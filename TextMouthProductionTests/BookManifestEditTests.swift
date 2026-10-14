@@ -525,4 +525,135 @@ final class BookManifestEditTests: XCTestCase {
             sessions.queue.async { continuation.resume() }
         }
     }
+
+    // MARK: - Places Follow Their Tracks (Item 5)
+
+    /// Reordering the tracks moves the reading position and a bookmark to
+    /// the chapters that play their tracks now, at the same time into each,
+    /// in the row and in the record alike.
+    func testThePositionAndABookmarkStayOnTheirTracksWhenTheTracksAreReordered() async throws {
+        let world = try makeIntegrationWorld("Edit Manifest Places")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.4, 0.4, 0.4])
+        let offset = AudioBookParser.characterOffset(forTime: 0.25)
+        let bookmarkOffset = AudioBookParser.characterOffset(forTime: 0.1)
+        world.library.updateBook(id: book.id) { row in
+            row.readingPosition = ReadingPosition(chapterIndex: 2, characterOffset: offset)
+            row.bookmarks = [Bookmark(number: 1, chapterIndex: 0, characterOffset: bookmarkOffset, label: "Pilot boat")]
+        }
+        LibraryPersistenceService.flushPendingSave()
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        await editor.editor.edit(try XCTUnwrap(world.library.bookByID(book.id)), choosingApp: false, in: world.library, from: nil)
+        let manifest = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL)).url
+
+        try save(#"{"tracks": ["03.wav", "01.wav", "02.wav"]}"#, to: manifest)
+        let heard = await check(with: editor, in: announcements)
+
+        XCTAssertEqual(heard, [BookManifestEditWording.updated])
+        let row = try XCTUnwrap(world.library.bookByID(book.id))
+        XCTAssertEqual(row.readingPosition?.chapterIndex, 0, "The position left its track")
+        XCTAssertEqual(row.readingPosition?.characterOffset, offset, "The position left its time")
+        XCTAssertEqual(row.bookmarks.map(\.chapterIndex), [1], "The bookmark left its track")
+        XCTAssertEqual(row.bookmarks.map(\.characterOffset), [bookmarkOffset])
+        XCTAssertEqual(row.bookmarks.map(\.label), ["Pilot boat"])
+        LibraryPersistenceService.flushPendingSave()
+        let record = try XCTUnwrap(row.storedBookInfo())
+        XCTAssertEqual(record.state.readingPosition?.chapterIndex, 0, "The record's position left its track")
+        XCTAssertEqual(record.bookmarks.map(\.chapterIndex), [1], "The record's bookmark left its track")
+    }
+
+    /// Group headings and titles change nothing but headings: the position
+    /// keeps its chapter, its time, and its date.
+    func testGroupHeadingsAndTitlesMoveNoPlace() async throws {
+        let world = try makeIntegrationWorld("Edit Manifest Places Kept")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.4, 0.4, 0.4])
+        let offset = AudioBookParser.characterOffset(forTime: 0.2)
+        world.library.updateBook(id: book.id) { row in
+            row.readingPosition = ReadingPosition(chapterIndex: 1, characterOffset: offset)
+        }
+        let saved = try XCTUnwrap(world.library.bookByID(book.id)?.readingPosition)
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        await editor.editor.edit(try XCTUnwrap(world.library.bookByID(book.id)), choosingApp: false, in: world.library, from: nil)
+        let manifest = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL)).url
+
+        try save(#"{"tracks": [{"heading": "Night Watch"}, {"file": "01.wav", "title": "Ebb"}, {"file": "02.wav", "title": "Flood"}, "03.wav"]}"#, to: manifest)
+        let heard = await check(with: editor, in: announcements)
+
+        XCTAssertEqual(heard, [BookManifestEditWording.updated])
+        XCTAssertEqual(book.storedBookInfo()?.contentIndex?.allHeadings.map(\.text), ["Night Watch", "Ebb", "Flood", "03"])
+        XCTAssertEqual(world.library.bookByID(book.id)?.readingPosition, saved, "A place moved though no track did")
+    }
+
+    /// A skipped track heading follows its track, taking its new title and
+    /// level; a skipped group heading follows its words, and waits, naming
+    /// no heading, once no group heading has them. The position's offset
+    /// across the whole book is worked out anew.
+    func testSkippedHeadingsFollowTheirTracksOrTheirWords() {
+        let old = trackIndex([
+            ("a.wav", ["Season One", "A"]),
+            ("b.wav", ["B"]),
+            ("c.wav", ["C"])
+        ], groupLevels: true)
+        let regrouped = trackIndex([
+            ("c.wav", ["Season One", "C"]),
+            ("a.wav", ["Alpha"]),
+            ("b.wav", ["B"])
+        ], groupLevels: true)
+        let ungrouped = trackIndex([("c.wav", ["C"]), ("a.wav", ["A"]), ("b.wav", ["B"])], groupLevels: false)
+        let date = Date(timeIntervalSince1970: 1_800_000_000)
+        var places = PlaceRelocator.Places()
+        places.position = ReadingPosition(chapterIndex: 1, characterOffset: 4, globalCharacterOffset: 14)
+        places.skippedHeadings = [
+            SkippedHeading(level: 2, label: "A", chapterIndex: 0, characterOffset: 0),
+            SkippedHeading(level: 1, label: "Season One", chapterIndex: 0, characterOffset: 0),
+            SkippedHeading(level: 2, label: "C", chapterIndex: 2, characterOffset: 0)
+        ]
+
+        let moved = TrackPlaces.moved(places, from: old, to: regrouped, at: date)
+
+        XCTAssertEqual(moved.position?.chapterIndex, 2)
+        XCTAssertEqual(moved.position?.characterOffset, 4)
+        XCTAssertEqual(moved.position?.globalCharacterOffset, regrouped.chapterStartOffset(2) + 4)
+        XCTAssertEqual(moved.position?.lastUpdated, date, "A position that changed chapter was not dated at the move")
+        XCTAssertEqual(moved.skippedHeadings, [
+            SkippedHeading(level: 2, label: "Alpha", chapterIndex: 1, characterOffset: 0),
+            SkippedHeading(level: 1, label: "Season One", chapterIndex: 0, characterOffset: 0),
+            SkippedHeading(level: 2, label: "C", chapterIndex: 0, characterOffset: 0)
+        ])
+        XCTAssertEqual(moved.waitingSkippedHeadings, [])
+
+        let withoutGroup = TrackPlaces.moved(places, from: old, to: ungrouped, at: date)
+        XCTAssertEqual(withoutGroup.skippedHeadings.map(\.label), ["A", "C"])
+        XCTAssertEqual(withoutGroup.waitingSkippedHeadings, [SkippedHeading(level: 1, label: "Season One", chapterIndex: 0, characterOffset: 0)])
+    }
+
+    /// An index of a book of tracks, ten characters a chapter: each entry
+    /// a track's file and its headings at its start, a group heading first;
+    /// with `groupLevels`, a group heading is level 1 and every track after
+    /// the first group is level 2, as `AudioTrackPlan` levels them.
+    private func trackIndex(_ tracks: [(file: String, headings: [String])], groupLevels: Bool) -> BookContentIndex {
+        let folder = URL(fileURLWithPath: "/Track Places", isDirectory: true)
+        var grouped = false
+        let chapters = tracks.enumerated().map { number, track -> Chapter in
+            if groupLevels && track.headings.count > 1 {
+                grouped = true
+            }
+            let headings = track.headings.enumerated().map { position, text in
+                let isGroup = position < track.headings.count - 1
+                return Heading(level: isGroup || !grouped ? 1 : 2, text: text, chapterIndex: number, characterOffset: 0)
+            }
+            return Chapter(title: track.headings.last ?? track.file, text: String(repeating: " ", count: 10), headings: headings)
+        }
+        return BookContentIndex.build(
+            fromChapters: chapters,
+            format: .audio,
+            audioFilePaths: tracks.map { folder.appendingPathComponent($0.file).path },
+            audioBaseURL: folder
+        )
+    }
 }

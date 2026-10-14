@@ -496,9 +496,17 @@ final class BookManifestEditSessions: Sendable {
         guard index.audioLayout == .multiFile else {
             return refuse(BookManifestEditWording.sectionsGiven)
         }
+        // The book's places follow their tracks, committed with the
+        // analysis, or not at all.
+        let moved = movedPlaces(of: book, to: index, at: Date())
         let committed: Book?
         do {
-            committed = try LibraryPersistenceService.saveContentAnalysis(for: book, index: index, cacheFormatVersion: nil)
+            committed = try LibraryPersistenceService.saveContentAnalysis(
+                for: book,
+                index: index,
+                cacheFormatVersion: nil,
+                movedPlaces: moved
+            )
         } catch {
             return refuse(error.localizedDescription)
         }
@@ -511,15 +519,32 @@ final class BookManifestEditSessions: Sendable {
             .storage,
             "MANIFEST_EDIT_ADOPTED: \(book.title): \(index.chapters.count) track(s), \(index.allHeadings.count) heading(s)"
         )
+        if moved != nil {
+            DiagnosticLog.event(.storage, "PLACES_MOVED: \(book.title): followed their tracks into the edited manifest's order")
+        }
         return (
             .adopted(BookManifestEdit(
                 committed: committed,
                 index: index,
                 pauses: ChapterPauses.betweenTracks(of: index, inAudioFolder: folder),
+                // Narrowed to the moves the record took.
+                movedPlaces: moved?.taken(by: committed),
                 title: manifest.title?.nonBlank,
                 author: manifest.author?.nonBlank
             )),
             fingerprint
         )
+    }
+
+    /// The moves of `book`'s places (`Book.relocatablePlaces`) from the
+    /// arrangement its record holds, which they were saved in, to `index`,
+    /// the arrangement the edited manifest gives (`TrackPlaces`); nil when
+    /// none moved, or the record holds no index to move them from.
+    private static func movedPlaces(of book: Book, to index: BookContentIndex, at date: Date) -> MovedPlaces? {
+        guard let old = book.storedBookInfo()?.contentIndex else { return nil }
+        let original = book.relocatablePlaces
+        let moved = TrackPlaces.moved(original, from: old, to: index, at: date)
+        guard moved != original else { return nil }
+        return MovedPlaces(bookID: book.id, original: original, moved: moved, snapshot: nil)
     }
 }
