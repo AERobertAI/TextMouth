@@ -2152,13 +2152,14 @@ extension ReaderViewModel {
     /// file named ahead is spared: the service queues it behind the one
     /// playing, and the next chapter takes it over as it begins.
     ///
-    /// Called as each chapter's audio starts, and as this reader's sleep timer
+    /// Called as each chapter's audio starts, as an edit of the book's
+    /// manifest rearranges its tracks (FR17), and as this reader's sleep timer
     /// is set or cancelled, since a timer set for the end of the heading,
     /// which an audiobook's chapter ends, stops playback at the chapter's
     /// end. Only audio playing or paused in the cursor's chapter's own file
     /// is given a file to follow: audio that has stopped, or that still
     /// plays a file the library has moved since, is given none.
-    private func nameFileAfterCurrentChapter() {
+    func nameFileAfterCurrentChapter() {
         guard isAudioBook, audioPlaybackService.isPlaying,
               case .file(let chapterFile) = chapterAudioSource(forChapterAt: currentChapterIndex),
               audioPlaybackService.loadedURL == chapterFile.standardizedFileURL else { return }

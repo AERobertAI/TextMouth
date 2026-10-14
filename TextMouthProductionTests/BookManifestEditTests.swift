@@ -656,4 +656,88 @@ final class BookManifestEditTests: XCTestCase {
             audioBaseURL: folder
         )
     }
+
+    // MARK: - An Open or Playing Reader (Item 6)
+
+    /// An open reader shows the new headings at once, its cursor on the
+    /// same track at the same time, its chapter files in the new order, and
+    /// saves its place there; nothing starts playing.
+    func testAnOpenReaderShowsTheNewHeadingsWithItsCursorOnItsTrack() async throws {
+        let world = try makeIntegrationWorld("Edit Manifest Open Reader")
+        let book = try world.makeSilentAudioBook(title: "Harbour Soundings", trackDurations: [0.4, 0.4, 0.4])
+        let reader = world.openReader(for: book)
+        let files = try await loadedTrackFiles(of: reader, count: 3)
+        let offset = AudioBookParser.characterOffset(forTime: 0.3)
+        reader.navigateTo(chapterIndex: 2, characterOffset: offset)
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        let manifest = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL)).url
+
+        try save(#"{"tracks": [{"heading": "Ebb Tide"}, {"file": "03.wav", "title": "Third"}, "01.wav", "02.wav"]}"#, to: manifest)
+        let heard = await check(with: editor, in: announcements)
+
+        XCTAssertEqual(heard, [BookManifestEditWording.updated])
+        XCTAssertEqual(reader.content?.contentIndex.allHeadings.map(\.text), ["Ebb Tide", "Third", "01", "02"])
+        XCTAssertEqual(reader.currentChapterIndex, 0, "The cursor left its track")
+        XCTAssertEqual(reader.currentCharacterOffset, offset, "The cursor left its time")
+        XCTAssertEqual(reader.audioChapterFiles.map(resolvedPath), [files[2], files[0], files[1]])
+        XCTAssertFalse(reader.isCurrentlyPlaying, "The edit started playback")
+        XCTAssertEqual(world.library.bookByID(book.id)?.readingPosition?.chapterIndex, 0, "The reader's place was not saved on its track")
+    }
+
+    /// A playing reader plays on in the same file, on the same player, in
+    /// the same play, without a break; the file named to follow is the next
+    /// track in the new order, and the book goes on to it.
+    func testAPlayingReaderPlaysOnIntoTheNextTrackInTheNewOrder() async throws {
+        let world = try makeIntegrationWorld("Edit Manifest Playing Reader")
+        let book = try world.makeSilentAudioBook(title: "Harbour Soundings", trackDurations: [3, 0.6, 0.6])
+        let reader = world.openReader(for: book)
+        let files = try await loadedTrackFiles(of: reader, count: 3)
+        let service = reader.audioPlaybackService
+        defer { reader.stop() }
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        let manifest = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL)).url
+
+        reader.play()
+        XCTAssertEqual(service.queuedFilePaths, [files[0], files[1]])
+        let player = try XCTUnwrap(service._playerForTesting)
+        let generation = reader.chapterPlaybackGeneration
+        try save(#"{"pauseBetweenTracksMs": 0, "tracks": ["01.wav", "03.wav", "02.wav"]}"#, to: manifest)
+        let heard = await check(with: editor, in: announcements)
+
+        XCTAssertEqual(heard, [BookManifestEditWording.updated])
+        XCTAssertTrue(reader.isCurrentlyPlaying, "The edit stopped playback")
+        XCTAssertTrue(service._playerForTesting === player, "Playback began again on a new player")
+        XCTAssertEqual(reader.chapterPlaybackGeneration, generation, "Playback began again")
+        XCTAssertEqual(service.loadedURL.map { resolvedPath($0.path) }, files[0], "Another file plays")
+        XCTAssertEqual(reader.content?.chapters.map(\.title), ["01", "03", "02"])
+        XCTAssertEqual(service.queuedFilePaths, [files[0], files[2]], "The next track in the new order was not named to follow")
+
+        let wentOn = await eventually(timeout: 10) { reader.currentChapterIndex == 1 }
+        XCTAssertTrue(wentOn, "The book did not go on from the first track")
+        XCTAssertEqual(service.loadedURL.map { resolvedPath($0.path) }, files[2], "The book went on to the old order's next track")
+    }
+
+    /// The chapter files of `reader`'s audiobook once it has loaded, each
+    /// as a resolved path, waiting for the load without holding the main
+    /// actor, on which it finishes.
+    ///
+    /// - Throws: when the reader did not load `count` tracks in time, so a
+    ///   test never indexes past the tracks it has.
+    private func loadedTrackFiles(of reader: ReaderViewModel, count: Int) async throws -> [String] {
+        let loaded = await eventually(timeout: 10) { !reader.isLoading && reader.content != nil }
+        let files = reader.audioChapterFiles.map(resolvedPath)
+        guard loaded, files.count == count else {
+            XCTFail("The reader loaded \(files.count) of \(count) tracks")
+            throw CancellationError()
+        }
+        return files
+    }
 }

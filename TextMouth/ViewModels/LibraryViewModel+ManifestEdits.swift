@@ -9,10 +9,15 @@ extension LibraryViewModel {
     /// analysis (its duration, its counts, and its index version), which
     /// its list shows, and the moves of its places the record took, and is
     /// saved; then its title and author take the manifest's, when it gives
-    /// them, through the one write of a manifest book's title and author.
+    /// them, through the one write of a manifest book's title and author;
+    /// then the book's open readers show the new arrangement as they play
+    /// on (`LibraryBookEvent.tracksRearranged`). The row's changes reach the
+    /// readers first, through the usual updates, so their copies of the book
+    /// agree with the headings they show.
     func commitManifestEdit(_ edit: BookManifestEdit) {
         applyAnalysisSummaries([ContentAnalysisSummary(committed: edit.committed, movedPlaces: edit.movedPlaces)])
         setTitleAndAuthor(ofManifestBook: edit.committed.id, title: edit.title, author: edit.author)
+        bookUpdates.tracksRearranged(bookID: edit.committed.id, by: edit)
     }
 
     // MARK: Title and Author, Kept in Step

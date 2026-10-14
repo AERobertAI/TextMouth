@@ -285,6 +285,9 @@ struct BookManifestEdit: Sendable {
     let index: BookContentIndex
     /// The pauses the edited manifest puts between the book's tracks.
     let pauses: ChapterPauses
+    /// A transcribed audiobook's transcript text, laid over the new
+    /// arrangement (FR05); nil for a book without one.
+    var transcript: TranscriptText? = nil
     /// The book's places this edit moved to their tracks' new chapters,
     /// narrowed to the moves its record took (`MovedPlaces.taken(by:)`);
     /// nil when it moved none.
@@ -492,7 +495,10 @@ final class BookManifestEditSessions: Sendable {
         } catch {
             return refuse(error.localizedDescription)
         }
-        let index = analysis.index
+        // A transcribed audiobook's transcript is laid over the new
+        // arrangement, and its layer kept in the index committed.
+        let transcript = TranscriptTextLoader.load(for: book, audioIndex: analysis.index)
+        let index = transcript.index
         guard index.audioLayout == .multiFile else {
             return refuse(BookManifestEditWording.sectionsGiven)
         }
@@ -527,6 +533,7 @@ final class BookManifestEditSessions: Sendable {
                 committed: committed,
                 index: index,
                 pauses: ChapterPauses.betweenTracks(of: index, inAudioFolder: folder),
+                transcript: transcript.text,
                 // Narrowed to the moves the record took.
                 movedPlaces: moved?.taken(by: committed),
                 title: manifest.title?.nonBlank,

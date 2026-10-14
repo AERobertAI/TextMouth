@@ -225,6 +225,7 @@ final class LibraryBookUpdatesTests: XCTestCase {
                 case .packageMoveEnded: return "move ended"
                 case .textReplaced: return "text replaced"
                 case .transcriptReplaced: return "transcript replaced"
+                case .tracksRearranged: return "tracks rearranged"
                 }
             }
         }

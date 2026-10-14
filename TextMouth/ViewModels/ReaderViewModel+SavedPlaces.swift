@@ -120,6 +120,23 @@ extension ReaderViewModel {
     /// moved position, so a cursor the listener already moved is left alone.
     func takeMovedPlaces(_ movedPlaces: MovedPlaces?) {
         guard !isAudioBook, let movedPlaces else { return }
+        takeMoves(movedPlaces)
+    }
+
+    /// Takes the moves of the places of this audiobook of tracks that an
+    /// edit of its manifest made (FR17, `TrackPlaces`): each place to the
+    /// chapter playing its track now. They are taken as a text's moves are
+    /// (`takeMovedPlaces(_:)`), each where it is still as it was. Does
+    /// nothing for nil, or for a text book.
+    func takeMovedTrackPlaces(_ movedPlaces: MovedPlaces?) {
+        guard isAudioBook, let movedPlaces else { return }
+        takeMoves(movedPlaces)
+    }
+
+    /// Takes `movedPlaces` into the library's row, this reader's own copy of
+    /// the book, its bookmark list, and its cursor, as `takeMovedPlaces(_:)`
+    /// describes.
+    private func takeMoves(_ movedPlaces: MovedPlaces) {
         let original = movedPlaces.original
         let moved = movedPlaces.moved
 
