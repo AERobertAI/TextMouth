@@ -143,7 +143,7 @@ extension LibraryViewModel {
     /// converting, so its reader refuses to play it. A book already
     /// converting or in line is left in its place.
     func requestOggConversion(ofBook bookID: UUID, access: MaintenanceFileAccess = .live) {
-        guard !oggConversion.isConverting(bookID) else { return }
+        guard !oggConversion.isConverting(bookID), !oggConversion.hasFailed(bookID) else { return }
         oggConversion.enqueue(bookID: bookID) { [weak self] in
             guard let self else { return }
             if case let .waiting(.space(needed, _)) = await self.convertOggAudio(ofBook: bookID, access: access),
@@ -214,6 +214,9 @@ extension LibraryViewModel {
                 Task { @MainActor in progress.reach(done) }
             }
         } catch {
+            // A book that fails waits for the next launch: nothing tries it
+            // again before (B09).
+            oggConversion.markFailed(bookID)
             return wait(.failed(Self.loggable(error)), for: book)
         }
 
@@ -221,6 +224,7 @@ extension LibraryViewModel {
             ? await commitConvertedTracks(conversions, of: book, folder: bookURL)
             : await commitConvertedFile(conversions, of: book)
         if case let .waiting(wait) = committed {
+            if case .failed = wait { oggConversion.markFailed(bookID) }
             return self.wait(wait, for: book)
         }
         let before = conversions.reduce(0) { $0 + $1.bytesBefore }
