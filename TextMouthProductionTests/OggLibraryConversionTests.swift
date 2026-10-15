@@ -269,7 +269,13 @@ final class OggLibraryConversionTests: XCTestCase {
     /// Indexes `book` as an import indexes it, saves its record with the
     /// index, and lists it in `world`'s library.
     private func indexAndList(_ book: Book, in world: IntegrationWorld) throws -> Book {
-        let analysis = try BookContentAnalysisService.load(book: book)
+        // The probe is a stand-in that reports two seconds for every track:
+        // the real one never decodes Ogg audio in TextMouth (B09).
+        let analysis = try BookContentAnalysisService.analyzeAudio(
+            book: book,
+            url: URL(fileURLWithPath: book.filePath),
+            prober: AudioMediaProber { _ in .success(2) }
+        )
         try book.saveBookInfoThrowing(contentIndex: analysis.index)
         world.library.library.addBook(book)
         return book

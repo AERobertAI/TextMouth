@@ -540,7 +540,7 @@ enum BookContentAnalysisService {
     /// can be trusted, and what saving edited audio does once the book's file
     /// has changed (FR04). Waits for AVFoundation, so call it off the main
     /// thread and outside Swift concurrency.
-    static func analyzeAudio(book: Book, url: URL) throws -> Result {
+    static func analyzeAudio(book: Book, url: URL, prober: AudioMediaProber = .avFoundation) throws -> Result {
         var isDirectory: ObjCBool = false
         let parsed: (
             content: DocumentContent,
@@ -551,12 +551,12 @@ enum BookContentAnalysisService {
         if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
            isDirectory.boolValue {
             let directoryResult = try AsyncBridge.waitForResult {
-                try await AudioBookParser.parseDirectory(url: url)
+                try await AudioBookParser.parseDirectory(url: url, prober: prober)
             }
             parsed = (directoryResult.content, directoryResult.filePaths, directoryResult.segments)
         } else {
             let content = try AsyncBridge.waitForResult {
-                try await AudioBookParser.parse(url: url)
+                try await AudioBookParser.parse(url: url, prober: prober)
             }
             parsed = (content, nil, nil)
         }
