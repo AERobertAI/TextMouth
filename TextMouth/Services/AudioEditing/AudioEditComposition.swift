@@ -40,6 +40,9 @@ struct AudioEditBase: Sendable {
     static func load(_ url: URL, name: String) async throws -> AudioEditBase {
         guard FileManager.default.fileExists(atPath: url.path) else { throw AudioEditError.missingAudio(name) }
         guard !DatalessFiles.isDataless(url) else { throw AudioEditError.audioInCloud }
+        // Never decode Ogg in TextMouth (B09): Apple's Vorbis decoder can spin
+        // forever. A book still in Ogg is converted to AAC first.
+        guard !OggAudioConverter.isOgg(url) else { throw AudioEditError.unreadableAudio }
         // Precise timing measures a VBR MP3 by decoding its frames rather than
         // estimating from its first ones, so its length is its real length.
         let asset = AVURLAsset(url: url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true])

@@ -1,3 +1,4 @@
+import AudioToolbox
 import AVFoundation
 import Darwin
 
@@ -7,19 +8,21 @@ import Darwin
 ///
 /// On October 14, 2026 Apple's Vorbis decoder, playing an Ogg track through
 /// AVPlayer at 1.5x, locked up inside AudioToolbox and grew TextMouth to
-/// 34 GB until the Mac ran out of memory. Decoding the same files offline
-/// had worked, so every import converts its Ogg audio, and a launch pass
-/// converts the books already in the library, decoding through
-/// AVAssetReader and never through a player.
+/// 34 GB until the Mac ran out of memory. The same decoder then froze every
+/// conversion that decoded Ogg inside TextMouth with AVAssetReader (B09), and
+/// no in-process call can be stopped once it spins. So TextMouth never
+/// decodes Ogg itself: it runs Apple's own `/usr/bin/afconvert` as a child
+/// process (`WatchedProcess`), which a watchdog kills when it runs too long,
+/// holds too much memory, or stops writing (`ConversionLimits`). All that
+/// TextMouth reads of the Ogg file is its header (`inspect(_:)`).
 ///
-/// A file is written by the audio editor's own AAC writer
-/// (`AudioEditRenderer`, with `AudioRenderSettings`), at the source's own
-/// average bit rate rounded up to the next standard AAC rate, so a track
-/// stays about the same size and sounds no worse
-/// (`bitRate(averaging:channels:accepted:)`). It is written under a hidden
-/// temporary name, checked by `AudioMediaProbe` (it plays, and lasts as long
-/// as its source to within `lengthTolerance`), and only then given its
-/// final name: the source's stem with .m4a, made unique when taken.
+/// A file is written at the source's own average bit rate rounded up to the
+/// next standard AAC rate, so a track stays about the same size and sounds
+/// no worse (`bitRate(averaging:channels:accepted:)`), under a hidden
+/// temporary name, checked by `AudioMediaProbe` (which decodes the AAC, never
+/// the Ogg: it plays, and lasts as long as its source to within
+/// `lengthTolerance`), and only then given its final name: the source's
+/// stem with .m4a, made unique when taken.
 enum OggAudioConverter {
     /// The extensions of Ogg audio, in lowercase: Vorbis's, the Ogg audio
     /// container's, and Opus's.
@@ -79,6 +82,11 @@ enum OggAudioConverter {
         case checkFailed(fileName: String, reason: String)
         /// The converted file could not be given its final name.
         case cannotName(fileName: String)
+        /// The watchdog killed the converting process, for `reason`.
+        case killed(fileName: String, reason: String)
+        /// The converting process ended in failure with exit `status`, or
+        /// could not be started (status -1).
+        case processFailed(fileName: String, status: Int32)
 
         var errorDescription: String? {
             switch self {
@@ -88,6 +96,10 @@ enum OggAudioConverter {
                 return "The AAC audio converted from \(fileName) failed its check: \(reason)."
             case let .cannotName(fileName):
                 return "The AAC audio converted from \(fileName) could not be given its name."
+            case let .killed(fileName, reason):
+                return "Converting \(fileName) to AAC was stopped because \(reason)."
+            case let .processFailed(fileName, status):
+                return "Converting \(fileName) to AAC failed (the converter ended with code \(status))."
             }
         }
     }
@@ -140,27 +152,111 @@ enum OggAudioConverter {
         return isOfCDFamily ? 44_100 : 48_000
     }
 
-    /// The settings `base`, an Ogg file of `bytes` bytes, is written in:
-    /// AAC-LC in an .m4a file, at its own channels (two at most: more are
-    /// mixed down to stereo, whose bit rates the task gives), its own sample
-    /// rate where AAC takes it, and its average bit rate, bytes × 8 ÷
-    /// duration, rounded up to the next standard rate.
-    static func settings(for base: AudioEditBase, bytes: Int64) -> AudioRenderSettings {
-        let channels = min(max(base.channelCount, 1), 2)
-        let rate = sampleRate(for: base.sampleRate)
-        let seconds = Double(base.frames) / base.sampleRate
-        let average = seconds > 0 ? Double(bytes) * 8 / seconds : 0
-        return AudioRenderSettings(
-            format: .aacM4A,
-            sampleRate: rate,
+    /// What the header of an Ogg file says: read without decoding a sample
+    /// (`inspect(_:)`).
+    struct SourceInfo: Equatable, Sendable {
+        /// The sample rate, in hertz.
+        let sampleRate: Double
+        /// The number of channels.
+        let channels: Int
+        /// How long it lasts, in seconds, as the container estimates it.
+        let duration: TimeInterval
+    }
+
+    /// The sample rate, channels, and length of the Ogg file at `url`, from
+    /// its header alone through AudioFile: nothing is decoded, so Apple's
+    /// Vorbis decoder is never run in TextMouth. Nil when the file isn't
+    /// there, is only in the cloud, or isn't audio AudioFile reads.
+    static func inspect(_ url: URL) -> SourceInfo? {
+        guard FileManager.default.fileExists(atPath: url.path), !DatalessFiles.isDataless(url) else { return nil }
+        var file: AudioFileID?
+        guard AudioFileOpenURL(url as CFURL, .readPermission, 0, &file) == noErr, let file else { return nil }
+        defer { AudioFileClose(file) }
+        var format = AudioStreamBasicDescription()
+        var formatSize = UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
+        var seconds: Float64 = 0
+        var secondsSize = UInt32(MemoryLayout<Float64>.size)
+        guard AudioFileGetProperty(file, kAudioFilePropertyDataFormat, &formatSize, &format) == noErr,
+              AudioFileGetProperty(file, kAudioFilePropertyEstimatedDuration, &secondsSize, &seconds) == noErr,
+              format.mSampleRate > 0, format.mChannelsPerFrame > 0, seconds.isFinite, seconds > 0 else { return nil }
+        return SourceInfo(sampleRate: format.mSampleRate, channels: Int(format.mChannelsPerFrame), duration: seconds)
+    }
+
+    /// How a source described by `info`, a file of `bytes` bytes, is written:
+    /// AAC-LC at its own channels (two at most: more are mixed down to
+    /// stereo), its own sample rate where AAC takes it
+    /// (`sampleRate(for:)`), and its average bit rate, bytes × 8 ÷ duration,
+    /// rounded up to the next standard rate.
+    struct Target: Equatable, Sendable {
+        /// The channels written: one or two.
+        let channels: Int
+        /// The sample rate written, in hertz.
+        let sampleRate: Double
+        /// The bit rate written, in bits a second; nil when the encoder
+        /// chooses.
+        let bitRate: Int?
+    }
+
+    /// The `Target` for `info` and `bytes`; see `Target`.
+    static func target(for info: SourceInfo, bytes: Int64) -> Target {
+        let channels = min(max(info.channels, 1), 2)
+        let rate = sampleRate(for: info.sampleRate)
+        let average = Double(bytes) * 8 / info.duration
+        return Target(
             channels: channels,
+            sampleRate: rate,
             bitRate: bitRate(
                 averaging: average,
                 channels: channels,
                 accepted: AudioRenderSettings.acceptedAACBitRates(sampleRate: rate, channels: channels)
-            ),
-            bitsPerSample: 16,
-            isFloat: false
+            )
+        )
+    }
+
+    /// The arguments of afconvert for writing `input` to `output` as `target`
+    /// from a source described by `info`: an .m4a file of AAC at the bit
+    /// rate; the sample rate (`-d aac@rate`) only where it differs from the
+    /// source's, and the channel count (`-c`) only where the source has more
+    /// than two.
+    static func afconvertArguments(from input: URL, to output: URL, info: SourceInfo, target: Target) -> [String] {
+        var format = "aac"
+        if target.sampleRate != info.sampleRate { format += "@\(Int(target.sampleRate))" }
+        var arguments = ["-f", "m4af", "-d", format]
+        if info.channels > 2 { arguments += ["-c", String(target.channels)] }
+        if let bitRate = target.bitRate { arguments += ["-b", String(bitRate)] }
+        return arguments + [input.path, output.path]
+    }
+
+    // MARK: - The Converting Process
+
+    /// What runs a conversion, and what watches it: afconvert under the
+    /// watchdog's rules in the app, replaced in tests by a stand-in child
+    /// (a `sleep`, or a script that writes slowly) and tight limits.
+    struct Tool: Sendable {
+        /// The executable and arguments that write `output` from `input`.
+        var command: @Sendable (_ input: URL, _ output: URL, _ info: SourceInfo, _ target: Target)
+            -> (executable: URL, arguments: [String])
+        /// What the watchdog allows a conversion of a track lasting the
+        /// given seconds.
+        var limits: @Sendable (_ duration: TimeInterval) -> WatchedProcess.Limits
+        /// How the watchdog reads the child's resident memory.
+        var residentMemory: @Sendable (pid_t) -> Int64?
+
+        /// Apple's own converter, which reads Ogg through AudioFile and
+        /// ExtAudioFile; it converted a 34-minute Vorbis track whole in
+        /// 9.5 seconds on October 13, 2026.
+        static let afconvert = Tool(
+            command: { input, output, info, target in
+                (URL(fileURLWithPath: "/usr/bin/afconvert"), afconvertArguments(from: input, to: output, info: info, target: target))
+            },
+            limits: { duration in
+                WatchedProcess.Limits(
+                    maximumSeconds: 60 + duration / 10,
+                    maximumResidentBytes: 1_073_741_824,
+                    maximumStalledSeconds: 20
+                )
+            },
+            residentMemory: { WatchedProcess.residentMemory(of: $0) }
         )
     }
 
@@ -168,49 +264,28 @@ enum OggAudioConverter {
 
     /// Converts the Ogg file `source` to AAC in an .m4a file beside it,
     /// under a hidden temporary name, and checks the result: it must play,
-    /// and last as long as the source to within `lengthTolerance`. With
-    /// `naming`, it then gets its final name (`givingFinalName(_:)`);
+    /// and last as long as the source to within `allowedLengthError(for:)`.
+    /// With `naming`, it then gets its final name (`givingFinalName(_:)`);
     /// without, it keeps the temporary one, for a caller that names a whole
     /// book's files in one step. The source is never changed, and nothing
     /// is left behind by a failure. Nothing is downloaded: a file only in
-    /// the cloud is refused.
+    /// the cloud is refused. The conversion runs in a child process the
+    /// watchdog of `tool` kills when it hangs (`OGG_CONVERSION_KILLED` in the
+    /// debug log).
     /// - Throws: `Failure`, or `CancellationError` when the task is
     ///   cancelled.
-    static func convert(_ source: URL, naming: Bool = true) async throws -> Conversion {
+    static func convert(_ source: URL, naming: Bool = true, using tool: Tool = .afconvert) async throws -> Conversion {
         let started = Date()
         let name = source.lastPathComponent
-        let base: AudioEditBase
-        do {
-            base = try await AudioEditBase.load(source, name: name)
-        } catch {
-            throw Failure.unreadable(fileName: name)
-        }
+        guard let info = inspect(source) else { throw Failure.unreadable(fileName: name) }
         let bytesBefore = fileSize(of: source)
-        let settings = settings(for: base, bytes: bytesBefore)
+        let target = target(for: info, bytes: bytesBefore)
         let stem = source.deletingPathExtension().lastPathComponent
         let staged = source.deletingLastPathComponent()
             .appendingPathComponent(".\(stem).\(UUID().uuidString)\(temporarySuffix)")
-        // The file keeps its own tags: the renderer copies its common
-        // metadata and writes the title it is given, so it is given the
-        // file's own title, or its name without one.
-        let title = await AudioPlaybackService.extractFullMetadata(from: source).title
-        let sources = AudioEditComposition.Sources(
-            base: base,
-            package: source.deletingLastPathComponent(),
-            // Only silence and MP3 use a scratch folder, and a whole file
-            // converted to AAC uses neither.
-            scratch: FileManager.default.temporaryDirectory
-        )
         do {
-            _ = try await AudioEditRenderer.render(
-                base.timeline,
-                sources: sources,
-                to: staged,
-                format: .aacM4A,
-                settings: settings,
-                metadata: AudioRenderMetadata(title: title.isEmpty ? stem : title, author: nil)
-            )
-            try await check(staged, against: Double(base.frames) / base.sampleRate, from: name)
+            try await run(tool, from: source, to: staged, info: info, target: target)
+            try await check(staged, against: info.duration, from: name)
         } catch {
             try? FileManager.default.removeItem(at: staged)
             throw error
@@ -218,11 +293,11 @@ enum OggAudioConverter {
         var conversion = Conversion(
             source: source,
             converted: staged,
-            duration: Double(base.frames) / base.sampleRate,
+            duration: info.duration,
             secondsTaken: Date().timeIntervalSince(started),
             bytesBefore: bytesBefore,
             bytesAfter: fileSize(of: staged),
-            bitRate: settings.bitRate
+            bitRate: target.bitRate
         )
         if naming {
             do {
@@ -235,6 +310,45 @@ enum OggAudioConverter {
         return conversion
     }
 
+    /// Runs the converting process of `tool` for `source`, writing `staged`,
+    /// and turns how it ended into success or a `Failure`; a kill is logged.
+    private static func run(
+        _ tool: Tool,
+        from source: URL,
+        to staged: URL,
+        info: SourceInfo,
+        target: Target
+    ) async throws {
+        let name = source.lastPathComponent
+        let command = tool.command(source, staged, info, target)
+        let outcome = try await WatchedProcess.run(
+            command.executable,
+            arguments: command.arguments,
+            watching: staged,
+            limits: tool.limits(info.duration),
+            residentMemory: tool.residentMemory
+        )
+        switch outcome {
+        case .exited(status: 0):
+            return
+        case let .exited(status):
+            throw Failure.processFailed(fileName: name, status: status)
+        case .couldNotStart:
+            throw Failure.processFailed(fileName: name, status: -1)
+        case let .killed(reason):
+            DiagnosticLog.event(.storage, "OGG_CONVERSION_KILLED: \(name): \(reason.words)")
+            throw Failure.killed(fileName: name, reason: reason.words)
+        }
+    }
+
+    /// How far the length of a converted file may differ from its source's
+    /// `duration`: `lengthTolerance`, and a half of a percent more, since an
+    /// Ogg file's length is the container's estimate, not a count of decoded
+    /// samples.
+    static func allowedLengthError(for duration: TimeInterval) -> TimeInterval {
+        lengthTolerance + duration * 0.005
+    }
+
     /// Checks the converted file at `url`, made from the file named
     /// `sourceName` lasting `duration` seconds: it must open and decode as
     /// audio (`AudioMediaProbe`), and last as long to within
@@ -245,7 +359,7 @@ enum OggAudioConverter {
         case let .failure(problem):
             throw Failure.checkFailed(fileName: sourceName, reason: problem.reason)
         case let .success(seconds):
-            guard abs(seconds - duration) <= lengthTolerance else {
+            guard abs(seconds - duration) <= allowedLengthError(for: duration) else {
                 throw Failure.checkFailed(
                     fileName: sourceName,
                     reason: String(format: "it lasts %.1f seconds, not %.1f", seconds, duration)
@@ -288,6 +402,7 @@ enum OggAudioConverter {
     static func convertEach(
         _ sources: [URL],
         naming: Bool = true,
+        using tool: Tool = .afconvert,
         progress: (@Sendable (Int) -> Void)? = nil
     ) async throws -> [Conversion] {
         var results = [Conversion?](repeating: nil, count: sources.count)
@@ -298,7 +413,7 @@ enum OggAudioConverter {
                 // the next, so at most the maximum run together.
                 while next < min(maximumConcurrentConversions, sources.count) {
                     let index = next
-                    group.addTask { (index, try await convert(sources[index], naming: naming)) }
+                    group.addTask { (index, try await convert(sources[index], naming: naming, using: tool)) }
                     next += 1
                 }
                 var done = 0
@@ -309,7 +424,7 @@ enum OggAudioConverter {
                         progress?(done)
                         if next < sources.count {
                             let index = next
-                            group.addTask { (index, try await convert(sources[index], naming: naming)) }
+                            group.addTask { (index, try await convert(sources[index], naming: naming, using: tool)) }
                             next += 1
                         }
                     }
@@ -351,21 +466,20 @@ enum OggAudioConverter {
     }
 
     /// About how many bytes `sources` take once converted: each one's length
-    /// at the bit rate it would be written at (`settings(for:bytes:)`), with
+    /// at the bit rate it would be written at (`target(for:bytes:)`), with
     /// a hundredth more and 64 KB for the file's own tables, or its own size
     /// when it can't be read. Reads only each file's header; never decodes.
     static func estimatedSize(of sources: [URL]) async -> Int64 {
         var total: Int64 = 0
         for source in sources {
             let bytes = fileSize(of: source)
-            guard let base = try? await AudioEditBase.load(source, name: source.lastPathComponent) else {
+            guard let info = inspect(source) else {
                 total += bytes
                 continue
             }
-            let settings = settings(for: base, bytes: bytes)
-            let seconds = Double(base.frames) / base.sampleRate
-            let bitRate = Double(settings.bitRate ?? AudioRenderSettings.bitRatePerChannel * settings.channels)
-            total += Int64((seconds * bitRate / 8 * 1.01).rounded(.up)) + 65_536
+            let channels = min(max(info.channels, 1), 2)
+            let bitRate = Double(target(for: info, bytes: bytes).bitRate ?? AudioRenderSettings.bitRatePerChannel * channels)
+            total += Int64((info.duration * bitRate / 8 * 1.01).rounded(.up)) + 65_536
         }
         return total
     }

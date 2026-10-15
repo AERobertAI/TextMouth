@@ -4,6 +4,10 @@ import AppKit
 enum ReaderOggWording {
     /// What Play says while the book's audio is being converted.
     static let beingConverted = "This book's audio is being converted from Ogg to AAC. It plays once the conversion ends."
+    /// What Play says for a book whose conversion failed at this launch: it
+    /// is not tried again before the next one.
+    static let conversionFailed = "This book's audio could not be converted from Ogg to AAC. "
+        + "TextMouth tries again the next time it starts."
     /// What Play says for a book found still in Ogg, whose conversion it
     /// starts.
     static let needsConverting = "This book's audio needs converting from Ogg to AAC before it plays. "
@@ -34,6 +38,10 @@ extension ReaderViewModel {
             .storage,
             "READER_READ_REFUSED: \(book.title): chapter \(currentChapterIndex + 1) is Ogg audio, which is converted to AAC first"
         )
+        if libraryViewModel.oggConversion.hasFailed(book.id) {
+            refuseOggAudio(ReaderOggWording.conversionFailed)
+            return false
+        }
         libraryViewModel.requestOggConversion(ofBook: book.id)
         refuseOggAudio(ReaderOggWording.needsConverting)
         return false

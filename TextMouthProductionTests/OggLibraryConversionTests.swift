@@ -106,6 +106,39 @@ final class OggLibraryConversionTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("manifest.json"), encoding: .utf8), manifestJSON)
     }
 
+    /// A book whose conversion failed is not tried again before the next
+    /// launch: a request for it starts nothing, and its reader says when
+    /// it will be tried again.
+    func testABookThatFailedIsNotTriedAgainBeforeTheNextLaunch() async throws {
+        try OggTestFixtures.skipUnlessOggDecodes()
+        let world = try makeIntegrationWorld("Ogg Library Failed Once")
+        let book = try makeOggBook(
+            in: world,
+            title: "Stubborn Dramas",
+            tracks: ["01.ogg": OggTestFixtures.vorbis],
+            manifest: nil
+        )
+        let folder = URL(fileURLWithPath: book.filePath)
+        try Data("no longer audio".utf8).write(to: folder.appendingPathComponent("01.ogg"))
+        let reader = world.openReader(for: book)
+        let loaded = await eventually { reader.content != nil }
+        XCTAssertTrue(loaded, "The reader never loaded its book")
+
+        guard case .waiting(.failed) = await world.library.convertOggAudio(ofBook: book.id) else {
+            return XCTFail("The conversion must fail")
+        }
+        world.library.requestOggConversion(ofBook: book.id)
+
+        XCTAssertTrue(world.library.oggConversion.hasFailed(book.id))
+        XCTAssertFalse(world.library.oggConversion.isConverting(book.id), "A failed book must not be queued again")
+        XCTAssertFalse(reader.chapterAudioIsClearOfOgg())
+        XCTAssertEqual(
+            reader.errorMessage,
+            "This book's audio could not be converted from Ogg to AAC. TextMouth tries again the next time it starts."
+        )
+        XCTAssertFalse(world.library.oggConversion.isConverting(book.id))
+    }
+
     // MARK: - While a Book Converts
 
     /// The overlay says how far the book under way has got, counting its
@@ -269,7 +302,13 @@ final class OggLibraryConversionTests: XCTestCase {
     /// Indexes `book` as an import indexes it, saves its record with the
     /// index, and lists it in `world`'s library.
     private func indexAndList(_ book: Book, in world: IntegrationWorld) throws -> Book {
-        let analysis = try BookContentAnalysisService.load(book: book)
+        // The probe is a stand-in that reports two seconds for every track:
+        // the real one never decodes Ogg audio in TextMouth (B09).
+        let analysis = try BookContentAnalysisService.analyzeAudio(
+            book: book,
+            url: URL(fileURLWithPath: book.filePath),
+            prober: AudioMediaProber { _ in .success(2) }
+        )
         try book.saveBookInfoThrowing(contentIndex: analysis.index)
         world.library.library.addBook(book)
         return book

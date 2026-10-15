@@ -28,6 +28,10 @@ final class OggConversionProgress: ObservableObject {
     private var underWay: (id: UUID, title: String)?
     /// The books a reader asked to convert, waiting their turn.
     private var queued: Set<UUID> = []
+    /// The books whose conversion failed since this launch (a track that
+    /// would not convert, or one the watchdog killed): they wait for the next
+    /// launch, and are never tried again before it (B09).
+    private var failed: Set<UUID> = []
     /// The last conversion in line: each one starts once the one before it
     /// has ended, so two books never convert at once.
     private var lastInLine: Task<Void, Never>?
@@ -36,6 +40,18 @@ final class OggConversionProgress: ObservableObject {
     /// its reader must not play it.
     func isConverting(_ bookID: UUID) -> Bool {
         underWay?.id == bookID || queued.contains(bookID)
+    }
+
+    /// Notes that the conversion of the book `bookID` failed, so nothing
+    /// tries it again before the next launch.
+    func markFailed(_ bookID: UUID) {
+        failed.insert(bookID)
+    }
+
+    /// Whether the conversion of the book `bookID` has failed since this
+    /// launch.
+    func hasFailed(_ bookID: UUID) -> Bool {
+        failed.contains(bookID)
     }
 
     /// Runs `work`, the conversion of one book or of the library's, once

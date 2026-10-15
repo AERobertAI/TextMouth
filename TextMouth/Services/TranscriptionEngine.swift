@@ -167,6 +167,9 @@ struct SpeechAnalyzerEngine: TranscriptionEngine {
     private static func analyze(fileAt url: URL, with analyzer: SpeechAnalyzer) async throws {
         let audioFile: AVAudioFile
         do {
+            // Never decode Ogg in TextMouth (B09): Apple's Vorbis decoder can
+            // spin forever.
+            guard !OggAudioConverter.isOgg(url) else { throw CocoaError(.fileReadCorruptFile) }
             audioFile = try AVAudioFile(forReading: url)
         } catch {
             throw TranscriptionError.unreadableFile(file: url.lastPathComponent, reason: TranscriptionError.unreadableAudioReason)
