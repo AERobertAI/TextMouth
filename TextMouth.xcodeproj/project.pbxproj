@@ -674,6 +674,7 @@
 		B49433AD8DD9E4FD70E32E4C /* HostedTestIsolationSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66BEADD3754A0854A2C15150 /* HostedTestIsolationSupport.swift */; };
 		B4B59C0592425BD318677D92 /* FeedItemIndexListTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 113FA8AF2E902E3D1C5C35D2 /* FeedItemIndexListTests.swift */; };
 		B5090CF66723BBC0D1DAA5BF /* FeedOPML.swift in Sources */ = {isa = PBXBuildFile; fileRef = C391FF37E32E1108E4B0B384 /* FeedOPML.swift */; };
+		B5ED8FB9B583D3A90A9230F9 /* OggBookCommitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A432C3F433764CD87CBD334 /* OggBookCommitTests.swift */; };
 		B6044620E2D0B1C22D11B2FC /* KeepOnThisMacTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 113457F1D1F6D7F977399FC9 /* KeepOnThisMacTests.swift */; };
 		B65053AF2AEA49F91A9080C9 /* LibraryFeedDeleteEpisodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1409B42C76C16F2E0778FFC /* LibraryFeedDeleteEpisodeTests.swift */; };
 		B69AEFD1869A8A77F64B17A8 /* ProductionPlaybackProfilingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A277440020042FDD9E4CB9F8 /* ProductionPlaybackProfilingTests.swift */; };
@@ -1012,6 +1013,7 @@
 		0A00167EDEB4C3FB86260D10 /* AudioEditBookRender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditBookRender.swift; sourceTree = "<group>"; };
 		0A0265F3A3B8B7ACEACA31A0 /* LibrarySortState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySortState.swift; sourceTree = "<group>"; };
 		0A2ACCF1B07F1FB0DBA0D38B /* FeedParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedParserTests.swift; sourceTree = "<group>"; };
+		0A432C3F433764CD87CBD334 /* OggBookCommitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OggBookCommitTests.swift; sourceTree = "<group>"; };
 		0A56A3FF118A8BDA0E6B9B5D /* CloudMaintenanceCacheBatchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudMaintenanceCacheBatchTests.swift; sourceTree = "<group>"; };
 		0A6213AC26A137FD0A6E782A /* DataDirectoryAvailability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataDirectoryAvailability.swift; sourceTree = "<group>"; };
 		0A6681D3B9E45F03A54B2B7C /* DiagnosticLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticLog.swift; sourceTree = "<group>"; };
@@ -2789,6 +2791,7 @@
 				56E9925E2D4BDCF8385F1C0F /* ObjCExceptionTests.swift */,
 				03C1A5E058F2B552E025E5FE /* OggAfconvertTests.swift */,
 				82EF6AA631C0D72D6F54B9CA /* OggAudioConverterTests.swift */,
+				0A432C3F433764CD87CBD334 /* OggBookCommitTests.swift */,
 				401DFE2E2C7CBDB7F6C6B1E4 /* OggImportConversionTests.swift */,
 				CFFB504D6A130FA65547ADDA /* OggLibraryConversionTests.swift */,
 				FF75D114EAF3FF1D823C69C3 /* OriginalFileDeletionTests.swift */,
@@ -3597,6 +3600,7 @@
 				D76B14B5FE9FAF0A0FDD891D /* OffsetMapTests.swift in Sources */,
 				9A6CC47F8CDD79E27300AEF2 /* OggAfconvertTests.swift in Sources */,
 				718B41AA95AB18966D11B924 /* OggAudioConverterTests.swift in Sources */,
+				B5ED8FB9B583D3A90A9230F9 /* OggBookCommitTests.swift in Sources */,
 				7DEFB4111B229D464E6BECDA /* OggImportConversionTests.swift in Sources */,
 				78D691C7670A329A4710D675 /* OggLibraryConversionTests.swift in Sources */,
 				4E7384F27A158D66E253A16F /* OriginalFileDeletionTests.swift in Sources */,
