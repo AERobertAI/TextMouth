@@ -363,19 +363,49 @@ extension ShortcutEdits {
         var edited: [ShortcutAction: [KeyBinding]] = [:]
         for action in ShortcutAction.allCases {
             guard let actionKeys = keys[action] else { continue }
-            let heldElsewhere = Set(keys.lazy.filter { other, _ in
-                other != action && other.sharesAWindow(in: other.defaultScope, with: action, in: action.defaultScope)
-            }.flatMap(\.value))
-            let given = Set(actionKeys)
-            let isADefault = ([defaults[action] ?? []] + (formerDefaults[action] ?? [])).contains { aDefault in
-                given == Set(aDefault) || given == Set(aDefault.filter { !heldElsewhere.contains($0) })
-            }
+            let isADefault = keysAreADefault(
+                of: action, given: actionKeys, among: keys, defaults: defaults, formerDefaults: formerDefaults
+            )
             if !isADefault {
                 edited[action] = actionKeys.withoutRepeats
             }
         }
         // Step 4.
         return ShortcutEdits(edited).resolvingSharedKeys(favoring: editedInFile)
+    }
+
+    /// Whether the `given` keys of `action` count as no edit: they are its
+    /// default, today's or one it had before, whole or less the keys other
+    /// actions whose scopes overlap its own hold among `keys`. A key the
+    /// user gave another action leaves this one without it, and does not
+    /// make it the user's. The rule of steps 2 and 3 of `migrating`, which
+    /// also judges an old-form config.json read after the move
+    /// (`KeyboardShortcutManager.adopt(_:in:)`), so the two cannot differ.
+    ///
+    /// The order of the keys is no edit: they are compared as sets.
+    ///
+    /// - Parameters:
+    ///   - action: The action whose keys are judged.
+    ///   - given: The keys `action` was given.
+    ///   - keys: Every action's keys, those other actions hold being what
+    ///     `action` may have lost.
+    ///   - defaults: Today's defaults.
+    ///   - formerDefaults: The defaults actions had before today's.
+    static func keysAreADefault(
+        of action: ShortcutAction,
+        given: [KeyBinding],
+        among keys: [ShortcutAction: [KeyBinding]],
+        defaults: [ShortcutAction: [KeyBinding]] = ShortcutAction.defaultBindings,
+        formerDefaults: [ShortcutAction: [[KeyBinding]]] = ShortcutAction.formerDefaultBindings
+    ) -> Bool {
+        // The keys other actions working in a window of this action's hold.
+        let heldElsewhere = Set(keys.lazy.filter { other, _ in
+            other != action && other.sharesAWindow(in: other.defaultScope, with: action, in: action.defaultScope)
+        }.flatMap(\.value))
+        let givenSet = Set(given)
+        return ([defaults[action] ?? []] + (formerDefaults[action] ?? [])).contains { aDefault in
+            givenSet == Set(aDefault) || givenSet == Set(aDefault.filter { !heldElsewhere.contains($0) })
+        }
     }
 }
 
