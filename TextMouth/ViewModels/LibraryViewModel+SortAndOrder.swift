@@ -141,7 +141,7 @@ extension LibraryViewModel {
     /// unfinished one (REV14). Continue to Next Book passes over them, as the
     /// reading list's Skip Finished Books passes over its finished books.
     func nextBookInFolder(after book: Book) -> Book? {
-        laterBooksInFolder(after: book).first { !$0.restsAtEnd }
+        nextBook(after: book, going: .down, skippingFinished: true)
     }
 
     /// The books after `book` that Continue to Next Book goes through,
@@ -149,30 +149,56 @@ extension LibraryViewModel {
     /// manual order, as the list shows that order
     /// (`ManualBookOrder.orderedBooks`), or, for a feed's item, which names
     /// no folder, the items downloaded that its feed's folder lists after it
-    /// (`laterFeedItems(after:of:)`, FR11). Empty after the last.
+    /// (FR11). Empty after the last.
     func laterBooksInFolder(after book: Book) -> [Book] {
-        if let feedID = book.feedLink?.feedID {
-            return laterFeedItems(after: book, of: feedID)
-        }
-        let folderBooks = ManualBookOrder.orderedBooks(in: library, folderPath: book.folderPath)
-        guard let currentIndex = folderBooks.firstIndex(where: { $0.id == book.id }) else { return [] }
-        return Array(folderBooks[(currentIndex + 1)...])
+        booksBeyond(book, going: .down)
     }
 
-    /// The items of the feed `feedID` that its folder lists after `book`'s
-    /// item, newest first as the folder lists them (`FeedRecord.listedItems`),
-    /// whose files are here (FR11): the episodes or articles down the list,
-    /// leaving out those not downloaded. Empty after the last, and for a feed
-    /// whose record is gone.
-    private func laterFeedItems(after book: Book, of feedID: UUID) -> [Book] {
+    /// The first of the books beyond `book` going `direction`
+    /// (`booksBeyond(_:going:)`), nearest first: when `skippingFinished`, the
+    /// first that does not rest at its end (`Book.restsAtEnd`), otherwise the
+    /// adjacent one, finished or not. nil when no book qualifies that way.
+    func nextBook(after book: Book, going direction: ReadingList.Direction, skippingFinished: Bool) -> Book? {
+        booksBeyond(book, going: direction).first { !skippingFinished || !$0.restsAtEnd }
+    }
+
+    /// The books beyond `book` going `direction` through the sequence its
+    /// folder lists, nearest first: down is the books after it, up the books
+    /// before it, read backward. For a plain folder's book the sequence is
+    /// its folder's manual order, as the list shows that order
+    /// (`ManualBookOrder.orderedBooks`); for a feed's item, which names no
+    /// folder, the feed's items as its folder lists them, newest first
+    /// (`FeedRecord.listedItems`, FR11), leaving out those whose files are not
+    /// here. Empty at that end of the sequence, and for a book the sequence
+    /// does not hold.
+    func booksBeyond(_ book: Book, going direction: ReadingList.Direction) -> [Book] {
+        if let feedID = book.feedLink?.feedID {
+            return feedItemBooksBeyond(book, of: feedID, going: direction)
+        }
+        let folderBooks = ManualBookOrder.orderedBooks(in: library, folderPath: book.folderPath)
+        let beyond = ListNeighbors.beyond(book.id, going: direction, in: folderBooks.map(\.id)) ?? []
+        // Each book is found by its ID in the order already in hand.
+        let booksByID = Dictionary(folderBooks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return beyond.compactMap { booksByID[$0] }
+    }
+
+    /// The downloaded items of the feed `feedID` beyond `book`'s item going
+    /// `direction` through the feed's folder listing (`booksBeyond(_:going:)`):
+    /// the episodes or articles down or up the list, leaving out those not
+    /// downloaded. Empty at that end, and for a feed whose record is gone or
+    /// whose listing does not hold the item.
+    private func feedItemBooksBeyond(_ book: Book, of feedID: UUID, going direction: ReadingList.Direction) -> [Book] {
         guard let items = feeds.store.record(of: feedID)?.listedItems else { return [] }
         let itemID = book.feedLink?.itemID
         guard let current = items.firstIndex(where: { $0.state.bookID == book.id || $0.id == itemID }) else { return [] }
-        // Each later item's row, found by one pass over the library.
+        // Each item's row, found by one pass over the library.
         let rows = Dictionary(library.books.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        return items[items.index(after: current)...].compactMap { item in
-            guard let bookID = item.state.bookID, let next = rows[bookID], next.feedLink?.feedID == feedID else { return nil }
-            return next
+        // The listing's positions stand for its items: the item was found
+        // by its book or its item ID, so the search is by position.
+        let beyond = ListNeighbors.beyond(current, going: direction, in: Array(items.indices)) ?? []
+        return beyond.compactMap { position in
+            guard let bookID = items[position].state.bookID, let row = rows[bookID], row.feedLink?.feedID == feedID else { return nil }
+            return row
         }
     }
 
