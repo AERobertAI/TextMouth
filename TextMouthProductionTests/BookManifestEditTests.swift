@@ -1400,4 +1400,107 @@ final class BookManifestEditTests: XCTestCase {
         preferences.set([first.uuidString: ["publisher", "colour", "author"]], forKey: ManifestOwedFields.key)
         XCTAssertEqual(record.owed(by: first), [.author], "A name that is no owable field was read back")
     }
+
+    /// A retitle made while the manifest has a typo is not lost when the
+    /// user fixes the typo and saves a manifest that still has the old
+    /// title: the save is taken (the new order, "Manifest updated" once)
+    /// but the stale title is not, and the row's title is written into the
+    /// file at the first look after the session, which announces nothing.
+    func testARetitleWhileTheManifestHasATypoSurvivesTheFixAndTheNextSave() async throws {
+        let world = try makeIntegrationWorld("Owed Manifest Typo")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2, 0.2], manifest: #"{"title": "Harbour Pilots"}"#)
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        await editor.editor.edit(try row(book.id, in: world), choosingApp: false, in: world.library, from: nil)
+        let manifest = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL)).url
+
+        // The user is midway through an edit: the closing brace is missing.
+        try save(#"{"title": "Harbour Pilots""#, to: manifest)
+        _ = await check(with: editor, in: announcements)
+        let didWrite = await retitle(book.id, to: "Night Pilots", in: world, with: editor.sessions)
+        XCTAssertFalse(didWrite, "A manifest with a typo was written")
+        XCTAssertEqual(editor.sessions.owed.owed(by: book.id), [.title])
+
+        // The fix, with the old title still in it and the tracks reordered.
+        try save(#"{"title": "Harbour Pilots", "tracks": ["02.wav", "01.wav"]}"#, to: manifest)
+        let heard = await check(with: editor, in: announcements)
+
+        XCTAssertEqual(heard, [BookManifestEditWording.updated])
+        XCTAssertEqual(book.storedBookInfo()?.contentIndex?.chapters.map(\.audioFilePath), ["02.wav", "01.wav"], "The new order was not taken")
+        XCTAssertEqual(world.library.bookByID(book.id)?.title, "Night Pilots", "The stale title was adopted")
+        XCTAssertEqual(editor.sessions.owed.owed(by: book.id), [.title])
+
+        let heardBeforeTheLook = announcements.messages
+        editor.editor.endAll()
+        let found = editor.sessions.look(at: try row(book.id, in: world))
+
+        guard case .unchanged = found else { return XCTFail("The look after the session found: \(found)") }
+        XCTAssertEqual(try manifestTitle(of: book), "Night Pilots", "The owed title was not written")
+        XCTAssertEqual(editor.sessions.owed.owed(by: book.id), [])
+        XCTAssertEqual(announcements.messages, heardBeforeTheLook, "The look made an announcement")
+    }
+
+    /// Only the owed field is kept: a save of the manifest with the old
+    /// title and a new author gives the book the author, not the title, and
+    /// the title is written at the first look after the session.
+    func testOnlyTheOwedFieldIsKeptWhileTheOtherFollowsTheManifest() async throws {
+        let world = try makeIntegrationWorld("Owed Manifest One Field")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2, 0.2], manifest: #"{"title": "Harbour Pilots"}"#)
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        await editor.editor.edit(try row(book.id, in: world), choosingApp: false, in: world.library, from: nil)
+        let manifest = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL)).url
+        let didWrite = await retitle(book.id, to: "Night Pilots", in: world, with: editor.sessions, isDataless: Self.manifestInCloud)
+        XCTAssertFalse(didWrite)
+        XCTAssertEqual(editor.sessions.owed.owed(by: book.id), [.title])
+
+        try save(#"{"title": "Harbour Pilots", "author": "Ilse Varga"}"#, to: manifest)
+        let heard = await check(with: editor, in: announcements)
+
+        XCTAssertEqual(heard, [BookManifestEditWording.updated])
+        XCTAssertEqual(world.library.bookByID(book.id)?.author, "Ilse Varga", "The manifest's author was not taken")
+        XCTAssertEqual(world.library.bookByID(book.id)?.title, "Night Pilots", "The stale title was adopted")
+        XCTAssertEqual(editor.sessions.owed.owed(by: book.id), [.title])
+
+        editor.editor.endAll()
+        let found = editor.sessions.look(at: try row(book.id, in: world))
+
+        guard case .unchanged = found else { return XCTFail("The look after the session found: \(found)") }
+        XCTAssertEqual(try manifestTitle(of: book), "Night Pilots")
+        XCTAssertEqual(try AudioManifest.decoded(from: Data(contentsOf: manifest)).author, "Ilse Varga")
+        XCTAssertEqual(editor.sessions.owed.owed(by: book.id), [])
+    }
+
+    /// A field the manifest is owed is left out of the comparison of a
+    /// manifest with its book, whatever the manifest says of it; another
+    /// field, and the arrangement, still count.
+    func testAnOwedFieldIsLeftOutOfTheComparison() throws {
+        let world = try makeIntegrationWorld("Owed Manifest Comparison")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2, 0.2], manifest: #"{"title": "Harbour Pilots"}"#)
+        let shown = try XCTUnwrap(book.storedBookInfo()?.contentIndex)
+        let location = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL))
+        let tracks = try AudioBookParser.trackPaths(in: book.bookFileURL)
+        XCTAssertNotEqual(book.author, "Ilse Varga")
+
+        /// Whether `json` arranges the book as shown, the fields in `owed` left out.
+        func matches(_ json: String, owed: Set<Book.MetadataField> = []) -> Bool {
+            BookManifestEditSessions.manifest(Data(json.utf8), at: location, arranges: book, as: shown, tracks: tracks, showingPauses: nil, owed: owed)
+        }
+
+        let otherTitle = #"{"title": "Night Pilots"}"#
+        XCTAssertFalse(matches(otherTitle), "A title that differs matched")
+        XCTAssertTrue(matches(otherTitle, owed: [.title]), "An owed title was compared")
+        XCTAssertFalse(matches(otherTitle, owed: [.author]), "An author owed left a title out")
+
+        let otherAuthor = #"{"title": "Harbour Pilots", "author": "Ilse Varga"}"#
+        XCTAssertFalse(matches(otherAuthor, owed: [.title]), "An author that differs matched while the title was owed")
+        XCTAssertTrue(matches(otherAuthor, owed: [.author]), "An owed author was compared")
+
+        let reordered = #"{"title": "Night Pilots", "tracks": ["02.wav", "01.wav"]}"#
+        XCTAssertFalse(matches(reordered, owed: [.title, .author]), "An owed field hid a new arrangement")
+    }
 }
