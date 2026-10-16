@@ -55,7 +55,7 @@ final class DAISYPackageImportTests: XCTestCase {
         XCTAssertEqual(book.format, .daisy)
         XCTAssertEqual(book.filePath, book.tmbDirectory.appendingPathComponent("book.opf").path)
         XCTAssertEqual(book.sourceFilePath, source.path)
-        XCTAssertTrue(imported.isFromPackageFolder)
+        XCTAssertTrue(imported.isFromFolder)
         XCTAssertFalse(imported.mayDeleteOriginal)
         XCTAssertEqual(try bookFiles(of: book), Fixtures.packageBookFiles)
         try assertReadsInFull(book, sentences: Fixtures.packageBookSentences, headings: Fixtures.packageBookHeadings)
@@ -81,7 +81,7 @@ final class DAISYPackageImportTests: XCTestCase {
         XCTAssertEqual(book.format, .daisy)
         XCTAssertEqual(book.filePath, book.tmbDirectory.appendingPathComponent("ncc.html").path)
         XCTAssertEqual(book.sourceFilePath, folder.path)
-        XCTAssertTrue(imported.isFromPackageFolder)
+        XCTAssertTrue(imported.isFromFolder)
         XCTAssertEqual(try bookFiles(of: book), Fixtures.navigationBookFiles)
         try assertReadsInFull(book, sentences: Fixtures.navigationBookSentences, headings: Fixtures.navigationBookHeadings)
     }
@@ -278,6 +278,84 @@ final class DAISYPackageImportTests: XCTestCase {
             XCTAssertTrue(FileManager.default.fileExists(atPath: original.path), folder.lastPathComponent)
         }
         XCTAssertTrue(FileManager.default.fileExists(atPath: packageFolder.appendingPathComponent("notes.txt").path))
+    }
+
+    // MARK: - Folders of Tracks
+
+    /// The files `makeNightFerries(in:)` writes, as paths inside the folder.
+    private static let nightFerriesFiles = ["01.wav", "02.wav", "cover.jpg", "lyrics.txt", "Bonus/liner notes.txt"]
+
+    /// Writes the folder `Night Ferries` into `parent`: two real silent
+    /// tracks, and the files an import does not copy (a cover, lyrics, and a
+    /// `Bonus` folder), and returns it.
+    @discardableResult
+    private func makeNightFerries(in parent: URL) throws -> URL {
+        let folder = try Fixtures.writeFolder(
+            ["cover.jpg": "not really a picture", "lyrics.txt": "Words.", "Bonus/liner notes.txt": "Notes."],
+            named: "Night Ferries",
+            in: parent
+        )
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("01.wav"), duration: 0.2)
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("02.wav"), duration: 0.2)
+        return folder
+    }
+
+    /// A folder of audio tracks is never deleted after its import, nor
+    /// offered for deletion, whatever the "After Importing a Book"
+    /// preference says: it holds files the import did not copy (a cover,
+    /// lyrics, a Bonus folder).
+    @MainActor
+    func testFolderOfTracksImportNeverDeletesOrOffersToDeleteItsFolder() throws {
+        // A regression must remove only this test's sandbox, never reach the user's Trash.
+        keepDeletionsOutOfTheTrash()
+
+        for behavior in [ImportDeleteBehavior.deleteAfterImport, .askEachTime] {
+            // Each behavior imports its own fresh folder: a second import of one folder is a duplicate.
+            let label = "\(behavior)"
+            let folder = try makeNightFerries(in: sources.appendingPathComponent(label, isDirectory: true))
+            let model = LibraryViewModel(initializeServices: false)
+            model.library = Library()
+
+            let imported = try FileImportService.importFileWithReport(from: folder, toFolder: folderPath)
+            XCTAssertTrue(imported.isFromFolder, label)
+            XCTAssertFalse(imported.mayDeleteOriginal, label)
+            withImportDeleteBehavior(behavior) {
+                model.completeSingleImportedBook(imported, originalURL: folder)
+            }
+
+            XCTAssertTrue(model.library.books.contains { $0.id == imported.book.id }, label)
+            XCTAssertTrue(model.importDecisions.isEmpty, label)
+            XCTAssertTrue(FileManager.default.fileExists(atPath: folder.path), label)
+            for file in Self.nightFerriesFiles {
+                XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent(file).path), "\(label): \(file)")
+            }
+        }
+    }
+
+    /// The same folder of tracks imported again, here from a copy of it
+    /// under another parent, is a duplicate; the duplicate question never
+    /// offers to delete the folder.
+    @MainActor
+    func testReimportingAFolderOfTracksIsADuplicateThatNeverOffersItsFolder() throws {
+        keepDeletionsOutOfTheTrash()
+        let folder = try makeNightFerries(in: sources)
+        let copy = try makeNightFerries(in: sources.appendingPathComponent("Downloads", isDirectory: true))
+
+        let first = try FileImportService.importFileWithReport(from: folder, toFolder: folderPath)
+        let second = try FileImportService.importFileWithReport(from: copy, toFolder: folderPath)
+        XCTAssertEqual(second.book.md5Hash, first.book.md5Hash)
+
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [first.book])
+        withImportDeleteBehavior(.deleteAfterImport) {
+            model.completeSingleImportedBook(second, originalURL: copy)
+        }
+
+        let duplicate = try XCTUnwrap(model.importDecisions.current?.duplicate)
+        XCTAssertEqual(duplicate.existing.id, first.book.id)
+        XCTAssertEqual(duplicate.book.id, second.book.id)
+        XCTAssertNil(duplicate.originalURL)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: copy.path))
     }
 
     // MARK: - What Is Copied Instead

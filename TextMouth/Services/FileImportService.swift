@@ -66,9 +66,13 @@ struct ImportedBook {
     /// the pages whose pictures OCR could not read. It reports nothing
     /// missing for a complete book and for formats that do not report yet.
     var report = ExtractionReport()
-    /// Whether the book was copied from a DAISY book kept as loose files:
-    /// its folder, or its OPF or ncc.html inside that folder (TODO I02).
-    var isFromPackageFolder = false
+    /// Whether the book was copied from a folder of files, not from one
+    /// file: a DAISY book kept as loose files (its folder, or its OPF or
+    /// ncc.html inside that folder, TODO I02), or a folder of audio tracks
+    /// (FR17, Part B). Such a folder holds files the import did not copy (a
+    /// cover, lyrics, other books' files, a Bonus folder), so it is never
+    /// deleted or offered for deletion.
+    var isFromFolder = false
 
     /// Whether the original file must stay exactly where it is: an import
     /// that left chapters or pages out never deletes it or offers to,
@@ -77,10 +81,10 @@ struct ImportedBook {
 
     /// Whether the "After Importing a Book" preference may delete the
     /// original, or offer to: only for a complete book copied from a single
-    /// file. A DAISY book's original is a folder of files, some of which may
-    /// belong to other books or to nothing the import copied, so it is
-    /// never deleted (TODO I02).
-    var mayDeleteOriginal: Bool { !keepsOriginal && !isFromPackageFolder }
+    /// file. A DAISY book's or a folder of tracks' original is a folder of
+    /// files, some of which may belong to other books or to nothing the
+    /// import copied, so it is never deleted (TODO I02, FR17).
+    var mayDeleteOriginal: Bool { !keepsOriginal && !isFromFolder }
 
     /// The warning an import that left chapters or pages out presents once:
     /// what is missing, then that the original was kept. Nil for a complete
@@ -859,7 +863,7 @@ enum FileImportService {
                 handEdits: .noneSinceImport
             )
             var imported = try publishReadableBook(staged, from: staging, run: &run)
-            imported.isFromPackageFolder = package != nil
+            imported.isFromFolder = package != nil
             return imported
         }
     }
@@ -1035,7 +1039,7 @@ enum FileImportService {
                 try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
                 try FileManager.default.copyItem(at: folder.appendingPathComponent(path), to: destination)
             }
-            return try publishTracks(
+            var imported = try publishTracks(
                 titled: folder.lastPathComponent,
                 in: audioDirectory,
                 of: staging,
@@ -1046,6 +1050,10 @@ enum FileImportService {
                 source: folder,
                 run: &run
             )
+            // The folder holds files that were not copied (a cover, lyrics,
+            // a Bonus folder), so it is never deleted or offered for deletion.
+            imported.isFromFolder = true
+            return imported
         }
     }
 
