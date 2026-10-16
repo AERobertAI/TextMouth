@@ -239,7 +239,7 @@ final class NowPlayingOwnershipTests: XCTestCase {
         XCTAssertTrue(scheduledActions.isEmpty)
     }
 
-    func testNewerFocusInvalidatesDeferredPlay() {
+    func testNewerFocusInvalidatesDeferredPlay() throws {
         var scheduledActions: [@MainActor () -> Void] = []
         var firstPlayCount = 0
         var secondPlayCount = 0
@@ -269,7 +269,8 @@ final class NowPlayingOwnershipTests: XCTestCase {
 
         XCTAssertEqual(coordinator.acceptRemoteCommand(.play), .success)
         second.focus()
-        scheduledActions[0]()
+        let action = try XCTUnwrap(scheduledActions[safe: 0], "the accepted command was never scheduled")
+        action()
 
         // A newer user focus action wins over the older queued command. The
         // command must neither start the former owner nor redirect to focus.
@@ -278,7 +279,7 @@ final class NowPlayingOwnershipTests: XCTestCase {
         XCTAssertEqual(coordinator.focusedOwnerID, second.ownerID)
     }
 
-    func testDeferredCommandDoesNotRedirectAfterAcceptedOwnerCloses() {
+    func testDeferredCommandDoesNotRedirectAfterAcceptedOwnerCloses() throws {
         var scheduledActions: [@MainActor () -> Void] = []
         var firstSkipCount = 0
         var fallbackSkipCount = 0
@@ -298,13 +299,14 @@ final class NowPlayingOwnershipTests: XCTestCase {
 
         XCTAssertEqual(coordinator.acceptRemoteCommand(.skipForward), .success)
         first.close()
-        scheduledActions[0]()
+        let action = try XCTUnwrap(scheduledActions[safe: 0], "the accepted command was never scheduled")
+        action()
 
         XCTAssertEqual(firstSkipCount, 0)
         XCTAssertEqual(fallbackSkipCount, 0)
     }
 
-    func testOpeningAndClosingInactiveReaderDoesNotDropQueuedSkip() {
+    func testOpeningAndClosingInactiveReaderDoesNotDropQueuedSkip() throws {
         var scheduledActions: [@MainActor () -> Void] = []
         var activeSkipCount = 0
         let coordinator = NowPlayingService(
@@ -320,12 +322,13 @@ final class NowPlayingOwnershipTests: XCTestCase {
         XCTAssertEqual(coordinator.acceptRemoteCommand(.skipForward), .success)
         let inactive = makeSession(coordinator: coordinator)
         inactive.close()
-        scheduledActions[0]()
+        let action = try XCTUnwrap(scheduledActions[safe: 0], "the accepted command was never scheduled")
+        action()
 
         XCTAssertEqual(activeSkipCount, 1)
     }
 
-    func testReleasingPausedMediaControlsInvalidatesQueuedPlay() {
+    func testReleasingPausedMediaControlsInvalidatesQueuedPlay() throws {
         var scheduledActions: [@MainActor () -> Void] = []
         var playCount = 0
         var isPlaying = false
@@ -345,7 +348,8 @@ final class NowPlayingOwnershipTests: XCTestCase {
 
         XCTAssertEqual(coordinator.acceptRemoteCommand(.play), .success)
         session.clearNowPlaying()
-        scheduledActions[0]()
+        let action = try XCTUnwrap(scheduledActions[safe: 0], "the accepted command was never scheduled")
+        action()
 
         XCTAssertEqual(playCount, 0)
         XCTAssertFalse(isPlaying)
@@ -478,7 +482,7 @@ final class NowPlayingOwnershipTests: XCTestCase {
         XCTAssertEqual(coordinator.playingOwnerID, second.ownerID)
     }
 
-    func testDeferredTogglePreservesSuppressionDecisionFromReceipt() {
+    func testDeferredTogglePreservesSuppressionDecisionFromReceipt() throws {
         let clock = Clock()
         var defaultDeviceID: UInt32? = 42
         var deviceIDs: [UInt32] = [42, 99]
@@ -518,13 +522,14 @@ final class NowPlayingOwnershipTests: XCTestCase {
         // it physically arrived inside the suppression window.
         clock.now = clock.now.addingTimeInterval(3)
         XCTAssertFalse(coordinator.isRouteCommandSuppressed)
-        scheduledActions[0]()
+        let action = try XCTUnwrap(scheduledActions[safe: 0], "the accepted command was never scheduled")
+        action()
 
         XCTAssertEqual(toggleCount, 0)
         XCTAssertFalse(isPlaying)
     }
 
-    func testBluetoothRouteChangeInvalidatesPlayAcceptedForOldRoute() {
+    func testBluetoothRouteChangeInvalidatesPlayAcceptedForOldRoute() throws {
         let clock = Clock()
         var defaultDeviceID: UInt32? = 42
         var deviceIDs: [UInt32] = [42, 99]
@@ -556,7 +561,8 @@ final class NowPlayingOwnershipTests: XCTestCase {
         defaultDeviceID = 99
         deviceIDs = [99]
         coordinator.handleDefaultOutputChange()
-        scheduledActions[0]()
+        let action = try XCTUnwrap(scheduledActions[safe: 0], "the accepted command was never scheduled")
+        action()
 
         XCTAssertTrue(coordinator.isRouteCommandSuppressed)
         XCTAssertEqual(playCount, 0)
@@ -588,7 +594,7 @@ final class NowPlayingOwnershipTests: XCTestCase {
         XCTAssertTrue(didPlay)
     }
 
-    func testDeferredRemoteCommandsPreserveSleepTimerRestartGesture() async {
+    func testDeferredRemoteCommandsPreserveSleepTimerRestartGesture() async throws {
         var scheduledActions: [@MainActor () -> Void] = []
         var backwardSkips = 0
         let restartPosted = expectation(description: "Sleep timer restart notification posted")
@@ -622,6 +628,8 @@ final class NowPlayingOwnershipTests: XCTestCase {
         XCTAssertEqual(coordinator.acceptRemoteCommand(.previousTrack), .success)
         XCTAssertEqual(scheduledActions.count, 2)
 
+        // One guard for both reads below: nothing between it and them can shorten the list.
+        _ = try XCTUnwrap(scheduledActions[safe: 1], "fewer than two commands were scheduled")
         scheduledActions[0]()
         scheduledActions[1]()
 
@@ -631,7 +639,7 @@ final class NowPlayingOwnershipTests: XCTestCase {
         await fulfillment(of: [restartPosted], timeout: 1.0)
     }
 
-    func testDeferredGestureUsesReceiptTimeInsteadOfExecutionTime() async {
+    func testDeferredGestureUsesReceiptTimeInsteadOfExecutionTime() async throws {
         let clock = Clock()
         var scheduledActions: [@MainActor () -> Void] = []
         var backwardSkips = 0
@@ -668,6 +676,8 @@ final class NowPlayingOwnershipTests: XCTestCase {
 
         // Even though both closures execute back-to-back, their original
         // three-second separation remains authoritative for gesture matching.
+        // One guard for both reads below: nothing between it and them can shorten the list.
+        _ = try XCTUnwrap(scheduledActions[safe: 1], "fewer than two commands were scheduled")
         scheduledActions[0]()
         scheduledActions[1]()
         XCTAssertEqual(backwardSkips, 2)
