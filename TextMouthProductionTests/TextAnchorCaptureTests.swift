@@ -99,7 +99,7 @@ final class TextAnchorCaptureTests: XCTestCase {
 
         let saved = try XCTUnwrap(world.library.bookByID(book.id)?.readingPosition)
         let anchor = try XCTUnwrap(saved.anchor, "the position was saved without its words")
-        let chapter = content.chapters[1].text as NSString
+        let chapter = try XCTUnwrap(content.chapters[safe: 1], "the book has no second chapter").text as NSString
         XCTAssertEqual(anchor.before, chapter.substring(with: NSRange(location: 6, length: 64)))
         XCTAssertEqual(anchor.after, chapter.substring(with: NSRange(location: 70, length: 64)))
         XCTAssertEqual(anchor.measuredIn, TextAnchor.currentMeasure)
@@ -193,7 +193,7 @@ final class TextAnchorCaptureTests: XCTestCase {
         let added = try XCTUnwrap(reader.addBookmarkAtCurrentPosition(label: "The oak screw"))
         XCTAssertEqual(added.anchor, content.anchor(at: TextPlace(chapter: 2, offset: 25), measuredIn: TextAnchor.currentMeasure))
 
-        let end = content.chapters[0].text.utf16Length
+        let end = try XCTUnwrap(content.chapters[safe: 0], "the book has no first chapter").text.utf16Length
         reader.currentChapterIndex = 0
         reader.currentCharacterOffset = end
         reader.toggleBookmarkAtCurrentPosition()
@@ -290,7 +290,7 @@ final class TextAnchorCaptureTests: XCTestCase {
         let book = try world.importBook(from: writeOrchardEPUB())
         let content = try MarkdownCacheService.loadFromCache(for: book)
         let pressing = try XCTUnwrap(content.allHeadings.first { $0.text == "The Cider Press" }, "the fixture lacks the heading")
-        let firstLength = content.chapters[0].text.utf16Length
+        let firstLength = try XCTUnwrap(content.chapters[safe: 0], "the book has no first chapter").text.utf16Length
         let earlier = TextAnchor(before: "an earlier ", after: "capture", fraction: 0.7, measuredIn: "3.0.4/1.0.0")
         let inPlace = Bookmark(number: 1, chapterIndex: 1, characterOffset: 33, label: "Frost")
         let pastItsEnd = Bookmark(number: 2, chapterIndex: 0, characterOffset: firstLength + 6)
