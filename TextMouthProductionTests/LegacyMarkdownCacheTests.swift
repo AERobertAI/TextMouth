@@ -28,13 +28,14 @@ final class LegacyMarkdownCacheTests: XCTestCase {
         XCTAssertEqual(content.chapters.map(\.title), ["Introduction", "Chapter One", "Chapter Two"])
     }
 
-    func testMarkdownWithoutMarkersProducesSingleChapter() {
+    func testMarkdownWithoutMarkersProducesSingleChapter() throws {
         let content = parse("# My Book\n\nWhole book text.\n\n## Section\n\nSection text.")
         XCTAssertEqual(content.chapters.count, 1)
-        XCTAssertTrue(content.chapters[0].text.contains("Whole book text"))
+        let firstChapter = try XCTUnwrap(content.chapters[safe: 0], "the book has no first chapter")
+        XCTAssertTrue(firstChapter.text.contains("Whole book text"))
     }
 
-    func testEmptyMarkedChaptersAreSkipped() {
+    func testEmptyMarkedChaptersAreSkipped() throws {
         let content = parse("""
         <!-- chapter: Empty -->
 
@@ -44,10 +45,11 @@ final class LegacyMarkdownCacheTests: XCTestCase {
         Actual text.
         """)
         XCTAssertEqual(content.chapters.count, 1)
-        XCTAssertEqual(content.chapters[0].title, "Content")
+        let firstChapter = try XCTUnwrap(content.chapters[safe: 0], "the book has no first chapter")
+        XCTAssertEqual(firstChapter.title, "Content")
     }
 
-    func testCachedChapterHeadingsReceiveCorrectChapterIndices() {
+    func testCachedChapterHeadingsReceiveCorrectChapterIndices() throws {
         let content = parse("""
         <!-- chapter: One -->
         # One
@@ -60,12 +62,14 @@ final class LegacyMarkdownCacheTests: XCTestCase {
         ## Section B
         Text.
         """)
-        XCTAssertFalse(content.chapters[0].headings.isEmpty)
-        XCTAssertFalse(content.chapters[1].headings.isEmpty)
+        let firstChapter = try XCTUnwrap(content.chapters[safe: 0], "the book has no first chapter")
+        let secondChapter = try XCTUnwrap(content.chapters[safe: 1], "the book has no second chapter")
+        XCTAssertFalse(firstChapter.headings.isEmpty)
+        XCTAssertFalse(secondChapter.headings.isEmpty)
         XCTAssertEqual(Set(content.allHeadings.map(\.chapterIndex)), Set([0, 1]))
     }
 
-    func testCachedMarkdownRoundTripPreservesChapterText() {
+    func testCachedMarkdownRoundTripPreservesChapterText() throws {
         let content = parse("""
         <!-- chapter: One -->
         # One
@@ -76,8 +80,10 @@ final class LegacyMarkdownCacheTests: XCTestCase {
 
         Jumped over the lazy dog.
         """)
-        XCTAssertTrue(content.chapters[0].text.contains("quick brown fox"))
-        XCTAssertTrue(content.chapters[1].text.contains("lazy dog"))
+        let firstChapter = try XCTUnwrap(content.chapters[safe: 0], "the book has no first chapter")
+        let secondChapter = try XCTUnwrap(content.chapters[safe: 1], "the book has no second chapter")
+        XCTAssertTrue(firstChapter.text.contains("quick brown fox"))
+        XCTAssertTrue(secondChapter.text.contains("lazy dog"))
     }
 
     func testTitledChaptersWithoutMarkdownHeadingsGetSyntheticHeadings() {
@@ -95,7 +101,7 @@ final class LegacyMarkdownCacheTests: XCTestCase {
         XCTAssertTrue(content.allHeadings.allSatisfy { $0.level == 1 })
     }
 
-    func testExistingMarkdownHeadingsAreNotDoubled() {
+    func testExistingMarkdownHeadingsAreNotDoubled() throws {
         let content = parse("""
         <!-- chapter: Introduction -->
         # Introduction
@@ -106,11 +112,13 @@ final class LegacyMarkdownCacheTests: XCTestCase {
 
         Story.
         """)
-        XCTAssertEqual(content.chapters[0].headings.count, 1)
-        XCTAssertEqual(content.chapters[1].headings.count, 1)
+        let firstChapter = try XCTUnwrap(content.chapters[safe: 0], "the book has no first chapter")
+        let secondChapter = try XCTUnwrap(content.chapters[safe: 1], "the book has no second chapter")
+        XCTAssertEqual(firstChapter.headings.count, 1)
+        XCTAssertEqual(secondChapter.headings.count, 1)
     }
 
-    func testMixedChaptersUseRealOrSyntheticHeadingsAsNeeded() {
+    func testMixedChaptersUseRealOrSyntheticHeadingsAsNeeded() throws {
         let content = parse("""
         <!-- chapter: Copyright -->
         Published text.
@@ -122,23 +130,28 @@ final class LegacyMarkdownCacheTests: XCTestCase {
         <!-- chapter: Chapter 2 -->
         More story.
         """)
-        XCTAssertEqual(content.chapters[0].headings.map(\.text), ["Copyright"])
-        XCTAssertEqual(content.chapters[1].headings.map(\.text), ["Chapter 1", "Section A"])
-        XCTAssertEqual(content.chapters[2].headings.map(\.text), ["Chapter 2"])
+        let firstChapter = try XCTUnwrap(content.chapters[safe: 0], "the book has no first chapter")
+        let secondChapter = try XCTUnwrap(content.chapters[safe: 1], "the book has no second chapter")
+        let thirdChapter = try XCTUnwrap(content.chapters[safe: 2], "the book has no third chapter")
+        XCTAssertEqual(firstChapter.headings.map(\.text), ["Copyright"])
+        XCTAssertEqual(secondChapter.headings.map(\.text), ["Chapter 1", "Section A"])
+        XCTAssertEqual(thirdChapter.headings.map(\.text), ["Chapter 2"])
     }
 
-    func testEmptyChapterTitleDoesNotCreateSyntheticHeading() {
+    func testEmptyChapterTitleDoesNotCreateSyntheticHeading() throws {
         let content = parse("""
         <!-- chapter:  -->
         Untitled image page.
         <!-- chapter: Real Chapter -->
         Actual content.
         """)
-        XCTAssertTrue(content.chapters[0].headings.isEmpty)
-        XCTAssertEqual(content.chapters[1].headings.map(\.text), ["Real Chapter"])
+        let firstChapter = try XCTUnwrap(content.chapters[safe: 0], "the book has no first chapter")
+        let secondChapter = try XCTUnwrap(content.chapters[safe: 1], "the book has no second chapter")
+        XCTAssertTrue(firstChapter.headings.isEmpty)
+        XCTAssertEqual(secondChapter.headings.map(\.text), ["Real Chapter"])
     }
 
-    func testInjectedHeadingTextRemainsInPlainContent() {
+    func testInjectedHeadingTextRemainsInPlainContent() throws {
         let content = parse("""
         <!-- chapter: Part 1 -->
         # Part 1
@@ -149,7 +162,8 @@ final class LegacyMarkdownCacheTests: XCTestCase {
         Opening text.
         """)
         XCTAssertEqual(content.allHeadings.map(\.text), ["Part 1", "Red Pill Blue Pill"])
-        XCTAssertTrue(content.chapters[1].text.contains("Red Pill Blue Pill"))
+        let secondChapter = try XCTUnwrap(content.chapters[safe: 1], "the book has no second chapter")
+        XCTAssertTrue(secondChapter.text.contains("Red Pill Blue Pill"))
     }
 
     func testLargeMarkedCacheCreatesOneHeadingPerTitledChapter() {
@@ -161,7 +175,7 @@ final class LegacyMarkdownCacheTests: XCTestCase {
         XCTAssertEqual(content.allHeadings.count, 50)
     }
 
-    func testCachedChapterGlobalOffsetsUseUTF16Coordinates() {
+    func testCachedChapterGlobalOffsetsUseUTF16Coordinates() throws {
         let content = parse("""
         <!-- chapter: One -->
         # One
@@ -173,7 +187,8 @@ final class LegacyMarkdownCacheTests: XCTestCase {
         Second.
         """)
         XCTAssertEqual(content.chapterStartOffset(0), 0)
-        XCTAssertEqual(content.chapterStartOffset(1), content.chapters[0].text.utf16.count)
+        let firstChapter = try XCTUnwrap(content.chapters[safe: 0], "the book has no first chapter")
+        XCTAssertEqual(content.chapterStartOffset(1), firstChapter.text.utf16.count)
     }
 
     /// A chapter marker written before format 3.0.5 could carry a leaked
