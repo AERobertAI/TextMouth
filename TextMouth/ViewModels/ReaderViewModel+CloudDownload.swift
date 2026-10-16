@@ -603,10 +603,12 @@ extension ReaderViewModel {
 
     /// The download finished: every file of the book is on this Mac. The
     /// book loads, or the chapter waiting for it plays unless the reader was
-    /// stopped meanwhile. While a Where Am I announcement speaks, the chapter
-    /// waits for it to end (`isChapterHeldByWhereAmI`), as a Play pressed
-    /// during it waits, and plays then (`startPlayHeldByWhereAmI()`); it once
-    /// started under the announcement (REV11).
+    /// stopped meanwhile. While a Where Am I announcement speaks, or the end
+    /// sound of one that ended by itself plays
+    /// (`isWhereAmISpeakingOrSoundingItsEnd`), the chapter waits for it to
+    /// end (`isChapterHeldByWhereAmI`), as a Play pressed during it waits,
+    /// and plays then (`startPlayHeldByWhereAmI()`); it once started under
+    /// the announcement (REV11), and under the end sound.
     private func downloadDidFinish(_ purpose: ReaderDownloadPurpose) {
         endDownloadWork(cancelling: false)
         cloudServices.states.record(.downloaded, for: book.id)
@@ -621,9 +623,9 @@ extension ReaderViewModel {
             // A reader stopped while it waited stays stopped.
             guard isCurrentlyPlaying && !isCurrentlyPaused else { return }
             cloudSession.chapterJustDownloaded = true
-            guard !isWhereAmISpeaking else {
+            guard !isWhereAmISpeakingOrSoundingItsEnd else {
                 isChapterHeldByWhereAmI = true
-                DiagnosticLog.trace(.playback, "the chapter's files are here while Where Am I speaks; it plays as the announcement ends")
+                DiagnosticLog.trace(.playback, "the chapter's files are here while Where Am I speaks or sounds its end; it plays after the announcement")
                 return
             }
             playAudioChapter()

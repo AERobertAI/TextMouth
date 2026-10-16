@@ -161,7 +161,7 @@ extension ReaderViewModel {
     /// (`startPlayHeldByWhereAmI()`), rather than play under it.
     ///
     /// So does the audio set aside when an announcement speaks as the move
-    /// ends, one pressed while the package moved, which found the audio
+    /// ends, or its end sound plays (`isWhereAmISpeakingOrSoundingItsEnd`), one pressed while the package moved, which found the audio
     /// waiting rather than playing and paused nothing: it is held for the
     /// announcement's end (`isChapterHeldByWhereAmI`), as a chapter whose
     /// files came during the announcement is, at the volume it played at.
@@ -173,12 +173,13 @@ extension ReaderViewModel {
             DiagnosticLog.trace(.playback, "the book's package moved; the chapter held for Where Am I's end waits for it still")
             return
         }
-        guard !isWhereAmISpeaking else {
+        guard !isWhereAmISpeakingOrSoundingItsEnd else {
             // The player was stopped for the move; the chapter it plays as
-            // the announcement ends starts at the volume the move found.
+            // the announcement ends, or as its end sound has played, starts
+            // at the volume the move found.
             audioPlaybackService.setVolume(paused.volume)
             isChapterHeldByWhereAmI = true
-            DiagnosticLog.trace(.playback, "the book's package moved while Where Am I speaks; its audio plays on as the announcement ends")
+            DiagnosticLog.trace(.playback, "the book's package moved while Where Am I speaks or sounds its end; its audio plays on after the announcement")
             return
         }
         restartAudioAtCursor(volume: paused.volume)
