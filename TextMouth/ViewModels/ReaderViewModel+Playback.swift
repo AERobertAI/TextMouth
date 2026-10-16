@@ -2593,29 +2593,27 @@ extension ReaderViewModel {
         sleepTimerStoppedHere: Bool,
         sayingNothingFollows say: (String) -> Void
     ) {
-        guard let nextBook = libraryViewModel.nextBookInFolder(after: book) else {
-            let whyNothingFollows = libraryViewModel.laterBooksInFolder(after: book).isEmpty
-                ? EndOfBookWording.noMoreBooksInFolderNote
-                : EndOfBookWording.onlyFinishedBooksInFolderNote
-            say(EndOfBookWording.finished(
-                book.title,
-                notes: [whyNothingFollows],
-                sleepTimerExpired: sleepTimerStoppedHere
-            ))
-            return
+        goOnPastThisBook(
+            to: successionInFolder(),
+            in: "its folder",
+            startingWith: { self.continueToNextBook($0) },
+            sleepTimerEndsListening: sleepTimerEndsListening,
+            sleepTimerStoppedHere: sleepTimerStoppedHere,
+            sayingNothingFollows: say
+        )
+    }
+
+    /// What follows this finished book in its folder: the next book
+    /// (`LibraryViewModel.nextBookInFolder(after:)`), or, when there is none,
+    /// why: no book at all follows, or every book after it is finished.
+    private func successionInFolder() -> BookSuccession {
+        if let nextBook = libraryViewModel.nextBookInFolder(after: book) {
+            return .book(nextBook)
         }
-        guard !sleepTimerEndsListening else {
-            // The next book would play on past this reader's sleep timer,
-            // which can pause only the reader that set it.
-            DiagnosticLog.trace(.playback, "end of book: this reader's sleep timer is in effect; not starting the next book")
-            say(EndOfBookWording.finished(book.title, notes: [EndOfBookWording.nextBookNotStartedNote]))
-            return
-        }
-        // The next book takes over, so this one no longer rests finished at
-        // its end.
-        handOverToNextBook(to: nextBook.id, titled: nextBook.title) {
-            self.continueToNextBook(nextBook.id)
-        }
+        let whyNothingFollows = libraryViewModel.laterBooksInFolder(after: book).isEmpty
+            ? EndOfBookWording.noMoreBooksInFolderNote
+            : EndOfBookWording.onlyFinishedBooksInFolderNote
+        return .nothing(note: whyNothingFollows)
     }
 
     /// Puts the cursor at the book's beginning, saved, where a book that
