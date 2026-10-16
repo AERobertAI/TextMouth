@@ -117,6 +117,15 @@ where Value: RawRepresentable & CaseIterable & Sendable, Value.RawValue == Strin
     func requestedValue(fromConfig rawValue: String) -> Value? {
         Value(rawValue: rawValue)
     }
+
+    /// Reads this preference straight from `defaults`, as `@AppStorage`
+    /// reads it, so a sheet that bypasses the Settings model reads the
+    /// global choice (the Playback tab's "When book ends", say) exactly as
+    /// Settings does: a missing key, or a stored value that names no case,
+    /// yields the default.
+    func storedValue(in defaults: UserDefaults) -> Value {
+        value(fromRaw: defaults.string(forKey: key))
+    }
 }
 
 // MARK: - Thresholds that can be switched off

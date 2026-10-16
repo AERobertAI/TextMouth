@@ -197,6 +197,146 @@ final class ListeningOptionsTests: XCTestCase {
         XCTAssertEqual(neither.folders.map(\.listeningOptions), [nil])
     }
 
+    // MARK: - The Setters
+
+    /// Setting a feed's options changes its record and writes it; standard
+    /// options, and none, are stored as nil and leave the record file
+    /// exactly as it was; the same options again write nothing.
+    func testSettingAFeedsOptionsChangesAndWritesItsRecord() async throws {
+        let world = try FeedTestWorld(self, label: "ListeningOptionsFeedSet")
+        let record = FeedRecordTests.record(itemCount: 1, folderID: world.bookFolder.id)
+        let feedID = record.feed.id
+        let store = world.center.store
+        let file = FeedPaths.recordFile(of: feedID, in: world.recordsFolder)
+        store.add(record)
+        await store.flush()
+        let original = try Data(contentsOf: file)
+
+        let options = ListeningOptions(continuation: .stop, predownloadsNext: false)
+        world.center.setListeningOptions(options, of: feedID)
+        await store.flush()
+        XCTAssertEqual(store.record(of: feedID)?.feed.listeningOptions, options)
+        let written = try FeedRecordCoding.decoder().decode(FeedRecord.self, from: Data(contentsOf: file))
+        XCTAssertEqual(written.feed.listeningOptions, options, "the record on disk holds them")
+
+        // The same options again write nothing: a file removed stays removed.
+        try FileManager.default.removeItem(at: file)
+        world.center.setListeningOptions(options, of: feedID)
+        await store.flush()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: file.path), "an unchanged value was written")
+
+        // Standard options are stored as none: the file is what it was.
+        world.center.setListeningOptions(.standard, of: feedID)
+        await store.flush()
+        XCTAssertNil(store.record(of: feedID)?.feed.listeningOptions)
+        XCTAssertEqual(try Data(contentsOf: file), original, "the record file is byte for byte what it was")
+
+        // None, when there are none, writes nothing either.
+        try FileManager.default.removeItem(at: file)
+        world.center.setListeningOptions(nil, of: feedID)
+        await store.flush()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: file.path))
+
+        // A feed that is not here changes nothing.
+        world.center.setListeningOptions(options, of: UUID())
+        await store.flush()
+        XCTAssertNil(store.record(of: feedID)?.feed.listeningOptions)
+    }
+
+    /// Setting a folder's options changes the folder and saves the index
+    /// once; standard options, none, a value the folder already has, and a
+    /// folder that is not here change and save nothing.
+    func testSettingAFoldersOptionsChangesTheFolderAndSavesOnce() throws {
+        // The index the save writes is the test's own, put back at the end.
+        let sandbox = try LibraryIndexSandbox.capture()
+        addTeardownBlock { sandbox.restore() }
+        let folder = BookFolder(name: "Dramas")
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(folders: [folder])
+        let changes = LibraryChangeCounter(model)
+        let options = ListeningOptions(continuation: .playBookAbove, skipsFinished: false)
+
+        model.setListeningOptions(options, ofFolder: folder.id)
+        XCTAssertEqual(model.listeningOptions(ofFolder: folder.id), options)
+        XCTAssertEqual(changes.count, 1)
+        model.setListeningOptions(options, ofFolder: folder.id)
+        model.setListeningOptions(options, ofFolder: UUID())
+        XCTAssertEqual(changes.count, 1, "an unchanged value or an unknown folder changed the library")
+        XCTAssertNil(model.listeningOptions(ofFolder: UUID()))
+
+        LibraryPersistenceService.flushPendingSave()
+        let saved = try Self.decodeIndex(Data(contentsOf: sandbox.indexURL))
+        XCTAssertEqual(saved.folders.first?.listeningOptions, options)
+
+        // Standard options are stored as none.
+        model.setListeningOptions(.standard, ofFolder: folder.id)
+        XCTAssertNil(model.listeningOptions(ofFolder: folder.id))
+        XCTAssertNil(model.library.folders.first?.listeningOptions, "standard options were stored")
+        XCTAssertEqual(changes.count, 2)
+        model.setListeningOptions(nil, ofFolder: folder.id)
+        XCTAssertEqual(changes.count, 2, "none, when there are none, changed the library")
+    }
+
+    // MARK: - The Options That Govern a Book
+
+    /// A feed's item is governed by its feed's options; a book in a plain
+    /// folder by that folder's, not those of a folder above it; and a book
+    /// at the top level, in a folder with none, or whose feed's record is
+    /// gone, by none.
+    func testTheOptionsThatGovernABook() throws {
+        let world = try FeedTestWorld(self, label: "ListeningOptionsGovern")
+        let options = ListeningOptions(continuation: .playBookAbove)
+        let folderOptions = ListeningOptions(continuation: .stop, skipsFinished: false)
+        var record = FeedRecordTests.record(itemCount: 1, folderID: world.bookFolder.id)
+        record.feed.listeningOptions = options
+        world.center.store.add(record)
+
+        var dramas = BookFolder(name: "Dramas")
+        dramas.listeningOptions = folderOptions
+        let sub = BookFolder(name: "Season One", parentPath: "Dramas")
+        let plain = BookFolder(name: "Plain")
+        world.library.library = Library(folders: [world.bookFolder, dramas, sub, plain])
+
+        func book(in folder: String) -> Book {
+            Book(title: "Book", format: .txt, filePath: "/tmp/Book.txt", md5Hash: "Book", folderPath: folder)
+        }
+        var feedItem = book(in: world.bookFolder.fullPath)
+        feedItem.feedLink = FeedBookLink(feedID: record.feed.id, itemID: "guid:ep-1")
+        XCTAssertEqual(world.library.listeningOptions(of: feedItem), options)
+
+        var orphan = book(in: world.bookFolder.fullPath)
+        orphan.feedLink = FeedBookLink(feedID: UUID(), itemID: "guid:ep-1")
+        XCTAssertNil(world.library.listeningOptions(of: orphan), "a feed whose record is gone")
+
+        XCTAssertEqual(world.library.listeningOptions(of: book(in: "Dramas")), folderOptions)
+        XCTAssertNil(world.library.listeningOptions(of: book(in: "Dramas/Season One")), "a subfolder inherits nothing")
+        XCTAssertNil(world.library.listeningOptions(of: book(in: "Plain")), "a folder with none")
+        XCTAssertNil(world.library.listeningOptions(of: book(in: "")), "the top level has none")
+        XCTAssertNil(world.library.listeningOptions(of: book(in: "Missing")), "a folder that is not here")
+    }
+
+    // MARK: - The Global Setting's Reader
+
+    /// An enum setting is read from a store as Settings reads it: a missing
+    /// key and an unknown raw value read as the rule's default, and a known
+    /// raw value as its case.
+    func testAnEnumRuleReadsItsStoredValue() throws {
+        let suite = "ListeningOptionsTests-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let rule = SettingsPolicy.endOfBookBehavior
+
+        XCTAssertEqual(rule.storedValue(in: defaults), rule.defaultValue, "no key")
+        defaults.set(EndOfBookBehavior.loop.rawValue, forKey: rule.key)
+        XCTAssertEqual(rule.storedValue(in: defaults), .loop)
+        defaults.set(EndOfBookBehavior.continueNext.rawValue, forKey: rule.key)
+        XCTAssertEqual(rule.storedValue(in: defaults), .continueNext)
+        defaults.set("Play Something Else", forKey: rule.key)
+        XCTAssertEqual(rule.storedValue(in: defaults), rule.defaultValue, "an unknown raw value")
+        defaults.set(5, forKey: rule.key)
+        XCTAssertEqual(rule.storedValue(in: defaults), rule.defaultValue, "a value of the wrong type")
+    }
+
     // MARK: - Fixtures
 
     /// A library of three rows for one directory spelled "Reports",

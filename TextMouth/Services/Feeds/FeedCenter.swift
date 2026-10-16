@@ -1161,6 +1161,16 @@ final class FeedCenter: ObservableObject {
             $0.feed.deleteDownloadsDaysAfterPlayedOverride = days.map(SettingsPolicy.feedDeleteDownloadsDaysAfterPlayed.validated)
         }
     }
+
+    /// Gives the feed `feedID` its own listening options (FR19), or none
+    /// when `options` is nil or standard: standard options are never stored,
+    /// so a feed left as it was keeps a record exactly as it was. Writes the
+    /// record only when its durable form changed, so setting what the feed
+    /// already has writes nothing.
+    func setListeningOptions(_ options: ListeningOptions?, of feedID: UUID) {
+        let stored = options.flatMap { $0.isStandard ? nil : $0 }
+        store.update(feedID) { $0.feed.listeningOptions = stored }
+    }
 }
 
 extension FeedAddress {
