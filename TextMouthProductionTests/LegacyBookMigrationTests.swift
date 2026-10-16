@@ -533,6 +533,8 @@ final class LegacyBookMigrationTests: XCTestCase {
         XCTAssertEqual(report.migratedCount, 2)
         XCTAssertEqual(report.failures, [])
         XCTAssertEqual(report.warnings, [])
+        // The pass must keep both records; a short library fails here rather than trapping below.
+        _ = try XCTUnwrap(library.books[safe: 1], "the library has no second book")
         XCTAssertNotEqual(library.books[0].tmbDirectory, library.books[1].tmbDirectory)
         for book in library.books {
             XCTAssertEqual(try text(of: book.bookFileURL), "Read by two records.", book.title)
@@ -562,6 +564,8 @@ final class LegacyBookMigrationTests: XCTestCase {
 
         XCTAssertEqual(report.failures.map(\.title), [stuck.title])
         XCTAssertEqual(report.migratedCount, 1)
+        // The pass must keep both records; a short library fails here rather than trapping below.
+        _ = try XCTUnwrap(library.books[safe: 1], "the library has no second book")
         XCTAssertEqual(library.books[0], stuck)
         XCTAssertEqual(try text(of: library.books[1].bookFileURL), "Still needed.")
         XCTAssertEqual(try text(of: original), "Still needed.")
@@ -603,6 +607,8 @@ final class LegacyBookMigrationTests: XCTestCase {
             LegacyMigrationError.originalMissing(path: missingOriginal.path).localizedDescription
         )
         XCTAssertEqual(report.warnings, [])
+        // The pass must keep all four records; a short library fails here rather than trapping below.
+        _ = try XCTUnwrap(library.books[safe: 3], "the library has no fourth book")
         XCTAssertEqual(library.books[0], missing)
         XCTAssertEqual(library.books[1].tmbDirectoryName, sandbox.usualPackage(for: movable).lastPathComponent)
         XCTAssertEqual(library.books[2], unreadable)
@@ -656,7 +662,7 @@ final class LegacyBookMigrationTests: XCTestCase {
 
     /// A long list is cut short in the alert, which is heard or read line by
     /// line at every launch, while the debug log still names every book.
-    func testAlertCutsALongListShortWhileTheLogNamesEveryBook() {
+    func testAlertCutsALongListShortWhileTheLogNamesEveryBook() throws {
         var report = LegacyMigrationReport()
         let limit = LegacyMigrationReport.booksNamedInAlert
         for number in 1...(limit + 2) {
@@ -666,6 +672,8 @@ final class LegacyBookMigrationTests: XCTestCase {
         let lines = (report.userSummary ?? "").components(separatedBy: "\n")
 
         XCTAssertEqual(lines.count, 1 + limit + 1)
+        // A summary with too few lines fails here rather than trapping on the subscript.
+        _ = try XCTUnwrap(lines[safe: limit], "the alert has no line for book \(limit)")
         XCTAssertTrue(lines[limit].hasPrefix("Book \(limit): "))
         XCTAssertEqual(
             lines.last,
