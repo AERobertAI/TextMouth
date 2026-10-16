@@ -655,3 +655,93 @@ final class OggHeaderTagTests: XCTestCase {
         }
     }
 }
+
+// MARK: - Metadata readers
+
+/// An Ogg file's tags and length reach the metadata readers through
+/// `OggHeaderReader`, never through AVFoundation.
+final class OggMetadataReadersTests: XCTestCase {
+    private typealias Builder = OggStreamBuilder
+
+    /// A folder of the test's own, removed when the test ends.
+    private var folder: URL!
+
+    override func setUpWithError() throws {
+        folder = try AudioTestFixtures.makeTemporaryDirectory()
+    }
+
+    override func tearDownWithError() throws {
+        // Optional: tear-down also runs when set-up failed.
+        if let folder { try? FileManager.default.removeItem(at: folder) }
+    }
+
+    /// Writes `bytes` to `name` in the test's folder and returns its URL.
+    private func write(_ bytes: [UInt8], as name: String) throws -> URL {
+        let url = folder.appendingPathComponent(name)
+        try Data(bytes).write(to: url)
+        return url
+    }
+
+    func testAnOggFileGivesItsTagsAndDuration() async throws {
+        let comments = ["TITLE=Chapter One", "ARTIST=A. Reader", "ALBUM=The Book", "GENRE=Audiobook", "DATE=2019"]
+        let url = try write(Builder.vorbisStream(comments: comments), as: "book.ogg")
+        let metadata = await AudioPlaybackService.extractFullMetadata(from: url)
+        XCTAssertEqual(metadata.title, "Chapter One")
+        XCTAssertEqual(metadata.artist, "A. Reader")
+        XCTAssertEqual(metadata.album, "The Book")
+        XCTAssertEqual(metadata.genre, "Audiobook")
+        XCTAssertEqual(metadata.year, "2019")
+        XCTAssertEqual(metadata.duration, "0:02")
+        XCTAssertEqual(metadata.fileFormat, "OGG")
+        let seconds = await AudioPlaybackService.getDuration(of: url)
+        XCTAssertEqual(try XCTUnwrap(seconds), 2.0, accuracy: 0.0001)
+    }
+
+    func testAnOpusFileGivesItsTagsAndDuration() async throws {
+        // 62 minutes 3 seconds, after the pre-skip.
+        let granule = Int64(3_723 * 48_000 + 312)
+        let url = try write(Builder.opusStream(granule: granule, comments: ["TITLE=Long", "PERFORMER=Voice"]),
+                            as: "long.opus")
+        let metadata = await AudioPlaybackService.extractFullMetadata(from: url)
+        XCTAssertEqual(metadata.title, "Long")
+        XCTAssertEqual(metadata.artist, "Voice")
+        XCTAssertEqual(metadata.duration, "1:02:03")
+        XCTAssertEqual(metadata.fileFormat, "OPUS")
+        let seconds = await AudioPlaybackService.getDuration(of: url)
+        XCTAssertEqual(try XCTUnwrap(seconds), 3_723, accuracy: 0.0001)
+    }
+
+    func testTheQuickTitleAndArtistReadComeFromTheSameTags() async throws {
+        let url = try write(Builder.vorbisStream(comments: ["TITLE=Quick", "ARTIST=Reader"]), as: "q.oga")
+        let quick = await AudioPlaybackService.extractMetadata(from: url)
+        XCTAssertEqual(quick.title, "Quick")
+        XCTAssertEqual(quick.artist, "Reader")
+    }
+
+    func testAnOggFileHasNoChapters() async throws {
+        let url = try write(Builder.vorbisStream(comments: ["TITLE=No Chapters"]), as: "c.ogg")
+        let chapters = await AudioPlaybackService.extractChapters(from: url)
+        XCTAssertTrue(chapters.isEmpty)
+    }
+
+    /// A file named `.ogg` that is not Ogg gives empty values, not an error.
+    func testAFileNamedOggThatIsNotOggGivesEmptyValues() async throws {
+        let url = try write(Array("definitely not Ogg".utf8), as: "fake.ogg")
+        let metadata = await AudioPlaybackService.extractFullMetadata(from: url)
+        XCTAssertEqual(metadata.title, "")
+        XCTAssertEqual(metadata.artist, "")
+        XCTAssertEqual(metadata.duration, "")
+        let seconds = await AudioPlaybackService.getDuration(of: url)
+        XCTAssertNil(seconds)
+    }
+
+    /// The `h:mm:ss` and `m:ss` strings are those the other formats show.
+    func testTheDurationStringIsFormattedLikeOtherFormats() async throws {
+        let short = try write(Builder.vorbisStream(granule: 22_050 * 59), as: "short.ogg")
+        let shortMetadata = await AudioPlaybackService.extractFullMetadata(from: short)
+        XCTAssertEqual(shortMetadata.duration, "0:59")
+        let long = try write(Builder.vorbisStream(granule: 22_050 * 600), as: "ten.ogg")
+        let longMetadata = await AudioPlaybackService.extractFullMetadata(from: long)
+        XCTAssertEqual(longMetadata.duration, "10:00")
+    }
+}
