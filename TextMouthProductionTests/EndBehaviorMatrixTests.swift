@@ -105,25 +105,25 @@ import XCTest
 /// continueNext | multi-file audio | minutes (running) | covered by ContinueToNextBookTests.testFinishedBooksRunningSleepTimerKeepsTheNextBookFromStarting
 /// continueNext | multi-file audio | minutes (expired) | covered by EndBehaviorMatrixTests.testMultiFileAudioEndBehaviorMatrix
 /// stop | DAISY | none | covered by FinishedBookReaderTests.testEveryAudiobookLayoutRestsExactlyAtItsEnd (clips)
-/// stop | DAISY | endOfBook | UNCOVERED
-/// stop | DAISY | endOfHeading | UNCOVERED
-/// stop | DAISY | minutes (running) | UNCOVERED
-/// stop | DAISY | minutes (expired) | UNCOVERED
-/// stopAndPlayStartsOver | DAISY | none | UNCOVERED
-/// stopAndPlayStartsOver | DAISY | endOfBook | UNCOVERED
-/// stopAndPlayStartsOver | DAISY | endOfHeading | UNCOVERED
-/// stopAndPlayStartsOver | DAISY | minutes (running) | UNCOVERED
-/// stopAndPlayStartsOver | DAISY | minutes (expired) | UNCOVERED
-/// loop | DAISY | none | UNCOVERED (only that the first chapter plays again, no wording: CompletionGenerationReaderTests.testLoopingAOneFileBookPlaysItsFirstChapterAgain)
-/// loop | DAISY | endOfBook | UNCOVERED
-/// loop | DAISY | endOfHeading | UNCOVERED
-/// loop | DAISY | minutes (running) | UNCOVERED
-/// loop | DAISY | minutes (expired) | UNCOVERED
-/// continueNext | DAISY | none | UNCOVERED
-/// continueNext | DAISY | endOfBook | UNCOVERED
-/// continueNext | DAISY | endOfHeading | UNCOVERED
-/// continueNext | DAISY | minutes (running) | UNCOVERED
-/// continueNext | DAISY | minutes (expired) | UNCOVERED
+/// stop | DAISY | endOfBook | covered by EndBehaviorMatrixTests.testDAISYEndBehaviorMatrix
+/// stop | DAISY | endOfHeading | covered by EndBehaviorMatrixTests.testDAISYEndBehaviorMatrix
+/// stop | DAISY | minutes (running) | covered by EndBehaviorMatrixTests.testDAISYEndBehaviorMatrix
+/// stop | DAISY | minutes (expired) | covered by EndBehaviorMatrixTests.testDAISYEndBehaviorMatrix
+/// stopAndPlayStartsOver | DAISY | none | covered by EndBehaviorMatrixTests.testDAISYEndBehaviorMatrix
+/// stopAndPlayStartsOver | DAISY | endOfBook | covered by EndBehaviorMatrixTests.testDAISYEndBehaviorMatrix
+/// stopAndPlayStartsOver | DAISY | endOfHeading | covered by EndBehaviorMatrixTests.testDAISYEndBehaviorMatrix
+/// stopAndPlayStartsOver | DAISY | minutes (running) | covered by EndBehaviorMatrixTests.testDAISYEndBehaviorMatrix
+/// stopAndPlayStartsOver | DAISY | minutes (expired) | covered by EndBehaviorMatrixTests.testDAISYEndBehaviorMatrix
+/// loop | DAISY | none | covered by EndBehaviorMatrixTests.testDAISYEndBehaviorMatrix
+/// loop | DAISY | endOfBook | covered by EndBehaviorMatrixTests.testDAISYEndBehaviorMatrix
+/// loop | DAISY | endOfHeading | covered by EndBehaviorMatrixTests.testDAISYEndBehaviorMatrix
+/// loop | DAISY | minutes (running) | covered by EndBehaviorMatrixTests.testDAISYEndBehaviorMatrix
+/// loop | DAISY | minutes (expired) | covered by EndBehaviorMatrixTests.testDAISYEndBehaviorMatrix
+/// continueNext | DAISY | none | covered by EndBehaviorMatrixTests.testDAISYEndBehaviorMatrix
+/// continueNext | DAISY | endOfBook | covered by EndBehaviorMatrixTests.testDAISYEndBehaviorMatrix
+/// continueNext | DAISY | endOfHeading | covered by EndBehaviorMatrixTests.testDAISYEndBehaviorMatrix
+/// continueNext | DAISY | minutes (running) | covered by EndBehaviorMatrixTests.testDAISYEndBehaviorMatrix
+/// continueNext | DAISY | minutes (expired) | covered by EndBehaviorMatrixTests.testDAISYEndBehaviorMatrix
 ///
 /// This class covers the text and single-file audio columns' cells that no
 /// other test did (`testTextBookEndBehaviorMatrix`,

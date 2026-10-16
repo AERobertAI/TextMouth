@@ -102,6 +102,7 @@
 		16EBE4162280962994E9729F /* AudioEditActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = F92E192EEF7CE9CC47DE3CA1 /* AudioEditActivity.swift */; };
 		17B95ACBBE538E715A38E81B /* IntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 719AC48A584BF96E3ED98D0B /* IntegrationTests.swift */; };
 		1801467EF9587955C6209A3B /* CloudMaintenanceCacheBatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A56A3FF118A8BDA0E6B9B5D /* CloudMaintenanceCacheBatchTests.swift */; };
+		180FE8D60C005AF3BF367277 /* EndBehaviorMatrixDAISYTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 114125DA32FD830E5B1E0998 /* EndBehaviorMatrixDAISYTests.swift */; };
 		185140C01557F55CB53651D7 /* DAISYAudioTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A08D74C351B71DD984E214 /* DAISYAudioTests.swift */; };
 		1887B2B643953C9EECD569E3 /* newmdct.c in Sources */ = {isa = PBXBuildFile; fileRef = 219EFAFC9047FB96A55BAC34 /* newmdct.c */; };
 		189BC9577BB2832DD1132AEE /* SavedFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = C221A7F9E32DD87EF06B77F1 /* SavedFile.swift */; };
@@ -1061,6 +1062,7 @@
 		10B5C58B28926F893C3A835F /* NetworkReachabilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkReachabilityTests.swift; sourceTree = "<group>"; };
 		113457F1D1F6D7F977399FC9 /* KeepOnThisMacTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepOnThisMacTests.swift; sourceTree = "<group>"; };
 		113FA8AF2E902E3D1C5C35D2 /* FeedItemIndexListTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedItemIndexListTests.swift; sourceTree = "<group>"; };
+		114125DA32FD830E5B1E0998 /* EndBehaviorMatrixDAISYTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndBehaviorMatrixDAISYTests.swift; sourceTree = "<group>"; };
 		118BEA78B35B7A8F2A0B25EC /* FileImportService+Packages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FileImportService+Packages.swift"; sourceTree = "<group>"; };
 		11D5E6350A32BCADEB8B77FD /* DataDirectoryMigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataDirectoryMigrationTests.swift; sourceTree = "<group>"; };
 		11F1EBBEDC2F0CB39D7AA1B2 /* LibraryInfoSpeakerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryInfoSpeakerTests.swift; sourceTree = "<group>"; };
@@ -2656,6 +2658,7 @@
 				C053AF5248D19C03347FDADE /* DuplicateFinderTests.swift */,
 				DC7B3696B41053F54B897195 /* EndBehaviorMatrixAudioSupport.swift */,
 				846817489370B482ABE0E488 /* EndBehaviorMatrixChapteredTests.swift */,
+				114125DA32FD830E5B1E0998 /* EndBehaviorMatrixDAISYTests.swift */,
 				4B944A6D1E4DA6E92DF9A53F /* EndBehaviorMatrixMultiFileTests.swift */,
 				2A86B0AB979C8C15A652A3FB /* EndBehaviorMatrixTests.swift */,
 				F78DAE3D5991C2B64EDE6D41 /* EndBehaviorTestSupport.swift */,
@@ -3474,6 +3477,7 @@
 				BE9ABB59EA6000410630D844 /* EPUBPartialExtractionTests.swift in Sources */,
 				0968C087F7867DC51A421263 /* EndBehaviorMatrixAudioSupport.swift in Sources */,
 				A9BFF32CE0D68395F8859534 /* EndBehaviorMatrixChapteredTests.swift in Sources */,
+				180FE8D60C005AF3BF367277 /* EndBehaviorMatrixDAISYTests.swift in Sources */,
 				7FEB0B711480BED7E9C2D9AF /* EndBehaviorMatrixMultiFileTests.swift in Sources */,
 				B0042101DBEA7BD2C73D8539 /* EndBehaviorMatrixTests.swift in Sources */,
 				EA7FC6A7AA89A512A70E146B /* EndBehaviorTestSupport.swift in Sources */,
