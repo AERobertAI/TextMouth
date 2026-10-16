@@ -129,6 +129,25 @@ final class AudioManifestTests: XCTestCase {
         XCTAssertNil(AudioManifest.read(inAudioFolder: folder))
     }
 
+    // MARK: - The Book's Title and Author
+
+    /// A manifest with no title or author, or with only blank ones, gives
+    /// the book none, so the book keeps the archive's name and the unknown
+    /// author; real text comes through untouched, spaces and all.
+    func testABlankTitleOrAuthorReadsAsNone() {
+        XCTAssertNil(AudioManifest().bookTitle)
+        XCTAssertNil(AudioManifest().bookAuthor)
+        for blank in ["", "   ", " \n\t "] {
+            XCTAssertNil(AudioManifest(title: blank, author: blank).bookTitle, "title \(blank.debugDescription)")
+            XCTAssertNil(AudioManifest(title: blank, author: blank).bookAuthor, "author \(blank.debugDescription)")
+        }
+        let manifest = AudioManifest(title: " Harbor Plays ", author: "Wenzel Okafor")
+        XCTAssertEqual(manifest.bookTitle, " Harbor Plays ")
+        XCTAssertEqual(manifest.bookAuthor, "Wenzel Okafor")
+        // The stored fields keep every byte a hand edit gave them.
+        XCTAssertEqual(AudioManifest(title: "  ").title, "  ")
+    }
+
     // MARK: - The Tracks List
 
     /// The manifest the tracks list was designed with, as a person writes

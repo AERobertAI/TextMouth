@@ -41,6 +41,22 @@ struct AudioManifest: Codable {
         case title, author, tracks, pauseBetweenTracksMs, order, chapters, segments
     }
 
+    /// The book's title as the manifest gives it, or nil when it gives none
+    /// or only blank text (`"title": ""`, `"   "`), so a blank title falls
+    /// back to the archive's or folder's name as a missing one does. The
+    /// one place for the rule; the stored `title` keeps every byte.
+    var bookTitle: String? {
+        title?.nonBlank
+    }
+
+    /// The book's author as the manifest gives it, or nil when it gives
+    /// none or only blank text, so a blank author reads as
+    /// `Book.unknownAuthor` as a missing one does. The stored `author`
+    /// keeps every byte.
+    var bookAuthor: String? {
+        author?.nonBlank
+    }
+
     /// The pauses a manifest may give, in milliseconds: none at all, up to
     /// one minute.
     static let pauseRangeMs: ClosedRange<Double> = 0...60_000
