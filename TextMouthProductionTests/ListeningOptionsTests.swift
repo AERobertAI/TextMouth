@@ -337,6 +337,149 @@ final class ListeningOptionsTests: XCTestCase {
         XCTAssertEqual(rule.storedValue(in: defaults), rule.defaultValue, "a value of the wrong type")
     }
 
+    // MARK: - The Wording
+
+    /// The nouns, and the one a feed's noun becomes.
+    func testTheNounsAndTheArticleBeforeEach() {
+        typealias Noun = ListeningOptionsWording.Noun
+        XCTAssertEqual(Noun(.episode), .episode)
+        XCTAssertEqual(Noun(.article), .article)
+        XCTAssertEqual(Noun(.item), .item)
+        let expected: [(Noun, String, String, String)] = [
+            (.episode, "episode", "episodes", "an"),
+            (.article, "article", "articles", "an"),
+            (.item, "item", "items", "an"),
+            (.book, "book", "books", "a"),
+        ]
+        for (noun, singular, plural, article) in expected {
+            XCTAssertEqual(noun.singular, singular)
+            XCTAssertEqual(noun.plural, plural)
+            XCTAssertEqual(noun.article, article)
+        }
+    }
+
+    /// The label of the choice of what happens when an item ends.
+    func testTheContinuationLabelForEveryNoun() {
+        XCTAssertEqual(ListeningOptionsWording.continuationLabel(.episode), "When an episode ends")
+        XCTAssertEqual(ListeningOptionsWording.continuationLabel(.article), "When an article ends")
+        XCTAssertEqual(ListeningOptionsWording.continuationLabel(.item), "When an item ends")
+        XCTAssertEqual(ListeningOptionsWording.continuationLabel(.book), "When a book ends")
+    }
+
+    /// The names of the four choices, the first naming the global setting's
+    /// own value, whatever that is.
+    func testTheContinuationChoicesForEveryNoun() {
+        for noun in [ListeningOptionsWording.Noun.episode, .article, .item, .book] {
+            XCTAssertEqual(
+                ListeningOptionsWording.continuationTitle(.playBookBelow, noun: noun, global: .stop),
+                "Play the \(noun.singular) below"
+            )
+            XCTAssertEqual(
+                ListeningOptionsWording.continuationTitle(.playBookAbove, noun: noun, global: .stop),
+                "Play the \(noun.singular) above"
+            )
+            XCTAssertEqual(ListeningOptionsWording.continuationTitle(.stop, noun: noun, global: .continueNext), "Stop")
+            XCTAssertEqual(
+                ListeningOptionsWording.continuationTitle(nil, noun: noun, global: .continueNext),
+                "Use the global setting (Continue to Next Book)"
+            )
+        }
+        XCTAssertEqual(
+            ListeningOptionsWording.continuationTitle(.playBookBelow, noun: .episode, global: .stop),
+            "Play the episode below"
+        )
+        XCTAssertEqual(
+            ListeningOptionsWording.continuationTitle(.playBookAbove, noun: .book, global: .stop),
+            "Play the book above"
+        )
+        for global in EndOfBookBehavior.allCases {
+            XCTAssertEqual(
+                ListeningOptionsWording.continuationTitle(nil, noun: .episode, global: global),
+                "Use the global setting (\(global.rawValue))"
+            )
+        }
+        XCTAssertEqual(
+            ListeningOptionsWording.continuationTitle(nil, noun: .book, global: .stopAndPlayStartsOver),
+            "Use the global setting (Stop, and Play Starts Over)"
+        )
+    }
+
+    /// The hint of the choice, for a feed's nouns and for a folder's books.
+    func testTheContinuationHintForEveryNoun() {
+        XCTAssertEqual(
+            ListeningOptionsWording.continuationHint(.episode),
+            "What happens when one of this feed's episodes ends: play the episode below it or the one above it in the list, stop, or follow the global setting"
+        )
+        XCTAssertEqual(
+            ListeningOptionsWording.continuationHint(.article),
+            "What happens when one of this feed's articles ends: play the article below it or the one above it in the list, stop, or follow the global setting"
+        )
+        XCTAssertEqual(
+            ListeningOptionsWording.continuationHint(.item),
+            "What happens when one of this feed's items ends: play the item below it or the one above it in the list, stop, or follow the global setting"
+        )
+        XCTAssertEqual(
+            ListeningOptionsWording.continuationHint(.book),
+            "What happens when one of this folder's books ends: play the book below it or the one above it in the folder, stop, or follow the global setting"
+        )
+    }
+
+    /// The label and hint of the switch that passes over finished items.
+    func testTheSkipFinishedWordingForEveryNoun() {
+        XCTAssertEqual(ListeningOptionsWording.skipFinishedLabel(.episode), "Skip finished episodes")
+        XCTAssertEqual(ListeningOptionsWording.skipFinishedLabel(.article), "Skip finished articles")
+        XCTAssertEqual(ListeningOptionsWording.skipFinishedLabel(.item), "Skip finished items")
+        XCTAssertEqual(ListeningOptionsWording.skipFinishedLabel(.book), "Skip finished books")
+        XCTAssertEqual(
+            ListeningOptionsWording.skipFinishedHint(.episode),
+            "When listening goes on to another episode, pass over the episodes already finished"
+        )
+        XCTAssertEqual(
+            ListeningOptionsWording.skipFinishedHint(.article),
+            "When listening goes on to another article, pass over the articles already finished"
+        )
+        XCTAssertEqual(
+            ListeningOptionsWording.skipFinishedHint(.item),
+            "When listening goes on to another item, pass over the items already finished"
+        )
+        XCTAssertEqual(
+            ListeningOptionsWording.skipFinishedHint(.book),
+            "When listening goes on to another book, pass over the books already finished"
+        )
+    }
+
+    /// The label and both hints of the switch that downloads the next item;
+    /// the minutes are the lead time's.
+    func testTheDownloadNextWordingForEveryNoun() {
+        XCTAssertEqual(ListeningOptionsWording.predownloadLabel(.episode), "Download the next episode before this one ends")
+        XCTAssertEqual(ListeningOptionsWording.predownloadLabel(.article), "Download the next article before this one ends")
+        XCTAssertEqual(ListeningOptionsWording.predownloadLabel(.item), "Download the next item before this one ends")
+        XCTAssertEqual(
+            ListeningOptionsWording.predownloadHint(.episode, enabled: true),
+            "When 10 minutes or less of the episode playing are left, download the episode that plays next, if it is not on this Mac yet"
+        )
+        XCTAssertEqual(
+            ListeningOptionsWording.predownloadHint(.article, enabled: true),
+            "When 10 minutes or less of the article playing are left, download the article that plays next, if it is not on this Mac yet"
+        )
+        XCTAssertEqual(
+            ListeningOptionsWording.predownloadHint(.item, enabled: true),
+            "When 10 minutes or less of the item playing are left, download the item that plays next, if it is not on this Mac yet"
+        )
+        XCTAssertEqual(
+            ListeningOptionsWording.predownloadHint(.episode, enabled: false),
+            "Available only while this feed's episodes go on to another episode when one ends"
+        )
+        XCTAssertEqual(
+            ListeningOptionsWording.predownloadHint(.article, enabled: false),
+            "Available only while this feed's articles go on to another article when one ends"
+        )
+        XCTAssertEqual(
+            ListeningOptionsWording.predownloadHint(.item, enabled: false),
+            "Available only while this feed's items go on to another item when one ends"
+        )
+    }
+
     // MARK: - Fixtures
 
     /// A library of three rows for one directory spelled "Reports",
