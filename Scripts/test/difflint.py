@@ -21,8 +21,8 @@ import re
 import subprocess
 import sys
 from collections import namedtuple
-from dataclasses import dataclass
-from typing import Callable, Dict, List, Optional, Set
+from dataclasses import dataclass, field
+from typing import Callable, Dict, List, Optional, Set, Tuple
 
 # The two severities a rule can have. ERROR fails the run; REVIEW fails it
 # only with --strict (a person decides whether a REVIEW hit is real).
@@ -264,7 +264,9 @@ def repo_root() -> str:
     return run_git(["rev-parse", "--show-toplevel"]).strip()
 
 
-_HUNK_HEADER = re.compile(r"^@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
+# `@@ -a,b +c,d @@`: groups are a (old start), b (old count), c (new start) and
+# d (new count); an omitted count means 1.
+_HUNK_HEADER = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
 
 
 def parse_added_lines(diff_text: str) -> Dict[str, Set[int]]:
@@ -296,9 +298,9 @@ def parse_added_lines(diff_text: str) -> Dict[str, Set[int]]:
             continue
         m = _HUNK_HEADER.match(line)
         if m and current is not None:
-            old_count = 1 if m.group(1) is None else int(m.group(1))
-            start = int(m.group(2))
-            new_count = 1 if m.group(3) is None else int(m.group(3))
+            old_count = 1 if m.group(2) is None else int(m.group(2))
+            start = int(m.group(3))
+            new_count = 1 if m.group(4) is None else int(m.group(4))
             if new_count > 0:
                 result[current].update(range(start, start + new_count))
             old_left, new_left = old_count, new_count
@@ -326,6 +328,146 @@ def added_lines(base: str, paths: List[str], root: Optional[str] = None) -> Dict
             continue
         result[path] = set(range(1, count + 1))
     return result
+
+
+# ---------------------------------------------------------------------------
+# Git: what did the branch remove or change? (hunks with both sides)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class Hunk:
+    """One `-U0` hunk: the lines it removed and the lines it added.
+
+    `removed` holds (line number in the OLD file, text) pairs and `added`
+    holds (line number in the NEW file, text) pairs; the text has no leading
+    -/+ and no newline. `old_start`/`new_start` are the header's starting
+    lines (for a hunk with nothing on one side, git gives the line BEFORE the
+    change, so use the pairs, not these, to locate text).
+    """
+    old_start: int
+    new_start: int
+    removed: List[Tuple[int, str]] = field(default_factory=list)
+    added: List[Tuple[int, str]] = field(default_factory=list)
+
+
+@dataclass
+class FileDiff:
+    """What a diff did to one file.
+
+    status    -- 'modified', 'added', 'deleted' or 'renamed'.
+    path      -- the file's path AFTER the change (for a deleted file, the
+                 path it had).
+    old_path  -- the path before a rename (None otherwise).
+    hunks     -- the file's hunks in order (none for a pure rename).
+    """
+    path: str
+    status: str = "modified"
+    old_path: Optional[str] = None
+    hunks: List[Hunk] = field(default_factory=list)
+
+
+_DIFF_HEADER = re.compile(r"^diff --git a/(.*) b/(.*)$")
+
+
+def _header_path(text: str, prefix: str) -> Optional[str]:
+    """The path in a `--- a/x` or `+++ b/x` header (None for /dev/null)."""
+    target = text[4:].split("\t")[0]
+    if target == "/dev/null":
+        return None
+    return target[2:] if target.startswith(prefix) else target
+
+
+def parse_hunks(diff_text: str) -> List[FileDiff]:
+    """Parse `git diff -U0 -M` output into one FileDiff per file.
+
+    Unlike `parse_added_lines` this keeps the removed lines too, with their
+    numbers in the old file, and records how each file changed (added,
+    deleted, renamed, modified) from git's extended header lines. A hunk body
+    is counted line by line (as in `parse_added_lines`), so body text that
+    merely looks like a header is never mistaken for one.
+    """
+    files: List[FileDiff] = []
+    current: Optional[FileDiff] = None
+    hunk: Optional[Hunk] = None
+    old_left = new_left = 0     # lines still to read in the current hunk body
+    old_no = new_no = 0         # the next old / new line number to assign
+    for line in diff_text.split("\n"):
+        if old_left > 0 or new_left > 0:
+            if line.startswith("-"):
+                hunk.removed.append((old_no, line[1:]))
+                old_no += 1
+                old_left -= 1
+            elif line.startswith("+"):
+                hunk.added.append((new_no, line[1:]))
+                new_no += 1
+                new_left -= 1
+            # Anything else ("\ No newline at end of file") is not counted.
+            continue
+        m = _DIFF_HEADER.match(line)
+        if m:
+            current = FileDiff(path=m.group(2))
+            files.append(current)
+            continue
+        if current is None:
+            continue
+        if line.startswith("new file mode"):
+            current.status = "added"
+        elif line.startswith("deleted file mode"):
+            current.status = "deleted"
+        elif line.startswith("rename from "):
+            current.status = "renamed"
+            current.old_path = line[len("rename from "):]
+        elif line.startswith("rename to "):
+            current.path = line[len("rename to "):]
+        elif line.startswith("--- "):
+            # A deleted file has no "+++" path, so take the old one here.
+            old = _header_path(line, "a/")
+            if old is not None and current.status == "deleted":
+                current.path = old
+        elif line.startswith("+++ "):
+            new = _header_path(line, "b/")
+            if new is not None:
+                current.path = new
+        else:
+            h = _HUNK_HEADER.match(line)
+            if h:
+                old_count = 1 if h.group(2) is None else int(h.group(2))
+                new_count = 1 if h.group(4) is None else int(h.group(4))
+                hunk = Hunk(int(h.group(1)), int(h.group(3)))
+                current.hunks.append(hunk)
+                # Numbering of the real lines starts at the header's number
+                # (a side with a zero count has no lines to number).
+                old_no = int(h.group(1))
+                new_no = int(h.group(3))
+                old_left, new_left = old_count, new_count
+    return files
+
+
+def diff_files(base: str, paths: List[str], root: Optional[str] = None):
+    """What the working tree did to `paths` since the merge-base of `base`.
+
+    Returns (merge_base, [FileDiff]). Renames are detected (-M). Untracked
+    files that are not ignored count as added files with all their lines.
+    Paths are relative to the repository root.
+    """
+    root = root or repo_root()
+    merge_base = run_git(["merge-base", base, "HEAD"], cwd=root).strip()
+    diff = run_git(["diff", "-U0", "--no-color", "-M", merge_base, "--"] + paths, cwd=root)
+    files = parse_hunks(diff)
+    untracked = run_git(["ls-files", "--others", "--exclude-standard", "--"] + paths, cwd=root)
+    for path in filter(None, untracked.split("\n")):
+        try:
+            with open(os.path.join(root, path), encoding="utf-8", errors="replace") as handle:
+                lines = handle.read().split("\n")
+        except OSError:
+            continue
+        if lines and lines[-1] == "":
+            lines.pop()                  # the file's final newline is not a line
+        new_file = FileDiff(path=path, status="added")
+        if lines:
+            new_file.hunks.append(Hunk(0, 1, [], list(enumerate(lines, 1))))
+        files.append(new_file)
+    return merge_base, files
 
 
 # ---------------------------------------------------------------------------
@@ -599,6 +741,75 @@ def _selftest() -> bool:
     check("pure deletion adds nothing", 21 not in parsed.get("Foo/A.swift", set()))
     check("deleted file not listed", "Foo/Dead.swift" not in parsed)
     check("new file", parsed.get("Foo/B.swift") == {1, 2})
+
+    # --- hunks with both sides (parse_hunks) ---------------------------------
+    diff = "\n".join([
+        "diff --git a/Foo/A.swift b/Foo/A.swift",
+        "--- a/Foo/A.swift",
+        "+++ b/Foo/A.swift",
+        "@@ -3,0 +4,2 @@ func x() {",
+        "+let one = 1",
+        "+++ looks like a header but is content",
+        "@@ -10,2 +12 @@",
+        "-old one",
+        "--- looks like a header but is content",
+        "+new",
+        "\\ No newline at end of file",
+        "@@ -20,2 +21,0 @@",
+        "-gone",
+        "-gone too",
+        "diff --git a/Foo/Dead.swift b/Foo/Dead.swift",
+        "deleted file mode 100644",
+        "--- a/Foo/Dead.swift",
+        "+++ /dev/null",
+        "@@ -1,2 +0,0 @@",
+        "-a",
+        "-b",
+        "diff --git a/Foo/B.swift b/Foo/B.swift",
+        "new file mode 100644",
+        "--- /dev/null",
+        "+++ b/Foo/B.swift",
+        "@@ -0,0 +1,2 @@",
+        "+first",
+        "+second",
+        "diff --git a/Foo/Old.swift b/Foo/New.swift",
+        "similarity index 100%",
+        "rename from Foo/Old.swift",
+        "rename to Foo/New.swift",
+        "diff --git a/Foo/R.swift b/Foo/Q.swift",
+        "similarity index 90%",
+        "rename from Foo/R.swift",
+        "rename to Foo/Q.swift",
+        "--- a/Foo/R.swift",
+        "+++ b/Foo/Q.swift",
+        "@@ -5 +5 @@",
+        "-before",
+        "+after",
+        "",
+    ])
+    files = {f.path: f for f in parse_hunks(diff)}
+    check("hunk files found", sorted(files) == ["Foo/A.swift", "Foo/B.swift", "Foo/Dead.swift",
+                                                "Foo/New.swift", "Foo/Q.swift"])
+    a = files["Foo/A.swift"]
+    check("modified status", a.status == "modified" and a.old_path is None)
+    check("three hunks", len(a.hunks) == 3)
+    check("pure addition", a.hunks[0].removed == []
+          and a.hunks[0].added == [(4, "let one = 1"), (5, "++ looks like a header but is content")])
+    check("replacement numbers", a.hunks[1].removed == [(10, "old one"), (11, "-- looks like a header but is content")]
+          and a.hunks[1].added == [(12, "new")])
+    check("pure removal numbers", a.hunks[2].removed == [(20, "gone"), (21, "gone too")]
+          and a.hunks[2].added == [])
+    check("hunk header starts", (a.hunks[1].old_start, a.hunks[1].new_start) == (10, 12))
+    check("deleted file", files["Foo/Dead.swift"].status == "deleted"
+          and files["Foo/Dead.swift"].hunks[0].removed == [(1, "a"), (2, "b")])
+    check("added file", files["Foo/B.swift"].status == "added"
+          and files["Foo/B.swift"].hunks[0].added == [(1, "first"), (2, "second")])
+    check("pure rename", files["Foo/New.swift"].status == "renamed"
+          and files["Foo/New.swift"].old_path == "Foo/Old.swift" and files["Foo/New.swift"].hunks == [])
+    check("rename with edits", files["Foo/Q.swift"].status == "renamed"
+          and files["Foo/Q.swift"].old_path == "Foo/R.swift"
+          and files["Foo/Q.swift"].hunks[0].removed == [(5, "before")]
+          and files["Foo/Q.swift"].hunks[0].added == [(5, "after")])
 
     # --- rules, only_lines, suppression ------------------------------------
     rules = [
