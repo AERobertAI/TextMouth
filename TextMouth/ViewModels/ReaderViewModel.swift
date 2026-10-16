@@ -841,22 +841,6 @@ final class ReaderViewModel: ObservableObject {
         return wordEstimate / speechService.wordsPerMinute * 60.0
     }
 
-    /// Time from start of book to when a heading begins
-    func timeToHeading(_ heading: Heading) -> TimeInterval {
-        guard let content = content, content.totalCharacterCount > 0 else { return 0 }
-        let globalOffset = content.globalOffset(chapterIndex: heading.chapterIndex, localOffset: heading.characterOffset)
-
-        if isAudioBook {
-            return totalEstimatedTime
-                * Double(globalOffset)
-                / Double(content.totalCharacterCount)
-        }
-
-        guard speechService.wordsPerMinute > 0 else { return 0 }
-        let fraction = Double(globalOffset) / Double(content.totalCharacterCount)
-        return content.estimatedReadingTime(wpm: speechService.wordsPerMinute) * fraction
-    }
-
     /// Percentage through book where a heading starts
     func percentAtHeading(_ heading: Heading) -> Double {
         guard let content = content else { return 0 }
