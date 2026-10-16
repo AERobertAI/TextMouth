@@ -252,7 +252,7 @@ final class LibraryIndexRecoveryTests: XCTestCase {
 
     /// Try Again keeps the loaded index authoritative but carries newer
     /// reading progress and moved packages over from the provisional library.
-    func testMergeCarriesOnlyNewerProgressAndMovedPackages() {
+    func testMergeCarriesOnlyNewerProgressAndMovedPackages() throws {
         let earlier = Date(timeIntervalSince1970: 1_700_000_000)
         let later = earlier.addingTimeInterval(3_600)
         let movedID = UUID()
@@ -283,6 +283,8 @@ final class LibraryIndexRecoveryTests: XCTestCase {
             fileExists: existingFiles.contains
         )
 
+        // The checks below read the merged books by position, so stop here if one is missing.
+        _ = try XCTUnwrap(merged.books[safe: 2], "the merged library has fewer than three books")
         XCTAssertEqual(merged.books[0].filePath, "/new/moved.txt")
         XCTAssertEqual(merged.books[0].folderPath, "New")
         XCTAssertEqual(merged.books[0].readingPosition?.characterOffset, 40)
