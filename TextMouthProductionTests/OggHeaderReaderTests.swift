@@ -451,3 +451,207 @@ final class OggHeaderReaderTests: XCTestCase {
         XCTAssertNil(OggHeaderReader.read(at: text))
     }
 }
+
+// MARK: - Tags
+
+/// The reader's tags: the comment packet's fields, its framing across pages,
+/// and the limits that keep a hostile or oversized packet harmless.
+final class OggHeaderTagTests: XCTestCase {
+    private typealias Builder = OggStreamBuilder
+
+    /// The tags of a Vorbis stream and of an Opus stream carrying `comments`;
+    /// both must agree, so each test checks the codecs together.
+    private func tags(_ comments: [String], file: StaticString = #filePath, line: UInt = #line)
+        throws -> OggHeaderReader.Tags {
+        let vorbis = Builder.vorbisStream(comments: comments)
+        let opus = Builder.opusStream(comments: comments)
+        let vorbisTags = try XCTUnwrap(OggHeaderReader.parse(head: vorbis, tail: vorbis), file: file, line: line).tags
+        let opusTags = try XCTUnwrap(OggHeaderReader.parse(head: opus, tail: opus), file: file, line: line).tags
+        XCTAssertEqual(vorbisTags, opusTags, "Vorbis and Opus disagree", file: file, line: line)
+        return vorbisTags
+    }
+
+    func testAllFiveFields() throws {
+        let tags = try tags(["TITLE=A Title", "ARTIST=An Artist", "ALBUM=An Album", "GENRE=Drama", "DATE=2020-05-01"])
+        XCTAssertEqual(tags, OggHeaderReader.Tags(title: "A Title", artist: "An Artist", album: "An Album",
+                                                  genre: "Drama", date: "2020-05-01"))
+    }
+
+    func testNamesMatchInAnyCase() throws {
+        let tags = try tags(["title=Low", "ArTiSt=Mixed", "Album=Cap", "genre=lower", "Date=2001"])
+        XCTAssertEqual(tags.title, "Low")
+        XCTAssertEqual(tags.artist, "Mixed")
+        XCTAssertEqual(tags.album, "Cap")
+        XCTAssertEqual(tags.genre, "lower")
+        XCTAssertEqual(tags.date, "2001")
+    }
+
+    func testPerformerIsTheArtistWhenThereIsNoArtist() throws {
+        XCTAssertEqual(try tags(["PERFORMER=Reader"]).artist, "Reader")
+        XCTAssertEqual(try tags(["PERFORMER=Reader", "ARTIST=Author"]).artist, "Author")
+        XCTAssertEqual(try tags(["ARTIST=", "PERFORMER=Reader"]).artist, "Reader")
+    }
+
+    func testACommentWithNoEqualsSignIsSkipped() throws {
+        let tags = try tags(["JUST SOME TEXT", "TITLE=Kept"])
+        XCTAssertEqual(tags.title, "Kept")
+    }
+
+    func testAnEmptyValueIsEmpty() throws {
+        let tags = try tags(["TITLE=", "ARTIST=Someone"])
+        XCTAssertEqual(tags.title, "")
+        XCTAssertEqual(tags.artist, "Someone")
+    }
+
+    func testTheFirstOfADuplicatedNameWins() throws {
+        XCTAssertEqual(try tags(["TITLE=First", "title=Second"]).title, "First")
+    }
+
+    func testValuesAreTrimmedAndKeepTheirUnicode() throws {
+        let tags = try tags(["TITLE=  Café 日本 \n", "ALBUM=a=b"])
+        XCTAssertEqual(tags.title, "Café 日本")
+        XCTAssertEqual(tags.album, "a=b")      // only the first "=" splits
+    }
+
+    func testNoCommentsGivesEmptyTags() throws {
+        XCTAssertEqual(try tags([]), OggHeaderReader.Tags())
+    }
+
+    // MARK: Packets across pages
+
+    /// A comment packet carried by two pages and by three, with lacing tables
+    /// of 255-valued segments and pages flagged as continued.
+    func testACommentPacketSpanningPages() throws {
+        for (length, pageCount) in [(600, 2), (1_000, 3)] {
+            let title = String(repeating: "x", count: length)
+            let packet = Builder.commentPacket(signature: Builder.opusSignature,
+                                               comments: [Array("TITLE=\(title)".utf8), Array("ARTIST=Late".utf8)])
+            XCTAssertGreaterThanOrEqual(Builder.pages(carrying: packet, perPage: 255 * 2).count, pageCount)
+            let stream = Builder.opusStream(commentPacket: packet, perPage: 255 * 2)
+            let header = try XCTUnwrap(OggHeaderReader.parse(head: stream, tail: stream))
+            XCTAssertEqual(header.tags.title, title)
+            XCTAssertEqual(header.tags.artist, "Late")
+        }
+    }
+
+    /// A Vorbis comment packet whose length is exactly a multiple of 255 ends
+    /// with a zero lacing value on its last page.
+    func testAPacketExactlyFillingItsSegmentsStillEnds() throws {
+        let signature = Builder.vorbisSignature
+        let base = Builder.commentPacket(signature: signature, comments: [Array("TITLE=".utf8)]).count + 1
+        let title = String(repeating: "y", count: 765 - base)
+        let packet = Builder.commentPacket(signature: signature, comments: [Array("TITLE=\(title)".utf8)]) + [1]
+        XCTAssertEqual(packet.count, 765)
+        let stream = Builder.vorbisStream(commentPacket: packet, perPage: 255)
+        let header = try XCTUnwrap(OggHeaderReader.parse(head: stream, tail: stream))
+        XCTAssertEqual(header.tags.title, title)
+    }
+
+    /// A page of another stream between the pages of the comment packet is passed over.
+    func testAnotherStreamsPageBetweenCommentPagesIsSkipped() throws {
+        let padded = Builder.commentPacket(signature: Builder.opusSignature,
+                                           comments: [Array("TITLE=Muxed".utf8), Array(("PAD=" + String(repeating: "p", count: 700)).utf8)])
+        let head = Builder.opusHead()
+        let comment = Builder.pages(carrying: padded, perPage: 255 * 2)
+        let other = Builder.page(serial: 9, lacing: [5], payload: [1, 2, 3, 4, 5])
+        let stream = (Builder.page(type: 0x02, granule: 0, lacing: [UInt8(head.count)], payload: head)
+            + comment[0] + other + comment.dropFirst().flatMap { $0 }
+            + Builder.audioPages(serial: 1, firstSequence: 9, granule: 96_312).flatMap { $0 })
+        let header = try XCTUnwrap(OggHeaderReader.parse(head: stream, tail: stream))
+        XCTAssertEqual(header.tags.title, "Muxed")
+    }
+
+    /// A page that should continue the comment packet but is not flagged as
+    /// doing so gives empty tags, and the header stays.
+    func testAnUnflaggedContinuationGivesEmptyTags() throws {
+        let head = Builder.opusHead()
+        let first = Builder.page(type: 0x02, granule: 0, lacing: [UInt8(head.count)], payload: head)
+        let partial = Builder.page(lacing: [255], payload: [UInt8](repeating: 1, count: 255))
+        let unflagged = Builder.page(type: 0, lacing: [10], payload: [UInt8](repeating: 1, count: 10))
+        let stream = first + partial + unflagged
+            + Builder.audioPages(serial: 1, firstSequence: 9, granule: 96_312).flatMap { $0 }
+        let header = try XCTUnwrap(OggHeaderReader.parse(head: stream, tail: stream))
+        XCTAssertEqual(header.tags, OggHeaderReader.Tags())
+    }
+
+    // MARK: Limits
+
+    /// A cover-art sized packet (over 256 KiB) gives empty tags and still a header.
+    func testAPacketOver256KiBGivesEmptyTagsAndAHeader() throws {
+        let art = String(repeating: "A", count: 300_000)
+        let packet = Builder.commentPacket(signature: Builder.opusSignature,
+                                           comments: [Array("TITLE=Hidden".utf8), Array("METADATA_BLOCK_PICTURE=\(art)".utf8)])
+        let stream = Builder.opusStream(commentPacket: packet)
+        let header = try XCTUnwrap(OggHeaderReader.parse(head: stream, tail: stream))
+        XCTAssertEqual(header.tags, OggHeaderReader.Tags())
+        XCTAssertEqual(header.duration, 2.0, accuracy: 0.0001)
+    }
+
+    /// A comment packet that runs past the end of `head` gives empty tags, never a failure.
+    func testACommentPacketNotWhollyInHeadGivesEmptyTags() throws {
+        let stream = Builder.vorbisStream(comments: ["TITLE=\(String(repeating: "z", count: 2_000))"], perPage: 255 * 2)
+        // Cut the head inside the comment packet's pages: only the identification page and one more fit.
+        let head = Array(stream[0..<1_000])
+        let header = try XCTUnwrap(OggHeaderReader.parse(head: head, tail: stream))
+        XCTAssertEqual(header.tags, OggHeaderReader.Tags())
+        XCTAssertEqual(header.duration, 2.0, accuracy: 0.0001)
+    }
+
+    func testADeclaredLengthOfFFFFFFFFStopsReadingButKeepsWhatWasRead() throws {
+        // The count says two comments; the second declares 0xFFFFFFFF bytes.
+        let kept = Array("TITLE=Kept".utf8)
+        let packet = Builder.commentPacket(signature: Builder.opusSignature, comments: [], declaredCount: 2)
+            + Builder.le(UInt64(kept.count), 4) + kept
+            + Builder.le(0xFFFF_FFFF, 4) + Array("ARTIST=Lost".utf8)
+        let stream = Builder.opusStream(commentPacket: packet)
+        let header = try XCTUnwrap(OggHeaderReader.parse(head: stream, tail: stream))
+        XCTAssertEqual(header.tags.title, "Kept")
+        XCTAssertEqual(header.tags.artist, "")
+    }
+
+    func testAVendorLengthOfFFFFFFFFGivesEmptyTags() throws {
+        let packet = Builder.opusSignature + Builder.le(0xFFFF_FFFF, 4) + Array("vendor".utf8)
+        let stream = Builder.opusStream(commentPacket: packet)
+        let header = try XCTUnwrap(OggHeaderReader.parse(head: stream, tail: stream))
+        XCTAssertEqual(header.tags, OggHeaderReader.Tags())
+    }
+
+    func testACountOfFFFFFFFFReadsOnlyTheCommentsThatAreThere() throws {
+        let packet = Builder.commentPacket(signature: Builder.opusSignature,
+                                           comments: [Array("TITLE=One".utf8), Array("ALBUM=Two".utf8)],
+                                           declaredCount: 0xFFFF_FFFF)
+        let stream = Builder.opusStream(commentPacket: packet)
+        let header = try XCTUnwrap(OggHeaderReader.parse(head: stream, tail: stream))
+        XCTAssertEqual(header.tags.title, "One")
+        XCTAssertEqual(header.tags.album, "Two")
+    }
+
+    /// Only the first 1,000 comments are read.
+    func testOnlyTheFirstThousandCommentsAreRead() throws {
+        var comments = (0..<1_200).map { "X\($0)=v" }
+        comments[999] = "ALBUM=Last Read"
+        comments[1_000] = "TITLE=Too Late"
+        let tags = try tags(comments)
+        XCTAssertEqual(tags.album, "Last Read")
+        XCTAssertEqual(tags.title, "")
+    }
+
+    func testAWrongSignatureGivesEmptyTags() throws {
+        // An Opus comment signature in a Vorbis stream, and the reverse.
+        let opusTags = Builder.commentPacket(signature: Builder.opusSignature, comments: [Array("TITLE=No".utf8)])
+        let vorbisTags = Builder.commentPacket(signature: Builder.vorbisSignature, comments: [Array("TITLE=No".utf8)])
+        let inVorbis = Builder.vorbisStream(commentPacket: opusTags)
+        let inOpus = Builder.opusStream(commentPacket: vorbisTags)
+        XCTAssertEqual(try XCTUnwrap(OggHeaderReader.parse(head: inVorbis, tail: inVorbis)).tags, OggHeaderReader.Tags())
+        XCTAssertEqual(try XCTUnwrap(OggHeaderReader.parse(head: inOpus, tail: inOpus)).tags, OggHeaderReader.Tags())
+    }
+
+    /// The real fixtures carry an encoder's vendor and few comments; reading
+    /// their bytes must at least give a header and never trap on the tags.
+    func testTheRealFixturesGiveTagsWithoutTrouble() throws {
+        for fixture in [OggTestFixtures.vorbis, OggTestFixtures.opus] {
+            let bytes = [UInt8](try Data(contentsOf: requireFile(fixture)))
+            XCTAssertNotNil(OggHeaderReader.parse(head: bytes, tail: bytes))
+        }
+    }
+}
