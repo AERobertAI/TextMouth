@@ -314,6 +314,7 @@
 		5797F1DC300FAE36591F779D /* SpeedBesideTimesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 819A292A7538FC1A8C83542C /* SpeedBesideTimesTests.swift */; };
 		57B460EF14D9EAA14101DFA2 /* VoiceCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0916D8A1D4B45FEC3CBC8A5B /* VoiceCatalogTests.swift */; };
 		57BEBC085EDC31A1AF92F543 /* AudioEditorWindowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57A6209616BA7C1FA6F6951B /* AudioEditorWindowTests.swift */; };
+		57F23533F562C0D86FD8BE3B /* WatchedProcessSafetyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63C3E7B75557DA7AAF01BE0B /* WatchedProcessSafetyTests.swift */; };
 		583C7D4358E7F0F0CBB2A484 /* LibraryViewModel+Cloud.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3015B5E165D322F71010DBDD /* LibraryViewModel+Cloud.swift */; };
 		589CB6E5B84964FDB3CD0F0C /* WhereAmIPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B041751DE7DDE714D5B5F86 /* WhereAmIPolicyTests.swift */; };
 		58D45BBDCAF0C99DE3DD0079 /* FFmpeg.swift in Sources */ = {isa = PBXBuildFile; fileRef = C404E21780561EB5942FF171 /* FFmpeg.swift */; };
@@ -1360,6 +1361,7 @@
 		62ED866F0874D09898F6616D /* FolderNavigationHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderNavigationHistory.swift; sourceTree = "<group>"; };
 		62EE36091339AF90887BEAA8 /* VoiceOverAnnouncer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceOverAnnouncer.swift; sourceTree = "<group>"; };
 		6356D9B0A96ADE86ED7338A9 /* MetadataEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataEditorView.swift; sourceTree = "<group>"; };
+		63C3E7B75557DA7AAF01BE0B /* WatchedProcessSafetyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchedProcessSafetyTests.swift; sourceTree = "<group>"; };
 		641454A13EB2CC273F98A2E1 /* ReaderViewModel+Playback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ReaderViewModel+Playback.swift"; sourceTree = "<group>"; };
 		6414D9D27C5C5CF49EB7EC46 /* SpeechRefusalReaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRefusalReaderTests.swift; sourceTree = "<group>"; };
 		644590F670C5D7D3781319A9 /* config.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
@@ -2966,6 +2968,7 @@
 				0916D8A1D4B45FEC3CBC8A5B /* VoiceCatalogTests.swift */,
 				09C295EF6A927BE6077EE5BF /* VoiceOverAnnouncerTests.swift */,
 				19AD9163066F3ED809CC83D1 /* VoiceOverFocusClosedWindowTests.swift */,
+				63C3E7B75557DA7AAF01BE0B /* WatchedProcessSafetyTests.swift */,
 				95C74C907B55A606F7F1E0D0 /* WhereAmIAnnouncementEndTests.swift */,
 				1B041751DE7DDE714D5B5F86 /* WhereAmIPolicyTests.swift */,
 				B0557EA7BE31086021AE6596 /* WindowFocusPolicyTests.swift */,
@@ -3774,6 +3777,7 @@
 				57B460EF14D9EAA14101DFA2 /* VoiceCatalogTests.swift in Sources */,
 				45B3FC6B9803B96279BF2DC2 /* VoiceOverAnnouncerTests.swift in Sources */,
 				B2A50FDE9946EB193CF36962 /* VoiceOverFocusClosedWindowTests.swift in Sources */,
+				57F23533F562C0D86FD8BE3B /* WatchedProcessSafetyTests.swift in Sources */,
 				7842AA4798EE66761B51DE55 /* WhereAmIAnnouncementEndTests.swift in Sources */,
 				589CB6E5B84964FDB3CD0F0C /* WhereAmIPolicyTests.swift in Sources */,
 				C405EB54DBD289ABB124D4AD /* WindowFocusPolicyTests.swift in Sources */,
