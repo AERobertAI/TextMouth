@@ -12,7 +12,7 @@ Facts (labels are exact; the values are the words Speak Info speaks, from the sa
 
 | Label | Value | Shown |
 | --- | --- | --- |
-| Location | the parent folder's path, or "Top level of the library" | always |
+| Location | the parent folder's path, or "Library Root" (`LibraryFolderOption.rootLabel`, `LibrarySheetViews.swift:294`, the New Folder sheet's word for the top level) | always |
 | Books | "12 books, 3 unopened" (`CountWording.books`, unopened as `LibraryInfoWording.briefParts(of: FolderInfoFacts)` says it) | always |
 | Subfolders | "2 subfolders" | when it has any |
 | Feeds | "2 feeds" | when it has any |
@@ -26,7 +26,7 @@ If the folder is gone while the sheet is open (deleted in another window), the s
 
 ## Files
 
-- New `TextMouth/Models/FolderSettingsWording.swift`: `enum FolderSettingsWording`: `title` = "Folder Settings" (the sheet's navigation title), the five labels above, `locationTopLevel` = "Top level of the library", `listeningHeading` = "Listening", `done` = "Done", `folderGone` = "This folder is no longer in the library." Each with a doc comment.
+- New `TextMouth/Models/FolderSettingsWording.swift`: `enum FolderSettingsWording`: `title` = "Folder Settings" (the sheet's navigation title), the five labels above, `listeningHeading` = "Listening", `done` = "Done", `folderGone` = "This folder is no longer in the library." Each with a doc comment.
 - New `TextMouth/Views/Library/FolderSettingsSheet.swift`:
   - `@MainActor final class FolderSettingsModel: ObservableObject, Identifiable` with `init(folderID: UUID, library: LibraryViewModel, feedFolders: LibraryFeedFolders, wordsPerMinute: Double, defaults: UserDefaults = .standard)`; `folder: BookFolder?` (read from `library.library.folders` by ID, so a rename shows); `facts: FolderInfoFacts?`; `continuation: ReadingList.Continuation?` and `skipsFinished: Bool` (get from `library.listeningOptions(ofFolder:)`, set through `library.setListeningOptions(_:ofFolder:)`, so each choice saves at once); `globalEndOfBookBehavior` (`SettingsPolicy.endOfBookBehavior.storedValue(in: defaults)`).
   - `struct FolderSettingsSheet: View` taking the model and `onDone: () -> Void`, observing `model.library`. Fixed frame (`.frame(width: 480, height: 420)`) with a `ScrollView` for the body, as `FeedInfoSheet` does (`FeedInfoSheet.swift:175-233`): a view that outgrows its window crashes the test host (`AccessibilityTestSupport.swift`, read `withHostedView`'s comment).
