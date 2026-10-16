@@ -21,6 +21,7 @@ import random
 import re
 import sys
 import tempfile
+import textwrap
 import uuid
 import zipfile
 from dataclasses import dataclass, field
@@ -1060,6 +1061,249 @@ def gen_html_nested_soup(rng):
 
 
 # --------------------------------------------------------------------------
+# PDF files (hand-written PDF syntax, Helvetica, no images)
+# --------------------------------------------------------------------------
+
+PAGE_WIDTH, PAGE_HEIGHT = 612, 792  # US Letter in points
+TOP_Y = 700                         # where body text starts on a page
+LEADING = 14                        # distance between baselines, in points
+LEFT_X, RIGHT_X = 72, 330           # the left margin, and the right column's left edge
+
+
+def pdf_string(text):
+    """Escape text for a PDF literal string (backslash and parentheses)."""
+    return text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+
+
+def wrap_paragraphs(paragraphs, width):
+    """Wrap paragraphs to `width` characters; one empty line separates paragraphs."""
+    lines = []
+    for index, text in enumerate(paragraphs):
+        if index:
+            lines.append("")
+        lines.extend(textwrap.wrap(text, width))
+    return lines
+
+
+def text_ops(lines, x, y_top, size=12):
+    """Turn lines into (x, y, size, text) drawing operations, one baseline per line."""
+    return [(x, y_top - index * LEADING, size, line) for index, line in enumerate(lines) if line]
+
+
+def content_stream(ops):
+    """Render drawing operations as a PDF content stream (the order given is the stream order)."""
+    return "".join(f"BT /F1 {size} Tf {x} {y} Td ({pdf_string(text)}) Tj ET\n"
+                   for x, y, size, text in ops).encode("latin-1")
+
+
+@dataclass
+class OutlineNode:
+    """One bookmark: its title, the page index and height it points at, and its children."""
+    title: str
+    page: int
+    y: int
+    children: list = field(default_factory=list)
+
+
+def outline_objects(nodes, first_number, page_numbers):
+    """Build the outline tree objects.  Returns (root object number, {number: body bytes}).
+
+    The root takes `first_number`; items follow in pre-order.  Every item is open
+    and counts all of its descendants, so the root counts every item.
+    """
+    items, counter = {}, [first_number + 1]
+
+    def number(level_nodes, parent):
+        """Give each node its object number, depth first, and remember its links."""
+        numbers = []
+        for node in level_nodes:
+            num = counter[0]
+            counter[0] += 1
+            items[num] = {"node": node, "parent": parent, "children": []}
+            items[num]["children"] = number(node.children, num)
+            numbers.append(num)
+        return numbers
+
+    top = number(nodes, first_number)
+
+    def total(num):
+        """Number of descendants of an item."""
+        return sum(1 + total(child) for child in items[num]["children"])
+
+    bodies = {}
+    for siblings in [top] + [item["children"] for item in items.values()]:
+        for position, num in enumerate(siblings):
+            item, node = items[num], items[num]["node"]
+            parts = [f"/Title ({pdf_string(node.title)})", f"/Parent {item['parent']} 0 R",
+                     f"/Dest [{page_numbers[node.page]} 0 R /XYZ {LEFT_X} {node.y} 0]"]
+            if position > 0:
+                parts.append(f"/Prev {siblings[position - 1]} 0 R")
+            if position + 1 < len(siblings):
+                parts.append(f"/Next {siblings[position + 1]} 0 R")
+            if item["children"]:
+                parts += [f"/First {item['children'][0]} 0 R", f"/Last {item['children'][-1]} 0 R",
+                          f"/Count {total(num)}"]
+            bodies[num] = "<< " + " ".join(parts) + " >>"
+    count = sum(1 + total(num) for num in top)
+    bodies[first_number] = (f"<< /Type /Outlines /First {top[0]} 0 R /Last {top[-1]} 0 R /Count {count} >>"
+                            if top else "<< /Type /Outlines /Count 0 >>")
+    return first_number, {num: body.encode("latin-1") for num, body in bodies.items()}
+
+
+def build_pdf(pages, title, author, rotate=0, outline=None):
+    """Assemble a PDF from pages (each a list of drawing operations in stream order).
+
+    Object layout: 1 catalog, 2 page tree, 3 font, 4 info, then a page and its
+    content stream per page, then the outline objects.  Offsets in the xref table
+    are the real byte positions, so strict readers accept the file.
+    """
+    page_numbers = [5 + 2 * index for index in range(len(pages))]
+    objects = {
+        2: ("<< /Type /Pages /Kids [" + " ".join(f"{n} 0 R" for n in page_numbers)
+            + f"] /Count {len(pages)} >>").encode("latin-1"),
+        3: b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+        4: f"<< /Title ({pdf_string(title)}) /Author ({pdf_string(author)}) /Producer (make-corpus.py) >>".encode("latin-1"),
+    }
+    catalog = "<< /Type /Catalog /Pages 2 0 R"
+    rotation = f" /Rotate {rotate}" if rotate else ""
+    for index, ops in enumerate(pages):
+        page_number = page_numbers[index]
+        stream = content_stream(ops)
+        objects[page_number] = (f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {PAGE_WIDTH} {PAGE_HEIGHT}]"
+                                f" /Resources << /Font << /F1 3 0 R >> >> /Contents {page_number + 1} 0 R{rotation} >>"
+                                ).encode("latin-1")
+        objects[page_number + 1] = b"<< /Length %d >>\nstream\n" % len(stream) + stream + b"endstream"
+    if outline:
+        root, outline_bodies = outline_objects(outline, 5 + 2 * len(pages), page_numbers)
+        objects.update(outline_bodies)
+        catalog += f" /Outlines {root} 0 R /PageMode /UseOutlines"
+    objects[1] = (catalog + " >>").encode("latin-1")
+
+    # Serialize in object order, noting each object's byte offset for the xref table.
+    out = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    offsets = {}
+    for number in sorted(objects):
+        offsets[number] = len(out)
+        out += b"%d 0 obj\n" % number + objects[number] + b"\nendobj\n"
+    xref_offset, size = len(out), max(objects) + 1
+    out += b"xref\n0 %d\n0000000000 65535 f \n" % size  # each entry below is exactly 20 bytes
+    for number in range(1, size):
+        out += b"%010d 00000 n \n" % offsets[number]
+    out += b"trailer\n<< /Size %d /Root 1 0 R /Info 4 0 R >>\nstartxref\n%d\n%%%%EOF\n" % (size, xref_offset)
+    return bytes(out)
+
+
+def column_text(rng, paragraph_count=5):
+    """Paragraph strings used as body text for the PDF files."""
+    return [paragraph(rng, 4) for _ in range(paragraph_count)]
+
+
+def two_column_pages(rng, right_first):
+    """One page of two-column text; the right column is drawn first when `right_first`.
+
+    The text flows down the left column and continues at the top of the right one.
+    Returns (pages, expected).
+    """
+    heading = "A Two Column Page"
+    lines = wrap_paragraphs(column_text(rng), 38)
+    half = (len(lines) + 1) // 2
+    assert half <= (TOP_Y - 72) // LEADING, "a column would run off the page"
+    left, right = text_ops(lines[:half], LEFT_X, TOP_Y), text_ops(lines[half:], RIGHT_X, TOP_Y)
+    title_op = [(LEFT_X, 750, 18, heading)]  # the title spans the top of the page
+    ops = title_op + (right + left if right_first else left + right)
+    first_left = next(line for line in lines[:half] if line)
+    first_right = next(line for line in lines[half:] if line)
+    expected = {"title": heading, "columns": 2, "first_line_of_left_column": first_left,
+                "first_line_of_right_column": first_right, "drawn_order": "right column first" if right_first else "left column first"}
+    return [ops], expected
+
+
+def one_column_pages(rng, intro):
+    """Body text in one 80-character column, over as many pages as it needs; `intro` is the first line."""
+    lines = [intro, ""] + wrap_paragraphs(column_text(rng, 8), 80)
+    per_page = (TOP_Y - 72) // LEADING
+    chunks = [lines[i:i + per_page] for i in range(0, len(lines), per_page)]
+    return [text_ops(chunk, LEFT_X, TOP_Y) for chunk in chunks]
+
+
+@generator("pdf-one-column.pdf", "pdf",
+           "A plain single-column PDF over two pages, as a baseline for reading order.")
+def gen_pdf_one_column(rng):
+    pages = one_column_pages(rng, "A Single Column of Text")
+    return (build_pdf(pages, "A Single Column of Text", "Corpus Generator"),
+            {"title": "A Single Column of Text", "author": "Corpus Generator", "pages": len(pages), "columns": 1})
+
+
+@generator("pdf-two-columns.pdf", "pdf",
+           "Two-column PDF whose content stream draws the left column and then the right: stream order is reading order.")
+def gen_pdf_two_columns(rng):
+    pages, expected = two_column_pages(rng, right_first=False)
+    expected.update({"author": "Corpus Generator", "pages": 1})
+    return build_pdf(pages, expected["title"], "Corpus Generator"), expected
+
+
+@generator("pdf-two-columns-drawn-backwards.pdf", "pdf",
+           "Two-column PDF whose content stream draws the right column FIRST, so stream order is not reading order.")
+def gen_pdf_two_columns_backwards(rng):
+    pages, expected = two_column_pages(rng, right_first=True)
+    expected.update({"author": "Corpus Generator", "pages": 1})
+    return build_pdf(pages, expected["title"], "Corpus Generator"), expected
+
+
+def rotated_pdf(rng, degrees):
+    """A one-page document whose page carries /Rotate `degrees`."""
+    heading = f"A Page Rotated {degrees} Degrees"
+    lines = [heading, "", "Read this page as it appears after rotation."] + [""] + wrap_paragraphs(column_text(rng, 3), 80)
+    data = build_pdf([text_ops(lines, LEFT_X, TOP_Y)], heading, "Corpus Generator", rotate=degrees)
+    return data, {"title": heading, "author": "Corpus Generator", "pages": 1, "rotate": degrees, "first_line": heading}
+
+
+@generator("pdf-rotated-90.pdf", "pdf", "One-page PDF whose page dictionary says /Rotate 90.")
+def gen_pdf_rotated_90(rng):
+    return rotated_pdf(rng, 90)
+
+
+@generator("pdf-rotated-270.pdf", "pdf", "One-page PDF whose page dictionary says /Rotate 270.")
+def gen_pdf_rotated_270(rng):
+    return rotated_pdf(rng, 270)
+
+
+@generator("pdf-with-outline.pdf", "pdf",
+           "Three-page PDF with an /Outlines tree (one nested level) naming headings that also appear as body lines, "
+           "for the duplicate-heading heuristic.")
+def gen_pdf_with_outline(rng):
+    # (chapter heading, its section headings); each chapter is one page.
+    chapters = [("Chapter One: The Harbor", []),
+                ("Chapter Two: The Crossing", ["Section 2.1: Departure", "Section 2.2: Arrival"]),
+                ("Chapter Three: The Ledger", [])]
+    pages, nodes = [], []
+    for page_index, (chapter, sections) in enumerate(chapters):
+        # Each heading is drawn as a body line at the height its bookmark points at.
+        ops, y = [(LEFT_X, TOP_Y, 18, chapter)], TOP_Y
+        node = OutlineNode(chapter, page_index, TOP_Y)
+        for line in wrap_paragraphs([paragraph(rng, 3)], 80):
+            y -= LEADING
+            ops.append((LEFT_X, y, 12, line))
+        for section in sections:
+            y -= 2 * LEADING
+            ops.append((LEFT_X, y, 14, section))
+            node.children.append(OutlineNode(section, page_index, y))
+            for line in wrap_paragraphs([paragraph(rng, 3)], 80):
+                y -= LEADING
+                ops.append((LEFT_X, y, 12, line))
+        pages.append(ops)
+        nodes.append(node)
+
+    def flatten(level):
+        """All bookmark titles in outline (pre-)order."""
+        return [t for node in level for t in [node.title] + flatten(node.children)]
+
+    data = build_pdf(pages, "A Book With Bookmarks", "Corpus Generator", outline=nodes)
+    return data, {"title": "A Book With Bookmarks", "author": "Corpus Generator", "pages": 3,
+                  "outline_titles": flatten(nodes), "headings": len(flatten(nodes))}
+
+
+# --------------------------------------------------------------------------
 # Writing the corpus
 # --------------------------------------------------------------------------
 
@@ -1467,9 +1711,138 @@ def check_html(t, name, data, expected):
     t.check("“" in text and "€" in text, f"{name}: lacks the 0x80 to 0x9F characters")
 
 
+RUN_PATTERN = re.compile(rb"BT /F1 (\d+) Tf (\d+) (\d+) Td \((.*)\) Tj ET")  # the generator's own text operator
+
+
+def pdf_xref(t, name, data):
+    """Check the header, startxref, xref table and trailer; return {object number: body bytes} or None."""
+    t.check(data.startswith(b"%PDF-1."), f"{name}: no %PDF header")
+    tail = re.search(rb"startxref\n(\d+)\n%%EOF\n\Z", data)
+    t.check(tail is not None, f"{name}: no startxref and %%EOF at the end")
+    if tail is None:
+        return None
+    position = int(tail.group(1))
+    t.check(data[position:position + 5] == b"xref\n", f"{name}: startxref {position} does not point at 'xref'")
+    header = re.match(rb"xref\n0 (\d+)\n", data[position:])
+    if header is None:
+        t.check(False, f"{name}: malformed xref header")
+        return None
+    size = int(header.group(1))
+    cursor = position + header.end()
+    entries = []
+    for number in range(size):
+        raw = data[cursor:cursor + 20]
+        t.check(re.fullmatch(rb"\d{10} \d{5} [nf] \n", raw) is not None, f"{name}: xref entry {number} is not 20 well-formed bytes")
+        entries.append(raw)
+        cursor += 20
+    t.check(entries[0].endswith(b"65535 f \n"), f"{name}: xref entry 0 is not the free-list head")
+    trailer = re.match(rb"trailer\n<<(.*?)>>\nstartxref\n", data[cursor:], re.S)
+    t.check(trailer is not None, f"{name}: no trailer right after the xref table")
+    if trailer is None:
+        return None
+    t.check(re.search(rb"/Size (\d+)", trailer.group(1)).group(1) == b"%d" % size, f"{name}: trailer /Size is not {size}")
+    bodies = {}
+    for number in range(1, size):
+        offset = int(entries[number][:10])
+        t.check(data[offset:].startswith(b"%d 0 obj\n" % number), f"{name}: xref offset {offset} is not object {number}")
+        end = data.find(b"endobj", offset)
+        bodies[number] = data[offset:end]
+    found = len(re.findall(rb"(?m)^\d+ 0 obj$", data))
+    t.check(found == size - 1, f"{name}: {found} objects in the file, {size - 1} in the table")
+    root = re.search(rb"/Root (\d+) 0 R", trailer.group(1))
+    t.check(root is not None and b"/Type /Catalog" in bodies.get(int(root.group(1)), b""), f"{name}: /Root is not a catalog")
+    for number, body in bodies.items():
+        for target in re.findall(rb"(\d+) 0 R", body):
+            t.check(int(target) in bodies, f"{name}: object {number} refers to missing object {int(target)}")
+    return bodies
+
+
+def pdf_stream_runs(t, name, body):
+    """Check a content stream object's /Length and return its text runs as (x, y, size, text)."""
+    parts = re.match(rb"\d+ 0 obj\n<< /Length (\d+) >>\nstream\n", body)
+    if parts is None:
+        return None
+    length = int(parts.group(1))
+    stream = body[parts.end():parts.end() + length]
+    t.check(body[parts.end() + length:].startswith(b"endstream"), f"{name}: stream /Length {length} is wrong")
+    return [(int(x), int(y), int(size), text.decode("latin-1")) for size, x, y, text in RUN_PATTERN.findall(stream)]
+
+
+def check_pdf(t, name, data, expected):
+    """Structural PDF checks: xref offsets, trailer, stream lengths, rotation, column order and outline."""
+    bodies = pdf_xref(t, name, data)
+    if bodies is None:
+        return
+    base = name.split("/")[-1]
+    runs_by_object = {n: pdf_stream_runs(t, name, b) for n, b in bodies.items() if b"stream\n" in b}
+    pages = [n for n, b in bodies.items() if b"/Type /Page " in b]
+    t.check(len(pages) == expected["pages"], f"{name}: {len(pages)} pages, manifest says {expected['pages']}")
+    info = next((b for b in bodies.values() if b"/Title (" in b and b"/Author (" in b), b"")
+    t.check(f"/Title ({expected['title']})".encode("latin-1") in info, f"{name}: info title differs from the manifest")
+
+    rotated = [n for n in pages if b"/Rotate" in bodies[n]]
+    if "rotate" in expected:
+        t.check(len(rotated) == len(pages) and all(b"/Rotate %d " % expected["rotate"] in bodies[n] for n in rotated),
+                f"{name}: pages do not all carry /Rotate {expected['rotate']}")
+    else:
+        t.check(not rotated, f"{name}: unexpected /Rotate")
+
+    if "drawn_order" in expected:
+        runs = [r for r in next(iter(runs_by_object.values())) if r[3] != expected["title"]]
+        stream_first_x = runs[0][0]
+        want_x = RIGHT_X if expected["drawn_order"] == "right column first" else LEFT_X
+        t.check(stream_first_x == want_x, f"{name}: first body run is at x={stream_first_x}, expected {want_x}")
+        left = sorted((r for r in runs if r[0] == LEFT_X), key=lambda r: -r[1])
+        right = sorted((r for r in runs if r[0] == RIGHT_X), key=lambda r: -r[1])
+        t.check(len(left) + len(right) == len(runs) and bool(left) and bool(right), f"{name}: runs are not in two columns")
+        t.check(left[0][3] == expected["first_line_of_left_column"], f"{name}: left column starts with the wrong line")
+        t.check(right[0][3] == expected["first_line_of_right_column"], f"{name}: right column starts with the wrong line")
+
+    if "outline_titles" in expected:
+        check_pdf_outline(t, name, bodies, runs_by_object, expected)
+
+
+def check_pdf_outline(t, name, bodies, runs_by_object, expected):
+    """Walk the outline tree: links are consistent and each title is also drawn as a body line at its destination."""
+    root_ref = re.search(rb"/Outlines (\d+) 0 R", next(b for b in bodies.values() if b"/Type /Catalog" in b))
+    t.check(root_ref is not None, f"{name}: catalog has no /Outlines")
+    if root_ref is None:
+        return
+    root = int(root_ref.group(1))
+    drawn = {(text, y) for runs in runs_by_object.values() for _, y, _, text in runs}
+    titles = []
+
+    def walk(first, parent):
+        """Follow /First and /Next from `first`; return the number of items seen."""
+        total, previous, current = 0, None, first
+        while current is not None:
+            body = bodies[current]
+            titles.append(re.search(rb"/Title \((.*?)\)", body).group(1).decode("latin-1"))
+            t.check(re.search(rb"/Parent (\d+) 0 R", body).group(1) == b"%d" % parent, f"{name}: outline item {current} has the wrong /Parent")
+            prev = re.search(rb"/Prev (\d+) 0 R", body)
+            t.check((prev is None and previous is None) or (prev is not None and int(prev.group(1)) == previous),
+                    f"{name}: outline item {current} has the wrong /Prev")
+            dest = re.search(rb"/Dest \[(\d+) 0 R /XYZ (\d+) (\d+) 0\]", body)
+            t.check(dest is not None and (titles[-1], int(dest.group(3))) in drawn,
+                    f"{name}: outline title {titles[-1]!r} is not drawn at its destination")
+            child = re.search(rb"/First (\d+) 0 R", body)
+            below = walk(int(child.group(1)), current) if child else 0
+            if child:
+                t.check(re.search(rb"/Count (\d+)", body).group(1) == b"%d" % below, f"{name}: outline item {current} has a wrong /Count")
+            total += 1 + below
+            nxt = re.search(rb"/Next (\d+) 0 R", body)
+            previous, current = current, int(nxt.group(1)) if nxt else None
+        return total
+
+    first = re.search(rb"/First (\d+) 0 R", bodies[root])
+    total = walk(int(first.group(1)), root) if first else 0
+    t.check(re.search(rb"/Count (\d+)", bodies[root]).group(1) == b"%d" % total, f"{name}: outline root has a wrong /Count")
+    t.check(titles == expected["outline_titles"], f"{name}: outline titles differ from the manifest")
+
+
 # Which structural checker handles which file extension.
 CHECKERS = {".epub": check_epub, ".docx": check_docx, ".md": check_markdown,
-            ".txt": check_text, ".html": check_html}
+            ".txt": check_text, ".html": check_html, ".pdf": check_pdf}
 
 
 def sha_map(folder):
