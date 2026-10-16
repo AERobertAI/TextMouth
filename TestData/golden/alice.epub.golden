@@ -1,0 +1,32 @@
+# TextMouth document golden, format 1
+file: alice.epub
+format: epub
+title: Alice's Adventures in Wonderland
+author: Lewis Carroll
+chapters: 15
+words: 29568
+text length: 163435
+text checksum: 6f253b9adea6c9dc
+first 300: \nThe Project Gutenberg eBook of Alice's Adventures in Wonderland\n\nThis eBook is for the use of anyone anywhere in the United States and most other parts of the world at no cost and with almost no restrictions whatsoever. You may copy it, give it away or re-use it under the terms of the Project Guten
+last 300: the main PG search facility: www.gutenberg.org.\n\nThis website includes information about Project Gutenberg, including how to make donations to the Project Gutenberg Literary Archive Foundation, how to help produce our new eBooks, and how to subscribe to our email newsletter to hear about new eBooks.
+heading: 1 | "Cover"
+heading: 2 | The Project Gutenberg eBook of Alice's Adventures in Wonderland
+heading: 1 | Alice’s Adventures in Wonderland
+heading: 2 | by Lewis Carroll
+heading: 4 | THE MILLENNIUM FULCRUM EDITION 3.0
+heading: 2 | Contents
+heading: 2 | CHAPTER I. Down the Rabbit-Hole
+heading: 2 | CHAPTER II. The Pool of Tears
+heading: 2 | CHAPTER III. A Caucus-Race and a Long Tale
+heading: 2 | CHAPTER IV. The Rabbit Sends in a Little Bill
+heading: 2 | CHAPTER V. Advice from a Caterpillar
+heading: 2 | CHAPTER VI. Pig and Pepper
+heading: 2 | CHAPTER VII. A Mad Tea-Party
+heading: 2 | CHAPTER VIII. The Queen’s Croquet-Ground
+heading: 2 | CHAPTER IX. The Mock Turtle’s Story
+heading: 2 | CHAPTER X. The Lobster Quadrille
+heading: 2 | CHAPTER XI. Who Stole the Tarts?
+heading: 2 | CHAPTER XII. Alice’s Evidence
+heading: 5 | THE END
+heading: 1 | Alice’s Adventures in Wonderland | Project Gutenberg
+heading: 2 | THE FULL PROJECT GUTENBERG™ LICENSE

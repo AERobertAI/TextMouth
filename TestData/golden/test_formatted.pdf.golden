@@ -1,0 +1,20 @@
+# TextMouth document golden, format 1
+file: test_formatted.pdf
+macOS: 26.3
+format: pdf
+title: The Seasonal Almanac
+author: Dorothy Whitfield
+chapters: 1
+words: 277
+text length: 1750
+text checksum: 9592874f35513117
+first 300: The Seasonal Almanac\n\nby Dorothy Whitfield\n\nChapter 1: Spring\n\nSpring arrives not as a single event but as a sequence of small awakenings. The soil loosens before the first shoots appear. Birdsong returns before the leaves do. The careful observer notices these precursors and prepares accordingly. T
+last 300: nd planting window opens for cool-weather crops that will carry through early winter.\n\nPreserving the Harvest\n\nCanning, drying, and root-cellaring each suit different produce. Tomatoes and fruits preserve well in jars. Herbs dry readily in bundled bunches hung in a warm, dry space with good airflow.
+heading: 1 | The Seasonal Almanac
+heading: 1 | Chapter 1: Spring
+heading: 2 | Early Planting
+heading: 3 | Soil Preparation
+heading: 1 | Chapter 2: Summer
+heading: 2 | Heat Management
+heading: 1 | Chapter 3: Autumn
+heading: 2 | Preserving the Harvest

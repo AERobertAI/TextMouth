@@ -1,0 +1,18 @@
+# TextMouth document golden, format 1
+file: sample.md
+format: markdown
+title: sample
+author: Unknown
+chapters: 1
+words: 201
+text length: 1225
+text checksum: 2171546cdb2a5503
+first 300: The Art of Testing\n\nThis is a sample markdown document for testing TextMouth’s markdown parser.\n\nChapter One: The Beginning\n\nOnce upon a time, in a land of automated tests, there lived a parser that needed to prove itself worthy. It had to handle headings, paragraphs, and all manner of markdown form
+last 300: ecial Characters\n\nThe parser must handle special characters like & and  and “quotes” and ‘apostrophes’.\n\nChapter Three: The End\n\nAnd so the parser proved itself, handling every heading level and every paragraph with ease. The end.\n\nEpilogue\n\nA brief afterword to ensure the final heading is captured.
+heading: 1 | The Art of Testing
+heading: 2 | Chapter One: The Beginning
+heading: 3 | Section 1.1: Lists
+heading: 2 | Chapter Two: The Middle
+heading: 3 | Section 2.1: Special Characters
+heading: 2 | Chapter Three: The End
+heading: 3 | Epilogue
