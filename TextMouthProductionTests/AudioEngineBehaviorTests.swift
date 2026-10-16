@@ -480,6 +480,154 @@ final class AudioEngineBehaviorTests: XCTestCase {
         XCTAssertEqual(lines.filter { $0.contains("SPEECH_PLAYER_EXCEPTION:") }.count, 1, "\(lines)")
     }
 
+    /// The player node's commands for a hosted test: the node's own calls,
+    /// except that `raising` raises an Objective-C exception, as AVFAudio
+    /// may when the audio output has stopped cycling.
+    private func nodeCommands(
+        raisingOn raising: PlayerNodeCommand
+    ) -> (PlayerNodeCommand, AVAudioPlayerNode) -> Void {
+        { command, node in
+            if command == raising {
+                NSException(name: NSExceptionName("AVAudioEngineTestRaise"), reason: "player did not see an IO cycle", userInfo: nil).raise()
+                return
+            }
+            switch command {
+            case .stop: node.stop()
+            case .reset: node.reset()
+            case .pause: node.pause()
+            }
+        }
+    }
+
+    /// The `SPEECH_PLAYER_EXCEPTION` lines among `lines`.
+    private func playerExceptionLines(_ lines: [String]) -> [String] {
+        lines.filter { $0.contains("SPEECH_PLAYER_EXCEPTION: AVAudioEngineTestRaise: player did not see an IO cycle") }
+    }
+
+    /// A player node that raises as it pauses neither ends the app nor
+    /// leaves the engine showing Playing: the engine pauses as for a node
+    /// that does not raise, one `SPEECH_PLAYER_EXCEPTION` line is logged,
+    /// and the engine resumes once the node does not raise.
+    func testAPlayerThatRaisesOnPauseLeavesTheEnginePaused() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let engine = AudioEngineService()
+        defer {
+            engine._playerCommandForTesting(nil)
+            engine.stop()
+        }
+        engine.setVolume(0)
+        engine._installRenderedAudioForTesting(lasting: 1)
+        engine.play()
+        XCTAssertTrue(engine.isPlaying)
+        engine._playerCommandForTesting(nodeCommands(raisingOn: .pause))
+
+        let lines = logLines(in: .speechTransitions) { engine.pause() }
+
+        XCTAssertTrue(engine.isPaused, "the engine did not pause")
+        XCTAssertEqual(playerExceptionLines(lines).count, 1, "\(lines)")
+
+        engine._playerCommandForTesting(nil)
+        XCTAssertTrue(engine.resume())
+        XCTAssertFalse(engine.isPaused)
+        XCTAssertTrue(engine.isPlaying)
+    }
+
+    /// A player node that raises as it stops neither ends the app nor
+    /// leaves the engine showing Playing: the play ends, nothing stays
+    /// scheduled, and one line is logged.
+    func testAPlayerThatRaisesOnStopEndsTheEnginesPlay() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let engine = AudioEngineService()
+        defer {
+            engine._playerCommandForTesting(nil)
+            engine.stop()
+        }
+        engine.setVolume(0)
+        engine._installRenderedAudioForTesting(lasting: 1)
+        engine.play()
+        XCTAssertTrue(engine.isPlaying)
+        engine._playerCommandForTesting(nodeCommands(raisingOn: .stop))
+
+        let lines = logLines(in: .speechTransitions) { engine.stop() }
+
+        XCTAssertFalse(engine.isPlaying)
+        XCTAssertFalse(engine.isPaused)
+        XCTAssertEqual(engine.scheduledSegmentAudioByteCount, 0, "the play was not ended before the node stopped")
+        XCTAssertEqual(playerExceptionLines(lines).count, 1, "\(lines)")
+    }
+
+    /// A player node that raises as it resets, which a new play does before
+    /// it feeds the node, neither ends the app nor stops the play being
+    /// made: one line is logged, and the engine plays again once the node
+    /// does not raise.
+    func testAPlayerThatRaisesOnResetDoesNotEndTheApp() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let engine = AudioEngineService()
+        defer {
+            engine._playerCommandForTesting(nil)
+            engine.stop()
+        }
+        engine.setVolume(0)
+        engine._installRenderedAudioForTesting(lasting: 1)
+        engine._playerCommandForTesting(nodeCommands(raisingOn: .reset))
+
+        let lines = logLines(in: .speechTransitions) { engine.play() }
+
+        XCTAssertEqual(playerExceptionLines(lines).count, 1, "\(lines)")
+
+        engine._playerCommandForTesting(nil)
+        engine.play()
+        XCTAssertTrue(engine.isPlaying)
+    }
+
+    /// An engine that cannot start (`_refusesToStartForTesting`), as when
+    /// macOS has no output it can use, plays nothing and says so in the
+    /// log, naming the play, not in the console.
+    func testAnEngineThatCannotStartForAPlayLogsIt() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let engine = AudioEngineService()
+        defer { engine.stop() }
+        engine.setVolume(0)
+        engine._installRenderedAudioForTesting(lasting: 1)
+        engine._refusesToStartForTesting = true
+
+        let lines = logLines(in: .speechTransitions) { engine.play() }
+
+        XCTAssertFalse(engine.isPlaying)
+        XCTAssertEqual(
+            lines.filter { $0.contains("AUDIO_ENGINE_START_FAILED: could not start for a play: ") }.count,
+            1,
+            "\(lines)"
+        )
+    }
+
+    /// An engine that macOS stopped under a paused play and that cannot
+    /// start again leaves the play paused, `resume()` says false, and the
+    /// log names the resume.
+    func testAnEngineThatCannotStartForAResumeLogsIt() throws {
+        try TextMouthPaths.ensureDirectoryStructure()
+        let engine = AudioEngineService()
+        defer { engine.stop() }
+        engine.setVolume(0)
+        engine._installRenderedAudioForTesting(lasting: 1)
+        engine.play()
+        engine.pause()
+        XCTAssertTrue(engine.isPaused)
+        engine._stopEngineOnlyForTesting()
+        engine._refusesToStartForTesting = true
+
+        var resumed = true
+        let lines = logLines(in: .speechTransitions) { resumed = engine.resume() }
+
+        XCTAssertFalse(resumed)
+        XCTAssertTrue(engine.isPaused, "the engine forgot it was paused")
+        XCTAssertEqual(
+            lines.filter { $0.contains("AUDIO_ENGINE_START_FAILED: could not start for a resume: ") }.count,
+            1,
+            "\(lines)"
+        )
+    }
+
     /// A report from a segment that a newer play replaced ends nothing, and
     /// says so in one playback trace line naming both plays.
     func testReportFromAReplacedPlayIsTracedAndEndsNothing() throws {
