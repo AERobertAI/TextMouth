@@ -195,11 +195,7 @@ struct ReadingList: Codable, Equatable, Sendable {
     /// `isEligible` accepts; nil when the list does not hold `id`, or holds
     /// no such book that way.
     func neighbor(of id: UUID, _ direction: Direction, where isEligible: (UUID) -> Bool) -> UUID? {
-        guard let position = bookIDs.firstIndex(of: id) else { return nil }
-        let beyond: [UUID] = direction == .down
-            ? Array(bookIDs[(position + 1)...])
-            : bookIDs[..<position].reversed()
-        return beyond.first(where: isEligible)
+        ListNeighbors.neighbor(of: id, direction, in: bookIDs, where: isEligible)
     }
 
     // MARK: Coding
