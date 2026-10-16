@@ -135,8 +135,9 @@ final class ListeningOptionsTests: XCTestCase {
 
         let data = try LibraryIndexSandbox.encoded(library)
         let rows = try Self.folderRows(in: data)
-        XCTAssertNotNil(rows[0]["listeningOptions"])
-        XCTAssertNil(rows[1]["listeningOptions"], "a folder with none writes no key")
+        XCTAssertEqual(rows.count, 2, "the index lost a folder")
+        XCTAssertNotNil(rows.first?["listeningOptions"])
+        XCTAssertNil(rows.last?["listeningOptions"], "a folder with none writes no key")
         let loaded = try Self.decodeIndex(data)
         XCTAssertEqual(loaded.folders.map(\.listeningOptions), [folder.listeningOptions, nil])
 
@@ -147,10 +148,12 @@ final class ListeningOptionsTests: XCTestCase {
         XCTAssertEqual(try Self.decodeIndex(older).folders.map(\.listeningOptions), [nil, nil])
 
         // Damaged options read as standard and cost the library nothing.
-        let damaged = try Self.editedIndex(data) { rows in rows[0]["listeningOptions"] = 5 }
+        let damaged = try Self.editedIndex(data) { rows in
+            if let first = rows.indices.first { rows[first]["listeningOptions"] = 5 }
+        }
         let survivor = try Self.decodeIndex(damaged)
         XCTAssertEqual(survivor.folders.count, 2)
-        XCTAssertEqual(survivor.folders[0].listeningOptions ?? .standard, .standard)
+        XCTAssertEqual(survivor.folders.first?.listeningOptions ?? .standard, .standard)
     }
 
     /// Renaming or moving a folder changes its name and parent in place, so
