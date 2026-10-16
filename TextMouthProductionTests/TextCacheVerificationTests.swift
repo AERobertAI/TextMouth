@@ -124,7 +124,7 @@ final class TextCacheVerificationTests: XCTestCase {
         XCTAssertEqual(staleReports(for: book), ["CACHE_STALE: \(book.title): content.md changed"])
         XCTAssertFalse(result.usedPersistedIndex)
         XCTAssertEqual(result.cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
-        XCTAssertTrue(result.content.chapters[0].text.contains("One two three."))
+        XCTAssertTrue(try XCTUnwrap(result.content.chapters[safe: 0], "the book has no first chapter").text.contains("One two three."))
         XCTAssertTrue(try MarkdownCacheService.loadFromCache(for: book).allText.contains("One two three."))
         try assertFingerprint(try XCTUnwrap(result.index.textCacheFingerprint), describesFilesOf: book)
         try assertNextOpenReadsNothing(after: result, for: book)
@@ -205,7 +205,7 @@ final class TextCacheVerificationTests: XCTestCase {
 
         XCTAssertEqual(counter.fileCount, 1)
         XCTAssertEqual(staleReports(for: book), ["CACHE_STALE: \(book.title): source changed"])
-        XCTAssertTrue(result.content.chapters[1].text.contains("Five four."))
+        XCTAssertTrue(try XCTUnwrap(result.content.chapters[safe: 1], "the book has no second chapter").text.contains("Five four."))
     }
 
     /// A missing source is no reason to distrust the cache, which is then
@@ -233,7 +233,7 @@ final class TextCacheVerificationTests: XCTestCase {
 
         let result = try BookContentAnalysisService.load(book: book)
 
-        XCTAssertTrue(result.content.chapters[1].text.hasSuffix("Nine ten."))
+        XCTAssertTrue(try XCTUnwrap(result.content.chapters[safe: 1], "the book has no second chapter").text.hasSuffix("Nine ten."))
         XCTAssertEqual(result.index.textCacheFingerprint, recorded)
         XCTAssertFalse(result.usedPersistedIndex, "the edited text needs its own index")
         XCTAssertNil(result.index.alignmentFailure(with: result.content.chapters))
@@ -254,6 +254,8 @@ final class TextCacheVerificationTests: XCTestCase {
     func testIndexWhoseHeadingsDisagreeIsReindexedNamingTheHeading() throws {
         let book = try makeCachedBook()
         var relabeled = try savedIndex(of: book)
+        // The two writes below are by position, so stop here if either is missing.
+        _ = try XCTUnwrap(relabeled.chapters[safe: 1]?.headings[safe: 1], "the saved index has no second heading in its second chapter")
         relabeled.chapters[1].headings[1].text = "Sooner"
         relabeled.chapters[1].headings[1].id = "relabeled"
         try book.saveBookInfoThrowing(contentIndex: relabeled)
