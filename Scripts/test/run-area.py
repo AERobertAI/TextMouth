@@ -21,8 +21,23 @@ file. Afterwards it prints one fact per line, in plain words:
 
 Options:
   --list              with no NAME: one line per area (name, class count,
-                      description); with NAMEs: their classes, one per line
+                      description); with NAMEs: their classes, one per line;
+                      with --changed: only the --changed report, no run
   --classes A,B       more classes, comma separated (repeatable)
+  --changed           pick the classes whose file mentions a type declared in a file
+                      changed since the merge-base of --base and HEAD (staged,
+                      unstaged, committed and untracked, under TextMouth/,
+                      TextMouthProductionTests/ and TestData/); a class declared in a
+                      changed test file always comes first. Prints "score  Class"
+                      lines (the number of changed type names the class's file
+                      mentions), a count line with the areas, and then RUNS them
+                      with any NAMEs given, like any NAMEs. It is a heuristic: a test
+                      that mentions no changed type is missed, so run the area or
+                      "all" before a merge. A name that over 150 test files mention
+                      is dropped from the scoring (the report says how many).
+  --base REF          the comparison point of --changed (default main)
+  --explain           with --changed: the matching type names under each class
+  --limit N           with --changed: keep the first N classes
   --dry-run           print the command (one shell-quoted line) and exit 0
   --unassigned        print the test classes no area lists, then a count line
   --selftest          check the script against canned logs and areas.conf; no build
@@ -49,12 +64,14 @@ xcodebuild, areas.conf unreadable), 130 interrupted with Ctrl-C (the log is kept
 
 import argparse
 import os
+import re
 import shutil
 import signal
 import subprocess
 import sys
 import tempfile
 import time
+from collections import Counter
 from dataclasses import replace
 from pathlib import Path
 
@@ -62,7 +79,8 @@ from pathlib import Path
 # (git does not ignore it), so write no bytecode, as trap-lint.py does.
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import testkit  # noqa: E402  (the path above must be set first)
+import difflint  # noqa: E402  (the path above must be set first)
+import testkit  # noqa: E402
 
 # Where macOS keeps the tool that unregisters an app from Launch Services.
 LSREGISTER = ("/System/Library/Frameworks/CoreServices.framework/Frameworks/"
@@ -94,6 +112,10 @@ def parse_args(argv):
     parser.add_argument("--jobs", type=int, default=4)
     parser.add_argument("--no-slot", action="store_true")
     parser.add_argument("--clean", action="store_true")
+    parser.add_argument("--changed", action="store_true")
+    parser.add_argument("--base", default=DEFAULT_BASE)
+    parser.add_argument("--explain", action="store_true")
+    parser.add_argument("--limit", type=int)
     return parser.parse_args(argv)
 
 
@@ -210,6 +232,223 @@ def print_lines(lines):
     for line in lines:
         print(line)
     sys.stdout.flush()
+
+
+# ---------------------------------------------------------------------------
+# --changed: which hosted tests mention the code a branch changed?
+# ---------------------------------------------------------------------------
+
+# The folders whose changes count, and the default comparison point.
+CHANGED_APP = "TextMouth/"
+CHANGED_TESTS = "TextMouthProductionTests/"
+CHANGED_DATA = "TestData/"
+DEFAULT_BASE = "main"
+
+# A class declared in a changed test file always outranks any mention score.
+CHANGED_TEST_SCORE = 1000
+# A name that more test files than this mention says nothing about any one of
+# them, so it is dropped from the scoring.
+COMMON_NAME_LIMIT = 150
+# --explain shows at most this many matching names under a class.
+MAX_EXPLAINED = 5
+
+# Types an `extension` may add to without that saying anything about the app's
+# own code: the standard library, Foundation, AppKit, SwiftUI, AVFoundation, the
+# JSON coders, CoreGraphics, and the test framework's base class.
+IGNORED_EXTENSIONS = frozenset("""
+    String Substring Character Array ArraySlice Dictionary Set Optional Result Range ClosedRange
+    Int Int64 UInt UInt32 UInt64 Double Float CGFloat Bool Collection Sequence RandomAccessCollection
+    BidirectionalCollection MutableCollection RangeReplaceableCollection Comparable Equatable
+    Hashable Identifiable Codable Encodable Decodable Error LocalizedError Task
+    Data URL Date Calendar TimeInterval Notification NotificationCenter UUID Locale Bundle
+    FileManager UserDefaults ProcessInfo Process Pipe Thread DispatchQueue OperationQueue
+    NSObject NSString NSAttributedString NSRange NSURL NSNumber NSError NSRegularExpression
+    NSView NSWindow NSApplication NSTextView NSTableView NSControl NSMenu NSMenuItem NSImage NSColor
+    NSFont NSSound NSPasteboard NSAlert NSOpenPanel NSSavePanel NSWorkspace NSSplitView NSToolbar
+    CGRect CGPoint CGSize NSRect NSPoint NSSize
+    View Scene Text Button Image Color Font Binding State FocusedValues FocusedValue EnvironmentValues
+    Commands Toggle Picker Slider List Form Section Menu Label Alert Animation Edge Axis
+    AVAudioPCMBuffer AVAudioFile AVAudioFormat AVAudioEngine AVAudioTime AVAudioPlayerNode
+    AVAsset AVURLAsset AVPlayer AVPlayerItem AVSpeechSynthesizer AVSpeechSynthesisVoice
+    AVSpeechUtterance AVMetadataItem CMTime
+    JSONDecoder JSONEncoder PropertyListDecoder PropertyListEncoder XCTestCase XCTest
+    Archive
+""".split())
+
+# A Swift keyword that can follow `class` without declaring a type
+# (`class func`, `class var`, ...): such a line names no type.
+_NOT_A_TYPE_NAME = frozenset("func var let init subscript override final static private "
+                             "fileprivate internal public open".split())
+# A type declaration at column 0 or nested one level (4 spaces), after any
+# attributes and modifiers: `@MainActor final class Foo: Bar {`, `extension A.B {`.
+_TYPE_DECLARATION = re.compile(
+    r"^(?: {4})?(?:@[\w.]+(?:\([^)]*\))?\s+)*"
+    r"(?:(?:private|fileprivate|internal|public|open|final|indirect|nonisolated)\s+)*"
+    r"(class|struct|enum|protocol|actor|extension)\s+([A-Za-z_][\w.]*)")
+_WORD = re.compile(r"\w+")
+
+
+def declared_type_names(source: str, file_name: str):
+    """The names a Swift file offers for matching tests against, sorted.
+
+    Top-level and one-level-nested `class`, `struct`, `enum`, `protocol` and
+    `actor` declarations, and the type an `extension` extends (a dotted
+    `A.B` gives both `A` and `B`), read from the source with comments and
+    strings masked. An extension of a standard or system type (see
+    IGNORED_EXTENSIONS) says nothing and is left out. The file's base name
+    (`ReaderViewModel+WhereAmI.swift`, split at `+`) is added as well.
+    """
+    names = set()
+    for line in difflint.mask_swift(source).code:
+        match = _TYPE_DECLARATION.match(line)
+        if not match:
+            continue
+        keyword, dotted = match.groups()
+        parts = dotted.split(".")
+        if parts[0] in _NOT_A_TYPE_NAME or (keyword == "extension" and parts[0] in IGNORED_EXTENSIONS):
+            continue
+        names.update((parts[0], parts[-1]))
+    stem = file_name.rsplit("/", 1)[-1].rsplit(".", 1)[0]
+    names.update(part for part in stem.split("+")
+                 if _WORD.fullmatch(part) and part not in IGNORED_EXTENSIONS)
+    return sorted(names)
+
+
+def file_words(text: str):
+    """How often each identifier-like word occurs in a text (what `\\bName\\b` can match)."""
+    return Counter(_WORD.findall(text))
+
+
+def score_test_classes(changed_names, changed_test_paths, classes, words_by_path):
+    """Scores each runnable hosted class by how many changed type names its file mentions.
+
+    changed_names:      set of declared type names of all changed app files.
+    changed_test_paths: paths (relative to the root) of changed test files.
+    classes:            {name: HostedClass}.
+    words_by_path:      {test file path: Counter of its words}, for every test file.
+    Returns (ranked, dropped, matches): ranked is [(score, class name)] with
+    the highest score first. Equal scores are told apart, since one file often
+    holds several classes: a class whose own name contains a matched type name
+    comes first (`SleepTimerServiceTests` for `SleepTimerService`), then the
+    file with more mentions, then the name. Dropped is the sorted list of names
+    left out because more than COMMON_NAME_LIMIT test files mention them;
+    matches maps a class name to the sorted names it matched.
+    """
+    mention_counts = {name: sum(name in words for words in words_by_path.values())
+                      for name in changed_names}
+    dropped = sorted(name for name, count in mention_counts.items() if count > COMMON_NAME_LIMIT)
+    useful = set(changed_names) - set(dropped)
+    keyed, matches = [], {}
+    for name, hosted in classes.items():
+        if not hosted.runnable:
+            continue
+        words = words_by_path.get(hosted.path, Counter())
+        found = sorted(useful.intersection(words))
+        matches[name] = found
+        if hosted.path in changed_test_paths:
+            keyed.append((CHANGED_TEST_SCORE, 0, 0, name))
+        elif found:
+            named = any(match in name for match in found)
+            keyed.append((len(found), int(named), sum(words[match] for match in found), name))
+    keyed.sort(key=lambda key: (-key[0], -key[1], -key[2], key[3]))
+    return [(key[0], key[3]) for key in keyed], dropped, matches
+
+
+def changed_files(base: str, root: Path):
+    """The files changed since the merge-base of `base` and HEAD, as {path: text or None}.
+
+    Tracked changes (staged, unstaged and committed) and untracked files under
+    TextMouth/, TextMouthProductionTests/ and TestData/. A deleted file is read
+    from the merge-base, so the types it declared still count; a file that
+    cannot be read as text maps to None. Raises difflint.GitError.
+    """
+    scopes = ["--", CHANGED_APP, CHANGED_TESTS, CHANGED_DATA]
+    merge_base = difflint.run_git(["merge-base", base, "HEAD"], cwd=str(root)).strip()
+    tracked = difflint.run_git(["diff", "--name-only", "--no-color", merge_base] + scopes, cwd=str(root))
+    untracked = difflint.run_git(["ls-files", "--others", "--exclude-standard"] + scopes, cwd=str(root))
+    paths = sorted(set(filter(None, tracked.split("\n"))) | set(filter(None, untracked.split("\n"))))
+    result = {}
+    for path in paths:
+        try:
+            result[path] = (root / path).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            # Gone from the working tree: take the merge-base's copy if it had one.
+            try:
+                result[path] = difflint.run_git(["show", f"{merge_base}:{path}"], cwd=str(root))
+            except difflint.GitError:
+                result[path] = None
+    return result
+
+
+def names_of_changes(changes):
+    """Splits {path: text} into (the names to look for, the changed test file paths).
+
+    An app file contributes its declared type names. A TestData file
+    contributes its base name (`Sample.epub` gives `Sample`), which a test that
+    loads it usually spells out.
+    """
+    names, test_paths = set(), set()
+    for path, text in changes.items():
+        if path.startswith(CHANGED_TESTS) and path.endswith(".swift"):
+            test_paths.add(path)
+        elif path.startswith(CHANGED_APP) and path.endswith(".swift") and text is not None:
+            names.update(declared_type_names(text, path))
+        elif path.startswith(CHANGED_DATA):
+            stem = path.rsplit("/", 1)[-1].split(".", 1)[0]
+            if _WORD.fullmatch(stem):
+                names.add(stem)
+    return names, test_paths
+
+
+def test_file_words(root: Path):
+    """{path: words} for every Swift file of the hosted test folder."""
+    return {str(source.relative_to(root)): file_words(source.read_text(encoding="utf-8", errors="replace"))
+            for source in sorted((root / testkit.TESTS_FOLDER).glob("*.swift"))}
+
+
+def changed_report(ranked, dropped, matches, areas, explain=False, limit=None):
+    """The lines --changed prints, and the class names it selected.
+
+    `ranked` is from score_test_classes. With `limit`, only the first N classes
+    are kept. Areas come from areas.conf; a class in no area counts as
+    `unassigned`.
+    """
+    if limit is not None:
+        ranked = ranked[:limit]
+    if not ranked:
+        return ["no hosted test class mentions the changed code"], []
+    areas_of = {}
+    for area in areas:
+        for cls in area.classes:
+            areas_of.setdefault(cls, []).append(area.name)
+    lines, seen_areas = [], []
+    for score, name in ranked:
+        lines.append(f"{score}  {name}")
+        if explain:
+            lines.append("    declared in a changed test file" if score == CHANGED_TEST_SCORE
+                         else "    mentions " + ", ".join(matches[name][:MAX_EXPLAINED]))
+        for area in areas_of.get(name, ["unassigned"]):
+            if area not in seen_areas:
+                seen_areas.append(area)
+    count = len(ranked)
+    lines.append(f"{count} class{'es' if count != 1 else ''}; areas: {', '.join(seen_areas)}")
+    if dropped:
+        lines.append(f"dropped {len(dropped)} name{'s' if len(dropped) != 1 else ''} "
+                     f"mentioned by more than {COMMON_NAME_LIMIT} test files")
+    lines.append('Heuristic: a test that mentions no changed type is not listed; '
+                 'run the area or "all" before a merge.')
+    return lines, [name for _score, name in ranked]
+
+
+def select_changed(root: Path, base, areas, classes, explain=False, limit=None):
+    """Runs the whole --changed analysis on the repository: (report lines, class names)."""
+    changes = changed_files(base, root)
+    if not changes:
+        return [f"no changed files under {CHANGED_APP}, {CHANGED_TESTS} or {CHANGED_DATA} "
+                f"since {base}", "no hosted test class mentions the changed code"], []
+    names, test_paths = names_of_changes(changes)
+    ranked, dropped, matches = score_test_classes(names, test_paths, classes, test_file_words(root))
+    return changed_report(ranked, dropped, matches, areas, explain, limit)
 
 
 # ---------------------------------------------------------------------------
@@ -384,6 +623,132 @@ def selftest() -> int:
         check("--clean treats a missing folder as fine", missing == 0)
         check("--clean deletes a build folder", removed == 0 and not build.exists())
 
+    # --changed: type names are read from code, not from comments or strings.
+    canned = '''\
+// class InComment {}
+/* struct InBlock {} */
+import Foundation
+
+let text = "enum InString {"
+
+@MainActor final class Alpha: Base {
+    struct Nested {}
+    class func make() {}
+    enum Deep {
+        struct TooDeep {}
+    }
+}
+private struct Beta {}
+protocol Gamma {}
+actor Delta {}
+extension Alpha {}
+extension String {}
+extension Notification.Name {}
+extension LogWriter.Environment {}
+public indirect enum Epsilon {}
+'''
+    found = declared_type_names(canned, "TextMouth/Models/Alpha.swift")
+    check("type names: classes, structs, enums, protocols, actors, extensions",
+          {"Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Nested", "Deep", "LogWriter", "Environment"} <= set(found), found)
+    check("type names: comments and strings are ignored",
+          not {"InComment", "InBlock", "InString"} & set(found), found)
+    check("type names: a type nested two levels is not listed", "TooDeep" not in found, found)
+    check("type names: `class func` is not a type", "make" not in found and "func" not in found, found)
+    check("type names: an extension of a standard type is ignored",
+          not {"String", "Notification", "Name"} & set(found), found)
+    plus = declared_type_names("extension ReaderViewModel {}\n", "TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift")
+    check("type names: a + file name adds its feature part", plus == ["ReaderViewModel", "WhereAmI"], plus)
+    check("type names: a plain file name is added when undeclared",
+          declared_type_names("let x = 1\n", "TextMouth/App/Helpers.swift") == ["Helpers"])
+    check("type names: String+Extras does not add String",
+          declared_type_names("extension String {}\n", "String+Extras.swift") == ["Extras"])
+
+    # --changed: scoring, order, limits and the report.
+    hosted = {name: testkit.HostedClass(name, f"T/{name}.swift", 1, 1)
+              for name in ("OneTests", "TwoTests", "WidgetTests", "NoneTests")}
+    hosted["Helper"] = testkit.HostedClass("Helper", "T/Helper.swift", 1, 0)
+    words = {
+        "T/OneTests.swift": file_words("Widget Gadget"),
+        "T/TwoTests.swift": file_words("Widget"),
+        "T/WidgetTests.swift": file_words("Widget"),
+        "T/NoneTests.swift": file_words("Other"),
+        "T/Helper.swift": file_words("Widget Gadget"),
+    }
+    ranked, dropped, matches = score_test_classes({"Widget", "Gadget"}, set(), hosted, words)
+    check("scoring: distinct names, highest first, name match breaks ties, helpers and misses left out",
+          ranked == [(2, "OneTests"), (1, "WidgetTests"), (1, "TwoTests")] and not dropped, ranked)
+    check("scoring: matches list the names", matches["OneTests"] == ["Gadget", "Widget"], matches)
+    ranked, _, _ = score_test_classes({"Gadget"}, {"T/NoneTests.swift"}, hosted, words)
+    check("scoring: a class in a changed test file scores 1000 and comes first",
+          ranked[0] == (1000, "NoneTests") and ranked[1] == (1, "OneTests"), ranked)
+    crowd = {f"T/C{n}.swift": file_words("Common Rare") for n in range(COMMON_NAME_LIMIT + 1)}
+    crowd.update(words)
+    crowd["T/OneTests.swift"] = file_words("Common Rare")
+    ranked, dropped, _ = score_test_classes({"Common", "Rare"}, set(), hosted, crowd)
+    check("scoring: a name mentioned by more than the limit is dropped and counted",
+          dropped == ["Common", "Rare"] and ranked == [], (dropped, ranked))
+    crowd.update({f"T/C{n}.swift": file_words("Common") for n in range(COMMON_NAME_LIMIT + 1)})
+    ranked, dropped, _ = score_test_classes({"Common", "Rare"}, set(), hosted, crowd)
+    check("scoring: only the common name is dropped", dropped == ["Common"] and ranked == [(1, "OneTests")],
+          (dropped, ranked))
+
+    sample_areas = [testkit.Area("first", "d", ("OneTests",)), testkit.Area("second", "d", ("OneTests", "TwoTests"))]
+    ranked, dropped, matches = score_test_classes({"Widget", "Gadget"}, set(), hosted, words)
+    lines, picked = changed_report(ranked, ["Zed"], matches, sample_areas, explain=True)
+    check("report: score and class, then the matched names under --explain",
+          lines[:2] == ["2  OneTests", "    mentions Gadget, Widget"], lines)
+    check("report: the count line lists areas in areas.conf order, unassigned for a class in none",
+          "3 classes; areas: first, second, unassigned" in lines, lines)
+    check("report: dropped names and the heuristic line close it",
+          lines[-2].startswith("dropped 1 name mentioned by more than ") and lines[-1].startswith("Heuristic: "), lines)
+    lines, picked = changed_report(ranked, [], matches, sample_areas, limit=1)
+    check("report: --limit keeps the first N", picked == ["OneTests"] and "1 class; areas: first, second" in lines, lines)
+    check("report: nothing selected says so",
+          changed_report([], [], {}, sample_areas) == (["no hosted test class mentions the changed code"], []))
+
+    # --changed on a real (scratch) git repository: edits, a new file, a deletion, TestData.
+    with tempfile.TemporaryDirectory() as folder:
+        repo = Path(folder)
+
+        def git(*arguments):
+            """Runs git in the scratch repository, quietly."""
+            subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@example.com", "-c", "commit.gpgsign=false",
+                            "-C", str(repo)] + list(arguments), check=True, capture_output=True)
+
+        git("init", "-q", "-b", "main")
+        for path, text in (("TextMouth/Models/Kept.swift", "struct Kept {}\n"),
+                           ("TextMouth/Models/Gone.swift", "struct Gone {}\n"),
+                           ("TextMouthProductionTests/KeptTests.swift", "// Kept\n"),
+                           ("README.md", "x\n")):
+            (repo / path).parent.mkdir(parents=True, exist_ok=True)
+            (repo / path).write_text(text)
+        git("add", "-A")
+        git("commit", "-q", "-m", "base")
+        git("checkout", "-q", "-b", "work")
+        (repo / "TextMouth/Models/Kept.swift").write_text("struct Kept {}\nstruct Added {}\n")
+        (repo / "TextMouth/Models/Gone.swift").unlink()
+        (repo / "TextMouth/Models/Fresh.swift").write_text("enum Fresh {}\n")
+        (repo / "TestData").mkdir()
+        (repo / "TestData/Sample.epub").write_text("x")
+        (repo / "README.md").write_text("changed\n")
+        changes = changed_files("main", repo)
+        check("changed files: edits, a deletion (read from the base), untracked and TestData; others left out",
+              sorted(changes) == ["TestData/Sample.epub", "TextMouth/Models/Fresh.swift", "TextMouth/Models/Gone.swift",
+                                  "TextMouth/Models/Kept.swift"] and changes["TextMouth/Models/Gone.swift"] == "struct Gone {}\n",
+              sorted(changes))
+        names, test_paths = names_of_changes(changes)
+        check("changed names: types of every app file plus a TestData base name",
+              {"Kept", "Added", "Gone", "Fresh", "Sample"} <= names and not test_paths, names)
+        git("add", "-A")
+        git("commit", "-q", "-m", "work")
+        check("changed files: committed changes still count since the merge-base",
+              len(changed_files("main", repo)) == 4)
+        try:
+            changed_files("no-such-ref", repo)
+            check("changed files: an unknown base raises", False)
+        except difflint.GitError:
+            check("changed files: an unknown base raises", True)
+
     if failures:
         print("\n".join(failures))
         return 1
@@ -428,16 +793,32 @@ def main(argv) -> int:
     if args.unassigned:
         print_lines(unassigned_lines(areas, classes))
         return 0
+    if args.limit is not None and args.limit < 1:
+        return usage_error("--limit wants a number of 1 or more")
+    # --changed picks classes from the code a branch changed; its report
+    # prints first, and --list stops there.
+    changed_picks = []
+    if args.changed:
+        try:
+            report, changed_picks = select_changed(root, args.base, areas, classes, args.explain, args.limit)
+        except difflint.GitError as error:
+            return usage_error(f"cannot find the changed files: {error}")
+        print_lines(report)
+        if args.list:
+            return 0
     try:
         if args.list:
             print_lines(list_lines(names, areas, classes))
             return 0
-        if not names and not extra:
+        if not names and not extra and not args.changed:
             return usage_error("no area or class named; try --list, or -h for help")
         selected = testkit.resolve_names(names, areas, classes)
-        selected = list(dict.fromkeys(selected + testkit.resolve_names(extra, areas, classes, classes_only=True)))
+        selected = list(dict.fromkeys(changed_picks + selected
+                                      + testkit.resolve_names(extra, areas, classes, classes_only=True)))
     except testkit.UnknownName as error:
         return usage_error(str(error))
+    if not selected:
+        return 0
 
     env_vars, problem = parse_env(args.env)
     if problem:
