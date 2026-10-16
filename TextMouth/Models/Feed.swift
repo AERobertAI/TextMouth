@@ -90,6 +90,15 @@ struct Feed: Codable, Equatable, Identifiable, Sendable {
     /// written only when set, so a subscribed feed's record file is
     /// exactly as it was.
     var unsubscribedDate: Date?
+    /// How listening goes on from one of the feed's episodes to another
+    /// (FR19): what happens when one ends, whether finished ones are passed
+    /// over, and whether the next is downloaded before it is needed. Nil is
+    /// the standard options, which are never stored (`FeedCenter
+    /// .setListeningOptions(_:of:)` stores nil for them). Read through
+    /// `decodeIfPresent`, so a record written before it existed reads as
+    /// standard, and written only when set, so a feed left as it was has a
+    /// record file exactly as it was.
+    var listeningOptions: ListeningOptions?
 
     /// A new subscription to the feed at `feedURL`, whose downloads go to
     /// the folder `folderID`, begun at `date`. Its title is the address's
@@ -112,6 +121,7 @@ struct Feed: Codable, Equatable, Identifiable, Sendable {
         keepEntriesOverride = nil
         deleteDownloadsDaysAfterPlayedOverride = nil
         unsubscribedDate = nil
+        listeningOptions = nil
     }
 
     /// Whether TextMouth checks the feed for new items (FR11, branch D): at
