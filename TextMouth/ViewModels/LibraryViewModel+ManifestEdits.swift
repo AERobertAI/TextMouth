@@ -179,12 +179,23 @@ extension LibraryViewModel {
     /// row holds them already. The launch's metadata refresh reads no tags
     /// from a folder of tracks, so it changes neither. A book that is no
     /// audiobook of tracks has only its row changed.
+    ///
+    /// A title or author the manifest cannot take now (it is only in the
+    /// cloud, or is midway through an edit) is kept as owed to it, on this
+    /// Mac, and written before the next look compares (`ManifestOwedFields`,
+    /// `BookManifestEditSessions.settleOwedFields(of:adding:isDataless:)`),
+    /// so the manifest's old value never replaces the user's edit.
+    /// - Parameters:
+    ///   - written: Called on the main actor with whether the manifest was
+    ///     written by this call.
+    ///   - isDataless: Tells a file only in the cloud; tests stand in for it.
     func setTitleAndAuthor(
         ofManifestBook bookID: UUID,
         title: String?,
         author: String?,
         sessions: BookManifestEditSessions = .shared,
-        written: (@MainActor @Sendable (Bool) -> Void)? = nil
+        written: (@MainActor @Sendable (Bool) -> Void)? = nil,
+        isDataless: @escaping @Sendable (URL) -> Bool = { DatalessFiles.isDataless($0) }
     ) {
         guard let row = bookByID(bookID), title != nil || author != nil else {
             written?(false)
@@ -202,14 +213,14 @@ extension LibraryViewModel {
             written?(false)
             return
         }
+        // The fields this call gives: the manifest is owed them from now on,
+        // until a write puts them in (`ManifestOwedFields`).
+        var given: Set<Book.MetadataField> = []
+        if title != nil { given.insert(.title) }
+        if author != nil { given.insert(.author) }
+        let owedByThisCall = given
         sessions.queue.async {
-            let didWrite: Bool
-            do {
-                didWrite = try BookManifestFile.keepTitleAndAuthor(of: book, title: title, author: author, sessions: sessions)
-            } catch {
-                DiagnosticLog.event(.storage, "MANIFEST_NOT_WRITTEN: \(book.title): \(error.localizedDescription)")
-                didWrite = false
-            }
+            let didWrite = sessions.settleOwedFields(of: book, adding: owedByThisCall, isDataless: isDataless)
             Task { @MainActor in
                 written?(didWrite)
             }

@@ -1240,4 +1240,164 @@ final class BookManifestEditTests: XCTestCase {
         }
         return outcome
     }
+
+    // MARK: - A Title or Author the Manifest Is Owed (REV17b, Finding 3)
+
+    /// Tells a manifest.json only in the cloud, a stand-in for
+    /// `DatalessFiles.isDataless`.
+    private static let manifestInCloud: @Sendable (URL) -> Bool = { $0.lastPathComponent == AudioManifest.fileName }
+
+    /// Nothing is in the cloud.
+    private static let nothingInCloud: @Sendable (URL) -> Bool = { _ in false }
+
+    /// Retitles the manifest book `bookID` to `title` (and gives it `author`
+    /// when given) through the one write, with `isDataless` telling what is
+    /// in the cloud, and returns whether the manifest was written by it.
+    private func retitle(
+        _ bookID: UUID,
+        to title: String,
+        author: String? = nil,
+        in world: IntegrationWorld,
+        with sessions: BookManifestEditSessions,
+        isDataless: @escaping @Sendable (URL) -> Bool = BookManifestEditTests.nothingInCloud
+    ) async -> Bool {
+        await withCheckedContinuation { continuation in
+            world.library.setTitleAndAuthor(
+                ofManifestBook: bookID,
+                title: title,
+                author: author,
+                sessions: sessions,
+                written: { continuation.resume(returning: $0) },
+                isDataless: isDataless
+            )
+        }
+    }
+
+    /// The book `bookID` as its row holds it now: a look and a settle write
+    /// the row's values, so the tests give them the row, never a copy made
+    /// before an edit.
+    private func row(_ bookID: UUID, in world: IntegrationWorld) throws -> Book {
+        try XCTUnwrap(world.library.bookByID(bookID))
+    }
+
+    /// The title the manifest of `book`'s folder holds.
+    private func manifestTitle(of book: Book) throws -> String? {
+        let location = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL))
+        return try AudioManifest.decoded(from: Data(contentsOf: location.url)).title
+    }
+
+    /// A retitle made while the manifest is only in the cloud changes the
+    /// row, writes nothing, and is kept as owed; a look while it is still
+    /// there changes nothing, and a look once it is back writes the title
+    /// before it compares, so the manifest's old title never replaces the
+    /// user's.
+    func testARetitleWhileTheManifestIsInTheCloudIsKeptAndWrittenOnceItIsBack() async throws {
+        let world = try makeIntegrationWorld("Owed Manifest Cloud")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2, 0.2], manifest: #"{"title": "Harbour Pilots"}"#)
+        let owed = ManifestOwedFields(preferences: makeSandboxedPreferences("Owed Manifest Cloud"))
+        let sessions = BookManifestEditSessions(owed: owed)
+
+        let didWrite = await retitle(book.id, to: "Night Pilots", in: world, with: sessions, isDataless: Self.manifestInCloud)
+
+        XCTAssertFalse(didWrite, "A manifest in the cloud was written")
+        XCTAssertEqual(world.library.bookByID(book.id)?.title, "Night Pilots")
+        XCTAssertEqual(try manifestTitle(of: book), "Harbour Pilots")
+        XCTAssertEqual(owed.owed(by: book.id), [.title], "The retitle was not kept as owed")
+
+        let whileAway = sessions.look(at: try row(book.id, in: world), isDataless: Self.manifestInCloud)
+        guard case .inCloud = whileAway else { return XCTFail("A manifest in the cloud was looked at: \(whileAway)") }
+        XCTAssertEqual(try manifestTitle(of: book), "Harbour Pilots")
+        XCTAssertEqual(owed.owed(by: book.id), [.title])
+
+        let back = sessions.look(at: try row(book.id, in: world), isDataless: Self.nothingInCloud)
+        guard case .unchanged = back else { return XCTFail("The look took the old title over the retitle: \(back)") }
+        XCTAssertEqual(try manifestTitle(of: book), "Night Pilots", "The owed title was not written")
+        XCTAssertEqual(world.library.bookByID(book.id)?.title, "Night Pilots")
+        XCTAssertEqual(owed.owed(by: book.id), [], "A title the manifest holds was still owed")
+    }
+
+    /// What the manifest is owed outlives a quit: a new set of sessions over
+    /// the same preferences, as a relaunch makes, writes the title at its
+    /// first look.
+    func testAnOwedTitleSurvivesARelaunch() async throws {
+        let world = try makeIntegrationWorld("Owed Manifest Relaunch")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2], manifest: #"{"title": "Harbour Pilots"}"#)
+        let preferences = makeSandboxedPreferences("Owed Manifest Relaunch")
+        let first = BookManifestEditSessions(owed: ManifestOwedFields(preferences: preferences))
+        _ = await retitle(book.id, to: "Night Pilots", in: world, with: first, isDataless: Self.manifestInCloud)
+        XCTAssertEqual(try manifestTitle(of: book), "Harbour Pilots")
+
+        let relaunched = BookManifestEditSessions(owed: ManifestOwedFields(preferences: preferences))
+        let found = relaunched.look(at: try row(book.id, in: world), isDataless: Self.nothingInCloud)
+
+        guard case .unchanged = found else { return XCTFail("The relaunch's look took the old title: \(found)") }
+        XCTAssertEqual(try manifestTitle(of: book), "Night Pilots")
+        XCTAssertEqual(world.library.bookByID(book.id)?.title, "Night Pilots")
+        XCTAssertEqual(relaunched.owed.owed(by: book.id), [])
+    }
+
+    /// A retitle the manifest takes at once owes it nothing, and a book
+    /// whose audio is no folder of tracks, whatever a stale record says, is
+    /// cleared by a settle, which writes nothing there.
+    func testNothingIsOwedForABookWhoseManifestWasWritten() async throws {
+        let world = try makeIntegrationWorld("Owed Manifest Nothing")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2], manifest: #"{"title": "Harbour Pilots"}"#)
+        let owed = ManifestOwedFields(preferences: makeSandboxedPreferences("Owed Manifest Nothing"))
+        let sessions = BookManifestEditSessions(owed: owed)
+
+        let didWrite = await retitle(book.id, to: "Night Pilots", author: "Ines Okafor", in: world, with: sessions)
+
+        XCTAssertTrue(didWrite)
+        XCTAssertEqual(try manifestTitle(of: book), "Night Pilots")
+        XCTAssertEqual(owed.owed(by: book.id), [], "A title the manifest took was owed")
+
+        let sections = try world.makeSegmentedAudioBook(
+            title: "Sections",
+            files: ["a.wav": 0.4],
+            sections: [AudioSegment(title: "One", file: "a.wav", startTime: 0, endTime: 0.4)]
+        )
+        owed.setOwed([.title, .author], by: sections.id)
+        let written = sessions.queue.sync { sessions.settleOwedFields(of: sections) }
+
+        XCTAssertFalse(written, "A manifest of sections was written")
+        XCTAssertEqual(owed.owed(by: sections.id), [], "A book that is no folder of tracks stayed owed")
+    }
+
+    /// The record round-trips through the preferences, an empty set removes
+    /// a book's entry and the last entry removes the record, a malformed
+    /// value reads as nothing owed, and only the title and the author are
+    /// ever stored or read back.
+    func testTheOwedRecordIsKeptAcrossInstancesAndEmptiesItself() {
+        let preferences = makeSandboxedPreferences("Owed Record")
+        let first = UUID()
+        let second = UUID()
+        let record = ManifestOwedFields(preferences: preferences)
+        XCTAssertEqual(record.owed(by: first), [])
+
+        record.setOwed([.author, .title, .publisher], by: first)
+        record.setOwed([.author], by: second)
+
+        let again = ManifestOwedFields(preferences: preferences)
+        XCTAssertEqual(again.owed(by: first), [.title, .author], "Only the title and the author are kept")
+        XCTAssertEqual(again.owed(by: second), [.author])
+        XCTAssertEqual(
+            preferences.dictionary(forKey: ManifestOwedFields.key) as? [String: [String]],
+            [first.uuidString: ["title", "author"], second.uuidString: ["author"]],
+            "The bytes differ for the same record"
+        )
+
+        again.setOwed([], by: first)
+        XCTAssertEqual(record.owed(by: first), [])
+        XCTAssertEqual(record.owed(by: second), [.author], "Another book's entry went with it")
+        record.setOwed([.publisher], by: second)
+        XCTAssertNil(preferences.object(forKey: ManifestOwedFields.key), "An empty record was kept")
+
+        // A value that is not the record, and names that are not fields.
+        preferences.set("not a record", forKey: ManifestOwedFields.key)
+        XCTAssertEqual(record.owed(by: first), [])
+        preferences.set([first.uuidString: [1, 2]], forKey: ManifestOwedFields.key)
+        XCTAssertEqual(record.owed(by: first), [])
+        preferences.set([first.uuidString: ["publisher", "colour", "author"]], forKey: ManifestOwedFields.key)
+        XCTAssertEqual(record.owed(by: first), [.author], "A name that is no owable field was read back")
+    }
 }
