@@ -25,6 +25,7 @@ import uuid
 import zipfile
 from dataclasses import dataclass, field
 from html.entities import name2codepoint
+from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote
 from xml.sax.saxutils import escape
@@ -718,6 +719,347 @@ def gen_docx_no_styles(rng):
 
 
 # --------------------------------------------------------------------------
+# Markdown files
+# --------------------------------------------------------------------------
+
+
+def count_markdown_headings(text):
+    """Count ATX and setext headings in Markdown, ignoring anything inside code fences.
+
+    Lines are split on "\\n" only (Python's splitlines would also split on the
+    Unicode separators that the unicode file carries on purpose).
+    """
+    count, fence, previous_blank = 0, None, True
+    lines = text.split("\n")
+    for index, line in enumerate(lines):
+        stripped = line.lstrip(" ")
+        indent = len(line) - len(stripped)
+        marker = re.match(r"(`{3,}|~{3,})", stripped) if indent <= 3 else None
+        if fence:
+            # Inside a fence only a closing fence of the same character matters.
+            if marker and marker.group(1)[0] == fence[0] and len(marker.group(1)) >= len(fence):
+                fence = None
+            previous_blank = False
+            continue
+        if marker:
+            fence = marker.group(1)
+            previous_blank = False
+            continue
+        if indent <= 3 and re.match(r"#{1,6}(\s|$)", stripped):
+            count += 1
+        elif (previous_blank and indent <= 3 and stripped and not re.match(r"[#>|`~*+\-<\[]|\d+[.)]\s", stripped)
+              and index + 1 < len(lines) and re.fullmatch(r" {0,3}(=+|-+)\s*", lines[index + 1])):
+            count += 1
+        previous_blank = not line.strip()
+    return count
+
+
+@generator("markdown-feature-soup.md", "markdown",
+           "Markdown using setext and ATX headings 1 to 6, aligned tables, fenced and indented code with "
+           "heading-like lines inside, nested lists, block quotes, footnotes, link references, inline HTML and hard breaks.")
+def gen_markdown_feature_soup(rng):
+    def row(*cells):
+        """A table row from its cells."""
+        return "| " + " | ".join(str(c) for c in cells) + " |"
+
+    lines = [
+        "Setext Level One Heading", "========================", "",
+        paragraph(rng), "",
+        "Setext Level Two Heading", "------------------------", "",
+        "# ATX Level One", "", "## ATX Level Two", "", "### ATX Level Three", "",
+        "#### ATX Level Four", "", "##### ATX Level Five", "", "###### ATX Level Six", "",
+        "## Closed ATX Heading ##", "",
+        "## Heading with *emphasis* and a [link](https://example.org/heading)", "",
+        "### Tables", "",
+        row("Left aligned", "Centered", "Right aligned"),
+        "|:-------------|:--------:|--------------:|",
+        row(phrase(rng), phrase(rng), rng.randint(10, 9999)),
+        row(phrase(rng), phrase(rng), rng.randint(10, 9999)),
+        row("A pipe \\| inside a cell", "`code | pipe`", rng.randint(10, 9999)),
+        "", "A table without outer pipes:", "",
+        "Item | Quantity", "--- | ---",
+        f"{phrase(rng)} | {rng.randint(1, 99)}", f"{phrase(rng)} | {rng.randint(1, 99)}", "",
+        "### Code", "",
+        "```python", "# This line starts with a hash but is code, not a heading", "def harbor():",
+        "    return 'ledger'", "```", "",
+        "~~~text", "A tilde fence with a setext-looking pair of lines", "==================", "~~~", "",
+        "    An indented code block", "    # also not a heading", "",
+        "### Lists", "",
+        "- Top level bullet", "  - Nested bullet", "    - Third level bullet", "      1. Numbered inside a bullet",
+        "      2. Second numbered item", "  - Back at the second level", "- Another top level bullet",
+        "", "  A paragraph continuing the last bullet.", "",
+        "1. First step", "2. Second step", "   - A bullet under a step", "3. Third step", "",
+        "- [x] A finished task", "- [ ] An open task", "",
+        "### Quotes", "",
+        "> A block quote opens here.", ">", "> > A quote nested inside the quote.", "> > > And one more level.", ">",
+        "> - A list inside a quote", "> - with two items", "",
+        "### Notes and links", "",
+        "A sentence with a footnote.[^1] Another with a named one.[^second]", "",
+        "[^1]: The first footnote.", "[^second]: The second footnote,", "    continued on an indented line.", "",
+        "See the [documentation][docs], the [guide][], or <https://example.org/autolink>.", "",
+        "[docs]: https://example.org/docs \"Documentation\"", "[guide]: https://example.org/guide", "",
+        "### Inline markup", "",
+        "Text with <kbd>Ctrl</kbd> and <span style=\"color: red\">inline HTML</span>, **bold**, *italic*, "
+        "~~struck~~, ``code with a `backtick` inside`` and an escaped \\*asterisk\\*. Also &copy; and an image "
+        "![A diagram of a harbor](harbor.png \"Harbor\").", "",
+        "<details>", "<summary>An HTML block</summary>", "", "Content inside the details block.", "", "</details>", "",
+        "<!-- A comment that should not be read aloud. -->", "",
+        "A hard break with two spaces  ", "continues on the next line,\\", "and again after a backslash.", "",
+        "* * *", "",
+        phrase(rng) + ": " + paragraph(rng, 2), "",
+    ]
+    text = "\n".join(lines)
+    expected = {"title": "Setext Level One Heading", "headings": count_markdown_headings(text)}
+    return utf8(text), expected
+
+
+@generator("markdown-very-long.md", "markdown",
+           "Five megabytes of Markdown: 400 sections of repeated structure with a table every 20 sections.",
+           large_only=True)
+def gen_markdown_very_long(rng):
+    section_bytes = 12_400  # 400 sections of about this size give about 5.2 MB
+    pieces = ["# A Very Long Document\n\n" + paragraph(rng) + "\n"]
+    for number in range(1, 401):
+        section = [f"\n## Section {number}: {phrase(rng)}\n"]
+        while sum(len(p) for p in section) < section_bytes:
+            section.append("\n" + paragraph(rng) + "\n")
+        section.append(f"\n### Details of section {number}\n")
+        section.append("".join(f"\n- {sentence(rng)}" for _ in range(4)) + "\n")
+        if number % 20 == 0:
+            section.append("\n| Measure | Value | Unit |\n|:--|--:|:--|\n")
+            section.append("".join(f"| {phrase(rng)} | {rng.randint(1, 9999)} | {rng.choice(WORDS)} |\n" for _ in range(5)))
+        pieces.extend(section)
+    text = "".join(pieces)
+    return utf8(text), {"title": "A Very Long Document", "headings": count_markdown_headings(text), "sections": 400}
+
+
+# Hazard lines for the Unicode file, grouped under a heading.  Invisible characters use escapes.
+UNICODE_GROUPS = [
+    ("Scripts and directions", [
+        ("Arabic, right to left", "مرحبا بالعالم، هذا اختبار للقراءة."),
+        ("Hebrew, right to left", "שלום עולם, זהו מבחן קריאה."),
+        ("Mixed direction", "The word שלום means peace and مرحبا means hello, inside one English sentence 123."),
+        ("Chinese", "你好，世界。这是一个朗读测试。"),
+        ("Japanese", "こんにちは、世界。これは読み上げのテストです。漢字とひらがなとカタカナ。"),
+        ("Korean", "안녕하세요 세계. 이것은 읽기 시험입니다."),
+        ("Thai, no spaces between words", "สวัสดีชาวโลกนี่คือการทดสอบการอ่านออกเสียง"),
+        ("Devanagari", "नमस्ते दुनिया, यह पढ़ने का एक परीक्षण है।"),
+    ]),
+    ("Emoji and flags", [
+        ("Emoji with skin tone modifiers", "\U0001F44D\U0001F3FB \U0001F44D\U0001F3FD \U0001F44D\U0001F3FF"),
+        ("Emoji joined with zero width joiners", "\U0001F468‍\U0001F469‍\U0001F467‍\U0001F466 and \U0001F9D1‍\U0001F4BB"),
+        ("Rainbow flag, a joiner sequence", "\U0001F3F3️‍\U0001F308"),
+        ("Flags from regional indicators", "\U0001F1E8\U0001F1E6 \U0001F1EF\U0001F1F5 \U0001F1E7\U0001F1F7"),
+        ("Variation selectors", "☹︎ text style and ☹️ emoji style, plus an ideographic variant 邊\U000E0100"),
+    ]),
+    ("Normalization and astral characters", [
+        ("Decomposed accents", "café naïve niño"),
+        ("Precomposed accents", "café naïve niño"),
+        ("A stack of combining marks", "á̂̃̄ after four marks"),
+        ("Astral plane letters", "\U0001D4D0\U0001D4D1\U0001D4D2 and \U00020BB7 and \U00010348"),
+        ("Full width and half width forms", "ＡＢＣ １２３ ｱｲｳ"),
+        ("Ligature characters", "ﬁ ﬂ ﬃ"),
+    ]),
+    ("Invisible and control characters", [
+        ("Soft hyphens", "inter­na­tion­al­i­za­tion"),
+        ("No-break spaces", "10 000 km and Mr. Ferreira"),
+        ("Zero width space and non-joiner", "zero​width and non‌joiner"),
+        ("Line and paragraph separators", "first second third"),
+        ("A stray byte order mark mid-text", "before﻿after"),
+        ("Bidirectional override", "plain ‮guarded text‬ plain again"),
+        ("Bidirectional isolates", "left ⁧right to left⁩ and back ⁦left to right⁩"),
+    ]),
+]
+
+
+@generator("unicode-heavy.md", "markdown",
+           "Markdown with right-to-left scripts, CJK, Thai, Devanagari, emoji joiner sequences, decomposed accents, "
+           "astral characters, soft hyphens, line separators, a mid-text BOM and bidirectional controls, one per labelled line.")
+def gen_unicode_heavy(rng):
+    lines = ["# Unicode Hazards", "", "Every line below carries one hazard, named before the colon.", ""]
+    for group, hazards in UNICODE_GROUPS:
+        lines += [f"## {group}", ""]
+        for label, content in hazards:
+            lines += [f"{label}: {content}", ""]
+    text = "\n".join(lines)
+    return utf8(text), {"title": "Unicode Hazards", "headings": count_markdown_headings(text),
+                        "hazard_lines": sum(len(h) for _, h in UNICODE_GROUPS)}
+
+
+# --------------------------------------------------------------------------
+# Plain text files
+# --------------------------------------------------------------------------
+
+# The one short passage written in every encoding and line-ending style.
+# It uses only characters that Latin-1 can hold, so every encoding carries it exactly.
+PASSAGE_LINES = [
+    "The Café at the Corner",
+    "",
+    "Renée carried a naïve plan and a small suitcase to the café, where the waiter said "
+    "¡Buenos días! and brought her a jalapeño tart for £12.",
+    "",
+    "The lamp stayed lit until closing, and nobody asked her to leave.",
+]
+# Extra lines for the Unicode encodings, which can hold what Latin-1 cannot.
+UNICODE_EXTRA = ["", "Beyond Latin-1: Привет, 世界, and a snowman ☃."]
+# Extra lines for Windows-1252, whose 0x80 to 0x9F bytes Latin-1 treats as control codes.
+WIN1252_EXTRA = ["", "Windows-1252 only: “curly quotes”, ‘single’, a dash — the euro €, an ellipsis… and a bullet •."]
+
+
+@dataclass
+class TextVariant:
+    """How one plain text file is encoded: codec, line ending, BOM bytes, and extra lines."""
+    codec: str
+    newline: str = "\n"
+    bom: bytes = b""
+    extra: tuple = ()
+
+    def lines(self):
+        """The passage lines this file holds."""
+        return PASSAGE_LINES + list(self.extra)
+
+    def encode(self):
+        """The file's bytes: BOM, then the lines joined and terminated by the line ending."""
+        text = self.newline.join(self.lines()) + self.newline
+        return self.bom + text.encode(self.codec)
+
+
+TEXT_VARIANTS = {
+    "text-utf8.txt": (TextVariant("utf-8", extra=UNICODE_EXTRA),
+                      "Plain UTF-8 text with no byte order mark, including Cyrillic, Chinese and a snowman."),
+    "text-utf16le-bom.txt": (TextVariant("utf-16-le", bom=b"\xff\xfe", extra=UNICODE_EXTRA),
+                             "UTF-16 little-endian text that begins with a byte order mark."),
+    "text-utf16be-bom.txt": (TextVariant("utf-16-be", bom=b"\xfe\xff", extra=UNICODE_EXTRA),
+                             "UTF-16 big-endian text that begins with a byte order mark."),
+    "text-latin1.txt": (TextVariant("latin-1"),
+                        "ISO 8859-1 text whose accented bytes are not valid UTF-8."),
+    "text-windows1252.txt": (TextVariant("cp1252", extra=WIN1252_EXTRA),
+                             "Windows-1252 text with curly quotes, a dash and a euro sign in the 0x80 to 0x9F bytes."),
+    "text-crlf.txt": (TextVariant("utf-8", newline="\r\n"),
+                      "UTF-8 text whose every line ends in carriage return and line feed."),
+    "text-cr-only.txt": (TextVariant("utf-8", newline="\r"),
+                         "UTF-8 text whose lines end in a bare carriage return, as on classic Mac OS."),
+}
+
+
+def register_text_variant(name, variant, hazard):
+    """Register the generator of one TEXT_VARIANTS file."""
+    @generator(name, "text", hazard)
+    def make(rng):
+        return variant.encode(), {"title": PASSAGE_LINES[0], "encoding": variant.codec,
+                                  "line_ending": {"\n": "LF", "\r\n": "CRLF", "\r": "CR"}[variant.newline],
+                                  "lines": len(variant.lines())}
+    return make
+
+
+for _name, (_variant, _hazard) in TEXT_VARIANTS.items():
+    register_text_variant(_name, _variant, _hazard)
+
+
+# Three pages separated by form feeds, each ending in a page-number footer.
+FORM_FEED_PAGES = [
+    ["Page one opens here.", "The text runs on for a few short lines", "before the page ends.", "- 1 -"],
+    ["Page two begins after a form feed.", "It has its own two lines.", "- 2 -"],
+    ["Page three is the last one.", "- 3 -"],
+]
+
+
+@generator("text-form-feeds.txt", "text",
+           "UTF-8 text whose pages are separated by form feed characters (U+000C) and end in page-number footers.")
+def gen_text_form_feeds(rng):
+    pages = ["\n".join(page) + "\n" for page in FORM_FEED_PAGES]
+    return utf8("\f".join(pages)), {"title": FORM_FEED_PAGES[0][0], "pages": len(pages)}
+
+
+# Lines that are real headings, and all-caps lines that merely look like headings.
+CAPS_HEADINGS = ["THE HARBOR LEDGER", "CHAPTER ONE: THE ARRIVAL", "CHAPTER TWO: THE CROSSING", "EPILOGUE"]
+CAPS_DECOYS = ["WARNING: DO NOT OPEN THE CELLAR DOOR!", "NASA"]
+
+
+@generator("text-all-caps-headings.txt", "text",
+           "UTF-8 text whose headings are all-caps lines, with all-caps decoys (a shouted warning, an acronym) that are not headings.")
+def gen_text_all_caps_headings(rng):
+    lines = [CAPS_HEADINGS[0], "", paragraph(rng, 2), "", CAPS_HEADINGS[1], "", paragraph(rng, 3), "",
+             CAPS_DECOYS[0], "", paragraph(rng, 2), "", CAPS_HEADINGS[2], "", paragraph(rng, 2), "",
+             CAPS_DECOYS[1], "", "That acronym alone on its line was not a heading either.", "",
+             CAPS_HEADINGS[3], "", paragraph(rng, 2), ""]
+    return utf8("\n".join(lines) + "\n"), {"title": CAPS_HEADINGS[0], "headings": len(CAPS_HEADINGS),
+                                           "decoys": CAPS_DECOYS}
+
+
+@generator("text-one-long-line.txt", "text",
+           "Three megabytes of UTF-8 text on a single line with no line ending at all.",
+           large_only=True)
+def gen_text_one_long_line(rng):
+    target = 3 * 1024 * 1024
+    pieces, size = [], 0
+    while size < target:
+        piece = sentence(rng)
+        pieces.append(piece)
+        size += len(piece) + 1
+    return utf8(" ".join(pieces)), {"title": None, "lines": 1}
+
+
+# --------------------------------------------------------------------------
+# HTML file
+# --------------------------------------------------------------------------
+
+# The page is encoded as Windows-1252 when written: its curly quotes, dash, euro sign and bullet use bytes 0x80 to 0x9F.
+HTML_SOUP = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="windows-1252">
+<title>Nested Soup</title>
+<style>
+  body::after { content: "STYLE TEXT MUST NOT BE READ"; }
+</style>
+<script>
+  var hidden = "SCRIPT TEXT MUST NOT BE READ";
+  if (1 < 2 && 3 > 2) { document.write("<h1>A heading made by script</h1>"); }
+</script>
+</head>
+<body>
+<h1>Nested Soup</h1>
+<div class="outer"><section><div><article>
+<h2>Deeply nested heading</h2>
+<p>Paragraph without a closing tag
+<p>Another paragraph ended by the next one, with an entity &amp; a numeric one &#8212; and &lt;angle brackets&gt;.
+<h3>Third level</h3>
+<ul><li>First item without a closing tag<li>Second item<ul><li>Nested item</ul></ul>
+</article></div></section></div>
+<table border="1">
+<caption>Outer table</caption>
+<tr><th>Name<th>Detail
+<tr><td>Outer cell<td><table><tr><td>Inner table cell</table>
+</table>
+<h4>Fourth level</h4>
+<pre>
+    Preformatted text keeps   its spaces
+      and its indentation, even &lt;tags&gt;.
+</pre>
+<p>Spaces:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end of the run.</p>
+<p>First paragraph made with breaks<br><br>Second paragraph made with breaks<br><br>Third paragraph made with breaks</p>
+<h5>Fifth level</h5>
+<p>Windows-1252 characters: “double” ‘single’ a dash — the euro € an ellipsis… a bullet • and café.</p>
+<!-- A comment that must not be read. -->
+<h6>Sixth level</h6>
+<p>The end.</p>
+</body>
+</html>
+"""
+
+
+@generator("html-nested-soup.html", "html",
+           "HTML 5 with deeply nested sections, nested tables, unclosed tags, pre, script and style text that must not be read, "
+           "nbsp runs, double-br paragraphs, h1 to h6, and a windows-1252 charset with matching bytes.")
+def gen_html_nested_soup(rng):
+    headings = len(re.findall(r"<h[1-6][ >]", HTML_SOUP))
+    # The script writes an h1 in a string; it is not a heading of the document.
+    headings -= HTML_SOUP.count('document.write("<h1>')
+    return HTML_SOUP.encode("cp1252"), {"title": "Nested Soup", "headings": headings, "charset": "windows-1252"}
+
+
+# --------------------------------------------------------------------------
 # Writing the corpus
 # --------------------------------------------------------------------------
 
@@ -986,8 +1328,148 @@ def count_docx_headings(document):
     return count
 
 
-# Which structural checker handles which file extension (each format adds its own).
-CHECKERS = {".epub": check_epub, ".docx": check_docx}
+# Code points that unicode-heavy.md must carry, named by hazard (an independent list from the generator's).
+REQUIRED_CODE_POINTS = {
+    "combining acute": 0x0301, "right-to-left override": 0x202E, "byte order mark": 0xFEFF,
+    "line separator": 0x2028, "paragraph separator": 0x2029, "soft hyphen": 0x00AD,
+    "no-break space": 0x00A0, "zero width joiner": 0x200D, "zero width space": 0x200B,
+    "zero width non-joiner": 0x200C, "emoji variation selector": 0xFE0F, "text variation selector": 0xFE0E,
+    "skin tone modifier": 0x1F3FD, "regional indicator": 0x1F1E8, "variation selector supplement": 0xE0100,
+    "Thai": 0x0E2A, "Devanagari": 0x0928, "Hebrew": 0x05E9, "Arabic": 0x0645, "Chinese": 0x4F60,
+    "Japanese hiragana": 0x3053, "Korean": 0xC548, "astral Han": 0x20BB7,
+}
+SOUP_HEADINGS = 16  # headings in markdown-feature-soup.md, counted by hand (setext 2, ATX 6, closed 1, rich 1, ### 6)
+
+
+def decode_strict(t, name, data, codec):
+    """Decode `data` with `codec`, recording a failure and returning None when it cannot."""
+    try:
+        return data.decode(codec)
+    except UnicodeDecodeError as error:
+        t.check(False, f"{name}: does not decode as {codec} ({error})")
+        return None
+
+
+def is_not_utf8(t, name, data):
+    """Record a check that `data` is NOT valid UTF-8 (a legacy encoding must not pass as UTF-8)."""
+    try:
+        data.decode("utf-8")
+        t.check(False, f"{name}: also valid UTF-8, so its encoding hides nothing")
+    except UnicodeDecodeError:
+        t.check(True, "")
+
+
+def check_markdown(t, name, data, expected):
+    """Markdown checks: valid UTF-8, the heading count, and the per-file hazards."""
+    text = decode_strict(t, name, data, "utf-8")
+    if text is None:
+        return
+    t.check(count_markdown_headings(text) == expected["headings"], f"{name}: heading count differs from the manifest")
+    if name.endswith("markdown-feature-soup.md"):
+        t.check(expected["headings"] == SOUP_HEADINGS, f"{name}: {expected['headings']} headings, expected {SOUP_HEADINGS}")
+        for needle in ("[^1]:", "[docs]:", "~~~", "```", "> > >", "|:--", "<details>", "  \n"):
+            t.check(needle in text, f"{name}: missing the feature {needle!r}")
+    elif name.endswith("markdown-very-long.md"):
+        t.check(len(re.findall(r"^## Section \d+:", text, re.M)) == 400, f"{name}: not 400 sections")
+        t.check(text.count("| Measure |") == 20, f"{name}: not a table every 20 sections")
+    elif name.endswith("unicode-heavy.md"):
+        for label, code_point in REQUIRED_CODE_POINTS.items():
+            t.check(chr(code_point) in text, f"{name}: missing {label} (U+{code_point:04X})")
+        t.check(not any(0xD800 <= ord(c) <= 0xDFFF for c in text), f"{name}: holds a lone surrogate")
+        labelled = [line for line in text.split("\n") if line and not line.startswith("#") and ": " in line]
+        t.check(len(labelled) == expected["hazard_lines"],
+                f"{name}: {len(labelled)} labelled lines, manifest says {expected['hazard_lines']}")
+
+
+def check_text_variant(t, name, data, variant):
+    """Check one encoded passage file: BOM, decoding, line endings, and legacy-encoding bytes."""
+    t.check(data.startswith(variant.bom), f"{name}: wrong byte order mark")
+    text = decode_strict(t, name, data, "utf-16" if variant.bom else variant.codec)  # Python reads the BOM itself
+    if text is None:
+        return
+    t.check(re.split(r"\r\n|\r|\n", text) == variant.lines() + [""], f"{name}: decoded text is not the passage")
+    t.check(not text.startswith("﻿"), f"{name}: the BOM leaked into the text")
+    if variant.newline == "\r\n":
+        t.check(text.count("\r\n") == text.count("\n") == text.count("\r"), f"{name}: line endings are not all CRLF")
+    elif variant.newline == "\r":
+        t.check("\n" not in text and "\r" in text, f"{name}: line endings are not bare CR")
+    else:
+        t.check("\r" not in text, f"{name}: a CR appears in an LF file")
+    if variant.codec in ("latin-1", "cp1252"):
+        is_not_utf8(t, name, data)
+    if variant.codec == "cp1252":
+        t.check(b"\x93" in data and b"\x80" in data, f"{name}: lacks the 0x80 to 0x9F bytes")
+
+
+def check_text(t, name, data, expected):
+    """Plain text checks: each encoding, BOM and line ending is what its name says."""
+    base = name.split("/")[-1]
+    if base in TEXT_VARIANTS:
+        check_text_variant(t, name, data, TEXT_VARIANTS[base][0])
+        return
+    text = decode_strict(t, name, data, "utf-8")
+    if text is None:
+        return
+    if base == "text-form-feeds.txt":
+        t.check(text.count("\f") == 2 and len(text.split("\f")) == expected["pages"], f"{name}: wrong form feed count")
+    elif base == "text-all-caps-headings.txt":
+        lines = text.split("\n")
+        # An all-caps line with a blank line (or the file edge) on both sides stands alone like a heading.
+        alone = [line for i, line in enumerate(lines)
+                 if line.isupper() and (i == 0 or not lines[i - 1]) and (i + 1 >= len(lines) or not lines[i + 1])]
+        for heading in CAPS_HEADINGS:
+            t.check(heading in alone, f"{name}: heading {heading!r} is not an all-caps line on its own")
+        t.check(len(CAPS_HEADINGS) == expected["headings"], f"{name}: heading count differs from the manifest")
+        for decoy in CAPS_DECOYS:
+            t.check(any(decoy in line for line in lines), f"{name}: decoy {decoy!r} missing")
+    elif base == "text-one-long-line.txt":
+        t.check("\n" not in text and "\r" not in text, f"{name}: has a line ending")
+
+
+class HeadingCounter(HTMLParser):
+    """Counts h1 to h6 start tags and records the title, as a tolerant HTML reader would.
+
+    Python's parser treats script and style content as raw text, so tags written
+    inside them (a decoy) are not counted.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.headings, self.title, self.in_title = 0, "", False
+
+    def handle_starttag(self, tag, attrs):
+        if re.fullmatch(r"h[1-6]", tag):
+            self.headings += 1
+        self.in_title = tag == "title"
+
+    def handle_endtag(self, tag):
+        self.in_title = False
+
+    def handle_data(self, data):
+        if self.in_title:
+            self.title += data
+
+
+def check_html(t, name, data, expected):
+    """HTML checks: bytes match the declared charset, the parse counts match, decoy text is present."""
+    t.check(b'<meta charset="windows-1252">' in data, f"{name}: missing the charset declaration")
+    is_not_utf8(t, name, data)
+    text = decode_strict(t, name, data, "cp1252")
+    if text is None:
+        return
+    parser = HeadingCounter()
+    parser.feed(text)
+    parser.close()
+    t.check(parser.headings == expected["headings"], f"{name}: {parser.headings} headings parsed, manifest says {expected['headings']}")
+    t.check(parser.title == expected["title"], f"{name}: title is {parser.title!r}")
+    t.check("SCRIPT TEXT MUST NOT BE READ" in text and "STYLE TEXT MUST NOT BE READ" in text,
+            f"{name}: the decoy script or style text is missing")
+    t.check("“" in text and "€" in text, f"{name}: lacks the 0x80 to 0x9F characters")
+
+
+# Which structural checker handles which file extension.
+CHECKERS = {".epub": check_epub, ".docx": check_docx, ".md": check_markdown,
+            ".txt": check_text, ".html": check_html}
 
 
 def sha_map(folder):
@@ -1029,7 +1511,10 @@ def check_run(t, label, folder, large):
 
 # Size windows (min, max) in bytes for the heavy files that only --large writes.
 # The 40-chapter EPUB is small once zipped, so it keeps the normal per-file limit.
-LARGE_WINDOWS = {}
+LARGE_WINDOWS = {
+    "markdown-very-long.md": (5_000_000, 5_500_000),
+    "text-one-long-line.txt": (3_000_000, 3_300_000),
+}
 
 
 def selftest():
@@ -1047,6 +1532,8 @@ def selftest():
         # Determinism: the same seed gives identical bytes; another seed changes something.
         t.check(sha_map(scratch / "a") == sha_map(scratch / "b"), "two runs with one seed differ")
         t.check(sha_map(scratch / "a") != sha_map(scratch / "c"), "a different seed changed nothing")
+        soup = "markdown-feature-soup.md"
+        t.check(sha_map(scratch / "a")[soup] != sha_map(scratch / "c")[soup], "a different seed left the Markdown soup unchanged")
 
         # Folder safety: refuse foreign files, replace our own, drop stale large files.
         foreign = scratch / "foreign"
