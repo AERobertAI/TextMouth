@@ -128,7 +128,10 @@ import XCTest
 /// This class covers the text and single-file audio columns' cells that no
 /// other test did (`testTextBookEndBehaviorMatrix`,
 /// `testSingleFileAudioEndBehaviorMatrix`); the other columns' uncovered
-/// cells are for part 2. No test plays sound: audio is silence, and speech is
+/// cells are for part 2, which lives in extensions of this class in files of
+/// their own, so the grid's types and helpers (`TimerCase`, `Cell`,
+/// `Outcome`, `Observed`, `cells(except:)`, `assertEnd`, `arm`) are internal
+/// rather than private. No test plays sound: audio is silence, and speech is
 /// stopped before the main run loop turns.
 @MainActor
 final class EndBehaviorMatrixTests: XCTestCase {
@@ -136,7 +139,7 @@ final class EndBehaviorMatrixTests: XCTestCase {
     // MARK: - The Grid
 
     /// The sleep timers of the grid, named as in the inventory above.
-    private enum TimerCase: String {
+    enum TimerCase: String {
         /// No timer was set.
         case none
         /// A timer set for the end of the book.
@@ -154,7 +157,7 @@ final class EndBehaviorMatrixTests: XCTestCase {
     }
 
     /// One cell of the grid, for one kind of content.
-    private struct Cell: Equatable {
+    struct Cell: Equatable {
         /// What the book does at its end.
         let behavior: EndOfBookBehavior
         /// The sleep timer in the reader.
@@ -214,7 +217,7 @@ final class EndBehaviorMatrixTests: XCTestCase {
     }
 
     /// What a cell's book does at its end.
-    private struct Outcome: Equatable {
+    struct Outcome: Equatable {
         /// The one announcement the listener hears.
         let announcement: String
         /// Whether the book plays again (a loop that restarts).
@@ -228,7 +231,7 @@ final class EndBehaviorMatrixTests: XCTestCase {
     }
 
     /// What a test saw of a book's end.
-    private struct Observed {
+    struct Observed {
         /// Every announcement made.
         let announcements: [String]
         /// Whether the book plays again.
@@ -249,7 +252,7 @@ final class EndBehaviorMatrixTests: XCTestCase {
 
     /// Every cell of the grid, in the inventory's order, but `covered`: those
     /// another test pins.
-    private static func cells(except covered: [Cell]) -> [Cell] {
+    static func cells(except covered: [Cell]) -> [Cell] {
         let behaviors: [EndOfBookBehavior] = [.stop, .stopAndPlayStartsOver, .loop, .continueNext]
         let timers: [TimerCase] = [.none, .endOfBook, .endOfHeading, .minutesRunning, .minutesExpired]
         return behaviors.flatMap { behavior in
@@ -278,7 +281,7 @@ final class EndBehaviorMatrixTests: XCTestCase {
     ///   - lastChapter: The index of the book's last chapter, where it rests
     ///     at its end.
     ///   - content: The kind of content, for the failure messages.
-    private func assertEnd(
+    func assertEnd(
         _ observed: Observed,
         is cell: Cell,
         title: String,
@@ -307,7 +310,7 @@ final class EndBehaviorMatrixTests: XCTestCase {
     /// the sleep timer sheet sets it. A timer that has run out is set and
     /// run out at once, before the book plays, which leaves it spent as
     /// one that ran out earlier would be.
-    private func arm(_ timer: TimerCase, in reader: ReaderViewModel) {
+    func arm(_ timer: TimerCase, in reader: ReaderViewModel) {
         switch timer {
         case .none:
             break
