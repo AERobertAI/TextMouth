@@ -35,15 +35,16 @@ enum WatchedProcess {
         /// Its output file did not grow for `seconds`.
         case madeNoProgress(seconds: TimeInterval)
 
-        /// The reason as a phrase: "it ran longer than 62 seconds".
+        /// The reason as a phrase: "it ran longer than 62 seconds" (counted with
+        /// `CountWording`, so one second reads "1 second").
         var words: String {
             switch self {
             case let .tookTooLong(seconds):
-                return "it ran longer than \(Int(seconds.rounded(.up))) seconds"
+                return "it ran longer than \(CountWording.seconds(Int(seconds.rounded(.up))))"
             case let .usedTooMuchMemory(bytes):
                 return "it held more than \(bytes / 1_048_576) MB of memory"
             case let .madeNoProgress(seconds):
-                return "its output did not grow for \(Int(seconds.rounded(.up))) seconds"
+                return "its output did not grow for \(CountWording.seconds(Int(seconds.rounded(.up))))"
             }
         }
     }
