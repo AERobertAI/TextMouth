@@ -113,6 +113,9 @@ final class FolderSettingsSheetTests: XCTestCase {
         let full = LibraryInfoWording.fullParts(of: roomy)
         XCTAssertEqual(brief, ["Classics", "Folder", "12 books, 3 unopened", "2 feeds"])
         XCTAssertEqual(full, ["2 subfolders", "14 hours, 3 minutes remaining in total"])
+        // The parts are read by position below: a different count must fail,
+        // never abort the test host.
+        guard brief.count == 4, full.count == 2 else { return XCTFail("Speak Info's parts changed: \(brief) \(full)") }
         let values = FolderSettingsWording.facts(of: roomy, parentPath: "").map(\.value)
         XCTAssertTrue(values.contains(brief[2]))
         XCTAssertTrue(values.contains(brief[3]))
@@ -151,6 +154,9 @@ final class FolderSettingsSheetTests: XCTestCase {
         XCTAssertEqual(facts.subfolderCount, 2, "the Shelf and the feed's own folder")
         let rows = FolderSettingsWording.facts(of: facts, parentPath: try XCTUnwrap(model.folder).parentPath)
         XCTAssertEqual(rows.map(\.label), ["Location", "Books", "Subfolders", "Feeds", "Time remaining"])
+        // The rows are read by position below: a different count must fail,
+        // never abort the test host.
+        guard rows.count == 5 else { return XCTFail("the rows were \(rows.map(\.label))") }
         XCTAssertEqual(rows[1].value, "3 books, 1 unopened")
         XCTAssertEqual(rows[2].value, "2 subfolders")
         XCTAssertEqual(rows[3].value, "1 feed")
