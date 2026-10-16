@@ -1508,6 +1508,203 @@ final class SpeechDirectChunkingTests: XCTestCase {
         XCTAssertEqual(SpeechService.voiceDidNotStartAnnouncement, "Speech paused: the voice did not start. Press Play to try again.")
     }
 
+    // MARK: The playback watchdog's cap per place
+
+    /// The place the idle-cap tests begin at: the start of the word the
+    /// first utterance reports.
+    private static let idlePlace = 300
+
+    /// Speech from the start of `longText` whose first utterance has started
+    /// and reported a word at `idlePlace`, which the recorder's idle
+    /// synthesizer then never goes on from. Returns the speech, what it was
+    /// handed, the timers its watchdogs tick on, and the first utterance.
+    private func makeSpeechThatReportedAWord() throws -> (SpeechService, UtteranceRecorder, ManualWatchdogTimers, AVSpeechUtterance) {
+        let timers = ManualWatchdogTimers()
+        let (speech, recorder) = makeDirectSpeech(watchdogTimers: timers)
+        speech.speak(Self.longText)
+        let first = try handedOver(0, by: recorder)
+        report(start: first, to: speech)
+        report(word: NSRange(location: Self.idlePlace, length: 5), of: first, to: speech)
+        return (speech, recorder, timers, first)
+    }
+
+    /// Let the playback watchdog now running find the synthesizer idle for
+    /// two ticks, which recovers it by speaking again; report the start of
+    /// the utterance handed over, as the synthesizer would, and return it.
+    /// Fails without stopping the test when nothing was spoken again.
+    private func idleOnce(
+        _ speech: SpeechService,
+        _ recorder: UtteranceRecorder,
+        _ timers: ManualWatchdogTimers
+    ) throws -> AVSpeechUtterance {
+        let handedBefore = recorder.utterances.count
+        let watchdog = try XCTUnwrap(timers.running.last, "nothing watches the speech")
+        timers.tick(watchdog, times: 2)
+        XCTAssertEqual(recorder.utterances.count, handedBefore + 1, "the idle synthesizer was not recovered")
+        let again = try handedOver(handedBefore, by: recorder)
+        report(start: again, to: speech)
+        return again
+    }
+
+    /// An utterance that goes idle at one place is recovered twice there,
+    /// each time by speaking again from the same word, and the third idle
+    /// pauses speech at the place, the cursor kept, with nothing more handed
+    /// over and nothing watched: the restart no longer repeats without end.
+    /// The reader is told once, speech says nothing over it, and the line
+    /// logged holds offsets only. Play speaks from the place afresh, and the
+    /// place has its two recoveries again.
+    func testAnIdleSynthesizerAtOnePlaceIsRecoveredTwiceThenSpeechPausesThere() throws {
+        let (speech, recorder, timers, _) = try makeSpeechThatReportedAWord()
+        defer { speech.stop() }
+        var stalls = 0
+        speech.onSpeechStalled = { stalls += 1 }
+        let restart = chunk(at: Self.idlePlace, size: SpeechService.directModeFirstChunkSize)
+
+        for recovery in 1...SpeechService.directIdleWatchdogRecoveriesPerPlace {
+            let again = try idleOnce(speech, recorder, timers)
+            XCTAssertEqual(again.speechString, restart.words(of: Self.longText), "recovery \(recovery) spoke from another place")
+            XCTAssertTrue(speech.isSpeaking && !speech.isPaused)
+        }
+        let lastWatchdog = try XCTUnwrap(timers.running.last)
+        let handedBeforeTheStop = recorder.utterances.count
+        let announced = recordingAnnouncements {
+            timers.tick(lastWatchdog, times: 2)
+        }
+
+        XCTAssertEqual(recorder.utterances.count, handedBeforeTheStop, "speech recovered a third time at the place")
+        XCTAssertTrue(speech.isSpeaking && speech.isPaused, "speech did not pause where the voice went idle")
+        XCTAssertEqual(speech.currentWordRange, NSRange(location: Self.idlePlace, length: 0), "the cursor left the place")
+        XCTAssertEqual(stalls, 1, "the reader was not told once")
+        XCTAssertEqual(announced.announcements, [], "speech spoke over the reader it told")
+        XCTAssertTrue(timers.running.isEmpty, "a watchdog still watches the paused speech")
+        let lines = speech.recentTransitionLines.lines.map(\.message)
+        XCTAssertTrue(
+            lines.contains(
+                "DIRECT_IDLE_STALLED: offset=\(Self.idlePlace) chunkEnd=\(restart.end) went idle after 2 recoveries; "
+                    + "speech paused there"
+            ),
+            "\(lines)"
+        )
+
+        XCTAssertTrue(speech.resume(), "Play did not speak again")
+        XCTAssertEqual(recorder.utterances.count, handedBeforeTheStop + 1)
+        XCTAssertEqual(try handedOver(handedBeforeTheStop, by: recorder).speechString, restart.words(of: Self.longText))
+        report(start: try handedOver(handedBeforeTheStop, by: recorder), to: speech)
+        for _ in 1...SpeechService.directIdleWatchdogRecoveriesPerPlace {
+            _ = try idleOnce(speech, recorder, timers)
+        }
+        XCTAssertFalse(speech.isPaused, "Play did not give the place its recoveries again")
+        XCTAssertEqual(stalls, 1)
+    }
+
+    /// A word reported past the place shows that speech moved on: a later
+    /// idle back at the place (here after a seek to it) is a new stall, with
+    /// the place's two recoveries to come, where the same idles with no
+    /// progress between them pause speech.
+    func testAWordPastThePlaceGivesItsRecoveriesBack() throws {
+        let (speech, recorder, timers, _) = try makeSpeechThatReportedAWord()
+        defer { speech.stop() }
+        var stalls = 0
+        speech.onSpeechStalled = { stalls += 1 }
+
+        _ = try idleOnce(speech, recorder, timers)
+        let secondRecovery = try idleOnce(speech, recorder, timers)
+        // The utterance spoken again gets past the place.
+        report(word: NSRange(location: 40, length: 5), of: secondRecovery, to: speech)
+        XCTAssertEqual(speech.currentWordRange?.location, Self.idlePlace + 40)
+        // The listener goes back to the place, and the voice says its word.
+        speech.seek(toCharOffset: Self.idlePlace)
+        let afterTheSeek = try XCTUnwrap(recorder.utterances.last)
+        report(start: afterTheSeek, to: speech)
+        report(word: NSRange(location: 0, length: 5), of: afterTheSeek, to: speech)
+        XCTAssertEqual(speech.currentWordRange?.location, Self.idlePlace)
+
+        for _ in 1...SpeechService.directIdleWatchdogRecoveriesPerPlace {
+            _ = try idleOnce(speech, recorder, timers)
+        }
+
+        XCTAssertFalse(speech.isPaused, "the place's recoveries were not given back")
+        XCTAssertEqual(stalls, 0)
+    }
+
+    /// A word at the place itself is not past it: the restart speaks that
+    /// word again, and going idle there is the same stall.
+    func testAWordAtThePlaceKeepsItsRecoveries() throws {
+        let (speech, recorder, timers, _) = try makeSpeechThatReportedAWord()
+        defer { speech.stop() }
+        var stalls = 0
+        speech.onSpeechStalled = { stalls += 1 }
+
+        _ = try idleOnce(speech, recorder, timers)
+        let secondRecovery = try idleOnce(speech, recorder, timers)
+        report(word: NSRange(location: 0, length: 5), of: secondRecovery, to: speech)
+        XCTAssertEqual(speech.currentWordRange?.location, Self.idlePlace)
+        let watchdog = try XCTUnwrap(timers.running.last)
+        timers.tick(watchdog, times: 2)
+
+        XCTAssertTrue(speech.isPaused, "a word at the place gave its recoveries back")
+        XCTAssertEqual(stalls, 1)
+    }
+
+    /// An utterance's start alone does not give the recoveries back: it
+    /// shows that the synthesizer can start, not that it speaks. Each
+    /// restart starts and says nothing, and the third idle pauses.
+    func testAStartAloneDoesNotGiveTheRecoveriesBack() throws {
+        let (speech, recorder, timers, _) = try makeSpeechThatReportedAWord()
+        defer { speech.stop() }
+        var stalls = 0
+        speech.onSpeechStalled = { stalls += 1 }
+
+        _ = try idleOnce(speech, recorder, timers)
+        _ = try idleOnce(speech, recorder, timers)
+        let handedBeforeTheStop = recorder.utterances.count
+        let watchdog = try XCTUnwrap(timers.running.last)
+        timers.tick(watchdog, times: 2)
+
+        XCTAssertEqual(recorder.utterances.count, handedBeforeTheStop, "speech recovered a third time at the place")
+        XCTAssertTrue(speech.isPaused)
+        XCTAssertEqual(stalls, 1)
+    }
+
+    /// Stopping speech forgets the place's recoveries: speech begun again
+    /// that goes idle at the same place has its two recoveries there.
+    func testStoppingSpeechForgetsTheIdleRecoveries() throws {
+        let (speech, recorder, timers, _) = try makeSpeechThatReportedAWord()
+        defer { speech.stop() }
+
+        _ = try idleOnce(speech, recorder, timers)
+        _ = try idleOnce(speech, recorder, timers)
+        speech.stop()
+        speech.speak(Self.longText)
+        let again = try XCTUnwrap(recorder.utterances.last)
+        report(start: again, to: speech)
+        report(word: NSRange(location: Self.idlePlace, length: 5), of: again, to: speech)
+
+        for _ in 1...SpeechService.directIdleWatchdogRecoveriesPerPlace {
+            _ = try idleOnce(speech, recorder, timers)
+        }
+
+        XCTAssertFalse(speech.isPaused, "stopping speech kept the place's recoveries")
+    }
+
+    /// With no reader to tell, speech that pauses where the voice went idle
+    /// says why itself, once, in the pinned words.
+    func testWithNoReaderSpeechSaysItselfThatTheIdleVoicePaused() throws {
+        let (speech, recorder, timers, _) = try makeSpeechThatReportedAWord()
+        defer { speech.stop() }
+        for _ in 1...SpeechService.directIdleWatchdogRecoveriesPerPlace {
+            _ = try idleOnce(speech, recorder, timers)
+        }
+        let watchdog = try XCTUnwrap(timers.running.last)
+
+        let announced = recordingAnnouncements {
+            timers.tick(watchdog, times: 2)
+        }
+
+        XCTAssertTrue(speech.isPaused, "speech did not pause where the voice went idle")
+        XCTAssertEqual(announced.announcements.map(\.message), [SpeechService.voiceDidNotStartAnnouncement])
+    }
+
     /// The app's watchdog timer ticks on the main run loop until it is
     /// cancelled, and not after.
     func testTheRunLoopWatchdogTimerTicksUntilCancelled() {

@@ -689,7 +689,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     var onSpeechRefused: ((SpeechRefusal) -> Void)?
     /// Called on the main queue when speech paused itself, the cursor where
     /// it paused, because the voice did not start a passage, on fresh
-    /// synthesizers too (`pauseAfterStartStalls(at:)`). The reader makes the
+    /// synthesizers too (`pauseAfterStalls(at:because:)`). The reader makes the
     /// pause its own and tells the listener; with no reader set, speech says
     /// `voiceDidNotStartAnnouncement` itself. Play speaks on from there.
     var onSpeechStalled: (() -> Void)?
@@ -803,7 +803,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// How many times the start watchdog recovers an utterance that never
     /// starts at one place, the utterance's start offset, before it stops
     /// speech there as a pause and tells the listener
-    /// (`pauseAfterStartStalls(at:)`), rather than recovering in silence
+    /// (`pauseAfterStalls(at:because:)`), rather than recovering in silence
     /// forever.
     static let directStartWatchdogRecoveriesPerPlace = 2
     private var directStartWatchdogTimer: SpeechWatchdogTimer?
@@ -818,14 +818,75 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// The place where the start watchdog last recovered an utterance that
     /// never started, and how many times it has recovered there since an
     /// utterance last started, speech stopped, or speech paused after them.
-    private var startStallRecoveries: StartStallRecoveries?
+    private var startStallRecoveries: WatchdogRecoveries?
+    /// How many times the playback watchdog recovers an utterance that went
+    /// idle at one place, the last word reported (else the chunk's base),
+    /// before it stops speech there as a pause and tells the listener
+    /// (`pauseAfterStalls(at:because:)`), rather than restarting at the same
+    /// word without end. The start watchdog's cap is
+    /// `directStartWatchdogRecoveriesPerPlace`.
+    static let directIdleWatchdogRecoveriesPerPlace = 2
+    /// The place where the playback watchdog last recovered an idle
+    /// utterance, and how many times it has recovered there since speech
+    /// last reported a word past it, stopped, or paused after them. An
+    /// utterance's start does not clear it: a start shows that the
+    /// synthesizer can start, not that it speaks.
+    private var idleRecoveries: WatchdogRecoveries?
 
-    /// Where the start watchdog has recovered, and how often.
-    private struct StartStallRecoveries {
-        /// The start offset of the utterances that never started.
+    /// Where one watchdog has recovered, and how often.
+    private struct WatchdogRecoveries {
+        /// The offset the recovered utterances began at (the start watchdog)
+        /// or went idle at (the playback watchdog).
         let place: Int
         /// How many times the watchdog recovered at that place.
         let count: Int
+
+        /// How many times `record` says a watchdog has recovered at `place`:
+        /// none when it holds another place, or nothing.
+        static func count(in record: WatchdogRecoveries?, at place: Int) -> Int {
+            guard let record, record.place == place else { return 0 }
+            return record.count
+        }
+    }
+
+    /// The two ways a watchdog's recoveries at one place run out, which
+    /// pause speech there (`pauseAfterStalls(at:because:)`) in words that
+    /// differ only by what the utterance did.
+    private enum DirectStall {
+        /// The utterance never started (the start watchdog).
+        case neverStarted
+        /// The utterance started, then went idle without a finish (the
+        /// playback watchdog).
+        case wentIdle
+
+        /// The log line's tag.
+        var logTag: String {
+            switch self {
+            case .neverStarted: return "DIRECT_START_STALLED"
+            case .wentIdle: return "DIRECT_IDLE_STALLED"
+            }
+        }
+        /// What the utterance did, as the log line says it.
+        var whatItDid: String {
+            switch self {
+            case .neverStarted: return "never started"
+            case .wentIdle: return "went idle"
+            }
+        }
+        /// How many recoveries the watchdog made at the place first.
+        var recoveriesPerPlace: Int {
+            switch self {
+            case .neverStarted: return SpeechService.directStartWatchdogRecoveriesPerPlace
+            case .wentIdle: return SpeechService.directIdleWatchdogRecoveriesPerPlace
+            }
+        }
+        /// What the old synthesizer did, for `replaceDirectSynthesizer(after:)`.
+        var replacementReason: String {
+            switch self {
+            case .neverStarted: return "the live utterance never started"
+            case .wentIdle: return "the live utterance went idle"
+            }
+        }
     }
     /// Timer to poll playback position from audio engine
     private var positionTimer: Timer?
@@ -1258,6 +1319,18 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
         let reportedOffset = currentWordRange?.location ?? directModeBaseOffset
         let safeOffset = max(0, min(reportedOffset, currentText.utf16Length))
+
+        // At most `directIdleWatchdogRecoveriesPerPlace` recoveries at one
+        // place, whichever branch below makes them: an utterance that starts
+        // and goes idle again at the same word would otherwise restart there
+        // without end. The next one pauses speech there instead.
+        let recoveriesHere = WatchdogRecoveries.count(in: idleRecoveries, at: safeOffset)
+        guard recoveriesHere < Self.directIdleWatchdogRecoveriesPerPlace else {
+            pauseAfterStalls(at: safeOffset, because: .wentIdle)
+            return
+        }
+        idleRecoveries = WatchdogRecoveries(place: safeOffset, count: recoveriesHere + 1)
+
         if renderedAudioMatchesSpeech {
             transitionLog(.event, "DIRECT_WATCHDOG_RECOVERY: synthesizer idle without usable didFinish; switching to rendered audio at offset=\(safeOffset) chunkEnd=\(directModeChunkEnd)")
             switchToRenderedAudioOrSpeakDirectly(at: safeOffset, failureTag: "DIRECT_WATCHDOG_ENGINE_FAILED")
@@ -1302,17 +1375,17 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// At most `directStartWatchdogRecoveriesPerPlace` times at one place,
     /// the utterance's start offset: when fresh synthesizers do not start
     /// it either, speech pauses there and the listener is told
-    /// (`pauseAfterStartStalls(at:)`), where it once recovered in silence
+    /// (`pauseAfterStalls(at:because:)`), where it once recovered in silence
     /// every few seconds, without end.
     private func recoverFromUnstartedDirectUtterance() {
         let place = directModeBaseOffset
         let offset = retryOffset(from: directModeBaseOffset, to: directModeChunkEnd)
-        let recoveriesHere = startStallRecoveries.map { $0.place == place ? $0.count : 0 } ?? 0
+        let recoveriesHere = WatchdogRecoveries.count(in: startStallRecoveries, at: place)
         guard recoveriesHere < Self.directStartWatchdogRecoveriesPerPlace else {
-            pauseAfterStartStalls(at: offset)
+            pauseAfterStalls(at: offset, because: .neverStarted)
             return
         }
-        startStallRecoveries = StartStallRecoveries(place: place, count: recoveriesHere + 1)
+        startStallRecoveries = WatchdogRecoveries(place: place, count: recoveriesHere + 1)
         transitionLog(
             .event,
             "DIRECT_START_WATCHDOG_RECOVERY: utterance at offset=\(place) chunkEnd=\(directModeChunkEnd) never started; "
@@ -1328,28 +1401,31 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
     /// What the listener hears when the voice did not start a passage, on
     /// fresh synthesizers too, and speech paused there
-    /// (`pauseAfterStartStalls(at:)`): "Speech paused", as the reader shows
+    /// (`pauseAfterStalls(at:because:)`): "Speech paused", as the reader shows
     /// it, Paused, with Play to go on from there (REV11; it once said
     /// "Speech stopped").
     nonisolated static let voiceDidNotStartAnnouncement = "Speech paused: the voice did not start. Press Play to try again."
 
-    /// Stop speech at `offset` as a pause, the cursor kept there, once the
-    /// start watchdog's recoveries at the place have all ended in an
-    /// utterance that never started (`DIRECT_START_STALLED`, offsets only):
-    /// the voice will not start, and recovering on would leave speech silent
-    /// while it showed itself speaking. The synthesizer that held the last
-    /// one is let go, and Play speaks from `offset` afresh, on a fresh one
-    /// (`pendingDirectSeekOffset`), the place's recoveries to come again.
+    /// Stop speech at `offset` as a pause, the cursor kept there, once a
+    /// watchdog's recoveries at the place have all ended in the same stall
+    /// (`stall`): an utterance that never started (`DIRECT_START_STALLED`),
+    /// or one that went idle (`DIRECT_IDLE_STALLED`), offsets only. The voice
+    /// will not speak, and recovering on would leave speech silent while it
+    /// showed itself speaking. The synthesizer that held the last one is let
+    /// go, and Play speaks from `offset` afresh, on a fresh one
+    /// (`pendingDirectSeekOffset`), the place's recoveries to come again
+    /// (both watchdogs' records go).
     /// The reader is told and tells the listener once (`onSpeechStalled`);
     /// with no reader, speech says `voiceDidNotStartAnnouncement` itself.
-    private func pauseAfterStartStalls(at offset: Int) {
+    private func pauseAfterStalls(at offset: Int, because stall: DirectStall) {
         transitionLog(
             .event,
-            "DIRECT_START_STALLED: offset=\(offset) chunkEnd=\(directModeChunkEnd) never started after "
-                + "\(Self.directStartWatchdogRecoveriesPerPlace) recoveries; speech paused there"
+            "\(stall.logTag): offset=\(offset) chunkEnd=\(directModeChunkEnd) \(stall.whatItDid) after "
+                + "\(stall.recoveriesPerPlace) recoveries; speech paused there"
         )
         startStallRecoveries = nil
-        replaceDirectSynthesizer(after: "the live utterance never started")
+        idleRecoveries = nil
+        replaceDirectSynthesizer(after: stall.replacementReason)
         pendingDirectSeekOffset = offset
         isPaused = true
         stopPositionTracking()
@@ -1969,6 +2045,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         lastDirectRetryOffset = nil
         strictlyGuardedRange = nil
         startStallRecoveries = nil
+        idleRecoveries = nil
         stopPositionTracking()
     }
 
@@ -2366,6 +2443,7 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
         let absoluteRange = NSRange(location: characterRange.location + baseOffset, length: characterRange.length)
         currentWordRange = absoluteRange
         forgetRetryPlace(passedBy: absoluteRange.location)
+        forgetIdleRecoveries(passedBy: absoluteRange.location)
         onWordSpoken?(absoluteRange, word)
     }
 
@@ -2383,6 +2461,17 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
         guard let place = lastDirectRetryOffset, offset > place else { return }
         lastDirectRetryOffset = nil
         transitionLog(.trace, "DIRECT_RETRY_PLACE_PASSED: offset=\(offset) place=\(place)")
+    }
+
+    /// Forget the playback watchdog's idle recoveries (`idleRecoveries`)
+    /// once a word past their place is reported at `offset`: speech has
+    /// moved on, so a later idle at that place is a new stall. A word at the
+    /// place itself is not past it: the restart at the last reported word
+    /// speaks that word again, and going idle there again is the same stall.
+    private func forgetIdleRecoveries(passedBy offset: Int) {
+        guard let record = idleRecoveries, offset > record.place else { return }
+        idleRecoveries = nil
+        transitionLog(.trace, "DIRECT_IDLE_PLACE_PASSED: offset=\(offset) place=\(record.place)")
     }
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) {
