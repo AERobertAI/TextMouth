@@ -58,6 +58,10 @@ PACKAGE_RESOLVED = $(PROJECT)/project.xcworkspace/xcshareddata/swiftpm/Package.r
 # compiled code earlier builds left there.
 TEST_DERIVED_DATA =
 
+# The branch that `make lint-tests` and `make lint-a11y` compare against: they
+# check the lines added since the merge-base of this ref and HEAD.
+LINT_BASE = main
+
 # Set to 1, as `make check` sets it, to have the performance baselines tests
 # (PerformanceBaselineTests) measure even on a busy Mac rather than skip.
 # The runner hands it to xcodebuild as TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT,
@@ -81,7 +85,7 @@ RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
 	-scheme $(SCHEME) \
 	-derivedDataPath "$(DERIVED_BUILD_DIR)"
 
-.PHONY: all clean build debug run install uninstall generate resolve-packages update-packages test check check-selftest test-area perf-baselines open xcode help signing-identity
+.PHONY: all clean build debug run install uninstall generate resolve-packages update-packages test check check-selftest test-area lint-tests lint-a11y perf-baselines open xcode help signing-identity
 
 ## Default: build the app
 all: build
@@ -99,7 +103,10 @@ help:
 	@echo "  make uninstall  - Remove from /Applications, keeping the dSYMs"
 	@echo "  make test       - Run the hosted production test suite"
 	@echo "  make check      - Run the reproducibility gate: package pins, Release build, hosted tests, no Swift warnings"
-	@echo "  make check-selftest - Test the gate, make install's dSYM keeping, and the baseline-recording script in seconds, without building"
+	@echo "  make check-selftest - Test the gate, make install's dSYM keeping, the baseline-recording script, and the Scripts/test tools in seconds, without building"
+	@echo "  make test-area AREAS=\"feeds bookmarks\" - Run only the hosted tests of some areas, in one build, with a short result"
+	@echo "  make lint-tests - Check the test lines this branch adds for traps, and list what it did to existing tests"
+	@echo "  make lint-a11y  - Check the SwiftUI lines this branch adds for accessibility mistakes"
 	@echo "  make perf-baselines - Record new performance baselines after a deliberate change"
 	@echo "  make signing-identity - Once per Mac: make the identity builds are signed with, so macOS remembers the microphone permission"
 	@echo "  make generate   - Regenerate the Xcode project (requires xcodegen)"
@@ -207,12 +214,19 @@ check:
 	@Scripts/check.sh $(CHECK_ARGS)
 
 ## Test the gate script, the performance baselines' recording script and the
-## area runner themselves: dry runs, stubbed build tools and canned logs, no
-## building
+## tools in Scripts/test (the area runner, the diff linters, the log reader,
+## the corpus generator) themselves: dry runs, stubbed build tools, canned
+## logs and snippets, no building
 check-selftest:
 	@Scripts/check-selftest.sh
 	@Scripts/perf-baselines-selftest.sh
 	@python3 Scripts/test/run-area.py --selftest
+	@python3 Scripts/test/difflint.py --selftest
+	@python3 Scripts/test/trap-lint.py --selftest
+	@python3 Scripts/test/a11y-lint.py --selftest
+	@python3 Scripts/test/test-diff.py --selftest
+	@python3 Scripts/test/test-logs.py --selftest
+	@python3 Scripts/test/make-corpus.py --selftest
 
 ## Run only the hosted tests of some areas (or test classes) in one build,
 ## printing a short summary: make test-area AREAS="feeds bookmarks". The areas
@@ -220,6 +234,20 @@ check-selftest:
 ## AREA_ARGS=--dry-run or AREA_ARGS="--env NAME=VALUE".
 test-area:
 	@python3 Scripts/test/run-area.py $(AREAS) $(AREA_ARGS)
+
+## Check the lines this branch added to the hosted tests (since LINT_BASE) for
+## what can crash a test host, play sound aloud, record, or touch the real
+## library, then list what it did to tests that already existed: removed or
+## changed assertions, skips, raised timeouts. No building.
+lint-tests:
+	@python3 Scripts/test/trap-lint.py --base $(LINT_BASE)
+	@python3 Scripts/test/test-diff.py --base $(LINT_BASE)
+
+## Check the SwiftUI lines this branch added (since LINT_BASE) for accessibility
+## mistakes a VoiceOver or braille user would meet: unlabelled controls, tap
+## gestures with no VoiceOver action, and the like. No building.
+lint-a11y:
+	@python3 Scripts/test/a11y-lint.py --base $(LINT_BASE)
 
 ## Rewrite TextMouthProductionTests/performance-baselines.json from a fresh
 ## run of PerformanceBaselineTests, which waits for a quiet Mac, printing
