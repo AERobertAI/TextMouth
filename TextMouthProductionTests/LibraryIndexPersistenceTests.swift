@@ -279,6 +279,204 @@ final class LibraryIndexPersistenceTests: XCTestCase {
         XCTAssertFalse(memory.holds(bytes, for: "a", at: file), "a new directory starts the memory over")
     }
 
+    /// A save of a library whose bytes library.json already holds writes
+    /// nothing: the file's modification date, set to the past by the test so
+    /// that a rewrite could not hide, is as the test left it.
+    func testASaveOfAnUnchangedLibraryWritesNothing() throws {
+        let library = LibraryIndexSandbox.sampleLibrary()
+        LibraryPersistenceService.save(library)
+        LibraryPersistenceService.flushPendingSave()
+        let past = try backdateIndex()
+
+        LibraryPersistenceService.save(library)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(try modificationDate(of: sandbox.indexURL), past, "library.json was written again")
+        XCTAssertEqual(
+            try LibraryIndexSandbox.canonicalJSON(Data(contentsOf: sandbox.indexURL)),
+            try LibraryIndexSandbox.canonicalJSON(LibraryIndexSandbox.encoded(library))
+        )
+    }
+
+    /// A save of a changed library writes it, and a reload sees the change.
+    func testASaveOfAChangedLibraryIsWritten() throws {
+        var library = LibraryIndexSandbox.sampleLibrary()
+        LibraryPersistenceService.save(library)
+        LibraryPersistenceService.flushPendingSave()
+        let past = try backdateIndex()
+        let before = try Data(contentsOf: sandbox.indexURL)
+
+        let added = "Added Shelf \(UUID().uuidString.prefix(8))"
+        library.folders.append(BookFolder(name: added))
+        LibraryPersistenceService.save(library)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertNotEqual(try modificationDate(of: sandbox.indexURL), past, "the changed library was not written")
+        XCTAssertNotEqual(try Data(contentsOf: sandbox.indexURL), before)
+        let reloaded = try XCTUnwrap(LibraryPersistenceService.load().library)
+        XCTAssertTrue(reloaded.folders.contains { $0.name == added })
+    }
+
+    /// A library.json that is gone since the last save is written again by
+    /// the next save of the same library, as after a deletion outside the app.
+    func testADeletedIndexIsWrittenAgainByASaveOfAnUnchangedLibrary() throws {
+        let library = LibraryIndexSandbox.sampleLibrary()
+        LibraryPersistenceService.save(library)
+        LibraryPersistenceService.flushPendingSave()
+        try FileManager.default.removeItem(at: sandbox.indexURL)
+
+        LibraryPersistenceService.save(library)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(
+            try LibraryIndexSandbox.canonicalJSON(Data(contentsOf: sandbox.indexURL)),
+            try LibraryIndexSandbox.canonicalJSON(LibraryIndexSandbox.encoded(library))
+        )
+    }
+
+    /// A new data directory starts the memory over: bytes remembered of the
+    /// old directory's library.json say nothing about the new one's, so a
+    /// file standing there is replaced, however alike the libraries are.
+    @MainActor
+    func testANewDataDirectoryStartsTheMemoryOver() throws {
+        let library = LibraryIndexSandbox.sampleLibrary()
+        LibraryPersistenceService.save(library)
+        LibraryPersistenceService.flushPendingSave()
+        let newRoot = try makeCurrentDataDirectory("IndexMemoryRoot")
+        let newIndex = newRoot.appendingPathComponent("library.json")
+        let stale = Data("not the library".utf8)
+        try stale.write(to: newIndex)
+
+        LibraryPersistenceService.save(library)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertNotEqual(try Data(contentsOf: newIndex), stale, "the new directory's file was left as it was")
+        XCTAssertEqual(
+            try LibraryIndexSandbox.canonicalJSON(Data(contentsOf: newIndex)),
+            try LibraryIndexSandbox.canonicalJSON(LibraryIndexSandbox.encoded(library))
+        )
+    }
+
+    /// A write that failed is not remembered: the retry of the same library
+    /// writes it, over a file that stands there since, and settles the failure.
+    @MainActor
+    func testAFailedWriteIsNotRememberedSoTheRetryWritesIt() throws {
+        let center = cleanSharedFailureCenter()
+        let library = LibraryIndexSandbox.sampleLibrary()
+        let obstruction = try WriteObstruction.place(at: sandbox.indexURL)
+        LibraryPersistenceService.save(library)
+        LibraryPersistenceService.flushPendingSave()
+        XCTAssertTrue(center.hasUnsavedChanges, "the write did not fail")
+
+        // Something else stands where library.json goes now, so only a
+        // write replaces it.
+        obstruction.clear()
+        let stale = Data("not the library".utf8)
+        try stale.write(to: sandbox.indexURL)
+        _ = recordingAnnouncements { center.retry(.libraryIndex) }
+
+        XCTAssertFalse(center.hasUnsavedChanges)
+        XCTAssertNotEqual(try Data(contentsOf: sandbox.indexURL), stale, "the retry did not write")
+        XCTAssertEqual(
+            try LibraryIndexSandbox.canonicalJSON(Data(contentsOf: sandbox.indexURL)),
+            try LibraryIndexSandbox.canonicalJSON(LibraryIndexSandbox.encoded(library))
+        )
+    }
+
+    /// The first save after a load of a valid index writes nothing when it
+    /// changes nothing, the bytes read being noted as the feed indexes' are.
+    func testTheFirstSaveAfterLoadingAValidIndexWritesNothing() throws {
+        try sandbox.stageValid(LibraryIndexSandbox.sampleLibrary(), at: sandbox.indexURL)
+        let past = try backdateIndex()
+
+        let loaded = try XCTUnwrap(LibraryPersistenceService.load().library)
+        LibraryPersistenceService.save(loaded)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(try modificationDate(of: sandbox.indexURL), past, "library.json was written again")
+    }
+
+    /// An index an older version wrote pretty-printed differs from what is
+    /// saved, so the first save writes it back, compact.
+    func testAPrettyPrintedIndexIsRewrittenByTheFirstSave() throws {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = .prettyPrinted
+        try encoder.encode(LibraryIndexSandbox.sampleLibrary()).write(to: sandbox.indexURL, options: .atomic)
+        let past = try backdateIndex()
+
+        let loaded = try XCTUnwrap(LibraryPersistenceService.load().library)
+        LibraryPersistenceService.save(loaded)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertNotEqual(try modificationDate(of: sandbox.indexURL), past, "the pretty index was not rewritten")
+        XCTAssertFalse(try Data(contentsOf: sandbox.indexURL).contains(UInt8(ascii: "\n")))
+    }
+
+    /// An index that could not be read is not remembered, so the rebuild
+    /// that replaces it writes even the bytes this process wrote before.
+    func testAnUnreadableIndexIsReplacedByTheRebuildWhateverWasWrittenBefore() throws {
+        let library = LibraryIndexSandbox.sampleLibrary()
+        LibraryPersistenceService.save(library)
+        LibraryPersistenceService.flushPendingSave()
+        try sandbox.stage(.truncated, of: library, at: sandbox.indexURL)
+        XCTAssertNotNil(unreadableFailure(from: LibraryPersistenceService.load()))
+
+        try LibraryPersistenceService.replaceUnreadableIndex(with: library)
+
+        XCTAssertEqual(
+            try LibraryIndexSandbox.canonicalJSON(Data(contentsOf: sandbox.indexURL)),
+            try LibraryIndexSandbox.canonicalJSON(LibraryIndexSandbox.encoded(library))
+        )
+    }
+
+    /// A save that writes nothing still counts as a save: it settles an
+    /// earlier failed write, as the file already holds this library.
+    @MainActor
+    func testASkippedSaveStillSettlesAnEarlierFailedWrite() throws {
+        let center = cleanSharedFailureCenter()
+        let library = LibraryIndexSandbox.sampleLibrary()
+        LibraryPersistenceService.save(library)
+        LibraryPersistenceService.flushPendingSave()
+
+        // A different library fails to write, so the center lists it.
+        let obstruction = try WriteObstruction.place(at: sandbox.indexURL)
+        LibraryPersistenceService.save(Library(folders: [BookFolder(name: "Never Written \(UUID().uuidString)")]))
+        LibraryPersistenceService.flushPendingSave()
+        XCTAssertEqual(center.outstandingFailures().map(\.subject), [.libraryIndex])
+
+        // The file holds the first library again; saving it writes nothing.
+        obstruction.clear()
+        try sandbox.stageValid(library, at: sandbox.indexURL)
+        let past = try backdateIndex()
+        LibraryPersistenceService.save(library)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(try modificationDate(of: sandbox.indexURL), past, "library.json was written again")
+        XCTAssertTrue(center.outstandingFailures().isEmpty, "the skipped save left the failure listed")
+    }
+
+    /// Equal libraries encode to equal bytes, however their dictionaries
+    /// were built, and a library decoded from its bytes encodes to them
+    /// again: the skip works only when they do.
+    func testEqualLibrariesEncodeToEqualBytes() throws {
+        let names = (0..<40).map { "Shelf \($0)" }
+        let settings = FolderSortSetting(sortField: .manual, sortAscending: true)
+        var forward = Library()
+        var backward = Library()
+        for name in names { forward.folderSortSettings[name] = settings }
+        for name in names.reversed() { backward.folderSortSettings[name] = settings }
+
+        let bytes = try LibraryPersistenceService.encodedIndex(forward)
+
+        XCTAssertEqual(try LibraryPersistenceService.encodedIndex(backward), bytes)
+        XCTAssertEqual(try LibraryPersistenceService.encodedIndex(forward), bytes)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let decoded = try decoder.decode(Library.self, from: bytes)
+        XCTAssertEqual(try LibraryPersistenceService.encodedIndex(decoded), bytes)
+    }
+
     // MARK: - Helpers
 
     /// Stages `damage` at `location`, loads, and checks the whole contract:
@@ -329,6 +527,22 @@ final class LibraryIndexPersistenceTests: XCTestCase {
         LibraryIndexSandbox.makeReadable(location)
         XCTAssertEqual(try Data(contentsOf: location), bytes, "the file changed", file: file, line: line)
         XCTAssertEqual(try Data(contentsOf: copy), bytes, "the copy is not verbatim", file: file, line: line)
+    }
+
+    /// Sets library.json's modification date far in the past and returns it,
+    /// so a later write of the file shows as a newer date however quickly it
+    /// follows. Clock resolution can never hide a rewrite.
+    private func backdateIndex() throws -> Date {
+        // Whole seconds, as every file system keeps them.
+        let past = Date(timeIntervalSince1970: 1_000_000_000)
+        try FileManager.default.setAttributes([.modificationDate: past], ofItemAtPath: sandbox.indexURL.path)
+        return past
+    }
+
+    /// When the file at `url` was last modified.
+    private func modificationDate(of url: URL) throws -> Date {
+        let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+        return try XCTUnwrap(attributes[.modificationDate] as? Date)
     }
 
     /// The failure carried by an unreadable result, or nil for any other.
