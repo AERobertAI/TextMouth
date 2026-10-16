@@ -45,25 +45,25 @@ import XCTest
 /// continueNext | text | minutes (running) | covered by EndBehaviorMatrixTests.testTextBookEndBehaviorMatrix
 /// continueNext | text | minutes (expired) | covered by EndBehaviorMatrixTests.testTextBookEndBehaviorMatrix
 /// stop | single-file audio | none | covered by FinishedBookReaderTests.testEveryAudiobookLayoutRestsExactlyAtItsEnd (oneFile)
-/// stop | single-file audio | endOfBook | UNCOVERED
-/// stop | single-file audio | endOfHeading | UNCOVERED
-/// stop | single-file audio | minutes (running) | UNCOVERED
-/// stop | single-file audio | minutes (expired) | UNCOVERED
-/// stopAndPlayStartsOver | single-file audio | none | UNCOVERED
-/// stopAndPlayStartsOver | single-file audio | endOfBook | UNCOVERED
-/// stopAndPlayStartsOver | single-file audio | endOfHeading | UNCOVERED
-/// stopAndPlayStartsOver | single-file audio | minutes (running) | UNCOVERED
-/// stopAndPlayStartsOver | single-file audio | minutes (expired) | UNCOVERED
-/// loop | single-file audio | none | UNCOVERED (only that the audio plays again, no wording or timer: AudioDirectoryImportTests.testLoopRestartsTheAudioBackendAtTheBeginning)
-/// loop | single-file audio | endOfBook | UNCOVERED
-/// loop | single-file audio | endOfHeading | UNCOVERED
-/// loop | single-file audio | minutes (running) | UNCOVERED
-/// loop | single-file audio | minutes (expired) | UNCOVERED
-/// continueNext | single-file audio | none | UNCOVERED
-/// continueNext | single-file audio | endOfBook | UNCOVERED
-/// continueNext | single-file audio | endOfHeading | UNCOVERED
-/// continueNext | single-file audio | minutes (running) | UNCOVERED
-/// continueNext | single-file audio | minutes (expired) | UNCOVERED
+/// stop | single-file audio | endOfBook | covered by EndBehaviorMatrixTests.testSingleFileAudioEndBehaviorMatrix
+/// stop | single-file audio | endOfHeading | covered by EndBehaviorMatrixTests.testSingleFileAudioEndBehaviorMatrix
+/// stop | single-file audio | minutes (running) | covered by EndBehaviorMatrixTests.testSingleFileAudioEndBehaviorMatrix
+/// stop | single-file audio | minutes (expired) | covered by EndBehaviorMatrixTests.testSingleFileAudioEndBehaviorMatrix
+/// stopAndPlayStartsOver | single-file audio | none | covered by EndBehaviorMatrixTests.testSingleFileAudioEndBehaviorMatrix
+/// stopAndPlayStartsOver | single-file audio | endOfBook | covered by EndBehaviorMatrixTests.testSingleFileAudioEndBehaviorMatrix
+/// stopAndPlayStartsOver | single-file audio | endOfHeading | covered by EndBehaviorMatrixTests.testSingleFileAudioEndBehaviorMatrix
+/// stopAndPlayStartsOver | single-file audio | minutes (running) | covered by EndBehaviorMatrixTests.testSingleFileAudioEndBehaviorMatrix
+/// stopAndPlayStartsOver | single-file audio | minutes (expired) | covered by EndBehaviorMatrixTests.testSingleFileAudioEndBehaviorMatrix
+/// loop | single-file audio | none | covered by EndBehaviorMatrixTests.testSingleFileAudioEndBehaviorMatrix
+/// loop | single-file audio | endOfBook | covered by EndBehaviorMatrixTests.testSingleFileAudioEndBehaviorMatrix
+/// loop | single-file audio | endOfHeading | covered by EndBehaviorMatrixTests.testSingleFileAudioEndBehaviorMatrix
+/// loop | single-file audio | minutes (running) | covered by EndBehaviorMatrixTests.testSingleFileAudioEndBehaviorMatrix
+/// loop | single-file audio | minutes (expired) | covered by EndBehaviorMatrixTests.testSingleFileAudioEndBehaviorMatrix
+/// continueNext | single-file audio | none | covered by EndBehaviorMatrixTests.testSingleFileAudioEndBehaviorMatrix
+/// continueNext | single-file audio | endOfBook | covered by EndBehaviorMatrixTests.testSingleFileAudioEndBehaviorMatrix
+/// continueNext | single-file audio | endOfHeading | covered by EndBehaviorMatrixTests.testSingleFileAudioEndBehaviorMatrix
+/// continueNext | single-file audio | minutes (running) | covered by EndBehaviorMatrixTests.testSingleFileAudioEndBehaviorMatrix
+/// continueNext | single-file audio | minutes (expired) | covered by EndBehaviorMatrixTests.testSingleFileAudioEndBehaviorMatrix
 /// stop | chaptered audio | none | covered by FinishedBookReaderTests.testEveryAudiobookLayoutRestsExactlyAtItsEnd (chapterMarks)
 /// stop | chaptered audio | endOfBook | UNCOVERED
 /// stop | chaptered audio | endOfHeading | UNCOVERED
@@ -369,6 +369,70 @@ final class EndBehaviorMatrixTests: XCTestCase {
                     is: cell, title: speech.book.title, next: speech.nextBook.title, lastChapter: 2, content: "text"
                 )
             }
+        }
+    }
+
+    // MARK: - Single-File Audio
+
+    /// An audiobook of one file played to its end does what the cell says,
+    /// for each cell of the single-file audio column that no other test
+    /// pins. The book is saved half a second from its end, so it plays out
+    /// in real time, silently, and a loop plays on for long after.
+    func testSingleFileAudioEndBehaviorMatrix() throws {
+        preserveSharedSleepTimer()
+        let seconds: TimeInterval = 10
+        let lastHalfSecond = Int((seconds - 0.5) * ReaderViewModel.audioCharsPerSecond)
+        for cell in Self.singleFileAudioCells {
+            let name = cell.name(of: "single-file audio")
+            let world = try makeIntegrationWorld("Matrix Audio \(cell.behavior) \(cell.timer)")
+            world.settings.sleepFadeOutDuration = 0
+            let book = try world.makeSilentAudioFileBook(
+                title: "Ferry Timetable",
+                duration: seconds,
+                savedPosition: ReadingPosition(chapterIndex: 0, characterOffset: lastHalfSecond),
+                endOfBook: cell.behavior
+            )
+            let nextBook = try world.makeSilentAudioBook(title: "Harbour Almanac", trackDurations: [5])
+            let reader = world.openReader(for: book)
+            waitForReaderToLoad(reader)
+            XCTAssertEqual(reader.audioLayout, .singleFile, "\(name): the book is not one file")
+            let service = reader.audioPlaybackService
+            let continued = recordContinueRequests(in: world)
+            defer {
+                reader.stop()
+                reader.cancelSleepTimer()
+            }
+            arm(cell.timer, in: reader)
+            // A timer that ran out as it was set announced that, before the end.
+            let announcedBefore = reader.lastAnnouncement
+
+            var nextAsked = false
+            let recorder = recordingAnnouncements {
+                reader.play()
+                XCTAssertTrue(service.isPlaying, "\(name): the book did not play")
+                XCTAssertTrue(
+                    eventually(within: 10) { reader.lastAnnouncement != announcedBefore },
+                    "\(name): the book never ended"
+                )
+                // Long enough for the player's last tick, as it stops at the
+                // end, to have been handled.
+                spinMainRunLoop(for: 0.3)
+                nextAsked = nextBookIsAskedFor(continued)
+            }
+
+            assertEnd(
+                Observed(
+                    announcements: recorder.announcements.map(\.message),
+                    playsAgain: service.isPlaying,
+                    finished: reader.hasFinishedBook,
+                    restsAtEnd: reader.cursorRestsAtEnd,
+                    chapter: reader.currentChapterIndex,
+                    nextAsked: nextAsked,
+                    nextRequested: world.autoplayRequests.hasRequest(for: nextBook.id),
+                    timerInEffect: SleepTimerService.shared.isActive
+                ),
+                is: cell, title: book.title, next: nextBook.title, lastChapter: 0, content: "single-file audio"
+            )
         }
     }
 }
