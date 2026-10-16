@@ -86,24 +86,24 @@ import XCTest
 /// continueNext | chaptered audio | minutes (expired) | UNCOVERED
 /// stop | multi-file audio | none | covered by FinishedBookReaderTests.testEveryAudiobookLayoutRestsExactlyAtItsEnd (filePerChapter)
 /// stop | multi-file audio | endOfBook | covered by IntegrationSleepTimerTests.testEndOfBookTimerPlaysAnAudiobookToItsEndAndStartsNothingAfter
-/// stop | multi-file audio | endOfHeading | UNCOVERED
-/// stop | multi-file audio | minutes (running) | UNCOVERED
-/// stop | multi-file audio | minutes (expired) | UNCOVERED
+/// stop | multi-file audio | endOfHeading | covered by EndBehaviorMatrixTests.testMultiFileAudioEndBehaviorMatrix
+/// stop | multi-file audio | minutes (running) | covered by EndBehaviorMatrixTests.testMultiFileAudioEndBehaviorMatrix
+/// stop | multi-file audio | minutes (expired) | covered by EndBehaviorMatrixTests.testMultiFileAudioEndBehaviorMatrix
 /// stopAndPlayStartsOver | multi-file audio | none | covered by FinishedBookReaderTests.testWithStopAndPlayStartsOverPlayStartsAFinishedBookOver
-/// stopAndPlayStartsOver | multi-file audio | endOfBook | UNCOVERED
-/// stopAndPlayStartsOver | multi-file audio | endOfHeading | UNCOVERED
-/// stopAndPlayStartsOver | multi-file audio | minutes (running) | UNCOVERED
-/// stopAndPlayStartsOver | multi-file audio | minutes (expired) | UNCOVERED
+/// stopAndPlayStartsOver | multi-file audio | endOfBook | covered by EndBehaviorMatrixTests.testMultiFileAudioEndBehaviorMatrix
+/// stopAndPlayStartsOver | multi-file audio | endOfHeading | covered by EndBehaviorMatrixTests.testMultiFileAudioEndBehaviorMatrix
+/// stopAndPlayStartsOver | multi-file audio | minutes (running) | covered by EndBehaviorMatrixTests.testMultiFileAudioEndBehaviorMatrix
+/// stopAndPlayStartsOver | multi-file audio | minutes (expired) | covered by EndBehaviorMatrixTests.testMultiFileAudioEndBehaviorMatrix
 /// loop | multi-file audio | none | covered by ContinueToNextBookTests.testWhereAFinishedBookRestsFollowsItsEndOfBookBehavior (loop)
 /// loop | multi-file audio | endOfBook | covered by ContinueToNextBookTests.testWhereAFinishedBookRestsFollowsItsEndOfBookBehavior (loop with the timer)
-/// loop | multi-file audio | endOfHeading | UNCOVERED
-/// loop | multi-file audio | minutes (running) | UNCOVERED
-/// loop | multi-file audio | minutes (expired) | UNCOVERED
+/// loop | multi-file audio | endOfHeading | covered by EndBehaviorMatrixTests.testMultiFileAudioEndBehaviorMatrix
+/// loop | multi-file audio | minutes (running) | covered by EndBehaviorMatrixTests.testMultiFileAudioEndBehaviorMatrix
+/// loop | multi-file audio | minutes (expired) | covered by EndBehaviorMatrixTests.testMultiFileAudioEndBehaviorMatrix
 /// continueNext | multi-file audio | none | covered by ContinueToNextBookTests.testFinishedBookAnnouncesTheNextOnceThenAsksForIt
 /// continueNext | multi-file audio | endOfBook | covered by IntegrationSleepTimerTests.testEndOfBookTimerPlaysAnAudiobookToItsEndAndStartsNothingAfter
 /// continueNext | multi-file audio | endOfHeading | covered by ContinueToNextBookTests.testEndOfHeadingTimerAtTheBooksEndKeepsTheNextBookFromStarting
 /// continueNext | multi-file audio | minutes (running) | covered by ContinueToNextBookTests.testFinishedBooksRunningSleepTimerKeepsTheNextBookFromStarting
-/// continueNext | multi-file audio | minutes (expired) | UNCOVERED
+/// continueNext | multi-file audio | minutes (expired) | covered by EndBehaviorMatrixTests.testMultiFileAudioEndBehaviorMatrix
 /// stop | DAISY | none | covered by FinishedBookReaderTests.testEveryAudiobookLayoutRestsExactlyAtItsEnd (clips)
 /// stop | DAISY | endOfBook | UNCOVERED
 /// stop | DAISY | endOfHeading | UNCOVERED
