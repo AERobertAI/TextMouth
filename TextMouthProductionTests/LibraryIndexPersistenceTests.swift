@@ -245,6 +245,40 @@ final class LibraryIndexPersistenceTests: XCTestCase {
         )
     }
 
+    // MARK: - Writing Only What Changed (SavedFile.OnDiskMemory)
+
+    /// The memory of what a file holds: unchanged bytes of a file that is
+    /// there are skipped; changed bytes, a file that is gone, a key it has
+    /// not seen, and a new data directory are not.
+    func testOnDiskMemorySkipsOnlyUnchangedBytesOfAFileThatIsThere() throws {
+        let folder = try makeSandboxDirectory("on-disk-memory")
+        let file = folder.appendingPathComponent("remembered.json")
+        let bytes = Data("first".utf8)
+        try bytes.write(to: file)
+        var memory = SavedFile.OnDiskMemory<String>()
+        memory.startOver(unlessIn: folder)
+        XCTAssertFalse(memory.holds(bytes, for: "a", at: file), "nothing is remembered yet")
+
+        memory.remember(bytes, for: "a")
+        XCTAssertTrue(memory.holds(bytes, for: "a", at: file))
+        XCTAssertFalse(memory.holds(Data("second".utf8), for: "a", at: file), "changed bytes are written")
+        XCTAssertFalse(memory.holds(bytes, for: "b", at: file), "another key is another file")
+
+        try FileManager.default.removeItem(at: file)
+        XCTAssertFalse(memory.holds(bytes, for: "a", at: file), "a file that is gone is written again")
+        try bytes.write(to: file)
+        XCTAssertTrue(memory.holds(bytes, for: "a", at: file))
+
+        memory.startOver(unlessIn: folder)
+        XCTAssertTrue(memory.holds(bytes, for: "a", at: file), "the same directory keeps the memory")
+        memory.forget("a")
+        XCTAssertFalse(memory.holds(bytes, for: "a", at: file), "a forgotten file is written")
+
+        memory.remember(bytes, for: "a")
+        memory.startOver(unlessIn: folder.appendingPathComponent("elsewhere", isDirectory: true))
+        XCTAssertFalse(memory.holds(bytes, for: "a", at: file), "a new directory starts the memory over")
+    }
+
     // MARK: - Helpers
 
     /// Stages `damage` at `location`, loads, and checks the whole contract:

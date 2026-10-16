@@ -98,16 +98,7 @@ enum LibraryPersistenceService {
     /// What each feed's index holds on disk as this process last read or
     /// wrote it (FR11), so a save writes a feed's index only when its bytes
     /// changed. Confined to saveQueue, where every index is read and written.
-    nonisolated(unsafe) private static var feedIndexesOnDisk = FeedIndexesOnDisk()
-
-    /// The bytes of each feed's index on disk, in one data directory.
-    private struct FeedIndexesOnDisk {
-        /// The data directory the bytes are in; the record starts over when
-        /// it changes, as after a data-directory move.
-        var rootPath: String?
-        /// Each feed's index, as last read or written.
-        var bytes: [UUID: Data] = [:]
-    }
+    nonisolated(unsafe) private static var feedIndexesOnDisk = SavedFile.OnDiskMemory<UUID>()
 
     /// Why library.json is not being written.
     private enum IndexWriteHold {
@@ -493,19 +484,17 @@ enum LibraryPersistenceService {
     ///   written; those written before it stay written.
     private static func writeFeedIndexes(of library: Library) throws {
         let root = TextMouthPaths.root
-        if feedIndexesOnDisk.rootPath != root.path {
-            feedIndexesOnDisk = FeedIndexesOnDisk(rootPath: root.path)
-        }
+        feedIndexesOnDisk.startOver(unlessIn: root)
         for index in try FeedIndexFiles.encodedIndexes(of: library, placedIn: root) {
             let file = FeedPaths.indexFile(of: index.feedID, in: root)
             // The same bytes are written again when the file is gone, as when
             // it was deleted outside TextMouth since this process wrote it.
-            if feedIndexesOnDisk.bytes[index.feedID] == index.data, FileManager.default.fileExists(atPath: file.path) {
+            if feedIndexesOnDisk.holds(index.data, for: index.feedID, at: file) {
                 continue
             }
             let folder = FeedPaths.itemsFolder(of: index.feedID, in: root)
             if index.rowCount == 0, !FileManager.default.fileExists(atPath: folder.path) {
-                feedIndexesOnDisk.bytes[index.feedID] = index.data
+                feedIndexesOnDisk.remember(index.data, for: index.feedID)
                 continue
             }
             do {
@@ -513,7 +502,7 @@ enum LibraryPersistenceService {
             } catch {
                 throw FeedIndexWriteError(file: file, underlying: error)
             }
-            feedIndexesOnDisk.bytes[index.feedID] = index.data
+            feedIndexesOnDisk.remember(index.data, for: index.feedID)
         }
     }
 
@@ -535,7 +524,7 @@ enum LibraryPersistenceService {
         saveQueue.sync {
             let root = TextMouthPaths.root
             let read = FeedIndexFiles.readAll(in: root, fromPackages: fromPackages, reader: reader)
-            feedIndexesOnDisk = FeedIndexesOnDisk(rootPath: root.path, bytes: read.compactMapValues(\.indexBytes))
+            feedIndexesOnDisk = SavedFile.OnDiskMemory(rootPath: root.path, bytes: read.compactMapValues(\.indexBytes))
             let rows = read.keys.sorted { $0.uuidString < $1.uuidString }.flatMap { read[$0]?.rows ?? [] }
             return FeedShelf(
                 rows: rows,
