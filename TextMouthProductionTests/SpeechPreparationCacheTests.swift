@@ -47,9 +47,18 @@ final class SpeechPreparationCacheTests: XCTestCase {
         let changes: [(name: String, change: (ReaderViewModel) throws -> Void)] = [
             ("pause level", { $0.settingsViewModel.punctuationPauseLevel = 2 }),
             ("rule added", { $0.substitutionService.rules.append(Self.seabirdsForGulls) }),
-            ("rule edited", { $0.substitutionService.rules[0].replacement = "port" }),
-            ("rule switched off", { $0.substitutionService.rules[0].isEnabled = false }),
-            ("rules reordered", { $0.substitutionService.rules.swapAt(0, 1) }),
+            ("rule edited", { reader in
+                _ = try XCTUnwrap(reader.substitutionService.rules[safe: 0], "the service has no first rule")
+                reader.substitutionService.rules[0].replacement = "port"
+            }),
+            ("rule switched off", { reader in
+                _ = try XCTUnwrap(reader.substitutionService.rules[safe: 0], "the service has no first rule")
+                reader.substitutionService.rules[0].isEnabled = false
+            }),
+            ("rules reordered", { reader in
+                _ = try XCTUnwrap(reader.substitutionService.rules[safe: 1], "the service has no second rule")
+                reader.substitutionService.rules.swapAt(0, 1)
+            }),
             ("substitutions off", { $0.substitutionService.isEnabled = false }),
             ("symbol style", { $0.substitutionService.repeatedSymbolStyle = .leaveOut }),
             ("symbol threshold", { $0.substitutionService.repeatedSymbolThreshold = -1 }),
@@ -106,8 +115,14 @@ final class SpeechPreparationCacheTests: XCTestCase {
             let changes: [(ReaderViewModel) throws -> Void] = [
                 { $0.settingsViewModel.punctuationPauseLevel = $0.settingsViewModel.punctuationPauseLevel == 3 ? 0 : 3 },
                 { $0.substitutionService.isEnabled.toggle() },
-                { $0.substitutionService.rules[0].isEnabled.toggle() },
-                { $0.substitutionService.rules.swapAt(0, 1) },
+                { reader in
+                    _ = try XCTUnwrap(reader.substitutionService.rules[safe: 0], "the service has no first rule")
+                    reader.substitutionService.rules[0].isEnabled.toggle()
+                },
+                { reader in
+                    _ = try XCTUnwrap(reader.substitutionService.rules[safe: 1], "the service has no second rule")
+                    reader.substitutionService.rules.swapAt(0, 1)
+                },
                 { $0.substitutionService.repeatedSymbolStyle = $0.substitutionService.repeatedSymbolStyle == .sayCount ? .leaveOut : .sayCount },
                 { $0.substitutionService.repeatedSymbolThreshold = $0.substitutionService.repeatedSymbolThreshold == 4 ? 9 : 4 },
                 { reader in reader.toggleHeadingSkip(try XCTUnwrap(reader.headings.first { $0.text == "Market" })) },
@@ -882,7 +897,7 @@ final class SpeechPreparationCacheTests: XCTestCase {
         chapterIndex: Int
     ) throws -> (text: String, offsetMap: ComposedOffsetMap) {
         let content = try XCTUnwrap(reader.content)
-        let text = content.chapters[chapterIndex].text
+        let text = try XCTUnwrap(content.chapters[safe: chapterIndex], "the book has no chapter \(chapterIndex)").text
         let skippedIDs = reader.skippedHeadingIDs
         let (filteredText, filterMap) = skippedIDs.isEmpty
             ? (text, OffsetMap.identity)
