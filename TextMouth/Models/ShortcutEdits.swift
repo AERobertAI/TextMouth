@@ -441,7 +441,9 @@ extension ShortcutEdits {
     /// held, left to one of them.
     ///
     /// A list makes its action the user's with those keys, even keys equal
-    /// to its default, working where it does by default; an object makes it
+    /// to its default, working where it does by default (a file in the old
+    /// form, a list for every action, is first stripped of the lists equal
+    /// to a default: `KeyboardShortcutManager.adopt(_:in:)`); an object makes it
     /// the user's with its keys, working in the kind of window it names
     /// (FR12's branch E); text beginning with "default" gives it back to the
     /// defaults, its keys and its scope, as Reset to Default does. An action

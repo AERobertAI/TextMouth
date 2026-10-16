@@ -356,19 +356,64 @@ final class KeyboardShortcutManager: ObservableObject {
     /// the action keeping what it has (`ShortcutEdits.entriesLeftOut(of:)`).
     /// No entries change nothing.
     ///
-    /// - Returns: Whether such a key was settled or an entry left out, so
-    ///   the settings model saves config.json again at once and the file
-    ///   shows the keys in force, as it is saved after a repaired value.
+    /// A file in the old form, a list for every action and none of the
+    /// record's forms (`ShortcutListing.isInTheRecordsForm`), is read as the
+    /// move reads it (`moveSavedShortcutsIfNeeded(in:fileListings:)`): a
+    /// list whose keys are a default of its action
+    /// (`ShortcutEdits.keysAreADefault`) is left out and edits nothing, so
+    /// an action the user edited in the app keeps its edit and an unedited
+    /// one keeps following the defaults, and only a list that differs from
+    /// every default makes its action the user's. A file in the new form is
+    /// read as above, a list equal to its action's default still making the
+    /// action the user's: an edited action set back to its default keys
+    /// stays the user's.
+    ///
+    /// - Returns: Whether such a key was settled, an entry left out, or an
+    ///   old-form file's list left out as a default, so the settings model
+    ///   saves config.json again at once and the file shows the keys in
+    ///   force, as it is saved after a repaired value; for an old-form file,
+    ///   in the new form, which a second reading changes nothing in.
     @discardableResult
     static func adopt(_ listings: [ShortcutAction: ShortcutListing], in store: UserDefaults) -> Bool {
         guard !listings.isEmpty else { return false }
         let record = editsPreference.read(from: store)
         let leftOut = record.entriesLeftOut(of: listings)
-        let adopted = record.adopting(listings.filter { leftOut[$0.key] == nil })
+        let (applied, defaultsLeftOut) = listingsLeavingOutDefaults(of: listings, skipping: Set(leftOut.keys))
+        let adopted = record.adopting(applied)
         ShortcutEdits.log(leftOut, source: "config.json", field: SettingsPolicy.keyboardShortcuts.key)
         ShortcutEdits.log(adopted.sharedKeys, source: "config.json", field: SettingsPolicy.keyboardShortcuts.key)
+        if defaultsLeftOut > 0 {
+            // A count only, naming no key.
+            DiagnosticLog.trace(
+                .storage,
+                "config.json is in the old form: \(defaultsLeftOut) of its lists are an action's default and edit nothing"
+            )
+        }
         editsPreference.write(adopted.edits, to: store)
-        return !adopted.sharedKeys.isEmpty || !leftOut.isEmpty
+        return !adopted.sharedKeys.isEmpty || !leftOut.isEmpty || defaultsLeftOut > 0
+    }
+
+    /// `listings` less the actions in `skipping` (entries left out for
+    /// another reason) and, for a file in the old form, less every list
+    /// whose keys are a default of its action by the rule the move uses
+    /// (`ShortcutEdits.keysAreADefault`); and how many lists that second
+    /// step left out. The form is the whole file's, `skipping` included,
+    /// and the keys other actions hold, which the rule reads, are the
+    /// file's own lists, as the move reads them. A file with any entry in
+    /// the record's form is in the new form, whose lists are all the user's:
+    /// none is left out.
+    private static func listingsLeavingOutDefaults(
+        of listings: [ShortcutAction: ShortcutListing],
+        skipping skipped: Set<ShortcutAction>
+    ) -> (kept: [ShortcutAction: ShortcutListing], leftOut: Int) {
+        let usable = listings.filter { !skipped.contains($0.key) }
+        guard !listings.values.contains(where: \.isInTheRecordsForm) else { return (usable, 0) }
+        let fileLists = listings.compactMapValues(\.bindings)
+        let kept = usable.filter { action, _ in
+            guard let keys = fileLists[action] else { return true }
+            return !ShortcutEdits.keysAreADefault(of: action, given: keys, among: fileLists)
+        }
+        return (kept, usable.count - kept.count)
     }
 
     // MARK: - Reading the Shortcuts

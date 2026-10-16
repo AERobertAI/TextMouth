@@ -528,6 +528,162 @@ final class ShortcutConfigFileTests: XCTestCase {
         withExtendedLifetime((first, second)) {}
     }
 
+    // MARK: - An Old-Form File Read After the Move
+
+    /// Every action of the October 5 build at today's default, and nothing
+    /// else changed: an old-form file whose only differences from the
+    /// defaults are the ones a test makes.
+    private func allDefaultsOfTheOctober5Build() -> [ShortcutAction: [KeyBinding]] {
+        var map = shortcutsShapedLikeThisUsers()
+        map[.releaseMediaControls] = ShortcutAction.defaultBindings[.releaseMediaControls] ?? []
+        map[.nextBookmark] = ShortcutAction.defaultBindings[.nextBookmark] ?? []
+        return map
+    }
+
+    /// Writes `record` to `store`, so the launch that follows finds one and
+    /// the move to the record does not run.
+    private func storeRecord(_ record: ShortcutEdits, in store: UserDefaults) {
+        KeyboardShortcutManager.editsPreference.write(record, to: store)
+    }
+
+    /// An old-form file written by the October 5 build, read later over a
+    /// record that holds Release Media Controls alone (a restored backup, or
+    /// a file that was unreadable at the move's launch): the lists that are
+    /// defaults, Next Bookmark's former one among them, edit nothing, so the
+    /// record is as it was, Next Bookmark follows today's default, Show
+    /// Bookmarks keeps Shift-Command-B, and config.json is saved in the new
+    /// form. A second launch changes nothing.
+    func testAnOldFormFileReadAfterTheMoveEditsOnlyWhatDiffersFromADefault() throws {
+        let url = try makeConfigFileURL()
+        let store = try isolatedDefaults()
+        let record = ShortcutEdits([.releaseMediaControls: [shiftR]])
+        storeRecord(record, in: store)
+        try oldFormFile(listing: shortcutsShapedLikeThisUsers()).write(to: url)
+
+        let first = launch(url, store: store)
+
+        XCTAssertEqual(KeyboardShortcutManager.editsPreference.read(from: store), record)
+        let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
+        XCTAssertEqual(manager.bindingsFor(.nextBookmark), [optionShiftCommandB])
+        XCTAssertEqual(manager.bindingsFor(.showBookmarkList), [shiftCommandB])
+        XCTAssertEqual(manager.bindingsFor(.releaseMediaControls), [shiftR])
+        let saved = try ConfigService.decode(Data(contentsOf: url))
+        XCTAssertEqual(saved.keyboardShortcuts["Release Media Controls"], ["shift+r"])
+        XCTAssertEqual(saved.keyboardShortcuts["Next Bookmark"], "default: option+shift+command+b")
+        XCTAssertEqual(saved.keyboardShortcuts["Show Bookmarks"], "default: shift+command+b")
+        XCTAssertEqual(saved.keyboardShortcuts["Play / Pause"], "default: space, k")
+
+        let bytes = try Data(contentsOf: url)
+        let second = launch(url, store: store)
+        XCTAssertEqual(try Data(contentsOf: url), bytes)
+        XCTAssertEqual(KeyboardShortcutManager.editsPreference.read(from: store), record)
+        withExtendedLifetime((first, second)) {}
+    }
+
+    /// The same file over an empty record: Release Media Controls, the one
+    /// list that differs from every default of its action, becomes the only
+    /// edit.
+    func testTheSameOldFormFileOverAnEmptyRecordMakesOnlyTheDifferingListAnEdit() throws {
+        let url = try makeConfigFileURL()
+        let store = try isolatedDefaults()
+        storeRecord(ShortcutEdits(), in: store)
+        try oldFormFile(listing: shortcutsShapedLikeThisUsers()).write(to: url)
+
+        let launched = launch(url, store: store)
+
+        XCTAssertEqual(KeyboardShortcutManager.editsPreference.read(from: store), ShortcutEdits([.releaseMediaControls: [shiftR]]))
+        let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
+        XCTAssertEqual(manager.bindingsFor(.nextBookmark), [optionShiftCommandB])
+        XCTAssertEqual(manager.bindingsFor(.showBookmarkList), [shiftCommandB])
+        withExtendedLifetime(launched) {}
+    }
+
+    /// An action the user edited in the app keeps its edit when an old-form
+    /// file lists it with its default keys, which the file's list says
+    /// nothing against.
+    func testAnOldFormListEqualToADefaultLeavesAnEditMadeInTheAppAlone() throws {
+        let url = try makeConfigFileURL()
+        let store = try isolatedDefaults()
+        let controlP = KeyBinding(key: "p", control: true)
+        let record = ShortcutEdits([.togglePlayback: [controlP]])
+        storeRecord(record, in: store)
+        try oldFormFile(listing: allDefaultsOfTheOctober5Build()).write(to: url)
+
+        let launched = launch(url, store: store)
+
+        XCTAssertEqual(KeyboardShortcutManager.editsPreference.read(from: store), record)
+        let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
+        XCTAssertEqual(manager.bindingsFor(.togglePlayback), [controlP])
+        XCTAssertEqual(try ConfigService.decode(Data(contentsOf: url)).keyboardShortcuts["Play / Pause"], ["control+p"])
+        withExtendedLifetime(launched) {}
+    }
+
+    /// An old-form file with one list that differs from every default: that
+    /// action is edited and no other.
+    func testAnOldFormFileWithOneDifferingListEditsThatActionAlone() throws {
+        let url = try makeConfigFileURL()
+        let store = try isolatedDefaults()
+        storeRecord(ShortcutEdits(), in: store)
+        let optionW = KeyBinding(key: "w", option: true)
+        var map = allDefaultsOfTheOctober5Build()
+        map[.whereAmI] = [optionW]
+        try oldFormFile(listing: map).write(to: url)
+
+        let launched = launch(url, store: store)
+
+        XCTAssertEqual(KeyboardShortcutManager.editsPreference.read(from: store), ShortcutEdits([.whereAmI: [optionW]]))
+        withExtendedLifetime(launched) {}
+    }
+
+    /// A file in the new form is read exactly as before: with one entry
+    /// "default: ...", a list equal to its action's default still makes the
+    /// action the user's, an edited action set back to its default keys
+    /// staying the user's. It is told apart from the old form by that entry
+    /// alone.
+    func testAListEqualToItsDefaultInAFileInTheNewFormStillMakesItsActionTheUsers() throws {
+        let store = try isolatedDefaults()
+        let defaultKeys = ShortcutAction.defaultBindings[.whereAmI] ?? []
+        XCTAssertFalse(defaultKeys.isEmpty, "the test needs a default to list")
+        var listings = ShortcutEdits().listings(defaults: ShortcutAction.defaultBindings)
+        listings[.whereAmI] = .edited(defaultKeys)
+
+        let repaired = KeyboardShortcutManager.adopt(listings, in: store)
+
+        XCTAssertFalse(repaired, "nothing was left out, so the file needs no second save")
+        XCTAssertEqual(KeyboardShortcutManager.editsPreference.read(from: store), ShortcutEdits([.whereAmI: defaultKeys]))
+    }
+
+    /// An old-form file applied twice: the first application leaves out the
+    /// lists that are defaults and asks for a second save; the new form it
+    /// is then saved in, read again, changes nothing and asks for none.
+    func testTheNewFormAnOldFormFileIsSavedInChangesNothingWhenReadAgain() throws {
+        let store = try isolatedDefaults()
+        let oldForm = shortcutsShapedLikeThisUsers().mapValues(ShortcutListing.edited)
+
+        XCTAssertTrue(KeyboardShortcutManager.adopt(oldForm, in: store), "lists left out: the file is saved again")
+        let record = KeyboardShortcutManager.editsPreference.read(from: store)
+        XCTAssertEqual(record, ShortcutEdits([.releaseMediaControls: [shiftR]]))
+
+        let newForm = record.listings(defaults: ShortcutAction.defaultBindings)
+        XCTAssertFalse(KeyboardShortcutManager.adopt(newForm, in: store))
+        XCTAssertEqual(KeyboardShortcutManager.editsPreference.read(from: store), record)
+    }
+
+    /// An old-form file whose lists are all differences from the defaults
+    /// leaves none out, so it asks for no second save on that account.
+    func testAnOldFormFileWithNoListEqualToADefaultLeavesNoneOut() throws {
+        let store = try isolatedDefaults()
+        let optionW = KeyBinding(key: "w", option: true)
+        let optionI = KeyBinding(key: "i", option: true)
+        let oldForm: [ShortcutAction: ShortcutListing] = [.whereAmI: .edited([optionW]), .speakInfo: .edited([optionI])]
+
+        XCTAssertFalse(KeyboardShortcutManager.adopt(oldForm, in: store))
+        XCTAssertEqual(
+            KeyboardShortcutManager.editsPreference.read(from: store),
+            ShortcutEdits([.whereAmI: [optionW], .speakInfo: [optionI]])
+        )
+    }
+
     // MARK: - The Whole Map's Key
 
     /// customKeyboardBindings is retired: listed as such, neither mirrored
