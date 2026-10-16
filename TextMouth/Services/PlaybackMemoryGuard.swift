@@ -55,11 +55,20 @@ struct MemoryGuardPolicy: Equatable, Sendable {
     /// second it leaves some fifty seconds between the two ceilings.
     static let quitCeiling: UInt64 = 6 << 30
 
+    /// The footprint from which the guard reads at the short interval even
+    /// while nothing plays: 1 GB, an order of magnitude above TextMouth's
+    /// own footprint. A runaway at the October 14 rate of about 60 MB a
+    /// second grows 1.8 GB in the 30 seconds of the long wait, so from
+    /// under 1 GB it reaches about 2.8 GB, still below the stop ceiling:
+    /// the reading after it is taken at the short interval, in time for the
+    /// quit ceiling, and no reading that matters is missed.
+    static let watchCloselyFootprint: UInt64 = 1 << 30
+
     /// What the guard does about one reading.
     enum Action: Equatable, Sendable {
         /// Nothing: the footprint is below the stop ceiling, or playback
         /// has already been stopped for it and it has not reached the quit
-        /// ceiling.
+        /// ceiling, or nothing plays to be stopped.
         case none
         /// Stop playback, which has grown the footprint to this many bytes.
         case stopPlayback(footprint: UInt64)
@@ -76,23 +85,39 @@ struct MemoryGuardPolicy: Equatable, Sendable {
     /// footprint has not fallen back below the stop ceiling since.
     private(set) var hasStoppedPlayback = false
 
-    /// Whether the guard reads the footprint: while anything plays, and
-    /// while a runaway it stopped playback for goes on, nothing playing.
+    /// The footprint the last reading found, or nil before the first.
+    private(set) var lastFootprint: UInt64?
+
+    /// Whether the guard watches closely, reading at the short interval:
+    /// while anything plays, while a runaway it stopped playback for goes
+    /// on, and while the last footprint read was at or above
+    /// `watchCloselyFootprint`. Otherwise it still reads, at the long one
+    /// (`readWait`), since a runaway can begin when nothing plays at all.
     func isWatching(whileAnythingPlays isAnythingPlaying: Bool) -> Bool {
-        isAnythingPlaying || hasStoppedPlayback
+        isAnythingPlaying || hasStoppedPlayback || (lastFootprint ?? 0) >= MemoryGuardPolicy.watchCloselyFootprint
     }
 
-    /// Decide what to do about a reading of `footprint` bytes, taken while
-    /// something plays (`isAnythingPlaying`) or while a runaway goes on.
+    /// How long to wait before the next reading: `readInterval` while the
+    /// guard watches closely, `idleReadInterval` otherwise. Decided from
+    /// the state and the last reading alone, so it can be tested without a
+    /// clock.
+    func readWait(whileAnythingPlays isAnythingPlaying: Bool, readInterval: TimeInterval, idleReadInterval: TimeInterval) -> TimeInterval {
+        isWatching(whileAnythingPlays: isAnythingPlaying) ? readInterval : idleReadInterval
+    }
+
+    /// Decide what to do about a reading of `footprint` bytes. The quit
+    /// ceiling acts in every state, since a runaway can begin while
+    /// nothing plays; the stop ceiling only while something plays
+    /// (`isAnythingPlaying`), when there is something to stop.
     mutating func act(onFootprint footprint: UInt64, isAnythingPlaying: Bool) -> Action {
+        lastFootprint = footprint
+        if footprint >= quitCeiling {
+            return .saveAndQuit(footprint: footprint)
+        }
         guard footprint >= stopCeiling else {
             // The runaway is over, or never began.
             hasStoppedPlayback = false
             return .none
-        }
-        guard isWatching(whileAnythingPlays: isAnythingPlaying) else { return .none }
-        if footprint >= quitCeiling {
-            return .saveAndQuit(footprint: footprint)
         }
         guard isAnythingPlaying else { return .none }
         hasStoppedPlayback = true
@@ -113,6 +138,33 @@ struct MemoryQuitMarker: Codable, Equatable, Sendable {
     /// The title of the book playing, or last playing, then; nil when none
     /// is known.
     let bookTitle: String?
+    /// Whether nothing was playing, and no playback had been stopped for
+    /// this runaway, when TextMouth quit: the memory grew with the audio
+    /// idle (a stuck import or decoder), so the book is no part of the
+    /// story. False in a marker written before this was kept.
+    let wasNothingPlaying: Bool
+
+    /// The keys the marker is kept under.
+    private enum CodingKeys: String, CodingKey {
+        case date, footprint, bookTitle, wasNothingPlaying
+    }
+
+    init(date: Date, footprint: UInt64, bookTitle: String?, wasNothingPlaying: Bool = false) {
+        self.date = date
+        self.footprint = footprint
+        self.bookTitle = bookTitle
+        self.wasNothingPlaying = wasNothingPlaying
+    }
+
+    /// Decode a marker, reading one written before `wasNothingPlaying`
+    /// existed (no such key) as a quit while a book played.
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        date = try values.decode(Date.self, forKey: .date)
+        footprint = try values.decode(UInt64.self, forKey: .footprint)
+        bookTitle = try values.decodeIfPresent(String.self, forKey: .bookTitle)
+        wasNothingPlaying = try values.decodeIfPresent(Bool.self, forKey: .wasNothingPlaying) ?? false
+    }
 
     /// Where the marker is kept: beside the library index in the data
     /// directory.
@@ -124,6 +176,9 @@ struct MemoryQuitMarker: Codable, Equatable, Sendable {
     /// "TextMouth quit on October 14, 2026 at 5:03 PM to protect your Mac:
     /// its memory grew to 6.1 GB while Ferry Timetables played, because of a
     /// fault in macOS's audio. Your place was saved."
+    /// When nothing was playing: "TextMouth quit on October 14, 2026 at
+    /// 5:03 PM to protect your Mac: its memory grew to 6.1 GB while nothing
+    /// was playing. Your place was saved."
     ///
     /// - Parameters:
     ///   - locale: The locale the date is written in: the listener's own.
@@ -132,10 +187,13 @@ struct MemoryQuitMarker: Codable, Equatable, Sendable {
         var style = Date.FormatStyle(date: .long, time: .shortened)
         style.locale = locale
         style.timeZone = timeZone
+        let opening = "TextMouth quit on \(date.formatted(style)) to protect your Mac: its memory grew to "
+            + "\(MemoryFootprint.gigabytes(footprint)) GB"
+        if wasNothingPlaying {
+            return opening + " while nothing was playing. Your place was saved."
+        }
         let book = bookTitle.map { $0.isEmpty ? "a book" : $0 } ?? "a book"
-        return "TextMouth quit on \(date.formatted(style)) to protect your Mac: its memory grew to "
-            + "\(MemoryFootprint.gigabytes(footprint)) GB while \(book) played, because of a fault in "
-            + "macOS's audio. Your place was saved."
+        return opening + " while \(book) played, because of a fault in macOS's audio. Your place was saved."
     }
 
     /// Write the marker to `url`, replacing any there.
@@ -173,11 +231,13 @@ protocol MemoryGuardedReader: AnyObject {
 
 // MARK: - The Guard
 
-/// A guard on TextMouth's memory while anything plays (B07): every five
-/// seconds while audio or speech plays it reads TextMouth's footprint, and
+/// A guard on TextMouth's memory (B07): every five seconds while audio or
+/// speech plays, and every thirty seconds otherwise (five again once the
+/// footprint is above a gigabyte), it reads TextMouth's footprint, and
 /// at the first ceiling (`MemoryGuardPolicy.stopCeiling`) stops playback in
 /// every reader that plays, which says why. At the second
-/// (`MemoryGuardPolicy.quitCeiling`), reached afterwards or at once, it
+/// (`MemoryGuardPolicy.quitCeiling`), reached afterwards, at once, or while
+/// nothing plays at all, it
 /// saves the library, every open reader's place, and every pending write,
 /// leaves a marker for the next launch to tell the listener about, and
 /// quits, asking nothing: a runaway inside Apple's audio code cannot be
@@ -189,8 +249,9 @@ protocol MemoryGuardedReader: AnyObject {
 /// there too; the saving is the main thread's, and should the main thread
 /// not have quit `quitGrace` seconds later, the queue quits on its own.
 ///
-/// Readers say when they play (`reader(_:isPlaying:title:)`). The app's
-/// guard (`shared`) watches nothing in hosted tests, which build their own
+/// Readers say when they play (`reader(_:isPlaying:title:)`), and the app
+/// begins the reading at launch (`beginWatching()`). The app's guard
+/// (`shared`) watches nothing in hosted tests, which build their own
 /// with a footprint, clock, and actions of their own.
 @MainActor
 final class PlaybackMemoryGuard {
@@ -201,8 +262,16 @@ final class PlaybackMemoryGuard {
         var readFootprint: @Sendable () -> UInt64? = { MemoryFootprint.current() }
         /// The time now, for the marker.
         var now: @Sendable () -> Date = { Date() }
-        /// How often the footprint is read while anything plays.
+        /// How often the footprint is read while the guard watches closely:
+        /// while anything plays, while a runaway it stopped goes on, and
+        /// while the last footprint read was at or above
+        /// `MemoryGuardPolicy.watchCloselyFootprint`.
         var readInterval: TimeInterval = 5
+        /// How often it is read otherwise: 30 seconds, since a runaway can
+        /// begin while nothing plays (a stuck import, or a decoder left
+        /// wedged after its track failed), and the quit ceiling must act
+        /// then too. Costs one cheap kernel call twice a minute.
+        var idleReadInterval: TimeInterval = 30
         /// How long the main thread has to save and quit before the guard's
         /// queue quits on its own.
         var quitGrace: TimeInterval = 15
@@ -255,9 +324,19 @@ final class PlaybackMemoryGuard {
         watch.actThrough(self)
     }
 
+    /// Begin reading the footprint, now and for as long as TextMouth runs,
+    /// if the guard `isEnabled` and no reading loop runs: the app calls it
+    /// at launch, so the quit ceiling acts even when nothing ever plays.
+    /// Calling it again starts no second loop.
+    func beginWatching() {
+        guard isEnabled else { return }
+        watch.begin()
+    }
+
     /// Note whether `reader`, playing the book `title`, plays now: playing,
     /// not paused, or waiting to play on. The guard reads the footprint
-    /// while any reader plays.
+    /// every `readInterval` while any reader plays; this begins the reading
+    /// loop too, should the app not have.
     func reader(_ reader: any MemoryGuardedReader, isPlaying: Bool, title: String) {
         readers = readers.filter { $0.value.reader != nil }
         readers[reader.readerID] = WatchedReader(reader: reader, isPlaying: isPlaying)
@@ -265,8 +344,8 @@ final class PlaybackMemoryGuard {
         watch.note(reader.readerID, isPlaying: isPlaying, title: title)
     }
 
-    /// Read the footprint now and act on it, as the guard's queue does every
-    /// `readInterval` while anything plays; for tests, which drive the guard
+    /// Read the footprint now and act on it, as the guard's queue does
+    /// every `readInterval` or `idleReadInterval`; for tests, which drive the guard
     /// reading by reading, waiting for the action it takes on the main
     /// thread.
     func readNow() {
@@ -351,7 +430,8 @@ final class PlaybackMemoryGuard {
 // MARK: - The Guard's Queue
 
 /// The part of the memory guard that runs on a queue of its own: it reads
-/// the footprint every `readInterval` while anything plays, decides
+/// the footprint (every `readInterval` or `idleReadInterval`, as the policy
+/// says: `MemoryGuardPolicy.readWait`), decides
 /// (`MemoryGuardPolicy`), and acts: stopping and saving on the main
 /// thread, writing the marker and, should the main thread not have quit in
 /// time, quitting from its own queue.
@@ -392,34 +472,45 @@ private final class MemoryWatch: Sendable {
         state.withLock { $0.mainGuard = mainGuard }
     }
 
+    /// Begin reading the footprint if the guard is not reading.
+    func begin() {
+        if let wait = state.withLock({ takeTheNextReading(&$0) }) {
+            scheduleReading(after: wait)
+        }
+    }
+
     /// Note whether the reader `readerID` plays the book `title`, and begin
-    /// reading the footprint if the guard now watches and is not reading.
+    /// reading the footprint if the guard is not reading.
     func note(_ readerID: UUID, isPlaying: Bool, title: String) {
-        let startsReading = state.withLock { state -> Bool in
+        let wait = state.withLock { state -> TimeInterval? in
             if isPlaying {
                 state.playing[readerID] = title
                 state.lastTitle = title
             } else {
                 state.playing[readerID] = nil
             }
-            return Self.takeTheNextReading(&state)
+            return takeTheNextReading(&state)
         }
-        if startsReading {
-            scheduleReading()
+        if let wait {
+            scheduleReading(after: wait)
         }
     }
 
-    /// Read the footprint, decide, and act; then read again
-    /// `readInterval` later while the guard still watches.
+    /// Read the footprint, decide, and act; then read again later, at the
+    /// wait the policy gives, until the guard begins to quit.
     func readAndAct() {
         let footprint = environment.readFootprint()
-        let (action, title, mainGuard) = state.withLock { state -> (MemoryGuardPolicy.Action, String?, PlaybackMemoryGuard?) in
-            guard let footprint, !state.isQuitting else { return (.none, nil, nil) }
+        let (action, title, wasNothingPlaying, mainGuard) = state.withLock { state -> (MemoryGuardPolicy.Action, String?, Bool, PlaybackMemoryGuard?) in
+            guard let footprint, !state.isQuitting else { return (.none, nil, false, nil) }
             let action = state.policy.act(onFootprint: footprint, isAnythingPlaying: !state.playing.isEmpty)
             if case .saveAndQuit = action {
                 state.isQuitting = true
             }
-            return (action, state.playing.values.sorted().first ?? state.lastTitle, state.mainGuard)
+            // Nothing played, and no playback was stopped for this runaway,
+            // when it quit: the marker says so, and the words leave the
+            // book out.
+            let wasNothingPlaying = state.playing.isEmpty && !state.policy.hasStoppedPlayback
+            return (action, state.playing.values.sorted().first ?? state.lastTitle, wasNothingPlaying, state.mainGuard)
         }
         switch action {
         case .none:
@@ -439,20 +530,22 @@ private final class MemoryWatch: Sendable {
                 "AUDIO_MEMORY_RUNAWAY: footprint=\(footprint) bytes (\(MemoryFootprint.gigabytes(footprint)) GB); "
                     + "saving and quitting to protect the Mac"
             )
-            quit(footprint: footprint, title: title, through: mainGuard)
+            quit(footprint: footprint, title: title, wasNothingPlaying: wasNothingPlaying, through: mainGuard)
         }
-        if state.withLock({ Self.takeTheNextReading(&$0) }) {
-            scheduleReading()
+        if let wait = state.withLock({ takeTheNextReading(&$0) }) {
+            scheduleReading(after: wait)
         }
     }
 
     /// Quit, the footprint having reached `footprint` bytes while `title`
-    /// played: the marker is written here, the main thread saves and
+    /// played, or while nothing did (`wasNothingPlaying`): the marker is written here, the main thread saves and
     /// quits, and should it not have quit `quitGrace` seconds later, this
     /// queue quits on its own.
-    private func quit(footprint: UInt64, title: String?, through mainGuard: PlaybackMemoryGuard?) {
+    private func quit(footprint: UInt64, title: String?, wasNothingPlaying: Bool, through mainGuard: PlaybackMemoryGuard?) {
         let environment = environment
-        environment.writeMarker(MemoryQuitMarker(date: environment.now(), footprint: footprint, bookTitle: title))
+        environment.writeMarker(MemoryQuitMarker(
+            date: environment.now(), footprint: footprint, bookTitle: title, wasNothingPlaying: wasNothingPlaying
+        ))
         Task { @MainActor in
             mainGuard?.saveEverythingAndQuit(environment)
         }
@@ -462,20 +555,25 @@ private final class MemoryWatch: Sendable {
         }
     }
 
-    /// Schedule the next reading, `readInterval` from now.
-    private func scheduleReading() {
-        queue.asyncAfter(deadline: .now() + environment.readInterval) { [self] in
+    /// Schedule the next reading, `wait` seconds from now.
+    private func scheduleReading(after wait: TimeInterval) {
+        queue.asyncAfter(deadline: .now() + wait) { [self] in
             state.withLock { $0.isScheduled = false }
             readAndAct()
         }
     }
 
-    /// Whether to schedule a reading now: the guard watches, is not
-    /// quitting, and has none scheduled. Notes it scheduled when so.
-    private static func takeTheNextReading(_ state: inout State) -> Bool {
-        guard !state.isScheduled, !state.isQuitting,
-              state.policy.isWatching(whileAnythingPlays: !state.playing.isEmpty) else { return false }
+    /// How long to wait before the next reading, or nil when none is to be
+    /// scheduled: the guard always reads, so a reading is scheduled unless
+    /// the guard is quitting or already has one scheduled. Notes it
+    /// scheduled one when it gives a wait.
+    private func takeTheNextReading(_ state: inout State) -> TimeInterval? {
+        guard !state.isScheduled, !state.isQuitting else { return nil }
         state.isScheduled = true
-        return true
+        return state.policy.readWait(
+            whileAnythingPlays: !state.playing.isEmpty,
+            readInterval: environment.readInterval,
+            idleReadInterval: environment.idleReadInterval
+        )
     }
 }
