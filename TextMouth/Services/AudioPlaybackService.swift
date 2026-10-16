@@ -1572,13 +1572,25 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
 
     // MARK: - Chapter/Marker Extraction
 
+    /// The one place the metadata readers open an asset to probe a file.
+    /// Returns nil for an Ogg file (by extension, any case): since October 14,
+    /// 2026 Ogg audio never reaches Apple's decoders or AVFoundation's probing
+    /// in the app's process (a spinning Ogg demuxer hung the Mac, and
+    /// `AsyncBridge.waitForResult` has no timeout). Only `afconvert`, in a child
+    /// process under a watchdog, reads it; an Ogg file's tags and length come
+    /// from `OggHeaderReader` instead.
+    static func metadataAsset(for url: URL) -> AVURLAsset? {
+        OggAudioConverter.isOgg(url) ? nil : AVURLAsset(url: url)
+    }
+
     /// Extract chapter markers from an audio file (M4B, M4A with chapters).
     /// Returns array of (title, startTime, duration), in the file's order.
     /// Everything is read through AVFoundation's asynchronous loading API
     /// (TODO Q06): a marker whose title cannot be read is named "Chapter",
     /// and a file whose markers cannot be loaded has none.
     static func extractChapters(from url: URL) async -> [(title: String, startTime: TimeInterval, duration: TimeInterval)] {
-        let asset = AVURLAsset(url: url)
+        // An Ogg file never reaches AVFoundation's probing (see `metadataAsset`).
+        guard let asset = metadataAsset(for: url) else { return [] }
         do {
             let locales = try await asset.load(.availableChapterLocales)
             let preferredLanguages = locales.isEmpty ? ["en"] : locales.map { $0.identifier }
@@ -1612,11 +1624,13 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// Extract comprehensive metadata from an audio file including album, genre, year, and duration.
     /// Returns an AudioMetadata struct with all available fields populated.
     static func extractFullMetadata(from url: URL) async -> AudioMetadata {
-        let asset = AVURLAsset(url: url)
         var result = AudioMetadata()
 
         // Set the file format from the extension
         result.fileFormat = url.pathExtension.uppercased()
+
+        // An Ogg file is never opened by AVFoundation (see `metadataAsset`).
+        guard let asset = metadataAsset(for: url) else { return result }
 
         do {
             let metadata = try await asset.load(.commonMetadata)
@@ -1669,7 +1683,8 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
 
     /// Get duration of an audio file without playing it.
     static func getDuration(of url: URL) async -> TimeInterval? {
-        let asset = AVURLAsset(url: url)
+        // An Ogg file is never opened by AVFoundation (see `metadataAsset`).
+        guard let asset = metadataAsset(for: url) else { return nil }
         do {
             let dur = try await asset.load(.duration)
             let secs = CMTimeGetSeconds(dur)
