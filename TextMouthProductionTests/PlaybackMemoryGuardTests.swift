@@ -317,9 +317,11 @@ final class PlaybackMemoryGuardTests: XCTestCase {
         spinMainRunLoop(for: 0.5)
 
         // Readings at 0.2 and 0.4 seconds: two, or three at most when the
-        // run loop is slow to start; three loops would read about six.
+        // run loop is slow to start; three loops would read about six. Under
+        // load the guard's queue may be late, so the lower bound waits for
+        // its first reading instead of counting at a fixed moment.
         XCTAssertLessThanOrEqual(dial.reads, 3)
-        XCTAssertGreaterThanOrEqual(dial.reads, 1)
+        XCTAssertTrue(eventually { dial.reads >= 1 }, "The begun guard never read")
     }
 
     // MARK: - The Marker

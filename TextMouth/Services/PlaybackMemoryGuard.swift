@@ -237,11 +237,11 @@ protocol MemoryGuardedReader: AnyObject {
 /// at the first ceiling (`MemoryGuardPolicy.stopCeiling`) stops playback in
 /// every reader that plays, which says why. At the second
 /// (`MemoryGuardPolicy.quitCeiling`), reached afterwards, at once, or while
-/// nothing plays at all, it
-/// saves the library, every open reader's place, and every pending write,
-/// leaves a marker for the next launch to tell the listener about, and
-/// quits, asking nothing: a runaway inside Apple's audio code cannot be
-/// stopped from inside the app, and would otherwise take the Mac down.
+/// nothing plays at all, it saves the library, every open reader's place,
+/// and every pending write, leaves a marker for the next launch to tell the
+/// listener about, and quits, asking nothing: a runaway inside Apple's
+/// audio code cannot be stopped from inside the app, and would otherwise
+/// take the Mac down.
 ///
 /// The footprint is read off the main thread, on the guard's own queue, so
 /// the guard keeps reading should the main thread be stuck behind the
@@ -344,8 +344,8 @@ final class PlaybackMemoryGuard {
         watch.note(reader.readerID, isPlaying: isPlaying, title: title)
     }
 
-    /// Read the footprint now and act on it, as the guard's queue does
-    /// every `readInterval` or `idleReadInterval`; for tests, which drive the guard
+    /// Read the footprint now and act on it, as the guard's queue does every
+    /// `readInterval` or `idleReadInterval`; for tests, which drive the guard
     /// reading by reading, waiting for the action it takes on the main
     /// thread.
     func readNow() {
@@ -538,9 +538,9 @@ private final class MemoryWatch: Sendable {
     }
 
     /// Quit, the footprint having reached `footprint` bytes while `title`
-    /// played, or while nothing did (`wasNothingPlaying`): the marker is written here, the main thread saves and
-    /// quits, and should it not have quit `quitGrace` seconds later, this
-    /// queue quits on its own.
+    /// played, or while nothing did (`wasNothingPlaying`): the marker is
+    /// written here, the main thread saves and quits, and should it not have
+    /// quit `quitGrace` seconds later, this queue quits on its own.
     private func quit(footprint: UInt64, title: String?, wasNothingPlaying: Bool, through mainGuard: PlaybackMemoryGuard?) {
         let environment = environment
         environment.writeMarker(MemoryQuitMarker(
