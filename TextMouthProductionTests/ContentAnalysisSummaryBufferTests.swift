@@ -109,7 +109,8 @@ final class ContentAnalysisSummaryBufferTests: XCTestCase {
         let sandbox = try LibraryIndexSandbox.capture()
         addTeardownBlock { sandbox.restore() }
         let model = makeModel(bookCount: 2)
-        var row = model.library.books[0]
+        // The model owns its library, so prove the row before writing it back by position.
+        var row = try XCTUnwrap(model.library.books[safe: 0], "the library has no first book")
         row.readingPosition = ReadingPosition(characterOffset: 77)
         model.library.books[0] = row
         let departed = Self.books(count: 1)[0]
@@ -124,9 +125,10 @@ final class ContentAnalysisSummaryBufferTests: XCTestCase {
         ])
 
         XCTAssertEqual(libraryChanges, 1)
-        XCTAssertEqual(model.library.books[0].totalWordCount, 3)
-        XCTAssertEqual(model.library.books[0].readingPosition?.characterOffset, 77, "the row lost its own state")
-        XCTAssertNil(model.library.books[1].totalWordCount)
+        XCTAssertEqual(model.library.books[safe: 0]?.totalWordCount, 3)
+        XCTAssertEqual(model.library.books[safe: 0]?.readingPosition?.characterOffset, 77, "the row lost its own state")
+        let untouched = try XCTUnwrap(model.library.books[safe: 1], "the library lost its second book")
+        XCTAssertNil(untouched.totalWordCount)
         XCTAssertEqual(model.library.books.count, 2)
     }
 
