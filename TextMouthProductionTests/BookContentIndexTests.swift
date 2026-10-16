@@ -24,7 +24,7 @@ final class BookContentIndexTests: XCTestCase {
         XCTAssertEqual(index.totalCharacterCount, 25)
         XCTAssertEqual(index.chapters.map(\.startCharacterOffset), [0, 10])
         XCTAssertEqual(index.chapters.map(\.wordCount), [3, 3])
-        XCTAssertEqual(index.chapters[1].headings[0].globalCharacterOffset, 16)
+        XCTAssertEqual(index.chapters[safe: 1]?.headings[safe: 0]?.globalCharacterOffset, 16)
         XCTAssertEqual(index.allHeadings.map(\.chapterIndex), [0, 1])
     }
 
@@ -254,7 +254,7 @@ final class BookContentIndexTests: XCTestCase {
     /// A chapter that names no file must void the whole file list. Dropping
     /// just that chapter's entry used to shift every later chapter onto the
     /// file of the chapter before it.
-    func testChapterWithoutAudioFileVoidsTheFileList() {
+    func testChapterWithoutAudioFileVoidsTheFileList() throws {
         let base = URL(fileURLWithPath: "/tmp/audio", isDirectory: true)
         let tracks = ["01.mp3", "02.mp3", "03.mp3"]
         let index = BookContentIndex.build(
@@ -265,6 +265,8 @@ final class BookContentIndexTests: XCTestCase {
         )
         XCTAssertEqual(index.resolvedAudioFilePaths(relativeTo: base), tracks.map { "/tmp/audio/\($0)" })
 
+        // The damage below is written by position, so stop here if the index has no second chapter.
+        _ = try XCTUnwrap(index.chapters[safe: 1], "the index has no second chapter")
         for missingPath in [nil, ""] {
             var damaged = index
             damaged.chapters[1].audio?.relativeFilePath = missingPath
@@ -273,7 +275,7 @@ final class BookContentIndexTests: XCTestCase {
     }
 
     /// Segments follow the same rule: one without a file voids them all.
-    func testSegmentWithoutAudioFileVoidsTheSegments() {
+    func testSegmentWithoutAudioFileVoidsTheSegments() throws {
         let chapters = [Chapter(title: "First"), Chapter(title: "Second")]
         let index = BookContentIndex.build(
             fromChapters: chapters,
@@ -285,6 +287,8 @@ final class BookContentIndexTests: XCTestCase {
         )
         XCTAssertEqual(index.restoredAudioSegments()?.map(\.file), ["shared.mp3", "shared.mp3"])
 
+        // The damage below is written by position, so stop here if the index has no first chapter.
+        _ = try XCTUnwrap(index.chapters[safe: 0], "the index has no first chapter")
         var damaged = index
         damaged.chapters[0].audio?.relativeFilePath = ""
         XCTAssertNil(damaged.restoredAudioSegments())
@@ -314,14 +318,14 @@ final class BookContentIndexTests: XCTestCase {
             audioSegments: [opening, survey]
         )
 
-        let audio = try XCTUnwrap(index.chapters[1].audio)
+        let audio = try XCTUnwrap(index.chapters[safe: 1]?.audio, "the index has no second chapter with audio")
         XCTAssertEqual(audio.relativeFilePath, "a.mp3")
         XCTAssertEqual(audio.startTime, 30)
         XCTAssertEqual(audio.duration, 85.5)
         XCTAssertEqual(audio.clips?.map(\.relativeFilePath), ["a.mp3", "b.mp3", "Disc 2/c.mp3"])
         XCTAssertEqual(audio.clips?.map(\.startTime), [30, 0, 2])
         XCTAssertEqual(audio.clips?.map(\.duration), [30, 45.5, 10])
-        XCTAssertNil(index.chapters[0].audio?.clips)
+        XCTAssertNil(index.chapters[safe: 0]?.audio?.clips)
         XCTAssertEqual(index.totalAudioDuration, 115.5)
         XCTAssertNil(index.validationFailure(for: .audio, audioBaseURL: nil))
 
@@ -388,6 +392,11 @@ final class BookContentIndexTests: XCTestCase {
         )
         XCTAssertEqual(index.restoredAudioSegments()?.first?.clips.count, 2)
 
+        // The damage below is written by position, so stop here if the first chapter has no second clip.
+        _ = try XCTUnwrap(
+            index.chapters[safe: 0]?.audio?.clips?[safe: 1],
+            "the first chapter has no second clip"
+        )
         for missingPath in [nil, ""] {
             var damaged = index
             damaged.chapters[0].audio?.clips?[1].relativeFilePath = missingPath
