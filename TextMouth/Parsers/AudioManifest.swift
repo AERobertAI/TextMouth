@@ -43,8 +43,9 @@ struct AudioManifest: Codable {
 
     /// The book's title as the manifest gives it, or nil when it gives none
     /// or only blank text (`"title": ""`, `"   "`), so a blank title falls
-    /// back to the archive's or folder's name as a missing one does. The
-    /// one place for the rule; the stored `title` keeps every byte.
+    /// back to the archive's or folder's name as a missing one does. What
+    /// the import (`FileImportService.publishTracks`) and the reading side
+    /// (`AudioBookParser`) take; the stored `title` keeps every byte.
     var bookTitle: String? {
         title?.nonBlank
     }

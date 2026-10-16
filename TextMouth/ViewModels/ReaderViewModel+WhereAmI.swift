@@ -319,7 +319,10 @@ extension ReaderViewModel {
     ///
     /// The end sound's window (`isWhereAmIEndSoundPlaying`) has no term of
     /// its own here: what the announcement leaves for it, a resume, a held
-    /// Play or a held chapter, is already counted. A chapter's download or a
+    /// Play or a held chapter, is counted already. A reader with none of
+    /// these, one that was not playing when the announcement began, has
+    /// nothing in Where Am I?'s hands, so a Play pressed in the window
+    /// starts it at once, as it always did. A chapter's download or a
     /// package's move that ends in the window adds the held chapter
     /// (`isWhereAmISpeakingOrSoundingItsEnd`).
     var isWhereAmIUnderWay: Bool {
