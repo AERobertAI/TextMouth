@@ -127,6 +127,8 @@ final class DataDirectoryMigrationTests: XCTestCase {
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: destination.path))
+        // The copy's first book is read three times below: stop here if it is missing.
+        _ = try XCTUnwrap(migrated.books[safe: 0], "the migrated library has no first book")
         XCTAssertTrue(migrated.books[0].filePath.hasPrefix(destination.path + "/"))
         XCTAssertTrue(FileManager.default.fileExists(atPath: migrated.books[0].filePath))
         let package = destination.appendingPathComponent("Library/\(migrated.books[0].tmbDirectoryName)")
@@ -214,7 +216,8 @@ final class DataDirectoryMigrationTests: XCTestCase {
 
         let migrated = try DataDirectoryMigrator.prepareMigration(from: source, to: destination, library: library)
 
-        let copiedPackage = package(of: migrated.books[0], in: destination)
+        let copiedBook = try XCTUnwrap(migrated.books[safe: 0], "the migrated library has no first book")
+        let copiedPackage = package(of: copiedBook, in: destination)
         XCTAssertEqual(
             try Data(contentsOf: TextMouthPaths.contentIndexPath(in: copiedPackage)),
             unusualSpelling,
@@ -242,7 +245,8 @@ final class DataDirectoryMigrationTests: XCTestCase {
 
         let migrated = try DataDirectoryMigrator.prepareMigration(from: source, to: destination, library: library)
 
-        let copiedPackage = package(of: migrated.books[0], in: destination)
+        let copiedBook = try XCTUnwrap(migrated.books[safe: 0], "the migrated library has no first book")
+        let copiedPackage = package(of: copiedBook, in: destination)
         XCTAssertTrue(
             FileManager.default.fileExists(atPath: TextMouthPaths.contentIndexPath(in: copiedPackage).path),
             "The copy's index has no file of its own"
@@ -271,7 +275,8 @@ final class DataDirectoryMigrationTests: XCTestCase {
 
         let migrated = try DataDirectoryMigrator.prepareMigration(from: source, to: destination, library: library)
 
-        let copied = try BookInfo.load(from: package(of: migrated.books[0], in: destination))
+        let copiedBook = try XCTUnwrap(migrated.books[safe: 0], "the migrated library has no first book")
+        let copied = try BookInfo.load(from: package(of: copiedBook, in: destination))
         XCTAssertEqual(copied.state.revision, 8)
         XCTAssertEqual(copied.metadata.title, "Renamed Before The Move")
         XCTAssertEqual(copied.state.contentAnalysisFields, stored.state.contentAnalysisFields)
