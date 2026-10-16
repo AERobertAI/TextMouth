@@ -926,9 +926,9 @@ final class ReaderCloudDownloadTests: XCTestCase {
     /// end sound as one that finished while the announcement spoke does:
     /// nothing starts over the sound, the reader goes on showing Playing, and
     /// the chapter plays exactly once as the sound passes, with no sound
-    /// beside Where Am I's own (no play sound). Before, only the announcement's speaking held
-    /// the chapter, so the download's end in this moment started it under
-    /// the end sound.
+    /// beside Where Am I's own (no play sound). Before, only the
+    /// announcement's speaking held the chapter, so the download's end in
+    /// this moment started it under the end sound.
     func testAChapterDownloadedWhileWhereAmIsEndSoundPlaysOnceAfterTheSound() throws {
         let cloud = try makeCloudReaders("Cloud Chapter Where Am I End Sound", clone: Self.failingClone)
         let (reader, book) = try readerWaitingForSecondChapter(in: cloud)

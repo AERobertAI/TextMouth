@@ -161,11 +161,13 @@ extension ReaderViewModel {
     /// (`startPlayHeldByWhereAmI()`), rather than play under it.
     ///
     /// So does the audio set aside when an announcement speaks as the move
-    /// ends, or its end sound plays (`isWhereAmISpeakingOrSoundingItsEnd`), one pressed while the package moved, which found the audio
-    /// waiting rather than playing and paused nothing: it is held for the
+    /// ends, or its end sound plays (`isWhereAmISpeakingOrSoundingItsEnd`),
+    /// one pressed while the package moved, which found the audio waiting
+    /// rather than playing and paused nothing: it is held for the
     /// announcement's end (`isChapterHeldByWhereAmI`), as a chapter whose
     /// files came during the announcement is, at the volume it played at.
-    /// The move's end once played it at once, under the announcement (REV13).
+    /// The move's end once played it at once, under the announcement (REV13),
+    /// and then under the end sound.
     private func resumeAudioAfterPackageMove() {
         guard let paused = audioPausedForMove else { return }
         audioPausedForMove = nil

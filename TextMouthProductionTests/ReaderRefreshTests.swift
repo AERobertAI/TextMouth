@@ -510,9 +510,9 @@ final class ReaderRefreshTests: XCTestCase {
     /// does, leaves the audio held for the end sound: the move's end, in the
     /// moment the end sound plays, starts nothing then, and once the sound
     /// has passed the audio plays on from the moved package, started once,
-    /// with no play sound. Before, only the
-    /// announcement's speaking held the audio, so the move's end in this
-    /// moment restarted it under the end sound.
+    /// with no play sound. Before, only the announcement's speaking held the
+    /// audio, so the move's end in this moment restarted it under the end
+    /// sound.
     func testAMoveEndingWhileWhereAmIsEndSoundPlaysHoldsTheAudioUntilTheSoundPasses() throws {
         let playing = try openPlayingAudiobook("Reader Refresh Move Ends In End Sound")
         let reader = playing.reader
