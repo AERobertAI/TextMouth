@@ -421,7 +421,11 @@ final class PlaybackMemoryGuard {
 
     /// Quit at once, from any thread, without running anything more: the
     /// main thread is stuck, and the place was saved as it was last left.
+    /// The converting children end first (`WatchedProcess.terminateAll()`),
+    /// since `_exit` would leave them running on, orphaned, with the
+    /// runaway the guard acts for possibly among them.
     nonisolated static func quitAtOnce() {
+        WatchedProcess.terminateAll()
         TextMouthPaths.flushLogs()
         _exit(0)
     }

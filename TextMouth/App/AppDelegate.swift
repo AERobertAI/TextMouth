@@ -196,6 +196,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        // An Ogg conversion's afconvert ends with the app, at once, rather
+        // than running on beside nothing (REV17a); the hidden file it was
+        // writing is cleaned up by the next conversion of that book.
+        WatchedProcess.terminateAll()
         // A transcription under way stops, asking nothing: it writes
         // nothing until its transcript is saved, so the book is left as it
         // was (FR05).
