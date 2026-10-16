@@ -248,8 +248,11 @@ def resolve_names(names: Sequence[str], areas: Sequence[Area],
 # ---------------------------------------------------------------------------
 
 def build_command(root: Path, classes: Sequence[str], derived_data: str, jobs: int = 4,
-                  use_slot: bool = True) -> List[str]:
+                  use_slot: bool = True, action: str = "test") -> List[str]:
     """The argv of one xcodebuild run of all `classes`, behind the slot wrapper.
+
+    `action` is xcodebuild's own: "test" (the default), or "build-for-testing"
+    and "test-without-building" for a build followed by several test runs.
 
     One invocation carries every class as its own -only-testing: argument, so
     several areas launch the test host once (each launch leaves about 23 MB in
@@ -258,7 +261,7 @@ def build_command(root: Path, classes: Sequence[str], derived_data: str, jobs: i
     """
     command = [str(root / SLOT_WRAPPER)] if use_slot else []
     command += [
-        "xcodebuild", "test",
+        "xcodebuild", action,
         "-project", PROJECT,
         "-scheme", SCHEME,
         "-destination", "platform=macOS",

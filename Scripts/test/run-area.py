@@ -38,7 +38,18 @@ Options:
   --base REF          the comparison point of --changed (default main)
   --explain           with --changed: the matching type names under each class
   --limit N           with --changed: keep the first N classes
-  --dry-run           print the command (one shell-quoted line) and exit 0
+  --repeat N          (2 to 20) build ONCE for testing, then run the chosen classes N
+                      times with test-without-building, each run to its own log
+                      (<log>.1, <log>.2, ...), all while holding one build slot.
+                      Prints each run's lines, then the "test-logs.py flaky" report
+                      over the N logs ("no test changed outcome in N runs" when
+                      nothing varied), then "PASSED in all N runs" or "FAILED in K
+                      of N runs"; exit 0 only when every run passed. Each run
+                      launches the test host, which leaves about 23 MB in a system
+                      cache only the user can purge, so use it for a suspected
+                      flaky test, not as a habit. --env reaches the runs only.
+  --dry-run           print the command (one shell-quoted line; with --repeat, the build
+                      step and each run step, labeled) and exit 0
   --unassigned        print the test classes no area lists, then a count line
   --selftest          check the script against canned logs and areas.conf; no build
   --summarize LOG     print the summary of an existing xcodebuild log and exit
@@ -63,8 +74,11 @@ xcodebuild, areas.conf unreadable), 130 interrupted with Ctrl-C (the log is kept
 """
 
 import argparse
+import contextlib
+import io
 import os
 import re
+import shlex
 import shutil
 import signal
 import subprocess
@@ -116,6 +130,7 @@ def parse_args(argv):
     parser.add_argument("--base", default=DEFAULT_BASE)
     parser.add_argument("--explain", action="store_true")
     parser.add_argument("--limit", type=int)
+    parser.add_argument("--repeat", type=int)
     return parser.parse_args(argv)
 
 
@@ -452,6 +467,90 @@ def select_changed(root: Path, base, areas, classes, explain=False, limit=None):
 
 
 # ---------------------------------------------------------------------------
+# --repeat: one build, N test runs, and what differed between them
+# ---------------------------------------------------------------------------
+
+# The least and most runs --repeat accepts: one run answers nothing about
+# flakiness, and more than twenty only costs test-host launches.
+REPEAT_MIN, REPEAT_MAX = 2, 20
+# Where the flaky report comes from (called as a program, not copied).
+TEST_LOGS_SCRIPT = Path(__file__).resolve().parent / "test-logs.py"
+
+
+def run_log_path(log_path: str, number: int) -> str:
+    """The log of run `number` (1-based): the main log's path plus `.<number>`."""
+    return f"{log_path}.{number}"
+
+
+def repeat_plan(root: Path, classes, derived_data: str, jobs: int, count: int, log_path: str,
+                env_vars, use_slot: bool = True):
+    """The command of a --repeat run, and its steps as shell-quoted lines.
+
+    One build-for-testing, then `count` test-without-building runs, each to
+    its own log, all inside ONE `/bin/sh -c` so the build slot (taken by the
+    wrapper around that one command) is held from the build to the last run
+    and no other agent's build is starved in between. A failing test run does
+    not stop the next one; a failing build stops everything. The TEST_RUNNER_
+    variables go to the test runs only. Returns (argv, [(label, line)]).
+    """
+    def argv(action):
+        return testkit.build_command(root, classes, derived_data, jobs=jobs, use_slot=False, action=action)
+
+    steps = [("build", testkit.shell_line(argv("build-for-testing"), {}))]
+    for number in range(1, count + 1):
+        line = testkit.shell_line(argv("test-without-building"), env_vars)
+        steps.append((f"run {number}", f"{line} > {shlex.quote(run_log_path(log_path, number))} 2>&1"))
+    script = f"{steps[0][1]} && {{ {'; '.join(line for _label, line in steps[1:])}; }}"
+    command = ([str(root / testkit.SLOT_WRAPPER)] if use_slot else []) + ["/bin/sh", "-c", script]
+    return command, steps
+
+
+def flaky_lines(log_paths, count: int):
+    """The `test-logs.py flaky` report over the run logs, as plain lines.
+
+    When no test varied, the report's "no flaky test found" line becomes
+    "no test changed outcome in N runs". Fewer than two readable logs cannot
+    be compared. Returns a list of lines.
+    """
+    present = [path for path in log_paths if os.path.exists(path)]
+    if len(present) < 2:
+        return ["not enough run logs to compare"]
+    done = subprocess.run([sys.executable, str(TEST_LOGS_SCRIPT), "flaky"] + present,
+                          capture_output=True, text=True, errors="replace")
+    if done.returncode != 0:
+        return [f"could not compare the runs: {(done.stderr or done.stdout).strip()}"]
+    return [f"no test changed outcome in {count} runs" if line == "no flaky test found" else line
+            for line in done.stdout.splitlines()]
+
+
+def repeat_report(root: Path, log_path: str, count: int, elapsed: float, status: int):
+    """Reads the main log and the run logs. Returns (lines, exit status).
+
+    Per run: the summary's lines, each starting `run N:`. Then the flaky
+    report, the time, and `PASSED in all N runs` or `FAILED in K of N runs`.
+    When no run log exists the build failed, and the main log's summary
+    (compile errors and all) is printed instead.
+    """
+    run_logs = [run_log_path(log_path, number) for number in range(1, count + 1)]
+    if not any(os.path.exists(path) for path in run_logs):
+        lines = testkit.format_summary(summarize_file(log_path, root, elapsed=elapsed, status=status or 1))
+        return ["the build did not finish, so no test ran"] + lines, 1
+    lines, failed = [], 0
+    for number, path in enumerate(run_logs, 1):
+        if not os.path.exists(path):
+            lines.append(f"run {number}: no log; the run did not start")
+            failed += 1
+            continue
+        summary = summarize_file(path, root)
+        failed += 0 if summary.passed else 1
+        lines += [f"run {number}: {line}" for line in testkit.format_summary(summary)]
+    lines += flaky_lines(run_logs, count)
+    lines.append(f"build and runs took {testkit.format_elapsed(elapsed)}; main log {log_path}")
+    lines.append(f"PASSED in all {count} runs" if not failed else f"FAILED in {failed} of {count} runs")
+    return lines, 0 if not failed else 1
+
+
+# ---------------------------------------------------------------------------
 # The self-test
 # ---------------------------------------------------------------------------
 
@@ -749,6 +848,69 @@ public indirect enum Epsilon {}
         except difflint.GitError:
             check("changed files: an unknown base raises", True)
 
+    # --repeat: the argument check, the command line, the flaky report, the report.
+    def run_main(*argv):
+        """Runs main() quietly. Returns (exit status, stdout lines, stderr text)."""
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            status = main(list(argv))
+        return status, out.getvalue().splitlines(), err.getvalue()
+
+    for bad in ("1", "0", "21", "-3"):
+        status, _lines, problem = run_main("--repeat", bad, "CountWordingTests")
+        check(f"--repeat {bad} is refused with status 2", status == 2 and "2 to 20" in problem, (status, problem))
+    status, lines, _problem = run_main("--dry-run", "--repeat", "3", "--env", "X=1", "--log", "/tmp/my log", "CountWordingTests")
+    check("--dry-run --repeat 3 prints the build step and three test steps",
+          status == 0 and [l.split(":")[0] for l in lines] == ["build", "run 1", "run 2", "run 3"], lines)
+    check("the build step builds for testing, without the environment",
+          "xcodebuild build-for-testing" in lines[0] and "TEST_RUNNER_" not in lines[0], lines[0])
+    check("each test step runs without building, with the environment and its own quoted log",
+          all("TEST_RUNNER_X=1 xcodebuild test-without-building" in l and l.endswith(f"'/tmp/my log.{n}' 2>&1")
+              for n, l in enumerate(lines[1:], 1)), lines)
+    command, steps = repeat_plan(Path("/r"), ["A"], "/d", 4, 2, "/l", {}, use_slot=True)
+    check("the whole sequence is one command behind the slot wrapper",
+          command[0] == "/r/" + testkit.SLOT_WRAPPER and command[1:3] == ["/bin/sh", "-c"] and len(command) == 4, command)
+    check("the script builds first, then runs both tests whatever the first gives",
+          command[3].startswith("xcodebuild build-for-testing") and " && { xcodebuild test-without-building" in command[3]
+          and command[3].count("test-without-building") == 2 and command[3].endswith("; }"), command[3])
+    check("--no-slot leaves the wrapper out", repeat_plan(Path("/r"), ["A"], "/d", 4, 2, "/l", {}, use_slot=False)[0][0] == "/bin/sh")
+
+    with tempfile.TemporaryDirectory() as folder:
+        base = os.path.join(folder, "area.log")
+        steady = _LOG_PASS.replace("[build-slot] acquired slot1 at 10:00:00\n", "")
+        shaky = steady.replace("Test Case '-[TextMouthProductionTests.CountWordingTests testOne]' passed",
+                               "Test Case '-[TextMouthProductionTests.CountWordingTests testOne]' failed") \
+            .replace("with 1 test skipped and 0 failures (0 unexpected)", "with 1 test skipped and 1 failure (1 unexpected)")
+        Path(base).write_text("[build-slot] acquired slot1 at 10:00:00\n")
+        runs = [os.path.join(folder, f"area.log.{n}") for n in (1, 2, 3)]
+        for path in runs:
+            Path(path).write_text(steady)
+        lines, verdict = repeat_report(_FAKE_ROOT, base, 3, 90, 0)
+        check("three steady runs: every run's lines, no change, PASSED in all 3 runs",
+              verdict == 0 and "run 1: PASSED" in lines and "run 3: PASSED" in lines
+              and "no test changed outcome in 3 runs" in lines and lines[-1] == "PASSED in all 3 runs", lines)
+        check("each run prints its Executed line",
+              sum(l.startswith("run ") and "Executed 13 tests" in l for l in lines) == 3, lines)
+        Path(runs[1]).write_text(shaky)
+        lines, verdict = repeat_report(_FAKE_ROOT, base, 3, 90, 0)
+        check("one failing run: FAILED in 1 of 3 runs and exit status 1",
+              verdict == 1 and lines[-1] == "FAILED in 1 of 3 runs" and "run 2: PASSED" not in lines, lines)
+        check("the flaky report names the test whose outcome changed",
+              any("CountWordingTests.testOne" in l for l in lines)
+              and "no test changed outcome in 3 runs" not in lines, lines)
+        os.remove(runs[2])
+        lines, verdict = repeat_report(_FAKE_ROOT, base, 3, 90, 0)
+        check("a run that never started counts as failed",
+              verdict == 1 and "run 3: no log; the run did not start" in lines and lines[-1] == "FAILED in 2 of 3 runs", lines)
+        for path in runs:
+            if os.path.exists(path):
+                os.remove(path)
+        Path(base).write_text(_LOG_COMPILE_ERROR)
+        lines, verdict = repeat_report(_FAKE_ROOT, base, 3, 90, 65)
+        check("with no run log the build failed: its errors and FAILED",
+              verdict == 1 and lines[0] == "the build did not finish, so no test ran"
+              and "ERROR Thing.swift:12: cannot find 'x' in scope" in lines and lines[-1].startswith("FAILED"), lines)
+
     if failures:
         print("\n".join(failures))
         return 1
@@ -795,6 +957,8 @@ def main(argv) -> int:
         return 0
     if args.limit is not None and args.limit < 1:
         return usage_error("--limit wants a number of 1 or more")
+    if args.repeat is not None and not REPEAT_MIN <= args.repeat <= REPEAT_MAX:
+        return usage_error(f"--repeat wants a number from {REPEAT_MIN} to {REPEAT_MAX}, not {args.repeat}")
     # --changed picks classes from the code a branch changed; its report
     # prints first, and --list stops there.
     changed_picks = []
@@ -823,10 +987,17 @@ def main(argv) -> int:
     env_vars, problem = parse_env(args.env)
     if problem:
         return usage_error(problem)
-    command = testkit.build_command(root, selected, derived_data, jobs=args.jobs, use_slot=not args.no_slot)
+    if args.repeat:
+        command, steps = repeat_plan(root, selected, derived_data, args.jobs, args.repeat, log_path,
+                                     env_vars, use_slot=not args.no_slot)
+    else:
+        command = testkit.build_command(root, selected, derived_data, jobs=args.jobs, use_slot=not args.no_slot)
 
     if args.dry_run:
-        print(testkit.shell_line(command, env_vars))
+        if args.repeat:
+            print_lines(f"{label}: {line}" for label, line in steps)
+        else:
+            print(testkit.shell_line(command, env_vars))
         return 0
     if shutil.which("xcodebuild") is None:
         return usage_error("xcodebuild was not found; install Xcode's command line tools")
@@ -835,14 +1006,21 @@ def main(argv) -> int:
 
     area_count = len([n for n in names if testkit.area_classes(areas, n) is not None])
     what = f"{area_count} area{'s' if area_count != 1 else ''}, " if area_count else ""
-    print(f"running {what}{len(selected)} class{'es' if len(selected) != 1 else ''}; "
+    times = f", {args.repeat} times" if args.repeat else ""
+    print(f"running {what}{len(selected)} class{'es' if len(selected) != 1 else ''}{times}; "
           f"build folder {derived_data}; log {log_path}")
     sys.stdout.flush()
 
     # The test host sees each --env variable with the TEST_RUNNER_ prefix.
+    # (A --repeat run carries them on its test steps only, so the build never sees them.)
     child_env = dict(os.environ)
-    child_env.update({f"{testkit.ENV_PREFIX}{k}": v for k, v in env_vars.items()})
+    if not args.repeat:
+        child_env.update({f"{testkit.ENV_PREFIX}{k}": v for k, v in env_vars.items()})
     started = time.monotonic()
+    if args.repeat:
+        # A run log left by an earlier --repeat must not pass for this one's.
+        for number in range(1, args.repeat + 1):
+            Path(run_log_path(log_path, number)).unlink(missing_ok=True)
     try:
         status = run_child(command, child_env, root, log_path)
     except KeyboardInterrupt:
@@ -850,6 +1028,10 @@ def main(argv) -> int:
         return 130
     except OSError as error:
         return usage_error(f"could not start the build: {error}")
+    if args.repeat:
+        lines, verdict = repeat_report(root, log_path, args.repeat, time.monotonic() - started, status)
+        print_lines(lines)
+        return verdict
     summary = summarize_file(log_path, root, elapsed=time.monotonic() - started, status=status)
     print_lines(testkit.format_summary(summary))
     return 0 if summary.passed else 1
