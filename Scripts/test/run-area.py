@@ -364,6 +364,26 @@ def selftest() -> int:
     check("the log path and elapsed time print", stamped[-2:] == ["log: /tmp/x.log", "PASSED in 5 minutes 12 seconds"], stamped)
     check("zero tests do not pass", not summary("Executed 0 tests, with 0 failures (0 unexpected)\n** TEST SUCCEEDED **").passed)
 
+    # --clean refuses a folder not named for a build, ignores a missing one,
+    # and deletes a real one.
+    with tempfile.TemporaryDirectory() as folder:
+        stray = Path(folder) / "stray"
+        stray.mkdir()
+        with open(os.devnull, "w") as quiet:
+            real_stderr, real_stdout = sys.stderr, sys.stdout
+            sys.stderr = sys.stdout = quiet
+            try:
+                refused = clean(str(stray))
+                missing = clean(str(Path(folder) / f"{DERIVED_DATA_MARK}-none"))
+                build = Path(folder) / f"{DERIVED_DATA_MARK}-x"
+                (build / "Build").mkdir(parents=True)
+                removed = clean(str(build))
+            finally:
+                sys.stderr, sys.stdout = real_stderr, real_stdout
+        check("--clean refuses a folder not named for a build", refused == 2 and stray.exists())
+        check("--clean treats a missing folder as fine", missing == 0)
+        check("--clean deletes a build folder", removed == 0 and not build.exists())
+
     if failures:
         print("\n".join(failures))
         return 1

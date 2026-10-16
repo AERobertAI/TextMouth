@@ -81,7 +81,7 @@ RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
 	-scheme $(SCHEME) \
 	-derivedDataPath "$(DERIVED_BUILD_DIR)"
 
-.PHONY: all clean build debug run install uninstall generate resolve-packages update-packages test check check-selftest perf-baselines open xcode help signing-identity
+.PHONY: all clean build debug run install uninstall generate resolve-packages update-packages test check check-selftest test-area perf-baselines open xcode help signing-identity
 
 ## Default: build the app
 all: build
@@ -206,11 +206,20 @@ test:
 check:
 	@Scripts/check.sh $(CHECK_ARGS)
 
-## Test the gate script and the performance baselines' recording script
-## themselves: dry runs and stubbed build tools, no building
+## Test the gate script, the performance baselines' recording script and the
+## area runner themselves: dry runs, stubbed build tools and canned logs, no
+## building
 check-selftest:
 	@Scripts/check-selftest.sh
 	@Scripts/perf-baselines-selftest.sh
+	@python3 Scripts/test/run-area.py --selftest
+
+## Run only the hosted tests of some areas (or test classes) in one build,
+## printing a short summary: make test-area AREAS="feeds bookmarks". The areas
+## are listed in Scripts/test/areas.conf; AREA_ARGS passes options, such as
+## AREA_ARGS=--dry-run or AREA_ARGS="--env NAME=VALUE".
+test-area:
+	@python3 Scripts/test/run-area.py $(AREAS) $(AREA_ARGS)
 
 ## Rewrite TextMouthProductionTests/performance-baselines.json from a fresh
 ## run of PerformanceBaselineTests, which waits for a quiet Mac, printing
