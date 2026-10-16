@@ -76,17 +76,19 @@ final class LegacyLibraryModelTests: XCTestCase {
         XCTAssertNil(library.createFolder(name: "A"))
     }
 
-    func testBookmarkAdditionAndRemovalRenumbersRemainingBookmarks() {
+    func testBookmarkAdditionAndRemovalRenumbersRemainingBookmarks() throws {
         var library = Library()
         let item = book("Book", hash: "book")
         library.addBook(item)
         library.addBookmark(bookID: item.id, chapterIndex: 0, characterOffset: 100)
         library.addBookmark(bookID: item.id, chapterIndex: 1, characterOffset: 200)
         library.addBookmark(bookID: item.id, chapterIndex: 2, characterOffset: 300)
-        let middleID = library.books[0].bookmarks[1].id
+        // Stop here, rather than trap, if the book or its second bookmark is missing.
+        let storedBook = try XCTUnwrap(library.books[safe: 0], "the library has no first book")
+        let middleID = try XCTUnwrap(storedBook.bookmarks[safe: 1], "the book has no second bookmark").id
         library.removeBookmark(bookID: item.id, bookmarkID: middleID)
-        XCTAssertEqual(library.books[0].bookmarks.map(\.number), [1, 2])
-        XCTAssertEqual(library.books[0].bookmarks[1].characterOffset, 300)
+        XCTAssertEqual(library.books[safe: 0]?.bookmarks.map(\.number), [1, 2])
+        XCTAssertEqual(library.books[safe: 0]?.bookmarks[safe: 1]?.characterOffset, 300)
     }
 
     func testMoveBookUpdatesFolderPath() {
@@ -94,7 +96,7 @@ final class LegacyLibraryModelTests: XCTestCase {
         let item = book("Book", hash: "book")
         library.addBook(item)
         library.moveBook(id: item.id, toFolder: "Fiction/SciFi")
-        XCTAssertEqual(library.books[0].folderPath, "Fiction/SciFi")
+        XCTAssertEqual(library.books[safe: 0]?.folderPath, "Fiction/SciFi")
     }
 
     func testBooksInFolderAndNoFolderQueries() {
@@ -135,7 +137,7 @@ final class LegacyLibraryModelTests: XCTestCase {
         library.addBook(book("Dune", hash: "d", folder: "Fiction/SciFi"))
         XCTAssertTrue(library.moveFolder(id: folder.id, toParentPath: "NonFiction"))
         XCTAssertEqual(library.folders.first { $0.id == folder.id }?.fullPath, "NonFiction/SciFi")
-        XCTAssertEqual(library.books[0].folderPath, "NonFiction/SciFi")
+        XCTAssertEqual(library.books[safe: 0]?.folderPath, "NonFiction/SciFi")
     }
 
     func testMoveFolderToRoot() {
@@ -144,7 +146,7 @@ final class LegacyLibraryModelTests: XCTestCase {
         let child = library.createFolder(name: "Child", parentPath: "Parent")!
         library.addBook(book("A", hash: "a", folder: "Parent/Child"))
         XCTAssertTrue(library.moveFolder(id: child.id, toParentPath: ""))
-        XCTAssertEqual(library.books[0].folderPath, "Child")
+        XCTAssertEqual(library.books[safe: 0]?.folderPath, "Child")
     }
 
     func testMoveFolderPreventsCycle() {
@@ -174,7 +176,7 @@ final class LegacyLibraryModelTests: XCTestCase {
         library.addBook(book("B", hash: "b", folder: "Old/Sub/Deep"))
         XCTAssertTrue(library.moveFolder(id: sub.id, toParentPath: "New"))
         XCTAssertEqual(library.folders.first { $0.name == "Deep" }?.fullPath, "New/Sub/Deep")
-        XCTAssertEqual(library.books[0].folderPath, "New/Sub/Deep")
+        XCTAssertEqual(library.books[safe: 0]?.folderPath, "New/Sub/Deep")
     }
 
     func testMoveFolderRejectsDestinationCollision() {
@@ -251,7 +253,7 @@ final class LegacyLibraryModelTests: XCTestCase {
         library.addBook(book("B", hash: "b", folder: "Parent/Child"))
         XCTAssertTrue(library.renameFolder(id: parent.id, to: "Renamed"))
         XCTAssertEqual(library.folders.first { $0.name == "Child" }?.fullPath, "Renamed/Child")
-        XCTAssertEqual(library.books[0].folderPath, "Renamed/Child")
+        XCTAssertEqual(library.books[safe: 0]?.folderPath, "Renamed/Child")
     }
 
     func testRenameFolderRejectsInvalidNamesAndCollisions() {
