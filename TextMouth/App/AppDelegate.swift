@@ -55,6 +55,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Self.logBuildIdentity(.current)
         // A quit to protect the Mac at the last launch is told once (B07).
         PlaybackMemoryGuard.tellOfAQuitToProtectTheMac()
+        // The memory guard reads TextMouth's footprint from now on, whether
+        // or not anything plays, so a runaway that begins while nothing
+        // plays, or outlives the playback it began in, still reaches the
+        // quit ceiling (REV17a).
+        PlaybackMemoryGuard.shared.beginWatching()
+        // Any afconvert that an earlier TextMouth left running, orphaned by
+        // a force-quit or a memory quit, is killed now (REV17a); only ones
+        // writing TextMouth's own hidden conversion files are touched.
+        OrphanedConversionSweep.sweepInBackground()
 
         // Disable automatic window tabbing (prevents "New Tab" menu proliferation)
         NSWindow.allowsAutomaticWindowTabbing = false
