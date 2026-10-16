@@ -700,6 +700,8 @@ def selftest() -> int:
 
     stamped = testkit.format_summary(replace(passed, log_path="/tmp/x.log", elapsed=312.4))
     check("the log path and elapsed time print", stamped[-2:] == ["log: /tmp/x.log", "PASSED in 5 minutes 12 seconds"], stamped)
+    check("a test-without-building run passes on TEST EXECUTE SUCCEEDED",
+          summary(_LOG_PASS.replace("** TEST SUCCEEDED **", "** TEST EXECUTE SUCCEEDED **")).passed)
     check("zero tests do not pass", not summary("Executed 0 tests, with 0 failures (0 unexpected)\n** TEST SUCCEEDED **").passed)
 
     # --clean refuses a folder not named for a build, ignores a missing one,

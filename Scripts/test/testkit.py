@@ -295,7 +295,7 @@ class Summary:
     errors: Tuple[Tuple[str, str, str], ...] = ()   # (file, line, message); file may be ""
     warnings: Tuple[Tuple[str, str, str], ...] = ()
     crash: Optional[str] = None
-    succeeded: bool = False                    # "** TEST SUCCEEDED **" seen
+    succeeded: bool = False                    # "** TEST SUCCEEDED **" (or "TEST EXECUTE SUCCEEDED") seen
     tail: Tuple[str, ...] = ()                 # last log lines, shown when nothing else explains a failure
     log_path: Optional[str] = None             # set by the caller
     elapsed: Optional[float] = None            # seconds, set by the caller
@@ -346,7 +346,8 @@ def summarize_log(text: str, root: Path) -> Summary:
         if match:
             executed_line, executed, failures = match.group(1).strip(), int(match.group(2)), int(match.group(3))
             continue
-        if "** TEST SUCCEEDED **" in line:
+        # `test` prints TEST SUCCEEDED; `test-without-building` (the --repeat runs) TEST EXECUTE SUCCEEDED.
+        if "** TEST SUCCEEDED **" in line or "** TEST EXECUTE SUCCEEDED **" in line:
             succeeded = True
             continue
         match = _TEST_ERROR.match(line)
