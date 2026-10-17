@@ -320,6 +320,14 @@ _COMPILE_ERROR = re.compile(r"^(/.+?\.swift):(\d+):\d+: error: (.*)$")
 _BARE_ERROR = re.compile(r"^(?:[\w+.-]+: )?(?:fatal )?error: (.*)$")
 _WARNING = re.compile(r"^(/.+?\.swift):(\d+):\d+: warning: (.*)$")
 _CRASH = re.compile(r"crashed|Restarting after unexpected exit, crash, or test timeout")
+# The build wrapper copies the agent's unread board messages into the log
+# (bbs.py's describe_message): a header "#2491 finding from a to b, 10:02:11
+# 17 Oct: topic", then the reply, files, and body lines, each indented two
+# spaces, a blank line between messages. Their words are no xcodebuild output,
+# and a message about a crash ("Test host crashed 9x") must not read as one.
+_BOARD_HEADER = re.compile(r"^#\d+(?: \(unread\))? \S+ from \S+ to \S+, ")
+# A line the build wrapper prints itself.
+_WRAPPER_PREFIX = "[build-slot]"
 # Path pieces that mark a warning as not the repository's own.
 _FOREIGN_PATH = ("/DerivedData", "/SourcePackages/", "/.build/", "/checkouts/", "/TextMouth-DerivedData")
 
@@ -346,7 +354,17 @@ def summarize_log(text: str, root: Path) -> Summary:
     crash = None
     succeeded = False
     lines = text.splitlines()
+    in_board_message = False   # inside a board message the wrapper copied into the log
     for line in lines:
+        if _BOARD_HEADER.match(line):
+            in_board_message = True
+            continue
+        if in_board_message:
+            # The message goes on through its indented lines and the blank
+            # line after it; the first other line is xcodebuild's again.
+            if line.startswith("  ") or not line.strip():
+                continue
+            in_board_message = False
         match = _EXECUTED.match(line)
         if match:
             executed_line, executed, failures = match.group(1).strip(), int(match.group(2)), int(match.group(3))
@@ -383,7 +401,8 @@ def summarize_log(text: str, root: Path) -> Summary:
             errors.setdefault(("", "", match.group(1)))
             continue
         # A crash line is not a test's name or an assertion message.
-        if crash is None and _CRASH.search(line) and not line.startswith(("Test Case ", "Test Suite ")) \
+        if crash is None and _CRASH.search(line) \
+                and not line.startswith(("Test Case ", "Test Suite ", _WRAPPER_PREFIX)) \
                 and ".swift:" not in line:
             crash = line.strip()[:240]
     failed_tests = tuple((key,) + test_errors.get(key, ("", "", "")) for key in failed_order)

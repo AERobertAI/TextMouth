@@ -1098,6 +1098,19 @@ final class ReaderViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
+        // Shift-Command-I speaks this reader's book's brief information,
+        // and Shift-Command-I twice (Speak Full Info) its full information,
+        // as the Library window speaks its selected row's (October 17).
+        // Only the reader the key was pressed in, or the key one for a
+        // menu command, speaks (`isTargetedNotification`).
+        nc.publisher(for: .speakInfo)
+            .merge(with: nc.publisher(for: .speakFullInfo))
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.speakInfo(notification.name == .speakFullInfo ? .full : .brief)
+            }
+            .store(in: &cancellables)
+
         nc.publisher(for: .copyReadingPosition)
             .sink { [weak self] notification in
                 guard let self = self, self.isTargetedNotification(notification) else { return }

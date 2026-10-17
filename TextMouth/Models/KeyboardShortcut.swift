@@ -53,7 +53,9 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case whereAmIFull = "Where Am I? Full Summary"
     /// Speaks the selected book's, folder's, or feed's information in
     /// the Library window with the app's own voice, as Where Am I? speaks
-    /// a position in a reader (`LibraryInfoSpeaker`).
+    /// a position in a reader (`LibraryInfoSpeaker`); in a reader window it
+    /// speaks the reader's own book's information, announced as the
+    /// reader's other spoken commands are (`ReaderViewModel.speakInfo(_:now:)`).
     case speakInfo = "Speak Info"
     /// Speaks the selected row's full summary in the Library window,
     /// Shift-Command-I twice by default (FR12), escalating Speak Info as
