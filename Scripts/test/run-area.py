@@ -4,7 +4,8 @@
 Usage: Scripts/test/run-area.py [options] NAME [NAME ...]
 
 A NAME is an area (listed in Scripts/test/areas.conf) or a test class. `all`
-is a built-in area: every class any area lists. Order is kept, repeats are
+is a built-in area: every runnable hosted test class (those no area lists
+yet come last). Order is kept, repeats are
 dropped, and ONE xcodebuild run covers them all (each launch of the test host
 leaves about 23 MB in a system cache only the user can purge, so never run the
 areas one after another).
@@ -167,9 +168,9 @@ def split_classes(values):
 def list_lines(names, areas, classes):
     """Lines for --list: every area when no NAME, else each NAME's classes."""
     if not names:
-        everything = testkit.area_classes(areas, testkit.ALL_AREA)
+        everything = testkit.resolve_names([testkit.ALL_AREA], areas, classes)
         lines = [f"{a.name}: {len(a.classes)} classes. {a.description}" for a in areas]
-        lines.append(f"{testkit.ALL_AREA}: {len(everything)} classes. Every class any area lists")
+        lines.append(f"{testkit.ALL_AREA}: {len(everything)} classes. Every runnable test class, those no area lists yet last")
         return lines
     return testkit.resolve_names(names, areas, classes)
 
@@ -644,7 +645,8 @@ def selftest() -> int:
     fake = {n: testkit.HostedClass(n, "x.swift", 1, 1) for n in "ABCD"}
     check("areas resolve in order without repeats",
           testkit.resolve_names(["one", "two", "D", "A"], sample, fake) == ["A", "B", "C", "D"])
-    check("all is every listed class", testkit.resolve_names(["all"], sample, fake) == ["A", "B", "C"])
+    check("all is every listed class, then every unlisted one",
+          testkit.resolve_names(["all"], sample, fake) == ["A", "B", "C", "D"])
     try:
         testkit.resolve_names(["tw"], sample, fake)
         check("an unknown name raises", False)

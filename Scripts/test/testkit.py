@@ -34,7 +34,8 @@ AREAS_CONF = "Scripts/test/areas.conf"
 # The prefix that carries an environment variable into the test host.
 ENV_PREFIX = "TEST_RUNNER_"
 
-# The built-in area that holds every class any area lists.
+# The built-in area that holds every runnable hosted test class: the classes
+# the areas list, in their order, then the ones no area lists yet.
 ALL_AREA = "all"
 
 # How many compile errors the summary lists before "and N more".
@@ -228,6 +229,10 @@ def resolve_names(names: Sequence[str], areas: Sequence[Area],
     result: List[str] = []
     for name in names:
         members = None if classes_only else area_classes(areas, name)
+        if members is not None and name == ALL_AREA:
+            # `all` must really be all: a class no area lists yet (a new one)
+            # is still run, after the listed ones, never skipped silently.
+            members = members + sorted(n for n, c in classes.items() if c.runnable)
         if members is not None:
             result.extend(members)
         elif name in classes and classes[name].runnable:
