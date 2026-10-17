@@ -789,7 +789,9 @@ extension Notification.Name {
     static let showBookInfo = Notification.Name("showBookInfo")
     /// Posted by Library > Speak Info and its key, Shift-Command-I: the
     /// Library window that takes the command speaks its selected row's
-    /// information with the app's own voice (`LibraryInfoSpeaker`).
+    /// information with the app's own voice (`LibraryInfoSpeaker`), and the
+    /// reader window it is pressed in speaks its book's information, in the
+    /// same words (`ReaderViewModel.speakInfo(_:now:)`).
     static let speakInfo = Notification.Name("speakInfo")
     /// Posted by Library > Speak Full Info and its key, Shift-Command-I
     /// twice unless the user changed it (FR12): the Library window that
