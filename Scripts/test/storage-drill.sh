@@ -25,10 +25,27 @@
 #   sessions set BBS_AGENT=<name> to report to the board.
 #
 # Output: run-area.py's lines (the result, each failure, the log's path,
-# PASSED or FAILED), then one line about the images, then the verdict.
+# PASSED or FAILED), then one line about the images, then the verdict:
+#   "Storage drill: PASSED"       only when the tests ran (at least one
+#                                 executed and not every one skipped, since
+#                                 the drill's tests all skip unless its switch
+#                                 is on), none failed, and no image is left
+#                                 attached;
+#   "Storage drill: FAILED"       when a test failed or an image is left
+#                                 attached;
+#   "Storage drill: NOT RUN: ..." when no drill test ran: a --dry-run, --list,
+#                                 or --clean option (run-area.py answers
+#                                 those without running a test), or a run in
+#                                 which every test skipped.
 #
-# Exit status: 0 when the tests passed and no image is left attached; 1 when
-# a test failed or an image is left attached; 2 for a usage or setup error.
+# Exit status: 0 only for PASSED; 1 when a test failed or an image is left
+# attached; 2 for a usage or setup error and for NOT RUN.
+#
+# For the selftest (Scripts/test/storage-drill-selftest.sh), two environment
+# variables replace the real tools; leave them unset otherwise:
+#   TEXTMOUTH_DRILL_RUN_AREA  the program run in place of
+#                             `python3 Scripts/test/run-area.py`
+#   TEXTMOUTH_DRILL_HDIUTIL   the program run in place of `hdiutil`
 
 set -u
 set -o pipefail
@@ -47,16 +64,43 @@ case "${1:-}" in
     -h|--help) usage; exit 0 ;;
 esac
 
-# Run only the drill's class, with the variable that switches it on.
-python3 "$SCRIPT_DIR/run-area.py" \
+# The tools, replaceable for the selftest (see the header).
+HDIUTIL=${TEXTMOUTH_DRILL_HDIUTIL:-hdiutil}
+if [ -n "${TEXTMOUTH_DRILL_RUN_AREA:-}" ]; then
+    run_area=("$TEXTMOUTH_DRILL_RUN_AREA")
+else
+    run_area=(python3 "$SCRIPT_DIR/run-area.py")
+fi
+
+# run-area.py's lines are shown as they come and kept in this file, so its
+# "Executed N tests ..." line can be read afterwards.
+runner_lines=$(mktemp "${TMPDIR:-/tmp}/storage-drill.XXXXXX") || exit 2
+trap 'rm -f "$runner_lines"' EXIT
+
+# Run only the drill's class, with the variable that switches it on. With
+# pipefail set, the status is run-area.py's, not tee's.
+"${run_area[@]}" \
     --classes StorageDrillTests \
     --env TEXTMOUTH_STORAGE_DRILL=1 \
-    "$@"
-tests_status=$?
+    "$@" 2>&1 | tee "$runner_lines"
+tests_status=${PIPESTATUS[0]}
+
+# tests_ran: succeeds when run-area.py's lines show a run in which at least
+# one test executed and not every executed test was skipped. Its first line
+# is "Executed N tests, with S tests skipped and F failures ..." (the skipped
+# part is absent when none skipped) or "no tests ran".
+tests_ran() {
+    local line executed skipped
+    line=$(grep -E '^Executed [0-9]+ tests?, with ' "$runner_lines" | tail -n 1)
+    [ -n "$line" ] || return 1
+    executed=$(printf '%s\n' "$line" | sed -E 's/^Executed ([0-9]+) .*/\1/')
+    skipped=$(printf '%s\n' "$line" | sed -nE 's/.* with ([0-9]+) tests? skipped.*/\1/p')
+    [ "$executed" -gt "${skipped:-0}" ]
+}
 
 # Any image of the drill still attached? Ask hdiutil, which lists every
 # attached image with its path; the drill's are named TMDrill-... .
-attached_report=$(hdiutil info 2>&1) || {
+attached_report=$("$HDIUTIL" info 2>&1) || {
     echo "Could not run hdiutil info, so the check for attached drill images was skipped."
     exit 2
 }
@@ -80,11 +124,17 @@ else
     image_status=1
 fi
 
-if [ "$tests_status" -eq 0 ] && [ "$image_status" -eq 0 ]; then
-    echo "Storage drill: PASSED"
-    exit 0
+# The verdict. A failed test or a left image is FAILED (a setup error from the
+# runner keeps its status 2); a run that ran no drill test is NOT RUN, never
+# PASSED; only a clean run of at least one test is PASSED.
+if [ "$tests_status" -ne 0 ] || [ "$image_status" -ne 0 ]; then
+    echo "Storage drill: FAILED"
+    [ "$tests_status" -eq 2 ] && exit 2
+    exit 1
 fi
-echo "Storage drill: FAILED"
-# Status 2 from the runner is a setup error; anything else is a failure.
-[ "$tests_status" -eq 2 ] && exit 2
-exit 1
+if ! tests_ran; then
+    echo "Storage drill: NOT RUN: no test ran (a dry run, a list, a clean, or every test skipped)"
+    exit 2
+fi
+echo "Storage drill: PASSED"
+exit 0
