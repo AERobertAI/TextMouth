@@ -85,7 +85,7 @@ RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
 	-scheme $(SCHEME) \
 	-derivedDataPath "$(DERIVED_BUILD_DIR)"
 
-.PHONY: all clean build debug run install uninstall generate resolve-packages update-packages test check check-selftest test-area lint-tests lint-a11y perf-baselines open xcode help signing-identity
+.PHONY: all clean build debug run install uninstall generate resolve-packages update-packages test check check-selftest test-area lint-tests lint-a11y lint-ogg perf-baselines open xcode help signing-identity
 
 ## Default: build the app
 all: build
@@ -107,6 +107,7 @@ help:
 	@echo "  make test-area AREAS=\"feeds bookmarks\" - Run only the hosted tests of some areas, in one build, with a short result"
 	@echo "  make lint-tests - Check the test lines this branch adds for traps, and list what it did to existing tests"
 	@echo "  make lint-a11y  - Check the SwiftUI lines this branch adds for accessibility mistakes"
+	@echo "  make lint-ogg   - Check the app lines this branch adds for audio readers that must refuse Ogg first"
 	@echo "  make perf-baselines - Record new performance baselines after a deliberate change"
 	@echo "  make signing-identity - Once per Mac: make the identity builds are signed with, so macOS remembers the microphone permission"
 	@echo "  make generate   - Regenerate the Xcode project (requires xcodegen)"
@@ -226,6 +227,7 @@ check-selftest:
 	@python3 Scripts/test/a11y-lint.py --selftest
 	@python3 Scripts/test/test-diff.py --selftest
 	@python3 Scripts/test/test-logs.py --selftest
+	@python3 Scripts/test/ogg-lint.py --selftest
 	@python3 Scripts/test/make-corpus.py --selftest
 
 ## Run only the hosted tests of some areas (or test classes) in one build,
@@ -248,6 +250,14 @@ lint-tests:
 ## gestures with no VoiceOver action, and the like. No building.
 lint-a11y:
 	@python3 Scripts/test/a11y-lint.py --base $(LINT_BASE)
+
+## Check the app lines this branch added (since LINT_BASE) for calls that open
+## an audio file with an Apple reader (AVURLAsset, AVAssetReader, AVAudioFile,
+## the AVPlayers, AudioFileOpenURL). Each must refuse an Ogg file first, since
+## Apple's Vorbis decoder once locked up the Mac (AGENTS.md, B06); a reviewed
+## line ends with `// lint-ok: <how this path refuses Ogg>`. No building.
+lint-ogg:
+	@python3 Scripts/test/ogg-lint.py --base $(LINT_BASE)
 
 ## Rewrite TextMouthProductionTests/performance-baselines.json from a fresh
 ## run of PerformanceBaselineTests, which waits for a quiet Mac, printing
