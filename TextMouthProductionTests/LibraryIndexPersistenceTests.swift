@@ -436,7 +436,7 @@ final class LibraryIndexPersistenceTests: XCTestCase {
         let obstruction = try WriteObstruction.place(at: sandbox.indexURL)
         LibraryPersistenceService.save(libraryB)
         LibraryPersistenceService.flushPendingSave()
-        XCTAssertTrue(center.hasUnsavedChanges, "the write did not fail")
+        XCTAssertEqual(center.outstandingFailures().map(\.subject), [.libraryIndex], "the failed write is not listed")
 
         // The file holds B all the same, as a rename that landed though it
         // reported failure would leave it.
@@ -450,7 +450,7 @@ final class LibraryIndexPersistenceTests: XCTestCase {
             try LibraryIndexSandbox.canonicalJSON(LibraryIndexSandbox.encoded(libraryA)),
             "the undo was skipped and library.json still holds B"
         )
-        XCTAssertFalse(center.hasUnsavedChanges, "the write that settled the failure left it listed")
+        XCTAssertTrue(center.outstandingFailures().isEmpty, "the write that settled the failure left it listed")
     }
 
     /// A save skipped because its bytes are the file's still clears the
@@ -552,32 +552,6 @@ final class LibraryIndexPersistenceTests: XCTestCase {
             try LibraryIndexSandbox.canonicalJSON(Data(contentsOf: sandbox.indexURL)),
             try LibraryIndexSandbox.canonicalJSON(LibraryIndexSandbox.encoded(library))
         )
-    }
-
-    /// A save that writes nothing still counts as a save: it settles an
-    /// earlier failed write, as the file already holds this library.
-    @MainActor
-    func testASkippedSaveStillSettlesAnEarlierFailedWrite() throws {
-        let center = cleanSharedFailureCenter()
-        let library = LibraryIndexSandbox.sampleLibrary()
-        LibraryPersistenceService.save(library)
-        LibraryPersistenceService.flushPendingSave()
-
-        // A different library fails to write, so the center lists it.
-        let obstruction = try WriteObstruction.place(at: sandbox.indexURL)
-        LibraryPersistenceService.save(Library(folders: [BookFolder(name: "Never Written \(UUID().uuidString)")]))
-        LibraryPersistenceService.flushPendingSave()
-        XCTAssertEqual(center.outstandingFailures().map(\.subject), [.libraryIndex])
-
-        // The file holds the first library again; saving it writes nothing.
-        obstruction.clear()
-        try sandbox.stageValid(library, at: sandbox.indexURL)
-        let past = try backdateIndex()
-        LibraryPersistenceService.save(library)
-        LibraryPersistenceService.flushPendingSave()
-
-        XCTAssertEqual(try modificationDate(of: sandbox.indexURL), past, "library.json was written again")
-        XCTAssertTrue(center.outstandingFailures().isEmpty, "the skipped save left the failure listed")
     }
 
     /// Equal libraries encode to equal bytes, however their dictionaries
