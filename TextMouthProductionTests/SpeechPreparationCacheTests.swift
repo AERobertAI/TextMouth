@@ -630,6 +630,39 @@ final class SpeechPreparationCacheTests: XCTestCase {
         }
     }
 
+    /// Speech that is ready while a Where Am I announcement's end sound
+    /// plays, the announcement having ended by itself, is not spoken over
+    /// the sound either (REV18a, item 7): the play goes on waiting, showing
+    /// Playing, and the speech starts once the sound has had its moment,
+    /// exactly the speech prepared in the background.
+    func testSpeechReadyWhileWhereAmIsEndSoundPlaysStartsOnceItHasPassed() throws {
+        try withReader(chapters: Self.chaptersEndingInALongOne(seed: 107)) { reader, _ in
+            let inputs = try waitingPlay(of: reader, whileWhereAmISpeaks: true)
+            let prepared = inputs.prepare()
+            let endSound = WhereAmIEndSoundClock(holdingFor: reader)
+
+            // The announcement ends by itself before the speech is ready.
+            reader.whereAmIAnnouncementFinished()
+            XCTAssertFalse(reader.isWhereAmISpeaking)
+            XCTAssertTrue(reader.isWhereAmIEndSoundPlaying)
+
+            reader.finishPreparingInBackground(prepared)
+
+            XCTAssertFalse(reader.speechService.isSpeaking, "the speech started over the end sound")
+            XCTAssertTrue(reader.isWaitingForChapterSpeech, "the play stopped waiting during the end sound")
+            XCTAssertTrue(reader.isCurrentlyPlaying, "Playing no longer shows during the end sound")
+            XCTAssertFalse(reader.isCurrentlyPaused)
+
+            endSound.passEndSound()
+
+            XCTAssertTrue(reader.speechService.isSpeaking, "the speech never started after the end sound")
+            XCTAssertFalse(reader.isWaitingForChapterSpeech)
+            assertSpeaks(reader, (prepared.text, prepared.offsetMap))
+            XCTAssertEqual(reader.chapterSpeechCache.misses, 0, "the chapter was prepared on the main thread")
+            silence(reader)
+        }
+    }
+
     /// An announcement ended by hand, by Where Am I pressed again or by a
     /// command that interrupts it, starts the play it held at once.
     func testWhereAmIEndedByHandStartsTheHeldPlayAtOnce() throws {

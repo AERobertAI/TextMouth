@@ -1609,11 +1609,14 @@ extension ReaderViewModel {
     /// then prepared afresh from the settings in force, at once, unless a
     /// preparation of exactly those is under way, which the play waits for
     /// in turn. A book with nothing left to say ends. Nothing is said over a
-    /// Where Am I announcement: the play goes on waiting, showing Playing,
-    /// and starts once the announcement ends (`startPlayHeldByWhereAmI()`).
+    /// Where Am I announcement, nor over the end sound of one that ended by
+    /// itself (`isWhereAmISpeakingOrSoundingItsEnd`): the play goes on
+    /// waiting, showing Playing, and starts once the announcement and its end
+    /// sound are over (`startPlayHeldByWhereAmI()`, which the end sound's
+    /// work asks as it passes).
     private func continueWaitingPlay() {
-        guard !isWhereAmISpeaking else {
-            DiagnosticLog.trace(.playback, "play: the chapter's speech is ready while Where Am I speaks; starting it once the announcement ends")
+        guard !isWhereAmISpeakingOrSoundingItsEnd else {
+            DiagnosticLog.trace(.playback, "play: the chapter's speech is ready while Where Am I speaks or sounds its end; starting it once they are over")
             return
         }
         chapterSpeechCache.awaitedByPlay = nil
@@ -2262,15 +2265,17 @@ extension ReaderViewModel {
     }
 
     /// The pause before the cursor's chapter has passed: the chapter plays
-    /// from the cursor, or, while a Where Am I? announcement speaks, waits
-    /// for the announcement's end (`isChapterHeldByWhereAmI`), as a chapter
-    /// whose files arrive during one waits, still counted as playing.
+    /// from the cursor, or, while a Where Am I? announcement speaks or sounds
+    /// its end (`isWhereAmISpeakingOrSoundingItsEnd`), waits for it
+    /// (`isChapterHeldByWhereAmI`), as a chapter whose files arrive during
+    /// one waits, still counted as playing. It plays once the announcement's
+    /// end sound has passed (`startPlayHeldByWhereAmI()`).
     private func startChapterAfterPause() {
         chapterStartAfterPause = nil
         guard !hasClosed else { return }
-        guard !isWhereAmISpeaking else {
+        guard !isWhereAmISpeakingOrSoundingItsEnd else {
             isChapterHeldByWhereAmI = true
-            DiagnosticLog.trace(.playback, "the pause before chapter \(currentChapterIndex) ended while Where Am I speaks; it plays as the announcement ends")
+            DiagnosticLog.trace(.playback, "the pause before chapter \(currentChapterIndex) ended while Where Am I speaks or sounds its end; it plays once they are over")
             return
         }
         playAudioChapter()
