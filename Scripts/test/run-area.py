@@ -594,6 +594,20 @@ Test Case '-[TextMouthProductionTests.BoomTests testBoom]' started.
 Restarting after unexpected exit, crash, or test timeout in BoomTests/testBoom(); summary will include totals from previous launches.
 ** TEST FAILED **
 """
+# The build wrapper's board messages (bbs.py's describe_message) in a log that
+# crashed nowhere: one whose topic says the test host crashed, one whose body
+# does, an error and an Executed line in a body, then a clean run.
+_LOG_BOARD_CRASH_TALK = """\
+[build-slot] unread board messages for worker (still unread; read them with bbs.py inbox worker --unread):
+#2491 finding from oggtoaac to all, 10:02:11 17 Oct: Test host crashed 9x in the Ogg tests
+  Files: TextMouth/Services/Foo.swift
+  The test host crashed again; error: boom
+  Executed 99 tests, with 99 failures (0 unexpected)
+
+#2492 notice from lead to worker, 10:03:00 17 Oct: restart after a crash
+  Restarting after unexpected exit, crash, or test timeout in X
+[build-slot] acquired slot1 at 10:04:00
+""" + _LOG_PASS
 
 
 def selftest() -> int:
@@ -699,6 +713,17 @@ def selftest() -> int:
     crashed = testkit.format_summary(summary(_LOG_CRASH))
     check("a crash with no Executed line says so", crashed[0] == "no tests ran"
           and any(l.startswith("CRASH ") for l in crashed) and crashed[-1] == "FAILED", crashed)
+
+    # A board message the wrapper copied into the log, however it speaks of
+    # crashes, errors, or results, is not xcodebuild's own output.
+    talked = summary(_LOG_BOARD_CRASH_TALK)
+    check("a board message about a crash is no CRASH", talked.crash is None, talked.crash)
+    check("a board message's error and Executed lines are not read", not talked.errors and talked.executed == 13, talked)
+    check("a log with board talk of crashes still passes", talked.passed
+          and not any(l.startswith("CRASH ") for l in testkit.format_summary(talked)))
+    after_board = summary(_LOG_BOARD_CRASH_TALK + _LOG_CRASH)
+    check("a real crash after board messages is still found",
+          after_board.crash is not None and after_board.crash.startswith("Restarting after unexpected exit"), after_board.crash)
 
     stamped = testkit.format_summary(replace(passed, log_path="/tmp/x.log", elapsed=312.4))
     check("the log path and elapsed time print", stamped[-2:] == ["log: /tmp/x.log", "PASSED in 5 minutes 12 seconds"], stamped)
