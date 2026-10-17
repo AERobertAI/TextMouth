@@ -37,6 +37,8 @@ final class ReaderNextChapterFileTests: XCTestCase {
         waitForReaderToLoad(reader)
         let service = reader.audioPlaybackService
         let files = reader.audioChapterFiles.map(resolvedPath)
+        // The reader made this list; a short one fails here, not at a subscript below.
+        _ = try XCTUnwrap(files[safe: 2], "the book has no third chapter file")
         let reports = PlayerReportLog(observing: service)
         defer { service._reportHandledForTesting = nil }
         let trail = try CursorTrail(of: reader)
@@ -75,6 +77,8 @@ final class ReaderNextChapterFileTests: XCTestCase {
         waitForReaderToLoad(reader)
         let service = reader.audioPlaybackService
         let files = reader.audioChapterFiles.map(resolvedPath)
+        // The reader made this list; a short one fails here, not at a subscript below.
+        _ = try XCTUnwrap(files[safe: 1], "the book has no second chapter file")
         defer { reader.stop() }
 
         reader.play()
