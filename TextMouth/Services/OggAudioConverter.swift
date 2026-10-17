@@ -1,4 +1,3 @@
-import AudioToolbox
 import AVFoundation
 import Darwin
 
@@ -14,7 +13,8 @@ import Darwin
 /// decodes Ogg itself: it runs Apple's own `/usr/bin/afconvert` as a child
 /// process (`WatchedProcess`), which a watchdog kills when it runs too long,
 /// holds too much memory, or stops writing (`ConversionLimits`). All that
-/// TextMouth reads of the Ogg file is its header (`inspect(_:)`).
+/// TextMouth reads of the Ogg file is its first and last bytes, parsed by
+/// hand (`OggHeaderReader`, through `inspect(_:)`), with no Apple audio API.
 ///
 /// A file is written at the source's own average bit rate rounded up to the
 /// next standard AAC rate, so a track stays about the same size and sounds
@@ -157,34 +157,27 @@ enum OggAudioConverter {
         return isOfCDFamily ? 44_100 : 48_000
     }
 
-    /// What the header of an Ogg file says: read without decoding a sample
-    /// (`inspect(_:)`).
+    /// What the header of an Ogg file says: read from its own bytes without
+    /// decoding a sample (`inspect(_:)`).
     struct SourceInfo: Equatable, Sendable {
         /// The sample rate, in hertz.
         let sampleRate: Double
         /// The number of channels.
         let channels: Int
-        /// How long it lasts, in seconds, as the container estimates it.
+        /// How long it lasts, in seconds, as the position of its last page
+        /// says.
         let duration: TimeInterval
     }
 
-    /// The sample rate, channels, and length of the Ogg file at `url`, from
-    /// its header alone through AudioFile: nothing is decoded, so Apple's
-    /// Vorbis decoder is never run in TextMouth. Nil when the file isn't
-    /// there, is only in the cloud, or isn't audio AudioFile reads.
+    /// The sample rate, channels, and length of the Ogg file at `url`, read
+    /// from the file's own bytes by `OggHeaderReader` (REV17a): no Apple
+    /// audio API opens the file, so neither AudioFile's demuxer nor Apple's
+    /// Vorbis decoder ever runs in TextMouth. Nil when the file isn't there,
+    /// is only in the cloud, or isn't Ogg Vorbis or Opus audio.
     static func inspect(_ url: URL) -> SourceInfo? {
-        guard FileManager.default.fileExists(atPath: url.path), !DatalessFiles.isDataless(url) else { return nil }
-        var file: AudioFileID?
-        guard AudioFileOpenURL(url as CFURL, .readPermission, 0, &file) == noErr, let file else { return nil }
-        defer { AudioFileClose(file) }
-        var format = AudioStreamBasicDescription()
-        var formatSize = UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
-        var seconds: Float64 = 0
-        var secondsSize = UInt32(MemoryLayout<Float64>.size)
-        guard AudioFileGetProperty(file, kAudioFilePropertyDataFormat, &formatSize, &format) == noErr,
-              AudioFileGetProperty(file, kAudioFilePropertyEstimatedDuration, &secondsSize, &seconds) == noErr,
-              format.mSampleRate > 0, format.mChannelsPerFrame > 0, seconds.isFinite, seconds > 0 else { return nil }
-        return SourceInfo(sampleRate: format.mSampleRate, channels: Int(format.mChannelsPerFrame), duration: seconds)
+        guard FileManager.default.fileExists(atPath: url.path), !DatalessFiles.isDataless(url),
+              let header = OggHeaderReader.read(at: url) else { return nil }
+        return SourceInfo(sampleRate: header.sampleRate, channels: header.channels, duration: header.duration)
     }
 
     /// How a source described by `info`, a file of `bytes` bytes, is written:
