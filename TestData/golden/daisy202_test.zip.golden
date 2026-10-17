@@ -1,0 +1,16 @@
+# TextMouth document golden, format 1
+file: daisy202_test.zip
+format: daisy
+title: The Manual of Tide Prediction
+author: Josephine Halford
+chapters: 1
+words: 149
+text length: 915
+text checksum: cbac5f797c297d89
+first 300: The Manual of Tide Prediction\n\nChapter 1: Gravitational Forces\n\nThe Moon's Influence\n\nThe gravitational pull of the Moon is the primary driver of ocean tides on Earth. As the Moon orbits our planet, its gravitational field creates two tidal bulges in the ocean — one facing the Moon and one on the op
+last 300: p Tides\n\nWhen the Sun, Moon, and Earth align during new and full moons, the combined gravitational forces produce especially large tidal ranges known as spring tides. Conversely, when the Sun and Moon are at right angles relative to Earth, their forces partially cancel, producing smaller neap tides.
+heading: 1 | The Manual of Tide Prediction
+heading: 1 | Chapter 1: Gravitational Forces
+heading: 2 | The Moon's Influence
+heading: 1 | Chapter 2: Tidal Patterns
+heading: 2 | Spring and Neap Tides

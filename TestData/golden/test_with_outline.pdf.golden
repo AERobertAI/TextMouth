@@ -1,0 +1,18 @@
+# TextMouth document golden, format 1
+file: test_with_outline.pdf
+macOS: 26.3
+format: pdf
+title: The Seasonal Almanac
+author: Dorothy Whitfield
+chapters: 1
+words: 87
+text length: 580
+text checksum: 7e4f20f6f460cee2
+first 300: The Seasonal Almanac\n\nChapter 1: Spring\n\nEarly Planting\n\nThe Seasonal Almanac\n\nby Dorothy Whitfield\n\nChapter 1: Spring\n\nSpring arrives not as a single event but as a sequence of small awakenings.\n\nEarly Planting\n\nRoot vegetables tolerate cool soil better than fruiting crops.\n\nChapter 2: Summer\n\nHeat
+last 300: pter 2: Summer\n\nHeat Management\n\nChapter 2: Summer\n\nThe long days of summer demand attention to watering schedules.\n\nHeat Management\n\nMulch serves double duty in summer: it retains moisture and suppresses weeds.\n\nChapter 3: Autumn\n\nChapter 3: Autumn\n\nThe harvest season rewards patience and planning.
+heading: 1 | The Seasonal Almanac
+heading: 1 | Chapter 1: Spring
+heading: 2 | Early Planting
+heading: 1 | Chapter 2: Summer
+heading: 2 | Heat Management
+heading: 1 | Chapter 3: Autumn

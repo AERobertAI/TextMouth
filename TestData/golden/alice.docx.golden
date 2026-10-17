@@ -1,0 +1,31 @@
+# TextMouth document golden, format 1
+file: alice.docx
+format: docx
+title: Alice's Adventures in Wonderland
+author: Lewis Carroll
+chapters: 1
+words: 29656
+text length: 163150
+text checksum: d2a74a9afe10695f
+first 300: Table of Contents\n\nAlice’s Adventures in Wonderland\n\nTHE MILLENNIUM FULCRUM EDITION 3.0\n\nContents\n\nCHAPTER I. Down the Rabbit-Hole\n\nCHAPTER II. The Pool of Tears\n\nCHAPTER III. A Caucus-Race and a Long Tale\n\nCHAPTER IV. The Rabbit Sends in a Little Bill\n\nCHAPTER V. Advice from a Caterpillar\n\nCHAPTER 
+last 300: the main PG search facility: www.gutenberg.org.\n\nThis website includes information about Project Gutenberg, including how to make donations to the Project Gutenberg Literary Archive Foundation, how to help produce our new eBooks, and how to subscribe to our email newsletter to hear about new eBooks.
+heading: 2 | Table of Contents
+heading: 3 | The Project Gutenberg eBook of Alice's Adventures in Wonderland
+heading: 2 | Alice’s Adventures in Wonderland
+heading: 3 | by Lewis Carroll
+heading: 4 | THE MILLENNIUM FULCRUM EDITION 3.0
+heading: 3 | Contents
+heading: 3 | CHAPTER I.
+heading: 3 | CHAPTER II.
+heading: 3 | CHAPTER III.
+heading: 3 | CHAPTER IV.
+heading: 3 | CHAPTER V.
+heading: 3 | CHAPTER VI.
+heading: 3 | CHAPTER VII.
+heading: 3 | CHAPTER VIII.
+heading: 3 | CHAPTER IX.
+heading: 3 | CHAPTER X.
+heading: 3 | CHAPTER XI.
+heading: 3 | CHAPTER XII.
+heading: 4 | THE END
+heading: 3 | THE FULL PROJECT GUTENBERG™ LICENSE

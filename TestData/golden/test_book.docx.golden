@@ -1,0 +1,21 @@
+# TextMouth document golden, format 1
+file: test_book.docx
+format: docx
+title: The Lighthouse Operator's Handbook
+author: Harriet Pemberton
+chapters: 1
+words: 452
+text length: 3046
+text checksum: 41c15fcf428ca84e
+first 300: The Lighthouse Operator's Handbook\n\nby Harriet Pemberton\n\nChapter 1: First Principles\n\nEvery coastal watchtower demands attention to three things above all else: the mechanism that drives the lens, the fuel that feeds the flame, and the log that records each passing vessel. Without any one of these,
+last 300: d) means "I am taking in, or discharging, or carrying dangerous goods."\n\nThis handbook serves as a foundation. No written guide replaces the judgment built through seasons of direct experience at the post. Trust the instruments, trust the training, and above all, trust what the sea itself tells you.
+heading: 1 | The Lighthouse Operator's Handbook
+heading: 1 | Chapter 1: First Principles
+heading: 2 | The Daily Routine
+heading: 2 | Equipment Checklist
+heading: 2 | Emergency Procedures
+heading: 1 | Chapter 2: Weather and Observation
+heading: 2 | Reading the Barometer
+heading: 3 | Barometer Readings Reference
+heading: 1 | Chapter 3: Communication
+heading: 2 | Signal Flag Meanings
