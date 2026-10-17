@@ -15,12 +15,16 @@ final class FeedInfoModel: ObservableObject, Identifiable {
     let center: FeedCenter
     /// The library, for its folders.
     let library: LibraryViewModel
+    /// The preferences the global "When book ends" is read from.
+    private let defaults: UserDefaults
 
-    /// Feed Info for the feed `feedID` of `center`, in `library`.
-    init(feedID: UUID, center: FeedCenter, library: LibraryViewModel) {
+    /// Feed Info for the feed `feedID` of `center`, in `library`; `defaults`
+    /// is where the global "When book ends" setting is read from (FR19).
+    init(feedID: UUID, center: FeedCenter, library: LibraryViewModel, defaults: UserDefaults = .standard) {
         self.feedID = feedID
         self.center = center
         self.library = library
+        self.defaults = defaults
     }
 
     /// The feed as its record holds it now, subscribed or not (FR11, branch
@@ -72,6 +76,50 @@ final class FeedInfoModel: ObservableObject, Identifiable {
     var deleteDaysAfterPlaying: Int {
         get { feed?.deleteDownloadsDaysAfterPlayed(under: globalSettings) ?? globalSettings.deleteDownloadsDaysAfterPlayed }
         set { center.setDeleteDownloadsDaysAfterPlayed(newValue, of: feedID) }
+    }
+
+    // MARK: The Feed's Listening Options (FR19)
+
+    /// The feed's listening options as its record holds them: the standard
+    /// ones for a feed with none of its own. Setting them saves them at once
+    /// through the engine, which stores nothing for the standard ones
+    /// (`FeedCenter.setListeningOptions(_:of:)`).
+    var listeningOptions: ListeningOptions {
+        get { feed?.listeningOptions ?? .standard }
+        set { center.setListeningOptions(newValue, of: feedID) }
+    }
+
+    /// What happens when one of the feed's episodes ends; nil is "Use the
+    /// global setting".
+    var episodeEnd: ReadingList.Continuation? {
+        get { listeningOptions.continuation }
+        set { listeningOptions.continuation = newValue }
+    }
+
+    /// Whether listening passes over the feed's finished episodes when it
+    /// goes on to another.
+    var skipsFinishedEpisodes: Bool {
+        get { listeningOptions.skipsFinished }
+        set { listeningOptions.skipsFinished = newValue }
+    }
+
+    /// Whether the episode that plays next is downloaded shortly before the
+    /// playing one ends. Kept while the checkbox is dimmed.
+    var predownloadsNextEpisode: Bool {
+        get { listeningOptions.predownloadsNext }
+        set { listeningOptions.predownloadsNext = newValue }
+    }
+
+    /// The global "When book ends" setting, which "Use the global setting"
+    /// follows and names.
+    var globalEndOfBookBehavior: EndOfBookBehavior {
+        SettingsPolicy.endOfBookBehavior.storedValue(in: defaults)
+    }
+
+    /// Whether listening would go on from one of the feed's episodes to
+    /// another, which is when downloading the next one can matter.
+    var continuesToAnotherEpisode: Bool {
+        listeningOptions.goesOn(under: globalEndOfBookBehavior)
     }
 
     // MARK: The Feed's Folder
