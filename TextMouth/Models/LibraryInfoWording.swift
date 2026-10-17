@@ -222,14 +222,9 @@ enum LibraryInfoWording {
     /// counted with how many are unopened, and its feeds counted when it
     /// has any. Example: "Classics. Folder. 12 books, 3 unopened. 2 feeds."
     static func briefParts(of folder: FolderInfoFacts) -> [String] {
-        var parts = [folder.name, folderKind]
-        var books = CountWording.books(folder.bookCount)
-        if folder.unopenedCount > 0 {
-            books += ", \(folder.unopenedCount) unopened"
-        }
-        parts.append(books)
-        if folder.feedCount > 0 {
-            parts.append(CountWording.phrase(folder.feedCount, singular: "feed", plural: "feeds"))
+        var parts = [folder.name, folderKind, booksPhrase(of: folder)]
+        if let feeds = feedsPhrase(of: folder) {
+            parts.append(feeds)
         }
         return parts
     }
@@ -238,14 +233,37 @@ enum LibraryInfoWording {
     /// has any, and the time left in all its books when any is known.
     /// Example: "2 subfolders. 14 hours, 3 minutes remaining in total."
     static func fullParts(of folder: FolderInfoFacts) -> [String] {
-        var parts: [String] = []
-        if folder.subfolderCount > 0 {
-            parts.append(CountWording.phrase(folder.subfolderCount, singular: "subfolder", plural: "subfolders"))
+        return [subfoldersPhrase(of: folder), timeRemainingPhrase(of: folder)].compactMap { $0 }
+    }
+
+    /// A folder's books counted with how many are unopened. Shared by Speak
+    /// Info and the Folder Settings sheet. Example: "12 books, 3 unopened".
+    static func booksPhrase(of folder: FolderInfoFacts) -> String {
+        var books = CountWording.books(folder.bookCount)
+        if folder.unopenedCount > 0 {
+            books += ", \(folder.unopenedCount) unopened"
         }
-        if let remaining = folder.timeRemaining {
-            parts.append("\(TimeFormatting.spoken(remaining)) remaining in total")
-        }
-        return parts
+        return books
+    }
+
+    /// A folder's feeds counted, or nil when it has none. Example: "2 feeds".
+    static func feedsPhrase(of folder: FolderInfoFacts) -> String? {
+        guard folder.feedCount > 0 else { return nil }
+        return CountWording.phrase(folder.feedCount, singular: "feed", plural: "feeds")
+    }
+
+    /// A folder's subfolders counted, or nil when it has none. Example:
+    /// "2 subfolders".
+    static func subfoldersPhrase(of folder: FolderInfoFacts) -> String? {
+        guard folder.subfolderCount > 0 else { return nil }
+        return CountWording.phrase(folder.subfolderCount, singular: "subfolder", plural: "subfolders")
+    }
+
+    /// The time left in all of a folder's books, or nil when none is known.
+    /// Example: "14 hours, 3 minutes remaining in total".
+    static func timeRemainingPhrase(of folder: FolderInfoFacts) -> String? {
+        guard let remaining = folder.timeRemaining else { return nil }
+        return "\(TimeFormatting.spoken(remaining)) remaining in total"
     }
 
     // MARK: A Feed

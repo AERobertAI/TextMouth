@@ -5,12 +5,20 @@ struct BookFolder: Identifiable, Codable, Hashable {
     var name: String
     var parentPath: String  // empty for root-level folders
     var dateCreated: Date
+    /// How listening goes on from one book of the folder to another (FR19),
+    /// for the books directly in it. Nil is the standard options, which are
+    /// never stored, so a library written before it existed reads as
+    /// standard and a folder left as it was saves exactly as it was. It
+    /// follows the folder when the folder is renamed or moved, which change
+    /// `name` and `parentPath` in place.
+    var listeningOptions: ListeningOptions?
 
     init(id: UUID = UUID(), name: String, parentPath: String = "", dateCreated: Date = Date()) {
         self.id = id
         self.name = name
         self.parentPath = parentPath
         self.dateCreated = dateCreated
+        self.listeningOptions = nil
     }
 
     var fullPath: String {

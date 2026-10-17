@@ -25,10 +25,11 @@ final class ShortcutMigrationTests: XCTestCase {
     /// Progress (FR10's feed half), the reading list's four commands, the
     /// two full summaries (FR12), Move to Library… (FR11's branch D), and
     /// the menu commands and Record window buttons whose keys were fixed
-    /// before (FR12's branch D).
+    /// before (FR12's branch D), and Folder or Feed Settings (FR19).
     static let actionsAddedSinceOctober5: Set<ShortcutAction> = ShortcutAction.keyEquivalentActions.union([
         .speakInfo, .speakImportProgress, .speakDownloadProgress, .addToReadingList, .removeFromReadingList,
         .nextInReadingList, .previousInReadingList, .whereAmIFull, .speakFullInfo, .moveToLibrary,
+        .folderOrFeedSettings,
     ])
 
     /// Every action the October 5 build had, in the order Settings lists

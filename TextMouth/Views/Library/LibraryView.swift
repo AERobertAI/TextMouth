@@ -57,6 +57,9 @@ enum WindowCommandRouting {
 enum LibraryFocusTarget: Equatable {
     case continueListening
     case timeSummary
+    /// Where VoiceOver's focus starts in a window with no books: the Add to
+    /// Library button, which took over the Import button's place (FR20). The
+    /// case keeps its name.
     case importButton
 
     /// Chooses a single initial accessibility target for the library.
@@ -219,6 +222,9 @@ struct LibraryView: View {
     /// notices after its commands (FR03). Kept, not observed: its sheets'
     /// host observes it, so a sheet opening never redraws the list.
     @State private var feedPresenter = LibraryFeedsPresenter()
+    /// The Folder Settings sheet shown for a plain folder, from the toolbar's
+    /// Folder Settings button or the Folder or Feed Settings command (FR19).
+    @State private var folderSettings: FolderSettingsModel?
     /// What speaks the selected row's information for Speak Info and Speak
     /// Full Info, I and I twice, and for Book Info on a folder, which has
     /// no sheet (October 7, 2026; FR12). Kept, not observed: it draws
@@ -270,6 +276,9 @@ struct LibraryView: View {
     @State private var exportModel: BookExportModel?
     /// This window's transcription dialogs (FR05).
     @StateObject private var transcription = TranscriptionPresenter()
+    /// What this window owns of its Add to Library button (FR20): the
+    /// sheet's model, and what its choices need of the window.
+    @StateObject private var addToLibrary = AddToLibraryHost()
     /// Which audiobooks are transcribed or being transcribed (FR05),
     /// observed so the rows' notes follow.
     @ObservedObject private var transcribedBooks = TranscribedBooks.shared
@@ -501,29 +510,7 @@ struct LibraryView: View {
                     .accessibilityLabel("Go up one folder level")
                 }
 
-                importBookButton(focusTarget: focusTarget)
-
-                Button {
-                    showTextInput = true
-                } label: {
-                    Label("New from Text", systemImage: "doc.text")
-                }
-                .accessibilityLabel("New book from text")
-                .accessibilityHint("Create a new book by pasting or typing text")
-
-                // Library > Add Feed… for this window alone, which it names
-                // as a shortcut names its window (FR03).
-                Button {
-                    var userInfo: [AnyHashable: Any] = [:]
-                    if let hostWindow {
-                        userInfo["sourceWindow"] = hostWindow
-                    }
-                    NotificationCenter.default.post(name: .addFeed, object: nil, userInfo: userInfo)
-                } label: {
-                    Label(FeedWording.addFeedToolbarTitle, systemImage: "dot.radiowaves.up.forward")
-                }
-                .accessibilityLabel(FeedWording.addFeedButtonLabel)
-                .accessibilityHint(FeedWording.addFeedButtonHint)
+                addToLibraryButton(focusTarget: focusTarget)
 
                 // Edit mode toggle
                 Button {
@@ -546,6 +533,11 @@ struct LibraryView: View {
                         Label("New Folder", systemImage: "folder.badge.plus")
                     }
                     .accessibilityLabel("Create new folder")
+                }
+
+                // Feed Settings or Folder Settings for the folder shown (FR19).
+                if let target = folderSettingsTarget {
+                    folderSettingsButton(target)
                 }
 
                 // Sort controls (TODO A06), or the Reading List's one order
@@ -658,6 +650,21 @@ struct LibraryView: View {
             takesCommand: takesCommand,
             // Move to Library…'s key acts on the selection (FR11, branch D).
             selectedBooks: { selectedBooks }
+        ))
+        // The Add to Library sheet, and the choice made in it, which runs
+        // once the sheet has gone (FR20).
+        .modifier(LibraryAddToLibrarySupport(
+            host: addToLibrary,
+            model: addToLibrary.model,
+            library: libraryViewModel,
+            hostWindow: hostWindow
+        ))
+        // Library > Folder or Feed Settings, and the Folder Settings sheet
+        // (FR19).
+        .modifier(LibraryFolderSettingsSupport(
+            folderSettings: $folderSettings,
+            takesCommand: takesCommand,
+            openShownSettings: { openFolderSettings(folderSettingsTarget) }
         ))
         // Library index recovery: presented at launch when library.json
         // cannot be read, and again from the recovery banner.
@@ -1658,6 +1665,48 @@ struct LibraryView: View {
         performFeedAction(FeedAction(command: .feedInfo, feedID: feedID, title: FeedWording.feedInfoTitle))
     }
 
+    /// What the settings button and command open: the settings of the
+    /// folder this window shows, nil where it shows none (FR19).
+    private var folderSettingsTarget: LibraryFolderSettingsTarget? {
+        LibraryFolderSettingsTarget.of(
+            category: category,
+            folderPath: currentFolderPath,
+            folders: libraryViewModel.library.folders,
+            feedID: { feedFolders.feedID(inFolder: $0) },
+            feedTitle: { feedFolders.center.store.records[$0]?.feed.title }
+        )
+    }
+
+    /// The toolbar's Feed Settings or Folder Settings button for `target`.
+    private func folderSettingsButton(_ target: LibraryFolderSettingsTarget) -> some View {
+        Button {
+            openFolderSettings(target)
+        } label: {
+            Label(target.buttonTitle, systemImage: target.systemImage)
+        }
+        .accessibilityLabel(target.accessibilityLabel)
+        .accessibilityHint(target.accessibilityHint)
+    }
+
+    /// Opens the settings of `target`: Feed Info for a feed's folder, by the
+    /// path Command-I takes, the Folder Settings sheet for a plain folder;
+    /// with no target, says there is nothing to open (FR19).
+    private func openFolderSettings(_ target: LibraryFolderSettingsTarget?) {
+        LibraryFolderSettingsTarget.open(
+            target,
+            showFeedInfo: showFeedInfo,
+            showFolderSettings: { folderID in
+                folderSettings = FolderSettingsModel(
+                    folderID: folderID,
+                    library: libraryViewModel,
+                    feedFolders: feedFolders,
+                    wordsPerMinute: settingsViewModel.wordsPerMinute
+                )
+            },
+            announce: announceToVoiceOver
+        )
+    }
+
     /// Where this list is: its category and, in Folders, its folder.
     private var location: LibraryLocation {
         LibraryLocation(category: category, folderPath: currentFolderPath)
@@ -1721,20 +1770,23 @@ struct LibraryView: View {
         return target == .continueListening ? nil : target
     }
 
-    /// The Import Book button's hint. It named four formats, which left out
-    /// most of those TextMouth reads, its audiobooks among them (TODO A10).
+    /// The Open Book choice's hint, once the Import Book button's. It named
+    /// four formats, which left out most of those TextMouth reads, its
+    /// audiobooks among them (TODO A10). The Add to Library sheet reuses it.
     nonisolated static let importBookHint = "Opens a file picker to import books in any format TextMouth reads."
 
-    /// The Import Book button: the initial VoiceOver target when
+    /// The Add to Library button (FR20), which replaced the Import, New from
+    /// Text, and Add Feed buttons: it shows the sheet that lists those ways
+    /// to add. The initial VoiceOver target when
     /// `focusTarget` says so.
-    private func importBookButton(focusTarget: LibraryFocusTarget?) -> some View {
+    private func addToLibraryButton(focusTarget: LibraryFocusTarget?) -> some View {
         Button {
-            showFileImporter = true
+            addToLibrary.present()
         } label: {
-            Label("Import Book", systemImage: "plus")
+            Label(AddToLibraryWording.buttonTitle, systemImage: "plus")
         }
-        .accessibilityLabel("Import a book file")
-        .accessibilityHint(Self.importBookHint)
+        .accessibilityLabel(AddToLibraryWording.buttonLabel)
+        .accessibilityHint(AddToLibraryWording.buttonHint)
         .modifier(LibraryFocusTargetModifier(
             isEnabled: focusTarget == .importButton
         ))
@@ -1981,6 +2033,34 @@ private struct LibraryOrderCommandsSupport: ViewModifier {
             .onReceive(NotificationCenter.default.publisher(for: .removeFromReadingList)) { notification in
                 guard takesCommand(notification) else { return }
                 changeReadingList(.remove)
+            }
+    }
+}
+
+// MARK: - Folder Settings Support (FR19)
+
+/// A Library window's part in the settings of the folder it shows (FR19): it
+/// presents the Folder Settings sheet whenever `folderSettings` holds a
+/// model, and hears the Library menu's Folder or Feed Settings, and its key
+/// once the user gives it one. Only the window that takes the command acts
+/// on it. It is not private so a test can host it.
+struct LibraryFolderSettingsSupport: ViewModifier {
+    /// The model of the sheet shown; nil while none is.
+    @Binding var folderSettings: FolderSettingsModel?
+    /// Whether this window takes the command a notification carries.
+    let takesCommand: (Notification) -> Bool
+    /// Opens the settings of the folder the window shows, or says there is
+    /// none.
+    let openShownSettings: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onReceive(NotificationCenter.default.publisher(for: .showFolderOrFeedSettings)) { notification in
+                guard takesCommand(notification) else { return }
+                openShownSettings()
+            }
+            .sheet(item: $folderSettings) { model in
+                FolderSettingsSheet(model: model, onDone: { folderSettings = nil })
             }
     }
 }

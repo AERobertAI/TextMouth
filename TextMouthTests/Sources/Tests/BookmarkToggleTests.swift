@@ -490,12 +490,13 @@ test("Every ShortcutAction has a default binding entry") {
         let bindings = defaults[action]
         try assertTrue(bindings != nil, "\(action.rawValue) should have a default binding entry")
         // Release Media Controls, the reading list's four commands (FR09),
-        // Speak Import Progress and Speak Download Progress (FR10), and Move
-        // to Library… (FR11) have no keys until the user gives them some.
+        // Speak Import Progress and Speak Download Progress (FR10), Move
+        // to Library… (FR11), and Folder or Feed Settings (FR19) have no
+        // keys until the user gives them some.
         if ![
             .releaseMediaControls, .addToReadingList, .removeFromReadingList,
             .nextInReadingList, .previousInReadingList, .speakImportProgress,
-            .speakDownloadProgress, .moveToLibrary,
+            .speakDownloadProgress, .moveToLibrary, .folderOrFeedSettings,
         ].contains(action) {
             try assertTrue(!bindings!.isEmpty, "\(action.rawValue) should have at least one default binding")
         }

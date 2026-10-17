@@ -79,6 +79,52 @@ enum EndOfBookWording {
     /// "Finished: Dune. Every book after it in the folder is finished."
     static let onlyFinishedBooksInFolderNote = "Every book after it in the folder is finished"
 
+    /// The same note for the direction listening goes in: going down it is
+    /// `onlyFinishedBooksInFolderNote`; going up, where a feed or folder
+    /// that plays the book above looks, "Every book before it in the folder
+    /// is finished". A feed's items say the same words.
+    static func onlyFinishedBooksInFolderNote(going direction: ReadingList.Direction) -> String {
+        switch direction {
+        case .down: return onlyFinishedBooksInFolderNote
+        case .up: return "Every book before it in the folder is finished"
+        }
+    }
+
+    // MARK: - An Episode That Must Be Downloaded
+
+    /// What a feed's episode that ended says of the next one, whose file is
+    /// not here (FR19): "Downloading the next episode: <title>", or "the
+    /// next article" for an article. A sentence after "Finished: <title>."
+    static func downloadingNextNote(_ item: FeedItem) -> String {
+        "Downloading the next \(kind(of: item)): \(item.title)"
+    }
+
+    /// What VoiceOver hears when the next episode's download failed and
+    /// playback stopped: "The next episode could not be downloaded, so
+    /// playback stopped. <reason>", the reason being the download's own
+    /// sentence, kept whole. "The next article" for an article.
+    ///
+    /// - Parameters:
+    ///   - reason: Why the download failed, as the item's row says it.
+    ///   - isArticle: Whether the next item is an article, not an episode.
+    static func nextEpisodeNotDownloaded(reason: String, isArticle: Bool = false) -> String {
+        "The next \(kind(isArticle: isArticle)) could not be downloaded, so playback stopped. \(reason)"
+    }
+
+    /// Why a download the reader asked for did not start: the engine
+    /// refused it, as it does while TextMouth quits or the feed is deleted.
+    static let downloadNotStartedReason = "TextMouth is not downloading right now."
+
+    /// "article" for an article, "episode" for any other item.
+    private static func kind(of item: FeedItem) -> String {
+        kind(isArticle: item.isArticle)
+    }
+
+    /// "article" or "episode".
+    private static func kind(isArticle: Bool) -> String {
+        isArticle ? "article" : "episode"
+    }
+
     // MARK: - A Book Resting at Its End
 
     /// What a surface that says how far a book has got says of a book

@@ -15,12 +15,16 @@ final class FeedInfoModel: ObservableObject, Identifiable {
     let center: FeedCenter
     /// The library, for its folders.
     let library: LibraryViewModel
+    /// The preferences the global "When book ends" is read from.
+    private let defaults: UserDefaults
 
-    /// Feed Info for the feed `feedID` of `center`, in `library`.
-    init(feedID: UUID, center: FeedCenter, library: LibraryViewModel) {
+    /// Feed Info for the feed `feedID` of `center`, in `library`; `defaults`
+    /// is where the global "When book ends" setting is read from (FR19).
+    init(feedID: UUID, center: FeedCenter, library: LibraryViewModel, defaults: UserDefaults = .standard) {
         self.feedID = feedID
         self.center = center
         self.library = library
+        self.defaults = defaults
     }
 
     /// The feed as its record holds it now, subscribed or not (FR11, branch
@@ -72,6 +76,50 @@ final class FeedInfoModel: ObservableObject, Identifiable {
     var deleteDaysAfterPlaying: Int {
         get { feed?.deleteDownloadsDaysAfterPlayed(under: globalSettings) ?? globalSettings.deleteDownloadsDaysAfterPlayed }
         set { center.setDeleteDownloadsDaysAfterPlayed(newValue, of: feedID) }
+    }
+
+    // MARK: The Feed's Listening Options (FR19)
+
+    /// The feed's listening options as its record holds them: the standard
+    /// ones for a feed with none of its own. Setting them saves them at once
+    /// through the engine, which stores nothing for the standard ones
+    /// (`FeedCenter.setListeningOptions(_:of:)`).
+    var listeningOptions: ListeningOptions {
+        get { feed?.listeningOptions ?? .standard }
+        set { center.setListeningOptions(newValue, of: feedID) }
+    }
+
+    /// What happens when one of the feed's episodes ends; nil is "Use the
+    /// global setting".
+    var episodeEnd: ReadingList.Continuation? {
+        get { listeningOptions.continuation }
+        set { listeningOptions.continuation = newValue }
+    }
+
+    /// Whether listening passes over the feed's finished episodes when it
+    /// goes on to another.
+    var skipsFinishedEpisodes: Bool {
+        get { listeningOptions.skipsFinished }
+        set { listeningOptions.skipsFinished = newValue }
+    }
+
+    /// Whether the episode that plays next is downloaded shortly before the
+    /// playing one ends. Kept while the checkbox is dimmed.
+    var predownloadsNextEpisode: Bool {
+        get { listeningOptions.predownloadsNext }
+        set { listeningOptions.predownloadsNext = newValue }
+    }
+
+    /// The global "When book ends" setting, which "Use the global setting"
+    /// follows and names.
+    var globalEndOfBookBehavior: EndOfBookBehavior {
+        SettingsPolicy.endOfBookBehavior.storedValue(in: defaults)
+    }
+
+    /// Whether listening would go on from one of the feed's episodes to
+    /// another, which is when downloading the next one can matter.
+    var continuesToAnotherEpisode: Bool {
+        listeningOptions.goesOn(under: globalEndOfBookBehavior)
     }
 
     // MARK: The Feed's Folder
@@ -349,7 +397,54 @@ struct FeedInfoSheet: View {
                 value: Binding(get: { model.deleteDaysAfterPlaying }, set: { model.deleteDaysAfterPlaying = $0 }),
                 isDisabled: model.deletesAfterGlobalDays
             )
+            listeningControls(noun: ListeningOptionsWording.Noun(noun))
         }
+    }
+
+    /// The feed's three listening controls (FR19), worded with `noun`: what
+    /// happens when one of its items ends, whether listening passes over the
+    /// finished ones, and whether the next one is downloaded before the
+    /// playing one ends. Built as the Reading List's options bar builds its
+    /// pop-up button and checkbox, so the keyboard and VoiceOver reach them
+    /// as they reach any other; each choice is saved as it is made.
+    @ViewBuilder
+    private func listeningControls(noun: ListeningOptionsWording.Noun) -> some View {
+        // The label is spoken from the control itself: a pop-up button takes
+        // no label from the picker's title.
+        let endLabel = ListeningOptionsWording.continuationLabel(noun)
+        let endHint = ListeningOptionsWording.continuationHint(noun)
+        Picker(endLabel, selection: Binding(get: { model.episodeEnd }, set: { model.episodeEnd = $0 })) {
+            ForEach(ListeningOptions.continuationChoices, id: \.self) { choice in
+                Text(ListeningOptionsWording.continuationTitle(choice, noun: noun, global: model.globalEndOfBookBehavior))
+                    .tag(choice)
+            }
+        }
+        .pickerStyle(.menu)
+        .fixedSize()
+        .help(endHint)
+        .accessibilityLabel(endLabel)
+        .accessibilityHint(endHint)
+
+        let skipLabel = ListeningOptionsWording.skipFinishedLabel(noun)
+        let skipHint = ListeningOptionsWording.skipFinishedHint(noun)
+        Toggle(skipLabel, isOn: Binding(get: { model.skipsFinishedEpisodes }, set: { model.skipsFinishedEpisodes = $0 }))
+            .toggleStyle(.checkbox)
+            .help(skipHint)
+            .accessibilityLabel(skipLabel)
+            .accessibilityHint(skipHint)
+
+        // Dimmed while listening would stop at the end of an item, since
+        // there is then no next one to download; the hint says so, and the
+        // choice is kept for when listening goes on again.
+        let goesOn = model.continuesToAnotherEpisode
+        let downloadLabel = ListeningOptionsWording.predownloadLabel(noun)
+        let downloadHint = ListeningOptionsWording.predownloadHint(noun, enabled: goesOn)
+        Toggle(downloadLabel, isOn: Binding(get: { model.predownloadsNextEpisode }, set: { model.predownloadsNextEpisode = $0 }))
+            .toggleStyle(.checkbox)
+            .disabled(!goesOn)
+            .help(downloadHint)
+            .accessibilityLabel(downloadLabel)
+            .accessibilityHint(downloadHint)
     }
 
     /// Whether a question shows; dismissing it forgets it.

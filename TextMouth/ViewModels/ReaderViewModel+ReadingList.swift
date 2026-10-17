@@ -125,22 +125,16 @@ extension ReaderViewModel {
         sleepTimerStoppedHere: Bool,
         sayingNothingFollows say: (String) -> Void
     ) {
-        guard let next = libraryViewModel.readingListContinuation(after: book.id) else {
-            let note = readingListEndNote()
-            DiagnosticLog.trace(.playback, "end of book: nothing follows in the reading list (\(note))")
-            say(EndOfBookWording.finished(book.title, notes: [note], sleepTimerExpired: sleepTimerStoppedHere))
-            return
-        }
-        guard !sleepTimerEndsListening else {
-            DiagnosticLog.trace(.playback, "end of book: this reader's sleep timer is in effect; not starting the next book in the reading list")
-            say(EndOfBookWording.finished(book.title, notes: [EndOfBookWording.nextBookNotStartedNote]))
-            return
-        }
-        // The next book takes over, as Continue to Next Book's does, so
-        // this one no longer rests finished at its end.
-        handOverToNextBook(to: next.id, titled: next.title) {
-            self.continueThroughReadingList(to: next.id)
-        }
+        let succession = libraryViewModel.readingListContinuation(after: book.id).map(BookSuccession.book)
+            ?? .nothing(note: readingListEndNote())
+        goOnPastThisBook(
+            to: succession,
+            in: "the reading list",
+            startingWith: { self.continueThroughReadingList(to: $0) },
+            sleepTimerEndsListening: sleepTimerEndsListening,
+            sleepTimerStoppedHere: sleepTimerStoppedHere,
+            sayingNothingFollows: say
+        )
     }
 
     /// Opens the book `nextBookID` to be read from the reading list, and

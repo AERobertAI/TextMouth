@@ -599,8 +599,9 @@ struct Library: Codable {
     /// `equivalence`, which older versions could create (`Reports` and
     /// `reports` on a case-insensitive volume). The first row in library
     /// order survives; a later duplicate's books, subfolders, and sort
-    /// settings move onto it and the duplicate row is removed. A surviving
-    /// folder's own sort setting wins over a duplicate's. Only the model
+    /// settings and listening options move onto it and the duplicate row is
+    /// removed. A surviving folder's own sort setting and listening options
+    /// win over a duplicate's. Only the model
     /// changes: such rows already share one directory, so nothing on disk
     /// moves or is deleted. Running the repair again changes nothing.
     mutating func mergeEquivalentFolders(
@@ -617,6 +618,8 @@ struct Library: Codable {
         // same-named subfolders of merged duplicates merge as well.
         var survivors: [String: String] = [:]
         var duplicateIDs: Set<UUID> = []
+        // Where each surviving row is, so a duplicate can give it its options.
+        var survivorIndices: [String: Int] = [:]
         let visitOrder = folders.indices.sorted { (folders[$0].depth, $0) < (folders[$1].depth, $1) }
         for index in visitOrder {
             let folder = folders[index]
@@ -625,9 +628,17 @@ struct Library: Codable {
             let key = equivalence.comparisonKey(for: path)
             if let survivingPath = survivors[key] {
                 duplicateIDs.insert(folder.id)
+                // The survivor keeps its own listening options; else it takes
+                // the first duplicate's that has some (rows are visited in
+                // library order), as its sort settings do below.
+                if let survivor = survivorIndices[key],
+                   folders[survivor].listeningOptions == nil {
+                    folders[survivor].listeningOptions = folder.listeningOptions
+                }
                 repair.merges.append(.init(duplicatePath: folder.fullPath, survivingPath: survivingPath))
             } else {
                 survivors[key] = path
+                survivorIndices[key] = index
                 if !BookFolder.spellingsMatch(parentPath, folder.parentPath) {
                     folders[index].parentPath = parentPath
                     repair.changedLibrary = true
