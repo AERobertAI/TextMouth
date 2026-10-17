@@ -1008,6 +1008,34 @@ final class BookManifestEditTests: XCTestCase {
         }
     }
 
+    /// TextMouth's own manifest, written for a book that had none, is not an
+    /// edit for a reader that opened the book before it and so shows no
+    /// pauses: the manifest gives no pause, which is the pauses the reader
+    /// shows, so nothing is taken or announced and nothing is written.
+    func testTextMouthsGeneratedManifestIsNotTakenForAnEditByAReaderThatShowsNoPauses() throws {
+        let world = try makeIntegrationWorld("Generated Manifest Unchanged")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2, 0.2, 0.2])
+        let index = try XCTUnwrap(book.storedBookInfo()?.contentIndex)
+        XCTAssertEqual(ChapterPauses.betweenTracks(of: index, inAudioFolder: book.bookFileURL), ChapterPauses.none)
+        try BookManifestFile.write(
+            BookManifestFile.generated(for: book, names: AudioBookParser.trackPaths(in: book.bookFileURL)),
+            at: AudioManifestLocation.forNewManifest(in: book.bookFileURL),
+            of: book.id,
+            sessions: BookManifestEditSessions()
+        )
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let manifest = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL)).url
+        let record = TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
+        let before = try [Data(contentsOf: manifest), Data(contentsOf: record)]
+
+        guard case .unchanged = editor.sessions.look(at: book, showingPauses: ChapterPauses.none) else {
+            return XCTFail("TextMouth's own manifest was taken for an edit")
+        }
+
+        XCTAssertEqual(try [Data(contentsOf: manifest), Data(contentsOf: record)], before)
+    }
+
     /// A book whose manifest is only in the cloud is left as it is, and
     /// nothing of it is read (FR02).
     func testAManifestOnlyInTheCloudIsNotLookedAt() throws {
