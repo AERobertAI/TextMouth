@@ -185,6 +185,12 @@ enum FeedEvent: Equatable, Sendable {
     case downloadFinished(feedID: UUID, itemID: FeedItem.ID, bookID: UUID)
     /// An item's download failed, for the reason given.
     case downloadFailed(feedID: UUID, itemID: FeedItem.ID, reason: String)
+    /// An item's download, one the listener asked for or one under way, was
+    /// cancelled before it finished, by Cancel Download, by the feed
+    /// downloads section's Cancel, or by Delete Feed…. The item is not
+    /// downloaded by now, so a listener of the event finds a consistent
+    /// record (REV18a finding 6).
+    case downloadCancelled(feedID: UUID, itemID: FeedItem.ID)
     /// A change of the "List and download" choice or its number took effect,
     /// once it had stayed unchanged for `FeedCenter.itemPolicyQuietTime`
     /// (FR11): the global setting's, which covers every feed, when `global`,
@@ -980,10 +986,12 @@ final class FeedCenter: ObservableObject {
     /// Downloads the item `itemID` of the feed `feedID` because the listener
     /// asked (Download, or trying a failed download again). An item moved
     /// into the library, whose book the library still lists, is never
-    /// downloaded again (FR11, branch D).
-    func download(_ itemID: FeedItem.ID, of feedID: UUID) {
+    /// downloaded again (FR11, branch D). A reader waiting for the item to
+    /// go on to it asks `startingNext`, to have it ahead of the downloads
+    /// queued before it, without opening it.
+    func download(_ itemID: FeedItem.ID, of feedID: UUID, startingNext: Bool = false) {
         guard libraryBook(of: itemID, in: feedID) == nil else { return }
-        downloads.download(itemID, of: feedID, origin: .listener)
+        downloads.download(itemID, of: feedID, origin: .listener, startingNext: startingNext)
     }
 
     /// Opens the item `itemID` of the feed `feedID`: its book at once when

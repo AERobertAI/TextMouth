@@ -1222,4 +1222,170 @@ final class ContinueToNextBookTests: XCTestCase {
         )
         XCTAssertEqual(makeReader(for: own.first, in: own.world).effectiveEndOfBookBehavior, .loop)
     }
+
+    // MARK: - A Hand-over to a Finished Book (REV18a, finding 5)
+
+    /// The library's row for `book`, as the library holds it now.
+    private func row(of book: Book, in world: World) -> Book? {
+        world.library.library.books.first { $0.id == book.id }
+    }
+
+    /// Check that `reader`, claimed by a hand-over while it rested finished,
+    /// plays its first track from its beginning, no longer finished, in the
+    /// reader and in the library's row.
+    ///
+    /// - Parameters:
+    ///   - reader: The reader of the finished book.
+    ///   - world: The world whose library holds the book.
+    private func assertPlaysFromItsBeginning(
+        _ reader: ReaderViewModel,
+        in world: World,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        // A fresh test host's first audio takes about five seconds to start.
+        XCTAssertTrue(
+            eventually(within: 15) { reader.audioPlaybackService.isPlaying },
+            "The finished book never played",
+            file: file,
+            line: line
+        )
+        XCTAssertEqual(reader.currentChapterIndex, 0, "It did not play from its first chapter", file: file, line: line)
+        XCTAssertEqual(
+            reader.audioPlaybackService.loadedURL?.lastPathComponent,
+            "01.wav",
+            "It did not play its first track",
+            file: file,
+            line: line
+        )
+        XCTAssertLessThan(
+            reader.audioPlaybackService.currentTime,
+            1.5,
+            "It did not play from its beginning",
+            file: file,
+            line: line
+        )
+        XCTAssertFalse(reader.hasFinishedBook, "It is still finished", file: file, line: line)
+        XCTAssertFalse(reader.cursorRestsAtEnd, "It still rests at its end", file: file, line: line)
+        XCTAssertEqual(
+            row(of: reader.book, in: world)?.restsAtEnd,
+            false,
+            "The library still shows it finished",
+            file: file,
+            line: line
+        )
+    }
+
+    /// With "Skip finished" off, a book that ends hands over to the finished
+    /// book below, whose reader opens for the request: it plays from its
+    /// beginning, announces nothing more, and does not run its own end rule,
+    /// which would hand over to the Third Volume and play none of the
+    /// Second.
+    func testAHandOverToAFinishedBookPlaysItFromItsBeginning() throws {
+        let folder = try makeFolderWorld(
+            options: ListeningOptions(continuation: .playBookBelow, skipsFinished: false),
+            finished: ["Second Volume"]
+        )
+        XCTAssertTrue(folder.second.restsAtEnd, "The Second Volume is not finished")
+
+        let handOver = endBook(folder.first, in: folder, expectingARequest: true)
+        XCTAssertEqual(handOver.announced, ["Starting: Second Volume"])
+        XCTAssertEqual(handOver.asked, [folder.second.id])
+
+        // The Second Volume's window opens for the request that waits.
+        let asked = recordContinueRequests(in: folder.world)
+        let recorder = recordingAnnouncements {
+            let reader = makeReader(for: folder.second, in: folder.world)
+            waitUntilLoaded(reader)
+            assertPlaysFromItsBeginning(reader, in: folder.world)
+            // Long enough for a second hand-over to be announced.
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+        XCTAssertEqual(recorder.announcements, [], "The finished book announced something")
+        XCTAssertTrue(asked().isEmpty, "The finished book handed over to another")
+        XCTAssertFalse(folder.world.requests.hasRequest(for: folder.third.id))
+    }
+
+    /// The same where the finished book's reader was open, resting at its
+    /// end, when the request reached it.
+    func testAHandOverToAnOpenFinishedBookPlaysItFromItsBeginning() throws {
+        let folder = try makeFolderWorld(
+            options: ListeningOptions(continuation: .playBookBelow, skipsFinished: false),
+            finished: ["Second Volume"]
+        )
+        let reader = makeReader(for: folder.second, in: folder.world)
+        waitUntilLoaded(reader)
+        XCTAssertTrue(reader.cursorRestsAtEnd, "The finished book did not open at its end")
+        XCTAssertFalse(reader.audioPlaybackService.isPlaying)
+
+        // The announcement of the First Volume's hand-over is all the
+        // listener hears: the Second Volume says nothing of its own.
+        let handOver = endBook(folder.first, in: folder, expectingARequest: true)
+        XCTAssertEqual(handOver.announced, ["Starting: Second Volume"])
+        XCTAssertEqual(handOver.asked, [folder.second.id])
+
+        assertPlaysFromItsBeginning(reader, in: folder.world)
+        XCTAssertFalse(folder.world.requests.hasRequest(for: folder.second.id), "The request was left to claim again")
+    }
+
+    /// A finished audiobook whose player the book's own end stopped, or left
+    /// paused, at its end, plays from its beginning when a hand-over reaches
+    /// it: its player is not resumed where it ended.
+    func testAHandOverToAnAudiobookItsPlayerEndedPlaysItFromItsBeginning() throws {
+        let endings: [(name: String, settle: (ReaderViewModel) -> Void)] = [
+            ("stopped", { $0.audioPlaybackService.stop() }),
+            ("paused", { $0.pause(playingPauseSound: false) })
+        ]
+        for (name, settle) in endings {
+            let folder = try makeFolderWorld(
+                options: ListeningOptions(continuation: .playBookBelow, skipsFinished: false),
+                own: ["Second Volume": .stop]
+            )
+            // The Second Volume plays, then ends by its own rule (Stop), its
+            // player left as `settle` leaves it.
+            let reader = makeReader(for: folder.second, in: folder.world)
+            waitUntilLoaded(reader)
+            reader.play()
+            XCTAssertTrue(eventually(within: 15) { reader.audioPlaybackService.isPlaying }, "\(name): it never played")
+            settle(reader)
+            reader.handleEndOfBook()
+            XCTAssertTrue(reader.hasFinishedBook, "\(name): the book did not finish")
+            XCTAssertTrue(reader.cursorRestsAtEnd, "\(name): the book did not rest at its end")
+
+            // Another book hands over to it.
+            continueTo(folder.second.id, in: folder.world)
+
+            assertPlaysFromItsBeginning(reader, in: folder.world)
+            XCTAssertFalse(reader.audioPlaybackService.isPaused, "\(name): the player was resumed, not started")
+            reader.stop()
+        }
+    }
+
+    /// A finished text book claimed by a hand-over speaks from its
+    /// beginning, and does not reply with its end rule (here, a hand-over of
+    /// its own to the next book). Its speech is silenced before the run loop
+    /// turns, so nothing is heard.
+    func testAHandOverToAFinishedTextBookSpeaksItFromItsBeginning() throws {
+        try withSpeechReader("Hand-over To A Finished Text Book", endOfBook: .continueNext) { speech in
+            let reader = speech.reader
+            reader.restAtEnd()
+            reader.hasFinishedBook = true
+            XCTAssertTrue(reader.cursorRestsAtEnd, "The text book does not rest at its end")
+            let asked = recordContinueRequests(in: speech.world)
+            speech.world.autoplayRequests.request(for: speech.book.id, from: UUID())
+
+            let recorder = recordingAnnouncements {
+                reader.claimAutoplayRequest()
+                // Silenced before anything is heard.
+                reader.speechService.stop()
+                spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+            }
+
+            XCTAssertEqual(reader.currentChapterIndex, 0, "It did not start from its first chapter")
+            XCTAssertFalse(reader.hasFinishedBook)
+            XCTAssertFalse(reader.cursorRestsAtEnd)
+            XCTAssertEqual(recorder.announcements, [], "The finished book announced something")
+            XCTAssertTrue(asked().isEmpty, "The finished book handed over to another")
+        }
+    }
 }

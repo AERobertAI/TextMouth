@@ -293,8 +293,14 @@ extension ReaderViewModel {
     /// time audio must not start over it. A chapter's download or a package's
     /// move that ends in this time holds the audio for the end sound's work,
     /// which plays it once (`startPlayHeldByWhereAmI()`), as it would hold it
-    /// while the announcement speaks. Only these two places ask it; every
-    /// other test of `isWhereAmISpeaking` is about the announcement itself.
+    /// while the announcement speaks. The places that ask it are the ones
+    /// that start audio on their own, and must not start it over the sound:
+    /// a chapter's download and a package's move that end
+    /// (`ReaderViewModel+CloudDownload`, `ReaderViewModel+LibraryUpdates`),
+    /// and the two plays that wait, the pause between chapters
+    /// (`startChapterAfterPause()`) and the speech a play waits for
+    /// (`continueWaitingPlay()`). Every other test of `isWhereAmISpeaking` is
+    /// about the announcement itself.
     var isWhereAmISpeakingOrSoundingItsEnd: Bool {
         isWhereAmISpeaking || isWhereAmIEndSoundPlaying
     }

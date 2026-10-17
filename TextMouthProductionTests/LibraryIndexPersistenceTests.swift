@@ -383,6 +383,130 @@ final class LibraryIndexPersistenceTests: XCTestCase {
         )
     }
 
+    // MARK: - A Write That Throws Forgets What Was Remembered (REV18c, finding 10)
+
+    /// A throwing error for the write closures below.
+    private struct WriteRefused: Error, Equatable {}
+
+    /// A write that succeeds remembers the bytes it wrote, for its key only.
+    func testAMemoryRemembersWhatASuccessfulWriteWrote() throws {
+        let file = try scratchFile()
+        let bytes = Data("written".utf8)
+        var memory = SavedFile.OnDiskMemory<String>()
+
+        memory.write(bytes, for: "a") {}
+
+        XCTAssertTrue(memory.holds(bytes, for: "a", at: file))
+        XCTAssertFalse(memory.holds(bytes, for: "b", at: file), "another key's file was taken for written")
+    }
+
+    /// A write that throws rethrows its own error and leaves the memory
+    /// holding neither the older bytes nor the new, while another key's file
+    /// is still remembered.
+    func testAMemoryForgetsTheOlderBytesWhenAWriteThrows() throws {
+        let file = try scratchFile()
+        let older = Data("older".utf8)
+        let newer = Data("newer".utf8)
+        var memory = SavedFile.OnDiskMemory<String>()
+        memory.remember(older, for: "a")
+        memory.remember(older, for: "b")
+
+        XCTAssertThrowsError(try memory.write(newer, for: "a") { throw WriteRefused() }) { error in
+            XCTAssertEqual(error as? WriteRefused, WriteRefused(), "the write's own error was not rethrown")
+        }
+
+        XCTAssertFalse(memory.holds(older, for: "a", at: file), "the older bytes are still remembered")
+        XCTAssertFalse(memory.holds(newer, for: "a", at: file), "the failed bytes were remembered")
+        XCTAssertTrue(memory.holds(older, for: "b", at: file), "another key's failure forgot this key's bytes")
+    }
+
+    /// The case the finding names: a write of library B throws (its rename may
+    /// still have landed, as on a network volume), so the file's state is
+    /// unknown. Saving library A again, as an undo does, must write A and not
+    /// skip it as unchanged because A was the last thing remembered.
+    @MainActor
+    func testASaveAfterAThrowingWriteIsNotSkippedAsUnchanged() throws {
+        let center = cleanSharedFailureCenter()
+        let libraryA = LibraryIndexSandbox.sampleLibrary()
+        let libraryB = Library(folders: [BookFolder(name: "Newer \(UUID().uuidString)")])
+        LibraryPersistenceService.save(libraryA)
+        LibraryPersistenceService.flushPendingSave()
+
+        // B's write throws.
+        let obstruction = try WriteObstruction.place(at: sandbox.indexURL)
+        LibraryPersistenceService.save(libraryB)
+        LibraryPersistenceService.flushPendingSave()
+        XCTAssertEqual(center.outstandingFailures().map(\.subject), [.libraryIndex], "the failed write is not listed")
+
+        // The file holds B all the same, as a rename that landed though it
+        // reported failure would leave it.
+        obstruction.clear()
+        try sandbox.stageValid(libraryB, at: sandbox.indexURL)
+        LibraryPersistenceService.save(libraryA)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(
+            try LibraryIndexSandbox.canonicalJSON(Data(contentsOf: sandbox.indexURL)),
+            try LibraryIndexSandbox.canonicalJSON(LibraryIndexSandbox.encoded(libraryA)),
+            "the undo was skipped and library.json still holds B"
+        )
+        XCTAssertTrue(center.outstandingFailures().isEmpty, "the write that settled the failure left it listed")
+    }
+
+    /// A save skipped because its bytes are the file's still clears the
+    /// checkpoint journal when nothing failed before.
+    func testASkippedSaveStillClearsTheCheckpointJournal() throws {
+        let library = LibraryIndexSandbox.sampleLibrary()
+        LibraryPersistenceService.save(library)
+        LibraryPersistenceService.flushPendingSave()
+        try Data("{\"books\":[]}".utf8).write(to: sandbox.checkpointJournalURL)
+        let past = try backdateIndex()
+
+        LibraryPersistenceService.save(library)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(try modificationDate(of: sandbox.indexURL), past, "library.json was written again")
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: sandbox.checkpointJournalURL.path),
+            "the skipped save left the journal"
+        )
+    }
+
+    /// After a failure that forgot the memory, a save whose bytes equal the
+    /// file's writes them instead of skipping, and then clears the journal.
+    @MainActor
+    func testASaveAfterAThrowingWriteWritesAndThenClearsTheCheckpointJournal() throws {
+        _ = cleanSharedFailureCenter()
+        let library = LibraryIndexSandbox.sampleLibrary()
+        LibraryPersistenceService.save(library)
+        LibraryPersistenceService.flushPendingSave()
+        let obstruction = try WriteObstruction.place(at: sandbox.indexURL)
+        LibraryPersistenceService.save(Library(folders: [BookFolder(name: "Never Written \(UUID().uuidString)")]))
+        LibraryPersistenceService.flushPendingSave()
+
+        // The file holds this library's bytes again, and a journal waits.
+        obstruction.clear()
+        try sandbox.stageValid(library, at: sandbox.indexURL)
+        try Data("{\"books\":[]}".utf8).write(to: sandbox.checkpointJournalURL)
+        let past = try backdateIndex()
+        LibraryPersistenceService.save(library)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertNotEqual(try modificationDate(of: sandbox.indexURL), past, "the save after the failure wrote nothing")
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: sandbox.checkpointJournalURL.path),
+            "the write left the journal"
+        )
+    }
+
+    /// A file in this test's scratch folder, which a memory's `holds` finds
+    /// there.
+    private func scratchFile() throws -> URL {
+        let file = try makeSandboxDirectory("OnDiskMemory").appendingPathComponent("file")
+        try Data("x".utf8).write(to: file)
+        return file
+    }
+
     /// The first save after a load of a valid index writes nothing when it
     /// changes nothing, the bytes read being noted as the feed indexes' are.
     func testTheFirstSaveAfterLoadingAValidIndexWritesNothing() throws {
@@ -428,32 +552,6 @@ final class LibraryIndexPersistenceTests: XCTestCase {
             try LibraryIndexSandbox.canonicalJSON(Data(contentsOf: sandbox.indexURL)),
             try LibraryIndexSandbox.canonicalJSON(LibraryIndexSandbox.encoded(library))
         )
-    }
-
-    /// A save that writes nothing still counts as a save: it settles an
-    /// earlier failed write, as the file already holds this library.
-    @MainActor
-    func testASkippedSaveStillSettlesAnEarlierFailedWrite() throws {
-        let center = cleanSharedFailureCenter()
-        let library = LibraryIndexSandbox.sampleLibrary()
-        LibraryPersistenceService.save(library)
-        LibraryPersistenceService.flushPendingSave()
-
-        // A different library fails to write, so the center lists it.
-        let obstruction = try WriteObstruction.place(at: sandbox.indexURL)
-        LibraryPersistenceService.save(Library(folders: [BookFolder(name: "Never Written \(UUID().uuidString)")]))
-        LibraryPersistenceService.flushPendingSave()
-        XCTAssertEqual(center.outstandingFailures().map(\.subject), [.libraryIndex])
-
-        // The file holds the first library again; saving it writes nothing.
-        obstruction.clear()
-        try sandbox.stageValid(library, at: sandbox.indexURL)
-        let past = try backdateIndex()
-        LibraryPersistenceService.save(library)
-        LibraryPersistenceService.flushPendingSave()
-
-        XCTAssertEqual(try modificationDate(of: sandbox.indexURL), past, "library.json was written again")
-        XCTAssertTrue(center.outstandingFailures().isEmpty, "the skipped save left the failure listed")
     }
 
     /// Equal libraries encode to equal bytes, however their dictionaries

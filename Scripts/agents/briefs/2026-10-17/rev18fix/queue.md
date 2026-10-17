@@ -1,0 +1,39 @@
+# Task queue (REV18a findings 3 and 4, and the engine half of 6): the next episode's place in the download queue, a Waiting episode fetched before the end, and an event for a cancelled download
+
+Slug `rev18fix-queue`, branch `rev18fix/queue` (made from `team/rev18fix`). Read `Scripts/agents/briefs/2026-10-17/teams-common.md`: "The worker's part", "Rules for everyone", "The board", "Builds", "Usage", "Lessons from October 16", "Keeping the cost down". Read the code by line range, as named here; every line number is checked against `team/rev18fix` as of this brief.
+
+## Why
+When a feed's episode ends and the next one is not downloaded, the reader asks the feed engine for it and waits (`ReaderViewModel+EpisodeDownload.swift`, FR19). Three things around that ask are wrong in the feed engine and its neighbours:
+- **3.** `FeedDownloadManager.download(_:of:origin:opening:)` (`TextMouth/Services/Feeds/FeedDownloadManager.swift:266-299`) takes a request that is already queued out of the queue and, when `opening` is false, appends it at the back. The reader's ask (`FeedCenter.download(_:of:)`, `FeedCenter.swift:984`, which passes `opening: false`) and every Play during the wait ask again, so the episode the listener is waiting for goes behind every download a refresh queued. The method's own comment (:258-265) says "Asking again for an item that waits or downloads only adds what the new request adds".
+- **4.** `ReaderViewModel+Predownload.swift:45` skips the early download when `item.state.isTransient`, which is true for `.waiting` too (the newest-N rule put the item off for a network with data limits, or for room); nothing is fetched ten minutes before the end. Only a download under way (`isDownloading`) should stand.
+- **6, engine half.** `FeedDownloadManager.cancel` and its siblings send no event, so a reader waiting for the download cannot tell the listener it was cancelled (the user's question 19: "Download cancelled, so playback stopped."). The reader's half is another worker's, after yours is merged.
+
+## Commits (one each, each with its tests; build and test after each)
+
+### 1. A queued request keeps its place; a wait can ask to go first (finding 3)
+In `FeedDownloadManager.download`:
+1. A new parameter `startingNext: Bool = false`, after `opening`. A request with `opening || startingNext` goes to the front of `queue` (index 0), as an opening one does now. `startingNext` does NOT open the book when it arrives (`opensWhenDone` stays as the caller's `opening`): the reader's wait hands over to the book itself.
+2. A request already in `queue` that is asked for again without `opening` or `startingNext` stays where it is: replace it in place (its flags merged exactly as now: `opensWhenDone` OR-ed, origin `.listener` when the new ask is the listener's). Asking again with either flag moves it to the front. The download under way (`current`) and the put-off list behave as now.
+3. `FeedCenter.download(_:of:)` (:984) gets the same `startingNext: Bool = false` and passes it on; every current caller is unchanged by the default. Update both doc comments (the method's :258-265 sentence now holds).
+4. Do NOT edit `ReaderViewModel+EpisodeDownload.swift`: the worker who owns it passes `startingNext: true` after you.
+
+Tests, in `FeedDownloadTests`, under "The Queue", in the style of `testDownloadsRunOneAtATime` (:362) and `testOpeningAnItemDownloadsItFirst` (:394), each with a stub server and slow files so the queue holds still: (a) three episodes asked in order, the first running, the queue `[2, 3]`: asking for 2 again (plain) leaves `[2, 3]` (before the fix it was `[3, 2]`), and the files are served in the order 1, 2, 3; (b) asking for 3 with `startingNext: true` makes the queue `[3, 2]` and the order served 1, 3, 2; the item's `downloadOrigin` is `.listener`; (c) a `startingNext` request for an item not queued yet goes to the front and opens nothing (`world.library.readerOpener` is never called); (d) asking for the item under way again changes nothing in the queue.
+
+### 2. A Waiting episode is fetched before the end (finding 4)
+`ReaderViewModel+Predownload.swift:45`: guard on `!item.state.isDownloading` in place of `!item.state.isTransient`, and fix the comment above it (:43-44): a download under way stands; one the newest-N rule put off (`.waiting`) is taken over by this listener's ask (`FeedDownloadManager.download` drops it from `putOff`). Test in `NextEpisodePredownloadTests` (see the test at :189 for how a predownload is set up and asserted): the next episode is in the state `.waiting("...")` (use the store's `updateItem`); at ten minutes left the download starts, and the item's `downloadOrigin` becomes `.listener`. An item already `.downloading` is still left alone (an existing test covers it: keep it green).
+
+### 3. A cancelled download is announced (finding 6, engine half)
+1. `FeedEvent` (`FeedCenter.swift:175-194`) gets `case downloadCancelled(feedID: UUID, itemID: FeedItem.ID)`, after `downloadFailed`, with a doc comment: a download the listener asked for, or one under way, was cancelled before it finished, by Cancel Download, the feed downloads section's Cancel, or Delete Feed…. The only other consumers of `FeedEvent` use `default:` branches (`FeedArrivals.handle`, `FeedDownloadManager`'s callers), so nothing else changes; confirm with `grep -rn "switch event" TextMouth`.
+2. `FeedDownloadManager` announces it once for each request that ends cancelled, through one private helper (DRY), after the item's state is `.notDownloaded` so a listener of the event finds a consistent record:
+   - `cancel(_:of:)` (:305): the queued request it removes. The download under way is announced where its task ends, in `run(_:)`'s `failure == .transfer(.cancelled)` branch (:622-626), which also covers `cancelEveryDownload()` and `closeFeed(_:)` cancelling `currentTask`. Never announce twice for one request.
+   - `cancelEveryDownload()` (:367): every queued request it drops (`queue.removeAll()`, :370): take the queue before it is emptied.
+   - `closeFeed(_:)` (:483): the feed's queued requests it drops.
+   - NOT announced: the newest-N rule's put-off requests, `withdrawRuleDownloads` (the rule's own), a download that stops for quitting (`run` returns `.stopped` first), one that fails, and one that finishes. Nobody waits on those, and the listener's ask is never put off.
+   - No new log tag: the existing `FEED_DOWNLOAD_CANCELLED` line (:624) stays as it is.
+3. Tests, in `FeedDownloadTests`, with `world.center.events` collected as the test at :26 does: Cancel Download of the download under way sends exactly one `.downloadCancelled` for it, after the item reads `.notDownloaded`; of a queued one, exactly one; `cancelEveryDownload()` with one running and two queued sends three, one each; `closeFeed(_:)` likewise for that feed's and not another feed's; a download that finishes, fails, or stops for quitting sends none; a rule download (origin `.window`) taken back sends none. If an existing test fails only because it lists every event a cancel produced, stop and ask: do not edit it.
+
+## Run
+Your classes `FeedDownloadTests` and `NextEpisodePredownloadTests`, then the neighbours: `FeedDownloadProgressEngineTests`, `FeedDeleteFeedTests`, `FeedNewestRuleTests`, `FeedLifecycleTests`, `FeedUICommandsTests`, `LibraryFeedUnsubscribeTests`, `EpisodeDownloadContinuationTests`, `EpisodeSuccessionTests`, `LogContentPolicyTests`, `UncheckedConcurrencyPolicyTests`. A failing existing test means stop and ask. `make lint-tests` with `LINT_BASE=team/rev18fix` before you report.
+
+## Not yours
+`ReaderViewModel+EpisodeDownload.swift`, `+GoingOn.swift`, `+Playback.swift`, `NowPlayingService.swift`, `EndOfBookWording.swift`, any `*.md`. Only `FeedDownloadManager.swift`, `FeedCenter.swift` (the `FeedEvent` enum and `download(_:of:)`), `ReaderViewModel+Predownload.swift` (line 45 and its comment), and the two test files.

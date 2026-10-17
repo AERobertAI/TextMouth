@@ -197,6 +197,25 @@ final class NextEpisodePredownloadTests: FeedItemIndexTestCase {
         XCTAssertEqual(setup.world.server.requests(to: "/audio/4.m4a").count, 1)
     }
 
+    /// An episode the newest-N rule put off, so that it says it waits, is
+    /// downloaded all the same at ten minutes from the end, and becomes the
+    /// listener's: a download under way stands, but a wait does not.
+    func testAWaitingNextEpisodeIsDownloadedForTheListener() async throws {
+        let setup = try await makeFeed(options: nil, global: .continueNext)
+        setup.world.center.store.updateItem("guid:ep-4", of: setup.feed.id) {
+            $0.state = .waiting("waiting for a network without data limits")
+        }
+        let reader = try await playingReader(in: setup)
+
+        reader.predownloadNextEpisodeIfDue()
+
+        XCTAssertTrue(reader.hasAskedForPredownload)
+        XCTAssertEqual(setup.world.center.store.record(of: setup.feed.id)?.item("guid:ep-4")?.state, .downloading)
+        _ = try await downloadedBook(setup.world, feed: setup.feed, item: "guid:ep-4")
+        XCTAssertEqual(setup.world.center.store.record(of: setup.feed.id)?.item("guid:ep-4")?.downloadOrigin, .listener)
+        XCTAssertEqual(setup.world.server.requests(to: "/audio/4.m4a").count, 1)
+    }
+
     /// Nothing is downloaded for a book that is not a feed's.
     func testNothingIsDownloadedForABookThatIsNotAFeedsItem() async throws {
         let setup = try await makeFeed(options: nil, global: .continueNext)

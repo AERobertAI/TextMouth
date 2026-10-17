@@ -88,6 +88,72 @@ final class LibraryFeedIndexWriteTests: FeedItemIndexTestCase {
         XCTAssertEqual(try fileNumber(of: feedIndexURL), before, "an unchanged index on disk was written again")
     }
 
+    // MARK: - A Write That Throws Forgets What Was Remembered
+
+    /// A feed's index write throws (its rename may still have landed, as on a
+    /// network volume), so the file's state is unknown. Saving the earlier
+    /// rows again, as an undo does, must write them and not skip them as
+    /// unchanged because they were the last bytes remembered (REV18c, 10).
+    @MainActor
+    func testASaveAfterAThrowingIndexWriteIsNotSkippedAsUnchanged() throws {
+        let center = cleanSharedFailureCenter()
+        var item = try makeFeedItem(title: "Undone")
+        let libraryA = Library(books: [item])
+        saveNow(libraryA)
+        let bytesOfA = try XCTUnwrap(contents(of: feedIndexURL))
+        item.readingPosition = Self.position(40, at: 5)
+        let libraryB = Library(books: [item])
+
+        // The index write of B throws.
+        let obstruction = try WriteObstruction.place(at: feedIndexURL)
+        saveNow(libraryB)
+        XCTAssertTrue(center.hasUnsavedChanges, "the write did not fail")
+
+        // The file holds B all the same, as a rename that landed though it
+        // reported failure would leave it.
+        obstruction.clear()
+        let indexOfB = try XCTUnwrap(
+            try FeedIndexFiles.encodedIndexes(of: libraryB, placedIn: TextMouthPaths.root).first { $0.feedID == feedID }
+        )
+        try indexOfB.data.write(to: feedIndexURL)
+        XCTAssertNotEqual(indexOfB.data, bytesOfA, "the two libraries index to the same bytes")
+        saveNow(libraryA)
+
+        XCTAssertEqual(contents(of: feedIndexURL), bytesOfA, "the undo was skipped and the index still holds B")
+        XCTAssertFalse(center.hasUnsavedChanges, "the write that settled the failure left it listed")
+    }
+
+    /// A save that writes no library.json still settles an earlier failed
+    /// write, here of a feed's index, which forgot only that index's bytes:
+    /// the retry writes the index, finds library.json unchanged, and leaves
+    /// it alone, and the failure is no longer listed.
+    @MainActor
+    func testASkippedLibraryWriteStillSettlesAFailedFeedIndexWrite() throws {
+        let center = cleanSharedFailureCenter()
+        var item = try makeFeedItem(title: "Settled")
+        saveNow(Library(books: [item]))
+        item.readingPosition = Self.position(40, at: 5)
+        let library = Library(books: [item])
+
+        // The feed's index cannot be written, so the center lists the failure.
+        let obstruction = try WriteObstruction.place(at: feedIndexURL)
+        saveNow(library)
+        XCTAssertEqual(center.outstandingFailures().map(\.subject), [.libraryIndex])
+
+        // The retry writes the index; library.json is unchanged, so it is not
+        // written again.
+        obstruction.clear()
+        let past = Date(timeIntervalSince1970: 1_000_000_000)
+        try FileManager.default.setAttributes([.modificationDate: past], ofItemAtPath: TextMouthPaths.libraryIndexFile.path)
+        saveNow(library)
+
+        let rows = try indexedRows()
+        XCTAssertEqual(rows.first?.readingPosition?.characterOffset, 40, "the index was not written")
+        let attributes = try FileManager.default.attributesOfItem(atPath: TextMouthPaths.libraryIndexFile.path)
+        XCTAssertEqual(attributes[.modificationDate] as? Date, past, "library.json was written again")
+        XCTAssertTrue(center.outstandingFailures().isEmpty, "the retry left the failure listed")
+    }
+
     /// The file system's number of the file at `url`.
     private func fileNumber(of url: URL) throws -> Int? {
         try FileManager.default.attributesOfItem(atPath: url.path)[.systemFileNumber] as? Int

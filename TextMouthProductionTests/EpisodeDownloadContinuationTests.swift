@@ -196,6 +196,332 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         XCTAssertEqual(setup.world.center.store.record(of: setup.feedID)?.item("guid:ep-1")?.state, .notDownloaded)
     }
 
+    // MARK: - Later End Decisions End the Wait
+
+    /// The sleep timer is started during the wait, and the download then
+    /// finishes: the episode does not start. The end says again that the
+    /// next book was not started because of the sleep timer.
+    func testASleepTimerStartedDuringTheWaitKeepsTheEpisodeFromStarting() async throws {
+        let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.handleEndOfBook()
+        startSharedSleepTimer(.minutes(30), ownedBy: reader.readerID)
+        await waitFor("the download arrives") { book(of: "guid:ep-1", in: setup) != nil }
+        try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 2))
+
+        XCTAssertEqual(heard.announced, [
+            "Finished: Middle part. Downloading the next episode: Bottom part.",
+            "Finished: Middle part. Next book not started because of the sleep timer.",
+        ])
+        XCTAssertEqual(heard.asked, [])
+        XCTAssertNil(reader.nextEpisodeWait, "The wait outlived the download")
+    }
+
+    /// Play during the wait, with the sleep timer started meanwhile, says
+    /// that the next book was not started, and ends the wait: the download's
+    /// arrival hands nothing over and says nothing more.
+    func testPlayWithASleepTimerEndsTheWait() async throws {
+        let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.handleEndOfBook()
+        startSharedSleepTimer(.minutes(30), ownedBy: reader.readerID)
+        reader.play()
+        XCTAssertEqual(heard.announced.last, "Finished: Middle part. Next book not started because of the sleep timer.")
+        XCTAssertNil(reader.nextEpisodeWait, "Play left the wait")
+        let saidSoFar = heard.announced
+
+        await waitFor("the download arrives") { book(of: "guid:ep-1", in: setup) != nil }
+        try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 2))
+
+        XCTAssertEqual(heard.announced, saidSoFar, "The arrival said something after the wait ended")
+        XCTAssertEqual(heard.asked, [])
+    }
+
+    /// The feed's options are set to Stop during the wait, and Play is
+    /// pressed: the end stops, and the download's arrival hands nothing over.
+    func testPlayAfterTheOptionsChangedToStopEndsTheWait() async throws {
+        let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.handleEndOfBook()
+        setup.world.center.setListeningOptions(ListeningOptions(continuation: .stop), of: setup.feedID)
+        reader.play()
+        XCTAssertEqual(heard.announced.last, "Finished: Middle part")
+        XCTAssertNil(reader.nextEpisodeWait, "Play left the wait")
+
+        await waitFor("the download arrives") { book(of: "guid:ep-1", in: setup) != nil }
+        try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 2))
+
+        XCTAssertEqual(heard.announced, [
+            "Finished: Middle part. Downloading the next episode: Bottom part.",
+            "Finished: Middle part",
+        ])
+        XCTAssertEqual(heard.asked, [])
+    }
+
+    /// A second end decision that finds nothing to follow ends the wait too.
+    func testASecondEndDecisionWithNothingToFollowEndsTheWait() async throws {
+        let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.handleEndOfBook()
+        XCTAssertNotNil(reader.nextEpisodeWait, "The wait did not begin")
+        // The bottom episode is played meanwhile, so nothing below remains
+        // that the feed does not skip.
+        setup.world.center.store.updateItem("guid:ep-1", of: setup.feedID) { $0.playedDate = Self.date(5) }
+        reader.play()
+        XCTAssertEqual(heard.announced.last, "Finished: Middle part. Every book after it in the folder is finished.")
+        XCTAssertNil(reader.nextEpisodeWait, "The second decision left the wait")
+
+        await waitFor("the download arrives") { book(of: "guid:ep-1", in: setup) != nil }
+        try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 2))
+
+        XCTAssertEqual(heard.asked, [])
+        XCTAssertEqual(heard.announced.count, 2, "The arrival said something after the wait ended")
+    }
+
+    // MARK: - Another Reader Takes the Controls
+
+    /// Two readers, one of the middle episode and one of the top episode
+    /// (downloaded), joined to one private Now Playing coordinator.
+    private struct TwoReaders {
+        let setup: Setup
+        let heard: Heard
+        let coordinator: NowPlayingService
+        /// Reads the middle episode, whose end starts the wait.
+        let ending: ReaderViewModel
+        /// Reads the top episode, the other window.
+        let other: ReaderViewModel
+    }
+
+    /// A feed whose middle and top episodes are downloaded, each open in a
+    /// loaded reader on one coordinator of its own. `bottomAnswer` is what
+    /// the server answers for the bottom episode, which the end downloads.
+    private func openTwoReaders(bottomAnswer: StubResponse? = nil) async throws -> TwoReaders {
+        let setup = try await makeFeed(
+            options: ListeningOptions(continuation: .playBookBelow),
+            global: .stop,
+            topIsDownloaded: true,
+            bottomAnswer: bottomAnswer
+        )
+        let heard = listen(to: setup)
+        let coordinator = NowPlayingService(installsSystemIntegrations: false, diagnosticSink: { _ in })
+        let ending = try openReader(for: setup.middle, in: setup, nowPlaying: coordinator)
+        let top = try XCTUnwrap(book(of: "guid:ep-3", in: setup))
+        let other = try openReader(for: top, in: setup, nowPlaying: coordinator)
+        await waitFor("both episodes load in their readers") { !ending.isLoading && !other.isLoading }
+        return TwoReaders(setup: setup, heard: heard, coordinator: coordinator, ending: ending, other: other)
+    }
+
+    /// Waits for the bottom episode's download to finish (or fail), and for
+    /// any hand-over to be asked for.
+    private func waitForTheDownloadToSettle(_ setup: Setup) async {
+        await waitFor("the download settles") {
+            let state = setup.world.center.store.record(of: setup.feedID)?.item("guid:ep-1")?.state
+            return state?.failureReason != nil || book(of: "guid:ep-1", in: setup) != nil
+        }
+        try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 2))
+    }
+
+    /// Another reader takes the controls (it plays, so it is the active
+    /// owner) while the download runs: the arrival hands nothing over and
+    /// says nothing.
+    func testNothingIsHandedOverWhenAnotherReaderTakesTheControls() async throws {
+        let readers = try await openTwoReaders()
+
+        readers.ending.handleEndOfBook()
+        readers.other.nowPlayingService.activateRemoteCommandsIfNeeded()
+        XCTAssertEqual(readers.coordinator.activeOwnerID, readers.other.readerID, "The other reader did not take the controls")
+        await waitForTheDownloadToSettle(readers.setup)
+
+        XCTAssertEqual(readers.heard.announced, ["Finished: Middle part. Downloading the next episode: Bottom part."])
+        XCTAssertEqual(readers.heard.asked, [])
+        XCTAssertNil(readers.ending.nextEpisodeWait, "The wait outlived the download")
+    }
+
+    /// The same with a download that fails: "could not be downloaded" is not
+    /// said over the other book.
+    func testAFailureIsNotSaidWhenAnotherReaderTakesTheControls() async throws {
+        let readers = try await openTwoReaders(bottomAnswer: StubResponse(status: 404))
+
+        readers.ending.handleEndOfBook()
+        readers.other.nowPlayingService.activateRemoteCommandsIfNeeded()
+        await waitForTheDownloadToSettle(readers.setup)
+
+        XCTAssertEqual(readers.heard.announced, ["Finished: Middle part. Downloading the next episode: Bottom part."])
+        XCTAssertNil(readers.ending.nextEpisodeWait, "The wait outlived the failure")
+    }
+
+    /// The other reader's window merely becomes the focused one: the same
+    /// silence.
+    func testNothingIsHandedOverWhenAnotherReadersWindowBecomesKey() async throws {
+        let readers = try await openTwoReaders()
+
+        readers.ending.handleEndOfBook()
+        readers.other.windowBecameKey()
+        XCTAssertEqual(readers.coordinator.activeOwnerID, readers.other.readerID, "The other window did not take the focus")
+        await waitForTheDownloadToSettle(readers.setup)
+
+        XCTAssertEqual(readers.heard.announced, ["Finished: Middle part. Downloading the next episode: Bottom part."])
+        XCTAssertEqual(readers.heard.asked, [])
+        XCTAssertNil(readers.ending.nextEpisodeWait, "The wait outlived the download")
+    }
+
+    /// The controls were another reader's already as the episode ended, and
+    /// stay so: that is no move, and the hand-over happens.
+    func testTheHandOverHappensWhenTheControlsWereAnotherReadersAlready() async throws {
+        let readers = try await openTwoReaders()
+        readers.other.nowPlayingService.activateRemoteCommandsIfNeeded()
+
+        readers.ending.handleEndOfBook()
+        await waitFor("the next episode asks to start") { !readers.heard.asked.isEmpty }
+
+        XCTAssertEqual(readers.heard.announced.last, "Starting: Bottom part")
+        XCTAssertEqual(readers.heard.asked, [try XCTUnwrap(book(of: "guid:ep-1", in: readers.setup)).id])
+    }
+
+    /// The ending reader's own window becomes key again meanwhile: the
+    /// controls are its own, and the hand-over happens.
+    func testTheHandOverHappensWhenTheEndingReadersWindowBecomesKeyAgain() async throws {
+        let readers = try await openTwoReaders()
+
+        readers.ending.handleEndOfBook()
+        readers.ending.windowBecameKey()
+        XCTAssertEqual(readers.coordinator.activeOwnerID, readers.ending.readerID, "The window did not take the focus")
+        await waitFor("the next episode asks to start") { !readers.heard.asked.isEmpty }
+
+        XCTAssertEqual(readers.heard.announced.last, "Starting: Bottom part")
+        XCTAssertEqual(readers.heard.asked, [try XCTUnwrap(book(of: "guid:ep-1", in: readers.setup)).id])
+    }
+
+    // MARK: - The Wait Goes First in the Queue
+
+    /// With a download under way and another queued behind it, ending the
+    /// episode puts the next episode first in the queue, and Play during the
+    /// wait leaves it there.
+    func testTheNextEpisodeGoesFirstInTheQueue() async throws {
+        let setup = try await makeFeed(
+            options: ListeningOptions(continuation: .playBookBelow), global: .stop, withAnOlderEpisode: true
+        )
+        _ = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+        // The top episode downloads, the oldest waits behind it. Nothing
+        // suspends before the checks below, so neither can finish first.
+        setup.world.center.download("guid:ep-3", of: setup.feedID)
+        setup.world.center.download("guid:ep-0", of: setup.feedID)
+        XCTAssertEqual(setup.world.center.downloads.current?.itemID, "guid:ep-3")
+        XCTAssertEqual(setup.world.center.downloads.queue.map(\.itemID), ["guid:ep-0"])
+
+        reader.handleEndOfBook()
+        XCTAssertEqual(setup.world.center.downloads.queue.map(\.itemID), ["guid:ep-1", "guid:ep-0"])
+
+        // Play asks again: the episode keeps the first place.
+        reader.play()
+        XCTAssertEqual(setup.world.center.downloads.queue.map(\.itemID), ["guid:ep-1", "guid:ep-0"])
+    }
+
+    // MARK: - A Cancelled Download
+
+    /// Cancel Download on the episode the end waits for says so once, and
+    /// nothing is handed over.
+    func testACancelledDownloadSaysSoOnce() async throws {
+        let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.handleEndOfBook()
+        setup.world.center.cancelDownload("guid:ep-1", of: setup.feedID)
+        try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 2))
+
+        XCTAssertEqual(heard.announced, [
+            "Finished: Middle part. Downloading the next episode: Bottom part.",
+            "Download cancelled, so playback stopped.",
+        ])
+        XCTAssertEqual(heard.asked, [])
+        XCTAssertNil(reader.nextEpisodeWait, "The wait outlived the cancel")
+    }
+
+    /// The downloads section's Cancel does the same.
+    func testCancellingEveryDownloadSaysSo() async throws {
+        let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.handleEndOfBook()
+        _ = setup.world.center.cancelEveryDownload()
+        try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 2))
+
+        XCTAssertEqual(heard.announced.last, "Download cancelled, so playback stopped.")
+        XCTAssertEqual(heard.announced.count, 2)
+        XCTAssertEqual(heard.asked, [])
+        XCTAssertNil(reader.nextEpisodeWait, "The wait outlived the cancel")
+    }
+
+    /// A cancel after the listener played the book again says nothing.
+    func testACancelAfterTheListenerPlayedAgainSaysNothing() async throws {
+        let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.handleEndOfBook()
+        reader.hasFinishedBook = false
+        setup.world.center.cancelDownload("guid:ep-1", of: setup.feedID)
+        // The cancel is heard once the download task has wound up.
+        await waitFor("the wait hears the cancel") { reader.nextEpisodeWait == nil }
+
+        XCTAssertEqual(heard.announced, ["Finished: Middle part. Downloading the next episode: Bottom part."])
+    }
+
+    /// A cancel after the reader closed says nothing.
+    func testACancelAfterTheReaderClosedSaysNothing() async throws {
+        let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.handleEndOfBook()
+        reader.close()
+        setup.world.center.cancelDownload("guid:ep-1", of: setup.feedID)
+
+        XCTAssertEqual(heard.announced, ["Finished: Middle part. Downloading the next episode: Bottom part."])
+    }
+
+    /// Another item's download is cancelled while the wait's item waits
+    /// behind it: the wait is not confused with it, and the episode starts
+    /// once it arrives.
+    func testAnotherItemsCancelDoesNotEndTheWait() async throws {
+        let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+        setup.world.center.download("guid:ep-3", of: setup.feedID)
+
+        reader.handleEndOfBook()
+        setup.world.center.cancelDownload("guid:ep-3", of: setup.feedID)
+        XCTAssertNotNil(reader.nextEpisodeWait, "Another item's cancel ended the wait")
+        await waitFor("the next episode asks to start") { !heard.asked.isEmpty }
+
+        XCTAssertEqual(heard.announced, [
+            "Finished: Middle part. Downloading the next episode: Bottom part.",
+            "Starting: Bottom part",
+        ])
+        XCTAssertEqual(heard.asked, [try XCTUnwrap(book(of: "guid:ep-1", in: setup)).id])
+    }
+
     // MARK: - An Episode Already Here, Played, or Finished
 
     /// The next episode is downloaded already: no download, and listening is
@@ -325,6 +651,7 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
             "The next article could not be downloaded, so playback stopped. The server says the file is gone."
         )
         XCTAssertEqual(EndOfBookWording.downloadNotStartedReason, "TextMouth is not downloading right now.")
+        XCTAssertEqual(EndOfBookWording.nextEpisodeDownloadCancelled, "Download cancelled, so playback stopped.")
         XCTAssertEqual(
             EndOfBookWording.finished("Part One", notes: [EndOfBookWording.downloadingNextNote(episode)]),
             "Finished: Part One. Downloading the next episode: Part Two."
@@ -372,6 +699,8 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
     ///   - bottomAnswer: What the server answers a request for the bottom
     ///     item's file; the file itself by default.
     ///   - middleIsFinished: Whether the middle item rests at its end.
+    ///   - withAnOlderEpisode: Whether the feed lists a fourth item, Last part
+    ///     (ep-0), older than the bottom one and served like the top one.
     private func makeFeed(
         options: ListeningOptions?,
         global: EndOfBookBehavior,
@@ -379,12 +708,13 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         bottomIsDownloaded: Bool = false,
         bottomIsPlayed: Bool = false,
         bottomAnswer: StubResponse? = nil,
-        middleIsFinished: Bool = false
+        middleIsFinished: Bool = false,
+        withAnOlderEpisode: Bool = false
     ) async throws -> Setup {
         let statistics = preserveSharedStatistics()
         let world = try FeedTestWorld(self, label: "EpisodeDownload", statistics: statistics)
-        let guids = ["ep-3", "ep-2", "ep-1"]
-        let titles = ["ep-3": "Top part", "ep-2": "Middle part", "ep-1": "Bottom part"]
+        let guids = ["ep-3", "ep-2", "ep-1"] + (withAnOlderEpisode ? ["ep-0"] : [])
+        let titles = ["ep-3": "Top part", "ep-2": "Middle part", "ep-1": "Bottom part", "ep-0": "Last part"]
         let items = guids.enumerated().map { offset, guid in
             FeedXML.Item(
                 guid: guid,
@@ -397,6 +727,7 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         world.server.serve("/atlas.xml", .feed(FeedXML.rss(items: items)))
         let silence = FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(duration: 1), mimeType: "audio/mp4")
         world.server.serve("/audio/ep-3.m4a", silence)
+        world.server.serve("/audio/ep-0.m4a", silence)
         world.server.serve("/audio/ep-1.m4a", bottomAnswer ?? silence)
         let feed = try await world.subscribe("/atlas.xml")
 
@@ -433,8 +764,13 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
 
     /// A reader of `book` in `setup`'s world, listening on the setup's own
     /// notification center and sharing no request store with the app;
-    /// closed when the test ends.
-    private func openReader(for book: Book, in setup: Setup) throws -> ReaderViewModel {
+    /// closed when the test ends. Readers given the same `nowPlaying`
+    /// coordinator share its media controls, as two reader windows do.
+    private func openReader(
+        for book: Book,
+        in setup: Setup,
+        nowPlaying: NowPlayingService? = nil
+    ) throws -> ReaderViewModel {
         let reader = ReaderViewModel(
             book: book,
             libraryViewModel: setup.world.library,
@@ -442,7 +778,8 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
             substitutionService: TextSubstitutionService(rules: []),
             autoplayRequests: ReaderAutoplayRequests(),
             notificationCenter: setup.notifications,
-            renderScheduler: nil
+            renderScheduler: nil,
+            nowPlaying: nowPlaying
         )
         addTeardownBlock { @MainActor in reader.close() }
         return reader

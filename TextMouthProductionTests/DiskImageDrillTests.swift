@@ -42,6 +42,60 @@ final class DiskImageDrillTests: XCTestCase {
         XCTAssertEqual(image.mountPoint.path, "/sandbox/Scratch/x/mnt-full-0a1b2c3d")
     }
 
+    // MARK: - The Fill Guards
+
+    /// A volume is mounted only when the mount point's device is known and
+    /// differs from its parent folder's.
+    func testAVolumeIsMountedOnlyWhenItsDeviceDiffersFromTheParents() {
+        XCTAssertEqual(FillGuards.volumeDevice(inside: 7, outside: 1), 7)
+        XCTAssertNil(FillGuards.volumeDevice(inside: 1, outside: 1), "the same device means nothing is mounted")
+        XCTAssertNil(FillGuards.volumeDevice(inside: nil, outside: 1))
+        XCTAssertNil(FillGuards.volumeDevice(inside: 7, outside: nil))
+        XCTAssertNil(FillGuards.volumeDevice(inside: nil, outside: nil))
+    }
+
+    /// No fill starts without a mounted volume and a known size; the reason
+    /// names the missing one, the volume first.
+    func testNoFillStartsWithoutAMountedVolumeAndAKnownSize() {
+        let size: Int64 = 3 * 1024 * 1024
+
+        XCTAssertNil(FillGuards.refusalBeforeFilling(volumeDevice: 7, capacityBytes: size))
+        XCTAssertEqual(FillGuards.refusalBeforeFilling(volumeDevice: nil, capacityBytes: size), "the image is not attached")
+        XCTAssertEqual(FillGuards.refusalBeforeFilling(volumeDevice: nil, capacityBytes: nil), "the image is not attached")
+        XCTAssertEqual(FillGuards.refusalBeforeFilling(volumeDevice: 7, capacityBytes: nil), "the image's size is not known")
+        XCTAssertEqual(FillGuards.refusalBeforeFilling(volumeDevice: 7, capacityBytes: 0), "the image's size is not known")
+        XCTAssertEqual(FillGuards.refusalBeforeFilling(volumeDevice: 7, capacityBytes: -1), "the image's size is not known")
+    }
+
+    /// The ballast file's descriptor must be on the volume's device.
+    func testTheBallastMustBeOnTheVolumesDevice() {
+        XCTAssertNil(FillGuards.refusalForDescriptor(descriptorDevice: 7, volumeDevice: 7))
+        XCTAssertEqual(
+            FillGuards.refusalForDescriptor(descriptorDevice: 1, volumeDevice: 7),
+            "the ballast file is not on the image's volume"
+        )
+    }
+
+    /// The write cap is twice the image's size: exactly that is allowed, one
+    /// byte more is not, and a 3 MB image can never take 6 MB and a byte.
+    func testTheWriteCapIsTwiceTheImagesSizeWithExactBoundaries() {
+        let size: Int64 = 3 * 1024 * 1024
+
+        XCTAssertEqual(FillGuards.writeLimit(capacityBytes: size), 6 * 1024 * 1024)
+        XCTAssertFalse(FillGuards.exceedsCap(written: 0, capacityBytes: size))
+        XCTAssertFalse(FillGuards.exceedsCap(written: size, capacityBytes: size), "a full image is the normal case")
+        XCTAssertFalse(FillGuards.exceedsCap(written: 2 * size, capacityBytes: size), "exactly twice is allowed")
+        XCTAssertTrue(FillGuards.exceedsCap(written: 2 * size + 1, capacityBytes: size))
+        XCTAssertTrue(FillGuards.exceedsCap(written: 10 * size, capacityBytes: size))
+    }
+
+    /// An image that was never made knows no size, so it cannot be filled.
+    func testAnImageThatWasNeverMadeKnowsNoSize() {
+        let image = DiskImage(in: URL(fileURLWithPath: "/sandbox/x", isDirectory: true), name: "fresh", token: "0a1b2c3d")
+
+        XCTAssertNil(image.capacityBytes)
+    }
+
     // MARK: - The Leftover Filter
 
     /// The sandbox prefixes name the folder holding every test sandbox,
@@ -94,6 +148,100 @@ final class DiskImageDrillTests: XCTestCase {
         // No prefix at all means no image may be touched.
         let any = Self.infoPlist(images: [("/var/folders/zz/T/TextMouthTests-1/TMDrill-1.dmg", ["/dev/disk3"])])
         XCTAssertEqual(LeftoverImages.drillImages(inInfoPlist: any, sandboxPrefixes: []), [])
+    }
+
+    // MARK: - Sparing a Running Test Run
+
+    /// An attached drill image at `path`, for the sweep's second step.
+    private static func image(_ path: String) -> AttachedImage {
+        AttachedImage(imagePath: path, devices: ["/dev/disk9"])
+    }
+
+    /// The liveness check of a test: only the processes in `running` are.
+    private static func alive(_ running: Set<Int32>) -> (Int32) -> Bool {
+        { running.contains($0) }
+    }
+
+    /// An image in the sandbox of a different process that is running belongs
+    /// to a test run going on now, so the sweep leaves it alone.
+    func testAnImageUnderARunningForeignSandboxIsSpared() {
+        let busy = Self.image("/var/folders/zz/T/TextMouthTests-500/Scratch/a/TMDrill-11111111-x.dmg")
+
+        XCTAssertEqual(
+            LeftoverImages.sparingRunningRuns([busy], currentProcess: 100, isRunning: Self.alive([500])), []
+        )
+    }
+
+    /// An image under a process that is gone is a crashed run's, and is swept.
+    func testAnImageUnderADeadSandboxIsSwept() {
+        let dead = Self.image("/var/folders/zz/T/TextMouthTests-501/Scratch/a/TMDrill-22222222-x.dmg")
+
+        XCTAssertEqual(
+            LeftoverImages.sparingRunningRuns([dead], currentProcess: 100, isRunning: Self.alive([500])), [dead]
+        )
+    }
+
+    /// This process is running, but its own sandbox's images are the ones
+    /// this run may sweep.
+    func testAnImageUnderThisProcessesOwnSandboxIsSwept() {
+        let own = Self.image("/var/folders/zz/T/TextMouthTests-100/Scratch/a/TMDrill-33333333-x.dmg")
+
+        XCTAssertEqual(
+            LeftoverImages.sparingRunningRuns([own], currentProcess: 100, isRunning: Self.alive([100])), [own]
+        )
+    }
+
+    /// A sandbox name with no readable process number (no digits, a zero, a
+    /// sign, or letters after the digits) cannot be shown to be running, so
+    /// its image is swept as it was before this step existed.
+    func testAnImageUnderASandboxWithNoReadableProcessIsSwept() {
+        let paths = [
+            "/var/folders/zz/T/TextMouthTests-/Scratch/a/TMDrill-1.dmg",
+            "/var/folders/zz/T/TextMouthTests-0/Scratch/a/TMDrill-2.dmg",
+            "/var/folders/zz/T/TextMouthTests-abc/Scratch/a/TMDrill-3.dmg",
+            "/var/folders/zz/T/TextMouthTests-12x/Scratch/a/TMDrill-4.dmg",
+            "/var/folders/zz/T/NotASandbox/Scratch/a/TMDrill-5.dmg"
+        ]
+        let images = paths.map(Self.image)
+
+        // Every number is "running", so only the unreadable names show it.
+        XCTAssertEqual(
+            LeftoverImages.sparingRunningRuns(images, currentProcess: 100, isRunning: { _ in true }), images
+        )
+    }
+
+    /// The folder's name is read from the path whichever way the base is
+    /// spelled, so `/var` and `/private/var` both name process 500.
+    func testTheSandboxProcessIsReadFromThePathWhicheverWayTheBaseIsSpelled() {
+        XCTAssertEqual(LeftoverImages.sandboxProcess(ofImageAt: "/var/folders/zz/T/TextMouthTests-500/a/TMDrill-1.dmg"), 500)
+        XCTAssertEqual(LeftoverImages.sandboxProcess(ofImageAt: "/private/var/folders/zz/T/TextMouthTests-500/a/TMDrill-1.dmg"), 500)
+        XCTAssertNil(LeftoverImages.sandboxProcess(ofImageAt: "/var/folders/zz/T/TextMouthTests-x/a/TMDrill-1.dmg"))
+        XCTAssertNil(LeftoverImages.sandboxProcess(ofImageAt: "TMDrill-1.dmg"))
+    }
+
+    /// The step keeps the order and drops only the busy run's images, among
+    /// several of mixed owners.
+    func testTheSpareStepKeepsOnlyWhatMayBeSwept() {
+        let busy = Self.image("/private/var/folders/zz/T/TextMouthTests-500/a/TMDrill-1.dmg")
+        let dead = Self.image("/var/folders/zz/T/TextMouthTests-501/a/TMDrill-2.dmg")
+        let own = Self.image("/var/folders/zz/T/TextMouthTests-100/a/TMDrill-3.dmg")
+
+        XCTAssertEqual(
+            LeftoverImages.sparingRunningRuns([busy, dead, own], currentProcess: 100, isRunning: Self.alive([500, 100])),
+            [dead, own]
+        )
+        XCTAssertEqual(LeftoverImages.sparingRunningRuns([], currentProcess: 100, isRunning: Self.alive([500])), [])
+    }
+
+    /// The real defaults: this very process counts as the current one, and
+    /// a sandbox of a process number that cannot exist is swept.
+    func testTheDefaultsUseThisProcessAndTheRealLivenessCheck() {
+        let ownPath = "/var/folders/zz/T/TextMouthTests-\(getpid())/a/TMDrill-1.dmg"
+        let own = Self.image(ownPath)
+        // 2^31 - 1 is above any real process number, so nothing runs there.
+        let gone = Self.image("/var/folders/zz/T/TextMouthTests-2147483647/a/TMDrill-2.dmg")
+
+        XCTAssertEqual(LeftoverImages.sparingRunningRuns([own, gone]), [own, gone])
     }
 
     /// A `hdiutil info -plist` listing of `images`, each an image path with

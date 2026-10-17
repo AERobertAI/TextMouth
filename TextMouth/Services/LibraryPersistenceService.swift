@@ -470,8 +470,9 @@ enum LibraryPersistenceService {
     /// library.json atomically, so a reader never sees a half-written index,
     /// unless the file already holds those bytes: as this process last read
     /// or wrote them, and the file is still there. The bytes are remembered
-    /// only once they are on disk, so a write that failed is made again by
-    /// the retry. Must run on saveQueue.
+    /// only once they are on disk; a write that throws forgets what was
+    /// remembered, since the file's state is then unknown, so the retry, and
+    /// any later save whatever it holds, writes again. Must run on saveQueue.
     private static func writeLibraryFileIfChanged(_ library: Library) throws {
         try TextMouthPaths.ensureDirectoryStructure()
         let data = try encodedIndex(library)
@@ -482,8 +483,9 @@ enum LibraryPersistenceService {
             DiagnosticLog.trace(.storage, "library.json is unchanged; not written again")
             return
         }
-        try data.write(to: file, options: .atomic)
-        libraryIndexOnDisk.remember(data, for: libraryIndexMemoryKey)
+        try libraryIndexOnDisk.write(data, for: libraryIndexMemoryKey) {
+            try data.write(to: file, options: .atomic)
+        }
     }
 
     /// `library` as library.json holds it: compact JSON with ISO 8601
@@ -532,12 +534,13 @@ enum LibraryPersistenceService {
                 feedIndexesOnDisk.remember(index.data, for: index.feedID)
                 continue
             }
-            do {
-                try FeedIndexFiles.write(index, in: root)
-            } catch {
-                throw FeedIndexWriteError(file: file, underlying: error)
+            try feedIndexesOnDisk.write(index.data, for: index.feedID) {
+                do {
+                    try FeedIndexFiles.write(index, in: root)
+                } catch {
+                    throw FeedIndexWriteError(file: file, underlying: error)
+                }
             }
-            feedIndexesOnDisk.remember(index.data, for: index.feedID)
         }
     }
 

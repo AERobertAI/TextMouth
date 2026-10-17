@@ -103,7 +103,7 @@ help:
 	@echo "  make uninstall  - Remove from /Applications, keeping the dSYMs"
 	@echo "  make test       - Run the hosted production test suite"
 	@echo "  make check      - Run the reproducibility gate: package pins, Release build, hosted tests, no Swift warnings"
-	@echo "  make check-selftest - Test the gate, make install's dSYM keeping, the baseline-recording script, and the Scripts/test tools in seconds, without building"
+	@echo "  make check-selftest - Test the gate, make install's dSYM keeping, the baseline-recording script, the storage drill script, and the Scripts/test tools in seconds, without building"
 	@echo "  make test-area AREAS=\"feeds bookmarks\" - Run only the hosted tests of some areas, in one build, with a short result"
 	@echo "  make lint-tests - Check the test lines this branch adds for traps, and list what it did to existing tests"
 	@echo "  make lint-a11y  - Check the SwiftUI lines this branch adds for accessibility mistakes"
@@ -214,13 +214,14 @@ test:
 check:
 	@Scripts/check.sh $(CHECK_ARGS)
 
-## Test the gate script, the performance baselines' recording script and the
-## tools in Scripts/test (the area runner, the diff linters, the log reader,
-## the corpus generator) themselves: dry runs, stubbed build tools, canned
-## logs and snippets, no building
+## Test the gate script, the performance baselines' recording script, the
+## storage drill script and the tools in Scripts/test (the area runner, the
+## diff linters, the log reader, the corpus generator) themselves: dry runs,
+## stubbed build tools, canned logs and snippets, no building
 check-selftest:
 	@Scripts/check-selftest.sh
 	@Scripts/perf-baselines-selftest.sh
+	@Scripts/test/storage-drill-selftest.sh
 	@python3 Scripts/test/run-area.py --selftest
 	@python3 Scripts/test/difflint.py --selftest
 	@python3 Scripts/test/trap-lint.py --selftest

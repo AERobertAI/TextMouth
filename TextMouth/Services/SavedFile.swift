@@ -180,10 +180,30 @@ enum SavedFile {
 
         /// Notes that the file by `key` holds `data` now. Call it only once
         /// the bytes are on disk (or, for a file that is not made, once they
-        /// are known to be what the caller wants there), so a failed write
-        /// is tried again by the next save.
+        /// are known to be what the caller wants there). For a write, use
+        /// `write(_:for:using:)`, which also forgets the older bytes when the
+        /// write throws.
         mutating func remember(_ data: Data, for key: Key) {
             bytes[key] = data
+        }
+
+        /// Runs `write`, which puts `data` in the file by `key`, and keeps
+        /// the memory true to the file whether it succeeds or not. When it
+        /// succeeds the file holds `data`, which is remembered. When it throws
+        /// the file's state is unknown (a rename on a network volume can land
+        /// and still report failure), so what was remembered of it is
+        /// forgotten before the error is rethrown: a later save, an undo to
+        /// the older bytes included, then writes instead of being skipped as
+        /// unchanged.
+        /// - Throws: Whatever `write` throws, unchanged.
+        mutating func write(_ data: Data, for key: Key, using write: () throws -> Void) rethrows {
+            do {
+                try write()
+            } catch {
+                forget(key)
+                throw error
+            }
+            remember(data, for: key)
         }
 
         /// Forgets what the file by `key` holds, as when it was found

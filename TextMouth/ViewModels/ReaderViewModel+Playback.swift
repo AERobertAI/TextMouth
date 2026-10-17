@@ -114,6 +114,11 @@ extension ReaderViewModel {
     /// timer in effect starts no next book, since it could never pause it.
     private func playFromTheEnd() {
         DiagnosticLog.trace(.playback, "play: the book rests at its end; Play does what its end does")
+        // Play is a new end decision: a wait for a next episode that an
+        // earlier one began ends here, whichever branch follows (the Stop,
+        // Starts Over, and Loop branches do not pass through
+        // `goOnPastThisBook`, which ends it for the others).
+        nextEpisodeWait = nil
         if isOpenedFromReadingList {
             followReadingListPastThisBook(
                 sleepTimerEndsListening: sleepTimerEndsListeningHere,
@@ -1604,11 +1609,14 @@ extension ReaderViewModel {
     /// then prepared afresh from the settings in force, at once, unless a
     /// preparation of exactly those is under way, which the play waits for
     /// in turn. A book with nothing left to say ends. Nothing is said over a
-    /// Where Am I announcement: the play goes on waiting, showing Playing,
-    /// and starts once the announcement ends (`startPlayHeldByWhereAmI()`).
+    /// Where Am I announcement, nor over the end sound of one that ended by
+    /// itself (`isWhereAmISpeakingOrSoundingItsEnd`): the play goes on
+    /// waiting, showing Playing, and starts once the announcement and its end
+    /// sound are over (`startPlayHeldByWhereAmI()`, which the end sound's
+    /// work asks as it passes).
     private func continueWaitingPlay() {
-        guard !isWhereAmISpeaking else {
-            DiagnosticLog.trace(.playback, "play: the chapter's speech is ready while Where Am I speaks; starting it once the announcement ends")
+        guard !isWhereAmISpeakingOrSoundingItsEnd else {
+            DiagnosticLog.trace(.playback, "play: the chapter's speech is ready while Where Am I speaks or sounds its end; starting it once they are over")
             return
         }
         chapterSpeechCache.awaitedByPlay = nil
@@ -2257,15 +2265,17 @@ extension ReaderViewModel {
     }
 
     /// The pause before the cursor's chapter has passed: the chapter plays
-    /// from the cursor, or, while a Where Am I? announcement speaks, waits
-    /// for the announcement's end (`isChapterHeldByWhereAmI`), as a chapter
-    /// whose files arrive during one waits, still counted as playing.
+    /// from the cursor, or, while a Where Am I? announcement speaks or sounds
+    /// its end (`isWhereAmISpeakingOrSoundingItsEnd`), waits for it
+    /// (`isChapterHeldByWhereAmI`), as a chapter whose files arrive during
+    /// one waits, still counted as playing. It plays once the announcement's
+    /// end sound has passed (`startPlayHeldByWhereAmI()`).
     private func startChapterAfterPause() {
         chapterStartAfterPause = nil
         guard !hasClosed else { return }
-        guard !isWhereAmISpeaking else {
+        guard !isWhereAmISpeakingOrSoundingItsEnd else {
             isChapterHeldByWhereAmI = true
-            DiagnosticLog.trace(.playback, "the pause before chapter \(currentChapterIndex) ended while Where Am I speaks; it plays as the announcement ends")
+            DiagnosticLog.trace(.playback, "the pause before chapter \(currentChapterIndex) ended while Where Am I speaks or sounds its end; it plays once they are over")
             return
         }
         playAudioChapter()
@@ -2921,6 +2931,19 @@ extension ReaderViewModel {
     /// start while it speaks. A book that failed to load has nothing to
     /// play, so its request is claimed and dropped.
     ///
+    /// A book that rests at its end, finished, is played from its
+    /// beginning (REV18a, finding 5). A hand-over reaches such a book when
+    /// "Skip finished" is off, in a folder's or feed's listening options or
+    /// in the reading list; the book was announced ("Starting: <title>")
+    /// when the hand-over began, so it is not asked to run its own end rule,
+    /// which would hand over again, and play none of it. It returns to its
+    /// beginning as Stop and Play Starts Over does (`returnToTheBeginning()`:
+    /// the row reads unfinished), and plays from there with `play()`, since
+    /// an audiobook's player may still report paused at its old end, where
+    /// `playOrResume()` would resume it. A finished book opened by the
+    /// listener, who presses Play, is not claimed here, and still runs its
+    /// end rule (TODO P07).
+    ///
     /// A closed reader claims nothing, and a reader still loading leaves
     /// the request waiting until loading ends, however long a download from
     /// the cloud makes that (`ReaderAutoplayRequests.hold(for:)`, FR02):
@@ -2932,6 +2955,14 @@ extension ReaderViewModel {
         guard request != nil else { return }
         DiagnosticLog.trace(.playback, "continue to next book: starting this book")
         cancelWhereAmIIfActive()
+        // A finished book plays from its beginning; a book already playing
+        // is left as it is (`play()` would start it anew).
+        if cursorRestsAtEnd, !isPlaybackUnderWay {
+            DiagnosticLog.trace(.playback, "continue to next book: this book rests at its end; starting it over")
+            returnToTheBeginning()
+            play()
+            return
+        }
         playOrResume()
     }
 

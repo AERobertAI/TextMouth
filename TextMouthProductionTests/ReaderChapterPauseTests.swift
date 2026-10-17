@@ -292,6 +292,39 @@ final class ReaderChapterPauseTests: XCTestCase {
         XCTAssertEqual(service.loadedURL.map { resolvedPath($0.path) }, files[1])
     }
 
+    /// The same where the pause ends while the announcement's end sound
+    /// plays, which is no longer the announcement speaking: the track is
+    /// held as well, the book still playing, and plays once the end sound
+    /// has had its moment (REV18a, item 7).
+    func testThePauseEndingDuringWhereAmIsEndSoundHoldsTheTrackForIt() throws {
+        let world = try makeIntegrationWorld("Chapter Pause End Sound")
+        let reader = try openBook(in: world, title: "Harbor Plays", trackDurations: [0.4, 3], manifest: Self.pausing)
+        let service = reader.audioPlaybackService
+        let files = reader.audioChapterFiles.map(resolvedPath)
+        let secondFile = try XCTUnwrap(files[safe: 1], "the book has fewer than two chapter files")
+        reader._whereAmIUtteranceRecorderForTesting = { _ in }
+        let endSound = WhereAmIEndSoundClock(holdingFor: reader)
+        defer { reader.stop() }
+        try playIntoThePause(reader)
+
+        // The announcement ends by itself while the pause still runs; its end
+        // sound plays until the test lets it pass.
+        reader.whereAmI()
+        reader.whereAmIAnnouncementFinished()
+        XCTAssertFalse(reader.isWhereAmISpeaking)
+        XCTAssertTrue(reader.isWhereAmIEndSoundPlaying)
+
+        XCTAssertTrue(eventually(within: 5) { reader.isChapterHeldByWhereAmI }, "The pause's end did not hold the track")
+        XCTAssertFalse(service.isPlaying, "The track played over the end sound")
+        XCTAssertTrue(reader.isPlaybackUnderWay)
+
+        endSound.passEndSound()
+
+        XCTAssertFalse(reader.isChapterHeldByWhereAmI)
+        XCTAssertTrue(service.isPlaying, "The track did not play once the end sound had passed")
+        XCTAssertEqual(service.loadedURL.map { resolvedPath($0.path) }, secondFile)
+    }
+
     // MARK: - Helpers
 
     /// A reader of a new book of silent tracks lasting `trackDurations`
