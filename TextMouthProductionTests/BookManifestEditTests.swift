@@ -1008,6 +1008,34 @@ final class BookManifestEditTests: XCTestCase {
         }
     }
 
+    /// TextMouth's own manifest, written for a book that had none, is not an
+    /// edit for a reader that opened the book before it and so shows no
+    /// pauses: the manifest gives no pause, which is the pauses the reader
+    /// shows, so nothing is taken or announced and nothing is written.
+    func testTextMouthsGeneratedManifestIsNotTakenForAnEditByAReaderThatShowsNoPauses() throws {
+        let world = try makeIntegrationWorld("Generated Manifest Unchanged")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2, 0.2, 0.2])
+        let index = try XCTUnwrap(book.storedBookInfo()?.contentIndex)
+        XCTAssertEqual(ChapterPauses.betweenTracks(of: index, inAudioFolder: book.bookFileURL), ChapterPauses.none)
+        try BookManifestFile.write(
+            BookManifestFile.generated(for: book, names: AudioBookParser.trackPaths(in: book.bookFileURL)),
+            at: AudioManifestLocation.forNewManifest(in: book.bookFileURL),
+            of: book.id,
+            sessions: BookManifestEditSessions()
+        )
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let manifest = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL)).url
+        let record = TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
+        let before = try [Data(contentsOf: manifest), Data(contentsOf: record)]
+
+        guard case .unchanged = editor.sessions.look(at: book, showingPauses: ChapterPauses.none) else {
+            return XCTFail("TextMouth's own manifest was taken for an edit")
+        }
+
+        XCTAssertEqual(try [Data(contentsOf: manifest), Data(contentsOf: record)], before)
+    }
+
     /// A book whose manifest is only in the cloud is left as it is, and
     /// nothing of it is read (FR02).
     func testAManifestOnlyInTheCloudIsNotLookedAt() throws {
@@ -1019,6 +1047,32 @@ final class BookManifestEditTests: XCTestCase {
 
         guard case .inCloud = found else { return XCTFail("A manifest only in the cloud was looked at: \(found)") }
         XCTAssertEqual(book.storedBookInfo()?.contentIndex?.chapters.map(\.audioFilePath), ["01.wav", "02.wav"])
+    }
+
+    /// A manifest saved while a track is only in the cloud is not taken: the
+    /// take would read, and so download, every track (FR02). The check
+    /// answers `.inCloud` with no new baseline and leaves the record as it
+    /// was, and once the tracks are back the same save is taken.
+    func testASavedManifestWaitsWhileATrackIsOnlyInTheCloud() throws {
+        let world = try makeIntegrationWorld("Saved Manifest Cloud Track")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2, 0.2, 0.2])
+        let manifestURL = AudioManifestLocation.forNewManifest(in: book.bookFileURL).url
+        try save(#"{"tracks": ["01.wav", "02.wav", "03.wav"]}"#, to: manifestURL)
+        let baseline = try XCTUnwrap(FileFingerprint(of: manifestURL, hasher: .md5))
+        try save(#"{"tracks": ["03.wav", "01.wav", "02.wav"]}"#, to: manifestURL)
+        let before = book.storedBookInfo()?.contentIndex?.chapters.map(\.audioFilePath)
+
+        let waiting = BookManifestEditSessions.check(book, against: baseline) { $0.lastPathComponent == "02.wav" }
+
+        guard case .inCloud = waiting.found else { return XCTFail("A track only in the cloud did not hold the take: \(waiting.found)") }
+        XCTAssertNil(waiting.baseline, "The baseline moved though nothing was taken")
+        XCTAssertEqual(book.storedBookInfo()?.contentIndex?.chapters.map(\.audioFilePath), before)
+
+        // Positive control: with every track on this Mac the same save is taken.
+        let taken = BookManifestEditSessions.check(book, against: baseline) { _ in false }
+        guard case .adopted = taken.found else { return XCTFail("The save was not taken once the tracks were back: \(taken.found)") }
+        XCTAssertNotNil(taken.baseline)
+        XCTAssertEqual(book.storedBookInfo()?.contentIndex?.chapters.map(\.audioFilePath), ["03.wav", "01.wav", "02.wav"])
     }
 
     /// Hands `found`, what a look at the book `bookID` found, to `editor` as
@@ -1239,5 +1293,298 @@ final class BookManifestEditTests: XCTestCase {
             }
         }
         return outcome
+    }
+
+    // MARK: - A Title or Author the Manifest Is Owed (REV17b, Finding 3)
+
+    /// Tells a manifest.json only in the cloud, a stand-in for
+    /// `DatalessFiles.isDataless`.
+    private static let manifestInCloud: @Sendable (URL) -> Bool = { $0.lastPathComponent == AudioManifest.fileName }
+
+    /// Nothing is in the cloud.
+    private static let nothingInCloud: @Sendable (URL) -> Bool = { _ in false }
+
+    /// Retitles the manifest book `bookID` to `title` (and gives it `author`
+    /// when given) through the one write, with `isDataless` telling what is
+    /// in the cloud, and returns whether the manifest was written by it.
+    private func retitle(
+        _ bookID: UUID,
+        to title: String,
+        author: String? = nil,
+        in world: IntegrationWorld,
+        with sessions: BookManifestEditSessions,
+        isDataless: @escaping @Sendable (URL) -> Bool = BookManifestEditTests.nothingInCloud
+    ) async -> Bool {
+        await withCheckedContinuation { continuation in
+            world.library.setTitleAndAuthor(
+                ofManifestBook: bookID,
+                title: title,
+                author: author,
+                sessions: sessions,
+                written: { continuation.resume(returning: $0) },
+                isDataless: isDataless
+            )
+        }
+    }
+
+    /// The book `bookID` as its row holds it now: a look and a settle write
+    /// the row's values, so the tests give them the row, never a copy made
+    /// before an edit.
+    private func row(_ bookID: UUID, in world: IntegrationWorld) throws -> Book {
+        try XCTUnwrap(world.library.bookByID(bookID))
+    }
+
+    /// The title the manifest of `book`'s folder holds.
+    private func manifestTitle(of book: Book) throws -> String? {
+        let location = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL))
+        return try AudioManifest.decoded(from: Data(contentsOf: location.url)).title
+    }
+
+    /// A retitle made while the manifest is only in the cloud changes the
+    /// row, writes nothing, and is kept as owed; a look while it is still
+    /// there changes nothing, and a look once it is back writes the title
+    /// before it compares, so the manifest's old title never replaces the
+    /// user's.
+    func testARetitleWhileTheManifestIsInTheCloudIsKeptAndWrittenOnceItIsBack() async throws {
+        let world = try makeIntegrationWorld("Owed Manifest Cloud")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2, 0.2], manifest: #"{"title": "Harbour Pilots"}"#)
+        let owed = ManifestOwedFields(preferences: makeSandboxedPreferences("Owed Manifest Cloud"))
+        let sessions = BookManifestEditSessions(owed: owed)
+
+        let didWrite = await retitle(book.id, to: "Night Pilots", in: world, with: sessions, isDataless: Self.manifestInCloud)
+
+        XCTAssertFalse(didWrite, "A manifest in the cloud was written")
+        XCTAssertEqual(world.library.bookByID(book.id)?.title, "Night Pilots")
+        XCTAssertEqual(try manifestTitle(of: book), "Harbour Pilots")
+        XCTAssertEqual(owed.owed(by: book.id), [.title], "The retitle was not kept as owed")
+
+        let whileAway = sessions.look(at: try row(book.id, in: world), isDataless: Self.manifestInCloud)
+        guard case .inCloud = whileAway else { return XCTFail("A manifest in the cloud was looked at: \(whileAway)") }
+        XCTAssertEqual(try manifestTitle(of: book), "Harbour Pilots")
+        XCTAssertEqual(owed.owed(by: book.id), [.title])
+
+        let back = sessions.look(at: try row(book.id, in: world), isDataless: Self.nothingInCloud)
+        guard case .unchanged = back else { return XCTFail("The look took the old title over the retitle: \(back)") }
+        XCTAssertEqual(try manifestTitle(of: book), "Night Pilots", "The owed title was not written")
+        XCTAssertEqual(world.library.bookByID(book.id)?.title, "Night Pilots")
+        XCTAssertEqual(owed.owed(by: book.id), [], "A title the manifest holds was still owed")
+    }
+
+    /// What the manifest is owed outlives a quit: a new set of sessions over
+    /// the same preferences, as a relaunch makes, writes the title at its
+    /// first look.
+    func testAnOwedTitleSurvivesARelaunch() async throws {
+        let world = try makeIntegrationWorld("Owed Manifest Relaunch")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2], manifest: #"{"title": "Harbour Pilots"}"#)
+        let preferences = makeSandboxedPreferences("Owed Manifest Relaunch")
+        let first = BookManifestEditSessions(owed: ManifestOwedFields(preferences: preferences))
+        _ = await retitle(book.id, to: "Night Pilots", in: world, with: first, isDataless: Self.manifestInCloud)
+        XCTAssertEqual(try manifestTitle(of: book), "Harbour Pilots")
+
+        let relaunched = BookManifestEditSessions(owed: ManifestOwedFields(preferences: preferences))
+        let found = relaunched.look(at: try row(book.id, in: world), isDataless: Self.nothingInCloud)
+
+        guard case .unchanged = found else { return XCTFail("The relaunch's look took the old title: \(found)") }
+        XCTAssertEqual(try manifestTitle(of: book), "Night Pilots")
+        XCTAssertEqual(world.library.bookByID(book.id)?.title, "Night Pilots")
+        XCTAssertEqual(relaunched.owed.owed(by: book.id), [])
+    }
+
+    /// A retitle the manifest takes at once owes it nothing, and a book
+    /// whose audio is no folder of tracks, whatever a stale record says, is
+    /// cleared by a settle, which writes nothing there.
+    func testNothingIsOwedForABookWhoseManifestWasWritten() async throws {
+        let world = try makeIntegrationWorld("Owed Manifest Nothing")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2], manifest: #"{"title": "Harbour Pilots"}"#)
+        let owed = ManifestOwedFields(preferences: makeSandboxedPreferences("Owed Manifest Nothing"))
+        let sessions = BookManifestEditSessions(owed: owed)
+
+        let didWrite = await retitle(book.id, to: "Night Pilots", author: "Ines Okafor", in: world, with: sessions)
+
+        XCTAssertTrue(didWrite)
+        XCTAssertEqual(try manifestTitle(of: book), "Night Pilots")
+        XCTAssertEqual(owed.owed(by: book.id), [], "A title the manifest took was owed")
+
+        let sections = try world.makeSegmentedAudioBook(
+            title: "Sections",
+            files: ["a.wav": 0.4],
+            sections: [AudioSegment(title: "One", file: "a.wav", startTime: 0, endTime: 0.4)]
+        )
+        owed.setOwed([.title, .author], by: sections.id)
+        let written = sessions.queue.sync { sessions.settleOwedFields(of: sections) }
+
+        XCTAssertFalse(written, "A manifest of sections was written")
+        XCTAssertEqual(owed.owed(by: sections.id), [], "A book that is no folder of tracks stayed owed")
+    }
+
+    /// What the manifest is owed is not forgotten while the book's folder is
+    /// missing (a volume not mounted, a library midway through a move): audio
+    /// that is not there is not audio that is no folder of tracks, so the
+    /// title stays owed and is written once the folder is back, and the old
+    /// title in the manifest never replaces the retitle.
+    func testAnOwedTitleStaysOwedWhileTheBooksFolderIsMissing() async throws {
+        let world = try makeIntegrationWorld("Owed Manifest Missing Folder")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2], manifest: #"{"title": "Harbour Pilots"}"#)
+        let owed = ManifestOwedFields(preferences: makeSandboxedPreferences("Owed Manifest Missing Folder"))
+        let sessions = BookManifestEditSessions(owed: owed)
+        _ = await retitle(book.id, to: "Night Pilots", in: world, with: sessions, isDataless: Self.manifestInCloud)
+        XCTAssertEqual(owed.owed(by: book.id), [.title])
+
+        // The book's package goes away, as with a volume that is not mounted.
+        let away = book.tmbDirectory.deletingLastPathComponent().appendingPathComponent("away-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.moveItem(at: book.tmbDirectory, to: away)
+        let whileGone = sessions.look(at: try row(book.id, in: world), isDataless: Self.nothingInCloud)
+
+        guard case .missing = whileGone else { return XCTFail("A missing folder was looked at: \(whileGone)") }
+        XCTAssertEqual(owed.owed(by: book.id), [.title], "A title owed was forgotten while the folder was missing")
+
+        try FileManager.default.moveItem(at: away, to: book.tmbDirectory)
+        let back = sessions.look(at: try row(book.id, in: world), isDataless: Self.nothingInCloud)
+
+        guard case .unchanged = back else { return XCTFail("The look once the folder was back took the old title: \(back)") }
+        XCTAssertEqual(try manifestTitle(of: book), "Night Pilots", "The owed title was not written")
+        XCTAssertEqual(world.library.bookByID(book.id)?.title, "Night Pilots")
+        XCTAssertEqual(owed.owed(by: book.id), [])
+    }
+
+    /// The record round-trips through the preferences, an empty set removes
+    /// a book's entry and the last entry removes the record, a malformed
+    /// value reads as nothing owed, and only the title and the author are
+    /// ever stored or read back.
+    func testTheOwedRecordIsKeptAcrossInstancesAndEmptiesItself() {
+        let preferences = makeSandboxedPreferences("Owed Record")
+        let first = UUID()
+        let second = UUID()
+        let record = ManifestOwedFields(preferences: preferences)
+        XCTAssertEqual(record.owed(by: first), [])
+
+        record.setOwed([.author, .title, .publisher], by: first)
+        record.setOwed([.author], by: second)
+
+        let again = ManifestOwedFields(preferences: preferences)
+        XCTAssertEqual(again.owed(by: first), [.title, .author], "Only the title and the author are kept")
+        XCTAssertEqual(again.owed(by: second), [.author])
+        XCTAssertEqual(
+            preferences.dictionary(forKey: ManifestOwedFields.key) as? [String: [String]],
+            [first.uuidString: ["title", "author"], second.uuidString: ["author"]],
+            "The bytes differ for the same record"
+        )
+
+        again.setOwed([], by: first)
+        XCTAssertEqual(record.owed(by: first), [])
+        XCTAssertEqual(record.owed(by: second), [.author], "Another book's entry went with it")
+        record.setOwed([.publisher], by: second)
+        XCTAssertNil(preferences.object(forKey: ManifestOwedFields.key), "An empty record was kept")
+
+        // A value that is not the record, and names that are not fields.
+        preferences.set("not a record", forKey: ManifestOwedFields.key)
+        XCTAssertEqual(record.owed(by: first), [])
+        preferences.set([first.uuidString: [1, 2]], forKey: ManifestOwedFields.key)
+        XCTAssertEqual(record.owed(by: first), [])
+        preferences.set([first.uuidString: ["publisher", "colour", "author"]], forKey: ManifestOwedFields.key)
+        XCTAssertEqual(record.owed(by: first), [.author], "A name that is no owable field was read back")
+    }
+
+    /// A retitle made while the manifest has a typo is not lost when the
+    /// user fixes the typo and saves a manifest that still has the old
+    /// title: the save is taken (the new order, "Manifest updated" once)
+    /// but the stale title is not, and the row's title is written into the
+    /// file at the first look after the session, which announces nothing.
+    func testARetitleWhileTheManifestHasATypoSurvivesTheFixAndTheNextSave() async throws {
+        let world = try makeIntegrationWorld("Owed Manifest Typo")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2, 0.2], manifest: #"{"title": "Harbour Pilots"}"#)
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        await editor.editor.edit(try row(book.id, in: world), choosingApp: false, in: world.library, from: nil)
+        let manifest = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL)).url
+
+        // The user is midway through an edit: the closing brace is missing.
+        try save(#"{"title": "Harbour Pilots""#, to: manifest)
+        _ = await check(with: editor, in: announcements)
+        let didWrite = await retitle(book.id, to: "Night Pilots", in: world, with: editor.sessions)
+        XCTAssertFalse(didWrite, "A manifest with a typo was written")
+        XCTAssertEqual(editor.sessions.owed.owed(by: book.id), [.title])
+
+        // The fix, with the old title still in it and the tracks reordered.
+        try save(#"{"title": "Harbour Pilots", "tracks": ["02.wav", "01.wav"]}"#, to: manifest)
+        let heard = await check(with: editor, in: announcements)
+
+        XCTAssertEqual(heard, [BookManifestEditWording.updated])
+        XCTAssertEqual(book.storedBookInfo()?.contentIndex?.chapters.map(\.audioFilePath), ["02.wav", "01.wav"], "The new order was not taken")
+        XCTAssertEqual(world.library.bookByID(book.id)?.title, "Night Pilots", "The stale title was adopted")
+        XCTAssertEqual(editor.sessions.owed.owed(by: book.id), [.title])
+
+        let heardBeforeTheLook = announcements.messages
+        editor.editor.endAll()
+        let found = editor.sessions.look(at: try row(book.id, in: world))
+
+        guard case .unchanged = found else { return XCTFail("The look after the session found: \(found)") }
+        XCTAssertEqual(try manifestTitle(of: book), "Night Pilots", "The owed title was not written")
+        XCTAssertEqual(editor.sessions.owed.owed(by: book.id), [])
+        XCTAssertEqual(announcements.messages, heardBeforeTheLook, "The look made an announcement")
+    }
+
+    /// Only the owed field is kept: a save of the manifest with the old
+    /// title and a new author gives the book the author, not the title, and
+    /// the title is written at the first look after the session.
+    func testOnlyTheOwedFieldIsKeptWhileTheOtherFollowsTheManifest() async throws {
+        let world = try makeIntegrationWorld("Owed Manifest One Field")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2, 0.2], manifest: #"{"title": "Harbour Pilots"}"#)
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        await editor.editor.edit(try row(book.id, in: world), choosingApp: false, in: world.library, from: nil)
+        let manifest = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL)).url
+        let didWrite = await retitle(book.id, to: "Night Pilots", in: world, with: editor.sessions, isDataless: Self.manifestInCloud)
+        XCTAssertFalse(didWrite)
+        XCTAssertEqual(editor.sessions.owed.owed(by: book.id), [.title])
+
+        try save(#"{"title": "Harbour Pilots", "author": "Ilse Varga"}"#, to: manifest)
+        let heard = await check(with: editor, in: announcements)
+
+        XCTAssertEqual(heard, [BookManifestEditWording.updated])
+        XCTAssertEqual(world.library.bookByID(book.id)?.author, "Ilse Varga", "The manifest's author was not taken")
+        XCTAssertEqual(world.library.bookByID(book.id)?.title, "Night Pilots", "The stale title was adopted")
+        XCTAssertEqual(editor.sessions.owed.owed(by: book.id), [.title])
+
+        editor.editor.endAll()
+        let found = editor.sessions.look(at: try row(book.id, in: world))
+
+        guard case .unchanged = found else { return XCTFail("The look after the session found: \(found)") }
+        XCTAssertEqual(try manifestTitle(of: book), "Night Pilots")
+        XCTAssertEqual(try AudioManifest.decoded(from: Data(contentsOf: manifest)).author, "Ilse Varga")
+        XCTAssertEqual(editor.sessions.owed.owed(by: book.id), [])
+    }
+
+    /// A field the manifest is owed is left out of the comparison of a
+    /// manifest with its book, whatever the manifest says of it; another
+    /// field, and the arrangement, still count.
+    func testAnOwedFieldIsLeftOutOfTheComparison() throws {
+        let world = try makeIntegrationWorld("Owed Manifest Comparison")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2, 0.2], manifest: #"{"title": "Harbour Pilots"}"#)
+        let shown = try XCTUnwrap(book.storedBookInfo()?.contentIndex)
+        let location = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL))
+        let tracks = try AudioBookParser.trackPaths(in: book.bookFileURL)
+        XCTAssertNotEqual(book.author, "Ilse Varga")
+
+        /// Whether `json` arranges the book as shown, the fields in `owed` left out.
+        func matches(_ json: String, owed: Set<Book.MetadataField> = []) -> Bool {
+            BookManifestEditSessions.manifest(Data(json.utf8), at: location, arranges: book, as: shown, tracks: tracks, showingPauses: nil, owed: owed)
+        }
+
+        let otherTitle = #"{"title": "Night Pilots"}"#
+        XCTAssertFalse(matches(otherTitle), "A title that differs matched")
+        XCTAssertTrue(matches(otherTitle, owed: [.title]), "An owed title was compared")
+        XCTAssertFalse(matches(otherTitle, owed: [.author]), "An author owed left a title out")
+
+        let otherAuthor = #"{"title": "Harbour Pilots", "author": "Ilse Varga"}"#
+        XCTAssertFalse(matches(otherAuthor, owed: [.title]), "An author that differs matched while the title was owed")
+        XCTAssertTrue(matches(otherAuthor, owed: [.author]), "An owed author was compared")
+
+        let reordered = #"{"title": "Night Pilots", "tracks": ["02.wav", "01.wav"]}"#
+        XCTAssertFalse(matches(reordered, owed: [.title, .author]), "An owed field hid a new arrangement")
     }
 }

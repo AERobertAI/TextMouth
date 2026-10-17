@@ -66,9 +66,13 @@ struct ImportedBook {
     /// the pages whose pictures OCR could not read. It reports nothing
     /// missing for a complete book and for formats that do not report yet.
     var report = ExtractionReport()
-    /// Whether the book was copied from a DAISY book kept as loose files:
-    /// its folder, or its OPF or ncc.html inside that folder (TODO I02).
-    var isFromPackageFolder = false
+    /// Whether the book was copied from a folder of files, not from one
+    /// file: a DAISY book kept as loose files (its folder, or its OPF or
+    /// ncc.html inside that folder, TODO I02), or a folder of audio tracks
+    /// (FR17, Part B). Such a folder holds files the import did not copy (a
+    /// cover, lyrics, other books' files, a Bonus folder), so it is never
+    /// deleted or offered for deletion.
+    var isFromFolder = false
 
     /// Whether the original file must stay exactly where it is: an import
     /// that left chapters or pages out never deletes it or offers to,
@@ -77,10 +81,10 @@ struct ImportedBook {
 
     /// Whether the "After Importing a Book" preference may delete the
     /// original, or offer to: only for a complete book copied from a single
-    /// file. A DAISY book's original is a folder of files, some of which may
-    /// belong to other books or to nothing the import copied, so it is
-    /// never deleted (TODO I02).
-    var mayDeleteOriginal: Bool { !keepsOriginal && !isFromPackageFolder }
+    /// file. A DAISY book's or a folder of tracks' original is a folder of
+    /// files, some of which may belong to other books or to nothing the
+    /// import copied, so it is never deleted (TODO I02, FR17).
+    var mayDeleteOriginal: Bool { !keepsOriginal && !isFromFolder }
 
     /// The warning an import that left chapters or pages out presents once:
     /// what is missing, then that the original was kept. Nil for a complete
@@ -859,7 +863,7 @@ enum FileImportService {
                 handEdits: .noneSinceImport
             )
             var imported = try publishReadableBook(staged, from: staging, run: &run)
-            imported.isFromPackageFolder = package != nil
+            imported.isFromFolder = package != nil
             return imported
         }
     }
@@ -981,14 +985,43 @@ enum FileImportService {
     /// Whether `source` is a folder holding audio tracks and no book any
     /// format reads, a DAISY book's folder above all: the folder imports
     /// as one audiobook (`importAudioFolderWithReport`). A TextMouth
-    /// package is never one.
+    /// package is never one. Neither is a folder with a DAISY book in a
+    /// folder beneath it: such a folder is not itself a book, and its
+    /// tracks belong to the books beneath it.
     static func isFolderOfTracks(_ source: URL) -> Bool {
         guard source.pathExtension.lowercased() != "tmb", BookFormat.detect(from: source) == nil else { return false }
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: source.path, isDirectory: &isDirectory), isDirectory.boolValue else {
             return false
         }
-        return !((try? AudioBookParser.audioFiles(in: source)) ?? []).isEmpty
+        // The folder is searched for DAISY books only once it is known to hold audio.
+        guard !((try? AudioBookParser.audioFiles(in: source)) ?? []).isEmpty else { return false }
+        return !holdsDAISYBookBeneath(source)
+    }
+
+    /// Whether a folder inside `folder`, at any depth, holds a DAISY book at
+    /// its top level (`DAISYParser.isDAISYDirectory(url:)`). `folder`'s own
+    /// top level is not checked: `BookFormat.detect` has done that. Finder's
+    /// __MACOSX folder, hidden items, and symbolic links are passed over, as
+    /// `filesHeld(by:)` and the tracks' discovery pass over them.
+    private static func holdsDAISYBookBeneath(_ folder: URL) -> Bool {
+        let keys: Set<URLResourceKey> = [.isDirectoryKey, .isSymbolicLinkKey]
+        guard let enumerator = FileManager.default.enumerator(
+            at: folder,
+            includingPropertiesForKeys: Array(keys),
+            options: [.skipsHiddenFiles]
+        ) else { return false }
+        for case let item as URL in enumerator {
+            let values = try? item.resourceValues(forKeys: keys)
+            if item.lastPathComponent == "__MACOSX" || values?.isSymbolicLink == true {
+                enumerator.skipDescendants()
+                continue
+            }
+            if values?.isDirectory == true, DAISYParser.isDAISYDirectory(url: item) {
+                return true
+            }
+        }
+        return false
     }
 
     /// Imports the folder of audio tracks `folder` as one audiobook, as a
@@ -1035,7 +1068,7 @@ enum FileImportService {
                 try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
                 try FileManager.default.copyItem(at: folder.appendingPathComponent(path), to: destination)
             }
-            return try publishTracks(
+            var imported = try publishTracks(
                 titled: folder.lastPathComponent,
                 in: audioDirectory,
                 of: staging,
@@ -1046,6 +1079,10 @@ enum FileImportService {
                 source: folder,
                 run: &run
             )
+            // The folder holds files that were not copied (a cover, lyrics,
+            // a Bonus folder), so it is never deleted or offered for deletion.
+            imported.isFromFolder = true
+            return imported
         }
     }
 

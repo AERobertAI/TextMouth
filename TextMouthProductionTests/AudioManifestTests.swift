@@ -422,6 +422,26 @@ final class AudioManifestTests: XCTestCase {
         XCTAssertEqual(ChapterPauses.none.after(chapter: 0), 0)
     }
 
+    /// No pause anywhere is one value whatever its source: a list of zeros
+    /// (what a manifest with no pause gives, one entry per chapter), of
+    /// pauses cleaned to 0, and the empty list are all `.none`, and a
+    /// trailing run of zeros never makes two otherwise equal pauses differ.
+    /// What each chapter is given is unchanged by this.
+    func testNoPauseAnywhereIsOneValueWhateverItsSource() {
+        XCTAssertEqual(ChapterPauses.none, ChapterPauses(afterEachChapter: [0, 0, 0]))
+        XCTAssertEqual(ChapterPauses(afterEachChapter: [-1, .nan, .infinity]), .none)
+        XCTAssertEqual(ChapterPauses(afterEachChapter: [0.5, 0]), ChapterPauses(afterEachChapter: [0.5]))
+        XCTAssertNotEqual(ChapterPauses(afterEachChapter: [0, 0.5]), ChapterPauses(afterEachChapter: [0.5]))
+        XCTAssertNotEqual(ChapterPauses(afterEachChapter: [0.5]), .none)
+        // The pause after each chapter is what it was: the dropped entries were all 0.
+        let trailing = ChapterPauses(afterEachChapter: [0.5, 0, 0])
+        XCTAssertEqual([0, 1, 2, 3].map(trailing.after(chapter:)), [0.5, 0, 0, 0])
+        let zeros = ChapterPauses(afterEachChapter: [0, 0, 0])
+        XCTAssertEqual([0, 1, 2, 3].map(zeros.after(chapter:)), [0, 0, 0, 0])
+        let leading = ChapterPauses(afterEachChapter: [0, 0.5, 0])
+        XCTAssertEqual([0, 1, 2].map(leading.after(chapter:)), [0, 0.5, 0])
+    }
+
     // MARK: - Helpers
 
     /// The index of a multi-file audiobook in this test's folder whose

@@ -55,7 +55,7 @@ final class DAISYPackageImportTests: XCTestCase {
         XCTAssertEqual(book.format, .daisy)
         XCTAssertEqual(book.filePath, book.tmbDirectory.appendingPathComponent("book.opf").path)
         XCTAssertEqual(book.sourceFilePath, source.path)
-        XCTAssertTrue(imported.isFromPackageFolder)
+        XCTAssertTrue(imported.isFromFolder)
         XCTAssertFalse(imported.mayDeleteOriginal)
         XCTAssertEqual(try bookFiles(of: book), Fixtures.packageBookFiles)
         try assertReadsInFull(book, sentences: Fixtures.packageBookSentences, headings: Fixtures.packageBookHeadings)
@@ -81,7 +81,7 @@ final class DAISYPackageImportTests: XCTestCase {
         XCTAssertEqual(book.format, .daisy)
         XCTAssertEqual(book.filePath, book.tmbDirectory.appendingPathComponent("ncc.html").path)
         XCTAssertEqual(book.sourceFilePath, folder.path)
-        XCTAssertTrue(imported.isFromPackageFolder)
+        XCTAssertTrue(imported.isFromFolder)
         XCTAssertEqual(try bookFiles(of: book), Fixtures.navigationBookFiles)
         try assertReadsInFull(book, sentences: Fixtures.navigationBookSentences, headings: Fixtures.navigationBookHeadings)
     }
@@ -278,6 +278,177 @@ final class DAISYPackageImportTests: XCTestCase {
             XCTAssertTrue(FileManager.default.fileExists(atPath: original.path), folder.lastPathComponent)
         }
         XCTAssertTrue(FileManager.default.fileExists(atPath: packageFolder.appendingPathComponent("notes.txt").path))
+    }
+
+    // MARK: - Folders of Tracks
+
+    /// The files `makeNightFerries(in:)` writes, as paths inside the folder.
+    private static let nightFerriesFiles = ["01.wav", "02.wav", "cover.jpg", "lyrics.txt", "Bonus/liner notes.txt"]
+
+    /// Writes the folder `Night Ferries` into `parent`: two real silent
+    /// tracks, and the files an import does not copy (a cover, lyrics, and a
+    /// `Bonus` folder), and returns it.
+    @discardableResult
+    private func makeNightFerries(in parent: URL) throws -> URL {
+        let folder = try Fixtures.writeFolder(
+            ["cover.jpg": "not really a picture", "lyrics.txt": "Words.", "Bonus/liner notes.txt": "Notes."],
+            named: "Night Ferries",
+            in: parent
+        )
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("01.wav"), duration: 0.2)
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("02.wav"), duration: 0.2)
+        return folder
+    }
+
+    /// A folder of audio tracks is never deleted after its import, nor
+    /// offered for deletion, whatever the "After Importing a Book"
+    /// preference says: it holds files the import did not copy (a cover,
+    /// lyrics, a Bonus folder).
+    @MainActor
+    func testFolderOfTracksImportNeverDeletesOrOffersToDeleteItsFolder() throws {
+        // A regression must remove only this test's sandbox, never reach the user's Trash.
+        keepDeletionsOutOfTheTrash()
+
+        for behavior in [ImportDeleteBehavior.deleteAfterImport, .askEachTime] {
+            // Each behavior imports its own fresh folder: a second import of one folder is a duplicate.
+            let label = "\(behavior)"
+            let folder = try makeNightFerries(in: sources.appendingPathComponent(label, isDirectory: true))
+            let model = LibraryViewModel(initializeServices: false)
+            model.library = Library()
+
+            let imported = try FileImportService.importFileWithReport(from: folder, toFolder: folderPath)
+            XCTAssertTrue(imported.isFromFolder, label)
+            XCTAssertFalse(imported.mayDeleteOriginal, label)
+            withImportDeleteBehavior(behavior) {
+                model.completeSingleImportedBook(imported, originalURL: folder)
+            }
+
+            XCTAssertTrue(model.library.books.contains { $0.id == imported.book.id }, label)
+            XCTAssertTrue(model.importDecisions.isEmpty, label)
+            XCTAssertTrue(FileManager.default.fileExists(atPath: folder.path), label)
+            for file in Self.nightFerriesFiles {
+                XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent(file).path), "\(label): \(file)")
+            }
+        }
+    }
+
+    /// The same folder of tracks imported again, here from a copy of it
+    /// under another parent, is a duplicate; the duplicate question never
+    /// offers to delete the folder.
+    @MainActor
+    func testReimportingAFolderOfTracksIsADuplicateThatNeverOffersItsFolder() throws {
+        keepDeletionsOutOfTheTrash()
+        let folder = try makeNightFerries(in: sources)
+        let copy = try makeNightFerries(in: sources.appendingPathComponent("Downloads", isDirectory: true))
+
+        let first = try FileImportService.importFileWithReport(from: folder, toFolder: folderPath)
+        let second = try FileImportService.importFileWithReport(from: copy, toFolder: folderPath)
+        XCTAssertEqual(second.book.md5Hash, first.book.md5Hash)
+
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [first.book])
+        withImportDeleteBehavior(.deleteAfterImport) {
+            model.completeSingleImportedBook(second, originalURL: copy)
+        }
+
+        let duplicate = try XCTUnwrap(model.importDecisions.current?.duplicate)
+        XCTAssertEqual(duplicate.existing.id, first.book.id)
+        XCTAssertEqual(duplicate.book.id, second.book.id)
+        XCTAssertNil(duplicate.originalURL)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: copy.path))
+    }
+
+    /// `files` with `prefix` put before each path, so a book's files can be
+    /// written inside a folder of a larger folder.
+    private func inside(_ prefix: String, _ files: [String: String]) -> [String: String] {
+        Dictionary(uniqueKeysWithValues: files.map { (prefix + $0.key, $0.value) })
+    }
+
+    /// Asserts that importing `folder` fails while its format is checked,
+    /// because it holds no book of its own (`FolderWithoutBookError`), and
+    /// that nothing was copied. Returns the error's message.
+    @discardableResult
+    private func assertRefusedAsNoBook(_ folder: URL, file: StaticString = #filePath, line: UInt = #line) -> String? {
+        var message: String?
+        XCTAssertThrowsError(
+            try FileImportService.importFileWithReport(from: folder, toFolder: folderPath), file: file, line: line
+        ) { error in
+            let failure = error as? ImportFailure
+            XCTAssertEqual(failure?.step, .checkingFormat, file: file, line: line)
+            XCTAssertEqual(
+                (failure?.underlying as? FolderWithoutBookError)?.folderName,
+                folder.lastPathComponent,
+                file: file,
+                line: line
+            )
+            message = error.localizedDescription
+        }
+        XCTAssertEqual((try? folderEntries()) ?? ["unreadable"], [], file: file, line: line)
+        return message
+    }
+
+    /// A folder of DAISY book folders is not itself a book: it is refused
+    /// like any folder without a book, not imported as one audiobook of
+    /// every book's audio files, and nothing in it is copied or changed.
+    func testAParentOfDAISYBookFoldersIsRefusedNotImportedAsOneAudiobook() throws {
+        // Each book's folder holds its DAISY files and an (empty) audio track.
+        var files = inside("Rope Splicing/", Fixtures.navigationBook)
+        files["Rope Splicing/track.mp3"] = ""
+        files.merge(inside("Ferry Timetables/", Fixtures.packageBook)) { $1 }
+        files["Ferry Timetables/track.mp3"] = ""
+        let parent = try Fixtures.writeFolder(files, named: "Audiobooks", in: sources)
+        let before = try FileManager.default.subpathsOfDirectory(atPath: parent.path).sorted()
+
+        XCTAssertEqual(LibraryViewModel.importSources(for: parent), [parent])
+        XCTAssertFalse(FileImportService.isFolderOfTracks(parent))
+        // The refusal's sentence is the one for any folder without a book of its own.
+        XCTAssertEqual(
+            assertRefusedAsNoBook(parent),
+            "Could not import “Audiobooks”. Checking its format failed: “Audiobooks” holds no DAISY book and no "
+                + "audio tracks to import as one book. It holds 4 .mp3 files, 3 .css files, 3 .smil files, and 7 other files."
+        )
+        XCTAssertEqual(try FileManager.default.subpathsOfDirectory(atPath: parent.path).sorted(), before)
+    }
+
+    /// A DAISY book two folders deep also makes its parent a folder that is
+    /// not a book, whatever audio sits at the parent's top.
+    func testADAISYBookTwoFoldersDeepAlsoRefusesTheParent() throws {
+        var files = inside("Author/Rope Splicing/", Fixtures.navigationBook)
+        files["track.mp3"] = ""
+        let parent = try Fixtures.writeFolder(files, named: "Library", in: sources)
+
+        XCTAssertFalse(FileImportService.isFolderOfTracks(parent))
+        assertRefusedAsNoBook(parent)
+    }
+
+    /// A positive control: a plain subfolder, holding no DAISY book, does not
+    /// stop a folder of tracks importing as one audiobook.
+    func testAFolderOfTracksWithAPlainSubfolderStillImportsAsOneAudiobook() throws {
+        let folder = try Fixtures.writeFolder(
+            ["Bonus/notes.txt": "Notes.", "Bonus/cover.jpg": "not really a picture"],
+            named: "Night Ferries",
+            in: sources
+        )
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("01.wav"), duration: 0.2)
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("02.wav"), duration: 0.2)
+
+        XCTAssertTrue(FileImportService.isFolderOfTracks(folder))
+        let imported = try FileImportService.importFileWithReport(from: folder, toFolder: folderPath)
+        XCTAssertEqual(imported.book.format, .audio)
+        XCTAssertEqual(imported.book.title, "Night Ferries")
+    }
+
+    /// A DAISY book inside Finder's __MACOSX folder or a hidden folder is
+    /// not a book of the folder's: tracks beside them still import as one.
+    func testADAISYBookInsideMACOSXOrAHiddenFolderDoesNotBlockAFolderOfTracks() throws {
+        var files = inside("__MACOSX/Night Ferries/", Fixtures.navigationBook)
+        files.merge(inside(".hidden/", Fixtures.navigationBook)) { $1 }
+        let folder = try Fixtures.writeFolder(files, named: "Night Ferries", in: sources)
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("01.wav"), duration: 0.2)
+
+        XCTAssertTrue(DAISYParser.isDAISYDirectory(url: folder.appendingPathComponent("__MACOSX/Night Ferries")))
+        XCTAssertTrue(DAISYParser.isDAISYDirectory(url: folder.appendingPathComponent(".hidden")))
+        XCTAssertTrue(FileImportService.isFolderOfTracks(folder))
     }
 
     // MARK: - What Is Copied Instead

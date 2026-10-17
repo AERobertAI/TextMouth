@@ -279,8 +279,11 @@ enum BookManifestFile {
     /// A book without a manifest is given one first, from the book as it
     /// is (`generated(for:names:)`), so its title and author are kept there
     /// too. Nothing for a book whose audio is no folder of tracks, or is
-    /// only in the cloud, or whose manifest is not one JSON object. Storage
-    /// work, off the main thread.
+    /// only in the cloud, or whose manifest is not one JSON object: the
+    /// caller keeps the edit owed then (`ManifestOwedFields`,
+    /// `BookManifestEditSessions.settleOwedFields(of:adding:isDataless:)`),
+    /// so it is written once the manifest can take it. Storage work, off the
+    /// main thread.
     ///
     /// - Returns: Whether the manifest was written.
     @discardableResult
@@ -312,6 +315,49 @@ enum BookManifestFile {
                     object[keys.author.rawValue] = author
                 }
             }
+        }
+    }
+
+    /// Whether the manifest of `book`'s folder of tracks holds the row's
+    /// values of `fields` (only the title and the author are told): its
+    /// `title` and `author` strings equal the row's. Also true when the
+    /// book's audio is no longer a folder of tracks whose manifest TextMouth
+    /// keeps (it is a file, or its manifest gives sections), since nothing
+    /// can be owed there. False when the folder or the manifest is only in
+    /// the cloud, when the folder is not there at all (a volume not mounted,
+    /// a library midway through a move: it may be back, and the manifest is
+    /// still owed what it was), when there is no manifest, and when the
+    /// manifest cannot be read or is not one JSON object. A read that
+    /// downloads nothing. Storage work, off the main thread.
+    static func holds(
+        _ fields: Set<Book.MetadataField>,
+        of book: Book,
+        isDataless: (URL) -> Bool = DatalessFiles.isDataless
+    ) -> Bool {
+        let folder = book.bookFileURL
+        switch BookManifestEditing.isTrackFolder(folder, isDataless: isDataless) {
+        case nil:
+            return false
+        case false?:
+            // Nothing is owed to audio that is no folder of tracks, but audio
+            // that is not there at all may come back: it stays owed.
+            return FileManager.default.fileExists(atPath: folder.path)
+        case true?:
+            break
+        }
+        guard let location = AudioManifestLocation.find(in: folder), !isDataless(location.url) else { return false }
+        // Read with downloading switched off, so a manifest that went to the
+        // cloud meanwhile refuses the read rather than download.
+        guard let data = try? DatalessFiles.withoutDownloading({ try Data(contentsOf: location.url) }),
+              let object = (try? JSONSerialization.jsonObject(with: AudioManifest.withoutByteOrderMark(data))) as? [String: Any]
+        else { return false }
+        let keys = AudioManifest.CodingKeys.self
+        let held = [
+            (Book.MetadataField.title, keys.title.rawValue, book.title),
+            (Book.MetadataField.author, keys.author.rawValue, book.author)
+        ]
+        return held.allSatisfy { field, key, value in
+            !fields.contains(field) || object[key] as? String == value
         }
     }
 
@@ -384,6 +430,69 @@ enum BookManifestFile {
     }
 }
 
+// MARK: - Fields a Manifest Is Owed (FR17)
+
+/// The title and the author of the audiobooks of tracks that a write could
+/// not put into the manifest yet (the manifest was only in the cloud, or the
+/// user was midway through an edit of it), kept on this Mac across a quit:
+/// per book, the fields whose row value the manifest is owed.
+///
+/// While a field is owed, the manifest's value for it is neither compared nor
+/// adopted: the row's value stands, so a look never takes a stale manifest
+/// title over the user's retitle. The owed fields are written at every look
+/// before it compares, and are no longer owed once the manifest holds the
+/// row's values (`BookManifestEditSessions.settleOwedFields(of:adding:isDataless:)`).
+///
+/// The record holds nothing but book IDs and field names, never a title. It
+/// is only changed on the manifest sessions' queue, so no two changes
+/// overlap. One record serves every library, since book IDs are unique.
+///
+/// `@unchecked Sendable`: its one stored property is a constant, and
+/// `UserDefaults` is documented thread-safe.
+struct ManifestOwedFields: @unchecked Sendable {
+    /// The preference the record is kept under: book ID string to the owed
+    /// fields' raw values.
+    static let key = "manifestOwedFields"
+
+    /// The fields that can be owed: the two a manifest keeps.
+    static let owable: Set<Book.MetadataField> = [.title, .author]
+
+    /// Where the record is kept.
+    let preferences: UserDefaults
+
+    init(preferences: UserDefaults = TextMouthRuntime.current.preferences) {
+        self.preferences = preferences
+    }
+
+    /// The whole record; empty when nothing is stored or the stored value is
+    /// not the dictionary of string lists it should be.
+    private var stored: [String: [String]] {
+        preferences.dictionary(forKey: Self.key) as? [String: [String]] ?? [:]
+    }
+
+    /// The fields the manifest of the book `bookID` is owed. Only the title
+    /// and the author are ever read back; any other stored name is ignored.
+    func owed(by bookID: UUID) -> Set<Book.MetadataField> {
+        let names = stored[bookID.uuidString] ?? []
+        return Set(names.compactMap(Book.MetadataField.init(rawValue:))).intersection(Self.owable)
+    }
+
+    /// Records `fields` as the ones the manifest of the book `bookID` is
+    /// owed, replacing what was recorded for it. An empty set removes the
+    /// book's entry, and the whole record is removed when no book is left.
+    /// Fields other than the title and the author are not stored.
+    func setOwed(_ fields: Set<Book.MetadataField>, by bookID: UUID) {
+        var record = stored
+        let names = Book.MetadataField.ordered(fields.intersection(Self.owable)).map(\.rawValue)
+        record[bookID.uuidString] = names.isEmpty ? nil : names
+        if record.isEmpty {
+            preferences.removeObject(forKey: Self.key)
+        } else {
+            preferences.set(record, forKey: Self.key)
+        }
+    }
+}
+
 // MARK: - Taking an Edit (FR17)
 
 /// An edit of a book's manifest taken as the book's arrangement: already
@@ -404,7 +513,8 @@ struct BookManifestEdit: Sendable {
     /// nil when it moved none.
     var movedPlaces: MovedPlaces? = nil
     /// The title the edited manifest gives, when it gives one that is not
-    /// blank; nil leaves the book's.
+    /// blank; nil leaves the book's. Always nil while the manifest is owed
+    /// the row's title (`ManifestOwedFields`): the row's stands.
     let title: String?
     /// The author the edited manifest gives, likewise.
     let author: String?
@@ -458,10 +568,15 @@ final class BookManifestEditSessions: Sendable {
     /// The boundary checks and writes run inside, as storage work.
     let boundary: StorageBoundary
 
+    /// The title and author the manifests are owed (`ManifestOwedFields`),
+    /// only changed on `queue`.
+    let owed: ManifestOwedFields
+
     /// Sessions checked as storage work of `boundary`: the app's, unless a
-    /// test passes its own.
-    init(boundary: StorageBoundary = .shared) {
+    /// test passes its own, and keeping what manifests are owed in `owed`.
+    init(boundary: StorageBoundary = .shared, owed: ManifestOwedFields = ManifestOwedFields()) {
         self.boundary = boundary
+        self.owed = owed
     }
 
     /// Starts, or starts again, the session of the book `bookID`.
@@ -519,7 +634,7 @@ final class BookManifestEditSessions: Sendable {
             // The baseline is read again: a check that waited for a hold
             // follows the one before it.
             let baseline = sessions.withLock { $0[bookID]?.baseline } ?? session.baseline
-            let checked = Self.check(boundary.rebasedToCurrent(book), against: baseline)
+            let checked = Self.check(boundary.rebasedToCurrent(book), against: baseline, owed: owed.owed(by: bookID))
             if let next = checked.baseline {
                 sessions.withLock { all in
                     guard all[bookID] != nil else { return }
@@ -551,6 +666,13 @@ final class BookManifestEditSessions: Sendable {
     ///   (`BookContentAnalysisService.analyzeAudio`), which every track
     ///   must pass, as an import's does, and commits the new index to the
     ///   book's record (`LibraryPersistenceService.saveContentAnalysis`).
+    /// - That parse reads every track, so it waits while any track is only
+    ///   in the cloud (`hasTrackOnlyInCloud(_:in:isDataless:)`): the answer
+    ///   is `.inCloud`, nothing is taken or downloaded, and the baseline
+    ///   stays, so the next check tries again once the tracks are back.
+    ///
+    /// A field the manifest is owed (`owed`) is not adopted: the edit taken
+    /// gives no title, or no author, for it.
     ///
     /// One debug-log line says what was taken or refused, naming the book's
     /// title, never a path. Runs off the main thread, as storage work.
@@ -559,6 +681,7 @@ final class BookManifestEditSessions: Sendable {
     static func check(
         _ book: Book,
         against baseline: FileFingerprint,
+        owed: Set<Book.MetadataField> = [],
         hasher: FingerprintHasher = .md5,
         isDataless: (URL) -> Bool = DatalessFiles.isDataless
     ) -> (found: BookManifestEditCheck, baseline: FileFingerprint?) {
@@ -584,11 +707,32 @@ final class BookManifestEditSessions: Sendable {
             // Rewritten with the same bytes: nothing was edited.
             return (.unchanged, fingerprint)
         }
-        let found = take(book, manifestAt: location, digest: digest)
+        // A take reads every track, so it waits until all are on this Mac
+        // (FR02): the tracks are listed with downloading off, as a look
+        // lists them. Nothing is taken and the baseline stays, so the next
+        // check tries again once the tracks are back. A listing that fails
+        // for another reason is left to the take, which refuses it in the
+        // import's words.
+        do {
+            let tracks = try DatalessFiles.withoutDownloading { try AudioBookParser.trackPaths(in: folder) }
+            if hasTrackOnlyInCloud(tracks, in: folder, isDataless: isDataless) { return (.inCloud, nil) }
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            return (.inCloud, nil)
+        } catch {
+            // Not a cloud matter: the take below says what is wrong.
+        }
+        let found = take(book, manifestAt: location, digest: digest, owed: owed)
         // Only a taken edit is the baseline from now on: a refused one
         // keeps the old, so the user's next save is checked again.
         guard case .adopted = found else { return (found, nil) }
         return (found, fingerprint)
+    }
+
+    /// Whether any of `tracks`, paths from `folder` (`AudioBookParser.trackPaths(in:)`),
+    /// is only in the cloud: a take reads every track, so it must wait until
+    /// all are on this Mac. Reads nothing of the tracks.
+    private static func hasTrackOnlyInCloud(_ tracks: [String], in folder: URL, isDataless: (URL) -> Bool) -> Bool {
+        tracks.contains { isDataless(folder.appendingPathComponent($0)) }
     }
 
     // MARK: Edits Made Outside a Session (FR18)
@@ -617,10 +761,14 @@ final class BookManifestEditSessions: Sendable {
     ///   - pauses: The pauses an open reader keeps between the book's
     ///     tracks, compared with the manifest's too; nil for a book no
     ///     reader shows yet, whose load reads its pauses afresh.
+    ///   - owed: The fields the manifest is owed (`ManifestOwedFields`): the
+    ///     row's value stands for each, so the manifest's is neither compared
+    ///     nor adopted.
     ///   - isDataless: Tells a file only in the cloud; tests stand in for it.
     static func look(
         at book: Book,
         showingPauses pauses: ChapterPauses? = nil,
+        owed: Set<Book.MetadataField> = [],
         hasher: FingerprintHasher = .md5,
         isDataless: (URL) -> Bool = DatalessFiles.isDataless
     ) -> BookManifestEditCheck {
@@ -644,12 +792,12 @@ final class BookManifestEditSessions: Sendable {
             return .missing
         }
         guard let shown = read.record.contentIndex, shown.audioLayout == .multiFile else { return .missing }
-        if manifest(read.bytes, at: location, arranges: book, as: shown, tracks: read.tracks, showingPauses: pauses) {
+        if manifest(read.bytes, at: location, arranges: book, as: shown, tracks: read.tracks, showingPauses: pauses, owed: owed) {
             return .unchanged
         }
         // The take reads every track, so it waits until all are on this Mac.
-        guard !read.tracks.contains(where: { isDataless(folder.appendingPathComponent($0)) }) else { return .inCloud }
-        return take(book, manifestAt: location, digest: hasher.digestOfData(read.bytes))
+        guard !hasTrackOnlyInCloud(read.tracks, in: folder, isDataless: isDataless) else { return .inCloud }
+        return take(book, manifestAt: location, digest: hasher.digestOfData(read.bytes), owed: owed)
     }
 
     /// Whether the manifest `bytes`, at `location` in the audio folder whose
@@ -658,7 +806,9 @@ final class BookManifestEditSessions: Sendable {
     /// the tracks in the same order, with the same titles, and the same group
     /// headings at the same levels, the manifest read as every load of the
     /// book reads it (`AudioTrackPlan`, `AudioBookParser.headings(of:chapterIndex:)`);
-    /// the title and the author the manifest gives, if any, the book's; and,
+    /// the title and the author the manifest gives, if any, the book's, each
+    /// left out that is in `owed` (the fields the manifest is owed, whose
+    /// row value stands); and,
     /// given `pauses`, the pauses an open reader keeps, the ones the manifest
     /// puts between the tracks (`ChapterPauses.betweenTracks(of:inAudioFolder:)`).
     ///
@@ -672,7 +822,8 @@ final class BookManifestEditSessions: Sendable {
         arranges book: Book,
         as shown: BookContentIndex,
         tracks paths: [String],
-        showingPauses pauses: ChapterPauses?
+        showingPauses pauses: ChapterPauses?,
+        owed: Set<Book.MetadataField> = []
     ) -> Bool {
         guard let manifest = try? AudioManifest.decoded(from: bytes), (manifest.segments ?? []).isEmpty else { return false }
         let plan = AudioTrackPlan(arranging: paths.map(location.name(ofTrackAt:)), by: manifest)
@@ -684,10 +835,10 @@ final class BookManifestEditSessions: Sendable {
               headings.map(\.level) == shownHeadings.map(\.level),
               headings.map(\.chapterIndex) == shownHeadings.map(\.chapterIndex)
         else { return false }
-        if let title = manifest.title?.nonBlank, title != book.title {
+        if !owed.contains(.title), let title = manifest.title?.nonBlank, title != book.title {
             return false
         }
-        if let author = manifest.author?.nonBlank, author != book.author {
+        if !owed.contains(.author), let author = manifest.author?.nonBlank, author != book.author {
             return false
         }
         if let pauses, pauses != ChapterPauses.betweenTracks(of: shown, inAudioFolder: book.bookFileURL) {
@@ -738,8 +889,58 @@ final class BookManifestEditSessions: Sendable {
         if keepsHandEditsFirst.withLock({ $0 }) {
             _ = BookManifestFile.keepHandEditedTitleAndAuthor(of: book, sessions: self, isDataless: isDataless)
         }
+        // What the manifest is owed is written before the look compares, so
+        // the look finds the manifest holding the row's title and author.
+        settleOwedFields(of: book, isDataless: isDataless)
         return boundary.perform(.contentAnalysis) { _ in
-            Self.look(at: boundary.rebasedToCurrent(book), showingPauses: pauses, isDataless: isDataless)
+            // Read after the settle, so a field just written is not owed.
+            Self.look(at: boundary.rebasedToCurrent(book), showingPauses: pauses, owed: owed.owed(by: book.id), isDataless: isDataless)
+        }
+    }
+
+    // MARK: Fields Owed to a Manifest (FR17)
+
+    /// Writes into `book`'s manifest the row's current title and author,
+    /// whichever the manifest is owed (`owed`) or is owed by this edit
+    /// (`fields`), and records what it is still owed: nothing once the
+    /// manifest holds the row's values (`BookManifestFile.holds(_:of:isDataless:)`),
+    /// which is also so for a book whose audio is no folder of tracks. A
+    /// write that fails is logged as `MANIFEST_NOT_WRITTEN`, a refusal to
+    /// download aside, and leaves the fields owed. Storage work: call it
+    /// only on `queue`, the one place the record is changed.
+    ///
+    /// - Parameters:
+    ///   - book: The book, whose title and author are the row's now.
+    ///   - fields: Fields an edit just changed, owed from now on even if this
+    ///     write cannot put them in the manifest.
+    ///   - isDataless: Tells a file only in the cloud; tests stand in for it.
+    /// - Returns: Whether the manifest was written.
+    @discardableResult
+    func settleOwedFields(
+        of book: Book,
+        adding fields: Set<Book.MetadataField> = [],
+        isDataless: (URL) -> Bool = DatalessFiles.isDataless
+    ) -> Bool {
+        boundary.perform(.contentAnalysis) { _ in
+            let current = boundary.rebasedToCurrent(book)
+            let owedNow = owed.owed(by: book.id).union(fields).intersection(ManifestOwedFields.owable)
+            guard !owedNow.isEmpty else { return false }
+            var didWrite = false
+            do {
+                didWrite = try BookManifestFile.keepTitleAndAuthor(
+                    of: current,
+                    title: owedNow.contains(.title) ? current.title : nil,
+                    author: owedNow.contains(.author) ? current.author : nil,
+                    sessions: self,
+                    isDataless: isDataless
+                )
+            } catch {
+                if !DatalessFiles.isDownloadRefusal(error) {
+                    DiagnosticLog.event(.storage, "MANIFEST_NOT_WRITTEN: \(current.title): \(error.localizedDescription)")
+                }
+            }
+            owed.setOwed(BookManifestFile.holds(owedNow, of: current, isDataless: isDataless) ? [] : owedNow, by: book.id)
+            return didWrite
         }
     }
 
@@ -753,9 +954,15 @@ final class BookManifestEditSessions: Sendable {
     /// import does, rebuilds the book's headings through the reader's own
     /// parse, moves the book's places to their tracks, and commits all of it
     /// to the book's record, or refuses it, changing nothing, with the
-    /// problem in the import's words (see `check(_:against:hasher:isDataless:)`).
+    /// problem in the import's words (see `check(_:against:owed:hasher:isDataless:)`).
+    /// A title or author the manifest is owed (`owed`) is not adopted.
     /// Reads every track: runs off the main thread, as storage work.
-    private static func take(_ book: Book, manifestAt location: AudioManifestLocation, digest: String) -> BookManifestEditCheck {
+    private static func take(
+        _ book: Book,
+        manifestAt location: AudioManifestLocation,
+        digest: String,
+        owed: Set<Book.MetadataField>
+    ) -> BookManifestEditCheck {
         let folder = book.bookFileURL
 
         /// Refuses the edit for `problem`, with one line saying so.
@@ -819,8 +1026,9 @@ final class BookManifestEditSessions: Sendable {
             transcript: transcript.text,
             // Narrowed to the moves the record took.
             movedPlaces: moved?.taken(by: committed),
-            title: manifest.title?.nonBlank,
-            author: manifest.author?.nonBlank
+            // A field the manifest is owed keeps the row's value.
+            title: owed.contains(.title) ? nil : manifest.title?.nonBlank,
+            author: owed.contains(.author) ? nil : manifest.author?.nonBlank
         ))
     }
 

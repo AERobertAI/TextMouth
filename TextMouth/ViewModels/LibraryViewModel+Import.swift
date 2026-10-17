@@ -587,8 +587,10 @@ extension LibraryViewModel {
     /// original is never deleted or offered for deletion, whatever the
     /// preference. Such a book is not opened automatically either: the
     /// reader window would take focus from the warning in the library window.
-    /// A DAISY book copied from its folder of files never has its original
-    /// deleted or offered for deletion either (`ImportedBook.mayDeleteOriginal`).
+    /// The original of a book copied from a folder of files, a DAISY book or
+    /// a folder of tracks, is never deleted or offered for deletion either
+    /// (`ImportedBook.mayDeleteOriginal`): the folder holds files the import
+    /// did not copy.
     func completeSingleImportedBook(
         _ imported: ImportedBook,
         originalURL: URL,
