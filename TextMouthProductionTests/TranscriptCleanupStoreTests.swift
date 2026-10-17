@@ -32,6 +32,9 @@ final class TranscriptCleanupStoreTests: XCTestCase {
         XCTAssertEqual(saved.cleanedUp, TranscriptCleanupNote(
             cleanedAt: TranscriptFixtures.date, rulesVersion: 4, rulesDate: "2026-10-04", rules: "user", corrections: 2
         ))
+        // Two files are read below; stop here, not in a trap, if one is missing.
+        _ = try XCTUnwrap(saved.files[safe: 1], "the cleaned transcript has no second file")
+        _ = try XCTUnwrap(transcript.files[safe: 1], "the transcribed book has no second file")
         XCTAssertEqual(saved.files[0].sentences.map(\.text), ["Gannet wings fold over the break-water.", "Rope coils dry on the jetty."])
         XCTAssertEqual(saved.files[0].sentences.map(\.words.isEmpty), [true, true])
         XCTAssertEqual(saved.files[1], transcript.files[1], "a file the rules did not change changed")
@@ -57,6 +60,7 @@ final class TranscriptCleanupStoreTests: XCTestCase {
         let world = try makeIntegrationWorld("Transcript Cleanup Refused")
         let (book, transcript) = try TranscriptCleanupFixtures.transcribedBook(in: world)
         let original = try Data(contentsOf: TextMouthPaths.transcriptPath(in: book.tmbDirectory))
+        _ = try XCTUnwrap(transcript.files[safe: 0]?.sentences[safe: 0], "the transcribed book has no first sentence")
         var shown = transcript
         shown.files[0].sentences[0].rewrite(as: "Gannet wings fold.")
         let nothing = TranscriptCleanupRuleSet(version: 1, date: "2026-10-04", rules: [rule("quillwort", "quill-wort")])
