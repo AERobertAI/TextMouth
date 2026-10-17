@@ -310,4 +310,111 @@ final class KeyboardReachabilityTests: XCTestCase {
             }
         }
     }
+
+    // MARK: - Every Menu Command Maps to an Action
+
+    /// Every `Button(` in MenuCommands.swift is a shortcut action's title or
+    /// raw value, or is on `standaloneMenuCommands`; no standalone entry is
+    /// stale or really an action; and the scan finds enough buttons to have
+    /// read the file.
+    func testEveryMenuCommandIsAnActionOrListed() throws {
+        let scan = try scanMenu()
+
+        XCTAssertEqual(scan.unreadable, [], "MenuCommands.swift lines with a Button( this scan cannot read; see menuButtons(in:) for the rules.")
+        XCTAssertGreaterThan(scan.buttons.count, 30, "a reformatted MenuCommands.swift would let this pass having checked nothing")
+        var seen: Set<String> = []
+        for button in scan.buttons {
+            switch Self.source(ofMenuButton: button.argument) {
+            case .action:
+                XCTAssertNil(Self.standaloneMenuCommands[button.argument], "\(button.argument) is an action's; remove it from standaloneMenuCommands.")
+            case .other:
+                seen.insert(button.argument)
+                XCTAssertNotNil(
+                    Self.standaloneMenuCommands[button.argument],
+                    "MenuCommands.swift line \(button.line): Button(\(button.argument)) is no shortcut action's title; "
+                        + "give it an action, or add it to standaloneMenuCommands with the reason it has none."
+                )
+            }
+        }
+        for (argument, reason) in Self.standaloneMenuCommands {
+            XCTAssertTrue(seen.contains(argument), "standaloneMenuCommands lists \(argument), which MenuCommands.swift no longer has; remove it.")
+            XCTAssertTrue(reason.count > 20 && reason.hasSuffix("."), "\(argument)'s reason is not a full sentence: \(reason)")
+        }
+    }
+
+    /// The scan reads each way a button names its action, and an ellipsis
+    /// written as three periods or one character.
+    func testTheMenuScanReadsEachFormOfButton() {
+        let text = """
+        struct Commands {
+            Button(ShortcutAction.openBook.title) {
+            Button("Play / Pause") {
+                // Button(commentedOut) {
+            Button("Move to Folder...") {
+            Button(ShortcutAction.addBookmark.rawValue) {
+            Button(FeedWording.importCommand) {
+            Button(
+            SomeButton(x) {
+        """
+        let (buttons, unreadable) = Self.menuButtons(in: text)
+
+        XCTAssertEqual(buttons.map(\.argument), [
+            "ShortcutAction.openBook.title", "\"Play / Pause\"", "\"Move to Folder...\"",
+            "ShortcutAction.addBookmark.rawValue", "FeedWording.importCommand",
+        ])
+        XCTAssertEqual(unreadable, [8, 9], "a button whose argument runs on, and a word ending in Button(")
+        XCTAssertEqual(buttons.map { Self.source(ofMenuButton: $0.argument) }, [
+            .action(.openBook), .action(.togglePlayback), .action(.moveToFolder), .action(.addBookmark), .other,
+        ])
+        XCTAssertEqual(Self.source(ofMenuButton: "\"Import Folder...\""), .action(.importDAISYFolder))
+        XCTAssertEqual(Self.source(ofMenuButton: "\"play / pause\""), .other, "a literal must match an action's name letter for letter")
+    }
+
+    /// A menu command that is a key equivalent has its menu item (the Record
+    /// window's buttons are buttons, not menu items), since the key acts
+    /// through the item.
+    func testEveryKeyEquivalentOutsideTheRecordWindowHasAMenuItem() throws {
+        let menuActions = try scanMenu().actionsWithAMenuItem
+        for action in ShortcutAction.keyEquivalentActions where action.category != ShortcutAction.recordingWindowCategory {
+            XCTAssertTrue(menuActions.contains(action), "\(action.rawValue) has a key equivalent but no menu item in MenuCommands.swift to act on it.")
+        }
+    }
+
+    // MARK: - Every Default Key Can Be Spoken
+
+    /// Whether `scalar` is one VoiceOver or a braille display cannot say: a
+    /// character of the private-use area, or a control character.
+    static func isUnspeakable(_ scalar: Unicode.Scalar) -> Bool {
+        (0xE000...0xF8FF).contains(scalar.value) || scalar.value < 0x20 || (0x7F...0x9F).contains(scalar.value)
+    }
+
+    /// Every default key reads as words, not as a raw private-use or control
+    /// character, and no two keys of one action read alike. (No older test
+    /// goes through every default: `ShortcutsSettingsTabTests` checks a table
+    /// of key names and a few keys.)
+    func testEveryDefaultKeyIsSpeakable() {
+        for action in ShortcutAction.allCases {
+            var spoken: [String: KeyBinding] = [:]
+            for binding in ShortcutAction.defaultBindings[action] ?? [] {
+                let words = binding.accessibleDisplayString
+                XCTAssertFalse(words.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, "\(action.rawValue) has a default key that reads as nothing")
+                XCTAssertFalse(KeyBinding.isUnnamedPrivateUseCharacter(binding.key), "\(action.rawValue)'s default key is a character no name says")
+                XCTAssertNil(words.unicodeScalars.first(where: Self.isUnspeakable), "\(action.rawValue)'s default reads as \"\(words)\", which holds a raw character")
+                if spoken[words] != nil {
+                    XCTFail("\(action.rawValue) has two different default keys that both read \"\(words)\".")
+                }
+                spoken[words] = binding
+            }
+        }
+    }
+
+    /// The speakable check tells a spoken key from a raw character.
+    func testTheSpeakableCheckFindsARawCharacter() {
+        XCTAssertNil("Command + I".unicodeScalars.first(where: Self.isUnspeakable))
+        XCTAssertNotNil("\u{F8FF}".unicodeScalars.first(where: Self.isUnspeakable))
+        XCTAssertNotNil("Command + \u{1}".unicodeScalars.first(where: Self.isUnspeakable))
+        // A key no name says reads as its raw character, which the check catches.
+        XCTAssertNotNil(KeyBinding(key: "\u{F8FF}").accessibleDisplayString.unicodeScalars.first(where: Self.isUnspeakable))
+        XCTAssertTrue(KeyBinding.isUnnamedPrivateUseCharacter("\u{F8FF}"))
+    }
 }
