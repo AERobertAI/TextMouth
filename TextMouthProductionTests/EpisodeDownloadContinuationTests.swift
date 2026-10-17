@@ -404,6 +404,124 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         XCTAssertEqual(readers.heard.asked, [try XCTUnwrap(book(of: "guid:ep-1", in: readers.setup)).id])
     }
 
+    // MARK: - The Wait Goes First in the Queue
+
+    /// With a download under way and another queued behind it, ending the
+    /// episode puts the next episode first in the queue, and Play during the
+    /// wait leaves it there.
+    func testTheNextEpisodeGoesFirstInTheQueue() async throws {
+        let setup = try await makeFeed(
+            options: ListeningOptions(continuation: .playBookBelow), global: .stop, withAnOlderEpisode: true
+        )
+        _ = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+        // The top episode downloads, the oldest waits behind it. Nothing
+        // suspends before the checks below, so neither can finish first.
+        setup.world.center.download("guid:ep-3", of: setup.feedID)
+        setup.world.center.download("guid:ep-0", of: setup.feedID)
+        XCTAssertEqual(setup.world.center.downloads.current?.itemID, "guid:ep-3")
+        XCTAssertEqual(setup.world.center.downloads.queue.map(\.itemID), ["guid:ep-0"])
+
+        reader.handleEndOfBook()
+        XCTAssertEqual(setup.world.center.downloads.queue.map(\.itemID), ["guid:ep-1", "guid:ep-0"])
+
+        // Play asks again: the episode keeps the first place.
+        reader.play()
+        XCTAssertEqual(setup.world.center.downloads.queue.map(\.itemID), ["guid:ep-1", "guid:ep-0"])
+    }
+
+    // MARK: - A Cancelled Download
+
+    /// Cancel Download on the episode the end waits for says so once, and
+    /// nothing is handed over.
+    func testACancelledDownloadSaysSoOnce() async throws {
+        let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.handleEndOfBook()
+        setup.world.center.cancelDownload("guid:ep-1", of: setup.feedID)
+        try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 2))
+
+        XCTAssertEqual(heard.announced, [
+            "Finished: Middle part. Downloading the next episode: Bottom part.",
+            "Download cancelled, so playback stopped.",
+        ])
+        XCTAssertEqual(heard.asked, [])
+        XCTAssertNil(reader.nextEpisodeWait, "The wait outlived the cancel")
+    }
+
+    /// The downloads section's Cancel does the same.
+    func testCancellingEveryDownloadSaysSo() async throws {
+        let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.handleEndOfBook()
+        _ = setup.world.center.cancelEveryDownload()
+        try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 2))
+
+        XCTAssertEqual(heard.announced.last, "Download cancelled, so playback stopped.")
+        XCTAssertEqual(heard.announced.count, 2)
+        XCTAssertEqual(heard.asked, [])
+        XCTAssertNil(reader.nextEpisodeWait, "The wait outlived the cancel")
+    }
+
+    /// A cancel after the listener played the book again says nothing.
+    func testACancelAfterTheListenerPlayedAgainSaysNothing() async throws {
+        let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.handleEndOfBook()
+        reader.hasFinishedBook = false
+        setup.world.center.cancelDownload("guid:ep-1", of: setup.feedID)
+        // The cancel is heard once the download task has wound up.
+        await waitFor("the wait hears the cancel") { reader.nextEpisodeWait == nil }
+
+        XCTAssertEqual(heard.announced, ["Finished: Middle part. Downloading the next episode: Bottom part."])
+    }
+
+    /// A cancel after the reader closed says nothing.
+    func testACancelAfterTheReaderClosedSaysNothing() async throws {
+        let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.handleEndOfBook()
+        reader.close()
+        setup.world.center.cancelDownload("guid:ep-1", of: setup.feedID)
+
+        XCTAssertEqual(heard.announced, ["Finished: Middle part. Downloading the next episode: Bottom part."])
+    }
+
+    /// Another item's download is cancelled while the wait's item waits
+    /// behind it: the wait is not confused with it, and the episode starts
+    /// once it arrives.
+    func testAnotherItemsCancelDoesNotEndTheWait() async throws {
+        let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+        setup.world.center.download("guid:ep-3", of: setup.feedID)
+
+        reader.handleEndOfBook()
+        setup.world.center.cancelDownload("guid:ep-3", of: setup.feedID)
+        XCTAssertNotNil(reader.nextEpisodeWait, "Another item's cancel ended the wait")
+        await waitFor("the next episode asks to start") { !heard.asked.isEmpty }
+
+        XCTAssertEqual(heard.announced, [
+            "Finished: Middle part. Downloading the next episode: Bottom part.",
+            "Starting: Bottom part",
+        ])
+        XCTAssertEqual(heard.asked, [try XCTUnwrap(book(of: "guid:ep-1", in: setup)).id])
+    }
+
     // MARK: - An Episode Already Here, Played, or Finished
 
     /// The next episode is downloaded already: no download, and listening is
@@ -533,6 +651,7 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
             "The next article could not be downloaded, so playback stopped. The server says the file is gone."
         )
         XCTAssertEqual(EndOfBookWording.downloadNotStartedReason, "TextMouth is not downloading right now.")
+        XCTAssertEqual(EndOfBookWording.nextEpisodeDownloadCancelled, "Download cancelled, so playback stopped.")
         XCTAssertEqual(
             EndOfBookWording.finished("Part One", notes: [EndOfBookWording.downloadingNextNote(episode)]),
             "Finished: Part One. Downloading the next episode: Part Two."
@@ -580,6 +699,8 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
     ///   - bottomAnswer: What the server answers a request for the bottom
     ///     item's file; the file itself by default.
     ///   - middleIsFinished: Whether the middle item rests at its end.
+    ///   - withAnOlderEpisode: Whether the feed lists a fourth item, Last part
+    ///     (ep-0), older than the bottom one and served like the top one.
     private func makeFeed(
         options: ListeningOptions?,
         global: EndOfBookBehavior,
@@ -587,12 +708,13 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         bottomIsDownloaded: Bool = false,
         bottomIsPlayed: Bool = false,
         bottomAnswer: StubResponse? = nil,
-        middleIsFinished: Bool = false
+        middleIsFinished: Bool = false,
+        withAnOlderEpisode: Bool = false
     ) async throws -> Setup {
         let statistics = preserveSharedStatistics()
         let world = try FeedTestWorld(self, label: "EpisodeDownload", statistics: statistics)
-        let guids = ["ep-3", "ep-2", "ep-1"]
-        let titles = ["ep-3": "Top part", "ep-2": "Middle part", "ep-1": "Bottom part"]
+        let guids = ["ep-3", "ep-2", "ep-1"] + (withAnOlderEpisode ? ["ep-0"] : [])
+        let titles = ["ep-3": "Top part", "ep-2": "Middle part", "ep-1": "Bottom part", "ep-0": "Last part"]
         let items = guids.enumerated().map { offset, guid in
             FeedXML.Item(
                 guid: guid,
@@ -605,6 +727,7 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         world.server.serve("/atlas.xml", .feed(FeedXML.rss(items: items)))
         let silence = FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(duration: 1), mimeType: "audio/mp4")
         world.server.serve("/audio/ep-3.m4a", silence)
+        world.server.serve("/audio/ep-0.m4a", silence)
         world.server.serve("/audio/ep-1.m4a", bottomAnswer ?? silence)
         let feed = try await world.subscribe("/atlas.xml")
 

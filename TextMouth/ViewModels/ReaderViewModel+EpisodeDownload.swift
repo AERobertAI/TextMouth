@@ -36,7 +36,9 @@ extension ReaderViewModel {
         nextEpisodeWait = feeds.events.sink { [weak self] event in
             self?.nextEpisodeEventArrived(event, during: wait)
         }
-        feeds.download(item.id, of: feedID)
+        // The listener waits for this episode, so it goes ahead of the
+        // downloads queued before it (it opens nothing: the wait hands over).
+        feeds.download(item.id, of: feedID, startingNext: true)
 
         // Right after the request, the item is downloading, waiting, or
         // (already) downloaded. Anything else means the engine refused it,
@@ -85,9 +87,9 @@ extension ReaderViewModel {
     }
 
     /// Acts on one event of the feed engine while this reader waits for
-    /// `wait`'s episode: its arrival hands listening over, its failure is
-    /// said. Events about other items or feeds, and other kinds of events,
-    /// are none of this wait's business.
+    /// `wait`'s episode: its arrival hands listening over, its failure or
+    /// its cancelling is said. Events about other items or feeds, and
+    /// other kinds of events, are none of this wait's business.
     private func nextEpisodeEventArrived(_ event: FeedEvent, during wait: NextEpisodeWait) {
         switch event {
         case .downloadFinished(let eventFeedID, let itemID, let bookID)
@@ -102,6 +104,17 @@ extension ReaderViewModel {
                 return
             }
             announceToVoiceOver(EndOfBookWording.nextEpisodeNotDownloaded(reason: reason, isArticle: wait.item.isArticle))
+
+        case .downloadCancelled(let eventFeedID, let itemID)
+            where eventFeedID == wait.feedID && itemID == wait.item.id:
+            // The listener cancelled it (Cancel Download, the downloads
+            // section's Cancel, or Delete Feed): nothing will arrive.
+            nextEpisodeWait = nil
+            guard !listenerHasMovedOn(wait) else {
+                DiagnosticLog.trace(.playback, "end of book: the next episode's download was cancelled, but the listener had moved on")
+                return
+            }
+            announceToVoiceOver(EndOfBookWording.nextEpisodeDownloadCancelled)
 
         default:
             break

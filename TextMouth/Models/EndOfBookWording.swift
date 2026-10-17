@@ -111,6 +111,11 @@ enum EndOfBookWording {
         "The next \(kind(isArticle: isArticle)) could not be downloaded, so playback stopped. \(reason)"
     }
 
+    /// What VoiceOver hears when the listener cancelled the download of the
+    /// next episode (or article) the end was waiting for: the user's own
+    /// words (question 19, October 16). One sentence for both kinds.
+    static let nextEpisodeDownloadCancelled = "Download cancelled, so playback stopped."
+
     /// Why a download the reader asked for did not start: the engine
     /// refused it, as it does while TextMouth quits or the feed is deleted.
     static let downloadNotStartedReason = "TextMouth is not downloading right now."
