@@ -219,6 +219,9 @@ struct LibraryView: View {
     /// notices after its commands (FR03). Kept, not observed: its sheets'
     /// host observes it, so a sheet opening never redraws the list.
     @State private var feedPresenter = LibraryFeedsPresenter()
+    /// The Folder Settings sheet shown for a plain folder, from the toolbar's
+    /// Folder Settings button or the Folder or Feed Settings command (FR19).
+    @State private var folderSettings: FolderSettingsModel?
     /// What speaks the selected row's information for Speak Info and Speak
     /// Full Info, I and I twice, and for Book Info on a folder, which has
     /// no sheet (October 7, 2026; FR12). Kept, not observed: it draws
@@ -548,6 +551,11 @@ struct LibraryView: View {
                     .accessibilityLabel("Create new folder")
                 }
 
+                // Feed Settings or Folder Settings for the folder shown (FR19).
+                if let target = folderSettingsTarget {
+                    folderSettingsButton(target)
+                }
+
                 // Sort controls (TODO A06), or the Reading List's one order
                 // (FR09).
                 sortMenu(hasSubfolders: !folders.isEmpty)
@@ -658,6 +666,13 @@ struct LibraryView: View {
             takesCommand: takesCommand,
             // Move to Library…'s key acts on the selection (FR11, branch D).
             selectedBooks: { selectedBooks }
+        ))
+        // Library > Folder or Feed Settings, and the Folder Settings sheet
+        // (FR19).
+        .modifier(LibraryFolderSettingsSupport(
+            folderSettings: $folderSettings,
+            takesCommand: takesCommand,
+            openShownSettings: { openFolderSettings(folderSettingsTarget) }
         ))
         // Library index recovery: presented at launch when library.json
         // cannot be read, and again from the recovery banner.
@@ -1658,6 +1673,48 @@ struct LibraryView: View {
         performFeedAction(FeedAction(command: .feedInfo, feedID: feedID, title: FeedWording.feedInfoTitle))
     }
 
+    /// What the settings button and command open: the settings of the
+    /// folder this window shows, nil where it shows none (FR19).
+    private var folderSettingsTarget: LibraryFolderSettingsTarget? {
+        LibraryFolderSettingsTarget.of(
+            category: category,
+            folderPath: currentFolderPath,
+            folders: libraryViewModel.library.folders,
+            feedID: { feedFolders.feedID(inFolder: $0) },
+            feedTitle: { feedFolders.center.store.records[$0]?.feed.title }
+        )
+    }
+
+    /// The toolbar's Feed Settings or Folder Settings button for `target`.
+    private func folderSettingsButton(_ target: LibraryFolderSettingsTarget) -> some View {
+        Button {
+            openFolderSettings(target)
+        } label: {
+            Label(target.buttonTitle, systemImage: target.systemImage)
+        }
+        .accessibilityLabel(target.accessibilityLabel)
+        .accessibilityHint(target.accessibilityHint)
+    }
+
+    /// Opens the settings of `target`: Feed Info for a feed's folder, by the
+    /// path Command-I takes, the Folder Settings sheet for a plain folder;
+    /// with no target, says there is nothing to open (FR19).
+    private func openFolderSettings(_ target: LibraryFolderSettingsTarget?) {
+        LibraryFolderSettingsTarget.open(
+            target,
+            showFeedInfo: showFeedInfo,
+            showFolderSettings: { folderID in
+                folderSettings = FolderSettingsModel(
+                    folderID: folderID,
+                    library: libraryViewModel,
+                    feedFolders: feedFolders,
+                    wordsPerMinute: settingsViewModel.wordsPerMinute
+                )
+            },
+            announce: announceToVoiceOver
+        )
+    }
+
     /// Where this list is: its category and, in Folders, its folder.
     private var location: LibraryLocation {
         LibraryLocation(category: category, folderPath: currentFolderPath)
@@ -1981,6 +2038,34 @@ private struct LibraryOrderCommandsSupport: ViewModifier {
             .onReceive(NotificationCenter.default.publisher(for: .removeFromReadingList)) { notification in
                 guard takesCommand(notification) else { return }
                 changeReadingList(.remove)
+            }
+    }
+}
+
+// MARK: - Folder Settings Support (FR19)
+
+/// A Library window's part in the settings of the folder it shows (FR19): it
+/// presents the Folder Settings sheet whenever `folderSettings` holds a
+/// model, and hears the Library menu's Folder or Feed Settings, and its key
+/// once the user gives it one. Only the window that takes the command acts
+/// on it. It is not private so a test can host it.
+struct LibraryFolderSettingsSupport: ViewModifier {
+    /// The model of the sheet shown; nil while none is.
+    @Binding var folderSettings: FolderSettingsModel?
+    /// Whether this window takes the command a notification carries.
+    let takesCommand: (Notification) -> Bool
+    /// Opens the settings of the folder the window shows, or says there is
+    /// none.
+    let openShownSettings: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onReceive(NotificationCenter.default.publisher(for: .showFolderOrFeedSettings)) { notification in
+                guard takesCommand(notification) else { return }
+                openShownSettings()
+            }
+            .sheet(item: $folderSettings) { model in
+                FolderSettingsSheet(model: model, onDone: { folderSettings = nil })
             }
     }
 }

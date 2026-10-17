@@ -70,6 +70,23 @@ enum LibraryFolderSettingsTarget: Equatable {
         return .feed(feedID: feed, title: feedTitle(feed) ?? folder.name)
     }
 
+    /// Opens the settings `target` names, by the one path the toolbar's
+    /// button and the Folder or Feed Settings command share: a feed's goes
+    /// through `showFeedInfo`, a plain folder's through `showFolderSettings`,
+    /// and with no target (no folder is shown) `announce` says so.
+    static func open(
+        _ target: LibraryFolderSettingsTarget?,
+        showFeedInfo: (UUID) -> Void,
+        showFolderSettings: (UUID) -> Void,
+        announce: (String) -> Void
+    ) {
+        switch target {
+        case .feed(let feedID, _): showFeedInfo(feedID)
+        case .folder(let folderID, _): showFolderSettings(folderID)
+        case nil: announce(LibraryFolderSettingsWording.nothingToOpen)
+        }
+    }
+
     /// The button's title.
     var buttonTitle: String {
         switch self {
