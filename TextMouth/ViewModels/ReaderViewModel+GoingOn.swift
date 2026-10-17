@@ -48,6 +48,11 @@ extension ReaderViewModel {
         sleepTimerStoppedHere: Bool,
         sayingNothingFollows say: (String) -> Void
     ) {
+        // This decision supersedes any earlier one. A wait for a next
+        // episode that an earlier end began (and the listener has since
+        // answered in another way, with a sleep timer or new feed options)
+        // must not outlive it and start a book this decision did not.
+        nextEpisodeWait = nil
         switch succession {
         case .nothing(let note):
             DiagnosticLog.trace(.playback, "end of book: nothing follows in \(place) (\(note))")
@@ -82,8 +87,9 @@ extension ReaderViewModel {
 
     /// Says that the next book was not started because this reader's sleep
     /// timer is in effect: the next book would play on past it, and the
-    /// timer can pause only the reader that set it.
-    private func saySleepTimerKeepsNextBookFromStarting(in place: String, saying say: (String) -> Void) {
+    /// timer can pause only the reader that set it. Also what the wait for a
+    /// next episode says when the timer was started after the wait began.
+    func saySleepTimerKeepsNextBookFromStarting(in place: String, saying say: (String) -> Void) {
         DiagnosticLog.trace(.playback, "end of book: this reader's sleep timer is in effect; not starting the next book in \(place)")
         say(EndOfBookWording.finished(book.title, notes: [EndOfBookWording.nextBookNotStartedNote]))
     }

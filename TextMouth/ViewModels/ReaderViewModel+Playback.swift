@@ -114,6 +114,11 @@ extension ReaderViewModel {
     /// timer in effect starts no next book, since it could never pause it.
     private func playFromTheEnd() {
         DiagnosticLog.trace(.playback, "play: the book rests at its end; Play does what its end does")
+        // Play is a new end decision: a wait for a next episode that an
+        // earlier one began ends here, whichever branch follows (the Stop,
+        // Starts Over, and Loop branches do not pass through
+        // `goOnPastThisBook`, which ends it for the others).
+        nextEpisodeWait = nil
         if isOpenedFromReadingList {
             followReadingListPastThisBook(
                 sleepTimerEndsListening: sleepTimerEndsListeningHere,

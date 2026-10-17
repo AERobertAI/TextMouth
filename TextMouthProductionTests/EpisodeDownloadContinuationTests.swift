@@ -196,6 +196,100 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         XCTAssertEqual(setup.world.center.store.record(of: setup.feedID)?.item("guid:ep-1")?.state, .notDownloaded)
     }
 
+    // MARK: - Later End Decisions End the Wait
+
+    /// The sleep timer is started during the wait, and the download then
+    /// finishes: the episode does not start. The end says again that the
+    /// next book was not started because of the sleep timer.
+    func testASleepTimerStartedDuringTheWaitKeepsTheEpisodeFromStarting() async throws {
+        let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.handleEndOfBook()
+        startSharedSleepTimer(.minutes(30), ownedBy: reader.readerID)
+        await waitFor("the download arrives") { book(of: "guid:ep-1", in: setup) != nil }
+        try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 2))
+
+        XCTAssertEqual(heard.announced, [
+            "Finished: Middle part. Downloading the next episode: Bottom part.",
+            "Finished: Middle part. Next book not started because of the sleep timer.",
+        ])
+        XCTAssertEqual(heard.asked, [])
+        XCTAssertNil(reader.nextEpisodeWait, "The wait outlived the download")
+    }
+
+    /// Play during the wait, with the sleep timer started meanwhile, says
+    /// that the next book was not started, and ends the wait: the download's
+    /// arrival hands nothing over and says nothing more.
+    func testPlayWithASleepTimerEndsTheWait() async throws {
+        let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.handleEndOfBook()
+        startSharedSleepTimer(.minutes(30), ownedBy: reader.readerID)
+        reader.play()
+        XCTAssertEqual(heard.announced.last, "Finished: Middle part. Next book not started because of the sleep timer.")
+        XCTAssertNil(reader.nextEpisodeWait, "Play left the wait")
+        let saidSoFar = heard.announced
+
+        await waitFor("the download arrives") { book(of: "guid:ep-1", in: setup) != nil }
+        try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 2))
+
+        XCTAssertEqual(heard.announced, saidSoFar, "The arrival said something after the wait ended")
+        XCTAssertEqual(heard.asked, [])
+    }
+
+    /// The feed's options are set to Stop during the wait, and Play is
+    /// pressed: the end stops, and the download's arrival hands nothing over.
+    func testPlayAfterTheOptionsChangedToStopEndsTheWait() async throws {
+        let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.handleEndOfBook()
+        setup.world.center.setListeningOptions(ListeningOptions(continuation: .stop), of: setup.feedID)
+        reader.play()
+        XCTAssertEqual(heard.announced.last, "Finished: Middle part")
+        XCTAssertNil(reader.nextEpisodeWait, "Play left the wait")
+
+        await waitFor("the download arrives") { book(of: "guid:ep-1", in: setup) != nil }
+        try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 2))
+
+        XCTAssertEqual(heard.announced, [
+            "Finished: Middle part. Downloading the next episode: Bottom part.",
+            "Finished: Middle part",
+        ])
+        XCTAssertEqual(heard.asked, [])
+    }
+
+    /// A second end decision that finds nothing to follow ends the wait too.
+    func testASecondEndDecisionWithNothingToFollowEndsTheWait() async throws {
+        let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.handleEndOfBook()
+        XCTAssertNotNil(reader.nextEpisodeWait, "The wait did not begin")
+        // The bottom episode is played meanwhile, so nothing below remains
+        // that the feed does not skip.
+        setup.world.center.store.updateItem("guid:ep-1", of: setup.feedID) { $0.playedDate = Self.date(5) }
+        reader.play()
+        XCTAssertEqual(heard.announced.last, "Finished: Middle part. Every book after it in the folder is finished.")
+        XCTAssertNil(reader.nextEpisodeWait, "The second decision left the wait")
+
+        await waitFor("the download arrives") { book(of: "guid:ep-1", in: setup) != nil }
+        try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 2))
+
+        XCTAssertEqual(heard.asked, [])
+        XCTAssertEqual(heard.announced.count, 2, "The arrival said something after the wait ended")
+    }
+
     // MARK: - An Episode Already Here, Played, or Finished
 
     /// The next episode is downloaded already: no download, and listening is

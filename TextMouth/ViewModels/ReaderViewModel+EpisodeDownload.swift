@@ -87,7 +87,8 @@ extension ReaderViewModel {
     /// listening over to the episode `item`, now the book `bookID`, exactly
     /// as it hands over to any next book ("Starting: <title>"). A listener
     /// who has moved on (played the book again, or closed the window) is
-    /// left alone.
+    /// left alone, and a sleep timer of this reader's, started meanwhile,
+    /// keeps the episode from starting, as it would at the end.
     private func goOnWithNextEpisode(
         _ item: FeedItem,
         as bookID: UUID,
@@ -96,6 +97,13 @@ extension ReaderViewModel {
         nextEpisodeWait = nil
         guard restsFinishedAwaitingTheNextEpisode else {
             DiagnosticLog.trace(.playback, "end of book: the next episode arrived, but the listener had moved on")
+            return
+        }
+        // The listener started a sleep timer after the wait began: the next
+        // episode would play on past it, and the timer can pause only this
+        // reader. Say what the end says when the timer is already in effect.
+        guard !sleepTimerEndsListeningHere else {
+            saySleepTimerKeepsNextBookFromStarting(in: "its feed", saying: announceToVoiceOver(_:))
             return
         }
         handOverToNextBook(to: bookID, titled: item.title) {
