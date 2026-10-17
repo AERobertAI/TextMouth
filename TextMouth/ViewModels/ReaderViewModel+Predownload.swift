@@ -41,8 +41,10 @@ extension ReaderViewModel {
             skippingFinished: rule.skipsFinished
         )
         // Only an episode whose file is not here needs fetching, and not one
-        // already downloading or waiting: that request stands.
-        guard case .episodeToDownload(let feedID, let item) = succession, !item.state.isTransient else { return }
+        // already downloading: that request stands. One the newest-N rule put
+        // off (it waits for a network with data limits, or for room) is
+        // fetched all the same: this listener's ask takes its place.
+        guard case .episodeToDownload(let feedID, let item) = succession, !item.state.isDownloading else { return }
 
         DiagnosticLog.event(.feeds, "FEED_PREDOWNLOAD: \(item.title) before \(book.title) ends")
         libraryViewModel.feeds.download(item.id, of: feedID)
