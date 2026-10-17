@@ -71,26 +71,20 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - A changed copy of `bbs.py` must never run against the live board: one worker did on October 12, which created the new tables early (harmlessly). Point `TEXTMOUTH_BBS_DIR` at a scratch folder first.
 - A test host that joins the system's media session takes the user's AirPods; it never does now, but a branch older than that fix still can until it rebases.
 
-## Where things stood on October 13, 2026
+## Where things stood on October 17, 2026
 
-Main holds the record of the REV16 fixes, then, from the evening:
-- the Ogg and Nothing Imported fix (9528b7a5, suite 6124 tests, 64 skipped, 0 failures, no Swift warnings), done by the orchestrator directly: a ZIP of Ogg tracks imports as one audiobook, and a ZIP import that brings nothing in says so in the library's alert;
-- the documentation reorganized into docs/ (this file's older status sections are in `docs/agents/history.md`), with the audiobook manifest's full reference at `docs/user/audiobook-manifest.md`;
-- FR15, FR16, and FR17 in the TODO, with the user's answers from `humanQuestions/2026-10-13.md`.
-- the REV16 fixes' documentation pass (100db7a5).
+On the night of October 16, before the weekly reset, the user asked to "max it out" with Sonnet throughout ("using orcestrator with sub agents and sub sub agents (using Sonnet)"): five teams, each a Sonnet lead with Sonnet workers at effort high, on the pattern in `Scripts/agents/briefs/2026-10-16/teams-common.md`. The limit cut every agent off at 20:27; a background task re-invoked the orchestrator at the 08:00 reset, and a message to each lead's id resumed it with its context intact. All five were merged on October 17, each after a green suite on the merged tree, with two documentation passes:
+- `team/oggsafe` (ba99a1dc): REV17a's seven findings in the Ogg conversion, the afconvert watchdog, and the memory guard.
+- `team/fixes` (8069c758): seven of twelve TODO follow-ups, and #1857's subscripts guarded in 30 more test files.
+- `team/importsafe` (c33a6499): REV17b's five findings, among them Import Folder… trashing a source folder after import.
+- `team/feedopts` (b1c4d1cc): FR19 (listening options for feeds and folders, Feed Settings and Folder Settings) and FR20 (one Add to Library button).
+- `team/testkit` (ed095edc): the reusable test tools in `Scripts/test/` (docs/developer/testing.md), the end-behavior and windows matrices, keyboard reachability, and playback fuzz tests.
 
-- FR15, the manifest's tracks list, group headings, and pauses between tracks (e2ab40d9, October 14, suite 6192 tests, 64 skipped, 0 failures), by agent `manifesttracks`, with its documentation.
+Main's suite after the testkit merge: **6816 tests, 71 skipped, 0 failures**, about 17 minutes of test time (`EndBehaviorMatrixTests` takes 153 s of it). The questions the night raised are in `humanQuestions/2026-10-16.md` (19 of them, each built with its recommended answer); `2026-10-12.md` and `2026-10-10-evening.md` still wait. The user's push and install are pending. The system icon cache stood at 7,344 entries.
 
-- FR17, Edit Manifest, the title and author kept in the manifest, the audio editor's fix, and Import Folder… (5d9caee3, October 14, suite 6221 tests, 67 skipped, 0 failures), by agent `editmanifest`, with its documentation.
-
-- FR18, a manifest edited outside TextMouth taken as Edit Manifest takes a save, with a one-time pass keeping earlier hand edits (1744021a, October 14, suite 6230 tests, 67 skipped, 0 failures), by agent `outsideedits`, with its documentation.
-
-- B07, the playback watchdog, memory guard, and sound effects off the main thread (d7f4f527, suite 6259 tests, 67 skipped, 0 failures), by agent `playbackwatch`; and B06, Ogg audio converted to AAC at import and once for the library (70a74208, suite 6284 tests, 64 skipped, 0 failures), by agent `oggtoaac`, after Apple's Vorbis decoder locked up in AVPlayer on October 14 and took the Mac down (see the TODO's B06 and B07). Never play Ogg through Apple's players in any test or experiment.
-
-B08, rendered speech's crash when the audio output stops cycling, was fixed the same evening (32dc2036, suite 6293 tests, 67 skipped, 0 failures) by a Sonnet agent the orchestrator reviewed. No agent is in flight.
-
-**Pending:**
-- the user's answers in `humanQuestions/2026-10-12.md` (13 small choices);
-- the user's push and install. Main is far ahead of origin/main, and agents' worktrees start at origin/main.
-
-The weekly window stood at 20% left; the user's floor is about 10%.
+**Lessons of the night:**
+- Sonnet leads did as well as Opus ones at these brief sizes: all 58 workers were accepted (6 oggsafe, 21 fixes, 3 importsafe, 10 feedopts, 18 testkit), a handful after one round.
+- A brief that adds an `@unchecked Sendable` type, a `nonisolated(unsafe)` variable, or a log tag names `UncheckedConcurrencyPolicyTests` and `LogContentPolicyTests`; one that adds a shortcut action names the legacy scenarios in `TextMouthTests/Sources/Tests` and `KeyboardReachabilityTests`; one that adds a fixture placing books in a folder runs the next class that opens a library. Workers' targeted runs missed each of these, and only the lead's full suite found them.
+- Workers build with `python3 Scripts/test/run-area.py <areas or classes>`; Python tools write no bytecode (`sys.dont_write_bytecode`); a rebase conflict in `project.pbxproj` is settled by `xcodegen generate`; after each merge, `run-area.py --unassigned` lists the new classes to place in `Scripts/test/areas.conf`.
+- Two team branches that conflict are merged by the orchestrator in a scratch worktree (`git worktree add <scratch> main -b integrate/<team>`, merge, resolve, full suite there), and main is fast-forwarded to it once green, so the main checkout never holds a half-merged tree.
+- The build slots were the night's bottleneck: waits of 25 to 60 minutes with five teams building. Three teams that build, plus agents that do not, is the ceiling.
