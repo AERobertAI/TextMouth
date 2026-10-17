@@ -858,6 +858,12 @@ final class AudioEngineBehaviorTests: XCTestCase {
         let out = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: audio.format, frameCapacity: 4))
         audio.copyFrames(0..<4, into: out)
         let outChannels = try XCTUnwrap(out.floatChannelData)
+        // The reads below take the second channel's buffer, which a format of
+        // fewer channels does not have; stop here rather than read past it.
+        guard audio.format.channelCount >= 2 else {
+            XCTFail("the audio's format has no second channel")
+            return
+        }
         Self.assertSamples(Array(UnsafeBufferPointer(start: outChannels[0], count: 4)), match: [1, 2, 3, 0].map(Self.sample))
         Self.assertSamples(Array(UnsafeBufferPointer(start: outChannels[1], count: 4)), match: [-1, -2, -3, 0].map(Self.sample))
     }
@@ -936,6 +942,8 @@ final class AudioEngineBehaviorTests: XCTestCase {
         XCTAssertEqual(scheduled.map(\.frames), [4_410..<6_615, 6_615..<8_820])
         let first = try XCTUnwrap(scheduled.first)
         let fadeFrames = 220
+        // The slices below cut the first slice's samples at the fade's end.
+        _ = try XCTUnwrap(first.samples[safe: fadeFrames - 1], "the first slice is shorter than the fade")
         Self.assertSamples(
             Array(first.samples[..<fadeFrames]),
             match: (0..<fadeFrames).map { speech[4_410 + $0] * (Float($0) / Float(fadeFrames)) }
