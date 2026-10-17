@@ -381,19 +381,18 @@ final class EndBehaviorMatrixTests: XCTestCase {
 
     /// An audiobook of one file played to its end does what the cell says,
     /// for each cell of the single-file audio column that no other test
-    /// pins. The book is saved half a second from its end, so it plays out
-    /// in real time, silently, and a loop plays on for long after.
+    /// pins. The book is saved a moment (`secondsLeftWhenSaved`) from its end, so it
+    /// plays out in real time, silently, and a loop plays on for long after.
     func testSingleFileAudioEndBehaviorMatrix() throws {
         preserveSharedSleepTimer()
         let seconds: TimeInterval = 10
-        let lastHalfSecond = Int((seconds - 0.5) * ReaderViewModel.audioCharsPerSecond)
         for cell in Self.singleFileAudioCells {
             let world = try makeIntegrationWorld("Matrix Audio \(cell.behavior) \(cell.timer)")
             world.settings.sleepFadeOutDuration = 0
             let book = try world.makeSilentAudioFileBook(
                 title: "Ferry Timetable",
                 duration: seconds,
-                savedPosition: ReadingPosition(chapterIndex: 0, characterOffset: lastHalfSecond),
+                savedPosition: ReadingPosition(chapterIndex: 0, characterOffset: Self.offsetBeforeTheEnd(ofChapterOf: seconds)),
                 endOfBook: cell.behavior
             )
             let nextBook = try world.makeSilentAudioBook(title: "Harbour Almanac", trackDurations: [5])

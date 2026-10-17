@@ -21,7 +21,7 @@ extension EndBehaviorMatrixTests {
         Cell(behavior: .continueNext, timer: .minutesRunning),
     ])
 
-    /// A book of two tracks, saved half a second from the end of the last,
+    /// A book of two tracks, saved a moment (`secondsLeftWhenSaved`) from the end of the last,
     /// played to its end does what the cell says, for each cell of the
     /// multi-file audio column that no other test pins. The last track is
     /// long, so a loop plays on for long after the end.
@@ -39,7 +39,7 @@ extension EndBehaviorMatrixTests {
                 trackDurations: [firstTrackSeconds, lastTrackSeconds],
                 savedPosition: ReadingPosition(
                     chapterIndex: 1,
-                    characterOffset: Self.offsetHalfASecondBeforeTheEnd(ofChapterOf: lastTrackSeconds)
+                    characterOffset: Self.offsetBeforeTheEnd(ofChapterOf: lastTrackSeconds)
                 ),
                 endOfBook: cell.behavior
             )

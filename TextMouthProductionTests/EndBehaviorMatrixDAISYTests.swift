@@ -36,7 +36,7 @@ extension EndBehaviorMatrixTests {
                 ],
                 savedPosition: ReadingPosition(
                     chapterIndex: 1,
-                    characterOffset: Self.offsetHalfASecondBeforeTheEnd(ofChapterOf: lastSectionSeconds)
+                    characterOffset: Self.offsetBeforeTheEnd(ofChapterOf: lastSectionSeconds)
                 ),
                 endOfBook: cell.behavior
             )

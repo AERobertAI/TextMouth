@@ -8,8 +8,9 @@ import XCTest
 extension EndBehaviorMatrixTests {
 
     /// Open `book` in `world`, set the sleep timer of `cell`, play the book
-    /// out silently in real time, and check what it did at its end against
-    /// the cell (`assertEnd`), each failure naming the cell.
+    /// out silently in real time (it has `secondsLeftWhenSaved` to play), and
+    /// check what it did at its end against the cell (`assertEnd`), each
+    /// failure naming the cell.
     ///
     /// The book must be saved a moment short of its end, so it plays out
     /// quickly: a loop then plays on for as long as the test lasts, which is
@@ -55,6 +56,8 @@ extension EndBehaviorMatrixTests {
         let announcedBefore = reader.lastAnnouncement
 
         var nextAsked = false
+        // Kept before the play begins, so no report of the end is missed.
+        let reports = PlayerReportLog(observing: service)
         let recorder = recordingAnnouncements {
             reader.play()
             XCTAssertTrue(service.isPlaying, "\(name): the book did not play", file: file, line: line)
@@ -62,9 +65,7 @@ extension EndBehaviorMatrixTests {
                 eventually(within: 10) { reader.lastAnnouncement != announcedBefore },
                 "\(name): the book never ended", file: file, line: line
             )
-            // Long enough for the player's last tick, as it stops at the end,
-            // to have been handled.
-            spinMainRunLoop(for: 0.3)
+            waitForTheEndToSettle(of: service, reports: reports)
             nextAsked = nextBookAsked(for: cell, title: book.title, next: nextBook.title, continued)
         }
 
@@ -82,6 +83,27 @@ extension EndBehaviorMatrixTests {
             is: cell, title: book.title, next: nextBook.title, lastChapter: lastChapter, content: content,
             file: file, line: line
         )
+    }
+
+    /// Wait until the audio service has dealt with everything that follows a
+    /// book's end, which the end's announcement does not yet prove: the
+    /// file's end notice, which arrives after the tick that finished the
+    /// clip or before it, and, when the book plays again (a loop), one tick
+    /// of the new play, which would finish it again were the end handled
+    /// twice. Each wait ends when the service's report arrives
+    /// (`AudioPlaybackService._reportHandledForTesting`) and is bounded by
+    /// the 0.3 seconds this test once waited whatever happened, so a report
+    /// that never comes (a book that stops, and has no tick after) costs no
+    /// more than before, and one that comes costs only until it does.
+    ///
+    /// - Parameters:
+    ///   - service: The audio service of the book's reader.
+    ///   - reports: The service's reports, kept since before the play began.
+    func waitForTheEndToSettle(of service: AudioPlaybackService, reports: PlayerReportLog) {
+        _ = eventually(within: 0.3) { !reports.endOfFileOutcomes.isEmpty }
+        guard service.isPlaying else { return }
+        let ticksSoFar = reports.tickCount
+        _ = eventually(within: 0.3) { reports.tickCount > ticksSoFar }
     }
 
     /// Whether the next book has been asked for, as `continued` records the
@@ -114,10 +136,19 @@ extension EndBehaviorMatrixTests {
             : !continued().isEmpty
     }
 
-    /// The offset, in a chapter of `seconds` seconds, half a second before
-    /// its end: where the audio columns' books are saved, so they end in
-    /// half a second.
-    static func offsetHalfASecondBeforeTheEnd(ofChapterOf seconds: TimeInterval) -> Int {
-        Int((seconds - 0.5) * ReaderViewModel.audioCharsPerSecond)
+    /// How long a book of the audio columns has left to play when it is
+    /// saved, in seconds: short, so a cell ends in moments, but long enough
+    /// that the player is playing steadily before the end, and well clear of
+    /// the start-of-play tolerance with which the audio service tells the
+    /// late end of an earlier playthrough from a real end
+    /// (`AudioEndNoticePolicy.playStartTolerance`). A tenth of a second is
+    /// the offsets' granularity (`ReaderViewModel.audioCharsPerSecond`).
+    static let secondsLeftWhenSaved: TimeInterval = 0.3
+
+    /// The offset, in a chapter of `seconds` seconds, `secondsLeftWhenSaved`
+    /// before its end: where the audio columns' books are saved, so they
+    /// end in moments.
+    static func offsetBeforeTheEnd(ofChapterOf seconds: TimeInterval) -> Int {
+        Int(((seconds - secondsLeftWhenSaved) * ReaderViewModel.audioCharsPerSecond).rounded())
     }
 }
