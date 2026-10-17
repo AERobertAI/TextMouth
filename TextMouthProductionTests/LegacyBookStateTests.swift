@@ -397,6 +397,8 @@ final class LegacyBookStateTests: XCTestCase {
         )
         var file = try jsonObject(Library(books: [intact, damaged]))
         var books = try XCTUnwrap(file["books"] as? [[String: Any]])
+        // The file was encoded from two books; guard the second before it is read and written by position.
+        _ = try XCTUnwrap(books[safe: 1], "the encoded library has no second book")
         var position = try XCTUnwrap(books[1]["readingPosition"] as? [String: Any])
         position["chapterIndex"] = -2
         position["characterOffset"] = "thirty"
@@ -406,6 +408,8 @@ final class LegacyBookStateTests: XCTestCase {
         let library = try savedDataDecoder.decode(Library.self, from: JSONSerialization.data(withJSONObject: file))
 
         XCTAssertEqual(library.books.map(\.title), ["Intact", "Damaged"])
+        // The decoded library may hold fewer books than were saved; fail rather than trap.
+        _ = try XCTUnwrap(library.books[safe: 1], "the decoded library has no second book")
         XCTAssertEqual(library.books[0].readingPosition?.characterOffset, 20)
         XCTAssertEqual(library.books[1].readingPosition?.chapterIndex, 0)
         XCTAssertEqual(library.books[1].readingPosition?.characterOffset, 0)
