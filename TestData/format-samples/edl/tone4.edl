@@ -1,0 +1,9 @@
+TITLE: FOUR TONES
+FCM: NON-DROP FRAME
+
+001  AX       AA/V  C        00:00:00:00 00:00:01:00 01:00:00:00 01:00:01:00
+* FROM CLIP NAME: tone4.wav
+
+002  AX       AA/V  C        00:00:02:00 00:00:04:00 01:00:01:00 01:00:03:00
+* FROM CLIP NAME: tone4.wav
+* LOC: 01:00:02:12 ResolveColorBlue  Marker on the cut

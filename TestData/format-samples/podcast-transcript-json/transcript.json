@@ -1,0 +1,71 @@
+{
+  "version": "1.0.0",
+  "segments": [
+    {
+      "speaker": "Ana",
+      "startTime": 0.0,
+      "endTime": 0.9,
+      "body": "This sentence belongs to the first tone, 440 hertz."
+    },
+    {
+      "speaker": "Ben",
+      "startTime": 1.0,
+      "endTime": 1.9,
+      "body": "This one belongs to the second tone, 550 hertz."
+    },
+    {
+      "speaker": "Ana",
+      "startTime": 2.0,
+      "endTime": 2.9,
+      "body": "Third tone, 660 hertz. A café, an étude."
+    },
+    {
+      "speaker": "Ben",
+      "startTime": 3.0,
+      "endTime": 3.1,
+      "body": "The"
+    },
+    {
+      "speaker": "Ben",
+      "startTime": 3.1,
+      "endTime": 3.2,
+      "body": "fourth"
+    },
+    {
+      "speaker": "Ben",
+      "startTime": 3.2,
+      "endTime": 3.3,
+      "body": "and"
+    },
+    {
+      "speaker": "Ben",
+      "startTime": 3.3,
+      "endTime": 3.4,
+      "body": "last"
+    },
+    {
+      "speaker": "Ben",
+      "startTime": 3.4,
+      "endTime": 3.5,
+      "body": "tone"
+    },
+    {
+      "speaker": "Ben",
+      "startTime": 3.5,
+      "endTime": 3.6,
+      "body": "is"
+    },
+    {
+      "speaker": "Ben",
+      "startTime": 3.6,
+      "endTime": 3.7,
+      "body": "880"
+    },
+    {
+      "speaker": "Ben",
+      "startTime": 3.7,
+      "endTime": 3.8,
+      "body": "hertz."
+    }
+  ]
+}

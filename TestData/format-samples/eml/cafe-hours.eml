@@ -1,0 +1,33 @@
+From: Odile =?utf-8?q?Banerjee-Mu=C3=B1oz?= <odile@example.invalid>
+To: reader@example.invalid
+Date: Sat, 17 Oct 2026 09:30:00 +0200
+Subject: =?utf-8?b?Q2Fmw6kgaG91cnMg4oCTIHLDqXN1bcOp?= day
+Message-ID: <cafe-hours-1@example.invalid>
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="===============4668779510811413299=="
+
+--===============4668779510811413299==
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
+
+Dear reader,
+
+The caf=E9 opens at nine. Bring your r=E9sum=E9 and a line from <<The Salt Le=
+dger>>? No: just a smile.
+
+This line is long enough that quoted-printable must wrap it with a soft line =
+break, because the limit is seventy-six characters.
+
+Regards,
+Odile
+
+--===============4668779510811413299==
+Content-Type: text/html; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+<html><body><h1>The caf=E9 opens at nine</h1><p>Bring your r=E9sum=E9.</p><p>=
+Regards,<br>Odile</p></body></html>
+
+--===============4668779510811413299==--

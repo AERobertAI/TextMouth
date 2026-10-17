@@ -1,0 +1,20 @@
+WEBVTT - four tones
+
+NOTE
+This comment block is ignored by players.
+
+intro
+00:00.000 --> 00:00.900
+<v Ana>First tone, 440 hertz.
+
+00:01.000 --> 00:01.900 align:start
+<v.loud Ben>Second tone, 550 hertz &amp; <b>bold</b>.
+
+00:00:02.000 --> 00:00:02.900
+<v Ana>Third tone, café 660 hertz.
+Second line of the cue.
+
+NOTE a one-line note
+
+00:00:03.000 --> 00:00:03.900
+The fourth, 880 hertz, with no speaker.

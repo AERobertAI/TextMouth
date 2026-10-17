@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<speak version="1.1" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
+  <p>
+    <s>The ferry leaves at <say-as interpret-as="time" format="hms12">9:30am</say-as>.</s>
+    <s>Wait here <break time="2s"/> until you hear the horn.</s>
+  </p>
+  <p>
+    <s>It is <emphasis level="strong">not</emphasis> a long crossing.</s>
+    <s><prosody rate="slow" pitch="-2st">Mind the gap between the boat and the pier.</prosody></s>
+    <s>Say the word <phoneme alphabet="ipa" ph="t&#601;&#712;m&#593;&#720;to&#650;">tomato</phoneme> twice, and spell <say-as interpret-as="characters">SSML</say-as>.</s>
+    <s><sub alias="World Wide Web Consortium">W3C</sub> publishes the standard.</s>
+  </p>
+</speak>

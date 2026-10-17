@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dtbook PUBLIC "-//NISO//DTD dtbook 2005-3//EN" "http://www.daisy.org/z3986/2005/dtbook-2005-3.dtd">
+<dtbook xmlns="http://www.daisy.org/z3986/2005/dtbook/" version="2005-3" xml:lang="en">
+<head>
+ <meta name="dc:Title" content="Harbour Notes"/>
+ <meta name="dc:Creator" content="A. Sample"/>
+ <meta name="dc:Identifier" content="textmouth-sample-dtbook"/>
+ <meta name="dc:Language" content="en"/>
+ <meta name="dtb:uid" content="textmouth-sample-dtbook"/>
+</head>
+<book>
+ <frontmatter>
+  <doctitle>Harbour Notes</doctitle>
+  <docauthor>A. Sample</docauthor>
+  <level1><h1>Preface</h1><p>These notes were written on the quay.</p></level1>
+ </frontmatter>
+ <bodymatter>
+  <level1 id="ch1">
+   <h1>The Ferry</h1>
+   <pagenum id="p1" page="normal">1</pagenum>
+   <p>The ferry leaves at seven. Café tables fill early, and the señor at the counter pours coffee without asking.<noteref idref="#n1">1</noteref></p>
+   <level2>
+    <h2>Morning Tides</h2>
+    <p>Gulls argue over crusts; everyone says “good morning” in three languages.</p>
+    <list type="ul"><li>Bread from the bakery</li><li>Smoked fish</li></list>
+    <sidebar><hd>Tip</hd><p>Arrive early for a window seat.</p></sidebar>
+    <imggroup><img src="pier.png" alt="A pier at dawn"/><caption>The pier at dawn</caption></imggroup>
+   </level2>
+   <level2>
+    <h2>Timetable</h2>
+    <table><thead><tr><th>Boat</th><th>Departs</th></tr></thead><tbody><tr><td>Ferry</td><td>07:00</td></tr><tr><td>Launch</td><td>09:30</td></tr></tbody></table>
+   </level2>
+  </level1>
+  <level1 id="ch2">
+   <h1>The Return</h1>
+   <pagenum id="p3" page="normal">3</pagenum>
+   <p>Prices — in euros — are posted by the quay.</p>
+   <note id="n1"><p>Posted prices change with the season.</p></note>
+  </level1>
+ </bodymatter>
+</book>
+</dtbook>

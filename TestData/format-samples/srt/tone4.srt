@@ -1,0 +1,17 @@
+1
+00:00:00,000 --> 00:00:00,900
+This sentence belongs to the first tone, 440 hertz.
+
+2
+00:00:01,000 --> 00:00:01,900
+This one belongs to the second tone, 550 hertz.
+
+3
+00:00:02,000 --> 00:00:02,900
+<i>Third tone, 660 hertz.</i>
+A café, an étude.
+
+4
+00:00:03,000 --> 00:00:03,900
+The fourth and last tone is 880 hertz.
+

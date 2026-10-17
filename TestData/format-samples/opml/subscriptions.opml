@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head><title>Subscriptions — café</title></head>
+  <body>
+    <outline text="Podcasts" title="Podcasts">
+      <outline type="rss" text="Les tons du café" title="Les tons du café" xmlUrl="https://example.invalid/tones/feed.xml" htmlUrl="https://example.invalid/tones"/>
+      <outline text="Fiction">
+        <outline type="rss" text="第一 &amp; second" xmlUrl="https://example.invalid/fiction.rss"/>
+        <outline type="rss" text="Nested again">
+          <outline type="rss" text="Deep feed" xmlUrl="https://example.invalid/deep.atom"/>
+        </outline>
+      </outline>
+    </outline>
+    <outline text="News">
+      <outline type="rss" text="Duplicate of the first (trailing slash, host case)" xmlUrl="https://EXAMPLE.invalid/tones/feed.xml"/>
+      <outline type="rss" text="Same feed in two folders" xmlUrl="https://example.invalid/fiction.rss"/>
+      <outline type="rss" text="Upper-case attribute" XMLURL="https://example.invalid/upper.xml"/>
+    </outline>
+    <outline text="A heading with no feed"/>
+    <outline type="rss" text="Top level, no folder" xmlUrl="http://example.invalid/top.rss"/>
+    <outline type="link" text="A link, not a feed" url="https://example.invalid/page"/>
+  </body>
+</opml>
