@@ -163,4 +163,88 @@ final class AddToLibraryToolbarTests: XCTestCase {
             )
         }
     }
+
+    // MARK: - The Toolbar
+
+    /// The labels of the toolbar's items of a hosted Library window with an
+    /// empty library, as AppKit draws them, or nil when this macOS draws no
+    /// toolbar for a hosted view.
+    private func libraryToolbarLabels() -> [String]? {
+        let library = LibraryViewModel(initializeServices: false)
+        let settings = SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false)
+        let hostingView = NSHostingView(
+            rootView: LibraryView(
+                currentFolderPath: .constant(""),
+                category: .constant(.folders),
+                showFileImporter: .constant(false),
+                showTextInput: .constant(false),
+                onOpenBook: { _ in }
+            )
+            .environmentObject(library)
+            .environmentObject(settings)
+        )
+        // Bridged, so SwiftUI draws the window's toolbar in AppKit's.
+        hostingView.sceneBridgingOptions = [.toolbars]
+        let window = OffscreenTestWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 900, height: 700),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
+        window.isReleasedWhenClosed = false
+        window.title = "Hosted Library window test"
+        window.contentView = hostingView
+        defer { takeDown(window) }
+        guard waitUntil(timeout: 5, {
+            window.contentView?.layoutSubtreeIfNeeded()
+            return window.toolbar != nil
+        }) else { return nil }
+        settle(hostingView, seconds: 0.5)
+        return window.toolbar?.items.map(\.label)
+    }
+
+    /// The toolbar shows Add to Library once, and none of the three buttons
+    /// it replaced.
+    func testTheToolbarShowsAddToLibraryAndNotTheThreeItReplaced() throws {
+        guard let labels = libraryToolbarLabels() else {
+            throw XCTSkip("This macOS draws no toolbar for a hosted SwiftUI view")
+        }
+        XCTAssertEqual(labels.filter { $0 == "Add to Library" }.count, 1, "\(labels)")
+        for gone in ["Import Book", "New from Text", "Add Feed"] {
+            XCTAssertFalse(labels.contains(gone), "the toolbar still has \(gone): \(labels)")
+        }
+    }
+
+    /// The button's words, pinned exactly since the listener hears them
+    /// through VoiceOver.
+    func testTheButtonsWords() {
+        XCTAssertEqual(AddToLibraryWording.buttonTitle, "Add to Library")
+        XCTAssertEqual(AddToLibraryWording.buttonLabel, "Add to Library")
+        XCTAssertEqual(
+            AddToLibraryWording.buttonHint,
+            "Opens a sheet with the ways to add to the library: open a book, import a folder, make a book from text, record audio, or add a feed"
+        )
+    }
+
+    /// The window's source draws the one button from those words with the
+    /// plus image, takes over the Import button's place as VoiceOver's
+    /// initial target, and has none of the three it replaced. SwiftUI keeps
+    /// a button's label and hint where a test cannot read them, so this
+    /// reads the source, as the folder settings tests do for the menu.
+    func testTheWindowDrawsOneButtonThatTakesTheImportButtonsPlace() throws {
+        let source = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("TextMouth/Views/Library/LibraryView.swift")
+        let text = try String(contentsOf: source, encoding: .utf8)
+        XCTAssertTrue(text.contains("Label(AddToLibraryWording.buttonTitle, systemImage: \"plus\")"))
+        XCTAssertTrue(text.contains(".accessibilityLabel(AddToLibraryWording.buttonLabel)"))
+        XCTAssertTrue(text.contains(".accessibilityHint(AddToLibraryWording.buttonHint)"))
+        XCTAssertTrue(text.contains("isEnabled: focusTarget == .importButton"))
+        XCTAssertTrue(text.contains("addToLibraryButton(focusTarget: focusTarget)"))
+        for gone in ["importBookButton", "Label(\"New from Text\"", "FeedWording.addFeedToolbarTitle", "FeedWording.addFeedButtonLabel"] {
+            XCTAssertFalse(text.contains(gone), "\(gone) is still in the Library window")
+        }
+        // The Open Book choice's hint keeps its text.
+        XCTAssertEqual(LibraryView.importBookHint, "Opens a file picker to import books in any format TextMouth reads.")
+    }
 }

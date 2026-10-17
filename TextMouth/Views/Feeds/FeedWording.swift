@@ -16,13 +16,9 @@ enum FeedWording {
     // (`ShortcutAction.addFeed.title`), one name for the menu, the Shortcuts
     // tab, and config.json.
 
-    /// The Library window's toolbar button's title.
-    static let addFeedToolbarTitle = "Add Feed"
     /// The Library menu's command that refreshes every feed now.
     static let refreshAllCommand = "Refresh All Feeds"
-    /// The toolbar button's spoken label.
-    static let addFeedButtonLabel = "Add a podcast or article feed"
-    /// The toolbar button's spoken hint.
+    /// What Add Feed does, spoken as its hint in the Add to Library sheet.
     static let addFeedButtonHint = "Opens a sheet where you type a feed's address and choose where its folder goes"
     /// The Add Feed sheet's heading.
     static let addFeedTitle = "Add Feed"

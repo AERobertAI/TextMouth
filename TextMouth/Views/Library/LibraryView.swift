@@ -57,6 +57,9 @@ enum WindowCommandRouting {
 enum LibraryFocusTarget: Equatable {
     case continueListening
     case timeSummary
+    /// Where VoiceOver's focus starts in a window with no books: the Add to
+    /// Library button, which took over the Import button's place (FR20). The
+    /// case keeps its name.
     case importButton
 
     /// Chooses a single initial accessibility target for the library.
@@ -273,6 +276,9 @@ struct LibraryView: View {
     @State private var exportModel: BookExportModel?
     /// This window's transcription dialogs (FR05).
     @StateObject private var transcription = TranscriptionPresenter()
+    /// What this window owns of its Add to Library button (FR20): the
+    /// sheet's model, and what its choices need of the window.
+    @StateObject private var addToLibrary = AddToLibraryHost()
     /// Which audiobooks are transcribed or being transcribed (FR05),
     /// observed so the rows' notes follow.
     @ObservedObject private var transcribedBooks = TranscribedBooks.shared
@@ -504,29 +510,7 @@ struct LibraryView: View {
                     .accessibilityLabel("Go up one folder level")
                 }
 
-                importBookButton(focusTarget: focusTarget)
-
-                Button {
-                    showTextInput = true
-                } label: {
-                    Label("New from Text", systemImage: "doc.text")
-                }
-                .accessibilityLabel("New book from text")
-                .accessibilityHint("Create a new book by pasting or typing text")
-
-                // Library > Add Feed… for this window alone, which it names
-                // as a shortcut names its window (FR03).
-                Button {
-                    var userInfo: [AnyHashable: Any] = [:]
-                    if let hostWindow {
-                        userInfo["sourceWindow"] = hostWindow
-                    }
-                    NotificationCenter.default.post(name: .addFeed, object: nil, userInfo: userInfo)
-                } label: {
-                    Label(FeedWording.addFeedToolbarTitle, systemImage: "dot.radiowaves.up.forward")
-                }
-                .accessibilityLabel(FeedWording.addFeedButtonLabel)
-                .accessibilityHint(FeedWording.addFeedButtonHint)
+                addToLibraryButton(focusTarget: focusTarget)
 
                 // Edit mode toggle
                 Button {
@@ -666,6 +650,14 @@ struct LibraryView: View {
             takesCommand: takesCommand,
             // Move to Library…'s key acts on the selection (FR11, branch D).
             selectedBooks: { selectedBooks }
+        ))
+        // The Add to Library sheet, and the choice made in it, which runs
+        // once the sheet has gone (FR20).
+        .modifier(LibraryAddToLibrarySupport(
+            host: addToLibrary,
+            model: addToLibrary.model,
+            library: libraryViewModel,
+            hostWindow: hostWindow
         ))
         // Library > Folder or Feed Settings, and the Folder Settings sheet
         // (FR19).
@@ -1778,20 +1770,23 @@ struct LibraryView: View {
         return target == .continueListening ? nil : target
     }
 
-    /// The Import Book button's hint. It named four formats, which left out
-    /// most of those TextMouth reads, its audiobooks among them (TODO A10).
+    /// The Open Book choice's hint, once the Import Book button's. It named
+    /// four formats, which left out most of those TextMouth reads, its
+    /// audiobooks among them (TODO A10). The Add to Library sheet reuses it.
     nonisolated static let importBookHint = "Opens a file picker to import books in any format TextMouth reads."
 
-    /// The Import Book button: the initial VoiceOver target when
+    /// The Add to Library button (FR20), which replaced the Import, New from
+    /// Text, and Add Feed buttons: it shows the sheet that lists those ways
+    /// to add. The initial VoiceOver target when
     /// `focusTarget` says so.
-    private func importBookButton(focusTarget: LibraryFocusTarget?) -> some View {
+    private func addToLibraryButton(focusTarget: LibraryFocusTarget?) -> some View {
         Button {
-            showFileImporter = true
+            addToLibrary.present()
         } label: {
-            Label("Import Book", systemImage: "plus")
+            Label(AddToLibraryWording.buttonTitle, systemImage: "plus")
         }
-        .accessibilityLabel("Import a book file")
-        .accessibilityHint(Self.importBookHint)
+        .accessibilityLabel(AddToLibraryWording.buttonLabel)
+        .accessibilityHint(AddToLibraryWording.buttonHint)
         .modifier(LibraryFocusTargetModifier(
             isEnabled: focusTarget == .importButton
         ))
