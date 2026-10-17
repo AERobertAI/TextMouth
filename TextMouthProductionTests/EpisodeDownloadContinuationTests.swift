@@ -290,6 +290,120 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         XCTAssertEqual(heard.announced.count, 2, "The arrival said something after the wait ended")
     }
 
+    // MARK: - Another Reader Takes the Controls
+
+    /// Two readers, one of the middle episode and one of the top episode
+    /// (downloaded), joined to one private Now Playing coordinator.
+    private struct TwoReaders {
+        let setup: Setup
+        let heard: Heard
+        let coordinator: NowPlayingService
+        /// Reads the middle episode, whose end starts the wait.
+        let ending: ReaderViewModel
+        /// Reads the top episode, the other window.
+        let other: ReaderViewModel
+    }
+
+    /// A feed whose middle and top episodes are downloaded, each open in a
+    /// loaded reader on one coordinator of its own. `bottomAnswer` is what
+    /// the server answers for the bottom episode, which the end downloads.
+    private func openTwoReaders(bottomAnswer: StubResponse? = nil) async throws -> TwoReaders {
+        let setup = try await makeFeed(
+            options: ListeningOptions(continuation: .playBookBelow),
+            global: .stop,
+            topIsDownloaded: true,
+            bottomAnswer: bottomAnswer
+        )
+        let heard = listen(to: setup)
+        let coordinator = NowPlayingService(installsSystemIntegrations: false, diagnosticSink: { _ in })
+        let ending = try openReader(for: setup.middle, in: setup, nowPlaying: coordinator)
+        let top = try XCTUnwrap(book(of: "guid:ep-3", in: setup))
+        let other = try openReader(for: top, in: setup, nowPlaying: coordinator)
+        await waitFor("both episodes load in their readers") { !ending.isLoading && !other.isLoading }
+        return TwoReaders(setup: setup, heard: heard, coordinator: coordinator, ending: ending, other: other)
+    }
+
+    /// Waits for the bottom episode's download to finish (or fail), and for
+    /// any hand-over to be asked for.
+    private func waitForTheDownloadToSettle(_ setup: Setup) async {
+        await waitFor("the download settles") {
+            let state = setup.world.center.store.record(of: setup.feedID)?.item("guid:ep-1")?.state
+            return state?.failureReason != nil || book(of: "guid:ep-1", in: setup) != nil
+        }
+        try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 2))
+    }
+
+    /// Another reader takes the controls (it plays, so it is the active
+    /// owner) while the download runs: the arrival hands nothing over and
+    /// says nothing.
+    func testNothingIsHandedOverWhenAnotherReaderTakesTheControls() async throws {
+        let readers = try await openTwoReaders()
+
+        readers.ending.handleEndOfBook()
+        readers.other.nowPlayingService.activateRemoteCommandsIfNeeded()
+        XCTAssertEqual(readers.coordinator.activeOwnerID, readers.other.readerID, "The other reader did not take the controls")
+        await waitForTheDownloadToSettle(readers.setup)
+
+        XCTAssertEqual(readers.heard.announced, ["Finished: Middle part. Downloading the next episode: Bottom part."])
+        XCTAssertEqual(readers.heard.asked, [])
+        XCTAssertNil(readers.ending.nextEpisodeWait, "The wait outlived the download")
+    }
+
+    /// The same with a download that fails: "could not be downloaded" is not
+    /// said over the other book.
+    func testAFailureIsNotSaidWhenAnotherReaderTakesTheControls() async throws {
+        let readers = try await openTwoReaders(bottomAnswer: StubResponse(status: 404))
+
+        readers.ending.handleEndOfBook()
+        readers.other.nowPlayingService.activateRemoteCommandsIfNeeded()
+        await waitForTheDownloadToSettle(readers.setup)
+
+        XCTAssertEqual(readers.heard.announced, ["Finished: Middle part. Downloading the next episode: Bottom part."])
+        XCTAssertNil(readers.ending.nextEpisodeWait, "The wait outlived the failure")
+    }
+
+    /// The other reader's window merely becomes the focused one: the same
+    /// silence.
+    func testNothingIsHandedOverWhenAnotherReadersWindowBecomesKey() async throws {
+        let readers = try await openTwoReaders()
+
+        readers.ending.handleEndOfBook()
+        readers.other.windowBecameKey()
+        XCTAssertEqual(readers.coordinator.activeOwnerID, readers.other.readerID, "The other window did not take the focus")
+        await waitForTheDownloadToSettle(readers.setup)
+
+        XCTAssertEqual(readers.heard.announced, ["Finished: Middle part. Downloading the next episode: Bottom part."])
+        XCTAssertEqual(readers.heard.asked, [])
+        XCTAssertNil(readers.ending.nextEpisodeWait, "The wait outlived the download")
+    }
+
+    /// The controls were another reader's already as the episode ended, and
+    /// stay so: that is no move, and the hand-over happens.
+    func testTheHandOverHappensWhenTheControlsWereAnotherReadersAlready() async throws {
+        let readers = try await openTwoReaders()
+        readers.other.nowPlayingService.activateRemoteCommandsIfNeeded()
+
+        readers.ending.handleEndOfBook()
+        await waitFor("the next episode asks to start") { !readers.heard.asked.isEmpty }
+
+        XCTAssertEqual(readers.heard.announced.last, "Starting: Bottom part")
+        XCTAssertEqual(readers.heard.asked, [try XCTUnwrap(book(of: "guid:ep-1", in: readers.setup)).id])
+    }
+
+    /// The ending reader's own window becomes key again meanwhile: the
+    /// controls are its own, and the hand-over happens.
+    func testTheHandOverHappensWhenTheEndingReadersWindowBecomesKeyAgain() async throws {
+        let readers = try await openTwoReaders()
+
+        readers.ending.handleEndOfBook()
+        readers.ending.windowBecameKey()
+        XCTAssertEqual(readers.coordinator.activeOwnerID, readers.ending.readerID, "The window did not take the focus")
+        await waitFor("the next episode asks to start") { !readers.heard.asked.isEmpty }
+
+        XCTAssertEqual(readers.heard.announced.last, "Starting: Bottom part")
+        XCTAssertEqual(readers.heard.asked, [try XCTUnwrap(book(of: "guid:ep-1", in: readers.setup)).id])
+    }
+
     // MARK: - An Episode Already Here, Played, or Finished
 
     /// The next episode is downloaded already: no download, and listening is
@@ -527,8 +641,13 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
 
     /// A reader of `book` in `setup`'s world, listening on the setup's own
     /// notification center and sharing no request store with the app;
-    /// closed when the test ends.
-    private func openReader(for book: Book, in setup: Setup) throws -> ReaderViewModel {
+    /// closed when the test ends. Readers given the same `nowPlaying`
+    /// coordinator share its media controls, as two reader windows do.
+    private func openReader(
+        for book: Book,
+        in setup: Setup,
+        nowPlaying: NowPlayingService? = nil
+    ) throws -> ReaderViewModel {
         let reader = ReaderViewModel(
             book: book,
             libraryViewModel: setup.world.library,
@@ -536,7 +655,8 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
             substitutionService: TextSubstitutionService(rules: []),
             autoplayRequests: ReaderAutoplayRequests(),
             notificationCenter: setup.notifications,
-            renderScheduler: nil
+            renderScheduler: nil,
+            nowPlaying: nowPlaying
         )
         addTeardownBlock { @MainActor in reader.close() }
         return reader

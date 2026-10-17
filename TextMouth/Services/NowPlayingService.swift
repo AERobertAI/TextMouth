@@ -151,6 +151,15 @@ final class NowPlayingSession {
         coordinator.clearNowPlaying(ownerID: ownerID)
     }
 
+    /// The reader that owns TextMouth's media controls right now: the
+    /// coordinator's active owner (`NowPlayingService.activeOwnerID`), the
+    /// playing reader or, while none plays, the most recently focused one.
+    /// Nil while no reader has either. A wait that must tell whether
+    /// another reader has taken the controls notes it and compares later.
+    var activeOwnerID: UUID? {
+        coordinator.activeOwnerID
+    }
+
     /// Whether this reader is the active owner: the playing reader, or,
     /// while none plays, the most recently focused one
     /// (`NowPlayingService.activeOwnerID`), which the system's skip, track,
