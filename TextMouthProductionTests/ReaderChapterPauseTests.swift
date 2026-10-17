@@ -39,6 +39,7 @@ final class ReaderChapterPauseTests: XCTestCase {
         let reader = try openBook(in: world, title: "Harbor Plays", trackDurations: [0.4, 0.4], manifest: Self.pausing)
         let service = reader.audioPlaybackService
         let files = reader.audioChapterFiles.map(resolvedPath)
+        _ = try XCTUnwrap(files[safe: 1], "the book has fewer than two chapter files")
         let moments = Moments(of: reader)
         defer { reader.stop() }
         XCTAssertEqual(reader.pauseAfterChapter(0), Self.pause)
@@ -145,6 +146,7 @@ final class ReaderChapterPauseTests: XCTestCase {
         let reader = try openBook(in: world, title: "Harbor Plays", trackDurations: [0.4, 3], manifest: Self.pausing)
         let service = reader.audioPlaybackService
         let files = reader.audioChapterFiles.map(resolvedPath)
+        _ = try XCTUnwrap(files[safe: 1], "the book has fewer than two chapter files")
         let sounds = try XCTUnwrap(reader.soundEffectService as? RecordedSoundEffects)
         defer { reader.stop() }
         try playIntoThePause(reader)
@@ -218,6 +220,7 @@ final class ReaderChapterPauseTests: XCTestCase {
         let reader = try openBook(in: world, title: "Harbor Plays", trackDurations: [0.4, 3], manifest: Self.pausing)
         let service = reader.audioPlaybackService
         let files = reader.audioChapterFiles.map(resolvedPath)
+        _ = try XCTUnwrap(files[safe: 1], "the book has fewer than two chapter files")
         defer { reader.stop() }
         try playIntoThePause(reader)
 
@@ -242,6 +245,7 @@ final class ReaderChapterPauseTests: XCTestCase {
             let reader = try openBook(in: world, title: "Harbor Plays", trackDurations: [0.4, 3, 3], manifest: Self.pausing)
             let service = reader.audioPlaybackService
             let files = reader.audioChapterFiles.map(resolvedPath)
+            _ = try XCTUnwrap(files[safe: chapter], "the book has no chapter file for the jump")
             try playIntoThePause(reader)
 
             reader.navigateTo(chapterIndex: chapter, characterOffset: offset)
@@ -268,6 +272,7 @@ final class ReaderChapterPauseTests: XCTestCase {
         let reader = try openBook(in: world, title: "Harbor Plays", trackDurations: [0.4, 3], manifest: Self.pausing)
         let service = reader.audioPlaybackService
         let files = reader.audioChapterFiles.map(resolvedPath)
+        _ = try XCTUnwrap(files[safe: 1], "the book has fewer than two chapter files")
         reader._whereAmIUtteranceRecorderForTesting = { _ in }
         let endSound = WhereAmIEndSoundClock(holdingFor: reader)
         defer { reader.stop() }
