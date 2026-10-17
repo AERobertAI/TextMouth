@@ -32,7 +32,12 @@ final class ImportFuzzTests: XCTestCase {
     /// Cases that violate an invariant today, by case id, with a one-line
     /// note on the finding. A listed case does not fail the sweep, and one
     /// that stops violating fails it, so the entry must go.
-    static let knownIssues: [String: String] = [:]
+    static let knownIssues: [String: String] = [
+        // Found by the first sweep (seed 20261016): a Markdown file of no
+        // bytes is imported, where an empty EPUB or DOCX is refused.
+        "sample.md#empty#seed=20261016":
+            "an empty Markdown file imports as an empty book whose report says nothing is missing",
+    ]
 
     /// Cases that must never be run (they crash or hang the host), by case
     /// id, with a note on the finding.
