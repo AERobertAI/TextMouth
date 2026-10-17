@@ -270,31 +270,69 @@ enum OggHeaderReader {
         let tags: Tags
     }
 
-    /// The stream that starts at the beginning of `head`: its codec and
-    /// format from the first packet, and its tags from the second; nil when
-    /// the first packet is not a Vorbis or Opus identification header. The
+    /// The first packet that ends on `page`, a first ("start of stream")
+    /// page, taken from `bytes`: the payload up to the first lacing value
+    /// below 255. Nil when no packet ends on the page (every lacing value is
+    /// 255, so the packet runs on) or the page continues an earlier packet.
+    private static func firstPacket(on page: Page, of bytes: [UInt8]) -> [UInt8]? {
+        guard page.type & 0x01 == 0 else { return nil }
+        var length = 0
+        for value in page.lacing {
+            length += Int(value)
+            // The page was checked to hold its whole payload, so this range is inside `bytes`.
+            if value < 255 { return Array(bytes[page.payloadStart..<(page.payloadStart + length)]) }
+        }
+        return nil
+    }
+
+    /// The serial of the Vorbis or Opus stream among the leading
+    /// start-of-stream pages of `head`, with the format its identification
+    /// packet declares. A multiplexed file begins with one such page per
+    /// stream (RFC 3533 section 4), and an Ogg Skeleton stream's "fishead"
+    /// may come first, so the first page's stream is not necessarily the
+    /// audio: the walk goes on while pages have the start flag (a page that
+    /// fails its checks ends it, keeping what was found), tries each new
+    /// serial's first packet, and takes the first that `identify` accepts.
+    /// Nil when the first page lacks the start flag or no leading stream is
+    /// Vorbis or Opus (FLAC, Speex, Theora, an unknown codec).
+    private static func audioStream(in head: [UInt8])
+        -> (serial: UInt32, format: (codec: Codec, channels: Int, sampleRate: Double, preSkip: Int))? {
+        var seen = Set<UInt32>()
+        var index = 0
+        while let current = page(in: head, at: index), current.type & 0x02 != 0 {
+            // Two start pages of one serial count once.
+            if seen.insert(current.serial).inserted,
+               let packet = firstPacket(on: current, of: head),
+               let format = identify(packet) {
+                return (current.serial, format)
+            }
+            index = current.end
+        }
+        return nil
+    }
+
+    /// The Vorbis or Opus stream among the leading pages of `head`: its codec
+    /// and format from its first packet, and its tags from its second; nil
+    /// when no leading stream is Vorbis or Opus (see `audioStream(in:)`). The
     /// tags are empty when the comment packet is missing, spans past `head`,
     /// or is larger than `maxPacketLength`.
     private static func streamStart(in head: [UInt8]) -> StreamStart? {
-        // The first page is at offset 0 and has the "first page" flag.
-        guard var current = page(in: head, at: 0), current.type & 0x02 != 0 else { return nil }
-        let serial = current.serial
+        guard let (serial, format) = audioStream(in: head) else { return nil }
 
+        // Assemble only that stream's packets from the first page again: the
+        // pages of the other streams (Skeleton's, a video's) are passed over.
         var assembler = PacketAssembler()
         var packets: [[UInt8]] = []
-        while true {
-            // Pages of other streams (a multiplexed file) are passed over.
+        var index = 0
+        while let current = page(in: head, at: index) {
             if current.serial == serial {
                 guard let completed = assembler.feed(current, of: head) else { break }
                 packets += completed
                 if packets.count >= 2 { break }
             }
-            guard let next = page(in: head, at: current.end) else { break }
-            current = next
+            index = current.end
         }
 
-        guard let identification = packets.first,
-              let format = identify(identification) else { return nil }
         let tags = packets.count >= 2 ? parseTags(packets[1], codec: format.codec) : Tags()
         return StreamStart(serial: serial, codec: format.codec, channels: format.channels,
                            sampleRate: format.sampleRate, preSkip: format.preSkip, tags: tags)

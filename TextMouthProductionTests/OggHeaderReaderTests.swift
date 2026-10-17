@@ -400,6 +400,129 @@ final class OggHeaderReaderTests: XCTestCase {
         XCTAssertEqual(header.duration, 2.0, accuracy: 0.0001)
     }
 
+    // MARK: Streams among other streams
+
+    /// A start-of-stream page of serial `serial` whose first packet is
+    /// `signature` followed by filler (a Skeleton "fishead", a Theora header).
+    private func startPage(serial: UInt32, signature: [UInt8]) -> [UInt8] {
+        let payload = signature + [UInt8](repeating: 0, count: 20)
+        return Builder.page(type: 0x02, granule: 0, serial: serial, lacing: [UInt8(payload.count)], payload: payload)
+    }
+
+    /// The Ogg Skeleton start page, serial 1.
+    private var fishead: [UInt8] { startPage(serial: 1, signature: Array("fishead".utf8) + [0]) }
+
+    /// A Theora start page, serial 5.
+    private var theora: [UInt8] { startPage(serial: 5, signature: [0x80] + Array("theora".utf8)) }
+
+    /// A later page of the Skeleton stream: a "fisbone", with `granule`.
+    private func skeletonPage(granule: Int64 = 0) -> [UInt8] {
+        Builder.page(granule: granule, serial: 1, lacing: [10], payload: [UInt8](repeating: 3, count: 10))
+    }
+
+    /// The pages of a Vorbis or Opus stream of serial 2 (title "Muxed", its
+    /// comment packet on several pages, audio ending at 2 seconds), with the
+    /// pages of other streams placed: `leading` ahead of its start page,
+    /// `afterStart` right after it, `betweenComment` after the comment
+    /// packet's first page, and `trailing` at the very end.
+    private func multiplexed(opus: Bool, leading: [[UInt8]] = [], afterStart: [[UInt8]] = [],
+                             betweenComment: [[UInt8]] = [], trailing: [[UInt8]] = []) -> [UInt8] {
+        let identification = opus ? Builder.opusHead() : Builder.vorbisID()
+        let signature = opus ? Builder.opusSignature : Builder.vorbisSignature
+        let padding = Array(("PAD=" + String(repeating: "p", count: 700)).utf8)
+        let comment = Builder.commentPacket(signature: signature, comments: [Array("TITLE=Muxed".utf8), padding])
+            + (opus ? [] : [1])
+        let start = Builder.page(type: 0x02, granule: 0, serial: 2, lacing: [UInt8(identification.count)],
+                                 payload: identification)
+        let commentPages = Builder.pages(carrying: comment, perPage: 255 * 2, serial: 2)
+        XCTAssertGreaterThan(commentPages.count, 1, "the comment packet must span pages")
+        let audio = Builder.audioPages(serial: 2, firstSequence: 9, granule: opus ? 96_312 : 44_100)
+        let pages: [[UInt8]] = leading + [start] + afterStart + commentPages.prefix(1) + betweenComment
+            + commentPages.dropFirst() + audio + trailing
+        return pages.flatMap { $0 }
+    }
+
+    /// A stream behind a Skeleton "fishead", with a "fisbone" after its
+    /// start page, reads exactly as the same stream without the Skeleton.
+    func testAStreamBehindASkeletonHeadReadsAsWithoutIt() throws {
+        for opus in [false, true] {
+            let plain = try XCTUnwrap(parse(multiplexed(opus: opus)), "opus \(opus)")
+            let skeleton = try XCTUnwrap(parse(multiplexed(opus: opus, leading: [fishead],
+                                                           afterStart: [skeletonPage()])), "opus \(opus)")
+            XCTAssertEqual(skeleton, plain)
+            XCTAssertEqual(skeleton.codec, opus ? .opus : .vorbis)
+            XCTAssertEqual(skeleton.tags.title, "Muxed")
+            XCTAssertEqual(skeleton.duration, 2.0, accuracy: 0.0001)
+        }
+    }
+
+    /// A Theora start page, alone or with the Skeleton's, is passed over.
+    func testATheoraStartPageBeforeTheAudioStreamIsPassedOver() throws {
+        for leading in [[theora], [fishead, theora], [theora, fishead]] {
+            for opus in [false, true] {
+                let header = try XCTUnwrap(parse(multiplexed(opus: opus, leading: leading,
+                                                             afterStart: [skeletonPage()])))
+                XCTAssertEqual(header, parse(multiplexed(opus: opus)))
+            }
+        }
+    }
+
+    /// Leading start pages that hold no Vorbis or Opus stream give nil.
+    func testSkeletonAndTheoraAloneGiveNoStream() {
+        let audio = Builder.audioPages(serial: 1, firstSequence: 3, granule: 44_100).flatMap { $0 }
+        XCTAssertNil(parse(fishead + theora + audio))
+        XCTAssertNil(parse(fishead + audio))
+    }
+
+    /// A later page of the Skeleton stream with a larger granule than the
+    /// audio's does not set the length: only the audio stream's serial does.
+    func testALaterSkeletonPageWithALargerGranuleIsIgnoredForTheLength() throws {
+        for opus in [false, true] {
+            let stream = multiplexed(opus: opus, leading: [fishead], trailing: [skeletonPage(granule: 9_999_999)])
+            XCTAssertEqual(try XCTUnwrap(parse(stream)).duration, 2.0, accuracy: 0.0001)
+        }
+    }
+
+    /// A Skeleton page between the comment packet's pages is passed over.
+    func testASkeletonPageBetweenCommentPagesIsPassedOver() throws {
+        for opus in [false, true] {
+            let stream = multiplexed(opus: opus, leading: [fishead], betweenComment: [skeletonPage()])
+            XCTAssertEqual(try XCTUnwrap(parse(stream)).tags.title, "Muxed")
+        }
+    }
+
+    /// Two start pages of one serial count once: the second is not tried, so
+    /// a Vorbis packet on a repeated Skeleton serial is not taken for audio.
+    func testTwoStartPagesOfOneSerialCountOnce() {
+        let id = Builder.vorbisID()
+        let repeated = Builder.page(type: 0x02, granule: 0, serial: 1, lacing: [UInt8(id.count)], payload: id)
+        let audio = Builder.audioPages(serial: 1, firstSequence: 3, granule: 44_100).flatMap { $0 }
+        XCTAssertNil(parse(fishead + repeated + audio))
+    }
+
+    /// A start page where no packet ends is passed over, and the walk goes on.
+    func testAStartPageWithNoPacketEndingIsPassedOver() throws {
+        let unfinished = Builder.page(type: 0x02, granule: 0, serial: 7, lacing: [255],
+                                      payload: [UInt8](repeating: 1, count: 255))
+        let header = try XCTUnwrap(parse(multiplexed(opus: false, leading: [unfinished, fishead])))
+        XCTAssertEqual(header, parse(multiplexed(opus: false)))
+    }
+
+    /// A leading page that fails its CRC ends the walk, so the stream behind it is not found.
+    func testACorruptStartPageEndsTheWalk() {
+        var stream = multiplexed(opus: false, leading: [fishead])
+        stream[fishead.count + 22] ^= 0xFF           // the audio stream's start page, second in the file
+        XCTAssertNil(parse(stream))
+    }
+
+    /// Nothing but start pages, cut anywhere, never traps.
+    func testAWalkOfStartPagesCutAnywhereNeverTraps() {
+        let stream = multiplexed(opus: true, leading: [fishead, theora])
+        for length in stride(from: 0, through: stream.count, by: 7) {
+            _ = OggHeaderReader.parse(head: Array(stream[0..<length]), tail: stream)
+        }
+    }
+
     // MARK: Robustness
 
     func testSeededRandomBytesNeverTrapAndGiveNil() {
