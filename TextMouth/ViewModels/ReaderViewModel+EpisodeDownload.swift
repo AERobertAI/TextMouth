@@ -13,8 +13,10 @@ extension ReaderViewModel {
     /// The reader listens to the feed engine's events first, then asks for
     /// the download, so no event can pass unheard. A download of the item
     /// already waiting or running is not started twice
-    /// (`FeedCenter.download(_:of:)`). A new wait replaces an earlier one. The wait ends silently when the
-    /// listener moves on, as another reader's taking the media controls does
+    /// (`FeedCenter.download(_:of:startingNext:)`), and the ask puts it
+    /// ahead of the downloads queued before it. A new wait replaces an
+    /// earlier one. The wait ends silently when the listener moves on, as
+    /// another reader's taking the media controls does
     /// (`listenerHasMovedOn(_:)`).
     ///
     /// - Parameters:
