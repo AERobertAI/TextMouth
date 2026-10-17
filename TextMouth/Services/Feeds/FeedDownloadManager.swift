@@ -324,9 +324,11 @@ final class FeedDownloadManager {
         defer { publishQueue() }
         putOff.removeAll { $0.feedID == feedID && $0.itemID == itemID }
         if let waiting = queue.firstIndex(where: { $0.feedID == feedID && $0.itemID == itemID }) {
-            queue.remove(at: waiting)
+            let request = queue.remove(at: waiting)
             store.updateItem(itemID, of: feedID) { $0.state = .notDownloaded }
+            announceCancelled([request])
         } else if current?.feedID == feedID, current?.itemID == itemID {
+            // Announced where its task ends (`run(_:)`).
             currentTask?.cancel()
         } else {
             // Put off by itself, for a network or for room: no longer.
@@ -385,6 +387,9 @@ final class FeedDownloadManager {
     func cancelEveryDownload() -> Cancellation {
         guard !isStoppedForQuit else { return Cancellation() }
         let (underWay, finishing, stopping) = cancelTargets
+        // Each request dropped from the queue is announced, below, once its
+        // item is not downloaded; the put-off ones, the rule's, are not.
+        let dropped = queue
         queue.removeAll()
         putOff.removeAll()
         if underWay != nil {
@@ -401,6 +406,7 @@ final class FeedDownloadManager {
             }
             markNotDownloaded(itemIDs, of: feedID)
         }
+        announceCancelled(dropped)
         FeedPartialDownloads.discardAll(in: environment.resumeFolder)
         if finishing == nil {
             removeFilesWaitingForImport()
@@ -447,6 +453,17 @@ final class FeedDownloadManager {
             return Cancellation.Stopped(feedID: download.feedID, itemID: download.itemID, title: title)
         }
         return (underWay, finishing, stopping)
+    }
+
+    /// Announces that each of `requests` was cancelled before it finished,
+    /// so a reader waiting for its episode can say so (REV18a finding 6).
+    /// Called once an item reads not downloaded, so a listener of the event
+    /// finds a consistent record; never for the rule's put-off requests, a
+    /// download stopped for quitting, or one that fails or finishes.
+    private func announceCancelled(_ requests: [Request]) {
+        for request in requests {
+            announce(.downloadCancelled(feedID: request.feedID, itemID: request.itemID))
+        }
     }
 
     /// Marks the items `itemIDs` of the feed `feedID` not downloaded, as
@@ -502,9 +519,12 @@ final class FeedDownloadManager {
         closedFeedIDs.insert(feedID)
         defer { publishQueue() }
         let dropped = Set((queue + putOff).filter { $0.feedID == feedID }.map(\.itemID))
+        // Those waiting to start are announced; the put-off ones, the rule's, are not.
+        let cancelled = queue.filter { $0.feedID == feedID }
         queue.removeAll { $0.feedID == feedID }
         putOff.removeAll { $0.feedID == feedID }
         markNotDownloaded(dropped, of: feedID)
+        announceCancelled(cancelled)
         if current?.feedID == feedID {
             currentTask?.cancel()
         }
@@ -640,6 +660,7 @@ final class FeedDownloadManager {
             if failure == .transfer(.cancelled) {
                 store.updateItem(request.itemID, of: request.feedID) { $0.state = .notDownloaded }
                 DiagnosticLog.event(.feeds, "FEED_DOWNLOAD_CANCELLED: \(item.title) (\(feed.title))")
+                announceCancelled([request])
                 return .stopped
             }
             // As it stands now: the listener may have asked for it meanwhile.

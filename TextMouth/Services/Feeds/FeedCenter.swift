@@ -185,6 +185,12 @@ enum FeedEvent: Equatable, Sendable {
     case downloadFinished(feedID: UUID, itemID: FeedItem.ID, bookID: UUID)
     /// An item's download failed, for the reason given.
     case downloadFailed(feedID: UUID, itemID: FeedItem.ID, reason: String)
+    /// An item's download, one the listener asked for or one under way, was
+    /// cancelled before it finished, by Cancel Download, by the feed
+    /// downloads section's Cancel, or by Delete Feed…. The item is not
+    /// downloaded by now, so a listener of the event finds a consistent
+    /// record (REV18a finding 6).
+    case downloadCancelled(feedID: UUID, itemID: FeedItem.ID)
     /// A change of the "List and download" choice or its number took effect,
     /// once it had stayed unchanged for `FeedCenter.itemPolicyQuietTime`
     /// (FR11): the global setting's, which covers every feed, when `global`,

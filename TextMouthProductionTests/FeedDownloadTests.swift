@@ -412,10 +412,15 @@ final class FeedDownloadTests: XCTestCase {
 
     /// A world whose feed lists three episodes, each a slow file so the
     /// queue holds still while the test asks. Nothing is asked for yet.
-    private func threeSlowEpisodes(label: String) async throws -> (world: FeedTestWorld, feed: Feed) {
+    /// - Parameter chunked: Whether each file arrives in ten pauses, so a
+    ///   download is still under way a second after it starts.
+    private func threeSlowEpisodes(label: String, chunked: Bool = false) async throws -> (world: FeedTestWorld, feed: Feed) {
         let world = try FeedTestWorld(self, label: label)
-        let audio = try FeedMediaFixtures.silentAAC()
+        let audio = try FeedMediaFixtures.silentAAC(duration: chunked ? 2 : 1)
         var slow = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
+        if chunked {
+            slow.chunkSize = max(1, audio.count / 10)
+        }
         slow.pause = 0.1
         let items = (1...3).map { number -> FeedXML.Item in
             world.server.serve("/audio/\(number).m4a", slow)
@@ -521,6 +526,158 @@ final class FeedDownloadTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(
             atPath: world.center.downloads.resumeDataFile(for: "guid:ep-1", of: feed.id).path
         ))
+    }
+
+    // MARK: - The Cancelled Event (REV18a finding 6)
+
+    /// What a test heard of `.downloadCancelled`: the item of each event,
+    /// and the state its record read at the moment the event came.
+    private final class CancelledLog {
+        var itemIDs: [FeedItem.ID] = []
+        var statesAtTheTime: [FeedItemState?] = []
+    }
+
+    /// Listens to `world`'s engine, noting each `.downloadCancelled` in `log`
+    /// together with the state the item read when it came.
+    private func listenForCancelled(in world: FeedTestWorld, into log: CancelledLog) -> AnyCancellable {
+        world.center.events.sink { [weak center = world.center] event in
+            guard case .downloadCancelled(let feedID, let itemID) = event else { return }
+            log.itemIDs.append(itemID)
+            log.statesAtTheTime.append(center?.store.record(of: feedID)?.item(itemID)?.state)
+        }
+    }
+
+    /// Cancel Download of the download under way sends exactly one event for
+    /// it, once the item reads not downloaded; of one waiting in the queue,
+    /// exactly one too.
+    func testCancellingADownloadAnnouncesItOnce() async throws {
+        let (world, feed) = try await threeSlowEpisodes(label: "FeedCancelledEvent", chunked: true)
+        let log = CancelledLog()
+        let subscription = listenForCancelled(in: world, into: log)
+        defer { subscription.cancel() }
+        ask(2, of: world, in: feed)
+        await waitFor("the first download is under way") { world.server.requests(to: "/audio/1.m4a").count == 1 }
+
+        world.center.cancelDownload("guid:ep-2", of: feed.id)
+        XCTAssertEqual(log.itemIDs, ["guid:ep-2"], "the queued request is announced when it leaves the queue")
+        world.center.cancelDownload("guid:ep-1", of: feed.id)
+        await waitFor("the download under way stops") { world.center.downloads.current == nil }
+
+        XCTAssertEqual(log.itemIDs, ["guid:ep-2", "guid:ep-1"])
+        XCTAssertEqual(log.statesAtTheTime, [.notDownloaded, .notDownloaded])
+    }
+
+    /// The feed downloads section's Cancel announces every download it
+    /// stops, one each: the one under way and those waiting.
+    func testCancellingEveryDownloadAnnouncesEachOne() async throws {
+        let (world, feed) = try await threeSlowEpisodes(label: "FeedCancelledAll", chunked: true)
+        let log = CancelledLog()
+        let subscription = listenForCancelled(in: world, into: log)
+        defer { subscription.cancel() }
+        ask(3, of: world, in: feed)
+        await waitFor("the first download is under way") { world.server.requests(to: "/audio/1.m4a").count == 1 }
+
+        world.center.cancelEveryDownload()
+        await waitFor("the download under way stops") { world.center.downloads.current == nil }
+
+        XCTAssertEqual(log.itemIDs.sorted(), ["guid:ep-1", "guid:ep-2", "guid:ep-3"])
+        XCTAssertEqual(log.statesAtTheTime, Array(repeating: FeedItemState.notDownloaded, count: 3))
+    }
+
+    /// Closing a feed for Delete Feed… announces its downloads, the one
+    /// under way and those waiting, and none of another feed's.
+    func testClosingAFeedAnnouncesItsDownloadsOnly() async throws {
+        let (world, feed) = try await threeSlowEpisodes(label: "FeedCancelledClose", chunked: true)
+        let other = try await subscribeSecondFeed(in: world)
+        let log = CancelledLog()
+        let subscription = listenForCancelled(in: world, into: log)
+        defer { subscription.cancel() }
+        ask(2, of: world, in: feed)
+        world.center.download("guid:b-1", of: other.id)
+        world.center.download("guid:ep-3", of: feed.id)
+        await waitFor("the first download is under way") { world.server.requests(to: "/audio/1.m4a").count == 1 }
+
+        world.center.downloads.closeFeed(feed.id)
+        await waitFor("the download under way stops") { world.center.downloads.current == nil }
+
+        XCTAssertEqual(log.itemIDs.sorted(), ["guid:ep-1", "guid:ep-2", "guid:ep-3"])
+        XCTAssertEqual(log.statesAtTheTime, Array(repeating: FeedItemState.notDownloaded, count: 3))
+        // The other feed's download goes on.
+        _ = try await downloadedBook(world, feed: other, item: "guid:b-1")
+        XCTAssertEqual(log.itemIDs.count, 3)
+    }
+
+    /// A download that fails, one that finishes, and one that stops for
+    /// quitting announce no cancellation: nobody cancelled them.
+    func testNoCancellationIsAnnouncedForAnEndThatIsNotACancel() async throws {
+        let world = try FeedTestWorld(self, label: "FeedCancelledNone")
+        let audio = try FeedMediaFixtures.silentAAC(duration: 4)
+        var slow = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
+        slow.chunkSize = max(1, audio.count / 20)
+        slow.pause = 0.1
+        world.server.serve("/audio/1.m4a", StubResponse(status: 404), FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
+        world.server.serve("/audio/2.m4a", slow)
+        await world.start()
+        let items = (1...2).map { number in
+            FeedXML.Item(guid: "ep-\(number)", title: "Episode \(number)", published: world.day(-Double(number)),
+                         enclosure: world.server.url("/audio/\(number).m4a").absoluteString, enclosureType: "audio/mp4")
+        }
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: items)))
+        let feed = try await world.subscribe("/feed.xml")
+        let log = CancelledLog()
+        let subscription = listenForCancelled(in: world, into: log)
+        defer { subscription.cancel() }
+
+        // It fails, then finishes when asked for again.
+        world.center.download("guid:ep-1", of: feed.id)
+        await waitFor("the download fails") {
+            world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state.failureReason != nil
+        }
+        world.center.download("guid:ep-1", of: feed.id)
+        _ = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+        // It stops for quitting, partway.
+        world.center.download("guid:ep-2", of: feed.id)
+        await waitFor("some of the second episode arrives") {
+            (world.center.downloads.progress.state.download?.transfer?.completedBytes ?? 0) > 0
+        }
+        var replies: [Bool] = []
+        XCTAssertTrue(FeedQuitHold.hold(world.center.downloads) { replies.append($0) })
+        await waitFor("the quit is answered") { !replies.isEmpty }
+
+        XCTAssertEqual(log.itemIDs, [])
+    }
+
+    /// The newest-N rule taking back its queued downloads announces
+    /// nothing: nobody waits on a download the rule alone asked for.
+    func testTheRulesDownloadsTakenBackAreNotAnnounced() async throws {
+        let (world, feed) = try await threeSlowEpisodes(label: "FeedCancelledRule", chunked: false)
+        let log = CancelledLog()
+        let subscription = listenForCancelled(in: world, into: log)
+        defer { subscription.cancel() }
+        world.center.download("guid:ep-1", of: feed.id)
+        world.center.downloads.download("guid:ep-2", of: feed.id, origin: .window)
+        world.center.downloads.download("guid:ep-3", of: feed.id, origin: .window)
+
+        let withdrawn = world.center.downloads.withdrawRuleDownloads(of: feed.id) { $0 == "guid:ep-2" }
+
+        XCTAssertEqual(withdrawn, ["guid:ep-2"])
+        XCTAssertEqual(world.center.downloads.queue.map(\.itemID), ["guid:ep-3"])
+        XCTAssertEqual(log.itemIDs, [])
+        _ = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+        _ = try await downloadedBook(world, feed: feed, item: "guid:ep-3")
+        XCTAssertEqual(log.itemIDs, [])
+    }
+
+    /// Subscribes `world` to a second feed of one slow episode, "guid:b-1",
+    /// whose download lasts as long as the first feed's.
+    private func subscribeSecondFeed(in world: FeedTestWorld) async throws -> Feed {
+        var slow = FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(), mimeType: "audio/mp4")
+        slow.pause = 0.1
+        world.server.serve("/audio/b1.m4a", slow)
+        let item = FeedXML.Item(guid: "b-1", title: "Other Episode", published: world.day(-1),
+                                enclosure: world.server.url("/audio/b1.m4a").absoluteString, enclosureType: "audio/mp4")
+        world.server.serve("/feed2.xml", .feed(FeedXML.rss(items: [item])))
+        return try await world.subscribe("/feed2.xml")
     }
 
     // MARK: - Downloads by Themselves (FR11)
