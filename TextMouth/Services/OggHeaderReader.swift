@@ -29,7 +29,7 @@ enum OggHeaderReader {
         let channels: Int
         /// The sample rate in hertz; for Opus always 48,000 (the decoder's rate).
         let sampleRate: Double
-        /// The stream's length in seconds, finite and above 0.
+        /// The stream's length in seconds: above 0 and at most `maximumDuration`.
         let duration: TimeInterval
         /// The tags, empty when the comment packet is missing or too large.
         let tags: Tags
@@ -53,6 +53,10 @@ enum OggHeaderReader {
     private static let maxRejectedCandidates = 256
     /// The Opus decoder's sample rate, whatever the file was recorded at.
     private static let opusSampleRate = 48_000.0
+    /// The longest stream believed: a year. A granule position that claims more is
+    /// corrupt, not audio, and refusing it keeps every later conversion of the
+    /// length to whole seconds (`Int(seconds)`) from overflowing and trapping.
+    static let maximumDuration: TimeInterval = 365 * 24 * 3_600
 
     // MARK: - CRC
 
@@ -118,7 +122,7 @@ enum OggHeaderReader {
             // The first `preSkip` samples are the decoder's warm-up.
             seconds = Double(max(0, granule - Int64(start.preSkip))) / opusSampleRate
         }
-        guard seconds.isFinite, seconds > 0 else { return nil }
+        guard seconds.isFinite, seconds > 0, seconds <= maximumDuration else { return nil }
 
         return Header(codec: start.codec, channels: start.channels,
                       sampleRate: start.sampleRate, duration: seconds, tags: start.tags)

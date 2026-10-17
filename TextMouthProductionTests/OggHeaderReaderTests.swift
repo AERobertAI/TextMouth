@@ -258,6 +258,18 @@ final class OggHeaderReaderTests: XCTestCase {
         XCTAssertNil(parse(Builder.vorbisStream(granule: 0)))
     }
 
+    /// A granule that claims more than a year of audio is corrupt, and is
+    /// refused: a crafted file must not give a length that later overflows
+    /// `Int(seconds)` and traps. A hundred hours is audio.
+    func testAGranuleClaimingMoreThanAYearGivesNoDuration() throws {
+        XCTAssertNil(parse(Builder.vorbisStream(rate: 1, granule: Int64.max)))
+        XCTAssertNil(parse(Builder.vorbisStream(rate: 22_050, granule: 22_050 * 31_536_001)))
+        XCTAssertNil(parse(Builder.opusStream(granule: Int64.max)))
+        let long = try XCTUnwrap(parse(Builder.vorbisStream(rate: 22_050, granule: 22_050 * 360_000)))
+        XCTAssertEqual(long.duration, 360_000, accuracy: 0.5)
+        XCTAssertEqual(OggHeaderReader.maximumDuration, 31_536_000)
+    }
+
     /// The real fixtures prove the CRC and the page logic against real files.
     func testTheRealVorbisFixture() throws {
         let bytes = [UInt8](try Data(contentsOf: requireFile(OggTestFixtures.vorbis)))
