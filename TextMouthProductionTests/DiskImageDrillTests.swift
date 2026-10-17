@@ -42,6 +42,60 @@ final class DiskImageDrillTests: XCTestCase {
         XCTAssertEqual(image.mountPoint.path, "/sandbox/Scratch/x/mnt-full-0a1b2c3d")
     }
 
+    // MARK: - The Fill Guards
+
+    /// A volume is mounted only when the mount point's device is known and
+    /// differs from its parent folder's.
+    func testAVolumeIsMountedOnlyWhenItsDeviceDiffersFromTheParents() {
+        XCTAssertEqual(FillGuards.volumeDevice(inside: 7, outside: 1), 7)
+        XCTAssertNil(FillGuards.volumeDevice(inside: 1, outside: 1), "the same device means nothing is mounted")
+        XCTAssertNil(FillGuards.volumeDevice(inside: nil, outside: 1))
+        XCTAssertNil(FillGuards.volumeDevice(inside: 7, outside: nil))
+        XCTAssertNil(FillGuards.volumeDevice(inside: nil, outside: nil))
+    }
+
+    /// No fill starts without a mounted volume and a known size; the reason
+    /// names the missing one, the volume first.
+    func testNoFillStartsWithoutAMountedVolumeAndAKnownSize() {
+        let size: Int64 = 3 * 1024 * 1024
+
+        XCTAssertNil(FillGuards.refusalBeforeFilling(volumeDevice: 7, capacityBytes: size))
+        XCTAssertEqual(FillGuards.refusalBeforeFilling(volumeDevice: nil, capacityBytes: size), "the image is not attached")
+        XCTAssertEqual(FillGuards.refusalBeforeFilling(volumeDevice: nil, capacityBytes: nil), "the image is not attached")
+        XCTAssertEqual(FillGuards.refusalBeforeFilling(volumeDevice: 7, capacityBytes: nil), "the image's size is not known")
+        XCTAssertEqual(FillGuards.refusalBeforeFilling(volumeDevice: 7, capacityBytes: 0), "the image's size is not known")
+        XCTAssertEqual(FillGuards.refusalBeforeFilling(volumeDevice: 7, capacityBytes: -1), "the image's size is not known")
+    }
+
+    /// The ballast file's descriptor must be on the volume's device.
+    func testTheBallastMustBeOnTheVolumesDevice() {
+        XCTAssertNil(FillGuards.refusalForDescriptor(descriptorDevice: 7, volumeDevice: 7))
+        XCTAssertEqual(
+            FillGuards.refusalForDescriptor(descriptorDevice: 1, volumeDevice: 7),
+            "the ballast file is not on the image's volume"
+        )
+    }
+
+    /// The write cap is twice the image's size: exactly that is allowed, one
+    /// byte more is not, and a 3 MB image can never take 6 MB and a byte.
+    func testTheWriteCapIsTwiceTheImagesSizeWithExactBoundaries() {
+        let size: Int64 = 3 * 1024 * 1024
+
+        XCTAssertEqual(FillGuards.writeLimit(capacityBytes: size), 6 * 1024 * 1024)
+        XCTAssertFalse(FillGuards.exceedsCap(written: 0, capacityBytes: size))
+        XCTAssertFalse(FillGuards.exceedsCap(written: size, capacityBytes: size), "a full image is the normal case")
+        XCTAssertFalse(FillGuards.exceedsCap(written: 2 * size, capacityBytes: size), "exactly twice is allowed")
+        XCTAssertTrue(FillGuards.exceedsCap(written: 2 * size + 1, capacityBytes: size))
+        XCTAssertTrue(FillGuards.exceedsCap(written: 10 * size, capacityBytes: size))
+    }
+
+    /// An image that was never made knows no size, so it cannot be filled.
+    func testAnImageThatWasNeverMadeKnowsNoSize() {
+        let image = DiskImage(in: URL(fileURLWithPath: "/sandbox/x", isDirectory: true), name: "fresh", token: "0a1b2c3d")
+
+        XCTAssertNil(image.capacityBytes)
+    }
+
     // MARK: - The Leftover Filter
 
     /// The sandbox prefixes name the folder holding every test sandbox,

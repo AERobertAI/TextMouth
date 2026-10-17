@@ -216,6 +216,27 @@ final class StorageDrillTests: XCTestCase {
         print("STORAGE_DRILL_NOTE: the vanished move left \(stagedLeftovers.count) hidden staged copy on the volume: \(stagedLeftovers)")
     }
 
+    // MARK: - 5. The Fill Refuses a Volume That Is Gone
+
+    /// `fillToCapacity` on an image that was unplugged throws, and makes no
+    /// file in the empty mount point folder on the Mac's own disk: zeros
+    /// written there would fill the startup disk.
+    func testFillingADetachedImageThrowsAndWritesNothing() throws {
+        let image = try DiskImage.make(for: self, name: "fill-detached", sizeMegabytes: 3)
+        XCTAssertTrue(image.detach(), "the image could not be unplugged")
+        XCTAssertFalse(image.isAttached)
+
+        XCTAssertThrowsError(try image.fillToCapacity(leavingFree: 16 * 1024)) { error in
+            let failure = error as? DiskImageError
+            XCTAssertEqual(failure?.action, "filling the volume")
+            XCTAssertEqual(failure?.detail, "the image is not attached")
+        }
+        XCTAssertEqual(
+            try FileManager.default.contentsOfDirectory(atPath: image.mountPoint.path), [],
+            "a file was made in the dead volume's place"
+        )
+    }
+
     // MARK: - Helpers
 
     /// Makes the data directory in use a folder on `image` until the test

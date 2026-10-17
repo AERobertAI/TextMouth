@@ -204,6 +204,53 @@ enum LeftoverImages {
     }
 }
 
+// MARK: - Fill Guards
+
+/// The pure decisions that keep `DiskImage.fillToCapacity` from ever writing
+/// zeros anywhere but on the drill's own small mounted volume. Writing until
+/// the disk is full on a plain folder would fill the Mac's startup disk, so
+/// each decision is a function the always-on tests call without a disk.
+enum FillGuards {
+    /// How many times the image's size the ballast may reach before the fill
+    /// is stopped as a bug, whatever the disk reports.
+    static let capMultiple: Int64 = 2
+
+    /// The device of a mounted volume: `inside` (the mount point's device)
+    /// when it is known and differs from `outside` (its parent folder's
+    /// device); nil when either is unknown or they are the same, which means
+    /// nothing is mounted there.
+    static func volumeDevice(inside: dev_t?, outside: dev_t?) -> dev_t? {
+        guard let inside, let outside, inside != outside else { return nil }
+        return inside
+    }
+
+    /// Why a fill must not start, or nil when it may: it needs the mounted
+    /// volume's device (`volumeDevice`) and the size the image was made with.
+    static func refusalBeforeFilling(volumeDevice: dev_t?, capacityBytes: Int64?) -> String? {
+        guard volumeDevice != nil else { return "the image is not attached" }
+        guard let capacityBytes, capacityBytes > 0 else { return "the image's size is not known" }
+        return nil
+    }
+
+    /// Why the open ballast file must not be written, or nil when it may:
+    /// its descriptor must be on the volume that was mounted before the
+    /// file was opened (a detach in between puts the file on another disk).
+    static func refusalForDescriptor(descriptorDevice: dev_t, volumeDevice: dev_t) -> String? {
+        descriptorDevice == volumeDevice ? nil : "the ballast file is not on the image's volume"
+    }
+
+    /// The most bytes the ballast may reach for an image of `capacityBytes`.
+    static func writeLimit(capacityBytes: Int64) -> Int64 {
+        capacityBytes * capMultiple
+    }
+
+    /// Whether `written` bytes have passed the limit: more than twice the
+    /// capacity (exactly twice is still allowed) without the disk being full.
+    static func exceedsCap(written: Int64, capacityBytes: Int64) -> Bool {
+        written > writeLimit(capacityBytes: capacityBytes)
+    }
+}
+
 // MARK: - A Disk Image
 
 /// Why a disk image operation failed.
@@ -225,6 +272,9 @@ final class DiskImage: @unchecked Sendable {
     let mountPoint: URL
     /// The volume's name, `TMDrill-<token>`.
     let volumeName: String
+    /// The size the image was made with, in bytes; nil until `create` has
+    /// run. It bounds `fillToCapacity` (see `FillGuards.exceedsCap`).
+    private(set) var capacityBytes: Int64?
 
     /// An image to be made in `folder`, named for `name`.
     init(in folder: URL, name: String, token: String = String(UUID().uuidString.prefix(8))) {
@@ -278,6 +328,7 @@ final class DiskImage: @unchecked Sendable {
     func create(sizeMegabytes: Int) throws {
         let result = HDIUtil.run(HDIUtil.createArguments(megabytes: sizeMegabytes, volumeName: volumeName, image: imageURL))
         guard result.succeeded else { throw DiskImageError(action: "creating \(imageURL.lastPathComponent)", detail: result.output) }
+        capacityBytes = Int64(sizeMegabytes) * 1024 * 1024
     }
 
     /// Mounts the image at its mount point, making that folder first.
@@ -295,13 +346,17 @@ final class DiskImage: @unchecked Sendable {
         return HDIUtil.run(HDIUtil.detachArguments(target: mountPoint.path)).succeeded
     }
 
-    /// Whether the volume is mounted at the mount point: its device differs
-    /// from the device of the folder holding it.
-    var isAttached: Bool {
-        guard let inside = deviceNumber(of: mountPoint),
-              let outside = deviceNumber(of: mountPoint.deletingLastPathComponent()) else { return false }
-        return inside != outside
+    /// The device of the volume mounted at the mount point, or nil when
+    /// nothing is mounted there (its device is the parent folder's).
+    var mountedDevice: dev_t? {
+        FillGuards.volumeDevice(
+            inside: deviceNumber(of: mountPoint),
+            outside: deviceNumber(of: mountPoint.deletingLastPathComponent())
+        )
     }
+
+    /// Whether the volume is mounted at the mount point.
+    var isAttached: Bool { mountedDevice != nil }
 
     /// Removes the image file and the empty mount point folder. Does nothing
     /// while the volume is still attached: a mounted volume's files are
@@ -324,11 +379,38 @@ final class DiskImage: @unchecked Sendable {
     /// reports it is full (`ENOSPC`), then shortens the file so about
     /// `reserve` bytes are free again, and flushes. Returns the ballast's
     /// location.
+    ///
+    /// Safe by construction, because zeros written to a plain folder would
+    /// fill the Mac's own disk: nothing is made unless the image is attached
+    /// now; the volume's device is taken once, before the file is opened; the
+    /// open file must be on that device, or it is removed; and the write stops
+    /// with an error, the ballast removed, once it passes twice the image's
+    /// size without the volume reporting it is full.
     func fillToCapacity(leavingFree reserve: Int) throws -> URL {
+        let action = "filling the volume"
+        // The volume's device, taken once, before anything is made.
+        let device = mountedDevice
+        let reason = FillGuards.refusalBeforeFilling(volumeDevice: device, capacityBytes: capacityBytes)
+        guard reason == nil, let volume = device, let capacity = capacityBytes else {
+            throw DiskImageError(action: action, detail: reason ?? "the image is not attached")
+        }
+
         let ballast = mountPoint.appendingPathComponent("ballast.bin")
         let descriptor = open(ballast.path, O_WRONLY | O_CREAT | O_TRUNC, 0o644)
         guard descriptor >= 0 else { throw posixError("creating the ballast file") }
         defer { close(descriptor) }
+
+        // The file just made must be on the volume, not on the Mac's disk.
+        var info = stat()
+        guard fstat(descriptor, &info) == 0 else {
+            let failure = posixError("checking the ballast file")
+            unlink(ballast.path)
+            throw failure
+        }
+        if let refusal = FillGuards.refusalForDescriptor(descriptorDevice: info.st_dev, volumeDevice: volume) {
+            unlink(ballast.path)
+            throw DiskImageError(action: action, detail: refusal)
+        }
 
         var written: off_t = 0
         // Big writes first, then ever smaller ones for the last gap.
@@ -337,10 +419,18 @@ final class DiskImage: @unchecked Sendable {
             while true {
                 let count = chunk.withUnsafeBytes { write(descriptor, $0.baseAddress, chunkSize) }
                 if count < 0 {
-                    guard errno == ENOSPC else { throw posixError("filling the volume") }
+                    guard errno == ENOSPC else { throw posixError(action) }
                     break
                 }
                 written += off_t(count)
+                // The disk never reported it was full: a bug, so stop.
+                if FillGuards.exceedsCap(written: Int64(written), capacityBytes: capacity) {
+                    unlink(ballast.path)
+                    throw DiskImageError(
+                        action: action,
+                        detail: "wrote more than \(FillGuards.capMultiple) times the image's size without the volume filling"
+                    )
+                }
             }
         }
         let kept = max(0, written - off_t(reserve))
