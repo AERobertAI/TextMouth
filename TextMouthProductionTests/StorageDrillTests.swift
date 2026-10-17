@@ -176,10 +176,18 @@ final class StorageDrillTests: XCTestCase {
     /// A data-directory move copies into a volume that is unplugged after a
     /// few items. The move fails, every file of the source has the checksum
     /// it had, the data directory in use and the setting still name the
-    /// source, and no published copy exists at the destination.
+    /// source, and no published copy exists at the destination. The hidden
+    /// staged copy, which the move could not remove while the volume was
+    /// away, is on the volume when it returns, with its note on this Mac's
+    /// journal; the launch sweep removes it and forgets the note.
     @MainActor
     func testAMoveWhoseDestinationVanishesLeavesTheSourceComplete() throws {
         let image = try DiskImage.make(for: self, name: "move-vanish", sizeMegabytes: 16)
+        // Start and end with no journal of staging folders, so the notes
+        // counted below are this move's alone.
+        let journal = MachineLocalPaths.moveLeftovers
+        try? FileManager.default.removeItem(at: journal)
+        addTeardownBlock { try? FileManager.default.removeItem(at: journal) }
         let source = try makeSourceLibrary()
         let sourceBefore = try FolderSnapshot(of: source)
         let rootBefore = TextMouthPaths.root
@@ -210,12 +218,28 @@ final class StorageDrillTests: XCTestCase {
 
         try image.attach()
         XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path), "a copy was published at the destination")
-        let stagedLeftovers = try FileManager.default.contentsOfDirectory(atPath: image.mountPoint.path)
-            .filter { $0.hasPrefix(DataDirectoryMigrator.stagingNamePrefix) }
-        print("STORAGE_DRILL_NOTE: the vanished move left \(stagedLeftovers.count) hidden staged copy on the volume: \(stagedLeftovers)")
+
+        // The move could not remove its hidden staged copy while the volume
+        // was away, so the copy is on the volume now, and the move's note of
+        // it is still on this Mac's journal.
+        let stagedLeftovers = try stagedCopies(on: image)
+        XCTAssertEqual(stagedLeftovers.count, 1, "the vanished move left \(stagedLeftovers.count) staged copies: \(stagedLeftovers)")
+        XCTAssertEqual(MigrationStagingLeftovers.readEntries().count, 1, "the move's note was forgotten with its folder still there")
+
+        // The launch sweep removes exactly that copy, and forgets the note.
+        MigrationStagingLeftovers.sweep(fileManager: .default)
+        XCTAssertEqual(try stagedCopies(on: image), [], "the sweep left a staged copy on the volume")
+        XCTAssertEqual(MigrationStagingLeftovers.readEntries(), [], "the journal still lists a folder")
     }
 
     // MARK: - Helpers
+
+    /// The names of the hidden staged copies a data-directory move left on
+    /// `image`'s volume.
+    private func stagedCopies(on image: DiskImage) throws -> [String] {
+        try FileManager.default.contentsOfDirectory(atPath: image.mountPoint.path)
+            .filter { $0.hasPrefix(DataDirectoryMigrator.stagingNamePrefix) }
+    }
 
     /// Makes the data directory in use a folder on `image` until the test
     /// ends, when the test process's own is put back. The image's teardown
