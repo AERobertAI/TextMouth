@@ -36,6 +36,14 @@ final class PlaybackFuzzTests: XCTestCase {
         try fuzz(.text)
     }
 
+    func testSingleFileAudioBookSurvivesRandomOperations() throws {
+        try fuzz(.singleFileAudio)
+    }
+
+    func testMultiFileAudioBookSurvivesRandomOperations() throws {
+        try fuzz(.multiFileAudio)
+    }
+
     // MARK: - Sizes
 
     /// An integer setting from the environment, or `fallback` where the
