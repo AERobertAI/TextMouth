@@ -977,6 +977,13 @@ final class ContinueToNextBookTests: XCTestCase {
         let index = try LibraryIndexSandbox.capture()
         addTeardownBlock { index.restore() }
         let folder = BookFolder(name: "Serials")
+        // `makeAudioBook` makes each package at the top level, but a book
+        // placed in the folder saves its record in the folder's own
+        // directory, which no package's teardown covers: remove it too, or
+        // the next test to open a library adopts what is left as orphaned
+        // packages (the full suite saw FeedItemIndexMoveTests fail on them).
+        let folderDirectory = TextMouthPaths.libraryDir.appendingPathComponent(folder.fullPath, isDirectory: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: folderDirectory) }
         var books: [Book] = []
         for title in ["First Volume", "Second Volume", "Third Volume"] {
             var book = try makeAudioBook(title: title, restingAtItsEnd: finished.contains(title))
