@@ -545,94 +545,94 @@ Answer for the whole file:
 
 1. **Reading RTF, .doc, .dot, and ODT through Apple's textutil.** TextMouth would run `/usr/bin/textutil` in a watched child process and find chapters from font sizes, since every heading style is lost on the way. Our own readers of Word's and RTF's real styles would be a larger job (FMT47).
    Recommended: yes now; write our own readers later only if headings come out wrong in your files.
-   Answer:
+   Answer: Do this for now, I would personally like the ability to keep bold and other formatting if possible for non heading text in case one day we might want to add the ability to speak differently formatted text like with a different pitch or something.
 
 2. **Text files in other encodings.** Today a Russian, Central European, Mac Roman, or Japanese text file is read silently as Western text, garbled.
    Recommended: guess the encoding, say the guess in Book Info, and add a Reopen with Encoding command; no question at each import.
-   Answer:
+   Answer: yes no question at import, if its possible maybe write something to guess if the encoding can not be decoded and show a alert when opening a book to ask if its a different encoding (try guessing first). Also I noticed when trying to open a DRMed epub I had accidentally loaded that it ended up garbled... We won't put any tools to break it or anything in TextMouth of course but it might be good to show a alert when opening a garbled file alerting the user it might be corrupted or DRMed.
 
 3. **Formats to refuse with advice.** Pages, Keynote, Numbers, WordPerfect, CHM, DjVu, XPS, real RAR comics, and copy-protected audio would get a message saying how to convert them, rather than a reader each.
    Recommended: yes.
-   Answer:
+   Answer: Why not Pages? The non Apple ones I would aggree with.
 
 ### Braille
 
 4. **The braille in your BRF files.** UEB contracted (Grade 2), as BARD and Bookshare deliver, needs a translator to be heard as print. Uncontracted (Grade 1) TextMouth can decode itself, and older EBAE needs a translator too.
    Recommended: plan for UEB Grade 2; tell us if you have other kinds.
-   Answer:
+   Answer: It should support multiple braille tables, not sure if Apple exposes the downloaded tables to the App? Try researching braille blaster or similar tools to see how they get the tables.
 
 5. **A library for contracted braille.** You asked for "writing the encoder and a decoder". Contracted braille needs liblouis (LGPL, about 0.6 MB, built from source in the repository as LAME is) or macOS 26's own translator, which a test program found empty. A translator of our own would take months.
    Recommended: liblouis, after a one-day test of macOS 26's translator inside the app.
-   Answer:
+   Answer: It wouldn't take months, you under estimate yourself, but I agree it would at least take a weekly limit's worth of work probably...  0.6 MB isn't bad, just go with that if thats all it adds. 
 
 6. **Exact braille cells on your display while TextMouth speaks.** No macOS interface lets an app send its own cells to the display, and macOS 26's Braille Access already shows a BRF's cells exactly.
    Recommended: no; show the print text, and say in Book Info that Braille Access shows the cells.
-   Answer:
+   Answer: Yes, I really just want to start the brf being converted to text to be listened to and then the ability to encode to be able to convert any markdown intermediate parsed format into a braille book.
 
 7. **BRF export defaults.** 40 cells by 25 lines, UEB Grade 2, braille page numbers on, and CR LF line ends, each changeable in the Export dialog.
    Recommended: yes.
-   Answer:
+   Answer: yes
 
 ### Audio
 
 8. **Audio files you have.** Do you have WMA, AMR or 3GP, Matroska or WebM, or APE or WavPack files that TextMouth cannot open?
    Recommended: do the formats macOS reads first (FMT09), then WMA and Matroska; tell us any you have.
-   Answer:
+   Answer: Yes wait on those, I do see WebM more then the others on this list.
 
 9. **Your installed ffmpeg for formats macOS cannot read.** WMA, Matroska, WavPack, and the rest would convert only when ffmpeg is installed, as yours is from Homebrew, with a clear message otherwise. Bundling ffmpeg would add about 1.5 to 3 MB and a source obligation.
    Recommended: installed ffmpeg only, for now.
-   Answer:
+   Answer: How much would it be to add the encoding / decoding for all these formats? It might be worth it to add, it looks like my current install of Text Mouth is 18.3 mb and I think I said I wanted to keep it below 30 mb if possible? Try measuring it using a test build.
 
 10. **Lossless sources and originals.** Convert lossless sources (FLAC in Ogg, APE, WavPack, WMA Lossless) to Apple Lossless instead of AAC, and keep each original beside its converted file (it costs disk space), with the documentation corrected to say a second lossy encoding can lose quality.
     Recommended: yes to both; keeping originals as a setting, on by default.
-    Answer:
+    Answer: Yes but keep originals as off, I don't think most people would need it especially sense the file loaded into the app would still probably exist unless deleted.
 
 ### Playlists, cue sheets, and transcripts
 
 11. **Playlists and cue sheets that name files elsewhere.** TextMouth is not sandboxed, so a playlist could name any file on the Mac.
     Recommended: use only files inside the playlist's own folder, and say which entries were skipped.
-    Answer:
+    Answer: Yes for now, maybe let adding trusted folders like ~/Music or something?
 
 12. **Transcripts from outside.** An SRT or WebVTT file, or a podcast's own transcript, would attach to an existing audiobook (paired by file name, chosen by a command, or fetched with a feed episode), with no transcript-only import.
     Recommended: yes.
-    Answer:
+    Answer: yes
 
 13. **A podcast's own transcript and chapters.** When a feed links them, TextMouth would download them with each episode, under the download's network rules, so an episode has text and headings at once.
     Recommended: yes, on by default.
-    Answer:
+    Answer: yes
 
 14. **OPML folders.** An OPML import would keep the folders your podcast app wrote, as feed folders, and an export would write them.
     Recommended: yes, after the transcript work.
-    Answer:
+    Answer: yes, add a import button to the add feed sheet too.
 
 ### Other documents
 
 15. **How a spreadsheet or CSV row reads.** One line per row, with cells separated by commas, or "column name: value" for every cell.
     Recommended: one line per row with commas, and a setting that says the column name before each cell.
-    Answer:
+    Answer: yes for now.
 
 16. **SSML and pronunciation lexicons.** Import SSML files as plain text, and a lexicon's aliases as substitution rules, leaving IPA pronunciations and Apple's SSML speech for later: it crashed on emphasis, ignores aliases, and turns off your speed controls.
     Recommended: yes.
-    Answer:
+    Answer: yes
 
 ### Export
 
 17. **The speed of exported speech.** It can sound exactly as the reader does, with your rate and pitch built in, or be spoken at the voice's normal rate, so you change speed in the player.
     Recommended: as the reader does, with the rate named in the dialog.
-    Answer:
+    Answer: put the rate and pitch in the dialog as sliders set to the current rate.
 
 18. **What "part of a text book" means.** The choices would be the current chapter, a range of headings from one to another, or the text selected in the reader.
     Recommended: all three, in one Range choice; the selection comes in the second stage (FMT44).
-    Answer:
+    Answer: headings / chapter ranges, and then I was thinking like timestamp to timestamp.
 
 19. **Resuming a long speech export.** A 10-hour book may take 5 to 35 minutes and 1.6 GB of temporary space; keeping finished chapter files lets a stopped export resume.
     Recommended: yes, deleted when the export finishes.
-    Answer:
+    Answer: Yes, and think about how to optimize this.
 
 20. **The licence line for exported speech.** Apple's licence allows audio made with the Mac's voices for your personal, non-commercial use only.
     Recommended: one plain line under the audio choices in the Export dialog, with nothing to tick.
-    Answer:
+    Answer: yes
 
 21. **The order of text export formats.** EPUB 3, then DOCX and RTF, with HTML along the way (it comes first, as the base) and PDF last.
     Recommended: yes.
-    Answer:
+    Answer: Yes, I thought markdown was the base, has that changed?
