@@ -1,0 +1,19 @@
+# Worker readerinfo: Shift-Command-I in a reader, and two small test-tool fixes
+
+You are `readerinfo`, one Sonnet worker (no lead): read `Scripts/agents/briefs/2026-10-17/teams-common.md`, "The worker's part" and "Rules for everyone", "Builds", and the lessons; you report to the orchestrator. Branch: `git checkout -b fix/reader-speak-info main`; check that `git merge-base --is-ancestor bae77340 HEAD` succeeds. Register on the board as `readerinfo`.
+
+## 1. Speak Info in a reader window (the user's words, October 17)
+"Is cmd+shift+i mapped to anything? I would rather have it as that and twice for full info, go ahead and change it in the reader too to be consistant". Team libpolish (merge 7977445a) made Shift-Command-I and Shift-Command-I twice the defaults of Speak Info and Speak Full Info, but only Library windows act on them, so in a reader they do nothing.
+- Make both act in a reader window, on that reader's own book: Speak Info says what the Library's Speak Info says for that book's row, and Speak Full Info what its full info says (the same words, from the same wording code: find how `LibraryInfoSpeaker` and `LibraryInfoWording` build them for a row, and reuse them; no second copy of any sentence). Speak them through the announcer the reader's other spoken commands use. Where Am I keeps W.
+- Find how a reader window receives an app-scope action (the notification each posts, its `sourceWindow`, and how the reader filters to its own window, as `.showBookInfo` does at `ReaderView.swift:617`), and how the escalation from the brief info to the full one works in the Library (`ShortcutPressDispatcher`): the reader's double press must escalate the same way.
+- Tests: in a hosted reader, Shift-Command-I speaks the book's info once, twice speaks the full info, and nothing reaches another window; the wording equals the Library's for the same book. Name `SpeakInfoShortcutTests`, `ShortcutPressDispatcherTests`, `KeyboardReachabilityTests`, `LibraryInfoSpeakerTests`, and the legacy scenarios in `TextMouthTests/Sources/Tests` in your runs.
+
+## 2. The source scan under a symbolic link
+`TextMouthProductionTests/SourceScanTestSupport.swift:18-45`: `AppSourceFile.folder` comes from `#filePath`, but the enumerator gives resolved paths, so in a checkout under `/tmp` (a symbolic link to `/private/tmp`) every file's path loses its folder and `KeyboardReachabilityTests` cannot find `App/MenuCommands.swift`. Resolve symbolic links on both sides before comparing prefixes (`resolvingSymlinksInPath()`), with a test that scans through a symbolic link to a small folder in the test's own temporary directory.
+
+## 3. A false CRASH in run-area.py's summary
+`Scripts/test/run-area.py` (its log summary, shared with `testkit.py`): a run whose log holds the build wrapper's board messages reports "CRASH the test host crashed or restarted" when a board message mentions a crash (seen October 17: "#2491 finding from oggtoaac to all, … Test host crashed 9x …"). Recognize only xcodebuild's own crash and restart lines, never a board message's text (find how the wrapper prints board lines, and skip them). Add a selftest case with such a board line. Python writes no bytecode.
+
+One commit per item, each with its tests. Finish as "The worker's part" says: rebase on main, run `python3 Scripts/test/run-area.py all` once, record the exact result line, unregister and delete your build folder, release your claims, and reply with a report of at most 20 lines (the branch, each commit, the tests added, the result line, what you could not verify, and the words the listener hears in a reader).
+
+Usage: read only the "5-hour session" and "Weekly (all models)" windows of `python3 ~/.claude/skills/claude-usage-left/scripts/claude_usage.py --brief`; "Weekly (Fable)" does not apply; keep working unless the API refuses you.
