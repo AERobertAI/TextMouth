@@ -239,10 +239,11 @@ struct LibraryView: View {
     /// What a move made from the Move sheet left to say, the feed items it
     /// left where they are, kept while the sheet closes (REV11 F6).
     @State private var afterMoveSheet = AnnouncementAfterSheet()
+    /// The folder the Move Folder... sheet moves while it shows; nil closes it.
     @State private var folderToMove: BookFolder?
-    @State private var showMoveFolderSheet = false
+    /// The folder the Rename Folder... sheet renames while it shows; nil
+    /// closes it.
     @State private var folderToRename: BookFolder?
-    @State private var showRenameFolderSheet = false
     @State private var renameFolderText = ""
     @State private var searchText = ""
     @State private var selectedBookIDs: Set<UUID> = []
@@ -777,37 +778,34 @@ struct LibraryView: View {
                 onCancel: { showTextInput = false }
             )
         }
-        // Rename folder sheet
-        .sheet(isPresented: $showRenameFolderSheet) {
-            if let folder = folderToRename {
-                RenameFolderSheet(
-                    currentName: folder.name,
-                    newName: $renameFolderText,
-                    onRename: {
-                        await editFolder(folder, closing: { showRenameFolderSheet = false }) {
-                            await libraryViewModel.renameFolderReturningOutcome(folder, to: renameFolderText)
-                        }
-                    },
-                    onCancel: {
-                        showRenameFolderSheet = false
+        // Rename folder sheet, handed its folder, so it never opens empty.
+        .sheet(item: $folderToRename) { folder in
+            RenameFolderSheet(
+                currentName: folder.name,
+                newName: $renameFolderText,
+                onRename: {
+                    await editFolder(folder, closing: { folderToRename = nil }) {
+                        await libraryViewModel.renameFolderReturningOutcome(folder, to: renameFolderText)
                     }
-                )
-            }
+                },
+                onCancel: {
+                    folderToRename = nil
+                }
+            )
         }
-        // Move folder to new parent sheet
-        .sheet(isPresented: $showMoveFolderSheet) {
-            if let folder = folderToMove {
-                MoveFolderToParentSheet(
-                    folder: folder,
-                    library: libraryViewModel.library,
-                    onMove: { newParent in
-                        await editFolder(folder, closing: { showMoveFolderSheet = false }) {
-                            await libraryViewModel.moveFolderReturningOutcome(folder, toParent: newParent)
-                        }
-                    },
-                    onCancel: { showMoveFolderSheet = false }
-                )
-            }
+        // Move folder to new parent sheet, handed its folder, so it never
+        // opens empty.
+        .sheet(item: $folderToMove) { folder in
+            MoveFolderToParentSheet(
+                folder: folder,
+                library: libraryViewModel.library,
+                onMove: { newParent in
+                    await editFolder(folder, closing: { folderToMove = nil }) {
+                        await libraryViewModel.moveFolderReturningOutcome(folder, toParent: newParent)
+                    }
+                },
+                onCancel: { folderToMove = nil }
+            )
         }
         // Delete folder dialog: move contents out vs delete everything. The
         // words say whether everything goes to the Trash or is deleted
@@ -1223,13 +1221,11 @@ struct LibraryView: View {
     @ViewBuilder
     private func folderMenu(_ folder: BookFolder) -> some View {
         Button("Rename Folder...") {
-            folderToRename = folder
             renameFolderText = folder.name
-            showRenameFolderSheet = true
+            folderToRename = folder
         }
         Button("Move Folder...") {
             folderToMove = folder
-            showMoveFolderSheet = true
         }
         if libraryViewModel.offersDeleteFolder(folder) {
             Divider()
