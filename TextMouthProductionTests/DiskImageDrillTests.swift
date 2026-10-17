@@ -150,6 +150,100 @@ final class DiskImageDrillTests: XCTestCase {
         XCTAssertEqual(LeftoverImages.drillImages(inInfoPlist: any, sandboxPrefixes: []), [])
     }
 
+    // MARK: - Sparing a Running Test Run
+
+    /// An attached drill image at `path`, for the sweep's second step.
+    private static func image(_ path: String) -> AttachedImage {
+        AttachedImage(imagePath: path, devices: ["/dev/disk9"])
+    }
+
+    /// The liveness check of a test: only the processes in `running` are.
+    private static func alive(_ running: Set<Int32>) -> (Int32) -> Bool {
+        { running.contains($0) }
+    }
+
+    /// An image in the sandbox of a different process that is running belongs
+    /// to a test run going on now, so the sweep leaves it alone.
+    func testAnImageUnderARunningForeignSandboxIsSpared() {
+        let busy = Self.image("/var/folders/zz/T/TextMouthTests-500/Scratch/a/TMDrill-11111111-x.dmg")
+
+        XCTAssertEqual(
+            LeftoverImages.sparingRunningRuns([busy], currentProcess: 100, isRunning: Self.alive([500])), []
+        )
+    }
+
+    /// An image under a process that is gone is a crashed run's, and is swept.
+    func testAnImageUnderADeadSandboxIsSwept() {
+        let dead = Self.image("/var/folders/zz/T/TextMouthTests-501/Scratch/a/TMDrill-22222222-x.dmg")
+
+        XCTAssertEqual(
+            LeftoverImages.sparingRunningRuns([dead], currentProcess: 100, isRunning: Self.alive([500])), [dead]
+        )
+    }
+
+    /// This process is running, but its own sandbox's images are the ones
+    /// this run may sweep.
+    func testAnImageUnderThisProcessesOwnSandboxIsSwept() {
+        let own = Self.image("/var/folders/zz/T/TextMouthTests-100/Scratch/a/TMDrill-33333333-x.dmg")
+
+        XCTAssertEqual(
+            LeftoverImages.sparingRunningRuns([own], currentProcess: 100, isRunning: Self.alive([100])), [own]
+        )
+    }
+
+    /// A sandbox name with no readable process number (no digits, a zero, a
+    /// sign, or letters after the digits) cannot be shown to be running, so
+    /// its image is swept as it was before this step existed.
+    func testAnImageUnderASandboxWithNoReadableProcessIsSwept() {
+        let paths = [
+            "/var/folders/zz/T/TextMouthTests-/Scratch/a/TMDrill-1.dmg",
+            "/var/folders/zz/T/TextMouthTests-0/Scratch/a/TMDrill-2.dmg",
+            "/var/folders/zz/T/TextMouthTests-abc/Scratch/a/TMDrill-3.dmg",
+            "/var/folders/zz/T/TextMouthTests-12x/Scratch/a/TMDrill-4.dmg",
+            "/var/folders/zz/T/NotASandbox/Scratch/a/TMDrill-5.dmg"
+        ]
+        let images = paths.map(Self.image)
+
+        // Every number is "running", so only the unreadable names show it.
+        XCTAssertEqual(
+            LeftoverImages.sparingRunningRuns(images, currentProcess: 100, isRunning: { _ in true }), images
+        )
+    }
+
+    /// The folder's name is read from the path whichever way the base is
+    /// spelled, so `/var` and `/private/var` both name process 500.
+    func testTheSandboxProcessIsReadFromThePathWhicheverWayTheBaseIsSpelled() {
+        XCTAssertEqual(LeftoverImages.sandboxProcess(ofImageAt: "/var/folders/zz/T/TextMouthTests-500/a/TMDrill-1.dmg"), 500)
+        XCTAssertEqual(LeftoverImages.sandboxProcess(ofImageAt: "/private/var/folders/zz/T/TextMouthTests-500/a/TMDrill-1.dmg"), 500)
+        XCTAssertNil(LeftoverImages.sandboxProcess(ofImageAt: "/var/folders/zz/T/TextMouthTests-x/a/TMDrill-1.dmg"))
+        XCTAssertNil(LeftoverImages.sandboxProcess(ofImageAt: "TMDrill-1.dmg"))
+    }
+
+    /// The step keeps the order and drops only the busy run's images, among
+    /// several of mixed owners.
+    func testTheSpareStepKeepsOnlyWhatMayBeSwept() {
+        let busy = Self.image("/private/var/folders/zz/T/TextMouthTests-500/a/TMDrill-1.dmg")
+        let dead = Self.image("/var/folders/zz/T/TextMouthTests-501/a/TMDrill-2.dmg")
+        let own = Self.image("/var/folders/zz/T/TextMouthTests-100/a/TMDrill-3.dmg")
+
+        XCTAssertEqual(
+            LeftoverImages.sparingRunningRuns([busy, dead, own], currentProcess: 100, isRunning: Self.alive([500, 100])),
+            [dead, own]
+        )
+        XCTAssertEqual(LeftoverImages.sparingRunningRuns([], currentProcess: 100, isRunning: Self.alive([500])), [])
+    }
+
+    /// The real defaults: this very process counts as the current one, and
+    /// a sandbox of a process number that cannot exist is swept.
+    func testTheDefaultsUseThisProcessAndTheRealLivenessCheck() {
+        let ownPath = "/var/folders/zz/T/TextMouthTests-\(getpid())/a/TMDrill-1.dmg"
+        let own = Self.image(ownPath)
+        // 2^31 - 1 is above any real process number, so nothing runs there.
+        let gone = Self.image("/var/folders/zz/T/TextMouthTests-2147483647/a/TMDrill-2.dmg")
+
+        XCTAssertEqual(LeftoverImages.sparingRunningRuns([own, gone]), [own, gone])
+    }
+
     /// A `hdiutil info -plist` listing of `images`, each an image path with
     /// its device entries, in the shape hdiutil prints.
     private static func infoPlist(images: [(path: String, devices: [String])]) -> Data {

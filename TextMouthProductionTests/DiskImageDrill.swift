@@ -202,6 +202,34 @@ enum LeftoverImages {
             return AttachedImage(imagePath: path, devices: wholeDisks.isEmpty ? devices : wholeDisks)
         }
     }
+
+    /// The process whose test sandbox (`TextMouthTests-<pid>`) holds the
+    /// image at `path`, read from the path's own components so it does not
+    /// matter whether the base is spelled `/var` or `/private/var`; nil when
+    /// no component is a sandbox name with a readable process number.
+    static func sandboxProcess(ofImageAt path: String) -> Int32? {
+        let sandbox = URL(fileURLWithPath: path).pathComponents
+            .first { $0.hasPrefix(TextMouthRuntime.sandboxNamePrefix) }
+        return sandbox.flatMap { TextMouthRuntime.sandboxProcess(named: $0) }
+    }
+
+    /// `images` without those in the sandbox of another test run that is
+    /// going on right now: a sandbox whose process is running and is not
+    /// `currentProcess` is that run's, and its images are not leftovers. An
+    /// image under this process's own sandbox, under a process that is gone,
+    /// or under a name with no readable process number stays in the list.
+    /// The current process and the liveness check are parameters so a test
+    /// can pass its own.
+    static func sparingRunningRuns(
+        _ images: [AttachedImage],
+        currentProcess: Int32 = getpid(),
+        isRunning: (Int32) -> Bool = TextMouthRuntime.isProcessRunning
+    ) -> [AttachedImage] {
+        images.filter { image in
+            guard let process = sandboxProcess(ofImageAt: image.imagePath) else { return true }
+            return process == currentProcess || !isRunning(process)
+        }
+    }
 }
 
 // MARK: - Fill Guards
@@ -307,15 +335,17 @@ final class DiskImage: @unchecked Sendable {
 
     /// Detaches every image of an earlier crashed run that is still
     /// attached: the drill's own (`TMDrill-...` under the sandbox base)
-    /// and nothing else. Returns what it detached.
+    /// and nothing else, sparing the images of a test run that is going on
+    /// at the same moment in another process (see
+    /// `LeftoverImages.sparingRunningRuns`). Returns what it detached.
     @discardableResult
     static func sweepLeftovers() -> [AttachedImage] {
         let info = HDIUtil.run(["info", "-plist"])
         guard info.succeeded else { return [] }
-        let leftovers = LeftoverImages.drillImages(
+        let leftovers = LeftoverImages.sparingRunningRuns(LeftoverImages.drillImages(
             inInfoPlist: Data(info.output.utf8),
             sandboxPrefixes: LeftoverImages.sandboxPrefixes(sandboxHome: HostedTestSandbox.home)
-        )
+        ))
         for leftover in leftovers {
             for device in leftover.devices {
                 _ = HDIUtil.run(HDIUtil.detachArguments(target: device))
