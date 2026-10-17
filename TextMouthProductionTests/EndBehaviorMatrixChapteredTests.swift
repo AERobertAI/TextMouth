@@ -11,10 +11,10 @@ extension EndBehaviorMatrixTests {
     /// Stop with no timer, which `FinishedBookReaderTests` pins.
     static let chapteredAudioCells = cells(except: [Cell(behavior: .stop, timer: .none)])
 
-    /// An m4b of two chapters, saved half a second from its end, played to
-    /// its end does what the cell says, for each cell of the chaptered audio
-    /// column that no other test pins. The last chapter is long, so a loop
-    /// plays on for long after the end.
+    /// An m4b of two chapters, saved a moment (`secondsLeftWhenSaved`) from
+    /// its end, played to its end does what the cell says, for each cell of
+    /// the chaptered audio column that no other test pins. The last chapter
+    /// is long, so a loop plays on for long after the end.
     ///
     /// Writing an m4b encodes AAC and takes a moment, so the file is written
     /// once, for the first cell's book, and every other cell's book (a row
@@ -27,7 +27,7 @@ extension EndBehaviorMatrixTests {
         let lastChapterSeconds: TimeInterval = 10
         let savedPosition = ReadingPosition(
             chapterIndex: 1,
-            characterOffset: Self.offsetHalfASecondBeforeTheEnd(ofChapterOf: lastChapterSeconds)
+            characterOffset: Self.offsetBeforeTheEnd(ofChapterOf: lastChapterSeconds)
         )
         // The first cell's m4b, once it is written, which later cells copy.
         var template: URL?

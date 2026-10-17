@@ -74,7 +74,7 @@ struct ImportFailure: LocalizedError {
     /// What went wrong, without the file's name: "Reading its text failed:
     /// …". A ZIP batch's summary lists it after the name of the file.
     var reason: String {
-        "\(step.activity) failed: \(underlying.localizedDescription)"
+        "\(step.activity) failed: \(Self.description(of: underlying))"
     }
 
     /// The whole sentence an alert reads: the file, then the reason.
@@ -98,9 +98,32 @@ struct ImportFailure: LocalizedError {
     }
 
     /// The reason `error` gives for a failed import, without a file name:
-    /// an `ImportFailure`'s own reason, or any other error's description.
+    /// an `ImportFailure`'s own reason, or any other error's description,
+    /// which is `outOfSpaceDescription` for a full disk.
     static func reason(for error: any Error) -> String {
-        (error as? ImportFailure)?.reason ?? error.localizedDescription
+        (error as? ImportFailure)?.reason ?? description(of: error)
+    }
+
+    /// What is said when a copy fails for lack of space. The system's own
+    /// sentence names the hidden staged package (".import-<id>.tmb"), an
+    /// internal name the listener never chose and VoiceOver would read out.
+    static let outOfSpaceDescription = "There isn’t enough free space on the disk."
+
+    /// Whether `error`, or an error it wraps under `NSUnderlyingErrorKey` at
+    /// any depth, says the volume is full: Cocoa's
+    /// `NSFileWriteOutOfSpaceError` or POSIX `ENOSPC`.
+    static func isOutOfSpace(_ error: any Error) -> Bool {
+        let nsError = error as NSError
+        if nsError.domain == NSCocoaErrorDomain, nsError.code == NSFileWriteOutOfSpaceError { return true }
+        if nsError.domain == NSPOSIXErrorDomain, nsError.code == Int(ENOSPC) { return true }
+        if let inner = nsError.userInfo[NSUnderlyingErrorKey] as? any Error { return isOutOfSpace(inner) }
+        return false
+    }
+
+    /// How a failed step's error is worded: the plain sentence for a full
+    /// disk, the error's own description for anything else.
+    private static func description(of error: any Error) -> String {
+        isOutOfSpace(error) ? outOfSpaceDescription : error.localizedDescription
     }
 }
 

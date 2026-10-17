@@ -64,6 +64,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // a force-quit or a memory quit, is killed now (REV17a); only ones
         // writing TextMouth's own hidden conversion files are touched.
         OrphanedConversionSweep.sweepInBackground()
+        // The hidden copy a data-directory move staged beside its
+        // destination is removed when the move ends; when the destination's
+        // volume was unplugged or the app force-quit, it was not. The
+        // folders this Mac's journal still lists are removed now, and no
+        // other folder is touched.
+        MigrationStagingLeftovers.sweepInBackground()
 
         // Disable automatic window tabbing (prevents "New Tab" menu proliferation)
         NSWindow.allowsAutomaticWindowTabbing = false

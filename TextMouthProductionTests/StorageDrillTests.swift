@@ -82,7 +82,7 @@ final class StorageDrillTests: XCTestCase {
     // MARK: - 2. A Full Disk During Import
 
     /// A volume with a few KB free refuses a 200 KB book in the app's own
-    /// words, with the reason the system gives, publishes nothing, and
+    /// plain words (no hidden staged name in them), publishes nothing, and
     /// leaves the ballast, the earlier contents, and the original exactly as
     /// they were (every file's checksum). Freeing the space lets the same
     /// import succeed.
@@ -101,18 +101,17 @@ final class StorageDrillTests: XCTestCase {
 
         let failure = try XCTUnwrap(thrown as? ImportFailure, "the import did not fail with an ImportFailure: \(String(describing: thrown))")
         XCTAssertEqual(failure.fileName, "Salt Quay Diary.txt")
-        XCTAssertTrue(Self.isOutOfSpace(failure.underlying), "the reason is not a full disk: \(failure.underlying)")
+        XCTAssertTrue(ImportFailure.isOutOfSpace(failure.underlying), "the reason is not a full disk: \(failure.underlying)")
         let message = try XCTUnwrap(failure.errorDescription)
-        // The wording the user hears. It names the hidden staged package
-        // (".import-<UUID>.tmb"), an internal name; the UUID is masked here.
-        let masked = message.replacingOccurrences(
-            of: #"\.import-[0-9A-Fa-f-]{36}\.tmb"#, with: ".import-<id>.tmb", options: .regularExpression
-        )
+        // The wording the user hears: the plain sentence for a full disk. It
+        // holds no id and no hidden staged name (".import-<UUID>.tmb"), which
+        // the system's own sentence would have named.
         XCTAssertEqual(
-            masked,
+            message,
             "Could not import “Salt Quay Diary.txt”. Copying it into the library failed: "
-                + "“Salt Quay Diary.txt” couldn’t be copied to “.import-<id>.tmb” because there isn’t enough space."
+                + "There isn’t enough free space on the disk."
         )
+        XCTAssertFalse(message.contains(".import-"), "the message names the hidden staged package: \(message)")
         // Only the debug log, which the app keeps in the data directory and
         // which records the failure, may differ; no package, no staging.
         let changes = try FolderSnapshot(of: image.mountPoint).differences(from: before)
@@ -177,10 +176,18 @@ final class StorageDrillTests: XCTestCase {
     /// A data-directory move copies into a volume that is unplugged after a
     /// few items. The move fails, every file of the source has the checksum
     /// it had, the data directory in use and the setting still name the
-    /// source, and no published copy exists at the destination.
+    /// source, and no published copy exists at the destination. The hidden
+    /// staged copy, which the move could not remove while the volume was
+    /// away, is on the volume when it returns, with its note on this Mac's
+    /// journal; the launch sweep removes it and forgets the note.
     @MainActor
     func testAMoveWhoseDestinationVanishesLeavesTheSourceComplete() throws {
         let image = try DiskImage.make(for: self, name: "move-vanish", sizeMegabytes: 16)
+        // Start and end with no journal of staging folders, so the notes
+        // counted below are this move's alone.
+        let journal = MachineLocalPaths.moveLeftovers
+        try? FileManager.default.removeItem(at: journal)
+        addTeardownBlock { try? FileManager.default.removeItem(at: journal) }
         let source = try makeSourceLibrary()
         let sourceBefore = try FolderSnapshot(of: source)
         let rootBefore = TextMouthPaths.root
@@ -211,12 +218,28 @@ final class StorageDrillTests: XCTestCase {
 
         try image.attach()
         XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path), "a copy was published at the destination")
-        let stagedLeftovers = try FileManager.default.contentsOfDirectory(atPath: image.mountPoint.path)
-            .filter { $0.hasPrefix(DataDirectoryMigrator.stagingNamePrefix) }
-        print("STORAGE_DRILL_NOTE: the vanished move left \(stagedLeftovers.count) hidden staged copy on the volume: \(stagedLeftovers)")
+
+        // The move could not remove its hidden staged copy while the volume
+        // was away, so the copy is on the volume now, and the move's note of
+        // it is still on this Mac's journal.
+        let stagedLeftovers = try stagedCopies(on: image)
+        XCTAssertEqual(stagedLeftovers.count, 1, "the vanished move left \(stagedLeftovers.count) staged copies: \(stagedLeftovers)")
+        XCTAssertEqual(MigrationStagingLeftovers.readEntries().count, 1, "the move's note was forgotten with its folder still there")
+
+        // The launch sweep removes exactly that copy, and forgets the note.
+        MigrationStagingLeftovers.sweep(fileManager: .default)
+        XCTAssertEqual(try stagedCopies(on: image), [], "the sweep left a staged copy on the volume")
+        XCTAssertEqual(MigrationStagingLeftovers.readEntries(), [], "the journal still lists a folder")
     }
 
     // MARK: - Helpers
+
+    /// The names of the hidden staged copies a data-directory move left on
+    /// `image`'s volume.
+    private func stagedCopies(on image: DiskImage) throws -> [String] {
+        try FileManager.default.contentsOfDirectory(atPath: image.mountPoint.path)
+            .filter { $0.hasPrefix(DataDirectoryMigrator.stagingNamePrefix) }
+    }
 
     /// Makes the data directory in use a folder on `image` until the test
     /// ends, when the test process's own is put back. The image's teardown
@@ -292,15 +315,6 @@ final class StorageDrillTests: XCTestCase {
             size += line.utf8.count
         }
         return lines.joined()
-    }
-
-    /// Whether `error`, or an error it wraps, says the volume is full.
-    private static func isOutOfSpace(_ error: Error) -> Bool {
-        let nsError = error as NSError
-        if nsError.domain == NSCocoaErrorDomain, nsError.code == NSFileWriteOutOfSpaceError { return true }
-        if nsError.domain == NSPOSIXErrorDomain, nsError.code == Int(ENOSPC) { return true }
-        if let inner = nsError.userInfo[NSUnderlyingErrorKey] as? Error { return isOutOfSpace(inner) }
-        return false
     }
 }
 

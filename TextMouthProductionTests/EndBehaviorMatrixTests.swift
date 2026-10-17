@@ -355,7 +355,9 @@ final class EndBehaviorMatrixTests: XCTestCase {
                 var nextAsked = false
                 let recorder = recordingAnnouncements {
                     spokeAgain = endSpeechSilently(endOfLastChapter, of: reader)
-                    nextAsked = nextBookIsAskedFor(continued)
+                    nextAsked = nextBookAsked(
+                        for: cell, title: speech.book.title, next: speech.nextBook.title, continued
+                    )
                 }
 
                 assertEnd(
@@ -379,62 +381,27 @@ final class EndBehaviorMatrixTests: XCTestCase {
 
     /// An audiobook of one file played to its end does what the cell says,
     /// for each cell of the single-file audio column that no other test
-    /// pins. The book is saved half a second from its end, so it plays out
-    /// in real time, silently, and a loop plays on for long after.
+    /// pins. The book is saved a moment (`secondsLeftWhenSaved`) from its
+    /// end, so it plays out in real time, silently, and a loop plays on for
+    /// long after.
     func testSingleFileAudioEndBehaviorMatrix() throws {
         preserveSharedSleepTimer()
         let seconds: TimeInterval = 10
-        let lastHalfSecond = Int((seconds - 0.5) * ReaderViewModel.audioCharsPerSecond)
         for cell in Self.singleFileAudioCells {
-            let name = cell.name(of: "single-file audio")
             let world = try makeIntegrationWorld("Matrix Audio \(cell.behavior) \(cell.timer)")
             world.settings.sleepFadeOutDuration = 0
             let book = try world.makeSilentAudioFileBook(
                 title: "Ferry Timetable",
                 duration: seconds,
-                savedPosition: ReadingPosition(chapterIndex: 0, characterOffset: lastHalfSecond),
+                savedPosition: ReadingPosition(
+                    chapterIndex: 0, characterOffset: Self.offsetBeforeTheEnd(ofChapterOf: seconds)
+                ),
                 endOfBook: cell.behavior
             )
             let nextBook = try world.makeSilentAudioBook(title: "Harbour Almanac", trackDurations: [5])
-            let reader = world.openReader(for: book)
-            waitForReaderToLoad(reader)
-            XCTAssertEqual(reader.audioLayout, .singleFile, "\(name): the book is not one file")
-            let service = reader.audioPlaybackService
-            let continued = recordContinueRequests(in: world)
-            defer {
-                reader.stop()
-                reader.cancelSleepTimer()
-            }
-            arm(cell.timer, in: reader)
-            // A timer that ran out as it was set announced that, before the end.
-            let announcedBefore = reader.lastAnnouncement
-
-            var nextAsked = false
-            let recorder = recordingAnnouncements {
-                reader.play()
-                XCTAssertTrue(service.isPlaying, "\(name): the book did not play")
-                XCTAssertTrue(
-                    eventually(within: 10) { reader.lastAnnouncement != announcedBefore },
-                    "\(name): the book never ended"
-                )
-                // Long enough for the player's last tick, as it stops at the
-                // end, to have been handled.
-                spinMainRunLoop(for: 0.3)
-                nextAsked = nextBookIsAskedFor(continued)
-            }
-
-            assertEnd(
-                Observed(
-                    announcements: recorder.announcements.map(\.message),
-                    playsAgain: service.isPlaying,
-                    finished: reader.hasFinishedBook,
-                    restsAtEnd: reader.cursorRestsAtEnd,
-                    chapter: reader.currentChapterIndex,
-                    nextAsked: nextAsked,
-                    nextRequested: world.autoplayRequests.hasRequest(for: nextBook.id),
-                    timerInEffect: SleepTimerService.shared.isActive
-                ),
-                is: cell, title: book.title, next: nextBook.title, lastChapter: 0, content: "single-file audio"
+            assertAudioBookEnd(
+                of: cell, content: "single-file audio", in: world, book: book, nextBook: nextBook,
+                layout: .singleFile, lastChapter: 0
             )
         }
     }

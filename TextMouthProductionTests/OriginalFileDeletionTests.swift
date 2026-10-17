@@ -207,6 +207,81 @@ final class OriginalFileDeletionTests: XCTestCase {
         }
     }
 
+    // MARK: - Folders Are Never Deleted
+
+    /// A folder holding a file: the service removes nothing, throws nothing,
+    /// and logs the folder by its name alone. Runs with the Trash off, so a
+    /// missing guard would delete the test's own folder for good and never
+    /// reach the user's real Trash.
+    func testAFolderIsNeverDeletedAsAnOriginal() throws {
+        let folder = try makeTestDirectory("KeptFolder")
+        let inside = folder.appendingPathComponent("track.mp3")
+        try Data("audio".utf8).write(to: inside)
+
+        try withTrashPreference(movesToTrash: false) {
+            XCTAssertNoThrow(try FileImportService.deleteOriginalFile(at: folder))
+        }
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.path), "the folder stays")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: inside.path), "its file stays")
+        let lines = debugLogLines(containing: "ORIGINAL_KEPT: \(folder.lastPathComponent): ")
+        XCTAssertEqual(lines.count, 1, "one event line")
+        XCTAssertTrue(
+            lines.first?.hasSuffix("is a folder, which an import never deletes") ?? false,
+            "\(lines)"
+        )
+        XCTAssertEqual(debugLogLines(containing: folder.path), [], "the folder is named, never its path")
+    }
+
+    /// A symbolic link to a folder counts as the folder: both survive.
+    func testASymbolicLinkToAFolderIsNeverDeletedAsAnOriginal() throws {
+        let directory = try makeTestDirectory("KeptLinkParent")
+        let target = directory.appendingPathComponent("Target Folder", isDirectory: true)
+        try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
+        let inside = target.appendingPathComponent("page.html")
+        try Data("page".utf8).write(to: inside)
+        let link = directory.appendingPathComponent("Link To Folder")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: target)
+
+        try withTrashPreference(movesToTrash: false) {
+            XCTAssertNoThrow(try FileImportService.deleteOriginalFile(at: link))
+        }
+
+        XCTAssertNotNil(try? FileManager.default.destinationOfSymbolicLink(atPath: link.path), "the link stays")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: inside.path), "the folder and its file stay")
+    }
+
+    /// Controls: a plain file is still removed, and a path that is already
+    /// gone counts as removed without a throw.
+    func testAFileIsStillRemovedAndAMissingPathDoesNotThrow() throws {
+        let directory = try makeTestDirectory("ControlOriginals")
+        let file = directory.appendingPathComponent("Plain.epub")
+        try Data("original".utf8).write(to: file)
+
+        try withTrashPreference(movesToTrash: false) {
+            XCTAssertNoThrow(try FileImportService.deleteOriginalFile(at: file))
+            XCTAssertNoThrow(try FileImportService.deleteOriginalFile(at: directory.appendingPathComponent("Gone.epub")))
+        }
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: file.path), "the file is removed")
+    }
+
+    /// Through the model, with the default deletion: the folder stays and
+    /// no failure banner is recorded, since nothing failed.
+    func testTheModelLeavesAFolderAloneAndRecordsNoFailure() throws {
+        let center = cleanSharedFailureCenter()
+        let folder = try makeTestDirectory("ModelKeptFolder")
+        try Data("daisy".utf8).write(to: folder.appendingPathComponent("ncc.html"))
+        let model = LibraryViewModel(initializeServices: false)
+
+        withTrashPreference(movesToTrash: false) {
+            model.deleteOriginalFile(at: folder)
+        }
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folder.path))
+        XCTAssertTrue(center.outstandingFailures().isEmpty)
+    }
+
     // MARK: - Helpers
 
     /// A file named `name` in a folder of the test's own made read-only, so

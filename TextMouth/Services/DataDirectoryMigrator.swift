@@ -320,7 +320,12 @@ enum DataDirectoryMigrator {
         // as it is, and the final rename never crosses volumes (TODO S10).
         let staging = destination.real.deletingLastPathComponent()
             .appendingPathComponent(stagingNamePrefix + UUID().uuidString, isDirectory: true)
-        defer { try? fileManager.removeItem(at: staging) }
+        // Noted before anything is created, so a folder that exists is always
+        // on this Mac's journal. Removed when the move ends, however it ends;
+        // if the removal fails (the volume was unplugged), the note stays and
+        // the launch sweep removes the folder once the volume is back.
+        MigrationStagingLeftovers.note(staging)
+        defer { MigrationStagingLeftovers.discard(staging, fileManager: fileManager) }
         // Copy the folder the data directory leads to. Copying a link copies
         // only the link, so the package records and library.json written
         // below would land in the data directory itself, and publication
@@ -332,6 +337,8 @@ enum DataDirectoryMigrator {
 
         let migratedLibrary = try stage(library, from: source, to: destination, in: staging, fileManager: fileManager)
         try publish(staging, at: destination, keeping: source, fileManager: fileManager)
+        // Renamed into place: nothing is left to clean up.
+        MigrationStagingLeftovers.forget(staging)
         return migratedLibrary
     }
 

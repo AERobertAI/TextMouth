@@ -636,6 +636,14 @@ enum MachineLocalPaths {
         root.appendingPathComponent("Kept Books.json", isDirectory: false)
     }
 
+    /// The hidden staging folders data-directory moves have begun and not yet
+    /// cleaned up (`MigrationStagingLeftovers`): a journal of this Mac's own,
+    /// since the folders are on a volume that may be away, and a sweep at
+    /// launch removes only what it lists.
+    static var moveLeftovers: URL {
+        root.appendingPathComponent("Move Leftovers.json", isDirectory: false)
+    }
+
     /// ~/Library/Caches/com.textmouth.TextMouth: what TextMouth can always
     /// make again from the data directory. Time Machine leaves the Caches
     /// folder out of backups, and macOS may empty it when the disk runs low.

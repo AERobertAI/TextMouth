@@ -80,6 +80,74 @@ final class ImportStagingTests: XCTestCase {
         )
     }
 
+    // MARK: - A Full Disk
+
+    /// The sentence a listener hears for a full disk, spelled out: a right
+    /// single quotation mark (U+2019) and a full stop.
+    private let fullDiskSentence = "There isn\u{2019}t enough free space on the disk."
+
+    /// The three shapes of a full disk the system reports: Cocoa's own
+    /// code, POSIX `ENOSPC`, and a Cocoa error of another code that carries
+    /// the POSIX one only underneath.
+    private var fullDiskErrors: [(name: String, error: any Error)] {
+        [
+            ("Cocoa", CocoaError(.fileWriteOutOfSpace)),
+            ("POSIX", NSError(domain: NSPOSIXErrorDomain, code: Int(ENOSPC))),
+            (
+                "nested",
+                NSError(
+                    domain: NSCocoaErrorDomain, code: NSFileWriteUnknownError,
+                    userInfo: [NSUnderlyingErrorKey: NSError(domain: NSPOSIXErrorDomain, code: Int(ENOSPC))]
+                )
+            )
+        ]
+    }
+
+    /// The constant holds the exact sentence.
+    func testTheFullDiskSentenceIsExact() {
+        XCTAssertEqual(ImportFailure.outOfSpaceDescription, fullDiskSentence)
+    }
+
+    /// A failure whose cause is a full disk says so in plain words, in the
+    /// reason, the alert, the log line, and `reason(for:)`, without the
+    /// system's sentence (which names the hidden staged package).
+    func testAFullDiskIsSaidInPlainWords() {
+        for (name, error) in fullDiskErrors {
+            let failure = ImportFailure(fileName: "Middlemarch.epub", step: .copying, underlying: error)
+
+            XCTAssertTrue(ImportFailure.isOutOfSpace(error), name)
+            XCTAssertEqual(failure.reason, "Copying it into the library failed: \(fullDiskSentence)", name)
+            XCTAssertEqual(
+                failure.localizedDescription,
+                "Could not import \u{201C}Middlemarch.epub\u{201D}. Copying it into the library failed: \(fullDiskSentence)",
+                name
+            )
+            XCTAssertEqual(
+                failure.logLine,
+                "IMPORT_FAILED: Middlemarch.epub: Copying it into the library failed: \(fullDiskSentence)",
+                name
+            )
+            XCTAssertEqual(ImportFailure.reason(for: failure), failure.reason, name)
+            XCTAssertEqual(ImportFailure.reason(for: error), fullDiskSentence, name)
+        }
+    }
+
+    /// Other errors are worded exactly as before, and are not mistaken for
+    /// a full disk.
+    func testOtherErrorsKeepTheirOwnWords() {
+        let others: [any Error] = [CocoaError(.fileWriteNoPermission), FileImportError.importFailed("x")]
+        for error in others {
+            XCTAssertFalse(ImportFailure.isOutOfSpace(error), "\(error)")
+            let failure = ImportFailure(fileName: "Book.txt", step: .copying, underlying: error)
+            XCTAssertEqual(
+                failure.reason,
+                "Copying it into the library failed: \(error.localizedDescription)"
+            )
+            XCTAssertEqual(ImportFailure.reason(for: error), error.localizedDescription)
+        }
+        XCTAssertEqual(FileImportError.importFailed("x").localizedDescription, "Import failed: x")
+    }
+
     // MARK: - The Run
 
     /// A failure is attributed to the step under way when it happened, and
