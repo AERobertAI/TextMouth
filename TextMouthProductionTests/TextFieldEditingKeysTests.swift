@@ -19,6 +19,9 @@ final class TextFieldEditingKeysTests: XCTestCase {
     /// The center the test's manager posts its actions on, heard by no
     /// window of the app.
     private let center = NotificationCenter()
+    /// The time, on the events' time line, at which the next call of `press`
+    /// starts: the Mac's uptime to begin with, ten seconds on for each call.
+    private var nextPressTime = ProcessInfo.processInfo.systemUptime
 
     // MARK: - A Field Being Edited
 
@@ -306,11 +309,11 @@ final class TextFieldEditingKeysTests: XCTestCase {
     /// default key posts its own action from a field, and every default key
     /// posts its own action from a view that takes no text, each pressed in
     /// a window of its own scope, the app's or an audio editor's; a double
-    /// press, W twice or I twice, is pressed twice, its first press posting
-    /// the brief summary it escalates. A key equivalent's key, a menu
-    /// command's or a Record window button's (FR12's branch D), posts
-    /// nothing and goes on to its menu item or button, from a field and
-    /// elsewhere. The keys are each action's in force, each pressed in a
+    /// press, W twice or Shift-Command-I twice, is pressed twice, its
+    /// first press posting the brief summary it escalates. A key
+    /// equivalent's key, a menu command's or a Record window button's
+    /// (FR12's branch D), posts nothing and goes on to its menu item or
+    /// button, from a field and elsewhere. The keys are each action's in force, each pressed in a
     /// window where the action works (FR12's branch E): none for one working
     /// in every window, and a reader's, a Library window, or the Record
     /// window for one working in a kind of window. Restart Sleep Timer's
@@ -346,7 +349,7 @@ final class TextFieldEditingKeysTests: XCTestCase {
                     let fieldTakesIt = !KeyboardShortcutManager.shouldHandle(binding: binding, whenTextInputIsFocused: true)
                     // A double press's first press posts the action it
                     // escalates, at once, and its second its own (FR12's
-                    // branch C: W twice and I twice).
+                    // branch C: W twice and Shift-Command-I twice).
                     let posts = (binding.isDoublePress ? [action.escalates].compactMap { $0 } : []) + [action]
                     let inField = try press(binding, on: manager, firstResponder: fieldEditor(), keyWindow: keyWindow)
                     XCTAssertEqual(inField.consumed, !fieldTakesIt, label)
@@ -437,11 +440,19 @@ final class TextFieldEditingKeysTests: XCTestCase {
                 posted.append(notification.userInfo?["action"] as? String ?? notification.name.rawValue)
             }
         defer { subscription.cancel() }
-        // Each event is made as it is pressed, timed by the Mac's uptime, so
-        // a second press follows the first well within the double-press time.
+        // Each call's presses are timed on the events' time line from the
+        // Mac's uptime as the test began: a double's second press 0.1
+        // seconds after its first, well within the double-press time, and
+        // each call ten seconds after the one before, so the presses of one
+        // call never chain with another's into a double press, as they
+        // would for a key the field does not keep, such as Shift-Command-I,
+        // which counts as a press from a field too.
         var consumed: [Bool] = []
-        for _ in 0..<(binding.isDoublePress ? 2 : 1) {
-            consumed.append(manager.handleKeyEvent(try ShortcutKeyPresses.keyPress(of: binding), keyWindow: keyWindow, firstResponder: firstResponder))
+        let start = nextPressTime
+        nextPressTime += 10
+        for pressNumber in 0..<(binding.isDoublePress ? 2 : 1) {
+            let event = try ShortcutKeyPresses.keyPress(of: binding, at: start + Double(pressNumber) * 0.1)
+            consumed.append(manager.handleKeyEvent(event, keyWindow: keyWindow, firstResponder: firstResponder))
         }
         XCTAssertEqual(Set(consumed).count, 1, "the manager consumed some presses of \(binding.configText) and not others")
         return (consumed.allSatisfy { $0 }, posted)

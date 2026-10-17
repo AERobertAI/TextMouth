@@ -105,8 +105,8 @@ final class DoublePressBindingTests: XCTestCase {
             "Play / Pause": "default: space, k",
             "Release Media Controls": ["shift+r"],
             "Show Bookmarks": "default: shift+command+b",
-            "Speak Full Info": "default: i twice",
-            "Speak Info": "default: i",
+            "Speak Full Info": "default: shift+command+i twice",
+            "Speak Info": "default: shift+command+i",
             "Where Am I?": "default: w",
             "Where Am I? Full Summary": "default: w twice",
         ]

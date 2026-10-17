@@ -7,10 +7,10 @@ enum ReadingListWording {
 
     // MARK: - The Rows
 
-    /// What a book's row says of a book in the reading list, as the row's
-    /// accessibility value, after its label, in every view but the Reading
-    /// List itself, where every row's book is in the list.
-    static let inReadingListValue = "In reading list"
+    /// What a book's row says of a book in the reading list: spoken in the
+    /// row's label, right after its title and author, in every view but the
+    /// Reading List itself, where every row's book is in the list.
+    static let inReadingListNote = "In reading list"
 
     // MARK: - The Order
 

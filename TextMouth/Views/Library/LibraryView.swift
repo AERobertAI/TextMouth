@@ -226,22 +226,24 @@ struct LibraryView: View {
     /// Folder Settings button or the Folder or Feed Settings command (FR19).
     @State private var folderSettings: FolderSettingsModel?
     /// What speaks the selected row's information for Speak Info and Speak
-    /// Full Info, I and I twice, and for Book Info on a folder, which has
-    /// no sheet (October 7, 2026; FR12). Kept, not observed: it draws
-    /// nothing.
+    /// Full Info, Shift-Command-I and Shift-Command-I twice (I and I twice
+    /// until October 17, 2026), and for Book Info on a folder, which has no
+    /// sheet (October 7, 2026; FR12). Kept, not observed: it draws nothing.
     @State private var infoSpeaker = LibraryInfoSpeaker()
     @State private var showNewFolderSheet = false
     @State private var newFolderName = ""
     @State private var newFolderParentPath = ""
-    @State private var booksToMove: [Book] = []
-    @State private var showMoveSheet = false
+    /// What the Move to Folder sheet moves while it shows: a request the
+    /// sheet is handed, so it never opens empty (October 17, 2026).
+    @State private var moveRequest: MoveToFolderRequest?
     /// What a move made from the Move sheet left to say, the feed items it
     /// left where they are, kept while the sheet closes (REV11 F6).
     @State private var afterMoveSheet = AnnouncementAfterSheet()
+    /// The folder the Move Folder... sheet moves while it shows; nil closes it.
     @State private var folderToMove: BookFolder?
-    @State private var showMoveFolderSheet = false
+    /// The folder the Rename Folder... sheet renames while it shows; nil
+    /// closes it.
     @State private var folderToRename: BookFolder?
-    @State private var showRenameFolderSheet = false
     @State private var renameFolderText = ""
     @State private var searchText = ""
     @State private var selectedBookIDs: Set<UUID> = []
@@ -582,27 +584,19 @@ struct LibraryView: View {
         }
         // Which feed items a move left is said once the sheet has closed,
         // so its closing never cuts the words off (REV11 F6).
-        .sheet(isPresented: $showMoveSheet, onDismiss: sayWhatTheMoveLeft) {
-            if !booksToMove.isEmpty {
-                MoveFolderSheet(
-                    books: booksToMove,
-                    library: libraryViewModel.library,
-                    lastMovedFolderPath: libraryViewModel.lastMovedFolderPath,
-                    onMove: { path in
-                        let outcome = await libraryViewModel.moveBooksReturningOutcome(booksToMove, toFolder: path)
-                        return closingOnSuccess(outcome) {
-                            afterMoveSheet.keep(outcome.message)
-                            clearAllSelections()
-                            showMoveSheet = false
-                        }
-                    },
-                    onCreateFolder: { name, parentPath in
-                        libraryViewModel.createFolderReturningOutcome(name: name, parentPath: parentPath)
-                    },
-                    onCancel: { showMoveSheet = false }
-                )
-            }
-        }
+        .modifier(MoveToFolderSheetPresentation(
+            request: $moveRequest,
+            library: libraryViewModel,
+            onMove: { request, path in
+                let outcome = await libraryViewModel.moveBooksReturningOutcome(request.books, toFolder: path)
+                return closingOnSuccess(outcome) {
+                    afterMoveSheet.keep(outcome.message)
+                    clearAllSelections()
+                    moveRequest = nil
+                }
+            },
+            onDismiss: sayWhatTheMoveLeft
+        ))
         .trackingRemovalPreferences($removalPreferences)
         // A folder deleted or moved from another window, as by Delete
         // Feed… or Delete Folder…, leaves this window on the folder's new
@@ -704,9 +698,9 @@ struct LibraryView: View {
             NotificationCenter.default.publisher(for: .speakInfo)
                 .merge(with: NotificationCenter.default.publisher(for: .speakFullInfo))
         ) { notification in
-            // The I key, and Library > Speak Info: the selected row's brief
-            // summary; I twice, and Library > Speak Full Info, its full one
-            // (FR12). Spoken with the app's own voice.
+            // Shift-Command-I, and Library > Speak Info: the selected row's
+            // brief summary; Shift-Command-I twice, and Library > Speak Full
+            // Info, its full one (FR12). Spoken with the app's own voice.
             guard takesCommand(notification) else { return }
             speakSelectedInfo(notification.name == .speakFullInfo ? .full : .brief)
         }
@@ -784,37 +778,34 @@ struct LibraryView: View {
                 onCancel: { showTextInput = false }
             )
         }
-        // Rename folder sheet
-        .sheet(isPresented: $showRenameFolderSheet) {
-            if let folder = folderToRename {
-                RenameFolderSheet(
-                    currentName: folder.name,
-                    newName: $renameFolderText,
-                    onRename: {
-                        await editFolder(folder, closing: { showRenameFolderSheet = false }) {
-                            await libraryViewModel.renameFolderReturningOutcome(folder, to: renameFolderText)
-                        }
-                    },
-                    onCancel: {
-                        showRenameFolderSheet = false
+        // Rename folder sheet, handed its folder, so it never opens empty.
+        .sheet(item: $folderToRename) { folder in
+            RenameFolderSheet(
+                currentName: folder.name,
+                newName: $renameFolderText,
+                onRename: {
+                    await editFolder(folder, closing: { folderToRename = nil }) {
+                        await libraryViewModel.renameFolderReturningOutcome(folder, to: renameFolderText)
                     }
-                )
-            }
+                },
+                onCancel: {
+                    folderToRename = nil
+                }
+            )
         }
-        // Move folder to new parent sheet
-        .sheet(isPresented: $showMoveFolderSheet) {
-            if let folder = folderToMove {
-                MoveFolderToParentSheet(
-                    folder: folder,
-                    library: libraryViewModel.library,
-                    onMove: { newParent in
-                        await editFolder(folder, closing: { showMoveFolderSheet = false }) {
-                            await libraryViewModel.moveFolderReturningOutcome(folder, toParent: newParent)
-                        }
-                    },
-                    onCancel: { showMoveFolderSheet = false }
-                )
-            }
+        // Move folder to new parent sheet, handed its folder, so it never
+        // opens empty.
+        .sheet(item: $folderToMove) { folder in
+            MoveFolderToParentSheet(
+                folder: folder,
+                library: libraryViewModel.library,
+                onMove: { newParent in
+                    await editFolder(folder, closing: { folderToMove = nil }) {
+                        await libraryViewModel.moveFolderReturningOutcome(folder, toParent: newParent)
+                    }
+                },
+                onCancel: { folderToMove = nil }
+            )
         }
         // Delete folder dialog: move contents out vs delete everything. The
         // words say whether everything goes to the Trash or is deleted
@@ -1230,13 +1221,11 @@ struct LibraryView: View {
     @ViewBuilder
     private func folderMenu(_ folder: BookFolder) -> some View {
         Button("Rename Folder...") {
-            folderToRename = folder
             renameFolderText = folder.name
-            showRenameFolderSheet = true
+            folderToRename = folder
         }
         Button("Move Folder...") {
             folderToMove = folder
-            showMoveFolderSheet = true
         }
         if libraryViewModel.offersDeleteFolder(folder) {
             Divider()
@@ -1498,11 +1487,12 @@ struct LibraryView: View {
 
     // MARK: - Moving Books
 
-    /// Opens the Move to Folder sheet for `books`, from a row's command, the
-    /// edit bar's Move, or Command-Shift-M, unless every one is a feed item,
-    /// which Move to Folder never moves (FR11): VoiceOver then hears at once
-    /// that they stay where they are, and no sheet opens. A mixed selection
-    /// opens the sheet, and its move says which items it left.
+    /// Opens the Move to Folder sheet, by a request for `books`, from a
+    /// row's command, the edit bar's Move, or Command-Shift-M, unless every
+    /// one is a feed item, which Move to Folder never moves (FR11):
+    /// VoiceOver then hears at once that they stay where they are, and no
+    /// request is made. A mixed selection opens the sheet, and its move says
+    /// which items it left.
     private func moveToFolder(_ books: [Book]) {
         guard !books.isEmpty else { return }
         guard books.contains(where: { !$0.isFeedItem }) else {
@@ -1511,8 +1501,7 @@ struct LibraryView: View {
             }
             return
         }
-        booksToMove = books
-        showMoveSheet = true
+        moveRequest = MoveToFolderRequest(books: books)
     }
 
     /// Says which feed items the Move sheet's move left where they are,
@@ -1616,10 +1605,10 @@ struct LibraryView: View {
 
     // MARK: - Speak Info and Book Info for the Selected Row
 
-    /// The row Speak Info (the I key) and Book Info (Cmd+I) act on: the
-    /// first selected row in the list's order, which the List selects by
-    /// ID for a folder's and a feed's row as for a book's, or the edit
-    /// selection's first book (`LibraryInfoRow.selected`).
+    /// The row Speak Info (Shift-Command-I) and Book Info (Command-I) act
+    /// on: the first selected row in the list's order, which the List
+    /// selects by ID for a folder's and a feed's row as for a book's, or
+    /// the edit selection's first book (`LibraryInfoRow.selected`).
     private var selectedInfoRow: LibraryInfoRow? {
         LibraryInfoRow.selected(
             selectedBookIDs,

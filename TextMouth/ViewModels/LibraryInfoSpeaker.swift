@@ -68,8 +68,9 @@ final class LibraryInfoSpeechDelegate: NSObject, AVSpeechSynthesizerDelegate {
 /// speaks a position in a reader: with the app's own voice at its speed,
 /// through a synthesizer of its own, so it works with VoiceOver off, and
 /// over VoiceOver's speech when that is on, as Where Am I's does. Speak Info
-/// (the I key, Library > Speak Info) asks for the brief summary and Speak
-/// Full Info (I twice, Library > Speak Full Info) for the full one, and what
+/// (Shift-Command-I, Library > Speak Info) asks for the brief summary and
+/// Speak Full Info (Shift-Command-I twice, Library > Speak Full Info) for
+/// the full one, and what
 /// each press does follows `SummaryPress` (FR12): a brief press stops a
 /// summary speaking, a full press switches the brief summary to the full
 /// one, and a press on another row speaks that row's summary in place of

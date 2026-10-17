@@ -49,6 +49,13 @@ import AppKit
 ///   (`match(_:)`). The audio editor's actions take no Shift along, so there
 ///   Shift-R never falls back to R's Punch In, nor Shift-T to Trim to
 ///   Selection.
+/// - In a Library window, and in a sheet over one, a letter pressed with no
+///   modifier at all, once or twice, never runs a shortcut, the listener's
+///   own included (`KeyBinding.isLetterAlone`,
+///   `ShortcutWindowKind.navigatesByLetter`): it goes on to the list, whose
+///   letter navigation moves to the first book or folder starting with it,
+///   or to the sheet's control. A letter with Shift, Option, Command, or
+///   Control still acts there.
 /// - A key equivalent's key (`ShortcutAction.isKeyEquivalent`, FR12's
 ///   branch D) is never taken: it goes on to the menu item or button that
 ///   acts on it, as an unmatched key does, and Shift never turns it into
@@ -431,6 +438,11 @@ extension ShortcutPressDispatcher {
                 for binding in bindings[action] ?? [] {
                     let stroke = binding.stroke
                     for kind in ShortcutWindowKind.allCases where actsIn.contains(kind) {
+                        // A letter pressed alone belongs to the window's own
+                        // letter navigation (October 17), so no action takes
+                        // it there. Every lookup follows from the index: the
+                        // presses, the waits, and the Shift fallback.
+                        if kind.navigatesByLetter && stroke.isLetterAlone { continue }
                         if action.isKeyEquivalent {
                             if actionsByKind[kind]?[stroke] == nil {
                                 keyEquivalentsByKind[kind, default: []].insert(stroke)

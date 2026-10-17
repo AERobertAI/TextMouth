@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - The Row Speak Info and Book Info Act On (October 7, 2026)
 
-/// The row of a Library window that Speak Info (the I key) and Book Info
+/// The row of a Library window that Speak Info (Shift-Command-I) and Book Info
 /// (Command-I) act on.
 enum LibraryInfoRow: Equatable {
     /// A book's row.

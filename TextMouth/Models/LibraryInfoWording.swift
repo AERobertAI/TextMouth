@@ -90,9 +90,10 @@ enum LibraryInfoSubject: Equatable {
 }
 
 /// The sentences Speak Info speaks (`LibraryInfoSpeaker`): the brief
-/// summary for Speak Info, the I key, and the full one for Speak Full Info,
-/// I twice (FR12), as Where Am I speaks a position. Pure functions, so
-/// every sentence is pinned by a test without a window; counts through
+/// summary for Speak Info, Shift-Command-I, and the full one for Speak
+/// Full Info, Shift-Command-I twice (FR12), as Where Am I speaks a
+/// position. Pure functions, so every sentence is pinned by a test
+/// without a window; counts through
 /// `CountWording`, times through `TimeFormatting`, dates through
 /// `FeedWording.moment`, and a feed's counts through its row's own phrase,
 /// so nothing is spelled twice.

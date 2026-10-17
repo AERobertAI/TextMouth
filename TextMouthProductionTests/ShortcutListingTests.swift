@@ -150,7 +150,7 @@ final class ShortcutListingTests: XCTestCase {
         XCTAssertEqual(listings[.togglePlayback], "default: space, k")
         XCTAssertEqual(listings[.releaseMediaControls], ["shift+r"])
         XCTAssertEqual(listings[.showBookmarkList], "default: shift+command+b")
-        XCTAssertEqual(listings[.speakInfo], "default: i")
+        XCTAssertEqual(listings[.speakInfo], "default: shift+command+i")
         XCTAssertEqual(listings[.whereAmI], "default: w")
         XCTAssertEqual(listings[.editorPlayPause], "default: space, k")
         XCTAssertEqual(ShortcutListing.edited([]), .list([]))

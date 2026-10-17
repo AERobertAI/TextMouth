@@ -398,29 +398,59 @@ final class ReadingListViewTests: XCTestCase {
 
     // MARK: - The Rows Say "In reading list"
 
-    /// A book's row says "In reading list" as its value, after its label,
-    /// which stays the same; a row for a book not in the list says nothing
-    /// more.
+    /// A book's row says "In reading list" in its label, right after its
+    /// title and author and before every other part, and a row for a book
+    /// not in the list says nothing more. The row carries no value.
     @MainActor
-    func testARowSaysInReadingListAsItsValueAndKeepsItsLabel() {
+    func testARowSaysInReadingListRightAfterItsTitleAndAuthor() {
         let book = Self.book("Loose Pages", in: "")
-        let listed = BookRow(book: book, isInReadingList: true)
-        let unlisted = BookRow(book: book)
+        // The same book, opened and partly read, for the rows that speak
+        // a progress.
+        var read = book
+        read.lastOpened = Date()
+        read.readingPosition = ReadingPosition(chapterIndex: 0, characterOffset: 0, globalCharacterOffset: 420)
+        read.totalCharacterCount = 1_000
 
-        XCTAssertEqual(ReadingListWording.inReadingListValue, "In reading list")
-        XCTAssertEqual(listed.rowAccessibilityValue, "In reading list")
-        XCTAssertNil(unlisted.rowAccessibilityValue)
-        XCTAssertEqual(listed.rowAccessibilityLabel, unlisted.rowAccessibilityLabel)
-        XCTAssertEqual(listed.rowAccessibilityLabel, "Loose Pages, by Ines Okonkwo-Varga, New, Plain Text")
+        XCTAssertEqual(ReadingListWording.inReadingListNote, "In reading list")
+
+        // Listed and unlisted: the note is the only difference.
+        XCTAssertEqual(
+            BookRow(book: book, isInReadingList: true).rowAccessibilityLabel,
+            "Loose Pages, by Ines Okonkwo-Varga, In reading list, New, Plain Text"
+        )
+        XCTAssertEqual(
+            BookRow(book: book).rowAccessibilityLabel,
+            "Loose Pages, by Ines Okonkwo-Varga, New, Plain Text"
+        )
+
+        // "Selected" still begins a selected row in edit mode.
+        XCTAssertEqual(
+            BookRow(book: book, isEditMode: true, isEditSelected: true, isInReadingList: true)
+                .rowAccessibilityLabel,
+            "Selected, Loose Pages, by Ines Okonkwo-Varga, In reading list, New, Plain Text"
+        )
+
+        // The note comes before the cloud note and the progress.
+        XCTAssertEqual(
+            BookRow(book: read, cloudState: .downloaded, isInReadingList: true).rowAccessibilityLabel,
+            "Loose Pages, by Ines Okonkwo-Varga, In reading list, Downloaded, 42 percent, Plain Text"
+        )
+
+        // And before "Now Reading" for a book open in a reader.
+        XCTAssertEqual(
+            BookRow(book: read, isOpenInWindow: true, isInReadingList: true).rowAccessibilityLabel,
+            "Loose Pages, by Ines Okonkwo-Varga, In reading list, Now Reading, 42 percent, Plain Text"
+        )
     }
 
-    /// Hosted, the row is one element whose label is the row's and whose
-    /// value is "In reading list", as VoiceOver reads them; skipped where
-    /// SwiftUI exposes no elements without an assistive app.
+    /// Hosted, the row is one element whose label is the row's, saying "In
+    /// reading list", and which carries no value, as VoiceOver reads it;
+    /// skipped where SwiftUI exposes no elements without an assistive app.
     @MainActor
-    func testAHostedRowCarriesTheValue() throws {
+    func testAHostedRowSaysItInItsLabel() throws {
         let row = BookRow(book: Self.book("Loose Pages", in: ""), isInReadingList: true)
         let label = row.rowAccessibilityLabel
+        XCTAssertTrue(label.contains("In reading list"), label)
 
         try withHostedView(row, until: { !self.accessibilityElements(labelled: label, in: $0).isEmpty }) { hostingView in
             let found = accessibilityElements(labelled: label, in: hostingView)
@@ -428,7 +458,8 @@ final class ReadingListViewTests: XCTestCase {
                 throw XCTSkip("SwiftUI exposed no accessibility elements without an assistive app")
             }
             XCTAssertEqual(found.count, 1, "the row is one element")
-            XCTAssertEqual(element.accessibilityValue() as? String, "In reading list")
+            let value = element.accessibilityValue() as? String
+            XCTAssertTrue(value == nil || value?.isEmpty == true, "the row carries no value: \(String(describing: value))")
         }
     }
 

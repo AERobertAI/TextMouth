@@ -3,8 +3,9 @@ import Foundation
 // MARK: - Brief and Full Summaries (FR12's Branch C)
 
 /// How much a spoken summary says: the brief one Where Am I? and Speak Info
-/// speak, W and I, or the full one Where Am I? Full Summary and Speak Full
-/// Info speak, W twice and I twice (FR12, section 3 of the design).
+/// speak, W and Shift-Command-I, or the full one Where Am I? Full Summary
+/// and Speak Full Info speak, W twice and Shift-Command-I twice (FR12,
+/// section 3 of the design).
 enum SummaryDetail: Equatable, Sendable {
     /// The brief summary.
     case brief

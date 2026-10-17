@@ -346,6 +346,8 @@ final class LogContentPolicyTests: XCTestCase {
         "BOOK_EXPORT", "BOOK_EXPORT_FAILED",
         "TEXT_EDIT_ADOPTED", "TEXT_EDIT_FAILED", "TEXT_EDIT_REFUSED", "TEXT_EDIT_SOURCE_CHANGED",
         "TEXT_EDIT_HELD", "TEXT_EDIT_KEPT",
+        // The Move to Folder… and Move to Library… sheet appearing, with the places and items it lists.
+        "MOVE_SHEET_SHOWN",
         // Every other tag the debug log's events begin with.
         "ARCHIVE_EXTRACTION_LEFT", "ARCHIVE_EXTRACTION_REMOVED",
         "AUDIO_PLAYBACK_FAILED", "BOOK_FINISHED", "BUILD_IDENTITY", "CACHE_STALE", "CONFIG_FILE", "DAISY_INCOMPLETE_CONTENT",

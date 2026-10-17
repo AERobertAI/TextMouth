@@ -145,12 +145,13 @@ final class ShortcutEditsTests: XCTestCase {
     /// without it: the edited action keeps its key.
     func testANewDefaultNeverTakesAKeyAnEditedActionHolds() {
         let plainI = KeyBinding(key: "i")
-        let edits = ShortcutEdits([.whereAmI: [plainW, plainI]])
+        let shiftCommandI = KeyBinding(key: "i", command: true, shift: true)
+        let edits = ShortcutEdits([.whereAmI: [plainW, shiftCommandI]])
 
         let inForce = edits.effectiveBindings(defaults: ShortcutAction.defaultBindings)
 
-        XCTAssertEqual(inForce[.whereAmI], [plainW, plainI])
-        XCTAssertEqual(inForce[.speakInfo], [], "Speak Info's I stays with Where Am I?")
+        XCTAssertEqual(inForce[.whereAmI], [plainW, shiftCommandI])
+        XCTAssertEqual(inForce[.speakInfo], [], "Speak Info's Shift-Command-I stays with Where Am I?")
         XCTAssertEqual(inForce[.editorMarkIn], [plainI], "the audio editor's I is in a scope of its own")
     }
 
