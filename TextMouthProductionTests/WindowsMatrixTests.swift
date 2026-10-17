@@ -713,4 +713,36 @@ final class WindowsMatrixTests: XCTestCase {
             XCTAssertTrue(bReader.isPlaybackUnderWay, "\(cell): B did not start playing")
         }
     }
+
+    // MARK: - Column 10: B Starts Playing
+
+    /// B starts playing. Only one book plays at a time, so A, if it was
+    /// playing, is paused where it was; a paused A stays paused. Nothing
+    /// ends A's timer or hands it to B, and VoiceOver hears nothing.
+    func testStartingAnotherBookPausesTheBookPlayingAndKeepsItsTimer() throws {
+        preserveSharedSleepTimer()
+        for (index, row) in Row.all.enumerated() where !Self.isCoveredByStartingB(row) {
+            let stage = try makeStage(for: row, index: 200 + index)
+            defer { stage.close() }
+            let bReader = openReader(for: try makeB(in: stage), in: stage)
+            let cell = "\(row) | B starts playing"
+            let before = observe(stage)
+
+            let recorder = recordingAnnouncements {
+                bReader.play()
+                XCTAssertTrue(
+                    eventually(within: 5) { bReader.audioPlaybackService.isPlaying },
+                    "\(cell): B never started playing"
+                )
+                // A text book's pause, asked for by B's start, finishes on
+                // the main queue's next turn.
+                handleQueuedCallbacks()
+            }
+
+            assertA(stage, since: before, playback: row.playback.isPlaying ? .pausedByAnotherBook : .unchanged, cell)
+            XCTAssertFalse(bReader.isCurrentlyPaused, "\(cell): B is paused")
+            XCTAssertNotEqual(SleepTimerService.shared.ownerID, bReader.readerID, "\(cell): B took the timer")
+            XCTAssertEqual(recorder.announcements.map(\.message), [], "\(cell): VoiceOver heard something")
+        }
+    }
 }
