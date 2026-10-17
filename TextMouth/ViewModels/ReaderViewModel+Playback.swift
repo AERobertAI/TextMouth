@@ -122,7 +122,8 @@ extension ReaderViewModel {
             )
             return
         }
-        switch effectiveEndOfBookBehavior {
+        let rule = endOfBookRule
+        switch rule.behavior {
         case .stop:
             announceToVoiceOver(EndOfBookWording.finished(book.title))
         case .stopAndPlayStartsOver:
@@ -131,6 +132,7 @@ extension ReaderViewModel {
             playFromTheBeginning(announcing: EndOfBookWording.restarting(book.title))
         case .continueNext:
             continueToNextBookInFolder(
+                following: rule,
                 sleepTimerEndsListening: sleepTimerEndsListeningHere,
                 sleepTimerStoppedHere: false,
                 sayingNothingFollows: announceToVoiceOver(_:)
@@ -2530,8 +2532,10 @@ extension ReaderViewModel {
             )
             return
         }
-        // Determine behavior: per-book override or global setting
-        var behavior = effectiveEndOfBookBehavior
+        // Determine the rule: the book's own behavior, else its feed's or
+        // folder's options, else the global setting (`EndOfBookRule`).
+        let rule = endOfBookRule
+        var behavior = rule.behavior
         // Looping restarts speech at the first chapter with anything to say.
         // A text book with none (every section skipped, or all text deleted
         // by substitutions) would reach its end again at once, forever, so
@@ -2564,6 +2568,7 @@ extension ReaderViewModel {
         case .continueNext:
             finishAtTheEnd(replayingAFinishedEnd: replayedFinishedEnd)
             continueToNextBookInFolder(
+                following: rule,
                 sleepTimerEndsListening: sleepTimerEndsListening,
                 sleepTimerStoppedHere: sleepTimerStoppedHere,
                 sayingNothingFollows: finishListening(announcing:)
@@ -2573,15 +2578,21 @@ extension ReaderViewModel {
 
     /// Continue to Next Book from this finished book (`handleEndOfBook()`,
     /// and Play on a book resting at its end, `playFromTheEnd()`): the next
-    /// book in its folder, by the folder's order, passing over books that
-    /// rest at their ends (`LibraryViewModel.nextBookInFolder(after:)`),
-    /// takes listening over (`handOverToNextBook(to:titled:askingWith:)`),
-    /// unless this reader's sleep timer is in effect, which could never
-    /// pause it, or no book, or only finished books, follow. Then `say`
-    /// says that the book finished and why nothing follows: "No more books
-    /// in folder", or "Every book after it in the folder is finished".
+    /// book in its folder or feed, in the direction the rule gives (below
+    /// by default, above when the feed or folder plays the book above), by
+    /// the folder's order, passing over books that rest at their ends when
+    /// the rule skips them
+    /// (`LibraryViewModel.nextBook(after:going:skippingFinished:)`), takes
+    /// listening over (`handOverToNextBook(to:titled:askingWith:)`), unless
+    /// this reader's sleep timer is in effect, which could never pause it,
+    /// or no book, or only finished books, follow. Then `say` says that the
+    /// book finished and why nothing follows: "No more books in folder", or
+    /// "Every book after it in the folder is finished" ("before it" going
+    /// up).
     ///
     /// - Parameters:
+    ///   - rule: The rule in force (`endOfBookRule`): the direction to go
+    ///     in, and whether finished books are passed over.
     ///   - sleepTimerEndsListening: Whether this reader's sleep timer is in
     ///     effect (`sleepTimerEndsListeningHere`).
     ///   - sleepTimerStoppedHere: Whether that timer stopped playback where
@@ -2589,12 +2600,13 @@ extension ReaderViewModel {
     ///   - say: Says what the listener hears when nothing follows: at the
     ///     end, it ends listening with it (`finishListening(announcing:)`).
     private func continueToNextBookInFolder(
+        following rule: EndOfBookRule,
         sleepTimerEndsListening: Bool,
         sleepTimerStoppedHere: Bool,
         sayingNothingFollows say: (String) -> Void
     ) {
         goOnPastThisBook(
-            to: successionInFolder(),
+            to: successionInFolder(following: rule),
             in: "its folder",
             startingWith: { self.continueToNextBook($0) },
             sleepTimerEndsListening: sleepTimerEndsListening,
@@ -2603,16 +2615,20 @@ extension ReaderViewModel {
         )
     }
 
-    /// What follows this finished book in its folder: the next book
-    /// (`LibraryViewModel.nextBookInFolder(after:)`), or, when there is none,
-    /// why: no book at all follows, or every book after it is finished.
-    private func successionInFolder() -> BookSuccession {
-        if let nextBook = libraryViewModel.nextBookInFolder(after: book) {
+    /// What follows this finished book in its folder or feed, going the way
+    /// `rule` says: the next book
+    /// (`LibraryViewModel.nextBook(after:going:skippingFinished:)`), or,
+    /// when there is none, why: no book at all lies that way, or every book
+    /// that does is finished and the rule passes over them.
+    private func successionInFolder(following rule: EndOfBookRule) -> BookSuccession {
+        if let nextBook = libraryViewModel.nextBook(
+            after: book, going: rule.direction, skippingFinished: rule.skipsFinished
+        ) {
             return .book(nextBook)
         }
-        let whyNothingFollows = libraryViewModel.laterBooksInFolder(after: book).isEmpty
+        let whyNothingFollows = libraryViewModel.booksBeyond(book, going: rule.direction).isEmpty
             ? EndOfBookWording.noMoreBooksInFolderNote
-            : EndOfBookWording.onlyFinishedBooksInFolderNote
+            : EndOfBookWording.onlyFinishedBooksInFolderNote(going: rule.direction)
         return .nothing(note: whyNothingFollows)
     }
 
@@ -2743,13 +2759,22 @@ extension ReaderViewModel {
         return currentGlobalOffset >= content.totalCharacterCount
     }
 
-    /// The effective end-of-book behavior for this book (per-book override or global default)
+    /// The rule in force at this book's end: its own end behavior, else the
+    /// options of its feed or plain folder, else the global setting
+    /// (`EndOfBookRule.resolve`). The reading list, for a book opened from
+    /// it, is asked before this.
+    var endOfBookRule: EndOfBookRule {
+        EndOfBookRule.resolve(
+            localRawValue: book.localEndOfBookBehavior,
+            options: libraryViewModel.listeningOptions(of: book),
+            global: settingsViewModel.endOfBookBehavior
+        )
+    }
+
+    /// The effective end-of-book behavior for this book (per-book override,
+    /// else its feed's or folder's choice, else the global default).
     var effectiveEndOfBookBehavior: EndOfBookBehavior {
-        if let localRaw = book.localEndOfBookBehavior,
-           let local = EndOfBookBehavior(rawValue: localRaw) {
-            return local
-        }
-        return settingsViewModel.endOfBookBehavior
+        endOfBookRule.behavior
     }
 
     /// Set or clear the per-book end-of-book behavior override

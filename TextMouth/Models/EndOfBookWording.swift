@@ -79,6 +79,17 @@ enum EndOfBookWording {
     /// "Finished: Dune. Every book after it in the folder is finished."
     static let onlyFinishedBooksInFolderNote = "Every book after it in the folder is finished"
 
+    /// The same note for the direction listening goes in: going down it is
+    /// `onlyFinishedBooksInFolderNote`; going up, where a feed or folder
+    /// that plays the book above looks, "Every book before it in the folder
+    /// is finished". A feed's items say the same words.
+    static func onlyFinishedBooksInFolderNote(going direction: ReadingList.Direction) -> String {
+        switch direction {
+        case .down: return onlyFinishedBooksInFolderNote
+        case .up: return "Every book before it in the folder is finished"
+        }
+    }
+
     // MARK: - A Book Resting at Its End
 
     /// What a surface that says how far a book has got says of a book

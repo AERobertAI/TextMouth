@@ -943,4 +943,276 @@ final class ContinueToNextBookTests: XCTestCase {
             .store(in: &subscriptions)
         return { posted }
     }
+
+    // MARK: - A Plain Folder's Own Options (FR19)
+
+    /// The three books of a plain folder with listening options of its own,
+    /// in the order the folder lists them, in a world of their own.
+    private struct FolderWorld {
+        let world: World
+        let first: Book
+        let second: Book
+        let third: Book
+    }
+
+    /// A world whose library holds the plain folder "Serials" with the books
+    /// First, Second and Third Volume, whose folder has `options`
+    /// (`LibraryViewModel.setListeningOptions(_:ofFolder:)`), with the global
+    /// "When book ends" at `global`. No book has an end-of-book behavior of
+    /// its own, unless `own` gives it one.
+    ///
+    /// - Parameters:
+    ///   - options: The folder's listening options, or nil for none.
+    ///   - global: The global "When book ends".
+    ///   - finished: The titles of the books that rest at their ends.
+    ///   - own: The books' own end-of-book behaviors, by title.
+    private func makeFolderWorld(
+        options: ListeningOptions?,
+        global: EndOfBookBehavior = .stop,
+        finished: Set<String> = [],
+        own: [String: EndOfBookBehavior] = [:]
+    ) throws -> FolderWorld {
+        // Setting the folder's options saves the library, so the library
+        // index is put back when the test ends.
+        let index = try LibraryIndexSandbox.capture()
+        addTeardownBlock { index.restore() }
+        let folder = BookFolder(name: "Serials")
+        var books: [Book] = []
+        for title in ["First Volume", "Second Volume", "Third Volume"] {
+            var book = try makeAudioBook(title: title, restingAtItsEnd: finished.contains(title))
+            book.folderPath = folder.fullPath
+            book.localEndOfBookBehavior = own[title]?.rawValue
+            books.append(book)
+        }
+        let world = try makeWorld(books: books)
+        world.library.library.folders = [folder]
+        world.library.setListeningOptions(options, ofFolder: folder.id)
+        world.settings.endOfBookBehavior = global
+        return FolderWorld(world: world, first: books[0], second: books[1], third: books[2])
+    }
+
+    /// Ends `book`'s reader as its last chapter's end does, and says what
+    /// the reader announced and which books it asked for.
+    ///
+    /// - Parameters:
+    ///   - book: The book whose reader ends.
+    ///   - folder: The folder's world.
+    ///   - expectingARequest: Whether the end is meant to ask for another
+    ///     book, so the wait ends as soon as it does.
+    private func endBook(
+        _ book: Book,
+        in folder: FolderWorld,
+        expectingARequest: Bool
+    ) -> (announced: [String], asked: [UUID]) {
+        let reader = makeReader(for: book, in: folder.world)
+        waitUntilLoaded(reader)
+        let asked = recordContinueRequests(in: folder.world)
+        let recorder = recordingAnnouncements {
+            reader.handleEndOfBook()
+            if expectingARequest {
+                XCTAssertTrue(eventually { !asked().isEmpty }, "Never asked for the next book")
+            }
+            // Long enough for any second request to arrive.
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+        return (recorder.announcements.map(\.message), asked().compactMap(\.nextBookID))
+    }
+
+    /// "Play the book above" plays the book above when a book ends, saying
+    /// "Starting" once; at the top of the folder the book says that no book
+    /// follows and plays nothing. The global setting is Stop.
+    func testAFolderThatPlaysTheBookAboveGoesUp() throws {
+        let folder = try makeFolderWorld(options: ListeningOptions(continuation: .playBookAbove))
+
+        let up = endBook(folder.second, in: folder, expectingARequest: true)
+        XCTAssertEqual(up.announced, ["Starting: First Volume"])
+        XCTAssertEqual(up.asked, [folder.first.id])
+
+        let top = endBook(folder.first, in: folder, expectingARequest: false)
+        XCTAssertEqual(top.announced, ["Finished: First Volume. No more books in folder."])
+        XCTAssertEqual(top.asked, [])
+    }
+
+    /// "Play the book below" plays the book below, where the global setting
+    /// is Stop.
+    func testAFolderThatPlaysTheBookBelowGoesDown() throws {
+        let folder = try makeFolderWorld(options: ListeningOptions(continuation: .playBookBelow))
+
+        let down = endBook(folder.first, in: folder, expectingARequest: true)
+        XCTAssertEqual(down.announced, ["Starting: Second Volume"])
+        XCTAssertEqual(down.asked, [folder.second.id])
+    }
+
+    /// "Stop" stops where the global setting is Continue to Next Book.
+    func testAFolderThatStopsStopsWhereTheGlobalSettingContinues() throws {
+        let folder = try makeFolderWorld(options: ListeningOptions(continuation: .stop), global: .continueNext)
+
+        let stopped = endBook(folder.first, in: folder, expectingARequest: false)
+        XCTAssertEqual(stopped.announced, ["Finished: First Volume"])
+        XCTAssertEqual(stopped.asked, [])
+    }
+
+    /// "Use the global setting" follows the global setting: with Continue to
+    /// Next Book it plays the book below, as it always did. The options here
+    /// are not the standard ones, so the folder keeps them.
+    func testAFolderThatUsesTheGlobalSettingContinuesWhereItDoes() throws {
+        let options = ListeningOptions(continuation: nil, predownloadsNext: false)
+        XCTAssertFalse(options.isStandard)
+        let folder = try makeFolderWorld(options: options, global: .continueNext)
+
+        let down = endBook(folder.first, in: folder, expectingARequest: true)
+        XCTAssertEqual(down.announced, ["Starting: Second Volume"])
+        XCTAssertEqual(down.asked, [folder.second.id])
+    }
+
+    /// A folder with no options follows the global setting.
+    func testAFolderWithNoOptionsFollowsTheGlobalSetting() throws {
+        let folder = try makeFolderWorld(options: nil, global: .continueNext)
+
+        let down = endBook(folder.first, in: folder, expectingARequest: true)
+        XCTAssertEqual(down.announced, ["Starting: Second Volume"])
+        XCTAssertEqual(down.asked, [folder.second.id])
+    }
+
+    /// "Skip finished" passes over a finished book below, and, switched off,
+    /// plays it.
+    func testSkipFinishedBooksPassesOverAFinishedBookBelowOrPlaysIt() throws {
+        let skipping = try makeFolderWorld(
+            options: ListeningOptions(continuation: .playBookBelow),
+            finished: ["Second Volume"]
+        )
+        let passedOver = endBook(skipping.first, in: skipping, expectingARequest: true)
+        XCTAssertEqual(passedOver.announced, ["Starting: Third Volume"])
+        XCTAssertEqual(passedOver.asked, [skipping.third.id])
+
+        let notSkipping = try makeFolderWorld(
+            options: ListeningOptions(continuation: .playBookBelow, skipsFinished: false),
+            finished: ["Second Volume"]
+        )
+        let played = endBook(notSkipping.first, in: notSkipping, expectingARequest: true)
+        XCTAssertEqual(played.announced, ["Starting: Second Volume"])
+        XCTAssertEqual(played.asked, [notSkipping.second.id])
+    }
+
+    /// Going up with only finished books above, the book says so in the
+    /// words of the direction: "Every book before it in the folder is
+    /// finished". Going up with "Skip finished" off, the finished book
+    /// plays.
+    func testGoingUpPastOnlyFinishedBooksSaysSo() throws {
+        XCTAssertEqual(
+            EndOfBookWording.onlyFinishedBooksInFolderNote(going: .down),
+            EndOfBookWording.onlyFinishedBooksInFolderNote
+        )
+        XCTAssertEqual(
+            EndOfBookWording.onlyFinishedBooksInFolderNote(going: .up),
+            "Every book before it in the folder is finished"
+        )
+
+        let skipping = try makeFolderWorld(
+            options: ListeningOptions(continuation: .playBookAbove),
+            finished: ["First Volume"]
+        )
+        let nothing = endBook(skipping.second, in: skipping, expectingARequest: false)
+        XCTAssertEqual(nothing.announced, ["Finished: Second Volume. Every book before it in the folder is finished."])
+        XCTAssertEqual(nothing.asked, [])
+
+        let notSkipping = try makeFolderWorld(
+            options: ListeningOptions(continuation: .playBookAbove, skipsFinished: false),
+            finished: ["First Volume"]
+        )
+        let played = endBook(notSkipping.second, in: notSkipping, expectingARequest: true)
+        XCTAssertEqual(played.announced, ["Starting: First Volume"])
+        XCTAssertEqual(played.asked, [notSkipping.first.id])
+    }
+
+    /// The book's own end behavior beats the folder's option: a book set to
+    /// Stop stops though its folder plays the book above.
+    func testABooksOwnEndBehaviorBeatsItsFolders() throws {
+        let folder = try makeFolderWorld(
+            options: ListeningOptions(continuation: .playBookAbove),
+            own: ["Second Volume": .stop]
+        )
+
+        let stopped = endBook(folder.second, in: folder, expectingARequest: false)
+        XCTAssertEqual(stopped.announced, ["Finished: Second Volume"])
+        XCTAssertEqual(stopped.asked, [])
+    }
+
+    /// A book opened from the reading list beats both its own end behavior
+    /// and its folder's option: the list's next book plays, not the folder's.
+    func testAReadingListBeatsTheBooksOwnAndTheFoldersChoice() throws {
+        let folder = try makeFolderWorld(
+            options: ListeningOptions(continuation: .playBookAbove),
+            own: ["Second Volume": .stop]
+        )
+        // The list holds the second and the third; it plays the one below.
+        folder.world.library.library.readingList = ReadingList(bookIDs: [folder.second.id, folder.third.id])
+        let requests = ReadingListOpenRequests()
+        requests.request(for: folder.second.id)
+        let reader = ReaderViewModel(
+            book: folder.second,
+            libraryViewModel: folder.world.library,
+            settingsViewModel: folder.world.settings,
+            autoplayRequests: folder.world.requests,
+            readingListRequests: requests,
+            notificationCenter: folder.world.notifications
+        )
+        addTeardownBlock { reader.close() }
+        waitUntilLoaded(reader)
+        XCTAssertTrue(reader.isOpenedFromReadingList, "The book is not read from the list")
+        let asked = recordContinueRequests(in: folder.world)
+
+        let recorder = recordingAnnouncements {
+            reader.handleEndOfBook()
+            XCTAssertTrue(eventually { !asked().isEmpty }, "Never asked for the list's next book")
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Third Volume"])
+        XCTAssertEqual(asked().compactMap(\.nextBookID), [folder.third.id])
+    }
+
+    /// Play on a finished book follows the same rule as its end: with the
+    /// folder playing the book above, it asks for the book above.
+    func testPlayOnAFinishedBookFollowsTheFoldersChoice() throws {
+        let folder = try makeFolderWorld(
+            options: ListeningOptions(continuation: .playBookAbove),
+            finished: ["Second Volume"]
+        )
+        let reader = makeReader(
+            for: folder.second,
+            in: folder.world,
+            nowPlaying: NowPlayingService(installsSystemIntegrations: false, diagnosticSink: { _ in })
+        )
+        waitUntilLoaded(reader)
+        XCTAssertTrue(reader.cursorRestsAtEnd, "The finished book did not open at its end")
+        let asked = recordContinueRequests(in: folder.world)
+
+        let recorder = recordingAnnouncements {
+            reader.play()
+            XCTAssertTrue(eventually { !asked().isEmpty }, "Play at the end never asked for the book above")
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: First Volume"])
+        XCTAssertEqual(asked().compactMap(\.nextBookID), [folder.first.id])
+        XCTAssertFalse(reader.audioPlaybackService.isPlaying, "Play at the end played the finished book")
+    }
+
+    /// The behavior in force that the reader's settings sheet shows follows
+    /// the folder's option, and the book's own over it.
+    func testTheBehaviorInForceShowsTheFoldersOptionAndTheBooksOwnOverIt() throws {
+        let stopping = try makeFolderWorld(options: ListeningOptions(continuation: .stop), global: .continueNext)
+        XCTAssertEqual(makeReader(for: stopping.first, in: stopping.world).effectiveEndOfBookBehavior, .stop)
+
+        let continuing = try makeFolderWorld(options: ListeningOptions(continuation: .playBookAbove), global: .stop)
+        XCTAssertEqual(makeReader(for: continuing.first, in: continuing.world).effectiveEndOfBookBehavior, .continueNext)
+
+        let own = try makeFolderWorld(
+            options: ListeningOptions(continuation: .playBookAbove),
+            global: .stop,
+            own: ["First Volume": .loop]
+        )
+        XCTAssertEqual(makeReader(for: own.first, in: own.world).effectiveEndOfBookBehavior, .loop)
+    }
 }
