@@ -159,25 +159,35 @@ enum OggStreamBuilder {
         return pages.flatMap { $0 }
     }
 
-    /// A whole Opus stream, like `vorbisStream`.
+    /// A whole Opus stream, like `vorbisStream`. `startOffset` is the granule
+    /// the stream starts at: 0 for a normal stream, more for one cut from a
+    /// longer recording (RFC 7845 4.5).
     static func opusStream(channels: UInt8 = 1, preSkip: UInt16 = 312, granule: Int64 = 96_312,
                            comments: [String] = [], commentPacket custom: [UInt8]? = nil,
-                           serial: UInt32 = 1, perPage: Int = 255 * 254) -> [UInt8] {
+                           serial: UInt32 = 1, perPage: Int = 255 * 254, startOffset: Int64 = 0) -> [UInt8] {
         let head = opusHead(channels: channels, preSkip: preSkip)
         let comment = custom ?? commentPacket(signature: opusSignature, comments: comments.map { Array($0.utf8) })
         var pages = [page(type: 0x02, granule: 0, serial: serial, sequence: 0,
                           lacing: [UInt8(head.count)], payload: head)]
         pages += self.pages(carrying: comment, perPage: perPage, serial: serial)
-        pages += audioPages(serial: serial, firstSequence: UInt32(pages.count), granule: granule)
+        pages += audioPages(serial: serial, firstSequence: UInt32(pages.count), granule: granule,
+                            opusStartOffset: startOffset)
         return pages.flatMap { $0 }
     }
 
-    /// Two audio pages: one in the middle of the stream, and a last one at `granule`.
-    static func audioPages(serial: UInt32, firstSequence: UInt32, granule: Int64) -> [[UInt8]] {
-        [page(granule: granule / 2, serial: serial, sequence: firstSequence,
-              lacing: [100], payload: [UInt8](repeating: 7, count: 100)),
-         page(type: 0x04, granule: granule, serial: serial, sequence: firstSequence + 1,
-              lacing: [50], payload: [UInt8](repeating: 9, count: 50))]
+    /// Two audio pages: one in the middle of the stream, and a last one at
+    /// `granule`. With `opusStartOffset` nil the packets are filler (a Vorbis
+    /// stream's, which the reader does not decode). With it set they are one
+    /// valid 20 ms Opus packet each (TOC 0xF8, 960 samples), and the first
+    /// page's granule is what a real stream's is: the granule the stream
+    /// starts at (0 for a normal stream) plus the 960 samples it holds.
+    static func audioPages(serial: UInt32, firstSequence: UInt32, granule: Int64,
+                           opusStartOffset: Int64? = nil) -> [[UInt8]] {
+        let opusPacket = { (length: Int) in [UInt8(0xF8)] + [UInt8](repeating: 9, count: length - 1) }
+        return [page(granule: opusStartOffset.map { $0 + 960 } ?? granule / 2, serial: serial, sequence: firstSequence,
+                     lacing: [100], payload: opusStartOffset == nil ? [UInt8](repeating: 7, count: 100) : opusPacket(100)),
+                page(type: 0x04, granule: granule, serial: serial, sequence: firstSequence + 1,
+                     lacing: [50], payload: opusStartOffset == nil ? [UInt8](repeating: 9, count: 50) : opusPacket(50))]
     }
 }
 
@@ -278,6 +288,7 @@ final class OggHeaderReaderTests: XCTestCase {
         XCTAssertEqual(header.channels, 1)
         XCTAssertEqual(header.sampleRate, 22_050)
         XCTAssertEqual(header.duration, 2.0, accuracy: 0.1)
+        XCTAssertEqual(OggHeaderReader.streamStartOffset(inHead: bytes), 0)
     }
 
     func testTheRealOpusFixture() throws {
@@ -287,6 +298,7 @@ final class OggHeaderReaderTests: XCTestCase {
         XCTAssertEqual(header.channels, 1)
         XCTAssertEqual(header.sampleRate, 48_000)
         XCTAssertEqual(header.duration, 2.0, accuracy: 0.1)
+        XCTAssertEqual(OggHeaderReader.streamStartOffset(inHead: bytes), 0)
     }
 
     // MARK: Refusals
@@ -436,7 +448,8 @@ final class OggHeaderReaderTests: XCTestCase {
                                  payload: identification)
         let commentPages = Builder.pages(carrying: comment, perPage: 255 * 2, serial: 2)
         XCTAssertGreaterThan(commentPages.count, 1, "the comment packet must span pages")
-        let audio = Builder.audioPages(serial: 2, firstSequence: 9, granule: opus ? 96_312 : 44_100)
+        let audio = Builder.audioPages(serial: 2, firstSequence: 9, granule: opus ? 96_312 : 44_100,
+                                      opusStartOffset: opus ? 0 : nil)
         let pages: [[UInt8]] = leading + [start] + afterStart + commentPages.prefix(1) + betweenComment
             + commentPages.dropFirst() + audio + trailing
         return pages.flatMap { $0 }
@@ -520,6 +533,361 @@ final class OggHeaderReaderTests: XCTestCase {
         let stream = multiplexed(opus: true, leading: [fishead, theora])
         for length in stride(from: 0, through: stream.count, by: 7) {
             _ = OggHeaderReader.parse(head: Array(stream[0..<length]), tail: stream)
+        }
+    }
+
+    // MARK: A stream that starts at a nonzero granule
+
+    /// Writes bits least significant first, as Vorbis packs them.
+    private struct BitWriter {
+        private(set) var bytes: [UInt8] = []
+        private var bitCount = 0
+
+        /// Appends the low `bits` bits of `value`, least significant first.
+        mutating func write(_ value: UInt32, bits: Int) {
+            for index in 0..<bits {
+                if bitCount % 8 == 0 { bytes.append(0) }
+                if (value >> UInt32(index)) & 1 == 1 { bytes[bytes.count - 1] |= 1 << UInt8(bitCount % 8) }
+                bitCount += 1
+            }
+        }
+
+        /// Appends whole bytes.
+        mutating func write(bytes values: [UInt8]) {
+            for value in values { write(UInt32(value), bits: 8) }
+        }
+    }
+
+    /// A Vorbis setup packet: `0x05 "vorbis"`, `filler` in place of the
+    /// codebooks and the rest, then the modes as 4.2.4 ends the header (the
+    /// count minus one in 6 bits, per mode a block flag, window type,
+    /// transform type and mapping, then the framing bit). `longBlocks` gives
+    /// each mode's block flag; the other parameters let a test break one field.
+    private func vorbisSetup(longBlocks: [Bool], mappings: [UInt8]? = nil, filler: [UInt8] = [],
+                             countField: UInt32? = nil, windowType: UInt32 = 0) -> [UInt8] {
+        var writer = BitWriter()
+        writer.write(bytes: [0x05] + Array("vorbis".utf8) + filler)
+        writer.write(countField ?? UInt32(longBlocks.count - 1), bits: 6)
+        for (index, isLong) in longBlocks.enumerated() {
+            writer.write(isLong ? 1 : 0, bits: 1)
+            writer.write(windowType, bits: 16)
+            writer.write(0, bits: 16)
+            writer.write(UInt32(mappings?[index] ?? 0), bits: 8)
+        }
+        writer.write(1, bits: 1)                      // the framing bit
+        return writer.bytes
+    }
+
+    /// A Vorbis audio packet of mode `mode`, in a setup of `modeCount` modes:
+    /// the packet type bit (0), then the mode number in `ilog(modeCount - 1)` bits.
+    private func vorbisAudioPacket(mode: Int, of modeCount: Int) -> [UInt8] {
+        let bits = (modeCount - 1).bitWidth - (modeCount - 1).leadingZeroBitCount
+        XCTAssertTrue(mode >> bits == 0, "mode \(mode) needs more than \(bits) bits")
+        return [UInt8(mode << 1)] + [UInt8](repeating: 0x55, count: 11)
+    }
+
+    /// An Opus packet: a TOC byte and `length - 1` bytes of frame data.
+    private func opusPacket(toc: [UInt8], length: Int = 12) -> [UInt8] {
+        toc + [UInt8](repeating: 0x21, count: max(0, length - toc.count))
+    }
+
+    /// One audio page: the packets it completes, and its granule position.
+    private typealias AudioPage = (packets: [[UInt8]], granule: Int64)
+
+    /// A whole stream like `Builder.vorbisStream`/`opusStream` (serial 1,
+    /// title "Cut"), with the headers on their own pages, a Vorbis setup
+    /// header (`setup`, default two modes), the given audio pages, and a last
+    /// page at granule `last`. Every audio packet must be under 255 bytes.
+    private func leadStream(opus: Bool, identification: [UInt8]? = nil, setup: [UInt8]? = nil,
+                            setupPerPage: Int = 255 * 254, audio: [AudioPage], last: Int64) -> [UInt8] {
+        let id = identification ?? (opus ? Builder.opusHead() : Builder.vorbisID())
+        let comment = Builder.commentPacket(signature: opus ? Builder.opusSignature : Builder.vorbisSignature,
+                                            comments: [Array("TITLE=Cut".utf8)]) + (opus ? [] : [1])
+        var pages: [[UInt8]] = [Builder.page(type: 0x02, granule: 0, lacing: [UInt8(id.count)], payload: id)]
+        pages += Builder.pages(carrying: comment, firstSequence: 1)
+        if !opus {
+            pages += Builder.pages(carrying: setup ?? vorbisSetup(longBlocks: [false, true]),
+                                   perPage: setupPerPage, firstSequence: UInt32(pages.count))
+        }
+        for page in audio {
+            pages.append(Builder.page(granule: page.granule, sequence: UInt32(pages.count),
+                                      lacing: page.packets.map { UInt8($0.count) }, payload: page.packets.flatMap { $0 }))
+        }
+        pages.append(Builder.page(type: 0x04, granule: last, sequence: UInt32(pages.count), lacing: [10],
+                                  payload: [UInt8](repeating: 9, count: 10)))
+        return pages.flatMap { $0 }
+    }
+
+    /// The stream's offset as the reader finds it.
+    private func offset(_ stream: [UInt8]) -> Int64 {
+        OggHeaderReader.streamStartOffset(inHead: stream)
+    }
+
+    /// An hour of Vorbis samples at 22,050 Hz, and of Opus samples at 48,000 Hz.
+    private let vorbisHour: Int64 = 3_600 * 22_050
+    private let opusHour: Int64 = 3_600 * 48_000
+
+    /// Vorbis cut an hour in, with a short (256) and a long (2,048) block mode
+    /// and a mixed run of packets, reads its true length to the sample.
+    func testAVorbisStreamCutAnHourInReadsItsTrueLength() throws {
+        // Long, short, short, long, short, long: 576 + 128 + 576 + 576 + 576 = 2,432 samples after the first.
+        let modes = [1, 0, 0, 1, 0, 1]
+        let packets = modes.map { vorbisAudioPacket(mode: $0, of: 2) }
+        let last = vorbisHour + 22_050 * 1_800 + 1_234
+        let stream = leadStream(opus: false, audio: [(packets, vorbisHour + 2_432)], last: last)
+        XCTAssertEqual(offset(stream), vorbisHour)
+        let header = try XCTUnwrap(parse(stream))
+        XCTAssertEqual(header.duration, Double(22_050 * 1_800 + 1_234) / 22_050, accuracy: 1e-9)
+        XCTAssertEqual(header.tags.title, "Cut")
+    }
+
+    /// A stream whose first granule equals its own samples has offset 0 and
+    /// the length of its last granule, as before.
+    func testAVorbisStreamThatStartsAtZeroIsUnchanged() throws {
+        let packets = [1, 0, 0, 1, 0, 1].map { vorbisAudioPacket(mode: $0, of: 2) }
+        let stream = leadStream(opus: false, audio: [(packets, 2_432)], last: 44_100)
+        XCTAssertEqual(offset(stream), 0)
+        XCTAssertEqual(try XCTUnwrap(parse(stream)).duration, 2.0, accuracy: 0.0001)
+    }
+
+    /// A setup header of one mode reads its mode number in 0 bits.
+    func testAOneModeSetupHeader() {
+        for (isLong, samples) in [(false, Int64(3 * 128)), (true, Int64(3 * 1_024))] {
+            let packets = (0..<4).map { _ in vorbisAudioPacket(mode: 0, of: 1) }
+            let stream = leadStream(opus: false, setup: vorbisSetup(longBlocks: [isLong]),
+                                    audio: [(packets, vorbisHour + samples)], last: vorbisHour + 44_100)
+            XCTAssertEqual(offset(stream), vorbisHour, "long \(isLong)")
+        }
+    }
+
+    /// Filler ahead of the modes, with a long run of zero bytes and a run of
+    /// ones, and mappings that are not 0, does not mislead the mode search.
+    func testASetupHeaderWithFillerAndAFalseZeroRun() {
+        let filler = [UInt8](repeating: 0xFF, count: 9) + [UInt8](repeating: 0, count: 30) + [1, 0, 0, 0, 0, 0, 0]
+        let setup = vorbisSetup(longBlocks: [true, false, true], mappings: [0, 1, 0], filler: filler)
+        // Modes 0, 1, 2, 1: long, short, long, short: 3 x 576 samples after the first.
+        let packets = [0, 1, 2, 1].map { vorbisAudioPacket(mode: $0, of: 3) }
+        let stream = leadStream(opus: false, setup: setup, audio: [(packets, vorbisHour + 1_728)],
+                                last: vorbisHour + 44_100)
+        XCTAssertEqual(offset(stream), vorbisHour)
+    }
+
+    /// Two modes whose mappings are 0 also read as one mode (the count field
+    /// before the last mode is 0): the larger count wins, so the first
+    /// mode's block size is the one used.
+    func testALargerModeCountWinsOverASmallerThatFitsByChance() {
+        // Modes [short, long]: packets 0, 1, 0 = short, long, short = 576 + 576.
+        let packets = [0, 1, 0].map { vorbisAudioPacket(mode: $0, of: 2) }
+        let stream = leadStream(opus: false, audio: [(packets, vorbisHour + 1_152)], last: vorbisHour + 44_100)
+        XCTAssertEqual(offset(stream), vorbisHour)
+    }
+
+    /// The most modes the 6-bit count allows, 64, with a 6-bit mode number.
+    func testASetupHeaderOfSixtyFourModes() {
+        let setup = vorbisSetup(longBlocks: (0..<64).map { $0 % 2 == 1 })
+        // Modes 63 (long), 0 (short), 1 (long): 576 + 576 after the first.
+        let packets = [63, 0, 1].map { vorbisAudioPacket(mode: $0, of: 64) }
+        let stream = leadStream(opus: false, setup: setup, audio: [(packets, vorbisHour + 1_152)],
+                                last: vorbisHour + 44_100)
+        XCTAssertEqual(offset(stream), vorbisHour)
+    }
+
+    /// A first audio page with granule -1 (which the format does not allow)
+    /// is counted in with the page after it that has a granule.
+    func testAFirstAudioPageWithGranuleMinusOneIsCountedWithTheNext() {
+        let first = [1, 0].map { vorbisAudioPacket(mode: $0, of: 2) }
+        let second = [0, 1].map { vorbisAudioPacket(mode: $0, of: 2) }
+        // Long, short, short, long: 576 + 128 + 576 after the first packet.
+        let stream = leadStream(opus: false, audio: [(first, -1), (second, vorbisHour + 1_280)],
+                                last: vorbisHour + 44_100)
+        XCTAssertEqual(offset(stream), vorbisHour)
+    }
+
+    /// Opus cut an hour in reads its true length, and the same stream
+    /// starting at 0 reads as before.
+    func testAnOpusStreamCutAnHourInReadsItsTrueLength() throws {
+        let cut = Builder.opusStream(granule: opusHour + 48_000 * 1_800 + 312, startOffset: opusHour)
+        XCTAssertEqual(offset(cut), opusHour)
+        XCTAssertEqual(try XCTUnwrap(parse(cut)).duration, 1_800, accuracy: 1e-9)
+
+        let normal = Builder.opusStream()
+        XCTAssertEqual(offset(normal), 0)
+        XCTAssertEqual(try XCTUnwrap(parse(normal)).duration, 2.0, accuracy: 1e-9)
+    }
+
+    /// A code 3 packet of three frames and a code 1 packet of two are counted right.
+    func testOpusFrameCountCodes() {
+        let packets = [opusPacket(toc: [0xFB, 0x03]), opusPacket(toc: [0xF9], length: 11)]
+        let stream = leadStream(opus: true, audio: [(packets, opusHour + 3 * 960 + 2 * 960)],
+                                last: opusHour + 96_312)
+        XCTAssertEqual(offset(stream), opusHour)
+    }
+
+    /// Frame sizes by TOC config (RFC 6716 3.1) and frame counts by code (3.2),
+    /// each as the number of samples one packet holds.
+    func testOpusSamplesPerPacket() {
+        let cases: [(toc: [UInt8], samples: Int64)] = [
+            ([0x00], 480), ([0x08], 960), ([0x10], 1_920), ([0x18], 2_880),          // SILK, config 0 to 3
+            ([0x40], 480), ([0x58], 2_880),                                          // SILK, configs 8 and 11
+            ([0x60], 480), ([0x68], 960), ([0x70], 480), ([0x78], 960),              // hybrid, configs 12 to 15
+            ([0x80], 120), ([0x88], 240), ([0x90], 480), ([0x98], 960),              // CELT, configs 16 to 19
+            ([0xE0], 120), ([0xE8], 240), ([0xF0], 480), ([0xF8], 960),              // CELT, configs 28 to 31
+            ([0xFA], 1_920),                                                         // code 2: two frames
+            ([0xFB, 0x01], 960), ([0xFB, 0x06], 5_760),                              // code 3: one and six frames
+            ([0xFB, 0xC6], 5_760),                                                   // code 3 with the v and p flags set
+        ]
+        for testCase in cases {
+            let stream = leadStream(opus: true, audio: [([opusPacket(toc: testCase.toc)], opusHour + testCase.samples)],
+                                    last: opusHour + 96_312)
+            XCTAssertEqual(offset(stream), opusHour, "TOC \(testCase.toc)")
+        }
+    }
+
+    /// Packets that are not valid Opus (RFC 6716 3.4) give offset 0, the old length.
+    func testInvalidOpusPacketsGiveOffsetZero() throws {
+        let invalid: [[UInt8]] = [
+            [],                                        // empty
+            [0xFB],                                    // code 3 without its frame count byte
+            [0xFB, 0x00],                              // code 3 of no frames
+            [0xFB, 0x07],                              // 7 x 20 ms = 140 ms, over the 120 ms limit
+            [0x1B, 0x03],                              // 3 x 60 ms = 180 ms
+        ]
+        for packet in invalid {
+            let stream = leadStream(opus: true, audio: [([opusPacket(toc: [0xF8]), packet], opusHour + 1_920)],
+                                    last: opusHour + 96_312)
+            XCTAssertEqual(offset(stream), 0, "packet \(packet)")
+            XCTAssertEqual(try XCTUnwrap(parse(stream)).duration, Double(opusHour + 96_000) / 48_000, accuracy: 1e-9)
+        }
+    }
+
+    /// Whatever the reader cannot make sense of costs the offset only: it
+    /// is 0, and the length is the old one, the last granule alone.
+    func testEachVorbisFallbackGivesTheOldLength() throws {
+        let good = [1, 0, 0].map { vorbisAudioPacket(mode: $0, of: 2) }
+        let granule = vorbisHour + 1_280
+        // A packet whose type bit is set is a header, not audio.
+        let notAudio = [vorbisAudioPacket(mode: 1, of: 2), [0x01] + [UInt8](repeating: 0x55, count: 11),
+                        vorbisAudioPacket(mode: 0, of: 2)]
+        // An identification packet whose byte 28 (the block sizes) is changed.
+        func identification(blockSizes: UInt8) -> [UInt8] { Array(Builder.vorbisID().prefix(28)) + [blockSizes, 1] }
+        let badID = identification(blockSizes: 0x55)          // blocksize_0 = 2^5, below the minimum 2^6
+        let inverted = identification(blockSizes: 0x8B)       // blocksize_0 = 2^11 above blocksize_1 = 2^8
+        let zeroBits = [UInt8](repeating: 0, count: 90)
+        let vorbisPrefix = [0x05] + Array("vorbis".utf8)
+        // Three modes, so that mode number 3 (2 bits) is past the count.
+        let threeModes = vorbisSetup(longBlocks: [false, true, false])
+        let pastTheCount = good + [vorbisAudioPacket(mode: 3, of: 4)]
+        // Mappings of 255 keep a smaller count from fitting by chance when the count field is wrong.
+        let wrongCount = vorbisSetup(longBlocks: [false, true], mappings: [255, 255], countField: 5)
+
+        /// A stream of one case: the identification, setup, and audio packets it changes.
+        func stream(identification: [UInt8]? = nil, setup: [UInt8]? = nil, packets: [[UInt8]]? = nil) -> [UInt8] {
+            leadStream(opus: false, identification: identification, setup: setup,
+                       audio: [(packets ?? good, granule)], last: vorbisHour + 44_100)
+        }
+        let cases: [(name: String, stream: [UInt8])] = [
+            ("a packet that is not audio", stream(packets: notAudio)),
+            ("a mode number past the count", stream(setup: threeModes, packets: pastTheCount)),
+            ("block sizes out of range", stream(identification: badID)),
+            ("block sizes inverted", stream(identification: inverted)),
+            ("a setup header of another kind", stream(setup: [0x01] + Array("vorbis".utf8) + [3, 4])),
+            ("a setup header of no bits set", stream(setup: vorbisPrefix + zeroBits)),
+            ("a setup header with no modes", stream(setup: vorbisPrefix + [1])),
+            ("a wrong mode count field", stream(setup: wrongCount)),
+            ("a mode with a window type", stream(setup: vorbisSetup(longBlocks: [false, true], windowType: 1))),
+            ("no audio page after the setup header", leadStream(opus: false, audio: [], last: vorbisHour + 44_100)),
+        ]
+        for testCase in cases {
+            XCTAssertEqual(offset(testCase.stream), 0, testCase.name)
+            let header = try XCTUnwrap(parse(testCase.stream), testCase.name)
+            XCTAssertEqual(header.duration, Double(vorbisHour + 44_100) / 22_050, accuracy: 1e-9, testCase.name)
+        }
+    }
+
+    /// Pages that complete audio packets but never give a granule are read
+    /// only so far: past the bound the offset is 0.
+    func testPagesWithoutAGranuleAreReadOnlySoFar() {
+        let packet = vorbisAudioPacket(mode: 0, of: 2)
+        let withoutGranule: [AudioPage] = (0..<40).map { _ in ([packet, packet], Int64(-1)) }
+        let late = withoutGranule + [([packet, packet], vorbisHour + 40_000)]
+        XCTAssertEqual(offset(leadStream(opus: false, audio: late, last: vorbisHour + 44_100)), 0)
+        // Within the bound the same run is counted: 8 pages of two short packets (15 x 128 = 1,920 samples).
+        let near: [AudioPage] = (0..<7).map { _ in ([packet, packet], Int64(-1)) } + [([packet, packet], vorbisHour + 1_920)]
+        XCTAssertEqual(offset(leadStream(opus: false, audio: near, last: vorbisHour + 44_100)), vorbisHour)
+    }
+
+    /// An offset past the last granule contradicts the file and is ignored.
+    func testAnOffsetPastTheLastGranuleIsIgnored() throws {
+        let packets = [1, 0, 0].map { vorbisAudioPacket(mode: $0, of: 2) }
+        // Long, short, short: 576 + 128 = 704 samples after the first packet.
+        let stream = leadStream(opus: false, audio: [(packets, vorbisHour + 704)], last: 44_100)
+        XCTAssertEqual(offset(stream), vorbisHour)
+        XCTAssertEqual(try XCTUnwrap(parse(stream)).duration, 2.0, accuracy: 1e-9)
+    }
+
+    /// A first audio page that does not lie wholly inside `head` costs the
+    /// offset only; a setup header cut off by the end of `head` the same,
+    /// with the tags and the header kept.
+    func testAnAudioPageOrSetupHeaderBeyondTheHeadCostsOnlyTheOffset() throws {
+        let packets = [1, 0, 0].map { vorbisAudioPacket(mode: $0, of: 2) }
+        let stream = leadStream(opus: false, audio: [(packets, vorbisHour + 1_280)], last: vorbisHour + 44_100)
+        let endPageLength = 27 + 1 + 10
+        let audioStart = leadStream(opus: false, audio: [], last: 0).count - endPageLength
+        let cutInAudio = Array(stream[0..<(audioStart + 5)])
+        let header = try XCTUnwrap(OggHeaderReader.parse(head: cutInAudio, tail: stream))
+        XCTAssertEqual(OggHeaderReader.streamStartOffset(inHead: cutInAudio), 0)
+        XCTAssertEqual(header.tags.title, "Cut")
+        XCTAssertEqual(header.duration, Double(vorbisHour + 44_100) / 22_050, accuracy: 1e-9)
+
+        // A setup header of 1,000 bytes on pages of 510, cut inside its second page.
+        let long = leadStream(opus: false, setup: vorbisSetup(longBlocks: [false, true], filler: [UInt8](repeating: 3, count: 1_000)),
+                              setupPerPage: 255 * 2, audio: [(packets, vorbisHour + 1_280)], last: vorbisHour + 44_100)
+        let setupStart = leadStream(opus: false, audio: [], last: 0).count - endPageLength
+            - Builder.pages(carrying: vorbisSetup(longBlocks: [false, true]), firstSequence: 0).flatMap { $0 }.count
+        let cutInSetup = Array(long[0..<(setupStart + 700)])
+        let partial = try XCTUnwrap(OggHeaderReader.parse(head: cutInSetup, tail: long))
+        XCTAssertEqual(OggHeaderReader.streamStartOffset(inHead: cutInSetup), 0)
+        XCTAssertEqual(partial.tags.title, "Cut")
+    }
+
+    /// Randomly made headers, packets, and granules, in pages with valid
+    /// CRCs so that the new paths are reached, never trap and never give a
+    /// nonsensical length.
+    func testRandomHeadersAndPacketsNeverTrap() {
+        var generator = OggFuzzGenerator(seed: 20_261_017)
+        let granules: [Int64] = [-1, 0, 1, 960, 1_234_567, Int64.max, Int64.min, Int64.max - 1]
+        for round in 0..<400 {
+            let opus = round % 2 == 0
+            // A setup header that is valid, valid with changed bytes, or random.
+            var setup = vorbisSetup(longBlocks: (0..<Int.random(in: 1...64, using: &generator)).map { _ in Bool.random(using: &generator) },
+                                    filler: (0..<Int.random(in: 0...40, using: &generator)).map { _ in UInt8.random(in: 0...255, using: &generator) })
+            switch Int.random(in: 0..<3, using: &generator) {
+            case 0:
+                break
+            case 1:
+                for _ in 0..<Int.random(in: 1...4, using: &generator) {
+                    setup[Int.random(in: 0..<setup.count, using: &generator)] = UInt8.random(in: 0...255, using: &generator)
+                }
+            default:
+                setup = [0x05] + Array("vorbis".utf8) + (0..<Int.random(in: 0...120, using: &generator)).map { _ in UInt8.random(in: 0...255, using: &generator) }
+            }
+            var identification = opus ? Builder.opusHead() : Builder.vorbisID()
+            if !opus && Bool.random(using: &generator) { identification[28] = UInt8.random(in: 0...255, using: &generator) }
+
+            // One to three audio pages of random packets (up to 200 bytes: 255 would continue the packet).
+            let pages: [AudioPage] = (0..<Int.random(in: 1...3, using: &generator)).map { _ in
+                let packets = (0..<Int.random(in: 0...6, using: &generator)).map { _ in
+                    (0..<Int.random(in: 0...200, using: &generator)).map { _ in UInt8.random(in: 0...255, using: &generator) }
+                }
+                return (packets, granules.randomElement(using: &generator) ?? 0)
+            }
+            let stream = leadStream(opus: opus, identification: identification, setup: setup, audio: pages,
+                                    last: granules.randomElement(using: &generator) ?? 0)
+            XCTAssertGreaterThanOrEqual(offset(stream), 0)
+            if let header = parse(stream) {
+                XCTAssertTrue(header.duration.isFinite && header.duration > 0
+                                && header.duration <= OggHeaderReader.maximumDuration, "round \(round)")
+            }
         }
     }
 

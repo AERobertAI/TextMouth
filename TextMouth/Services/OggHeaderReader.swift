@@ -51,6 +51,11 @@ enum OggHeaderReader {
     /// The most candidate pages, found by their "OggS", that may fail their
     /// checks while the tail is searched, which bounds the search's work.
     private static let maxRejectedCandidates = 256
+    /// The most pages that complete audio packets without a granule position
+    /// (contradicting the format) that are read to find a stream's first audio page.
+    private static let maxAudioPagesWithoutGranule = 16
+    /// The most samples (120 ms at 48,000 Hz) an Opus packet may hold (RFC 6716 3.2).
+    private static let maxOpusPacketSamples = 5_760
     /// The Opus decoder's sample rate, whatever the file was recorded at.
     private static let opusSampleRate = 48_000.0
     /// The longest stream believed: a year. A granule position that claims more is
@@ -113,14 +118,17 @@ enum OggHeaderReader {
         guard let start = streamStart(in: head),
               let granule = lastGranule(in: tail, serial: start.serial) else { return nil }
 
-        // The stream's length from the last page that ends a packet.
+        // The stream's length from the last page that ends a packet, less the
+        // granule the stream starts at (see `StreamStart.startOffset`). An
+        // offset past the last granule contradicts the file, so it is ignored.
+        let offset = start.startOffset <= granule ? start.startOffset : 0
         let seconds: Double
         switch start.codec {
         case .vorbis:
-            seconds = Double(granule) / start.sampleRate
+            seconds = Double(granule - offset) / start.sampleRate
         case .opus:
             // The first `preSkip` samples are the decoder's warm-up.
-            seconds = Double(max(0, granule - Int64(start.preSkip))) / opusSampleRate
+            seconds = Double(max(0, granule - offset - Int64(start.preSkip))) / opusSampleRate
         }
         guard seconds.isFinite, seconds > 0, seconds <= maximumDuration else { return nil }
 
@@ -259,7 +267,7 @@ enum OggHeaderReader {
 
     // MARK: - The stream's start
 
-    /// What the first two packets of a stream tell.
+    /// What the first packets of a stream tell.
     private struct StreamStart {
         let serial: UInt32
         let codec: Codec
@@ -268,6 +276,21 @@ enum OggHeaderReader {
         /// The Opus pre-skip, in 48,000 Hz samples; 0 for Vorbis.
         let preSkip: Int
         let tags: Tags
+        /// The granule position the stream starts at: 0 for a stream that
+        /// begins at the start of its recording, more for one cut from a
+        /// longer stream (a live broadcast joined an hour in). 0 too when it
+        /// cannot be read, which is the length from the last granule alone.
+        let startOffset: Int64
+    }
+
+    /// A stream's packets from its first page to its first audio page.
+    private struct StreamLead {
+        /// Every packet completed on those pages, in order: the header
+        /// packets, then the audio packets.
+        var packets: [[UInt8]] = []
+        /// The granule position of the first page that completes an audio
+        /// packet; nil when no such page lies inside the buffer.
+        var firstAudioGranule: Int64?
     }
 
     /// The first packet that ends on `page`, a first ("start of stream")
@@ -311,31 +334,203 @@ enum OggHeaderReader {
         return nil
     }
 
+    /// The packets of stream `serial` in `head`, from the first page through
+    /// its first audio page: the page, after the `headerCount` header packets,
+    /// that completes an audio packet with a granule position of 0 or more
+    /// (a page that completes one without a granule contradicts the format;
+    /// its packets are kept, up to `maxAudioPagesWithoutGranule` such pages).
+    /// The pages of other streams are passed over. Reading stops at the first
+    /// page that fails its checks or contradicts the packets so far, keeping
+    /// the packets completed until then.
+    private static func lead(of serial: UInt32, headerCount: Int, in head: [UInt8]) -> StreamLead {
+        var lead = StreamLead()
+        var assembler = PacketAssembler()
+        var pagesWithoutGranule = 0
+        var index = 0
+        while let current = page(in: head, at: index) {
+            index = current.end
+            guard current.serial == serial else { continue }
+            guard let completed = assembler.feed(current, of: head) else { break }
+            lead.packets += completed
+
+            // A page completes an audio packet when it completes any packet
+            // and the packets so far outnumber the headers.
+            guard !completed.isEmpty, lead.packets.count > headerCount else { continue }
+            if current.granule >= 0 {
+                lead.firstAudioGranule = current.granule
+                break
+            }
+            pagesWithoutGranule += 1
+            if pagesWithoutGranule >= maxAudioPagesWithoutGranule { break }
+        }
+        return lead
+    }
+
     /// The Vorbis or Opus stream among the leading pages of `head`: its codec
-    /// and format from its first packet, and its tags from its second; nil
-    /// when no leading stream is Vorbis or Opus (see `audioStream(in:)`). The
-    /// tags are empty when the comment packet is missing, spans past `head`,
-    /// or is larger than `maxPacketLength`.
+    /// and format from its first packet, its tags from its second, and where
+    /// it starts from its first audio page; nil when no leading stream is
+    /// Vorbis or Opus (see `audioStream(in:)`). The tags are empty when the
+    /// comment packet is missing, spans past `head`, or is larger than
+    /// `maxPacketLength`; the start offset is 0 when it cannot be read.
     private static func streamStart(in head: [UInt8]) -> StreamStart? {
         guard let (serial, format) = audioStream(in: head) else { return nil }
 
-        // Assemble only that stream's packets from the first page again: the
-        // pages of the other streams (Skeleton's, a video's) are passed over.
-        var assembler = PacketAssembler()
-        var packets: [[UInt8]] = []
-        var index = 0
-        while let current = page(in: head, at: index) {
-            if current.serial == serial {
-                guard let completed = assembler.feed(current, of: head) else { break }
-                packets += completed
-                if packets.count >= 2 { break }
-            }
-            index = current.end
-        }
-
-        let tags = packets.count >= 2 ? parseTags(packets[1], codec: format.codec) : Tags()
+        // Vorbis has three header packets (identification, comment, setup),
+        // Opus two (head, tags).
+        let lead = lead(of: serial, headerCount: format.codec == .vorbis ? 3 : 2, in: head)
+        let tags = lead.packets.count >= 2 ? parseTags(lead.packets[1], codec: format.codec) : Tags()
         return StreamStart(serial: serial, codec: format.codec, channels: format.channels,
-                           sampleRate: format.sampleRate, preSkip: format.preSkip, tags: tags)
+                           sampleRate: format.sampleRate, preSkip: format.preSkip, tags: tags,
+                           startOffset: startOffset(of: lead, codec: format.codec))
+    }
+
+    /// The granule position at which the stream whose packets are `lead`
+    /// starts: that of its first audio page less the samples the page's
+    /// packets produce (the stream's own samples before it), never below 0.
+    /// This is how libvorbisfile (`_initial_pcmoffset`) and opusfile
+    /// (`op_find_initial_pcm_offset`) read a stream cut from a longer one.
+    /// 0 when anything cannot be read, which is a normal stream's offset.
+    private static func startOffset(of lead: StreamLead, codec: Codec) -> Int64 {
+        guard let granule = lead.firstAudioGranule else { return 0 }
+        let samples: Int64?
+        switch codec {
+        case .opus: samples = opusSamples(ofAudio: lead.packets.dropFirst(2))
+        case .vorbis: samples = vorbisSamples(of: lead.packets)
+        }
+        guard let samples else { return 0 }
+        // Both are 0 or more, so the subtraction cannot overflow.
+        return max(0, granule - samples)
+    }
+
+    /// The offset `startOffset(of:codec:)` finds for the stream at the start
+    /// of `head` (0 when it has no stream or the offset cannot be read).
+    /// Internal so that tests can assert it.
+    static func streamStartOffset(inHead head: [UInt8]) -> Int64 {
+        streamStart(in: head)?.startOffset ?? 0
+    }
+
+    // MARK: - Samples in packets
+
+    /// The samples (at 48,000 Hz) in `packets`, Opus audio packets; nil when
+    /// any is invalid (RFC 6716 3.4).
+    private static func opusSamples(ofAudio packets: ArraySlice<[UInt8]>) -> Int64? {
+        var total: Int64 = 0
+        for packet in packets {
+            guard let samples = opusSamples(in: packet) else { return nil }
+            total += Int64(samples)
+        }
+        return total
+    }
+
+    /// The samples (at 48,000 Hz) one Opus packet holds: its frame size from
+    /// the TOC byte (RFC 6716 3.1) times its frame count (3.2). Nil for an
+    /// empty packet, a code 3 packet of no frames, or one over 120 ms.
+    private static func opusSamples(in packet: [UInt8]) -> Int? {
+        guard let toc = packet.first else { return nil }
+        // The frame size: 2.5, 5, 10, 20, 40, 60 ms are 120, 240, 480, 960, 1920, 2880 samples.
+        let config = Int(toc >> 3)
+        let frameSamples: Int
+        switch config {
+        case 0..<12: frameSamples = [480, 960, 1_920, 2_880][config & 3]    // SILK: 10, 20, 40, 60 ms
+        case 12..<16: frameSamples = [480, 960][config & 1]                 // hybrid: 10, 20 ms
+        default: frameSamples = [120, 240, 480, 960][config & 3]            // CELT: 2.5, 5, 10, 20 ms
+        }
+        // The frame count: 1, 2, 2, or (code 3) the low six bits of the next byte.
+        let frames: Int
+        switch toc & 0x03 {
+        case 0: frames = 1
+        case 1, 2: frames = 2
+        default:
+            guard packet.count > 1 else { return nil }
+            frames = Int(packet[1] & 0x3F)
+        }
+        let samples = frames * frameSamples
+        return frames > 0 && samples <= maxOpusPacketSamples ? samples : nil
+    }
+
+    /// The samples (at the stream's rate) the audio packets of a Vorbis
+    /// stream produce, given all its packets (three headers, then audio); nil
+    /// when a block size, the modes or a packet cannot be read. Each audio
+    /// packet gives a quarter of its own block size plus a quarter of the
+    /// previous packet's (Vorbis I 4.3.8), and the first gives none: it only
+    /// primes the decoder (1.3.2).
+    private static func vorbisSamples(of packets: [[UInt8]]) -> Int64? {
+        guard packets.count > 3,
+              let sizes = vorbisBlockSizes(in: packets[0]),
+              let modeIsLong = vorbisModes(in: packets[2]) else { return nil }
+        // The mode number is `ilog(mode_count - 1)` bits (4.3.1).
+        let modeBits = (modeIsLong.count - 1).bitWidth - (modeIsLong.count - 1).leadingZeroBitCount
+
+        var total: Int64 = 0
+        var previous: Int?
+        for packet in packets.dropFirst(3) {
+            // Bit 0 is the packet type, 0 for audio; the mode number follows.
+            guard let first = packet.first, first & 1 == 0,
+                  let mode = bits(packet, at: 1, count: modeBits), Int(mode) < modeIsLong.count else { return nil }
+            let size = modeIsLong[Int(mode)] ? sizes.long : sizes.short
+            if let previous { total += Int64(previous + size) / 4 }
+            previous = size
+        }
+        return total
+    }
+
+    /// The two block sizes, in samples, of a Vorbis identification packet:
+    /// byte 28 holds `blocksize_0` in its low nibble and `blocksize_1` in its
+    /// high nibble, each a power of two exponent (Vorbis I 4.2.2). Nil unless
+    /// both exponents are in 6 to 13 and the first is not above the second.
+    private static func vorbisBlockSizes(in identification: [UInt8]) -> (short: Int, long: Int)? {
+        guard identification.count > 28 else { return nil }
+        let short = Int(identification[28] & 0x0F), long = Int(identification[28] >> 4)
+        guard (6...13).contains(short), (6...13).contains(long), short <= long else { return nil }
+        return (1 << short, 1 << long)
+    }
+
+    /// Whether each mode of a Vorbis setup packet uses the long block size, in
+    /// mode order; nil when the modes cannot be found. The modes end the
+    /// setup header (4.2.4): `mode_count - 1` in 6 bits, then per mode a
+    /// block flag bit, 16 bits of window type and 16 of transform type (both
+    /// 0), and 8 bits of mapping, then the framing bit, the last bit set in
+    /// the packet. What precedes them is of unknown length, so they are found
+    /// backwards from the framing bit as ffmpeg's Vorbis parser does: the
+    /// largest count whose count field and mode records all read back
+    /// consistently (a smaller count can fit by chance, a larger rarely).
+    private static func vorbisModes(in setup: [UInt8]) -> [Bool]? {
+        let signature: [UInt8] = [0x05] + Array("vorbis".utf8)
+        guard hasPrefix(setup, signature: signature),
+              let lastByte = setup.lastIndex(where: { $0 != 0 }) else { return nil }
+        // The framing bit: the highest set bit of the last nonzero byte.
+        let framing = lastByte * 8 + (UInt8.bitWidth - 1 - setup[lastByte].leadingZeroBitCount)
+
+        for count in stride(from: 64, through: 1, by: -1) {
+            // Each mode record is 1 + 16 + 16 + 8 = 41 bits, and the count field is 6 bits.
+            let firstMode = framing - 41 * count
+            guard firstMode - 6 >= signature.count * 8,
+                  bits(setup, at: firstMode - 6, count: 6) == UInt32(count - 1) else { continue }
+            var modeIsLong: [Bool] = []
+            for mode in 0..<count {
+                let record = firstMode + 41 * mode
+                guard let flag = bits(setup, at: record, count: 1),
+                      bits(setup, at: record + 1, count: 16) == 0,
+                      bits(setup, at: record + 17, count: 16) == 0 else { break }
+                modeIsLong.append(flag == 1)
+            }
+            if modeIsLong.count == count { return modeIsLong }
+        }
+        return nil
+    }
+
+    /// `count` bits (at most 32) of `bytes` from bit `position`, as Vorbis
+    /// packs them: bit 0 is the least significant bit of byte 0, and the
+    /// first bit read is the least significant of the value. Nil when they
+    /// do not wholly lie inside `bytes`.
+    private static func bits(_ bytes: [UInt8], at position: Int, count: Int) -> UInt32? {
+        guard position >= 0, count >= 0, count <= 32, position <= bytes.count * 8 - count else { return nil }
+        var value: UInt32 = 0
+        for offset in 0..<count {
+            let bit = position + offset
+            value |= UInt32((bytes[bit / 8] >> UInt8(bit % 8)) & 1) << UInt32(offset)
+        }
+        return value
     }
 
     /// The codec, channel count, sample rate and Opus pre-skip an
