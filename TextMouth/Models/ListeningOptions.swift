@@ -48,6 +48,12 @@ struct ListeningOptions: Codable, Equatable, Hashable, Sendable {
     /// the control's hint words it.
     static let predownloadLeadTime: TimeInterval = 10 * 60
 
+    /// The choices of "When an item ends", in the order the pop-up buttons
+    /// of Feed Info and Folder Settings list them: "Use the global setting"
+    /// (nil) first, then each of the reading list's continuations.
+    static let continuationChoices: [ReadingList.Continuation?] =
+        [nil] + ReadingList.Continuation.allCases.map { Optional($0) }
+
     /// Whether listening goes on from one item to another under these
     /// options, when the global "When book ends" is `global`: yes for play
     /// the one below or above, no for stop, and, with no choice of its own,

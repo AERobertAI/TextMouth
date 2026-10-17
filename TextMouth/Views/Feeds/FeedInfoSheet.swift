@@ -414,7 +414,7 @@ struct FeedInfoSheet: View {
         let endLabel = ListeningOptionsWording.continuationLabel(noun)
         let endHint = ListeningOptionsWording.continuationHint(noun)
         Picker(endLabel, selection: Binding(get: { model.episodeEnd }, set: { model.episodeEnd = $0 })) {
-            ForEach(FolderSettingsModel.continuationChoices, id: \.self) { choice in
+            ForEach(ListeningOptions.continuationChoices, id: \.self) { choice in
                 Text(ListeningOptionsWording.continuationTitle(choice, noun: noun, global: model.globalEndOfBookBehavior))
                     .tag(choice)
             }

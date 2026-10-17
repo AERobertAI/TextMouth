@@ -79,11 +79,6 @@ final class FolderSettingsModel: ObservableObject, Identifiable {
     var globalEndOfBookBehavior: EndOfBookBehavior {
         SettingsPolicy.endOfBookBehavior.storedValue(in: defaults)
     }
-
-    /// The choices of "When a book ends", in the order the pop-up lists
-    /// them: the global setting (nil) first.
-    static let continuationChoices: [ReadingList.Continuation?] =
-        [nil] + ReadingList.Continuation.allCases.map { Optional($0) }
 }
 
 /// The Folder Settings sheet (FR19): the folder's name as its heading, its
@@ -169,7 +164,7 @@ struct FolderSettingsSheet: View {
                 get: { model.continuation },
                 set: { model.continuation = $0 }
             )) {
-                ForEach(FolderSettingsModel.continuationChoices, id: \.self) { choice in
+                ForEach(ListeningOptions.continuationChoices, id: \.self) { choice in
                     Text(ListeningOptionsWording.continuationTitle(choice, noun: noun, global: model.globalEndOfBookBehavior))
                         .tag(choice)
                 }
