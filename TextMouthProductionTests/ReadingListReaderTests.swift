@@ -855,6 +855,57 @@ final class ReadingListReaderTests: XCTestCase {
         XCTAssertNil(next.lastAnnouncement)
     }
 
+    /// With Skip Finished Books off, a book read from the list hands over to
+    /// the finished book beside it, whose open reader plays it from its
+    /// beginning (REV18a, finding 5): it does not run its own end rule, which
+    /// would hand over to the book after it and play none of it. With the
+    /// option on, the finished book is still passed over.
+    func testTheListHandsOverToAFinishedBookWhichPlaysFromItsBeginning() throws {
+        let world = try makeIntegrationWorld("ReadingListFinishedHandOver")
+        let requests = ReadingListOpenRequests()
+        let first = try makeAudioBook("First Crossing", in: world)
+        let second = try makeAudioBook("Second Crossing", in: world)
+        let third = try makeAudioBook("Third Crossing", in: world)
+        list([first, second, third], in: world, skipsFinished: false)
+        // The second book's window is open, resting at its end.
+        let next = makeReader(for: second, in: world, requests: requests)
+        waitForReaderToLoad(next)
+        next.restAtEnd()
+        next.hasFinishedBook = true
+        let finishedRow = world.library.library.books.first { $0.id == second.id }
+        XCTAssertEqual(finishedRow?.restsAtEnd, true, "The second book does not rest at its end in the library")
+        // The list counts a book finished as Books Finished does.
+        ReadingStatsService.shared.markBookFinished(bookID: second.id, title: second.title)
+        XCTAssertEqual(
+            world.library.readingListNeighbor(of: first.id, direction: .down, skippingFinished: true)?.id,
+            third.id,
+            "The finished book is not passed over while the list skips finished books"
+        )
+        let reader = makeReaderFromList(for: first, in: world, requests: requests)
+        let asked = record(.continueToNextBook, in: world)
+
+        let recorder = recordingAnnouncements {
+            reader.handleEndOfBook()
+            XCTAssertTrue(
+                eventually(within: Self.playbackStartTimeout) { next.audioPlaybackService.isPlaying },
+                "The finished book never played"
+            )
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Second Crossing"])
+        XCTAssertEqual(asked().map(\.nextBookID), [second.id], "The finished book handed over to another")
+        XCTAssertEqual(next.currentChapterIndex, 0)
+        XCTAssertLessThan(next.audioPlaybackService.currentTime, 1.5, "It did not play from its beginning")
+        XCTAssertFalse(next.hasFinishedBook)
+        XCTAssertFalse(next.cursorRestsAtEnd)
+        XCTAssertEqual(
+            world.library.library.books.first { $0.id == second.id }?.restsAtEnd,
+            false,
+            "The library still shows it finished"
+        )
+    }
+
     /// The list as it is when the book ends decides what follows, whatever
     /// it was when the book started: a book playing while the list is
     /// rearranged and its option changed goes on to the book now beside it

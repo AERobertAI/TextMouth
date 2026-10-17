@@ -2926,6 +2926,19 @@ extension ReaderViewModel {
     /// start while it speaks. A book that failed to load has nothing to
     /// play, so its request is claimed and dropped.
     ///
+    /// A book that rests at its end, finished, is played from its
+    /// beginning (REV18a, finding 5). A hand-over reaches such a book when
+    /// "Skip finished" is off, in a folder's or feed's listening options or
+    /// in the reading list; the book was announced ("Starting: <title>")
+    /// when the hand-over began, so it is not asked to run its own end rule,
+    /// which would hand over again, and play none of it. It returns to its
+    /// beginning as Stop and Play Starts Over does (`returnToTheBeginning()`:
+    /// the row reads unfinished), and plays from there with `play()`, since
+    /// an audiobook's player may still report paused at its old end, where
+    /// `playOrResume()` would resume it. A finished book opened by the
+    /// listener, who presses Play, is not claimed here, and still runs its
+    /// end rule (TODO P07).
+    ///
     /// A closed reader claims nothing, and a reader still loading leaves
     /// the request waiting until loading ends, however long a download from
     /// the cloud makes that (`ReaderAutoplayRequests.hold(for:)`, FR02):
@@ -2937,6 +2950,14 @@ extension ReaderViewModel {
         guard request != nil else { return }
         DiagnosticLog.trace(.playback, "continue to next book: starting this book")
         cancelWhereAmIIfActive()
+        // A finished book plays from its beginning; a book already playing
+        // is left as it is (`play()` would start it anew).
+        if cursorRestsAtEnd, !isPlaybackUnderWay {
+            DiagnosticLog.trace(.playback, "continue to next book: this book rests at its end; starting it over")
+            returnToTheBeginning()
+            play()
+            return
+        }
         playOrResume()
     }
 
