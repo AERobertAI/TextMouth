@@ -257,13 +257,22 @@ final class FeedDownloadManager {
 
     /// Downloads the item `itemID` of the feed `feedID`, after those already
     /// waiting; one the listener opens comes first, and opens once its book
-    /// is in the library. An item downloaded already, whose book is in the
-    /// library, opens at once when asked. Asking again for an item that
-    /// waits or downloads only adds what the new request adds, and asking
-    /// for one a network with data limits put off takes the place of that
-    /// request. Nothing is asked for while TextMouth quits, nor of a feed
-    /// being deleted (FR14).
-    func download(_ itemID: FeedItem.ID, of feedID: UUID, origin: Origin, opening: Bool = false) {
+    /// is in the library, and so does one the listener waits for to go on
+    /// to (`startingNext`), which opens nothing, since the reader's wait
+    /// hands over to the book itself. An item downloaded already, whose book
+    /// is in the library, opens at once when asked. Asking again for an item
+    /// that waits or downloads only adds what the new request adds, and the
+    /// request keeps its place in the queue unless the new ask opens it or
+    /// starts it next; asking for one a network with data limits put off
+    /// takes the place of that request. Nothing is asked for while
+    /// TextMouth quits, nor of a feed being deleted (FR14).
+    func download(
+        _ itemID: FeedItem.ID,
+        of feedID: UUID,
+        origin: Origin,
+        opening: Bool = false,
+        startingNext: Bool = false
+    ) {
         guard !isStoppedForQuit, !closedFeedIDs.contains(feedID),
               let item = store.record(of: feedID)?.item(itemID), item.deletedDate == nil else { return }
         // However it goes, the downloads' progress hears the queue (FR10).
@@ -284,13 +293,22 @@ final class FeedDownloadManager {
             return
         }
         var request = Request(feedID: feedID, itemID: itemID, origin: origin, opensWhenDone: opening)
+        // Opening an item, or going on to it, puts it ahead of the queue.
+        let goesFirst = opening || startingNext
+        var keptPlace: Int?
         if let waiting = queue.firstIndex(where: { $0.feedID == feedID && $0.itemID == itemID }) {
             request.opensWhenDone = request.opensWhenDone || queue[waiting].opensWhenDone
             request.origin = origin == .listener ? .listener : queue[waiting].origin
             queue.remove(at: waiting)
+            // Asked for again, it keeps its place with what the new ask
+            // adds, so the listener who asks at every Play does not send it
+            // to the back.
+            keptPlace = goesFirst ? nil : waiting
         }
-        if opening {
+        if goesFirst {
             queue.insert(request, at: 0)
+        } else if let keptPlace {
+            queue.insert(request, at: keptPlace)
         } else {
             queue.append(request)
         }

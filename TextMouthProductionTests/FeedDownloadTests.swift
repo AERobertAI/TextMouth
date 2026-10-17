@@ -410,6 +410,97 @@ final class FeedDownloadTests: XCTestCase {
         XCTAssertEqual(world.server.requests.count, asked)
     }
 
+    /// A world whose feed lists three episodes, each a slow file so the
+    /// queue holds still while the test asks. Nothing is asked for yet.
+    private func threeSlowEpisodes(label: String) async throws -> (world: FeedTestWorld, feed: Feed) {
+        let world = try FeedTestWorld(self, label: label)
+        let audio = try FeedMediaFixtures.silentAAC()
+        var slow = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
+        slow.pause = 0.1
+        let items = (1...3).map { number -> FeedXML.Item in
+            world.server.serve("/audio/\(number).m4a", slow)
+            return FeedXML.Item(guid: "ep-\(number)", title: "Episode \(number)", published: world.day(-Double(number)),
+                                enclosure: world.server.url("/audio/\(number).m4a").absoluteString, enclosureType: "audio/mp4")
+        }
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: items)))
+        return (world, try await world.subscribe("/feed.xml"))
+    }
+
+    /// Asks for the first `count` of the three episodes in order, so the
+    /// first runs and the others wait.
+    private func ask(_ count: Int, of world: FeedTestWorld, in feed: Feed) {
+        for number in 1...count {
+            world.center.download("guid:ep-\(number)", of: feed.id)
+        }
+    }
+
+    /// Waits for all three episodes to download, and returns the audio files
+    /// the server served, in the order asked for, as their names ("1.m4a").
+    private func downloadAllThree(_ world: FeedTestWorld, in feed: Feed) async throws -> [String] {
+        for number in 1...3 {
+            _ = try await downloadedBook(world, feed: feed, item: "guid:ep-\(number)")
+        }
+        return world.server.requests.compactMap(\.url?.path).filter { $0.hasPrefix("/audio/") }
+            .map { String($0.dropFirst("/audio/".count)) }
+    }
+
+    /// Asking again for an episode already waiting leaves it where it was:
+    /// a listener who presses Play again and again does not send it behind
+    /// the downloads queued after it (REV18a finding 3).
+    func testAskingAgainForAQueuedItemKeepsItsPlace() async throws {
+        let (world, feed) = try await threeSlowEpisodes(label: "FeedQueueKeep")
+        ask(3, of: world, in: feed)
+        XCTAssertEqual(world.center.downloads.queue.map(\.itemID), ["guid:ep-2", "guid:ep-3"])
+
+        world.center.download("guid:ep-2", of: feed.id)
+        XCTAssertEqual(world.center.downloads.queue.map(\.itemID), ["guid:ep-2", "guid:ep-3"])
+        let served = try await downloadAllThree(world, in: feed)
+        XCTAssertEqual(served, ["1.m4a", "2.m4a", "3.m4a"])
+    }
+
+    /// A request that starts next goes to the front of the queue, as the
+    /// listener's, and the others follow (REV18a finding 3).
+    func testAQueuedItemAskedToStartNextGoesFirst() async throws {
+        let (world, feed) = try await threeSlowEpisodes(label: "FeedQueueNext")
+        ask(3, of: world, in: feed)
+
+        world.center.download("guid:ep-3", of: feed.id, startingNext: true)
+        XCTAssertEqual(world.center.downloads.queue.map(\.itemID), ["guid:ep-3", "guid:ep-2"])
+        XCTAssertEqual(world.center.downloads.queue.first?.origin, .listener)
+        let served = try await downloadAllThree(world, in: feed)
+        XCTAssertEqual(served, ["1.m4a", "3.m4a", "2.m4a"])
+        XCTAssertEqual(world.center.store.record(of: feed.id)?.item("guid:ep-3")?.downloadOrigin, .listener)
+    }
+
+    /// An item not queued yet, asked to start next, goes to the front, and
+    /// opens nothing when it arrives: the reader's wait hands over to the
+    /// book itself.
+    func testAnItemNotQueuedYetStartsNextWithoutOpening() async throws {
+        let (world, feed) = try await threeSlowEpisodes(label: "FeedQueueNextNew")
+        var opened: [UUID] = []
+        world.library.readerOpener = { opened.append($0) }
+        ask(2, of: world, in: feed)
+
+        world.center.download("guid:ep-3", of: feed.id, startingNext: true)
+        XCTAssertEqual(world.center.downloads.queue.map(\.itemID), ["guid:ep-3", "guid:ep-2"])
+        XCTAssertEqual(world.center.downloads.queue.map(\.opensWhenDone), [false, false])
+        let served = try await downloadAllThree(world, in: feed)
+        XCTAssertEqual(served, ["1.m4a", "3.m4a", "2.m4a"])
+        XCTAssertEqual(opened, [], "starting next does not open the book")
+    }
+
+    /// Asking again for the download under way changes nothing in the queue.
+    func testAskingAgainForTheDownloadUnderWayLeavesTheQueue() async throws {
+        let (world, feed) = try await threeSlowEpisodes(label: "FeedQueueRunning")
+        ask(3, of: world, in: feed)
+
+        world.center.download("guid:ep-1", of: feed.id, startingNext: true)
+        XCTAssertEqual(world.center.downloads.current?.itemID, "guid:ep-1")
+        XCTAssertEqual(world.center.downloads.queue.map(\.itemID), ["guid:ep-2", "guid:ep-3"])
+        let served = try await downloadAllThree(world, in: feed)
+        XCTAssertEqual(served, ["1.m4a", "2.m4a", "3.m4a"])
+    }
+
     /// Cancelling a download under way stops it, keeps nothing of it, and
     /// leaves the item not downloaded; one waiting leaves the queue.
     func testCancellingStopsADownload() async throws {
