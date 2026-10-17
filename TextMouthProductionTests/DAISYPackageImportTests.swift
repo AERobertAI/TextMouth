@@ -358,6 +358,99 @@ final class DAISYPackageImportTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: copy.path))
     }
 
+    /// `files` with `prefix` put before each path, so a book's files can be
+    /// written inside a folder of a larger folder.
+    private func inside(_ prefix: String, _ files: [String: String]) -> [String: String] {
+        Dictionary(uniqueKeysWithValues: files.map { (prefix + $0.key, $0.value) })
+    }
+
+    /// Asserts that importing `folder` fails while its format is checked,
+    /// because it holds no book of its own (`FolderWithoutBookError`), and
+    /// that nothing was copied. Returns the error's message.
+    @discardableResult
+    private func assertRefusedAsNoBook(_ folder: URL, file: StaticString = #filePath, line: UInt = #line) -> String? {
+        var message: String?
+        XCTAssertThrowsError(
+            try FileImportService.importFileWithReport(from: folder, toFolder: folderPath), file: file, line: line
+        ) { error in
+            let failure = error as? ImportFailure
+            XCTAssertEqual(failure?.step, .checkingFormat, file: file, line: line)
+            XCTAssertEqual(
+                (failure?.underlying as? FolderWithoutBookError)?.folderName,
+                folder.lastPathComponent,
+                file: file,
+                line: line
+            )
+            message = error.localizedDescription
+        }
+        XCTAssertEqual((try? folderEntries()) ?? ["unreadable"], [], file: file, line: line)
+        return message
+    }
+
+    /// A folder of DAISY book folders is not itself a book: it is refused
+    /// like any folder without a book, not imported as one audiobook of
+    /// every book's audio files, and nothing in it is copied or changed.
+    func testAParentOfDAISYBookFoldersIsRefusedNotImportedAsOneAudiobook() throws {
+        // Each book's folder holds its DAISY files and an (empty) audio track.
+        var files = inside("Rope Splicing/", Fixtures.navigationBook)
+        files["Rope Splicing/track.mp3"] = ""
+        files.merge(inside("Ferry Timetables/", Fixtures.packageBook)) { $1 }
+        files["Ferry Timetables/track.mp3"] = ""
+        let parent = try Fixtures.writeFolder(files, named: "Audiobooks", in: sources)
+        let before = try FileManager.default.subpathsOfDirectory(atPath: parent.path).sorted()
+
+        XCTAssertEqual(LibraryViewModel.importSources(for: parent), [parent])
+        XCTAssertFalse(FileImportService.isFolderOfTracks(parent))
+        // The refusal's sentence is the one for any folder without a book of its own.
+        XCTAssertEqual(
+            assertRefusedAsNoBook(parent),
+            "Could not import “Audiobooks”. Checking its format failed: “Audiobooks” holds no DAISY book and no "
+                + "audio tracks to import as one book. It holds 4 .mp3 files, 3 .css files, 3 .smil files, and 7 other files."
+        )
+        XCTAssertEqual(try FileManager.default.subpathsOfDirectory(atPath: parent.path).sorted(), before)
+    }
+
+    /// A DAISY book two folders deep also makes its parent a folder that is
+    /// not a book, whatever audio sits at the parent's top.
+    func testADAISYBookTwoFoldersDeepAlsoRefusesTheParent() throws {
+        var files = inside("Author/Rope Splicing/", Fixtures.navigationBook)
+        files["track.mp3"] = ""
+        let parent = try Fixtures.writeFolder(files, named: "Library", in: sources)
+
+        XCTAssertFalse(FileImportService.isFolderOfTracks(parent))
+        assertRefusedAsNoBook(parent)
+    }
+
+    /// A positive control: a plain subfolder, holding no DAISY book, does not
+    /// stop a folder of tracks importing as one audiobook.
+    func testAFolderOfTracksWithAPlainSubfolderStillImportsAsOneAudiobook() throws {
+        let folder = try Fixtures.writeFolder(
+            ["Bonus/notes.txt": "Notes.", "Bonus/cover.jpg": "not really a picture"],
+            named: "Night Ferries",
+            in: sources
+        )
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("01.wav"), duration: 0.2)
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("02.wav"), duration: 0.2)
+
+        XCTAssertTrue(FileImportService.isFolderOfTracks(folder))
+        let imported = try FileImportService.importFileWithReport(from: folder, toFolder: folderPath)
+        XCTAssertEqual(imported.book.format, .audio)
+        XCTAssertEqual(imported.book.title, "Night Ferries")
+    }
+
+    /// A DAISY book inside Finder's __MACOSX folder or a hidden folder is
+    /// not a book of the folder's: tracks beside them still import as one.
+    func testADAISYBookInsideMACOSXOrAHiddenFolderDoesNotBlockAFolderOfTracks() throws {
+        var files = inside("__MACOSX/Night Ferries/", Fixtures.navigationBook)
+        files.merge(inside(".hidden/", Fixtures.navigationBook)) { $1 }
+        let folder = try Fixtures.writeFolder(files, named: "Night Ferries", in: sources)
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("01.wav"), duration: 0.2)
+
+        XCTAssertTrue(DAISYParser.isDAISYDirectory(url: folder.appendingPathComponent("__MACOSX/Night Ferries")))
+        XCTAssertTrue(DAISYParser.isDAISYDirectory(url: folder.appendingPathComponent(".hidden")))
+        XCTAssertTrue(FileImportService.isFolderOfTracks(folder))
+    }
+
     // MARK: - What Is Copied Instead
 
     /// A DAISY 3 book whose manifest names no DTBook is copied whole, since
