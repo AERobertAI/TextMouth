@@ -13,13 +13,15 @@ final class TranscriptAccuracyTests: XCTestCase {
     /// The known text splits at spaces and at em and en dashes, leaves out
     /// what is only punctuation, and knows where sentences begin: at the
     /// start, after a full stop that is no title, and at a quotation.
-    func testTheKnownTextSplitsIntoWordsAndSentences() {
+    func testTheKnownTextSplitsIntoWordsAndSentences() throws {
         let words = TranscriptAccuracy.words(in: "“My dear Mr. Bennet,” said his lady—“have you heard?” * Then she went.\nNext line")
 
         XCTAssertEqual(words.map(\.key), ["my", "dear", "mr", "bennet", "said", "his", "lady", "have", "you", "heard", "then", "she", "went", "next", "line"])
         XCTAssertEqual(words.filter(\.startsSentence).map(\.key), ["my", "have", "then", "next"])
-        XCTAssertEqual(words[3].text, "Bennet,”")
-        XCTAssertNil(words[0].confidence)
+        let bennet = try XCTUnwrap(words[safe: 3], "the known text has no fourth word")
+        let first = try XCTUnwrap(words[safe: 0], "the known text has no first word")
+        XCTAssertEqual(bennet.text, "Bennet,”")
+        XCTAssertNil(first.confidence)
     }
 
     /// Words are compared in lower case, without the punctuation at either
@@ -149,7 +151,7 @@ final class TranscriptAccuracyTests: XCTestCase {
 
     /// Each word heard falls in the band of its confidence, and counts as
     /// wrong when it lies in a difference.
-    func testConfidenceBandsCountWordsAndMistakes() {
+    func testConfidenceBandsCountWordsAndMistakes() throws {
         let heard = [
             word("the", confidence: 0.98),
             word("cat", confidence: 0.96),
@@ -163,8 +165,10 @@ final class TranscriptAccuracyTests: XCTestCase {
         XCTAssertEqual(bands.map(\.from), [0, 0.5, 0.7, 0.9, 0.95])
         XCTAssertEqual(bands.map(\.words), [1, 0, 0, 1, 3])
         XCTAssertEqual(bands.map(\.errors), [1, 0, 0, 0, 1])
-        XCTAssertEqual(bands[0].errorRate, 1)
-        XCTAssertEqual(bands[4].errorRate, 1.0 / 3, accuracy: 1e-9)
+        let lowest = try XCTUnwrap(bands[safe: 0], "there is no lowest confidence band")
+        let highest = try XCTUnwrap(bands[safe: 4], "there is no fifth confidence band")
+        XCTAssertEqual(lowest.errorRate, 1)
+        XCTAssertEqual(highest.errorRate, 1.0 / 3, accuracy: 1e-9)
     }
 
     // MARK: - Tallies

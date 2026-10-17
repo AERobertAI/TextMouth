@@ -176,6 +176,31 @@ final class AudioMediaImportTests: XCTestCase {
         XCTAssertEqual(model.library.books.map(\.title), [title])
     }
 
+    // MARK: - The Manifest's Title and Author
+
+    /// An archive whose manifest gives a blank title and author names the
+    /// book after the archive and leaves its author unknown, as a manifest
+    /// without them does; a real title and author name the book.
+    func testBlankManifestTitleAndAuthorFallBackAndRealOnesAreKept() throws {
+        let blankName = "Harbor Blank \(UUID().uuidString.prefix(8))"
+        let blank = try makeAudioArchive(named: blankName) { folder in
+            try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("a.wav"), duration: 1)
+            try Data(#"{"title": "   ", "author": ""}"#.utf8).write(to: folder.appendingPathComponent("manifest.json"))
+        }
+        let named = try makeAudioArchive(named: "Harbor Named \(UUID().uuidString.prefix(8))") { folder in
+            try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("a.wav"), duration: 1)
+            try Data(#"{"title": "Harbor Plays", "author": "Wenzel Okafor"}"#.utf8).write(to: folder.appendingPathComponent("manifest.json"))
+        }
+
+        let blankBook = try FileImportService.importAudioZipWithReport(from: blank, toFolder: folderPath).book
+        let namedBook = try FileImportService.importAudioZipWithReport(from: named, toFolder: folderPath).book
+
+        XCTAssertEqual(blankBook.title, blankName)
+        XCTAssertEqual(blankBook.author, Book.unknownAuthor)
+        XCTAssertEqual(namedBook.title, "Harbor Plays")
+        XCTAssertEqual(namedBook.author, "Wenzel Okafor")
+    }
+
     // MARK: - Helpers
 
     /// An import function as these tests call it: the source, the library

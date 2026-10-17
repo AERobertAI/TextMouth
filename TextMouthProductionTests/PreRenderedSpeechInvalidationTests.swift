@@ -212,8 +212,11 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
             let started = renders.startNext()
 
             XCTAssertEqual(renders.requested.count, 2)
-            XCTAssertTrue(started?.engine === renders.requested[1].engine)
-            XCTAssertTrue(reader.lookAhead?.engine === renders.requested[1].engine)
+            // A count assertion does not stop the test, so read the second
+            // render through the safe subscript.
+            let replacement = try XCTUnwrap(renders.requested[safe: 1], "the reader queued no second render")
+            XCTAssertTrue(started?.engine === replacement.engine)
+            XCTAssertTrue(reader.lookAhead?.engine === replacement.engine)
         }
     }
 
@@ -231,7 +234,8 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
 
             XCTAssertEqual(start.chapterIndex, 1)
             XCTAssertTrue(start.isSpeaking)
-            XCTAssertEqual(start.adoptedSignature, renders.requested[0].request.signature)
+            let firstRender = try XCTUnwrap(renders.requested[safe: 0], "the reader queued no render")
+            XCTAssertEqual(start.adoptedSignature, firstRender.request.signature)
             XCTAssertEqual(start.spokenText, expected.text)
             XCTAssertEqual(start.offsetMap, expected.offsetMap)
             XCTAssertEqual(renders.requested.count, 2)
@@ -376,7 +380,8 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
 
             let start = finishChapter(reader)
 
-            XCTAssertEqual(start.adoptedSignature, renders.requested[0].request.signature)
+            let firstRender = try XCTUnwrap(renders.requested[safe: 0], "the reader queued no render")
+            XCTAssertEqual(start.adoptedSignature, firstRender.request.signature)
             XCTAssertEqual(
                 Double(start.playbackPitchCents),
                 AudioEngineService.pitchCents(for: newPitch),
@@ -529,7 +534,8 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
             let start = finishChapter(reader)
 
             XCTAssertEqual(renders.requested.count, 3)
-            XCTAssertEqual(start.adoptedSignature, renders.requested[1].request.signature)
+            let rearmedRender = try XCTUnwrap(renders.requested[safe: 1], "the reader queued no second render")
+            XCTAssertEqual(start.adoptedSignature, rearmedRender.request.signature)
             XCTAssertEqual(start.spokenText, current.text)
             XCTAssertEqual(start.offsetMap, current.offsetMap)
         }

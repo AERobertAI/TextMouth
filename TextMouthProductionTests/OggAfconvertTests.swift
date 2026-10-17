@@ -219,6 +219,18 @@ final class OggAfconvertTests: XCTestCase {
         XCTAssertEqual(WatchedProcess.KillReason.madeNoProgress(seconds: 20).words, "its output did not grow for 20 seconds")
     }
 
+    /// A one-second limit reads "1 second", not "1 seconds", and two or
+    /// more keep the plural; the rounding up is unchanged.
+    func testKillReasonsCountOneSecondInTheSingular() {
+        XCTAssertEqual(WatchedProcess.KillReason.tookTooLong(seconds: 1).words, "it ran longer than 1 second")
+        XCTAssertEqual(WatchedProcess.KillReason.madeNoProgress(seconds: 1).words, "its output did not grow for 1 second")
+        // A fraction rounds up to the next whole second before it is counted.
+        XCTAssertEqual(WatchedProcess.KillReason.tookTooLong(seconds: 0.4).words, "it ran longer than 1 second")
+        XCTAssertEqual(WatchedProcess.KillReason.tookTooLong(seconds: 2).words, "it ran longer than 2 seconds")
+        XCTAssertEqual(WatchedProcess.KillReason.tookTooLong(seconds: 62.2).words, "it ran longer than 63 seconds")
+        XCTAssertEqual(WatchedProcess.KillReason.madeNoProgress(seconds: 20).words, "its output did not grow for 20 seconds")
+    }
+
     // MARK: - The Converter Kills a Hung Child
 
     /// A stand-in converter whose child is `executable` with `arguments`, and
@@ -240,7 +252,7 @@ final class OggAfconvertTests: XCTestCase {
             _ = try await OggAudioConverter.convert(source, using: tool("/bin/sleep", ["60"]))
             XCTFail("A hung conversion must fail")
         } catch let failure as OggAudioConverter.Failure {
-            XCTAssertEqual(failure, .killed(fileName: "hung.ogg", reason: "its output did not grow for 1 seconds"))
+            XCTAssertEqual(failure, .killed(fileName: "hung.ogg", reason: "its output did not grow for 1 second"))
         }
         XCTAssertEqual(OggTestFixtures.names(in: folder), ["hung.ogg"])
     }

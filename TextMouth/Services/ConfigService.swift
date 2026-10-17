@@ -357,9 +357,14 @@ final class ConfigService: ObservableObject {
         /// (FR12's branch E); every other action is text beginning with
         /// "default", such as "default: w". Writing a list or an object makes
         /// an action the user's, and writing "default" gives it back to
-        /// TextMouth's defaults. TextMouth writes every action from the
-        /// record of the user's edits (`ShortcutEdits`); an action the file
-        /// leaves out keeps its shortcuts.
+        /// TextMouth's defaults. A file in the old form, which earlier
+        /// releases wrote as a list for every action and which holds no
+        /// "default" and no object, makes the user's only the actions whose
+        /// list differs from every default they had: a list equal to a
+        /// default edits nothing (`KeyboardShortcutManager.adopt(_:in:)`).
+        /// TextMouth writes every action from the record of the user's edits
+        /// (`ShortcutEdits`); an action the file leaves out keeps its
+        /// shortcuts.
         var keyboardShortcuts: [String: ShortcutListing] = [:]
         /// How soon a second press of a key must follow the first to make a
         /// double press, such as "w twice" in `keyboardShortcuts`, in

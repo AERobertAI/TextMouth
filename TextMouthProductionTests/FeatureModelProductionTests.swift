@@ -151,7 +151,7 @@ final class FeatureModelProductionTests: XCTestCase {
         XCTAssertEqual(ReaderViewModel.currentHeading(in: filtered, chapterIndex: 0, characterOffset: 100)?.text, "Visible")
     }
 
-    func testHeadingDurationsEndAtNextDisplayedHeading() {
+    func testHeadingDurationsEndAtNextDisplayedHeading() throws {
         let positioned = [
             Heading(level: 1, text: "Part One", characterOffset: 0),
             Heading(level: 2, text: "Chapter One", characterOffset: 100),
@@ -170,11 +170,12 @@ final class FeatureModelProductionTests: XCTestCase {
 
         // The hidden H2/H3 headings must remain inside Part One's 400-character
         // duration rather than cutting it off at the first hidden H2.
+        _ = try XCTUnwrap(displayed[safe: 1], "fewer than two headings are displayed")
         XCTAssertEqual(nextOffsets[displayed[0].id], 400)
         XCTAssertEqual(nextOffsets[displayed[1].id], 700)
     }
 
-    func testHeadingDurationsRespectLessRestrictiveDisplayFilter() {
+    func testHeadingDurationsRespectLessRestrictiveDisplayFilter() throws {
         let positioned = [
             Heading(level: 1, text: "Part One", characterOffset: 0),
             Heading(level: 2, text: "Chapter One", characterOffset: 100),
@@ -190,6 +191,7 @@ final class FeatureModelProductionTests: XCTestCase {
             totalCharacterCount: 700
         )
 
+        _ = try XCTUnwrap(displayed[safe: 2], "fewer than three headings are displayed")
         XCTAssertEqual(nextOffsets[displayed[0].id], 100)
         XCTAssertEqual(nextOffsets[displayed[1].id], 400)
         XCTAssertEqual(nextOffsets[displayed[2].id], 700)

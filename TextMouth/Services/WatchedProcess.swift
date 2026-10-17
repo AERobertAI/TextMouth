@@ -58,17 +58,18 @@ enum WatchedProcess {
         /// The kernel ended it (SIGXCPU) after `seconds` of processor time.
         case usedTooMuchProcessorTime(seconds: TimeInterval)
 
-        /// The reason as a phrase: "it ran longer than 62 seconds".
+        /// The reason as a phrase: "it ran longer than 62 seconds" (counted with
+        /// `CountWording`, so one second reads "1 second").
         var words: String {
             switch self {
             case let .tookTooLong(seconds):
-                return "it ran longer than \(Int(seconds.rounded(.up))) seconds"
+                return "it ran longer than \(CountWording.seconds(Int(seconds.rounded(.up))))"
             case let .usedTooMuchMemory(bytes):
                 return "it held more than \(bytes / 1_048_576) MB of memory"
             case let .madeNoProgress(seconds):
-                return "its output did not grow for \(Int(seconds.rounded(.up))) seconds"
+                return "its output did not grow for \(CountWording.seconds(Int(seconds.rounded(.up))))"
             case let .usedTooMuchProcessorTime(seconds):
-                return "it used more than \(Int(seconds.rounded(.up))) seconds of processor time"
+                return "it used more than \(CountWording.seconds(Int(seconds.rounded(.up)))) of processor time"
             }
         }
     }

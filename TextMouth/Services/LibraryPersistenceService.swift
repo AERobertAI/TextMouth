@@ -98,16 +98,16 @@ enum LibraryPersistenceService {
     /// What each feed's index holds on disk as this process last read or
     /// wrote it (FR11), so a save writes a feed's index only when its bytes
     /// changed. Confined to saveQueue, where every index is read and written.
-    nonisolated(unsafe) private static var feedIndexesOnDisk = FeedIndexesOnDisk()
+    nonisolated(unsafe) private static var feedIndexesOnDisk = SavedFile.OnDiskMemory<UUID>()
 
-    /// The bytes of each feed's index on disk, in one data directory.
-    private struct FeedIndexesOnDisk {
-        /// The data directory the bytes are in; the record starts over when
-        /// it changes, as after a data-directory move.
-        var rootPath: String?
-        /// Each feed's index, as last read or written.
-        var bytes: [UUID: Data] = [:]
-    }
+    /// What library.json holds on disk as this process last read or wrote it,
+    /// so a save writes it only when its bytes changed: reading an episode
+    /// checkpoints every half minute, and most checkpoints change nothing of
+    /// the library's own books. The same memory the feed indexes use, with
+    /// one file to remember. Confined to saveQueue.
+    nonisolated(unsafe) private static var libraryIndexOnDisk = SavedFile.OnDiskMemory<String>()
+    /// The key library.json is remembered by in `libraryIndexOnDisk`.
+    private static let libraryIndexMemoryKey = "library.json"
 
     /// Why library.json is not being written.
     private enum IndexWriteHold {
@@ -429,6 +429,12 @@ enum LibraryPersistenceService {
     /// (`Library.encode(to:)`). A feed's index that cannot be written stops
     /// the write before library.json, so a row leaving library.json for its
     /// feed's index is never in neither.
+    ///
+    /// Neither file is written when its bytes are those this process last
+    /// read or wrote of it and it is still there (`SavedFile.OnDiskMemory`).
+    /// A write skipped so still counts as a save: the file already holds
+    /// exactly this library, so an earlier failed write is settled, and every
+    /// checkpoint so far is held, as after a write.
     private static func writeIndexFile(_ library: Library) throws {
         var library = library
         let moved = StorageBoundary.shared.rebaseToCurrent(&library)
@@ -440,7 +446,7 @@ enum LibraryPersistenceService {
         }
         try TextMouthPaths.ensureDirectoryStructure()
         try writeFeedIndexes(of: library)
-        try encodeAndWrite(library, to: libraryFileURL)
+        try writeLibraryFileIfChanged(library)
         failureCenter.recordSuccess(.libraryIndex)
         // Writing again: a later hold is logged afresh.
         loggedIndexWriteHolds.remove(.dataDirectoryUnavailable)
@@ -460,19 +466,38 @@ enum LibraryPersistenceService {
         }
     }
 
-    /// Encode `library` the way every index write does and replace `url`
-    /// atomically, so a reader never sees a half-written index.
-    private static func encodeAndWrite(_ library: Library, to url: URL) throws {
+    /// Encodes `library` the way every index write does and replaces
+    /// library.json atomically, so a reader never sees a half-written index,
+    /// unless the file already holds those bytes: as this process last read
+    /// or wrote them, and the file is still there. The bytes are remembered
+    /// only once they are on disk, so a write that failed is made again by
+    /// the retry. Must run on saveQueue.
+    private static func writeLibraryFileIfChanged(_ library: Library) throws {
         try TextMouthPaths.ensureDirectoryStructure()
-        try encodedIndex(library).write(to: url, options: .atomic)
+        let data = try encodedIndex(library)
+        let file = libraryFileURL
+        libraryIndexOnDisk.startOver(unlessIn: TextMouthPaths.root)
+        if libraryIndexOnDisk.holds(data, for: libraryIndexMemoryKey, at: file) {
+            // A trace line, never an event: checkpoints are frequent.
+            DiagnosticLog.trace(.storage, "library.json is unchanged; not written again")
+            return
+        }
+        try data.write(to: file, options: .atomic)
+        libraryIndexOnDisk.remember(data, for: libraryIndexMemoryKey)
     }
 
     /// `library` as library.json holds it: compact JSON with ISO 8601
     /// dates. Only TextMouth reads the index, so it is not pretty-printed,
     /// which makes it about 16% smaller (PERF15); any JSON reader, older
     /// versions of TextMouth included, reads it the same.
+    ///
+    /// The bytes are the same for the same library: keys are sorted, as the
+    /// feed indexes' are, because `Library.folderSortSettings` is a
+    /// dictionary, whose order can differ between two equal ones, and a
+    /// save that changed nothing writes nothing (`writeLibraryFileIfChanged`).
     static func encodedIndex(_ library: Library) throws -> Data {
         let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
         encoder.dateEncodingStrategy = .iso8601
         return try encoder.encode(library)
     }
@@ -483,7 +508,8 @@ enum LibraryPersistenceService {
     /// (`Library.feedIndexRows`), each row placed where its package is
     /// (`FeedIndexFiles.placed(_:in:of:)`), and only the indexes whose bytes
     /// differ from what this process last read or wrote of them, or whose
-    /// file is gone since: listening to an episode rewrites its feed's small
+    /// file is gone since (`SavedFile.OnDiskMemory`, which library.json's
+    /// write uses too): listening to an episode rewrites its feed's small
     /// index, never another feed's.
     /// A feed the library keeps no row of now gets an empty index, unless its
     /// folder is gone too, when there is nothing left to keep and nothing is
@@ -493,19 +519,17 @@ enum LibraryPersistenceService {
     ///   written; those written before it stay written.
     private static func writeFeedIndexes(of library: Library) throws {
         let root = TextMouthPaths.root
-        if feedIndexesOnDisk.rootPath != root.path {
-            feedIndexesOnDisk = FeedIndexesOnDisk(rootPath: root.path)
-        }
+        feedIndexesOnDisk.startOver(unlessIn: root)
         for index in try FeedIndexFiles.encodedIndexes(of: library, placedIn: root) {
             let file = FeedPaths.indexFile(of: index.feedID, in: root)
             // The same bytes are written again when the file is gone, as when
             // it was deleted outside TextMouth since this process wrote it.
-            if feedIndexesOnDisk.bytes[index.feedID] == index.data, FileManager.default.fileExists(atPath: file.path) {
+            if feedIndexesOnDisk.holds(index.data, for: index.feedID, at: file) {
                 continue
             }
             let folder = FeedPaths.itemsFolder(of: index.feedID, in: root)
             if index.rowCount == 0, !FileManager.default.fileExists(atPath: folder.path) {
-                feedIndexesOnDisk.bytes[index.feedID] = index.data
+                feedIndexesOnDisk.remember(index.data, for: index.feedID)
                 continue
             }
             do {
@@ -513,7 +537,7 @@ enum LibraryPersistenceService {
             } catch {
                 throw FeedIndexWriteError(file: file, underlying: error)
             }
-            feedIndexesOnDisk.bytes[index.feedID] = index.data
+            feedIndexesOnDisk.remember(index.data, for: index.feedID)
         }
     }
 
@@ -535,7 +559,7 @@ enum LibraryPersistenceService {
         saveQueue.sync {
             let root = TextMouthPaths.root
             let read = FeedIndexFiles.readAll(in: root, fromPackages: fromPackages, reader: reader)
-            feedIndexesOnDisk = FeedIndexesOnDisk(rootPath: root.path, bytes: read.compactMapValues(\.indexBytes))
+            feedIndexesOnDisk = SavedFile.OnDiskMemory(rootPath: root.path, bytes: read.compactMapValues(\.indexBytes))
             let rows = read.keys.sorted { $0.uuidString < $1.uuidString }.flatMap { read[$0]?.rows ?? [] }
             return FeedShelf(
                 rows: rows,
@@ -1280,8 +1304,13 @@ enum LibraryPersistenceService {
             do {
                 let data = try Data(contentsOf: url)
                 bytes = data
-                return .loaded(try decodeLibrary(from: data))
+                let library = try decodeLibrary(from: data)
+                rememberLibraryIndex(data, readFrom: url)
+                return .loaded(library)
             } catch {
+                // What the file holds is not a library this process knows,
+                // so whatever it remembered of it must not stand in for it.
+                if url == libraryFileURL { libraryIndexOnDisk.forget(libraryIndexMemoryKey) }
                 let failure = LibraryIndexReadFailure(
                     indexURL: url,
                     quarantineURL: LibraryIndexQuarantine.preserve(url, bytes: bytes),
@@ -1292,6 +1321,17 @@ enum LibraryPersistenceService {
                 return .unreadable(failure)
             }
         }
+    }
+
+    /// Notes the bytes of a library index that read and decoded, so the first
+    /// save after launch writes nothing when it changes nothing, as
+    /// `loadFeedShelf` does for the feed indexes. Only library.json itself is
+    /// noted: a legacy index is migrated by writing the current one. Must run
+    /// on saveQueue.
+    private static func rememberLibraryIndex(_ data: Data, readFrom url: URL) {
+        guard url == libraryFileURL else { return }
+        libraryIndexOnDisk.startOver(unlessIn: TextMouthPaths.root)
+        libraryIndexOnDisk.remember(data, for: libraryIndexMemoryKey)
     }
 
     /// Decode an index the way every index read does.

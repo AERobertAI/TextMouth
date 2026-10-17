@@ -172,8 +172,8 @@ enum AudioBookParser {
         let pathOfTrack = { (name: String) in found?.location.path(ofTrackNamed: name) ?? name }
         let nameOfTrack = { (path: String) in found?.location.name(ofTrackAt: path) ?? path }
 
-        let overallTitle = manifest?.title ?? url.lastPathComponent
-        let overallAuthor = manifest?.author ?? Book.unknownAuthor
+        let overallTitle = manifest?.bookTitle ?? url.lastPathComponent
+        let overallAuthor = manifest?.bookAuthor ?? Book.unknownAuthor
 
         // If manifest has segments (DAISY-style sub-file chapters), use those
         // instead of the one-file-per-chapter model. Their clips name files

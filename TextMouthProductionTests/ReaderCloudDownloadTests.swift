@@ -921,6 +921,49 @@ final class ReaderCloudDownloadTests: XCTestCase {
         reader.stop()
     }
 
+    /// A chapter whose files finish downloading in the moment after Where
+    /// Am I? ends by itself, while its end sound still plays, waits for the
+    /// end sound as one that finished while the announcement spoke does:
+    /// nothing starts over the sound, the reader goes on showing Playing, and
+    /// the chapter plays exactly once as the sound passes, with no sound
+    /// beside Where Am I's own (no play sound). Before, only the
+    /// announcement's speaking held the chapter, so the download's end in
+    /// this moment started it under the end sound.
+    func testAChapterDownloadedWhileWhereAmIsEndSoundPlaysOnceAfterTheSound() throws {
+        let cloud = try makeCloudReaders("Cloud Chapter Where Am I End Sound", clone: Self.failingClone)
+        let (reader, book) = try readerWaitingForSecondChapter(in: cloud)
+        let second = try chapterFile(number: 2, of: reader)
+        let sounds = RecordedSoundEffects(preferences: makeSandboxedPreferences("Cloud Chapter Where Am I End Sound"))
+        reader.soundEffectService = sounds
+        let announcement = try speakWhereAmI(in: reader)
+        let endSound = WhereAmIEndSoundClock(holdingFor: reader)
+        let generationBefore = reader.chapterPlaybackGeneration
+        reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didFinish: announcement)
+        waitFor("the announcement's end") { !reader.isWhereAmISpeaking }
+        XCTAssertTrue(endSound.hasWorkWaiting, "The end sound's work was not scheduled")
+
+        // The files come in the window: the announcement is over, its end
+        // sound has not passed.
+        cloud.cloudOnly.clear()
+        cloud.storage.finishHeldDownload(of: book.id)
+        waitFor("the download's end") { reader.cloudPhase == nil }
+
+        XCTAssertNil(reader.audioPlaybackService.loadedURL, "The chapter played over the end sound")
+        XCTAssertTrue(reader.isChapterHeldByWhereAmI, "The chapter was not held for the end sound")
+        XCTAssertTrue(reader.isCurrentlyPlaying, "The reader stopped showing Playing")
+        XCTAssertFalse(reader.isCurrentlyPaused)
+        XCTAssertEqual(reader.chapterPlaybackGeneration, generationBefore, "The chapter began before the end sound passed")
+
+        endSound.passEndSound()
+
+        waitFor("the chapter to play") { reader.audioPlaybackService.isPlaying }
+        XCTAssertEqual(Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)), Self.path(second))
+        XCTAssertFalse(reader.isChapterHeldByWhereAmI)
+        XCTAssertEqual(reader.chapterPlaybackGeneration, generationBefore + 1, "The chapter was not started exactly once")
+        XCTAssertEqual(sounds.played, [.whereAmIStart, .whereAmIEnd], "A sound beside Where Am I's own was made")
+        reader.stop()
+    }
+
     /// Where Am I? pressed again while it speaks stops it, and a chapter
     /// whose files came during it plays at once, as its end would have
     /// played it.

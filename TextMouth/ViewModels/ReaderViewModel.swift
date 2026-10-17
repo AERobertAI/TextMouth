@@ -363,6 +363,23 @@ final class ReaderViewModel: ObservableObject {
     /// announcement, which takes the resume over (REV11). Accessed from the
     /// WhereAmI and Playback extensions.
     var isWhereAmIResumePending = false
+    /// Whether the end sound of a Where Am I announcement that ended by
+    /// itself is still playing: the window between the announcement's end
+    /// (`whereAmIAnnouncementFinished()`) and the work it schedules for once
+    /// the sound has played (`resumeAfterWhereAmIEndSound()`,
+    /// `whereAmIEndSoundDelay` later). Set as the announcement ends, and
+    /// cleared first thing by that work; nothing else sets or clears it, and
+    /// an announcement the system cancels, which plays no end sound, leaves
+    /// it false.
+    ///
+    /// It needs a flag of its own: in the window `isWhereAmISpeaking` is
+    /// already false, and `isWhereAmIResumePending` is set only for a book
+    /// that was playing before the announcement, so a reader waiting for a
+    /// chapter's download when Where Am I? was pressed has neither. Without
+    /// it, a chapter's download or a package's move that ended in the window
+    /// started audio over the end sound (`isWhereAmISpeakingOrSoundingItsEnd`).
+    /// Accessed from the WhereAmI extension.
+    var isWhereAmIEndSoundPlaying = false
     /// Whether a Play pressed while a Where Am I announcement spoke waits
     /// for the announcement to end to start the book
     /// (`startPlayHeldByWhereAmI()`): for a book the announcement had not
@@ -822,22 +839,6 @@ final class ReaderViewModel: ObservableObject {
         guard content.totalCharacterCount > 0, speechService.wordsPerMinute > 0 else { return 0 }
         let wordEstimate = Double(charCount) / Double(content.totalCharacterCount) * Double(content.totalWordCount)
         return wordEstimate / speechService.wordsPerMinute * 60.0
-    }
-
-    /// Time from start of book to when a heading begins
-    func timeToHeading(_ heading: Heading) -> TimeInterval {
-        guard let content = content, content.totalCharacterCount > 0 else { return 0 }
-        let globalOffset = content.globalOffset(chapterIndex: heading.chapterIndex, localOffset: heading.characterOffset)
-
-        if isAudioBook {
-            return totalEstimatedTime
-                * Double(globalOffset)
-                / Double(content.totalCharacterCount)
-        }
-
-        guard speechService.wordsPerMinute > 0 else { return 0 }
-        let fraction = Double(globalOffset) / Double(content.totalCharacterCount)
-        return content.estimatedReadingTime(wpm: speechService.wordsPerMinute) * fraction
     }
 
     /// Percentage through book where a heading starts

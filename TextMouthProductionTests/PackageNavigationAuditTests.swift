@@ -59,9 +59,12 @@ final class PackageNavigationAuditTests: XCTestCase {
         let cached = try MarkdownCacheService.loadFromCache(for: book)
 
         XCTAssertEqual(direct.chapters.count, 2)
+        // A parse that finds too few chapters fails here, not at a subscript below.
+        _ = try XCTUnwrap(direct.chapters[safe: 1], "the directly parsed book has no second chapter")
         XCTAssertTrue(direct.chapters[0].text.contains("Alpha content."))
         XCTAssertTrue(direct.chapters[1].text.contains("Beta content."))
         XCTAssertEqual(cached.chapters.count, 2)
+        _ = try XCTUnwrap(cached.chapters[safe: 1], "the cached book has no second chapter")
         XCTAssertTrue(cached.chapters[0].text.contains("Alpha content."))
         XCTAssertTrue(cached.chapters[1].text.contains("Beta content."))
     }

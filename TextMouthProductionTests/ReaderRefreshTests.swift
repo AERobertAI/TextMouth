@@ -505,6 +505,80 @@ final class ReaderRefreshTests: XCTestCase {
         reader.stop()
     }
 
+    /// Where Am I? pressed while the library moves the package of the
+    /// audiobook playing, whose announcement ends by itself before the move
+    /// does, leaves the audio held for the end sound: the move's end, in the
+    /// moment the end sound plays, starts nothing then, and once the sound
+    /// has passed the audio plays on from the moved package, started once,
+    /// with no play sound. Before, only the announcement's speaking held the
+    /// audio, so the move's end in this moment restarted it under the end
+    /// sound.
+    func testAMoveEndingWhileWhereAmIsEndSoundPlaysHoldsTheAudioUntilTheSoundPasses() throws {
+        let playing = try openPlayingAudiobook("Reader Refresh Move Ends In End Sound")
+        let reader = playing.reader
+        reader._whereAmIUtteranceRecorderForTesting = { _ in }
+        let endSound = WhereAmIEndSoundClock(holdingFor: reader)
+        let generationBefore = reader.chapterPlaybackGeneration
+
+        _ = try moveToShelf(playing) {
+            // The announcement ends by itself while the package still moves,
+            // so the move ends in the moment its end sound plays.
+            reader.whereAmI()
+            reader.whereAmIAnnouncementFinished()
+        }
+
+        XCTAssertFalse(reader.isWhereAmISpeaking, "The announcement did not end")
+        XCTAssertTrue(endSound.hasWorkWaiting, "The end sound's work was not scheduled")
+        XCTAssertNil(reader.audioPlaybackService.loadedURL, "The move's end started the audio over the end sound")
+        XCTAssertTrue(reader.isChapterHeldByWhereAmI, "The move's end did not hold the audio for the end sound")
+        XCTAssertTrue(reader.isCurrentlyPlaying, "The reader does not show Playing")
+        XCTAssertFalse(reader.isCurrentlyPaused, "The reader shows paused")
+        XCTAssertEqual(reader.chapterPlaybackGeneration, generationBefore, "The chapter began before the end sound passed")
+
+        endSound.passEndSound()
+
+        try assertPlaysOnFromTheMovedPackage(playing, "As the end sound passed")
+        XCTAssertEqual(reader.chapterPlaybackGeneration, generationBefore + 1, "The chapter did not start exactly once")
+        XCTAssertFalse(reader.isChapterHeldByWhereAmI)
+        XCTAssertEqual(playing.sounds.played, [.whereAmIStart, .whereAmIEnd], "A sound beside Where Am I's was made")
+        reader.stop()
+    }
+
+    /// The end sound's window is a state of its own
+    /// (`isWhereAmIEndSoundPlaying`): closed before an announcement, open as
+    /// one that ended by itself sounds its end, closed again when the
+    /// sound's work runs, and never opened by an announcement the system
+    /// cancels, which plays no end sound.
+    func testTheEndSoundWindowOpensWhenAnAnnouncementEndsAndClosesWhenItsSoundHasPlayed() throws {
+        let playing = try openPlayingAudiobook("Reader Refresh End Sound Window")
+        let reader = playing.reader
+        var announcements: [AVSpeechUtterance] = []
+        reader._whereAmIUtteranceRecorderForTesting = { announcements.append($0) }
+        let endSound = WhereAmIEndSoundClock(holdingFor: reader)
+        XCTAssertFalse(reader.isWhereAmIEndSoundPlaying, "The window is open before any announcement")
+        XCTAssertFalse(reader.isWhereAmISpeakingOrSoundingItsEnd)
+
+        reader.whereAmI()
+        XCTAssertFalse(reader.isWhereAmIEndSoundPlaying, "The window is open while the announcement speaks")
+        XCTAssertTrue(reader.isWhereAmISpeakingOrSoundingItsEnd, "The announcement speaks")
+        reader.whereAmIAnnouncementFinished()
+
+        XCTAssertTrue(reader.isWhereAmIEndSoundPlaying, "The window is not open as the announcement ends")
+        XCTAssertTrue(reader.isWhereAmISpeakingOrSoundingItsEnd, "The end sound plays")
+        endSound.passEndSound()
+        XCTAssertFalse(reader.isWhereAmIEndSoundPlaying, "The window is open after the end sound")
+        XCTAssertFalse(reader.isWhereAmISpeakingOrSoundingItsEnd)
+
+        // An announcement the system cancels plays no end sound.
+        reader.whereAmI()
+        let cancelled = try XCTUnwrap(announcements.last, "No announcement was handed over")
+        reader.whereAmIDelegate?.speechSynthesizer(AVSpeechSynthesizer(), didCancel: cancelled)
+        XCTAssertTrue(waitUntil(timeout: 5) { !reader.isWhereAmISpeaking }, "The cancel did not end the announcement")
+        XCTAssertFalse(reader.isWhereAmIEndSoundPlaying, "A cancelled announcement opened the window")
+        XCTAssertFalse(endSound.hasWorkWaiting, "A cancelled announcement scheduled end-sound work")
+        reader.stop()
+    }
+
     /// What stops the audiobook playing, done while the library moves its
     /// package, takes the audio set aside for the move, so the move's end
     /// leaves the book as it was left: a pause, Play/Pause, a minutes sleep

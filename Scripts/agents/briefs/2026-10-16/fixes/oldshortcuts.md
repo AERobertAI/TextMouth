@@ -1,0 +1,52 @@
+# fixes-oldshortcuts: an old-form config.json applied after the move marks only the actions that differ from a default as edited
+
+- Team `fixes`; lead `fixes-lead`; your task is number 49 on the team's list.
+- Your slug is `fixes-oldshortcuts`. Your branch is `fixes/oldshortcuts`, made with `git checkout -b fixes/oldshortcuts team/fixes`. Your worktree may start on an old commit, so branch from `team/fixes` exactly so.
+- First read `Scripts/agents/briefs/2026-10-16/teams-common.md`: "The worker's part", "Rules for everyone", "The board", and "Builds". **Tonight the usage rule is overridden:** the user said to "max it out" before the weekly reset, so keep working until the API refuses you, whatever the usage reading says. The "Weekly (Fable)" window caps another model and does not apply. Commit each green step at once.
+- `bbs` is `python3 .claude/skills/agent-bbs/scripts/bbs.py`, run from your worktree root. Write it out in full: the worktree guard refuses a command kept in a variable. Use `git -C <path>` rather than `cd … &&`. Register, joining the team, then mark your task started:
+
+      python3 .claude/skills/agent-bbs/scripts/bbs.py register fixes-oldshortcuts --role "An old-form config.json applied later marks only non-default actions edited" --branch fixes/oldshortcuts --team fixes --files TextMouth/Models/ShortcutEdits.swift TextMouth/Models/KeyboardShortcut.swift TextMouth/Services/KeyboardShortcutManager.swift TextMouth/Services/ConfigService.swift TextMouthProductionTests/ShortcutConfigFileTests.swift
+      python3 .claude/skills/agent-bbs/scripts/bbs.py task move fixes-oldshortcuts 49 working
+
+- This brief gives you what you need. Read only the line ranges it names, once each, and what its tests lead you to.
+
+## The problem (confirmed on `team/fixes` by the lead)
+Earlier releases wrote config.json's `keyboardShortcuts` as a LIST FOR EVERY ACTION, each action's keys, defaults included. FR12 (October 7) made the record of edits (`ShortcutEdits`) the user's and wrote "default: …" text for every unedited action. The user's answers (`humanQuestions/2026-10-07-evening.md`, question 6, "yes") settled that when the saved shortcuts MOVE to the record, an action whose keys equal a default, today's or an earlier one, counts as never edited.
+
+That rule runs once, at the first launch that finds no record, and only for a file readable then: `KeyboardShortcutManager.moveSavedShortcutsIfNeeded(in:fileListings:)` (`Services/KeyboardShortcutManager.swift` about 305 to 345) calls `ShortcutEdits.migrating(savedMap:fileLists:defaults:formerDefaults:)` (`Models/ShortcutEdits.swift` about 342 to 385), whose steps 2 and 3 keep as edited only the actions whose keys are no default of theirs (`isADefault`, 366 to 372). The same old-form file read LATER (a restored backup, an older build's or another Mac's file, a file unreadable or only in the cloud at the move's launch) goes through `KeyboardShortcutManager.adopt(_:in:)` (about 370 to 385) and `ShortcutEdits.adopting(_:)` (about 424 to 449), where "a list makes its action the user's with those keys, even keys equal to its default". Every action it lists becomes edited, so Next Bookmark keeps its former default Shift-Command-B over Show Bookmarks (TODO line 3350).
+
+How an old-form file is told: `ShortcutListing.isInTheRecordsForm` (`Models/KeyboardShortcut.swift` about 1263) is true for an object or for text following the defaults, the two forms only the record writes; the old form holds neither, and the move already uses exactly that test (`fileListings.values.contains(where: \.isInTheRecordsForm)`, about line 315) to tell a file in the new form.
+
+## What to build
+1. **Share the rule.** Extract the judgment `migrating` makes inline (`heldElsewhere`, `given`, `isADefault`, 360 to 374) into one documented function of `ShortcutEdits` (static, taking an action, the keys given, the map of every action's keys the held-elsewhere check reads, the defaults and the former defaults) and have `migrating` call it. This is a refactor with no change of behavior: `ShortcutEditsTests` and `ShortcutConfigFileTests` must pass unchanged.
+2. **Apply it to a later old-form file.** In `KeyboardShortcutManager.adopt(_:in:)`: when no listing is in the record's form (the file is the old form, a list for every action), leave out of what `adopting` receives every list whose keys are a default of its action by that rule. Such an action is not edited by the file: it keeps whatever the record has (an action the user edited in the app keeps its edit; an unedited one keeps following the defaults). A list that differs from every default still makes its action the user's, as today. The map the rule reads for "held elsewhere" is the file's own lists, as the move reads them.
+3. **A file in the new form is read exactly as before**: with at least one entry in the record's form, a list equal to its action's default still makes the action the user's ("an edited action set back to its default keys is still a list: it stays the user's", the user's answer to question 5, "yes"). Pin that with a test so the two cases cannot blur.
+4. **The return value.** `adopt` returns whether the settings model should save config.json again at once. An old-form file applied here should be written back in the new form soon: return true when an old-form file left out any list, so the file shows the keys in force (check what the callers do with it: `SettingsViewModel.applyConfigChanges`, about line 1042; make sure a second application of the new-form file changes nothing and returns false).
+5. **Comments.** Update the doc comments of `adopt`, `adopting`, and `ShortcutListing` (and `AppConfig.keyboardShortcuts` in `ConfigService.swift`, about line 351) where they say "a list makes its action the user's" to say what an old-form file does; document the extracted function. Put one `DiagnosticLog.trace(.storage, …)` line naming how many lists an old-form file left out (a count, no keys).
+
+## Tests to add (new methods in `ShortcutConfigFileTests`; no new test file)
+Use the fixtures the move's tests use: `shortcutsShapedLikeThisUsers()` (about line 272), `oldFormFile(listing:)`, `saveWholeMap(_:in:)`, `launch(_:store:)`, `isolatedDefaults()`, `makeConfigFileURL()`; read `testThisUsersFirstLaunchMovesTheirShortcutsToTheRecord` (about line 306) first. In all of them the record ALREADY EXISTS, so the move does not run (write it with `KeyboardShortcutManager.editsPreference.write(_:to:)` first):
+- An old-form file written by the October 5 build, applied over a record that holds only Release Media Controls (Shift-R): afterwards the record is still exactly that, Next Bookmark is Option-Shift-Command-B, Show Bookmarks keeps Shift-Command-B (through a `KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)`), and config.json is saved in the new form.
+- The same file over an EMPTY record: Release Media Controls (the one list that differs) becomes the only edit.
+- A record in which Play is edited to another key, and an old-form file listing Play with its default keys: Play keeps the record's key.
+- An old-form file with one list that differs from a default: that action is edited, the others not.
+- A file with one "default: …" entry and a list equal to its action's default: that action is edited (the new form is read as before).
+- A second application of the same file changes nothing.
+- **Prove the main test fails without the fix:** after your commit, `git checkout HEAD~1 -- TextMouth/Services/KeyboardShortcutManager.swift` (adjust to your history), run the new tests alone, see them fail, then `git checkout HEAD -- TextMouth/Services/KeyboardShortcutManager.swift`. Report both results.
+
+## Commits
+(1) the shared rule, a refactor with no change of behavior; (2) the old form applied later, with its tests. Each message ends with `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`. Comment every function and non-obvious block; stay DRY.
+
+## Build and test
+Run once after both commits, in one build: `ShortcutConfigFileTests`, `ShortcutEditsTests`, `ShortcutManagerTests`, `DoublePressBindingTests`, `MenuKeyShortcutTests`, `ConfigSyncTests`, `ConfigWatcherTests`. Then the revert run. Scratch files go in `/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/8d971e15-7103-46cf-b45e-5c4d099f2f74/scratchpad/`, each named `fixes-oldshortcuts-…`. Start each build in the background and check no more often than every 4 minutes with one short command.
+
+    BBS_AGENT=fixes-oldshortcuts .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath /var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-fixes-oldshortcuts -only-testing:TextMouthProductionTests/ShortcutConfigFileTests -only-testing:TextMouthProductionTests/ShortcutEditsTests -only-testing:TextMouthProductionTests/ShortcutManagerTests -only-testing:TextMouthProductionTests/DoublePressBindingTests -only-testing:TextMouthProductionTests/MenuKeyShortcutTests -only-testing:TextMouthProductionTests/ConfigSyncTests -only-testing:TextMouthProductionTests/ConfigWatcherTests > /private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/8d971e15-7103-46cf-b45e-5c4d099f2f74/scratchpad/fixes-oldshortcuts-build-1.log 2>&1
+
+Read a result with `grep -E "Executed [0-9]+ tests|error:|failed \(|\.swift:[0-9]+:[0-9]+: warning:" <log> | tail -20`. Your change must add no Swift warning. **Never touch the user's live library or preferences**: tests use `isolatedDefaults()` and temporary config files. A failing existing test means stop and ask (`bbs post fixes-oldshortcuts --to fixes-lead --tag question --topic "…"`), with its name and why: never edit, weaken, or work around it.
+
+## Do not touch
+- Any existing test, any `*.md` file, any other test file, `project.pbxproj` (add no new file), and the Settings views.
+- The meaning of a list in the new form, and what `moveSavedShortcutsIfNeeded` does.
+
+## Finish
+As "The worker's part" says: post `done: fixes/oldshortcuts` to `fixes-lead`; move task 49 to `review`; remove your build folder, unregistering its app first; release your claims; reply with your report of at most 15 lines. In it, say what you decided about `adopt`'s return value.

@@ -33,6 +33,8 @@ final class LogWriteSafetyTests: XCTestCase {
 
         let lines = try String(contentsOf: log, encoding: .utf8).split(separator: "\n", omittingEmptySubsequences: false)
         XCTAssertEqual(lines.count, 3, "two lines plus the trailing newline")
+        // The checks below read the pieces by position, so stop here if the log is shorter.
+        _ = try XCTUnwrap(lines[safe: 2], "the log has fewer than three pieces")
         XCTAssertTrue(lines[0].hasSuffix(": first"), String(lines[0]))
         XCTAssertTrue(lines[1].hasSuffix(": second"), String(lines[1]))
         XCTAssertEqual(lines[2], "")
@@ -183,6 +185,8 @@ final class LogWriteSafetyTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: previous, encoding: .utf8), "older generation\n")
         let lines = try String(contentsOf: log, encoding: .utf8).components(separatedBy: "\n")
         XCTAssertEqual(lines.count, 3, "the note, the line, and the end of the last line: \(lines)")
+        // The checks below read the pieces by position, so stop here if the log is shorter.
+        _ = try XCTUnwrap(lines[safe: 1], "the log has fewer than two pieces")
         XCTAssertTrue(lines[0].hasSuffix(
             ": LOG_ROTATION: textmouth_debug.log reached 2 MB but couldn't be renamed to textmouth_debug.log.previous "
                 + "(Operation not permitted), so it was started over without its earlier lines"

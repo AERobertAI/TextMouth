@@ -54,7 +54,7 @@ final class ImportDecisionQueueTests: XCTestCase {
     /// (TODO S04), passes every book a question holds through the transform
     /// (a duplicate's new copy and the copy it matched, a ZIP archive's
     /// books) and keeps each question itself, the order, and the count.
-    func testMappingBooksKeepsEachQuestionAndChangesOnlyItsBooks() {
+    func testMappingBooksKeepsEachQuestionAndChangesOnlyItsBooks() throws {
         var queue = ImportDecisionQueue()
         let duplicate = Self.duplicateQuestion()
         let original = Self.originalFileQuestion()
@@ -76,7 +76,9 @@ final class ImportDecisionQueueTests: XCTestCase {
         XCTAssertEqual([queue.position, queue.total], [2, 4])
         XCTAssertEqual(queue.current?.duplicate?.book.filePath, "/moved/library/b.txt")
         XCTAssertEqual(queue.current?.duplicate?.existing.filePath, "/moved/library/a.txt")
-        guard case .zipFolder(let batch) = queue.waiting[2].kind else {
+        // The ZIP question is the third waiting; a short queue fails here, not in a trap.
+        let zipWaiting = try XCTUnwrap(queue.waiting[safe: 2], "the queue has no third waiting question")
+        guard case .zipFolder(let batch) = zipWaiting.kind else {
             return XCTFail("The ZIP question changed kind")
         }
         XCTAssertEqual(batch.books.map(\.filePath), ["/moved/library/c.txt"])

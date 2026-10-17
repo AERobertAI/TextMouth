@@ -288,6 +288,17 @@ extension ReaderViewModel {
         return timeEstimateForHeading(heading) * fractionRemaining
     }
 
+    /// Whether a Where Am I announcement speaks, or one that ended by itself
+    /// is still sounding its end (`isWhereAmIEndSoundPlaying`): the whole
+    /// time audio must not start over it. A chapter's download or a package's
+    /// move that ends in this time holds the audio for the end sound's work,
+    /// which plays it once (`startPlayHeldByWhereAmI()`), as it would hold it
+    /// while the announcement speaks. Only these two places ask it; every
+    /// other test of `isWhereAmISpeaking` is about the announcement itself.
+    var isWhereAmISpeakingOrSoundingItsEnd: Bool {
+        isWhereAmISpeaking || isWhereAmIEndSoundPlaying
+    }
+
     /// Whether Where Am I? still has the book in hand: an announcement
     /// speaking, or one that ended by itself and resumes the book it paused
     /// once its end sound has played (`isWhereAmIResumePending`), starts the
@@ -305,6 +316,15 @@ extension ReaderViewModel {
     /// pauses any play waiting to start. A held chapter was once left out,
     /// and a Play in that moment started it at once, under the end sound,
     /// with the play sound (open after the where-am-i-followups merge).
+    ///
+    /// The end sound's window (`isWhereAmIEndSoundPlaying`) has no term of
+    /// its own here: what the announcement leaves for it, a resume, a held
+    /// Play or a held chapter, is counted already. A reader with none of
+    /// these, one that was not playing when the announcement began, has
+    /// nothing in Where Am I?'s hands, so a Play pressed in the window
+    /// starts it at once, as it always did. A chapter's download or a
+    /// package's move that ends in the window adds the held chapter
+    /// (`isWhereAmISpeakingOrSoundingItsEnd`).
     var isWhereAmIUnderWay: Bool {
         isWhereAmISpeaking || isWhereAmIResumePending || isPlayHeldByWhereAmI || isChapterHeldByWhereAmI
     }
@@ -516,6 +536,13 @@ extension ReaderViewModel {
     /// (`whereAmISynthesizerFinished(_:)`); tests call it in the
     /// announcement's place.
     ///
+    /// The end sound plays for `whereAmIEndSoundDelay`, a window in which the
+    /// announcement no longer speaks but still has the book
+    /// (`isWhereAmIEndSoundPlaying`): a chapter's download or a package's
+    /// move that ends then holds its audio for the end sound's work, as one
+    /// that ends while the announcement speaks does, and the audio plays
+    /// once, after the sound.
+    ///
     /// Until the book resumes, the resume is owed (`isWhereAmIResumePending`)
     /// and the book counts as playing (`whereAmIWillPlayBook`), so whatever
     /// pauses or stops the book in that moment, a sleep timer running out,
@@ -533,6 +560,8 @@ extension ReaderViewModel {
             wasPlayingBeforeWhereAmI = false
             isWhereAmIResumePending = true
         }
+        // The window opens; the work below closes it.
+        isWhereAmIEndSoundPlaying = true
         afterWhereAmIEndSound { [weak self] in
             self?.resumeAfterWhereAmIEndSound()
         }
@@ -556,6 +585,8 @@ extension ReaderViewModel {
     /// the book meanwhile took the resume (`isWhereAmIResumePending`), and
     /// the play it held starts (`startPlayHeldByWhereAmI()`).
     private func resumeAfterWhereAmIEndSound() {
+        // The end sound has played: audio may start again.
+        isWhereAmIEndSoundPlaying = false
         if isWhereAmIResumePending {
             isWhereAmIResumePending = false
             resumeBookPausedForWhereAmI()

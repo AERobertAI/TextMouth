@@ -489,11 +489,23 @@ struct MeasurementReport {
         let after: String
     }
 
-    /// Every difference of every source, in order.
-    func differenceRecords() -> [DifferenceRecord] {
-        sources.flatMap { source -> [DifferenceRecord] in
+    /// Every difference of every source, in order. It throws, failing the
+    /// measurement, when a difference points outside the words it indexes,
+    /// rather than trapping on the slice.
+    func differenceRecords() throws -> [DifferenceRecord] {
+        try sources.flatMap { source -> [DifferenceRecord] in
             let alignment = source.alignment
-            return alignment.differences.map { difference in
+            return try alignment.differences.map { difference in
+                // Guard both ranges once, so the slices and subscripts below
+                // cannot run past the written and heard words.
+                _ = try XCTUnwrap(
+                    difference.written.clamped(to: alignment.written.indices) == difference.written ? difference.written : nil,
+                    "\(source.name): a difference's written words lie outside the \(alignment.written.count) written words"
+                )
+                _ = try XCTUnwrap(
+                    difference.heard.clamped(to: alignment.heard.indices) == difference.heard ? difference.heard : nil,
+                    "\(source.name): a difference's heard words lie outside the \(alignment.heard.count) heard words"
+                )
                 let context = 5
                 let before = alignment.written[max(0, difference.written.lowerBound - context)..<difference.written.lowerBound]
                 let afterEnd = min(alignment.written.count, difference.written.upperBound + context)

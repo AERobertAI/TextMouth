@@ -26,7 +26,8 @@ final class TranscriptTextTests: XCTestCase {
             ["Quillwort grows by the ferry slip.", "Tide tables hang in the harbor office.", "Nobody reads them twice."],
             ["The salt road bends east.", "Carts wait at the toll."],
         ])
-        XCTAssertEqual(chapters[1].sentences.map(\.startMilliseconds), [0, 1_980])
+        let secondChapter = try XCTUnwrap(chapters[safe: 1], "the transcript has no second chapter")
+        XCTAssertEqual(secondChapter.sentences.map(\.startMilliseconds), [0, 1_980])
     }
 
     /// A segmented book's chapter takes the sentences its clips play, timed
@@ -70,14 +71,16 @@ final class TranscriptTextTests: XCTestCase {
             ["The bridge sways underfoot.", "Nobody looks down.", "Then the far bank."],
             ["Stalls line the square."],
         ])
-        XCTAssertEqual(chapters[1].sentences.map(\.startMilliseconds), [0, 2_000, 4_000])
-        XCTAssertEqual(chapters[1].sentences.map(\.endMilliseconds), [2_000, 3_500, 7_500])
-        XCTAssertEqual(chapters[2].sentences.map(\.startMilliseconds), [200])
+        let secondChapter = try XCTUnwrap(chapters[safe: 1], "the transcript has no second chapter")
+        let thirdChapter = try XCTUnwrap(chapters[safe: 2], "the transcript has no third chapter")
+        XCTAssertEqual(secondChapter.sentences.map(\.startMilliseconds), [0, 2_000, 4_000])
+        XCTAssertEqual(secondChapter.sentences.map(\.endMilliseconds), [2_000, 3_500, 7_500])
+        XCTAssertEqual(thirdChapter.sentences.map(\.startMilliseconds), [200])
     }
 
     /// A single file's chapters split its sentences where the reader starts
     /// each chapter, and time them from there.
-    func testAChapteredFilesSentencesAreSplitAtItsChapters() {
+    func testAChapteredFilesSentencesAreSplitAtItsChapters() throws {
         let audio = BookContentIndex.build(
             fromChapters: [
                 Chapter(title: "Morning", text: String(repeating: " ", count: 100)),
@@ -97,8 +100,9 @@ final class TranscriptTextTests: XCTestCase {
             ["The ferry leaves early."],
             ["It returns at dusk.", "Lamps are lit."],
         ])
-        XCTAssertEqual(chapters[1].sentences.map(\.startMilliseconds), [0, 5_000])
-        XCTAssertEqual(chapters[1].sentences.map(\.endMilliseconds), [2_000, 8_000])
+        let secondChapter = try XCTUnwrap(chapters[safe: 1], "the transcript has no second chapter")
+        XCTAssertEqual(secondChapter.sentences.map(\.startMilliseconds), [0, 5_000])
+        XCTAssertEqual(secondChapter.sentences.map(\.endMilliseconds), [2_000, 8_000])
     }
 
     // MARK: - content.md
@@ -163,15 +167,25 @@ final class TranscriptTextTests: XCTestCase {
         let text = try XCTUnwrap(TranscriptTextBuilder.text(of: chapters, bookTitle: "Toll Road", bookAuthor: "Unknown"))
 
         XCTAssertEqual(text.chapters.count, 2)
-        XCTAssertEqual(text.chapters[0].headings.map(\.text), ["Chapter *One*"])
-        XCTAssertEqual(text.chapters[1].text, "Quiet")
-        let chapterText = Array(text.chapters[0].text.utf16)
-        XCTAssertEqual(text.sentences[0].count, tricky.count)
-        for (placed, expected) in zip(text.sentences[0], tricky) {
+        let firstChapter = try XCTUnwrap(text.chapters[safe: 0], "the transcript has no first chapter")
+        let secondChapter = try XCTUnwrap(text.chapters[safe: 1], "the transcript has no second chapter")
+        let firstSentences = try XCTUnwrap(text.sentences[safe: 0], "the text has no sentences for its first chapter")
+        XCTAssertEqual(firstChapter.headings.map(\.text), ["Chapter *One*"])
+        XCTAssertEqual(secondChapter.text, "Quiet")
+        let chapterText = Array(firstChapter.text.utf16)
+        XCTAssertEqual(firstSentences.count, tricky.count)
+        for (placed, expected) in zip(firstSentences, tricky) {
+            // A sentence placed outside its chapter's text would trap the
+            // slice below, so it stops the test instead.
+            guard placed.characterOffset >= 0, placed.characterOffset <= placed.characterEnd,
+                  placed.characterEnd <= chapterText.count else {
+                XCTFail("the sentence \"\(expected)\" is placed outside its chapter's text")
+                return
+            }
             let found = String(decoding: chapterText[placed.characterOffset..<placed.characterEnd], as: UTF16.self)
             XCTAssertEqual(found, expected)
         }
-        XCTAssertEqual(text.sentences[0].map(\.startMilliseconds), Array(stride(from: 0, to: 8_000, by: 1_000)))
+        XCTAssertEqual(firstSentences.map(\.startMilliseconds), Array(stride(from: 0, to: 8_000, by: 1_000)))
         XCTAssertNil(text.readingIndex.validationFailure(for: .markdown, audioBaseURL: nil))
         XCTAssertNil(text.readingIndex.alignmentFailure(with: text.chapters))
     }

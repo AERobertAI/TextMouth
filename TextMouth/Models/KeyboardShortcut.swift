@@ -1189,7 +1189,12 @@ private enum ConfigModifier: CaseIterable {
 /// - a list of shortcuts, written as `KeyBinding.configText` writes them,
 ///   makes the action the user's, with those keys or, for an empty list,
 ///   none, working where it does by default: `"Release Media Controls":
-///   ["shift+r"]`;
+///   ["shift+r"]`. In a file in the old form, which earlier releases wrote
+///   as a list for every action and which holds neither of the two other
+///   forms, a list equal to a default of its action edits nothing
+///   (`ShortcutEdits.keysAreADefault`); in a file in the new form, one
+///   entry in either of the other forms is enough, a list equal to the
+///   default still makes the action the user's;
 /// - an object holding such a list and the kind of window the action works
 ///   in makes it the user's, working there: `"New from Text…": {"keys":
 ///   ["shift+command+t"], "worksIn": "Every window"}`. TextMouth writes the

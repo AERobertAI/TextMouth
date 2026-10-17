@@ -132,4 +132,65 @@ enum SavedFile {
             throw POSIXError(POSIXErrorCode(rawValue: failure) ?? .EIO)
         }
     }
+
+    // MARK: Writing only what changed
+
+    /// What this process last read or wrote of some files in one data
+    /// directory, so a save writes a file only when its freshly encoded bytes
+    /// differ (library.json, each feed's index). The caller encodes the same
+    /// content to the same bytes every time (sorted keys, a fixed row order);
+    /// a save that changed nothing then writes nothing, and a checkpoint that
+    /// fires every half minute while an episode plays does not rewrite a
+    /// file of 900 KB for nothing.
+    ///
+    /// The memory is a value, held by the code that owns the files and
+    /// confined to the queue it reads and writes them on; it does no
+    /// locking of its own. It never replaces a read of the disk: it holds
+    /// only what this process saw there, so a file that is gone is written
+    /// again, and a file changed by something else is replaced the next time
+    /// its content changes here.
+    struct OnDiskMemory<Key: Hashable> {
+        /// The data directory the bytes are in; the memory starts over when
+        /// it changes, as after a data-directory move.
+        private(set) var rootPath: String?
+        /// Each file's bytes, as last read or written, by the caller's key.
+        private var bytes: [Key: Data]
+
+        /// A memory of `bytes` read from, or written to, the data directory
+        /// at `rootPath`; empty when it knows nothing yet.
+        init(rootPath: String? = nil, bytes: [Key: Data] = [:]) {
+            self.rootPath = rootPath
+            self.bytes = bytes
+        }
+
+        /// Forgets everything unless the memory is of the data directory at
+        /// `root`: bytes of another directory say nothing about this one.
+        mutating func startOver(unlessIn root: URL) {
+            guard rootPath != root.path else { return }
+            self = OnDiskMemory(rootPath: root.path)
+        }
+
+        /// Whether the file at `file` holds `data` already, as this process
+        /// last read or wrote it, so that writing it again would change
+        /// nothing. A file that is gone since is never unchanged: the same
+        /// bytes are written again when it was deleted outside TextMouth.
+        func holds(_ data: Data, for key: Key, at file: URL) -> Bool {
+            bytes[key] == data && FileManager.default.fileExists(atPath: file.path)
+        }
+
+        /// Notes that the file by `key` holds `data` now. Call it only once
+        /// the bytes are on disk (or, for a file that is not made, once they
+        /// are known to be what the caller wants there), so a failed write
+        /// is tried again by the next save.
+        mutating func remember(_ data: Data, for key: Key) {
+            bytes[key] = data
+        }
+
+        /// Forgets what the file by `key` holds, as when it was found
+        /// unreadable or is about to be replaced by something else, so the
+        /// next save writes it whatever it would encode to.
+        mutating func forget(_ key: Key) {
+            bytes[key] = nil
+        }
+    }
 }

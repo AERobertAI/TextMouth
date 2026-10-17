@@ -68,6 +68,8 @@ final class TranscriptionServiceTests: XCTestCase {
         XCTAssertEqual(events.map(\.elapsed), events.map(\.elapsed).sorted())
         XCTAssertEqual(events.last?.fractionDone, 1)
         XCTAssertEqual(events.last?.percentDone, 100)
+        // The fourth event is read by position, so stop here if it never came.
+        _ = try XCTUnwrap(events[safe: 3], "progress reported fewer than four events")
         XCTAssertEqual(events[3].percentDone, 60)
     }
 
@@ -310,6 +312,7 @@ final class TranscriptionServiceTests: XCTestCase {
         XCTAssertEqual(builder.sentences.map(\.text), ["Glossary, page 31.", "Index, page 32."])
         XCTAssertEqual(builder.sentences.map(\.startMilliseconds), [10_000, 11_500])
         XCTAssertEqual(builder.sentences.map(\.endMilliseconds), [11_500, 13_200])
+        _ = try XCTUnwrap(builder.sentences[safe: 1], "the builder made no second sentence")
         XCTAssertEqual(builder.sentences[1].words.map(\.characterOffset), [0, 7, 12])
     }
 
@@ -324,6 +327,8 @@ final class TranscriptionServiceTests: XCTestCase {
         builder.add(TranscribedResult(start: 4, end: 6, pieces: [piece("Hm.", nil, nil)]))
 
         XCTAssertEqual(builder.sentences.map(\.text), ["Okay. Carts wait here.", "Hm."])
+        // Both sentences are read by position below, so stop here if one is missing.
+        _ = try XCTUnwrap(builder.sentences[safe: 1], "the builder made fewer than two sentences")
         XCTAssertEqual(builder.sentences[0].words.map(\.characterOffset), [6, 12, 17])
         XCTAssertEqual(builder.sentences[0].startMilliseconds, 1_000)
         XCTAssertEqual(builder.sentences[1].words, [])

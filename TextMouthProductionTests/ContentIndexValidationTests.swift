@@ -1592,11 +1592,14 @@ final class ContentIndexValidationTests: XCTestCase {
 
     /// `index` with new chapter lengths and everything derived from them
     /// (start offsets, global heading offsets, the total) kept consistent,
-    /// so a test can reach huge counts without allocating their text.
+    /// so a test can reach huge counts without allocating their text. The
+    /// loop pairs `lengths` with the index's own chapter positions, so a
+    /// `lengths` longer than the chapter list stops at the last chapter
+    /// instead of trapping (the test's expectation then fails).
     private func resized(_ index: BookContentIndex, to lengths: [Int]) -> BookContentIndex {
         var resized = index
         var start = 0
-        for (position, length) in lengths.enumerated() {
+        for (position, length) in zip(index.chapters.indices, lengths) {
             resized.chapters[position].characterCount = length
             resized.chapters[position].startCharacterOffset = start
             for heading in resized.chapters[position].headings.indices {

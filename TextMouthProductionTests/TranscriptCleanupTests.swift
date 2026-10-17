@@ -76,18 +76,21 @@ final class TranscriptCleanupTests: XCTestCase {
 
     /// The rules apply in order, each to what the ones before it left, and
     /// each counts its own corrections, with an example of them.
-    func testRulesApplyInOrderEachCountingItsOwn() {
+    func testRulesApplyInOrderEachCountingItsOwn() throws {
         let cleanup = TranscriptCleanup(rules: [rule("tolled", "told"), rule("told", "said"), rule("ferry", "ferry boat")])
 
         let cleaned = cleanup.cleaned("The keeper tolled us twice and told us once.")
 
         XCTAssertEqual(cleaned.text, "The keeper said us twice and said us once.")
         XCTAssertEqual(cleaned.corrections, [1, 2, 0])
-        XCTAssertEqual(cleaned.examples[0], [TranscriptCleanup.Example(
+        // Guard the positions first: a short list fails the test instead of trapping it.
+        let firstRuleExamples = try XCTUnwrap(cleaned.examples[safe: 0], "the cleanup has no examples for its first rule")
+        let thirdRuleExamples = try XCTUnwrap(cleaned.examples[safe: 2], "the cleanup has no examples for its third rule")
+        XCTAssertEqual(firstRuleExamples, [TranscriptCleanup.Example(
             before: "The keeper tolled us twice and told…",
             after: "The keeper told us twice and told…"
         )])
-        XCTAssertTrue(cleaned.examples[2].isEmpty)
+        XCTAssertTrue(thirdRuleExamples.isEmpty)
     }
 
     /// A sentence no rule changes comes back exactly as it was, spaces and
@@ -101,10 +104,11 @@ final class TranscriptCleanupTests: XCTestCase {
 
     /// An example shows a few words around the change, with "…" where
     /// words were left out.
-    func testAnExampleShowsTheWordsAroundTheChange() {
+    func testAnExampleShowsTheWordsAroundTheChange() throws {
         let cleanup = TranscriptCleanup(rules: [rule("alright", "all right")])
 
-        let example = cleanup.cleaned("One two three four five six alright seven eight nine ten eleven.").examples[0].first
+        let cleaned = cleanup.cleaned("One two three four five six alright seven eight nine ten eleven.")
+        let example = try XCTUnwrap(cleaned.examples[safe: 0], "the cleanup has no examples for its only rule").first
 
         XCTAssertEqual(example?.before, "…three four five six alright seven eight nine ten…")
         XCTAssertEqual(example?.after, "…three four five six all right seven eight nine ten…")
@@ -116,7 +120,7 @@ final class TranscriptCleanupTests: XCTestCase {
     /// its time and dropping its words' timings, leaves every other
     /// sentence as it was, words and all, and counts corrections by rule
     /// and changed sentences; the cleaned transcript is valid.
-    func testAPreviewRewritesTheSentencesTheRulesChange() {
+    func testAPreviewRewritesTheSentencesTheRulesChange() throws {
         let transcript = TranscriptFixtures.transcript([
             (path: "01.wav", duration: 9_000, sentences: [
                 TranscriptFixtures.sentence("The pier was alright at dawn.", from: 0, to: 2_400),
@@ -133,15 +137,17 @@ final class TranscriptCleanupTests: XCTestCase {
         XCTAssertEqual(preview.changedSentences, 2)
         XCTAssertEqual(preview.changes.map(\.rule.pattern), ["alright", "pier"])
         XCTAssertEqual(preview.changes.map(\.corrections), [2, 2])
-        XCTAssertEqual(preview.changes[0].examples.count, 2)
-        let sentences = preview.cleaned.files[0].sentences
+        XCTAssertEqual(try XCTUnwrap(preview.changes[safe: 0], "the preview lists no change").examples.count, 2)
+        let sentences = try XCTUnwrap(preview.cleaned.files[safe: 0], "the cleaned transcript has no first file").sentences
         XCTAssertEqual(sentences.map(\.text), [
             "The jetty was all right at dawn.", "Tide tables hang in the office.", "All right, the jetty again.",
         ])
         XCTAssertEqual(sentences.map(\.startMilliseconds), [0, 2_400, 5_100])
         XCTAssertEqual(sentences.map(\.endMilliseconds), [2_400, 5_100, 6_960])
         XCTAssertEqual(sentences.map(\.words.isEmpty), [true, false, true])
-        XCTAssertEqual(sentences[1], transcript.files[0].sentences[1])
+        // `transcript` is the test's own three-sentence fixture; only the cleaned list needs a guard.
+        let keptSentence = try XCTUnwrap(sentences[safe: 1], "the cleaned file has no second sentence")
+        XCTAssertEqual(keptSentence, transcript.files[0].sentences[1])
         XCTAssertNil(preview.cleaned.validationFailure())
         XCTAssertNil(preview.cleaned.cleanedUp, "a preview records no cleanup")
     }

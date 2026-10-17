@@ -129,7 +129,7 @@ final class BookTextEditTests: XCTestCase {
         let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md", Self.twoChapters))
         let reader = world.openReader(for: book)
         await waitForReaderToLoadYielding(reader)
-        let channel = try XCTUnwrap(reader.content?.chapters[1].text)
+        let channel = try XCTUnwrap(reader.content?.chapters[safe: 1]?.text, "the reader has no second chapter")
         reader.navigateTo(chapterIndex: 1, characterOffset: (channel as NSString).range(of: "Buoys").location)
         let sourceBefore = try XCTUnwrap(BookInfo.load(from: book.tmbDirectory).state.textCacheFingerprint?.source)
         let editor = makeEditor()
@@ -145,7 +145,7 @@ final class BookTextEditTests: XCTestCase {
         try Self.editedChapters.write(to: cache, atomically: true, encoding: .utf8)
         editor.editor.appBecameActive()
 
-        let shown = await eventually(timeout: 10) { reader.content?.chapters[1].text.contains("A pilot boat waits") == true }
+        let shown = await eventually(timeout: 10) { reader.content?.chapters[safe: 1]?.text.contains("A pilot boat waits") == true }
         XCTAssertTrue(shown, "the reader never showed the edit")
         // content.md is the edit, never rebuilt from the source.
         XCTAssertEqual(try String(contentsOf: cache, encoding: .utf8), Self.editedChapters)
@@ -168,7 +168,7 @@ final class BookTextEditTests: XCTestCase {
         XCTAssertEqual(row.textCacheFingerprint, fingerprint)
         XCTAssertEqual(reader.book.textCacheFingerprint, fingerprint)
         // The reader shows the edit at the words it was at.
-        let edited = try XCTUnwrap(reader.content?.chapters[1].text)
+        let edited = try XCTUnwrap(reader.content?.chapters[safe: 1]?.text, "the reader has no second chapter")
         XCTAssertEqual(reader.currentChapterIndex, 1)
         XCTAssertEqual(reader.currentCharacterOffset, (edited as NSString).range(of: "Buoys").location)
         XCTAssertEqual(reader.headings.map(\.text), ["Harbour", "Channel", "Sandbanks"])
@@ -176,7 +176,7 @@ final class BookTextEditTests: XCTestCase {
         // The next open reads the edit through its saved index.
         let reopened = try BookContentAnalysisService.load(book: row)
         XCTAssertTrue(reopened.usedPersistedIndex, "the next open did not use the edit's index")
-        XCTAssertTrue(reopened.content.chapters[1].text.contains("A pilot boat waits"))
+        XCTAssertTrue(reopened.content.chapters[safe: 1]?.text.contains("A pilot boat waits") == true)
     }
 
     /// A save the watcher hears is taken without TextMouth becoming active,
@@ -212,7 +212,7 @@ final class BookTextEditTests: XCTestCase {
 
         let loaded = try ReaderViewModel.readContent(of: book, readingTexts: nil)
 
-        XCTAssertTrue(loaded.content.chapters[1].text.contains("A pilot boat waits"), "the read missed the edit")
+        XCTAssertTrue(loaded.content.chapters[safe: 1]?.text.contains("A pilot boat waits") == true, "the read missed the edit")
         XCTAssertFalse(loaded.shouldPersistContentIndex, "the edit's index was not already saved")
         XCTAssertEqual(debugLogLines(containing: "CACHE_STALE: \(book.title):"), [])
         XCTAssertEqual(
@@ -339,7 +339,7 @@ final class BookTextEditTests: XCTestCase {
 
         try Self.editedChapters.write(to: cache, atomically: true, encoding: .utf8)
         editor.editor.appBecameActive()
-        let opened = await eventually(timeout: 10) { reader.content?.chapters[1].text.contains("A pilot boat waits") == true }
+        let opened = await eventually(timeout: 10) { reader.content?.chapters[safe: 1]?.text.contains("A pilot boat waits") == true }
         XCTAssertTrue(opened, "the reader did not open the book once the edit was taken")
         XCTAssertNil(reader.loadErrorMessage)
         XCTAssertEqual(reader.headings.map(\.text), ["Harbour", "Channel", "Sandbanks"])
@@ -531,7 +531,7 @@ final class BookTextEditTests: XCTestCase {
         XCTAssertEqual(debugLogLines(containing: "TEXT_EDIT_ADOPTED: \(book.title):").count, adoptedBefore + 1)
         let reopened = try BookContentAnalysisService.load(book: row)
         XCTAssertTrue(reopened.usedPersistedIndex, "the next open did not use the edit's index")
-        XCTAssertTrue(reopened.content.chapters[1].text.contains("A pilot boat waits"))
+        XCTAssertTrue(reopened.content.chapters[safe: 1]?.text.contains("A pilot boat waits") == true)
         XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([row], access: .live), [], "the next launch would check it again")
     }
 

@@ -1902,8 +1902,9 @@ enum FileImportService {
         if let location = AudioManifestLocation.find(in: audioDirectory) {
             try run.begin(.readingManifest, in: staging.directory)
             let manifest = try AudioManifestCheck.checkedManifest(at: location, audioFolder: audioDirectory)
-            if let manifestTitle = manifest.title { title = manifestTitle }
-            if let manifestAuthor = manifest.author { author = manifestAuthor }
+            // A blank title or author falls back as a missing one does.
+            if let manifestTitle = manifest.bookTitle { title = manifestTitle }
+            if let manifestAuthor = manifest.bookAuthor { author = manifestAuthor }
         }
         let staged = stagedAudioBook(
             id: bookID,

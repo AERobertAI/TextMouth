@@ -185,7 +185,8 @@ final class WatchedProcessSafetyTests: XCTestCase {
         XCTAssertLessThan(Date().timeIntervalSince(started), 15)
     }
 
-    /// The reason is spoken in whole seconds, rounded up.
+    /// The reason is spoken in whole seconds, rounded up, and counted with
+    /// `CountWording` like the other reasons, so one second reads "1 second".
     func testTheProcessorTimeReasonReadsAsWords() {
         XCTAssertEqual(
             WatchedProcess.KillReason.usedTooMuchProcessorTime(seconds: 240).words,
@@ -193,7 +194,7 @@ final class WatchedProcessSafetyTests: XCTestCase {
         )
         XCTAssertEqual(
             WatchedProcess.KillReason.usedTooMuchProcessorTime(seconds: 0.2).words,
-            "it used more than 1 seconds of processor time"
+            "it used more than 1 second of processor time"
         )
     }
 
