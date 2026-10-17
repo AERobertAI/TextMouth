@@ -1,0 +1,19 @@
+Grade 2 sample: contractions used (UEB, ICEB Rules 2013)
+==========================================================
+Capital sign (dot 6, rule 8.2): The, We.
+the        strong wordsign, dots 2346: "The" (twice).
+and        strong wordsign, dots 12346.
+with       strong wordsign, dots 23456.
+can        alphabetic wordsign c, dots 14.
+go         alphabetic wordsign g, dots 1245.
+you        alphabetic wordsign y, dots 13456.
+like       alphabetic wordsign l, dots 123.
+ch         strong groupsign, dots 16: "church" (c-h-u-r-c-h = ch u r ch).
+sh         strong groupsign, dots 146: "shop".
+en         lower groupsign, dots 26: "open" (o p en).
+ing        groupsign, dots 346, not at the start of a word: "singing" (s ing ing).
+Uncontracted words: boy, girl, is.
+Not exercised: lower wordsigns (be, his, in, was, were, enough), the dot-5 and dot-45 prefix
+contractions, the shortforms, the numeric/grade 1 interplay, context rules for 'to into by'.
+Each pattern is the one liblouis en-ueb-g2.ctb states (always/word/match rules) where the
+file states it; the remaining cells follow ICEB Rules.  This file was NOT run through liblouis.

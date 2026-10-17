@@ -1,0 +1,10 @@
+#EXTM3U
+#EXTINF:1,Café tone, 440 Hz
+tone1.wav
+#EXTINF:1,Señal two - 660 Hz
+tone2.wav
+# a comment line
+#EXTINF:1,Third (subfolder-free)
+tone3.wav
+#EXTINF:1,Fourth in a subfolder
+more\tone4.wav

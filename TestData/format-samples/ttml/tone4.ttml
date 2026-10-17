@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:tts="http://www.w3.org/ns/ttml#styling"
+    xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+    ttp:timeBase="media" ttp:contentProfiles="http://www.w3.org/ns/ttml/profile/imsc1.2/text"
+    xml:lang="en">
+  <head>
+    <metadata><ttm:title>Four tones</ttm:title>
+      <ttm:agent xml:id="a0" type="person"><ttm:name type="full">Ana</ttm:name></ttm:agent>
+      <ttm:agent xml:id="a1" type="person"><ttm:name type="full">Ben</ttm:name></ttm:agent></metadata>
+    <styling><style xml:id="s1" tts:color="white"/></styling>
+    <layout><region xml:id="r1" tts:origin="10% 80%" tts:extent="80% 10%"/></layout>
+  </head>
+  <body>
+    <div>
+      <p begin="00:00:00.000" end="00:00:00.900" ttm:agent="a0" region="r1">This sentence belongs to the first tone, 440 hertz.</p>
+      <p begin="00:00:01.000" end="00:00:01.900" ttm:agent="a1" region="r1">This one belongs to the second tone, 550 hertz.</p>
+      <p begin="00:00:02.000" end="00:00:02.900" ttm:agent="a0" region="r1">Third tone, 660 hertz. A café, an étude.</p>
+      <p begin="3s" dur="0.9s" ttm:agent="a1"><span style="s1">The fourth,</span><br/><span>880 hertz (offset-time, with a line break).</span></p>
+    </div>
+  </body>
+</tt>

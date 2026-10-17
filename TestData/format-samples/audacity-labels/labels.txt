@@ -1,0 +1,4 @@
+0.000000	0.000000	Point at the start
+1.000000	2.000000	Region: second tone, café
+2.500000	2.500000	Point inside the third tone
+3.000000	4.000000	
