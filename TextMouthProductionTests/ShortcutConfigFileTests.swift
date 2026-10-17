@@ -408,9 +408,9 @@ final class ShortcutConfigFileTests: XCTestCase {
 
     /// This user's config.json in the new form, written by a build without
     /// the full summaries (FR12's branch C), gains them at the next launch
-    /// as "default: shift+command+i twice" and "default: w twice", which they then have;
-    /// Release Media Controls keeps Shift-R as the user's own, and the
-    /// record is left as it was.
+    /// as "default: shift+command+i twice" and "default: w twice", which
+    /// they then have; Release Media Controls keeps Shift-R as the user's
+    /// own, and the record is left as it was.
     func testAFileWrittenBeforeTheFullSummariesGainsThemAsDefaults() throws {
         let url = try makeConfigFileURL()
         let store = try isolatedDefaults()

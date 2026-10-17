@@ -226,9 +226,9 @@ struct LibraryView: View {
     /// Folder Settings button or the Folder or Feed Settings command (FR19).
     @State private var folderSettings: FolderSettingsModel?
     /// What speaks the selected row's information for Speak Info and Speak
-    /// Full Info, I and I twice, and for Book Info on a folder, which has
-    /// no sheet (October 7, 2026; FR12). Kept, not observed: it draws
-    /// nothing.
+    /// Full Info, Shift-Command-I and Shift-Command-I twice (I and I twice
+    /// until October 17, 2026), and for Book Info on a folder, which has no
+    /// sheet (October 7, 2026; FR12). Kept, not observed: it draws nothing.
     @State private var infoSpeaker = LibraryInfoSpeaker()
     @State private var showNewFolderSheet = false
     @State private var newFolderName = ""
@@ -698,9 +698,9 @@ struct LibraryView: View {
             NotificationCenter.default.publisher(for: .speakInfo)
                 .merge(with: NotificationCenter.default.publisher(for: .speakFullInfo))
         ) { notification in
-            // The I key, and Library > Speak Info: the selected row's brief
-            // summary; I twice, and Library > Speak Full Info, its full one
-            // (FR12). Spoken with the app's own voice.
+            // Shift-Command-I, and Library > Speak Info: the selected row's
+            // brief summary; Shift-Command-I twice, and Library > Speak Full
+            // Info, its full one (FR12). Spoken with the app's own voice.
             guard takesCommand(notification) else { return }
             speakSelectedInfo(notification.name == .speakFullInfo ? .full : .brief)
         }
@@ -1605,10 +1605,10 @@ struct LibraryView: View {
 
     // MARK: - Speak Info and Book Info for the Selected Row
 
-    /// The row Speak Info (the I key) and Book Info (Cmd+I) act on: the
-    /// first selected row in the list's order, which the List selects by
-    /// ID for a folder's and a feed's row as for a book's, or the edit
-    /// selection's first book (`LibraryInfoRow.selected`).
+    /// The row Speak Info (Shift-Command-I) and Book Info (Command-I) act
+    /// on: the first selected row in the list's order, which the List
+    /// selects by ID for a folder's and a feed's row as for a book's, or
+    /// the edit selection's first book (`LibraryInfoRow.selected`).
     private var selectedInfoRow: LibraryInfoRow? {
         LibraryInfoRow.selected(
             selectedBookIDs,

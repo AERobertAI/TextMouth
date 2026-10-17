@@ -309,11 +309,11 @@ final class TextFieldEditingKeysTests: XCTestCase {
     /// default key posts its own action from a field, and every default key
     /// posts its own action from a view that takes no text, each pressed in
     /// a window of its own scope, the app's or an audio editor's; a double
-    /// press, W twice or Shift-Command-I twice, is pressed twice, its first press posting
-    /// the brief summary it escalates. A key equivalent's key, a menu
-    /// command's or a Record window button's (FR12's branch D), posts
-    /// nothing and goes on to its menu item or button, from a field and
-    /// elsewhere. The keys are each action's in force, each pressed in a
+    /// press, W twice or Shift-Command-I twice, is pressed twice, its
+    /// first press posting the brief summary it escalates. A key
+    /// equivalent's key, a menu command's or a Record window button's
+    /// (FR12's branch D), posts nothing and goes on to its menu item or
+    /// button, from a field and elsewhere. The keys are each action's in force, each pressed in a
     /// window where the action works (FR12's branch E): none for one working
     /// in every window, and a reader's, a Library window, or the Record
     /// window for one working in a kind of window. Restart Sleep Timer's
@@ -440,12 +440,13 @@ final class TextFieldEditingKeysTests: XCTestCase {
                 posted.append(notification.userInfo?["action"] as? String ?? notification.name.rawValue)
             }
         defer { subscription.cancel() }
-        // Each event is made as it is pressed, timed by the Mac's uptime, so
-        // a second press follows the first well within the double-press time.
-        // Every call starts ten seconds after the one before, so the presses
-        // of one call never chain with those of another into a double press:
-        // a key the field does not keep, such as Shift-Command-I, counts as a
-        // press from a field too.
+        // Each call's presses are timed on the events' time line from the
+        // Mac's uptime as the test began: a double's second press 0.1
+        // seconds after its first, well within the double-press time, and
+        // each call ten seconds after the one before, so the presses of one
+        // call never chain with another's into a double press, as they
+        // would for a key the field does not keep, such as Shift-Command-I,
+        // which counts as a press from a field too.
         var consumed: [Bool] = []
         let start = nextPressTime
         nextPressTime += 10

@@ -5,9 +5,9 @@ import XCTest
 
 /// The full summaries as actions of their own (FR12's branch C, section 3
 /// of the design): Where Am I? Full Summary, W twice, and Speak Full Info,
-/// Shift-Command-I twice (I twice until October 17), named as the user chose
-/// on October 7 (question 9), listed under
-/// Information after their brief summaries, each posting its own
+/// Shift-Command-I twice (I twice until October 17), named as the user
+/// chose on October 7 (question 9), listed under Information after their
+/// brief summaries, each posting its own
 /// notification, with Where Am I? and Book Info keeping their
 /// keys; the rule every press of a summary follows; and their menu items
 /// (question 8) and Shortcuts tab rows.
@@ -17,7 +17,7 @@ final class FullSummaryActionTests: XCTestCase {
     // MARK: - Keys Used Below
 
     private let wTwice = KeyBinding(key: "w", isDoublePress: true)
-    private let iTwice = KeyBinding(key: "i", command: true, shift: true, isDoublePress: true)
+    private let shiftCommandITwice = KeyBinding(key: "i", command: true, shift: true, isDoublePress: true)
 
     // MARK: - The Actions
 
@@ -46,32 +46,32 @@ final class FullSummaryActionTests: XCTestCase {
         XCTAssertEqual(information, [.whereAmI, .whereAmIFull, .speakInfo, .speakFullInfo, .speakImportProgress, .speakDownloadProgress])
     }
 
-    /// Their keys are W twice and Shift-Command-I twice, said, shown, and written in
-    /// config.json with the word "twice"; Where Am I? keeps W, Speak Info has
-    /// Shift-Command-I, and Book Info keeps Command-I.
-    func testTheirKeysAreWTwiceAndITwice() {
+    /// Their keys are W twice and Shift-Command-I twice, said, shown, and
+    /// written in config.json with the word "twice"; Where Am I? keeps W,
+    /// Speak Info has Shift-Command-I, and Book Info keeps Command-I.
+    func testTheirKeysAreWTwiceAndShiftCommandITwice() {
         let defaults = ShortcutAction.defaultBindings
 
         XCTAssertEqual(defaults[.whereAmIFull], [wTwice])
-        XCTAssertEqual(defaults[.speakFullInfo], [iTwice])
+        XCTAssertEqual(defaults[.speakFullInfo], [shiftCommandITwice])
         XCTAssertEqual(wTwice.accessibleDisplayString, "W twice")
-        XCTAssertEqual(iTwice.accessibleDisplayString, "Shift + Command + I twice")
+        XCTAssertEqual(shiftCommandITwice.accessibleDisplayString, "Shift + Command + I twice")
         XCTAssertEqual(wTwice.displayString, "W twice")
         XCTAssertEqual(wTwice.configText, "w twice")
-        XCTAssertEqual(iTwice.configText, "shift+command+i twice")
-        XCTAssertEqual(ShortcutListing.followingDefaults([iTwice]), "default: shift+command+i twice")
+        XCTAssertEqual(shiftCommandITwice.configText, "shift+command+i twice")
+        XCTAssertEqual(ShortcutListing.followingDefaults([shiftCommandITwice]), "default: shift+command+i twice")
         XCTAssertEqual(defaults[.whereAmI], [KeyBinding(key: "w")])
         XCTAssertEqual(defaults[.speakInfo], [KeyBinding(key: "i", command: true, shift: true)])
         XCTAssertEqual(defaults[.showBookInfo], [KeyBinding(key: "i", command: true)])
     }
 
-    /// No other action of either scope has W twice or Shift-Command-I twice by default;
-    /// the audio editor's W and I, Where Am I? and Mark In there, keep
-    /// their single presses with no double action.
+    /// No other action of either scope has W twice or Shift-Command-I twice
+    /// by default; the audio editor's W and I, Where Am I? and Mark In
+    /// there, keep their single presses with no double action.
     func testNoOtherActionHasTheirKeys() {
         let defaults = ShortcutAction.defaultBindings
         let owners = ShortcutAction.allCases.filter { action in
-            defaults[action]?.contains { $0 == wTwice || $0 == iTwice } == true
+            defaults[action]?.contains { $0 == wTwice || $0 == shiftCommandITwice } == true
         }
 
         XCTAssertEqual(owners, [.whereAmIFull, .speakFullInfo])
@@ -134,8 +134,9 @@ final class FullSummaryActionTests: XCTestCase {
 
     // MARK: - The Shortcuts Tab
 
-    /// The Shortcuts tab says each one's keys in words, "W twice" and "Shift + Command + I
-    /// twice", in its row's VoiceOver label as for every action.
+    /// The Shortcuts tab says each one's keys in words, "W twice" and
+    /// "Shift + Command + I twice", in its row's VoiceOver label as for
+    /// every action.
     func testTheShortcutsTabSaysTheirKeysInWords() {
         let manager = KeyboardShortcutManager(userDefaults: makeSandboxedPreferences("full-summary-tab"), installsEventMonitor: false)
 

@@ -347,15 +347,17 @@ struct LibraryCommands: Commands {
 
             // Speaks the selected book's, folder's, or feed's information
             // with the app's own voice, as Where Am I? speaks a position
-            // in a reader. Its key, Shift-Command-I, is handled by KeyboardShortcutManager
-            // for window targeting; Book Info (Command-I) is the Navigate
-            // menu's, and from a feed's row it opens Feed Info.
+            // in a reader. Its key, Shift-Command-I, is handled by
+            // KeyboardShortcutManager for window targeting; Book Info
+            // (Command-I) is the Navigate menu's, and from a feed's row it
+            // opens Feed Info.
             Button(ShortcutAction.speakInfo.title) {
                 NotificationCenter.default.post(name: .speakInfo, object: nil)
             }
 
-            // The selected row's full summary (FR12, question 8), Shift-Command-I
-            // twice unless changed, likewise handled by KeyboardShortcutManager.
+            // The selected row's full summary (FR12, question 8),
+            // Shift-Command-I twice unless changed, likewise handled by
+            // KeyboardShortcutManager.
             Button(ShortcutAction.speakFullInfo.title) {
                 NotificationCenter.default.post(name: .speakFullInfo, object: nil)
             }
@@ -785,13 +787,14 @@ extension Notification.Name {
     /// presents the folder-only panel and imports the folders chosen.
     static let importDAISYFolder = Notification.Name("importDAISYFolder")
     static let showBookInfo = Notification.Name("showBookInfo")
-    /// Posted by Library > Speak Info and its key, Shift-Command-I: the Library window
-    /// that takes the command speaks its selected row's information with
-    /// the app's own voice (`LibraryInfoSpeaker`).
+    /// Posted by Library > Speak Info and its key, Shift-Command-I: the
+    /// Library window that takes the command speaks its selected row's
+    /// information with the app's own voice (`LibraryInfoSpeaker`).
     static let speakInfo = Notification.Name("speakInfo")
-    /// Posted by Library > Speak Full Info and its key, Shift-Command-I twice unless the
-    /// user changed it (FR12): the Library window that takes the command
-    /// speaks its selected row's full summary (`LibraryInfoSpeaker`).
+    /// Posted by Library > Speak Full Info and its key, Shift-Command-I
+    /// twice unless the user changed it (FR12): the Library window that
+    /// takes the command speaks its selected row's full summary
+    /// (`LibraryInfoSpeaker`).
     static let speakFullInfo = Notification.Name("speakFullInfo")
     /// Posted by Library > Speak Import Progress and its key, when the user
     /// gave it one: the library model has VoiceOver speak how the imports

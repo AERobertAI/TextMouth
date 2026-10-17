@@ -105,10 +105,9 @@ final class ShortcutPressDispatcherTests: XCTestCase {
 
     /// With the default keys, the first W and the first Shift-Command-I act
     /// at once, as the brief summaries, and a second press within the
-    /// double-press time
-    /// switches to the full one; a third quick press is ignored, and a press
-    /// after the time is the brief action again, which stops a summary
-    /// speaking (question 3). Nothing ever waits on a timer.
+    /// double-press time switches to the full one; a third quick press is
+    /// ignored, and a press after the time is the brief action again, which
+    /// stops a summary speaking (question 3). Nothing ever waits on a timer.
     func testShiftCommandIAndWTwiceSwitchToTheFullSummariesWithoutWaiting() {
         let harness = Harness(ShortcutAction.defaultBindings, escalations: ShortcutAction.escalations)
         let shiftCommandI = KeyBinding(key: "i", command: true, shift: true)
@@ -128,11 +127,10 @@ final class ShortcutPressDispatcherTests: XCTestCase {
         XCTAssertEqual(harness.index.waitingKeys, [])
     }
 
-    /// Through the manager, W twice posts Where Am I? at once and then Where
-    /// Am I? Full Summary, and Shift-Command-I twice Speak Info and then
-    /// Speak Full Info,
-    /// each with the window pressed in, as the reader and the Library
-    /// window take them.
+    /// Through the manager, W twice in a reader posts Where Am I? at once
+    /// and then Where Am I? Full Summary, and Shift-Command-I twice in a
+    /// Library window Speak Info and then Speak Full Info, each with the
+    /// window pressed in, as the reader and the Library window take them.
     func testTheManagerPostsTheBriefSummaryThenTheFullOne() throws {
         let center = NotificationCenter()
         let manager = KeyboardShortcutManager(
