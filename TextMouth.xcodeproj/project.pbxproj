@@ -616,6 +616,7 @@
 		9EA61C416FC587108930F38F /* BookTextEditWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1207FC60FA1FFBF8FAA826E0 /* BookTextEditWording.swift */; };
 		9EEC682BF31B78C3E541BD2A /* HandEditedMetadataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6B6D30D85C0A58A0DC21D2F /* HandEditedMetadataTests.swift */; };
 		9F14EAF9CC235C641C2B16DD /* DOCXParser+Relationships.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B154CF1F2CC17C668B84EE6 /* DOCXParser+Relationships.swift */; };
+		9F30CDE24C418B579ADB9D42 /* WindowsMatrixTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB75E9674BA50E5983754569 /* WindowsMatrixTests.swift */; };
 		9F3C9489AF6B43DF48432AA1 /* TranscriptEditTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7FAFFB4676EAD93DBAA3F1B /* TranscriptEditTests.swift */; };
 		9F7AE9C0CFA9F1C54CE8FB52 /* TextCacheUpdateQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7484C7AC1950A85136CE3821 /* TextCacheUpdateQueue.swift */; };
 		9FAED132A4D2BA4E4B7F6251 /* BookExportPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB09F2553E63A4006BD38C15 /* BookExportPresentation.swift */; };
@@ -1853,6 +1854,7 @@
 		DB03A27DEDE2446719BAC308 /* AudioEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorView.swift; sourceTree = "<group>"; };
 		DB09F2553E63A4006BD38C15 /* BookExportPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookExportPresentation.swift; sourceTree = "<group>"; };
 		DB55A0279C9E0F13D65B565E /* LibraryFeedItemEditTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryFeedItemEditTests.swift; sourceTree = "<group>"; };
+		DB75E9674BA50E5983754569 /* WindowsMatrixTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowsMatrixTests.swift; sourceTree = "<group>"; };
 		DBCC589BF20B6C90A39EE43D /* SleepTimerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepTimerService.swift; sourceTree = "<group>"; };
 		DC7B3696B41053F54B897195 /* EndBehaviorMatrixAudioSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndBehaviorMatrixAudioSupport.swift; sourceTree = "<group>"; };
 		DCDBEE28BA67CD3C8CF92977 /* FeedRefresher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedRefresher.swift; sourceTree = "<group>"; };
@@ -3054,6 +3056,7 @@
 				1B041751DE7DDE714D5B5F86 /* WhereAmIPolicyTests.swift */,
 				B0557EA7BE31086021AE6596 /* WindowFocusPolicyTests.swift */,
 				CB19D8C0D50DF1A16B10F3CB /* WindowScopeShortcutTests.swift */,
+				DB75E9674BA50E5983754569 /* WindowsMatrixTests.swift */,
 				2DE88EB9B76BC3FEACE00F0F /* ZIPImportTests.swift */,
 				BAF6A827A1C13BAD91B094DE /* ZIPTestSupport.swift */,
 			);
@@ -3889,6 +3892,7 @@
 				589CB6E5B84964FDB3CD0F0C /* WhereAmIPolicyTests.swift in Sources */,
 				C405EB54DBD289ABB124D4AD /* WindowFocusPolicyTests.swift in Sources */,
 				28A8D7812D05D171DBD83F50 /* WindowScopeShortcutTests.swift in Sources */,
+				9F30CDE24C418B579ADB9D42 /* WindowsMatrixTests.swift in Sources */,
 				CEBD16E7F3797CC4F225B178 /* ZIPImportTests.swift in Sources */,
 				F528E0611263BCBC90C02128 /* ZIPTestSupport.swift in Sources */,
 			);
