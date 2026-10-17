@@ -397,7 +397,54 @@ struct FeedInfoSheet: View {
                 value: Binding(get: { model.deleteDaysAfterPlaying }, set: { model.deleteDaysAfterPlaying = $0 }),
                 isDisabled: model.deletesAfterGlobalDays
             )
+            listeningControls(noun: ListeningOptionsWording.Noun(noun))
         }
+    }
+
+    /// The feed's three listening controls (FR19), worded with `noun`: what
+    /// happens when one of its items ends, whether listening passes over the
+    /// finished ones, and whether the next one is downloaded before the
+    /// playing one ends. Built as the Reading List's options bar builds its
+    /// pop-up button and checkbox, so the keyboard and VoiceOver reach them
+    /// as they reach any other; each choice is saved as it is made.
+    @ViewBuilder
+    private func listeningControls(noun: ListeningOptionsWording.Noun) -> some View {
+        // The label is spoken from the control itself: a pop-up button takes
+        // no label from the picker's title.
+        let endLabel = ListeningOptionsWording.continuationLabel(noun)
+        let endHint = ListeningOptionsWording.continuationHint(noun)
+        Picker(endLabel, selection: Binding(get: { model.episodeEnd }, set: { model.episodeEnd = $0 })) {
+            ForEach(FolderSettingsModel.continuationChoices, id: \.self) { choice in
+                Text(ListeningOptionsWording.continuationTitle(choice, noun: noun, global: model.globalEndOfBookBehavior))
+                    .tag(choice)
+            }
+        }
+        .pickerStyle(.menu)
+        .fixedSize()
+        .help(endHint)
+        .accessibilityLabel(endLabel)
+        .accessibilityHint(endHint)
+
+        let skipLabel = ListeningOptionsWording.skipFinishedLabel(noun)
+        let skipHint = ListeningOptionsWording.skipFinishedHint(noun)
+        Toggle(skipLabel, isOn: Binding(get: { model.skipsFinishedEpisodes }, set: { model.skipsFinishedEpisodes = $0 }))
+            .toggleStyle(.checkbox)
+            .help(skipHint)
+            .accessibilityLabel(skipLabel)
+            .accessibilityHint(skipHint)
+
+        // Dimmed while listening would stop at the end of an item, since
+        // there is then no next one to download; the hint says so, and the
+        // choice is kept for when listening goes on again.
+        let goesOn = model.continuesToAnotherEpisode
+        let downloadLabel = ListeningOptionsWording.predownloadLabel(noun)
+        let downloadHint = ListeningOptionsWording.predownloadHint(noun, enabled: goesOn)
+        Toggle(downloadLabel, isOn: Binding(get: { model.predownloadsNextEpisode }, set: { model.predownloadsNextEpisode = $0 }))
+            .toggleStyle(.checkbox)
+            .disabled(!goesOn)
+            .help(downloadHint)
+            .accessibilityLabel(downloadLabel)
+            .accessibilityHint(downloadHint)
     }
 
     /// Whether a question shows; dismissing it forgets it.

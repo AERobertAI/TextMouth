@@ -454,9 +454,9 @@ final class FeedUICommandsTests: XCTestCase {
             let steppers = descendants(of: hosting, as: NSStepper.self)
             XCTAssertEqual(steppers.count, 2)
             XCTAssertTrue(steppers.allSatisfy { !$0.isEnabled }, "a stepper was available while following the global setting")
-            XCTAssertEqual(feedCheckboxes(in: hosting).count, 3, "two Use the global setting checkboxes and an off checkbox")
+            XCTAssertEqual(feedCheckboxes(in: hosting).count, 5, "two Use the global setting checkboxes, an off checkbox, and the Skip finished and Download the next checkboxes")
             let popUps = descendants(of: hosting, as: NSPopUpButton.self)
-            XCTAssertEqual(popUps.count, 2, "the List and download and folder pop-ups")
+            XCTAssertEqual(popUps.count, 3, "the List and download, folder, and When an episode ends pop-ups")
             let listAndDownload = popUps.first { $0.itemTitles.contains("Every episode listed, downloads by hand") }
             XCTAssertNotNil(listAndDownload, "no List and download pop-up in the feed's words: \(popUps.map(\.itemTitles))")
             XCTAssertEqual(listAndDownload?.isEnabled, false, "the pop-up was available while following the global setting")

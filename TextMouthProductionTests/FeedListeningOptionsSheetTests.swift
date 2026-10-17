@@ -181,4 +181,267 @@ final class FeedListeningOptionsSheetTests: XCTestCase {
             }
         }
     }
+
+    // MARK: - The Sheet as Drawn
+
+    /// The size Feed Info is hosted at: a little more than its own fixed
+    /// 520 by 600, so no control is clipped out of the window. The sheet
+    /// carries a fixed frame of its own, so it cannot outgrow the window.
+    private let hostSize = NSSize(width: 560, height: 760)
+
+    /// Feed Info for `subscribed`, with `model`, hosted until its three
+    /// pop-up buttons are drawn, then handed to `body` with the hosting view.
+    private func withFeedInfo(
+        _ model: FeedInfoModel,
+        _ subscribed: Subscribed,
+        _ body: (NSView) throws -> Void
+    ) rethrows {
+        let sheet = FeedInfoSheet(
+            model: model,
+            feedFolders: LibraryFeedFolders(center: subscribed.world.center),
+            requestUnsubscribe: { nil },
+            onUnsubscribe: { _ in },
+            onDone: {}
+        )
+        try withHostedView(sheet, size: hostSize, until: {
+            self.descendants(of: $0, as: NSPopUpButton.self).count == 3
+                && feedCheckboxes(in: $0).count == 5
+        }, body)
+    }
+
+    /// The pop-up buttons of Feed Info that are When an episode ends: the
+    /// one whose first choice is "Use the global setting".
+    private func endPopUp(in hosting: NSView) -> NSPopUpButton? {
+        descendants(of: hosting, as: NSPopUpButton.self).first {
+            $0.itemTitles.first?.hasPrefix("Use the global setting (") == true
+        }
+    }
+
+    /// Feed Info draws the new pop-up with its four choices in order, the
+    /// first naming the global setting, and two more checkboxes, both on
+    /// and available while the global setting continues to the next episode.
+    func testTheSheetDrawsTheThreeListeningControls() async throws {
+        let subscribed = try await subscribe(label: "FeedListeningDrawn")
+        let model = makeModel(subscribed, defaults: makeDefaults("Drawn", behavior: .continueNext))
+
+        withFeedInfo(model, subscribed) { hosting in
+            let popUp = endPopUp(in: hosting)
+            XCTAssertEqual(popUp?.itemTitles, [
+                "Use the global setting (Continue to Next Book)",
+                "Play the episode below",
+                "Play the episode above",
+                "Stop",
+            ])
+            XCTAssertEqual(popUp?.titleOfSelectedItem, "Use the global setting (Continue to Next Book)")
+            XCTAssertEqual(popUp?.isEnabled, true)
+
+            // Two Use the global setting checkboxes and an off checkbox, then
+            // the two new ones, in reading order.
+            let checkboxes = feedCheckboxes(in: hosting)
+            XCTAssertEqual(checkboxes.count, 5)
+            XCTAssertEqual(checkboxes.dropFirst(3).map(\.state), [.on, .on], "Skip finished and Download the next are on by default")
+            XCTAssertEqual(checkboxes.dropFirst(3).map(\.isEnabled), [true, true])
+        }
+    }
+
+    /// The pop-up shows the choice the feed has: the one above, and Stop.
+    func testThePopUpShowsTheFeedsChoice() async throws {
+        let subscribed = try await subscribe(label: "FeedListeningSelected")
+        let model = makeModel(subscribed, defaults: makeDefaults("Selected"))
+
+        for (choice, title) in [
+            (ReadingList.Continuation.playBookAbove, "Play the episode above"),
+            (.stop, "Stop"),
+        ] {
+            model.episodeEnd = choice
+            withFeedInfo(model, subscribed) { hosting in
+                XCTAssertEqual(endPopUp(in: hosting)?.titleOfSelectedItem, title)
+            }
+        }
+    }
+
+    /// The Download the next episode checkbox is available exactly while
+    /// listening would go on to another episode, and is available again once
+    /// the choice changes; its own choice is kept while it is dimmed.
+    func testTheDownloadCheckboxIsAvailableExactlyWhileListeningGoesOn() async throws {
+        let subscribed = try await subscribe(label: "FeedListeningDimmed")
+        // The global setting stops, so a feed that follows it stops too.
+        let model = makeModel(subscribed, defaults: makeDefaults("Dimmed", behavior: .stop))
+        model.predownloadsNextEpisode = false
+
+        withFeedInfo(model, subscribed) { hosting in
+            @MainActor func downloadCheckbox() -> NSButton? { feedCheckboxes(in: hosting).last }
+            @MainActor func isAvailable(_ expected: Bool) -> Bool {
+                waitUntil {
+                    hosting.layoutSubtreeIfNeeded()
+                    return downloadCheckbox()?.isEnabled == expected
+                }
+            }
+            XCTAssertTrue(isAvailable(false), "available while the feed follows a global setting that stops")
+            // Dimmed, it still draws the choice it keeps.
+            XCTAssertEqual(downloadCheckbox()?.state, .off)
+            // Skip finished is not tied to it.
+            XCTAssertEqual(feedCheckboxes(in: hosting).dropLast().last?.isEnabled, true)
+
+            model.episodeEnd = .playBookBelow
+            XCTAssertTrue(isAvailable(true), "dimmed while the feed plays the episode below")
+            model.episodeEnd = .playBookAbove
+            XCTAssertTrue(isAvailable(true), "dimmed while the feed plays the episode above")
+            model.episodeEnd = .stop
+            XCTAssertTrue(isAvailable(false), "available while the feed stops")
+            XCTAssertFalse(model.predownloadsNextEpisode, "the dimmed choice was not kept")
+        }
+    }
+
+    /// The global setting at Continue to Next Book makes the checkbox
+    /// available for a feed that follows it.
+    func testTheDownloadCheckboxFollowsTheGlobalSettingForAFeedThatFollowsIt() async throws {
+        let subscribed = try await subscribe(label: "FeedListeningDimmedGlobal")
+        let model = makeModel(subscribed, defaults: makeDefaults("DimmedGlobal", behavior: .continueNext))
+        withFeedInfo(model, subscribed) { hosting in
+            XCTAssertEqual(feedCheckboxes(in: hosting).last?.isEnabled, true)
+        }
+    }
+
+    /// A feed of articles says "article" in every control's words.
+    func testAFeedOfArticlesSaysArticle() async throws {
+        let subscribed = try await subscribe(label: "FeedListeningArticles", articles: true)
+        let model = makeModel(subscribed, defaults: makeDefaults("Articles", behavior: .continueNext))
+        XCTAssertEqual(
+            ListeningOptionsWording.Noun(subscribed.world.center.counts(of: subscribed.feed.id).noun),
+            .article
+        )
+
+        withFeedInfo(model, subscribed) { hosting in
+            XCTAssertEqual(endPopUp(in: hosting)?.itemTitles, [
+                "Use the global setting (Continue to Next Book)",
+                "Play the article below",
+                "Play the article above",
+                "Stop",
+            ])
+            if hostedWindowsExposeAccessibility() {
+                let labels = accessibleControls(in: hosting).map(\.label)
+                XCTAssertTrue(labels.contains("When an article ends"), "\(labels)")
+            }
+        }
+        // The words, pinned where the hosted window cannot show them.
+        XCTAssertEqual(ListeningOptionsWording.continuationLabel(.article), "When an article ends")
+        XCTAssertEqual(ListeningOptionsWording.skipFinishedLabel(.article), "Skip finished articles")
+        XCTAssertEqual(
+            ListeningOptionsWording.predownloadLabel(.article),
+            "Download the next article before this one ends"
+        )
+    }
+
+    /// The sheet shows the wording functions' output, not a copy of it: the
+    /// pop-up's titles are `continuationTitle` for each choice, and, where
+    /// the session exposes accessibility, the controls speak the label and
+    /// hint functions' output.
+    func testTheSheetShowsTheWordingFunctionsOutput() async throws {
+        let subscribed = try await subscribe(label: "FeedListeningWording")
+        let model = makeModel(subscribed, defaults: makeDefaults("Wording", behavior: .loop))
+
+        withFeedInfo(model, subscribed) { hosting in
+            let expectedTitles = [nil, ReadingList.Continuation.playBookBelow, .playBookAbove, .stop].map {
+                ListeningOptionsWording.continuationTitle($0, noun: .episode, global: .loop)
+            }
+            XCTAssertEqual(endPopUp(in: hosting)?.itemTitles, expectedTitles)
+            XCTAssertEqual(expectedTitles.first, "Use the global setting (Loop to Start)")
+
+            // Only the pop-up is exposed as a control here: SwiftUI builds its
+            // checkboxes' accessibility elements only for a connected
+            // assistive app, so their words are pinned by the wording tests.
+            if hostedWindowsExposeAccessibility() {
+                let controls = accessibleControls(in: hosting)
+                let picker = controls.first { $0.role == .popUpButton && $0.label == ListeningOptionsWording.continuationLabel(.episode) }
+                XCTAssertEqual(picker?.hint, ListeningOptionsWording.continuationHint(.episode))
+            }
+        }
+    }
+
+    // MARK: - Choosing in the Sheet
+
+    /// Runs each of `attempts` in turn until `condition` holds, waiting a
+    /// moment after each for SwiftUI to hand the change on; whether it held
+    /// at the end.
+    private func savesAfterTrying(_ attempts: [() -> Void], until condition: () -> Bool) -> Bool {
+        for attempt in attempts {
+            attempt()
+            if waitUntil(timeout: 1, condition) { return true }
+        }
+        return false
+    }
+
+    /// Choosing in the hosted pop-up saves into the feed's record, and the
+    /// first choice stores nothing again.
+    func testChoosingInTheHostedPopUpSaves() async throws {
+        let subscribed = try await subscribe(label: "FeedListeningChoose")
+        let model = makeModel(subscribed, defaults: makeDefaults("Choose"))
+
+        try withFeedInfo(model, subscribed) { hosting in
+            let popUp = try XCTUnwrap(endPopUp(in: hosting))
+            // Choosing a menu item runs the action SwiftUI gave the item;
+            // the pop-up's own target and action are the second way.
+            @MainActor func choose(_ index: Int, until condition: () -> Bool) -> Bool {
+                savesAfterTrying(
+                    [
+                        { popUp.menu?.performActionForItem(at: index) },
+                        { popUp.selectItem(at: index); _ = popUp.target?.perform(popUp.action, with: popUp) },
+                    ],
+                    until: condition
+                )
+            }
+            XCTAssertTrue(
+                choose(3) { subscribed.record?.feed.listeningOptions?.continuation == .stop },
+                "choosing Stop did not save: \(String(describing: subscribed.record?.feed.listeningOptions))"
+            )
+            XCTAssertTrue(
+                choose(1) { subscribed.record?.feed.listeningOptions?.continuation == .playBookBelow },
+                "choosing the episode below did not save"
+            )
+            // The first choice, Use the global setting, is the standard one
+            // here, so the record keeps no options at all.
+            XCTAssertTrue(
+                choose(0) { subscribed.record?.feed.listeningOptions == nil },
+                "choosing the global setting did not clear the options"
+            )
+        }
+    }
+
+    /// Each new checkbox saves its choice. SwiftUI gives its checkbox no
+    /// target or action a test can press (see `feedCheckboxes`), so the
+    /// click's own path, the model's setter the checkbox's binding calls, is
+    /// driven directly, and the checkbox is checked to draw what was saved.
+    func testTheCheckboxesSaveAndDrawTheirChoice() async throws {
+        let subscribed = try await subscribe(label: "FeedListeningCheckboxes")
+        let model = makeModel(subscribed, defaults: makeDefaults("Checkboxes", behavior: .continueNext))
+
+        withFeedInfo(model, subscribed) { hosting in
+            @MainActor func state(of index: Int) -> NSControl.StateValue? {
+                let boxes = feedCheckboxes(in: hosting)
+                return boxes.indices.contains(index) ? boxes[index].state : nil
+            }
+            @MainActor func draws(_ index: Int, _ expected: NSControl.StateValue) -> Bool {
+                waitUntil {
+                    hosting.layoutSubtreeIfNeeded()
+                    return state(of: index) == expected
+                }
+            }
+
+            model.skipsFinishedEpisodes = false
+            XCTAssertEqual(subscribed.record?.feed.listeningOptions?.skipsFinished, false)
+            XCTAssertTrue(draws(3, .off), "Skip finished did not draw the choice saved")
+
+            model.predownloadsNextEpisode = false
+            XCTAssertEqual(subscribed.record?.feed.listeningOptions?.predownloadsNext, false)
+            XCTAssertTrue(draws(4, .off), "Download the next did not draw the choice saved")
+
+            // Back on, both: the record keeps nothing again.
+            model.skipsFinishedEpisodes = true
+            model.predownloadsNextEpisode = true
+            XCTAssertNil(subscribed.record?.feed.listeningOptions)
+            XCTAssertTrue(draws(3, .on))
+            XCTAssertTrue(draws(4, .on))
+        }
+    }
 }
