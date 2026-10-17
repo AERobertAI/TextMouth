@@ -82,7 +82,7 @@ final class StorageDrillTests: XCTestCase {
     // MARK: - 2. A Full Disk During Import
 
     /// A volume with a few KB free refuses a 200 KB book in the app's own
-    /// words, with the reason the system gives, publishes nothing, and
+    /// plain words (no hidden staged name in them), publishes nothing, and
     /// leaves the ballast, the earlier contents, and the original exactly as
     /// they were (every file's checksum). Freeing the space lets the same
     /// import succeed.
@@ -101,18 +101,17 @@ final class StorageDrillTests: XCTestCase {
 
         let failure = try XCTUnwrap(thrown as? ImportFailure, "the import did not fail with an ImportFailure: \(String(describing: thrown))")
         XCTAssertEqual(failure.fileName, "Salt Quay Diary.txt")
-        XCTAssertTrue(Self.isOutOfSpace(failure.underlying), "the reason is not a full disk: \(failure.underlying)")
+        XCTAssertTrue(ImportFailure.isOutOfSpace(failure.underlying), "the reason is not a full disk: \(failure.underlying)")
         let message = try XCTUnwrap(failure.errorDescription)
-        // The wording the user hears. It names the hidden staged package
-        // (".import-<UUID>.tmb"), an internal name; the UUID is masked here.
-        let masked = message.replacingOccurrences(
-            of: #"\.import-[0-9A-Fa-f-]{36}\.tmb"#, with: ".import-<id>.tmb", options: .regularExpression
-        )
+        // The wording the user hears: the plain sentence for a full disk. It
+        // holds no id and no hidden staged name (".import-<UUID>.tmb"), which
+        // the system's own sentence would have named.
         XCTAssertEqual(
-            masked,
+            message,
             "Could not import “Salt Quay Diary.txt”. Copying it into the library failed: "
-                + "“Salt Quay Diary.txt” couldn’t be copied to “.import-<id>.tmb” because there isn’t enough space."
+                + "There isn’t enough free space on the disk."
         )
+        XCTAssertFalse(message.contains(".import-"), "the message names the hidden staged package: \(message)")
         // Only the debug log, which the app keeps in the data directory and
         // which records the failure, may differ; no package, no staging.
         let changes = try FolderSnapshot(of: image.mountPoint).differences(from: before)
@@ -292,15 +291,6 @@ final class StorageDrillTests: XCTestCase {
             size += line.utf8.count
         }
         return lines.joined()
-    }
-
-    /// Whether `error`, or an error it wraps, says the volume is full.
-    private static func isOutOfSpace(_ error: Error) -> Bool {
-        let nsError = error as NSError
-        if nsError.domain == NSCocoaErrorDomain, nsError.code == NSFileWriteOutOfSpaceError { return true }
-        if nsError.domain == NSPOSIXErrorDomain, nsError.code == Int(ENOSPC) { return true }
-        if let inner = nsError.userInfo[NSUnderlyingErrorKey] as? Error { return isOutOfSpace(inner) }
-        return false
     }
 }
 
