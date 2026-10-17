@@ -71,7 +71,8 @@ struct ImportedBook {
     /// ncc.html inside that folder, TODO I02), or a folder of audio tracks
     /// (FR17, Part B). Such a folder holds files the import did not copy (a
     /// cover, lyrics, other books' files, a Bonus folder), so it is never
-    /// deleted or offered for deletion.
+    /// deleted or offered for deletion. `deleteOriginalFile(at:)` refuses a
+    /// folder too, whatever its caller decided.
     var isFromFolder = false
 
     /// Whether the original file must stay exactly where it is: an import
@@ -1729,8 +1730,25 @@ enum FileImportService {
     /// deleting" chooses, like every other deletion. Throws when the file
     /// could not be removed, so the caller can say so (TODO S09); a file
     /// that is already gone counts as removed.
+    ///
+    /// A folder is never deleted as an import's original: a folder import
+    /// (a DAISY book kept as loose files, a folder of audio tracks) leaves
+    /// files the import did not copy in it, such as a cover, lyrics, or other
+    /// books. The library already never offers the deletion for such a book
+    /// (`ImportedBook.mayDeleteOriginal`); this refuses it too, so a caller
+    /// that is ever given a folder (or a symbolic link to one) still cannot
+    /// remove it. The refusal removes nothing, sends nothing to the Trash,
+    /// and does not throw, since nothing failed: it writes one log line.
     @MainActor
     static func deleteOriginalFile(at url: URL) throws {
+        // `fileExists(atPath:isDirectory:)` follows a symbolic link, so a link
+        // to a folder counts as a folder, which is wanted.
+        var isDirectory: ObjCBool = false
+        if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
+           isDirectory.boolValue {
+            DiagnosticLog.event(.import, "ORIGINAL_KEPT: \(url.lastPathComponent): is a folder, which an import never deletes")
+            return
+        }
         try removeItemRespectingTrashSetting(at: url)
     }
 
