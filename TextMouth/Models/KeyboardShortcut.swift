@@ -55,9 +55,9 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// the Library window with the app's own voice, as Where Am I? speaks
     /// a position in a reader (`LibraryInfoSpeaker`).
     case speakInfo = "Speak Info"
-    /// Speaks the selected row's full summary in the Library window, I
-    /// twice by default (FR12), escalating Speak Info as Where Am I? Full
-    /// Summary escalates Where Am I?.
+    /// Speaks the selected row's full summary in the Library window,
+    /// Shift-Command-I twice by default (FR12), escalating Speak Info as
+    /// Where Am I? Full Summary escalates Where Am I?.
     case speakFullInfo = "Speak Full Info"
     /// Has VoiceOver speak how the imports under way have got, as the
     /// import overlay says it, from any window (FR10). It has no key until
@@ -1555,15 +1555,19 @@ extension ShortcutAction {
                 KeyBinding(key: "w", isDoublePress: true)
             ],
             .speakInfo: [
-                // A plain key beside Where Am I's W, as the user asked on
-                // October 7: it never reaches a text field (plain keys
-                // are left to typing), and Book Info keeps Command-I.
-                // The audio editor's Mark In has I in its own scope.
-                KeyBinding(key: "i")
+                // Shift-Command-I, as the user chose on October 17: a
+                // letter pressed alone belongs to the Library list's
+                // letter navigation (it jumps to the first book of that
+                // letter), so Speak Info needs a modified key. Book Info
+                // keeps Command-I, and the audio editor's Mark In has I
+                // in its own scope.
+                KeyBinding(key: "i", command: true, shift: true)
             ],
-            // I twice, as W twice is Where Am I's full summary (FR12).
+            // The same stroke twice speaks the full summary (FR12), as W
+            // twice does for Where Am I?: the dispatcher compares whole
+            // strokes, modifiers included, so the escalation holds.
             .speakFullInfo: [
-                KeyBinding(key: "i", isDoublePress: true)
+                KeyBinding(key: "i", command: true, shift: true, isDoublePress: true)
             ],
             // No key by default (FR10): the user gives it a key of their
             // choosing in Settings, as Release Media Controls.

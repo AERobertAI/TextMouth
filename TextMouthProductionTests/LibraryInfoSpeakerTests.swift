@@ -36,7 +36,7 @@ final class InfoSynthesizerRecorder: LibraryInfoSynthesizing {
 /// asked for ending it and replacing the synthesizer (finding 4); with the
 /// app's own voice and speed, through a recorder, so no test plays sound;
 /// and the Library window's part: which row is spoken, the facts gathered
-/// for it, and I, I twice, and Command-I in a hosted window.
+/// for it, and Speak Info, Speak Full Info, and Command-I in a hosted window.
 @MainActor
 final class LibraryInfoSpeakerTests: XCTestCase {
 
@@ -624,13 +624,13 @@ final class LibraryInfoSpeakerTests: XCTestCase {
 
     // MARK: - The Library Window
 
-    /// In a hosted Library window, the I key speaks that nothing is
+    /// In a hosted Library window, Speak Info (Shift-Command-I) speaks that nothing is
     /// selected, then, once a row is selected (the List selects a folder's
     /// row by its ID as a book's), that row's brief summary, every time,
     /// however quick the presses: a plain folder's, a feed's row's as the
     /// feed, and a book's. The feed's folder has no row of its own here,
-    /// since the feed's row stands for it, so the feed is heard once. I
-    /// twice speaks a row's full summary, and I on another row while a
+    /// since the feed's row stands for it, so the feed is heard once. Speak
+    /// Full Info speaks a row's full summary, and Speak Info on another row while a
     /// summary speaks speaks that row's. Command-I on the plain folder
     /// speaks its full summary, since a folder has no sheet, and on the
     /// feed's row opens Feed Info and speaks nothing. The window's speaker
@@ -727,24 +727,24 @@ final class LibraryInfoSpeakerTests: XCTestCase {
         XCTAssertEqual(texts.count, 3, report)
         XCTAssertFalse(
             texts.contains { $0.contains("Added ") || $0.contains("Address ") || $0.contains("subfolder") },
-            "a press of I spoke a full summary: " + report
+            "a press of Speak Info spoke a full summary: " + report
         )
         XCTAssertNotNil(FeedInfoFacts.of(feedID: feed.id, center: world.center, now: Date()))
 
-        // I twice on Middlemarch's row: its brief summary, then its full one.
+        // Shift-Command-I twice on Middlemarch's row: its brief summary, then its full one.
         let middlemarchIndex = try XCTUnwrap(heard.first { $0.text.hasPrefix(middlemarchBrief) }?.row)
         select(middlemarchIndex)
         XCTAssertNotNil(press(.speakInfo, leavingItSpeaking: true))
-        let full = try XCTUnwrap(press(.speakFullInfo), "I twice spoke nothing")
+        let full = try XCTUnwrap(press(.speakFullInfo), "Speak Full Info spoke nothing")
         XCTAssertTrue(full.hasPrefix(middlemarchBrief) && full.contains("Added "), full)
 
-        // I on Classics while Middlemarch's summary speaks: Classics' own
+        // Speak Info on Classics while Middlemarch's summary speaks: Classics' own
         // summary, never a silent stop (REV07, Library finding 2).
         XCTAssertNotNil(press(.speakInfo, leavingItSpeaking: true))
         let classicsIndex = try XCTUnwrap(heard.first { $0.text == classicsBrief }?.row)
         select(classicsIndex)
         let stopsBefore = recorder.stops
-        XCTAssertEqual(press(.speakInfo), classicsBrief, "I on another row while a summary spoke said nothing")
+        XCTAssertEqual(press(.speakInfo), classicsBrief, "Speak Info on another row while a summary spoke said nothing")
         XCTAssertGreaterThan(recorder.stops, stopsBefore, "Middlemarch's summary went on under Classics'")
 
         // Command-I on the plain folder speaks its full summary; on the

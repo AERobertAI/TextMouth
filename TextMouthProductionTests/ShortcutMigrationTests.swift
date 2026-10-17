@@ -116,9 +116,9 @@ final class ShortcutMigrationTests: XCTestCase {
         XCTAssertEqual(inForce[.releaseMediaControls], [shiftR], file: file, line: line)
         XCTAssertEqual(inForce[.nextBookmark], [optionShiftCommandB], file: file, line: line)
         XCTAssertEqual(inForce[.showBookmarkList], [shiftCommandB], file: file, line: line)
-        XCTAssertEqual(inForce[.speakInfo], [KeyBinding(key: "i")], file: file, line: line)
+        XCTAssertEqual(inForce[.speakInfo], [KeyBinding(key: "i", command: true, shift: true)], file: file, line: line)
         // The full summaries, newer than the map, get their double presses.
-        XCTAssertEqual(inForce[.speakFullInfo], [KeyBinding(key: "i", isDoublePress: true)], file: file, line: line)
+        XCTAssertEqual(inForce[.speakFullInfo], [KeyBinding(key: "i", command: true, shift: true, isDoublePress: true)], file: file, line: line)
         XCTAssertEqual(inForce[.whereAmIFull], [KeyBinding(key: "w", isDoublePress: true)], file: file, line: line)
         // Every other action has its defaults in force, as with nothing edited.
         let defaultsInForce = ShortcutEdits().effectiveBindings(defaults: ShortcutAction.defaultBindings)

@@ -208,8 +208,8 @@ final class ShortcutConfigFileTests: XCTestCase {
             #"      "shift+r""#,
             #"    ],"#,
             #"    "Show Bookmarks" : "default: shift+command+b","#,
-            #"    "Speak Full Info" : "default: i twice","#,
-            #"    "Speak Info" : "default: i","#,
+            #"    "Speak Full Info" : "default: shift+command+i twice","#,
+            #"    "Speak Info" : "default: shift+command+i","#,
             #"    "Toggle Bookmark" : "default: command+b","#,
             #"    "Where Am I?" : "default: w","#,
             #"    "Where Am I? Full Summary" : "default: w twice""#,
@@ -320,8 +320,8 @@ final class ShortcutConfigFileTests: XCTestCase {
         XCTAssertEqual(saved.keyboardShortcuts["Release Media Controls"], ["shift+r"])
         XCTAssertEqual(saved.keyboardShortcuts["Next Bookmark"], "default: option+shift+command+b")
         XCTAssertEqual(saved.keyboardShortcuts["Show Bookmarks"], "default: shift+command+b")
-        XCTAssertEqual(saved.keyboardShortcuts["Speak Info"], "default: i")
-        XCTAssertEqual(saved.keyboardShortcuts["Speak Full Info"], "default: i twice")
+        XCTAssertEqual(saved.keyboardShortcuts["Speak Info"], "default: shift+command+i")
+        XCTAssertEqual(saved.keyboardShortcuts["Speak Full Info"], "default: shift+command+i twice")
         XCTAssertEqual(saved.keyboardShortcuts["Where Am I? Full Summary"], "default: w twice")
         XCTAssertEqual(saved.keyboardShortcuts["Add to Reading List"], "default: none")
         // The menu commands' keys, newer than the map (FR12's branch D).
@@ -408,7 +408,7 @@ final class ShortcutConfigFileTests: XCTestCase {
 
     /// This user's config.json in the new form, written by a build without
     /// the full summaries (FR12's branch C), gains them at the next launch
-    /// as "default: i twice" and "default: w twice", which they then have;
+    /// as "default: shift+command+i twice" and "default: w twice", which they then have;
     /// Release Media Controls keeps Shift-R as the user's own, and the
     /// record is left as it was.
     func testAFileWrittenBeforeTheFullSummariesGainsThemAsDefaults() throws {
@@ -424,13 +424,13 @@ final class ShortcutConfigFileTests: XCTestCase {
         let launched = launch(url, store: store)
 
         let saved = try ConfigService.decode(Data(contentsOf: url))
-        XCTAssertEqual(saved.keyboardShortcuts["Speak Full Info"], "default: i twice")
+        XCTAssertEqual(saved.keyboardShortcuts["Speak Full Info"], "default: shift+command+i twice")
         XCTAssertEqual(saved.keyboardShortcuts["Where Am I? Full Summary"], "default: w twice")
         XCTAssertEqual(saved.keyboardShortcuts["Release Media Controls"], ["shift+r"])
         XCTAssertEqual(saved.keyboardShortcuts.count, ShortcutAction.allCases.count)
         XCTAssertEqual(KeyboardShortcutManager.editsPreference.read(from: store), record)
         let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)
-        XCTAssertEqual(manager.bindingsFor(.speakFullInfo), [KeyBinding(key: "i", isDoublePress: true)])
+        XCTAssertEqual(manager.bindingsFor(.speakFullInfo), [KeyBinding(key: "i", command: true, shift: true, isDoublePress: true)])
         XCTAssertEqual(manager.bindingsFor(.whereAmIFull), [KeyBinding(key: "w", isDoublePress: true)])
         XCTAssertEqual(manager.bindingsFor(.releaseMediaControls), [shiftR])
         withExtendedLifetime(launched) {}

@@ -103,16 +103,17 @@ final class ShortcutPressDispatcherTests: XCTestCase {
 
     // MARK: - The Full Summaries' Keys (FR12's Branch C)
 
-    /// With the default keys, the first W and the first I act at once, as
-    /// the brief summaries, and a second press within the double-press time
+    /// With the default keys, the first W and the first Shift-Command-I act
+    /// at once, as the brief summaries, and a second press within the
+    /// double-press time
     /// switches to the full one; a third quick press is ignored, and a press
     /// after the time is the brief action again, which stops a summary
     /// speaking (question 3). Nothing ever waits on a timer.
-    func testIAndWTwiceSwitchToTheFullSummariesWithoutWaiting() {
+    func testShiftCommandIAndWTwiceSwitchToTheFullSummariesWithoutWaiting() {
         let harness = Harness(ShortcutAction.defaultBindings, escalations: ShortcutAction.escalations)
-        let plainI = KeyBinding(key: "i")
+        let shiftCommandI = KeyBinding(key: "i", command: true, shift: true)
 
-        for (key, brief, full) in [(plainW, ShortcutAction.whereAmI, ShortcutAction.whereAmIFull), (plainI, .speakInfo, .speakFullInfo)] {
+        for (key, brief, full) in [(plainW, ShortcutAction.whereAmI, ShortcutAction.whereAmIFull), (shiftCommandI, .speakInfo, .speakFullInfo)] {
             let start = harness.now + 10
             harness.press(key, at: start)
             XCTAssertEqual(harness.performed.suffix(1), [brief], "\(key.configText): the first press acts at once")
@@ -128,7 +129,8 @@ final class ShortcutPressDispatcherTests: XCTestCase {
     }
 
     /// Through the manager, W twice posts Where Am I? at once and then Where
-    /// Am I? Full Summary, and I twice Speak Info and then Speak Full Info,
+    /// Am I? Full Summary, and Shift-Command-I twice Speak Info and then
+    /// Speak Full Info,
     /// each with the window pressed in, as the reader and the Library
     /// window take them.
     func testTheManagerPostsTheBriefSummaryThenTheFullOne() throws {
@@ -151,8 +153,8 @@ final class ShortcutPressDispatcherTests: XCTestCase {
         XCTAssertTrue(manager.handleKeyEvent(try keyDown("w", keyCode: 13, at: 10), keyWindow: window, firstResponder: nil))
         XCTAssertEqual(posted.map(\.name), [.whereAmI], "W speaks the brief summary at once")
         XCTAssertTrue(manager.handleKeyEvent(try keyDown("w", keyCode: 13, at: 10.2), keyWindow: window, firstResponder: nil))
-        XCTAssertTrue(manager.handleKeyEvent(try keyDown("i", keyCode: 34, at: 20), keyWindow: window, firstResponder: nil))
-        XCTAssertTrue(manager.handleKeyEvent(try keyDown("i", keyCode: 34, at: 20.2), keyWindow: window, firstResponder: nil))
+        XCTAssertTrue(manager.handleKeyEvent(try keyDown("i", keyCode: 34, at: 20, modifiers: [.shift, .command]), keyWindow: window, firstResponder: nil))
+        XCTAssertTrue(manager.handleKeyEvent(try keyDown("i", keyCode: 34, at: 20.2, modifiers: [.shift, .command]), keyWindow: window, firstResponder: nil))
 
         XCTAssertEqual(posted.map(\.name), [.whereAmI, .whereAmIFull, .speakInfo, .speakFullInfo])
         XCTAssertTrue(posted.allSatisfy { $0.window === window }, "a summary was posted without its window")
@@ -605,7 +607,7 @@ final class ShortcutPressDispatcherTests: XCTestCase {
 
         XCTAssertFalse(harness.press(KeyBinding(key: "j", shift: true), at: 10, inTextField: true))
         XCTAssertFalse(harness.press(KeyBinding(key: "rightArrow", command: true, shift: true), at: 11, inTextField: true))
-        XCTAssertFalse(harness.press(KeyBinding(key: "i", command: true, shift: true), at: 12, inTextField: true), "Book Info is Command-I alone")
+        XCTAssertFalse(harness.press(KeyBinding(key: "e", command: true, shift: true), at: 12, inTextField: true), "Toggle Edit Mode is Command-E alone")
         XCTAssertEqual(harness.performed, [])
 
         XCTAssertTrue(harness.press(KeyBinding(key: "t", command: true, shift: true), at: 13, inTextField: true))
@@ -668,7 +670,7 @@ final class ShortcutPressDispatcherTests: XCTestCase {
             KeyBinding(key: "w", shift: true),
             KeyBinding(key: "i", shift: true),
             KeyBinding(key: "l", command: true, shift: true),
-            KeyBinding(key: "i", command: true, shift: true),
+            KeyBinding(key: "y", command: true, shift: true),
             KeyBinding(key: "e", command: true, shift: true),
             KeyBinding(key: "a", command: true, shift: true),
         ]
