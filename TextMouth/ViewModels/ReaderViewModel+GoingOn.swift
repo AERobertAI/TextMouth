@@ -9,6 +9,10 @@ enum BookSuccession: Equatable {
     /// Nothing follows; the note says why, as the sentence after
     /// "Finished: <title>." says it.
     case nothing(note: String)
+    /// A feed's next episode, whose file is not here: it is downloaded, and
+    /// listening goes on once it arrives (FR19). Only
+    /// `LibraryViewModel.succession(after:going:skippingFinished:)` gives it.
+    case episodeToDownload(feedID: UUID, item: FeedItem)
 }
 
 extension ReaderViewModel {
@@ -62,6 +66,10 @@ extension ReaderViewModel {
             handOverToNextBook(to: next.id, titled: next.title) {
                 start(next.id)
             }
+
+        case .episodeToDownload:
+            // Placeholder until the reader's wait for the download exists.
+            say(EndOfBookWording.finished(book.title, notes: [EndOfBookWording.noMoreBooksInFolderNote], sleepTimerExpired: sleepTimerStoppedHere))
         }
     }
 }

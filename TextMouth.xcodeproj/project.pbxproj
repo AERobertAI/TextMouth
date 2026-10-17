@@ -562,6 +562,7 @@
 		9367CBE3D10E4BBDF0DEB4C0 /* RemovedFromLibraryMarker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09029F21B8236C81E8327DB1 /* RemovedFromLibraryMarker.swift */; };
 		93B8E01A2994F36F8389300C /* LibraryCloudTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A577A544AA9CB047DF069AD /* LibraryCloudTestSupport.swift */; };
 		93D4E20E195A1FC6AD4A80A8 /* SubstitutionCompositionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FE8C85E2E883DE314829286 /* SubstitutionCompositionTests.swift */; };
+		9450492DFC228E5FE9E8AA5A /* LibraryViewModel+Succession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 547623DEBA27F504B3E0DFB8 /* LibraryViewModel+Succession.swift */; };
 		9486CF24F11C99DC7ADA358C /* RemovalWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 725183EF3DA7A14663C47417 /* RemovalWording.swift */; };
 		95183905CFC4BEF44D745375 /* DAISYPackageFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38C3383998011C5B6FB97B86 /* DAISYPackageFixtures.swift */; };
 		95502F138B3DD4F98AAEC41E /* AudioEditSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40DA62EBD7CD3AFD80F3CD50 /* AudioEditSession.swift */; };
@@ -953,6 +954,7 @@
 		F9B79B1412391681EFABA460 /* TranscriptSentenceBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53C0A3D05DA45EC1B44A2D04 /* TranscriptSentenceBuilder.swift */; };
 		FB1C1119A3E8C050651CF410 /* DOCXParser+Metadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF2B3058D9636B4E1E7C007C /* DOCXParser+Metadata.swift */; };
 		FB34D9868505A6ABBD0171E1 /* ShortcutPressDispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B5C2318FD444E85BA1B947D /* ShortcutPressDispatcher.swift */; };
+		FB620436B23F53CA070169DF /* EpisodeSuccessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF38A4062A46818FAD23E771 /* EpisodeSuccessionTests.swift */; };
 		FB7FE144EB99BFBA9C2C0DE2 /* FeedArrivals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85D4FC02375690AFAC959521 /* FeedArrivals.swift */; };
 		FBE5337D4DDE25A2349EB349 /* LibraryViewModel+FolderManagement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 969830FA3CFFC902338D9B57 /* LibraryViewModel+FolderManagement.swift */; };
 		FC21588FD1C05D0BA1B0E346 /* DoublePressBindingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7869555A15F80E73B3762EB6 /* DoublePressBindingTests.swift */; };
@@ -1342,6 +1344,7 @@
 		534B708CA7163913AA5B5E5F /* ParserEdgeCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParserEdgeCaseTests.swift; sourceTree = "<group>"; };
 		53C0A3D05DA45EC1B44A2D04 /* TranscriptSentenceBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptSentenceBuilder.swift; sourceTree = "<group>"; };
 		542DA8B8671EC466E721BBA0 /* RecordingCaptureBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingCaptureBackend.swift; sourceTree = "<group>"; };
+		547623DEBA27F504B3E0DFB8 /* LibraryViewModel+Succession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LibraryViewModel+Succession.swift"; sourceTree = "<group>"; };
 		54CDB66EE9D2786D224F3D58 /* LegacyAudioMetadataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyAudioMetadataTests.swift; sourceTree = "<group>"; };
 		54D722975A14F64FEFB2327F /* ReaderEPUBMetadataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderEPUBMetadataTests.swift; sourceTree = "<group>"; };
 		54EEF22349F649B2B737468A /* FeedDownloadProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedDownloadProgress.swift; sourceTree = "<group>"; };
@@ -1912,6 +1915,7 @@
 		EDF28B487B2701C071FD0C8C /* DOCXParser+Styles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DOCXParser+Styles.swift"; sourceTree = "<group>"; };
 		EE33C70E9656A474AE748067 /* TextAnchor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextAnchor.swift; sourceTree = "<group>"; };
 		EEE8BFA9593EDF50AE982521 /* TMBPackageImportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TMBPackageImportTests.swift; sourceTree = "<group>"; };
+		EF38A4062A46818FAD23E771 /* EpisodeSuccessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EpisodeSuccessionTests.swift; sourceTree = "<group>"; };
 		EF8E59F54073167110549593 /* AudioEditTimelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditTimelineTests.swift; sourceTree = "<group>"; };
 		EFAF6CEA00495C6FCC75CD00 /* DAISYParser+PackageInventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DAISYParser+PackageInventory.swift"; sourceTree = "<group>"; };
 		EFB10241A4D89A2A85B74E6B /* ReaderViewModel+EditedText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ReaderViewModel+EditedText.swift"; sourceTree = "<group>"; };
@@ -2672,6 +2676,7 @@
 				7869555A15F80E73B3762EB6 /* DoublePressBindingTests.swift */,
 				C053AF5248D19C03347FDADE /* DuplicateFinderTests.swift */,
 				B3904FA9631114D91848CE68 /* EndOfBookRuleTests.swift */,
+				EF38A4062A46818FAD23E771 /* EpisodeSuccessionTests.swift */,
 				D563CA7AF5572584D18BA831 /* EPUBAuthorNameTests.swift */,
 				3ACDACF93B7D5E6D0F673F5D /* EPUBHeadingRecoveryTests.swift */,
 				AF5737DE80C0D1C09DC603F5 /* EPUBMetadataTests.swift */,
@@ -3134,6 +3139,7 @@
 				F2DBE415BE4865BFB5F67A3A /* LibraryViewModel+ReadingList.swift */,
 				1F6E3A0D653CAF634775E5B1 /* LibraryViewModel+Recording.swift */,
 				247004B0F966D548FB692E7F /* LibraryViewModel+SortAndOrder.swift */,
+				547623DEBA27F504B3E0DFB8 /* LibraryViewModel+Succession.swift */,
 				BD90D574B03B2EA6CAB3B623 /* LibraryViewModel+TextAnchors.swift */,
 				B572745A04BE8E5053CF118A /* LibraryViewModel+TextEdits.swift */,
 				9D8B499F5F921D2B7E291A3C /* LiveReadingPositions.swift */,
@@ -3491,6 +3497,7 @@
 				844F51BCE58A3ACF695EA70C /* EPUBParserTests.swift in Sources */,
 				BE9ABB59EA6000410630D844 /* EPUBPartialExtractionTests.swift in Sources */,
 				7B676B0FD0EBE359E272496C /* EndOfBookRuleTests.swift in Sources */,
+				FB620436B23F53CA070169DF /* EpisodeSuccessionTests.swift in Sources */,
 				ADDB53521DD65E8ACFE36ECF /* ExtractionReportTests.swift in Sources */,
 				9316E11F7C4A636EB232AAE9 /* FeatureModelProductionTests.swift in Sources */,
 				E36AE2762D4CDF20C2CFE317 /* FeedDeleteFeedTests.swift in Sources */,
@@ -4108,6 +4115,7 @@
 				0F0852F6F63500FCD608EFD4 /* LibraryViewModel+ReadingList.swift in Sources */,
 				CCADE68DB13907F05F138250 /* LibraryViewModel+Recording.swift in Sources */,
 				BCC107488C728878A954381E /* LibraryViewModel+SortAndOrder.swift in Sources */,
+				9450492DFC228E5FE9E8AA5A /* LibraryViewModel+Succession.swift in Sources */,
 				9B6CE2D4E40E5052711D9244 /* LibraryViewModel+TextAnchors.swift in Sources */,
 				AD944E2D7F1A98FF91B853BD /* LibraryViewModel+TextEdits.swift in Sources */,
 				917F00B96C78230F4AE638BB /* LibraryViewModel.swift in Sources */,
