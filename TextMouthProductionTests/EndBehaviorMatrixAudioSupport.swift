@@ -58,6 +58,10 @@ extension EndBehaviorMatrixTests {
         var nextAsked = false
         // Kept before the play begins, so no report of the end is missed.
         let reports = PlayerReportLog(observing: service)
+        // The log holds its service's hook by an unowned reference, and
+        // `reader.stop()` (in the defer above) can still bring a last
+        // report: the hook is cleared before the log goes, and before the stop.
+        defer { service._reportHandledForTesting = nil }
         let recorder = recordingAnnouncements {
             reader.play()
             XCTAssertTrue(service.isPlaying, "\(name): the book did not play", file: file, line: line)
@@ -93,8 +97,20 @@ extension EndBehaviorMatrixTests {
     /// twice. Each wait ends when the service's report arrives
     /// (`AudioPlaybackService._reportHandledForTesting`) and is bounded by
     /// the 0.3 seconds this test once waited whatever happened, so a report
-    /// that never comes (a book that stops, and has no tick after) costs no
-    /// more than before, and one that comes costs only until it does.
+    /// that never comes costs no more than before, and one that comes costs
+    /// only until it does.
+    ///
+    /// What the reports do after the end, measured on October 17 for every
+    /// cell (times from the end's announcement): in the chaptered and DAISY
+    /// columns, the tick that finished the clip is followed within about 40
+    /// ms by the stop tick (`.ignore`, the one of the P07 bug) and then by
+    /// the end-of-file report, in that order, so waiting for the
+    /// end-of-file report covers the stop tick; a DAISY loop gets no
+    /// end-of-file report and waits the whole 0.3 seconds, as it always
+    /// did. In the single-file and multi-file columns the end arrives as
+    /// the end-of-file report alone, and no tick follows it in a stopping
+    /// cell within 0.8 seconds, so there is nothing more to wait for; a
+    /// loop there gets a tick of the new play about 6 ms after.
     ///
     /// - Parameters:
     ///   - service: The audio service of the book's reader.

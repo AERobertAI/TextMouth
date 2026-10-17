@@ -11,10 +11,10 @@ extension EndBehaviorMatrixTests {
     /// Stop with no timer, which `FinishedBookReaderTests` pins.
     static let chapteredAudioCells = cells(except: [Cell(behavior: .stop, timer: .none)])
 
-    /// An m4b of two chapters, saved a moment (`secondsLeftWhenSaved`) from its end, played to
-    /// its end does what the cell says, for each cell of the chaptered audio
-    /// column that no other test pins. The last chapter is long, so a loop
-    /// plays on for long after the end.
+    /// An m4b of two chapters, saved a moment (`secondsLeftWhenSaved`) from
+    /// its end, played to its end does what the cell says, for each cell of
+    /// the chaptered audio column that no other test pins. The last chapter
+    /// is long, so a loop plays on for long after the end.
     ///
     /// Writing an m4b encodes AAC and takes a moment, so the file is written
     /// once, for the first cell's book, and every other cell's book (a row
