@@ -37,9 +37,11 @@ private struct MoveSheetOwner: View {
     }
 }
 
-/// Move to Folder… opens its sheet with the books it moves, every time: VoiceOver
-/// found it empty on some presentations (October 17, 2026), because the sheet
-/// was built from state the owner had set in the same update.
+/// Move to Folder… opens its sheet with the books it moves, every time:
+/// VoiceOver found it empty on some presentations (October 17, 2026),
+/// because the sheet was built from the owner's state as its body last
+/// captured it, before the books were set, when nothing ran that body again
+/// first, as after the edit bar's Move or a row's context menu.
 @MainActor
 final class MoveFolderSheetPresentationTests: XCTestCase {
     /// Counts the bodies `MoveFolderSheet` has run so far in this process.
@@ -142,7 +144,11 @@ final class MoveFolderSheetPresentationTests: XCTestCase {
         XCTAssertEqual(sheetBodies, beforeNone, "Move to Folder opened a sheet with nothing selected")
 
         // The last row, a book, selected: the sheet opens.
-        XCTAssertGreaterThan(list.numberOfRows, 0, "the list shows no rows")
+        // Guarded, never asserted: a row index below zero would raise and
+        // take the test host down.
+        guard list.numberOfRows > 0 else {
+            return XCTFail("the list shows no rows")
+        }
         list.selectRowIndexes(IndexSet(integer: list.numberOfRows - 1), byExtendingSelection: false)
         settle(hosted.hostingView, seconds: 0.3)
         let beforeSelected = sheetBodies
