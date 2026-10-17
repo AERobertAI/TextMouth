@@ -237,6 +237,22 @@ final class NextEpisodePredownloadTests: FeedItemIndexTestCase {
         XCTAssertEqual(asked(of: setup), [])
     }
 
+    // MARK: - The Position's Publish
+
+    /// A playing episode asks by itself as its position is published, about
+    /// once a second: nothing here calls `predownloadNextEpisodeIfDue()`.
+    func testPlayingAsksForTheNextEpisodeByItself() async throws {
+        let setup = try await makeFeed(options: nil, global: .continueNext)
+        let reader = try await playingReader(in: setup)
+
+        await waitFor("playing asks for the next episode", timeout: 10) { !asked(of: setup).isEmpty }
+
+        XCTAssertTrue(reader.hasAskedForPredownload)
+        XCTAssertEqual(asked(of: setup), ["guid:ep-4"])
+        _ = try await downloadedBook(setup.world, feed: setup.feed, item: "guid:ep-4")
+        XCTAssertEqual(setup.world.server.requests(to: "/audio/4.m4a").count, 1)
+    }
+
     // MARK: - The Newest-N Rule
 
     /// The newest-N rule leaves the pre-downloaded episode alone, though it

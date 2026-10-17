@@ -2003,6 +2003,9 @@ final class ReaderViewModel: ObservableObject {
             libraryViewModel.updateLiveReadingPosition(bookID: book.id, position: position)
         }
         lastLivePositionPublish = now
+        // With the position published, see whether the next episode of a
+        // feed is due to be downloaded (FR19, task C): cheap guards first.
+        predownloadNextEpisodeIfDue()
     }
 
     /// Perform actor-isolated window teardown explicitly. Swift deinitializers
