@@ -619,6 +619,7 @@ struct MoveFolderSheet: View {
     }
 
     var body: some View {
+        let _ = ViewBodyCounter.record("MoveFolderSheet")
         VStack(spacing: 16) {
             Text(headerTitle)
                 .font(.headline)
@@ -689,6 +690,52 @@ struct MoveFolderSheet: View {
                folderOptions.contains(where: { $0.path == lastMovedFolderPath }) {
                 selectedPath = lastMovedFolderPath
             }
+        }
+    }
+}
+
+// MARK: - Move to Folder's Presentation
+
+/// What Move to Folder… moves while its sheet shows: the books of a row's
+/// command, the edit bar's Move, or Command-Shift-M. The sheet is handed
+/// this request, so its content comes from it and never from the owner's
+/// state captured when the owner's body last ran, which left the sheet
+/// empty for VoiceOver on a first presentation.
+struct MoveToFolderRequest: Identifiable, Equatable {
+    /// Tells two requests apart, so a second Move opens a sheet of its own.
+    let id = UUID()
+    /// The books that move, as the library held them.
+    let books: [Book]
+}
+
+/// Shows Move to Folder…'s sheet while `request` names what moves. A
+/// modifier of its own, so the Library window's long chain of modifiers
+/// stays within what the type checker takes, and so a test can host the
+/// presentation without the window.
+struct MoveToFolderSheetPresentation: ViewModifier {
+    /// What moves while the sheet shows; nil closes it.
+    @Binding var request: MoveToFolderRequest?
+    /// The library the books move in.
+    let library: LibraryViewModel
+    /// Moves the request's books into the folder at the path, answering what
+    /// happened; the owner closes the sheet after a success.
+    let onMove: @MainActor (MoveToFolderRequest, String) async -> OperationOutcome
+    /// Runs once the sheet has closed, as the owner says what the move left.
+    let onDismiss: () -> Void
+
+    func body(content: Content) -> some View {
+        // The sheet's content comes only from the request `sheet(item:)`
+        // hands the closure, never from state captured when this body last
+        // ran, so it is never built empty.
+        content.sheet(item: $request, onDismiss: onDismiss) { request in
+            MoveFolderSheet(
+                books: request.books,
+                library: library.library,
+                lastMovedFolderPath: library.lastMovedFolderPath,
+                onMove: { path in await onMove(request, path) },
+                onCreateFolder: { library.createFolderReturningOutcome(name: $0, parentPath: $1) },
+                onCancel: { self.request = nil }
+            )
         }
     }
 }

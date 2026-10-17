@@ -233,8 +233,9 @@ struct LibraryView: View {
     @State private var showNewFolderSheet = false
     @State private var newFolderName = ""
     @State private var newFolderParentPath = ""
-    @State private var booksToMove: [Book] = []
-    @State private var showMoveSheet = false
+    /// What the Move to Folder sheet moves while it shows: a request the
+    /// sheet is handed, so it never opens empty (October 17, 2026).
+    @State private var moveRequest: MoveToFolderRequest?
     /// What a move made from the Move sheet left to say, the feed items it
     /// left where they are, kept while the sheet closes (REV11 F6).
     @State private var afterMoveSheet = AnnouncementAfterSheet()
@@ -582,27 +583,19 @@ struct LibraryView: View {
         }
         // Which feed items a move left is said once the sheet has closed,
         // so its closing never cuts the words off (REV11 F6).
-        .sheet(isPresented: $showMoveSheet, onDismiss: sayWhatTheMoveLeft) {
-            if !booksToMove.isEmpty {
-                MoveFolderSheet(
-                    books: booksToMove,
-                    library: libraryViewModel.library,
-                    lastMovedFolderPath: libraryViewModel.lastMovedFolderPath,
-                    onMove: { path in
-                        let outcome = await libraryViewModel.moveBooksReturningOutcome(booksToMove, toFolder: path)
-                        return closingOnSuccess(outcome) {
-                            afterMoveSheet.keep(outcome.message)
-                            clearAllSelections()
-                            showMoveSheet = false
-                        }
-                    },
-                    onCreateFolder: { name, parentPath in
-                        libraryViewModel.createFolderReturningOutcome(name: name, parentPath: parentPath)
-                    },
-                    onCancel: { showMoveSheet = false }
-                )
-            }
-        }
+        .modifier(MoveToFolderSheetPresentation(
+            request: $moveRequest,
+            library: libraryViewModel,
+            onMove: { request, path in
+                let outcome = await libraryViewModel.moveBooksReturningOutcome(request.books, toFolder: path)
+                return closingOnSuccess(outcome) {
+                    afterMoveSheet.keep(outcome.message)
+                    clearAllSelections()
+                    moveRequest = nil
+                }
+            },
+            onDismiss: sayWhatTheMoveLeft
+        ))
         .trackingRemovalPreferences($removalPreferences)
         // A folder deleted or moved from another window, as by Delete
         // Feed… or Delete Folder…, leaves this window on the folder's new
@@ -1498,11 +1491,12 @@ struct LibraryView: View {
 
     // MARK: - Moving Books
 
-    /// Opens the Move to Folder sheet for `books`, from a row's command, the
-    /// edit bar's Move, or Command-Shift-M, unless every one is a feed item,
-    /// which Move to Folder never moves (FR11): VoiceOver then hears at once
-    /// that they stay where they are, and no sheet opens. A mixed selection
-    /// opens the sheet, and its move says which items it left.
+    /// Opens the Move to Folder sheet, by a request for `books`, from a
+    /// row's command, the edit bar's Move, or Command-Shift-M, unless every
+    /// one is a feed item, which Move to Folder never moves (FR11):
+    /// VoiceOver then hears at once that they stay where they are, and no
+    /// request is made. A mixed selection opens the sheet, and its move says
+    /// which items it left.
     private func moveToFolder(_ books: [Book]) {
         guard !books.isEmpty else { return }
         guard books.contains(where: { !$0.isFeedItem }) else {
@@ -1511,8 +1505,7 @@ struct LibraryView: View {
             }
             return
         }
-        booksToMove = books
-        showMoveSheet = true
+        moveRequest = MoveToFolderRequest(books: books)
     }
 
     /// Says which feed items the Move sheet's move left where they are,
