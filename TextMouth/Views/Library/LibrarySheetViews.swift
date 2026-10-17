@@ -685,12 +685,27 @@ struct MoveFolderSheet: View {
         .interactiveDismissDisabled(isWorking)
         .clearingFailure($failureMessage, whenChanged: selectedPath)
         .onAppear {
+            // Say in the debug log what the sheet shows as it appears, so a
+            // report of an empty sheet can be checked against the log. Only
+            // counts: never a title or a path.
+            DiagnosticLog.event(.app, Self.shownLine(
+                command: heading == nil ? "Move to Folder" : "Move to Library",
+                places: folderOptions.count,
+                items: books.count
+            ))
             // Default to last moved folder if it still exists, otherwise Library Root
             if !lastMovedFolderPath.isEmpty,
                folderOptions.contains(where: { $0.path == lastMovedFolderPath }) {
                 selectedPath = lastMovedFolderPath
             }
         }
+    }
+
+    /// The debug log's line for a sheet appearing: which command opened it,
+    /// how many places it lists, and how many items it moves. Counts only,
+    /// so the line holds no title or path.
+    nonisolated static func shownLine(command: String, places: Int, items: Int) -> String {
+        "MOVE_SHEET_SHOWN: \(command) lists \(places) place(s) for \(items) item(s)"
     }
 }
 

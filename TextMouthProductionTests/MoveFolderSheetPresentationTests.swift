@@ -95,6 +95,19 @@ final class MoveFolderSheetPresentationTests: XCTestCase {
         XCTAssertEqual(first, first)
     }
 
+    /// The debug log's line for the sheet appearing names the command and
+    /// counts, and nothing else.
+    func testTheShownLineNamesTheCommandAndCountsOnly() {
+        XCTAssertEqual(
+            MoveFolderSheet.shownLine(command: "Move to Folder", places: 3, items: 2),
+            "MOVE_SHEET_SHOWN: Move to Folder lists 3 place(s) for 2 item(s)"
+        )
+        XCTAssertEqual(
+            MoveFolderSheet.shownLine(command: "Move to Library", places: 1, items: 1),
+            "MOVE_SHEET_SHOWN: Move to Library lists 1 place(s) for 1 item(s)"
+        )
+    }
+
     /// The Library window opens the sheet for the selected book, and not for
     /// an empty selection.
     func testTheLibraryWindowOpensTheSheetForTheSelectedBook() throws {
