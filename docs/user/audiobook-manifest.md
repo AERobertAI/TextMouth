@@ -55,6 +55,7 @@ Every key is optional. A manifest is one JSON object.
 ### title and author
 - title: the book's title. Without it, the book takes the ZIP's name.
 - author: the book's author. Without it, Unknown.
+- A title or author that is empty or only spaces counts as none.
 
 ### tracks
 The book's order and titles, one entry per track or group heading. An entry is one of:
