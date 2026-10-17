@@ -256,6 +256,18 @@ final class ShortcutsSettingsTabTests: XCTestCase {
         XCTAssertEqual(manager.actions(thatLostKeysSince: keysBeforeShiftR, besides: .releaseMediaControls), [])
     }
 
+    // MARK: - Letters in Library Windows (October 17)
+
+    /// The tab's first section says why a letter shortcut does nothing in a
+    /// Library window, in these words.
+    func testTheLetterNavigationNoteIsPinned() {
+        XCTAssertEqual(
+            ShortcutsSettingsWording.letterNavigationNote,
+            "In Library windows, a letter pressed alone moves to the first book or folder whose name starts with it, "
+                + "so a shortcut that is a letter alone, such as W, works only in other windows."
+        )
+    }
+
     // MARK: - Double Presses (FR12, Section 6 of the Design)
 
     /// The recorder, the actions that change a key's presses, and the

@@ -497,6 +497,17 @@ enum ShortcutWindowKind: CaseIterable, Hashable, Sendable {
     /// Any other window, Settings, a panel, or an alert run on its own among
     /// them, or none at all.
     case other
+
+    /// Whether a letter pressed alone, with no modifier, belongs to the
+    /// window's own letter navigation rather than to a shortcut: a Library
+    /// window's list moves to the first book or folder whose name starts
+    /// with it. The user asked on October 17 to "have letter navigation take
+    /// priority", so no shortcut is a letter alone in a Library window
+    /// (`KeyBinding.isLetterAlone`; `ShortcutPressDispatcher.Index`). Only
+    /// `.library` navigates by letter.
+    var navigatesByLetter: Bool {
+        self == .library
+    }
 }
 
 extension Notification.Name {
@@ -710,6 +721,18 @@ extension KeyBinding {
     /// answer (`dialogKeys`), pressed once or twice.
     var isDialogKey: Bool {
         Self.dialogKeys.contains(stroke)
+    }
+}
+
+extension KeyBinding {
+    /// Whether the binding is a letter pressed with no modifier at all
+    /// (none of Command, Option, Shift, or Control), once or twice, such as
+    /// W, or W twice. Any letter counts, a non-Latin one included. A
+    /// Library window leaves such a key to its list's letter navigation
+    /// (`ShortcutWindowKind.navigatesByLetter`).
+    var isLetterAlone: Bool {
+        key.count == 1 && key.first?.isLetter == true
+            && !command && !option && !shift && !control
     }
 }
 

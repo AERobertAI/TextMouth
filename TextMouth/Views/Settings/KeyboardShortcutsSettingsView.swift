@@ -28,6 +28,9 @@ struct KeyboardShortcutsSettingsView: View {
                 ) {
                     Text(status)
                 }
+                // Why a letter shortcut does nothing in a Library window,
+                // as text, so VoiceOver and a braille display have it.
+                Text(ShortcutsSettingsWording.letterNavigationNote)
             }
 
             ForEach(categories, id: \.self) { category in
@@ -412,6 +415,13 @@ struct ShortcutBindingRow: View {
 /// What the Shortcuts tab says (FR12): every key in words, never in symbols,
 /// which a braille display shows as signs. Tests pin each wording.
 enum ShortcutsSettingsWording {
+    /// Said in the tab's first section: in a Library window a letter pressed
+    /// alone is the list's letter navigation, never a shortcut (October 17,
+    /// `ShortcutWindowKind.navigatesByLetter`).
+    static let letterNavigationNote =
+        "In Library windows, a letter pressed alone moves to the first book or folder whose name starts with it, "
+        + "so a shortcut that is a letter alone, such as W, works only in other windows."
+
     /// What an edited row says after its keys, on screen and to VoiceOver.
     static let edited = "Edited"
     /// The title of the button, and of the row's VoiceOver action, that

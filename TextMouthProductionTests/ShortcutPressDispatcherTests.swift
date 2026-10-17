@@ -148,16 +148,20 @@ final class ShortcutPressDispatcherTests: XCTestCase {
             posted.append((notification.name, notification.userInfo?["sourceWindow"] as? NSWindow))
         }
         defer { subscription.cancel() }
-        let window = makeWindow()
+        // W is a reader's, and Shift-Command-I a Library window's: a letter
+        // alone is the Library list's letter navigation.
+        let reader = makeShortcutWindow(.reader)
+        let library = makeShortcutWindow(.library)
 
-        XCTAssertTrue(manager.handleKeyEvent(try keyDown("w", keyCode: 13, at: 10), keyWindow: window, firstResponder: nil))
+        XCTAssertTrue(manager.handleKeyEvent(try keyDown("w", keyCode: 13, at: 10), keyWindow: reader, firstResponder: nil))
         XCTAssertEqual(posted.map(\.name), [.whereAmI], "W speaks the brief summary at once")
-        XCTAssertTrue(manager.handleKeyEvent(try keyDown("w", keyCode: 13, at: 10.2), keyWindow: window, firstResponder: nil))
-        XCTAssertTrue(manager.handleKeyEvent(try keyDown("i", keyCode: 34, at: 20, modifiers: [.shift, .command]), keyWindow: window, firstResponder: nil))
-        XCTAssertTrue(manager.handleKeyEvent(try keyDown("i", keyCode: 34, at: 20.2, modifiers: [.shift, .command]), keyWindow: window, firstResponder: nil))
+        XCTAssertTrue(manager.handleKeyEvent(try keyDown("w", keyCode: 13, at: 10.2), keyWindow: reader, firstResponder: nil))
+        XCTAssertTrue(manager.handleKeyEvent(try keyDown("i", keyCode: 34, at: 20, modifiers: [.shift, .command]), keyWindow: library, firstResponder: nil))
+        XCTAssertTrue(manager.handleKeyEvent(try keyDown("i", keyCode: 34, at: 20.2, modifiers: [.shift, .command]), keyWindow: library, firstResponder: nil))
 
         XCTAssertEqual(posted.map(\.name), [.whereAmI, .whereAmIFull, .speakInfo, .speakFullInfo])
-        XCTAssertTrue(posted.allSatisfy { $0.window === window }, "a summary was posted without its window")
+        XCTAssertEqual(posted.map { $0.window === reader }, [true, true, false, false], "a summary was posted without its window")
+        XCTAssertEqual(posted.map { $0.window === library }, [false, false, true, true], "a summary was posted without its window")
     }
 
     // MARK: - An Unrelated Double Action
@@ -451,12 +455,14 @@ final class ShortcutPressDispatcherTests: XCTestCase {
             .editorSkipBack: [plainJ],
         ])
 
-        XCTAssertEqual(index.actions(for: plainJ, in: .library), .init(single: .skipBackward, double: .goToLibrary, singleWaits: true))
-        XCTAssertEqual(index.actions(for: jTwice, in: .library), index.actions(for: plainJ, in: .library), "looked up by its stroke")
+        XCTAssertEqual(index.actions(for: plainJ, in: .reader), .init(single: .skipBackward, double: .goToLibrary, singleWaits: true))
+        XCTAssertEqual(index.actions(for: jTwice, in: .reader), index.actions(for: plainJ, in: .reader), "looked up by its stroke")
+        XCTAssertNil(index.actions(for: plainJ, in: .library), "a letter alone is the Library list's letter navigation")
         XCTAssertEqual(index.actions(for: plainJ, in: .audioEditor), .init(single: .editorSkipBack, double: nil, singleWaits: false))
         XCTAssertNil(index.actions(for: plainK, in: .library))
-        // J waits in every kind of window the app's actions reach.
-        XCTAssertEqual(index.waitingKeys, [ShortcutWindowKind.library, .reader, .recording, .other].map {
+        // J waits in every kind of window the app's actions reach, but a
+        // Library window, where a letter alone is the list's.
+        XCTAssertEqual(index.waitingKeys, [ShortcutWindowKind.reader, .recording, .other].map {
             .init(kind: $0, stroke: plainJ, single: .skipBackward, double: .goToLibrary)
         })
     }
@@ -488,7 +494,8 @@ final class ShortcutPressDispatcherTests: XCTestCase {
             posted.append((notification.userInfo?["action"] as? String ?? "", notification.userInfo?["sourceWindow"] as? NSWindow))
         }
         defer { subscription.cancel() }
-        let window = makeWindow()
+        // A reader window: in a Library window a plain J is the list's.
+        let window = makeShortcutWindow(.reader)
 
         XCTAssertTrue(manager.handleKeyEvent(try keyDown("j", keyCode: 38, at: 10), keyWindow: window, firstResponder: nil))
         XCTAssertTrue(posted.isEmpty, "J waits: Skip Backward's single press and Go to Library's double")
@@ -536,6 +543,13 @@ final class ShortcutPressDispatcherTests: XCTestCase {
             for binding in defaults[action] ?? [] {
                 for kind in ShortcutWindowKind.allCases where action.defaultScope.reaches(kind) {
                     let label = "\(action.rawValue)'s \(binding.configText) in \(kind)"
+                    // A letter alone in a Library window is the list's letter
+                    // navigation: no index holds it there (October 17).
+                    if kind.navigatesByLetter && binding.isLetterAlone {
+                        XCTAssertNil(index.actions(for: binding, in: kind), label)
+                        XCTAssertFalse(index.isKeyEquivalent(binding, in: kind), label)
+                        continue
+                    }
                     // A key equivalent's key goes on to its menu item or
                     // button (FR12's branch D).
                     if action.isKeyEquivalent {
@@ -607,7 +621,7 @@ final class ShortcutPressDispatcherTests: XCTestCase {
 
         XCTAssertFalse(harness.press(KeyBinding(key: "j", shift: true), at: 10, inTextField: true))
         XCTAssertFalse(harness.press(KeyBinding(key: "rightArrow", command: true, shift: true), at: 11, inTextField: true))
-        XCTAssertFalse(harness.press(KeyBinding(key: "e", command: true, shift: true), at: 12, inTextField: true), "Toggle Edit Mode is Command-E alone")
+        XCTAssertFalse(harness.press(KeyBinding(key: "l", command: true, shift: true), at: 12, inTextField: true), "Go to Library is Command-L alone")
         XCTAssertEqual(harness.performed, [])
 
         XCTAssertTrue(harness.press(KeyBinding(key: "t", command: true, shift: true), at: 13, inTextField: true))
@@ -670,7 +684,6 @@ final class ShortcutPressDispatcherTests: XCTestCase {
             KeyBinding(key: "w", shift: true),
             KeyBinding(key: "i", shift: true),
             KeyBinding(key: "l", command: true, shift: true),
-            KeyBinding(key: "y", command: true, shift: true),
             KeyBinding(key: "e", command: true, shift: true),
             KeyBinding(key: "a", command: true, shift: true),
         ]
@@ -679,6 +692,13 @@ final class ShortcutPressDispatcherTests: XCTestCase {
             XCTAssertFalse(manager.handleKeyEvent(event, keyWindow: nil, firstResponder: nil), key.configText)
         }
         XCTAssertEqual(posted.names, [])
+
+        // Shift-Command-I is Speak Info's own key, not Book Info's with Shift
+        // along: it acts in a Library window.
+        let library = makeShortcutWindow(.library)
+        let speakInfoKey = try ShortcutKeyPresses.keyPress(of: KeyBinding(key: "i", command: true, shift: true), at: 20)
+        XCTAssertTrue(manager.handleKeyEvent(speakInfoKey, keyWindow: library, firstResponder: nil))
+        XCTAssertEqual(posted.names, [ShortcutAction.speakInfo.rawValue])
 
         let acting: [(characters: String, keyCode: UInt16, modifiers: NSEvent.ModifierFlags, action: ShortcutAction)] = [
             ("J", 38, [.shift], .skipBackward),
@@ -691,7 +711,7 @@ final class ShortcutPressDispatcherTests: XCTestCase {
             let event = try keyDown(press.characters, keyCode: press.keyCode, at: Double(30 + offset), modifiers: press.modifiers)
             XCTAssertTrue(manager.handleKeyEvent(event, keyWindow: nil, firstResponder: nil), press.action.rawValue)
         }
-        XCTAssertEqual(posted.names, acting.map(\.action.rawValue))
+        XCTAssertEqual(posted.names, [ShortcutAction.speakInfo.rawValue] + acting.map(\.action.rawValue), "Speak Info first, then the Shift ones")
     }
 
     /// A waiting single press keeps whether Shift was held: Shift-J, with
@@ -978,6 +998,116 @@ final class ShortcutPressDispatcherTests: XCTestCase {
             ShortcutsSettingsWording.trialStatus(isTrying: false, lastOutcome: .tooFarApart(0.7)),
             "Last try: Two presses, 0.7 seconds apart. Set the time above 0.7 seconds to count them as one."
         )
+    }
+
+    // MARK: - Letters in Library Windows
+
+    /// The defaults that are a letter alone: W (Where Am I?), J and L (the
+    /// skips), K (Play / Pause), and F and B (the navigation-unit cycles).
+    private var defaultLetterActions: [(key: String, action: ShortcutAction)] {
+        [
+            ("w", .whereAmI), ("j", .skipBackward), ("l", .skipForward),
+            ("k", .togglePlayback), ("f", .cycleForwardNavigationUnit), ("b", .cycleBackwardNavigationUnit),
+        ]
+    }
+
+    /// With the defaults, a letter alone matches nothing in a Library window
+    /// and is not taken (it goes on to the list's letter navigation), runs
+    /// its action in a reader, and Space plays and pauses in both. Shift-J
+    /// does not fall back to J there.
+    func testADefaultLetterAloneActsInAReaderAndNotInALibraryWindow() {
+        // With the real escalations, W acts at once, as it does in the app.
+        let harness = Harness(ShortcutAction.defaultBindings, escalations: ShortcutAction.escalations)
+        var time: TimeInterval = 10
+        // Every action the harness has run so far, oldest first.
+        var expected: [ShortcutAction] = []
+
+        for (letter, action) in defaultLetterActions {
+            time += 10
+            XCTAssertFalse(harness.press(KeyBinding(key: letter), at: time, kind: .library), "\(letter) was taken in a Library window")
+            XCTAssertNil(harness.index.actions(for: KeyBinding(key: letter), in: .library), letter)
+            XCTAssertEqual(harness.performed, expected, "\(letter) ran an action in a Library window")
+            time += 10
+            XCTAssertTrue(harness.press(KeyBinding(key: letter), at: time, kind: .reader), "\(letter) was not taken in a reader")
+            expected.append(action)
+            XCTAssertEqual(harness.performed, expected, letter)
+        }
+        for kind in [ShortcutWindowKind.library, .reader] {
+            time += 10
+            XCTAssertTrue(harness.press(KeyBinding(key: "space"), at: time, kind: kind), "Space in \(kind)")
+            expected.append(.togglePlayback)
+            XCTAssertEqual(harness.performed, expected, "Space in \(kind)")
+        }
+        time += 10
+        XCTAssertFalse(harness.press(KeyBinding(key: "j", shift: true), at: time, kind: .library), "Shift-J fell back to J")
+        XCTAssertEqual(harness.performed, expected)
+        XCTAssertEqual(harness.index.waitingKeys.filter { $0.kind == .library }, [], "a letter alone never waits in a Library window")
+    }
+
+    /// A letter the listener binds alone acts in a reader and not in a
+    /// Library window, as the defaults' letters do; the same letter with
+    /// Shift or Option acts in both.
+    func testALetterTheListenerBindsAloneStaysOutOfLibraryWindows() {
+        let plainQ = KeyBinding(key: "q")
+        let bindings: [ShortcutAction: [KeyBinding]] = [
+            .whereAmI: [plainQ],
+            .skipForward: [KeyBinding(key: "q", shift: true)],
+            .skipBackward: [KeyBinding(key: "q", option: true)],
+        ]
+        let harness = Harness(bindings)
+
+        XCTAssertFalse(harness.press(plainQ, at: 10, kind: .library))
+        XCTAssertEqual(harness.performed, [])
+        XCTAssertTrue(harness.press(plainQ, at: 20, kind: .reader))
+        XCTAssertEqual(harness.performed, [.whereAmI])
+        var expected: [ShortcutAction] = [.whereAmI]
+        for (offset, kind) in [ShortcutWindowKind.library, .reader].enumerated() {
+            XCTAssertTrue(harness.press(KeyBinding(key: "q", shift: true), at: Double(30 + 20 * offset), kind: kind), "Shift-Q in \(kind)")
+            XCTAssertTrue(harness.press(KeyBinding(key: "q", option: true), at: Double(40 + 20 * offset), kind: kind), "Option-Q in \(kind)")
+            expected += [.skipForward, .skipBackward]
+            XCTAssertEqual(harness.performed, expected, "in \(kind)")
+        }
+    }
+
+    /// A letter alone, pressed once or twice, and only that: a non-Latin
+    /// letter counts, and Space, a digit, punctuation, or a letter with
+    /// Shift or Command does not.
+    func testIsLetterAloneIsALetterWithNoModifier() {
+        XCTAssertTrue(KeyBinding(key: "w").isLetterAlone)
+        XCTAssertTrue(wTwice.isLetterAlone)
+        XCTAssertTrue(KeyBinding(key: "\u{E9}").isLetterAlone, "a non-Latin letter such as e with an acute accent")
+        XCTAssertTrue(KeyBinding(key: "\u{43F}").isLetterAlone, "a Cyrillic letter")
+        for notAlone in [
+            KeyBinding(key: "space"), KeyBinding(key: "1"), KeyBinding(key: ","),
+            KeyBinding(key: "w", shift: true), KeyBinding(key: "w", command: true),
+            KeyBinding(key: "w", option: true), KeyBinding(key: "w", control: true),
+            KeyBinding(key: "w", command: true, isDoublePress: true),
+        ] {
+            XCTAssertFalse(notAlone.isLetterAlone, notAlone.configText)
+        }
+        XCTAssertEqual(ShortcutWindowKind.allCases.filter(\.navigatesByLetter), [.library])
+    }
+
+    /// Through the manager: a plain W in a Library window is left to the
+    /// list (not taken, nothing posted); in a reader it is taken and posts
+    /// Where Am I?.
+    func testThePlainWReachesTheLibraryListAndTheReaderActs() throws {
+        let center = NotificationCenter()
+        let manager = KeyboardShortcutManager(
+            userDefaults: makeSandboxedPreferences("press-dispatcher-letter-navigation"),
+            installsEventMonitor: false,
+            notificationCenter: center
+        )
+        let posted = PostedShortcutActions(on: center)
+        let library = makeShortcutWindow(.library)
+        let reader = makeShortcutWindow(.reader)
+        let plainWPress = try ShortcutKeyPresses.keyPress(of: plainW, at: 10)
+
+        XCTAssertFalse(manager.handleKeyEvent(plainWPress, keyWindow: library, firstResponder: nil))
+        XCTAssertEqual(posted.names, [], "a plain W in a Library window posted an action")
+
+        XCTAssertTrue(manager.handleKeyEvent(try ShortcutKeyPresses.keyPress(of: plainW, at: 20), keyWindow: reader, firstResponder: nil))
+        XCTAssertEqual(posted.names, [ShortcutAction.whereAmI.rawValue])
     }
 
     // MARK: - Helpers
