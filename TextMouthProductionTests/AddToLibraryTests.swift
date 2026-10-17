@@ -109,4 +109,152 @@ final class AddToLibraryTests: XCTestCase {
         XCTAssertEqual(AddToLibraryWording.label(.openBook, key: "Command + O"), "Open Book…, Command + O")
         XCTAssertEqual(AddToLibraryWording.label(.openBook, key: nil), "Open Book…")
     }
+
+    // MARK: - The Model
+
+    /// A model whose `perform` records the choices it runs instead of running
+    /// them, and for which every choice works except those in `dimmed`.
+    private func makeModel(dimmed: Set<AddToLibraryChoice> = [], performed: @escaping (AddToLibraryChoice) -> Void) -> AddToLibraryModel {
+        AddToLibraryModel(isEnabled: { !dimmed.contains($0) }, perform: performed)
+    }
+
+    /// Choosing closes the sheet and runs nothing; the choice runs when the
+    /// sheet has gone, once, and a second dismissal runs nothing.
+    func testAChoiceRunsOnlyAfterTheSheetHasGoneAndOnlyOnce() {
+        var performed: [AddToLibraryChoice] = []
+        let model = makeModel { performed.append($0) }
+        model.isPresented = true
+
+        model.choose(.newFromText)
+
+        XCTAssertFalse(model.isPresented, "choosing did not close the sheet")
+        XCTAssertEqual(performed, [], "the choice ran while the sheet was still closing")
+
+        model.sheetDidDismiss()
+        XCTAssertEqual(performed, [.newFromText])
+
+        model.sheetDidDismiss()
+        XCTAssertEqual(performed, [.newFromText], "a second dismissal ran the choice again")
+    }
+
+    /// A dismissal with nothing chosen runs nothing.
+    func testADismissalWithNothingChosenRunsNothing() {
+        var performed: [AddToLibraryChoice] = []
+        let model = makeModel { performed.append($0) }
+        model.sheetDidDismiss()
+        XCTAssertEqual(performed, [])
+    }
+
+    /// Cancel closes the sheet and runs nothing, even after the sheet's
+    /// dismissal, and even for a choice made before it.
+    func testCancelClosesAndRunsNothing() {
+        var performed: [AddToLibraryChoice] = []
+        let model = makeModel { performed.append($0) }
+        model.isPresented = true
+
+        model.cancel()
+        model.sheetDidDismiss()
+        XCTAssertFalse(model.isPresented)
+        XCTAssertEqual(performed, [])
+
+        model.choose(.addFeed)
+        model.cancel()
+        model.sheetDidDismiss()
+        XCTAssertEqual(performed, [], "a choice made before Cancel still ran")
+    }
+
+    /// A choice that does not work in this window is ignored: the sheet stays
+    /// open and nothing runs.
+    func testADimmedChoiceIsIgnored() {
+        var performed: [AddToLibraryChoice] = []
+        let model = makeModel(dimmed: [.newRecording]) { performed.append($0) }
+        model.isPresented = true
+
+        model.choose(.newRecording)
+        XCTAssertTrue(model.isPresented, "a dimmed choice closed the sheet")
+        model.sheetDidDismiss()
+        XCTAssertEqual(performed, [])
+        XCTAssertFalse(model.isEnabled(.newRecording))
+        XCTAssertTrue(model.isEnabled(.openBook))
+    }
+
+    /// Choosing twice before the sheet has gone runs only the last, once.
+    func testTwoChoicesBeforeTheDismissalRunOnlyTheLast() {
+        var performed: [AddToLibraryChoice] = []
+        let model = makeModel { performed.append($0) }
+        model.isPresented = true
+
+        model.choose(.openBook)
+        model.choose(.importFolder)
+        model.sheetDidDismiss()
+        model.sheetDidDismiss()
+
+        XCTAssertEqual(performed, [.importFolder])
+    }
+
+    /// The model can be used again: a second showing and choice runs again.
+    func testTheModelServesASecondShowing() {
+        var performed: [AddToLibraryChoice] = []
+        let model = makeModel { performed.append($0) }
+        for choice in [AddToLibraryChoice.openBook, .addFeed] {
+            model.isPresented = true
+            model.choose(choice)
+            model.sheetDidDismiss()
+        }
+        XCTAssertEqual(performed, [.openBook, .addFeed])
+    }
+
+    // MARK: - The Menu Commands' Rules
+
+    /// A shortcut manager with a store of its own and no event monitor.
+    private func makeManager(_ label: String) -> KeyboardShortcutManager {
+        KeyboardShortcutManager(userDefaults: makeSandboxedPreferences(label), installsEventMonitor: false)
+    }
+
+    /// Every choice works wherever its menu command does: in every window by
+    /// default, and, once a scope excludes Library windows, not in them.
+    func testAChoiceIsEnabledWhereItsMenuCommandWorks() {
+        let manager = makeManager("add-to-library-enabled")
+        let kinds: [ShortcutWindowKind?] = [nil] + ShortcutWindowKind.allCases.map { Optional($0) }
+        for choice in AddToLibraryChoice.allCases {
+            XCTAssertTrue(choice.isEnabled(under: manager, in: .library), choice.title)
+            XCTAssertTrue(choice.isEnabled(under: manager, in: nil), choice.title)
+            for kind in kinds {
+                XCTAssertEqual(
+                    choice.isEnabled(under: manager, in: kind),
+                    manager.scope(of: choice.action).admitsMenuCommand(in: kind),
+                    "\(choice.title) in \(String(describing: kind))"
+                )
+            }
+        }
+
+        manager.setScope(.reader, for: .newFromText)
+        XCTAssertEqual(manager.scope(of: .newFromText), .reader)
+        XCTAssertFalse(AddToLibraryChoice.newFromText.isEnabled(under: manager, in: .library), "New from Text… stayed enabled in a Library window")
+        XCTAssertTrue(AddToLibraryChoice.newFromText.isEnabled(under: manager, in: .reader))
+        XCTAssertTrue(AddToLibraryChoice.newFromText.isEnabled(under: manager, in: nil), "any command acts with no window open")
+        XCTAssertTrue(AddToLibraryChoice.openBook.isEnabled(under: manager, in: .library), "another choice followed it")
+    }
+
+    /// A choice's key in words is its action's key equivalent in force, nil
+    /// for none, and follows the user's edit.
+    func testAChoicesKeyInWords() {
+        let manager = makeManager("add-to-library-keys")
+        XCTAssertEqual(AddToLibraryChoice.openBook.keyDescription(under: manager), "Command + O")
+        XCTAssertEqual(AddToLibraryChoice.newFromText.keyDescription(under: manager), "Shift + Command + T")
+        XCTAssertEqual(AddToLibraryChoice.newRecording.keyDescription(under: manager), "Option + Command + N")
+        for choice in AddToLibraryChoice.allCases {
+            XCTAssertEqual(
+                choice.keyDescription(under: manager),
+                manager.keyEquivalent(for: choice.action)?.accessibleDisplayString,
+                choice.title
+            )
+        }
+
+        manager.updateBindings(for: .openBook, to: [KeyBinding(key: "b", command: true, shift: true)])
+        XCTAssertEqual(AddToLibraryChoice.openBook.keyDescription(under: manager), "Shift + Command + B")
+
+        manager.updateBindings(for: .addFeed, to: [])
+        XCTAssertNil(AddToLibraryChoice.addFeed.keyDescription(under: manager), "a choice with no key described one")
+    }
 }
