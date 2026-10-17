@@ -1049,6 +1049,32 @@ final class BookManifestEditTests: XCTestCase {
         XCTAssertEqual(book.storedBookInfo()?.contentIndex?.chapters.map(\.audioFilePath), ["01.wav", "02.wav"])
     }
 
+    /// A manifest saved while a track is only in the cloud is not taken: the
+    /// take would read, and so download, every track (FR02). The check
+    /// answers `.inCloud` with no new baseline and leaves the record as it
+    /// was, and once the tracks are back the same save is taken.
+    func testASavedManifestWaitsWhileATrackIsOnlyInTheCloud() throws {
+        let world = try makeIntegrationWorld("Saved Manifest Cloud Track")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2, 0.2, 0.2])
+        let manifestURL = AudioManifestLocation.forNewManifest(in: book.bookFileURL).url
+        try save(#"{"tracks": ["01.wav", "02.wav", "03.wav"]}"#, to: manifestURL)
+        let baseline = try XCTUnwrap(FileFingerprint(of: manifestURL, hasher: .md5))
+        try save(#"{"tracks": ["03.wav", "01.wav", "02.wav"]}"#, to: manifestURL)
+        let before = book.storedBookInfo()?.contentIndex?.chapters.map(\.audioFilePath)
+
+        let waiting = BookManifestEditSessions.check(book, against: baseline) { $0.lastPathComponent == "02.wav" }
+
+        guard case .inCloud = waiting.found else { return XCTFail("A track only in the cloud did not hold the take: \(waiting.found)") }
+        XCTAssertNil(waiting.baseline, "The baseline moved though nothing was taken")
+        XCTAssertEqual(book.storedBookInfo()?.contentIndex?.chapters.map(\.audioFilePath), before)
+
+        // Positive control: with every track on this Mac the same save is taken.
+        let taken = BookManifestEditSessions.check(book, against: baseline) { _ in false }
+        guard case .adopted = taken.found else { return XCTFail("The save was not taken once the tracks were back: \(taken.found)") }
+        XCTAssertNotNil(taken.baseline)
+        XCTAssertEqual(book.storedBookInfo()?.contentIndex?.chapters.map(\.audioFilePath), ["03.wav", "01.wav", "02.wav"])
+    }
+
     /// Hands `found`, what a look at the book `bookID` found, to `editor` as
     /// the app does, and returns what VoiceOver heard since, waiting a moment
     /// for it.

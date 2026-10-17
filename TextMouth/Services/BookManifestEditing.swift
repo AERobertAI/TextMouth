@@ -661,6 +661,10 @@ final class BookManifestEditSessions: Sendable {
     ///   (`BookContentAnalysisService.analyzeAudio`), which every track
     ///   must pass, as an import's does, and commits the new index to the
     ///   book's record (`LibraryPersistenceService.saveContentAnalysis`).
+    /// - That parse reads every track, so it waits while any track is only
+    ///   in the cloud (`hasTrackOnlyInCloud(_:in:isDataless:)`): the answer
+    ///   is `.inCloud`, nothing is taken or downloaded, and the baseline
+    ///   stays, so the next check tries again once the tracks are back.
     ///
     /// A field the manifest is owed (`owed`) is not adopted: the edit taken
     /// gives no title, or no author, for it.
@@ -698,11 +702,32 @@ final class BookManifestEditSessions: Sendable {
             // Rewritten with the same bytes: nothing was edited.
             return (.unchanged, fingerprint)
         }
+        // A take reads every track, so it waits until all are on this Mac
+        // (FR02): the tracks are listed with downloading off, as a look
+        // lists them. Nothing is taken and the baseline stays, so the next
+        // check tries again once the tracks are back. A listing that fails
+        // for another reason is left to the take, which refuses it in the
+        // import's words.
+        do {
+            let tracks = try DatalessFiles.withoutDownloading { try AudioBookParser.trackPaths(in: folder) }
+            if hasTrackOnlyInCloud(tracks, in: folder, isDataless: isDataless) { return (.inCloud, nil) }
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            return (.inCloud, nil)
+        } catch {
+            // Not a cloud matter: the take below says what is wrong.
+        }
         let found = take(book, manifestAt: location, digest: digest, owed: owed)
         // Only a taken edit is the baseline from now on: a refused one
         // keeps the old, so the user's next save is checked again.
         guard case .adopted = found else { return (found, nil) }
         return (found, fingerprint)
+    }
+
+    /// Whether any of `tracks`, paths from `folder` (`AudioBookParser.trackPaths(in:)`),
+    /// is only in the cloud: a take reads every track, so it must wait until
+    /// all are on this Mac. Reads nothing of the tracks.
+    private static func hasTrackOnlyInCloud(_ tracks: [String], in folder: URL, isDataless: (URL) -> Bool) -> Bool {
+        tracks.contains { isDataless(folder.appendingPathComponent($0)) }
     }
 
     // MARK: Edits Made Outside a Session (FR18)
@@ -766,7 +791,7 @@ final class BookManifestEditSessions: Sendable {
             return .unchanged
         }
         // The take reads every track, so it waits until all are on this Mac.
-        guard !read.tracks.contains(where: { isDataless(folder.appendingPathComponent($0)) }) else { return .inCloud }
+        guard !hasTrackOnlyInCloud(read.tracks, in: folder, isDataless: isDataless) else { return .inCloud }
         return take(book, manifestAt: location, digest: hasher.digestOfData(read.bytes), owed: owed)
     }
 
