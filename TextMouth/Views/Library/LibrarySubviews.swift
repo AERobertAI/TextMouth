@@ -407,8 +407,9 @@ struct BookRow: View {
     /// "Transcribing", shown and spoken after the cloud notes; nil for none.
     var transcriptionNote: TranscriptionRowNote? = nil
     /// Whether the row says its book is in the reading list (FR09): "In
-    /// reading list", spoken as the row's value after its label, which
-    /// stays as it was. The list passes true only outside the Reading List,
+    /// reading list", spoken in the row's label right after its title and
+    /// author, so scrolling through many rows finds it in the same place
+    /// every time. The list passes true only outside the Reading List,
     /// where every row's book is in the list.
     var isInReadingList: Bool = false
     /// Move Up and Move Down, offered while the list shows an order the
@@ -536,11 +537,6 @@ struct BookRow: View {
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(rowAccessibilityLabel)
-        // "In reading list" after the label, only for a book in it (FR09).
-        // Always set, empty otherwise, which VoiceOver does not speak, so
-        // the row keeps its identity, and VoiceOver its place on the row,
-        // when its own command adds the book or takes it off.
-        .accessibilityValue(rowAccessibilityValue ?? "")
         .accessibilityHint(Self.accessibilityHint(isEditMode: isEditMode, isEditSelected: isEditSelected))
         .accessibilityAddTraits(isEditSelected ? [.isSelected] : [])
         .accessibilityActions {
@@ -597,6 +593,11 @@ struct BookRow: View {
         }
         parts.append(book.title)
         parts.append("by \(book.author)")
+        // Right after the title and author, so a book in the reading list
+        // says so in the same place on every row (FR09).
+        if isInReadingList {
+            parts.append(ReadingListWording.inReadingListNote)
+        }
         if book.isUnopened {
             parts.append("New")
         } else if isOpenInWindow {
@@ -620,13 +621,6 @@ struct BookRow: View {
         }
         parts.append(book.format.displayName)
         return parts.joined(separator: ", ")
-    }
-
-    /// What VoiceOver says for the row after its label: "In reading list"
-    /// for a book the row says is in the reading list (FR09), and nothing
-    /// otherwise.
-    var rowAccessibilityValue: String? {
-        isInReadingList ? ReadingListWording.inReadingListValue : nil
     }
 
     // The row's words, apart from the view, so a feed item's row (FR11,
