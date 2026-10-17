@@ -634,4 +634,83 @@ final class WindowsMatrixTests: XCTestCase {
         router.unregister(newLibrary)
         router.unregisterReaderWindow(readerWindow)
     }
+
+    // MARK: - Column 7: A Timer Cancelled, Started, Run Out, and Restarted in B's Window
+
+    /// The sleep timer is one for the whole app, owned by the reader that set
+    /// it. Four things happen to it in B's reader, for every row:
+    ///
+    /// - B's reader cancels it. Anyone may cancel, so A's timer ends
+    ///   (`ReaderViewModel.cancelSleepTimer()`).
+    /// - B's reader starts one. It replaces A's, which A no longer owns.
+    /// - B's timer runs out. B pauses (it plays nothing) and says "Sleep
+    ///   timer expired. Playback paused." while A plays on. That is under
+    ///   question: the listener who set a timer in A and then set one in B
+    ///   hears that playback paused while the book they were listening to
+    ///   goes on. It is pinned as it is today.
+    /// - B's reader restarts the timer (the Restart Sleep Timer shortcut or
+    ///   a media gesture in B's window). It takes the duration of the timer
+    ///   in effect, or the last one used, owns it, and starts B playing,
+    ///   which pauses A. Also under question for the same reason: A's timer
+    ///   has become B's.
+    ///
+    /// In every case A is not stopped or moved by the timer's changes alone;
+    /// only the restart's play pauses it.
+    func testATimerCancelledStartedRunOutAndRestartedInAnotherBooksWindow() throws {
+        preserveSharedSleepTimer()
+        let timer = SleepTimerService.shared
+        for (index, row) in Row.all.enumerated() {
+            let stage = try makeStage(for: row, index: 100 + index)
+            defer { stage.close() }
+            let bReader = openReader(for: try makeB(in: stage), in: stage)
+
+            // Cancelled in B's reader.
+            var cell = "\(row) | cancel a timer in B's reader"
+            var before = observe(stage)
+            var recorder = recordingAnnouncements { bReader.cancelSleepTimer() }
+            assertA(stage, since: before, timer: .ended, cell)
+            XCTAssertEqual(recorder.announcements.map(\.message), [], "\(cell): VoiceOver heard something")
+
+            // Started in B's reader.
+            armTimer(of: stage)
+            cell = "\(row) | start a timer in B's reader"
+            before = observe(stage)
+            recorder = recordingAnnouncements { bReader.startSleepTimer(duration: .minutes(5)) }
+            assertA(stage, since: before, timer: .takenBy(bReader.readerID, .minutes(5)), cell)
+            XCTAssertEqual(recorder.announcements.map(\.message), [], "\(cell): VoiceOver heard something")
+
+            // B's timer runs out while A plays on.
+            cell = "\(row) | B's timer runs out"
+            before = observe(stage)
+            recorder = recordingAnnouncements {
+                timer._expireForTesting()
+                XCTAssertTrue(eventually(within: 3) { !timer.isActive }, "\(cell): the timer never ended")
+                handleQueuedCallbacks()
+            }
+            assertA(stage, since: before, timer: .ended, cell)
+            XCTAssertEqual(recorder.announcements.map(\.message), [Self.expiredAnnouncement], "\(cell): what VoiceOver heard")
+
+            // Restarted in B's reader, which plays B and so pauses A.
+            armTimer(of: stage)
+            cell = "\(row) | restart the timer in B's reader"
+            let expectedDuration = row.timer.duration ?? .minutes(5)
+            let expectedWords = row.timer == .none ? "Timer restarted: 5 minutes." : "Timer reset."
+            before = observe(stage)
+            recorder = recordingAnnouncements {
+                bReader.restartOrStartLastSleepTimer()
+                // A text book's pause, asked for by B's start, finishes on
+                // the main queue's next turn.
+                handleQueuedCallbacks()
+            }
+            assertA(
+                stage,
+                since: before,
+                playback: row.playback.isPlaying ? .pausedByAnotherBook : .unchanged,
+                timer: .takenBy(bReader.readerID, expectedDuration),
+                cell
+            )
+            XCTAssertEqual(recorder.announcements.map(\.message), [expectedWords], "\(cell): what VoiceOver heard")
+            XCTAssertTrue(bReader.isPlaybackUnderWay, "\(cell): B did not start playing")
+        }
+    }
 }
