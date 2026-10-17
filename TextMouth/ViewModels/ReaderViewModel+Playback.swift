@@ -2616,20 +2616,15 @@ extension ReaderViewModel {
     }
 
     /// What follows this finished book in its folder or feed, going the way
-    /// `rule` says: the next book
-    /// (`LibraryViewModel.nextBook(after:going:skippingFinished:)`), or,
-    /// when there is none, why: no book at all lies that way, or every book
-    /// that does is finished and the rule passes over them.
+    /// `rule` says (`LibraryViewModel.succession(after:going:skippingFinished:)`):
+    /// the next book, or, for a feed's episode whose file is not here, the
+    /// order to download it; or, when there is none, why: no book at all lies
+    /// that way, or every book that does is finished and the rule passes over
+    /// them.
     private func successionInFolder(following rule: EndOfBookRule) -> BookSuccession {
-        if let nextBook = libraryViewModel.nextBook(
+        libraryViewModel.succession(
             after: book, going: rule.direction, skippingFinished: rule.skipsFinished
-        ) {
-            return .book(nextBook)
-        }
-        let whyNothingFollows = libraryViewModel.booksBeyond(book, going: rule.direction).isEmpty
-            ? EndOfBookWording.noMoreBooksInFolderNote
-            : EndOfBookWording.onlyFinishedBooksInFolderNote(going: rule.direction)
-        return .nothing(note: whyNothingFollows)
+        )
     }
 
     /// Puts the cursor at the book's beginning, saved, where a book that

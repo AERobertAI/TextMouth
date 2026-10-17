@@ -441,6 +441,14 @@ final class ReaderViewModel: ObservableObject {
     /// again, or waits at its start. Accessed from the Playback and
     /// Navigation extensions.
     var hasFinishedBook = false
+    /// The wait for the next episode's download (FR19, task B3): while this
+    /// finished episode's feed downloads the episode that follows it, the
+    /// subscription to the feed engine's events that hands listening over
+    /// when it arrives, or says why playback stopped when it fails. Nil
+    /// when no wait is under way; a new wait replaces an earlier one, and
+    /// closing the reader ends it. Held here because an extension cannot
+    /// hold a stored property; used by `ReaderViewModel+EpisodeDownload`.
+    var nextEpisodeWait: AnyCancellable?
     /// Whether the play under way replays a finished book's end, as a
     /// backward skip after the end starts it (`performSkip(unit:forward:)`):
     /// the end it plays on to is no new finish (TODO P07; the user,
@@ -1994,6 +2002,8 @@ final class ReaderViewModel: ObservableObject {
     func close() {
         guard !hasClosed else { return }
         hasClosed = true
+        // A closed reader hands nothing over when the next episode arrives.
+        nextEpisodeWait = nil
         // A download the reader waits for is stopped, and the book's state
         // found afterwards recorded for the library list (FR02).
         endCloudWorkForClose()

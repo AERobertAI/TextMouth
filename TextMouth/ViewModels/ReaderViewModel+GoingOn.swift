@@ -55,10 +55,7 @@ extension ReaderViewModel {
 
         case .book(let next):
             guard !sleepTimerEndsListening else {
-                // The next book would play on past this reader's sleep timer,
-                // which can pause only the reader that set it.
-                DiagnosticLog.trace(.playback, "end of book: this reader's sleep timer is in effect; not starting the next book in \(place)")
-                say(EndOfBookWording.finished(book.title, notes: [EndOfBookWording.nextBookNotStartedNote]))
+                saySleepTimerKeepsNextBookFromStarting(in: place, saying: say)
                 return
             }
             // The next book takes over, so this one no longer rests finished
@@ -67,9 +64,27 @@ extension ReaderViewModel {
                 start(next.id)
             }
 
-        case .episodeToDownload:
-            // Placeholder until the reader's wait for the download exists.
-            say(EndOfBookWording.finished(book.title, notes: [EndOfBookWording.noMoreBooksInFolderNote], sleepTimerExpired: sleepTimerStoppedHere))
+        case .episodeToDownload(let feedID, let item):
+            guard !sleepTimerEndsListening else {
+                // No download either: nothing would play it.
+                saySleepTimerKeepsNextBookFromStarting(in: place, saying: say)
+                return
+            }
+            DiagnosticLog.trace(.playback, "end of book: the next episode of \(place) is not here; downloading it")
+            say(EndOfBookWording.finished(
+                book.title,
+                notes: [EndOfBookWording.downloadingNextNote(item)],
+                sleepTimerExpired: sleepTimerStoppedHere
+            ))
+            waitForNextEpisode(item, of: feedID, startingWith: start)
         }
+    }
+
+    /// Says that the next book was not started because this reader's sleep
+    /// timer is in effect: the next book would play on past it, and the
+    /// timer can pause only the reader that set it.
+    private func saySleepTimerKeepsNextBookFromStarting(in place: String, saying say: (String) -> Void) {
+        DiagnosticLog.trace(.playback, "end of book: this reader's sleep timer is in effect; not starting the next book in \(place)")
+        say(EndOfBookWording.finished(book.title, notes: [EndOfBookWording.nextBookNotStartedNote]))
     }
 }

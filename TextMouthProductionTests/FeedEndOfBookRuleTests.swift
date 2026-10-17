@@ -5,8 +5,8 @@ import XCTest
 /// A feed's item at its end follows its feed's listening options (FR19,
 /// task B2): the item above or below plays, finished items are passed over
 /// or not as the feed says, "Stop" stops, and a feed with standard options
-/// follows the global "When book ends" as it always did, passing over an
-/// item that is not downloaded (task B3 changes that, not this one).
+/// follows the global "When book ends" as it always did, except that an
+/// item that is not downloaded is downloaded, not passed over (task B3).
 ///
 /// The items are downloaded articles of the feed, newest first as the
 /// feed's folder lists them: Third, Second, First. Their readers play
@@ -111,14 +111,17 @@ final class FeedEndOfBookRuleTests: FeedItemIndexTestCase {
     // MARK: - Standard Options
 
     /// A feed with standard options follows the global Continue to Next
-    /// Book: the downloaded item below plays, and an item that is not
-    /// downloaded between them is passed over.
-    func testAFeedWithStandardOptionsFollowsTheGlobalSettingPastAnItemNotHere() async throws {
+    /// Book: an item below that is not downloaded is not passed over (task
+    /// B3 changed that from passing it over): it is downloaded, and the
+    /// downloaded item beyond it does not play meanwhile. What the download
+    /// brings is the business of `EpisodeDownloadContinuationTests`.
+    func testAFeedWithStandardOptionsFollowsTheGlobalSettingToAnItemNotHere() async throws {
         let setup = try await makeFeed(options: nil, global: .continueNext, secondIsDownloaded: false)
 
-        let down = await end(setup.third, in: setup, expectingARequest: true)
-        XCTAssertEqual(down.announced, ["Starting: First"])
-        XCTAssertEqual(down.asked, [setup.first.id])
+        let down = await end(setup.third, in: setup, expectingARequest: false)
+        XCTAssertEqual(down.announced.first, "Finished: Third. Downloading the next episode: Episode ep-2.")
+        XCTAssertFalse(down.announced.contains("Starting: First"), "The item beyond the one not here played")
+        XCTAssertEqual(down.asked, [])
     }
 
     /// A feed with standard options and the global setting at Stop stops.
