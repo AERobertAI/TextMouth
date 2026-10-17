@@ -65,7 +65,7 @@ extension EndBehaviorMatrixTests {
             // Long enough for the player's last tick, as it stops at the end,
             // to have been handled.
             spinMainRunLoop(for: 0.3)
-            nextAsked = nextBookIsAskedFor(continued)
+            nextAsked = nextBookAsked(for: cell, title: book.title, next: nextBook.title, continued)
         }
 
         assertEnd(
@@ -82,6 +82,36 @@ extension EndBehaviorMatrixTests {
             is: cell, title: book.title, next: nextBook.title, lastChapter: lastChapter, content: content,
             file: file, line: line
         )
+    }
+
+    /// Whether the next book has been asked for, as `continued` records the
+    /// requests, once a book's end has settled. A cell that expects the next
+    /// book waits for the ask, which comes `ReaderViewModel.continueToNextBookDelay`
+    /// after the announcement (`nextBookIsAskedFor`); any other cell reads
+    /// what has been asked for so far, at once.
+    ///
+    /// That is as strong as the wait it replaces: the next book is asked
+    /// for only by a hand-over (`ReaderViewModel.handOverToNextBook`, which
+    /// its two callers, `goOnPastThisBook` and the episode download, reach
+    /// at the end of a book), and a hand-over speaks "Starting: <title>" the
+    /// moment it begins, before it asks. The cell's announcement assertion
+    /// (`assertEnd`) fails on that announcement in every cell that is not to
+    /// hand over, and the recorder that holds the announcements was running
+    /// all along, so a hand-over that began would fail the cell whether or
+    /// not this test then waited a second for its ask.
+    ///
+    /// - Parameters:
+    ///   - cell: The behavior and timer under test.
+    ///   - title: The title of the book that ended, for the expected outcome.
+    ///   - next: The title of the book after it.
+    ///   - continued: The reader of the requests posted so far
+    ///     (`recordContinueRequests(in:)`).
+    func nextBookAsked(
+        for cell: Cell, title: String, next: String, _ continued: () -> [Notification]
+    ) -> Bool {
+        cell.outcome(title: title, next: next).nextAsked
+            ? nextBookIsAskedFor(continued)
+            : !continued().isEmpty
     }
 
     /// The offset, in a chapter of `seconds` seconds, half a second before
