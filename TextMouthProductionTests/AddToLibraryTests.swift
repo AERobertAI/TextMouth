@@ -257,4 +257,65 @@ final class AddToLibraryTests: XCTestCase {
         manager.updateBindings(for: .addFeed, to: [])
         XCTAssertNil(AddToLibraryChoice.addFeed.keyDescription(under: manager), "a choice with no key described one")
     }
+
+    // MARK: - The Hosted Sheet
+
+    /// The sheet's size, which its fixed frame gives it: a hosted view that
+    /// outgrows its window crashes the test host (`withHostedView`).
+    private let sheetSize = NSSize(width: 420, height: 480)
+
+    /// The sheet for `model`, whose keys in words are `keys`.
+    private func makeSheet(_ model: AddToLibraryModel, keys: [AddToLibraryChoice: String] = [:]) -> AddToLibrarySheet {
+        AddToLibrarySheet(model: model, keyDescription: { keys[$0] })
+    }
+
+    /// The sheet draws inside its fixed frame, and, where the session exposes
+    /// SwiftUI's buttons to accessibility, lists the five choices in order
+    /// as buttons spoken with their keys and hinted with their summaries,
+    /// the dimmed one with its reason, and Cancel last. A hosted SwiftUI
+    /// button here has no AppKit button to click (the test host draws none),
+    /// so pressing a choice is tested through the model call its closure
+    /// makes (`choose`), above.
+    func testTheSheetListsTheFiveChoicesInOrderThenCancel() {
+        let model = makeModel(dimmed: [.newRecording]) { _ in }
+        let keys: [AddToLibraryChoice: String] = [.openBook: "Command + O"]
+        withHostedView(makeSheet(model, keys: keys), size: sheetSize, until: { !self.descendants(of: $0, as: NSView.self).isEmpty }) { hosting in
+            hosting.layoutSubtreeIfNeeded()
+            XCTAssertLessThanOrEqual(hosting.fittingSize.width, sheetSize.width)
+            XCTAssertLessThanOrEqual(hosting.fittingSize.height, sheetSize.height)
+
+            // SwiftUI builds its buttons' accessibility lazily, so a session
+            // may expose none; the labels are pinned by the wording tests.
+            let buttons = accessibleControls(in: hosting).filter { $0.role == .button }
+            guard !buttons.isEmpty else { return }
+            var expected = AddToLibraryChoice.allCases.map { AddToLibraryWording.label($0, key: keys[$0]) }
+            expected.append(AddToLibraryWording.cancel)
+            XCTAssertEqual(buttons.map(\.label), expected)
+            let hints = AddToLibraryChoice.allCases.map {
+                $0 == .newRecording ? AddToLibraryWording.unavailableHint($0) : AddToLibraryWording.summary($0)
+            }
+            XCTAssertEqual(buttons.prefix(AddToLibraryChoice.allCases.count).map(\.hint), hints)
+        }
+    }
+
+    /// Escape reaches Cancel: it closes the sheet and drops a choice made,
+    /// so nothing runs.
+    func testEscapeReachesCancel() throws {
+        var performed: [AddToLibraryChoice] = []
+        let model = makeModel { performed.append($0) }
+        model.isPresented = true
+        try withHostedView(makeSheet(model), size: sheetSize, until: { !self.descendants(of: $0, as: NSView.self).isEmpty }) { hosting in
+            guard pressKey(.escape, in: hosting) else {
+                throw XCTSkip("This macOS hands an offscreen window no key equivalents")
+            }
+            XCTAssertFalse(model.isPresented, "Escape did not close the sheet")
+
+            // Escape after a choice has been made drops the choice.
+            model.isPresented = true
+            model.choose(.addFeed)
+            XCTAssertTrue(pressKey(.escape, in: hosting))
+            model.sheetDidDismiss()
+            XCTAssertEqual(performed, [], "a choice ran after Escape")
+        }
+    }
 }

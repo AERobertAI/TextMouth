@@ -72,3 +72,74 @@ extension AddToLibraryChoice {
         shortcuts.keyEquivalent(for: action)?.accessibleDisplayString
     }
 }
+// MARK: - The Sheet
+
+/// The Add to Library sheet (FR20): a heading, one button for each way to
+/// add (`AddToLibraryChoice.allCases`), each with its summary under it, and
+/// Cancel. Tab and Space reach every button, Escape presses Cancel, and each
+/// choice is one button for VoiceOver, spoken with its key and its summary
+/// as the hint.
+struct AddToLibrarySheet: View {
+    @ObservedObject var model: AddToLibraryModel
+    /// A choice's key in words, nil for none (`AddToLibraryChoice.keyDescription(under:)`).
+    let keyDescription: (AddToLibraryChoice) -> String?
+
+    /// The sheet's fixed size. A view that outgrows its hosting window
+    /// crashes the test host, and five rows with a heading and Cancel fit
+    /// this height, so nothing needs to scroll.
+    private static let width: CGFloat = 420
+    private static let height: CGFloat = 480
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(AddToLibraryWording.sheetTitle)
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
+
+            ForEach(AddToLibraryChoice.allCases) { choice in
+                choiceButton(choice)
+            }
+
+            HStack {
+                Spacer()
+                Button(AddToLibraryWording.cancel) { model.cancel() }
+                    .keyboardShortcut(.cancelAction)
+            }
+        }
+        .padding()
+        .frame(width: Self.width, height: Self.height, alignment: .topLeading)
+        .navigationTitle(AddToLibraryWording.sheetTitle)
+    }
+
+    /// One choice's button: its title (and key) with the summary under it in
+    /// a smaller, secondary style, as a single element for VoiceOver, dimmed
+    /// where its menu command does not work. The first takes VoiceOver's
+    /// initial focus, as the other sheets' first control does.
+    private func choiceButton(_ choice: AddToLibraryChoice) -> some View {
+        let key = keyDescription(choice)
+        let enabled = model.isEnabled(choice)
+        return Button {
+            model.choose(choice)
+        } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack {
+                    Text(choice.title)
+                    if let key {
+                        Spacer()
+                        Text(key).foregroundStyle(.secondary)
+                    }
+                }
+                Text(choice.summary)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .disabled(!enabled)
+        .accessibilityLabel(AddToLibraryWording.label(choice, key: key))
+        .accessibilityHint(enabled ? AddToLibraryWording.summary(choice) : AddToLibraryWording.unavailableHint(choice))
+        .modifier(InitialVoiceOverFocusModifier(isTarget: choice == AddToLibraryChoice.allCases.first))
+    }
+}
