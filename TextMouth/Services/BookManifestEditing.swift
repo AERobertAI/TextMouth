@@ -322,8 +322,11 @@ enum BookManifestFile {
     /// values of `fields` (only the title and the author are told): its
     /// `title` and `author` strings equal the row's. Also true when the
     /// book's audio is no longer a folder of tracks whose manifest TextMouth
-    /// keeps, since nothing can be owed there. False when the folder or the
-    /// manifest is only in the cloud, when there is no manifest, and when the
+    /// keeps (it is a file, or its manifest gives sections), since nothing
+    /// can be owed there. False when the folder or the manifest is only in
+    /// the cloud, when the folder is not there at all (a volume not mounted,
+    /// a library midway through a move: it may be back, and the manifest is
+    /// still owed what it was), when there is no manifest, and when the
     /// manifest cannot be read or is not one JSON object. A read that
     /// downloads nothing. Storage work, off the main thread.
     static func holds(
@@ -336,7 +339,9 @@ enum BookManifestFile {
         case nil:
             return false
         case false?:
-            return true
+            // Nothing is owed to audio that is no folder of tracks, but audio
+            // that is not there at all may come back: it stays owed.
+            return FileManager.default.fileExists(atPath: folder.path)
         case true?:
             break
         }

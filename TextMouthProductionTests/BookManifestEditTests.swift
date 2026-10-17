@@ -1417,6 +1417,36 @@ final class BookManifestEditTests: XCTestCase {
         XCTAssertEqual(owed.owed(by: sections.id), [], "A book that is no folder of tracks stayed owed")
     }
 
+    /// What the manifest is owed is not forgotten while the book's folder is
+    /// missing (a volume not mounted, a library midway through a move): audio
+    /// that is not there is not audio that is no folder of tracks, so the
+    /// title stays owed and is written once the folder is back, and the old
+    /// title in the manifest never replaces the retitle.
+    func testAnOwedTitleStaysOwedWhileTheBooksFolderIsMissing() async throws {
+        let world = try makeIntegrationWorld("Owed Manifest Missing Folder")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2], manifest: #"{"title": "Harbour Pilots"}"#)
+        let owed = ManifestOwedFields(preferences: makeSandboxedPreferences("Owed Manifest Missing Folder"))
+        let sessions = BookManifestEditSessions(owed: owed)
+        _ = await retitle(book.id, to: "Night Pilots", in: world, with: sessions, isDataless: Self.manifestInCloud)
+        XCTAssertEqual(owed.owed(by: book.id), [.title])
+
+        // The book's package goes away, as with a volume that is not mounted.
+        let away = book.tmbDirectory.deletingLastPathComponent().appendingPathComponent("away-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.moveItem(at: book.tmbDirectory, to: away)
+        let whileGone = sessions.look(at: try row(book.id, in: world), isDataless: Self.nothingInCloud)
+
+        guard case .missing = whileGone else { return XCTFail("A missing folder was looked at: \(whileGone)") }
+        XCTAssertEqual(owed.owed(by: book.id), [.title], "A title owed was forgotten while the folder was missing")
+
+        try FileManager.default.moveItem(at: away, to: book.tmbDirectory)
+        let back = sessions.look(at: try row(book.id, in: world), isDataless: Self.nothingInCloud)
+
+        guard case .unchanged = back else { return XCTFail("The look once the folder was back took the old title: \(back)") }
+        XCTAssertEqual(try manifestTitle(of: book), "Night Pilots", "The owed title was not written")
+        XCTAssertEqual(world.library.bookByID(book.id)?.title, "Night Pilots")
+        XCTAssertEqual(owed.owed(by: book.id), [])
+    }
+
     /// The record round-trips through the preferences, an empty set removes
     /// a book's entry and the last entry removes the record, a malformed
     /// value reads as nothing owed, and only the title and the author are
