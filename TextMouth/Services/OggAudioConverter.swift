@@ -1,4 +1,3 @@
-import AudioToolbox
 import AVFoundation
 import Darwin
 
@@ -14,7 +13,8 @@ import Darwin
 /// decodes Ogg itself: it runs Apple's own `/usr/bin/afconvert` as a child
 /// process (`WatchedProcess`), which a watchdog kills when it runs too long,
 /// holds too much memory, or stops writing (`ConversionLimits`). All that
-/// TextMouth reads of the Ogg file is its header (`inspect(_:)`).
+/// TextMouth reads of the Ogg file is its first and last bytes, parsed by
+/// hand (`OggHeaderReader`, through `inspect(_:)`), with no Apple audio API.
 ///
 /// A file is written at the source's own average bit rate rounded up to the
 /// next standard AAC rate, so a track stays about the same size and sounds
@@ -43,11 +43,16 @@ enum OggAudioConverter {
     static let lengthTolerance: TimeInterval = 1
 
     /// What ends the hidden name a file has while it is written and
-    /// checked: the reader never lists a hidden file
-    /// (`AudioBookParser.audioFiles(in:)` skips them), and a file left
+    /// checked (`temporaryURL(beside:)`): the reader never lists a hidden
+    /// file (`AudioBookParser.audioFiles(in:)` skips them), and a file left
     /// behind by an interrupted conversion is found by it and removed
     /// (`removeLeftovers(in:)`).
     static let temporarySuffix = ".ogg-conversion.m4a"
+
+    /// The longest file name, in UTF-16 code units, that every supported
+    /// file system accepts (exFAT and HFS+ count units; APFS counts
+    /// characters, so it accepts at least as much).
+    static let maximumNameLength = 255
 
     /// The standard AAC bit rates of stereo audio, in bits a second; mono's
     /// are half of each (`standardBitRates(channels:)`).
@@ -152,34 +157,27 @@ enum OggAudioConverter {
         return isOfCDFamily ? 44_100 : 48_000
     }
 
-    /// What the header of an Ogg file says: read without decoding a sample
-    /// (`inspect(_:)`).
+    /// What the header of an Ogg file says: read from its own bytes without
+    /// decoding a sample (`inspect(_:)`).
     struct SourceInfo: Equatable, Sendable {
         /// The sample rate, in hertz.
         let sampleRate: Double
         /// The number of channels.
         let channels: Int
-        /// How long it lasts, in seconds, as the container estimates it.
+        /// How long it lasts, in seconds, as the position of its last page
+        /// says.
         let duration: TimeInterval
     }
 
-    /// The sample rate, channels, and length of the Ogg file at `url`, from
-    /// its header alone through AudioFile: nothing is decoded, so Apple's
-    /// Vorbis decoder is never run in TextMouth. Nil when the file isn't
-    /// there, is only in the cloud, or isn't audio AudioFile reads.
+    /// The sample rate, channels, and length of the Ogg file at `url`, read
+    /// from the file's own bytes by `OggHeaderReader` (REV17a): no Apple
+    /// audio API opens the file, so neither AudioFile's demuxer nor Apple's
+    /// Vorbis decoder ever runs in TextMouth. Nil when the file isn't there,
+    /// is only in the cloud, or isn't Ogg Vorbis or Opus audio.
     static func inspect(_ url: URL) -> SourceInfo? {
-        guard FileManager.default.fileExists(atPath: url.path), !DatalessFiles.isDataless(url) else { return nil }
-        var file: AudioFileID?
-        guard AudioFileOpenURL(url as CFURL, .readPermission, 0, &file) == noErr, let file else { return nil }
-        defer { AudioFileClose(file) }
-        var format = AudioStreamBasicDescription()
-        var formatSize = UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
-        var seconds: Float64 = 0
-        var secondsSize = UInt32(MemoryLayout<Float64>.size)
-        guard AudioFileGetProperty(file, kAudioFilePropertyDataFormat, &formatSize, &format) == noErr,
-              AudioFileGetProperty(file, kAudioFilePropertyEstimatedDuration, &secondsSize, &seconds) == noErr,
-              format.mSampleRate > 0, format.mChannelsPerFrame > 0, seconds.isFinite, seconds > 0 else { return nil }
-        return SourceInfo(sampleRate: format.mSampleRate, channels: Int(format.mChannelsPerFrame), duration: seconds)
+        guard FileManager.default.fileExists(atPath: url.path), !DatalessFiles.isDataless(url),
+              let header = OggHeaderReader.read(at: url) else { return nil }
+        return SourceInfo(sampleRate: header.sampleRate, channels: header.channels, duration: header.duration)
     }
 
     /// How a source described by `info`, a file of `bytes` bytes, is written:
@@ -262,6 +260,17 @@ enum OggAudioConverter {
 
     // MARK: - Converting
 
+    /// The hidden name a conversion of `source` has until it is named:
+    /// ".<UUID>.ogg-conversion.m4a", beside `source`. It is built from the
+    /// UUID alone, 56 characters whatever the source's name, so a source
+    /// with a long stem (up to the file system's limit) can still be
+    /// converted; the UUID makes it unique, and `removeLeftovers(in:)` finds
+    /// it by `temporarySuffix`.
+    static func temporaryURL(beside source: URL) -> URL {
+        source.deletingLastPathComponent()
+            .appendingPathComponent(".\(UUID().uuidString)\(temporarySuffix)")
+    }
+
     /// Converts the Ogg file `source` to AAC in an .m4a file beside it,
     /// under a hidden temporary name, and checks the result: it must play,
     /// and last as long as the source to within `allowedLengthError(for:)`.
@@ -280,9 +289,7 @@ enum OggAudioConverter {
         guard let info = inspect(source) else { throw Failure.unreadable(fileName: name) }
         let bytesBefore = fileSize(of: source)
         let target = target(for: info, bytes: bytesBefore)
-        let stem = source.deletingPathExtension().lastPathComponent
-        let staged = source.deletingLastPathComponent()
-            .appendingPathComponent(".\(stem).\(UUID().uuidString)\(temporarySuffix)")
+        let staged = temporaryURL(beside: source)
         do {
             try await run(tool, from: source, to: staged, info: info, target: target)
             try await check(staged, against: info.duration, from: name)
@@ -368,30 +375,89 @@ enum OggAudioConverter {
         }
     }
 
+    /// The exclusive rename that takes a final name: `from` becomes `to`
+    /// only if nothing has the name `to` (`RENAME_EXCL`). Returns 0, or -1
+    /// with `errno` set. This is `givingFinalName`'s default `exclusiveRename`.
+    static func renameWithoutReplacing(_ from: String, _ to: String) -> Int32 {
+        renamex_np(from, to, UInt32(RENAME_EXCL))
+    }
+
+    /// The name of the `number`th candidate for a final name: `stem` with
+    /// .m4a for the first, "<stem> 2.m4a" and so on after. Should the name
+    /// pass `maximumNameLength` UTF-16 units, whole characters (never half
+    /// a grapheme cluster) are dropped from the end of the stem until it
+    /// fits; the stem itself is not changed, so each candidate is fitted on
+    /// its own.
+    static func candidateName(stem: String, number: Int) -> String {
+        let ending = number == 1 ? ".m4a" : " \(number).m4a"
+        var characters = Substring(stem)
+        // Drop the stem's last character until the whole name fits.
+        while characters.utf16.count + ending.utf16.count > maximumNameLength, !characters.isEmpty {
+            characters.removeLast()
+        }
+        return String(characters) + ending
+    }
+
     /// `conversion` with its file given its final name: its source's stem
     /// with .m4a, or, when a file has that name already, the first of
-    /// "<stem> 2.m4a", "<stem> 3.m4a", … that is free. Each name is taken
-    /// with one rename that refuses an existing file (`RENAME_EXCL`), so two
-    /// conversions finishing at once never take the same name, and no file
-    /// is ever replaced.
+    /// "<stem> 2.m4a", "<stem> 3.m4a", … that is free (`candidateName`).
+    /// Each name is taken with one rename that refuses an existing file
+    /// (`RENAME_EXCL`), so two conversions finishing at once never take the
+    /// same name, and no file is ever replaced. A file system that does not
+    /// support that rename (exFAT answers ENOTSUP) is served by reserving the
+    /// name with an exclusive create, which is as safe, and then renaming
+    /// over the empty reservation.
+    /// - Parameter exclusiveRename: How the exclusive rename is made: 0, or
+    ///   -1 with `errno` set. A test passes one that fails as it chooses.
     /// - Throws: `Failure.cannotName` when the rename fails otherwise.
-    static func givingFinalName(_ conversion: Conversion) throws -> Conversion {
+    static func givingFinalName(
+        _ conversion: Conversion,
+        exclusiveRename: (_ from: String, _ to: String) -> Int32 = renameWithoutReplacing
+    ) throws -> Conversion {
         let folder = conversion.source.deletingLastPathComponent()
         let stem = conversion.source.deletingPathExtension().lastPathComponent
+        let failure = Failure.cannotName(fileName: conversion.source.lastPathComponent)
         var number = 1
         while true {
-            let name = number == 1 ? "\(stem).m4a" : "\(stem) \(number).m4a"
-            let target = folder.appendingPathComponent(name)
-            if renamex_np(conversion.converted.path, target.path, UInt32(RENAME_EXCL)) == 0 {
+            let target = folder.appendingPathComponent(candidateName(stem: stem, number: number))
+            var taken = exclusiveRename(conversion.converted.path, target.path) == 0
+            // Read errno at once: nothing may run between the failure and it.
+            let reason = taken ? 0 : errno
+            if !taken, reason == ENOTSUP || reason == EOPNOTSUPP {
+                taken = try renamingOverReservation(of: conversion.converted, to: target, failure: failure)
+            } else if !taken, reason != EEXIST {
+                throw failure
+            }
+            if taken {
                 var named = conversion
                 named.converted = target
                 return named
             }
-            guard errno == EEXIST else {
-                throw Failure.cannotName(fileName: conversion.source.lastPathComponent)
-            }
             number += 1
         }
+    }
+
+    /// The fallback for a file system without `RENAME_EXCL`: reserves
+    /// `target` by creating it exclusively (it fails when anything has the
+    /// name), closes it, and renames `file` over it. No file that was there
+    /// before is replaced, and of two conversions only one creates the name.
+    /// - Returns: true when `file` now has the name `target`; false when
+    ///   the name is taken, so the caller tries the next.
+    /// - Throws: `failure` when the name cannot be reserved or the rename
+    ///   fails (the reservation is then removed).
+    private static func renamingOverReservation(of file: URL, to target: URL, failure: Failure) throws -> Bool {
+        let descriptor = open(target.path, O_CREAT | O_EXCL | O_WRONLY, 0o644)
+        guard descriptor >= 0 else {
+            if errno == EEXIST { return false }
+            throw failure
+        }
+        close(descriptor)
+        guard rename(file.path, target.path) == 0 else {
+            // Only the empty reservation made above is removed.
+            unlink(target.path)
+            throw failure
+        }
+        return true
     }
 
     /// Converts each of `sources` as `convert(_:naming:)` does, at most

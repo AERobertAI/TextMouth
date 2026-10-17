@@ -46,6 +46,27 @@ final class OggAfconvertTests: XCTestCase {
         XCTAssertNil(OggAudioConverter.inspect(folder.appendingPathComponent("missing.ogg")))
     }
 
+    /// `inspect` takes its facts from the hand-written header reader
+    /// (`OggHeaderReader`), so no Apple audio API opens the file: streams
+    /// built in memory, written under Ogg names, give their rate, channels,
+    /// and length (an Opus stream always at the decoder's 48,000 Hz, less
+    /// its pre-skip).
+    func testInspectReadsStreamsBuiltInMemoryThroughTheHeaderReader() throws {
+        let vorbis = folder.appendingPathComponent("synthetic.ogg")
+        try Data(OggStreamBuilder.vorbisStream(channels: 2, rate: 44_100, granule: 88_200)).write(to: vorbis)
+        let opus = folder.appendingPathComponent("synthetic.opus")
+        try Data(OggStreamBuilder.opusStream(channels: 6, preSkip: 312, granule: 48_312)).write(to: opus)
+
+        XCTAssertEqual(
+            OggAudioConverter.inspect(vorbis),
+            OggAudioConverter.SourceInfo(sampleRate: 44_100, channels: 2, duration: 2)
+        )
+        let opusInfo = try XCTUnwrap(OggAudioConverter.inspect(opus))
+        XCTAssertEqual(opusInfo.sampleRate, 48_000)
+        XCTAssertEqual(opusInfo.channels, 6)
+        XCTAssertEqual(opusInfo.duration, 1, accuracy: 0.0001)
+    }
+
     // MARK: - Nothing Else Decodes Ogg
 
     /// The playability probe, the audio editor's loader, and the

@@ -198,6 +198,18 @@ extension LibraryViewModel {
 
         let bookURL = URL(fileURLWithPath: book.filePath)
         let isFolder = search.isFolder
+        // A folder book's commit reads its saved index (`commitTracks`). It
+        // is read here first, with the same call, so a book whose index the
+        // commit would refuse waits before any minutes of conversion are
+        // spent: nothing is converted and no hidden file is made (REV17a).
+        if isFolder {
+            do {
+                try await OffMainWork.runThrowing { _ = try BookContentAnalysisService.load(book: book) }
+            } catch {
+                oggConversion.markFailed(bookID)
+                return wait(.failed(Self.loggable(error)), for: book)
+            }
+        }
         let container = isFolder ? bookURL : bookURL.deletingLastPathComponent()
         let needed = await OggAudioConverter.estimatedSize(of: found) + ArchiveLimits.standard.freeSpaceReserve
         if let free = ArchiveLimits.volumeFreeSpace(at: container), free < needed {
@@ -277,14 +289,22 @@ extension LibraryViewModel {
     /// files removed, so the book is as it was.
     /// - Returns: The edit; nil when the record could not take it now (it
     ///   is only in the cloud, or the book moved meanwhile).
-    nonisolated private static func commitTracks(
+    nonisolated static func commitTracks(
         _ conversions: [OggAudioConverter.Conversion],
         of book: Book,
         folder: URL
     ) throws -> BookManifestEdit? {
         // The index as the book plays it now, read before any file is
         // named, so it names the Ogg files.
-        let current = try BookContentAnalysisService.load(book: book).index
+        let current: BookContentIndex
+        do {
+            current = try BookContentAnalysisService.load(book: book).index
+        } catch {
+            // Nothing is named yet: the hidden converted files go, so a
+            // failed commit leaves no gigabytes behind (REV17a).
+            OggAudioConverter.discard(conversions)
+            throw error
+        }
         var named: [OggAudioConverter.Conversion] = []
         do {
             for conversion in conversions {

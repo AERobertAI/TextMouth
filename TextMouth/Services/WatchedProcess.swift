@@ -13,6 +13,17 @@ import os
 /// or the file it writes has not grown for too long. The child's standard
 /// input, output, and errors are closed (the null device), so nothing it
 /// prints can fill a pipe and stall it.
+///
+/// Three more guards keep a runaway child from outliving its watcher:
+/// - the kernel itself ends the child (SIGXCPU) when it has used its CPU
+///   allowance, `ulimit -t`, even if TextMouth is not watching any more;
+/// - a tiny reaper shell kills the child as soon as TextMouth's own process
+///   is gone, however it went (quit, force-quit, or the memory guard's
+///   `_exit`);
+/// - `terminateAll()` kills every running child at once, for the app's
+///   termination.
+/// The watchdog's clock is the monotonic system uptime, so a sleep or a
+/// change of the wall clock never ages a healthy child.
 enum WatchedProcess {
     /// What the watchdog allows a child.
     struct Limits: Equatable, Sendable {
@@ -24,6 +35,16 @@ enum WatchedProcess {
         var maximumStalledSeconds: TimeInterval
         /// How often the watchdog looks, in seconds.
         var pollInterval: TimeInterval = 1
+        /// The most processor time the child may use, in seconds, enforced by
+        /// the kernel (`ulimit -t`). Nil means four times `maximumSeconds`:
+        /// a few cores' work for the whole wall-clock allowance.
+        var maximumCPUSeconds: TimeInterval?
+
+        /// The CPU allowance in force: the explicit one, else four times
+        /// `maximumSeconds`.
+        var effectiveMaximumCPUSeconds: TimeInterval {
+            maximumCPUSeconds ?? maximumSeconds * 4
+        }
     }
 
     /// Why the watchdog killed a child, in words for the debug log.
@@ -34,6 +55,8 @@ enum WatchedProcess {
         case usedTooMuchMemory(bytes: Int64)
         /// Its output file did not grow for `seconds`.
         case madeNoProgress(seconds: TimeInterval)
+        /// The kernel ended it (SIGXCPU) after `seconds` of processor time.
+        case usedTooMuchProcessorTime(seconds: TimeInterval)
 
         /// The reason as a phrase: "it ran longer than 62 seconds".
         var words: String {
@@ -44,6 +67,8 @@ enum WatchedProcess {
                 return "it held more than \(bytes / 1_048_576) MB of memory"
             case let .madeNoProgress(seconds):
                 return "its output did not grow for \(Int(seconds.rounded(.up))) seconds"
+            case let .usedTooMuchProcessorTime(seconds):
+                return "it used more than \(Int(seconds.rounded(.up))) seconds of processor time"
             }
         }
     }
@@ -73,33 +98,160 @@ enum WatchedProcess {
         return (attributes?[.size] as? NSNumber)?.int64Value ?? 0
     }
 
+    // MARK: - Cancelling, and the children that are running
+
+    /// The child's pid and whether its task was cancelled, under one lock, so
+    /// that a cancellation and the child's start can meet in either order and
+    /// the child is killed all the same: `cancel()` kills a published pid,
+    /// and `publish(_:)` kills at once a pid published after the
+    /// cancellation. The kill is injected so a test can drive both orders.
+    final class ChildGate: Sendable {
+        /// What the lock guards.
+        private struct State {
+            var pid: pid_t?
+            var isCancelled = false
+        }
+
+        private let state = OSAllocatedUnfairLock(initialState: State())
+        private let kill: @Sendable (pid_t) -> Void
+
+        /// A gate that ends a child with `kill` (SIGKILL by default).
+        init(kill: @escaping @Sendable (pid_t) -> Void = { _ = Darwin.kill($0, SIGKILL) }) {
+            self.kill = kill
+        }
+
+        /// Whether the task has been cancelled.
+        var isCancelled: Bool { state.withLock { $0.isCancelled } }
+
+        /// The task was cancelled: remember it, and kill the child when it
+        /// is already published. The kill runs inside the lock so it can
+        /// never hit a pid that `clear()` has since released.
+        func cancel() {
+            state.withLock { state in
+                state.isCancelled = true
+                if let pid = state.pid { kill(pid) }
+            }
+        }
+
+        /// The child has started as `pid`: publish it and read the flag in
+        /// the same critical section, killing the child at once when the
+        /// task was cancelled first. Returns whether it was cancelled.
+        @discardableResult
+        func publish(_ pid: pid_t) -> Bool {
+            state.withLock { state in
+                state.pid = pid
+                if state.isCancelled { kill(pid) }
+                return state.isCancelled
+            }
+        }
+
+        /// The child has ended: a later cancellation must not signal its pid.
+        func clear() {
+            state.withLock { $0.pid = nil }
+        }
+    }
+
+    /// Every child that is running, from the moment its pid is published
+    /// until it ends, for `terminateAll()`. `Process` is not `Sendable`, so
+    /// the lock is the unchecked kind; every access goes through it.
+    private static let registry = OSAllocatedUnfairLock<[pid_t: Process]>(uncheckedState: [:])
+
+    /// How many children are running now (for tests).
+    static var runningChildCount: Int { registry.withLockUnchecked { $0.count } }
+
+    /// Kills every running child with SIGKILL, checking first that it still
+    /// runs. Callable from any thread; takes only a short lock and never
+    /// waits for a child: the app's termination calls it.
+    static func terminateAll() {
+        registry.withLockUnchecked { children in
+            for (pid, process) in children where process.isRunning {
+                kill(pid, SIGKILL)
+            }
+        }
+    }
+
+    // MARK: - The reaper
+
+    /// The reaper's script: `$1` is the pid whose death kills the tool, `$2`
+    /// the tool's pid. It ends by itself when the tool has ended.
+    private static let reaperScript = """
+    while kill -0 "$2" 2>/dev/null; do
+        if ! kill -0 "$1" 2>/dev/null; then
+            kill -9 "$2" 2>/dev/null
+            exit 0
+        fi
+        sleep 1
+    done
+    """
+
+    /// Starts a shell that kills `child` as soon as `parent` is gone, so a
+    /// runaway tool dies with TextMouth however TextMouth ends. It ends by
+    /// itself when the child ends first. Nil when it could not start, which
+    /// is not an error for the run it guards. `parent` is TextMouth's own
+    /// pid except in tests.
+    static func startReaper(watching child: pid_t, parent: pid_t = getpid()) -> Process? {
+        let reaper = Process()
+        reaper.executableURL = URL(fileURLWithPath: "/bin/sh")
+        reaper.arguments = ["-c", reaperScript, "sh", String(parent), String(child)]
+        reaper.standardInput = FileHandle.nullDevice
+        reaper.standardOutput = FileHandle.nullDevice
+        reaper.standardError = FileHandle.nullDevice
+        do {
+            try reaper.run()
+        } catch {
+            return nil
+        }
+        return reaper
+    }
+
+    // MARK: - Running
+
+    /// Whether `url` is a file this process may execute (a directory is not).
+    private static func canExecute(_ url: URL) -> Bool {
+        var isDirectory: ObjCBool = false
+        return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory)
+            && !isDirectory.boolValue
+            && FileManager.default.isExecutableFile(atPath: url.path)
+    }
+
+    /// The whole seconds `ulimit -t` is given for `seconds` of processor
+    /// time: rounded up, at least 1, and clamped so a huge limit cannot
+    /// overflow.
+    private static func cpuSecondsForShell(_ seconds: TimeInterval) -> Int {
+        Int(min(max(seconds.rounded(.up), 1), 1_000_000_000))
+    }
+
     /// Runs `executable` with `arguments` and waits for it, off the main
     /// thread, under `limits`, watching the growth of the file `output`.
     /// - Parameters:
     ///   - residentMemory: How the watchdog reads a child's memory; tests
     ///     replace it.
+    ///   - uptime: The watchdog's clock, in seconds, which must never run
+    ///     backwards (the system uptime); tests replace it.
     /// - Throws: `CancellationError` when the task is cancelled, which kills
-    ///   the child.
+    ///   the child; a task already cancelled starts no child.
     static func run(
         _ executable: URL,
         arguments: [String],
         watching output: URL,
         limits: Limits,
-        residentMemory: @escaping @Sendable (pid_t) -> Int64? = WatchedProcess.residentMemory(of:)
+        residentMemory: @escaping @Sendable (pid_t) -> Int64? = WatchedProcess.residentMemory(of:),
+        uptime: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
     ) async throws -> Outcome {
-        // The child's pid, shared with the cancellation handler.
-        let running = OSAllocatedUnfairLock<pid_t?>(initialState: nil)
+        try Task.checkCancellation()
+        // The child's pid and the cancellation flag, shared with the handler.
+        let gate = ChildGate()
         let outcome: Outcome = await withTaskCancellationHandler {
             await withCheckedContinuation { continuation in
                 DispatchQueue.global(qos: .utility).async {
                     continuation.resume(returning: watch(
                         executable, arguments: arguments, output: output, limits: limits,
-                        residentMemory: residentMemory, running: running
+                        residentMemory: residentMemory, uptime: uptime, gate: gate
                     ))
                 }
             }
         } onCancel: {
-            if let pid = running.withLock({ $0 }) { kill(pid, SIGKILL) }
+            gate.cancel()
         }
         try Task.checkCancellation()
         return outcome
@@ -107,17 +259,28 @@ enum WatchedProcess {
 
     /// Starts the child and watches it until it ends or is killed; blocks
     /// its thread, so call it on a background queue.
+    ///
+    /// The child is `/bin/sh` setting the CPU limit and then replacing itself
+    /// with the tool (`exec`), so the pid seen, measured, and killed here is
+    /// the tool's own.
     private static func watch(
         _ executable: URL,
         arguments: [String],
         output: URL,
         limits: Limits,
         residentMemory: @Sendable (pid_t) -> Int64?,
-        running: OSAllocatedUnfairLock<pid_t?>
+        uptime: @Sendable () -> TimeInterval,
+        gate: ChildGate
     ) -> Outcome {
+        // A tool that cannot run, or a task cancelled already, starts nothing.
+        guard canExecute(executable), !gate.isCancelled else { return .couldNotStart }
+        let maximumCPU = limits.effectiveMaximumCPUSeconds
         let process = Process()
-        process.executableURL = executable
-        process.arguments = arguments
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = [
+            "-c", "ulimit -t \"$1\" || exit 126; shift; exec \"$@\"", "sh",
+            String(cpuSecondsForShell(maximumCPU)), executable.path,
+        ] + arguments
         process.standardInput = FileHandle.nullDevice
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
@@ -130,25 +293,35 @@ enum WatchedProcess {
             return .couldNotStart
         }
         let pid = process.processIdentifier
-        running.withLock { $0 = pid }
-        defer { running.withLock { $0 = nil } }
+        // Registered and published together: a cancellation that came first
+        // kills the child now, one that comes later finds the pid.
+        registry.withLockUnchecked { $0[pid] = process }
+        gate.publish(pid)
+        // The reaper kills the child if TextMouth dies before this watch ends.
+        let reaper = startReaper(watching: pid)
+        defer {
+            gate.clear()
+            registry.withLockUnchecked { _ = $0.removeValue(forKey: pid) }
+            // However the child ended, the reaper has nothing left to do.
+            if let reaper, reaper.isRunning { reaper.terminate() }
+        }
 
-        let started = Date()
+        let started = uptime()
         var lastSize = size(of: output)
         var lastGrowth = started
         while ended.wait(timeout: .now() + limits.pollInterval) == .timedOut {
-            let now = Date()
+            let now = uptime()
             let reason: KillReason?
             let currentSize = size(of: output)
             if currentSize > lastSize {
                 lastSize = currentSize
                 lastGrowth = now
             }
-            if now.timeIntervalSince(started) > limits.maximumSeconds {
+            if now - started > limits.maximumSeconds {
                 reason = .tookTooLong(seconds: limits.maximumSeconds)
             } else if let memory = residentMemory(pid), memory > limits.maximumResidentBytes {
                 reason = .usedTooMuchMemory(bytes: limits.maximumResidentBytes)
-            } else if now.timeIntervalSince(lastGrowth) > limits.maximumStalledSeconds {
+            } else if now - lastGrowth > limits.maximumStalledSeconds {
                 reason = .madeNoProgress(seconds: limits.maximumStalledSeconds)
             } else {
                 reason = nil
@@ -159,6 +332,10 @@ enum WatchedProcess {
                 _ = ended.wait(timeout: .now() + 10)
                 return .killed(reason)
             }
+        }
+        // The kernel's own CPU limit ended it: say so rather than "exited".
+        if process.terminationReason == .uncaughtSignal, process.terminationStatus == SIGXCPU {
+            return .killed(.usedTooMuchProcessorTime(seconds: maximumCPU))
         }
         return .exited(status: process.terminationStatus)
     }
