@@ -1,3 +1,4 @@
+import SwiftUI
 import XCTest
 @testable import TextMouth
 
@@ -106,5 +107,47 @@ final class LibraryFolderSettingsTargetTests: XCTestCase {
     /// What the shortcut says where no folder is shown.
     func testTheNothingToOpenLineIsPinned() {
         XCTAssertEqual(LibraryFolderSettingsWording.nothingToOpen, "Open a folder first to see its settings")
+    }
+}
+
+/// The Folder or Feed Settings shortcut action (FR19): a Library-menu
+/// command with no default key, which the Shortcuts tab lists under Library.
+final class FolderOrFeedSettingsShortcutTests: XCTestCase {
+
+    /// The action's title, group, scope, and the notification it posts.
+    func testTheActionIsALibraryCommandWithNoKey() {
+        let action = ShortcutAction.folderOrFeedSettings
+        XCTAssertEqual(action.rawValue, "Folder or Feed Settings")
+        XCTAssertEqual(action.title, "Folder or Feed Settings")
+        XCTAssertEqual(action.category, "Library")
+        XCTAssertEqual(action.defaultScope, .app)
+        XCTAssertEqual(ShortcutAction.defaultBindings[action], [])
+        XCTAssertEqual(action.notificationName, .showFolderOrFeedSettings)
+        XCTAssertEqual(Notification.Name.showFolderOrFeedSettings.rawValue, "showFolderOrFeedSettings")
+    }
+
+    /// The Shortcuts tab lists the action in its Library group, whose row
+    /// says it has no shortcut, and the record of edits lists it too.
+    func testTheShortcutsTabListsIt() {
+        XCTAssertTrue(ShortcutAction.allCases.filter { $0.category == "Library" }.contains(.folderOrFeedSettings))
+        XCTAssertEqual(
+            ShortcutsSettingsWording.rowLabel(for: .folderOrFeedSettings, keys: [], isEdited: false),
+            "Folder or Feed Settings: No shortcut"
+        )
+        let listings = ShortcutEdits([:]).listings(defaults: ShortcutAction.defaultBindings)
+        XCTAssertEqual(listings[.folderOrFeedSettings], "default: none")
+    }
+
+    /// The Library menu has a command for it, which is what lets a listener
+    /// without a key reach it. SwiftUI builds the menu where a test cannot
+    /// read it, so this reads the menu's source for the item.
+    func testTheLibraryMenuHasTheCommand() throws {
+        // MenuCommands.swift sits in TextMouth/App, beside the test folder.
+        let source = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("TextMouth/App/MenuCommands.swift")
+        let text = try String(contentsOf: source, encoding: .utf8)
+        XCTAssertTrue(text.contains("Button(ShortcutAction.folderOrFeedSettings.title)"))
+        XCTAssertTrue(text.contains("post(name: .showFolderOrFeedSettings"))
     }
 }

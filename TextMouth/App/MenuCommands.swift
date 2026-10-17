@@ -406,6 +406,13 @@ struct LibraryCommands: Commands {
                 NotificationCenter.default.post(name: .removeFromReadingList, object: nil)
             }
 
+            // Opens the settings of the folder the Library window shows
+            // (FR19), the toolbar button's command; it has no key until the
+            // user gives it one in Settings.
+            Button(ShortcutAction.folderOrFeedSettings.title) {
+                NotificationCenter.default.post(name: .showFolderOrFeedSettings, object: nil)
+            }
+
             Divider()
 
             // Keeps the selected books downloaded on this Mac, or stops, in
@@ -825,6 +832,10 @@ extension Notification.Name {
     /// the user gave it one (FR09): the Library window that takes it takes
     /// its selected books off the reading list.
     static let removeFromReadingList = Notification.Name("removeFromReadingList")
+    /// Posted by Library > Folder or Feed Settings, and by its key when the
+    /// user gave it one (FR19): the Library window that takes it opens the
+    /// settings of the folder it shows, or says there is none.
+    static let showFolderOrFeedSettings = Notification.Name("showFolderOrFeedSettings")
     /// Posted by Library > Keep on This Mac: the key Library window keeps
     /// its selected books downloaded on this Mac.
     static let keepOnThisMac = Notification.Name("keepOnThisMac")

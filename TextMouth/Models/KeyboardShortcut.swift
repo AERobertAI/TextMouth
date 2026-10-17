@@ -89,6 +89,11 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// Takes the selected books off the reading list (FR09). It has no key
     /// until the user gives it one in Settings.
     case removeFromReadingList = "Remove from Reading List"
+    /// Opens the settings of the folder the Library window shows (FR19): Feed
+    /// Info in a feed's folder, Folder Settings in a plain folder, as the
+    /// toolbar's Feed Settings or Folder Settings button does. It has no key
+    /// until the user gives it one in Settings.
+    case folderOrFeedSettings = "Folder or Feed Settings"
     /// Library > Import Folder…, a menu command whose key is its menu item's
     /// key equivalent (FR12's branch D), for DAISY books and folders of audio
     /// tracks (FR17). It was Import DAISY Folder… until October 14, 2026,
@@ -288,6 +293,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .moveBookDown: return .moveBookDown
         case .addToReadingList: return .addToReadingList
         case .removeFromReadingList: return .removeFromReadingList
+        case .folderOrFeedSettings: return .showFolderOrFeedSettings
         case .importDAISYFolder: return .importDAISYFolder
         case .addFeed: return .addFeed
         case .openBook: return .openBookFile
@@ -329,7 +335,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .whereAmI, .whereAmIFull, .speakInfo, .speakFullInfo, .speakImportProgress, .speakDownloadProgress:
             return "Information"
         case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .moveToLibrary, .selectAll, .toggleEditMode,
-             .moveBookUp, .moveBookDown, .addToReadingList, .removeFromReadingList, .importDAISYFolder, .addFeed:
+             .moveBookUp, .moveBookDown, .addToReadingList, .removeFromReadingList, .folderOrFeedSettings, .importDAISYFolder, .addFeed:
             return "Library"
         case .openBook, .newFromText, .newRecording:
             return Self.fileCategory
@@ -1598,6 +1604,9 @@ extension ShortcutAction {
             // choosing in Settings, as Release Media Controls.
             .addToReadingList: [],
             .removeFromReadingList: [],
+            // No key by default (FR19), as the reading-list commands have
+            // none: the user gives it one of their choosing in Settings.
+            .folderOrFeedSettings: [],
             .importDAISYFolder: [KeyBinding(key: "o", command: true, shift: true)],
             // Shift-Command-F: Command-F alone searches a book.
             .addFeed: [KeyBinding(key: "f", command: true, shift: true)],
