@@ -531,10 +531,13 @@ final class OfflineRenderProbe: NSObject, AVSpeechSynthesizerDelegate, @unchecke
     private let utterance: AVSpeechUtterance
     /// The text's length in UTF-16 units, for the render queue.
     let textLength: Int
-    /// How the render ended, the frames written so far, and whom to tell
-    /// of the end.
-    private let state = OSAllocatedUnfairLock<(end: End?, frames: Int, report: (@Sendable (Bool) -> Void)?)>(
-        initialState: (nil, 0, nil)
+    /// How the render ended, the frames written so far, whom to tell of
+    /// the end, the buffers written so far, and the sample rate of the
+    /// first buffer (0 until one arrives).
+    private let state = OSAllocatedUnfairLock<(
+        end: End?, frames: Int, report: (@Sendable (Bool) -> Void)?, buffers: Int, sampleRate: Double
+    )>(
+        initialState: (nil, 0, nil, 0, 0)
     )
 
     init(_ text: String, voice: AVSpeechSynthesisVoice, synthesizer: AVSpeechSynthesizer = AVSpeechSynthesizer()) {
@@ -553,6 +556,13 @@ final class OfflineRenderProbe: NSObject, AVSpeechSynthesizerDelegate, @unchecke
     /// The frames written so far.
     var frames: Int { state.withLock { $0.frames } }
 
+    /// The buffers written so far.
+    var buffers: Int { state.withLock { $0.buffers } }
+
+    /// The sample rate of the first buffer written, in Hz, or 0 while none
+    /// has been written.
+    var sampleRate: Double { state.withLock { $0.sampleRate } }
+
     /// Start the render, telling `report` once the synthesizer finishes or
     /// cancels the utterance. The buffer callback is formed here, outside
     /// the main actor, since the synthesizer may call it on any thread.
@@ -562,7 +572,12 @@ final class OfflineRenderProbe: NSObject, AVSpeechSynthesizerDelegate, @unchecke
             guard let pcm = buffer as? AVAudioPCMBuffer else { return }
             // Read outside the lock: the buffer is not Sendable.
             let frames = Int(pcm.frameLength)
-            state.withLock { $0.frames += frames }
+            let rate = pcm.format.sampleRate
+            state.withLock {
+                $0.frames += frames
+                $0.buffers += 1
+                if $0.sampleRate == 0 { $0.sampleRate = rate }
+            }
         }
     }
 
