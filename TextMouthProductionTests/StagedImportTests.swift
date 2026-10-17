@@ -378,6 +378,133 @@ final class StagedImportTests: XCTestCase {
         XCTAssertEqual(debugLogLines(containing: "IMPORT_FAILED: \(archive.lastPathComponent): Extracting the archive failed: ").count, 1)
     }
 
+    // MARK: - Files With No Text
+
+    /// What a listener hears when a text file holds nothing to read: the
+    /// step, then the import's own reason.
+    private static let noTextReason = "Reading its text failed: This file has no text to read."
+
+    /// A source named `name` (its extension picks the format) holding
+    /// `bytes`, written outside the library.
+    private func makeSource(named name: String, bytes: Data) throws -> URL {
+        let source = sources.appendingPathComponent(name)
+        try bytes.write(to: source)
+        return source
+    }
+
+    /// Asserts that importing `bytes` as a file named `name` is refused with
+    /// the no-text reason, at the step of reading its text, leaving nothing.
+    private func assertBlankFileIsRefused(
+        _ name: String,
+        _ bytes: Data,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        let source = try makeSource(named: name, bytes: bytes)
+        let failure = assertImportFails(at: .readingText, of: source, file: file, line: line)
+        XCTAssertEqual(failure?.reason, Self.noTextReason, name, file: file, line: line)
+    }
+
+    /// A file of no bytes, in each of the three plain formats, is refused,
+    /// where it used to import as an empty book that said nothing was
+    /// missing (the import fuzz sweep's first finding).
+    func testAFileOfNoBytesIsRefusedInEveryPlainFormat() throws {
+        for ext in ["md", "txt", "html"] {
+            try assertBlankFileIsRefused("Empty \(UUID().uuidString.prefix(8)).\(ext)", Data())
+        }
+    }
+
+    /// A file of only white space (spaces, tabs, blank lines, a no-break
+    /// space) is refused as one of no bytes is.
+    func testAFileOfWhiteSpaceAloneIsRefused() throws {
+        let blank = Data(" \t\n\n  \u{00A0}\r\n\t ".utf8)
+        for ext in ["md", "txt"] {
+            try assertBlankFileIsRefused("Blank \(UUID().uuidString.prefix(8)).\(ext)", blank)
+        }
+    }
+
+    /// A UTF-8 byte-order mark with nothing after it holds no text.
+    func testAByteOrderMarkAloneIsRefused() throws {
+        let mark = Data([0xEF, 0xBB, 0xBF])
+        for ext in ["md", "txt"] {
+            try assertBlankFileIsRefused("Mark \(UUID().uuidString.prefix(8)).\(ext)", mark)
+        }
+    }
+
+    /// An HTML file of markup and a script, with no text, is refused.
+    func testHTMLWithMarkupAndNoTextIsRefused() throws {
+        let markup = "<html><body><div></div><script>var a = 1;</script></body></html>"
+        try assertBlankFileIsRefused("Markup \(UUID().uuidString.prefix(8)).html", Data(markup.utf8))
+    }
+
+    /// Controls: a file of one word, and a Markdown file that is only a
+    /// heading, still import.
+    func testFilesWithEvenOneWordOfTextStillImport() throws {
+        let files: [(String, String)] = [
+            ("One Word", "txt"), ("One Word", "md"), ("One Word", "html"), ("Only Heading", "md")
+        ]
+        for (title, ext) in files {
+            let text = ext == "html" ? "<p>Hello</p>" : (title == "Only Heading" ? "# Title" : "Hello")
+            let source = try makeSource(named: "\(title) \(UUID().uuidString.prefix(8)).\(ext)", bytes: Data(text.utf8))
+
+            let imported = try FileImportService.importFileWithReport(from: source, toFolder: folderPath)
+
+            XCTAssertTrue(imported.report.isComplete, source.lastPathComponent)
+            XCTAssertTrue(FileManager.default.fileExists(atPath: imported.book.tmbDirectory.path), source.lastPathComponent)
+        }
+    }
+
+    /// Through the library, with "Delete After Import" on: the alert names
+    /// the file and the reason, no row or decision is made, and the file is
+    /// still there.
+    @MainActor
+    func testEmptyMarkdownFailsThroughTheLibraryAndStaysWhereItWas() throws {
+        let source = try makeSource(named: "Empty Notes \(UUID().uuidString.prefix(8)).md", bytes: Data())
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+
+        withImportDeleteBehavior(.deleteAfterImport) {
+            model.importSingleFileAsync(from: source, toFolder: folderPath)
+            XCTAssertTrue(eventually(within: 20) { model.showError }, "the import never reported its failure")
+        }
+
+        XCTAssertEqual(
+            model.errorMessage,
+            "Could not import “\(source.lastPathComponent)”. \(Self.noTextReason)"
+        )
+        XCTAssertTrue(model.library.books.isEmpty)
+        XCTAssertTrue(model.importDecisions.isEmpty)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: source.path), "the empty file is kept")
+        XCTAssertEqual(try folderEntries(), [])
+    }
+
+    /// A ZIP of an empty text file and a real Markdown file imports the
+    /// Markdown, lists the empty file as failed with the no-text reason, and
+    /// keeps the archive although the preference says to delete it.
+    @MainActor
+    func testZIPWithAnEmptyTextFileImportsTheRestAndKeepsTheArchive() throws {
+        let archive = try makeTemporaryZip(prefix: "StagedImportBlank", entries: [
+            "Real.md": Data("# Real\n\nA chapter anyone can read.".utf8),
+            "Empty.txt": Data()
+        ])
+        addTeardownBlock { try? FileManager.default.removeItem(at: archive) }
+
+        let result = try FileImportService.importZip(from: archive, toFolder: folderPath)
+
+        XCTAssertEqual(result.books.map(\.title), ["Real"])
+        XCTAssertEqual(result.failures.map(\.fileName), ["Empty.txt"])
+        XCTAssertEqual(result.failures.map(\.message), [Self.noTextReason])
+
+        withImportDeleteBehavior(.deleteAfterImport) {
+            let model = LibraryViewModel(initializeServices: false)
+            model.library = Library()
+
+            model.completeZIPImport(result, originalURL: archive, folderPath: folderPath)
+
+            XCTAssertTrue(FileManager.default.fileExists(atPath: archive.path), "the archive is kept")
+        }
+    }
+
     // MARK: - Fixtures
 
     /// Bytes that no text decoder can read, saved under a text file's name,

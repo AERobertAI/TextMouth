@@ -23,6 +23,11 @@ enum FileImportError: LocalizedError {
     /// A ZIP archive holds a file whose path climbs out of the folder it is
     /// extracted into, which is never extracted (TODO I05).
     case archivePathOutside
+    /// A plain text, Markdown, or HTML file holds no text a listener could
+    /// hear (it is empty, or only white space or markup), so importing it
+    /// would add a silent, empty book. An import refuses it
+    /// (`FileImportService.readableContent(of:run:refusingBlankText:)`).
+    case noTextToRead
 
     var errorDescription: String? {
         switch self {
@@ -34,6 +39,7 @@ enum FileImportError: LocalizedError {
         case .unreadableArchive: return "The archive is damaged, incomplete, or not a ZIP archive."
         case .archiveLinksOutside: return "The archive holds a link to a file outside it, which is never extracted."
         case .archivePathOutside: return "The archive holds a file whose path leads outside it, which is never extracted."
+        case .noTextToRead: return "This file has no text to read."
         }
     }
 }
@@ -863,7 +869,7 @@ enum FileImportService {
                 // a package keeps the record it carries.
                 handEdits: .noneSinceImport
             )
-            var imported = try publishReadableBook(staged, from: staging, run: &run)
+            var imported = try publishReadableBook(staged, from: staging, run: &run, refusingBlankText: true)
             imported.isFromFolder = package != nil
             return imported
         }
@@ -1184,18 +1190,21 @@ enum FileImportService {
     /// the kept one with `publish`, which otherwise renames the staged
     /// package to its destination (`ImportStaging.publish()`). Ogg audio is
     /// converted to AAC first, so no book is read or played from Ogg
-    /// (`convertOggAudio(of:in:run:)`, B06).
+    /// (`convertOggAudio(of:in:run:)`, B06). `refusingBlankText` is passed on
+    /// to `readableContent(of:run:refusingBlankText:)`: only the import of a
+    /// file chosen by the user sets it, to refuse a text file with no text.
     static func publishReadableBook(
         _ staged: Book,
         from staging: ImportStaging,
         run: inout ImportRun,
         feedLink: FeedBookLink? = nil,
         replacing replaced: BookState? = nil,
+        refusingBlankText: Bool = false,
         publish: (ImportStaging) throws -> Void = { try $0.publish() }
     ) throws -> ImportedBook {
         var staged = staged
         try convertOggAudio(of: &staged, in: staging, run: &run)
-        let content = try readableContent(of: &staged, run: &run)
+        let content = try readableContent(of: &staged, run: &run, refusingBlankText: refusingBlankText)
         let book = staging.published(staged)
 
         try run.begin(.savingRecord, in: staging.directory)
@@ -1215,13 +1224,30 @@ enum FileImportService {
         var report = ExtractionReport()
     }
 
+    /// The plain formats whose import is refused when the file holds no text
+    /// (`FileImportError.noTextToRead`). EPUB, Word, DAISY, and PDF have
+    /// their own refusals or none.
+    private static let plainTextFormats: Set<BookFormat> = [.txt, .markdown, .html]
+
     /// Reads `book`'s content as the reader will, so that no import publishes
     /// a book that cannot be opened. A text book's content.md is written into
     /// its package, and an extraction that fails, in any format, fails with
     /// the extraction's error. An audio book is analyzed, and one without a
     /// playable chapter fails. `book` receives the cache version and the
     /// index's counts.
-    static func readableContent(of book: inout Book, run: inout ImportRun) throws -> ReadableContent {
+    ///
+    /// With `refusingBlankText` set, a plain text, Markdown, or HTML book
+    /// (`plainTextFormats`) none of whose chapters holds a character other
+    /// than white space fails with `FileImportError.noTextToRead`, so a blank
+    /// file is not imported as a silent, empty book. The check is here, not
+    /// in `MarkdownCacheService`, because every rebuild of an existing book's
+    /// text goes through that, and a book already in the library must never
+    /// become unreadable.
+    static func readableContent(
+        of book: inout Book,
+        run: inout ImportRun,
+        refusingBlankText: Bool = false
+    ) throws -> ReadableContent {
         if book.format.isAudio {
             try run.begin(.readingAudio, in: book.tmbDirectory)
             let analysis: BookContentAnalysisService.Result
@@ -1240,6 +1266,10 @@ enum FileImportService {
             // Only a book without a package gets no cache, and every
             // import gives its book one before reading it.
             throw FileImportError.importFailed("The book has no package to hold its text.")
+        }
+        if refusingBlankText, plainTextFormats.contains(book.format),
+           !generated.content.chapters.contains(where: { chapter in chapter.text.contains { !$0.isWhitespace } }) {
+            throw FileImportError.noTextToRead
         }
         return ReadableContent(index: generated.content.contentIndex, report: generated.report)
     }
