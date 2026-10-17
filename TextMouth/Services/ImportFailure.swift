@@ -98,7 +98,8 @@ struct ImportFailure: LocalizedError {
     }
 
     /// The reason `error` gives for a failed import, without a file name:
-    /// an `ImportFailure`'s own reason, or any other error's description.
+    /// an `ImportFailure`'s own reason, or any other error's description,
+    /// which is `outOfSpaceDescription` for a full disk.
     static func reason(for error: any Error) -> String {
         (error as? ImportFailure)?.reason ?? description(of: error)
     }
