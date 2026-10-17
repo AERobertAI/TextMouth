@@ -80,7 +80,7 @@ On the night of October 16, before the weekly reset, the user asked to "max it o
 - `team/feedopts` (b1c4d1cc): FR19 (listening options for feeds and folders, Feed Settings and Folder Settings) and FR20 (one Add to Library button).
 - `team/testkit` (ed095edc): the reusable test tools in `Scripts/test/` (docs/developer/testing.md), the end-behavior and windows matrices, keyboard reachability, and playback fuzz tests.
 
-Main's suite after the testkit merge: **6816 tests, 71 skipped, 0 failures**, about 17 minutes of test time (`EndBehaviorMatrixTests` takes 153 s of it). The questions the night raised are in `humanQuestions/2026-10-16.md` (19 of them, each built with its recommended answer); `2026-10-12.md` and `2026-10-10-evening.md` still wait. The user's push and install are pending. The system icon cache stood at 7,344 entries.
+Main's suite after the testkit merge: **6816 tests, 71 skipped, 0 failures**, about 17 minutes of test time (`EndBehaviorMatrixTests` took 153 s of it until todo18 brought it to about 52 s; after the rev18fix merge the suite counted **6927 tests, 75 skipped, 0 failures**). The questions the night raised are in `humanQuestions/2026-10-16.md` (19 of them, each built with its recommended answer); `2026-10-12.md` and `2026-10-10-evening.md` still wait. The user's push and install are pending. The system icon cache stood at 7,344 entries.
 
 **Lessons of the night:**
 - Sonnet leads did as well as Opus ones at these brief sizes: all 58 workers were accepted (6 oggsafe, 21 fixes, 3 importsafe, 10 feedopts, 18 testkit), a handful after one round.
