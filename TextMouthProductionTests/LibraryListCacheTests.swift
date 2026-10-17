@@ -77,7 +77,8 @@ final class LibraryListCacheTests: XCTestCase {
         // A reading position alone, as a reader's live position changes it:
         // the same list, with the new position. (A checkpoint also stamps
         // the book as last opened; see the Recent test below.)
-        let middle = first[2].id
+        // The shelf lists six books, so a short list is a failure, not a trap.
+        let middle = try XCTUnwrap(first[safe: 2], "the shelf shows fewer than three books", file: file, line: line).id
         let position = ReadingPosition(chapterIndex: 3, characterOffset: 1_234, globalCharacterOffset: 9_999)
         let middleIndex = try XCTUnwrap(model.library.books.firstIndex { $0.id == middle }, file: file, line: line)
         model.library.books[middleIndex].readingPosition = position
