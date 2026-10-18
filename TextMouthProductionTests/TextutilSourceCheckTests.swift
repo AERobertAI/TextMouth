@@ -38,56 +38,6 @@ final class TextutilSourceCheckTests: XCTestCase {
         return data
     }
 
-    /// The offset of the File Information Block in the Word document at
-    /// `url`, found by the code under test, failing the test when none is.
-    private func fibOffset(of url: URL) throws -> Int {
-        let data = try Data(contentsOf: url)
-        return try XCTUnwrap(TextutilSourceCheck.fibOffset(in: data), "No File Information Block in \(url.lastPathComponent)")
-    }
-
-    /// The little-endian flags word of the block at `offset` in the file at `url`.
-    private func fibFlags(of url: URL, at offset: Int) throws -> UInt16 {
-        let data = try Data(contentsOf: url)
-        return UInt16(data[offset + 0x0A]) | UInt16(data[offset + 0x0B]) << 8
-    }
-
-    /// Writes `flags` as the flags word of the block at `offset` in the file at `url`.
-    private func setFibFlags(_ flags: UInt16, of url: URL, at offset: Int) throws {
-        var data = try Data(contentsOf: url)
-        data[offset + 0x0A] = UInt8(flags & 0xFF)
-        data[offset + 0x0B] = UInt8(flags >> 8)
-        try data.write(to: url)
-    }
-
-    /// Replaces `META-INF/manifest.xml` in the ZIP at `url` with `manifest`.
-    private func replaceManifest(in url: URL, with manifest: String) throws {
-        let archive = try Archive(url: url, accessMode: .update)
-        let old = try XCTUnwrap(archive["META-INF/manifest.xml"])
-        try archive.remove(old)
-        let data = Data(manifest.utf8)
-        try archive.addEntry(
-            with: "META-INF/manifest.xml",
-            type: .file,
-            uncompressedSize: Int64(data.count),
-            compressionMethod: .deflate,
-            provider: { position, size in
-                let start = Int(position)
-                return data[start..<min(start + size, data.count)]
-            }
-        )
-    }
-
-    /// A manifest whose `content.xml` entry carries encryption data.
-    private let encryptedManifest = """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0" manifest:version="1.3">
-        <manifest:file-entry manifest:full-path="/" manifest:media-type="application/vnd.oasis.opendocument.text"/>
-        <manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml">\
-        <manifest:encryption-data manifest:checksum-type="SHA1/1K" manifest:checksum="AAAA"/>\
-        </manifest:file-entry>
-        </manifest:manifest>
-        """
-
     // MARK: - RTF under another name
 
     func testRTFSamplesBeginAsRTFWhateverTheirName() throws {

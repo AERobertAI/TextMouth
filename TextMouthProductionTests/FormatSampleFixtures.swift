@@ -1,4 +1,5 @@
 import XCTest
+import ZIPFoundation
 @testable import TextMouth
 
 /// The format samples in `TestData/format-samples` (FMT01, FMT03, FMT04,
@@ -79,5 +80,64 @@ extension XCTestCase {
     private func documentType(listing value: String, inKey key: String) -> [String: Any]? {
         let types = Bundle.main.infoDictionary?["CFBundleDocumentTypes"] as? [[String: Any]] ?? []
         return types.first { ($0[key] as? [String] ?? []).contains(value) }
+    }
+}
+
+// MARK: - Making a Word or OpenDocument Sample Protected by a Password
+
+/// Helpers that turn a copy of a sample into a document protected by a
+/// password (FMT13), shared by the tests of the source check and of the
+/// import. They change only the copy the test passes in.
+extension XCTestCase {
+    /// The offset of the File Information Block in the Word document at
+    /// `url`, found by the code under test, failing the test when none is.
+    func fibOffset(of url: URL) throws -> Int {
+        let data = try Data(contentsOf: url)
+        return try XCTUnwrap(TextutilSourceCheck.fibOffset(in: data), "No File Information Block in \(url.lastPathComponent)")
+    }
+
+    /// The little-endian flags word of the block at `offset` in the file at `url`.
+    func fibFlags(of url: URL, at offset: Int) throws -> UInt16 {
+        let data = try Data(contentsOf: url)
+        return UInt16(data[offset + 0x0A]) | UInt16(data[offset + 0x0B]) << 8
+    }
+
+    /// Writes `flags` as the flags word of the block at `offset` in the file at `url`.
+    func setFibFlags(_ flags: UInt16, of url: URL, at offset: Int) throws {
+        var data = try Data(contentsOf: url)
+        data[offset + 0x0A] = UInt8(flags & 0xFF)
+        data[offset + 0x0B] = UInt8(flags >> 8)
+        try data.write(to: url)
+    }
+
+    /// Replaces `META-INF/manifest.xml` in the ZIP at `url` with `manifest`.
+    func replaceManifest(in url: URL, with manifest: String) throws {
+        let archive = try Archive(url: url, accessMode: .update)
+        let old = try XCTUnwrap(archive["META-INF/manifest.xml"])
+        try archive.remove(old)
+        let data = Data(manifest.utf8)
+        try archive.addEntry(
+            with: "META-INF/manifest.xml",
+            type: .file,
+            uncompressedSize: Int64(data.count),
+            compressionMethod: .deflate,
+            provider: { position, size in
+                let start = Int(position)
+                return data[start..<min(start + size, data.count)]
+            }
+        )
+    }
+
+    /// A manifest whose `content.xml` entry carries encryption data.
+    var encryptedManifest: String {
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0" manifest:version="1.3">
+        <manifest:file-entry manifest:full-path="/" manifest:media-type="application/vnd.oasis.opendocument.text"/>
+        <manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml">\
+        <manifest:encryption-data manifest:checksum-type="SHA1/1K" manifest:checksum="AAAA"/>\
+        </manifest:file-entry>
+        </manifest:manifest>
+        """
     }
 }
