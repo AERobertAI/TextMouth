@@ -42,12 +42,47 @@ enum TextutilDocumentReader {
     ///   format), `PasswordProtectedDocument`, and what
     ///   `TextutilConverter.html(of:as:workingIn:using:)` throws.
     static func extractMarkdown(from url: URL, bookFormat: BookFormat) throws -> String {
-        let source = try htmlText(of: url, bookFormat: bookFormat)
-        // A web page is converted as an .html file is.
-        guard !source.isWebPage else {
-            return try HTMLToMarkdownConverter.convert(source.html, stripDuplicateNavigation: true)
+        try extract(from: url, bookFormat: bookFormat).markdown
+    }
+
+    /// What reading a document for the Markdown cache produced: its Markdown,
+    /// and the title and author its own HTML head names, each nil when the
+    /// document names none. They come from the one conversion that made the
+    /// Markdown, so an import that adopts them converts the document once.
+    struct Extraction: Equatable {
+        var markdown: String
+        var title: String?
+        var author: String?
+
+        /// `markdown` with the names its document's head holds
+        /// (`metadata(in:)`), each nil when empty.
+        fileprivate init(markdown: String, named: (title: String, author: String)) {
+            self.markdown = markdown
+            title = named.title.isEmpty ? nil : named.title
+            author = named.author.isEmpty ? nil : named.author
         }
-        return try markdown(from: SwiftSoup.parse(source.html), html: source.html)
+    }
+
+    /// The Markdown of the book at `url`, read as `bookFormat`
+    /// (`extractMarkdown(from:bookFormat:)`), with the title and author its
+    /// HTML names. The document is converted once.
+    static func extract(from url: URL, bookFormat: BookFormat) throws -> Extraction {
+        let source = try htmlText(of: url, bookFormat: bookFormat)
+        guard !source.isWebPage else {
+            // A web page is converted as an .html file is, and names its
+            // own title and author in its head.
+            let named = metadata(in: try SwiftSoup.parse(headOf(source.html)))
+            return Extraction(
+                markdown: try HTMLToMarkdownConverter.convert(source.html, stripDuplicateNavigation: true),
+                named: named
+            )
+        }
+        let html = source.html
+        let document = try SwiftSoup.parse(html)
+        // The names are read before `markdown(from:html:)`, which restores
+        // the structure in the document and so changes it.
+        let named = metadata(in: document)
+        return Extraction(markdown: try markdown(from: document, html: html), named: named)
     }
 
     /// The book at `url`, read as `bookFormat`, for the direct reader. The

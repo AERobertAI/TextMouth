@@ -145,8 +145,17 @@ struct ImportedFileMetadata {
 
     /// Reads the metadata `format` keeps inside the file at `url`, starting
     /// from `fallbackTitle`, or the file's name when that is nil, and an
-    /// unknown author.
-    static func read(from url: URL, format: BookFormat, fallbackTitle: String? = nil) -> ImportedFileMetadata {
+    /// unknown author. A textutil format's title and author are read by
+    /// converting the document, which costs a run of textutil: an import
+    /// sets `readingTextutilNames` false, since the conversion that reads
+    /// its text names them too (`MarkdownCacheService.GeneratedCache`), and
+    /// the launch refresh leaves it true.
+    static func read(
+        from url: URL,
+        format: BookFormat,
+        fallbackTitle: String? = nil,
+        readingTextutilNames: Bool = true
+    ) -> ImportedFileMetadata {
         var metadata = ImportedFileMetadata(title: fallbackTitle ?? url.deletingPathExtension().lastPathComponent)
         /// Adopts the title and author a format's metadata names, keeping
         /// the defaults for any it leaves empty.
@@ -171,7 +180,7 @@ struct ImportedFileMetadata {
             // metadata never fails an import, so a refusal (a password, a
             // damaged file) leaves the defaults and the import's own
             // reading of the text fails with its sentence.
-            if let named = try? TextutilDocumentReader.readMetadata(from: url, bookFormat: format) {
+            if readingTextutilNames, let named = try? TextutilDocumentReader.readMetadata(from: url, bookFormat: format) {
                 adopt(title: named.title, author: named.author)
             }
         case .pdf:
@@ -830,10 +839,14 @@ enum FileImportService {
             try run.begin(.readingSource)
             let package = try daisyPackage(of: sourceURL, format: format)
             let hash = try checksum ?? importHash(of: sourceURL, package: package)
+            // A textutil format is listed by its file's name until its text
+            // is read: that one conversion names its title and author
+            // (`publishReadableBook`), so none is run here.
             let metadata = ImportedFileMetadata.read(
                 from: package?.entryURL ?? sourceURL,
                 format: format,
-                fallbackTitle: package?.untitledName
+                fallbackTitle: package?.untitledName,
+                readingTextutilNames: false
             )
             let bookID = UUID()
             let dateAdded = Date()
@@ -883,7 +896,9 @@ enum FileImportService {
                 // a package keeps the record it carries.
                 handEdits: .noneSinceImport
             )
-            var imported = try publishReadableBook(staged, from: staging, run: &run, refusingBlankText: true)
+            var imported = try publishReadableBook(
+                staged, from: staging, run: &run, refusingBlankText: true, adoptingDocumentNames: true
+            )
             imported.isFromFolder = package != nil
             return imported
         }
@@ -1252,7 +1267,10 @@ enum FileImportService {
     /// converted to AAC first, so no book is read or played from Ogg
     /// (`convertOggAudio(of:in:run:)`, B06). `refusingBlankText` is passed on
     /// to `readableContent(of:run:refusingBlankText:)`: only the import of a
-    /// file chosen by the user sets it, to refuse a text file with no text.
+    /// file chosen by the user sets it, to refuse a text file with no text, and
+    /// so does `adoptingDocumentNames`, which gives the book the title and
+    /// author a textutil document names (`MarkdownCacheService`): the import
+    /// of a file lists it by its file name until its text is read.
     static func publishReadableBook(
         _ staged: Book,
         from staging: ImportStaging,
@@ -1260,11 +1278,14 @@ enum FileImportService {
         feedLink: FeedBookLink? = nil,
         replacing replaced: BookState? = nil,
         refusingBlankText: Bool = false,
+        adoptingDocumentNames: Bool = false,
         publish: (ImportStaging) throws -> Void = { try $0.publish() }
     ) throws -> ImportedBook {
         var staged = staged
         try convertOggAudio(of: &staged, in: staging, run: &run)
-        let content = try readableContent(of: &staged, run: &run, refusingBlankText: refusingBlankText)
+        let content = try readableContent(
+            of: &staged, run: &run, refusingBlankText: refusingBlankText, adoptingDocumentNames: adoptingDocumentNames
+        )
         let book = staging.published(staged)
 
         try run.begin(.savingRecord, in: staging.directory)
@@ -1321,10 +1342,15 @@ enum FileImportService {
     /// in `MarkdownCacheService`, because every rebuild of an existing book's
     /// text goes through that, and a book already in the library must never
     /// become unreadable.
+    ///
+    /// With `adoptingDocumentNames`, `book` also takes the title and author
+    /// the document names, read by the one conversion that reads its text
+    /// (`MarkdownCacheService.generateReportedCacheAnalyzeAndStamp`).
     static func readableContent(
         of book: inout Book,
         run: inout ImportRun,
-        refusingBlankText: Bool = false
+        refusingBlankText: Bool = false,
+        adoptingDocumentNames: Bool = false
     ) throws -> ReadableContent {
         if book.format.isAudio {
             try run.begin(.readingAudio, in: book.tmbDirectory)
@@ -1340,7 +1366,9 @@ enum FileImportService {
         }
 
         try run.begin(.readingText, in: book.tmbDirectory)
-        guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &book) else {
+        guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(
+            for: &book, adoptingDocumentNames: adoptingDocumentNames
+        ) else {
             // Only a book without a package gets no cache, and every
             // import gives its book one before reading it.
             throw FileImportError.importFailed("The book has no package to hold its text.")

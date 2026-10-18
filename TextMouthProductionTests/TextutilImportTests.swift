@@ -351,6 +351,57 @@ final class TextutilImportTests: XCTestCase {
         XCTAssertEqual(allText(of: content), allText(of: expected))
     }
 
+    // MARK: - One Conversion per Import
+
+    /// An import runs textutil once, not twice: the conversion that reads
+    /// the text names the title and author, which the book is listed under.
+    func testAnImportRunsTextutilOnceAndTakesTheNamesFromIt() throws {
+        let cases: [(sample: String, title: String, author: String)] = [
+            ("rtf/word-styles.rtf", "Word Styles Sample", "A. Sample"),
+            ("odt/handwritten.odt", "Harbour Notes", Book.unknownAuthor),
+            // A document that names no title is listed by its file name.
+            ("rtf/headings.rtf", "headings", "A. Sample"),
+        ]
+        for expected in cases {
+            let recorder = TextutilToolRecorder()
+            let copy = try copyOfFormatSample(expected.sample)
+            let book = try TextutilConverter.$tool.withValue(recorder.countingTool()) {
+                try importedForTest(copy).book
+            }
+            XCTAssertEqual(recorder.outputs.count, 1, expected.sample)
+            XCTAssertEqual(book.title, expected.title, expected.sample)
+            XCTAssertEqual(book.author, expected.author, expected.sample)
+
+            // The record the package keeps holds the same names.
+            let record = try BookInfo.load(from: book.tmbDirectory)
+            XCTAssertEqual(record.metadata.title, expected.title, expected.sample)
+            XCTAssertEqual(record.metadata.author, expected.author, expected.sample)
+        }
+    }
+
+    /// The launch refresh still reads a textutil book's names (one
+    /// conversion); an import's own reading of the metadata reads none.
+    func testOnlyTheRefreshReadsTextutilNamesApartFromTheText() throws {
+        let copy = try copyOfFormatSample("rtf/word-styles.rtf")
+        let refresh = TextutilToolRecorder()
+        let read = TextutilDocumentReader.$temporaryRoot.withValue(temporaryRoot) {
+            TextutilConverter.$tool.withValue(refresh.countingTool()) {
+                ImportedFileMetadata.read(from: copy, format: .rtf)
+            }
+        }
+        XCTAssertEqual(refresh.outputs.count, 1)
+        XCTAssertEqual(read.title, "Word Styles Sample")
+        XCTAssertEqual(read.author, "A. Sample")
+
+        let beforeStaging = TextutilToolRecorder()
+        let named = TextutilConverter.$tool.withValue(beforeStaging.countingTool()) {
+            ImportedFileMetadata.read(from: copy, format: .rtf, readingTextutilNames: false)
+        }
+        XCTAssertEqual(beforeStaging.outputs.count, 0)
+        XCTAssertEqual(named.title, "word-styles")
+        XCTAssertEqual(named.author, Book.unknownAuthor)
+    }
+
     // MARK: - An Import's Cancel Stops textutil
 
     /// What a test's queued import threw, set on the import queue's thread

@@ -46,11 +46,16 @@ enum MarkdownCacheService {
     /// coordinates. Keep those results until indexing instead of parsing the
     /// newly written Markdown a second time. Other formats supply Markdown only.
     /// `report` names the chapters the source could not supply; formats that
-    /// do not report omissions leave it empty.
+    /// do not report omissions leave it empty. A document that names its own
+    /// title and author, as a textutil format does in the head of its HTML,
+    /// gives them in `title` and `author`, read from the one conversion that
+    /// made the Markdown; every other format leaves them nil.
     private struct ExtractedCache {
         var markdown: String
         var chapters: [Chapter]? = nil
         var report = ExtractionReport()
+        var title: String? = nil
+        var author: String? = nil
     }
 
     /// What one successful cache generation produced: the book's reading
@@ -65,6 +70,11 @@ enum MarkdownCacheService {
         /// of the old text stays until the book's record holds them, so the
         /// caller commits them (`MovedPlaces.discardSnapshot()` after).
         var movedPlaces: MovedPlaces? = nil
+        /// The title and author the source document names, nil for a format
+        /// that names none (everything but textutil's formats) and for a
+        /// document that names none.
+        var title: String? = nil
+        var author: String? = nil
     }
 
     // MARK: - Cache Generation
@@ -123,18 +133,26 @@ enum MarkdownCacheService {
     ///   without a package.
     /// - Throws: why no cache could be written. A cache written earlier is
     ///   left as it was, so a failed rebuild never empties a readable book.
-    static func generateReportedCacheContent(for book: Book) throws -> GeneratedCache? {
+    ///
+    /// With `adoptingDocumentNames`, as an import of a file the user chose
+    /// sets it, the title and author the document names (`GeneratedCache`)
+    /// are the book's while its content is read, in place of the book's own
+    /// (a file name at that point). A regeneration never sets it: the
+    /// book's title and author may have been edited by hand.
+    static func generateReportedCacheContent(
+        for book: Book, adoptingDocumentNames: Bool = false
+    ) throws -> GeneratedCache? {
         guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return nil }
         let boundary = StorageBoundary.shared
         return try boundary.perform(.textExtraction) { _ in
-            try writeCache(for: boundary.rebasedToCurrent(book))
+            try writeCache(for: boundary.rebasedToCurrent(book), adoptingDocumentNames: adoptingDocumentNames)
         }
     }
 
     /// The work of `generateReportedCacheContent(for:)` for a book with a
     /// package, whose paths are in the current data directory: extracts the
     /// source, writes content.md, and indexes and fingerprints the result.
-    private static func writeCache(for book: Book) throws -> GeneratedCache {
+    private static func writeCache(for book: Book, adoptingDocumentNames: Bool) throws -> GeneratedCache {
         let cachePath = cacheURL(for: book)
         extractionObserver?(book)
         let fileURL = URL(fileURLWithPath: book.filePath)
@@ -150,11 +168,16 @@ enum MarkdownCacheService {
             throw EPUBParserError.noReadableChapters(report)
         }
 
+        // The names the content is read under: the document's own when this
+        // import adopts them and it names them, otherwise the book's.
+        let bookTitle = adoptingDocumentNames ? extracted.title ?? book.title : book.title
+        let bookAuthor = adoptingDocumentNames ? extracted.author ?? book.author : book.author
+
         let parsed: DocumentContent
         if let chapters = extracted.chapters, !chapters.isEmpty {
             parsed = DocumentContent(
-                title: documentTitle(of: chapters, bookTitle: book.title),
-                author: book.author,
+                title: documentTitle(of: chapters, bookTitle: bookTitle),
+                author: bookAuthor,
                 chapters: chapters,
                 contentIndex: BookContentIndex.build(fromChapters: chapters, format: book.format)
             )
@@ -162,7 +185,7 @@ enum MarkdownCacheService {
             // Preserve the cache reader's empty-document and chapter-marker
             // behavior as well as its title fallback for non-EPUB formats.
             let markdownContent = parseMultiChapterMarkdown(
-                extracted.markdown, bookTitle: book.title, bookAuthor: book.author
+                extracted.markdown, bookTitle: bookTitle, bookAuthor: bookAuthor
             )
             parsed = DocumentContent(
                 title: markdownContent.title, author: markdownContent.author, chapters: markdownContent.chapters,
@@ -201,7 +224,10 @@ enum MarkdownCacheService {
         logIncompleteContent(extracted.report, of: book)
         // The places move from the copied old text to the text just written.
         let movedPlaces = snapshot.flatMap { $0.movePlaces(to: content, at: Date()) }
-        return GeneratedCache(content: content, report: extracted.report, movedPlaces: movedPlaces)
+        return GeneratedCache(
+            content: content, report: extracted.report, movedPlaces: movedPlaces,
+            title: extracted.title, author: extracted.author
+        )
     }
 
     /// Copies the book's old content.md aside with its saved places, before
@@ -275,12 +301,23 @@ enum MarkdownCacheService {
     /// Import-time variant: write the cache, stamp `book` with the cache
     /// version and its index summary, and return the content with the report
     /// of chapters the source could not supply.
+    /// With `adoptingDocumentNames`, `book` also takes the title and author
+    /// the document names (`generateReportedCacheContent(for:adoptingDocumentNames:)`),
+    /// keeping its own for any the document leaves out.
     /// - Returns: nil for a book with no text cache.
     /// - Throws: why no cache could be written; `book` is then unchanged.
-    static func generateReportedCacheAnalyzeAndStamp(for book: inout Book) throws -> GeneratedCache? {
-        guard let generated = try generateReportedCacheContent(for: book) else { return nil }
+    static func generateReportedCacheAnalyzeAndStamp(
+        for book: inout Book, adoptingDocumentNames: Bool = false
+    ) throws -> GeneratedCache? {
+        guard let generated = try generateReportedCacheContent(
+            for: book, adoptingDocumentNames: adoptingDocumentNames
+        ) else { return nil }
         book.cacheFormatVersion = currentCacheVersion
         book.applyContentIndexSummary(generated.content.contentIndex)
+        if adoptingDocumentNames {
+            if let title = generated.title { book.title = title }
+            if let author = generated.author { book.author = author }
+        }
         return generated
     }
 
@@ -431,7 +468,10 @@ enum MarkdownCacheService {
         case .docx:
             markdown = try DOCXParser.extractMarkdown(from: url)
         case .rtf, .rtfd, .doc, .odt, .wordml:
-            markdown = try TextutilDocumentReader.extractMarkdown(from: url, bookFormat: format)
+            // One conversion gives the Markdown and the names the head of
+            // textutil's HTML holds.
+            let extraction = try TextutilDocumentReader.extract(from: url, bookFormat: format)
+            return ExtractedCache(markdown: extraction.markdown, title: extraction.title, author: extraction.author)
         case .daisy:
             markdown = try DAISYParser.extractMarkdown(from: url)
         case .pdf:
