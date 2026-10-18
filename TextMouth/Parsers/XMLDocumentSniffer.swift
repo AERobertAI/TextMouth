@@ -44,6 +44,34 @@ enum XMLDocumentSniffer {
         return rootKind(of: prefix)
     }
 
+    /// Whether the file at `url` holds no text at all: it has no bytes, or
+    /// only white space (spaces, tabs, line breaks, and a leading UTF-8 byte
+    /// order mark). An import tells such a file it has no text to read
+    /// rather than that it is some other kind of XML. Only the first
+    /// `scanLength` bytes are read, so a file longer than that is never
+    /// called blank, and a missing file, a folder, and a file that cannot
+    /// be read are not blank either.
+    static func holdsNoText(fileAt url: URL) -> Bool {
+        var isFolder: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isFolder),
+              !isFolder.boolValue,
+              let handle = try? FileHandle(forReadingFrom: url) else { return false }
+        defer { try? handle.close() }
+        // One byte more than the scan: a file that fills it is longer.
+        // `read` answers nil, not empty data, at the end of an empty file; a
+        // read that fails throws, and a file that cannot be read is not blank.
+        let bytes: Data
+        do {
+            bytes = try handle.read(upToCount: scanLength + 1) ?? Data()
+        } catch {
+            return false
+        }
+        guard bytes.count <= scanLength else { return false }
+        let byteOrderMark: [UInt8] = [0xEF, 0xBB, 0xBF]
+        let body = bytes.starts(with: byteOrderMark) ? bytes.dropFirst(byteOrderMark.count) : bytes[...]
+        return body.allSatisfy { [0x20, 0x09, 0x0A, 0x0D].contains($0) }
+    }
+
     /// The kind of an XML document that begins with `prefix`. The prefix may
     /// be cut off anywhere once its root element has started.
     static func rootKind(of prefix: Data) -> XMLRootKind {

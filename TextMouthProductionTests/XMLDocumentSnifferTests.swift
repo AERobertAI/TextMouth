@@ -90,6 +90,57 @@ final class XMLDocumentSnifferTests: XCTestCase {
         XCTAssertEqual(XMLDocumentSniffer.rootKind(ofFileAt: late), .other)
     }
 
+    /// The kind is told from the root element alone, so a DTBook in UTF-16
+    /// (with its byte order mark), in ISO 8859-1, or with Cyrillic head
+    /// text, and one behind a long comment, is a DTBook: the DAISY reader
+    /// finds a DTBook by this answer and by no search of its own.
+    func testADTBookInAnyEncodingOrBehindALongCommentIsADTBook() throws {
+        let body = "<dtbook xmlns=\"\(dtbookNamespace)\"><head><meta name=\"dc:Title\" content=\"Записки \u{E9}\"/></head></dtbook>"
+        let comment = "<!-- " + String(repeating: "Licensed for reading. ", count: 40) + "-->\n"
+        let utf16 = try XCTUnwrap(("<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n" + body).data(using: .utf16))
+        let latin1 = try XCTUnwrap(
+            ("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n<dtbook><head><meta name=\"a\" content=\"\u{E9}\"/></head></dtbook>")
+                .data(using: .isoLatin1)
+        )
+
+        XCTAssertEqual(XMLDocumentSniffer.rootKind(of: utf16), .dtbook)
+        XCTAssertEqual(XMLDocumentSniffer.rootKind(of: latin1), .dtbook)
+        XCTAssertEqual(kind(of: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + body), .dtbook)
+        XCTAssertEqual(kind(of: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + comment + body), .dtbook)
+    }
+
+    // MARK: - Blank Files
+
+    /// A file with no bytes, and one of only white space (a byte order
+    /// mark may lead it), holds no text; a file with any other character,
+    /// a missing file, and a folder do not.
+    func testOnlyAnEmptyOrWhiteSpaceFileHoldsNoText() throws {
+        let folder = try makeSandboxDirectory("XMLSniffer")
+        func file(_ name: String, _ bytes: Data) throws -> URL {
+            let url = folder.appendingPathComponent(name)
+            try bytes.write(to: url)
+            return url
+        }
+
+        XCTAssertTrue(XMLDocumentSniffer.holdsNoText(fileAt: try file("empty.xml", Data())))
+        XCTAssertTrue(XMLDocumentSniffer.holdsNoText(fileAt: try file("spaces.xml", Data(" \n\t\r\n ".utf8))))
+        XCTAssertTrue(XMLDocumentSniffer.holdsNoText(fileAt: try file("bom.xml", Data([0xEF, 0xBB, 0xBF, 0x0A]))))
+        XCTAssertFalse(XMLDocumentSniffer.holdsNoText(fileAt: try file("text.xml", Data(" \n x ".utf8))))
+        XCTAssertFalse(XMLDocumentSniffer.holdsNoText(fileAt: try file("root.xml", Data("<a/>".utf8))))
+        XCTAssertFalse(XMLDocumentSniffer.holdsNoText(fileAt: folder.appendingPathComponent("absent.xml")))
+        XCTAssertFalse(XMLDocumentSniffer.holdsNoText(fileAt: folder))
+    }
+
+    /// White space that runs past the scan length is not known to be all
+    /// white space (only the start is read), so the file is not called blank.
+    func testWhiteSpaceBeyondTheScanLengthIsNotCalledBlank() throws {
+        let folder = try makeSandboxDirectory("XMLSniffer")
+        let long = folder.appendingPathComponent("long.xml")
+        try Data(repeating: 0x20, count: XMLDocumentSniffer.scanLength + 1).write(to: long)
+
+        XCTAssertFalse(XMLDocumentSniffer.holdsNoText(fileAt: long))
+    }
+
     /// A missing file and a folder are `.other`, without a crash.
     func testAMissingFileAndAFolderAreOther() throws {
         let folder = try makeSandboxDirectory("XMLSniffer")
