@@ -263,6 +263,51 @@ class DirectoryFileProvider: DAISYFileProvider {
     }
 }
 
+/// Reads one DTBook file kept on its own (FMT04): the provider lists that
+/// file alone, so nothing beside it in its folder, which is not part of the
+/// book, is ever listed, read, or copied.
+final class SingleFileProvider: DAISYFileProvider {
+    /// The DTBook file.
+    private let fileURL: URL
+
+    /// Prepare to serve `fileURL`.
+    /// - Throws: `DocumentTooLargeError` when the file, by its size in the
+    ///   file system, passes the document byte limit, so a file too large
+    ///   is refused in those words rather than taken for no book at all
+    ///   (version detection passes over a file it cannot read).
+    init(fileURL: URL) throws {
+        let size = try fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        try DocumentByteLimit.check(byteCount: Int64(size))
+        self.fileURL = fileURL
+    }
+
+    /// The file's name alone.
+    func listFiles() -> [String] {
+        [fileURL.lastPathComponent]
+    }
+
+    /// The file's bytes, held to the document byte limit.
+    /// - Throws: `DAISYParserError.missingContent` for any other path,
+    ///   and the limit's or the file system's error for the file itself.
+    func readFile(at path: String) throws -> Data {
+        try requireFile(at: path)
+        return try DocumentByteLimit.contents(of: fileURL)
+    }
+
+    /// Copy the file to `destination`, held to the same bounds as reading it.
+    /// - Throws: as `readFile(at:)` throws.
+    func copyFile(at path: String, to destination: URL) throws {
+        try readFile(at: path).write(to: destination)
+    }
+
+    /// Refuses every path but the file's own name.
+    private func requireFile(at path: String) throws {
+        guard path == fileURL.lastPathComponent else {
+            throw DAISYParserError.missingContent("File not found: \(path)")
+        }
+    }
+}
+
 // MARK: - Main Parser
 
 /// Parses DAISY 2.02 and DAISY 3 books, extracting text content as Markdown.
@@ -279,8 +324,11 @@ enum DAISYParser {
     static func parse(url: URL) throws -> DocumentContent {
         let markdown = try extractMarkdown(from: url)
         let metadata = try? readMetadata(from: url)
-        let title = metadata?.title ?? url.deletingPathExtension().lastPathComponent
-        let author = metadata?.author ?? Book.unknownAuthor
+        // A name the book does not give (empty, as a DTBook on its own
+        // leaves one it does not name) falls back like a missing book.
+        let title = metadata.flatMap { $0.title.isEmpty ? nil : $0.title }
+            ?? url.deletingPathExtension().lastPathComponent
+        let author = metadata.flatMap { $0.author.isEmpty ? nil : $0.author } ?? Book.unknownAuthor
 
         let content = try MarkdownDocParser.parse(markdown: markdown, title: title)
         return DocumentContent(title: title, author: author, chapters: content.chapters)
@@ -383,6 +431,10 @@ enum DAISYParser {
                 } catch {
                     throw DAISYParserError.invalidArchive
                 }
+            } else if ext == "xml", XMLDocumentSniffer.rootKind(ofFileAt: url) == .dtbook {
+                // A DTBook file on its own (FMT04): the book is that file
+                // and nothing beside it.
+                base = try SingleFileProvider(fileURL: url)
             } else if isPackageEntryFile(url) {
                 // A package file (.opf) or a DAISY 2.02 navigation file
                 // (ncc.html): its folder holds the book. The chosen file is
@@ -541,7 +593,12 @@ enum DAISYParser {
     private static func readDAISY3Metadata(from provider: DAISYFileProvider) throws -> DAISYMetadata? {
         let allFiles = provider.listFiles()
         guard let opfPath = allFiles.first(where: { $0.lowercased().hasSuffix(".opf") }) else {
-            return nil
+            // Without an OPF, the DTBook's own head and front matter name
+            // the book. A damaged DTBook gives no metadata, and the import
+            // names the book by its file: the text extraction reports the
+            // damage in its own words.
+            guard let xmlPath = findDTBookXML(in: allFiles, provider: provider) else { return nil }
+            return try? DAISYDTBookHeadParser(path: xmlPath, in: provider).parse()
         }
         let result = try DAISYOPFParser(path: opfPath, in: provider).parse()
         return DAISYMetadata(title: result.title, author: result.author)

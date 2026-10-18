@@ -28,6 +28,10 @@ enum FileImportError: LocalizedError {
     /// would add a silent, empty book. An import refuses it
     /// (`FileImportService.readableContent(of:run:refusingBlankText:)`).
     case noTextToRead
+    /// An .xml file whose root element is neither a DTBook's nor Word 2003
+    /// XML's: XML is a container for countless things, and TextMouth reads
+    /// only those two kinds (`XMLDocumentSniffer`, FMT04 and FMT13).
+    case unsupportedXML
 
     var errorDescription: String? {
         switch self {
@@ -40,6 +44,8 @@ enum FileImportError: LocalizedError {
         case .archiveLinksOutside: return "The archive holds a link to a file outside it, which is never extracted."
         case .archivePathOutside: return "The archive holds a file whose path leads outside it, which is never extracted."
         case .noTextToRead: return "This file has no text to read."
+        case .unsupportedXML:
+            return "This XML file is neither a DTBook book nor a Word 2003 XML document, the kinds of XML file TextMouth reads."
         }
     }
 }
@@ -949,8 +955,9 @@ enum FileImportService {
 
     /// Why `source` cannot be imported when no format reads it: a folder
     /// that is neither a DAISY book nor a folder of audio tracks is told so,
-    /// with what it holds, as a ZIP without a book is (FR17); any other
-    /// item's extension is not supported. A TextMouth package is not a
+    /// with what it holds, as a ZIP without a book is (FR17); an .xml file
+    /// that is no DTBook is told so (`FileImportError.unsupportedXML`); any
+    /// other item's extension is not supported. A TextMouth package is not a
     /// folder of a book here: it is imported as a package, not as a file.
     private static func unsupportedSourceError(for source: URL) -> Error {
         let ext = source.pathExtension.lowercased()
@@ -959,6 +966,10 @@ enum FileImportService {
            FileManager.default.fileExists(atPath: source.path, isDirectory: &isDirectory),
            isDirectory.boolValue {
             return FolderWithoutBookError(folderName: source.lastPathComponent, files: filesHeld(by: source))
+        }
+        // An .xml file no format claimed is some other kind of XML.
+        if ext == "xml" {
+            return FileImportError.unsupportedXML
         }
         return FileImportError.unsupportedFormat(ext)
     }
