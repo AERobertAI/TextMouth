@@ -46,7 +46,8 @@ final class LegacyBookStateTests: XCTestCase {
         XCTAssertEqual(BookFormat.detect(from: URL(fileURLWithPath: "/tmp/book.xhtml")), .html)
         XCTAssertEqual(BookFormat.detect(from: URL(fileURLWithPath: "/tmp/book.pdf")), .pdf)
         XCTAssertEqual(BookFormat.detect(from: URL(fileURLWithPath: "/tmp/book.docx")), .docx)
-        XCTAssertNil(BookFormat.detect(from: URL(fileURLWithPath: "/tmp/book.doc")))
+        // A Word 97-2003 document is read through textutil (FMT13), never as DOCX.
+        XCTAssertEqual(BookFormat.detect(from: URL(fileURLWithPath: "/tmp/book.doc")), .doc)
     }
 
     /// Playback timestamps and computed counts should survive production state encoding.
