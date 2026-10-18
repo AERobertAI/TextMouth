@@ -274,10 +274,16 @@
 			<key>CFBundleTypeExtensions</key>
 			<array>
 				<string>docx</string>
+				<string>dotx</string>
+				<string>docm</string>
+				<string>dotm</string>
 			</array>
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>org.openxmlformats.wordprocessingml.document</string>
+				<string>org.openxmlformats.wordprocessingml.template</string>
+				<string>org.openxmlformats.wordprocessingml.document.macroenabled</string>
+				<string>org.openxmlformats.wordprocessingml.template.macroenabled</string>
 			</array>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>

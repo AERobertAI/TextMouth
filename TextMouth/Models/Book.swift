@@ -49,13 +49,20 @@ enum BookFormat: String, Codable, CaseIterable {
     /// import's playability check (`AudioMediaProbe`) refuses each Ogg file
     /// by name, saying it cannot be opened as audio, as for any file the Mac
     /// cannot play.
+    ///
+    /// A Word template (.dotx), a macro-enabled document (.docm), and a
+    /// macro-enabled template (.dotm) are the same Office Open XML package
+    /// as a .docx, only the main part's content type differs, so they share
+    /// the `.docx` case and its reader. That reader opens only the XML parts
+    /// it needs, so a macro project (word/vbaProject.bin) is never opened
+    /// and no macro can run.
     var fileExtensions: [String] {
         switch self {
         case .epub: return ["epub"]
         case .txt: return ["txt"]
         case .markdown: return ["md", "markdown"]
         case .html: return ["html", "htm", "xhtml"]
-        case .docx: return ["docx"]
+        case .docx: return ["docx", "dotx", "docm", "dotm"]
         case .daisy: return ["daisy", "opf"]
         case .pdf: return ["pdf"]
         case .audio:

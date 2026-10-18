@@ -2064,6 +2064,17 @@ enum FileImportService {
         if let docx = UTType("org.openxmlformats.wordprocessingml.document") {
             types.append(docx)
         }
+        // Word templates and macro-enabled documents are the same package,
+        // read by the same reader (macro projects are never opened).
+        for identifier in [
+            "org.openxmlformats.wordprocessingml.template",
+            "org.openxmlformats.wordprocessingml.document.macroenabled",
+            "org.openxmlformats.wordprocessingml.template.macroenabled"
+        ] {
+            if let type = UTType(identifier) {
+                types.append(type)
+            }
+        }
         // PDF documents
         types.append(.pdf)
         // DAISY books (OPF files and .daisy extension)
