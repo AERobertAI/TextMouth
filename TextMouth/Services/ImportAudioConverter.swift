@@ -279,7 +279,9 @@ enum ImportAudioConverter {
             guard let header = OggHeaderReader.read(at: url) else { return nil }
             return SourceInfo(
                 sampleRate: header.sampleRate, channels: header.channels, duration: header.duration,
-                formatID: formatID(of: header.codec), bitsPerSample: nil, isLossless: false
+                formatID: formatID(of: header.codec), bitsPerSample: header.bitsPerSample,
+                // FLAC keeps every bit of its source, so it becomes Apple Lossless; Vorbis and Opus are lossy.
+                isLossless: header.codec == .flac
             )
         }
         guard let facts = try await AudioFileInfo.read(url) else { return nil }
