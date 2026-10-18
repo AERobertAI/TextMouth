@@ -55,13 +55,14 @@ final class AudioChannelDownmixTests: XCTestCase {
         )
     }
 
-    /// Writes `seconds` of a 440 Hz sine, the same in every channel, to
-    /// `url` as 16-bit PCM in a CAF with the channel layout `tag`, and
+    /// Writes `seconds` of a 440 Hz sine, the same in every channel (or in
+    /// channel `signalIn` alone, the others silent), to `url` as 16-bit PCM in a CAF with the channel layout `tag`, and
     /// returns the channels the layout holds. `AVAudioFile` writes the
     /// file and decodes nothing.
     @discardableResult
     private func writePCM(
-        layout tag: AudioChannelLayoutTag, to url: URL, seconds: Double = 1, rate: Double = 44_100
+        layout tag: AudioChannelLayoutTag, to url: URL, seconds: Double = 1, rate: Double = 44_100,
+        signalIn: Int? = nil
     ) throws -> Int {
         let layout = try XCTUnwrap(AVAudioChannelLayout(layoutTag: tag))
         let channels = Int(layout.channelCount)
@@ -79,10 +80,12 @@ final class AudioChannelDownmixTests: XCTestCase {
         let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: frames))
         buffer.frameLength = frames
         let channelData = try XCTUnwrap(buffer.floatChannelData)
-        for pointer in UnsafeBufferPointer(start: channelData, count: Int(file.processingFormat.channelCount)) {
+        let pointers = UnsafeBufferPointer(start: channelData, count: Int(file.processingFormat.channelCount))
+        for (channel, pointer) in pointers.enumerated() {
             let samples = UnsafeMutableBufferPointer(start: pointer, count: Int(frames))
+            let sounding = signalIn == nil || signalIn == channel
             for index in samples.indices {
-                samples[index] = 0.25 * Float(sin(2 * Double.pi * 440 * Double(index) / rate))
+                samples[index] = sounding ? 0.25 * Float(sin(2 * Double.pi * 440 * Double(index) / rate)) : 0
             }
         }
         try file.write(from: buffer)
@@ -153,13 +156,13 @@ final class AudioChannelDownmixTests: XCTestCase {
         let aac = ImportAudioConverter.target(for: info(rate: 88_200, channels: 6), bytes: 100_000)
         XCTAssertEqual(
             ImportAudioConverter.downmixArguments(from: input, to: output, target: aac),
-            ["-f", "caff", "-d", "LEI16@44100", "-c", "2", "/in/a.ac3", "/in/.x.audio-downmix.caf"]
+            ["-f", "caff", "-d", "LEI16@44100", "-c", "2", "--mix", "/in/a.ac3", "/in/.x.audio-downmix.caf"]
         )
         for (bits, depth) in [(16, 16), (20, 24), (24, 24), (32, 32)] {
             let target = ImportAudioConverter.target(for: info(rate: 96_000, channels: 6, bits: bits, lossless: true), bytes: 1)
             XCTAssertEqual(
                 ImportAudioConverter.downmixArguments(from: input, to: output, target: target),
-                ["-f", "caff", "-d", "LEI\(depth)@96000", "-c", "2", "/in/a.ac3", "/in/.x.audio-downmix.caf"],
+                ["-f", "caff", "-d", "LEI\(depth)@96000", "-c", "2", "--mix", "/in/a.ac3", "/in/.x.audio-downmix.caf"],
                 "\(bits) bits"
             )
         }
@@ -299,6 +302,55 @@ final class AudioChannelDownmixTests: XCTestCase {
             offset = body + size + (size % 2)
         }
         return nil
+    }
+
+    /// How many decibels `level` is below `reference`, both RMS levels.
+    private static func decibels(below reference: Double, _ level: Double) -> Double {
+        20 * log10(reference / max(level, 1e-9))
+    }
+
+    /// Decodes the file at `url` to WAV with afconvert in a child process and
+    /// returns each channel's RMS level.
+    private func levels(of url: URL, as name: String) async throws -> [Double] {
+        let wav = folder.appendingPathComponent(name)
+        let status = try await afconvert(["-f", "WAVE", "-d", "LEI16", url.path, wav.path], watching: wav)
+        XCTAssertEqual(status, 0, name)
+        return try XCTUnwrap(Self.channelLevels(ofWAVAt: wav))
+    }
+
+    /// A 5.1 PCM file with signal in the centre channel alone (layout
+    /// MPEG_5_1_A: L R C LFE Ls Rs) converts to a stereo file whose two
+    /// channels both sit within 2 dB of 10.7 dB below the source's centre
+    /// (the normalized ITU downmix). Without `--mix` the centre is lost.
+    func testAPCMCentreReachesBothEarsAtTheITULevel() async throws {
+        let source = folder.appendingPathComponent("pcm51.caf")
+        try writePCM(layout: kAudioChannelLayoutTag_MPEG_5_1_A, to: source, signalIn: 2)
+        let sourceCentre = try XCTUnwrap(try await levels(of: source, as: "source.wav").max())
+        XCTAssertGreaterThan(sourceCentre, 1_000)
+
+        let conversion = try await ImportAudioConverter.convert(source)
+
+        let converted = try await levels(of: conversion.converted, as: "converted.wav")
+        XCTAssertEqual(converted.count, 2)
+        for level in converted {
+            XCTAssertEqual(Self.decibels(below: sourceCentre, level), 10.7, accuracy: 2, "a channel lost the centre")
+        }
+    }
+
+    /// The same for the committed AC-3 fixture, which AC-3's own decoder
+    /// mixes 13.7 dB below its centre.
+    func testAnAC3CentreReachesBothEarsAtItsDecodersLevel() async throws {
+        let source = try copy(Self.centre51, as: "film.ac3")
+        let sourceCentre = try XCTUnwrap(try await levels(of: source, as: "source.wav").max())
+        XCTAssertGreaterThan(sourceCentre, 1_000)
+
+        let conversion = try await ImportAudioConverter.convert(source)
+
+        let converted = try await levels(of: conversion.converted, as: "converted.wav")
+        XCTAssertEqual(converted.count, 2)
+        for level in converted {
+            XCTAssertEqual(Self.decibels(below: sourceCentre, level), 13.7, accuracy: 2, "a channel lost the centre")
+        }
     }
 
     // MARK: - Lossless Sources of Every Channel Count

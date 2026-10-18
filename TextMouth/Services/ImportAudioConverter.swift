@@ -462,10 +462,20 @@ enum ImportAudioConverter {
     /// afconvert mixes 3.0 and 5.1 AC-3, 5.1 E-AC-3, and a 10-channel
     /// Wave64 down to stereo PCM in this one step, where it refuses `-c 2`
     /// with the AAC and Apple Lossless encoders themselves.
+    ///
+    /// `--mix` is essential: without it `-c` "adds or removes channels
+    /// without regard to order", and a 5.1 PCM source whose dialogue is in
+    /// the centre channel came out silent in both channels (-93 dBFS
+    /// against the centre's -21 dBFS); with it both channels carry the
+    /// centre, 10.7 dB down (the normalized ITU downmix). AC-3 and E-AC-3
+    /// are mixed by their own decoder either way. A PCM source with no
+    /// channel layout cannot be mixed: afconvert keeps its first two
+    /// channels. These arguments are in this one function so that the mix
+    /// can be changed in one place.
     static func downmixArguments(from input: URL, to output: URL, target: Target) -> [String] {
         [
             "-f", "caff", "-d", "LEI\(downmixBitDepth(for: target))@\(Int(target.sampleRate))",
-            "-c", String(maximumChannels), input.path, output.path,
+            "-c", String(maximumChannels), "--mix", input.path, output.path,
         ]
     }
 
