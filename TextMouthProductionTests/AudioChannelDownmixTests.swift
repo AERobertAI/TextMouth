@@ -442,4 +442,90 @@ final class AudioChannelDownmixTests: XCTestCase {
         XCTAssertEqual(conversion.converted.lastPathComponent, "plain.m4a")
         XCTAssertEqual(names, ["plain.caf", "plain.m4a"])
     }
+
+    // MARK: - Disk Space
+
+    /// What the 5.1 fixture's downmix needs free: its 49,152 frames at
+    /// 48 kHz in two channels of 16-bit samples, and 512 MB.
+    private static let fixtureBytesNeeded: Int64 = 49_152 * 2 * 2 + 512 * 1_048_576
+
+    /// A tool whose volume holds `available` bytes (nil: unknown), whose
+    /// downmix step, if it ever runs, touches `marker`.
+    private func tool(available: Int64?, marker: URL) -> ImportAudioConverter.Tool {
+        var tool = tool(downmix: ("/usr/bin/touch", [marker.path]))
+        tool.availableBytes = { _ in available }
+        return tool
+    }
+
+    /// The stereo PCM file's size is its length at the rate written, in two
+    /// channels of 16-bit samples for AAC and of the Apple Lossless depth
+    /// (24 bits for 20), and 512 MB on top.
+    func testTheFreeSpaceADownmixNeeds() {
+        let reserve = Int64(512 * 1_048_576)
+        let aac = ImportAudioConverter.target(for: info(rate: 44_100, channels: 6), bytes: 1_000_000)
+        XCTAssertEqual(
+            ImportAudioConverter.downmixBytesNeeded(duration: 3_600, target: aac),
+            3_600 * 44_100 * 2 * 2 + reserve
+        )
+        for (bits, bytes) in [(16, 2), (20, 3), (24, 3), (32, 4)] as [(Int, Int64)] {
+            let lossless = ImportAudioConverter.target(for: info(rate: 96_000, channels: 6, bits: bits, lossless: true), bytes: 1)
+            XCTAssertEqual(
+                ImportAudioConverter.downmixBytesNeeded(duration: 600, target: lossless),
+                600 * 96_000 * 2 * bytes + reserve,
+                "\(bits) bits"
+            )
+        }
+    }
+
+    /// The refusal reads as a whole sentence with the size in figures.
+    func testTheWordsOfTheNotEnoughSpaceFailure() {
+        XCTAssertEqual(
+            ImportAudioConverter.Failure.notEnoughSpace(fileName: "a.ac3", bytesNeeded: 1_400_000_000).errorDescription,
+            "There is not enough free disk space to convert a.ac3: it needs 1.4 GB free."
+        )
+    }
+
+    /// The real reading of the free space gives a figure for the temporary
+    /// folder's volume.
+    func testTheRealFreeSpaceReadingGivesAFigure() throws {
+        let free = try XCTUnwrap(ImportAudioConverter.availableBytes(on: folder))
+        XCTAssertGreaterThan(free, 0)
+    }
+
+    /// With less free space than the downmix needs, the conversion is
+    /// refused with the new failure before any child runs, leaving nothing.
+    func testNotEnoughSpaceIsRefusedBeforeAnyChildRuns() async throws {
+        let marker = folder.appendingPathComponent("step-one-ran")
+        let refused = try await failure(of: tool(available: Self.fixtureBytesNeeded - 1, marker: marker))
+        XCTAssertEqual(refused, .notEnoughSpace(fileName: "film.ac3", bytesNeeded: Self.fixtureBytesNeeded))
+        XCTAssertEqual(names, ["film.ac3"])
+    }
+
+    /// Exactly the free space needed is enough: the downmix runs (the
+    /// stand-in's marker appears), so the refusal is for less only.
+    func testExactlyEnoughSpaceRunsTheDownmix() async throws {
+        let marker = folder.appendingPathComponent("step-one-ran")
+        _ = try await failure(of: tool(available: Self.fixtureBytesNeeded, marker: marker))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: marker.path))
+    }
+
+    /// A volume that can't say how much it has is not a reason to refuse.
+    func testUnknownFreeSpaceDoesNotRefuse() async throws {
+        let marker = folder.appendingPathComponent("step-one-ran")
+        _ = try await failure(of: tool(available: nil, marker: marker))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: marker.path))
+    }
+
+    /// A mono or stereo source writes no stereo file, so it asks for no
+    /// space and converts however little the volume reports.
+    func testAStereoSourceNeedsNoFreeSpaceForADownmix() async throws {
+        let source = folder.appendingPathComponent("plain.caf")
+        try writePCM(layout: kAudioChannelLayoutTag_Stereo, to: source)
+        var noSpace = tool()
+        noSpace.availableBytes = { _ in 0 }
+
+        let conversion = try await ImportAudioConverter.convert(source, using: noSpace)
+
+        XCTAssertEqual(conversion.converted.lastPathComponent, "plain.m4a")
+    }
 }

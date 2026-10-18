@@ -98,6 +98,11 @@ enum ImportAudioConverter {
     /// orphaned-converter sweep find it as they find the .m4a.
     static let downmixSuffix = ".audio-downmix.caf"
 
+    /// The free space a downmix leaves on the volume beyond its stereo PCM
+    /// file: 512 MB, for the .m4a written next and for the rest of the
+    /// system (`downmixBytesNeeded(duration:target:)`).
+    static let downmixReserveBytes: Int64 = 512 * 1_048_576
+
     /// The longest file name, in UTF-16 code units, that every supported
     /// file system accepts (exFAT and HFS+ count units; APFS counts
     /// characters, so it accepts at least as much).
@@ -141,6 +146,10 @@ enum ImportAudioConverter {
         /// The converting process ended in failure with exit `status`, or
         /// could not be started (status -1).
         case processFailed(fileName: String, status: Int32)
+        /// The volume holds too little free space for the stereo PCM file of
+        /// a downmix and the room to spare (`downmixBytesNeeded`); nothing
+        /// was run. `bytesNeeded` is the free space it needs.
+        case notEnoughSpace(fileName: String, bytesNeeded: Int64)
 
         var errorDescription: String? {
             switch self {
@@ -154,6 +163,9 @@ enum ImportAudioConverter {
                 return "Converting \(fileName) was stopped because \(reason)."
             case let .processFailed(fileName, status):
                 return "Converting \(fileName) failed (the converter ended with code \(status))."
+            case let .notEnoughSpace(fileName, bytesNeeded):
+                return "There is not enough free disk space to convert \(fileName): "
+                    + "it needs \(ImportProgressWording.size(bytesNeeded)) free."
             }
         }
     }
@@ -424,6 +436,24 @@ enum ImportAudioConverter {
         return depth == 20 ? 24 : depth
     }
 
+    /// The free space a downmix of a track lasting `duration` seconds,
+    /// written as `target`, needs on the volume: the stereo PCM file of
+    /// step 1 (duration × sample rate × two channels × bytes a sample,
+    /// uncompressed, so a long track's file is large) and the reserve
+    /// (`downmixReserveBytes`).
+    static func downmixBytesNeeded(duration: TimeInterval, target: Target) -> Int64 {
+        let frames = Int64((duration * target.sampleRate).rounded())
+        return frames * Int64(maximumChannels) * Int64(downmixBitDepth(for: target) / 8) + downmixReserveBytes
+    }
+
+    /// The bytes free on the volume that holds `folder` for TextMouth's use
+    /// (`volumeAvailableCapacityForImportantUsageKey`, which counts space the
+    /// system can purge); nil when the volume can't say.
+    static func availableBytes(on folder: URL) -> Int64? {
+        (try? folder.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]))?
+            .volumeAvailableCapacityForImportantUsage
+    }
+
     /// The arguments of afconvert for step 1 of a downmix: writing `input`,
     /// a source of more than two channels in any layout, to `output`, a
     /// CAF of stereo linear PCM (`-f caff -d LEI<bits>@<rate> -c 2`) at the
@@ -456,6 +486,10 @@ enum ImportAudioConverter {
             -> (executable: URL, arguments: [String]) = { input, output, target in
                 (URL(fileURLWithPath: "/usr/bin/afconvert"), downmixArguments(from: input, to: output, target: target))
             }
+        /// The bytes free on the volume that holds the given folder, or nil
+        /// when unknown (the conversion then goes on). The real reading by
+        /// default; a test replaces it.
+        var availableBytes: @Sendable (_ folder: URL) -> Int64? = { ImportAudioConverter.availableBytes(on: $0) }
         /// What the watchdog allows a conversion of a track lasting the
         /// given seconds.
         var limits: @Sendable (_ duration: TimeInterval) -> WatchedProcess.Limits
@@ -556,7 +590,9 @@ enum ImportAudioConverter {
     /// (`downmixArguments`, written by `tool.downmixCommand`) that the second
     /// step reads (`afconvertArguments`, by `tool.command`, with the PCM
     /// file's facts); the PCM file is removed as soon as the second step
-    /// ends, however it ends. Each step is a watched child.
+    /// ends, however it ends. Each step is a watched child. Before the first
+    /// step, the volume's free space must hold the PCM file
+    /// (`downmixBytesNeeded(duration:target:)`), or nothing runs.
     /// - Throws: `Failure`, or `CancellationError`.
     private static func write(
         _ source: URL,
@@ -571,6 +607,11 @@ enum ImportAudioConverter {
             return
         }
         let stereo = downmixURL(beside: source)
+        // Refuse before any child runs when the stereo PCM file would not fit.
+        let needed = downmixBytesNeeded(duration: info.duration, target: target)
+        if let available = tool.availableBytes(stereo.deletingLastPathComponent()), available < needed {
+            throw Failure.notEnoughSpace(fileName: name, bytesNeeded: needed)
+        }
         defer { try? FileManager.default.removeItem(at: stereo) }
         try await run(tool.downmixCommand(source, stereo, target), named: name, duration: info.duration, tool: tool, watching: stereo)
         // What step 1 wrote: linear PCM in stereo, at the rate and depth step 2 keeps.
