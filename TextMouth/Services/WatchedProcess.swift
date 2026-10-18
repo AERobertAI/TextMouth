@@ -10,7 +10,8 @@ import os
 ///
 /// Once a second the watchdog (`Limits`) kills the child, with SIGKILL, when
 /// it has run longer than allowed, its resident memory has passed the limit,
-/// or the file it writes has not grown for too long. The child's standard
+/// the file it writes has not grown for too long, or that file has grown
+/// past its cap. The child's standard
 /// input, output, and errors are closed (the null device), so nothing it
 /// prints can fill a pipe and stall it.
 ///
@@ -39,6 +40,11 @@ enum WatchedProcess {
         /// the kernel (`ulimit -t`). Nil means four times `maximumSeconds`:
         /// a few cores' work for the whole wall-clock allowance.
         var maximumCPUSeconds: TimeInterval?
+        /// The most the watched file may grow to, in bytes. Nil means no cap.
+        /// A child whose output passes it is killed (`wroteTooMuch`): a
+        /// header that lies about a file's length can make a converter
+        /// reserve and write gigabytes the disk does not have.
+        var maximumOutputBytes: Int64?
 
         /// The CPU allowance in force: the explicit one, else four times
         /// `maximumSeconds`.
@@ -57,6 +63,8 @@ enum WatchedProcess {
         case madeNoProgress(seconds: TimeInterval)
         /// The kernel ended it (SIGXCPU) after `seconds` of processor time.
         case usedTooMuchProcessorTime(seconds: TimeInterval)
+        /// Its watched output file grew past `bytes`.
+        case wroteTooMuch(bytes: Int64)
 
         /// The reason as a phrase: "it ran longer than 62 seconds" (counted with
         /// `CountWording`, so one second reads "1 second").
@@ -70,6 +78,8 @@ enum WatchedProcess {
                 return "its output did not grow for \(CountWording.seconds(Int(seconds.rounded(.up))))"
             case let .usedTooMuchProcessorTime(seconds):
                 return "it used more than \(CountWording.seconds(Int(seconds.rounded(.up)))) of processor time"
+            case let .wroteTooMuch(bytes):
+                return "its output passed \(bytes / 1_048_576) MB"
             }
         }
     }
@@ -241,18 +251,26 @@ enum WatchedProcess {
     ) async throws -> Outcome {
         try await runWatched(
             executable, arguments: arguments, output: output, standardOutput: nil,
-            limits: limits, residentMemory: residentMemory, uptime: uptime
+            outputIsProgress: true, limits: limits, residentMemory: residentMemory, uptime: uptime
         )
     }
 
     /// Runs `executable` as `run` does, and keeps what the child prints
     /// (FMT09): its standard output goes to a new hidden file,
     /// `.<UUID>.watched-output`, in the temporary directory, which the
-    /// watchdog watches for growth (so `maximumStalledSeconds` counts from
-    /// the child's last output). The file is removed however the run ends: an
-    /// exit, a kill, a failure to start, or a cancellation.
-    /// - Parameter maximumOutputBytes: How much of the output is returned;
-    ///   the rest is dropped.
+    /// watchdog watches. The file is removed however the run ends: an exit, a
+    /// kill, a failure to start, or a cancellation.
+    ///
+    /// Output is not progress here: a child that prints without end must
+    /// still end at its time limit, and one that prints only when it ends
+    /// (afinfo) must not be killed for being silent, so the stall clock runs
+    /// from the child's start whatever it prints.
+    /// - Parameters:
+    ///   - maximumOutputBytes: How much of the output is returned, and the
+    ///     most the file may grow to: a child that writes more is killed
+    ///     (`wroteTooMuch`) and the bytes up to the cap are still returned.
+    ///   - outputFolder: Where the hidden file is made: the temporary
+    ///     directory, unless a test gives its own.
     /// - Returns: How the child ended, and the first `maximumOutputBytes`
     ///   bytes it printed (empty when it printed nothing or never started).
     /// - Throws: `CancellationError`, as `run` does.
@@ -261,11 +279,11 @@ enum WatchedProcess {
         arguments: [String],
         limits: Limits,
         maximumOutputBytes: Int = 1 << 20,
+        outputFolder: URL = FileManager.default.temporaryDirectory,
         residentMemory: @escaping @Sendable (pid_t) -> Int64? = WatchedProcess.residentMemory(of:),
         uptime: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
     ) async throws -> (outcome: Outcome, output: Data) {
-        let file = FileManager.default.temporaryDirectory
-            .appendingPathComponent(".\(UUID().uuidString).watched-output")
+        let file = outputFolder.appendingPathComponent(".\(UUID().uuidString)\(outputFileSuffix)")
         guard FileManager.default.createFile(atPath: file.path, contents: nil),
               let handle = try? FileHandle(forWritingTo: file)
         else {
@@ -278,12 +296,19 @@ enum WatchedProcess {
             try? handle.close()
             try? FileManager.default.removeItem(at: file)
         }
+        // The file itself is capped at the number of bytes that come back.
+        var cappedLimits = limits
+        cappedLimits.maximumOutputBytes = min(limits.maximumOutputBytes ?? .max, Int64(maximumOutputBytes))
         let outcome = try await runWatched(
             executable, arguments: arguments, output: file, standardOutput: handle,
-            limits: limits, residentMemory: residentMemory, uptime: uptime
+            outputIsProgress: false, limits: cappedLimits, residentMemory: residentMemory, uptime: uptime
         )
         return (outcome, firstBytes(of: file, upTo: maximumOutputBytes))
     }
+
+    /// What every captured-output file's name ends with (the launch sweeps
+    /// look for it).
+    static let outputFileSuffix = ".watched-output"
 
     /// The first `count` bytes of the file at `url`; empty when it cannot be
     /// read.
@@ -296,12 +321,14 @@ enum WatchedProcess {
     /// The core of `run` and `runCapturingOutput`: starts the child on a
     /// background queue, under `limits`, with the cancellation handler.
     /// `standardOutput`, when given, takes the null device's place for the
-    /// child's standard output.
+    /// child's standard output. `outputIsProgress` says whether the watched
+    /// file's growth resets the stall clock.
     private static func runWatched(
         _ executable: URL,
         arguments: [String],
         output: URL,
         standardOutput: FileHandle?,
+        outputIsProgress: Bool,
         limits: Limits,
         residentMemory: @escaping @Sendable (pid_t) -> Int64?,
         uptime: @escaping @Sendable () -> TimeInterval
@@ -314,7 +341,7 @@ enum WatchedProcess {
                 DispatchQueue.global(qos: .utility).async {
                     continuation.resume(returning: watch(
                         executable, arguments: arguments, output: output,
-                        standardOutput: standardOutput, limits: limits,
+                        standardOutput: standardOutput, outputIsProgress: outputIsProgress, limits: limits,
                         residentMemory: residentMemory, uptime: uptime, gate: gate
                     ))
                 }
@@ -337,6 +364,7 @@ enum WatchedProcess {
         arguments: [String],
         output: URL,
         standardOutput: FileHandle?,
+        outputIsProgress: Bool,
         limits: Limits,
         residentMemory: @Sendable (pid_t) -> Int64?,
         uptime: @Sendable () -> TimeInterval,
@@ -385,12 +413,15 @@ enum WatchedProcess {
             let currentSize = size(of: output)
             if currentSize > lastSize {
                 lastSize = currentSize
-                lastGrowth = now
+                // Output counts as progress only when the caller says so.
+                if outputIsProgress { lastGrowth = now }
             }
             if now - started > limits.maximumSeconds {
                 reason = .tookTooLong(seconds: limits.maximumSeconds)
             } else if let memory = residentMemory(pid), memory > limits.maximumResidentBytes {
                 reason = .usedTooMuchMemory(bytes: limits.maximumResidentBytes)
+            } else if let cap = limits.maximumOutputBytes, currentSize > cap {
+                reason = .wroteTooMuch(bytes: cap)
             } else if now - lastGrowth > limits.maximumStalledSeconds {
                 reason = .madeNoProgress(seconds: limits.maximumStalledSeconds)
             } else {
