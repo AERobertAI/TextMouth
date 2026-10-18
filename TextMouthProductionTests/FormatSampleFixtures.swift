@@ -83,6 +83,30 @@ extension XCTestCase {
     }
 }
 
+// MARK: - Making a Web Archive
+
+extension XCTestCase {
+    /// The bytes of a web archive whose main resource has the given fields;
+    /// a nil field is left out, as another tool may leave it out. `extra`
+    /// adds top-level entries beside `WebMainResource`, such as subresources.
+    /// Shared by the tests of the reader and of the import (FMT03).
+    func webArchiveBytes(
+        data: Data? = Data("<h1>Title</h1>".utf8),
+        mimeType: String? = "text/html",
+        encoding: String? = "utf-8",
+        extra: [String: Any] = [:],
+        format: PropertyListSerialization.PropertyListFormat = .binary
+    ) throws -> Data {
+        var main: [String: Any] = ["WebResourceURL": "file:///index.html"]
+        main["WebResourceData"] = data
+        main["WebResourceMIMEType"] = mimeType
+        main["WebResourceTextEncodingName"] = encoding
+        var root: [String: Any] = ["WebMainResource": main]
+        root.merge(extra) { _, new in new }
+        return try PropertyListSerialization.data(fromPropertyList: root, format: format, options: 0)
+    }
+}
+
 // MARK: - Making a Word or OpenDocument Sample Protected by a Password
 
 /// Helpers that turn a copy of a sample into a document protected by a
