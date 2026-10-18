@@ -64,6 +64,28 @@ final class SSMLReaderTests: XCTestCase {
         XCTAssertEqual(try paragraphs(speak("<p>Wait <break/> here</p>")), ["Wait here"])
     }
 
+    /// A voice's start and end each separate words, so neighbouring voices'
+    /// words never run together.
+    func testVoicesNeverRunTogether() throws {
+        XCTAssertEqual(try paragraphs(speak("<p><voice name=\"a\">Hello.</voice><voice name=\"b\">Hi.</voice></p>")),
+                       ["Hello. Hi."])
+        XCTAssertEqual(try paragraphs(speak("<p>Said<voice name=\"a\">Hello</voice>twice</p>")),
+                       ["Said Hello twice"])
+    }
+
+    /// An audio element, empty or with fallback text, separates the words
+    /// on either side of it.
+    func testAudioNeverRunsTheWordsAroundItTogether() throws {
+        XCTAssertEqual(try paragraphs(speak("<p>Wait<audio src=\"h.mp3\"/>then</p>")), ["Wait then"])
+        XCTAssertEqual(try paragraphs(speak("<p>Wait<audio src=\"h.mp3\">Horn.</audio>then</p>")),
+                       ["Wait Horn. then"])
+    }
+
+    /// The start of a sentence separates it from words just before it.
+    func testASentenceStartsAWordApart() throws {
+        XCTAssertEqual(try paragraphs(speak("<p>Intro<s>One.</s></p>")), ["Intro One."])
+    }
+
     func testSentencesWithNothingBetweenThemStayApart() throws {
         XCTAssertEqual(try paragraphs(speak("<p><s>One.</s><s>Two.</s></p>")), ["One. Two."])
         XCTAssertEqual(try paragraphs(speak("<p><sentence>One.</sentence><sentence>Two.</sentence></p>")),
@@ -153,6 +175,28 @@ final class SSMLReaderTests: XCTestCase {
     func testNestedEmphasisWritesOneEm() throws {
         let ssml = speak("<p><emphasis>very <emphasis>very</emphasis></emphasis> long</p>")
         XCTAssertEqual(try paragraphs(ssml), ["<em>very very</em> long"])
+    }
+
+    /// Level "none" asks for no emphasis: its words are written plain. Every
+    /// other level, and no level, is written as emphasis.
+    func testEmphasisOfLevelNoneWritesItsContentOnly() throws {
+        XCTAssertEqual(try paragraphs(speak("<p>It is <emphasis level=\"none\">not</emphasis> long.</p>")),
+                       ["It is not long."])
+        for level in ["strong", "moderate", "reduced"] {
+            XCTAssertEqual(try paragraphs(speak("<p>It is <emphasis level=\"\(level)\">not</emphasis> long.</p>")),
+                           ["It is <em>not</em> long."], level)
+        }
+        XCTAssertEqual(try paragraphs(speak("<p>It is <emphasis>not</emphasis> long.</p>")),
+                       ["It is <em>not</em> long."])
+    }
+
+    /// A plain emphasis inside an emphatic one, and the reverse, keep the
+    /// emphatic one's tags balanced.
+    func testEmphasisOfLevelNoneNestsWithoutUnbalancingTags() throws {
+        XCTAssertEqual(try paragraphs(speak("<p><emphasis>a <emphasis level=\"none\">b</emphasis> c</emphasis> d</p>")),
+                       ["<em>a b c</em> d"])
+        XCTAssertEqual(try paragraphs(speak("<p><emphasis level=\"none\">a <emphasis>b</emphasis> c</emphasis> d</p>")),
+                       ["a <em>b</em> c d"])
     }
 
     func testEmptyEmphasisWritesNothing() throws {

@@ -93,8 +93,13 @@ enum SSMLReader {
         private var current = ""
         /// Whether the root element has been seen.
         private var sawRoot = false
-        /// How many `emphasis` elements enclose the text being read; only
-        /// the outermost writes tags, since nested ones add nothing to a listener.
+        /// For each open `emphasis` element, innermost last, whether it
+        /// asks for emphasis (any level but "none"), so its end knows
+        /// whether its start counted in `emphasisDepth`.
+        private var emphasisStack: [Bool] = []
+        /// How many emphatic `emphasis` elements enclose the text being
+        /// read; only the outermost writes tags, since nested ones add
+        /// nothing to a listener.
         private var emphasisDepth = 0
         /// How many open elements lie inside one whose text is not written
         /// (`desc`, `meta`, `metadata`, `lexicon`, or a `sub` with an
@@ -133,12 +138,19 @@ enum SSMLReader {
             case "p", "paragraph":
                 // A paragraph ends any text that came before it outside one.
                 finishParagraph()
-            case "break":
-                // A pause is a word boundary, never a paragraph.
+            case "break", "voice", "audio", "s", "sentence":
+                // A pause, a change of voice, a sound, and a sentence's
+                // start are word boundaries, never paragraphs: words on
+                // either side of one never run together.
                 current += " "
             case "emphasis":
-                emphasisDepth += 1
-                if emphasisDepth == 1 { current += "<em>" }
+                // Level "none" asks for no emphasis: its content only.
+                let emphatic = attributeDict["level"] != "none"
+                emphasisStack.append(emphatic)
+                if emphatic {
+                    emphasisDepth += 1
+                    if emphasisDepth == 1 { current += "<em>" }
+                }
             case "sub":
                 // Speak the alias in place of the content; keep the content
                 // when there is no alias to speak.
@@ -150,8 +162,8 @@ enum SSMLReader {
             case "desc", "meta", "metadata", "lexicon":
                 skipDepth = 1
             default:
-                // say-as, phoneme, prosody, voice, lang, token, w, mark, s,
-                // audio (its fallback text), and unknown elements: content only.
+                // say-as, phoneme, prosody, lang, token, w, mark, and
+                // unknown elements: content only.
                 break
             }
         }
@@ -165,12 +177,15 @@ enum SSMLReader {
             switch ParserUtilities.stripNamespacePrefix(elementName) {
             case "p", "paragraph":
                 finishParagraph()
-            case "s", "sentence":
-                // Sentences never run together, whatever sits between the tags.
+            case "s", "sentence", "voice", "audio":
+                // Sentences never run together, whatever sits between the
+                // tags, and a voice or a sound ends its words.
                 current += " "
             case "emphasis":
-                emphasisDepth -= 1
-                if emphasisDepth == 0 { current += "</em>" }
+                if emphasisStack.popLast() == true {
+                    emphasisDepth -= 1
+                    if emphasisDepth == 0 { current += "</em>" }
+                }
             default:
                 break
             }
