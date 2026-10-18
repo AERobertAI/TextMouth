@@ -214,6 +214,78 @@ final class DTBookImportTests: XCTestCase {
 
     // MARK: - Refusals
 
+    /// A DTBook with a head and a book but no words is refused, as a blank
+    /// text file is, and leaves nothing in the library.
+    func testABlankDTBookIsRefused() throws {
+        let folder = try makeSandboxDirectory("DTBookBlank")
+        let blank = folder.appendingPathComponent("blank.xml")
+        try Data("<dtbook><head/><book/></dtbook>".utf8).write(to: blank)
+
+        XCTAssertThrowsError(try FileImportService.importFileWithReport(from: blank, toFolder: folderPath)) { error in
+            XCTAssertEqual(
+                error.localizedDescription,
+                "Could not import “blank.xml”. Reading its text failed: This file has no text to read."
+            )
+        }
+        XCTAssertEqual(try folderEntries(), [])
+    }
+
+    /// Only a DTBook on its own is refused for having no words: a DAISY
+    /// package whose DTBook carries none still imports, by its folder and by
+    /// its OPF, as it always has (its audio is the book).
+    func testAPackageWhoseDTBookHasNoWordsStillImports() throws {
+        let package = try copyOfFormatSample("dtbook/nimas-style-package")
+        try Data("<dtbook><head/><book/></dtbook>".utf8)
+            .write(to: package.appendingPathComponent("harbour-dtbook.xml"))
+
+        for source in [package, package.appendingPathComponent("harbour-nimas.opf")] {
+            let book = try importedForTest(source).book
+            XCTAssertEqual(book.format, .daisy, source.lastPathComponent)
+        }
+    }
+
+    /// An .xml file with no bytes, or only white space, is told it has no
+    /// text to read, not that it is some other kind of XML.
+    func testAnEmptyOrBlankXMLFileHasNoTextToRead() throws {
+        let folder = try makeSandboxDirectory("DTBookEmpty")
+        for (name, bytes) in [("empty.xml", Data()), ("spaces.xml", Data(" \n\t\r\n ".utf8))] {
+            let file = folder.appendingPathComponent(name)
+            try bytes.write(to: file)
+
+            XCTAssertThrowsError(try FileImportService.importFileWithReport(from: file, toFolder: folderPath), name) { error in
+                XCTAssertEqual(
+                    error.localizedDescription,
+                    "Could not import “\(name)”. Checking its format failed: This file has no text to read.",
+                    name
+                )
+            }
+        }
+        XCTAssertEqual(try folderEntries(), [])
+    }
+
+    /// An XML file whose root is neither a DTBook's nor Word's is refused
+    /// by name, before anything is copied.
+    func testAnotherKindOfXMLIsRefusedByName() throws {
+        let folder = try makeSandboxDirectory("DTBookImport")
+        let catalog = folder.appendingPathComponent("catalog.xml")
+        try Data("<?xml version=\"1.0\"?><catalog><item>One</item></catalog>".utf8).write(to: catalog)
+
+        XCTAssertThrowsError(try FileImportService.importFileWithReport(from: catalog, toFolder: folderPath)) { error in
+            XCTAssertEqual((error as? ImportFailure)?.step, .checkingFormat)
+            // FileImportError is not Equatable, so its case is told by its sentence.
+            XCTAssertEqual(
+                ((error as? ImportFailure)?.underlying as? FileImportError)?.errorDescription,
+                FileImportError.unsupportedXML.errorDescription
+            )
+            XCTAssertEqual(
+                error.localizedDescription,
+                "Could not import “catalog.xml”. Checking its format failed: This XML file is neither a DTBook book "
+                    + "nor a Word 2003 XML document, the kinds of XML file TextMouth reads."
+            )
+        }
+        XCTAssertEqual(try folderEntries(), [])
+    }
+
     /// A DTBook past the document byte limit is refused with the limit's
     /// sentence (not as "not a DAISY book"), and leaves nothing in the library.
     func testADTBookPastTheByteLimitIsRefused() throws {

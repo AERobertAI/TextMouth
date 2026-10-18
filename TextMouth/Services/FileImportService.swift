@@ -999,7 +999,8 @@ enum FileImportService {
     /// Why `source` cannot be imported when no format reads it: a folder
     /// that is neither a DAISY book nor a folder of audio tracks is told so,
     /// with what it holds, as a ZIP without a book is (FR17); an .xml file
-    /// that is no DTBook is told so (`FileImportError.unsupportedXML`); any
+    /// that is no DTBook is told so (`FileImportError.unsupportedXML`), unless
+    /// it is empty or blank, when it is told it has no text; any
     /// other item's extension is not supported. A TextMouth package is not a
     /// folder of a book here: it is imported as a package, not as a file.
     private static func unsupportedSourceError(for source: URL) -> Error {
@@ -1010,8 +1011,13 @@ enum FileImportService {
            isDirectory.boolValue {
             return FolderWithoutBookError(folderName: source.lastPathComponent, files: filesHeld(by: source))
         }
-        // An .xml file no format claimed is some other kind of XML.
         if ext == "xml" {
+            // An .xml file with no bytes, or only white space, has no text to
+            // read: say so, rather than that it is some other kind of XML.
+            if XMLDocumentSniffer.holdsNoText(fileAt: source) {
+                return FileImportError.noTextToRead
+            }
+            // An .xml file no format claimed is some other kind of XML.
             return FileImportError.unsupportedXML
         }
         return FileImportError.unsupportedFormat(ext)
@@ -1288,6 +1294,18 @@ enum FileImportService {
         .txt, .markdown, .html, .webarchive, .ssml, .rtf, .rtfd, .doc, .odt, .wordml,
     ]
 
+    /// Whether an import of `book` is refused when the book holds no text:
+    /// a book in one of `formatsRefusedWhenBlank`, or a DTBook kept as a
+    /// loose .xml file. A DAISY package or archive is not refused: a book
+    /// whose audio carries no text is a real book, and it imports as it
+    /// always has. A DAISY book's own file is an .xml file only when it is
+    /// a DTBook on its own (a package's is its OPF or navigation file, an
+    /// archive's the archive).
+    private static func refusesBlankText(_ book: Book) -> Bool {
+        if formatsRefusedWhenBlank.contains(book.format) { return true }
+        return book.format == .daisy && book.bookFileURL.pathExtension.lowercased() == "xml"
+    }
+
     /// Reads `book`'s content as the reader will, so that no import publishes
     /// a book that cannot be opened. A text book's content.md is written into
     /// its package, and an extraction that fails, in any format, fails with
@@ -1296,8 +1314,9 @@ enum FileImportService {
     /// index's counts.
     ///
     /// With `refusingBlankText` set, a plain text, Markdown, HTML, or
-    /// textutil book (`formatsRefusedWhenBlank`) none of whose chapters holds a character other
-    /// than white space fails with `FileImportError.noTextToRead`, so a blank
+    /// textutil book (`formatsRefusedWhenBlank`), or a DTBook on its own
+    /// (`refusesBlankText(_:)`), none of whose chapters holds a character
+    /// other than white space fails with `FileImportError.noTextToRead`, so a blank
     /// file is not imported as a silent, empty book. The check is here, not
     /// in `MarkdownCacheService`, because every rebuild of an existing book's
     /// text goes through that, and a book already in the library must never
@@ -1326,7 +1345,7 @@ enum FileImportService {
             // import gives its book one before reading it.
             throw FileImportError.importFailed("The book has no package to hold its text.")
         }
-        if refusingBlankText, formatsRefusedWhenBlank.contains(book.format),
+        if refusingBlankText, refusesBlankText(book),
            !generated.content.chapters.contains(where: { chapter in chapter.text.contains { !$0.isWhitespace } }) {
             throw FileImportError.noTextToRead
         }
