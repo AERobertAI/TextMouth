@@ -51,6 +51,49 @@ final class TextutilSourceCheckTests: XCTestCase {
         XCTAssertTrue(TextutilSourceCheck.beginsAsRTF(try file(named: "bom.doc", holding: bytes)))
     }
 
+    // MARK: - HTML under another name
+
+    func testAWebPageBeginsAsHTMLWhateverItsNameOrCase() throws {
+        XCTAssertTrue(TextutilSourceCheck.beginsAsHTML(try copyOfFormatSample("rtf/headings-source.html")))
+        XCTAssertTrue(TextutilSourceCheck.beginsAsHTML(try copyOfFormatSample("rtf/headings-source.html", named: "page.doc")))
+        for (index, text) in [
+            "<html>", "<HTML lang=\"en\">", "<Html\n>", "<!doctype html>", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\">",
+            "<html/>", "<html",
+        ].enumerated() {
+            XCTAssertTrue(TextutilSourceCheck.beginsAsHTML(try file(named: "page\(index).doc", holding: Data(text.utf8))), text)
+        }
+    }
+
+    func testAWebPageBehindAByteOrderMarkAndBlankLinesStillBeginsAsHTML() throws {
+        let bytes = Data([0xEF, 0xBB, 0xBF]) + Data("\r\n \t\n".utf8) + Data("<html><body>Hi</body></html>".utf8)
+        XCTAssertTrue(TextutilSourceCheck.beginsAsHTML(try file(named: "bom.doc", holding: bytes)))
+    }
+
+    func testOtherFilesDoNotBeginAsHTML() throws {
+        XCTAssertFalse(TextutilSourceCheck.beginsAsHTML(try copyOfFormatSample("rtf/headings.rtf")))
+        XCTAssertFalse(TextutilSourceCheck.beginsAsHTML(try copyOfFormatSample("doc/headings.doc")))
+        XCTAssertFalse(TextutilSourceCheck.beginsAsHTML(try copyOfFormatSample("odt/headings.odt")))
+        XCTAssertFalse(TextutilSourceCheck.beginsAsHTML(try copyOfFormatSample("wordml/headings.wordml")))
+        XCTAssertFalse(TextutilSourceCheck.beginsAsHTML(try copyOfFormatSample("rtfd/headings.rtfd")))
+        XCTAssertFalse(TextutilSourceCheck.beginsAsHTML(try file(named: "empty.doc", holding: Data())))
+        XCTAssertFalse(TextutilSourceCheck.beginsAsHTML(URL(fileURLWithPath: "/nonexistent/missing.doc")))
+        // Near misses: a longer name, another tag, text that only mentions the tag, a different doctype.
+        for (index, text) in ["<htmlx>", "<head><title>t</title></head>", "Use <html> to start a page.", "<!DOCTYPE html5>", "<!DOCTYPE svg>", "<ht"]
+            .enumerated() {
+            XCTAssertFalse(TextutilSourceCheck.beginsAsHTML(try file(named: "near\(index).doc", holding: Data(text.utf8))), text)
+        }
+    }
+
+    /// Only the first 1,024 bytes are read: a page whose first tag comes
+    /// after more white space than that is not recognized.
+    func testOnlyTheFirstKilobyteIsLookedAt() throws {
+        let page = Data("<html>".utf8)
+        let near = Data(repeating: 0x20, count: 1_024 - page.count) + page
+        XCTAssertTrue(TextutilSourceCheck.beginsAsHTML(try file(named: "near.doc", holding: near)))
+        let far = Data(repeating: 0x20, count: 1_024) + page
+        XCTAssertFalse(TextutilSourceCheck.beginsAsHTML(try file(named: "far.doc", holding: far)))
+    }
+
     func testOtherFilesDoNotBeginAsRTF() throws {
         XCTAssertFalse(TextutilSourceCheck.beginsAsRTF(try copyOfFormatSample("doc/headings.doc")))
         XCTAssertFalse(TextutilSourceCheck.beginsAsRTF(try copyOfFormatSample("odt/headings.odt")))

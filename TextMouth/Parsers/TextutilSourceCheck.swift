@@ -24,15 +24,61 @@ enum TextutilSourceCheck {
     /// whatever its extension. Reads at most the first 64 bytes.
     static func beginsAsRTF(_ url: URL) -> Bool {
         guard let head = leadingBytes(of: url, count: 64) else { return false }
-        var index = 0
-        // A UTF-8 byte-order mark some editors write before the text.
-        if head.starts(with: [0xEF, 0xBB, 0xBF]) { index = 3 }
-        // ASCII white space: tab, line feed, vertical tab, form feed,
-        // carriage return, and space.
-        while index < head.count, head[index] == 0x20 || (0x09...0x0D).contains(head[index]) {
+        return head.dropFirst(firstContentIndex(in: head)).starts(with: Array(#"{\rtf"#.utf8))
+    }
+
+    // MARK: - HTML under another name
+
+    /// How many leading bytes `beginsAsHTML(_:)` reads: enough for a long run
+    /// of blank lines before the document's first tag.
+    private static let htmlSniffLength = 1_024
+
+    /// Whether the file at `url` begins as an HTML page: after an optional
+    /// UTF-8 byte-order mark and any ASCII white space, within its first
+    /// `htmlSniffLength` bytes, its next bytes are `<!DOCTYPE html` or
+    /// `<html` (compared without regard to case), and the name ends there
+    /// (white space, `>`, `/`, or the end of what was read). Word's "Web
+    /// Page" format and many web exports keep the name .doc, and `textutil`
+    /// told `-format doc` refuses them as damaged. Such a page is read by
+    /// TextMouth's own HTML reader, never by `textutil`, so no WebKit runs.
+    /// A page in UTF-16 is not recognized. Reads at most `htmlSniffLength`
+    /// bytes.
+    static func beginsAsHTML(_ url: URL) -> Bool {
+        guard let head = leadingBytes(of: url, count: htmlSniffLength) else { return false }
+        let content = head.dropFirst(firstContentIndex(in: head))
+        return ["<!doctype html", "<html"].contains { beginsWith($0, content) }
+    }
+
+    /// Whether `bytes` begin with the ASCII `tag`, compared without regard
+    /// to case, and the next byte, if there is one, cannot continue a name.
+    private static func beginsWith(_ tag: String, _ bytes: ArraySlice<UInt8>) -> Bool {
+        let expected = Array(tag.utf8)
+        guard bytes.count >= expected.count,
+              zip(bytes, expected).allSatisfy({ lowercased($0) == $1 }) else { return false }
+        guard let next = bytes.dropFirst(expected.count).first else { return true }
+        return next == UInt8(ascii: ">") || next == UInt8(ascii: "/") || isWhiteSpace(next)
+    }
+
+    /// `byte` with an ASCII capital made lowercase.
+    private static func lowercased(_ byte: UInt8) -> UInt8 {
+        (UInt8(ascii: "A")...UInt8(ascii: "Z")).contains(byte) ? byte + 32 : byte
+    }
+
+    /// Whether `byte` is ASCII white space: tab, line feed, vertical tab,
+    /// form feed, carriage return, or space.
+    private static func isWhiteSpace(_ byte: UInt8) -> Bool {
+        byte == 0x20 || (0x09...0x0D).contains(byte)
+    }
+
+    /// The index in `head` of the first byte that is neither an optional
+    /// UTF-8 byte-order mark (some editors write one before the text) nor
+    /// ASCII white space after it; `head.count` when there is none.
+    private static func firstContentIndex(in head: [UInt8]) -> Int {
+        var index = head.starts(with: [0xEF, 0xBB, 0xBF]) ? 3 : 0
+        while index < head.count, isWhiteSpace(head[index]) {
             index += 1
         }
-        return head.dropFirst(index).starts(with: Array(#"{\rtf"#.utf8))
+        return index
     }
 
     // MARK: - A Word 97-2003 document with a password
