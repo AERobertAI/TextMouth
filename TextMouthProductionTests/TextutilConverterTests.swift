@@ -191,11 +191,13 @@ final class TextutilConverterTests: XCTestCase {
     func testAHungChildIsStoppedAndLeavesNothing() throws {
         let source = try tinyFile("hang.rtf")
         let hung = tool("/bin/sleep", ["60"], limits: limits(seconds: 1, stalled: 5))
+        // Other tests' children may be running: the count must return to what it was.
+        let childrenBefore = WatchedProcess.runningChildCount
         XCTAssertThrowsError(try TextutilConverter.html(of: source, as: .rtf, workingIn: work, using: hung)) {
             XCTAssertEqual($0 as? TextutilConverter.Failure, .stopped(reason: "it ran longer than 1 second"))
         }
         assertWorkFolderEmpty()
-        XCTAssertEqual(WatchedProcess.runningChildCount, 0)
+        XCTAssertEqual(WatchedProcess.runningChildCount, childrenBefore)
     }
 
     func testAFailingChildIsUnreadable() throws {

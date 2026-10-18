@@ -101,19 +101,28 @@ enum TextutilDocumentReader {
         }
     }
 
+    /// The folder the working folders of conversions outside a staged
+    /// package are made in: the temporary directory, unless a test binds a
+    /// folder of its own with `TextutilDocumentReader.$temporaryRoot
+    /// .withValue(_:operation:)`, so that its scan for leftovers never meets
+    /// the files of another build's textutil in the shared temporary
+    /// directory. Like `DocumentByteLimit.current`, it is read on the
+    /// caller's thread (`withWorkingFolder(for:_:)`), before any hop.
+    @TaskLocal static var temporaryRoot: URL = FileManager.default.temporaryDirectory
+
     /// Runs `body` with the folder textutil writes its hidden output in.
     /// When the book's file is in a staged package (an import in progress)
     /// that is the package, so the output goes with it should the import
-    /// fail or be cancelled. Otherwise it is a new folder in the temporary
-    /// directory, removed afterwards: neither a library package (perhaps in
-    /// a cloud folder) nor the folder of a file being imported ever
-    /// receives one.
+    /// fail or be cancelled. Otherwise it is a new folder in `temporaryRoot`
+    /// (the temporary directory), removed afterwards: neither a library
+    /// package (perhaps in a cloud folder) nor the folder of a file being
+    /// imported ever receives one.
     private static func withWorkingFolder<Output>(for url: URL, _ body: (URL) throws -> Output) throws -> Output {
         let parent = url.deletingLastPathComponent()
         if ImportStaging.isStagedPackageName(parent.lastPathComponent) {
             return try body(parent)
         }
-        let folder = FileManager.default.temporaryDirectory
+        let folder = temporaryRoot
             .appendingPathComponent("TextMouth-textutil-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }

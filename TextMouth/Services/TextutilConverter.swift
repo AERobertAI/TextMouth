@@ -106,6 +106,14 @@ enum TextutilConverter {
         )
     }
 
+    /// The tool conversions use: Apple's textutil, unless a test binds a
+    /// stand-in with `TextutilConverter.$tool.withValue(_:operation:)`, which
+    /// reaches every conversion that operation makes on its own thread,
+    /// however deep in an import or a reader's load it is made (a count of
+    /// runs, a child that hangs). It is read on the caller's thread, as
+    /// `DocumentByteLimit.current` is: a detached task does not inherit it.
+    @TaskLocal static var tool: Tool = .textutil
+
     /// The suffix of the hidden file textutil writes: ".<UUID>.textutil.html".
     /// Named once, so a leftover can be found by it.
     static let temporarySuffix = ".textutil.html"
@@ -185,7 +193,7 @@ enum TextutilConverter {
         of source: URL,
         as format: TextutilInputFormat,
         workingIn folder: URL,
-        using tool: Tool = .textutil
+        using tool: Tool = TextutilConverter.tool
     ) throws -> String {
         // Size the source before anything runs. The limit is read here, on
         // the caller's thread: the detached task below does not inherit a

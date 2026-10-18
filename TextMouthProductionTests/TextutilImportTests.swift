@@ -11,9 +11,15 @@ final class TextutilImportTests: XCTestCase {
     private var sandbox: LibraryIndexSandbox?
     /// The library folder the refusal tests import into; each test has its own.
     private let folderPath = "Textutil Import \(UUID().uuidString.prefix(8))"
+    /// The folder this test's conversions make their working folders in
+    /// (`TextutilDocumentReader.temporaryRoot`), so its scan for leftovers
+    /// never meets those of another build's textutil, which the shared
+    /// temporary directory would show it. Replaced in set-up.
+    private var temporaryRoot = URL(fileURLWithPath: "/var/empty", isDirectory: true)
 
     override func setUpWithError() throws {
         sandbox = try LibraryIndexSandbox.capture()
+        temporaryRoot = try makeSandboxDirectory("TextutilTemporaryRoot")
     }
 
     override func tearDownWithError() throws {
@@ -75,29 +81,31 @@ final class TextutilImportTests: XCTestCase {
     }
 
     /// Every textutil leftover in the places a conversion could write: the
-    /// import staging folder, and the temporary directory (the hidden file,
-    /// and the folders `TextutilDocumentReader` makes there).
+    /// import staging folder, and this test's temporary root (the hidden
+    /// file, and the folders `TextutilDocumentReader` makes there).
     private func textutilLeftovers() -> Set<String> {
         var found = Set<String>()
         for path in textutilFiles(under: MachineLocalPaths.importStaging) {
             found.insert("staging/\(path)")
         }
-        let temporary = FileManager.default.temporaryDirectory
-        for name in (try? FileManager.default.contentsOfDirectory(atPath: temporary.path)) ?? []
+        for name in (try? FileManager.default.contentsOfDirectory(atPath: temporaryRoot.path)) ?? []
         where name.hasPrefix("TextMouth-textutil-") || name.hasSuffix(TextutilConverter.temporarySuffix) {
             found.insert("temporary/\(name)")
         }
         return found
     }
 
-    /// Runs `body` and asserts that it left no textutil file in any place a
-    /// conversion could write (the leftovers present before are ignored, so
-    /// a sibling process's run never fails this test).
+    /// Runs `body`, its conversions working in this test's temporary root,
+    /// and asserts that it left no textutil file in any place a conversion
+    /// could write (the leftovers present before are ignored, so a sibling
+    /// process's run in the shared staging folder never fails this test).
     private func assertLeavesNoTextutilFiles(
         file: StaticString = #filePath, line: UInt = #line, _ body: () throws -> Void
     ) throws {
         let before = textutilLeftovers()
-        try body()
+        try TextutilDocumentReader.$temporaryRoot.withValue(temporaryRoot) {
+            try body()
+        }
         XCTAssertEqual(textutilLeftovers().subtracting(before), [], file: file, line: line)
     }
 
@@ -309,6 +317,33 @@ final class TextutilImportTests: XCTestCase {
         XCTAssertEqual(try folderEntries(), [])
     }
 
+    // MARK: - Where Conversions Work
+
+    /// A conversion outside a staged package (a reader's load, the launch
+    /// refresh) works in a new folder of `temporaryRoot`, which a test binds
+    /// to a folder of its own, and removes it: the root is empty after.
+    func testAConversionOutsideAStagedPackageWorksInTheBoundRoot() throws {
+        let copy = try copyOfFormatSample("rtf/headings.rtf")
+        let recorder = TextutilToolRecorder()
+        let named = try TextutilDocumentReader.$temporaryRoot.withValue(temporaryRoot) {
+            try TextutilConverter.$tool.withValue(recorder.countingTool()) {
+                try TextutilDocumentReader.readMetadata(from: copy, bookFormat: .rtf)
+            }
+        }
+        XCTAssertEqual(named.author, "A. Sample")
+
+        // The hidden file went in one working folder made directly in the root.
+        let outputs = recorder.outputs
+        XCTAssertEqual(outputs.count, 1)
+        let working = try XCTUnwrap(outputs.first).deletingLastPathComponent()
+        XCTAssertTrue(working.lastPathComponent.hasPrefix("TextMouth-textutil-"), working.lastPathComponent)
+        XCTAssertEqual(
+            working.deletingLastPathComponent().resolvingSymlinksInPath().path,
+            temporaryRoot.resolvingSymlinksInPath().path
+        )
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: temporaryRoot.path), [])
+    }
+
     // MARK: - Nothing Left Behind
 
     func testASuccessfulImportLeavesNoTextutilFileAnywhere() throws {
@@ -421,5 +456,61 @@ final class TextutilImportTests: XCTestCase {
     func testAFileNamedRTFDIsHashedAsAFile() throws {
         let plain = try file(named: "plain.rtfd", holding: Data("not a folder".utf8))
         XCTAssertEqual(try FileImportService.importHash(of: plain), try FileImportService.md5Hash(of: plain))
+    }
+}
+
+// MARK: - A Stand-In for textutil
+
+/// Stands in for the tool of `TextutilConverter` in a test: it records where
+/// each conversion was told to write, then runs real textutil (`countingTool()`)
+/// or a child that never ends (`hangingTool()`). Its list is the conversions
+/// an operation made.
+final class TextutilToolRecorder: @unchecked Sendable {
+    private let lock = NSLock()
+    private var recorded: [URL] = []
+
+    /// The hidden output file of each conversion started, in order.
+    var outputs: [URL] {
+        lock.lock()
+        defer { lock.unlock() }
+        return recorded
+    }
+
+    /// Notes one conversion that will write `output`.
+    private func record(_ output: URL) {
+        lock.lock()
+        recorded.append(output)
+        lock.unlock()
+    }
+
+    /// Real textutil under its own limits, with each run recorded.
+    func countingTool() -> TextutilConverter.Tool {
+        let real = TextutilConverter.Tool.textutil
+        return TextutilConverter.Tool(
+            command: { [self] input, format, output in
+                record(output)
+                return real.command(input, format, output)
+            },
+            limits: real.limits,
+            residentMemory: real.residentMemory
+        )
+    }
+
+    /// A child that sleeps for a minute and writes nothing, with each run
+    /// recorded: only its being killed ends it early. Its limits are loose,
+    /// so the watchdog never ends it within a test.
+    func hangingTool() -> TextutilConverter.Tool {
+        TextutilConverter.Tool(
+            command: { [self] _, _, output in
+                record(output)
+                return (URL(fileURLWithPath: "/bin/sleep"), ["60"])
+            },
+            limits: { _ in
+                WatchedProcess.Limits(
+                    maximumSeconds: 120, maximumResidentBytes: 1 << 30, maximumStalledSeconds: 120, pollInterval: 0.1
+                )
+            },
+            residentMemory: { _ in nil }
+        )
     }
 }
