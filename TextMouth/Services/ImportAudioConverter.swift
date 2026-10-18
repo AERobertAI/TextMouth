@@ -184,8 +184,13 @@ enum ImportAudioConverter {
         oggExtensions.contains(url.pathExtension.lowercased())
     }
 
-    /// Whether the import converts the file at `url`, by its extension in
-    /// any case (`convertedExtensions`).
+    /// Whether the extension of the file at `url`, in any case, is one of
+    /// `convertedExtensions`. This is the extension's answer alone: at import
+    /// the content decides as well (`verdict(for:)`, `needsConversion(among:using:)`),
+    /// since a file's extension may say .mp3 or .m4a of an MP2 or Ogg file.
+    /// It still answers where only a name is at hand (`metadataAsset`, which
+    /// refuses an asset before its content is read) and what `verdict(for:)`
+    /// counts first.
     static func isConvertedAtImport(_ url: URL) -> Bool {
         convertedExtensions.contains(url.pathExtension.lowercased())
     }
@@ -198,10 +203,89 @@ enum ImportAudioConverter {
         isConvertedAtImport(url) && !ownWorkingExtensions.contains(url.pathExtension.lowercased())
     }
 
-    /// The tracks of the folder `folder` that the import converts
-    /// (`isConvertedAtImport`), found by the reader's own rules.
+    /// The tracks of the folder `folder` that the import converts whatever
+    /// their extension and wherever the bytes alone settle it
+    /// (`verdict(for:)` is `.convert`), found by the reader's own rules. A
+    /// track the bytes leave open (MPEG-4, unknown content) is not listed: it
+    /// needs `afinfo`, which `needsConversion(among:using:)` asks.
     static func filesToConvert(in folder: URL) -> [URL] {
-        tracks(in: folder, where: isConvertedAtImport)
+        tracks(in: folder) { verdict(for: $0) == .convert }
+    }
+
+    // MARK: - Which Files, by Content
+
+    /// What the import does about the file at `url`, going by its extension
+    /// and its first bytes (`AudioContentSniffer`): `.convert` when the
+    /// extension is one the import converts or the bytes are of a format it
+    /// converts (a file is converted whatever it is named, and the guards
+    /// refuse a converted extension all the same); `.leave` when the bytes
+    /// are of a format TextMouth plays; `.askAfinfo` when they do not settle
+    /// it (MPEG-4, QuickTime, unrecognized or unreadable content).
+    static func verdict(for url: URL) -> AudioContentSniffer.Verdict {
+        if isConvertedAtImport(url) { return .convert }
+        return AudioContentSniffer.verdict(for: AudioContentSniffer.kind(of: url))
+    }
+
+    /// Whether a file that `afinfo` describes by `formatID` (its first
+    /// track's codec) and `fileType` (its container) plays as it is: AAC
+    /// (`aac `, `aach`, `aacp`) in MPEG-4, QuickTime, or ADTS; Apple Lossless
+    /// (`alac`) in MPEG-4 or QuickTime; MP3 (`.mp3`) in MPEG audio, MPEG-4,
+    /// or QuickTime. Every other codec or container is converted. A nil
+    /// `fileType` (the container is not known) asks about the codec alone.
+    static func playsAsIs(formatID: String, fileType: String?) -> Bool {
+        let mpeg4Containers: Set<String> = ["m4af", "m4bf", "mp4f", "qt", "moov"]
+        let containers: Set<String>
+        switch formatID.trimmingCharacters(in: .whitespaces) {
+        case "aac", "aach", "aacp": containers = mpeg4Containers.union(["adts"])
+        case "alac": containers = mpeg4Containers
+        case ".mp3": containers = mpeg4Containers.union(["mpg3"])
+        default: return false
+        }
+        guard let fileType else { return true }
+        return containers.contains(fileType.trimmingCharacters(in: .whitespaces).lowercased())
+    }
+
+    /// The files among `files` that the import converts, in their order: by
+    /// their extension and bytes (`verdict(for:)`), and, for those the bytes
+    /// leave open, by what `afinfo` names (`playsAsIs(formatID:fileType:)`),
+    /// at most `maximumConcurrentConversions` asked at once. A file `afinfo`
+    /// cannot read is left as it is: `afconvert` could not convert it either,
+    /// and the probe refuses it as before.
+    /// - Throws: `CancellationError` only.
+    static func needsConversion(among files: [URL], using tool: AudioFileInfo.Tool = .afinfo) async throws -> [URL] {
+        let verdicts = files.map(verdict(for:))
+        var converts = verdicts.map { $0 == .convert }
+        let undecided = verdicts.indices.filter { verdicts[$0] == .askAfinfo }
+        // Ask afinfo about the open ones, one group of the maximum at a time.
+        for start in stride(from: 0, to: undecided.count, by: maximumConcurrentConversions) {
+            let group = undecided[start..<min(start + maximumConcurrentConversions, undecided.count)]
+            let answers = try await withThrowingTaskGroup(of: (Int, Bool).self, returning: [(Int, Bool)].self) { tasks in
+                for index in group {
+                    let file = files[index]
+                    tasks.addTask { (index, try await isConvertedByWhatItHolds(file, using: tool)) }
+                }
+                var results: [(Int, Bool)] = []
+                for try await answer in tasks { results.append(answer) }
+                return results
+            }
+            for (index, answer) in answers { converts[index] = answer }
+        }
+        return zip(files, converts).filter(\.1).map(\.0)
+    }
+
+    /// Whether `afinfo` names, for the file at `url`, a codec or container
+    /// that the import converts; false when it cannot read the file.
+    private static func isConvertedByWhatItHolds(_ url: URL, using tool: AudioFileInfo.Tool) async throws -> Bool {
+        guard let facts = try await AudioFileInfo.read(url, using: tool) else { return false }
+        return !playsAsIs(formatID: facts.formatID, fileType: facts.fileType)
+    }
+
+    /// The tracks of the folder `folder` that the import converts, by
+    /// extension and content, `needsConversion(among:using:)` deciding the
+    /// ones the bytes leave open.
+    /// - Throws: `CancellationError` only.
+    static func tracksNeedingConversion(in folder: URL, using tool: AudioFileInfo.Tool = .afinfo) async throws -> [URL] {
+        try await needsConversion(among: tracks(in: folder) { _ in true }, using: tool)
     }
 
     /// The Ogg files among the tracks of the folder `folder` (the library's
@@ -290,10 +374,24 @@ enum ImportAudioConverter {
     }
 
     /// What the import does with `source`, described by `info`: nothing for
-    /// an extension it plays as it is, Apple Lossless for a lossless source
-    /// (nothing is lost), AAC for any other.
+    /// a file it plays as it is, Apple Lossless for a lossless source
+    /// (nothing is lost), AAC for any other. The file is converted when its
+    /// extension is one the import converts, when its bytes are of a format
+    /// it converts, or when its bytes say MPEG-4 or QuickTime and `info`'s
+    /// codec is not one it plays (`playsAsIs(formatID:fileType:)`). A file
+    /// whose bytes cannot be read, or say nothing, is judged by its extension
+    /// alone.
     static func plan(for source: URL, info: SourceInfo) -> Plan {
-        guard isConvertedAtImport(source) else { return .leaveAsItIs }
+        var converts = isConvertedAtImport(source)
+        if !converts {
+            let kind = AudioContentSniffer.kind(of: source)
+            switch AudioContentSniffer.verdict(for: kind) {
+            case .convert: converts = true
+            case .leave: converts = false
+            case .askAfinfo: converts = kind == .mpeg4 && !playsAsIs(formatID: info.formatID, fileType: nil)
+            }
+        }
+        guard converts else { return .leaveAsItIs }
         return info.isLossless ? .convertToAppleLossless : .convertToAAC
     }
 
@@ -914,12 +1012,25 @@ enum ImportAudioConverter {
     /// (`BookManifestFile.change`), which tells an Edit Manifest session of
     /// the book `bookID`, as the audio editor renames a track it renders to
     /// .m4a. A folder without a manifest is left as it is.
-    static func renameTracks(of conversions: [Conversion], inManifestOf folder: URL, bookID: UUID?) throws {
+    /// - Parameter sourceNames: Each source's path from `folder`
+    ///   (`AudioBookParser.relativeName(of:in:)`), in the order of
+    ///   `conversions`, read while the sources still existed; the import
+    ///   removes its sources before its converted files take their final
+    ///   names, and a removed file's path cannot be resolved. When nil, each
+    ///   is read from the source, which must then still be there.
+    static func renameTracks(
+        of conversions: [Conversion],
+        inManifestOf folder: URL,
+        bookID: UUID?,
+        sourceNames: [String]? = nil
+    ) throws {
         guard !conversions.isEmpty, let location = AudioManifestLocation.find(in: folder) else { return }
         try BookManifestFile.change(manifestAt: location, of: bookID) { object in
-            for conversion in conversions {
+            for (index, conversion) in conversions.enumerated() {
+                let sourceName = sourceNames.flatMap { $0.indices.contains(index) ? $0[index] : nil }
+                    ?? AudioBookParser.relativeName(of: conversion.source, in: folder)
                 BookManifestFile.renameTrack(
-                    location.name(ofTrackAt: AudioBookParser.relativeName(of: conversion.source, in: folder)),
+                    location.name(ofTrackAt: sourceName),
                     to: location.name(ofTrackAt: AudioBookParser.relativeName(of: conversion.converted, in: folder)),
                     in: &object
                 )

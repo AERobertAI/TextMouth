@@ -218,4 +218,348 @@ final class AudioContentTests: XCTestCase {
         XCTAssertEqual(AudioContentSniffer.firstBytes(of: file, upTo: 4, from: 10), [])
         XCTAssertEqual(AudioContentSniffer.firstBytes(of: file, upTo: 4, from: -1), [])
     }
+
+    // MARK: - What afinfo Says
+
+    /// A file afinfo describes plays as it is when it is AAC, Apple
+    /// Lossless, or MP3 in a container that holds it, and is converted when
+    /// the codec or the container is another.
+    func testWhatPlaysAsItIsByCodecAndContainer() {
+        XCTAssertTrue(ImportAudioConverter.playsAsIs(formatID: "aac ", fileType: "m4af"))
+        XCTAssertTrue(ImportAudioConverter.playsAsIs(formatID: "aach", fileType: "mp4f"))
+        XCTAssertTrue(ImportAudioConverter.playsAsIs(formatID: "aacp", fileType: "m4bf"))
+        XCTAssertTrue(ImportAudioConverter.playsAsIs(formatID: "alac", fileType: "m4af"))
+        XCTAssertTrue(ImportAudioConverter.playsAsIs(formatID: ".mp3", fileType: "MPG3"))
+        XCTAssertTrue(ImportAudioConverter.playsAsIs(formatID: "aac ", fileType: nil))
+        for codec in ["ac-3", "ec-3", "opus", "flac", "samr", "lpcm", ".mp2", "ima4", "ulaw"] {
+            XCTAssertFalse(ImportAudioConverter.playsAsIs(formatID: codec, fileType: "m4af"), codec)
+            XCTAssertFalse(ImportAudioConverter.playsAsIs(formatID: codec, fileType: nil), codec)
+        }
+        XCTAssertFalse(ImportAudioConverter.playsAsIs(formatID: "aac ", fileType: "caff"))
+        XCTAssertFalse(ImportAudioConverter.playsAsIs(formatID: "alac", fileType: "caff"))
+        XCTAssertFalse(ImportAudioConverter.playsAsIs(formatID: ".mp3", fileType: "WAVE"))
+    }
+
+    // MARK: - Fixtures for the Import
+
+    /// One second of a 440 Hz tone as MPEG layer II (MP2), mono at 44.1 kHz
+    /// and 64 kbit/s, made on this Mac with
+    /// `ffmpeg -f lavfi -i "sine=frequency=440:duration=1:sample_rate=44100" -ac 1 -c:a mp2 -b:a 64k tone.mp2`
+    /// (`/opt/homebrew/bin/ffmpeg`). It stands in for a feed episode served
+    /// as audio/mpeg and saved as .mp3.
+    private static let mp2Fixture = "audio/tone.mp2"
+
+    /// Runs the Mac's tool at `path` (afconvert) with `arguments` in a child
+    /// process, failing the test when it does not end in success.
+    private func runTool(_ path: String, _ arguments: [String], file: StaticString = #filePath, line: UInt = #line) throws {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: path)
+        process.arguments = arguments
+        try process.run()
+        process.waitUntilExit()
+        XCTAssertEqual(process.terminationStatus, 0, "\(path) \(arguments)", file: file, line: line)
+    }
+
+    /// A WAVE file of one second of silence at `name`, made by the test.
+    private func makeWave(named name: String) throws -> URL {
+        let wave = folder.appendingPathComponent(name)
+        try AudioTestFixtures.writeSilence(to: wave, duration: 1)
+        return wave
+    }
+
+    /// An AIFC file of IMA4 ADPCM at `name`, made with afconvert from a
+    /// WAVE file.
+    private func makeIMA4(named name: String) throws -> URL {
+        let wave = try makeWave(named: "ima4-source.wav")
+        let aifc = folder.appendingPathComponent(name)
+        try runTool("/usr/bin/afconvert", ["-f", "AIFC", "-d", "ima4", wave.path, aifc.path])
+        return aifc
+    }
+
+    /// A copy of the fixture `fixture` (under `TestData`) in `directory`
+    /// (the test's folder by default) named `name`.
+    @discardableResult
+    private func copyFixture(_ fixture: String, as name: String, into directory: URL? = nil) throws -> URL {
+        try OggTestFixtures.copy(fixture, to: directory ?? folder, as: name)
+    }
+
+    /// The codec of the first audio track of the file at `url`, by afinfo in
+    /// a child process.
+    private func codec(of url: URL) async throws -> String? {
+        try await AudioFileInfo.read(url)?.formatID
+    }
+
+    // MARK: - Misnamed Files Are Converted
+
+    /// Which of the files among `files` the import converts.
+    private func converted(among files: [URL]) async throws -> [String] {
+        try await ImportAudioConverter.needsConversion(among: files).map(\.lastPathComponent)
+    }
+
+    /// An MP2 file named .mp3, an IMA4 AIFC file named .aiff, and an Ogg
+    /// file named .m4a or .flac are all converted, whatever their names.
+    func testMisnamedFilesAreToBeConverted() async throws {
+        let mp2 = try copyFixture(Self.mp2Fixture, as: "episode.mp3")
+        let aifc = try makeIMA4(named: "episode.aiff")
+        let ogg = try copyFixture(OggTestFixtures.vorbis, as: "elegy.m4a")
+        let flacNamed = try copyFixture(OggTestFixtures.vorbis, as: "elegy.flac")
+
+        let names = try await converted(among: [mp2, aifc, ogg, flacNamed])
+
+        XCTAssertEqual(names, ["episode.mp3", "episode.aiff", "elegy.m4a", "elegy.flac"])
+    }
+
+    /// An afinfo stand-in: a child process (`/bin/cat`) that prints the XML
+    /// afinfo prints for a file whose first track holds `codec` in a
+    /// `container` ("ac-3" in 'm4af'), or fails when `codec` is nil.
+    private func standInAfinfo(codec: String?, container: String = "m4af") throws -> AudioFileInfo.Tool {
+        let xml = codec.map { """
+            <audio_info><audio_file><file_type>'\(container)'</file_type><tracks><track>\
+            <num_channels>2</num_channels><sample_rate>44100</sample_rate>\
+            <format_type>\($0)</format_type><duration>1.0</duration></track></tracks></audio_file></audio_info>
+            """ } ?? ""
+        let output = folder.appendingPathComponent("afinfo-\(UUID().uuidString).xml")
+        try Data(xml.utf8).write(to: output)
+        let path = output.path
+        let command = codec == nil ? ("/usr/bin/false", [String]()) : ("/bin/cat", [path])
+        return AudioFileInfo.Tool(
+            command: { _ in (URL(fileURLWithPath: command.0), command.1) },
+            limits: AudioFileInfo.Tool.afinfo.limits,
+            residentMemory: AudioFileInfo.Tool.afinfo.residentMemory
+        )
+    }
+
+    /// An MPEG-4 file (an `ftyp` box, named .m4a) is settled by what afinfo
+    /// says its first audio track holds: converted for AC-3, Opus, FLAC, or
+    /// PCM; left for AAC, Apple Lossless, or MP3; left when afinfo cannot
+    /// read it. Unrecognized content is settled the same way.
+    func testAnMPEG4FileIsSettledByWhatItsFirstTrackHolds() async throws {
+        let mpeg4 = folder.appendingPathComponent("movie.m4a")
+        try Data(ftyp("M4A ")).write(to: mpeg4)
+        let unknown = folder.appendingPathComponent("odd.m4a")
+        try Data(Array("no known signature here".utf8)).write(to: unknown)
+        for file in [mpeg4, unknown] {
+            for codec in ["ac-3", "ec-3", "opus", "flac", "lpcm", "samr"] {
+                let tool = try standInAfinfo(codec: codec)
+                let names = try await ImportAudioConverter.needsConversion(among: [file], using: tool)
+                XCTAssertEqual(names.count, 1, "\(file.lastPathComponent) holding \(codec)")
+            }
+            for codec in ["aac ", "aach", "aacp", "alac", ".mp3"] {
+                let tool = try standInAfinfo(codec: codec)
+                let names = try await ImportAudioConverter.needsConversion(among: [file], using: tool)
+                XCTAssertEqual(names, [], "\(file.lastPathComponent) holding \(codec)")
+            }
+            let unreadable = try standInAfinfo(codec: nil)
+            let none = try await ImportAudioConverter.needsConversion(among: [file], using: unreadable)
+            XCTAssertEqual(none, [], "\(file.lastPathComponent) that afinfo cannot read")
+        }
+        // Another container than MPEG-4 is converted though the codec is AAC.
+        let inCAF = try standInAfinfo(codec: "aac ", container: "caff")
+        let other = try await ImportAudioConverter.needsConversion(among: [mpeg4], using: inCAF)
+        XCTAssertEqual(other.count, 1)
+    }
+
+    /// A file the bytes already settle is never put to afinfo: an Ogg file
+    /// is converted and a real MP3 left, whatever the stand-in would say.
+    func testTheBytesThatSettleAFileKeepItFromAfinfo() async throws {
+        let ogg = try copyFixture(OggTestFixtures.vorbis, as: "a.m4a")
+        let mp3 = try copyFixture("format-samples/mp3-chapters/three-tones.mp3", as: "b.m4a")
+        let saysAAC = try standInAfinfo(codec: "aac ")
+        let saysAC3 = try standInAfinfo(codec: "ac-3")
+        let first = try await ImportAudioConverter.needsConversion(among: [ogg, mp3], using: saysAAC)
+        let second = try await ImportAudioConverter.needsConversion(among: [ogg, mp3], using: saysAC3)
+        XCTAssertEqual(first.map(\.lastPathComponent), ["a.m4a"])
+        XCTAssertEqual(second.map(\.lastPathComponent), ["a.m4a"])
+    }
+
+    /// The real files stay as they are: an MP3, an AAC .m4a, a WAVE, an
+    /// AIFF, and a FLAC are not converted, and neither is a file afinfo
+    /// cannot read at all (an .m4a of text).
+    func testRealFilesAreLeftAsTheyAre() async throws {
+        let mp3 = try copyFixture("format-samples/mp3-chapters/three-tones.mp3", as: "a.mp3")
+        let m4a = try copyFixture("format-samples/m4b-chapters/three-tones.m4b", as: "b.m4a")
+        let wave = try makeWave(named: "c.wav")
+        let aiff = folder.appendingPathComponent("d.aiff")
+        try runTool("/usr/bin/afconvert", ["-f", "AIFF", "-d", "BEI16", wave.path, aiff.path])
+        let flac = try copyFixture("format-samples/flac-chapters/three-tones.flac", as: "e.flac")
+        let text = folder.appendingPathComponent("f.m4a")
+        try Data("not audio at all".utf8).write(to: text)
+
+        let names = try await converted(among: [mp3, m4a, wave, aiff, flac, text])
+
+        XCTAssertEqual(names, [])
+    }
+
+    /// A folder lists the tracks to convert by content too, and keeps their
+    /// order.
+    func testAFolderOfTracksListsTheOnesToConvert() async throws {
+        let tracks = folder.appendingPathComponent("Book", isDirectory: true)
+        try copyFixture("format-samples/m4b-chapters/three-tones.m4b", as: "01.m4a", into: tracks)
+        try copyFixture(OggTestFixtures.vorbis, as: "02.m4a", into: tracks)
+        try copyFixture(Self.mp2Fixture, as: "03.mp3", into: tracks)
+        try copyFixture("format-samples/mp3-chapters/three-tones.mp3", as: "04.mp3", into: tracks)
+        try copyFixture("format-samples/ac3/tones.ac3", as: "05.ac3", into: tracks)
+
+        // The bytes alone settle the ones they can: the synchronous list.
+        XCTAssertEqual(ImportAudioConverter.filesToConvert(in: tracks).map(\.lastPathComponent), ["02.m4a", "03.mp3", "05.ac3"])
+        let all = try await ImportAudioConverter.tracksNeedingConversion(in: tracks)
+        XCTAssertEqual(all.map(\.lastPathComponent), ["02.m4a", "03.mp3", "05.ac3"])
+    }
+
+    /// What asking afinfo adds to an import of 50 AAC .m4a tracks: they are
+    /// not converted, and the time taken (about half a second on the
+    /// developer's Mac) is printed.
+    func testAskingAfinfoAboutFiftyM4ATracksIsQuickAndConvertsNothing() async throws {
+        let tracks = folder.appendingPathComponent("Fifty", isDirectory: true)
+        for number in 1...50 {
+            try copyFixture("format-samples/m4b-chapters/three-tones.m4b", as: String(format: "%02d.m4a", number), into: tracks)
+        }
+        let started = Date()
+
+        let all = try await ImportAudioConverter.tracksNeedingConversion(in: tracks)
+
+        let seconds = Date().timeIntervalSince(started)
+        print("AUDIOCONTENT_AFINFO_50_M4A_SECONDS \(seconds)")
+        XCTAssertEqual(all, [])
+        XCTAssertLessThan(seconds, 60)
+    }
+
+    // MARK: - Misnamed Files Import Converted
+
+    /// Imports `source` as a single file and returns the book's file, which
+    /// must be an .m4a of AAC. The package is removed when the test ends.
+    @discardableResult
+    private func importConverted(_ source: URL) async throws -> URL {
+        let imported = try FileImportService.importFileWithReport(from: source)
+        importedPackages.append(imported.book.tmbDirectory)
+        let file = URL(fileURLWithPath: imported.book.filePath)
+        XCTAssertEqual(file.pathExtension, "m4a", source.lastPathComponent)
+        let foundCodec = try await codec(of: file)
+        XCTAssertEqual(foundCodec, "aac ", source.lastPathComponent)
+        return file
+    }
+
+    /// An MP2 file named .mp3 imports converted: an .m4a of AAC, named for
+    /// the source's stem.
+    func testAnMP2FileNamedMP3ImportsAsAAC() async throws {
+        let source = try copyFixture(Self.mp2Fixture, as: "Episode.mp3")
+
+        let file = try await importConverted(source)
+
+        XCTAssertEqual(file.lastPathComponent, "Episode.m4a")
+    }
+
+    /// An AIFC file of IMA4 named .aiff imports converted.
+    func testAnIMA4AIFCFileNamedAIFFImportsAsAAC() async throws {
+        let source = try makeIMA4(named: "Episode.aiff")
+
+        let file = try await importConverted(source)
+
+        XCTAssertEqual(file.lastPathComponent, "Episode.m4a")
+    }
+
+    /// An Ogg Vorbis file named .m4a imports converted and keeps its name:
+    /// "Elegy.m4a", never "Elegy 2.m4a", and the package holds one .m4a.
+    func testAnOggFileNamedM4AImportsAsAACAndKeepsItsName() async throws {
+        try OggTestFixtures.skipUnlessOggDecodes()
+        let source = try copyFixture(OggTestFixtures.vorbis, as: "Elegy.m4a")
+
+        let file = try await importConverted(source)
+
+        XCTAssertEqual(file.lastPathComponent, "Elegy.m4a")
+        let inPackage = OggTestFixtures.names(in: file.deletingLastPathComponent()).filter { $0.hasSuffix(".m4a") }
+        XCTAssertEqual(inPackage, ["Elegy.m4a"])
+        XCTAssertEqual(AudioContentSniffer.kind(of: file), .mpeg4, "what is there now is MPEG-4, not Ogg")
+    }
+
+    /// A folder of tracks, one named .m4a that holds Ogg and one named .mp3
+    /// that holds MP2, imports with every track an AAC .m4a: the Ogg track
+    /// under its source's own name (never "02 2.m4a"), the MP2 track as
+    /// "03.m4a", and the manifest's tracks renamed as the files are. The
+    /// folder imported from is untouched.
+    func testAFolderWithMisnamedTracksImportsWithItsNamesAndManifestKept() async throws {
+        try OggTestFixtures.skipUnlessOggDecodes()
+        let book = folder.appendingPathComponent("Radio", isDirectory: true)
+        try copyFixture("format-samples/m4b-chapters/three-tones.m4b", as: "01.m4a", into: book)
+        try copyFixture(OggTestFixtures.vorbis, as: "02.m4a", into: book)
+        try copyFixture(Self.mp2Fixture, as: "03.mp3", into: book)
+        let manifestJSON = Data(#"{"tracks": ["03.mp3", "02.m4a", "01.m4a"]}"#.utf8)
+        try manifestJSON.write(to: book.appendingPathComponent("manifest.json"))
+
+        let imported = try FileImportService.importAudioFolderWithReport(from: book)
+        importedPackages.append(imported.book.tmbDirectory)
+
+        let audio = URL(fileURLWithPath: imported.book.filePath)
+        XCTAssertEqual(try AudioBookParser.trackPaths(in: audio).sorted(), ["01.m4a", "02.m4a", "03.m4a"])
+        for name in ["02.m4a", "03.m4a"] {
+            let trackCodec = try await codec(of: audio.appendingPathComponent(name))
+            XCTAssertEqual(trackCodec, "aac ", name)
+        }
+        let written = try JSONSerialization.jsonObject(with: Data(contentsOf: audio.appendingPathComponent("manifest.json")))
+        XCTAssertEqual((written as? [String: Any])?["tracks"] as? [String], ["03.m4a", "02.m4a", "01.m4a"])
+        XCTAssertEqual(OggTestFixtures.names(in: book), ["01.m4a", "02.m4a", "03.mp3", "manifest.json"])
+        XCTAssertEqual(try Data(contentsOf: book.appendingPathComponent("manifest.json")), manifestJSON)
+    }
+
+    /// A feed episode reaches the same rule as a single file: an MP2 file
+    /// the server served as audio/mpeg, kept as .mp3, imports as an .m4a of
+    /// AAC through `FeedEpisodeImporter.importEpisode`.
+    func testAFeedEpisodeOfMP2NamedMP3IsConverted() async throws {
+        let feed = Feed(
+            feedURL: try XCTUnwrap(URL(string: "https://example.com/harbour-radio.xml")),
+            folderID: UUID(),
+            subscribedDate: Date(timeIntervalSince1970: 1_790_000_000)
+        )
+        let item = FeedItem(
+            id: "episode-9",
+            title: "Episode 9: The Slipway",
+            firstSeen: Date(timeIntervalSince1970: 1_790_000_000),
+            author: "Harbour Radio"
+        )
+        let download = try copyFixture(Self.mp2Fixture, as: "download.mp3")
+        addTeardownBlock { try? FileManager.default.removeItem(at: FeedPaths.itemsFolder(of: feed.id, in: TextMouthPaths.root)) }
+
+        let imported = try FeedEpisodeImporter.importEpisode(
+            download, named: "Episode 9.mp3", item: item, of: feed, dateAdded: Date()
+        )
+        importedPackages.append(imported.book.tmbDirectory)
+
+        let file = URL(fileURLWithPath: imported.book.filePath)
+        XCTAssertEqual(file.pathExtension, "m4a")
+        let fileCodec = try await codec(of: file)
+        XCTAssertEqual(fileCodec, "aac ")
+    }
+
+    /// Real files import as they are: an MP3 stays an MP3, an AAC .m4a an
+    /// .m4a (same name, same bytes).
+    func testRealFilesImportAsTheyAre() throws {
+        let mp3 = try copyFixture("format-samples/mp3-chapters/three-tones.mp3", as: "Song.mp3")
+        let m4a = try copyFixture("format-samples/m4b-chapters/three-tones.m4b", as: "Tale.m4a")
+        for source in [mp3, m4a] {
+            let sourceBytes = try Data(contentsOf: source)
+            let imported = try FileImportService.importFileWithReport(from: source)
+            importedPackages.append(imported.book.tmbDirectory)
+
+            let file = URL(fileURLWithPath: imported.book.filePath)
+            XCTAssertEqual(file.lastPathComponent, source.lastPathComponent)
+            XCTAssertEqual(try Data(contentsOf: file), sourceBytes, source.lastPathComponent)
+        }
+    }
+
+    // MARK: - The Plan
+
+    /// The plan follows the content: an MP2 file named .mp3 is converted to
+    /// AAC; a real MP3 is left; a path that does not exist is judged by its
+    /// extension alone.
+    func testThePlanFollowsTheContent() throws {
+        let info = ImportAudioConverter.SourceInfo(
+            sampleRate: 44_100, channels: 1, duration: 1, formatID: ".mp2", bitsPerSample: nil, isLossless: false
+        )
+        let mp2 = try copyFixture(Self.mp2Fixture, as: "x.mp3")
+        let mp3 = try copyFixture("format-samples/mp3-chapters/three-tones.mp3", as: "y.mp3")
+        XCTAssertEqual(ImportAudioConverter.plan(for: mp2, info: info), .convertToAAC)
+        XCTAssertEqual(ImportAudioConverter.plan(for: mp3, info: info), .leaveAsItIs)
+        XCTAssertEqual(ImportAudioConverter.plan(for: folder.appendingPathComponent("missing.mp3"), info: info), .leaveAsItIs)
+        XCTAssertEqual(ImportAudioConverter.plan(for: folder.appendingPathComponent("missing.ac3"), info: info), .convertToAAC)
+    }
 }
