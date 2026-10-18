@@ -306,6 +306,10 @@ final class NeroChapterReaderTests: XCTestCase {
     func testNothingLeftGivesNothing() {
         XCTAssertTrue(NeroChapterReader.bookChapters(from: [], fileDuration: 5).isEmpty)
         XCTAssertTrue(NeroChapterReader.bookChapters(from: [.init(title: "X", start: 9)], fileDuration: 5).isEmpty)
+        // Without the file's length, no chapter's end is known: none.
+        for unknown in [0, -1, .nan, .infinity] as [TimeInterval] {
+            XCTAssertTrue(NeroChapterReader.bookChapters(from: [.init(title: "X", start: 1)], fileDuration: unknown).isEmpty)
+        }
     }
 
     // MARK: - The real sample

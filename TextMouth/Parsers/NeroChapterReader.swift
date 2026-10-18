@@ -148,15 +148,19 @@ enum NeroChapterReader {
 
     /// Makes a book's chapters, in the shape `AudioPlaybackService.extractChapters`
     /// returns, from a Nero list and the file's length:
+    /// - none when the length is not known (not a finite number above zero):
+    ///   the last chapter's end would be unknown, and a damaged start could
+    ///   give a chapter of any length, so the book keeps one chapter, as
+    ///   without a list;
     /// - sorted by start, equal starts keeping their file order;
-    /// - a chapter at or past the file's end dropped (when the length is
-    ///   known), and so is a repeat of a start already taken;
+    /// - a chapter at or past the file's end dropped, and so is a repeat of
+    ///   a start already taken;
     /// - the first chapter taken to begin at 0, so the chapters cover the file;
     /// - each lasting until the next one's start, the last until the file's end;
     /// - an empty title named "Chapter N", N being the chapter's place from 1.
     static func bookChapters(from chapters: [Chapter], fileDuration: TimeInterval)
         -> [(title: String, startTime: TimeInterval, duration: TimeInterval)] {
-        let knownEnd = fileDuration.isFinite && fileDuration > 0
+        guard fileDuration.isFinite, fileDuration > 0 else { return [] }
         let ordered = chapters.enumerated()
             .sorted { $0.element.start != $1.element.start ? $0.element.start < $1.element.start : $0.offset < $1.offset }
             .map(\.element)
@@ -164,15 +168,14 @@ enum NeroChapterReader {
         // Drop what lies past the end and repeated starts (the list is sorted).
         var kept: [Chapter] = []
         for chapter in ordered {
-            if knownEnd && chapter.start >= fileDuration { continue }
+            if chapter.start >= fileDuration { continue }
             if let last = kept.last, last.start == chapter.start { continue }
             kept.append(chapter)
         }
 
-        let end = knownEnd ? fileDuration : (kept.last?.start ?? 0)
         return kept.enumerated().map { index, chapter in
             let start = index == 0 ? 0 : chapter.start
-            let next = index + 1 < kept.count ? kept[index + 1].start : end
+            let next = index + 1 < kept.count ? kept[index + 1].start : fileDuration
             return (title: chapter.title.isEmpty ? "Chapter \(index + 1)" : chapter.title,
                     startTime: start,
                     duration: max(0, next - start))
