@@ -863,6 +863,10 @@ enum FileImportService {
         toFolder folderPath: String = "",
         observer: ImportStepObserver? = nil
     ) throws -> ImportedBook {
+        // A playlist imports as one audiobook of the files it lists (FMT10).
+        if isPlaylistFile(sourceURL) {
+            return try importPlaylistWithReport(from: sourceURL, toFolder: folderPath, observer: observer)
+        }
         // A folder of audio tracks that is no DAISY book imports as one
         // audiobook, as a ZIP of the same tracks does (FR17, Part B).
         if isFolderOfTracks(sourceURL) {
@@ -1248,6 +1252,14 @@ enum FileImportService {
             imported.isFromFolder = true
             return imported
         }
+    }
+
+    /// Whether `source` is a playlist file (`M3UPlaylist.isPlaylist`): a
+    /// folder that happens to be named like one is not.
+    static func isPlaylistFile(_ source: URL) -> Bool {
+        var isDirectory: ObjCBool = false
+        let isFolder = FileManager.default.fileExists(atPath: source.path, isDirectory: &isDirectory) && isDirectory.boolValue
+        return M3UPlaylist.isPlaylist(source) && !isFolder
     }
 
     /// Imports the audio files the playlist `playlist` (M3U or M3U8) lists
@@ -2439,6 +2451,11 @@ enum FileImportService {
         types.append(.quickTimeMovie)            // mov
         if let m4v = UTType("com.apple.m4v-video") {
             types.append(m4v)
+        }
+        // M3U and M3U8 playlists, imported as an audiobook of the files they
+        // list (FMT10).
+        if let playlist = UTType("public.m3u-playlist") {
+            types.append(playlist)
         }
         return types
     }

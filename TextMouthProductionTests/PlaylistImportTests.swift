@@ -1,3 +1,4 @@
+import UniformTypeIdentifiers
 import XCTest
 @testable import TextMouth
 
@@ -316,6 +317,77 @@ final class PlaylistImportTests: XCTestCase {
         XCTAssertTrue(model.showError)
         XCTAssertEqual(opened.ids, [])
         XCTAssertTrue(model.library.books.contains { $0.id == imported.book.id })
+    }
+
+    // MARK: - Reaching the Import
+
+    /// A playlist given to the general file import goes to the playlist
+    /// import, in either extension and in any case, ahead of the folder and
+    /// format checks; the book is the one the playlist import makes.
+    func testTheFileImportSendsAPlaylistToThePlaylistImport() throws {
+        let lower = try makePlaylist("lower.m3u", listing: ["#EXTINF:1,One", "a.wav", "absent.wav"], tracks: ["a.wav"])
+        let upper = try makePlaylist("Upper.M3U8", listing: ["#EXTINF:1,Two", "b.wav"], tracks: ["b.wav"], in: "Other")
+
+        let lowerBook = try FileImportService.importFileWithReport(from: lower, toFolder: folderPath)
+        let upperBook = try FileImportService.importFileWithReport(from: upper, toFolder: folderPath)
+
+        XCTAssertEqual(lowerBook.book.format, .audio)
+        XCTAssertEqual(try chapterTitles(of: lowerBook.book), ["One"])
+        XCTAssertEqual(lowerBook.notice, "TextMouth skipped 1 entry of “lower.m3u”: “absent.wav” (not found).")
+        XCTAssertFalse(lowerBook.mayDeleteOriginal)
+        XCTAssertEqual(upperBook.book.title, "Upper")
+        XCTAssertEqual(try chapterTitles(of: upperBook.book), ["Two"])
+    }
+
+    /// A folder that is named like a playlist is still a folder of tracks,
+    /// not a playlist.
+    func testAFolderNamedLikeAPlaylistIsStillAFolderOfTracks() throws {
+        let folder = sources.appendingPathComponent("Mix.m3u", isDirectory: true)
+        try AudioTestFixtures.writeSilence(to: folder.appendingPathComponent("01.wav"), duration: 0.2)
+
+        XCTAssertFalse(FileImportService.isPlaylistFile(folder))
+        let imported = try FileImportService.importFileWithReport(from: folder, toFolder: folderPath)
+
+        XCTAssertEqual(imported.book.title, "Mix.m3u")
+        XCTAssertNil(imported.notice)
+    }
+
+    /// The Open Book panel offers M3U and M3U8 files, and Finder and the
+    /// Dock offer them to the app as an M3U Playlist document type.
+    func testThePanelAndTheDocumentTypesOfferPlaylists() throws {
+        for ext in ["m3u", "m3u8"] {
+            let type = try XCTUnwrap(UTType(filenameExtension: ext), ext)
+            XCTAssertTrue(FileImportService.supportedTypes.contains { type.conforms(to: $0) }, ext)
+        }
+        let documentTypes = try XCTUnwrap(Bundle.main.infoDictionary?["CFBundleDocumentTypes"] as? [[String: Any]])
+        let declared = try XCTUnwrap(documentTypes.first { $0["CFBundleTypeName"] as? String == "M3U Playlist" })
+        XCTAssertEqual(declared["CFBundleTypeExtensions"] as? [String], ["m3u", "m3u8"])
+        XCTAssertEqual(declared["LSItemContentTypes"] as? [String], ["public.m3u-playlist"])
+        XCTAssertEqual(declared["CFBundleTypeRole"] as? String, "Viewer")
+        XCTAssertEqual(declared["LSHandlerRank"] as? String, "Alternate")
+    }
+
+    /// A playlist chosen in the Open panel, or opened from Finder, is one
+    /// source (never split as a folder of DAISY books is), and importing
+    /// it through the library's queue adds its book and presents its
+    /// notice.
+    @MainActor
+    func testAPlaylistChosenInTheLibraryImportsThroughTheQueue() async throws {
+        let playlist = try makePlaylist("queued.m3u", listing: ["a.wav", "absent.wav"], tracks: ["a.wav"])
+        XCTAssertEqual(LibraryViewModel.importSources(for: playlist), [playlist])
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+
+        model.importFiles(urls: [playlist], toFolder: folderPath)
+        // The import runs on the library's queue; wait for its book.
+        for _ in 0..<300 where model.library.books.isEmpty {
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+
+        let book = try XCTUnwrap(model.library.books.first)
+        XCTAssertEqual(book.title, "queued")
+        XCTAssertEqual(model.errorMessage, "TextMouth skipped 1 entry of “queued.m3u”: “absent.wav” (not found).")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: playlist.path))
     }
 
     // MARK: - The Words

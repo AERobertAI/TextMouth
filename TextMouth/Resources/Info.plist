@@ -270,6 +270,23 @@
 		</dict>
 		<dict>
 			<key>CFBundleTypeName</key>
+			<string>M3U Playlist</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>m3u</string>
+				<string>m3u8</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.m3u-playlist</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
 			<string>Word Document (DOCX)</string>
 			<key>CFBundleTypeExtensions</key>
 			<array>
