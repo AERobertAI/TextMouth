@@ -1243,10 +1243,15 @@ enum FileImportService {
         var report = ExtractionReport()
     }
 
-    /// The plain formats whose import is refused when the file holds no text
-    /// (`FileImportError.noTextToRead`). EPUB, Word, DAISY, and PDF have
-    /// their own refusals or none.
-    private static let plainTextFormats: Set<BookFormat> = [.txt, .markdown, .html]
+    /// The formats whose import is refused when the file holds no text
+    /// (`FileImportError.noTextToRead`): the plain ones, and the five that
+    /// textutil reads. A rich text, Word, or OpenDocument file whose text is
+    /// only white space (a few empty paragraphs) converts without error, so
+    /// without this it would be added as a silent book. EPUB, DOCX, DAISY,
+    /// and PDF have their own refusals or none.
+    private static let formatsRefusedWhenBlank: Set<BookFormat> = [
+        .txt, .markdown, .html, .rtf, .rtfd, .doc, .odt, .wordml,
+    ]
 
     /// Reads `book`'s content as the reader will, so that no import publishes
     /// a book that cannot be opened. A text book's content.md is written into
@@ -1255,8 +1260,8 @@ enum FileImportService {
     /// playable chapter fails. `book` receives the cache version and the
     /// index's counts.
     ///
-    /// With `refusingBlankText` set, a plain text, Markdown, or HTML book
-    /// (`plainTextFormats`) none of whose chapters holds a character other
+    /// With `refusingBlankText` set, a plain text, Markdown, HTML, or
+    /// textutil book (`formatsRefusedWhenBlank`) none of whose chapters holds a character other
     /// than white space fails with `FileImportError.noTextToRead`, so a blank
     /// file is not imported as a silent, empty book. The check is here, not
     /// in `MarkdownCacheService`, because every rebuild of an existing book's
@@ -1286,7 +1291,7 @@ enum FileImportService {
             // import gives its book one before reading it.
             throw FileImportError.importFailed("The book has no package to hold its text.")
         }
-        if refusingBlankText, plainTextFormats.contains(book.format),
+        if refusingBlankText, formatsRefusedWhenBlank.contains(book.format),
            !generated.content.chapters.contains(where: { chapter in chapter.text.contains { !$0.isWhitespace } }) {
             throw FileImportError.noTextToRead
         }
