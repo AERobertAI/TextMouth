@@ -76,6 +76,11 @@ enum BookFormat: String, Codable, CaseIterable {
     /// the `.docx` case and its reader. That reader opens only the XML parts
     /// it needs, so a macro project (word/vbaProject.bin) is never opened
     /// and no macro can run.
+    ///
+    /// The formats macOS decodes that the import converts to an .m4a file
+    /// (`ImportAudioConverter.coreAudioExtensions`: AC-3, AMR, MP2, CAF,
+    /// AIFC, AU, Wave64, 3GPP audio, and the like) are listed too: a file of
+    /// one is converted at import, and only the converted file is played.
     var fileExtensions: [String] {
         switch self {
         case .epub: return ["epub"]
@@ -98,6 +103,7 @@ enum BookFormat: String, Codable, CaseIterable {
         case .pdf: return ["pdf"]
         case .audio:
             return ["mp3", "m4a", "m4b", "wav", "aiff", "aif", "flac", "alac", "aac", "ogg", "oga", "opus", "mp4", "m4v", "mov"]
+                + ImportAudioConverter.coreAudioExtensions.sorted()
         }
     }
 

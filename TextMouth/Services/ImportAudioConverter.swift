@@ -38,9 +38,22 @@ enum ImportAudioConverter {
     /// container's, and Opus's.
     static let oggExtensions: Set<String> = ["ogg", "oga", "opus"]
 
+    /// The extensions, in lowercase, of the formats macOS decodes that the
+    /// import converts (FMT09): the coded ones (AC-3 and Enhanced AC-3, MP1
+    /// and MP2, AMR, 3GPP audio, and CAF's, AIFC's, and AU's compressed
+    /// forms), so that Apple's rarer decoders stay out of the player; and the
+    /// containers that hold PCM as often as coded audio (AIFC, CAF, AU, Wave64,
+    /// whose extension says nothing of what is inside), so that the reader
+    /// guards can decide by extension alone. The extensions TextMouth already
+    /// plays (mp3, m4a, wav, aiff, flac, and the rest of `BookFormat.audio`)
+    /// are not here.
+    static let coreAudioExtensions: Set<String> = [
+        "aifc", "caf", "au", "snd", "w64", "ac3", "ec3", "eac3", "mp1", "mp2", "mpa", "amr", "awb", "3gp", "3g2", "3ga",
+    ]
+
     /// The extensions, in lowercase, of every audio format the import
-    /// converts to AAC (FMT09). Ogg alone for now; later steps add the rest.
-    static let convertedExtensions: Set<String> = oggExtensions
+    /// converts (FMT09): Ogg's and `coreAudioExtensions`.
+    static let convertedExtensions: Set<String> = oggExtensions.union(coreAudioExtensions)
 
     /// The extensions, in lowercase, of files TextMouth writes itself from
     /// its own samples with Apple's encoder and reads back in the app: a

@@ -2446,6 +2446,11 @@ enum FileImportService {
             UTType("public.aac-audio"),          // aac
             UTType("org.xiph.ogg-audio"),        // ogg, oga, opus
         ].compactMap { $0 })
+        // The formats macOS decodes that the import converts (FMT09), by
+        // their extensions' system types where they have one.
+        types.append(contentsOf: ImportAudioConverter.coreAudioExtensions.sorted().compactMap {
+            UTType(filenameExtension: $0)
+        })
         // Video, imported as an audiobook whose sound alone plays (FR03).
         types.append(.mpeg4Movie)                // mp4
         types.append(.quickTimeMovie)            // mov

@@ -43,6 +43,21 @@ final class BookFormatTests: XCTestCase {
         XCTAssertTrue(FeedMediaKind.audioExtensions.isSuperset(of: ["ogg", "oga", "opus"]))
     }
 
+    /// The formats macOS decodes that the import converts (FMT09) are
+    /// audiobook formats under each extension, in any case, and the Open
+    /// panel offers their system types.
+    func testCoreAudioFormatsAreAudiobookFormats() {
+        for ext in ImportAudioConverter.coreAudioExtensions {
+            XCTAssertEqual(BookFormat.detect(from: URL(fileURLWithPath: "/tmp/track.\(ext)")), .audio, ext)
+            XCTAssertEqual(BookFormat.detect(from: URL(fileURLWithPath: "/tmp/TRACK.\(ext.uppercased())")), .audio, ext)
+            XCTAssertTrue(ArchiveEntryLimits.isAudio("Disc/track.\(ext)"), ext)
+        }
+        let offered = Set(FileImportService.supportedTypes.map(\.identifier))
+        for identifier in ["public.ac3-audio", "public.mp2", "com.apple.coreaudio-format", "org.3gpp.adaptive-multi-rate-audio"] {
+            XCTAssertTrue(offered.contains(identifier), identifier)
+        }
+    }
+
     func testDuplicateImportDoesNotDeleteOriginalBeforeUserDecision() throws {
         let viewModel = LibraryViewModel()
         let existing = makeBook(hash: "same-content")

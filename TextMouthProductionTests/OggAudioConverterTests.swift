@@ -117,15 +117,21 @@ final class OggAudioConverterTests: XCTestCase {
 
     /// The import converts a file by its extension in any case, and no
     /// reader decodes one of those, except a CAF, which TextMouth writes
-    /// itself (a recording's take, the audio editor's passes). A CAF is not
-    /// converted yet, so it is never refused as the app's own.
+    /// itself (a recording's take, the audio editor's passes). An imported
+    /// CAF is converted all the same (FMT09), but is never refused as the
+    /// app's own.
     func testTheGuardsAskAboutTheFormatsTheImportConverts() {
         for name in ["a.ogg", "b.OPUS", "c.oga"] {
             let url = URL(fileURLWithPath: "/tmp/\(name)")
             XCTAssertTrue(ImportAudioConverter.isConvertedAtImport(url), name)
             XCTAssertTrue(ImportAudioConverter.isNeverDecodedInApp(url), name)
         }
-        for name in ["d.mp3", "e.caf", "f.CAF", "g.ogg.m4a"] {
+        for name in ["e.caf", "f.CAF"] {
+            let url = URL(fileURLWithPath: "/tmp/\(name)")
+            XCTAssertTrue(ImportAudioConverter.isConvertedAtImport(url), name)
+            XCTAssertFalse(ImportAudioConverter.isNeverDecodedInApp(url), name)
+        }
+        for name in ["d.mp3", "g.ogg.m4a"] {
             let url = URL(fileURLWithPath: "/tmp/\(name)")
             XCTAssertFalse(ImportAudioConverter.isConvertedAtImport(url), name)
             XCTAssertFalse(ImportAudioConverter.isNeverDecodedInApp(url), name)

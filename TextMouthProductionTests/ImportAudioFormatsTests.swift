@@ -10,12 +10,16 @@ import XCTest
 /// processes.
 final class ImportAudioFormatsTests: XCTestCase {
     private var folder: URL! // lint-ok: made in setUpWithError before every test
+    /// Imported book packages, removed when a test ends.
+    private var importedPackages: [URL] = []
 
     override func setUpWithError() throws {
         folder = try AudioTestFixtures.makeTemporaryDirectory()
     }
 
     override func tearDown() {
+        for package in importedPackages { try? FileManager.default.removeItem(at: package) }
+        importedPackages = []
         if let folder { try? FileManager.default.removeItem(at: folder) }
         folder = nil
     }
@@ -220,5 +224,169 @@ final class ImportAudioFormatsTests: XCTestCase {
             ImportAudioConverter.Failure.processFailed(fileName: "a.ac3", status: 3).errorDescription,
             "Converting a.ac3 failed (the converter ended with code 3)."
         )
+    }
+
+    // MARK: - The New Formats' Samples
+
+    /// The new extensions' samples: where each is, the plan, and the codec
+    /// the converted file must hold.
+    private static let samples: [(path: String, plan: ImportAudioConverter.Plan, codec: String)] = [
+        ("ac3/tones.ac3", .convertToAAC, "aac "),
+        ("eac3/tones.ec3", .convertToAAC, "aac "),
+        ("amr/tones.amr", .convertToAAC, "aac "),
+        ("3gp/tones-aac.3gp", .convertToAAC, "aac "),
+        ("3gp/tones-amr.3gp", .convertToAAC, "aac "),
+        ("mp2/tones.mp2", .convertToAAC, "aac "),
+        ("au/tones.au", .convertToAppleLossless, "alac"),
+        ("aifc/tones-ima4.aifc", .convertToAAC, "aac "),
+        ("aifc/tones-ulaw.aifc", .convertToAAC, "aac "),
+        ("caf/tones-pcm.caf", .convertToAppleLossless, "alac"),
+        ("caf/tones-alac.caf", .convertToAppleLossless, "alac"),
+        ("caf/tones-opus.caf", .convertToAAC, "aac "),
+        ("w64/tones.w64", .convertToAppleLossless, "alac"),
+    ]
+
+    /// Copies the sample `path` (under `TestData/format-samples`) into
+    /// `destination` (the test's own folder by default), named as `name`
+    /// when given, and returns the copy.
+    @discardableResult
+    private func copySample(_ path: String, as name: String? = nil, into destination: URL? = nil) throws -> URL {
+        let target: URL = destination ?? folder
+        try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
+        let source = try requireFile("format-samples/\(path)")
+        let copy = target.appendingPathComponent(name ?? source.lastPathComponent)
+        try FileManager.default.copyItem(at: source, to: copy)
+        return copy
+    }
+
+    /// Every sample, converted: the plan is the expected one, the .m4a holds
+    /// AAC or Apple Lossless, lasts as long as its source, passes the
+    /// playability probe, and (Apple Lossless) keeps the source's 16 bits.
+    /// Each conversion's time is printed.
+    func testEveryNewFormatConvertsToAnM4A() async throws {
+        for sample in Self.samples {
+            let source = try copySample(sample.path, into: folder.appendingPathComponent(UUID().uuidString))
+            let sourceRead = try await ImportAudioConverter.inspect(source)
+            let sourceInfo = try XCTUnwrap(sourceRead, sample.path)
+            XCTAssertEqual(ImportAudioConverter.plan(for: source, info: sourceInfo), sample.plan, sample.path)
+
+            let conversion = try await ImportAudioConverter.convert(source)
+
+            XCTAssertEqual(conversion.converted.pathExtension, "m4a", sample.path)
+            let convertedRead = try await AudioFileInfo.read(conversion.converted)
+            let converted = try XCTUnwrap(convertedRead, sample.path)
+            XCTAssertEqual(converted.formatID, sample.codec, sample.path)
+            XCTAssertEqual(
+                converted.duration, sourceInfo.duration,
+                accuracy: ImportAudioConverter.allowedLengthError(for: sourceInfo.duration), sample.path
+            )
+            let probed = await AudioMediaProbe.duration(of: conversion.converted)
+            if case .failure = probed { XCTFail("\(sample.path) does not play: \(probed)") }
+            if sample.plan == .convertToAppleLossless {
+                XCTAssertEqual(converted.bitsPerSample, sourceInfo.bitsPerSample, sample.path)
+                XCTAssertEqual(converted.bitsPerSample, 16, sample.path)
+            }
+            print("FMT09 conversion time \(sample.path): \(String(format: "%.2f", conversion.secondsTaken)) s")
+        }
+    }
+
+    // MARK: - Importing
+
+    /// A single AC-3 file imports as an .m4a file, which is the book's
+    /// file; no .ac3 is left in the package, and the original is untouched.
+    func testASingleAC3FileImportsAsAnM4AFile() throws {
+        let source = try copySample("ac3/tones.ac3")
+        let sourceBytes = try Data(contentsOf: source)
+
+        let imported = try FileImportService.importFileWithReport(from: source)
+        importedPackages.append(imported.book.tmbDirectory)
+
+        let audio = URL(fileURLWithPath: imported.book.filePath)
+        XCTAssertEqual(audio.lastPathComponent, "tones.m4a")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: audio.path))
+        XCTAssertEqual(OggTestFixtures.names(in: audio.deletingLastPathComponent()).filter { $0.hasSuffix(".ac3") }, [])
+        XCTAssertEqual(try Data(contentsOf: source), sourceBytes)
+    }
+
+    /// A folder of 01.ac3, 02.mp3, and 03.caf imports as 01.m4a, 02.mp3,
+    /// and 03.m4a in that order; the mp3 stays as it is. A manifest naming
+    /// the three names the renamed tracks, and the folder imported from
+    /// keeps its files.
+    func testAFolderOfMixedFormatsImportsInOrderWithItsManifestRenamed() throws {
+        let source = folder.appendingPathComponent("Mixed")
+        try copySample("ac3/tones.ac3", as: "01.ac3", into: source)
+        let mp3 = try requireFile("format-samples/mp3-chapters/three-tones.mp3")
+        try FileManager.default.copyItem(at: mp3, to: source.appendingPathComponent("02.mp3"))
+        try copySample("caf/tones-pcm.caf", as: "03.caf", into: source)
+
+        let plain = try FileImportService.importAudioFolderWithReport(from: source)
+        importedPackages.append(plain.book.tmbDirectory)
+        XCTAssertEqual(
+            try AudioBookParser.trackPaths(in: URL(fileURLWithPath: plain.book.filePath)),
+            ["01.m4a", "02.mp3", "03.m4a"]
+        )
+
+        let manifestJSON = Data(#"{"tracks": ["01.ac3", "02.mp3", "03.caf"]}"#.utf8)
+        try manifestJSON.write(to: source.appendingPathComponent("manifest.json"))
+        let named = try FileImportService.importAudioFolderWithReport(from: source)
+        importedPackages.append(named.book.tmbDirectory)
+
+        let audio = URL(fileURLWithPath: named.book.filePath)
+        XCTAssertEqual(try AudioBookParser.trackPaths(in: audio), ["01.m4a", "02.mp3", "03.m4a"])
+        let written = try JSONSerialization.jsonObject(with: Data(contentsOf: audio.appendingPathComponent("manifest.json")))
+        XCTAssertEqual((written as? [String: Any])?["tracks"] as? [String], ["01.m4a", "02.mp3", "03.m4a"])
+        XCTAssertEqual(OggTestFixtures.names(in: source), ["01.ac3", "02.mp3", "03.caf", "manifest.json"])
+        XCTAssertEqual(try Data(contentsOf: source.appendingPathComponent("manifest.json")), manifestJSON)
+    }
+
+    /// An .amr of random bytes fails the import at Converting its audio, in
+    /// words that name the file, and leaves nothing in the library folder.
+    func testAnAMRFileOfRandomBytesFailsTheImportAtItsStep() throws {
+        let source = folder.appendingPathComponent("Noise.amr")
+        var generator = SystemRandomNumberGenerator()
+        try Data((0..<4_096).map { _ in UInt8.random(in: 0...255, using: &generator) }).write(to: source)
+        let libraryBefore = OggTestFixtures.names(in: TextMouthPaths.libraryDir)
+
+        do {
+            let imported = try FileImportService.importFileWithReport(from: source)
+            importedPackages.append(imported.book.tmbDirectory)
+            XCTFail("A file of random bytes must not import")
+        } catch let failure as ImportFailure {
+            XCTAssertEqual(failure.step.activity, "Converting its audio")
+            XCTAssertEqual(failure.underlying as? ImportAudioConverter.Failure, .unreadable(fileName: "Noise.amr"))
+            XCTAssertEqual(
+                failure.errorDescription,
+                "Could not import “Noise.amr”. Converting its audio failed: The audio file Noise.amr could not be read for converting."
+            )
+        }
+        XCTAssertEqual(OggTestFixtures.names(in: TextMouthPaths.libraryDir), libraryBefore)
+    }
+
+    // MARK: - The Guards
+
+    /// Each new extension is converted at import and never decoded in the
+    /// app, except CAF, TextMouth's own working format, which the import
+    /// converts all the same.
+    func testEveryNewExtensionIsConvertedAndNeverDecodedInTheApp() {
+        XCTAssertEqual(ImportAudioConverter.coreAudioExtensions.count, 16)
+        for ext in ImportAudioConverter.coreAudioExtensions {
+            for name in ["track.\(ext)", "TRACK.\(ext.uppercased())"] {
+                let url = URL(fileURLWithPath: "/a/\(name)")
+                XCTAssertTrue(ImportAudioConverter.isConvertedAtImport(url), name)
+                XCTAssertEqual(ImportAudioConverter.isNeverDecodedInApp(url), ext != "caf", name)
+            }
+            XCTAssertTrue(ImportAudioConverter.convertedExtensions.contains(ext), ext)
+        }
+        // What TextMouth already plays stays as it is.
+        for ext in ["mp3", "m4a", "m4b", "wav", "aiff", "aif", "flac", "alac", "aac", "mp4", "m4v", "mov"] {
+            XCTAssertFalse(ImportAudioConverter.isConvertedAtImport(URL(fileURLWithPath: "/a/track.\(ext)")), ext)
+        }
+    }
+
+    /// The metadata reader opens no file of a converted extension, CAF too.
+    func testNoMetadataAssetIsMadeForAConvertedFormat() {
+        for ext in ["ac3", "caf", "amr", "aifc"] {
+            XCTAssertNil(AudioPlaybackService.metadataAsset(for: URL(fileURLWithPath: "/a/track.\(ext)")), ext)
+        }
     }
 }
