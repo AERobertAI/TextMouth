@@ -134,14 +134,16 @@ enum NeroChapterReader {
         return chapters
     }
 
-    /// A title read as UTF-8, or as ISO Latin 1 when the bytes are not valid
-    /// UTF-8, with white space and NUL characters trimmed from both ends.
+    /// A title cut at its first NUL byte (as FFmpeg reads one: the rest is
+    /// padding or garbage), then read as UTF-8, or as Windows-1252 when the
+    /// bytes are not valid UTF-8 (the shared rule of `TextFileDecoder`, which
+    /// gives the curly quotes a Windows tool writes at 0x93 and 0x94), with
+    /// white space trimmed from both ends.
     private static func decodeTitle(_ bytes: ArraySlice<UInt8>) -> String {
-        let data = Data(bytes)
-        let text = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) ?? ""
-        var trimSet = CharacterSet.whitespacesAndNewlines
-        trimSet.insert(charactersIn: "\u{0}")
-        return text.trimmingCharacters(in: trimSet)
+        // Stop at the first NUL; a title that starts with one is empty.
+        let data = Data(bytes.prefix(while: { $0 != 0 }))
+        let text = String(data: data, encoding: .utf8) ?? TextFileDecoder.windows1252Text(data)
+        return text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     // MARK: - The book's chapters

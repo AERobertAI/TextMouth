@@ -137,10 +137,29 @@ final class NeroChapterReaderTests: XCTestCase {
         XCTAssertEqual(NeroChapterReader.parse(chpl: payload), expectedTwo)
     }
 
-    /// A title that is not valid UTF-8 is read as ISO Latin 1.
+    /// A title that is not valid UTF-8 is read as Windows-1252, which agrees
+    /// with ISO Latin 1 outside 0x80 through 0x9F.
     func testLatinOneTitle() {
         let payload = BoxWriter.chplPayload(entries: [BoxWriter.entry(start: 1, title: [0x43, 0x61, 0x66, 0xE9])])
         XCTAssertEqual(NeroChapterReader.parse(chpl: payload), [.init(title: "Café", start: 1)])
+    }
+
+    /// The bytes 0x93 and 0x94 are the curly double quotes of Windows-1252
+    /// (not the control characters ISO Latin 1 gives them).
+    func testWindowsQuotesInAnInvalidUTF8Title() {
+        let payload = BoxWriter.chplPayload(entries: [BoxWriter.entry(start: 1, title: [0x93, 0x48, 0x69, 0x94])])
+        XCTAssertEqual(NeroChapterReader.parse(chpl: payload), [.init(title: "\u{201C}Hi\u{201D}", start: 1)])
+    }
+
+    /// A title stops at its first NUL byte; what follows is not part of it.
+    func testTitleStopsAtItsFirstNUL() {
+        let payload = BoxWriter.chplPayload(entries: [
+            BoxWriter.entry(start: 0, title: [0x41, 0x00, 0x42]),
+            // A NUL first leaves nothing, and the next chapter is still read.
+            BoxWriter.entry(start: 1, title: [0x00, 0x43]),
+            // The same holds for a title that is not valid UTF-8.
+            BoxWriter.entry(start: 2, title: [0x43, 0x61, 0x66, 0xE9, 0x00, 0x44])])
+        XCTAssertEqual(NeroChapterReader.parse(chpl: payload).map(\.title), ["A", "", "Café"])
     }
 
     /// A UTF-8 title is read as UTF-8.
