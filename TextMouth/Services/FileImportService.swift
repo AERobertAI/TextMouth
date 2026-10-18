@@ -2111,8 +2111,9 @@ enum FileImportService {
         if let md = UTType("net.daringfireball.markdown") {
             types.append(md)
         }
-        // Office Open XML Word documents. Legacy binary .doc files are not
-        // ZIP-based DOCX documents and are not supported by DOCXParser.
+        // Office Open XML Word documents. Legacy binary .doc and .dot files
+        // are not ZIP-based DOCX documents: they go to textutil (see below),
+        // never to DOCXParser.
         if let docx = UTType("org.openxmlformats.wordprocessingml.document") {
             types.append(docx)
         }
@@ -2127,6 +2128,22 @@ enum FileImportService {
                 types.append(type)
             }
         }
+        // Rich text, read by textutil (FMT13).
+        types.append(.rtf)
+        // Rich text with attachments: a package, which the panel shows as a
+        // single file.
+        types.append(.rtfd)
+        // Word 97-2003 documents and templates, read by textutil.
+        types.append(contentsOf: ["com.microsoft.word.doc", "com.microsoft.word.dot"].compactMap { UTType($0) })
+        // OpenDocument text documents and templates, read by textutil.
+        types.append(contentsOf: [
+            "org.oasis-open.opendocument.text",
+            "org.oasis-open.opendocument.text-template",
+        ].compactMap { UTType($0) })
+        // XML files: Word 2003 XML (WordML) documents and DTBook files,
+        // which the import tells apart by their root element
+        // (`XMLDocumentSniffer`); any other XML file is refused by name.
+        types.append(.xml)
         // PDF documents
         types.append(.pdf)
         // DAISY books (OPF files and .daisy extension)

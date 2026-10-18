@@ -6,13 +6,15 @@ import AppKit
 @MainActor
 final class BookFormatTests: XCTestCase {
     /// Legacy binary Word documents are not Office Open XML archives and cannot
-    /// be parsed by DOCXParser, so they must not be detected as DOCX input.
-    func testLegacyDocIsNotAdvertisedAsDOCX() {
+    /// be parsed by DOCXParser, so they must never be detected as DOCX input.
+    /// They are read by textutil instead (FMT13): a .doc is its own format, and
+    /// the Open Book panel offers the Word 97-2003 type.
+    func testLegacyDocIsReadByTextutilNeverAsDOCX() {
         let legacyURL = URL(fileURLWithPath: "/tmp/legacy.doc")
 
-        XCTAssertNil(BookFormat.detect(from: legacyURL))
+        XCTAssertEqual(BookFormat.detect(from: legacyURL), .doc)
         XCTAssertFalse(BookFormat.docx.fileExtensions.contains("doc"))
-        XCTAssertFalse(
+        XCTAssertTrue(
             FileImportService.supportedTypes.contains {
                 $0.identifier == "com.microsoft.word.doc"
             }

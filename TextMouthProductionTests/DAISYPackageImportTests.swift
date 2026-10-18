@@ -666,9 +666,10 @@ final class DAISYPackageImportTests: XCTestCase {
 
     /// The standard Open Book... panel offers files only, as it always did,
     /// so Return on a folder there keeps opening the folder, as keyboard
-    /// and VoiceOver users rely on: no type it allows is a folder, and the
-    /// only one that is a directory at all is TextMouth's own package, which
-    /// the panel offers as a single file. A DAISY book's ncc.html stays
+    /// and VoiceOver users rely on: no type it allows is a plain folder. The
+    /// only ones that are directories at all are packages, which the panel
+    /// shows as a single file: TextMouth's own package, and an RTFD (rich
+    /// text with attachments, FMT13). A DAISY book's ncc.html stays
     /// choosable, as the HTML file it is.
     func testOpenBookPanelOffersFilesOnly() throws {
         let types = FileImportService.supportedTypes
@@ -677,7 +678,7 @@ final class DAISYPackageImportTests: XCTestCase {
 
         XCTAssertFalse(types.contains(.folder))
         XCTAssertFalse(types.contains(.directory))
-        XCTAssertEqual(types.filter { $0.conforms(to: .directory) }, [packageType])
+        XCTAssertEqual(Set(types.filter { $0.conforms(to: .directory) }), [packageType, .rtfd])
         XCTAssertTrue(types.contains { navigationFile.conforms(to: $0) })
     }
 
