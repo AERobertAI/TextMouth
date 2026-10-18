@@ -1,0 +1,15 @@
+# TextMouth document golden, format 1
+file: rtf__word-list-table.rtf
+macOS: 26.3
+format: rtf
+title: List and Table
+author: A. Sample
+chapters: 1
+words: 22
+text length: 154
+text checksum: 8e172b9228ca4f32
+first 300: Shopping and Timetable\n\nShopping\n\nThree things:\n\nBread from the bakery\n\nSmoked fish\n\nA newspaper\n\nTimetable\n\nBoat\n\nDeparts\n\nFerry\n\n07:00\n\nAfter the table.
+last 300: Shopping and Timetable\n\nShopping\n\nThree things:\n\nBread from the bakery\n\nSmoked fish\n\nA newspaper\n\nTimetable\n\nBoat\n\nDeparts\n\nFerry\n\n07:00\n\nAfter the table.
+heading: 1 | Shopping and Timetable
+heading: 2 | Shopping
+heading: 2 | Timetable

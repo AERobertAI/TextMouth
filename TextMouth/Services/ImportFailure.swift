@@ -168,6 +168,12 @@ struct ImportRun {
             return try body(&run)
         } catch let failure as ImportFailure {
             throw failure
+        } catch let cancelled as ImportCancelled {
+            // The reader cancelled the import while a conversion ran (the
+            // Cancel button killed it): not a failure, so it is passed on
+            // as it is, and logged as a cancellation.
+            ImportCancellation.log(fileName, stopped: "while \(run.step.activity.lowercased())")
+            throw cancelled
         } catch {
             let failure = ImportFailure(fileName: fileName, step: run.step, underlying: error)
             failure.log()

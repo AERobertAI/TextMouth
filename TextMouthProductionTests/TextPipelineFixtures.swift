@@ -74,6 +74,94 @@ enum TextPipelineFixtures {
     /// wherever they are present.
     static let optionalTestDataBookNames = ["are-you-ready-d3-audio.zip", "fire-safety-d202-audio.zip"]
 
+    // MARK: Format Samples
+
+    /// The folder inside TestData that holds the format samples, with the
+    /// slash that ends it.
+    static let formatSamplesPrefix = "format-samples/"
+
+    /// The format samples the document goldens record and the import fuzz
+    /// sweeps, as paths inside TestData, one per line: every file and folder
+    /// sample of the RTF, RTFD, Word, OpenDocument, WordML, web archive,
+    /// SSML, and DTBook folders. `rtf/headings-source.html` is left out: it
+    /// is only the HTML the other RTF samples were made from. A folder
+    /// sample (an RTFD, a NIMAS package) is named as the folder.
+    static let formatSampleNames = [
+        "format-samples/doc/headings.doc",
+        "format-samples/doc/libreoffice-tdf104239_chapterNumbering.doc",
+        "format-samples/doc/libreoffice-tdf81705_outlineLevel.doc",
+        "format-samples/docm/headings-synthetic.docm",
+        "format-samples/docm/libreoffice-hello.docm",
+        "format-samples/dot/headings-synthetic.dot",
+        "format-samples/dot/libreoffice-tdf120761_zOrder.dot",
+        "format-samples/dotm/headings-synthetic.dotm",
+        "format-samples/dotm/libreoffice-autotext-dotm.dotm",
+        "format-samples/dotx/headings-synthetic.dotx",
+        "format-samples/dotx/libreoffice-sample.dotx",
+        "format-samples/dtbook/harbour-standalone.xml",
+        "format-samples/dtbook/nimas-style-package",
+        "format-samples/odt/handwritten.odt",
+        "format-samples/odt/headings.odt",
+        "format-samples/ott/handwritten.ott",
+        "format-samples/rtf/headings.rtf",
+        "format-samples/rtf/word-list-table.rtf",
+        "format-samples/rtf/word-styles.rtf",
+        "format-samples/rtfd/headings.rtfd",
+        "format-samples/rtfd/with-image.rtfd",
+        "format-samples/ssml/passage.ssml",
+        "format-samples/webarchive/headings.webarchive",
+        "format-samples/wordml/headings.wordml",
+    ]
+
+    /// The samples of `formatSampleNames` that import only under another
+    /// file name, by sample, with that name: Word 2003 XML imports only as
+    /// an .xml file.
+    static let formatSampleImportNames = [
+        "format-samples/wordml/headings.wordml": "headings.xml",
+    ]
+
+    /// Samples whose recorded golden showed a reader bug, by sample, with the
+    /// bug. Their goldens are not recorded or compared until the reader is
+    /// fixed: then the entry goes and the golden is recorded in the same
+    /// commit. `testHeldBackSamplesAreFormatSamples` keeps the list honest.
+    static let formatSamplesHeldBack: [String: String] = [:]
+
+    /// The folders of the format samples that macOS's own readers
+    /// (`/usr/bin/textutil`) read. What they give can change with macOS, as
+    /// a PDF's text does, so their goldens are compared only on a Mac of the
+    /// major version that recorded them. The other samples are read by
+    /// TextMouth's own readers and are compared everywhere.
+    static let macOSDependentFormatSampleFolders: Set<String> = [
+        "doc", "dot", "odt", "ott", "rtf", "rtfd", "wordml",
+    ]
+
+    /// The path of the sample `name` (one of `formatSampleNames`) inside the
+    /// format samples folder: "rtf/headings.rtf" for
+    /// "format-samples/rtf/headings.rtf".
+    static func pathInsideFormatSamples(_ name: String) -> String {
+        name.hasPrefix(formatSamplesPrefix) ? String(name.dropFirst(formatSamplesPrefix.count)) : name
+    }
+
+    /// The name of the sample's golden, without ".golden": its path inside
+    /// the format samples folder with each "/" written as "__", such as
+    /// "rtf__headings.rtf", so that it is a plain file name.
+    static func formatSampleGoldenName(_ name: String) -> String {
+        pathInsideFormatSamples(name).replacingOccurrences(of: "/", with: "__")
+    }
+
+    /// The file name the sample is imported under: its mapping in
+    /// `formatSampleImportNames`, or its own name.
+    static func formatSampleImportName(_ name: String) -> String {
+        formatSampleImportNames[name] ?? (name as NSString).lastPathComponent
+    }
+
+    /// Whether the sample's golden depends on the macOS version (see
+    /// `macOSDependentFormatSampleFolders`).
+    static func isMacOSDependentFormatSample(_ name: String) -> Bool {
+        let folder = pathInsideFormatSamples(name).split(separator: "/").first.map(String.init) ?? ""
+        return macOSDependentFormatSampleFolders.contains(folder)
+    }
+
     /// TestData's recorded books with their files: every one of
     /// `testDataBookNames`, and those of `optionalTestDataBookNames` that
     /// this checkout holds.

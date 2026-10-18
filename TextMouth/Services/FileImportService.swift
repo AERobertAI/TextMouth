@@ -28,6 +28,10 @@ enum FileImportError: LocalizedError {
     /// would add a silent, empty book. An import refuses it
     /// (`FileImportService.readableContent(of:run:refusingBlankText:)`).
     case noTextToRead
+    /// An .xml file whose root element is neither a DTBook's nor Word 2003
+    /// XML's: XML is a container for countless things, and TextMouth reads
+    /// only those two kinds (`XMLDocumentSniffer`, FMT04 and FMT13).
+    case unsupportedXML
 
     var errorDescription: String? {
         switch self {
@@ -40,6 +44,8 @@ enum FileImportError: LocalizedError {
         case .archiveLinksOutside: return "The archive holds a link to a file outside it, which is never extracted."
         case .archivePathOutside: return "The archive holds a file whose path leads outside it, which is never extracted."
         case .noTextToRead: return "This file has no text to read."
+        case .unsupportedXML:
+            return "This XML file is neither a DTBook book nor a Word 2003 XML document, the kinds of XML file TextMouth reads."
         }
     }
 }
@@ -74,11 +80,12 @@ struct ImportedBook {
     var report = ExtractionReport()
     /// Whether the book was copied from a folder of files, not from one
     /// file: a DAISY book kept as loose files (its folder, or its OPF or
-    /// ncc.html inside that folder, TODO I02), or a folder of audio tracks
-    /// (FR17, Part B). Such a folder holds files the import did not copy (a
-    /// cover, lyrics, other books' files, a Bonus folder), so it is never
-    /// deleted or offered for deletion. `deleteOriginalFile(at:)` refuses a
-    /// folder too, whatever its caller decided.
+    /// ncc.html inside that folder, TODO I02), a folder of audio tracks
+    /// (FR17, Part B), or an RTFD, which is a folder too. A folder may hold
+    /// files the import did not copy (a cover, lyrics, other books' files, a
+    /// Bonus folder), so it is never deleted or offered for deletion.
+    /// `deleteOriginalFile(at:)` refuses a folder too, whatever its caller
+    /// decided.
     var isFromFolder = false
 
     /// Whether the original file must stay exactly where it is: an import
@@ -92,6 +99,18 @@ struct ImportedBook {
     /// files, some of which may belong to other books or to nothing the
     /// import copied, so it is never deleted (TODO I02, FR17).
     var mayDeleteOriginal: Bool { !keepsOriginal && !isFromFolder }
+
+    /// What the reader is told when "After Importing a Book" would have
+    /// deleted this book's original, or asked about it, but cannot, because
+    /// the original is an RTFD: a folder, which an import never deletes. It
+    /// is the words of every kept original, then why. Nil for any other
+    /// import, whose original is deleted, offered, or kept without a word
+    /// (a DAISY folder or a folder of tracks is kept silently, as it
+    /// always was).
+    var rtfdOriginalKeptNotice: String? {
+        guard isFromFolder, book.format == .rtfd else { return nil }
+        return "The original file was kept: it is a folder, and an import never deletes a folder."
+    }
 
     /// The warning an import that left chapters or pages out presents once:
     /// what is missing, then that the original was kept. Nil for a complete
@@ -123,8 +142,8 @@ struct ImportedFileMetadata {
     /// Markdown, or HTML file keeps no title or author it reads.
     static func readsFile(of format: BookFormat) -> Bool {
         switch format {
-        case .epub, .docx, .pdf, .daisy, .audio: return true
-        case .txt, .markdown, .html: return false
+        case .epub, .docx, .rtf, .rtfd, .doc, .odt, .wordml, .pdf, .daisy, .audio: return true
+        case .txt, .markdown, .html, .webarchive, .ssml: return false
         }
     }
 
@@ -139,8 +158,17 @@ struct ImportedFileMetadata {
 
     /// Reads the metadata `format` keeps inside the file at `url`, starting
     /// from `fallbackTitle`, or the file's name when that is nil, and an
-    /// unknown author.
-    static func read(from url: URL, format: BookFormat, fallbackTitle: String? = nil) -> ImportedFileMetadata {
+    /// unknown author. A textutil format's title and author are read by
+    /// converting the document, which costs a run of textutil: an import
+    /// sets `readingTextutilNames` false, since the conversion that reads
+    /// its text names them too (`MarkdownCacheService.GeneratedCache`), and
+    /// the launch refresh leaves it true.
+    static func read(
+        from url: URL,
+        format: BookFormat,
+        fallbackTitle: String? = nil,
+        readingTextutilNames: Bool = true
+    ) -> ImportedFileMetadata {
         var metadata = ImportedFileMetadata(title: fallbackTitle ?? url.deletingPathExtension().lastPathComponent)
         /// Adopts the title and author a format's metadata names, keeping
         /// the defaults for any it leaves empty.
@@ -160,6 +188,14 @@ struct ImportedFileMetadata {
             if let core = try? DOCXParser.readMetadata(from: url) {
                 adopt(title: core.title, author: core.author)
             }
+        case .rtf, .rtfd, .doc, .odt, .wordml:
+            // Title and author from the head of textutil's HTML. Reading
+            // metadata never fails an import, so a refusal (a password, a
+            // damaged file) leaves the defaults and the import's own
+            // reading of the text fails with its sentence.
+            if readingTextutilNames, let named = try? TextutilDocumentReader.readMetadata(from: url, bookFormat: format) {
+                adopt(title: named.title, author: named.author)
+            }
         case .pdf:
             // Title and author from the document's attributes.
             if let attributes = PDFTextParser.readMetadata(from: url) {
@@ -176,7 +212,7 @@ struct ImportedFileMetadata {
             if !tags.album.isEmpty { metadata.audioAlbum = tags.album }
             if !tags.genre.isEmpty { metadata.audioGenre = tags.genre }
             if !tags.year.isEmpty { metadata.audioYear = tags.year }
-        case .txt, .markdown, .html:
+        case .txt, .markdown, .html, .webarchive, .ssml:
             break
         }
         return metadata
@@ -559,9 +595,12 @@ enum FileImportService {
     }
 
     /// Checks the content `info` names inside `packageURL`: a safe file name
-    /// that exists, in the format `info` records, and, for a file, with the
-    /// checksum it records (`content(at:hasChecksum:)`). Only an audio
-    /// book's content may be a folder.
+    /// that exists, in the format `info` records, and with the checksum it
+    /// records (`content(at:of:hasChecksum:)`). The only content that may be
+    /// a folder is an audio book's folder of tracks, which has no checksum
+    /// of its own to check, and an RTFD book's package, which is a folder
+    /// checked as a file is: its format and its folder checksum
+    /// (`contentChecksum(of:format:)`) must be the record's.
     static func inspectContent(
         of packageURL: URL,
         describedBy info: BookInfo
@@ -579,7 +618,9 @@ enum FileImportService {
 
         var contentIsDirectory: ObjCBool = false
         FileManager.default.fileExists(atPath: contentURL.path, isDirectory: &contentIsDirectory)
-        if contentIsDirectory.boolValue {
+        // A folder is a folder of tracks unless it is an RTFD, a document
+        // that happens to be a folder: that is checked below like a file.
+        if contentIsDirectory.boolValue && !isRTFDFolder(contentURL) {
             guard info.metadata.format.isAudio else {
                 throw TMBPackageImportError.invalidPackage("only audiobook content may be a directory")
             }
@@ -602,7 +643,7 @@ enum FileImportService {
     /// checksum (`DAISYPackageInventory.contentHash()`), which the record of
     /// a loose DAISY book's import holds (TODO I02).
     private static func content(at contentURL: URL, of format: BookFormat, hasChecksum recorded: String) throws -> Bool {
-        if try md5Hash(of: contentURL) == recorded {
+        if try contentChecksum(of: contentURL, format: format) == recorded {
             return true
         }
         guard let package = try? daisyPackage(of: contentURL, format: format) else { return false }
@@ -816,10 +857,14 @@ enum FileImportService {
             try run.begin(.readingSource)
             let package = try daisyPackage(of: sourceURL, format: format)
             let hash = try checksum ?? importHash(of: sourceURL, package: package)
+            // A textutil format is listed by its file's name until its text
+            // is read: that one conversion names its title and author
+            // (`publishReadableBook`), so none is run here.
             let metadata = ImportedFileMetadata.read(
                 from: package?.entryURL ?? sourceURL,
                 format: format,
-                fallbackTitle: package?.untitledName
+                fallbackTitle: package?.untitledName,
+                readingTextutilNames: false
             )
             let bookID = UUID()
             let dateAdded = Date()
@@ -835,7 +880,7 @@ enum FileImportService {
             defer { staging.discard() }
 
             try run.begin(.copying, in: staging.directory)
-            let stagedFile = try stageContent(of: sourceURL, package: package, in: staging.directory)
+            let stagedFile = try stageContent(of: sourceURL, format: format, package: package, in: staging.directory)
 
             let staged = Book(
                 id: bookID,
@@ -869,8 +914,12 @@ enum FileImportService {
                 // a package keeps the record it carries.
                 handEdits: .noneSinceImport
             )
-            var imported = try publishReadableBook(staged, from: staging, run: &run, refusingBlankText: true)
-            imported.isFromFolder = package != nil
+            var imported = try publishReadableBook(
+                staged, from: staging, run: &run, refusingBlankText: true, adoptingDocumentNames: true
+            )
+            // A DAISY package is copied file by file from its folder; an RTFD
+            // is a folder, whole, which no import deletes.
+            imported.isFromFolder = package != nil || isRTFDFolder(sourceURL)
             return imported
         }
     }
@@ -891,7 +940,55 @@ enum FileImportService {
     /// The checksum a book imported from `source` is known by, when
     /// `package` is the DAISY package `source` is, or nil when it is none.
     private static func importHash(of source: URL, package: DAISYPackageInventory?) throws -> String {
-        try package?.contentHash() ?? md5Hash(of: source)
+        try package?.contentHash() ?? contentChecksum(of: source, format: BookFormat.detect(from: source))
+    }
+
+    /// The checksum of a book's own file, `url`, a book of `format`: the MD5
+    /// of its bytes, except for an RTFD, which is a folder, not a file,
+    /// whose checksum is that of the regular files anywhere inside it
+    /// (`folderHash(of:in:)`). A plain file named .rtfd is hashed as a file.
+    /// Internal so a book's fingerprint digests its RTFD with the very same
+    /// walk the import used (`FingerprintHasher.md5`), and a package holding
+    /// an RTFD is checked by it (`inspectContent`, `reconstructedBook`).
+    static func contentChecksum(of url: URL, format: BookFormat?) throws -> String {
+        guard format == .rtfd, isFolder(url) else { return try md5Hash(of: url) }
+        return try folderHash(of: regularFilePaths(in: url), in: url)
+    }
+
+    /// Whether the item at `url` is an RTFD: a folder named .rtfd, the one
+    /// kind of folder, besides a folder of audio tracks, that a book's
+    /// content can be. A plain file with that name is not (it is read and
+    /// measured as a file), and no other folder is.
+    static func isRTFDFolder(_ url: URL) -> Bool {
+        url.pathExtension.lowercased() == "rtfd" && isFolder(url)
+    }
+
+    /// Whether the item at `url` is a folder (a package such as an .rtfd
+    /// included).
+    private static func isFolder(_ url: URL) -> Bool {
+        (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true
+    }
+
+    /// The paths, inside `folder`, of the regular files anywhere in it, by
+    /// their relative paths. A symbolic link is never followed (the
+    /// enumerator reports it as a link, which is not a regular file), and a
+    /// hidden file or folder (a Finder's .DS_Store) is passed over, so
+    /// browsing a folder in Finder never changes its checksum. Internal so
+    /// an RTFD's stamp measures exactly the files its checksum reads
+    /// (`FileStamp`).
+    static func regularFilePaths(in folder: URL) -> [String] {
+        guard let walk = FileManager.default.enumerator(atPath: folder.path) else { return [] }
+        var paths: [String] = []
+        while let path = walk.nextObject() as? String {
+            if (path as NSString).lastPathComponent.hasPrefix(".") {
+                walk.skipDescendants()
+                continue
+            }
+            if (walk.fileAttributes?[.type] as? FileAttributeType) == .typeRegular {
+                paths.append(path)
+            }
+        }
+        return paths
     }
 
     /// The DAISY package `source`, a book of `format`, is: for a DAISY book
@@ -904,22 +1001,52 @@ enum FileImportService {
         return try DAISYPackageInventory.ofSource(source)
     }
 
-    /// Copies what an import of `source` reads into the staged package
-    /// `directory`, and returns the book's own file there: every file of
-    /// `package`, laid out as in its folder, when `source` is a DAISY book
-    /// kept as loose files; otherwise the source file itself.
+    /// Copies what an import of `source`, a book of `format`, reads into the
+    /// staged package `directory`, and returns the book's own file there:
+    /// every file of `package`, laid out as in its folder, when `source` is
+    /// a DAISY book kept as loose files; otherwise the source file itself.
+    ///
+    /// A text document that is a symbolic link is copied as what it points
+    /// to, a real file or folder named as the link was: a link copied as a
+    /// link would point out of the package, to a place that may change or
+    /// vanish. An audio file keeps today's handling (team audiofmt owns it).
     private static func stageContent(
         of source: URL,
+        format: BookFormat,
         package: DAISYPackageInventory?,
         in directory: URL
     ) throws -> URL {
         guard let package else {
             let stagedFile = directory.appendingPathComponent(source.lastPathComponent)
-            try FileManager.default.copyItem(at: source, to: stagedFile)
+            let isText = format != .audio
+            try FileManager.default.copyItem(at: isText ? source.resolvingSymlinksInPath() : source, to: stagedFile)
+            if isText { try removeSymbolicLinks(in: stagedFile) }
             return stagedFile
         }
         logShortfalls(of: package)
         return try package.copyFiles(into: directory)
+    }
+
+    /// Removes every symbolic link anywhere inside the folder `item` (an
+    /// RTFD's staged copy), hidden ones included; a file or an empty folder
+    /// is left as it is. A copy keeps the links of its original, and an
+    /// attachment's link may point anywhere on the disk: left in the
+    /// package, it would let the book read, and a later copy carry, a file
+    /// outside it. Nothing is followed, only removed.
+    private static func removeSymbolicLinks(in item: URL) throws {
+        let walk = FileManager.default.enumerator(
+            at: item,
+            includingPropertiesForKeys: [.isSymbolicLinkKey],
+            options: []
+        )
+        // Collect before removing, so the walk is not changed under itself.
+        var links: [URL] = []
+        while let entry = walk?.nextObject() as? URL {
+            if try entry.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink == true {
+                links.append(entry)
+            }
+        }
+        for link in links { try FileManager.default.removeItem(at: link) }
     }
 
     /// Records as import events, in the console and the debug log, what a
@@ -949,8 +1076,10 @@ enum FileImportService {
 
     /// Why `source` cannot be imported when no format reads it: a folder
     /// that is neither a DAISY book nor a folder of audio tracks is told so,
-    /// with what it holds, as a ZIP without a book is (FR17); any other
-    /// item's extension is not supported. A TextMouth package is not a
+    /// with what it holds, as a ZIP without a book is (FR17); an .xml file
+    /// that is no DTBook is told so (`FileImportError.unsupportedXML`), unless
+    /// it is empty or blank, when it is told it has no text; any
+    /// other item's extension is not supported. A TextMouth package is not a
     /// folder of a book here: it is imported as a package, not as a file.
     private static func unsupportedSourceError(for source: URL) -> Error {
         let ext = source.pathExtension.lowercased()
@@ -959,6 +1088,15 @@ enum FileImportService {
            FileManager.default.fileExists(atPath: source.path, isDirectory: &isDirectory),
            isDirectory.boolValue {
             return FolderWithoutBookError(folderName: source.lastPathComponent, files: filesHeld(by: source))
+        }
+        if ext == "xml" {
+            // An .xml file with no bytes, or only white space, has no text to
+            // read: say so, rather than that it is some other kind of XML.
+            if XMLDocumentSniffer.holdsNoText(fileAt: source) {
+                return FileImportError.noTextToRead
+            }
+            // An .xml file no format claimed is some other kind of XML.
+            return FileImportError.unsupportedXML
         }
         return FileImportError.unsupportedFormat(ext)
     }
@@ -1192,7 +1330,10 @@ enum FileImportService {
     /// converted to AAC first, so no book is read or played from Ogg
     /// (`convertOggAudio(of:in:run:)`, B06). `refusingBlankText` is passed on
     /// to `readableContent(of:run:refusingBlankText:)`: only the import of a
-    /// file chosen by the user sets it, to refuse a text file with no text.
+    /// file chosen by the user sets it, to refuse a text file with no text, and
+    /// so does `adoptingDocumentNames`, which gives the book the title and
+    /// author a textutil document names (`MarkdownCacheService`): the import
+    /// of a file lists it by its file name until its text is read.
     static func publishReadableBook(
         _ staged: Book,
         from staging: ImportStaging,
@@ -1200,11 +1341,14 @@ enum FileImportService {
         feedLink: FeedBookLink? = nil,
         replacing replaced: BookState? = nil,
         refusingBlankText: Bool = false,
+        adoptingDocumentNames: Bool = false,
         publish: (ImportStaging) throws -> Void = { try $0.publish() }
     ) throws -> ImportedBook {
         var staged = staged
         try convertOggAudio(of: &staged, in: staging, run: &run)
-        let content = try readableContent(of: &staged, run: &run, refusingBlankText: refusingBlankText)
+        let content = try readableContent(
+            of: &staged, run: &run, refusingBlankText: refusingBlankText, adoptingDocumentNames: adoptingDocumentNames
+        )
         let book = staging.published(staged)
 
         try run.begin(.savingRecord, in: staging.directory)
@@ -1224,10 +1368,27 @@ enum FileImportService {
         var report = ExtractionReport()
     }
 
-    /// The plain formats whose import is refused when the file holds no text
-    /// (`FileImportError.noTextToRead`). EPUB, Word, DAISY, and PDF have
-    /// their own refusals or none.
-    private static let plainTextFormats: Set<BookFormat> = [.txt, .markdown, .html]
+    /// The formats whose import is refused when the file holds no text
+    /// (`FileImportError.noTextToRead`): the plain ones, and the five that
+    /// textutil reads. A rich text, Word, or OpenDocument file whose text is
+    /// only white space (a few empty paragraphs) converts without error, so
+    /// without this it would be added as a silent book. EPUB, DOCX, DAISY,
+    /// and PDF have their own refusals or none.
+    private static let formatsRefusedWhenBlank: Set<BookFormat> = [
+        .txt, .markdown, .html, .webarchive, .ssml, .rtf, .rtfd, .doc, .odt, .wordml,
+    ]
+
+    /// Whether an import of `book` is refused when the book holds no text:
+    /// a book in one of `formatsRefusedWhenBlank`, or a DTBook kept as a
+    /// loose .xml file. A DAISY package or archive is not refused: a book
+    /// whose audio carries no text is a real book, and it imports as it
+    /// always has. A DAISY book's own file is an .xml file only when it is
+    /// a DTBook on its own (a package's is its OPF or navigation file, an
+    /// archive's the archive).
+    private static func refusesBlankText(_ book: Book) -> Bool {
+        if formatsRefusedWhenBlank.contains(book.format) { return true }
+        return book.format == .daisy && book.bookFileURL.pathExtension.lowercased() == "xml"
+    }
 
     /// Reads `book`'s content as the reader will, so that no import publishes
     /// a book that cannot be opened. A text book's content.md is written into
@@ -1236,17 +1397,23 @@ enum FileImportService {
     /// playable chapter fails. `book` receives the cache version and the
     /// index's counts.
     ///
-    /// With `refusingBlankText` set, a plain text, Markdown, or HTML book
-    /// (`plainTextFormats`) none of whose chapters holds a character other
-    /// than white space fails with `FileImportError.noTextToRead`, so a blank
+    /// With `refusingBlankText` set, a plain text, Markdown, HTML, or
+    /// textutil book (`formatsRefusedWhenBlank`), or a DTBook on its own
+    /// (`refusesBlankText(_:)`), none of whose chapters holds a character
+    /// other than white space fails with `FileImportError.noTextToRead`, so a blank
     /// file is not imported as a silent, empty book. The check is here, not
     /// in `MarkdownCacheService`, because every rebuild of an existing book's
     /// text goes through that, and a book already in the library must never
     /// become unreadable.
+    ///
+    /// With `adoptingDocumentNames`, `book` also takes the title and author
+    /// the document names, read by the one conversion that reads its text
+    /// (`MarkdownCacheService.generateReportedCacheAnalyzeAndStamp`).
     static func readableContent(
         of book: inout Book,
         run: inout ImportRun,
-        refusingBlankText: Bool = false
+        refusingBlankText: Bool = false,
+        adoptingDocumentNames: Bool = false
     ) throws -> ReadableContent {
         if book.format.isAudio {
             try run.begin(.readingAudio, in: book.tmbDirectory)
@@ -1262,12 +1429,14 @@ enum FileImportService {
         }
 
         try run.begin(.readingText, in: book.tmbDirectory)
-        guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &book) else {
+        guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(
+            for: &book, adoptingDocumentNames: adoptingDocumentNames
+        ) else {
             // Only a book without a package gets no cache, and every
             // import gives its book one before reading it.
             throw FileImportError.importFailed("The book has no package to hold its text.")
         }
-        if refusingBlankText, plainTextFormats.contains(book.format),
+        if refusingBlankText, refusesBlankText(book),
            !generated.content.chapters.contains(where: { chapter in chapter.text.contains { !$0.isWhitespace } }) {
             throw FileImportError.noTextToRead
         }
@@ -1454,6 +1623,10 @@ enum FileImportService {
     ///   package file instead, as does a TextMouth package holding a DAISY
     ///   book, since neither folder names one book.
     /// - An archive whose own top level holds a DAISY book is that book.
+    /// - A folder that is a Rich Text with Attachments document (an .rtfd,
+    ///   a package the Finder shows as one file) is one book, listed as
+    ///   that folder. Its files (the TXT.rtf and the attachments) are never
+    ///   books or files passed over.
     /// - A DAISY ZIP inside is one book. Any other archive inside is
     ///   unpacked through `nested`, within the batch's budget, and searched
     ///   the same way; one that cannot be unpacked, or lies deeper than the
@@ -1481,6 +1654,13 @@ enum FileImportService {
             if (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true {
                 guard url.lastPathComponent != "__MACOSX" else {
                     entries.skipDescendants()
+                    continue
+                }
+                // An RTFD is a folder that stands for one document: it is the
+                // book, never its TXT.rtf and its attachments.
+                if BookFormat.detect(from: url) == .rtfd {
+                    entries.skipDescendants()
+                    found.books.append(url)
                     continue
                 }
                 let packageFiles = DAISYParser.packageEntryPoints(in: url)
@@ -1624,6 +1804,17 @@ enum FileImportService {
                         )
                     )
                 }
+            } catch is ImportCancelled {
+                // The reader cancelled while this book converted (a textutil
+                // child was killed): the batch stops here as it does between
+                // books, and this book, staged and removed, is no failure.
+                return ZipImportResult(
+                    books: books,
+                    failures: failures,
+                    incompleteBooks: incompleteBooks,
+                    cancellation: .afterBooks(completed: index, total: total),
+                    skippedDuplicates: skippedDuplicates
+                )
             } catch {
                 // The summary names the file, so the message is the reason
                 // alone: the step that failed and why.
@@ -1784,6 +1975,10 @@ enum FileImportService {
 
     /// Compute MD5 hash of a file (streaming for large files)
     static func md5Hash(of url: URL) throws -> String {
+        // FileHandle's legacy read raises an Objective-C exception, which
+        // Swift cannot catch, on a folder (an RTFD is one): refuse it first,
+        // so no caller can crash on a book whose file is a folder.
+        guard !isFolder(url) else { throw ContentFingerprintError.notARegularFile }
         let handle = try FileHandle(forReadingFrom: url)
         defer { handle.closeFile() }
 
@@ -2048,11 +2243,46 @@ enum FileImportService {
         if let md = UTType("net.daringfireball.markdown") {
             types.append(md)
         }
-        // Office Open XML Word documents. Legacy binary .doc files are not
-        // ZIP-based DOCX documents and are not supported by DOCXParser.
+        // Office Open XML Word documents. Legacy binary .doc and .dot files
+        // are not ZIP-based DOCX documents: they go to textutil (see below),
+        // never to DOCXParser.
         if let docx = UTType("org.openxmlformats.wordprocessingml.document") {
             types.append(docx)
         }
+        // Word templates and macro-enabled documents are the same package,
+        // read by the same reader (macro projects are never opened).
+        for identifier in [
+            "org.openxmlformats.wordprocessingml.template",
+            "org.openxmlformats.wordprocessingml.document.macroenabled",
+            "org.openxmlformats.wordprocessingml.template.macroenabled"
+        ] {
+            if let type = UTType(identifier) {
+                types.append(type)
+            }
+        }
+        // Safari web archives, read as their main page (FMT03), and SSML
+        // files, read as text (FMT07). macOS declares no SSML type; the app
+        // imports one in Info.plist. `importedAs` returns that declared type
+        // whether or not the system has registered it yet, so the panel
+        // always offers .ssml.
+        types.append(.webArchive)
+        types.append(UTType(importedAs: "org.w3.ssml", conformingTo: .xml))
+        // Rich text, read by textutil (FMT13).
+        types.append(.rtf)
+        // Rich text with attachments: a package, which the panel shows as a
+        // single file.
+        types.append(.rtfd)
+        // Word 97-2003 documents and templates, read by textutil.
+        types.append(contentsOf: ["com.microsoft.word.doc", "com.microsoft.word.dot"].compactMap { UTType($0) })
+        // OpenDocument text documents and templates, read by textutil.
+        types.append(contentsOf: [
+            "org.oasis-open.opendocument.text",
+            "org.oasis-open.opendocument.text-template",
+        ].compactMap { UTType($0) })
+        // XML files: Word 2003 XML (WordML) documents and DTBook files,
+        // which the import tells apart by their root element
+        // (`XMLDocumentSniffer`); any other XML file is refused by name.
+        types.append(.xml)
         // PDF documents
         types.append(.pdf)
         // DAISY books (OPF files and .daisy extension)

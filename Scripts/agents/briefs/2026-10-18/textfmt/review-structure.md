@@ -1,0 +1,21 @@
+# textfmt-rvstructure: field codes, WordML tables, and a linear bullet pass (review items 2, 7, 12)
+
+Slug `textfmt-rvstructure`, branch `textfmt/rvstructure` from `team/textfmt`. Read `Scripts/agents/briefs/2026-10-18/textfmt/shared.md` first, then `TextMouth/Parsers/TextutilHTMLStructure.swift` and `TextMouth/Parsers/TextutilDocumentReader.swift` whole.
+
+## 1. Field codes are spoken (item 2, medium)
+
+textutil writes a Word document's field instructions as text. `doc/libreoffice-tdf81705_outlineLevel.doc` reads `TOC \o "1-3" \h \z \u HYPERLINK \l "_Toc68096040" D PAGEREF _Toc68096040 \h 1`, where "D" (and the page number "1") are the visible results. The listener must never hear a field instruction, and a field's visible result must stay. Look at textutil's HTML for that sample (run `/usr/bin/textutil -convert html -noload -nostore -format doc -output <scratch>/out.html -- <a copy>` once from the shell to see the spans) and remove, in a new step of `TextutilHTMLStructure.restore(in:)`, each instruction: a field keyword (TOC, HYPERLINK, PAGEREF, REF, PAGE, NUMPAGES, SEQ, TC, XE, INDEX, DATE, TIME, FILENAME, MERGEFIELD, INCLUDEPICTURE, INCLUDETEXT, NOTEREF, STYLEREF, SYMBOL, FORMTEXT, FORMCHECKBOX, EQ, IF, QUOTE, AUTHOR, TITLE, SUBJECT, KEYWORDS, COMMENTS, DOCPROPERTY, NUMWORDS, NUMCHARS, LISTNUM, ADVANCE) at a word boundary, with its switches (`\o`, `\h`, `\* MERGEFORMAT`, and their arguments) and its quoted arguments ("1-3", "_Toc68096040"), and the bare bookmark names they take (`_Toc…`, `_Ref…`). Base the rule on what textutil writes (the spans and Apple-converted-space around them), and keep it narrow: ordinary prose such as "Turn to PAGE 5" or "the INDEX finger" must stay (test both). A paragraph left empty disappears. Then the outlineLevel sample reads "Contents", then "D 1" or "D" (pin what remains, the visible result), never "TOC" or "PAGEREF".
+
+## 2. WordML table cells become headings (item 7)
+
+textutil's WordML reader flattens a table into plain paragraphs, so the WordML sample's bold header cells "Boat" and "Departs" become level-3 headings (pinned today in `TextutilImportTests.testWordMLImportsUnderAnXMLName`). Table cells are never headings. Read the WordML file itself (it is XML: `w:tbl` > `w:tr` > `w:tc` > `w:p` > `w:r` > `w:t`; an `XMLParser` with `shouldResolveExternalEntities = false`, by local names, its size through `DocumentByteLimit`) for each table's rows of cell texts, in a new small type in its own file. Then, in the HTML, find the run of consecutive paragraphs whose texts are those cells' texts in order, and put them back as a `<table>` of those rows and cells, so they read as the other formats' tables do and are never heading candidates. A run not found leaves the HTML as it was. Hook it in `TextutilDocumentReader` only for `.wordml` (one call; another worker changes that file's metadata path at the same time, so touch nothing else in it). Update the pinned headings in that one test to "1: Harbour Notes", "2: Morning Tides", "2: Timetable" (your lead authorizes exactly that edit of a team test).
+
+## 3. The bullet pass is quadratic (item 12)
+
+`convertBulletParagraphs` removes each bullet paragraph with `remove()` (SwiftSoup's `removeChild` is linear in the parent's children), so tens of thousands of list lines take quadratic time, in TextMouth's own process with no watchdog. Rebuild each parent's children in one pass (collect the new child list, then set it once), and the same for `listItem(from:)` if it shares the cost. Add a test that builds a document of 30,000 tab-bullet-tab paragraphs (and 1,000 body paragraphs), restores it, checks the list has 30,000 items, and asserts it finishes within a generous bound (measure first: give 4 times the time you measure, and say the measured time in the test's comment and your report).
+
+## Goldens
+
+`TextPipelineFixtures.formatSamplesHeldBack` holds `wordml/headings.wordml` and `doc/libreoffice-tdf81705_outlineLevel.doc` back. Once 1 and 2 work, remove both entries and record their goldens with `Scripts/test/update-goldens.sh` (read its `-h`), check them by eye, and commit them with the fix.
+
+Run `TextutilHTMLStructureTests`, `TextutilImportTests`, `DocumentGoldenTests`, and the converter's tests you ran before. Every new test fails without its fix.

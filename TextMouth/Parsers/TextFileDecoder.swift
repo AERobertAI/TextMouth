@@ -337,21 +337,38 @@ enum TextFileDecoder {
         if unicodeEncodings.contains(encoding) {
             return nil
         }
-        if windows1252Equivalents.contains(encoding) {
-            return DecodedText(text: windows1252Text(data), encoding: .windowsCP1252, basis: .declaration(label: label))
-        }
         // Foundation refuses bytes that are not valid in the encoding rather
         // than replacing them, so a result holds every byte.
-        guard let text = String(data: data, encoding: encoding) else {
+        guard let text = decodedText(data, in: encoding) else {
             throw TextEncodingError.invalidForDeclaredEncoding(file: fileName, label: label)
         }
-        return DecodedText(text: text, encoding: encoding, basis: .declaration(label: label))
+        // Windows-1252 and its equivalents all report as Windows-1252, the
+        // encoding the text was truly read in.
+        let readEncoding = windows1252Equivalents.contains(encoding) ? String.Encoding.windowsCP1252 : encoding
+        return DecodedText(text: text, encoding: readEncoding, basis: .declaration(label: label))
+    }
+
+    /// `data` read in `encoding` by the one rule every reader of a labelled
+    /// encoding shares: ISO Latin 1, ASCII, and Windows-1252 are all read as
+    /// Windows-1252, as browsers read them (see `windows1252Equivalents`), so
+    /// the bytes 0x80 through 0x9F are curly quotation marks, dashes, and the
+    /// euro sign, never invisible control characters. Any other encoding is
+    /// read by Foundation. Internal because the web archive reader
+    /// (`WebArchiveReader`) reads its page the same way.
+    /// - Returns: nil when the bytes are not valid in `encoding`.
+    static func decodedText(_ data: Data, in encoding: String.Encoding) -> String? {
+        if windows1252Equivalents.contains(encoding) {
+            return windows1252Text(data)
+        }
+        return String(data: data, encoding: encoding)
     }
 
     /// The encoding a declaration's label names, by the IANA names and
     /// aliases Core Foundation knows ("latin1", "cp1252", "Shift_JIS"), in
-    /// any letter case. Nil for a label it does not know.
-    private static func encoding(forLabel label: String) -> String.Encoding? {
+    /// any letter case. Nil for a label it does not know. Internal because
+    /// the web archive reader (`WebArchiveReader`) names its page's
+    /// encoding the same way.
+    static func encoding(forLabel label: String) -> String.Encoding? {
         let encoding = CFStringConvertIANACharSetNameToEncoding(label as CFString)
         guard encoding != kCFStringEncodingInvalidId else { return nil }
         return String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(encoding))
@@ -394,8 +411,10 @@ enum TextFileDecoder {
 
     // MARK: Finishing the Text
 
-    /// `text` without the U+FEFF characters at its start.
-    private static func droppingLeadingByteOrderMarks(_ text: String) -> String {
+    /// `text` without the U+FEFF characters at its start. Internal because
+    /// the web archive reader (`WebArchiveReader`) finishes its text the
+    /// same way.
+    static func droppingLeadingByteOrderMarks(_ text: String) -> String {
         guard text.unicodeScalars.first == "\u{FEFF}" else { return text }
         return String(text.unicodeScalars.drop(while: { $0 == "\u{FEFF}" }))
     }

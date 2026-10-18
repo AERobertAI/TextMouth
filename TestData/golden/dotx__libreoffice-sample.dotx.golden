@@ -1,0 +1,11 @@
+# TextMouth document golden, format 1
+file: dotx__libreoffice-sample.dotx
+format: docx
+title: libreoffice-sample
+author: Vasily Melenchuk
+chapters: 1
+words: 7
+text length: 36
+text checksum: ef6eb02bbb57033d
+first 300: Sample file which will be a template
+last 300: Sample file which will be a template

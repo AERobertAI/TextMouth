@@ -1,0 +1,15 @@
+# TextMouth document golden, format 1
+file: doc__headings.doc
+macOS: 26.3
+format: doc
+title: headings
+author: A. Sample
+chapters: 1
+words: 73
+text length: 438
+text checksum: 5b18302518fb7f3b
+first 300: Harbour Notes\n\nThe ferry leaves at seven. Café tables fill early, and the señor at the counter pours coffee without asking.\n\nMorning Tides\n\nGulls argue over crusts; the crane operators wave, and everyone says “good morning” in three languages.\n\nBread from the bakery on Rue Ménard\n\nSmoked fish, naïve
+last 300: \n\nGulls argue over crusts; the crane operators wave, and everyone says “good morning” in three languages.\n\nBread from the bakery on Rue Ménard\n\nSmoked fish, naïve prices\n\nA newspaper already a day old\n\nTimetable\n\nBoat\n\nDeparts\n\nFerry\n\n07:00\n\nLaunch\n\n09:30\n\nPrices — in euros — are posted by the quay.
+heading: 1 | Harbour Notes
+heading: 2 | Morning Tides
+heading: 2 | Timetable

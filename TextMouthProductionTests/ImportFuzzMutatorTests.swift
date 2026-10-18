@@ -296,6 +296,45 @@ final class ImportFuzzMutatorTests: XCTestCase {
         }
     }
 
+    /// The Word templates and macro documents and the OpenDocument files are
+    /// ZIP archives and get the ZIP damage, in any letter case.
+    func testWordAndOpenDocumentZipFormatsGetZipDamage() {
+        for name in ["a.dotx", "a.docm", "a.dotm", "a.odt", "a.ott", "A.ODT", "format-samples/dotx/a.dotx"] {
+            let applicable = ImportFuzzMutator.applicable(to: name)
+            XCTAssertTrue(applicable.contains(.zipTail), name)
+            XCTAssertTrue(applicable.contains(.zipHead), name)
+            XCTAssertFalse(applicable.contains(.insertNUL), name)
+            XCTAssertFalse(applicable.contains(.deepNesting), name)
+        }
+    }
+
+    /// RTF, SSML, and XML files are text and get the text damage but not the
+    /// ZIP damage or the nesting, which is for HTML.
+    func testRTFSSMLAndXMLGetTextDamage() {
+        for name in ["a.rtf", "a.ssml", "a.xml", "A.RTF", "format-samples/ssml/passage.ssml"] {
+            let applicable = ImportFuzzMutator.applicable(to: name)
+            for mutation in [ImportFuzzMutation.insertNUL, .invalidUTF8, .longLine] {
+                XCTAssertTrue(applicable.contains(mutation), "\(name) \(mutation)")
+            }
+            XCTAssertFalse(applicable.contains(.zipTail), name)
+            XCTAssertFalse(applicable.contains(.zipHead), name)
+            XCTAssertFalse(applicable.contains(.deepNesting), name)
+        }
+    }
+
+    /// A .doc, .dot, or .webarchive is binary: it gets the general damage
+    /// and neither the ZIP nor the text damage.
+    func testBinaryFormatsGetTheDefaultDamageOnly() {
+        for name in ["a.doc", "a.dot", "a.webarchive"] {
+            let applicable = ImportFuzzMutator.applicable(to: name)
+            for mutation in [ImportFuzzMutation.zipTail, .zipHead, .insertNUL, .invalidUTF8, .longLine, .deepNesting] {
+                XCTAssertFalse(applicable.contains(mutation), "\(name) \(mutation)")
+            }
+            XCTAssertTrue(applicable.contains(.truncate50), name)
+            XCTAssertTrue(applicable.contains(.flip8), name)
+        }
+    }
+
     // MARK: - Case Identity
 
     /// A case id is the document, the mutation, and the seed, in text that

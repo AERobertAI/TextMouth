@@ -108,10 +108,18 @@ enum ImportFuzzMutator {
 
     // MARK: Which Mutations Apply
 
-    /// The file extensions of documents that are ZIP archives.
-    private static let zipExtensions: Set<String> = ["epub", "docx", "zip"]
-    /// The file extensions of documents that are plain text of some kind.
-    private static let textExtensions: Set<String> = ["txt", "md", "markdown", "html", "htm", "xhtml"]
+    /// The file extensions of documents that are ZIP archives: the Word
+    /// templates and macro documents and the OpenDocument files are ZIPs too.
+    private static let zipExtensions: Set<String> = [
+        "epub", "docx", "zip", "dotx", "docm", "dotm", "odt", "ott",
+    ]
+    /// The file extensions of documents that are plain text of some kind:
+    /// RTF, SSML, and XML (a DTBook, or Word 2003 XML under an .xml name)
+    /// are damaged as text is. A .doc, .dot, or .webarchive is binary and
+    /// takes the general damage only.
+    private static let textExtensions: Set<String> = [
+        "txt", "md", "markdown", "html", "htm", "xhtml", "rtf", "ssml", "xml",
+    ]
     /// The file extensions of documents that are HTML.
     private static let htmlExtensions: Set<String> = ["html", "htm", "xhtml"]
 

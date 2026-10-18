@@ -20,7 +20,20 @@ enum BookFormat: String, Codable, CaseIterable {
     case txt
     case markdown
     case html
+    // A Safari web archive and an SSML file are read as text through the
+    // HTML path (FMT03, FMT07). Like every raw value here, these are written
+    // into the library index and never changed.
+    case webarchive
+    case ssml
     case docx
+    // The next five are read through Apple's textutil in a child process
+    // (FMT13). Their raw values are written into the library index, so they
+    // are never changed.
+    case rtf
+    case rtfd
+    case doc
+    case odt
+    case wordml
     case daisy
     case pdf
     case audio
@@ -31,7 +44,14 @@ enum BookFormat: String, Codable, CaseIterable {
         case .txt: return "Plain Text"
         case .markdown: return "Markdown"
         case .html: return "HTML"
+        case .webarchive: return "Web Archive"
+        case .ssml: return "SSML"
         case .docx: return "Word Document"
+        case .rtf: return "Rich Text"
+        case .rtfd: return "Rich Text with Attachments"
+        case .doc: return "Word 97-2003 Document"
+        case .odt: return "OpenDocument Text"
+        case .wordml: return "Word 2003 XML"
         case .daisy: return "DAISY"
         case .pdf: return "PDF"
         case .audio: return "Audio"
@@ -49,13 +69,31 @@ enum BookFormat: String, Codable, CaseIterable {
     /// import's playability check (`AudioMediaProbe`) refuses each Ogg file
     /// by name, saying it cannot be opened as audio, as for any file the Mac
     /// cannot play.
+    ///
+    /// A Word template (.dotx), a macro-enabled document (.docm), and a
+    /// macro-enabled template (.dotm) are the same Office Open XML package
+    /// as a .docx, only the main part's content type differs, so they share
+    /// the `.docx` case and its reader. That reader opens only the XML parts
+    /// it needs, so a macro project (word/vbaProject.bin) is never opened
+    /// and no macro can run.
     var fileExtensions: [String] {
         switch self {
         case .epub: return ["epub"]
         case .txt: return ["txt"]
         case .markdown: return ["md", "markdown"]
         case .html: return ["html", "htm", "xhtml"]
-        case .docx: return ["docx"]
+        case .webarchive: return ["webarchive"]
+        case .ssml: return ["ssml"]
+        case .docx: return ["docx", "dotx", "docm", "dotm"]
+        case .rtf: return ["rtf"]
+        case .rtfd: return ["rtfd"]
+        // A .dot is a .doc with its template bit set, read exactly as one.
+        case .doc: return ["doc", "dot"]
+        // A template (.ott) differs from a document only by its mimetype entry.
+        case .odt: return ["odt", "ott"]
+        // WordML is an .xml file, known by its root element through
+        // `XMLDocumentSniffer` (see `detect(from:)`), never by an extension.
+        case .wordml: return []
         case .daisy: return ["daisy", "opf"]
         case .pdf: return ["pdf"]
         case .audio:
@@ -79,6 +117,14 @@ enum BookFormat: String, Codable, CaseIterable {
             return .daisy
         }
         let ext = url.pathExtension.lowercased()
+        // A loose XML file is read by what its root element says it is
+        // (FMT04, FMT13), never by its extension alone: a DTBook is a
+        // DAISY book, and any other XML file is no book. A folder that
+        // happens to be named like an XML file is not a file, so it falls
+        // through to the folder check below.
+        if ext == "xml", let format = XMLDocumentSniffer.bookFormat(ofFileAt: url) {
+            return format
+        }
         for format in BookFormat.allCases {
             if format.fileExtensions.contains(ext) {
                 return format

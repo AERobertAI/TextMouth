@@ -19,6 +19,19 @@ struct ImportCancelled: Error, Equatable {}
 final class ImportCancellation: @unchecked Sendable {
     private let lock = NSLock()
     private var cancelled = false
+    /// What running work asked to be told when this is cancelled, so that
+    /// work stuck in a wait (a child process) is stopped at once rather
+    /// than at the next check. Removed as the work ends.
+    private var handlers: [UUID: @Sendable () -> Void] = [:]
+
+    /// The cancellation of the import queue's import running on this thread,
+    /// or nil outside one. The queue binds it around each import it runs
+    /// (`SerialImportQueue.enqueue`), and work an import does on its own
+    /// thread, such as a conversion by textutil, reads it before it hands
+    /// work to another thread, as `DocumentByteLimit.current` is read. A
+    /// conversion outside an import (the reader, startup maintenance) finds
+    /// nil and is never stopped by an import's Cancel.
+    @TaskLocal static var current: ImportCancellation? = nil
 
     /// Whether the imports sharing this cancellation are to stop.
     var isCancelled: Bool {
@@ -27,11 +40,35 @@ final class ImportCancellation: @unchecked Sendable {
         return cancelled
     }
 
-    /// Stops the imports sharing this cancellation at their next check.
+    /// Stops the imports sharing this cancellation at their next check, and
+    /// tells the work running under `whileRunning(_:then:)` to stop now.
     func cancel() {
         lock.lock()
         cancelled = true
+        let running = Array(handlers.values)
+        handlers.removeAll()
         lock.unlock()
+        // Outside the lock: a handler may take locks of its own.
+        for stop in running { stop() }
+    }
+
+    /// Runs `body` with `stop` registered to run, once, if this is
+    /// cancelled before `body` ends: at once when it already is. `stop` is
+    /// called on the cancelling thread and must not block; it is withdrawn
+    /// when `body` ends, however it ends.
+    func whileRunning<Value>(_ stop: @escaping @Sendable () -> Void, then body: () throws -> Value) rethrows -> Value {
+        let key = UUID()
+        lock.lock()
+        let alreadyCancelled = cancelled
+        if !alreadyCancelled { handlers[key] = stop }
+        lock.unlock()
+        if alreadyCancelled { stop() }
+        defer {
+            lock.lock()
+            handlers[key] = nil
+            lock.unlock()
+        }
+        return try body()
     }
 
     /// This cancellation as the check an import asks.

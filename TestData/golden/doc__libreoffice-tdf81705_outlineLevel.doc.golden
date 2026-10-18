@@ -1,0 +1,13 @@
+# TextMouth document golden, format 1
+file: doc__libreoffice-tdf81705_outlineLevel.doc
+macOS: 26.3
+format: doc
+title: libreoffice-tdf81705_outlineLevel
+author: user
+chapters: 1
+words: 7
+text length: 25
+text checksum: 658db01949d4d8ef
+first 300: A\n\nB\n\nC\n\nD\n\nContents\n\nD 1
+last 300: A\n\nB\n\nC\n\nD\n\nContents\n\nD 1
+heading: 1 | Contents
