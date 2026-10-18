@@ -588,6 +588,26 @@ final class AudioChannelDownmixTests: XCTestCase {
         XCTAssertEqual(names, ["film.ac3"])
     }
 
+    /// A step 1 that writes without end is stopped at its cap (four times
+    /// the stereo PCM's size and 16 MB, review item 4) and fails the
+    /// conversion, leaving nothing.
+    func testARunawayStepOneIsStoppedAtItsCap() async throws {
+        let source = try copy(Self.centre51, as: "film.ac3")
+        let info = try await inspected(source)
+        let bytes = (try FileManager.default.attributesOfItem(atPath: source.path)[.size] as? NSNumber)?.int64Value ?? 0
+        let cap = ImportAudioConverter.outputCap(
+            of: .downmix, duration: info.duration, target: ImportAudioConverter.target(for: info, bytes: bytes))
+        var runaway = tool(stalled: 30)
+        runaway.downmixCommand = { _, output, _ in
+            (URL(fileURLWithPath: "/bin/sh"), ["-c", "exec /usr/bin/yes >> \"$0\"", output.path])
+        }
+
+        let failed = try await failure(of: runaway)
+
+        XCTAssertEqual(failed, .killed(fileName: "film.ac3", reason: WatchedProcess.KillReason.wroteTooMuch(bytes: cap).words))
+        XCTAssertEqual(names, ["film.ac3"])
+    }
+
     /// A hung step 2 is killed and fails the conversion, and the stereo file
     /// step 1 wrote is removed.
     func testAKillInStepTwoRemovesTheIntermediate() async throws {

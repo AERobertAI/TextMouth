@@ -569,6 +569,57 @@ enum ImportAudioConverter {
         return frames * Int64(maximumChannels) * Int64(downmixBitDepth(for: target) / 8) + downmixReserveBytes
     }
 
+    /// The two processes a conversion can run, for the cap on what each may
+    /// write.
+    enum Step: Equatable, Sendable {
+        /// Step 1 of a downmix: stereo linear PCM in a CAF.
+        case downmix
+        /// The encoder: AAC or Apple Lossless in an .m4a.
+        case encode
+    }
+
+    /// The bit rate the cap assumes where the AAC encoder chooses its own
+    /// (`Target.bitRate` is nil): 320,000 bits a second, the most it writes.
+    static let encoderChosenBitRate = 320_000
+
+    /// A cap never counts a track longer than this many seconds or a sample
+    /// rate above `maximumCappedSampleRate`, so a lying header cannot
+    /// overflow the arithmetic (`AudioFileInfo` already refuses lengths over
+    /// a year).
+    private static let maximumCappedSeconds: Double = 366 * 24 * 3_600
+    private static let maximumCappedSampleRate: Double = 10_000_000
+
+    /// How many bytes `step` is expected to write for a track lasting
+    /// `duration` seconds, converted as `target`: AAC, duration × bit rate ÷
+    /// 8 (`encoderChosenBitRate` where the encoder chooses); Apple Lossless
+    /// and the downmix's PCM, duration × rate × channels × bytes a sample
+    /// (`downmixBitDepth(for:)`; two channels for the PCM). Uncompressed
+    /// size is the most Apple Lossless can take.
+    static func expectedOutputBytes(of step: Step, duration: TimeInterval, target: Target) -> Int64 {
+        let seconds = duration.isFinite ? min(max(duration, 0), maximumCappedSeconds) : 0
+        let rate = target.sampleRate.isFinite ? min(max(target.sampleRate, 0), maximumCappedSampleRate) : 0
+        let bytesPerSample = Double(downmixBitDepth(for: target) / 8)
+        switch step {
+        case .downmix:
+            return Int64(seconds * rate * Double(maximumChannels) * bytesPerSample)
+        case .encode where target.appleLosslessBitDepth != nil:
+            return Int64(seconds * rate * Double(target.channels) * bytesPerSample)
+        case .encode:
+            return Int64(seconds * Double(target.bitRate ?? encoderChosenBitRate) / 8)
+        }
+    }
+
+    /// The most a step may write before the watchdog and the kernel stop it:
+    /// four times what it is expected to write, and 16 MB more
+    /// (`outputCapReserveBytes`), so a header that lies about a file's length
+    /// cannot fill the disk.
+    static func outputCap(of step: Step, duration: TimeInterval, target: Target) -> Int64 {
+        expectedOutputBytes(of: step, duration: duration, target: target) * 4 + outputCapReserveBytes
+    }
+
+    /// The bytes added to four times a step's expected output to make its cap.
+    static let outputCapReserveBytes: Int64 = 16 * 1_048_576
+
     /// The bytes free on the volume that holds `folder` for TextMouth's use
     /// (`volumeAvailableCapacityForImportantUsageKey`, which counts space the
     /// system can purge); nil when the volume can't say.
@@ -741,7 +792,10 @@ enum ImportAudioConverter {
     ) async throws {
         let name = source.lastPathComponent
         guard needsDownmix(info) else {
-            try await run(tool.command(source, staged, info, target), named: name, duration: info.duration, tool: tool, watching: staged)
+            try await run(
+                tool.command(source, staged, info, target), named: name, duration: info.duration, tool: tool,
+                watching: staged, cap: outputCap(of: .encode, duration: info.duration, target: target)
+            )
             return
         }
         let stereo = downmixURL(beside: source)
@@ -751,31 +805,42 @@ enum ImportAudioConverter {
             throw Failure.notEnoughSpace(fileName: name, bytesNeeded: needed)
         }
         defer { try? FileManager.default.removeItem(at: stereo) }
-        try await run(tool.downmixCommand(source, stereo, target), named: name, duration: info.duration, tool: tool, watching: stereo)
+        try await run(
+            tool.downmixCommand(source, stereo, target), named: name, duration: info.duration, tool: tool,
+            watching: stereo, cap: outputCap(of: .downmix, duration: info.duration, target: target)
+        )
         // What step 1 wrote: linear PCM in stereo, at the rate and depth step 2 keeps.
         let stereoInfo = SourceInfo(
             sampleRate: target.sampleRate, channels: maximumChannels, duration: info.duration, formatID: "lpcm",
             bitsPerSample: downmixBitDepth(for: target), isLossless: true
         )
-        try await run(tool.command(stereo, staged, stereoInfo, target), named: name, duration: info.duration, tool: tool, watching: staged)
+        try await run(
+            tool.command(stereo, staged, stereoInfo, target), named: name, duration: info.duration, tool: tool,
+            watching: staged, cap: outputCap(of: .encode, duration: info.duration, target: target)
+        )
     }
 
     /// Runs one converting process, `command`, of a conversion of the file
     /// named `name` lasting `duration` seconds, under the watchdog's limits
     /// of `tool` and watching `output` grow, and turns how it ended into
-    /// success or a `Failure`; a kill is logged.
+    /// success or a `Failure`; a kill is logged. The output may grow to
+    /// `cap` bytes (`outputCap(of:duration:target:)`), unless the tool's
+    /// own limits set a cap, as a test's stand-in may.
     private static func run(
         _ command: (executable: URL, arguments: [String]),
         named name: String,
         duration: TimeInterval,
         tool: Tool,
-        watching output: URL
+        watching output: URL,
+        cap: Int64
     ) async throws {
+        var limits = tool.limits(duration)
+        limits.maximumOutputBytes = limits.maximumOutputBytes ?? cap
         let outcome = try await WatchedProcess.run(
             command.executable,
             arguments: command.arguments,
             watching: output,
-            limits: tool.limits(duration),
+            limits: limits,
             residentMemory: tool.residentMemory
         )
         switch outcome {

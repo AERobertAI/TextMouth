@@ -328,6 +328,79 @@ final class OggAfconvertTests: XCTestCase {
         XCTAssertEqual(OggTestFixtures.names(in: folder), ["bad.ogg"])
     }
 
+    // MARK: - The Converter Caps Each Step's Output (review item 4)
+
+    /// Four times the expected size and 16 MB, step by step: AAC at its bit
+    /// rate (or the encoder's 320,000 where it chooses), Apple Lossless and
+    /// the downmix's PCM at their uncompressed size.
+    func testTheCapIsFourTimesTheExpectedSizePlusSixteenMegabytes() {
+        typealias Target = ImportAudioConverter.Target
+        let reserve: Int64 = 16 * 1_048_576
+        let aac = Target(channels: 2, sampleRate: 44_100, bitRate: 64_000)
+        XCTAssertEqual(ImportAudioConverter.expectedOutputBytes(of: .encode, duration: 100, target: aac), 800_000)
+        XCTAssertEqual(ImportAudioConverter.outputCap(of: .encode, duration: 100, target: aac), 3_200_000 + reserve)
+        let chosen = Target(channels: 1, sampleRate: 22_050, bitRate: nil)
+        XCTAssertEqual(ImportAudioConverter.expectedOutputBytes(of: .encode, duration: 100, target: chosen), 4_000_000)
+        let lossless16 = Target(channels: 2, sampleRate: 44_100, bitRate: nil, appleLosslessBitDepth: 16)
+        XCTAssertEqual(ImportAudioConverter.expectedOutputBytes(of: .encode, duration: 10, target: lossless16), 1_764_000)
+        // A depth of 20 is written as 24-bit PCM, three bytes a sample.
+        let lossless20 = Target(channels: 2, sampleRate: 48_000, bitRate: nil, appleLosslessBitDepth: 20)
+        XCTAssertEqual(ImportAudioConverter.expectedOutputBytes(of: .encode, duration: 10, target: lossless20), 2_880_000)
+        let mono24 = Target(channels: 1, sampleRate: 96_000, bitRate: nil, appleLosslessBitDepth: 24)
+        XCTAssertEqual(ImportAudioConverter.expectedOutputBytes(of: .encode, duration: 5, target: mono24), 1_440_000)
+    }
+
+    /// The downmix's PCM is two channels at the depth step 2 keeps: 16-bit
+    /// for AAC, the Apple Lossless depth (24 for 20) for lossless.
+    func testTheDownmixStepIsCappedAtItsStereoPCM() {
+        typealias Target = ImportAudioConverter.Target
+        let aac = Target(channels: 2, sampleRate: 44_100, bitRate: 64_000)
+        XCTAssertEqual(ImportAudioConverter.expectedOutputBytes(of: .downmix, duration: 10, target: aac), 1_764_000)
+        let lossless = Target(channels: 2, sampleRate: 48_000, bitRate: nil, appleLosslessBitDepth: 24)
+        XCTAssertEqual(ImportAudioConverter.expectedOutputBytes(of: .downmix, duration: 10, target: lossless), 2_880_000)
+        XCTAssertEqual(
+            ImportAudioConverter.outputCap(of: .downmix, duration: 10, target: lossless), 4 * 2_880_000 + 16 * 1_048_576
+        )
+    }
+
+    /// A lying header cannot trap the arithmetic or take the reserve away.
+    func testTheCapSurvivesAbsurdFacts() {
+        let reserve: Int64 = 16 * 1_048_576
+        let wild = ImportAudioConverter.Target(channels: 2, sampleRate: 1e300, bitRate: nil, appleLosslessBitDepth: 32)
+        for duration in [TimeInterval.infinity, .nan, 1e300, -5, 0] {
+            for step in [ImportAudioConverter.Step.encode, .downmix] {
+                XCTAssertGreaterThanOrEqual(ImportAudioConverter.outputCap(of: step, duration: duration, target: wild), reserve)
+            }
+        }
+        let nan = ImportAudioConverter.Target(channels: 2, sampleRate: .nan, bitRate: 64_000)
+        XCTAssertEqual(ImportAudioConverter.outputCap(of: .downmix, duration: 10, target: nan), reserve)
+    }
+
+    /// A conversion whose child writes without end is stopped at the cap, by
+    /// the kernel or the watchdog: it fails as killed with the cap in its
+    /// words, and the partial file is removed.
+    func testAConversionThatWritesPastItsCapIsStopped() async throws {
+        let source = try OggTestFixtures.copy(OggTestFixtures.vorbis, to: folder, as: "runaway.ogg")
+        let read = try await ImportAudioConverter.inspect(source)
+        let info = try XCTUnwrap(read)
+        let bytes = (try FileManager.default.attributesOfItem(atPath: source.path)[.size] as? NSNumber)?.int64Value ?? 0
+        let cap = ImportAudioConverter.outputCap(
+            of: .encode, duration: info.duration, target: ImportAudioConverter.target(for: info, bytes: bytes))
+        var runaway = tool("/bin/true", [], stalled: 30)
+        runaway.command = { _, output, _, _ in
+            (URL(fileURLWithPath: "/bin/sh"), ["-c", "exec /usr/bin/yes >> \"$0\"", output.path])
+        }
+
+        do {
+            _ = try await ImportAudioConverter.convert(source, using: runaway)
+            XCTFail("A runaway conversion must fail")
+        } catch let failure as ImportAudioConverter.Failure {
+            XCTAssertEqual(
+                failure, .killed(fileName: "runaway.ogg", reason: WatchedProcess.KillReason.wroteTooMuch(bytes: cap).words))
+        }
+        XCTAssertEqual(OggTestFixtures.names(in: folder), ["runaway.ogg"])
+    }
+
     /// A conversion whose child fails reports the exit status and leaves
     /// nothing; the book waits for a later launch.
     func testAFailingConversionLeavesNothing() async throws {
