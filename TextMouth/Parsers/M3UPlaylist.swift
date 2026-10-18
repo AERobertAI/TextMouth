@@ -221,7 +221,7 @@ extension M3UPlaylist {
     /// a folder; a file that is not audio; a file an earlier track already is.
     func resolve(inFolder folder: URL, fileManager: FileManager = .default) -> Resolution {
         var resolution = Resolution(tracks: [], skipped: [])
-        let canonicalFolder = Self.canonical(folder)
+        let resolvedFolder = ResolvedFolder(folder)
         // Canonical paths of the tracks so far, in Unicode NFC.
         var seen = Set<String>()
 
@@ -237,7 +237,7 @@ extension M3UPlaylist {
             case let .path(found): path = found
             }
 
-            switch Self.findFile(path, inFolder: canonicalFolder, fileManager: fileManager) {
+            switch Self.findFile(path, inFolder: resolvedFolder, fileManager: fileManager) {
             case .outside: skip(entry, .outsideFolder)
             case .missing: skip(entry, .missing)
             case let .found(url, isDirectory):
@@ -250,7 +250,7 @@ extension M3UPlaylist {
                 } else {
                     resolution.tracks.append(Track(
                         url: url,
-                        path: Self.relativePath(of: url, in: canonicalFolder),
+                        path: Self.relativePath(of: url, in: resolvedFolder.real),
                         title: entry.title))
                 }
             }
@@ -306,49 +306,90 @@ extension M3UPlaylist {
         case found(URL, isDirectory: Bool)
     }
 
-    /// The file `path` names for a playlist in `canonicalFolder`. A relative
-    /// path is taken from the folder. When nothing is at the path but
-    /// something is at its percent-decoded form (`tone%201.wav`), that is used.
-    /// A candidate is made canonical (symbolic links resolved), and it must lie
-    /// strictly inside the folder, by path components; one that does not is
-    /// never asked of the disk. A link inside the folder that points outside
-    /// is therefore outside.
-    private static func findFile(_ path: String, inFolder canonicalFolder: URL, fileManager: FileManager) -> Found {
+    /// The playlist's folder, spelled two ways. `textual` has its symbolic
+    /// links resolved by Foundation, which also drops `/private`; it is the
+    /// base of relative entries and the gate that keeps the disk from being
+    /// asked about a path that is plainly outside. `real` is the folder as
+    /// `realpath(3)` resolves it, and is what every found file is judged by.
+    private struct ResolvedFolder {
+        let textual: URL
+        let real: URL
+
+        /// The two spellings of `folder`. A folder `realpath` cannot resolve
+        /// (it is not there) keeps its textual spelling for both, and no
+        /// entry in it is found.
+        init(_ folder: URL) {
+            textual = M3UPlaylist.canonical(folder)
+            real = M3UPlaylist.realPath(folder.path) ?? textual
+        }
+    }
+
+    /// The file `path` names for a playlist in `folder`. A relative path is
+    /// taken from the folder. When nothing is at the path but something is at
+    /// its percent-decoded form (`tone%201.wav`), that is used.
+    ///
+    /// Each spelling is judged in two steps. A textual gate (symbolic links
+    /// resolved where they exist, `x/..` removed by name) stops a path that
+    /// is plainly outside before the disk is asked. Then, once something is
+    /// there, the path is resolved fully by `realpath(3)`, which follows
+    /// every link, fails on a missing component or a link loop, and so cannot
+    /// be fooled by `nothing-here/../extras/diary.m4a` with `extras` a link to
+    /// another folder. Only the fully resolved path, strictly inside the
+    /// folder by path components, is a file; the found URL is that path.
+    private static func findFile(_ path: String, inFolder folder: ResolvedFolder, fileManager: FileManager) -> Found {
         guard !path.isEmpty else { return .missing }
         var spellings = [path]
         if let decoded = path.removingPercentEncoding, decoded != path { spellings.append(decoded) }
 
         var rawWasOutside = false
+        var resolvedWasOutside = false
         for (index, spelling) in spellings.enumerated() {
             // Built as one absolute path, so no relative URL reaches the disk.
-            let base = URL(fileURLWithPath: spelling.hasPrefix("/") ? spelling : canonicalFolder.path + "/" + spelling)
+            let base = URL(fileURLWithPath: spelling.hasPrefix("/") ? spelling : folder.textual.path + "/" + spelling)
             let candidate = canonical(base)
-            guard isInside(candidate, canonicalFolder) else {
+            guard isInside(candidate, folder.textual) else {
                 if index == 0 { rawWasOutside = true }
                 continue
             }
             var isDirectory: ObjCBool = false
-            if fileManager.fileExists(atPath: candidate.path, isDirectory: &isDirectory) {
-                return .found(candidate, isDirectory: isDirectory.boolValue)
+            guard fileManager.fileExists(atPath: candidate.path, isDirectory: &isDirectory) else { continue }
+            // Something is there: resolve it fully before believing where it is.
+            guard let real = realPath(candidate.path) else { continue }
+            guard isInside(real, folder.real) else {
+                resolvedWasOutside = true
+                continue
             }
+            return .found(real, isDirectory: isDirectory.boolValue)
         }
-        return rawWasOutside ? .outside : .missing
+        return rawWasOutside || resolvedWasOutside ? .outside : .missing
     }
 
-    /// `url` with symbolic links resolved and `.`/`..` removed.
+    /// `url` with symbolic links resolved and `.`/`..` removed, by Foundation:
+    /// a component that is missing is not an error, and `x/..` is removed by
+    /// name. Good for a gate; never proof of where a file is (see `realPath`).
     private static func canonical(_ url: URL) -> URL {
         url.resolvingSymlinksInPath().standardizedFileURL
     }
 
-    /// Whether `url` lies strictly inside `folder` (both canonical), compared
-    /// by path components so `/music-extra` is not inside `/music`.
+    /// `path` fully resolved by `realpath(3)`: every symbolic link followed,
+    /// `.` and `..` applied to the real folders. Nil when a component is
+    /// missing, a link loops, or the path has a NUL byte (C would cut it).
+    private static func realPath(_ path: String) -> URL? {
+        guard !path.unicodeScalars.contains("\0"), let resolved = realpath(path, nil) else { return nil }
+        defer { free(resolved) }
+        return URL(fileURLWithPath: String(cString: resolved))
+    }
+
+    /// Whether `url` lies strictly inside `folder` (both resolved the same
+    /// way), compared by path components so `/music-extra` is not inside
+    /// `/music`.
     private static func isInside(_ url: URL, _ folder: URL) -> Bool {
         let folderComponents = folder.pathComponents
         let components = url.pathComponents
         return components.count > folderComponents.count && components.starts(with: folderComponents)
     }
 
-    /// `url`'s path relative to `folder` (both canonical, `url` inside).
+    /// `url`'s path relative to `folder` (both fully resolved, `url` inside).
     private static func relativePath(of url: URL, in folder: URL) -> String {
         url.pathComponents.dropFirst(folder.pathComponents.count).joined(separator: "/")
     }

@@ -211,6 +211,66 @@ final class M3UPlaylistTests: XCTestCase {
         XCTAssertEqual(resolution.tracks.map(\.path), ["inner/real.wav"])
     }
 
+    /// `realpath(3)` of `url`, to compare with what `resolve` found.
+    private func realPath(_ url: URL) throws -> String {
+        let resolved = try XCTUnwrap(realpath(url.path, nil))
+        defer { free(resolved) }
+        return String(cString: resolved)
+    }
+
+    /// A component that cannot be resolved (missing, a dangling link, or a
+    /// link loop) before `/../extras/diary.m4a`, with `extras` a link to a
+    /// folder outside, must not hide the outside: Foundation removes
+    /// `x/..` by name and the link is then followed. The outside file is
+    /// never a track (review item 2).
+    func testUnresolvableComponentBeforeParentDoesNotHideALinkOutside() throws {
+        let other = try AudioTestFixtures.makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: other) }
+        try Data("x".utf8).write(to: other.appendingPathComponent("diary.m4a"))
+        let fileManager = FileManager.default
+        try fileManager.createSymbolicLink(at: folder.appendingPathComponent("extras"), withDestinationURL: other)
+        try fileManager.createSymbolicLink(
+            at: folder.appendingPathComponent("dangling"),
+            withDestinationURL: folder.appendingPathComponent("no-such-target"))
+        try fileManager.createSymbolicLink(atPath: folder.appendingPathComponent("loopA").path, withDestinationPath: "loopB")
+        try fileManager.createSymbolicLink(atPath: folder.appendingPathComponent("loopB").path, withDestinationPath: "loopA")
+
+        let entries = [
+            "nothing-here/../extras/diary.m4a", "dangling/../extras/diary.m4a", "loopA/../extras/diary.m4a",
+            "extras/diary.m4a",
+        ]
+        let resolution = resolve(entries)
+        XCTAssertTrue(resolution.tracks.isEmpty)
+        XCTAssertEqual(skips(resolution), entries.map { [$0, "outside the playlist's folder"] })
+    }
+
+    /// A link inside the folder to a file inside gives the fully resolved
+    /// file: its URL has no link left in it.
+    func testFoundTrackHasItsFullyResolvedURL() throws {
+        let real = try touch("inner/real.wav")
+        try FileManager.default.createSymbolicLink(
+            at: folder.appendingPathComponent("alias.wav"), withDestinationURL: real)
+        let resolution = resolve(["alias.wav"])
+        XCTAssertEqual(resolution.tracks.map(\.path), ["inner/real.wav"])
+        XCTAssertEqual(resolution.tracks.first?.url.path, try realPath(real))
+    }
+
+    /// A playlist folder spelled `/tmp/…` (a link to `/private/tmp/…`) finds
+    /// its files, whichever way the two sides are resolved.
+    func testFolderGivenThroughTheTmpLink() throws {
+        let name = "m3usafety-\(UUID().uuidString)"
+        let real = URL(fileURLWithPath: "/private/tmp/\(name)", isDirectory: true)
+        try FileManager.default.createDirectory(at: real, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: real) }
+        try Data("x".utf8).write(to: real.appendingPathComponent("tone.wav"))
+
+        let throughTheLink = URL(fileURLWithPath: "/tmp/\(name)", isDirectory: true)
+        let resolution = M3UPlaylist.parse("tone.wav").resolve(inFolder: throughTheLink)
+        XCTAssertEqual(resolution.tracks.map(\.path), ["tone.wav"])
+        XCTAssertEqual(resolution.tracks.first?.url.path, "/private/tmp/\(name)/tone.wav")
+        XCTAssertTrue(resolution.skipped.isEmpty)
+    }
+
     /// A path that goes up and back down inside the folder is inside; a
     /// sibling folder whose name starts with the folder's name, the folder
     /// itself, and a path above it are outside.
