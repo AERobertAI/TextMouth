@@ -86,6 +86,7 @@ final class OggFlacConversionTests: XCTestCase {
     /// source's 16 bits, rate, and length, passes the playability probe, and
     /// leaves the source and no hidden file. The time is printed.
     func testAnOggFlacFileConvertsToAppleLossless() async throws {
+        try OggTestFixtures.skipUnlessOggDecodes()
         let source = try copyTone()
         let sourceBytes = try Data(contentsOf: source)
 
@@ -125,6 +126,7 @@ final class OggFlacConversionTests: XCTestCase {
     /// Apple Lossless, which is the book's file; the file imported from is
     /// untouched, and no Ogg file is left in the package.
     func testASingleOggFlacFileImportsAsAnAppleLosslessM4AFile() async throws {
+        try OggTestFixtures.skipUnlessOggDecodes()
         let source = try copyTone()
         let sourceBytes = try Data(contentsOf: source)
 
