@@ -1,7 +1,8 @@
 import Foundation
 
-/// Reads an Ogg Vorbis or Ogg Opus file's stream facts (codec, channels,
-/// sample rate, duration) and tags from the file's own bytes, with no Apple
+/// Reads an Ogg Vorbis, Ogg Opus, or Ogg FLAC file's stream facts (codec,
+/// channels, sample rate, bits per sample for FLAC, duration) and tags from
+/// the file's own bytes, with no Apple
 /// audio API: since October 14, 2026 Ogg audio never reaches AVFoundation
 /// or AudioToolbox in the app's process, so a hand-written reader is the only
 /// way to learn an Ogg file's length and tags at import.
@@ -13,7 +14,7 @@ import Foundation
 /// verifies (RFC 3533), so a stray "OggS" in audio data costs nothing.
 enum OggHeaderReader {
     /// The codecs this reader recognises.
-    enum Codec: Equatable, Sendable { case vorbis, opus }
+    enum Codec: Equatable, Sendable { case vorbis, opus, flac }
 
     /// The tags of the stream's comment packet; a field the file does not
     /// carry is empty.
@@ -29,6 +30,9 @@ enum OggHeaderReader {
         let channels: Int
         /// The sample rate in hertz; for Opus always 48,000 (the decoder's rate).
         let sampleRate: Double
+        /// The bits in a sample of the source FLAC kept; nil for Vorbis and
+        /// Opus, which keep no sample depth.
+        let bitsPerSample: Int?
         /// The stream's length in seconds: above 0 and at most `maximumDuration`.
         let duration: TimeInterval
         /// The tags, empty when the comment packet is missing or too large.
@@ -58,6 +62,12 @@ enum OggHeaderReader {
     private static let maxOpusPacketSamples = 5_760
     /// The Opus decoder's sample rate, whatever the file was recorded at.
     private static let opusSampleRate = 48_000.0
+    /// How far (in seconds) a FLAC stream's last granule position and the
+    /// total samples of its STREAMINFO may differ before the file is refused.
+    private static let flacLengthTolerance = 1.0
+    /// The length of a FLAC stream's first packet: the 13 bytes of mapping
+    /// header and "fLaC", the 4-byte block header, and the 34-byte STREAMINFO.
+    private static let flacIdentificationLength = 51
     /// The longest stream believed: a year. A granule position that claims more is
     /// corrupt, not audio, and refusing it keeps every later conversion of the
     /// length to whole seconds (`Int(seconds)`) from overflowing and trapping.
@@ -90,9 +100,9 @@ enum OggHeaderReader {
 
     // MARK: - Reading a file
 
-    /// The header of the Ogg Vorbis or Opus file at `url`, read from its
-    /// first `headLength` and last `tailLength` bytes only; nil when it is
-    /// not a regular, readable Ogg Vorbis or Opus file.
+    /// The header of the Ogg Vorbis, Opus, or FLAC file at `url`, read from
+    /// its first `headLength` and last `tailLength` bytes only; nil when it
+    /// is not a regular, readable Ogg file of one of those codecs.
     static func read(at url: URL) -> Header? {
         guard let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey]),
               values.isRegularFile == true,
@@ -112,8 +122,8 @@ enum OggHeaderReader {
 
     /// The header of an Ogg file from `head`, its first bytes, and `tail`, its
     /// last bytes (the two may overlap, and for a short file are both the
-    /// whole file); nil when they are not a whole Ogg Vorbis or Opus stream's
-    /// start and end. Pure: it reads nothing but the two arrays.
+    /// whole file); nil when they are not a whole Ogg Vorbis, Opus, or FLAC
+    /// stream's start and end. Pure: it reads nothing but the two arrays.
     static func parse(head: [UInt8], tail: [UInt8]) -> Header? {
         guard let start = streamStart(in: head),
               let granule = lastGranule(in: tail, serial: start.serial) else { return nil }
@@ -129,11 +139,19 @@ enum OggHeaderReader {
         case .opus:
             // The first `preSkip` samples are the decoder's warm-up.
             seconds = Double(max(0, granule - offset - Int64(start.preSkip))) / opusSampleRate
+        case .flac:
+            seconds = Double(granule) / start.sampleRate
         }
         guard seconds.isFinite, seconds > 0, seconds <= maximumDuration else { return nil }
 
-        return Header(codec: start.codec, channels: start.channels,
-                      sampleRate: start.sampleRate, duration: seconds, tags: start.tags)
+        // FLAC's STREAMINFO also states the stream's length (0 when unknown):
+        // a file whose two statements differ by more than a second contradicts
+        // itself, so it is refused rather than believed either way.
+        if start.codec == .flac, start.totalSamples > 0,
+           abs(Double(start.totalSamples) / start.sampleRate - seconds) > flacLengthTolerance { return nil }
+
+        return Header(codec: start.codec, channels: start.channels, sampleRate: start.sampleRate,
+                      bitsPerSample: start.bitsPerSample, duration: seconds, tags: start.tags)
     }
 
     // MARK: - Pages
@@ -273,8 +291,13 @@ enum OggHeaderReader {
         let codec: Codec
         let channels: Int
         let sampleRate: Double
-        /// The Opus pre-skip, in 48,000 Hz samples; 0 for Vorbis.
+        /// The Opus pre-skip, in 48,000 Hz samples; 0 for Vorbis and FLAC.
         let preSkip: Int
+        /// FLAC's bits per sample; nil for the other codecs.
+        let bitsPerSample: Int?
+        /// FLAC's total samples as its STREAMINFO states them; 0 when the
+        /// stream's length is unknown, and for the other codecs.
+        let totalSamples: Int64
         let tags: Tags
         /// The granule position the stream starts at: 0 for a stream that
         /// begins at the start of its recording, more for one cut from a
@@ -308,7 +331,7 @@ enum OggHeaderReader {
         return nil
     }
 
-    /// The serial of the Vorbis or Opus stream among the leading
+    /// The serial of the Vorbis, Opus, or FLAC stream among the leading
     /// start-of-stream pages of `head`, with the format its identification
     /// packet declares. A multiplexed file begins with one such page per
     /// stream (RFC 3533 section 4), and an Ogg Skeleton stream's "fishead"
@@ -317,9 +340,8 @@ enum OggHeaderReader {
     /// fails its checks ends it, keeping what was found), tries each new
     /// serial's first packet, and takes the first that `identify` accepts.
     /// Nil when the first page lacks the start flag or no leading stream is
-    /// Vorbis or Opus (FLAC, Speex, Theora, an unknown codec).
-    private static func audioStream(in head: [UInt8])
-        -> (serial: UInt32, format: (codec: Codec, channels: Int, sampleRate: Double, preSkip: Int))? {
+    /// Vorbis, Opus, or FLAC (Speex, Theora, an unknown codec).
+    private static func audioStream(in head: [UInt8]) -> (serial: UInt32, format: Identification)? {
         var seen = Set<UInt32>()
         var index = 0
         while let current = page(in: head, at: index), current.type & 0x02 != 0 {
@@ -366,21 +388,28 @@ enum OggHeaderReader {
         return lead
     }
 
-    /// The Vorbis or Opus stream among the leading pages of `head`: its codec
-    /// and format from its first packet, its tags from its second, and where
-    /// it starts from its first audio page; nil when no leading stream is
-    /// Vorbis or Opus (see `audioStream(in:)`). The tags are empty when the
+    /// The Vorbis, Opus, or FLAC stream among the leading pages of `head`: its
+    /// codec and format from its first packet, its tags from its second (for
+    /// FLAC, from whichever header packet is the comment block), and where it
+    /// starts from its first audio page; nil when no leading stream is one of
+    /// those (see `audioStream(in:)`). The tags are empty when the
     /// comment packet is missing, spans past `head`, or is larger than
     /// `maxPacketLength`; the start offset is 0 when it cannot be read.
     private static func streamStart(in head: [UInt8]) -> StreamStart? {
         guard let (serial, format) = audioStream(in: head) else { return nil }
 
-        // Vorbis has three header packets (identification, comment, setup),
-        // Opus two (head, tags).
-        let lead = lead(of: serial, headerCount: format.codec == .vorbis ? 3 : 2, in: head)
-        let tags = lead.packets.count >= 2 ? parseTags(lead.packets[1], codec: format.codec) : Tags()
+        // A FLAC stream that does not count its headers is read to the end of
+        // `head` (bounded), and its header packets are found by their last flag.
+        let lead = lead(of: serial, headerCount: format.headerPackets ?? Int.max, in: head)
+        let tags: Tags
+        if format.codec == .flac {
+            tags = flacTags(in: lead.packets, headerPackets: format.headerPackets)
+        } else {
+            tags = lead.packets.count >= 2 ? parseTags(lead.packets[1], codec: format.codec) : Tags()
+        }
         return StreamStart(serial: serial, codec: format.codec, channels: format.channels,
-                           sampleRate: format.sampleRate, preSkip: format.preSkip, tags: tags,
+                           sampleRate: format.sampleRate, preSkip: format.preSkip,
+                           bitsPerSample: format.bitsPerSample, totalSamples: format.totalSamples, tags: tags,
                            startOffset: startOffset(of: lead, codec: format.codec))
     }
 
@@ -396,6 +425,9 @@ enum OggHeaderReader {
         switch codec {
         case .opus: samples = opusSamples(ofAudio: lead.packets.dropFirst(2))
         case .vorbis: samples = vorbisSamples(of: lead.packets)
+        // A FLAC stream's granule counts samples from its start; its length
+        // is the last granule, with no offset (the STREAMINFO cross-checks it).
+        case .flac: return 0
         }
         guard let samples else { return 0 }
         // Both are 0 or more, so the subtraction cannot overflow.
@@ -533,25 +565,77 @@ enum OggHeaderReader {
         return value
     }
 
-    /// The codec, channel count, sample rate and Opus pre-skip an
-    /// identification packet declares; nil for any other kind of packet
-    /// (FLAC, Speex, Theora, and so on) or a nonsensical value.
-    private static func identify(_ packet: [UInt8])
-        -> (codec: Codec, channels: Int, sampleRate: Double, preSkip: Int)? {
+    /// What a stream's identification packet declares.
+    private struct Identification {
+        let codec: Codec
+        let channels: Int
+        let sampleRate: Double
+        /// The Opus pre-skip, in 48,000 Hz samples; 0 for Vorbis and FLAC.
+        var preSkip = 0
+        /// FLAC's bits per sample; nil for the other codecs.
+        var bitsPerSample: Int?
+        /// FLAC's total samples; 0 when unknown, and for the other codecs.
+        var totalSamples: Int64 = 0
+        /// How many packets are headers, the identification packet included;
+        /// nil when the stream does not say (a FLAC header count of 0).
+        var headerPackets: Int?
+    }
+
+    /// The codec, channel count, sample rate, and the rest an identification
+    /// packet declares; nil for any other kind of packet (Speex, Theora, and
+    /// so on) or a nonsensical value.
+    private static func identify(_ packet: [UInt8]) -> Identification? {
         if hasPrefix(packet, signature: [0x01] + Array("vorbis".utf8)) {
             // 0x01 "vorbis", version (UInt32, 0), channels (byte), sample rate (UInt32).
             guard littleEndian(packet, at: 7, as: UInt32.self) == 0,
                   packet.count > 11, packet[11] > 0,
                   let rate = littleEndian(packet, at: 12, as: UInt32.self), rate > 0 else { return nil }
-            return (.vorbis, Int(packet[11]), Double(rate), 0)
+            // Vorbis has three header packets (identification, comment, setup).
+            return Identification(codec: .vorbis, channels: Int(packet[11]), sampleRate: Double(rate),
+                                  headerPackets: 3)
         }
         if hasPrefix(packet, signature: Array("OpusHead".utf8)) {
             // "OpusHead", version (byte, high nibble 0), channels (byte), pre-skip (UInt16).
             guard packet.count > 9, packet[8] & 0xF0 == 0, packet[9] > 0,
                   let preSkip = littleEndian(packet, at: 10, as: UInt16.self) else { return nil }
-            return (.opus, Int(packet[9]), opusSampleRate, Int(preSkip))
+            // Opus has two (head, tags).
+            return Identification(codec: .opus, channels: Int(packet[9]), sampleRate: opusSampleRate,
+                                  preSkip: Int(preSkip), headerPackets: 2)
         }
-        return nil
+        return identifyFLAC(packet)
+    }
+
+    /// The facts of an Ogg FLAC stream's first packet (xiph.org/flac/ogg_mapping.html):
+    /// 0x7F "FLAC", the mapping's major and minor version (bytes), a 16-bit
+    /// big-endian count of the header packets after this one (0: unknown),
+    /// "fLaC", then the STREAMINFO metadata block, a 4-byte block header (type
+    /// 0, length 34) and the block itself. Bit by bit, from STREAMINFO's byte
+    /// 10 (the packet's byte 27): the sample rate (20 bits), the channel count
+    /// less one (3), the bits per sample less one (5), and the total samples
+    /// (36). Nil for any other packet, a major version other than 1, a block
+    /// that is not STREAMINFO, or a sample rate of 0.
+    private static func identifyFLAC(_ packet: [UInt8]) -> Identification? {
+        guard hasPrefix(packet, signature: [0x7F] + Array("FLAC".utf8)),
+              packet.count >= flacIdentificationLength,
+              packet[5] == 1,                                          // the mapping's major version
+              Array(packet[9..<13]) == Array("fLaC".utf8),
+              packet[13] & 0x7F == 0,                                  // STREAMINFO (the last flag is ignored)
+              packet[14] == 0, packet[15] == 0, packet[16] == 34 else { return nil }
+
+        let rate = (Int(packet[27]) << 12) | (Int(packet[28]) << 4) | Int(packet[29] >> 4)
+        // The channel count is 1 or more, as it is stored less one.
+        let channels = Int((packet[29] >> 1) & 0x07) + 1
+        let bits = ((Int(packet[29] & 0x01) << 4) | Int(packet[30] >> 4)) + 1
+        // 36 bits: the low nibble of byte 30, then bytes 31 to 34.
+        let total = (Int64(packet[30] & 0x0F) << 32) | (Int64(packet[31]) << 24)
+            | (Int64(packet[32]) << 16) | (Int64(packet[33]) << 8) | Int64(packet[34])
+        guard rate > 0 else { return nil }
+
+        // The count of header packets after this one, or nil when it is 0.
+        let declared = (Int(packet[7]) << 8) | Int(packet[8])
+        return Identification(codec: .flac, channels: channels, sampleRate: Double(rate),
+                              bitsPerSample: bits, totalSamples: total,
+                              headerPackets: declared > 0 ? declared + 1 : nil)
     }
 
     /// Whether `bytes` begin with `signature`.
@@ -561,14 +645,48 @@ enum OggHeaderReader {
 
     // MARK: - Tags
 
-    /// The tags in a comment packet: its signature (Vorbis `0x03 "vorbis"`,
-    /// Opus `"OpusTags"`), the vendor string, then the comments, each a
-    /// length and a UTF-8 `NAME=value`. Names match case-insensitively and the
+    /// The tags of an Ogg FLAC stream, from its `packets` (the identification
+    /// packet first): the VORBIS_COMMENT block among the header packets after
+    /// it. Those are `headerPackets` less the identification packet when the
+    /// stream counts them, otherwise as many as precede the one whose block
+    /// header is marked last (high bit of its first byte); an audio frame's
+    /// sync code has that bit too, so the search ends there at the latest.
+    /// Empty tags when there is no comment block.
+    private static func flacTags(in packets: [[UInt8]], headerPackets: Int?) -> Tags {
+        let limit = headerPackets.map { $0 - 1 } ?? Int.max
+        for packet in packets.dropFirst().prefix(limit) {
+            guard let first = packet.first else { break }
+            if first & 0x7F == 4 { return parseTags(packet, codec: .flac) }
+            if first & 0x80 != 0 { break }
+        }
+        return Tags()
+    }
+
+    /// The tags of a stream's comment packet: its signature (Vorbis `0x03
+    /// "vorbis"`, Opus `"OpusTags"`; for FLAC the metadata block's 4-byte
+    /// header, type 4 and a 24-bit length, which also bounds the comments),
+    /// the vendor string, then the comments, each a length and a UTF-8
+    /// `NAME=value`. Names match case-insensitively and the
     /// first of a name wins; at most `maxComments` are read, and reading
     /// stops at the first inconsistent length, keeping what was read.
-    private static func parseTags(_ packet: [UInt8], codec: Codec) -> Tags {
-        let signature = codec == .vorbis ? [0x03] + Array("vorbis".utf8) : Array("OpusTags".utf8)
-        guard hasPrefix(packet, signature: signature) else { return Tags() }
+    private static func parseTags(_ whole: [UInt8], codec: Codec) -> Tags {
+        // The comments' bytes after the signature, and how long the signature is.
+        let packet: [UInt8]
+        let signatureLength: Int
+        switch codec {
+        case .vorbis, .opus:
+            let signature = codec == .vorbis ? [0x03] + Array("vorbis".utf8) : Array("OpusTags".utf8)
+            guard hasPrefix(whole, signature: signature) else { return Tags() }
+            packet = whole
+            signatureLength = signature.count
+        case .flac:
+            // A VORBIS_COMMENT block (type 4) whose declared length lies inside the packet.
+            guard whole.count >= 4, whole[0] & 0x7F == 4 else { return Tags() }
+            let length = (Int(whole[1]) << 16) | (Int(whole[2]) << 8) | Int(whole[3])
+            guard length <= whole.count - 4 else { return Tags() }
+            packet = Array(whole[4..<(4 + length)])
+            signatureLength = 0
+        }
 
         /// The length-prefixed block at `index` and the index after it.
         func block(at index: Int) -> (bytes: ArraySlice<UInt8>, next: Int)? {
@@ -579,7 +697,7 @@ enum OggHeaderReader {
         }
 
         // The vendor string, then the comment count.
-        guard let vendor = block(at: signature.count),
+        guard let vendor = block(at: signatureLength),
               let count = littleEndian(packet, at: vendor.next, as: UInt32.self) else { return Tags() }
         var index = vendor.next + 4
 

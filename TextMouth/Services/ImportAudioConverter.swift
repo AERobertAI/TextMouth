@@ -296,6 +296,7 @@ enum ImportAudioConverter {
         switch codec {
         case .vorbis: return "vorbis"
         case .opus: return "opus"
+        case .flac: return "flac"
         }
     }
 
