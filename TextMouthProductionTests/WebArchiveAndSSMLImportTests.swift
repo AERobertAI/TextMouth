@@ -171,9 +171,10 @@ final class WebArchiveAndSSMLImportTests: XCTestCase {
     func testTheOpenBookPanelOffersWebArchivesAndSSML() throws {
         let identifiers = FileImportService.supportedTypes.map(\.identifier)
         XCTAssertTrue(identifiers.contains("com.apple.webarchive"))
-        // The SSML type is declared in Info.plist; offered whenever the system knows it.
-        if let ssml = UTType("org.w3.ssml") {
-            XCTAssertTrue(identifiers.contains(ssml.identifier))
-        }
+        // The SSML type is declared in Info.plist and always offered: a type
+        // whose preferred extension is "ssml" must be among the panel's types.
+        let hasSSML = FileImportService.supportedTypes.contains { $0.preferredFilenameExtension == "ssml" }
+        XCTAssertTrue(hasSSML, "The Open Book panel offers no type for .ssml files")
+        XCTAssertTrue(identifiers.contains("org.w3.ssml"))
     }
 }

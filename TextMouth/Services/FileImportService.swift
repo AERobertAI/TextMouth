@@ -2231,13 +2231,12 @@ enum FileImportService {
             }
         }
         // Safari web archives, read as their main page (FMT03), and SSML
-        // files, read as text (FMT07). The SSML type is declared in
-        // Info.plist, so it may be dynamic until the app's declaration is
-        // registered; append it only when the system knows it.
+        // files, read as text (FMT07). macOS declares no SSML type; the app
+        // imports one in Info.plist. `importedAs` returns that declared type
+        // whether or not the system has registered it yet, so the panel
+        // always offers .ssml.
         types.append(.webArchive)
-        if let ssml = UTType("org.w3.ssml") {
-            types.append(ssml)
-        }
+        types.append(UTType(importedAs: "org.w3.ssml", conformingTo: .xml))
         // Rich text, read by textutil (FMT13).
         types.append(.rtf)
         // Rich text with attachments: a package, which the panel shows as a
