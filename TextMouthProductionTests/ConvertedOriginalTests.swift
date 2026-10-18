@@ -76,9 +76,9 @@ final class ConvertedOriginalTests: XCTestCase {
         )
         XCTAssertEqual(
             ConvertedOriginalWording.caption(keeping: true),
-            "Audio that TextMouth converts at import keeps its original file too, which takes about as much disk "
-                + "space again. Export offers it as the Original file. Feed episodes are not kept: they can be "
-                + "downloaded again."
+            "When TextMouth converts audio at import, it keeps the original file too. An original takes about as "
+                + "much disk space as its converted file, or about twice as much when it is uncompressed. Export "
+                + "offers it as the Original file. A feed episode's original is not kept: it can be downloaded again."
         )
         XCTAssertEqual(
             ConvertedOriginalWording.caption(keeping: false),
