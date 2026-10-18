@@ -13,6 +13,11 @@ struct ProcessSnapshot: Equatable {
     let path: String
     /// The command line, `argv[0]` first.
     let arguments: [String]
+    /// The path of the file the process writes as its standard output
+    /// (descriptor 1), when it is a file and the sweep asked for it; nil
+    /// otherwise. Only `afinfo`'s is read: TextMouth runs it with its output
+    /// in a hidden `.watched-output` file.
+    var standardOutputPath: String? = nil
 }
 
 /// Kills the `afconvert` processes an earlier TextMouth left running (REV17a
@@ -107,6 +112,123 @@ enum OrphanedConversionSweep {
         }
     }
 
+    // MARK: The Rules for afinfo
+
+    /// The program the afinfo half of the sweep may kill.
+    static let afinfoPath = "/usr/bin/afinfo"
+
+    /// How old, in seconds, a leftover output file must be before it is
+    /// removed. afinfo is allowed 30 seconds and one more for each 20 MB; a
+    /// test host and the user's TextMouth share the temporary directory, so
+    /// a newer file may be another copy's running afinfo, and an hour leaves
+    /// it far out of reach.
+    static let capturedOutputMinimumAge: TimeInterval = 3600
+
+    /// Whether `name` (a last path component) is one of TextMouth's captured
+    /// outputs: ".", a UUID, and `WatchedProcess.outputFileSuffix`.
+    static func isCapturedOutputName(_ name: String) -> Bool {
+        let suffix = WatchedProcess.outputFileSuffix
+        guard name.hasPrefix("."), name.hasSuffix(suffix),
+              name.count > suffix.count + 1 else { return false }
+        return UUID(uuidString: String(name.dropFirst().dropLast(suffix.count))) != nil
+    }
+
+    /// Whether the sweep must kill `process` as an orphaned afinfo: it is
+    /// `/usr/bin/afinfo`, run by the current user, an orphan (parent pid 1),
+    /// and prints into a hidden captured-output file of TextMouth's. An
+    /// afinfo whose parent lives, that prints elsewhere, or that belongs to
+    /// another user or app, is never killed.
+    static func shouldKillAfinfo(_ process: ProcessSnapshot, currentUser: uid_t = geteuid()) -> Bool {
+        guard process.path == afinfoPath,
+              process.userID == currentUser,
+              process.parentPid == launchdPid,
+              let output = process.standardOutputPath else { return false }
+        return isCapturedOutputName((output as NSString).lastPathComponent)
+    }
+
+    /// Kills, with SIGKILL, each process of `processes` that
+    /// `shouldKillAfinfo` accepts, and returns their pids.
+    /// - Parameters:
+    ///   - processes: The running processes.
+    ///   - kill: What ends a process, given the pid and the signal. The real
+    ///     `Darwin.kill` by default.
+    /// - Returns: The pids it killed, in the order of `processes`.
+    @discardableResult
+    static func sweepAfinfo(
+        processes: [ProcessSnapshot],
+        kill: (pid_t, Int32) -> Void = { _ = Darwin.kill($0, $1) }
+    ) -> [pid_t] {
+        let doomed = processes.filter { shouldKillAfinfo($0) }.map(\.pid)
+        for pid in doomed { kill(pid, SIGKILL) }
+        return doomed
+    }
+
+    /// Removes, from `root`, each real file named like a captured output
+    /// (`isCapturedOutputName`) whose modification time is more than
+    /// `capturedOutputMinimumAge` before `now`. A newer file (an afinfo may
+    /// be writing it, here or in another copy of the app), a symbolic link
+    /// or folder named like one, and everything else in `root` are left alone.
+    /// - Parameters:
+    ///   - root: The folder to look in; the temporary directory at launch.
+    ///   - now: The current time (tests pass their own).
+    /// - Returns: The number of files removed.
+    @discardableResult
+    static func sweepCapturedOutputFiles(in root: URL, now: Date = Date()) -> Int {
+        let keys: [URLResourceKey] = [.isRegularFileKey, .isSymbolicLinkKey, .contentModificationDateKey]
+        guard let entries = try? FileManager.default.contentsOfDirectory(
+            at: root, includingPropertiesForKeys: keys) else { return 0 }
+        var removed = 0
+        for entry in entries where isCapturedOutputName(entry.lastPathComponent) {
+            guard let values = try? entry.resourceValues(forKeys: Set(keys)),
+                  values.isRegularFile == true,
+                  values.isSymbolicLink != true,
+                  let modified = values.contentModificationDate,
+                  now.timeIntervalSince(modified) > capturedOutputMinimumAge else { continue }
+            // A file that cannot be removed is simply left for the next launch.
+            if (try? FileManager.default.removeItem(at: entry)) != nil { removed += 1 }
+        }
+        return removed
+    }
+
+    /// The log line for a sweep that killed `killed` afinfo processes and
+    /// removed `files` old captured-output files.
+    static func afinfoLogLine(killedCount killed: Int, removedFileCount files: Int) -> String {
+        "AFINFO_LEFTOVERS_SWEPT: killed \(killed) orphaned afinfo process(es), "
+            + "removed \(files) old output file(s)"
+    }
+
+    /// Runs both afinfo sweeps once, off the main thread at utility
+    /// priority, and logs one line when anything was swept. It does nothing
+    /// in hosted tests.
+    /// - Parameters:
+    ///   - isHostedTest: Whether this is a hosted test run.
+    ///   - lister: Lists the running processes.
+    ///   - kill: Ends a process.
+    ///   - root: The folder holding the output files: the temporary
+    ///     directory unless a test passes its own.
+    ///   - now: The current time (tests pass their own).
+    ///   - completion: Called on the background queue when the sweep has
+    ///     finished (tests wait on it); not called when nothing is run.
+    static func sweepAfinfoInBackground(
+        isHostedTest: Bool = TextMouthRuntime.current.isHostedTest,
+        lister: @escaping @Sendable () -> [ProcessSnapshot] = { runningProcesses() },
+        kill: @escaping @Sendable (pid_t, Int32) -> Void = { _ = Darwin.kill($0, $1) },
+        root: URL = FileManager.default.temporaryDirectory,
+        now: @escaping @Sendable () -> Date = { Date() },
+        completion: (@Sendable () -> Void)? = nil
+    ) {
+        guard !isHostedTest else { return }
+        DispatchQueue.global(qos: .utility).async {
+            // The process first, so its file is no longer in use when removed.
+            let killed = sweepAfinfo(processes: lister(), kill: kill)
+            let files = sweepCapturedOutputFiles(in: root, now: now())
+            if !killed.isEmpty || files > 0 {
+                DiagnosticLog.event(.storage, afinfoLogLine(killedCount: killed.count, removedFileCount: files))
+            }
+            completion?()
+        }
+    }
+
     // MARK: Listing Processes
 
     /// Every process the current user may inspect, through libproc. A process
@@ -131,7 +253,24 @@ enum OrphanedConversionSweep {
         guard let path = executablePath(of: pid),
               let (parent, user) = parentAndUser(of: pid),
               let arguments = arguments(of: pid) else { return nil }
-        return ProcessSnapshot(pid: pid, parentPid: parent, userID: user, path: path, arguments: arguments)
+        return ProcessSnapshot(
+            pid: pid, parentPid: parent, userID: user, path: path, arguments: arguments,
+            // Only afinfo's output is looked at, so no other process pays for it.
+            standardOutputPath: path == afinfoPath ? standardOutputPath(of: pid) : nil
+        )
+    }
+
+    /// The path of the file `pid` has open as descriptor 1, from
+    /// `proc_pidfdinfo` with `PROC_PIDFDVNODEPATHINFO`; nil when descriptor 1
+    /// is not a file, or the process has gone or cannot be inspected.
+    static func standardOutputPath(of pid: pid_t) -> String? {
+        var info = vnode_fdinfowithpath()
+        let size = Int32(MemoryLayout<vnode_fdinfowithpath>.size)
+        guard proc_pidfdinfo(pid, STDOUT_FILENO, PROC_PIDFDVNODEPATHINFO, &info, size) == size else { return nil }
+        // The path is a fixed-size C array, imported as a tuple.
+        return withUnsafePointer(to: &info.pvip.vip_path) {
+            $0.withMemoryRebound(to: CChar.self, capacity: Int(MAXPATHLEN)) { String(cString: $0) }
+        }
     }
 
     /// The executable's path from `proc_pidpath`, or nil on failure.
