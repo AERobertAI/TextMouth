@@ -114,6 +114,7 @@
 		1887B2B643953C9EECD569E3 /* newmdct.c in Sources */ = {isa = PBXBuildFile; fileRef = 219EFAFC9047FB96A55BAC34 /* newmdct.c */; };
 		189BC9577BB2832DD1132AEE /* SavedFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = C221A7F9E32DD87EF06B77F1 /* SavedFile.swift */; };
 		18ECA9EB09755BC573BFA585 /* ListeningDays.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1FD96A6FACE9F60B9E59799 /* ListeningDays.swift */; };
+		18EF440AD235FB656A4E5665 /* DocumentTypeDeclarationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF21B735233AB52434401919 /* DocumentTypeDeclarationTests.swift */; };
 		192F7A5B55852BE86A384FE6 /* ReaderViewModel+SpeakInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DF6267C55345A0D7CFE278D /* ReaderViewModel+SpeakInfo.swift */; };
 		1964198C25B5FDB290EE6308 /* SummaryPress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90CC6CBA49002A776C2559F9 /* SummaryPress.swift */; };
 		1B02A24BDFF6712D98EDD037 /* ConfigSaveCoalescingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5281BF84421866D59B5B434 /* ConfigSaveCoalescingTests.swift */; };
@@ -1916,6 +1917,7 @@
 		CE7FE4132ACB5A9B7C4DD1BC /* UncheckedConcurrencyPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UncheckedConcurrencyPolicyTests.swift; sourceTree = "<group>"; };
 		CEF91BB2739F53E049CBD9BD /* TranscriptTextLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptTextLoader.swift; sourceTree = "<group>"; };
 		CF1838BD7730DFAC73D67D85 /* FeedItemUIBookInfoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedItemUIBookInfoTests.swift; sourceTree = "<group>"; };
+		CF21B735233AB52434401919 /* DocumentTypeDeclarationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentTypeDeclarationTests.swift; sourceTree = "<group>"; };
 		CF2B3058D9636B4E1E7C007C /* DOCXParser+Metadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DOCXParser+Metadata.swift"; sourceTree = "<group>"; };
 		CF383270BF526E12EB6E7C71 /* ImportFuzzMutatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportFuzzMutatorTests.swift; sourceTree = "<group>"; };
 		CFC7B62C2565B66A16CDFA23 /* ShortcutManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutManagerTests.swift; sourceTree = "<group>"; };
@@ -2828,6 +2830,7 @@
 				C44597E82E14B7799932E03A /* DocumentDump.swift */,
 				9904270A85223CFAB7B5D3B1 /* DocumentDumpTests.swift */,
 				7BC5A8F6A753EEED476BF839 /* DocumentGoldenTests.swift */,
+				CF21B735233AB52434401919 /* DocumentTypeDeclarationTests.swift */,
 				D6018DC6189219689FF4F390 /* DOCXMalformedXMLTests.swift */,
 				172465A6DAB9BE5514C68195 /* DOCXStructureTests.swift */,
 				7869555A15F80E73B3762EB6 /* DoublePressBindingTests.swift */,
@@ -3696,6 +3699,7 @@
 				BF766F61089554E4836A388E /* DocumentDump.swift in Sources */,
 				27D1B46F457F16DC5EB51826 /* DocumentDumpTests.swift in Sources */,
 				465D53B8C6043A9915D09B2C /* DocumentGoldenTests.swift in Sources */,
+				18EF440AD235FB656A4E5665 /* DocumentTypeDeclarationTests.swift in Sources */,
 				FC21588FD1C05D0BA1B0E346 /* DoublePressBindingTests.swift in Sources */,
 				2D89C40A66967CD8516BCF04 /* DuplicateFinderTests.swift in Sources */,
 				2A1B992E0DABB5B492C4EF75 /* EPUBAuthorNameTests.swift in Sources */,

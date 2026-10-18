@@ -308,6 +308,124 @@
 		</dict>
 		<dict>
 			<key>CFBundleTypeName</key>
+			<string>Rich Text Document (RTF)</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>rtf</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.rtf</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Rich Text Document with Attachments (RTFD)</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>rtfd</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.apple.rtfd</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSTypeIsPackage</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Word 97-2003 Document (DOC)</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>doc</string>
+				<string>dot</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.microsoft.word.doc</string>
+				<string>com.microsoft.word.dot</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>OpenDocument Text (ODT)</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>odt</string>
+				<string>ott</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>org.oasis-open.opendocument.text</string>
+				<string>org.oasis-open.opendocument.text-template</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>XML Document (DTBook or Word 2003 XML)</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>xml</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.xml</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Web Archive</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>webarchive</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.apple.webarchive</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>SSML Document</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>ssml</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>org.w3.ssml</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
 			<string>DAISY Book</string>
 			<key>CFBundleTypeExtensions</key>
 			<array>
@@ -420,6 +538,27 @@
 				<key>public.mime-type</key>
 				<array>
 					<string>text/markdown</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>org.w3.ssml</string>
+			<key>UTTypeDescription</key>
+			<string>SSML Document</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.xml</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>ssml</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/ssml+xml</string>
 				</array>
 			</dict>
 		</dict>
