@@ -497,4 +497,37 @@ final class ConvertedOriginalTests: XCTestCase {
         }
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: destination.path), [])
     }
+
+    // MARK: - Kept originals and the data folder's move
+
+    /// The data folder's copy plan counts the bytes of a package's hidden
+    /// kept originals folder, and a move of the data folder copies them,
+    /// so a move never loses a kept original.
+    func testTheDataFolderCopyCountsAndCopiesKeptOriginals() throws {
+        let base = try makeSandboxDirectory("keepexport-move")
+        let source = base.appendingPathComponent("Source", isDirectory: true)
+        let destination = base.appendingPathComponent("Destination", isDirectory: true)
+        let package = source.appendingPathComponent("Library/Elegy.tmb", isDirectory: true)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        try Data("0123456789".utf8).write(to: package.appendingPathComponent("Elegy.m4a"))
+        let kept = try keepStandIn("Elegy.ogg", in: package)
+        let keptBytes = try Data(contentsOf: kept)
+        let library = Library(books: [
+            Book(
+                title: "Elegy",
+                format: .audio,
+                filePath: package.appendingPathComponent("Elegy.m4a").path,
+                md5Hash: "elegy",
+                tmbDirectoryName: "Elegy.tmb"
+            ),
+        ])
+
+        let plan = try DataDirectoryCopyPlan(of: source)
+        XCTAssertEqual(plan.items.first { $0.relativePath == "Library/Elegy.tmb" }?.byteCount, Int64(10 + keptBytes.count))
+
+        _ = try DataDirectoryMigrator.prepareMigration(from: source, to: destination, library: library)
+
+        let copied = destination.appendingPathComponent("Library/Elegy.tmb/.convertedOriginals/Elegy.ogg")
+        XCTAssertEqual(try Data(contentsOf: copied), keptBytes)
+    }
 }
