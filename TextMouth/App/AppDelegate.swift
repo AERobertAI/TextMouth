@@ -64,6 +64,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // a force-quit or a memory quit, is killed now (REV17a); only ones
         // writing TextMouth's own hidden conversion files are touched.
         OrphanedConversionSweep.sweepInBackground()
+        // The same for a textutil that a force-quit or a crash orphaned
+        // mid-conversion, and for the working folders (with their hidden
+        // output) older than an hour that it left in the temporary directory.
+        OrphanedConversionSweep.sweepTextutilInBackground()
         // The hidden copy a data-directory move staged beside its
         // destination is removed when the move ends; when the destination's
         // volume was unplugged or the app force-quit, it was not. The
