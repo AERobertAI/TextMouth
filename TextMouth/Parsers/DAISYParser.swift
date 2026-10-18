@@ -571,19 +571,17 @@ enum DAISYParser {
         return conversion.markdown
     }
 
-    /// Find a DTBook XML file by scanning for files with <dtbook> root element
+    /// Find a DTBook XML file by scanning for files with a <dtbook> root
+    /// element. `XMLDocumentSniffer` decides, as it decides for a loose .xml
+    /// file at import, so a DTBook is found whatever its encoding (UTF-16,
+    /// ISO 8859-1, any declared one), however long its prolog, and under any
+    /// file name. Only the first `scanLength` bytes of each file are looked
+    /// at; a file that cannot be read is passed over.
     private static func findDTBookXML(in files: [String], provider: DAISYFileProvider) -> String? {
         for path in files where path.lowercased().hasSuffix(".xml") {
-            // Skip known non-DTBook XML files
-            let filename = (path as NSString).lastPathComponent.lowercased()
-            if filename == "metadata.xml" || filename.hasSuffix(".ncx") { continue }
-
-            // Check if this XML has a dtbook root element
-            if let data = try? provider.readFile(at: path) {
-                let prefix = String(data: data.prefix(500), encoding: .utf8) ?? ""
-                if prefix.contains("dtbook") {
-                    return path
-                }
+            if let data = try? provider.readFile(at: path),
+               XMLDocumentSniffer.rootKind(of: data) == .dtbook {
+                return path
             }
         }
         return nil

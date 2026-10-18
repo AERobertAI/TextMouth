@@ -117,30 +117,102 @@ final class DTBookImportTests: XCTestCase {
         }
     }
 
-    // MARK: - Refusals
+    // MARK: - Every Valid DTBook
 
-    /// An XML file whose root is neither a DTBook's nor Word's is refused
-    /// by name, before anything is copied.
-    func testAnotherKindOfXMLIsRefusedByName() throws {
-        let folder = try makeSandboxDirectory("DTBookImport")
-        let catalog = folder.appendingPathComponent("catalog.xml")
-        try Data("<?xml version=\"1.0\"?><catalog><item>One</item></catalog>".utf8).write(to: catalog)
-
-        XCTAssertThrowsError(try FileImportService.importFileWithReport(from: catalog, toFolder: folderPath)) { error in
-            XCTAssertEqual((error as? ImportFailure)?.step, .checkingFormat)
-            // FileImportError is not Equatable, so its case is told by its sentence.
-            XCTAssertEqual(
-                ((error as? ImportFailure)?.underlying as? FileImportError)?.errorDescription,
-                FileImportError.unsupportedXML.errorDescription
-            )
-            XCTAssertEqual(
-                error.localizedDescription,
-                "Could not import “catalog.xml”. Checking its format failed: This XML file is neither a DTBook book "
-                    + "nor a Word 2003 XML document, the kinds of XML file TextMouth reads."
-            )
-        }
-        XCTAssertEqual(try folderEntries(), [])
+    /// One DTBook file the old detection refused: its name, bytes, the title
+    /// its head names, and a phrase of its text a listener must hear.
+    private struct DTBookVariant {
+        let fileName: String
+        let bytes: Data
+        let title: String
+        let words: String
     }
+
+    /// The DTBook that carries `title`, `author`, and `paragraph` in a head
+    /// and body, declared as `declaredEncoding` and preceded by `prolog`.
+    private func dtbookMarkup(
+        declaredEncoding: String, prolog: String = "", title: String, author: String, paragraph: String
+    ) -> String {
+        """
+        <?xml version="1.0" encoding="\(declaredEncoding)"?>
+        \(prolog)<dtbook xmlns="http://www.daisy.org/z3986/2005/dtbook/" version="2005-3" xml:lang="en">
+        <head>
+         <meta name="dc:Title" content="\(title)"/>
+         <meta name="dc:Creator" content="\(author)"/>
+        </head>
+        <book><bodymatter><level1><h1>Chapter One</h1><p>\(paragraph)</p></level1></bodymatter></book>
+        </dtbook>
+        """
+    }
+
+    /// The four DTBooks the old detection refused, built here: a long
+    /// comment before the root, ISO 8859-1 text, Cyrillic head text, and
+    /// UTF-16 with a byte order mark. The old test decoded the first 500
+    /// bytes as UTF-8 and looked for "dtbook" in them: a comment pushed the
+    /// root past them, Latin-1 is not UTF-8, a Cyrillic head is cut inside a
+    /// letter there, and UTF-16 is not UTF-8 either.
+    private func dtbookVariants() throws -> [DTBookVariant] {
+        let comment = "<!-- " + String(repeating: "Licensed for reading by the borrowing library. ", count: 13) + "-->\n"
+        let commented = dtbookMarkup(
+            declaredEncoding: "UTF-8", prolog: comment,
+            title: "Harbour Notes", author: "A. Sample", paragraph: "These notes were written on the quay."
+        )
+        let latin1 = dtbookMarkup(
+            declaredEncoding: "ISO-8859-1", title: "Caf\u{E9} Notes", author: "\u{C9}mile Bront\u{EB}",
+            paragraph: "Le se\u{F1}or boit un caf\u{E9} sur le quai."
+        )
+        let russian = dtbookMarkup(
+            declaredEncoding: "UTF-8", title: "Записки у причала", author: "Антонина Сергеевна Кулагина",
+            paragraph: "Паром отходит в семь."
+        )
+        let utf16 = dtbookMarkup(
+            declaredEncoding: "UTF-16", title: "Harbour Notes", author: "A. Sample", paragraph: "The ferry leaves at seven."
+        )
+        return [
+            DTBookVariant(fileName: "commented.xml", bytes: Data(commented.utf8),
+                          title: "Harbour Notes", words: "written on the quay"),
+            DTBookVariant(fileName: "latin1.xml", bytes: try XCTUnwrap(latin1.data(using: .isoLatin1)),
+                          title: "Caf\u{E9} Notes", words: "boit un caf\u{E9} sur le quai"),
+            DTBookVariant(fileName: "russian.xml", bytes: Data(russian.utf8),
+                          title: "Записки у причала", words: "Паром отходит в семь"),
+            // `data(using: .utf16)` begins with the byte order mark.
+            DTBookVariant(fileName: "utf16.xml", bytes: try XCTUnwrap(utf16.data(using: .utf16)),
+                          title: "Harbour Notes", words: "The ferry leaves at seven"),
+        ]
+    }
+
+    /// Each of the four variants imports as a DAISY book with its own title
+    /// and its words: the sniffer's answer is the one test of a DTBook.
+    func testADTBookInAnyEncodingOrProlog() throws {
+        for variant in try dtbookVariants() {
+            let folder = try makeSandboxDirectory("DTBookVariant")
+            let file = folder.appendingPathComponent(variant.fileName)
+            try variant.bytes.write(to: file)
+            XCTAssertEqual(XMLDocumentSniffer.rootKind(ofFileAt: file), .dtbook, variant.fileName)
+
+            let book = try importedForTest(file).book
+
+            XCTAssertEqual(book.format, .daisy, variant.fileName)
+            XCTAssertEqual(book.title, variant.title, variant.fileName)
+            let text = allText(of: try openedContent(of: book))
+            XCTAssertTrue(text.contains(variant.words), "\(variant.fileName): \(text)")
+        }
+    }
+
+    /// A DTBook named metadata.xml is still a DTBook: no file name is passed
+    /// over when a file is searched for the book's text.
+    func testADTBookNamedMetadataXMLImports() throws {
+        let sample = try copyOfFormatSample("dtbook/harbour-standalone.xml")
+        let renamed = sample.deletingLastPathComponent().appendingPathComponent("metadata.xml")
+        try FileManager.default.moveItem(at: sample, to: renamed)
+
+        let book = try importedForTest(renamed).book
+
+        XCTAssertEqual(book.format, .daisy)
+        XCTAssertEqual(book.title, "Harbour Notes")
+    }
+
+    // MARK: - Refusals
 
     /// A DTBook past the document byte limit is refused with the limit's
     /// sentence (not as "not a DAISY book"), and leaves nothing in the library.
