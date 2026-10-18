@@ -438,6 +438,46 @@ final class WatchedProcessSafetyTests: XCTestCase {
         XCTAssertEqual(outcome, .killed(.wroteTooMuch(bytes: 1_000)))
     }
 
+    /// The kernel stops a fast writer at the cap, not the watchdog: with a
+    /// poll interval far longer than the test, the child still ends at once
+    /// as `wroteTooMuch`, and its file holds at most the 1 MB cap.
+    func testTheKernelStopsAFastWriterAtTheCapBetweenTwoLooks() async throws {
+        let output = folder.appendingPathComponent("fast.bin")
+        let cap: Int64 = 1 << 20
+        let started = Date()
+        let outcome = try await WatchedProcess.run(
+            URL(fileURLWithPath: "/bin/sh"),
+            arguments: ["-c", "while :; do printf xxxxxxxxxxxxxxxx >> \"$0\"; done", output.path],
+            watching: output, limits: limits(outputCap: cap, poll: 30)
+        )
+        XCTAssertEqual(outcome, .killed(.wroteTooMuch(bytes: cap)))
+        XCTAssertLessThan(Date().timeIntervalSince(started), 10)
+        let size = (try FileManager.default.attributesOfItem(atPath: output.path)[.size] as? NSNumber)?.int64Value
+        XCTAssertLessThanOrEqual(try XCTUnwrap(size), cap)
+    }
+
+    /// `yes` writing into a capturing run's file under a 1 MB cap, with the
+    /// watchdog too slow to help, ends as `wroteTooMuch` and the 1 MB comes
+    /// back whole.
+    func testYesIsStoppedAtAOneMegabyteCapByTheKernel() async throws {
+        let result = try await WatchedProcess.runCapturingOutput(
+            URL(fileURLWithPath: "/usr/bin/yes"), arguments: [], limits: limits(poll: 30),
+            maximumOutputBytes: 1 << 20, outputFolder: folder
+        )
+        XCTAssertEqual(result.outcome, .killed(.wroteTooMuch(bytes: 1 << 20)))
+        XCTAssertEqual(result.output.count, 1 << 20)
+    }
+
+    /// The shell's limit is whole kilobytes, rounded up, clamped to a petabyte, and open without a cap.
+    func testTheFileSizeLimitGivenToTheShell() {
+        XCTAssertEqual(WatchedProcess.fileSizeLimitForShell(nil), "unlimited")
+        XCTAssertEqual(WatchedProcess.fileSizeLimitForShell(0), "1")
+        XCTAssertEqual(WatchedProcess.fileSizeLimitForShell(1_024), "1")
+        XCTAssertEqual(WatchedProcess.fileSizeLimitForShell(1_025), "2")
+        XCTAssertEqual(WatchedProcess.fileSizeLimitForShell(1 << 20), "1024")
+        XCTAssertEqual(WatchedProcess.fileSizeLimitForShell(Int64.max), "1099511627776")
+    }
+
     /// A child under the cap, and a run with no cap at all, are left alone
     /// until some other limit ends them.
     func testAChildUnderTheCapOrWithNoCapIsNotKilledForItsOutput() async throws {

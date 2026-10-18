@@ -15,9 +15,13 @@ import os
 /// input, output, and errors are closed (the null device), so nothing it
 /// prints can fill a pipe and stall it.
 ///
-/// Three more guards keep a runaway child from outliving its watcher:
+/// Four more guards keep a runaway child from outliving its watcher:
 /// - the kernel itself ends the child (SIGXCPU) when it has used its CPU
 ///   allowance, `ulimit -t`, even if TextMouth is not watching any more;
+/// - when the output has a cap, the kernel ends the child (SIGXFSZ) the
+///   moment a write would pass it, `ulimit -f`: the watchdog looks once a
+///   second, and a fast writer can put gigabytes on the disk between two
+///   looks;
 /// - a tiny reaper shell kills the child as soon as TextMouth's own process
 ///   is gone, however it went (quit, force-quit, or the memory guard's
 ///   `_exit`);
@@ -232,6 +236,18 @@ enum WatchedProcess {
         Int(min(max(seconds.rounded(.up), 1), 1_000_000_000))
     }
 
+    /// What `ulimit -f` is given for an output cap of `bytes`: whole
+    /// kilobytes (the unit of `/bin/sh`'s `ulimit -f`, measured: 3 stops a
+    /// writer at 3,072 bytes), rounded up, at least 1; "unlimited" without a
+    /// cap. A cap above a petabyte is given as a petabyte: the shell refuses
+    /// a number whose bytes overflow, and the child could not start.
+    static func fileSizeLimitForShell(_ bytes: Int64?) -> String {
+        guard let requested = bytes else { return "unlimited" }
+        let bytes = min(requested, 1 << 50)
+        let kilobyte: Int64 = 1_024
+        return String(max(1, bytes / kilobyte + (bytes % kilobyte > 0 ? 1 : 0)))
+    }
+
     /// Runs `executable` with `arguments` and waits for it, off the main
     /// thread, under `limits`, watching the growth of the file `output`.
     /// - Parameters:
@@ -356,8 +372,8 @@ enum WatchedProcess {
     /// Starts the child and watches it until it ends or is killed; blocks
     /// its thread, so call it on a background queue.
     ///
-    /// The child is `/bin/sh` setting the CPU limit and then replacing itself
-    /// with the tool (`exec`), so the pid seen, measured, and killed here is
+    /// The child is `/bin/sh` setting the CPU and file-size limits and then
+    /// replacing itself with the tool (`exec`), so the pid seen, measured, and killed here is
     /// the tool's own.
     private static func watch(
         _ executable: URL,
@@ -376,8 +392,9 @@ enum WatchedProcess {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/sh")
         process.arguments = [
-            "-c", "ulimit -t \"$1\" || exit 126; shift; exec \"$@\"", "sh",
-            String(cpuSecondsForShell(maximumCPU)), executable.path,
+            "-c", "ulimit -t \"$1\" || exit 126; ulimit -f \"$2\" || exit 126; shift 2; exec \"$@\"", "sh",
+            String(cpuSecondsForShell(maximumCPU)), fileSizeLimitForShell(limits.maximumOutputBytes),
+            executable.path,
         ] + arguments
         process.standardInput = FileHandle.nullDevice
         process.standardOutput = standardOutput ?? FileHandle.nullDevice
@@ -434,9 +451,14 @@ enum WatchedProcess {
                 return .killed(reason)
             }
         }
-        // The kernel's own CPU limit ended it: say so rather than "exited".
-        if process.terminationReason == .uncaughtSignal, process.terminationStatus == SIGXCPU {
-            return .killed(.usedTooMuchProcessorTime(seconds: maximumCPU))
+        // The kernel's own limits ended it: say so rather than "exited".
+        if process.terminationReason == .uncaughtSignal {
+            if process.terminationStatus == SIGXCPU {
+                return .killed(.usedTooMuchProcessorTime(seconds: maximumCPU))
+            }
+            if process.terminationStatus == SIGXFSZ, let cap = limits.maximumOutputBytes {
+                return .killed(.wroteTooMuch(bytes: cap))
+            }
         }
         return .exited(status: process.terminationStatus)
     }
