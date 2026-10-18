@@ -28,6 +28,13 @@ struct AudioFileInfo: Equatable, Sendable {
     let bitsPerSample: Int?
     /// Whether the samples are floating-point numbers (linear PCM only).
     let isFloat: Bool
+    /// Whether the file says which channel is which (a layout such as
+    /// "5.1 (L C R Ls Rs LFE)"), as afinfo prints it for the track or its
+    /// format. False when the layout is "NA" or only "Discrete" channels:
+    /// a mix to stereo then cannot tell the centre from a rear channel.
+    /// True when afinfo prints no layout at all (nothing is known against
+    /// the file).
+    var hasChannelLayout = true
 
     /// Whether the codec keeps every bit of the source: linear PCM, ALAC,
     /// and FLAC.
@@ -64,6 +71,7 @@ struct AudioFileInfo: Equatable, Sendable {
         private static let wantedInTrack: Set<String> = [
             "num_channels", "sample_rate", "format_type", "bit_depth", "duration",
             "pcm_info/data_type", "source_info/bit_depth",
+            "channel_layout", "format_list/format/channel_layout",
         ]
 
         /// The names of the elements open now, outermost first.
@@ -145,8 +153,19 @@ struct AudioFileInfo: Equatable, Sendable {
                 sampleRate: sampleRate,
                 duration: duration,
                 bitsPerSample: bits.flatMap { $0 > 0 ? $0 : nil },
-                isFloat: isFloat
+                isFloat: isFloat,
+                hasChannelLayout: Self.hasChannelLayout(values["channel_layout"], values["format_list/format/channel_layout"])
             )
+        }
+
+        /// Whether the layouts afinfo printed (the track's, and its format's,
+        /// where AAC in an .m4a keeps it) say which channel is which: any
+        /// one that is named and not "NA" or "Discrete" does; all absent
+        /// counts as saying so.
+        private static func hasChannelLayout(_ layouts: String?...) -> Bool {
+            let printed = layouts.compactMap { trimmed($0) }
+            guard !printed.isEmpty else { return true }
+            return printed.contains { $0 != "NA" && !$0.isEmpty && !$0.localizedCaseInsensitiveContains("discrete") }
         }
 
         /// `text` without the white space around it; nil stays nil.

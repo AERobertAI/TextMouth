@@ -150,6 +150,10 @@ enum ImportAudioConverter {
         /// a downmix and the room to spare (`downmixBytesNeeded`); nothing
         /// was run. `bytesNeeded` is the free space it needs.
         case notEnoughSpace(fileName: String, bytesNeeded: Int64)
+        /// The file has `channels` channels (more than two) and does not say
+        /// which is which, so a mix to stereo would keep two arbitrary
+        /// channels, often not the speech. Nothing was run.
+        case unlabelledChannels(fileName: String, channels: Int)
 
         var errorDescription: String? {
             switch self {
@@ -166,6 +170,9 @@ enum ImportAudioConverter {
             case let .notEnoughSpace(fileName, bytesNeeded):
                 return "There is not enough free disk space to convert \(fileName): "
                     + "it needs \(ImportProgressWording.size(bytesNeeded)) free."
+            case let .unlabelledChannels(fileName, channels):
+                return "The audio file \(fileName) has \(channels) channels but does not say which is which, "
+                    + "so TextMouth cannot mix it to stereo."
             }
         }
     }
@@ -264,6 +271,12 @@ enum ImportAudioConverter {
         /// Whether the codec keeps every bit of its source (PCM, ALAC, FLAC),
         /// so the import writes Apple Lossless rather than AAC.
         let isLossless: Bool
+        /// Whether the file says which channel is which. Always true for an
+        /// Ogg file, whose channel order its specification fixes, and for
+        /// mono and stereo; false only for a file of more than two channels
+        /// that gives no layout (`AudioFileInfo.hasChannelLayout`), which
+        /// cannot be mixed to stereo (`Failure.unlabelledChannels`).
+        var hasChannelLayout = true
     }
 
     /// What the import does with one audio file.
@@ -305,7 +318,8 @@ enum ImportAudioConverter {
         guard let facts = try await AudioFileInfo.read(url) else { return nil }
         return SourceInfo(
             sampleRate: facts.sampleRate, channels: facts.channels, duration: facts.duration,
-            formatID: facts.formatID, bitsPerSample: facts.bitsPerSample, isLossless: facts.isLossless
+            formatID: facts.formatID, bitsPerSample: facts.bitsPerSample, isLossless: facts.isLossless,
+            hasChannelLayout: facts.hasChannelLayout
         )
     }
 
@@ -470,7 +484,8 @@ enum ImportAudioConverter {
     /// centre, 10.7 dB down (the normalized ITU downmix). AC-3 and E-AC-3
     /// are mixed by their own decoder either way. A PCM source with no
     /// channel layout cannot be mixed: afconvert keeps its first two
-    /// channels. These arguments are in this one function so that the mix
+    /// channels, so `convert` refuses it first (`Failure.unlabelledChannels`).
+    /// These arguments are in this one function so that the mix
     /// can be changed in one place.
     static func downmixArguments(from input: URL, to output: URL, target: Target) -> [String] {
         [
@@ -564,6 +579,10 @@ enum ImportAudioConverter {
         let started = Date()
         let name = source.lastPathComponent
         guard let info = try await inspect(source) else { throw Failure.unreadable(fileName: name) }
+        // Without a layout afconvert keeps the first two channels, and the speech is often the third.
+        if needsDownmix(info), !info.hasChannelLayout {
+            throw Failure.unlabelledChannels(fileName: name, channels: info.channels)
+        }
         let bytesBefore = fileSize(of: source)
         let target = target(for: info, bytes: bytesBefore)
         let staged = temporaryURL(beside: source)

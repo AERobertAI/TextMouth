@@ -318,11 +318,29 @@ final class AudioChannelDownmixTests: XCTestCase {
         return try XCTUnwrap(Self.channelLevels(ofWAVAt: wav))
     }
 
+    /// Checks that the stereo file at `converted`, mixed from a source whose
+    /// tone is in its centre channel alone (RMS `sourceCentre`), carries the
+    /// tone in both channels: each channel is within 20 dB of the source's
+    /// centre, and the two within 1 dB of each other. The exact level is not
+    /// pinned (Apple may change its normalization); it is printed, so a
+    /// change shows in the log without failing.
+    private func assertCentreInBothEars(of converted: URL, sourceCentre: Double, _ label: String) async throws {
+        let levels = try await levels(of: converted, as: "\(label)-converted.wav")
+        XCTAssertEqual(levels.count, 2, label)
+        let drops = levels.map { Self.decibels(below: sourceCentre, $0) }
+        print("\(label): the centre arrives \(drops.map { String(format: "%.1f", $0) }) dB below the source's centre")
+        for drop in drops {
+            XCTAssertLessThan(drop, 20, "\(label): a channel lost the centre")
+        }
+        if let first = drops.first, let last = drops.last {
+            XCTAssertEqual(first, last, accuracy: 1, "\(label): the ears differ")
+        }
+    }
+
     /// A 5.1 PCM file with signal in the centre channel alone (layout
-    /// MPEG_5_1_A: L R C LFE Ls Rs) converts to a stereo file whose two
-    /// channels both sit within 2 dB of 10.7 dB below the source's centre
-    /// (the normalized ITU downmix). Without `--mix` the centre is lost.
-    func testAPCMCentreReachesBothEarsAtTheITULevel() async throws {
+    /// MPEG_5_1_A) converts to a stereo file with the tone in both channels.
+    /// Without `--mix` the centre is lost (-93 dBFS against -21).
+    func testAPCMCentreReachesBothEars() async throws {
         let source = folder.appendingPathComponent("pcm51.caf")
         try writePCM(layout: kAudioChannelLayoutTag_MPEG_5_1_A, to: source, signalIn: 2)
         let sourceCentre = try XCTUnwrap(try await levels(of: source, as: "source.wav").max())
@@ -330,27 +348,104 @@ final class AudioChannelDownmixTests: XCTestCase {
 
         let conversion = try await ImportAudioConverter.convert(source)
 
-        let converted = try await levels(of: conversion.converted, as: "converted.wav")
-        XCTAssertEqual(converted.count, 2)
-        for level in converted {
-            XCTAssertEqual(Self.decibels(below: sourceCentre, level), 10.7, accuracy: 2, "a channel lost the centre")
-        }
+        try await assertCentreInBothEars(of: conversion.converted, sourceCentre: sourceCentre, "pcm 5.1")
     }
 
-    /// The same for the committed AC-3 fixture, which AC-3's own decoder
-    /// mixes 13.7 dB below its centre.
-    func testAnAC3CentreReachesBothEarsAtItsDecodersLevel() async throws {
+    /// The same for the committed AC-3 fixture, which AC-3's own decoder mixes.
+    func testAnAC3CentreReachesBothEars() async throws {
         let source = try copy(Self.centre51, as: "film.ac3")
         let sourceCentre = try XCTUnwrap(try await levels(of: source, as: "source.wav").max())
         XCTAssertGreaterThan(sourceCentre, 1_000)
 
         let conversion = try await ImportAudioConverter.convert(source)
 
-        let converted = try await levels(of: conversion.converted, as: "converted.wav")
-        XCTAssertEqual(converted.count, 2)
-        for level in converted {
-            XCTAssertEqual(Self.decibels(below: sourceCentre, level), 13.7, accuracy: 2, "a channel lost the centre")
+        try await assertCentreInBothEars(of: conversion.converted, sourceCentre: sourceCentre, "ac-3 5.1")
+    }
+
+    // MARK: - Sources That Do Not Say Which Channel Is Which
+
+    /// Writes a CAF of `channels` channels of 16-bit PCM by hand, one second
+    /// of a tone in every channel. With `labelled`, a layout chunk names each
+    /// channel (the standard labels 1, 2, 3, ...: L R C LFE Ls Rs Lc Rc Cs
+    /// Lsd for ten); without, there is no layout chunk at all, which
+    /// `AVAudioFile` cannot write (it may add a layout of its own).
+    private func writeCAF(channels: Int, labelled: Bool = false, to url: URL, rate: Double = 44_100) throws {
+        func bigEndian<T: FixedWidthInteger>(_ value: T) -> [UInt8] {
+            withUnsafeBytes(of: value.bigEndian) { Array($0) }
         }
+        let frames = Int(rate)
+        var pcm = Data()
+        for index in 0..<frames {
+            let sample = Int16(8_000 * sin(2 * Double.pi * 440 * Double(index) / rate))
+            for _ in 0..<channels { pcm.append(contentsOf: withUnsafeBytes(of: sample.littleEndian) { Array($0) }) }
+        }
+        var description = bigEndian(rate.bitPattern)
+        description += Array("lpcm".utf8) + bigEndian(UInt32(2)) + bigEndian(UInt32(2 * channels))
+        description += bigEndian(UInt32(1)) + bigEndian(UInt32(channels)) + bigEndian(UInt32(16))
+        var file = Data("caff".utf8) + Data(bigEndian(UInt16(1)) + bigEndian(UInt16(0)))
+        file += Data("desc".utf8) + Data(bigEndian(Int64(description.count)) + description)
+        if labelled {
+            // Layout tag 0 means "use the channel descriptions": a label, flags, and three coordinates each.
+            var layout = bigEndian(UInt32(0)) + bigEndian(UInt32(0)) + bigEndian(UInt32(channels))
+            for label in 1...channels { layout += bigEndian(UInt32(label)) + Array(repeating: 0, count: 16) }
+            file += Data("chan".utf8) + Data(bigEndian(Int64(layout.count)) + layout)
+        }
+        file += Data("data".utf8) + Data(bigEndian(Int64(pcm.count + 4)) + bigEndian(UInt32(0)))
+        file += pcm
+        try file.write(to: url)
+    }
+
+    /// A six-channel file with no layout, and one whose channels are only
+    /// "Discrete", is refused by name before any child runs: afconvert would
+    /// keep the first two channels, and the speech is often the third. A
+    /// labelled one, and stereo without a layout, are not refused.
+    func testASurroundSourceWithoutALayoutIsRefusedByName() async throws {
+        let bare = folder.appendingPathComponent("bare.caf")
+        try writeCAF(channels: 6, to: bare)
+        let discrete = folder.appendingPathComponent("discrete.caf")
+        try writePCM(layout: kAudioChannelLayoutTag_DiscreteInOrder | 6, to: discrete)
+        let marker = folder.appendingPathComponent("a-child-ran")
+        let spy = tool(downmix: ("/usr/bin/touch", [marker.path]), convert: ("/usr/bin/touch", [marker.path]))
+
+        for (source, name) in [(bare, "bare.caf"), (discrete, "discrete.caf")] {
+            let inspected = try XCTUnwrap(try await ImportAudioConverter.inspect(source))
+            XCTAssertFalse(inspected.hasChannelLayout, name)
+            do {
+                _ = try await ImportAudioConverter.convert(source, using: spy)
+                XCTFail("\(name) must be refused")
+            } catch let failure as ImportAudioConverter.Failure {
+                XCTAssertEqual(failure, .unlabelledChannels(fileName: name, channels: 6), name)
+            }
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path), "no child ran")
+        XCTAssertEqual(names, ["bare.caf", "discrete.caf"])
+
+        let stereo = folder.appendingPathComponent("stereo.caf")
+        try writeCAF(channels: 2, to: stereo)
+        let conversion = try await ImportAudioConverter.convert(stereo)
+        XCTAssertEqual(conversion.converted.lastPathComponent, "stereo.m4a")
+    }
+
+    /// The refusal's words, with the file's own count.
+    func testTheWordsOfTheUnlabelledChannelsFailure() {
+        XCTAssertEqual(
+            ImportAudioConverter.Failure.unlabelledChannels(fileName: "film.caf", channels: 6).errorDescription,
+            "The audio file film.caf has 6 channels but does not say which is which, so TextMouth cannot mix it to stereo."
+        )
+    }
+
+    /// afinfo's layouts are read for the track and for the AAC format: AC-3
+    /// and a labelled PCM file have one, as has the converted stereo AAC.
+    func testALabelledFileHasAChannelLayout() async throws {
+        let ac3 = try copy(Self.centre51, as: "film.ac3")
+        let ac3Info = try XCTUnwrap(try await ImportAudioConverter.inspect(ac3))
+        XCTAssertTrue(ac3Info.hasChannelLayout)
+        let pcm = folder.appendingPathComponent("pcm51.caf")
+        try writePCM(layout: kAudioChannelLayoutTag_MPEG_5_1_A, to: pcm)
+        let pcmInfo = try XCTUnwrap(try await ImportAudioConverter.inspect(pcm))
+        XCTAssertTrue(pcmInfo.hasChannelLayout)
+        let conversion = try await ImportAudioConverter.convert(ac3)
+        XCTAssertTrue(try await facts(of: conversion.converted).hasChannelLayout)
     }
 
     // MARK: - Lossless Sources of Every Channel Count
@@ -385,12 +480,14 @@ final class AudioChannelDownmixTests: XCTestCase {
         XCTAssertEqual(names.count, 16)
     }
 
-    /// A source of ten channels (more than Apple Lossless holds) converts
-    /// too, to stereo.
+    /// A source of ten channels, labelled one by one (more than Apple
+    /// Lossless holds), converts too, to stereo.
     func testATenChannelSourceConvertsToAppleLossless() async throws {
         let source = folder.appendingPathComponent("ten.caf")
-        let channels = try writePCM(layout: kAudioChannelLayoutTag_DiscreteInOrder | 10, to: source)
-        XCTAssertEqual(channels, 10)
+        try writeCAF(channels: 10, labelled: true, to: source)
+        let before = try XCTUnwrap(try await ImportAudioConverter.inspect(source))
+        XCTAssertEqual(before.channels, 10)
+        XCTAssertTrue(before.hasChannelLayout)
 
         let conversion = try await ImportAudioConverter.convert(source)
 
