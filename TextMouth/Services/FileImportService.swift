@@ -87,6 +87,11 @@ struct ImportedBook {
     /// `deleteOriginalFile(at:)` refuses a folder too, whatever its caller
     /// decided.
     var isFromFolder = false
+    /// What the import tells the listener once the book is in the library,
+    /// besides what is missing from it (`warning`): the entries a playlist
+    /// import skipped (FMT10). Nil when there is nothing to tell. It does
+    /// not keep the original: a playlist's is never deleted anyway.
+    var notice: String?
 
     /// Whether the original file must stay exactly where it is: an import
     /// that left chapters or pages out never deletes it or offers to,
@@ -118,6 +123,20 @@ struct ImportedBook {
     var warning: String? {
         guard keepsOriginal else { return nil }
         return "\(report.message) The original file was kept."
+    }
+
+    /// All the import tells the listener once the book is in the library:
+    /// what is missing from it (`warning`), then what it skipped (`notice`),
+    /// as one message; nil when there is nothing to tell.
+    var announcement: String? { announcement(warning: warning) }
+
+    /// The import's message with `warning` in place of its own: the
+    /// library's choice of warning (what is missing, or an RTFD's kept
+    /// original), then what it skipped (`notice`), as one message; nil when
+    /// there is nothing to tell.
+    func announcement(warning: String?) -> String? {
+        let sentences = [warning, notice].compactMap { $0 }
+        return sentences.isEmpty ? nil : sentences.joined(separator: " ")
     }
 }
 
@@ -1229,6 +1248,110 @@ enum FileImportService {
             imported.isFromFolder = true
             return imported
         }
+    }
+
+    /// Imports the audio files the playlist `playlist` (M3U or M3U8) lists
+    /// as one audiobook (FMT10), as a folder of the same tracks imports
+    /// (`importAudioFolderWithReport`): through the same staging, copying,
+    /// manifest check, conversion of formats Apple's players must not read,
+    /// and read-back before publishing. Only files inside the playlist's own
+    /// folder are used (`M3UPlaylist.resolve(inFolder:)`); each is copied to
+    /// the same path in the book's package. A `manifest.json` written there
+    /// names the book (the playlist's `#PLAYLIST` name, else its file's name
+    /// without the extension) and lists the tracks in the playlist's order
+    /// with the titles its `#EXTINF` lines gave. The book is known by a
+    /// checksum of its tracks' paths and bytes and the playlist's own name
+    /// and bytes (`folderHash(of:in:)`), so the same playlist imported twice
+    /// is a duplicate. The entries skipped are told in the result's `notice`.
+    /// Nothing is deleted or offered for deletion afterwards: the tracks
+    /// belong to the listener's music folders.
+    /// - Throws: an `ImportFailure` naming the playlist and the step that
+    ///   failed, with a `PlaylistImportError` when it is a stream, lists only
+    ///   web addresses, or names no usable file; whatever was staged is
+    ///   removed first, and the playlist and its tracks are never changed.
+    static func importPlaylistWithReport(
+        from playlist: URL,
+        toFolder folderPath: String = "",
+        observer: ImportStepObserver? = nil
+    ) throws -> ImportedBook {
+        try ImportRun.perform(importing: playlist.lastPathComponent, observer: observer) { run in
+            try run.begin(.readingSource)
+            let folder = playlist.deletingLastPathComponent()
+            let parsed = try M3UPlaylist.read(at: playlist)
+            guard !parsed.isStreaming else { throw PlaylistImportError.streaming }
+            guard !parsed.listsOnlyWebAddresses else { throw PlaylistImportError.onlyWebAddresses }
+            let (tracks, skipped) = distinctTracks(of: parsed.resolve(inFolder: folder))
+            guard !tracks.isEmpty else { throw PlaylistImportError.noTrack(skipped: skipped) }
+
+            let bookTitle = parsed.title ?? playlist.deletingPathExtension().lastPathComponent
+            let hash = try folderHash(of: tracks.map(\.path) + [playlist.lastPathComponent], in: folder)
+            let bookID = UUID()
+            let dateAdded = Date()
+
+            try run.begin(.preparingPackage)
+            let staging = try ImportStaging.makeEmpty(publishingTo: try destinationPackageURL(
+                title: bookTitle,
+                author: Book.unknownAuthor,
+                dateAdded: dateAdded,
+                bookID: bookID,
+                folderPath: folderPath
+            ))
+            defer { staging.discard() }
+
+            try run.begin(.copying, in: staging.directory)
+            let audioDirectory = try makeAudioDirectory(in: staging)
+            for track in tracks {
+                let destination = audioDirectory.appendingPathComponent(track.path)
+                try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try FileManager.default.copyItem(at: track.url, to: destination)
+            }
+            // The manifest gives the playlist's order and titles; the check
+            // and the format conversion that follow treat it as any other.
+            var manifest = AudioManifest()
+            manifest.title = bookTitle
+            manifest.tracks = tracks.map { .track(AudioManifestTrack(file: $0.path, title: $0.title)) }
+            try BookManifestFile.encoded(manifest)
+                .write(to: audioDirectory.appendingPathComponent(AudioManifest.fileName))
+
+            var imported = try publishTracks(
+                titled: bookTitle,
+                in: audioDirectory,
+                of: staging,
+                id: bookID,
+                md5Hash: hash,
+                folderPath: folderPath,
+                dateAdded: dateAdded,
+                source: playlist,
+                run: &run
+            )
+            // The tracks and the playlist belong to the listener's music
+            // folders, so none is deleted or offered for deletion, whatever
+            // "After Importing a Book" says.
+            imported.isFromFolder = true
+            imported.notice = PlaylistImportWording.notice(playlistName: playlist.lastPathComponent, skipped: skipped)
+            return imported
+        }
+    }
+
+    /// `resolution`'s tracks, without a second spelling of one file (the
+    /// same name in another case, which a Mac's disk takes for the file
+    /// itself, would copy over the first), and its skipped entries with
+    /// each such spelling added as listed before.
+    static func distinctTracks(
+        of resolution: M3UPlaylist.Resolution
+    ) -> (tracks: [M3UPlaylist.Track], skipped: [M3UPlaylist.Skipped]) {
+        var seen = Set<String>()
+        var tracks: [M3UPlaylist.Track] = []
+        var skipped = resolution.skipped
+        for track in resolution.tracks {
+            let key = track.path.precomposedStringWithCanonicalMapping.lowercased()
+            if seen.insert(key).inserted {
+                tracks.append(track)
+            } else {
+                skipped.append(M3UPlaylist.Skipped(location: track.path, reason: .listedBefore))
+            }
+        }
+        return (tracks, skipped)
     }
 
     /// The checksum a folder of tracks is known by: the MD5 of each file's

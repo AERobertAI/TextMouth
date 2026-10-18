@@ -594,6 +594,8 @@ extension LibraryViewModel {
     /// original is never deleted or offered for deletion, whatever the
     /// preference. Such a book is not opened automatically either: the
     /// reader window would take focus from the warning in the library window.
+    /// The entries a playlist import skipped (`ImportedBook.notice`) are
+    /// presented the same way, with the same effect on opening.
     /// The original of a book copied from a folder of files, a DAISY book or
     /// a folder of tracks, is never deleted or offered for deletion either
     /// (`ImportedBook.mayDeleteOriginal`): the folder holds files the import
@@ -612,19 +614,22 @@ extension LibraryViewModel {
         // Without an original to offer, a later duplicate answer cannot
         // delete it either.
         let deletableOriginal = imported.mayDeleteOriginal ? originalURL : nil
+        // What the import has to tell (what is missing, an RTFD's kept
+        // original, what a playlist skipped) is presented in an alert, so
+        // the book is not opened over it.
+        let announcement = imported.announcement(warning: importWarning(for: imported))
         var request = request
-        let warning = importWarning(for: imported)
-        if warning != nil {
+        if announcement != nil {
             request.opensAfterImport = false
         }
         guard addBookCheckingDuplicate(
-            book, originalURL: deletableOriginal, warning: warning, request: request
+            book, originalURL: deletableOriginal, warning: announcement, request: request
         ) else {
             return
         }
         save()
-        if let warning {
-            presentImportMessage(warning)
+        if let announcement {
+            presentImportMessage(announcement)
         }
         addImportedBooksToReadingList([book], request: request)
         finishAddedBook(book, originalURL: deletableOriginal, request: request)
