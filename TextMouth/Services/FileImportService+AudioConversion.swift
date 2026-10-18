@@ -17,7 +17,9 @@ extension FileImportService {
     /// single such file is converted, removed, and the book's file becomes
     /// the .m4a. With `keepingOriginals`, each source is moved into the
     /// package's hidden kept originals folder instead of removed
-    /// (`ImportAudioConverter.keepSources(of:from:inPackage:)`). Only the
+    /// (`ImportAudioConverter.keepSources(of:from:inPackage:)`). It is asked
+    /// only once something was converted, so an import that converts
+    /// nothing never reads the setting from the main thread. Only the
     /// staged copy is ever changed: the archive, folder, or file imported
     /// from is never touched. A book without such audio, and every other
     /// format, is left as it is.
@@ -27,7 +29,7 @@ extension FileImportService {
     static func convertImportedAudio(
         of book: inout Book,
         in staging: ImportStaging,
-        keepingOriginals: Bool,
+        keepingOriginals: @autoclosure () -> Bool,
         run: inout ImportRun
     ) throws {
         guard book.format.isAudio else { return }
@@ -39,7 +41,7 @@ extension FileImportService {
             guard !sources.isEmpty else { return }
             let conversions = try convertTracks(sources, of: staging, run: &run)
             try ImportAudioConverter.renameTracks(of: conversions, inManifestOf: bookURL, bookID: nil)
-            try disposeOfSources(of: conversions, from: bookURL, in: staging, keepingOriginals: keepingOriginals)
+            try disposeOfSources(of: conversions, from: bookURL, in: staging, keepingOriginals: keepingOriginals())
         } else if ImportAudioConverter.isConvertedAtImport(bookURL) {
             let conversions = try convertTracks([bookURL], of: staging, run: &run)
             guard let converted = conversions.first?.converted else { return }
@@ -47,7 +49,7 @@ extension FileImportService {
                 of: conversions,
                 from: bookURL.deletingLastPathComponent(),
                 in: staging,
-                keepingOriginals: keepingOriginals
+                keepingOriginals: keepingOriginals()
             )
             book.filePath = converted.path
         }
