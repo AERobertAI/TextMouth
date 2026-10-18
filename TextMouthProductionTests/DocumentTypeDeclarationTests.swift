@@ -86,4 +86,73 @@ final class DocumentTypeDeclarationTests: XCTestCase {
         XCTAssertEqual(type.preferredMIMEType, "application/ssml+xml")
         XCTAssertEqual(UTType(filenameExtension: "ssml"), type)
     }
+
+    // MARK: - An RTFD in a folder or a ZIP
+
+    /// A sandbox folder holding a copy of the RTFD sample (a package with its
+    /// TXT.rtf and a picture), a copy of the RTF sample, and a stray file.
+    private func makeFolderOfBooks() throws -> URL {
+        let folder = try makeSandboxDirectory("RTFDFolder")
+        let fileManager = FileManager.default
+        try fileManager.copyItem(
+            at: try formatSampleURL("rtfd/with-image.rtfd"),
+            to: folder.appendingPathComponent("with-image.rtfd"))
+        try fileManager.copyItem(
+            at: try formatSampleURL("rtf/headings.rtf"),
+            to: folder.appendingPathComponent("headings.rtf"))
+        try Data("not a book".utf8).write(to: folder.appendingPathComponent("notes.dat"))
+        return folder
+    }
+
+    /// An RTFD in a folder is one book, listed as the package itself, and so
+    /// is the RTF beside it. The files inside the package are neither books
+    /// nor counted among the files passed over: only the stray file is.
+    func testAnRTFDInAFolderIsOneBookAndItsFilesAreNotCounted() throws {
+        let folder = try makeFolderOfBooks()
+        let unpacking = NestedArchiveUnpacking(
+            directory: try makeSandboxDirectory("RTFDNested"),
+            budget: ArchiveBudget(),
+            depth: 1,
+            isCancelled: { false },
+            progress: nil
+        )
+
+        let found = try FileImportService.importCandidates(in: folder, unpacking: unpacking)
+
+        XCTAssertEqual(found.books.map(\.lastPathComponent), ["headings.rtf", "with-image.rtfd"])
+        XCTAssertEqual(found.nonBookFiles.countsByExtension, ["dat": 1])
+        XCTAssertTrue(found.failures.isEmpty)
+    }
+
+    /// A ZIP of the same folder imports as two books, an RTFD and an RTF,
+    /// and no book is made of the package's TXT.rtf.
+    func testAZIPWithAnRTFDImportsItAsOneBook() throws {
+        let folder = try makeFolderOfBooks()
+        let package = folder.appendingPathComponent("with-image.rtfd")
+        // The archive holds the package's folder and both of its files, the
+        // way the Finder's Compress would make it.
+        let entries: [TestZIPEntry] = [
+            .folder("Books/"),
+            .folder("Books/with-image.rtfd/"),
+            TestZIPEntry("Books/with-image.rtfd/TXT.rtf",
+                         try Data(contentsOf: package.appendingPathComponent("TXT.rtf"))),
+            TestZIPEntry("Books/with-image.rtfd/Attachment.png",
+                         try Data(contentsOf: package.appendingPathComponent("Attachment.png"))),
+            TestZIPEntry("Books/headings.rtf",
+                         try Data(contentsOf: folder.appendingPathComponent("headings.rtf"))),
+            TestZIPEntry("Books/notes.dat", Data("not a book".utf8))
+        ]
+        let archive = try makeTemporaryZip(prefix: "RTFDArchive", orderedEntries: entries)
+        addTeardownBlock { try? FileManager.default.removeItem(at: archive) }
+
+        let result = try FileImportService.importZip(from: archive)
+        for book in result.books {
+            addTeardownBlock { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+        }
+
+        XCTAssertTrue(result.failures.isEmpty, "\(result.failures)")
+        XCTAssertEqual(result.books.map(\.format).sorted { $0.rawValue < $1.rawValue }, [.rtf, .rtfd])
+        XCTAssertEqual(result.books.count, 2, "TXT.rtf must not become a book of its own")
+        XCTAssertEqual(result.nonBookFiles.countsByExtension, ["dat": 1])
+    }
 }

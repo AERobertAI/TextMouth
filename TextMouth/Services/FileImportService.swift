@@ -1513,6 +1513,10 @@ enum FileImportService {
     ///   package file instead, as does a TextMouth package holding a DAISY
     ///   book, since neither folder names one book.
     /// - An archive whose own top level holds a DAISY book is that book.
+    /// - A folder that is a Rich Text with Attachments document (an .rtfd,
+    ///   a package the Finder shows as one file) is one book, listed as
+    ///   that folder. Its files (the TXT.rtf and the attachments) are never
+    ///   books or files passed over.
     /// - A DAISY ZIP inside is one book. Any other archive inside is
     ///   unpacked through `nested`, within the batch's budget, and searched
     ///   the same way; one that cannot be unpacked, or lies deeper than the
@@ -1540,6 +1544,13 @@ enum FileImportService {
             if (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true {
                 guard url.lastPathComponent != "__MACOSX" else {
                     entries.skipDescendants()
+                    continue
+                }
+                // An RTFD is a folder that stands for one document: it is the
+                // book, never its TXT.rtf and its attachments.
+                if BookFormat.detect(from: url) == .rtfd {
+                    entries.skipDescendants()
+                    found.books.append(url)
                     continue
                 }
                 let packageFiles = DAISYParser.packageEntryPoints(in: url)
