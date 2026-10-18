@@ -101,7 +101,7 @@ final class OggLibraryConversionTests: XCTestCase {
 
         let result = await world.library.convertOggBookAudio(ofBook: book.id)
 
-        XCTAssertEqual(result, .waiting(.failed("The Ogg audio file 02.ogg could not be read for converting to AAC.")))
+        XCTAssertEqual(result, .waiting(.failed("The audio file 02.ogg could not be read for converting.")))
         XCTAssertEqual(OggTestFixtures.names(in: folder), ["01.ogg", "02.ogg", "manifest.json"])
         XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("manifest.json"), encoding: .utf8), manifestJSON)
     }

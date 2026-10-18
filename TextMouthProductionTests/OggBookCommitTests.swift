@@ -20,7 +20,7 @@ final class OggBookCommitTests: XCTestCase {
         guard case let .waiting(.failed(reason)) = result else {
             return XCTFail("The book must wait as failed, not \(result)")
         }
-        XCTAssertFalse(reason.contains("could not be read for converting to AAC"), "A track was looked at before the index: \(reason)")
+        XCTAssertFalse(reason.contains("could not be read for converting"), "A track was looked at before the index: \(reason)")
         XCTAssertEqual(OggTestFixtures.names(in: folder), Self.trackNames, "No hidden file may be made")
         XCTAssertTrue(world.library.oggConversion.hasFailed(book.id))
         XCTAssertFalse(world.library.oggConversion.isConverting(book.id))
@@ -37,7 +37,7 @@ final class OggBookCommitTests: XCTestCase {
         guard case let .waiting(.failed(reason)) = result else {
             return XCTFail("The junk tracks must fail the conversion, not \(result)")
         }
-        XCTAssertTrue(reason.contains("could not be read for converting to AAC"), "The tracks were not looked at: \(reason)")
+        XCTAssertTrue(reason.contains("could not be read for converting"), "The tracks were not looked at: \(reason)")
         XCTAssertEqual(OggTestFixtures.names(in: folder), Self.trackNames)
     }
 

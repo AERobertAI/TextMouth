@@ -25,25 +25,29 @@ final class OggAfconvertTests: XCTestCase {
 
     /// The header of each fixture gives its rate, channels, and length with
     /// nothing decoded.
-    func testTheHeaderGivesTheRateChannelsAndLength() throws {
+    func testTheHeaderGivesTheRateChannelsAndLength() async throws {
         let vorbis = try OggTestFixtures.copy(OggTestFixtures.vorbis, to: folder, as: "v.ogg")
         let opus = try OggTestFixtures.copy(OggTestFixtures.opus, to: folder, as: "o.opus")
 
-        let vorbisInfo = try XCTUnwrap(ImportAudioConverter.inspect(vorbis))
+        let vorbisInfoRead = try await ImportAudioConverter.inspect(vorbis)
+        let vorbisInfo = try XCTUnwrap(vorbisInfoRead)
         XCTAssertEqual(vorbisInfo.sampleRate, 22_050)
         XCTAssertEqual(vorbisInfo.channels, 1)
         XCTAssertEqual(vorbisInfo.duration, 2, accuracy: 0.1)
-        let opusInfo = try XCTUnwrap(ImportAudioConverter.inspect(opus))
+        let opusInfoRead = try await ImportAudioConverter.inspect(opus)
+        let opusInfo = try XCTUnwrap(opusInfoRead)
         XCTAssertEqual(opusInfo.channels, 1)
         XCTAssertEqual(opusInfo.duration, 2, accuracy: 0.1)
     }
 
     /// A missing file and a file that is not audio have no header to read.
-    func testNothingIsReadFromAMissingFileOrOneThatIsNotAudio() throws {
+    func testNothingIsReadFromAMissingFileOrOneThatIsNotAudio() async throws {
         let text = folder.appendingPathComponent("text.ogg")
         try Data("not audio".utf8).write(to: text)
-        XCTAssertNil(ImportAudioConverter.inspect(text))
-        XCTAssertNil(ImportAudioConverter.inspect(folder.appendingPathComponent("missing.ogg")))
+        let textInfo = try await ImportAudioConverter.inspect(text)
+        XCTAssertNil(textInfo)
+        let missingInfo = try await ImportAudioConverter.inspect(folder.appendingPathComponent("missing.ogg"))
+        XCTAssertNil(missingInfo)
     }
 
     /// `inspect` takes its facts from the hand-written header reader
@@ -51,17 +55,21 @@ final class OggAfconvertTests: XCTestCase {
     /// built in memory, written under Ogg names, give their rate, channels,
     /// and length (an Opus stream always at the decoder's 48,000 Hz, less
     /// its pre-skip).
-    func testInspectReadsStreamsBuiltInMemoryThroughTheHeaderReader() throws {
+    func testInspectReadsStreamsBuiltInMemoryThroughTheHeaderReader() async throws {
         let vorbis = folder.appendingPathComponent("synthetic.ogg")
         try Data(OggStreamBuilder.vorbisStream(channels: 2, rate: 44_100, granule: 88_200)).write(to: vorbis)
         let opus = folder.appendingPathComponent("synthetic.opus")
         try Data(OggStreamBuilder.opusStream(channels: 6, preSkip: 312, granule: 48_312)).write(to: opus)
 
+        let vorbisInfo = try await ImportAudioConverter.inspect(vorbis)
         XCTAssertEqual(
-            ImportAudioConverter.inspect(vorbis),
-            ImportAudioConverter.SourceInfo(sampleRate: 44_100, channels: 2, duration: 2)
+            vorbisInfo,
+            ImportAudioConverter.SourceInfo(
+                sampleRate: 44_100, channels: 2, duration: 2, formatID: "vorbis", bitsPerSample: nil, isLossless: false
+            )
         )
-        let opusInfo = try XCTUnwrap(ImportAudioConverter.inspect(opus))
+        let opusInfoRead = try await ImportAudioConverter.inspect(opus)
+        let opusInfo = try XCTUnwrap(opusInfoRead)
         XCTAssertEqual(opusInfo.sampleRate, 48_000)
         XCTAssertEqual(opusInfo.channels, 6)
         XCTAssertEqual(opusInfo.duration, 1, accuracy: 0.0001)
@@ -93,7 +101,9 @@ final class OggAfconvertTests: XCTestCase {
     func testTheArgumentsChangeOnlyWhatMustChange() {
         let input = URL(fileURLWithPath: "/in/a.ogg")
         let output = URL(fileURLWithPath: "/out/.a.m4a")
-        let same = ImportAudioConverter.SourceInfo(sampleRate: 44_100, channels: 2, duration: 10)
+        let same = ImportAudioConverter.SourceInfo(
+            sampleRate: 44_100, channels: 2, duration: 10, formatID: "vorbis", bitsPerSample: nil, isLossless: false
+        )
         XCTAssertEqual(
             ImportAudioConverter.afconvertArguments(
                 from: input, to: output, info: same,
@@ -101,7 +111,9 @@ final class OggAfconvertTests: XCTestCase {
             ),
             ["-f", "m4af", "-d", "aac", "-b", "128000", "/in/a.ogg", "/out/.a.m4a"]
         )
-        let surround = ImportAudioConverter.SourceInfo(sampleRate: 88_200, channels: 6, duration: 10)
+        let surround = ImportAudioConverter.SourceInfo(
+            sampleRate: 88_200, channels: 6, duration: 10, formatID: "vorbis", bitsPerSample: nil, isLossless: false
+        )
         XCTAssertEqual(
             ImportAudioConverter.afconvertArguments(
                 from: input, to: output, info: surround,

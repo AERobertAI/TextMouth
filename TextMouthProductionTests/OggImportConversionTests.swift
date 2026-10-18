@@ -47,7 +47,7 @@ final class OggImportConversionTests: XCTestCase {
         )
         XCTAssertEqual(
             failure.errorDescription,
-            "Could not import “Elegy.ogg”. Converting its audio failed: The Ogg audio file Elegy.ogg could not be read for converting to AAC."
+            "Could not import “Elegy.ogg”. Converting its audio failed: The audio file Elegy.ogg could not be read for converting."
         )
     }
 

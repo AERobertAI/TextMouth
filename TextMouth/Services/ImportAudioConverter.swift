@@ -1,10 +1,18 @@
 import AVFoundation
 import Darwin
 
-/// Converts the audio the import converts to AAC-LC in an .m4a file beside
-/// it, so TextMouth never hands such a source to a player or decoder. Ogg
-/// (Vorbis or Opus, in .ogg, .oga, or .opus files) was the first format
-/// (B06); `convertedExtensions` lists them all (FMT09).
+/// Converts the audio the import converts to an .m4a file beside it, so
+/// TextMouth never hands such a source to a player or decoder. Ogg (Vorbis
+/// or Opus, in .ogg, .oga, or .opus files) was the first format (B06);
+/// `convertedExtensions` lists them all (FMT09).
+///
+/// A lossy source (Ogg, AC-3, AMR, MP2, and the like) becomes AAC-LC; a
+/// lossless one (PCM, ALAC, FLAC) becomes Apple Lossless, which loses
+/// nothing (`Plan`, `plan(for:info:)`). The source is read by `afinfo` and
+/// converted by `afconvert`, both from the Mac itself (the app's oldest
+/// macOS is 14.0): a format that Mac cannot read or convert is refused by
+/// the file's name ("Converting its audio" stops the import, and nothing is
+/// left behind); no other check is needed.
 ///
 /// On October 14, 2026 Apple's Vorbis decoder, playing an Ogg track through
 /// AVPlayer at 1.5x, locked up inside AudioToolbox and grew TextMouth to
@@ -80,7 +88,7 @@ enum ImportAudioConverter {
 
     /// One file converted: where it came from and went, and what that took.
     struct Conversion: Equatable, Sendable {
-        /// The Ogg file, which a conversion never changes or removes.
+        /// The source file, which a conversion never changes or removes.
         let source: URL
         /// The .m4a file: under its hidden temporary name until it is
         /// given its final one (`givingFinalName(_:)`).
@@ -100,7 +108,7 @@ enum ImportAudioConverter {
 
     /// Why a file could not be converted, in words a listener can be told.
     enum Failure: LocalizedError, Equatable {
-        /// The Ogg file could not be read as audio, or is only in the cloud.
+        /// The audio file could not be read as audio, or is only in the cloud.
         case unreadable(fileName: String)
         /// The converted file failed its check: it would not play, or its
         /// length was not its source's.
@@ -116,15 +124,15 @@ enum ImportAudioConverter {
         var errorDescription: String? {
             switch self {
             case let .unreadable(fileName):
-                return "The Ogg audio file \(fileName) could not be read for converting to AAC."
+                return "The audio file \(fileName) could not be read for converting."
             case let .checkFailed(fileName, reason):
-                return "The AAC audio converted from \(fileName) failed its check: \(reason)."
+                return "The audio converted from \(fileName) failed its check: \(reason)."
             case let .cannotName(fileName):
-                return "The AAC audio converted from \(fileName) could not be given its name."
+                return "The audio converted from \(fileName) could not be given its name."
             case let .killed(fileName, reason):
-                return "Converting \(fileName) to AAC was stopped because \(reason)."
+                return "Converting \(fileName) was stopped because \(reason)."
             case let .processFailed(fileName, status):
-                return "Converting \(fileName) to AAC failed (the converter ended with code \(status))."
+                return "Converting \(fileName) failed (the converter ended with code \(status))."
             }
         }
     }
@@ -203,46 +211,127 @@ enum ImportAudioConverter {
         return isOfCDFamily ? 44_100 : 48_000
     }
 
-    /// What the header of an Ogg file says: read from its own bytes without
-    /// decoding a sample (`inspect(_:)`).
+    /// What the converter knows of a source before it converts it: read from
+    /// an Ogg file's own bytes (`OggHeaderReader`) or from `afinfo` in a
+    /// watched child process (`AudioFileInfo`), never by decoding a sample in
+    /// the app (`inspect(_:)`).
     struct SourceInfo: Equatable, Sendable {
         /// The sample rate, in hertz.
         let sampleRate: Double
         /// The number of channels.
         let channels: Int
-        /// How long it lasts, in seconds, as the position of its last page
-        /// says.
+        /// How long it lasts, in seconds, as the container says.
         let duration: TimeInterval
+        /// The codec: "vorbis" or "opus" for Ogg, otherwise afinfo's format
+        /// ("lpcm", "alac", "flac", "ac-3", "samr", ".mp2", "ima4", ...).
+        let formatID: String
+        /// The bits in a sample of PCM, or of the source a lossless codec
+        /// kept; nil for floating-point PCM and for lossy codecs.
+        let bitsPerSample: Int?
+        /// Whether the codec keeps every bit of its source (PCM, ALAC, FLAC),
+        /// so the import writes Apple Lossless rather than AAC.
+        let isLossless: Bool
     }
 
-    /// The sample rate, channels, and length of the Ogg file at `url`, read
-    /// from the file's own bytes by `OggHeaderReader` (REV17a): no Apple
-    /// audio API opens the file, so neither AudioFile's demuxer nor Apple's
-    /// Vorbis decoder ever runs in TextMouth. Nil when the file isn't there,
-    /// is only in the cloud, or isn't Ogg Vorbis or Opus audio.
-    static func inspect(_ url: URL) -> SourceInfo? {
-        guard FileManager.default.fileExists(atPath: url.path), !DatalessFiles.isDataless(url),
-              let header = OggHeaderReader.read(at: url) else { return nil }
-        return SourceInfo(sampleRate: header.sampleRate, channels: header.channels, duration: header.duration)
+    /// What the import does with one audio file.
+    enum Plan: Equatable, Sendable {
+        /// The file is of a format TextMouth plays as it is.
+        case leaveAsItIs
+        /// A lossy source is encoded as AAC-LC in an .m4a file.
+        case convertToAAC
+        /// A lossless source is written as Apple Lossless in an .m4a file.
+        case convertToAppleLossless
     }
 
-    /// How a source described by `info`, a file of `bytes` bytes, is written:
-    /// AAC-LC at its own channels (two at most: more are mixed down to
-    /// stereo), its own sample rate where AAC takes it
+    /// What the import does with `source`, described by `info`: nothing for
+    /// an extension it plays as it is, Apple Lossless for a lossless source
+    /// (nothing is lost), AAC for any other.
+    static func plan(for source: URL, info: SourceInfo) -> Plan {
+        guard isConvertedAtImport(source) else { return .leaveAsItIs }
+        return info.isLossless ? .convertToAppleLossless : .convertToAAC
+    }
+
+    /// The sample rate, channels, length, and codec of the file at `url`. An
+    /// Ogg file's come from its own bytes by `OggHeaderReader` (REV17a); any
+    /// other file's from `afinfo` in a child process (`AudioFileInfo`). No
+    /// Apple audio API opens the file in this process, so neither AudioFile's
+    /// demuxer nor Apple's Vorbis decoder ever runs in TextMouth. Nil when
+    /// the file isn't there, is only in the cloud, or can't be read as audio.
+    /// - Throws: `CancellationError` only.
+    static func inspect(_ url: URL) async throws -> SourceInfo? {
+        guard FileManager.default.fileExists(atPath: url.path), !DatalessFiles.isDataless(url) else { return nil }
+        if isOgg(url) { // lint-ok: Ogg alone is read from its own bytes; every other format by afinfo
+            guard let header = OggHeaderReader.read(at: url) else { return nil }
+            return SourceInfo(
+                sampleRate: header.sampleRate, channels: header.channels, duration: header.duration,
+                formatID: header.codec == .opus ? "opus" : "vorbis", bitsPerSample: nil, isLossless: false
+            )
+        }
+        guard let facts = try await AudioFileInfo.read(url) else { return nil }
+        return SourceInfo(
+            sampleRate: facts.sampleRate, channels: facts.channels, duration: facts.duration,
+            formatID: facts.formatID, bitsPerSample: facts.bitsPerSample, isLossless: facts.isLossless
+        )
+    }
+
+    /// The most channels Apple Lossless holds.
+    static let maximumLosslessChannels = 8
+
+    /// The Apple Lossless bit depth that holds a source of `bits` bits a
+    /// sample: 16, 20, 24, or 32, the smallest that fits; 24 when the depth
+    /// is unknown or the samples are floating-point numbers (nil).
+    static func appleLosslessBitDepth(forBitsPerSample bits: Int?) -> Int {
+        guard let bits else { return 24 }
+        switch bits {
+        case ...16: return 16
+        case ...20: return 20
+        case ...24: return 24
+        default: return 32
+        }
+    }
+
+    /// The flag afconvert takes after `alac/` for an Apple Lossless bit
+    /// depth: 1, 2, 3, or 4 for 16, 20, 24, or 32 bits. Without it afconvert
+    /// writes 32-bit samples, five times the size of a 16-bit source's.
+    static func appleLosslessFlag(forBitDepth depth: Int) -> Int {
+        switch depth {
+        case 16: return 1
+        case 20: return 2
+        case 24: return 3
+        default: return 4
+        }
+    }
+
+    /// How a source described by `info`, a file of `bytes` bytes, is written.
+    /// A lossy source becomes AAC-LC at its own channels (two at most: more
+    /// are mixed down to stereo), its own sample rate where AAC takes it
     /// (`sampleRate(for:)`), and its average bit rate, bytes × 8 ÷ duration,
-    /// rounded up to the next standard rate.
+    /// rounded up to the next standard rate. A lossless source
+    /// (`appleLosslessBitDepth` set) becomes Apple Lossless at its own rate
+    /// and channels (eight at most), with no bit rate.
     struct Target: Equatable, Sendable {
-        /// The channels written: one or two.
+        /// The channels written: one or two for AAC, up to eight for Apple
+        /// Lossless.
         let channels: Int
         /// The sample rate written, in hertz.
         let sampleRate: Double
         /// The bit rate written, in bits a second; nil when the encoder
-        /// chooses.
+        /// chooses, and always nil for Apple Lossless.
         let bitRate: Int?
+        /// The bit depth of Apple Lossless samples; nil means AAC.
+        var appleLosslessBitDepth: Int? = nil
     }
 
     /// The `Target` for `info` and `bytes`; see `Target`.
     static func target(for info: SourceInfo, bytes: Int64) -> Target {
+        if info.isLossless {
+            return Target(
+                channels: min(max(info.channels, 1), maximumLosslessChannels),
+                sampleRate: info.sampleRate,
+                bitRate: nil,
+                appleLosslessBitDepth: appleLosslessBitDepth(forBitsPerSample: info.bitsPerSample)
+            )
+        }
         let channels = min(max(info.channels, 1), 2)
         let rate = sampleRate(for: info.sampleRate)
         let average = Double(bytes) * 8 / info.duration
@@ -261,8 +350,15 @@ enum ImportAudioConverter {
     /// from a source described by `info`: an .m4a file of AAC at the bit
     /// rate; the sample rate (`-d aac@rate`) only where it differs from the
     /// source's, and the channel count (`-c`) only where the source has more
-    /// than two.
+    /// than two. Apple Lossless (`-d alac/<flag>`, `appleLosslessFlag`) keeps
+    /// the source's rate, and gets `-c 8` only for a source of more than
+    /// eight channels.
     static func afconvertArguments(from input: URL, to output: URL, info: SourceInfo, target: Target) -> [String] {
+        if let depth = target.appleLosslessBitDepth {
+            var arguments = ["-f", "m4af", "-d", "alac/\(appleLosslessFlag(forBitDepth: depth))"]
+            if info.channels > maximumLosslessChannels { arguments += ["-c", String(maximumLosslessChannels)] }
+            return arguments + [input.path, output.path]
+        }
         var format = "aac"
         if target.sampleRate != info.sampleRate { format += "@\(Int(target.sampleRate))" }
         var arguments = ["-f", "m4af", "-d", format]
@@ -332,7 +428,7 @@ enum ImportAudioConverter {
     static func convert(_ source: URL, naming: Bool = true, using tool: Tool = .afconvert) async throws -> Conversion {
         let started = Date()
         let name = source.lastPathComponent
-        guard let info = inspect(source) else { throw Failure.unreadable(fileName: name) }
+        guard let info = try await inspect(source) else { throw Failure.unreadable(fileName: name) }
         let bytesBefore = fileSize(of: source)
         let target = target(for: info, bytes: bytesBefore)
         let staged = temporaryURL(beside: source)
@@ -588,16 +684,23 @@ enum ImportAudioConverter {
         }
     }
 
-    /// About how many bytes `sources` take once converted: each one's length
-    /// at the bit rate it would be written at (`target(for:bytes:)`), with
-    /// a hundredth more and 64 KB for the file's own tables, or its own size
-    /// when it can't be read. Reads only each file's header; never decodes.
+    /// About how many bytes `sources` take once converted: each lossy one's
+    /// length at the bit rate it would be written at (`target(for:bytes:)`),
+    /// with a hundredth more and 64 KB for the file's own tables; each
+    /// lossless one's own size and 64 KB; or a file's own size when it can't
+    /// be read. Reads only each file's header; never decodes.
     static func estimatedSize(of sources: [URL]) async -> Int64 {
         var total: Int64 = 0
         for source in sources {
             let bytes = fileSize(of: source)
-            guard let info = inspect(source) else {
+            // A cancellation counts as an unreadable file: only a size is wanted.
+            guard let info = try? await inspect(source) else {
                 total += bytes
+                continue
+            }
+            // Apple Lossless takes about the source's own size.
+            if info.isLossless {
+                total += bytes + 65_536
                 continue
             }
             let channels = min(max(info.channels, 1), 2)

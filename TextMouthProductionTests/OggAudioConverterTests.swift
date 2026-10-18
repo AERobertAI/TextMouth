@@ -261,7 +261,7 @@ final class OggAudioConverterTests: XCTestCase {
             XCTFail("A file that isn't audio must not convert")
         } catch let failure as ImportAudioConverter.Failure {
             XCTAssertEqual(failure, .unreadable(fileName: "broken.ogg"))
-            XCTAssertEqual(failure.errorDescription, "The Ogg audio file broken.ogg could not be read for converting to AAC.")
+            XCTAssertEqual(failure.errorDescription, "The audio file broken.ogg could not be read for converting.")
         }
         XCTAssertEqual(OggTestFixtures.names(in: folder), ["broken.ogg"])
     }
