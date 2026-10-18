@@ -616,7 +616,7 @@ enum FileImportService {
     /// checksum (`DAISYPackageInventory.contentHash()`), which the record of
     /// a loose DAISY book's import holds (TODO I02).
     private static func content(at contentURL: URL, of format: BookFormat, hasChecksum recorded: String) throws -> Bool {
-        if try md5Hash(of: contentURL) == recorded {
+        if try contentChecksum(of: contentURL, format: format) == recorded {
             return true
         }
         guard let package = try? daisyPackage(of: contentURL, format: format) else { return false }
@@ -905,7 +905,42 @@ enum FileImportService {
     /// The checksum a book imported from `source` is known by, when
     /// `package` is the DAISY package `source` is, or nil when it is none.
     private static func importHash(of source: URL, package: DAISYPackageInventory?) throws -> String {
-        try package?.contentHash() ?? md5Hash(of: source)
+        try package?.contentHash() ?? contentChecksum(of: source, format: BookFormat.detect(from: source))
+    }
+
+    /// The checksum of a book's own file, `url`, a book of `format`: the MD5
+    /// of its bytes, except for an RTFD, which is a folder, not a file,
+    /// whose checksum is that of the regular files anywhere inside it
+    /// (`folderHash(of:in:)`). A plain file named .rtfd is hashed as a file.
+    private static func contentChecksum(of url: URL, format: BookFormat?) throws -> String {
+        guard format == .rtfd, isFolder(url) else { return try md5Hash(of: url) }
+        return try folderHash(of: regularFilePaths(in: url), in: url)
+    }
+
+    /// Whether the item at `url` is a folder (a package such as an .rtfd
+    /// included).
+    private static func isFolder(_ url: URL) -> Bool {
+        (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true
+    }
+
+    /// The paths, inside `folder`, of the regular files anywhere in it, by
+    /// their relative paths. A symbolic link is never followed (the
+    /// enumerator reports it as a link, which is not a regular file), and a
+    /// hidden file or folder (a Finder's .DS_Store) is passed over, so
+    /// browsing a folder in Finder never changes its checksum.
+    private static func regularFilePaths(in folder: URL) -> [String] {
+        guard let walk = FileManager.default.enumerator(atPath: folder.path) else { return [] }
+        var paths: [String] = []
+        while let path = walk.nextObject() as? String {
+            if (path as NSString).lastPathComponent.hasPrefix(".") {
+                walk.skipDescendants()
+                continue
+            }
+            if (walk.fileAttributes?[.type] as? FileAttributeType) == .typeRegular {
+                paths.append(path)
+            }
+        }
+        return paths
     }
 
     /// The DAISY package `source`, a book of `format`, is: for a DAISY book
@@ -1808,6 +1843,10 @@ enum FileImportService {
 
     /// Compute MD5 hash of a file (streaming for large files)
     static func md5Hash(of url: URL) throws -> String {
+        // FileHandle's legacy read raises an Objective-C exception, which
+        // Swift cannot catch, on a folder (an RTFD is one): refuse it first,
+        // so no caller can crash on a book whose file is a folder.
+        guard !isFolder(url) else { throw ContentFingerprintError.notARegularFile }
         let handle = try FileHandle(forReadingFrom: url)
         defer { handle.closeFile() }
 
