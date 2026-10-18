@@ -22,10 +22,19 @@ enum TextutilHTMLStructure {
     /// into lists, then turn the paragraphs that look like headings into
     /// `h1` to `h6`. The order matters: a bullet line must never become a
     /// heading, and a picture's file name must not count as heading text.
+    /// The whole body is counted (for its body size and weight) after the
+    /// pictures are gone but before the bullet paragraphs become list
+    /// items: an item carries no class, so counted afterwards its characters
+    /// would fall to the 12 px default and could outweigh a smaller body.
     static func restore(in document: Document) throws {
         try removePictures(from: document)
+        let rules = try classRules(in: document)
+        let bodyCensus = Census(
+            measuring: textNodes(under: document.body() ?? document),
+            with: StyleResolver(rules: rules)
+        )
         try convertBulletParagraphs(in: document)
-        try convertHeadingParagraphs(in: document)
+        try convertHeadingParagraphs(in: document, rules: rules, bodyCensus: bodyCensus)
     }
 
     // MARK: - Constants
@@ -164,14 +173,20 @@ enum TextutilHTMLStructure {
     // MARK: - Heading paragraphs
 
     /// Turn the paragraphs that are headings by their size or weight into
-    /// `h1` to `h6`, keeping their children.
-    private static func convertHeadingParagraphs(in document: Document) throws {
+    /// `h1` to `h6`, keeping their children. `bodyCensus` is the count of the
+    /// whole body made before the bullet paragraphs became items; the
+    /// candidates' own characters are counted here, with a resolver of their
+    /// own (the earlier one remembers elements the bullet pass has removed).
+    private static func convertHeadingParagraphs(
+        in document: Document,
+        rules: [String: ClassRule],
+        bodyCensus: Census?
+    ) throws {
         let body = document.body() ?? document
-        let styles = StyleResolver(rules: try classRules(in: document))
+        let styles = StyleResolver(rules: rules)
 
-        guard let census = Census(measuring: textNodes(under: body), with: styles),
-              let bodySize = census.bodySize else { return }
-        let boldAllowed = !census.isMostlyBold
+        guard let bodySize = bodyCensus?.bodySize else { return }
+        let boldAllowed = !(bodyCensus?.isMostlyBold ?? false)
 
         // Find the candidates before renaming any: a renamed paragraph no
         // longer matches its class rule.

@@ -322,6 +322,29 @@ final class TextutilHTMLStructureTests: XCTestCase {
         XCTAssertFalse(lines.contains { $0.contains("•") && !$0.contains("In a cell") })
     }
 
+    /// The body size is counted before bullet paragraphs become list items,
+    /// which carry no class and so would count at the 12 px default. Here the
+    /// body is 10 px, and its bullets hold more characters than its other
+    /// paragraphs: counted after the conversion, 12 px would win as the body
+    /// size and the real 12 px heading "Notes" would not be larger. (Before
+    /// the fix this test failed: no heading was found.)
+    func testBulletListsDoNotChangeTheBodySize() throws {
+        let tab = "<span class=\"Apple-tab-span\">\t</span>"
+        let bullets = ["Bread from the bakery", "Smoked fish and salt", "Coffee, black, no sugar"]
+            .map { "<p class=\"p9\">\(tab)•\(tab)\($0)</p>" }
+            .joined(separator: "\n")
+        let markup = html(
+            style: "p.p9 {font: 10.0px Times}",
+            body: """
+            <p class="p9">The ferry leaves at seven and the cafe tables fill.</p>
+            \(bullets)
+            <p class="p2">Notes</p>
+            """
+        )
+        XCTAssertEqual(try headings(markup), ["1: Notes"])
+        XCTAssertEqual(try restored(markup).select("body > ul > li").size(), 3)
+    }
+
     /// Two runs of bullets with a paragraph between them are two lists.
     func testSeparatedBulletRunsAreSeparateLists() throws {
         let line = "<p class=\"p2\">\t*\tItem</p>"
