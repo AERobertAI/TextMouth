@@ -597,7 +597,10 @@ extension LibraryViewModel {
     /// The original of a book copied from a folder of files, a DAISY book or
     /// a folder of tracks, is never deleted or offered for deletion either
     /// (`ImportedBook.mayDeleteOriginal`): the folder holds files the import
-    /// did not copy.
+    /// did not copy. An RTFD's original, a folder, is never deleted either,
+    /// and when the preference would have deleted it or asked, the reader is
+    /// told once that it was kept (`rtfdOriginalKeptNotice`), as a book with
+    /// chapters left out is told.
     func completeSingleImportedBook(
         _ imported: ImportedBook,
         originalURL: URL,
@@ -610,20 +613,31 @@ extension LibraryViewModel {
         // delete it either.
         let deletableOriginal = imported.mayDeleteOriginal ? originalURL : nil
         var request = request
-        if imported.warning != nil {
+        let warning = importWarning(for: imported)
+        if warning != nil {
             request.opensAfterImport = false
         }
         guard addBookCheckingDuplicate(
-            book, originalURL: deletableOriginal, warning: imported.warning, request: request
+            book, originalURL: deletableOriginal, warning: warning, request: request
         ) else {
             return
         }
         save()
-        if let warning = imported.warning {
+        if let warning {
             presentImportMessage(warning)
         }
         addImportedBooksToReadingList([book], request: request)
         finishAddedBook(book, originalURL: deletableOriginal, request: request)
+    }
+
+    /// What an import of `imported` tells the reader once: its warning when
+    /// it left chapters or pages out, or, when the "After Importing a Book"
+    /// preference would have deleted or asked about the original of an RTFD,
+    /// that the original was kept. Nil when there is nothing to tell.
+    private func importWarning(for imported: ImportedBook) -> String? {
+        if let warning = imported.warning { return warning }
+        guard configService.config.importDeleteBehavior != .keepOriginal else { return nil }
+        return imported.rtfdOriginalKeptNotice
     }
 
     /// Publish a batch result while retaining an archive that still contains

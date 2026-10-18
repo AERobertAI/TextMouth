@@ -80,11 +80,12 @@ struct ImportedBook {
     var report = ExtractionReport()
     /// Whether the book was copied from a folder of files, not from one
     /// file: a DAISY book kept as loose files (its folder, or its OPF or
-    /// ncc.html inside that folder, TODO I02), or a folder of audio tracks
-    /// (FR17, Part B). Such a folder holds files the import did not copy (a
-    /// cover, lyrics, other books' files, a Bonus folder), so it is never
-    /// deleted or offered for deletion. `deleteOriginalFile(at:)` refuses a
-    /// folder too, whatever its caller decided.
+    /// ncc.html inside that folder, TODO I02), a folder of audio tracks
+    /// (FR17, Part B), or an RTFD, which is a folder too. A folder may hold
+    /// files the import did not copy (a cover, lyrics, other books' files, a
+    /// Bonus folder), so it is never deleted or offered for deletion.
+    /// `deleteOriginalFile(at:)` refuses a folder too, whatever its caller
+    /// decided.
     var isFromFolder = false
 
     /// Whether the original file must stay exactly where it is: an import
@@ -98,6 +99,18 @@ struct ImportedBook {
     /// files, some of which may belong to other books or to nothing the
     /// import copied, so it is never deleted (TODO I02, FR17).
     var mayDeleteOriginal: Bool { !keepsOriginal && !isFromFolder }
+
+    /// What the reader is told when "After Importing a Book" would have
+    /// deleted this book's original, or asked about it, but cannot, because
+    /// the original is an RTFD: a folder, which an import never deletes. It
+    /// is the words of every kept original, then why. Nil for any other
+    /// import, whose original is deleted, offered, or kept without a word
+    /// (a DAISY folder or a folder of tracks is kept silently, as it
+    /// always was).
+    var rtfdOriginalKeptNotice: String? {
+        guard isFromFolder, book.format == .rtfd else { return nil }
+        return "The original file was kept: it is a folder, and an import never deletes a folder."
+    }
 
     /// The warning an import that left chapters or pages out presents once:
     /// what is missing, then that the original was kept. Nil for a complete
@@ -899,7 +912,9 @@ enum FileImportService {
             var imported = try publishReadableBook(
                 staged, from: staging, run: &run, refusingBlankText: true, adoptingDocumentNames: true
             )
-            imported.isFromFolder = package != nil
+            // A DAISY package is copied file by file from its folder; an RTFD
+            // is a folder, whole, which no import deletes.
+            imported.isFromFolder = package != nil || isRTFDFolder(sourceURL)
             return imported
         }
     }
