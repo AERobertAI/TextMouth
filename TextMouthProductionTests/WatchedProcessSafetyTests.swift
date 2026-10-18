@@ -305,4 +305,80 @@ final class WatchedProcessSafetyTests: XCTestCase {
         WatchedProcess.terminateAll()
         XCTAssertEqual(WatchedProcess.runningChildCount, before)
     }
+
+    // MARK: - Capturing The Output (FMT09)
+
+    /// How many hidden `.watched-output` files the temporary directory holds.
+    private func capturedOutputFileCount() -> Int {
+        let names = (try? FileManager.default.contentsOfDirectory(
+            atPath: FileManager.default.temporaryDirectory.path
+        )) ?? []
+        return names.filter { $0.hasSuffix(".watched-output") }.count
+    }
+
+    /// What the child prints comes back, and its exit is reported.
+    func testRunCapturingOutputReturnsWhatTheChildPrints() async throws {
+        let result = try await WatchedProcess.runCapturingOutput(
+            URL(fileURLWithPath: "/bin/echo"), arguments: ["hello", "there"], limits: limits()
+        )
+        XCTAssertEqual(result.outcome, .exited(status: 0))
+        XCTAssertEqual(String(data: result.output, encoding: .utf8), "hello there\n")
+    }
+
+    /// Only the first `maximumOutputBytes` bytes come back.
+    func testRunCapturingOutputKeepsOnlyTheFirstBytes() async throws {
+        let result = try await WatchedProcess.runCapturingOutput(
+            URL(fileURLWithPath: "/bin/echo"), arguments: ["abcdefghij"], limits: limits(),
+            maximumOutputBytes: 4
+        )
+        XCTAssertEqual(String(data: result.output, encoding: .utf8), "abcd")
+    }
+
+    /// The hidden file is gone after an exit, a kill, and a failure to start.
+    func testRunCapturingOutputLeavesNoFileBehind() async throws {
+        let before = capturedOutputFileCount()
+        _ = try await WatchedProcess.runCapturingOutput(
+            URL(fileURLWithPath: "/bin/echo"), arguments: ["x"], limits: limits()
+        )
+        let killed = try await WatchedProcess.runCapturingOutput(
+            URL(fileURLWithPath: "/bin/sleep"), arguments: ["30"], limits: limits(seconds: 0.3)
+        )
+        XCTAssertEqual(killed.outcome, .killed(.tookTooLong(seconds: 0.3)))
+        let missing = try await WatchedProcess.runCapturingOutput(
+            folder.appendingPathComponent("no-such-tool"), arguments: [], limits: limits()
+        )
+        XCTAssertEqual(missing.outcome, .couldNotStart)
+        XCTAssertTrue(missing.output.isEmpty)
+        XCTAssertEqual(capturedOutputFileCount(), before)
+    }
+
+    /// A cancelled run throws, kills the child, and removes its file too.
+    func testACancelledCapturingRunRemovesItsFile() async throws {
+        let before = capturedOutputFileCount()
+        let limits = limits()
+        let task = Task { () -> Data in
+            try await WatchedProcess.runCapturingOutput(
+                URL(fileURLWithPath: "/bin/sleep"), arguments: ["30"], limits: limits
+            ).output
+        }
+        // Long enough for the child to have started.
+        try await Task.sleep(nanoseconds: 500_000_000)
+        task.cancel()
+        do {
+            _ = try await task.value
+            XCTFail("A cancelled run must throw")
+        } catch is CancellationError {
+            // Expected.
+        }
+        XCTAssertEqual(capturedOutputFileCount(), before)
+    }
+
+    /// The stalled-output clock counts from the child's last output: a
+    /// silent child is killed as making no progress.
+    func testASilentCapturingChildIsKilledAsMakingNoProgress() async throws {
+        let result = try await WatchedProcess.runCapturingOutput(
+            URL(fileURLWithPath: "/bin/sleep"), arguments: ["30"], limits: limits(stalled: 0.3)
+        )
+        XCTAssertEqual(result.outcome, .killed(.madeNoProgress(seconds: 0.3)))
+    }
 }

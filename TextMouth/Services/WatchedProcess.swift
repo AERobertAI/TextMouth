@@ -239,6 +239,73 @@ enum WatchedProcess {
         residentMemory: @escaping @Sendable (pid_t) -> Int64? = WatchedProcess.residentMemory(of:),
         uptime: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
     ) async throws -> Outcome {
+        try await runWatched(
+            executable, arguments: arguments, output: output, standardOutput: nil,
+            limits: limits, residentMemory: residentMemory, uptime: uptime
+        )
+    }
+
+    /// Runs `executable` as `run` does, and keeps what the child prints
+    /// (FMT09): its standard output goes to a new hidden file,
+    /// `.<UUID>.watched-output`, in the temporary directory, which the
+    /// watchdog watches for growth (so `maximumStalledSeconds` counts from
+    /// the child's last output). The file is removed however the run ends: an
+    /// exit, a kill, a failure to start, or a cancellation.
+    /// - Parameter maximumOutputBytes: How much of the output is returned;
+    ///   the rest is dropped.
+    /// - Returns: How the child ended, and the first `maximumOutputBytes`
+    ///   bytes it printed (empty when it printed nothing or never started).
+    /// - Throws: `CancellationError`, as `run` does.
+    static func runCapturingOutput(
+        _ executable: URL,
+        arguments: [String],
+        limits: Limits,
+        maximumOutputBytes: Int = 1 << 20,
+        residentMemory: @escaping @Sendable (pid_t) -> Int64? = WatchedProcess.residentMemory(of:),
+        uptime: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
+    ) async throws -> (outcome: Outcome, output: Data) {
+        let file = FileManager.default.temporaryDirectory
+            .appendingPathComponent(".\(UUID().uuidString).watched-output")
+        guard FileManager.default.createFile(atPath: file.path, contents: nil),
+              let handle = try? FileHandle(forWritingTo: file)
+        else {
+            // No place to put the output: the child is not started.
+            try? FileManager.default.removeItem(at: file)
+            return (.couldNotStart, Data())
+        }
+        // However the run ends, the file goes (the handle first closes).
+        defer {
+            try? handle.close()
+            try? FileManager.default.removeItem(at: file)
+        }
+        let outcome = try await runWatched(
+            executable, arguments: arguments, output: file, standardOutput: handle,
+            limits: limits, residentMemory: residentMemory, uptime: uptime
+        )
+        return (outcome, firstBytes(of: file, upTo: maximumOutputBytes))
+    }
+
+    /// The first `count` bytes of the file at `url`; empty when it cannot be
+    /// read.
+    private static func firstBytes(of url: URL, upTo count: Int) -> Data {
+        guard count > 0, let reader = try? FileHandle(forReadingFrom: url) else { return Data() }
+        defer { try? reader.close() }
+        return (try? reader.read(upToCount: count)) ?? Data()
+    }
+
+    /// The core of `run` and `runCapturingOutput`: starts the child on a
+    /// background queue, under `limits`, with the cancellation handler.
+    /// `standardOutput`, when given, takes the null device's place for the
+    /// child's standard output.
+    private static func runWatched(
+        _ executable: URL,
+        arguments: [String],
+        output: URL,
+        standardOutput: FileHandle?,
+        limits: Limits,
+        residentMemory: @escaping @Sendable (pid_t) -> Int64?,
+        uptime: @escaping @Sendable () -> TimeInterval
+    ) async throws -> Outcome {
         try Task.checkCancellation()
         // The child's pid and the cancellation flag, shared with the handler.
         let gate = ChildGate()
@@ -246,7 +313,8 @@ enum WatchedProcess {
             await withCheckedContinuation { continuation in
                 DispatchQueue.global(qos: .utility).async {
                     continuation.resume(returning: watch(
-                        executable, arguments: arguments, output: output, limits: limits,
+                        executable, arguments: arguments, output: output,
+                        standardOutput: standardOutput, limits: limits,
                         residentMemory: residentMemory, uptime: uptime, gate: gate
                     ))
                 }
@@ -268,6 +336,7 @@ enum WatchedProcess {
         _ executable: URL,
         arguments: [String],
         output: URL,
+        standardOutput: FileHandle?,
         limits: Limits,
         residentMemory: @Sendable (pid_t) -> Int64?,
         uptime: @Sendable () -> TimeInterval,
@@ -283,7 +352,7 @@ enum WatchedProcess {
             String(cpuSecondsForShell(maximumCPU)), executable.path,
         ] + arguments
         process.standardInput = FileHandle.nullDevice
-        process.standardOutput = FileHandle.nullDevice
+        process.standardOutput = standardOutput ?? FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
         // Signalled as the child ends, so the loop below wakes at once.
         let ended = DispatchSemaphore(value: 0)
