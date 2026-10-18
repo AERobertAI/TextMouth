@@ -79,6 +79,11 @@ enum TextutilHTMLStructure {
     /// Turn each run of consecutive sibling bullet paragraphs into one `ul`.
     /// textutil writes the lists of .doc, .docx, and WordML files this way,
     /// as paragraphs reading tab, bullet, tab, and then the item's words.
+    ///
+    /// The work is linear in the size of the document: SwiftSoup removes a
+    /// child in time linear in the parent's children, so removing each of
+    /// tens of thousands of bullet paragraphs one by one would take quadratic
+    /// time. Each parent that holds a run has its children rebuilt once.
     private static func convertBulletParagraphs(in document: Document) throws {
         let body = document.body() ?? document
 
@@ -93,15 +98,62 @@ enum TextutilHTMLStructure {
             }
         }
 
+        // Group the runs by the parent that holds them, in document order.
+        var parents: [Element] = []
+        var runsByParent: [ObjectIdentifier: [[Element]]] = [:]
+        for run in runs {
+            guard let parent = run.first?.parent() else { continue }
+            let key = ObjectIdentifier(parent)
+            if runsByParent[key] == nil { parents.append(parent) }
+            runsByParent[key, default: []].append(run)
+        }
+
+        for parent in parents {
+            try replaceRuns(runsByParent[ObjectIdentifier(parent)] ?? [], in: parent)
+        }
+    }
+
+    /// Replace each run of bullet paragraphs, all children of `parent`, with
+    /// one `ul` of their items, rebuilding `parent`'s children in one pass:
+    /// each list takes the place of its run's first paragraph, and the other
+    /// paragraphs of the run go.
+    private static func replaceRuns(_ runs: [[Element]], in parent: Element) throws {
+        var listsByFirstParagraph: [ObjectIdentifier: Element] = [:]
+        var replaced: Set<ObjectIdentifier> = []
         for run in runs {
             guard let first = run.first else { continue }
             let list = Element(try Tag.valueOf("ul"), "")
-            try first.before(list)
-            for paragraph in run {
-                try list.appendChild(listItem(from: paragraph))
-                try paragraph.remove()
+            // The list holds the items; `list.addChildren` runs once per
+            // run, so the cost is that of the items alone.
+            try list.addChildren(try run.map { try listItem(from: $0) })
+            listsByFirstParagraph[ObjectIdentifier(first)] = list
+            replaced.formUnion(run.map { ObjectIdentifier($0) })
+        }
+
+        // Lift all of the parent's children out, then put back the ones that
+        // stay, with the lists in place of their runs.
+        var rebuilt: [Node] = []
+        for child in try detachAllChildren(of: parent) {
+            let key = ObjectIdentifier(child)
+            if let list = listsByFirstParagraph[key] {
+                rebuilt.append(list)
+            } else if !replaced.contains(key) {
+                rebuilt.append(child)
             }
         }
+        try parent.addChildren(rebuilt)
+    }
+
+    /// Remove every child of `element` and return them, in order. Children
+    /// are removed from the last to the first: SwiftSoup renumbers the
+    /// siblings after a removed child, so removing the last first renumbers
+    /// none, and emptying an element takes linear time, not quadratic.
+    private static func detachAllChildren(of element: Element) throws -> [Node] {
+        let children = element.getChildNodes()
+        for child in children.reversed() {
+            try child.remove()
+        }
+        return children
     }
 
     /// A list item that holds the children of the bullet paragraph
@@ -120,9 +172,7 @@ enum TextutilHTMLStructure {
             }
         }
         let item = Element(try Tag.valueOf("li"), "")
-        for child in paragraph.getChildNodes() {
-            try item.appendChild(child)
-        }
+        try item.addChildren(try detachAllChildren(of: paragraph))
         return item
     }
 

@@ -352,6 +352,32 @@ final class TextutilHTMLStructureTests: XCTestCase {
         XCTAssertEqual(try restored(markup).select("body > ul").size(), 2)
     }
 
+    /// A document of 30,000 bullet paragraphs among 1,000 body paragraphs is
+    /// restored into one list of 30,000 items, in time linear in its size:
+    /// removing each bullet paragraph from a parent of 31,000 children one
+    /// by one was quadratic (SwiftSoup renumbers every later sibling), and
+    /// ran in TextMouth's own process with no watchdog. Measured on the
+    /// development Mac: 1.8 seconds, where the one-by-one removal took 241 seconds.
+    /// The bound is four times the measured time, rounded up.
+    func testThirtyThousandBulletParagraphsAreRestoredInLinearTime() throws {
+        let tab = "<span class=\"Apple-tab-span\">\t</span>"
+        let bullets = (1...30_000).map { "<p class=\"p2\">\(tab)•\(tab)Item \($0)</p>" }
+        // Half the body paragraphs come before the list and half after, so
+        // the removed paragraphs have siblings on both sides.
+        let body = Array(repeating: plain, count: 500) + bullets + Array(repeating: plain, count: 500)
+        let document = try SwiftSoup.parse(html(body: body.joined(separator: "\n")))
+
+        let clock = ContinuousClock()
+        let elapsed = try clock.measure { try TextutilHTMLStructure.restore(in: document) }
+
+        XCTAssertEqual(try document.select("body > ul").size(), 1)
+        XCTAssertEqual(try document.select("body > ul > li").size(), 30_000)
+        XCTAssertEqual(try document.select("body > ul > li").first()?.text(), "Item 1")
+        XCTAssertEqual(try document.select("body > ul > li").last()?.text(), "Item 30000")
+        XCTAssertEqual(try document.select("body > p").size(), 1_000)
+        XCTAssertLessThan(elapsed, .seconds(8))
+    }
+
     // MARK: - Pictures and emphasis
 
     /// A picture's file name is never read: no image or object text remains.
