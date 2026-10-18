@@ -927,9 +927,18 @@ enum FileImportService {
     /// of its bytes, except for an RTFD, which is a folder, not a file,
     /// whose checksum is that of the regular files anywhere inside it
     /// (`folderHash(of:in:)`). A plain file named .rtfd is hashed as a file.
-    private static func contentChecksum(of url: URL, format: BookFormat?) throws -> String {
+    /// Internal so a book's fingerprint digests its RTFD with the very same
+    /// walk the import used (`FingerprintHasher.md5`).
+    static func contentChecksum(of url: URL, format: BookFormat?) throws -> String {
         guard format == .rtfd, isFolder(url) else { return try md5Hash(of: url) }
         return try folderHash(of: regularFilePaths(in: url), in: url)
+    }
+
+    /// Whether the item at `url` is an RTFD: a folder named .rtfd. A plain
+    /// file with that name is not (it is read and measured as a file), and
+    /// no other folder is, since only an RTFD stands for one document.
+    static func isRTFDFolder(_ url: URL) -> Bool {
+        url.pathExtension.lowercased() == "rtfd" && isFolder(url)
     }
 
     /// Whether the item at `url` is a folder (a package such as an .rtfd
@@ -942,8 +951,10 @@ enum FileImportService {
     /// their relative paths. A symbolic link is never followed (the
     /// enumerator reports it as a link, which is not a regular file), and a
     /// hidden file or folder (a Finder's .DS_Store) is passed over, so
-    /// browsing a folder in Finder never changes its checksum.
-    private static func regularFilePaths(in folder: URL) -> [String] {
+    /// browsing a folder in Finder never changes its checksum. Internal so
+    /// an RTFD's stamp measures exactly the files its checksum reads
+    /// (`FileStamp`).
+    static func regularFilePaths(in folder: URL) -> [String] {
         guard let walk = FileManager.default.enumerator(atPath: folder.path) else { return [] }
         var paths: [String] = []
         while let path = walk.nextObject() as? String {

@@ -10,8 +10,9 @@ import Foundation
 
 // MARK: - File Stamp
 
-/// What stat(2) reports about a regular file without reading it: its size
-/// and when its content last changed. A file whose stamp is unchanged is
+/// What stat(2) reports about a regular file without reading it (or, for an
+/// RTFD folder, about the files inside it): its size and when its content
+/// last changed. A file whose stamp is unchanged is
 /// taken to hold the same bytes; only a stamp that differs, or a check that
 /// fails for another reason, leads to reading the file for its digest.
 /// Stamps keep the time to the nanosecond, but compare it to the
@@ -49,19 +50,59 @@ struct FileStamp: Hashable, Sendable {
     }
 
     /// The stamp of the regular file at `url`, following symbolic links as
-    /// reading the file does. Nil when nothing is there, when the item is a
-    /// folder or anything else that is not a regular file, or when it cannot
-    /// be examined.
+    /// reading the file does, or of the RTFD folder there (see below). Nil
+    /// when nothing is there, when the item is any other folder or anything
+    /// else that is not a regular file, or when it cannot be examined.
+    ///
+    /// An RTFD (Rich Text with Attachments) is a folder that stands for one
+    /// document, so its stamp is a folder's: the total size of the regular
+    /// files anywhere inside it, and the latest modification time among
+    /// them. It passes over exactly what the RTFD's checksum passes over
+    /// (`FileImportService.regularFilePaths(in:)`): hidden files and folders
+    /// such as a Finder's .DS_Store, and symbolic links, so browsing the
+    /// folder never changes its stamp, while changing, adding, or removing a
+    /// file of it does (a removed file changes the total size; an added or
+    /// rewritten one the time or the size). An RTFD with no regular file in
+    /// it has no stamp. A regular file is measured exactly as ever.
     init?(of url: URL) {
+        guard let stamp = FileImportService.isRTFDFolder(url)
+                ? Self.stamp(ofFolder: url)
+                : Self.stamp(ofRegularFile: url) else { return nil }
+        self = stamp
+    }
+
+    /// The stamp of the regular file at `url` from stat(2), following
+    /// symbolic links; nil for anything else.
+    private static func stamp(ofRegularFile url: URL) -> FileStamp? {
         var status = stat()
         let examined = url.withUnsafeFileSystemRepresentation { path -> Bool in
             guard let path else { return false }
             return stat(path, &status) == 0
         }
         guard examined, status.st_mode & S_IFMT == S_IFREG else { return nil }
-        self.init(
+        return FileStamp(
             byteCount: Int64(status.st_size),
-            modificationTimeNanoseconds: Self.nanoseconds(since1970: status.st_mtimespec)
+            modificationTimeNanoseconds: nanoseconds(since1970: status.st_mtimespec)
+        )
+    }
+
+    /// The stamp of the RTFD folder at `folder`: the sum of the sizes and
+    /// the latest modification time of the files its checksum reads. A file
+    /// that vanishes while the folder is measured is left out, as it is
+    /// absent next time; nil when no file is left to measure. The sum
+    /// saturates rather than overflowing.
+    private static func stamp(ofFolder folder: URL) -> FileStamp? {
+        let stamps = FileImportService.regularFilePaths(in: folder).compactMap {
+            stamp(ofRegularFile: folder.appendingPathComponent($0))
+        }
+        guard !stamps.isEmpty else { return nil }
+        let total = stamps.reduce(Int64(0)) { sum, stamp in
+            let (added, overflowed) = sum.addingReportingOverflow(stamp.byteCount)
+            return overflowed ? .max : added
+        }
+        return FileStamp(
+            byteCount: total,
+            modificationTimeNanoseconds: stamps.map(\.modificationTimeNanoseconds).max() ?? 0
         )
     }
 
@@ -268,7 +309,8 @@ extension TextCacheFingerprint {
 /// a second: a few milliseconds for a typical EPUB. Tests substitute a hasher
 /// that counts its calls, to prove which checks read files.
 struct FingerprintHasher: Sendable {
-    /// The digest of the regular file at a URL, read in full.
+    /// The digest of the regular file at a URL, read in full; for an RTFD
+    /// folder, its checksum.
     let digestOfFile: @Sendable (URL) throws -> String
     /// The digest of bytes already in memory, such as a content.md just
     /// written or read; the same digest `digestOfFile` gives the same bytes.
@@ -286,6 +328,11 @@ struct FingerprintHasher: Sendable {
     /// spells them.
     static let md5 = FingerprintHasher(
         digestOfFile: { url in
+            // An RTFD is a folder whose digest is its checksum, the one its
+            // import recorded, from the same walk of its files.
+            if FileImportService.isRTFDFolder(url) {
+                return try FileImportService.contentChecksum(of: url, format: .rtfd)
+            }
             // FileHandle raises an Objective-C exception, which Swift cannot
             // catch, when it reads a folder: refuse anything but a file first.
             guard FileStamp(of: url) != nil else { throw ContentFingerprintError.notARegularFile }

@@ -716,14 +716,21 @@ final class TextutilImportTests: XCTestCase {
 
     /// A folder never reaches `FileHandle`, whose legacy read raises an
     /// exception that cannot be caught: every reader of a book's file
-    /// refuses or skips one.
+    /// refuses or skips one. The one folder that is a book's file, an RTFD,
+    /// is measured and digested as a folder instead (`FileStamp`,
+    /// `FingerprintHasher.md5`); any other folder is still refused.
     func testNoReaderOfABookFileRaisesOnAFolder() throws {
         let folder = try copyOfFormatSample("rtfd/headings.rtfd")
         XCTAssertThrowsError(try FileImportService.md5Hash(of: folder))
-        XCTAssertNil(FileStamp(of: folder))
-        XCTAssertNil(FileFingerprint(of: folder, hasher: .md5))
-        XCTAssertThrowsError(try FingerprintHasher.md5.digestOfFile(folder))
         XCTAssertThrowsError(try ContentFingerprint(of: folder))
+        XCTAssertNotNil(FileStamp(of: folder))
+        XCTAssertNotNil(FileFingerprint(of: folder, hasher: .md5))
+        XCTAssertEqual(try FingerprintHasher.md5.digestOfFile(folder), try FileImportService.importHash(of: folder))
+
+        let other = try copyOfFormatSample("rtfd/headings.rtfd", named: "headings-folder")
+        XCTAssertNil(FileStamp(of: other))
+        XCTAssertNil(FileFingerprint(of: other, hasher: .md5))
+        XCTAssertThrowsError(try FingerprintHasher.md5.digestOfFile(other))
     }
 
     /// A plain file named .rtfd is hashed as a file, not walked as a folder.
