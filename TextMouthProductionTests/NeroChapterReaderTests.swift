@@ -1,3 +1,4 @@
+import AVFoundation
 import XCTest
 @testable import TextMouth
 
@@ -305,5 +306,80 @@ final class NeroChapterReaderTests: XCTestCase {
     func testNothingLeftGivesNothing() {
         XCTAssertTrue(NeroChapterReader.bookChapters(from: [], fileDuration: 5).isEmpty)
         XCTAssertTrue(NeroChapterReader.bookChapters(from: [.init(title: "X", start: 9)], fileDuration: 5).isEmpty)
+    }
+
+    // MARK: - The real sample
+
+    /// The three titles and starts of `three-tones.m4b`'s `chpl` atom, read
+    /// once from the file's bytes (0, 1.5, and 3.0 seconds).
+    private let sampleChapters = [NeroChapterReader.Chapter(title: "Tone 440 Hz", start: 0),
+                                  NeroChapterReader.Chapter(title: "Tone 660 Hz - second", start: 1.5),
+                                  NeroChapterReader.Chapter(title: "Tone 880 Hz (café)", start: 3.0)]
+
+    /// A copy of the sample in the test's folder (the samples' folder is
+    /// never changed), with `edit` applied to its bytes.
+    private func sampleCopy(named name: String, edit: (inout Data) throws -> Void = { _ in }) throws -> URL {
+        let source = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("TestData/format-samples/m4b-chapters/three-tones.m4b")
+        var bytes = try Data(contentsOf: source)
+        try edit(&bytes)
+        let url = folder.appendingPathComponent(name)
+        try bytes.write(to: url)
+        return url
+    }
+
+    /// Renames the audio track's chapter reference: the `chap` inside `tref`
+    /// becomes `xxxx`, so AVFoundation finds no chapter track.
+    private func hideChapterTrack(_ bytes: inout Data) throws {
+        let tref = try XCTUnwrap(bytes.range(of: Data("tref".utf8)), "the sample has no tref")
+        let chap = try XCTUnwrap(bytes.range(of: Data("chap".utf8), in: tref.lowerBound..<bytes.endIndex),
+                                 "no chap inside tref")
+        // The reference must lie inside the tref box (its 20 bytes).
+        XCTAssertLessThan(chap.lowerBound - tref.lowerBound, 20)
+        bytes.replaceSubrange(chap, with: Data("xxxx".utf8))
+    }
+
+    /// The reader finds the sample's three chapters.
+    func testSampleChapters() throws {
+        let url = try sampleCopy(named: "three-tones.m4b")
+        XCTAssertEqual(NeroChapterReader.read(at: url), sampleChapters)
+    }
+
+    /// With the chapter track intact, `extractChapters` gives AVFoundation's.
+    func testExtractChaptersUsesTheChapterTrackWhenThereIsOne() async throws {
+        let url = try sampleCopy(named: "three-tones.m4b")
+        let book = await AudioPlaybackService.extractChapters(from: url)
+        XCTAssertEqual(book.count, 3)
+        for (chapter, expected) in zip(book, sampleChapters) {
+            XCTAssertEqual(chapter.startTime, expected.start, accuracy: 0.05)
+            XCTAssertEqual(chapter.title, expected.title)
+        }
+    }
+
+    /// With the chapter track hidden, `extractChapters` falls back to `chpl`:
+    /// the same titles and starts, lasting to the file's end.
+    func testExtractChaptersFallsBackToTheNeroList() async throws {
+        let url = try sampleCopy(named: "no-track.m4b", edit: hideChapterTrack)
+        let book = await AudioPlaybackService.extractChapters(from: url)
+        XCTAssertEqual(book.map(\.title), sampleChapters.map(\.title))
+        XCTAssertEqual(book.count, 3)
+        for (chapter, expected) in zip(book, sampleChapters) {
+            XCTAssertEqual(chapter.startTime, expected.start, accuracy: 0.01)
+        }
+        let asset = try XCTUnwrap(AudioPlaybackService.metadataAsset(for: url))
+        let length = CMTimeGetSeconds(try await asset.load(.duration))
+        XCTAssertEqual(book.reduce(0) { $0 + $1.duration }, length, accuracy: 0.01)
+    }
+
+    /// The fallback applies to the extension in any case, and not to others.
+    func testFallbackFollowsTheExtension() async throws {
+        let upper = try sampleCopy(named: "NO-TRACK.M4B", edit: hideChapterTrack)
+        let upperBook = await AudioPlaybackService.extractChapters(from: upper)
+        XCTAssertEqual(upperBook.count, 3)
+        // The same bytes under an extension outside the MPEG-4 list get no fallback.
+        let other = try sampleCopy(named: "no-track.dat", edit: hideChapterTrack)
+        let otherBook = await AudioPlaybackService.extractChapters(from: other)
+        XCTAssertTrue(otherBook.isEmpty)
     }
 }
