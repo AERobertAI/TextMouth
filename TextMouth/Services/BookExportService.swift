@@ -241,6 +241,9 @@ enum BookExportService {
         if let originals = originalAudioItem(of: book, stem: stem, access: access) {
             items.append(originals)
         }
+        if let converted = convertedOriginalItem(of: book, stem: stem, access: access) {
+            items.append(converted)
+        }
         let markdown = MarkdownCacheService.cacheURL(for: book)
         let hasMarkdown = access.presence(of: markdown) == .present
         if let transcript = transcriptItem(of: book, stem: stem, markdown: hasMarkdown ? markdown : nil, access: access) {
@@ -472,6 +475,57 @@ enum BookExportService {
         }
         return BookExportItem(
             kind: .originalAudio,
+            folderName: name,
+            files: files,
+            fileInCloud: files.lazy.compactMap { access.itemInCloud($0.source.url) }.first
+        )
+    }
+
+    // MARK: Originals an Import Kept
+
+    /// The audio files as they were before the import converted them (the
+    /// "Keep originals of converted audio" setting): every file in the
+    /// package's hidden kept originals folder, which only an audiobook's
+    /// import fills. They are copied as bytes and never opened, so a kept
+    /// Ogg file is never decoded (the October 14 rule). The original of a
+    /// book of one file is exported under its own name, as a text book's
+    /// Original file is; the originals of a book of tracks, in a folder
+    /// named "<title> - Original Files", each under its path inside the
+    /// book's folder of tracks. Nil when the book is not an audiobook or
+    /// keeps none. A folder that can't be listed without downloading it is
+    /// offered as in the cloud, with nothing listed.
+    private static func convertedOriginalItem(of book: Book, stem: String, access: MaintenanceFileAccess) -> BookExportItem? {
+        guard book.format.isAudio else { return nil }
+        let folder = book.tmbDirectory
+            .appendingPathComponent(ImportAudioConverter.keptOriginalsFolderName, isDirectory: true)
+        let name = "\(stem) - Original Files"
+        let inCloud = BookExportItem(kind: .originalFile, folderName: name, files: [], fileInCloud: folder)
+        switch access.presence(of: folder) {
+        case .absent:
+            return nil
+        case .inCloud:
+            return inCloud
+        case .present:
+            break
+        }
+        let listed: [String]
+        do {
+            listed = try access.read(folder) { try regularFiles(in: folder) }
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            return inCloud
+        } catch {
+            return nil
+        }
+        guard !listed.isEmpty else { return nil }
+        // A book of one file keeps one original, which is exported alone.
+        // A book of tracks is exported as a folder, even for a single kept
+        // original, so the folder tells which tracks it belongs to.
+        if listed.count == 1, let only = listed.first, !isFolder(book.bookFileURL) {
+            return standaloneItem(.originalFile, files: [copy(folder.appendingPathComponent(only), as: only)], access: access)
+        }
+        let files = listed.map { copy(folder.appendingPathComponent($0), as: $0) }
+        return BookExportItem(
+            kind: .originalFile,
             folderName: name,
             files: files,
             fileInCloud: files.lazy.compactMap { access.itemInCloud($0.source.url) }.first

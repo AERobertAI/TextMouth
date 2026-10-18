@@ -358,4 +358,143 @@ final class ConvertedOriginalTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: kept.path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: imported.book.tmbDirectory.path))
     }
+
+    // MARK: - Export offers the kept originals (stand-in bytes, no decoding)
+
+    /// Writes stand-in bytes for the original `path` (from the book's
+    /// folder of tracks) into `package`'s kept originals folder, as an
+    /// import with the setting on leaves it. Nothing here is ever decoded.
+    @discardableResult
+    private func keepStandIn(_ path: String, in package: URL) throws -> URL {
+        let file = package
+            .appendingPathComponent(ImportAudioConverter.keptOriginalsFolderName, isDirectory: true)
+            .appendingPathComponent(path)
+        try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data("stand-in for \(path)".utf8).write(to: file)
+        return file
+    }
+
+    /// An audiobook of one WAVE file in `world`, imported as the library
+    /// imports a chosen file.
+    private func importSingleFileAudiobook(in world: IntegrationWorld, named name: String) throws -> Book {
+        let source = try makeSandboxDirectory("keepexport-source").appendingPathComponent(name)
+        try AudioTestFixtures.writeSilence(to: source, duration: 1)
+        return try world.importBook(from: source)
+    }
+
+    /// The Original file's checkbox says what an audiobook adds to it, in
+    /// words pinned here.
+    func testTheOriginalFileHintMentionsConvertedAudio() {
+        XCTAssertEqual(
+            BookExportWording.hint(for: .originalFile),
+            "The book's own file, as it was imported; for an audiobook, its audio files as they were before "
+                + "TextMouth converted them."
+        )
+    }
+
+    /// A book of one file whose import kept the original offers it as the
+    /// Original file, under its own name with its byte count, beside the
+    /// Audio it plays; exporting it writes the kept bytes exactly.
+    func testASingleFileBookOffersItsKeptOriginalAndExportsItByteForByte() throws {
+        let world = try makeIntegrationWorld("keepexport-single")
+        let book = try importSingleFileAudiobook(in: world, named: "Elegy.wav")
+        let kept = try keepStandIn("Elegy.ogg", in: book.tmbDirectory)
+        let destination = try makeSandboxDirectory("keepexport-single-destination")
+
+        let offer = BookExportService.offer(for: book)
+        let outcome = BookExportService.export([offer], kinds: [.originalFile], to: destination)
+
+        XCTAssertEqual(offer.items.map(\.kind), [.audio, .originalFile])
+        let item = try XCTUnwrap(offer.item(.originalFile))
+        XCTAssertNil(item.folderName)
+        XCTAssertEqual(item.suggestedName, "Elegy.ogg")
+        XCTAssertEqual(item.files.map(\.source), [.copy(kept)])
+        XCTAssertEqual(item.byteCount, Int64(try Data(contentsOf: kept).count))
+        XCTAssertFalse(item.isInCloud)
+        XCTAssertEqual(outcome.failures, [])
+        XCTAssertEqual(outcome.exported.map(\.lastPathComponent), ["Elegy.ogg"])
+        XCTAssertEqual(
+            try Data(contentsOf: destination.appendingPathComponent("Elegy.ogg")),
+            try Data(contentsOf: kept)
+        )
+    }
+
+    /// A book of tracks offers only what was kept, in a folder named for
+    /// the book: with `01.ogg` kept and `02.mp3` never converted, the folder
+    /// holds `01.ogg` alone, and Audio is still the converted tracks.
+    func testABookOfTracksOffersItsKeptOriginalsInAFolder() throws {
+        let world = try makeIntegrationWorld("keepexport-tracks")
+        let book = try world.makeSilentAudioBook(title: "Harbor Plays", trackDurations: [1, 1])
+        try keepStandIn("01.ogg", in: book.tmbDirectory)
+        let stem = BookExportService.fileNameStem(for: book.title)
+        let destination = try makeSandboxDirectory("keepexport-tracks-destination")
+
+        let offer = BookExportService.offer(for: book)
+        let outcome = BookExportService.export([offer], kinds: [.originalFile], to: destination)
+
+        XCTAssertEqual(offer.items.map(\.kind), [.audio, .originalFile])
+        XCTAssertEqual(offer.item(.originalFile)?.folderName, "\(stem) - Original Files")
+        XCTAssertEqual(offer.item(.originalFile)?.files.map(\.path), ["01.ogg"])
+        XCTAssertEqual(offer.item(.audio)?.files.count, 2)
+        XCTAssertEqual(outcome.failures, [])
+        let folder = destination.appendingPathComponent("\(stem) - Original Files", isDirectory: true)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), ["01.ogg"])
+    }
+
+    /// Originals kept under a folder of the tracks keep that path in the
+    /// exported folder, in Finder's order ("2" before "10").
+    func testKeptOriginalsKeepTheirPathsInTheExportedFolder() throws {
+        let world = try makeIntegrationWorld("keepexport-paths")
+        let book = try world.makeSilentAudioBook(title: "Long Radio", trackDurations: [1])
+        for path in ["Disc 1/10.ogg", "Disc 1/2.ogg", "intro.ogg"] {
+            try keepStandIn(path, in: book.tmbDirectory)
+        }
+
+        let item = try XCTUnwrap(BookExportService.offer(for: book).item(.originalFile))
+
+        XCTAssertEqual(item.files.map(\.path), ["Disc 1/2.ogg", "Disc 1/10.ogg", "intro.ogg"])
+    }
+
+    /// Without a kept original, an audiobook offers no Original file, as
+    /// before; nor does a kept folder holding only a hidden file.
+    func testAnAudiobookWithoutAKeptOriginalOffersNoOriginalFile() throws {
+        let world = try makeIntegrationWorld("keepexport-none")
+        let book = try importSingleFileAudiobook(in: world, named: "Weir.wav")
+        XCTAssertNil(BookExportService.offer(for: book).item(.originalFile))
+
+        let folder = book.tmbDirectory
+            .appendingPathComponent(ImportAudioConverter.keptOriginalsFolderName, isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try Data("Finder".utf8).write(to: folder.appendingPathComponent(".DS_Store"))
+
+        let offer = BookExportService.offer(for: book)
+        XCTAssertNil(offer.item(.originalFile))
+        XCTAssertEqual(offer.items.map(\.kind), [.audio])
+    }
+
+    /// A kept original only in the cloud is offered as such and never
+    /// exported: a kept folder that can't be listed without downloading it,
+    /// and a kept file that is dataless.
+    func testKeptOriginalsInTheCloudAreRefused() throws {
+        let world = try makeIntegrationWorld("keepexport-cloud")
+        let book = try importSingleFileAudiobook(in: world, named: "Elegy.wav")
+        let kept = try keepStandIn("Elegy.ogg", in: book.tmbDirectory)
+        let folder = kept.deletingLastPathComponent()
+        let destination = try makeSandboxDirectory("keepexport-cloud-destination")
+
+        for dataless in [folder, kept] {
+            let paths = Set([dataless.standardizedFileURL.path])
+            let cloud = MaintenanceFileAccess(
+                isDataless: { paths.contains($0.standardizedFileURL.path) },
+                refusesRead: { paths.contains($0.standardizedFileURL.path) }
+            )
+            let offer = BookExportService.offer(for: book, access: cloud)
+            let outcome = BookExportService.export([offer], kinds: [.originalFile], to: destination, access: cloud)
+
+            XCTAssertEqual(offer.item(.originalFile)?.fileInCloud, dataless)
+            XCTAssertEqual(outcome.exported, [])
+            XCTAssertEqual(outcome.booksInCloud.map(\.title), [book.title])
+        }
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: destination.path), [])
+    }
 }
