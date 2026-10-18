@@ -435,6 +435,106 @@ final class PlaylistImportTests: XCTestCase {
         )
     }
 
+    // MARK: - Short Lists (review item 6)
+
+    /// An entry of exactly 60 characters is kept whole; one of 61 loses its
+    /// middle (it has no folder, so only its file name remains, 40 characters).
+    func testAnEntryOfSixtyCharactersIsKeptWholeAndOneOfSixtyOneIsShortened() {
+        let sixty = String(repeating: "a", count: 59) + "b"
+        XCTAssertEqual(sixty.count, 60)
+        XCTAssertEqual(PlaylistImportWording.shortened(sixty), sixty)
+
+        let sixtyOne = String(repeating: "a", count: 60) + "b"
+        XCTAssertEqual(sixtyOne.count, 61)
+        let shortened = PlaylistImportWording.shortened(sixtyOne)
+        XCTAssertEqual(shortened, String(repeating: "a", count: 20) + "…" + String(repeating: "a", count: 18) + "b")
+        XCTAssertEqual(shortened.count, 40)
+
+        // A short entry with folders is untouched too.
+        XCTAssertEqual(PlaylistImportWording.shortened("Music/01 Intro.mp3"), "Music/01 Intro.mp3")
+    }
+
+    /// A long entry keeps its start and its file name around "…", at 60
+    /// characters in all, whether the folders are separated by "/" or "\".
+    func testALongEntryKeepsItsStartAndItsFileName() {
+        let path = "Music/Audiobooks/A Very Long Title That Goes On And On Forever/03 Intro.mp3"
+        XCTAssertEqual(
+            PlaylistImportWording.shortened(path),
+            "Music/Audiobooks/A Very Long Title That Goes O…/03 Intro.mp3"
+        )
+        let windows = path.replacingOccurrences(of: "/", with: "\\")
+        XCTAssertEqual(
+            PlaylistImportWording.shortened(windows),
+            "Music\\Audiobooks\\A Very Long Title That Goes O…\\03 Intro.mp3"
+        )
+        XCTAssertEqual(PlaylistImportWording.shortened(path).count, PlaylistImportWording.entryLimit)
+    }
+
+    /// A file name of more than 40 characters is shortened in its middle too,
+    /// to its first 20 and last 19 characters, and the start gives way.
+    func testALongFileNameLosesItsMiddle() {
+        let path = "Music/Audiobooks/Series One/The Complete Unabridged Recording Of Chapter Three Part Two.mp3"
+        let shortened = PlaylistImportWording.shortened(path)
+        XCTAssertEqual(shortened, "Music/Audiobooks/S…/The Complete Unabrid… Three Part Two.mp3")
+        XCTAssertEqual(shortened.count, PlaylistImportWording.entryLimit)
+    }
+
+    /// An entry that is only a separator and a file name, of any length,
+    /// comes out within the limit.
+    func testAFolderAndAFileNameAreNeverLongerThanTheLimit() {
+        for nameLength in [40, 41, 55, 500] {
+            let path = "/" + String(repeating: "n", count: nameLength)
+            XCTAssertLessThanOrEqual(PlaylistImportWording.shortened(path).count, PlaylistImportWording.entryLimit)
+        }
+        // An entry that ends in a separator has no file name to keep.
+        let folder = String(repeating: "f", count: 100) + "/"
+        XCTAssertEqual(PlaylistImportWording.shortened(folder), String(repeating: "f", count: 58) + "…/")
+    }
+
+    /// One entry of 4 MiB makes a notice and a refusal each shorter than
+    /// 1,000 characters, ending as they always have.
+    func testAFourMegabyteEntryGivesAShortNoticeAndRefusal() {
+        let huge = String(repeating: "x", count: 4 * 1024 * 1024)
+        let skipped = [M3UPlaylist.Skipped(location: huge, reason: .missing)]
+
+        let notice = PlaylistImportWording.notice(playlistName: "big.m3u", skipped: skipped) ?? ""
+        let refusal = PlaylistImportWording.noTrack(skipped: skipped)
+        XCTAssertGreaterThan(notice.count, 0)
+        XCTAssertLessThan(notice.count, 1000)
+        XCTAssertLessThan(refusal.count, 1000)
+        XCTAssertTrue(notice.hasPrefix("TextMouth skipped 1 entry of “big.m3u”: “"))
+        XCTAssertTrue(notice.hasSuffix("” (not found)."))
+        XCTAssertTrue(refusal.hasSuffix("” (not found)."))
+    }
+
+    /// The list stops naming entries once they would pass 600 characters:
+    /// ten entries of 60 characters name seven, and count three more.
+    func testTheListStopsNamingEntriesAtSixHundredCharacters() {
+        let skipped = (1...10).map { number -> M3UPlaylist.Skipped in
+            let stem = "entry\(number)"
+            let name = stem + String(repeating: "x", count: PlaylistImportWording.entryLimit - stem.count)
+            return M3UPlaylist.Skipped(location: name, reason: .missing)
+        }
+        let notice = PlaylistImportWording.notice(playlistName: "a.m3u", skipped: skipped) ?? ""
+        let prefix = "TextMouth skipped 10 entries of “a.m3u”: "
+        XCTAssertTrue(notice.hasPrefix(prefix))
+        XCTAssertTrue(notice.hasSuffix(", and 3 more."))
+        // Seven entries are named: "entry7" is, "entry8" is not.
+        XCTAssertTrue(notice.contains("“entry7x"))
+        XCTAssertFalse(notice.contains("“entry8x"))
+        XCTAssertLessThanOrEqual(notice.count - prefix.count, PlaylistImportWording.listLimit + ", and 3 more.".count)
+
+        // The first entry is named however long its reason and name are.
+        let one = PlaylistImportWording.notice(
+            playlistName: "a.m3u",
+            skipped: [M3UPlaylist.Skipped(location: skipped[0].location, reason: .outsideFolder)]
+        )
+        XCTAssertEqual(
+            one,
+            "TextMouth skipped 1 entry of “a.m3u”: “\(skipped[0].location)” (outside the playlist's folder)."
+        )
+    }
+
     /// An import's warning and its notice come to the listener as one
     /// message, the warning first; either alone is itself.
     func testTheAnnouncementJoinsTheWarningAndTheNotice() {

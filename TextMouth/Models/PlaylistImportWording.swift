@@ -60,13 +60,59 @@ enum PlaylistImportWording {
         CountWording.phrase(count, singular: "entry", plural: "entries")
     }
 
-    /// The skipped entries in playlist order, each as its location in curly
-    /// quotes and its reason in parentheses, listed as a sentence lists
-    /// them. At most `namedLimit` are named; "and 2 more" counts the rest.
+    /// The most characters one named entry keeps (its location, before the
+    /// curly quotes and the reason).
+    static let entryLimit = 60
+
+    /// The most characters a file name keeps in a shortened entry; a longer
+    /// one loses its middle.
+    static let fileNameLimit = 40
+
+    /// The most characters the whole list of named entries spans, so a
+    /// playlist of long lines cannot make an alert too long to listen to.
+    static let listLimit = 600
+
+    /// `location` as at most `entryLimit` characters. A longer one keeps its
+    /// start and its file name (from its last slash or backslash on), joined by
+    /// "…": "Music/Audiobooks/A Very…/03 Intro.mp3". A file name of more
+    /// than `fileNameLimit` characters is itself shortened in its middle,
+    /// to its first 20 and its last 19 characters around "…". An entry of
+    /// `entryLimit` characters or fewer is kept whole.
+    static func shortened(_ location: String) -> String {
+        guard location.count > entryLimit else { return location }
+        // The tail is the last separator and the file name after it; with no
+        // separator the whole entry is the file name and has no start.
+        let separatorIndex = location.lastIndex { $0 == "/" || $0 == "\\" }
+        let fileName = separatorIndex.map { String(location[location.index(after: $0)...]) } ?? location
+        let shortName = fileName.count > fileNameLimit
+            ? "\(fileName.prefix(20))…\(fileName.suffix(19))"
+            : fileName
+        guard let separatorIndex else { return shortName }
+        let tail = "\(location[separatorIndex])\(shortName)"
+        // The start fills what the tail and the joining "…" leave of the limit.
+        let startLength = max(0, entryLimit - tail.count - 1)
+        return "\(location.prefix(startLength))…\(tail)"
+    }
+
+    /// The skipped entries in playlist order, each as its (shortened)
+    /// location in curly quotes and its reason in parentheses, listed as a
+    /// sentence lists them. At most `namedLimit` are named, and only while
+    /// the named entries stay within `listLimit` characters; "and 2 more"
+    /// counts the rest. The first entry is always named.
     private static func skippedList(_ skipped: [M3UPlaylist.Skipped]) -> String {
-        var items = skipped.prefix(namedLimit).map { "“\($0.location)” (\($0.reason.words))" }
-        if skipped.count > namedLimit {
-            items.append("\(skipped.count - namedLimit) more")
+        var items: [String] = []
+        var length = 0
+        // Only the first `namedLimit` entries are ever looked at, however
+        // many the playlist skipped.
+        for entry in skipped.prefix(namedLimit) {
+            let item = "“\(shortened(entry.location))” (\(entry.reason.words))"
+            // Two characters for the ", " that joins it to the one before.
+            if !items.isEmpty, length + item.count + 2 > listLimit { break }
+            items.append(item)
+            length += item.count + 2
+        }
+        if skipped.count > items.count {
+            items.append("\(skipped.count - items.count) more")
         }
         return CountWording.list(items)
     }
