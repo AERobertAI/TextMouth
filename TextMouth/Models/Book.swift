@@ -20,6 +20,11 @@ enum BookFormat: String, Codable, CaseIterable {
     case txt
     case markdown
     case html
+    // A Safari web archive and an SSML file are read as text through the
+    // HTML path (FMT03, FMT07). Like every raw value here, these are written
+    // into the library index and never changed.
+    case webarchive
+    case ssml
     case docx
     // The next five are read through Apple's textutil in a child process
     // (FMT13). Their raw values are written into the library index, so they
@@ -39,6 +44,8 @@ enum BookFormat: String, Codable, CaseIterable {
         case .txt: return "Plain Text"
         case .markdown: return "Markdown"
         case .html: return "HTML"
+        case .webarchive: return "Web Archive"
+        case .ssml: return "SSML"
         case .docx: return "Word Document"
         case .rtf: return "Rich Text"
         case .rtfd: return "Rich Text with Attachments"
@@ -75,6 +82,8 @@ enum BookFormat: String, Codable, CaseIterable {
         case .txt: return ["txt"]
         case .markdown: return ["md", "markdown"]
         case .html: return ["html", "htm", "xhtml"]
+        case .webarchive: return ["webarchive"]
+        case .ssml: return ["ssml"]
         case .docx: return ["docx", "dotx", "docm", "dotm"]
         case .rtf: return ["rtf"]
         case .rtfd: return ["rtfd"]

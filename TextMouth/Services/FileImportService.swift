@@ -130,7 +130,7 @@ struct ImportedFileMetadata {
     static func readsFile(of format: BookFormat) -> Bool {
         switch format {
         case .epub, .docx, .rtf, .rtfd, .doc, .odt, .wordml, .pdf, .daisy, .audio: return true
-        case .txt, .markdown, .html: return false
+        case .txt, .markdown, .html, .webarchive, .ssml: return false
         }
     }
 
@@ -190,7 +190,7 @@ struct ImportedFileMetadata {
             if !tags.album.isEmpty { metadata.audioAlbum = tags.album }
             if !tags.genre.isEmpty { metadata.audioGenre = tags.genre }
             if !tags.year.isEmpty { metadata.audioYear = tags.year }
-        case .txt, .markdown, .html:
+        case .txt, .markdown, .html, .webarchive, .ssml:
             break
         }
         return metadata
@@ -1285,7 +1285,7 @@ enum FileImportService {
     /// without this it would be added as a silent book. EPUB, DOCX, DAISY,
     /// and PDF have their own refusals or none.
     private static let formatsRefusedWhenBlank: Set<BookFormat> = [
-        .txt, .markdown, .html, .rtf, .rtfd, .doc, .odt, .wordml,
+        .txt, .markdown, .html, .webarchive, .ssml, .rtf, .rtfd, .doc, .odt, .wordml,
     ]
 
     /// Reads `book`'s content as the reader will, so that no import publishes
@@ -2138,6 +2138,14 @@ enum FileImportService {
             if let type = UTType(identifier) {
                 types.append(type)
             }
+        }
+        // Safari web archives, read as their main page (FMT03), and SSML
+        // files, read as text (FMT07). The SSML type is declared in
+        // Info.plist, so it may be dynamic until the app's declaration is
+        // registered; append it only when the system knows it.
+        types.append(.webArchive)
+        if let ssml = UTType("org.w3.ssml") {
+            types.append(ssml)
         }
         // Rich text, read by textutil (FMT13).
         types.append(.rtf)

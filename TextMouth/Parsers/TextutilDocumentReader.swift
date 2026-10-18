@@ -15,7 +15,7 @@ extension TextutilInputFormat {
         case .doc: self = .doc
         case .odt: self = .odt
         case .wordml: self = .wordml
-        case .epub, .txt, .markdown, .html, .docx, .daisy, .pdf, .audio: return nil
+        case .epub, .txt, .markdown, .html, .webarchive, .ssml, .docx, .daisy, .pdf, .audio: return nil
         }
     }
 }

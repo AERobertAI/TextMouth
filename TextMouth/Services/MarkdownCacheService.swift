@@ -414,6 +414,11 @@ enum MarkdownCacheService {
         case .html:
             let html = try TextFileDecoder.readText(at: url, format: format)
             markdown = try HTMLToMarkdownConverter.convert(html, stripDuplicateNavigation: true)
+        case .webarchive:
+            markdown = try WebArchiveReader.mainPage(of: url).markdown()
+        case .ssml:
+            // Read as text, never as SSML for the speech engine (see BookParser).
+            markdown = try HTMLToMarkdownConverter.convert(SSMLReader.html(from: url))
         case .markdown:
             // Already Markdown — use the decoded text as-is
             markdown = try TextFileDecoder.readText(at: url, format: format)

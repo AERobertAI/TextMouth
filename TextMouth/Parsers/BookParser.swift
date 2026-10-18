@@ -14,6 +14,15 @@ enum BookParser {
         case .html:
             let html = try TextFileDecoder.readText(at: url, format: format)
             return try HTMLParser.parse(html: html, title: url.deletingPathExtension().lastPathComponent)
+        case .webarchive:
+            // The archive's main page, as an HTML or a text book is read.
+            return try WebArchiveReader.mainPage(of: url).parsed(title: url.deletingPathExtension().lastPathComponent)
+        case .ssml:
+            // An SSML file is read as text, its markup removed (FMT07): it is
+            // never handed to the speech engine as SSML
+            // (`AVSpeechUtterance(ssmlRepresentation:)` crashed on an
+            // `emphasis` element), nor as text with its tags.
+            return try HTMLParser.parse(html: SSMLReader.html(from: url), title: url.deletingPathExtension().lastPathComponent)
         case .markdown:
             let text = try TextFileDecoder.readText(at: url, format: format)
             return try MarkdownDocParser.parse(markdown: text, title: url.deletingPathExtension().lastPathComponent)
@@ -35,5 +44,25 @@ enum BookParser {
                 try await AudioBookParser.parse(url: url)
             }
         }
+    }
+}
+
+// MARK: - Web Archive Pages
+
+extension WebArchiveReader.MainPage {
+    /// The page as a book's content: an HTML page through the HTML parser, a
+    /// text page through the plain-text parser, as an `.html` and a `.txt`
+    /// file are read. This is the one place the choice between the two is made
+    /// for a direct reading; `markdown()` makes it for the cache.
+    func parsed(title: String) throws -> DocumentContent {
+        isHTML ? try HTMLParser.parse(html: text, title: title) : PlainTextParser.parse(text: text, title: title)
+    }
+
+    /// The page as the Markdown cache holds it, converted exactly as an
+    /// `.html` file (with its duplicate navigation stripped) or a `.txt` file is.
+    func markdown() throws -> String {
+        isHTML
+            ? try HTMLToMarkdownConverter.convert(text, stripDuplicateNavigation: true)
+            : PlainTextParser.markdown(text: text)
     }
 }
