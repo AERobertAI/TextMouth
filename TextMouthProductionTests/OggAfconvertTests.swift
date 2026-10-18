@@ -97,7 +97,8 @@ final class OggAfconvertTests: XCTestCase {
     // MARK: - afconvert's Arguments
 
     /// The arguments name the .m4a container, AAC, and the bit rate; the
-    /// sample rate and channel count only when they change.
+    /// sample rate only when it changes, and the channel count never (a
+    /// source of more than two channels is mixed down in a step of its own).
     func testTheArgumentsChangeOnlyWhatMustChange() {
         let input = URL(fileURLWithPath: "/in/a.ogg")
         let output = URL(fileURLWithPath: "/out/.a.m4a")
@@ -119,7 +120,7 @@ final class OggAfconvertTests: XCTestCase {
                 from: input, to: output, info: surround,
                 target: .init(channels: 2, sampleRate: 44_100, bitRate: nil)
             ),
-            ["-f", "m4af", "-d", "aac@44100", "-c", "2", "/in/a.ogg", "/out/.a.m4a"]
+            ["-f", "m4af", "-d", "aac@44100", "/in/a.ogg", "/out/.a.m4a"]
         )
     }
 

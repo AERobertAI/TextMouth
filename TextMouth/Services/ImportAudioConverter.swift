@@ -92,6 +92,12 @@ enum ImportAudioConverter {
     /// earlier version is removed (`isTemporaryName(_:)`).
     static let legacyTemporarySuffix = ".ogg-conversion.m4a"
 
+    /// What ends the hidden name of the stereo PCM file that step 1 of a
+    /// downmix writes (`downmixURL(beside:)`), a suffix of its own so that
+    /// `isTemporaryName(_:)` knows it: `removeLeftovers(in:)` and the
+    /// orphaned-converter sweep find it as they find the .m4a.
+    static let downmixSuffix = ".audio-downmix.caf"
+
     /// The longest file name, in UTF-16 code units, that every supported
     /// file system accepts (exFAT and HFS+ count units; APFS counts
     /// characters, so it accepts at least as much).
@@ -302,8 +308,16 @@ enum ImportAudioConverter {
         }
     }
 
-    /// The most channels Apple Lossless holds.
-    static let maximumLosslessChannels = 8
+    /// The most channels TextMouth writes, AAC or Apple Lossless: two. A
+    /// source of more is mixed down to stereo (`needsDownmix(_:)`).
+    static let maximumChannels = 2
+
+    /// Whether the source described by `info` has more channels than
+    /// TextMouth writes, so it is converted in two steps (`downmixArguments`,
+    /// then `afconvertArguments`).
+    static func needsDownmix(_ info: SourceInfo) -> Bool {
+        info.channels > maximumChannels
+    }
 
     /// The Apple Lossless bit depth that holds a source of `bits` bits a
     /// sample: 16, 20, 24, or 32, the smallest that fits; 24 when the depth
@@ -331,15 +345,21 @@ enum ImportAudioConverter {
     }
 
     /// How a source described by `info`, a file of `bytes` bytes, is written.
-    /// A lossy source becomes AAC-LC at its own channels (two at most: more
-    /// are mixed down to stereo), its own sample rate where AAC takes it
-    /// (`sampleRate(for:)`), and its average bit rate, bytes × 8 ÷ duration,
-    /// rounded up to the next standard rate. A lossless source
-    /// (`appleLosslessBitDepth` set) becomes Apple Lossless at its own rate
-    /// and channels (eight at most), with no bit rate.
+    /// TextMouth writes at most two channels: an audiobook is one listening
+    /// stream, and a film's or a radio drama's dialogue lives in the centre
+    /// channel, which a stereo mix puts in both ears on every path (the
+    /// player, the editor, transcription, MP3 export). A source of more than
+    /// two channels, lossy or lossless, is mixed down to stereo
+    /// (`downmixArguments`); mono and stereo are written as they are. A lossy
+    /// source becomes AAC-LC at its channels (two at most), its own sample
+    /// rate where AAC takes it (`sampleRate(for:)`), and its average bit
+    /// rate, bytes × 8 ÷ duration, rounded up to the next standard rate of
+    /// stereo (or mono). A lossless source (`appleLosslessBitDepth` set)
+    /// becomes Apple Lossless at its own rate and channels (two at most),
+    /// with no bit rate.
     struct Target: Equatable, Sendable {
-        /// The channels written: one or two for AAC, up to eight for Apple
-        /// Lossless.
+        /// The channels written: one or two, for AAC and Apple Lossless
+        /// alike.
         let channels: Int
         /// The sample rate written, in hertz.
         let sampleRate: Double
@@ -354,13 +374,13 @@ enum ImportAudioConverter {
     static func target(for info: SourceInfo, bytes: Int64) -> Target {
         if info.isLossless {
             return Target(
-                channels: min(max(info.channels, 1), maximumLosslessChannels),
+                channels: min(max(info.channels, 1), maximumChannels),
                 sampleRate: info.sampleRate,
                 bitRate: nil,
                 appleLosslessBitDepth: appleLosslessBitDepth(forBitsPerSample: info.bitsPerSample)
             )
         }
-        let channels = min(max(info.channels, 1), 2)
+        let channels = min(max(info.channels, 1), maximumChannels)
         let rate = sampleRate(for: info.sampleRate)
         let average = Double(bytes) * 8 / info.duration
         return Target(
@@ -376,23 +396,47 @@ enum ImportAudioConverter {
 
     /// The arguments of afconvert for writing `input` to `output` as `target`
     /// from a source described by `info`: an .m4a file of AAC at the bit
-    /// rate; the sample rate (`-d aac@rate`) only where it differs from the
-    /// source's, and the channel count (`-c`) only where the source has more
-    /// than two. Apple Lossless (`-d alac/<flag>`, `appleLosslessFlag`) keeps
-    /// the source's rate, and gets `-c 8` only for a source of more than
-    /// eight channels.
+    /// rate, with the sample rate (`-d aac@rate`) only where it differs from
+    /// the source's, or of Apple Lossless (`-d alac/<flag>`,
+    /// `appleLosslessFlag`) at the source's rate. The channel count is never
+    /// passed (`-c`): afconvert refuses it for AAC above stereo and for
+    /// Apple Lossless above eight channels ("ExtAudioFileSetProperty
+    /// ('cclo') failed"), so a source of more than two channels is first
+    /// mixed down to a stereo PCM file (`downmixArguments`), and this is
+    /// called with that file as `input`.
     static func afconvertArguments(from input: URL, to output: URL, info: SourceInfo, target: Target) -> [String] {
         if let depth = target.appleLosslessBitDepth {
-            var arguments = ["-f", "m4af", "-d", "alac/\(appleLosslessFlag(forBitDepth: depth))"]
-            if info.channels > maximumLosslessChannels { arguments += ["-c", String(maximumLosslessChannels)] }
-            return arguments + [input.path, output.path]
+            return ["-f", "m4af", "-d", "alac/\(appleLosslessFlag(forBitDepth: depth))", input.path, output.path]
         }
         var format = "aac"
         if target.sampleRate != info.sampleRate { format += "@\(Int(target.sampleRate))" }
         var arguments = ["-f", "m4af", "-d", format]
-        if info.channels > 2 { arguments += ["-c", String(target.channels)] }
         if let bitRate = target.bitRate { arguments += ["-b", String(bitRate)] }
         return arguments + [input.path, output.path]
+    }
+
+    /// The bit depth of the stereo PCM file that step 1 of a downmix writes
+    /// for `target`: 16 bits for AAC, which keeps no more; for Apple
+    /// Lossless the depth of its samples, 24 for a depth of 20 (PCM has no
+    /// 20-bit form), so nothing is lost.
+    static func downmixBitDepth(for target: Target) -> Int {
+        guard let depth = target.appleLosslessBitDepth else { return 16 }
+        return depth == 20 ? 24 : depth
+    }
+
+    /// The arguments of afconvert for step 1 of a downmix: writing `input`,
+    /// a source of more than two channels in any layout, to `output`, a
+    /// CAF of stereo linear PCM (`-f caff -d LEI<bits>@<rate> -c 2`) at the
+    /// bit depth (`downmixBitDepth(for:)`) and the sample rate `target`
+    /// writes, so step 2 changes neither. Measured on macOS 26.3.1:
+    /// afconvert mixes 3.0 and 5.1 AC-3, 5.1 E-AC-3, and a 10-channel
+    /// Wave64 down to stereo PCM in this one step, where it refuses `-c 2`
+    /// with the AAC and Apple Lossless encoders themselves.
+    static func downmixArguments(from input: URL, to output: URL, target: Target) -> [String] {
+        [
+            "-f", "caff", "-d", "LEI\(downmixBitDepth(for: target))@\(Int(target.sampleRate))",
+            "-c", String(maximumChannels), input.path, output.path,
+        ]
     }
 
     // MARK: - The Converting Process
@@ -404,6 +448,14 @@ enum ImportAudioConverter {
         /// The executable and arguments that write `output` from `input`.
         var command: @Sendable (_ input: URL, _ output: URL, _ info: SourceInfo, _ target: Target)
             -> (executable: URL, arguments: [String])
+        /// The executable and arguments that write `output`, a CAF of stereo
+        /// PCM, from `input`, a source of more than two channels: step 1 of
+        /// a downmix. Afconvert's by default; a test's stand-in replaces it
+        /// together with `command`, so it drives each step.
+        var downmixCommand: @Sendable (_ input: URL, _ output: URL, _ target: Target)
+            -> (executable: URL, arguments: [String]) = { input, output, target in
+                (URL(fileURLWithPath: "/usr/bin/afconvert"), downmixArguments(from: input, to: output, target: target))
+            }
         /// What the watchdog allows a conversion of a track lasting the
         /// given seconds.
         var limits: @Sendable (_ duration: TimeInterval) -> WatchedProcess.Limits
@@ -441,14 +493,24 @@ enum ImportAudioConverter {
             .appendingPathComponent(".\(UUID().uuidString)\(temporarySuffix)")
     }
 
+    /// The hidden name of the stereo PCM file that step 1 of a downmix
+    /// writes: ".<UUID>.audio-downmix.caf", beside `source` for the same
+    /// reason as `temporaryURL(beside:)`.
+    static func downmixURL(beside source: URL) -> URL {
+        source.deletingLastPathComponent()
+            .appendingPathComponent(".\(UUID().uuidString)\(downmixSuffix)")
+    }
+
     /// Converts `source`, a file the import converts, to AAC or Apple
     /// Lossless (`target(for:bytes:)`) in an .m4a file beside it,
     /// under a hidden temporary name, and checks the result: it must play,
     /// and last as long as the source to within `allowedLengthError(for:)`.
     /// With `naming`, it then gets its final name (`givingFinalName(_:)`);
     /// without, it keeps the temporary one, for a caller that names a whole
-    /// book's files in one step. The source is never changed, and nothing
-    /// is left behind by a failure. Nothing is downloaded: a file only in
+    /// book's files in one step. A source of more than two channels is
+    /// converted in two steps through a hidden stereo PCM file
+    /// (`write(_:to:info:target:using:)`). The source is never changed, and
+    /// nothing is left behind by a failure. Nothing is downloaded: a file only in
     /// the cloud is refused. The conversion runs in a child process the
     /// watchdog of `tool` kills when it hangs (`AUDIO_CONVERSION_KILLED` in the
     /// debug log).
@@ -462,7 +524,7 @@ enum ImportAudioConverter {
         let target = target(for: info, bytes: bytesBefore)
         let staged = temporaryURL(beside: source)
         do {
-            try await run(tool, from: source, to: staged, info: info, target: target)
+            try await write(source, to: staged, info: info, target: target, using: tool)
             try await check(staged, against: info.duration, from: name)
         } catch {
             try? FileManager.default.removeItem(at: staged)
@@ -488,22 +550,53 @@ enum ImportAudioConverter {
         return conversion
     }
 
-    /// Runs the converting process of `tool` for `source`, writing `staged`,
-    /// and turns how it ended into success or a `Failure`; a kill is logged.
-    private static func run(
-        _ tool: Tool,
-        from source: URL,
+    /// Writes `staged` from `source`, described by `info`, as `target`. A
+    /// source of mono or stereo is written in one step. A source of more
+    /// channels is mixed down first, to a hidden stereo PCM file
+    /// (`downmixArguments`, written by `tool.downmixCommand`) that the second
+    /// step reads (`afconvertArguments`, by `tool.command`, with the PCM
+    /// file's facts); the PCM file is removed as soon as the second step
+    /// ends, however it ends. Each step is a watched child.
+    /// - Throws: `Failure`, or `CancellationError`.
+    private static func write(
+        _ source: URL,
         to staged: URL,
         info: SourceInfo,
-        target: Target
+        target: Target,
+        using tool: Tool
     ) async throws {
         let name = source.lastPathComponent
-        let command = tool.command(source, staged, info, target)
+        guard needsDownmix(info) else {
+            try await run(tool.command(source, staged, info, target), named: name, duration: info.duration, tool: tool, watching: staged)
+            return
+        }
+        let stereo = downmixURL(beside: source)
+        defer { try? FileManager.default.removeItem(at: stereo) }
+        try await run(tool.downmixCommand(source, stereo, target), named: name, duration: info.duration, tool: tool, watching: stereo)
+        // What step 1 wrote: linear PCM in stereo, at the rate and depth step 2 keeps.
+        let stereoInfo = SourceInfo(
+            sampleRate: target.sampleRate, channels: maximumChannels, duration: info.duration, formatID: "lpcm",
+            bitsPerSample: downmixBitDepth(for: target), isLossless: true
+        )
+        try await run(tool.command(stereo, staged, stereoInfo, target), named: name, duration: info.duration, tool: tool, watching: staged)
+    }
+
+    /// Runs one converting process, `command`, of a conversion of the file
+    /// named `name` lasting `duration` seconds, under the watchdog's limits
+    /// of `tool` and watching `output` grow, and turns how it ended into
+    /// success or a `Failure`; a kill is logged.
+    private static func run(
+        _ command: (executable: URL, arguments: [String]),
+        named name: String,
+        duration: TimeInterval,
+        tool: Tool,
+        watching output: URL
+    ) async throws {
         let outcome = try await WatchedProcess.run(
             command.executable,
             arguments: command.arguments,
-            watching: staged,
-            limits: tool.limits(info.duration),
+            watching: output,
+            limits: tool.limits(duration),
             residentMemory: tool.residentMemory
         )
         switch outcome {
@@ -692,13 +785,14 @@ enum ImportAudioConverter {
     }
 
     /// Whether `name` is a hidden temporary name of a conversion: it starts
-    /// with ".", ends with either suffix (`temporarySuffix`,
-    /// `legacyTemporarySuffix`), and has something before the suffix.
+    /// with ".", ends with one of the suffixes (`temporarySuffix`,
+    /// `legacyTemporarySuffix`, `downmixSuffix`), and has something before
+    /// the suffix.
     static func isTemporaryName(_ name: String) -> Bool {
         guard name.hasPrefix(".") else { return false }
         // Each suffix starts with ".", so a name equal to one would pass the
         // first two tests with nothing in front.
-        return [temporarySuffix, legacyTemporarySuffix].contains { suffix in
+        return [temporarySuffix, legacyTemporarySuffix, downmixSuffix].contains { suffix in
             name.hasSuffix(suffix) && name.count > suffix.count
         }
     }

@@ -97,14 +97,14 @@ final class ImportAudioFormatsTests: XCTestCase {
     // MARK: - The Target
 
     /// Apple Lossless keeps the source's own sample rate, takes no bit rate,
-    /// and keeps up to eight channels (more are mixed down by afconvert).
-    func testALosslessTargetKeepsTheRateAndTheChannelsUpToEight() {
+    /// and keeps one or two channels (more are mixed down to stereo).
+    func testALosslessTargetKeepsTheRateAndTheChannelsUpToTwo() {
         let stereo = ImportAudioConverter.target(for: info(rate: 96_000, bits: 24, lossless: true), bytes: 1_000_000)
         XCTAssertEqual(stereo, .init(channels: 2, sampleRate: 96_000, bitRate: nil, appleLosslessBitDepth: 24))
         let surround = ImportAudioConverter.target(for: info(rate: 48_000, channels: 6, bits: 16, lossless: true), bytes: 1)
-        XCTAssertEqual(surround.channels, 6)
+        XCTAssertEqual(surround.channels, 2)
         let many = ImportAudioConverter.target(for: info(channels: 12, bits: 16, lossless: true), bytes: 1)
-        XCTAssertEqual(many.channels, 8)
+        XCTAssertEqual(many.channels, 2)
         let none = ImportAudioConverter.target(for: info(channels: 0, bits: 16, lossless: true), bytes: 1)
         XCTAssertEqual(none.channels, 1)
     }
@@ -132,8 +132,8 @@ final class ImportAudioFormatsTests: XCTestCase {
     // MARK: - afconvert's Arguments
 
     /// Apple Lossless names its bit depth by flag (1, 2, 3, 4 for 16, 20, 24,
-    /// 32 bits), takes no sample rate or bit rate, and adds `-c 8` only for
-    /// a source of more than eight channels.
+    /// 32 bits), takes no sample rate or bit rate, and never a channel
+    /// count: a source of more than two channels is mixed down first.
     func testApplesLosslessArgumentsNameTheDepthFlag() {
         let input = URL(fileURLWithPath: "/in/a.caf")
         let output = URL(fileURLWithPath: "/out/.a.m4a")
@@ -157,7 +157,7 @@ final class ImportAudioFormatsTests: XCTestCase {
             ImportAudioConverter.afconvertArguments(
                 from: input, to: output, info: twelve, target: ImportAudioConverter.target(for: twelve, bytes: 1)
             ),
-            ["-f", "m4af", "-d", "alac/1", "-c", "8", "/in/a.caf", "/out/.a.m4a"]
+            ["-f", "m4af", "-d", "alac/1", "/in/a.caf", "/out/.a.m4a"]
         )
     }
 
