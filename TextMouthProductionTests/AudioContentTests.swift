@@ -563,6 +563,21 @@ final class AudioContentTests: XCTestCase {
         XCTAssertEqual(ImportAudioConverter.plan(for: folder.appendingPathComponent("missing.ac3"), info: info), .convertToAAC)
     }
 
+    /// Content no signature names (here text named .m4a) is settled by the
+    /// codec afinfo names, as the import does: AC-3 is converted, AAC is left.
+    func testThePlanSettlesUnrecognizedContentByItsCodec() throws {
+        let odd = folder.appendingPathComponent("odd.m4a")
+        try Data("no known signature here".utf8).write(to: odd)
+        let ac3 = ImportAudioConverter.SourceInfo(
+            sampleRate: 48_000, channels: 2, duration: 1, formatID: "ac-3", bitsPerSample: nil, isLossless: false
+        )
+        let aac = ImportAudioConverter.SourceInfo(
+            sampleRate: 44_100, channels: 2, duration: 1, formatID: "aac ", bitsPerSample: nil, isLossless: false
+        )
+        XCTAssertEqual(ImportAudioConverter.plan(for: odd, info: ac3), .convertToAAC)
+        XCTAssertEqual(ImportAudioConverter.plan(for: odd, info: aac), .leaveAsItIs)
+    }
+
     // MARK: - The Guard Refuses a Misnamed Ogg File
 
     /// An Ogg file is never decoded in the app, whatever it is named (an old

@@ -383,9 +383,10 @@ enum ImportAudioConverter {
     /// a file it plays as it is, Apple Lossless for a lossless source
     /// (nothing is lost), AAC for any other. The file is converted when its
     /// extension is one the import converts, when its bytes are of a format
-    /// it converts, or when its bytes say MPEG-4 or QuickTime and `info`'s
-    /// codec is not one it plays (`playsAsIs(formatID:fileType:)`). A file
-    /// whose bytes cannot be read, or say nothing, is judged by its extension
+    /// it converts, or when its bytes leave it open (MPEG-4, QuickTime, or
+    /// unrecognized content) and `info`'s codec is not one it plays
+    /// (`playsAsIs(formatID:fileType:)`), as `needsConversion(among:using:)`
+    /// decides. A file whose bytes cannot be read is judged by its extension
     /// alone.
     static func plan(for source: URL, info: SourceInfo) -> Plan {
         var converts = isConvertedAtImport(source)
@@ -394,7 +395,11 @@ enum ImportAudioConverter {
             switch AudioContentSniffer.verdict(for: kind) {
             case .convert: converts = true
             case .leave: converts = false
-            case .askAfinfo: converts = kind == .mpeg4 && !playsAsIs(formatID: info.formatID, fileType: nil)
+            case .askAfinfo:
+                // Like needsConversion(among:), the codec decides MPEG-4 and unrecognized
+                // content; a file that cannot be read at all keeps its extension's answer.
+                let isReadable = AudioContentSniffer.firstBytes(of: source, upTo: 1) != nil
+                converts = isReadable && !playsAsIs(formatID: info.formatID, fileType: nil)
             }
         }
         guard converts else { return .leaveAsItIs }
