@@ -1582,7 +1582,7 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// `afconvert`, in a child process under a watchdog, reads it; an Ogg
     /// file's tags and length come from `OggHeaderReader` instead.
     static func metadataAsset(for url: URL) -> AVURLAsset? {
-        ImportAudioConverter.isConvertedAtImport(url) ? nil : AVURLAsset(url: url)
+        ImportAudioConverter.isConvertedAtImport(url) ? nil : AVURLAsset(url: url) // lint-ok: refuses every converted format by extension
     }
 
     /// Extract chapter markers from an audio file (M4B, M4A with chapters).
