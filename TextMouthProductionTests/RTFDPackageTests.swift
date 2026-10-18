@@ -14,7 +14,7 @@ import XCTest
 /// library use no reader window, which the hosted app would really open.
 final class RTFDPackageTests: XCTestCase {
     /// The hosted test root's library index, put back after each test.
-    private var sandbox: LibraryIndexSandbox!
+    private var sandbox: LibraryIndexSandbox?
 
     /// A fixed moment in whole seconds, since bookInfo.json stores dates to
     /// the second.
