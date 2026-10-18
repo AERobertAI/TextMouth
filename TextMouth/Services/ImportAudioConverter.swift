@@ -196,11 +196,17 @@ enum ImportAudioConverter {
     }
 
     /// Whether no reader may decode the file at `url`: the import converts
-    /// it, and it is not a file of TextMouth's own making
-    /// (`ownWorkingExtensions`). This is the question every reader guard
-    /// asks before Apple's decoder sees a file.
+    /// it by its extension, and it is not a file of TextMouth's own making
+    /// (`ownWorkingExtensions`); or it starts with "OggS", whatever its
+    /// extension, so an old book's misnamed Ogg file is never opened in the
+    /// app. This is the question every reader guard asks before Apple's
+    /// decoder sees a file, some on the main thread: it costs one open and
+    /// four bytes, of a regular file that is not only in the cloud
+    /// (`AudioContentSniffer.isOgg(at:)`), and is not reached for a name the
+    /// extension settles.
     static func isNeverDecodedInApp(_ url: URL) -> Bool {
-        isConvertedAtImport(url) && !ownWorkingExtensions.contains(url.pathExtension.lowercased())
+        if isConvertedAtImport(url), !ownWorkingExtensions.contains(url.pathExtension.lowercased()) { return true }
+        return AudioContentSniffer.isOgg(at: url) // lint-ok: this is the guard itself, adding the Ogg content check to the extension's
     }
 
     /// The tracks of the folder `folder` that the import converts whatever

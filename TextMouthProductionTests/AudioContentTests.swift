@@ -562,4 +562,43 @@ final class AudioContentTests: XCTestCase {
         XCTAssertEqual(ImportAudioConverter.plan(for: folder.appendingPathComponent("missing.mp3"), info: info), .leaveAsItIs)
         XCTAssertEqual(ImportAudioConverter.plan(for: folder.appendingPathComponent("missing.ac3"), info: info), .convertToAAC)
     }
+
+    // MARK: - The Guard Refuses a Misnamed Ogg File
+
+    /// An Ogg file is never decoded in the app, whatever it is named (an old
+    /// book's misnamed Ogg file is refused by the probe, the player,
+    /// transcription, and the editor); a real .m4a, a real .mp3, a text
+    /// file, and a missing file are not refused.
+    func testTheGuardRefusesAnOggFileWhateverItIsNamed() throws {
+        for name in ["a.m4a", "b.flac", "c.mp3", "d.wav", "e.caf", "f.OGG", "g.noextension"] {
+            let ogg = try copyFixture(OggTestFixtures.vorbis, as: name)
+            XCTAssertTrue(ImportAudioConverter.isNeverDecodedInApp(ogg), name)
+        }
+        let m4a = try copyFixture("format-samples/m4b-chapters/three-tones.m4b", as: "real.m4a")
+        let mp3 = try copyFixture("format-samples/mp3-chapters/three-tones.mp3", as: "real.mp3")
+        let text = folder.appendingPathComponent("words.m4a")
+        try Data("Ogg is a word, but this is text".utf8).write(to: text)
+        let short = folder.appendingPathComponent("short.m4a")
+        try Data("Ogg".utf8).write(to: short)
+        for url in [m4a, mp3, text, short, folder.appendingPathComponent("missing.m4a")] {
+            XCTAssertFalse(ImportAudioConverter.isNeverDecodedInApp(url), url.lastPathComponent)
+        }
+        // The extension still decides first, as it did.
+        XCTAssertTrue(ImportAudioConverter.isNeverDecodedInApp(folder.appendingPathComponent("missing.ogg")))
+        XCTAssertFalse(ImportAudioConverter.isNeverDecodedInApp(folder.appendingPathComponent("missing.caf")))
+    }
+
+    /// A named pipe called x.m4a is not a file to read: the guard answers at
+    /// once (it opens non-blocking and checks the file type before it reads),
+    /// where a blocking open would wait for a writer for ever.
+    func testTheGuardDoesNotWaitOnAPipeNamedLikeAudio() {
+        let fifo = folder.appendingPathComponent("x.m4a")
+        XCTAssertEqual(mkfifo(fifo.path, 0o644), 0, "Could not create the named pipe")
+        let started = Date()
+
+        let refused = ImportAudioConverter.isNeverDecodedInApp(fifo)
+
+        XCTAssertFalse(refused)
+        XCTAssertLessThan(Date().timeIntervalSince(started), 5)
+    }
 }
