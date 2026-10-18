@@ -99,10 +99,11 @@ final class XMLDocumentSnifferTests: XCTestCase {
         XCTAssertNil(XMLDocumentSniffer.bookFormat(ofFileAt: folder))
     }
 
-    /// The format of a loose XML file is DAISY for a DTBook, and nothing
-    /// for WordML (until it is wired) and every other XML file; the
-    /// book-format detection agrees, whatever case the extension is in.
-    func testABookFormatIsDAISYOnlyForADTBook() throws {
+    /// The format of a loose XML file is DAISY for a DTBook and Word 2003
+    /// XML for WordML; the book-format detection agrees, whatever case the
+    /// extension is in. (Every other XML file has none: see the refusal in
+    /// `DTBookImportTests`.)
+    func testABookFormatIsDAISYForADTBookAndWordMLForWordML() throws {
         let dtbook = try copyOfFormatSample("dtbook/harbour-standalone.xml")
         let shouting = try copyOfFormatSample("dtbook/harbour-standalone.xml", named: "BOOK.XML")
         let wordML = try copyOfFormatSample("wordml/headings.wordml", named: "notes.xml")
@@ -110,10 +111,10 @@ final class XMLDocumentSnifferTests: XCTestCase {
         XCTAssertEqual(XMLDocumentSniffer.rootKind(ofFileAt: dtbook), .dtbook)
         XCTAssertEqual(XMLDocumentSniffer.rootKind(ofFileAt: wordML), .wordML)
         XCTAssertEqual(XMLDocumentSniffer.bookFormat(ofFileAt: dtbook), .daisy)
-        XCTAssertNil(XMLDocumentSniffer.bookFormat(ofFileAt: wordML))
+        XCTAssertEqual(XMLDocumentSniffer.bookFormat(ofFileAt: wordML), .wordml)
 
         XCTAssertEqual(BookFormat.detect(from: dtbook), .daisy)
         XCTAssertEqual(BookFormat.detect(from: shouting), .daisy)
-        XCTAssertNil(BookFormat.detect(from: wordML))
+        XCTAssertEqual(BookFormat.detect(from: wordML), .wordml)
     }
 }
