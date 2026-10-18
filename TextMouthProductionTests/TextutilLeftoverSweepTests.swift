@@ -11,7 +11,9 @@ import XCTest
 final class TextutilLeftoverSweepTests: XCTestCase {
 
     private let uuid = "6F1C2B7E-0C55-4B1B-9D5F-0A1B2C3D4E5F"
-    private var sandbox: URL!
+    /// The folder the folder sweep looks in: its own, new for every test.
+    private let sandbox = FileManager.default.temporaryDirectory
+        .appendingPathComponent("TextutilLeftoverSweepTests-\(UUID().uuidString)", isDirectory: true)
 
     /// A flag a background closure may set, safely.
     private final class Flag: @unchecked Sendable {
@@ -24,15 +26,12 @@ final class TextutilLeftoverSweepTests: XCTestCase {
     /// Makes the sandbox root the folder sweep looks in.
     override func setUpWithError() throws {
         try super.setUpWithError()
-        sandbox = FileManager.default.temporaryDirectory
-            .appendingPathComponent("TextutilLeftoverSweepTests-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: sandbox, withIntermediateDirectories: true)
     }
 
     /// Removes the sandbox.
     override func tearDown() {
-        if let sandbox { try? FileManager.default.removeItem(at: sandbox) }
-        sandbox = nil
+        try? FileManager.default.removeItem(at: sandbox)
         super.tearDown()
     }
 
@@ -239,6 +238,7 @@ final class TextutilLeftoverSweepTests: XCTestCase {
             root: sandbox)
         // Give a wrongly started background task time to run.
         let settle = expectation(description: "settle")
+        settle.assertForOverFulfill = false
         DispatchQueue.global().asyncAfter(deadline: .now() + 0.3) { settle.fulfill() }
         wait(for: [settle], timeout: 5)
         XCTAssertFalse(listed.isSet)
@@ -260,6 +260,7 @@ final class TextutilLeftoverSweepTests: XCTestCase {
         let doomed = snapshot(pid: 777)
         let spared = snapshot(pid: 778, parent: 4321)
         let finished = expectation(description: "finished")
+        finished.assertForOverFulfill = false
         OrphanedConversionSweep.sweepTextutilInBackground(
             isHostedTest: false,
             lister: { [doomed, spared] },
