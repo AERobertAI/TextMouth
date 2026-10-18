@@ -35,6 +35,7 @@ The work comes in waves. The first wave's tasks each build one piece in files of
 - Build and test only with `python3 Scripts/test/run-area.py <ClassNames>` (read its `-h`; pass `--derived-data /var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-<your slug>` and `--log` to a file in the session's scratchpad named with your slug), started in the background, checked no more often than every 4 minutes. Set `BBS_AGENT=<your slug>` in its environment.
 - A new Swift file (app or tests) needs `/opt/homebrew/bin/xcodegen generate`, and the regenerated `TextMouth.xcodeproj/project.pbxproj` committed with it.
 - Run your brief's classes, then `make lint-tests LINT_BASE=team/textfmt` before you report, and say both results in your report.
+- **Never `rm` a path held in a shell variable** (Claude Code stops such a command for the user's approval). Remove your build folder, after unregistering its app, with its literal path in the command itself: `rm -rf "/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-<your slug>"`. Every other `rm` likewise names a literal, quoted path.
 - Python tools write no bytecode (`sys.dont_write_bytecode = True`); edit files in place with Python or `gsed -i`, never two heredocs on one command line.
 
 ## Rules the team adds
