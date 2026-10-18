@@ -229,9 +229,14 @@ final class TextutilImportTests: XCTestCase {
         ))
     }
 
-    /// A WordML file is an .xml file, known by its root element. Its table
-    /// comes back flattened, so its bold header cells ("Boat", "Departs")
-    /// read as headings: what the reader shows is pinned as it is.
+    /// A WordML file is an .xml file, known by its root element: what the
+    /// reader shows for the sample is pinned as it is.
+    ///
+    /// The sample's "Boat" and "Departs" are bold paragraphs in the file
+    /// itself, not cells: textutil's WordML writer flattened the table when
+    /// the sample was made, so the heading rule takes them for headings.
+    /// A real WordML table is pinned by
+    /// `testACellOfAWordMLTableIsNeverAHeading`.
     func testWordMLImportsUnderAnXMLName() throws {
         try assertImports(Expectation(
             sample: "wordml/headings.wordml", copyName: "headings.xml", format: .wordml, title: "headings",
@@ -239,6 +244,45 @@ final class TextutilImportTests: XCTestCase {
             headings: ["1: Harbour Notes", "2: Morning Tides", "2: Timetable", "3: Boat", "3: Departs"],
             contains: ["Bread from the bakery on Rue Ménard"], excludes: ["•"]
         ))
+    }
+
+    /// A WordML file with a real table (`w:tbl`): its header cells are bold,
+    /// as a header row's are, and still never headings. The text of every
+    /// cell is read, and only the title above the table is a heading. The
+    /// file is made by hand, because the WordML sample has no table.
+    func testACellOfAWordMLTableIsNeverAHeading() throws {
+        func cell(_ text: String, bold: Bool = false) -> String {
+            "<w:tc><w:p><w:r>\(bold ? "<w:rPr><w:b/></w:rPr>" : "")<w:t>\(text)</w:t></w:r></w:p></w:tc>"
+        }
+        func row(_ cells: String...) -> String { "<w:tr>\(cells.joined())</w:tr>" }
+        let wordML = """
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <?mso-application progid="Word.Document"?>
+            <w:wordDocument xmlns:w="http://schemas.microsoft.com/office/word/2003/wordml" \
+            xmlns:wx="http://schemas.microsoft.com/office/word/2003/auxHint"><w:body><wx:sect>
+            <w:p><w:r><w:rPr><w:sz w:val="48"/><w:b/></w:rPr><w:t>Harbour Notes</w:t></w:r></w:p>
+            <w:p><w:r><w:t>The ferry leaves at seven, and the cafe tables fill early with people who read the news.</w:t></w:r></w:p>
+            <w:p><w:r><w:t>Gulls argue over crusts while the crane operators wave from their cabs above the quay.</w:t></w:r></w:p>
+            <w:tbl><w:tblPr/><w:tblGrid><w:gridCol w:w="2000"/><w:gridCol w:w="2000"/></w:tblGrid>
+            \(row(cell("Boat", bold: true), cell("Departs", bold: true)))
+            \(row(cell("Ferry"), cell("07:00")))
+            \(row(cell("Launch"), cell("09:30")))
+            </w:tbl>
+            <w:p><w:r><w:t>Prices are posted by the quay.</w:t></w:r></w:p>
+            </wx:sect></w:body></w:wordDocument>
+            """
+        let folder = try makeSandboxDirectory("WordMLTable")
+        let file = folder.appendingPathComponent("table.xml")
+        try Data(wordML.utf8).write(to: file)
+
+        let imported = try importedForTest(file)
+        XCTAssertEqual(imported.book.format, .wordml)
+        let content = try openedContent(of: imported.book)
+        XCTAssertEqual(headingLines(of: content), ["1: Harbour Notes"])
+        let text = allText(of: content)
+        for word in ["Boat", "Departs", "Ferry", "07:00", "Launch", "09:30", "Prices are posted"] {
+            XCTAssertTrue(text.contains(word), word)
+        }
     }
 
     /// textutil writes the title and author of some real Word files as NUL

@@ -124,10 +124,7 @@ enum TextPipelineFixtures {
     /// bug. Their goldens are not recorded or compared until the reader is
     /// fixed: then the entry goes and the golden is recorded in the same
     /// commit. `testHeldBackSamplesAreFormatSamples` keeps the list honest.
-    static let formatSamplesHeldBack = [
-        "format-samples/wordml/headings.wordml":
-            "table header cells \"Boat\" and \"Departs\" are read as level-3 headings",
-    ]
+    static let formatSamplesHeldBack: [String: String] = [:]
 
     /// The folders of the format samples that macOS's own readers
     /// (`/usr/bin/textutil`) read. What they give can change with macOS, as
