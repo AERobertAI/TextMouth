@@ -19,7 +19,7 @@ enum ImportStep: Equatable, Sendable {
     case readingManifest
     /// Converting a DAISY book's audio into TextMouth's audio layout.
     case convertingAudio
-    /// Converting the audio the import converts to AAC (B06, FMT09), `done`
+    /// Converting the audio the import converts to .m4a (B06, FMT09), `done`
     /// of `total` tracks so far: after the archive's extraction and its
     /// manifest's check, before the audio is read, since such audio is
     /// never handed to a player.

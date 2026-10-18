@@ -26,11 +26,13 @@ import Darwin
 /// by hand (`OggHeaderReader`, through `inspect(_:)`), with no Apple audio
 /// API.
 ///
-/// A file is written at the source's own average bit rate rounded up to the
-/// next standard AAC rate, so a track stays about the same size and sounds
-/// no worse (`bitRate(averaging:channels:accepted:)`), under a hidden
-/// temporary name, checked by `AudioMediaProbe` (which decodes the AAC, never
-/// the Ogg: it plays, and lasts as long as its source to within
+/// AAC is written at the source's own average bit rate rounded up to the
+/// next standard AAC rate (`bitRate(averaging:channels:accepted:)`), so a
+/// track keeps about its size and loses as little as a second lossy encoding
+/// can (it can lose a little, even at a higher rate: which is why a lossless
+/// source becomes Apple Lossless instead). A file is written under a hidden
+/// temporary name, checked by `AudioMediaProbe` (which decodes the .m4a,
+/// never the source: it plays, and lasts as long as its source to within
 /// `lengthTolerance`), and only then given its final name: the source's
 /// stem with .m4a, made unique when taken.
 enum ImportAudioConverter {
@@ -202,7 +204,7 @@ enum ImportAudioConverter {
     /// The bit rate a source of `average` bits a second in `channels`
     /// channels is encoded at: the next standard AAC rate at or above its
     /// average (the highest standard rate for anything above it), so a
-    /// track stays about the same size and is no worse. Where the encoder
+    /// track keeps about its size and loses as little as it can. Where the encoder
     /// doesn't take that rate at the sample rate written, `accepted` (the
     /// rates it does take) gives the nearest one above, or its highest;
     /// nil when it names none, so the encoder chooses.
@@ -277,7 +279,7 @@ enum ImportAudioConverter {
             guard let header = OggHeaderReader.read(at: url) else { return nil }
             return SourceInfo(
                 sampleRate: header.sampleRate, channels: header.channels, duration: header.duration,
-                formatID: header.codec == .opus ? "opus" : "vorbis", bitsPerSample: nil, isLossless: false
+                formatID: formatID(of: header.codec), bitsPerSample: nil, isLossless: false
             )
         }
         guard let facts = try await AudioFileInfo.read(url) else { return nil }
@@ -285,6 +287,16 @@ enum ImportAudioConverter {
             sampleRate: facts.sampleRate, channels: facts.channels, duration: facts.duration,
             formatID: facts.formatID, bitsPerSample: facts.bitsPerSample, isLossless: facts.isLossless
         )
+    }
+
+    /// The format an Ogg stream's codec is known by in `SourceInfo`, as
+    /// afinfo would name it; a switch, so that a codec the header reader
+    /// learns must be named here too.
+    private static func formatID(of codec: OggHeaderReader.Codec) -> String {
+        switch codec {
+        case .vorbis: return "vorbis"
+        case .opus: return "opus"
+        }
     }
 
     /// The most channels Apple Lossless holds.
@@ -426,7 +438,8 @@ enum ImportAudioConverter {
             .appendingPathComponent(".\(UUID().uuidString)\(temporarySuffix)")
     }
 
-    /// Converts the Ogg file `source` to AAC in an .m4a file beside it,
+    /// Converts `source`, a file the import converts, to AAC or Apple
+    /// Lossless (`target(for:bytes:)`) in an .m4a file beside it,
     /// under a hidden temporary name, and checks the result: it must play,
     /// and last as long as the source to within `allowedLengthError(for:)`.
     /// With `naming`, it then gets its final name (`givingFinalName(_:)`);

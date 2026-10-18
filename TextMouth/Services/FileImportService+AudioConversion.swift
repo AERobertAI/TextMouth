@@ -4,8 +4,8 @@ import Foundation
 
 extension FileImportService {
     /// Converts the audio of `book`, staged in `staging`, that the import
-    /// converts (`ImportAudioConverter.convertedExtensions`) to AAC in .m4a
-    /// files, before anything reads it as a book or plays it: every import
+    /// converts (`ImportAudioConverter.convertedExtensions`) to AAC or Apple
+    /// Lossless in .m4a files, before anything reads it as a book or plays it: every import
     /// of audio ends in `publishReadableBook`, which calls this first, so a
     /// ZIP of tracks, a folder of tracks, a single file, a feed's episode,
     /// and a DAISY book's audio are all converted here. It comes after an

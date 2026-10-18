@@ -64,11 +64,14 @@ enum BookFormat: String, Codable, CaseIterable {
     /// takes one, and a video episode's package imports again.
     ///
     /// Ogg audio (.ogg, .oga, and .opus, the extensions Core Audio itself
-    /// lists for its Ogg file type, holding Vorbis, Opus, or FLAC) plays
-    /// through AVFoundation from macOS 15.4 on. On an earlier macOS the
-    /// import's playability check (`AudioMediaProbe`) refuses each Ogg file
-    /// by name, saying it cannot be opened as audio, as for any file the Mac
-    /// cannot play.
+    /// lists for its Ogg file type) and the formats macOS decodes that
+    /// TextMouth does not play as they are
+    /// (`ImportAudioConverter.coreAudioExtensions`: AC-3, AMR, MP2, CAF,
+    /// AIFC, AU, Wave64, 3GPP audio, and the like) are converted at import
+    /// to an .m4a file, by afconvert in a child process
+    /// (`ImportAudioConverter`), and only the converted file is played. A
+    /// Mac whose afconvert cannot read a format (Ogg before macOS 15.4, for
+    /// one) refuses such a file by name at "Converting its audio".
     ///
     /// A Word template (.dotx), a macro-enabled document (.docm), and a
     /// macro-enabled template (.dotm) are the same Office Open XML package
@@ -76,11 +79,6 @@ enum BookFormat: String, Codable, CaseIterable {
     /// the `.docx` case and its reader. That reader opens only the XML parts
     /// it needs, so a macro project (word/vbaProject.bin) is never opened
     /// and no macro can run.
-    ///
-    /// The formats macOS decodes that the import converts to an .m4a file
-    /// (`ImportAudioConverter.coreAudioExtensions`: AC-3, AMR, MP2, CAF,
-    /// AIFC, AU, Wave64, 3GPP audio, and the like) are listed too: a file of
-    /// one is converted at import, and only the converted file is played.
     var fileExtensions: [String] {
         switch self {
         case .epub: return ["epub"]
