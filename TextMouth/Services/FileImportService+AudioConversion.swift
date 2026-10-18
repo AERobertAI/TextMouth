@@ -33,7 +33,9 @@ extension FileImportService {
     /// format, is left as it is.
     /// - Throws: the conversion's errors (`ImportAudioConverter.Failure`), or
     ///   the manifest's or the file system's; the import then fails at
-    ///   Converting its audio, with whatever was staged removed.
+    ///   Converting its audio, with whatever was staged removed. When the
+    ///   reader cancels the import, the running conversions are killed at
+    ///   once and `ImportCancelled` is thrown, which is no failure.
     static func convertImportedAudio(
         of book: inout Book,
         in staging: ImportStaging,
@@ -48,7 +50,7 @@ extension FileImportService {
             // The content decides, not the extension: a track named .m4a may hold Ogg or AC-3.
             let sources = try AsyncBridge.waitForResult { try await ImportAudioConverter.tracksNeedingConversion(in: bookURL) }
             guard !sources.isEmpty else { return }
-            let unnamed = try convertTracks(sources, of: staging, run: &run)
+            let unnamed = try convertTracks(sources, inPackage: staging.directory, run: &run)
             // The sources' paths are read now, while they exist to be resolved.
             let sourceNames = unnamed.map { AudioBookParser.relativeName(of: $0.source, in: bookURL) }
             try disposeOfSources(of: unnamed, from: bookURL, in: staging, keepingOriginals: keepingOriginals())
@@ -57,7 +59,7 @@ extension FileImportService {
         } else {
             let needed = try AsyncBridge.waitForResult { try await ImportAudioConverter.needsConversion(among: [bookURL]) }
             guard !needed.isEmpty else { return }
-            let unnamed = try convertTracks([bookURL], of: staging, run: &run)
+            let unnamed = try convertTracks([bookURL], inPackage: staging.directory, run: &run)
             try disposeOfSources(
                 of: unnamed,
                 from: bookURL.deletingLastPathComponent(),
@@ -133,27 +135,39 @@ extension FileImportService {
     /// own thread, which waits for each group of up to
     /// `ImportAudioConverter.maximumConcurrentConversions` converted at once,
     /// telling the run, and so the overlay, how many are done after each:
-    /// "converting its audio: 12 of 176 tracks".
+    /// "converting its audio: 12 of 176 tracks". `directory` is the staged
+    /// package the run reports its steps in; `tool` is what converts (a
+    /// stand-in in tests).
+    ///
+    /// An import's Cancel (`ImportCancellation.current`, read here on the
+    /// import's own thread, since the task the wait runs in does not inherit
+    /// task-locals) kills the running conversions at once.
     /// - Throws: the first conversion's error, every file already converted
-    ///   being removed first.
-    private static func convertTracks(
+    ///   being removed first; `ImportCancelled` when the reader cancelled.
+    static func convertTracks(
         _ sources: [URL],
-        of staging: ImportStaging,
+        inPackage directory: URL,
+        using tool: ImportAudioConverter.Tool = .afconvert,
         run: inout ImportRun
     ) throws -> [ImportAudioConverter.Conversion] {
-        try run.begin(.convertingImportedAudio(done: 0, of: sources.count), in: staging.directory)
+        try run.begin(.convertingImportedAudio(done: 0, of: sources.count), in: directory)
+        let cancellation = ImportCancellation.current
         var conversions: [ImportAudioConverter.Conversion] = []
         do {
             let size = ImportAudioConverter.maximumConcurrentConversions
             for start in stride(from: 0, to: sources.count, by: size) {
                 let group = Array(sources[start..<min(start + size, sources.count)])
-                conversions += try AsyncBridge.waitForResult {
-                    try await ImportAudioConverter.convertEach(group, naming: false)
+                conversions += try AsyncBridge.waitForResult(cancelledBy: cancellation) {
+                    try await ImportAudioConverter.convertEach(group, naming: false, using: tool)
                 }
-                try run.begin(.convertingImportedAudio(done: conversions.count, of: sources.count), in: staging.directory)
+                try run.begin(.convertingImportedAudio(done: conversions.count, of: sources.count), in: directory)
             }
         } catch {
             ImportAudioConverter.discard(conversions)
+            // The reader cancelled the import: the conversions are killed
+            // (and what they had made removed), and the import ends as a
+            // cancelled one does rather than as a failed one.
+            if error is CancellationError, cancellation?.isCancelled == true { throw ImportCancelled() }
             throw error
         }
         return conversions

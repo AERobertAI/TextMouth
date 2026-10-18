@@ -270,6 +270,63 @@ final class OggAfconvertTests: XCTestCase {
         XCTAssertEqual(OggTestFixtures.names(in: folder), ["hung.ogg"])
     }
 
+    /// Cancelling an import kills the conversions that are running at once
+    /// (review item 8): `convertTracks` throws `ImportCancelled` within
+    /// seconds, long before the stand-in's own half minute, no child outlives
+    /// it, and the folder holds the sources only.
+    func testCancellingTheImportEndsTheRunningConversionsAtOnce() throws {
+        let sources = try (1...3).map {
+            try OggTestFixtures.copy(OggTestFixtures.vorbis, to: folder, as: "0\($0).ogg")
+        }
+        let hung = tool("/bin/sleep", ["60"], stalled: 30)
+        let childrenBefore = WatchedProcess.runningChildCount
+        let cancellation = ImportCancellation()
+        let ended = expectation(description: "the conversion ended")
+        let thrown = LockedValue<(any Error)?>(nil)
+        let directory = try XCTUnwrap(folder)
+        // As the import queue runs an import: on its own thread, under the
+        // import's cancellation.
+        DispatchQueue.global().async {
+            ImportCancellation.$current.withValue(cancellation) {
+                do {
+                    var run = ImportRun(fileName: "tracks", observer: nil)
+                    _ = try FileImportService.convertTracks(sources, inPackage: directory, using: hung, run: &run)
+                } catch {
+                    thrown.value = error
+                }
+            }
+            ended.fulfill()
+        }
+        let deadline = Date().addingTimeInterval(10)
+        while WatchedProcess.runningChildCount <= childrenBefore, Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.02)
+        }
+        XCTAssertGreaterThan(WatchedProcess.runningChildCount, childrenBefore, "No conversion started")
+
+        let cancelledAt = Date()
+        cancellation.cancel()
+        wait(for: [ended], timeout: 5)
+        XCTAssertLessThan(Date().timeIntervalSince(cancelledAt), 3)
+        XCTAssertTrue(thrown.value is ImportCancelled, "\(String(describing: thrown.value))")
+        XCTAssertEqual(WatchedProcess.runningChildCount, childrenBefore)
+        XCTAssertEqual(OggTestFixtures.names(in: folder), ["01.ogg", "02.ogg", "03.ogg"])
+    }
+
+    /// A failed conversion outside a cancellation is still an error, not a
+    /// cancelled import.
+    func testAFailedConversionIsNotACancelledImport() throws {
+        let source = try OggTestFixtures.copy(OggTestFixtures.vorbis, to: folder, as: "bad.ogg")
+        var run = ImportRun(fileName: "tracks", observer: nil)
+        do {
+            _ = try FileImportService.convertTracks(
+                [source], inPackage: folder, using: tool("/bin/sh", ["-c", "exit 3"]), run: &run)
+            XCTFail("A failed conversion must throw")
+        } catch {
+            XCTAssertTrue(error is ImportAudioConverter.Failure, "\(error)")
+        }
+        XCTAssertEqual(OggTestFixtures.names(in: folder), ["bad.ogg"])
+    }
+
     /// A conversion whose child fails reports the exit status and leaves
     /// nothing; the book waits for a later launch.
     func testAFailingConversionLeavesNothing() async throws {
