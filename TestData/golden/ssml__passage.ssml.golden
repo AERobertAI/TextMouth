@@ -1,0 +1,11 @@
+# TextMouth document golden, format 1
+file: ssml__passage.ssml
+format: ssml
+title: passage
+author: Unknown
+chapters: 1
+words: 42
+text length: 227
+text checksum: d6b1cd77b1749719
+first 300: The ferry leaves at 9:30am. Wait here until you hear the horn.\n\nIt is not a long crossing. Mind the gap between the boat and the pier. Say the word tomato twice, and spell SSML. World Wide Web Consortium publishes the standard.
+last 300: The ferry leaves at 9:30am. Wait here until you hear the horn.\n\nIt is not a long crossing. Mind the gap between the boat and the pier. Say the word tomato twice, and spell SSML. World Wide Web Consortium publishes the standard.

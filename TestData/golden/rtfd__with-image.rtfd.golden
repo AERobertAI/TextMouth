@@ -1,0 +1,13 @@
+# TextMouth document golden, format 1
+file: rtfd__with-image.rtfd
+macOS: 26.3
+format: rtfd
+title: with-image
+author: Unknown
+chapters: 1
+words: 16
+text length: 84
+text checksum: a79f895ce3522e9c
+first 300: The Pier\n\nA picture of the pier follows.\n\nAfter the picture, the text goes on. Café.
+last 300: The Pier\n\nA picture of the pier follows.\n\nAfter the picture, the text goes on. Café.
+heading: 1 | The Pier

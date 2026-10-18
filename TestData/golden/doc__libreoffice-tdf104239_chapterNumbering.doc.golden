@@ -1,0 +1,18 @@
+# TextMouth document golden, format 1
+file: doc__libreoffice-tdf104239_chapterNumbering.doc
+macOS: 26.3
+format: doc
+title: libreoffice-tdf104239_chapterNumbering
+author: Unknown
+chapters: 1
+words: 14
+text length: 83
+text checksum: ba73df6a8c170c10
+first 300: Heading 1\n\nHeading 2\n\nHeading 3\n\nHeading 4\n\nHeading 5\n\nHeading 6\n\nChapter numbering
+last 300: Heading 1\n\nHeading 2\n\nHeading 3\n\nHeading 4\n\nHeading 5\n\nHeading 6\n\nChapter numbering
+heading: 1 | Heading 1
+heading: 2 | Heading 2
+heading: 3 | Heading 3
+heading: 4 | Heading 4
+heading: 5 | Heading 5
+heading: 5 | Heading 6

@@ -14,7 +14,12 @@ import XCTest
 ///
 /// A PDF's text comes from PDFKit and Vision and changes with the macOS
 /// version, so a PDF's golden records the macOS it was made on and is
-/// compared only on a Mac of the same major version.
+/// compared only on a Mac of the same major version. The same holds for the
+/// format samples that macOS's `textutil` reads (RTF, RTFD, Word 97-2003,
+/// OpenDocument, and WordML): they are compared on a Mac of the same major
+/// version too. The other format samples are compared on every Mac. A format
+/// sample's golden is named by its path inside `TestData/format-samples`,
+/// each "/" written as "__", such as `rtf__headings.rtf.golden`.
 final class DocumentGoldenTests: XCTestCase {
 
     // MARK: - The Documents
@@ -68,6 +73,91 @@ final class DocumentGoldenTests: XCTestCase {
     func testPDFsMatchTheirGoldensOnTheMacTheyWereRecordedOn() throws {
         let documents = try Self.pdfNames.map { (name: $0, url: try requireFile($0)) }
         let skipped = try checkOrRecord(documents, macOSVersion: DocumentDump.currentMacOSVersion)
+        try skipIfRecordedOnAnotherMacOS(skipped)
+    }
+
+    /// The format samples that TextMouth's own readers read (Word templates,
+    /// the web archive, SSML, DTBook) match their goldens on every Mac.
+    func testFormatSamplesMatchTheirGoldens() throws {
+        let names = recordedFormatSampleNames.filter { !TextPipelineFixtures.isMacOSDependentFormatSample($0) }
+        _ = try checkOrRecord(try formatSampleDocuments(names), macOSVersion: nil)
+    }
+
+    /// The format samples that macOS's `textutil` reads match their goldens
+    /// on the Mac they were recorded on, as the PDFs do. On a Mac whose major
+    /// macOS version differs the comparison is skipped: what Apple's readers
+    /// give changes with macOS.
+    func testTextutilFormatSamplesMatchTheirGoldensOnTheMacTheyWereRecordedOn() throws {
+        let names = recordedFormatSampleNames.filter { TextPipelineFixtures.isMacOSDependentFormatSample($0) }
+        let skipped = try checkOrRecord(try formatSampleDocuments(names), macOSVersion: DocumentDump.currentMacOSVersion)
+        try skipIfRecordedOnAnotherMacOS(skipped)
+    }
+
+    /// The list of format samples names every sample of the formats' folders
+    /// (so a sample added later gets a golden) and nothing that is not
+    /// there; golden names are plain file names that do not repeat.
+    func testTheFormatSampleListNamesEverySample() throws {
+        let samplesFolder = try requireFile(String(TextPipelineFixtures.formatSamplesPrefix.dropLast()))
+        let folders = Set(TextPipelineFixtures.formatSampleNames.compactMap {
+            TextPipelineFixtures.pathInsideFormatSamples($0).split(separator: "/").first.map(String.init)
+        })
+        // Everything in those folders but the HTML the RTF samples came from.
+        var onDisk: [String] = []
+        for folder in folders.sorted() {
+            let entries = try FileManager.default.contentsOfDirectory(atPath: samplesFolder.appendingPathComponent(folder).path)
+            for entry in entries where !entry.hasPrefix(".") && entry != "headings-source.html" {
+                onDisk.append("\(TextPipelineFixtures.formatSamplesPrefix)\(folder)/\(entry)")
+            }
+        }
+        XCTAssertEqual(
+            TextPipelineFixtures.formatSampleNames.sorted(), onDisk.sorted(),
+            "TextPipelineFixtures.formatSampleNames must name every sample in the formats' folders"
+        )
+        let goldenNames = TextPipelineFixtures.formatSampleNames.map(TextPipelineFixtures.formatSampleGoldenName)
+        XCTAssertEqual(Set(goldenNames).count, goldenNames.count)
+        XCTAssertFalse(goldenNames.contains { $0.contains("/") })
+        // A renamed sample is one of the list.
+        for name in TextPipelineFixtures.formatSampleImportNames.keys {
+            XCTAssertTrue(TextPipelineFixtures.formatSampleNames.contains(name), name)
+        }
+    }
+
+    /// Every held-back sample is a listed format sample, so a removed or
+    /// renamed sample cannot leave a stale entry.
+    func testHeldBackSamplesAreFormatSamples() {
+        for name in TextPipelineFixtures.formatSamplesHeldBack.keys {
+            XCTAssertTrue(TextPipelineFixtures.formatSampleNames.contains(name), name)
+        }
+    }
+
+    /// The golden name of a format sample is its path inside the format
+    /// samples folder with each "/" written as "__", and the WordML sample
+    /// imports under an .xml name.
+    func testFormatSampleGoldenNamesJoinThePathWithTwoUnderscores() {
+        XCTAssertEqual(
+            TextPipelineFixtures.formatSampleGoldenName("format-samples/rtf/headings.rtf"), "rtf__headings.rtf"
+        )
+        XCTAssertEqual(
+            TextPipelineFixtures.formatSampleGoldenName("format-samples/dtbook/nimas-style-package"),
+            "dtbook__nimas-style-package"
+        )
+        XCTAssertEqual(
+            TextPipelineFixtures.formatSampleImportName("format-samples/wordml/headings.wordml"), "headings.xml"
+        )
+        XCTAssertEqual(
+            TextPipelineFixtures.formatSampleImportName("format-samples/rtf/headings.rtf"), "headings.rtf"
+        )
+    }
+
+    /// The format samples whose goldens are recorded and compared: all but
+    /// those held back until a reader bug is fixed.
+    private var recordedFormatSampleNames: [String] {
+        TextPipelineFixtures.formatSampleNames.filter { TextPipelineFixtures.formatSamplesHeldBack[$0] == nil }
+    }
+
+    /// Skip the test, naming the documents, when any golden was recorded on
+    /// another major macOS version; do nothing when `skipped` is empty.
+    private func skipIfRecordedOnAnotherMacOS(_ skipped: [String]) throws {
         if !skipped.isEmpty {
             throw XCTSkip("""
                 \(skipped.joined(separator: ", ")) was recorded on another major version of macOS than \
@@ -77,15 +167,30 @@ final class DocumentGoldenTests: XCTestCase {
         }
     }
 
+    /// Copies of the format samples `names` in sandbox folders of this test
+    /// (a sample is never imported where it lies, and a renamed one gets its
+    /// import name), each with its golden's name.
+    private func formatSampleDocuments(_ names: [String]) throws -> [(name: String, url: URL)] {
+        try names.map { name in
+            let copy = try copyOfFormatSample(
+                TextPipelineFixtures.pathInsideFormatSamples(name),
+                named: TextPipelineFixtures.formatSampleImportNames[name]
+            )
+            return (TextPipelineFixtures.formatSampleGoldenName(name), copy)
+        }
+    }
+
     /// Every golden in TestData/golden belongs to a document: one of the
-    /// named books, a named PDF, or one of the optional books (whether or
-    /// not this checkout holds it). A stale golden is removed in the same
+    /// named books, a named PDF, a format sample, or one of the optional
+    /// books (whether or not this checkout holds it). A stale golden is removed in the same
     /// commit as its document.
     func testEveryGoldenFileHasADocument() throws {
         // Recording writes the goldens; the folder may not exist yet.
         try XCTSkipIf(Self.isRecording, "Goldens are being recorded")
+        let formatSamples = TextPipelineFixtures.formatSampleNames.map(TextPipelineFixtures.formatSampleGoldenName)
         let known = Set(
             TextPipelineFixtures.testDataBookNames + TextPipelineFixtures.optionalTestDataBookNames + Self.pdfNames
+                + formatSamples
         ).map { "\($0).golden" }
         let found = try FileManager.default.contentsOfDirectory(atPath: Self.goldenFolder.path)
             .filter { !$0.hasPrefix(".") }

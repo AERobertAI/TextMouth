@@ -1,0 +1,18 @@
+# TextMouth document golden, format 1
+file: dtbook__harbour-standalone.xml
+format: daisy
+title: Harbour Notes
+author: A. Sample
+chapters: 1
+words: 95
+text length: 572
+text checksum: b5743d333f79c335
+first 300: Harbour Notes\n\nA. Sample\n\nPreface\n\nThese notes were written on the quay.\n\nThe Ferry\n\n[Page 1]\n\nThe ferry leaves at seven. Café tables fill early, and the señor at the counter pours coffee without asking.1\n\nMorning Tides\n\nGulls argue over crusts; everyone says “good morning” in three languages.\n\nBrea
+last 300: g” in three languages.\n\nBread from the bakery\n\nSmoked fish\n\nTip\n\nArrive early for a window seat.\n\n![A pier at dawn](pier.png)The pier at dawn\n\n\nTimetable\n\nBoat Departs\n\nFerry 07:00\n\nLaunch 09:30\n\nThe Return\n\n[Page 3]\n\nPrices — in euros — are posted by the quay.\n\nPosted prices change with the season.
+heading: 1 | Harbour Notes
+heading: 1 | Preface
+heading: 1 | The Ferry
+heading: 2 | Morning Tides
+heading: 2 | Tip
+heading: 2 | Timetable
+heading: 1 | The Return
