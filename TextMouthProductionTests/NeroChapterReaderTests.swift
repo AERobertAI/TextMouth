@@ -396,13 +396,22 @@ final class NeroChapterReaderTests: XCTestCase {
     }
 
     /// The fallback applies to the extension in any case, and not to others.
+    /// The decision is tested on its own (`mayHoldChapterList`, which
+    /// `extractChapters` asks), because a file under an extension outside the
+    /// list gets no chapters whether the fallback is asked or not: AVFoundation
+    /// cannot open it, so an end-to-end check of those could never fail.
     func testFallbackFollowsTheExtension() async throws {
+        // Every MPEG-4 extension, in any case, may hold a chpl atom.
+        for name in ["a.m4a", "a.m4b", "a.mp4", "a.m4v", "a.mov", "A.M4B", "a.Mp4", "Book.MOV", "a.b.m4b"] {
+            XCTAssertTrue(NeroChapterReader.mayHoldChapterList(URL(fileURLWithPath: "/tmp/\(name)")), name)
+        }
+        // Other extensions, none, and a name that only ends in one, may not.
+        for name in ["a.dat", "a.mp3", "a.ogg", "a.flac", "a.wav", "a.aac", "a.caf", "a.txt", "a", "m4b", "a.m4b.dat", "a.m4bx"] {
+            XCTAssertFalse(NeroChapterReader.mayHoldChapterList(URL(fileURLWithPath: "/tmp/\(name)")), name)
+        }
+        // End to end, an upper-case extension still falls back to the Nero list.
         let upper = try sampleCopy(named: "NO-TRACK.M4B", edit: hideChapterTrack)
         let upperBook = await AudioPlaybackService.extractChapters(from: upper)
         XCTAssertEqual(upperBook.count, 3)
-        // The same bytes under an extension outside the MPEG-4 list get no fallback.
-        let other = try sampleCopy(named: "no-track.dat", edit: hideChapterTrack)
-        let otherBook = await AudioPlaybackService.extractChapters(from: other)
-        XCTAssertTrue(otherBook.isEmpty)
     }
 }
