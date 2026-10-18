@@ -230,6 +230,14 @@ enum ImportProgressWording {
         }
     }
 
+    // MARK: - A Book Imported With Something To Tell
+
+    /// The title of the library's alert as an import that added its book
+    /// ends with something to tell: chapters left out, an RTFD's original
+    /// kept, or the entries a playlist skipped. The book is in the library,
+    /// so it is no error.
+    static let bookImportedTitle = "Book Imported"
+
     // MARK: - A Batch That Imported Nothing
 
     /// The title of the library's alert as a ZIP batch that brought no new

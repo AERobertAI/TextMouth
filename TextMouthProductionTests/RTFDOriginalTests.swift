@@ -77,6 +77,8 @@ final class RTFDOriginalTests: XCTestCase {
 
             XCTAssertEqual(model.showError, says, "\(behavior)")
             XCTAssertEqual(model.errorMessage, says ? sentence : nil, "\(behavior)")
+            // The book was added, so the alert is no error (review item 11).
+            XCTAssertEqual(model.errorTitle, says ? "Book Imported" : nil, "\(behavior)")
         }
     }
 

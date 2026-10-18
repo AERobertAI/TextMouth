@@ -315,6 +315,8 @@ final class PlaylistImportTests: XCTestCase {
 
         XCTAssertEqual(model.errorMessage, "TextMouth skipped 1 entry of “alert.m3u”: “gone.wav” (not found).")
         XCTAssertTrue(model.showError)
+        // The book was added, so the alert is no error (review item 11).
+        XCTAssertEqual(model.errorTitle, "Book Imported")
         XCTAssertEqual(opened.ids, [])
         XCTAssertTrue(model.library.books.contains { $0.id == imported.book.id })
     }

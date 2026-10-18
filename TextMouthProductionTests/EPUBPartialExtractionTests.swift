@@ -469,6 +469,8 @@ final class EPUBPartialExtractionTests: XCTestCase {
             XCTAssertEqual(try MarkdownCacheService.loadFromCache(for: imported.book).chapters.count, 2)
             XCTAssertTrue(FileManager.default.fileExists(atPath: epub.path))
             XCTAssertTrue(library.showError)
+            // The book was added, so the alert is no error (review item 11).
+            XCTAssertEqual(library.errorTitle, "Book Imported")
             XCTAssertEqual(
                 library.errorMessage,
                 "1 of 3 chapters could not be read: chapter 2 (“OEBPS/ch02.xhtml”) is missing from this EPUB book. "

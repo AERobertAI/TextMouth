@@ -349,7 +349,7 @@ extension LibraryViewModel {
         library.addBook(imported.book)
         save()
         if let warning = imported.warning {
-            presentImportMessage(warning)
+            presentImportMessage(warning, title: ImportProgressWording.bookImportedTitle)
         } else if openAfterImport {
             readerOpener(imported.book.id)
         }
@@ -629,7 +629,7 @@ extension LibraryViewModel {
         }
         save()
         if let announcement {
-            presentImportMessage(announcement)
+            presentImportMessage(announcement, title: ImportProgressWording.bookImportedTitle)
         }
         addImportedBooksToReadingList([book], request: request)
         finishAddedBook(book, originalURL: deletableOriginal, request: request)
@@ -711,9 +711,10 @@ extension LibraryViewModel {
     }
 
     /// Tell the reader about an import through the library's alert: why it
-    /// failed, what a completed import is missing, or, under `title`, why
-    /// an import brought nothing in. Without a title the alert says
-    /// "Error".
+    /// failed, or, under `title`, what a completed import is missing ("Book
+    /// Imported") or why an import brought nothing in ("Nothing Imported").
+    /// Without a title the alert says "Error", which only a failure, an
+    /// import that added no book, may carry.
     private func presentImportMessage(_ message: String, title: String? = nil) {
         importProgress.clear()
         errorMessage = message
