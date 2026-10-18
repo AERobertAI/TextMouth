@@ -42,8 +42,12 @@ enum TextutilDocumentReader {
     ///   format), `PasswordProtectedDocument`, and what
     ///   `TextutilConverter.html(of:as:workingIn:using:)` throws.
     static func extractMarkdown(from url: URL, bookFormat: BookFormat) throws -> String {
-        let html = try htmlText(of: url, bookFormat: bookFormat)
-        return try markdown(from: SwiftSoup.parse(html), html: html)
+        let source = try htmlText(of: url, bookFormat: bookFormat)
+        // A web page is converted as an .html file is.
+        guard !source.isWebPage else {
+            return try HTMLToMarkdownConverter.convert(source.html, stripDuplicateNavigation: true)
+        }
+        return try markdown(from: SwiftSoup.parse(source.html), html: source.html)
     }
 
     /// The book at `url`, read as `bookFormat`, for the direct reader. The
@@ -52,12 +56,18 @@ enum TextutilDocumentReader {
     /// titled by its file's name, and one that names no author has an
     /// unknown author.
     static func parse(url: URL, bookFormat: BookFormat) throws -> DocumentContent {
-        let html = try htmlText(of: url, bookFormat: bookFormat)
+        let source = try htmlText(of: url, bookFormat: bookFormat)
+        let fileName = url.deletingPathExtension().lastPathComponent
+        if source.isWebPage {
+            // A web page is read as an .html file is.
+            return try HTMLParser.parse(html: source.html, title: fileName)
+        }
+        let html = source.html
         let document = try SwiftSoup.parse(html)
         let named = metadata(in: document)
         // The metadata is read before `markdown(from:html:)`, which restores
         // the structure in the document and so changes it.
-        let title = named.title.isEmpty ? url.deletingPathExtension().lastPathComponent : named.title
+        let title = named.title.isEmpty ? fileName : named.title
         let author = named.author.isEmpty ? Book.unknownAuthor : named.author
 
         let content = try MarkdownDocParser.parse(markdown: try markdown(from: document, html: html), title: title)
@@ -69,22 +79,70 @@ enum TextutilDocumentReader {
     /// text before `</head>` is parsed, so a large document's body is never
     /// parsed for its title.
     static func readMetadata(from url: URL, bookFormat: BookFormat) throws -> (title: String, author: String) {
-        let html = try htmlText(of: url, bookFormat: bookFormat)
+        let html = try htmlText(of: url, bookFormat: bookFormat).html
         return metadata(in: try SwiftSoup.parse(headOf(html)))
     }
 
     // MARK: HTML
 
-    /// textutil's HTML for the book at `url`. The steps, in order: choose
-    /// the format textutil is told, refuse a document protected by a
-    /// password, choose where textutil writes, and convert.
-    private static func htmlText(of url: URL, bookFormat: BookFormat) throws -> String {
+    /// The HTML a document is read from, and whether it is a web page that
+    /// was never converted (`htmlText(of:bookFormat:)`).
+    private struct Source {
+        var html: String
+        /// True for a page that was HTML to begin with, which TextMouth's
+        /// HTML reader reads as it reads an .html file; false for textutil's
+        /// HTML, whose structure `TextutilHTMLStructure` restores.
+        var isWebPage = false
+    }
+
+    /// How a document is read, decided from its first bytes
+    /// (`reading(of:bookFormat:)`).
+    private enum Reading: Equatable {
+        /// By textutil, told this format.
+        case textutil(TextutilInputFormat)
+        /// By TextMouth's own HTML reader: the file is a web page whatever
+        /// its name.
+        case webPage
+    }
+
+    /// How the document at `url` is read, as a book of `bookFormat`. A
+    /// file's name or extension can say .doc, .rtf, or .odt while its bytes
+    /// say otherwise, so the first bytes decide, in this order:
+    /// - an .rtfd is a folder and is read as one;
+    /// - a file that begins as RTF is read as RTF (Word's "Save as RTF"
+    ///   keeps the .doc);
+    /// - a file that begins as an HTML page (Word's "Web Page") is read as
+    ///   a web page, never by textutil, which refuses it as damaged;
+    /// - a file whose root element is Word 2003 XML is read as WordML;
+    /// - any other file is read as the format its book says.
+    /// - Throws: `FileImportError.unsupportedFormat` for a format that is not
+    ///   textutil's.
+    private static func reading(of url: URL, bookFormat: BookFormat) throws -> Reading {
         guard let declared = TextutilInputFormat(bookFormat) else {
             throw FileImportError.unsupportedFormat(bookFormat.rawValue)
         }
-        // A file that begins as RTF is read as RTF whatever its name (Word's
-        // "Save as RTF" keeps the .doc). An .rtfd is a folder, never RTF.
-        let format: TextutilInputFormat = declared != .rtfd && TextutilSourceCheck.beginsAsRTF(url) ? .rtf : declared
+        guard declared != .rtfd else { return .textutil(.rtfd) }
+        if TextutilSourceCheck.beginsAsRTF(url) { return .textutil(.rtf) }
+        if TextutilSourceCheck.beginsAsHTML(url) { return .webPage }
+        if declared != .wordml, XMLDocumentSniffer.rootKind(ofFileAt: url) == .wordML { return .textutil(.wordml) }
+        return .textutil(declared)
+    }
+
+    /// The HTML for the book at `url`: textutil's, or the page's own. The
+    /// steps, in order: decide how the document is read, refuse a document
+    /// protected by a password, and either read the page or choose where
+    /// textutil writes and convert.
+    private static func htmlText(of url: URL, bookFormat: BookFormat) throws -> Source {
+        let format: TextutilInputFormat
+        switch try reading(of: url, bookFormat: bookFormat) {
+        case .webPage:
+            // The page's bytes are held to the same limit as a document's.
+            let bytes = try DocumentByteLimit.contents(of: url)
+            let page = try TextFileDecoder.decode(bytes, fileName: url.lastPathComponent, format: .html)
+            return Source(html: page.text, isWebPage: true)
+        case let .textutil(chosen):
+            format = chosen
+        }
 
         // textutil would fail on a document with a password as on a damaged
         // one, which tells the listener nothing to do.
@@ -96,9 +154,10 @@ enum TextutilDocumentReader {
             break
         }
 
-        return try withWorkingFolder(for: url) { folder in
+        let html = try withWorkingFolder(for: url) { folder in
             try TextutilConverter.html(of: url, as: format, workingIn: folder)
         }
+        return Source(html: html)
     }
 
     /// The folder the working folders of conversions outside a staged

@@ -268,6 +268,89 @@ final class TextutilImportTests: XCTestCase {
         ))
     }
 
+    // MARK: - A Web Page or WordML Named .doc
+
+    /// Word's "Web Page" format keeps the name .doc, and textutil told
+    /// `-format doc` refuses it as damaged. It is read as the web page it is,
+    /// by TextMouth's own HTML reader, never by textutil, and the book stays
+    /// a .doc: it takes the title and author the page names.
+    func testAWebPageNamedDocImportsWithoutTextutil() throws {
+        let recorder = TextutilToolRecorder()
+        let copy = try copyOfFormatSample("rtf/headings-source.html", named: "page.doc")
+        let imported = try TextutilConverter.$tool.withValue(recorder.countingTool()) {
+            try importedForTest(copy)
+        }
+        // No textutil ran: it would have refused the file.
+        XCTAssertEqual(recorder.outputs.count, 0)
+        XCTAssertEqual(imported.book.format, .doc)
+        XCTAssertEqual(imported.book.title, "Harbour Notes")
+        XCTAssertEqual(imported.book.author, "A. Sample")
+
+        let content = try openedContent(of: imported.book)
+        XCTAssertEqual(headingLines(of: content), ["1: Harbour Notes", "2: Morning Tides", "2: Timetable"])
+        XCTAssertTrue(allText(of: content).contains("Bread from the bakery on Rue Ménard"))
+    }
+
+    /// The same page named .rtf or .odt is a web page too, and the direct
+    /// reader reads it as the cache does.
+    func testAWebPageNamedAnyTextutilFormatReadsAsAWebPage() throws {
+        let recorder = TextutilToolRecorder()
+        try TextutilConverter.$tool.withValue(recorder.countingTool()) {
+            for name in ["page.rtf", "page.odt", "page.dot"] {
+                let copy = try copyOfFormatSample("rtf/headings-source.html", named: name)
+                let format = try XCTUnwrap(BookFormat.detect(from: copy), name)
+                let parsed = try TextutilDocumentReader.parse(url: copy, bookFormat: format)
+                XCTAssertEqual(parsed.title, "Harbour Notes", name)
+                XCTAssertEqual(parsed.author, "A. Sample", name)
+                XCTAssertEqual(headingLines(of: parsed), ["1: Harbour Notes", "2: Morning Tides", "2: Timetable"], name)
+                let named = try TextutilDocumentReader.readMetadata(from: copy, bookFormat: format)
+                XCTAssertEqual(named.title, "Harbour Notes", name)
+                XCTAssertEqual(named.author, "A. Sample", name)
+            }
+        }
+        XCTAssertEqual(recorder.outputs.count, 0)
+    }
+
+    /// A page past the byte limit is refused before it is read, as a
+    /// document is, and a web page with nothing in it is refused as empty.
+    func testAWebPageNamedDocIsHeldToTheLimitAndRefusedWhenEmpty() throws {
+        let copy = try copyOfFormatSample("rtf/headings-source.html", named: "big.doc")
+        try assertLeavesNoTextutilFiles {
+            XCTAssertThrowsError(
+                try DocumentByteLimit.$current.withValue(100) {
+                    try FileImportService.importFileWithReport(from: copy, toFolder: folderPath)
+                }
+            ) {
+                XCTAssertEqual(
+                    $0.localizedDescription,
+                    "Could not import “big.doc”. Reading its text failed: "
+                        + "This document holds more than 100 bytes, the most TextMouth reads from one document."
+                )
+            }
+        }
+        XCTAssertEqual(try folderEntries(), [])
+
+        let blank = try file(named: "blank.doc", holding: Data("<html><body> </body></html>".utf8))
+        try assertRefused(blank, saying: "Could not import “blank.doc”. Reading its text failed: This file has no text to read.")
+    }
+
+    /// A Word 2003 XML document named .doc is read as WordML, whatever its
+    /// name says: it imports as the same text the .xml copy does, and the
+    /// book is a .doc.
+    func testWordMLNamedDocReadsAsWordML() throws {
+        let asXML = try importedForTest(try copyOfFormatSample("wordml/headings.wordml", named: "headings.xml")).book
+        let expected = try openedContent(of: asXML)
+        XCTAssertFalse(headingLines(of: expected).isEmpty)
+
+        let imported = try importedForTest(try copyOfFormatSample("wordml/headings.wordml", named: "notes.doc"))
+        XCTAssertEqual(imported.book.format, .doc)
+        XCTAssertEqual(imported.book.title, "notes")
+        XCTAssertEqual(imported.book.author, "A. Sample")
+        let content = try openedContent(of: imported.book)
+        XCTAssertEqual(headingLines(of: content), headingLines(of: expected))
+        XCTAssertEqual(allText(of: content), allText(of: expected))
+    }
+
     // MARK: - An Import's Cancel Stops textutil
 
     /// What a test's queued import threw, set on the import queue's thread
