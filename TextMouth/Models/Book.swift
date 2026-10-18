@@ -79,6 +79,14 @@ enum BookFormat: String, Codable, CaseIterable {
             return .daisy
         }
         let ext = url.pathExtension.lowercased()
+        // A loose XML file is read by what its root element says it is
+        // (FMT04, FMT13), never by its extension alone: a DTBook is a
+        // DAISY book, and any other XML file is no book. A folder that
+        // happens to be named like an XML file is not a file, so it falls
+        // through to the folder check below.
+        if ext == "xml", let format = XMLDocumentSniffer.bookFormat(ofFileAt: url) {
+            return format
+        }
         for format in BookFormat.allCases {
             if format.fileExtensions.contains(ext) {
                 return format
