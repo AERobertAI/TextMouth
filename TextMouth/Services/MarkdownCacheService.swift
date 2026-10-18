@@ -401,6 +401,11 @@ enum MarkdownCacheService {
     /// Plain text: literal Markdown with the plain-text headings as ATX headings.
     /// HTML, Markdown, and plain-text files are decoded by `TextFileDecoder`,
     /// as the direct parsers decode them (see `BookParser.parse(url:format:)`).
+    /// RTF, RTFD, Word 97-2003, OpenDocument text, and Word 2003 XML are
+    /// read by textutil in a child process (`TextutilDocumentReader`), which
+    /// blocks while it runs: like DOCX's regeneration, this runs off the main
+    /// thread, in the import queue, startup maintenance, Redo Text
+    /// Extraction, and the reader's background load.
     private static func extractCache(from url: URL, format: BookFormat) throws -> ExtractedCache {
         let markdown: String
         switch format {
@@ -420,6 +425,8 @@ enum MarkdownCacheService {
             markdown = PlainTextParser.markdown(text: text)
         case .docx:
             markdown = try DOCXParser.extractMarkdown(from: url)
+        case .rtf, .rtfd, .doc, .odt, .wordml:
+            markdown = try TextutilDocumentReader.extractMarkdown(from: url, bookFormat: format)
         case .daisy:
             markdown = try DAISYParser.extractMarkdown(from: url)
         case .pdf:

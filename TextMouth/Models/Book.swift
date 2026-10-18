@@ -21,6 +21,14 @@ enum BookFormat: String, Codable, CaseIterable {
     case markdown
     case html
     case docx
+    // The next five are read through Apple's textutil in a child process
+    // (FMT13). Their raw values are written into the library index, so they
+    // are never changed.
+    case rtf
+    case rtfd
+    case doc
+    case odt
+    case wordml
     case daisy
     case pdf
     case audio
@@ -32,6 +40,11 @@ enum BookFormat: String, Codable, CaseIterable {
         case .markdown: return "Markdown"
         case .html: return "HTML"
         case .docx: return "Word Document"
+        case .rtf: return "Rich Text"
+        case .rtfd: return "Rich Text with Attachments"
+        case .doc: return "Word 97-2003 Document"
+        case .odt: return "OpenDocument Text"
+        case .wordml: return "Word 2003 XML"
         case .daisy: return "DAISY"
         case .pdf: return "PDF"
         case .audio: return "Audio"
@@ -63,6 +76,15 @@ enum BookFormat: String, Codable, CaseIterable {
         case .markdown: return ["md", "markdown"]
         case .html: return ["html", "htm", "xhtml"]
         case .docx: return ["docx", "dotx", "docm", "dotm"]
+        case .rtf: return ["rtf"]
+        case .rtfd: return ["rtfd"]
+        // A .dot is a .doc with its template bit set, read exactly as one.
+        case .doc: return ["doc", "dot"]
+        // A template (.ott) differs from a document only by its mimetype entry.
+        case .odt: return ["odt", "ott"]
+        // WordML is an .xml file, known by its root element through
+        // `XMLDocumentSniffer` (see `detect(from:)`), never by an extension.
+        case .wordml: return []
         case .daisy: return ["daisy", "opf"]
         case .pdf: return ["pdf"]
         case .audio:

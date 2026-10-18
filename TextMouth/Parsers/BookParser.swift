@@ -22,6 +22,9 @@ enum BookParser {
             return PlainTextParser.parse(text: text, title: url.deletingPathExtension().lastPathComponent)
         case .docx:
             return try DOCXParser.parse(url: url)
+        case .rtf, .rtfd, .doc, .odt, .wordml:
+            // textutil's formats, read through a child process (FMT13).
+            return try TextutilDocumentReader.parse(url: url, bookFormat: format)
         case .daisy:
             return try DAISYParser.parse(url: url)
         case .pdf:

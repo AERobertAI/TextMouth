@@ -67,10 +67,14 @@ enum XMLDocumentSniffer {
     }
 
     /// The book format a loose .xml file at `url` imports as: `.daisy` for a
-    /// DTBook, nil for every other kind. A later task (FMT13) makes WordML
-    /// `.wordml` here.
+    /// DTBook, `.wordml` for a Word 2003 XML document, nil for every other
+    /// kind.
     static func bookFormat(ofFileAt url: URL) -> BookFormat? {
-        rootKind(ofFileAt: url) == .dtbook ? .daisy : nil
+        switch rootKind(ofFileAt: url) {
+        case .dtbook: return .daisy
+        case .wordML: return .wordml
+        case .other: return nil
+        }
     }
 }
 

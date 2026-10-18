@@ -129,7 +129,7 @@ struct ImportedFileMetadata {
     /// Markdown, or HTML file keeps no title or author it reads.
     static func readsFile(of format: BookFormat) -> Bool {
         switch format {
-        case .epub, .docx, .pdf, .daisy, .audio: return true
+        case .epub, .docx, .rtf, .rtfd, .doc, .odt, .wordml, .pdf, .daisy, .audio: return true
         case .txt, .markdown, .html: return false
         }
     }
@@ -165,6 +165,14 @@ struct ImportedFileMetadata {
             // Title and author from the document's core properties.
             if let core = try? DOCXParser.readMetadata(from: url) {
                 adopt(title: core.title, author: core.author)
+            }
+        case .rtf, .rtfd, .doc, .odt, .wordml:
+            // Title and author from the head of textutil's HTML. Reading
+            // metadata never fails an import, so a refusal (a password, a
+            // damaged file) leaves the defaults and the import's own
+            // reading of the text fails with its sentence.
+            if let named = try? TextutilDocumentReader.readMetadata(from: url, bookFormat: format) {
+                adopt(title: named.title, author: named.author)
             }
         case .pdf:
             // Title and author from the document's attributes.

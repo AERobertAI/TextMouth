@@ -89,7 +89,7 @@ struct LibraryBookInfoReader: Sendable {
             }
             let tags = await Task.detached(priority: .userInitiated) { await reader.readAudioMetadata(file) }.value
             return .audio(book.mergingEditableAudioMetadata(tags), isCloudOnly: false)
-        case .txt, .markdown, .html, .docx, .daisy, .pdf:
+        case .txt, .markdown, .html, .docx, .rtf, .rtfd, .doc, .odt, .wordml, .daisy, .pdf:
             return .simple
         }
     }
