@@ -880,7 +880,7 @@ enum FileImportService {
             defer { staging.discard() }
 
             try run.begin(.copying, in: staging.directory)
-            let stagedFile = try stageContent(of: sourceURL, package: package, in: staging.directory)
+            let stagedFile = try stageContent(of: sourceURL, format: format, package: package, in: staging.directory)
 
             let staged = Book(
                 id: bookID,
@@ -1001,22 +1001,52 @@ enum FileImportService {
         return try DAISYPackageInventory.ofSource(source)
     }
 
-    /// Copies what an import of `source` reads into the staged package
-    /// `directory`, and returns the book's own file there: every file of
-    /// `package`, laid out as in its folder, when `source` is a DAISY book
-    /// kept as loose files; otherwise the source file itself.
+    /// Copies what an import of `source`, a book of `format`, reads into the
+    /// staged package `directory`, and returns the book's own file there:
+    /// every file of `package`, laid out as in its folder, when `source` is
+    /// a DAISY book kept as loose files; otherwise the source file itself.
+    ///
+    /// A text document that is a symbolic link is copied as what it points
+    /// to, a real file or folder named as the link was: a link copied as a
+    /// link would point out of the package, to a place that may change or
+    /// vanish. An audio file keeps today's handling (team audiofmt owns it).
     private static func stageContent(
         of source: URL,
+        format: BookFormat,
         package: DAISYPackageInventory?,
         in directory: URL
     ) throws -> URL {
         guard let package else {
             let stagedFile = directory.appendingPathComponent(source.lastPathComponent)
-            try FileManager.default.copyItem(at: source, to: stagedFile)
+            let isText = format != .audio
+            try FileManager.default.copyItem(at: isText ? source.resolvingSymlinksInPath() : source, to: stagedFile)
+            if isText { try removeSymbolicLinks(in: stagedFile) }
             return stagedFile
         }
         logShortfalls(of: package)
         return try package.copyFiles(into: directory)
+    }
+
+    /// Removes every symbolic link anywhere inside the folder `item` (an
+    /// RTFD's staged copy), hidden ones included; a file or an empty folder
+    /// is left as it is. A copy keeps the links of its original, and an
+    /// attachment's link may point anywhere on the disk: left in the
+    /// package, it would let the book read, and a later copy carry, a file
+    /// outside it. Nothing is followed, only removed.
+    private static func removeSymbolicLinks(in item: URL) throws {
+        let walk = FileManager.default.enumerator(
+            at: item,
+            includingPropertiesForKeys: [.isSymbolicLinkKey],
+            options: []
+        )
+        // Collect before removing, so the walk is not changed under itself.
+        var links: [URL] = []
+        while let entry = walk?.nextObject() as? URL {
+            if try entry.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink == true {
+                links.append(entry)
+            }
+        }
+        for link in links { try FileManager.default.removeItem(at: link) }
     }
 
     /// Records as import events, in the console and the debug log, what a

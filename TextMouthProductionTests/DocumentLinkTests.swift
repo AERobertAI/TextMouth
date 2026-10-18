@@ -9,6 +9,20 @@ import XCTest
 /// point out of the package. Every file the tests link to is a copy in a
 /// folder of the test's own.
 final class DocumentLinkTests: XCTestCase {
+    /// The hosted test root's library index, put back after each test.
+    private var sandbox: LibraryIndexSandbox?
+    /// The library folder the import tests import into; each test has its own.
+    private let folderPath = "Document Link \(UUID().uuidString.prefix(8))"
+
+    override func setUpWithError() throws {
+        sandbox = try LibraryIndexSandbox.capture()
+    }
+
+    override func tearDownWithError() throws {
+        // Optional: tear-down also runs when set-up failed partway.
+        sandbox?.restore()
+        try? FileManager.default.removeItem(at: TextMouthPaths.libraryDir.appendingPathComponent(folderPath, isDirectory: true))
+    }
 
     // MARK: - Helpers
 
@@ -128,5 +142,100 @@ final class DocumentLinkTests: XCTestCase {
             }
         }
         XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path))
+    }
+
+    // MARK: - Importing a Linked Document
+
+    /// The kind of file system item at `url`, never following a link: a
+    /// link reports as a link, whatever it points to.
+    private func itemType(at url: URL) throws -> FileAttributeType? {
+        try FileManager.default.attributesOfItem(atPath: url.path)[.type] as? FileAttributeType
+    }
+
+    /// Every symbolic link anywhere inside `folder`, hidden ones included,
+    /// as paths relative to it.
+    private func links(inside folder: URL) -> [String] {
+        // The enumerator's paths are relative to the folder, so they do not
+        // depend on how the temporary directory's own path is spelled.
+        let paths = FileManager.default.enumerator(atPath: folder.path)?.allObjects as? [String] ?? []
+        return paths.filter { (try? itemType(at: folder.appendingPathComponent($0))) == .typeSymbolicLink }.sorted()
+    }
+
+    /// A link to an RTF imports as the RTF: the package holds a real file,
+    /// named as the link was, with the RTF's own bytes, and the book opens
+    /// with the RTF's headings.
+    func testALinkToAnRTFImportsAsARegularFileWithTheRTFsBytes() throws {
+        let target = try copyOfFormatSample("rtf/headings.rtf")
+        let linked = try link(named: "Linked Notes.rtf", to: target)
+
+        let book = try importedForTest(linked).book
+
+        let staged = URL(fileURLWithPath: book.filePath)
+        XCTAssertEqual(staged.lastPathComponent, "Linked Notes.rtf")
+        XCTAssertEqual(try itemType(at: staged), .typeRegular)
+        XCTAssertEqual(try Data(contentsOf: staged), try Data(contentsOf: target))
+        XCTAssertEqual(links(inside: book.tmbDirectory), [])
+        XCTAssertEqual(
+            headingLines(of: try openedContent(of: book)),
+            ["1: Harbour Notes", "2: Morning Tides", "2: Timetable"]
+        )
+    }
+
+    /// A link to an SSML file imports with the file's words, held as a real
+    /// file in the package.
+    func testALinkToAnSSMLFileImportsWithItsWords() throws {
+        let target = try copyOfFormatSample("ssml/passage.ssml")
+        let linked = try link(named: "Linked Passage.ssml", to: target)
+
+        let book = try importedForTest(linked).book
+
+        XCTAssertEqual(try itemType(at: URL(fileURLWithPath: book.filePath)), .typeRegular)
+        let text = allText(of: try openedContent(of: book))
+        XCTAssertTrue(text.contains("The ferry leaves at 9:30am."), text)
+        XCTAssertTrue(text.contains("World Wide Web Consortium"), text)
+    }
+
+    /// An RTFD that holds a link to a file outside it still imports, and
+    /// its staged copy holds no link: the link may point anywhere on the
+    /// disk, and the package must hold only what is in it.
+    func testAnRTFDWithALinkToAFileOutsideImportsWithoutTheLink() throws {
+        let copy = try copyOfFormatSample("rtfd/headings.rtfd")
+        let outside = try file(named: "Outside.txt", holding: Data("not part of the book".utf8))
+        try FileManager.default.createSymbolicLink(
+            atPath: copy.appendingPathComponent("Outside.txt").path, withDestinationPath: outside.path
+        )
+        // The copy that is imported does hold the link, or the test shows nothing.
+        XCTAssertEqual(links(inside: copy), ["Outside.txt"])
+
+        let book = try importedForTest(copy).book
+
+        XCTAssertEqual(links(inside: book.tmbDirectory), [])
+        XCTAssertEqual(try itemType(at: URL(fileURLWithPath: book.filePath)), .typeDirectory)
+        XCTAssertEqual(
+            headingLines(of: try openedContent(of: book)),
+            ["1: Harbour Notes", "2: Morning Tides", "2: Timetable"]
+        )
+    }
+
+    /// A link to a document past the limit is refused as the document is,
+    /// with the import's words and the limit's sentence, and leaves nothing
+    /// in the library.
+    func testALinkToADocumentPastTheLimitIsRefusedByTheImport() throws {
+        let target = try copyOfFormatSample("rtf/headings.rtf")
+        let linked = try shortLink(named: "s.rtf", besides: target)
+
+        XCTAssertThrowsError(
+            try DocumentByteLimit.$current.withValue(100) {
+                try FileImportService.importFileWithReport(from: linked, toFolder: folderPath)
+            }
+        ) {
+            XCTAssertEqual(
+                $0.localizedDescription,
+                "Could not import “s.rtf”. Reading its text failed: "
+                    + "This document holds more than 100 bytes, the most TextMouth reads from one document."
+            )
+        }
+        let folder = TextMouthPaths.libraryDir.appendingPathComponent(folderPath, isDirectory: true)
+        XCTAssertEqual((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? [], [])
     }
 }
