@@ -108,6 +108,19 @@ final class AudioChannelDownmixTests: XCTestCase {
         return nil
     }
 
+    /// What the converter reads of the source at `url`, which must be readable.
+    private func inspected(_ url: URL) async throws -> ImportAudioConverter.SourceInfo {
+        let read = try await ImportAudioConverter.inspect(url)
+        return try XCTUnwrap(read)
+    }
+
+    /// The RMS level of the loudest channel of the source at `url`, decoded
+    /// to WAV by afconvert in a child (the centre, in a centre-only source).
+    private func loudestChannel(of url: URL) async throws -> Double {
+        let all = try await levels(of: url, as: "source.wav")
+        return try XCTUnwrap(all.max())
+    }
+
     /// What `AudioFileInfo` (afinfo in a child) says of the converted file.
     private func facts(of url: URL) async throws -> AudioFileInfo {
         let read = try await AudioFileInfo.read(url)
@@ -208,7 +221,7 @@ final class AudioChannelDownmixTests: XCTestCase {
     func testLossySurroundSourcesConvertToStereoAAC() async throws {
         for (fixture, name, channels) in [(Self.centre30, "three.ac3", 3), (Self.centre51, "six.ac3", 6)] {
             let source = try copy(fixture, as: name)
-            let before = try XCTUnwrap(try await ImportAudioConverter.inspect(source))
+            let before = try await inspected(source)
             XCTAssertEqual(before.channels, channels, name)
 
             let conversion = try await ImportAudioConverter.convert(source)
@@ -235,7 +248,7 @@ final class AudioChannelDownmixTests: XCTestCase {
             made = status == 0
         }
         try XCTSkipUnless(made, "This macOS's AAC encoder takes neither 7.1 layout name.")
-        let before = try XCTUnwrap(try await ImportAudioConverter.inspect(aac))
+        let before = try await inspected(aac)
         XCTAssertEqual(before.channels, 8)
         XCTAssertFalse(before.isLossless)
 
@@ -343,7 +356,7 @@ final class AudioChannelDownmixTests: XCTestCase {
     func testAPCMCentreReachesBothEars() async throws {
         let source = folder.appendingPathComponent("pcm51.caf")
         try writePCM(layout: kAudioChannelLayoutTag_MPEG_5_1_A, to: source, signalIn: 2)
-        let sourceCentre = try XCTUnwrap(try await levels(of: source, as: "source.wav").max())
+        let sourceCentre = try await loudestChannel(of: source)
         XCTAssertGreaterThan(sourceCentre, 1_000)
 
         let conversion = try await ImportAudioConverter.convert(source)
@@ -354,7 +367,7 @@ final class AudioChannelDownmixTests: XCTestCase {
     /// The same for the committed AC-3 fixture, which AC-3's own decoder mixes.
     func testAnAC3CentreReachesBothEars() async throws {
         let source = try copy(Self.centre51, as: "film.ac3")
-        let sourceCentre = try XCTUnwrap(try await levels(of: source, as: "source.wav").max())
+        let sourceCentre = try await loudestChannel(of: source)
         XCTAssertGreaterThan(sourceCentre, 1_000)
 
         let conversion = try await ImportAudioConverter.convert(source)
@@ -408,7 +421,7 @@ final class AudioChannelDownmixTests: XCTestCase {
         let spy = tool(downmix: ("/usr/bin/touch", [marker.path]), convert: ("/usr/bin/touch", [marker.path]))
 
         for (source, name) in [(bare, "bare.caf"), (discrete, "discrete.caf")] {
-            let inspected = try XCTUnwrap(try await ImportAudioConverter.inspect(source))
+            let inspected = try await inspected(source)
             XCTAssertFalse(inspected.hasChannelLayout, name)
             do {
                 _ = try await ImportAudioConverter.convert(source, using: spy)
@@ -438,14 +451,15 @@ final class AudioChannelDownmixTests: XCTestCase {
     /// and a labelled PCM file have one, as has the converted stereo AAC.
     func testALabelledFileHasAChannelLayout() async throws {
         let ac3 = try copy(Self.centre51, as: "film.ac3")
-        let ac3Info = try XCTUnwrap(try await ImportAudioConverter.inspect(ac3))
+        let ac3Info = try await inspected(ac3)
         XCTAssertTrue(ac3Info.hasChannelLayout)
         let pcm = folder.appendingPathComponent("pcm51.caf")
         try writePCM(layout: kAudioChannelLayoutTag_MPEG_5_1_A, to: pcm)
-        let pcmInfo = try XCTUnwrap(try await ImportAudioConverter.inspect(pcm))
+        let pcmInfo = try await inspected(pcm)
         XCTAssertTrue(pcmInfo.hasChannelLayout)
         let conversion = try await ImportAudioConverter.convert(ac3)
-        XCTAssertTrue(try await facts(of: conversion.converted).hasChannelLayout)
+        let convertedFacts = try await facts(of: conversion.converted)
+        XCTAssertTrue(convertedFacts.hasChannelLayout)
     }
 
     // MARK: - Lossless Sources of Every Channel Count
@@ -485,7 +499,7 @@ final class AudioChannelDownmixTests: XCTestCase {
     func testATenChannelSourceConvertsToAppleLossless() async throws {
         let source = folder.appendingPathComponent("ten.caf")
         try writeCAF(channels: 10, labelled: true, to: source)
-        let before = try XCTUnwrap(try await ImportAudioConverter.inspect(source))
+        let before = try await inspected(source)
         XCTAssertEqual(before.channels, 10)
         XCTAssertTrue(before.hasChannelLayout)
 
