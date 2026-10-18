@@ -768,6 +768,63 @@ enum ImportAudioConverter {
         }
     }
 
+    /// The hidden folder at the top of a book's package that holds the
+    /// originals an import kept of the audio it converted (the "Keep
+    /// originals of converted audio" setting), each under its path from the
+    /// book's folder of tracks, or under its own name for a single file.
+    /// Hidden so that every track scan, manifest, playlist, and player passes
+    /// it by: `AudioBookParser.audioFiles(in:)` and the others skip hidden
+    /// files, and `FileImportService.isPackageContentName` refuses names
+    /// that start with ".". A kept Ogg file is never opened by anything in
+    /// TextMouth (the October 14 rule); only Export copies it out.
+    static let keptOriginalsFolderName = ".convertedOriginals"
+
+    /// Moves the files `conversions` were made from into the package's kept
+    /// originals folder, in place of removing them
+    /// (`removeSources(of:)`): each goes to
+    /// `package/.convertedOriginals/<its path from base>`, the folders
+    /// made as needed. `base` is the book's folder of tracks for a book of
+    /// several tracks, or the single file's own folder. Only the staged copy
+    /// is ever moved: what the import came from is never touched.
+    /// - Throws: the file system's error; the import then fails at
+    ///   Converting its audio, with everything staged removed.
+    static func keepSources(of conversions: [Conversion], from base: URL, inPackage package: URL) throws {
+        let keptFolder = package.appendingPathComponent(keptOriginalsFolderName, isDirectory: true)
+        for conversion in conversions {
+            // The path is read before the move, while the source exists to
+            // be resolved.
+            let destination = keptFolder.appendingPathComponent(
+                AudioBookParser.relativeName(of: conversion.source, in: base)
+            )
+            try FileManager.default.createDirectory(
+                at: destination.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try FileManager.default.moveItem(at: conversion.source, to: destination)
+        }
+    }
+
+    /// The original files an import kept in `package`, in Finder's order by
+    /// their paths in the kept originals folder; none when it has no such
+    /// folder. Export offers them as the Original file.
+    static func keptOriginals(inPackage package: URL) -> [URL] {
+        let keptFolder = package.appendingPathComponent(keptOriginalsFolderName, isDirectory: true)
+        guard let enumerator = FileManager.default.enumerator(
+            at: keptFolder,
+            includingPropertiesForKeys: [.isRegularFileKey]
+        ) else { return [] }
+        var files: [URL] = []
+        for case let file as URL in enumerator
+        where (try? file.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true {
+            files.append(file)
+        }
+        return files.sorted {
+            AudioBookParser.relativeName(of: $0, in: keptFolder).localizedStandardCompare(
+                AudioBookParser.relativeName(of: $1, in: keptFolder)
+            ) == .orderedAscending
+        }
+    }
+
     /// The size of the file at `url` in bytes, or 0 when it can't be read.
     static func fileSize(of url: URL) -> Int64 {
         guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),

@@ -1463,8 +1463,8 @@ enum FileImportService {
     /// the kept one with `publish`, which otherwise renames the staged
     /// package to its destination (`ImportStaging.publish()`). Audio the
     /// import converts is converted first, so no book is read or played
-    /// from it (`convertImportedAudio(of:in:run:)`, B06, FMT09).
-    /// `refusingBlankText` is passed on to
+    /// from it (`convertImportedAudio(of:in:keepingOriginals:run:)`, B06,
+    /// FMT09). `refusingBlankText` is passed on to
     /// `readableContent(of:run:refusingBlankText:)`: only the import of a
     /// file chosen by the user sets it, to refuse a text file with no text, and
     /// so does `adoptingDocumentNames`, which gives the book the title and
@@ -1481,7 +1481,12 @@ enum FileImportService {
         publish: (ImportStaging) throws -> Void = { try $0.publish() }
     ) throws -> ImportedBook {
         var staged = staged
-        try convertImportedAudio(of: &staged, in: staging, run: &run)
+        try convertImportedAudio(
+            of: &staged,
+            in: staging,
+            keepingOriginals: keepsOriginalsOfConvertedAudio(feedLink: feedLink),
+            run: &run
+        )
         let content = try readableContent(
             of: &staged, run: &run, refusingBlankText: refusingBlankText, adoptingDocumentNames: adoptingDocumentNames
         )

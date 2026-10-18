@@ -15,13 +15,21 @@ extension FileImportService {
     /// A folder of tracks has each such track converted beside it and
     /// renamed in the folder's manifest, then the sources are removed. A
     /// single such file is converted, removed, and the book's file becomes
-    /// the .m4a. Only the staged copy is ever changed: the archive, folder,
-    /// or file imported from is never touched. A book without such audio,
-    /// and every other format, is left as it is.
+    /// the .m4a. With `keepingOriginals`, each source is moved into the
+    /// package's hidden kept originals folder instead of removed
+    /// (`ImportAudioConverter.keepSources(of:from:inPackage:)`). Only the
+    /// staged copy is ever changed: the archive, folder, or file imported
+    /// from is never touched. A book without such audio, and every other
+    /// format, is left as it is.
     /// - Throws: the conversion's errors (`ImportAudioConverter.Failure`), or
     ///   the manifest's or the file system's; the import then fails at
     ///   Converting its audio, with whatever was staged removed.
-    static func convertImportedAudio(of book: inout Book, in staging: ImportStaging, run: inout ImportRun) throws {
+    static func convertImportedAudio(
+        of book: inout Book,
+        in staging: ImportStaging,
+        keepingOriginals: Bool,
+        run: inout ImportRun
+    ) throws {
         guard book.format.isAudio else { return }
         let bookURL = URL(fileURLWithPath: book.filePath)
         var isDirectory: ObjCBool = false
@@ -31,12 +39,50 @@ extension FileImportService {
             guard !sources.isEmpty else { return }
             let conversions = try convertTracks(sources, of: staging, run: &run)
             try ImportAudioConverter.renameTracks(of: conversions, inManifestOf: bookURL, bookID: nil)
-            try ImportAudioConverter.removeSources(of: conversions)
+            try disposeOfSources(of: conversions, from: bookURL, in: staging, keepingOriginals: keepingOriginals)
         } else if ImportAudioConverter.isConvertedAtImport(bookURL) {
             let conversions = try convertTracks([bookURL], of: staging, run: &run)
             guard let converted = conversions.first?.converted else { return }
-            try ImportAudioConverter.removeSources(of: conversions)
+            try disposeOfSources(
+                of: conversions,
+                from: bookURL.deletingLastPathComponent(),
+                in: staging,
+                keepingOriginals: keepingOriginals
+            )
             book.filePath = converted.path
+        }
+    }
+
+    /// Whether an import keeps the originals of the audio it converts: only
+    /// when the setting is on, and never for a feed episode (`feedLink`
+    /// non-nil), which can be downloaded again. The setting belongs to the
+    /// main actor and an import runs on its own thread, so it is read there:
+    /// directly when this is the main thread, through it otherwise.
+    static func keepsOriginalsOfConvertedAudio(feedLink: FeedBookLink?) -> Bool {
+        guard feedLink == nil else { return false }
+        return Thread.isMainThread ? settingOnMainThread() : DispatchQueue.main.sync { settingOnMainThread() }
+    }
+
+    /// The "Keep originals of converted audio" setting, read by code that
+    /// is already on the main thread.
+    private static func settingOnMainThread() -> Bool {
+        MainActor.assumeIsolated { ConfigService.shared.config.keepsOriginalOfConvertedAudio }
+    }
+
+    /// Takes the sources of `conversions`, files in `staging` whose
+    /// converted files have taken their places, out of the way: moved into
+    /// the package's kept originals folder when `keepingOriginals`, else
+    /// removed. `base` is the folder their paths are kept relative to.
+    private static func disposeOfSources(
+        of conversions: [ImportAudioConverter.Conversion],
+        from base: URL,
+        in staging: ImportStaging,
+        keepingOriginals: Bool
+    ) throws {
+        if keepingOriginals {
+            try ImportAudioConverter.keepSources(of: conversions, from: base, inPackage: staging.directory)
+        } else {
+            try ImportAudioConverter.removeSources(of: conversions)
         }
     }
 
