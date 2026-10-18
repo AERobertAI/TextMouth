@@ -174,7 +174,7 @@ extension M3UPlaylist {
 
     /// Why an entry is not a track.
     enum SkipReason: Equatable, Sendable {
-        case webAddress, outsideFolder, missing, folder, notAudio, listedBefore
+        case webAddress, outsideFolder, missing, folder, notAudio, hidden, notOrdinaryFile, listedBefore
 
         /// The reason as a sentence part a listener hears after the entry's name.
         var words: String {
@@ -184,6 +184,8 @@ extension M3UPlaylist {
             case .missing: return "not found"
             case .folder: return "a folder"
             case .notAudio: return "not an audio file"
+            case .hidden: return "hidden"
+            case .notOrdinaryFile: return "not an ordinary file"
             case .listedBefore: return "listed before"
             }
         }
@@ -218,7 +220,9 @@ extension M3UPlaylist {
     /// Each entry, in order, is decided by the first rule that applies:
     /// a web address; a Windows drive path; a path outside the folder (checked
     /// before the disk is asked, so nothing outside is probed); nothing there;
-    /// a folder; a file that is not audio; a file an earlier track already is.
+    /// a folder; a file that is not audio; a file that is hidden, or in a
+    /// hidden folder; anything but an ordinary file (a FIFO, a socket, a
+    /// device); a file an earlier track already is.
     func resolve(inFolder folder: URL, fileManager: FileManager = .default) -> Resolution {
         var resolution = Resolution(tracks: [], skipped: [])
         let resolvedFolder = ResolvedFolder(folder)
@@ -245,6 +249,8 @@ extension M3UPlaylist {
                     skip(entry, .folder)
                 } else if !Self.isAudio(url) {
                     skip(entry, .notAudio)
+                } else if let unusable = Self.unusableReason(of: url, inFolder: resolvedFolder.real) {
+                    skip(entry, unusable)
                 } else if !seen.insert(url.path.precomposedStringWithCanonicalMapping).inserted {
                     skip(entry, .listedBefore)
                 } else {
@@ -387,6 +393,33 @@ extension M3UPlaylist {
         let folderComponents = folder.pathComponents
         let components = url.pathComponents
         return components.count > folderComponents.count && components.starts(with: folderComponents)
+    }
+
+    // MARK: Ordinary Files
+
+    /// Why the audio file `url` (fully resolved, inside `folder`) cannot be a
+    /// track, by the rules the import of a folder applies
+    /// (`AudioBookParser.audioFiles(in:)`): nothing hidden, nothing inside a
+    /// hidden folder or `__MACOSX`, and regular files only. Nil when it can.
+    /// It reads the names and the file system's flags and never opens the
+    /// file, which could block forever for a FIFO.
+    private static func unusableReason(of url: URL, inFolder folder: URL) -> SkipReason? {
+        // The file and every folder between the playlist's folder and it.
+        var current = folder
+        for component in url.pathComponents.dropFirst(folder.pathComponents.count) {
+            current = current.appendingPathComponent(component)
+            if isHidden(current) { return .hidden }
+        }
+        let values = try? url.resourceValues(forKeys: [.isRegularFileKey])
+        return values?.isRegularFile == true ? nil : .notOrdinaryFile
+    }
+
+    /// Whether the file or folder at `url` is hidden: a name starting with a
+    /// dot, the `__MACOSX` folder of a Mac archive, or the hidden flag.
+    private static func isHidden(_ url: URL) -> Bool {
+        let name = url.lastPathComponent
+        if name.hasPrefix(".") || name == "__MACOSX" { return true }
+        return (try? url.resourceValues(forKeys: [.isHiddenKey]))?.isHidden == true
     }
 
     /// `url`'s path relative to `folder` (both fully resolved, `url` inside).

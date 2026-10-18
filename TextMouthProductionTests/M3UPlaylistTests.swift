@@ -271,6 +271,33 @@ final class M3UPlaylistTests: XCTestCase {
         XCTAssertTrue(resolution.skipped.isEmpty)
     }
 
+    /// A FIFO named like a track is not an ordinary file. The test makes it
+    /// and never opens it: opening a FIFO with no writer blocks forever
+    /// (review item 5).
+    func testFIFOIsNotAnOrdinaryFile() throws {
+        XCTAssertEqual(mkfifo(folder.appendingPathComponent("01.mp3").path, 0o644), 0)
+        try touch("02.mp3")
+        let resolution = resolve(["01.mp3", "02.mp3"])
+        XCTAssertEqual(skips(resolution), [["01.mp3", "not an ordinary file"]])
+        XCTAssertEqual(resolution.tracks.map(\.path), ["02.mp3"])
+    }
+
+    /// A hidden file, a file in a hidden folder, and a file in `__MACOSX` are
+    /// skipped as hidden, the way a folder import leaves them out; a link
+    /// to a hidden file inside the folder is that hidden file.
+    func testHiddenFilesAndFoldersAreSkipped() throws {
+        let hidden = try touch(".hidden.wav")
+        try touch(".dotfolder/x.wav")
+        try touch("__MACOSX/x.wav")
+        try touch("shown.wav")
+        try FileManager.default.createSymbolicLink(
+            at: folder.appendingPathComponent("alias.wav"), withDestinationURL: hidden)
+        let entries = [".hidden.wav", ".dotfolder/x.wav", "__MACOSX/x.wav", "alias.wav"]
+        let resolution = resolve(entries + ["shown.wav"])
+        XCTAssertEqual(skips(resolution), entries.map { [$0, "hidden"] })
+        XCTAssertEqual(resolution.tracks.map(\.path), ["shown.wav"])
+    }
+
     /// A path that goes up and back down inside the folder is inside; a
     /// sibling folder whose name starts with the folder's name, the folder
     /// itself, and a path above it are outside.
@@ -365,9 +392,12 @@ final class M3UPlaylistTests: XCTestCase {
 
     /// Each reason has the words a listener hears.
     func testSkipReasonWords() {
-        let all: [M3UPlaylist.SkipReason] = [.webAddress, .outsideFolder, .missing, .folder, .notAudio, .listedBefore]
+        let all: [M3UPlaylist.SkipReason] = [
+            .webAddress, .outsideFolder, .missing, .folder, .notAudio, .hidden, .notOrdinaryFile, .listedBefore,
+        ]
         XCTAssertEqual(all.map(\.words), [
-            "a web address", "outside the playlist's folder", "not found", "a folder", "not an audio file", "listed before",
+            "a web address", "outside the playlist's folder", "not found", "a folder", "not an audio file",
+            "hidden", "not an ordinary file", "listed before",
         ])
     }
 
