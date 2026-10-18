@@ -79,11 +79,13 @@ enum WebArchiveReader {
         }
         guard !bytes.isEmpty else { throw FileImportError.noTextToRead }
 
-        // The archive's own encoding name wins when the bytes read in it;
-        // otherwise the file decoder's rules (byte-order mark, UTF-8, the
-        // page's own declaration, Windows-1252) read them.
+        // The archive's own encoding name wins when the bytes read in it
+        // (ISO Latin 1 and ASCII as Windows-1252, as browsers read them, by
+        // the file decoder's one rule); otherwise the file decoder's rules
+        // (byte-order mark, UTF-8, the page's own declaration, Windows-1252)
+        // read them.
         if let encoding = TextFileDecoder.encoding(forLabel: trimmed(main["WebResourceTextEncodingName"])),
-           let text = String(data: bytes, encoding: encoding) {
+           let text = TextFileDecoder.decodedText(bytes, in: encoding) {
             let finished = TextFileDecoder.normalizingLineEndings(TextFileDecoder.droppingLeadingByteOrderMarks(text))
             return MainPage(text: finished, isHTML: isHTML)
         }

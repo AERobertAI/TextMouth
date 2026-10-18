@@ -38,6 +38,19 @@ final class WebArchiveReaderTests: XCTestCase {
         XCTAssertEqual(main.text, "<p>café</p>")
     }
 
+    /// An archive labelled ISO Latin 1 or ASCII reads as Windows-1252, as a
+    /// browser reads it, so the bytes 0x93 0x94 0x97 0x85 0x80 are curly
+    /// quotation marks, a dash, an ellipsis, and the euro sign, never
+    /// invisible control characters.
+    func testAPageLabelledLatin1OrASCIIReadsItsCurlyQuotesDashEllipsisAndEuro() throws {
+        let bytes = Data("<p>".utf8) + Data([0x93]) + Data("Hi".utf8) + Data([0x94, 0x97, 0x85, 0x80])
+            + Data("</p>".utf8)
+        for label in ["ISO-8859-1", "us-ascii"] {
+            let main = try page(webArchiveBytes(data: bytes, encoding: label))
+            XCTAssertEqual(main.text, "<p>“Hi”—…€</p>", label)
+        }
+    }
+
     func testTheSameBytesWithoutAnEncodingNameReadByThePagesOwnDeclaration() throws {
         let bytes = Data("<meta charset=\"windows-1252\"><p>caf".utf8) + Data([0xE9]) + Data("</p>".utf8)
         let main = try page(webArchiveBytes(data: bytes, encoding: nil))
