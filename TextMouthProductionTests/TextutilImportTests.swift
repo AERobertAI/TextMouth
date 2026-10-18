@@ -268,6 +268,146 @@ final class TextutilImportTests: XCTestCase {
         ))
     }
 
+    // MARK: - An Import's Cancel Stops textutil
+
+    /// What a test's queued import threw, set on the import queue's thread
+    /// and read on the test's.
+    private let thrown = LockedValue<(any Error)?>(nil)
+
+    /// Queues the import of `url` on `queue`, converting through `tool`, and
+    /// returns an expectation fulfilled when the import ends; `thrown` holds
+    /// what it threw, if anything.
+    private func queueImport(of url: URL, on queue: SerialImportQueue, using tool: TextutilConverter.Tool) -> XCTestExpectation {
+        let ended = expectation(description: "the import ended")
+        let folderPath = folderPath
+        let thrown = thrown
+        queue.enqueue {
+            do {
+                // The stand-in tool is bound here, on the queue's own thread.
+                _ = try TextutilConverter.$tool.withValue(tool) {
+                    try FileImportService.importFileWithReport(from: url, toFolder: folderPath)
+                }
+            } catch {
+                thrown.value = error
+            }
+            ended.fulfill()
+        }
+        return ended
+    }
+
+    /// The import queue's Cancel kills the textutil child an import waits
+    /// for, within a second or two: the import ends as a cancelled import
+    /// does (`ImportCancelled`, no failure), nothing is left in the library
+    /// or the staging folder, no child runs, and a conversion made outside
+    /// an import afterwards is not stopped.
+    func testCancellingTheQueueStopsARunningTextutilAndLeavesNothing() throws {
+        let copy = try copyOfFormatSample("rtf/headings.rtf")
+        let recorder = TextutilToolRecorder()
+        let queue = SerialImportQueue()
+        let childrenBefore = WatchedProcess.runningChildCount
+
+        try assertLeavesNoTextutilFiles {
+            let ended = queueImport(of: copy, on: queue, using: recorder.hangingTool())
+            let started = Date().addingTimeInterval(10)
+            while WatchedProcess.runningChildCount <= childrenBefore, Date() < started {
+                Thread.sleep(forTimeInterval: 0.02)
+            }
+            XCTAssertGreaterThan(WatchedProcess.runningChildCount, childrenBefore, "The child never started")
+
+            let cancelledAt = Date()
+            queue.cancelEnqueued()
+            wait(for: [ended], timeout: 5)
+            XCTAssertLessThan(Date().timeIntervalSince(cancelledAt), 3)
+        }
+
+        XCTAssertTrue(thrown.value is ImportCancelled, "\(String(describing: thrown.value))")
+        XCTAssertEqual(WatchedProcess.runningChildCount, childrenBefore)
+        XCTAssertEqual(try folderEntries(), [])
+
+        // The cancel was the import's: a reader's conversion is not stopped.
+        let named = try TextutilDocumentReader.$temporaryRoot.withValue(temporaryRoot) {
+            try TextutilDocumentReader.readMetadata(from: copy, bookFormat: .rtf)
+        }
+        XCTAssertEqual(named.author, "A. Sample")
+    }
+
+    /// An import cancelled while it waits behind another never starts its
+    /// child: it ends cancelled as soon as its turn comes.
+    func testAnImportCancelledWhileItWaitsStartsNoChild() throws {
+        let copy = try copyOfFormatSample("rtf/headings.rtf")
+        let recorder = TextutilToolRecorder()
+        let queue = SerialImportQueue()
+        let childrenBefore = WatchedProcess.runningChildCount
+
+        // A first import holds the queue until the test lets it go.
+        let gate = DispatchSemaphore(value: 0)
+        let firstEnded = expectation(description: "the first import ended")
+        queue.enqueue {
+            gate.wait()
+            firstEnded.fulfill()
+        }
+        let ended = queueImport(of: copy, on: queue, using: recorder.hangingTool())
+        queue.cancelEnqueued()
+        gate.signal()
+        wait(for: [firstEnded, ended], timeout: 5)
+
+        XCTAssertTrue(thrown.value is ImportCancelled, "\(String(describing: thrown.value))")
+        XCTAssertEqual(WatchedProcess.runningChildCount, childrenBefore)
+        XCTAssertEqual(try folderEntries(), [])
+    }
+
+    /// A ZIP batch whose book is cancelled mid-conversion stops there, as it
+    /// stops between books: the cancelled book is no failure, and the
+    /// books before it are kept.
+    func testABatchStopsWhereABookWasCancelledMidConversion() throws {
+        let files = [URL(fileURLWithPath: "/tmp/one.rtf"), URL(fileURLWithPath: "/tmp/two.rtf"), URL(fileURLWithPath: "/tmp/three.rtf")]
+        let result = FileImportService.importSupportedFiles(
+            files,
+            toFolder: "",
+            checksum: { $0.lastPathComponent },
+            importer: { url, _, _, _ in
+                // The second book is the one the cancel catches.
+                if url.lastPathComponent == "two.rtf" { throw ImportCancelled() }
+                return ImportedBook(book: Book(title: url.lastPathComponent, format: .rtf, filePath: url.path, md5Hash: url.lastPathComponent))
+            }
+        )
+        XCTAssertEqual(result.books.map(\.title), ["one.rtf"])
+        XCTAssertEqual(result.failures.count, 0)
+        XCTAssertEqual(result.cancellation, .afterBooks(completed: 1, total: 3))
+    }
+
+    /// An import the reader cancelled raises no alert, and one that failed does.
+    @MainActor
+    func testACancelledImportRaisesNoAlertButAFailedOneDoes() throws {
+        let copy = try copyOfFormatSample("rtf/headings.rtf")
+        let model = LibraryViewModel(initializeServices: false)
+        let queue = model.importOperationQueue
+        // The import fails (or is cancelled) as it begins to copy the file.
+        let failure = LockedValue<(any Error)?>(ImportCancelled())
+        queue.stepObserver = { step, _ in
+            if step == .copying, let error = failure.value { throw error }
+        }
+        addTeardownBlock { queue.stepObserver = nil }
+
+        /// Waits until the import queued before has ended and the main queue
+        /// has run what that import left on it.
+        func settle() {
+            let settled = expectation(description: "the queue settled")
+            model.enqueueImport { DispatchQueue.main.async { settled.fulfill() } }
+            wait(for: [settled], timeout: 10)
+        }
+
+        model.importSingleFileAsync(from: copy, toFolder: folderPath)
+        settle()
+        XCTAssertFalse(model.showError)
+
+        failure.value = FileImportError.noTextToRead
+        model.importSingleFileAsync(from: copy, toFolder: folderPath)
+        settle()
+        XCTAssertTrue(model.showError)
+        XCTAssertTrue((model.errorMessage ?? "").contains("This file has no text to read."), model.errorMessage ?? "nil")
+    }
+
     // MARK: - Refusals
 
     /// Every sentence is what the listener hears: the import's own words,

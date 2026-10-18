@@ -1713,6 +1713,17 @@ enum FileImportService {
                         )
                     )
                 }
+            } catch is ImportCancelled {
+                // The reader cancelled while this book converted (a textutil
+                // child was killed): the batch stops here as it does between
+                // books, and this book, staged and removed, is no failure.
+                return ZipImportResult(
+                    books: books,
+                    failures: failures,
+                    incompleteBooks: incompleteBooks,
+                    cancellation: .afterBooks(completed: index, total: total),
+                    skippedDuplicates: skippedDuplicates
+                )
             } catch {
                 // The summary names the file, so the message is the reason
                 // alone: the step that failed and why.

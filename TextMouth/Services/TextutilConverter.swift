@@ -209,14 +209,25 @@ enum TextutilConverter {
 
         let command = tool.command(source, format, output)
         let limits = tool.limits(size)
-        let outcome = try AsyncBridge.waitForResult {
-            try await WatchedProcess.run(
-                command.executable,
-                arguments: command.arguments,
-                watching: output,
-                limits: limits,
-                residentMemory: tool.residentMemory
-            )
+        // An import's Cancel kills the child (`ImportCancellation`). Like the
+        // limit, the cancellation is read here, on the caller's thread: the
+        // detached task below does not inherit task-locals.
+        let cancellation = ImportCancellation.current
+        let outcome: WatchedProcess.Outcome
+        do {
+            outcome = try AsyncBridge.waitForResult(cancelledBy: cancellation) {
+                try await WatchedProcess.run(
+                    command.executable,
+                    arguments: command.arguments,
+                    watching: output,
+                    limits: limits,
+                    residentMemory: tool.residentMemory
+                )
+            }
+        } catch is CancellationError where cancellation?.isCancelled == true {
+            // The reader cancelled the import: the child is gone, and the
+            // import ends as a cancelled one does.
+            throw ImportCancelled()
         }
 
         switch outcome {

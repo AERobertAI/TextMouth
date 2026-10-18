@@ -30,9 +30,24 @@ enum AsyncBridge {
     static func waitForResult<Value>(
         of operation: @escaping @Sendable () async throws -> Value
     ) throws -> Value {
+        try waitForResult(cancelledBy: nil, of: operation)
+    }
+
+    /// As `waitForResult(of:)`, and the detached task is cancelled when
+    /// `cancellation` is, so work in it that follows its task's cancellation
+    /// (a watched child process, which is killed) ends at once instead of
+    /// running to its end while the thread waits. An import's Cancel does
+    /// this for its conversions. With a nil `cancellation` it is
+    /// `waitForResult(of:)`.
+    /// - Throws: what the operation throws, which for work that follows its
+    ///   task's cancellation is `CancellationError`.
+    static func waitForResult<Value>(
+        cancelledBy cancellation: ImportCancellation?,
+        of operation: @escaping @Sendable () async throws -> Value
+    ) throws -> Value {
         let outcome = Outcome<Value>()
         let finished = DispatchSemaphore(value: 0)
-        Task.detached(priority: waitPriority(for: Task.currentPriority)) {
+        let task = Task.detached(priority: waitPriority(for: Task.currentPriority)) {
             do {
                 outcome.store(.success(try await operation()))
             } catch {
@@ -40,7 +55,13 @@ enum AsyncBridge {
             }
             finished.signal()
         }
-        finished.wait()
+        if let cancellation {
+            // Cancelling the task is thread-safe and instant; the handler
+            // is withdrawn once the wait is over.
+            cancellation.whileRunning({ task.cancel() }, then: { finished.wait() })
+        } else {
+            finished.wait()
+        }
         // The task stores its result before it signals, so the wait cannot
         // end without one; this guard only satisfies the type checker.
         guard let result = outcome.result else { throw CancellationError() }

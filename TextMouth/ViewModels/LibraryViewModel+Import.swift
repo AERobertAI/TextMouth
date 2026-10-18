@@ -93,9 +93,16 @@ final class SerialImportQueue: @unchecked Sendable {
     func enqueue(whileHeld: (@Sendable () -> Void)? = nil, _ operation: @escaping @Sendable () -> Void) {
         updateCount(by: 1)
         let boundary = self.boundary
+        // The cancellation this import shares with those enqueued since the
+        // last cancel. Bound around the import, it lets the Cancel button
+        // stop a conversion the import is waiting on (a textutil child),
+        // which the import's own checks between steps could not.
+        let cancellation = currentCancellation
         queue.async { [weak self] in
             boundary.perform(.importing, whileHeld: whileHeld) { _ in
-                operation()
+                ImportCancellation.$current.withValue(cancellation) {
+                    operation()
+                }
             }
             self?.updateCount(by: -1)
         }
@@ -676,6 +683,10 @@ extension LibraryViewModel {
     /// Tells the reader why an import failed: VoiceOver hears that it
     /// failed when it ran long (FR10), and the library's alert says why.
     private func presentImportError(_ error: Error) {
+        // An import the reader cancelled (the Cancel button killed the
+        // conversion it was waiting on) is no failure, and has nothing to
+        // alert: the overlay clears as the queue empties.
+        guard !(error is ImportCancelled) else { return }
         importProgress.end(.failure)
         presentImportMessage(error.localizedDescription)
     }

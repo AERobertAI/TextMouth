@@ -244,6 +244,134 @@ final class TextutilConverterTests: XCTestCase {
         assertWorkFolderEmpty()
     }
 
+    // MARK: - An Import's Cancel
+
+    /// Runs `body`, an import's conversion, on a background thread under
+    /// `cancellation`, as the import queue runs an import, and reports what
+    /// it threw once it ends: nil when it returned.
+    private func conversion(
+        under cancellation: ImportCancellation,
+        ended: XCTestExpectation,
+        thrown: LockedValue<(any Error)?>,
+        _ body: @escaping @Sendable () throws -> Void
+    ) {
+        DispatchQueue.global().async {
+            ImportCancellation.$current.withValue(cancellation) {
+                do {
+                    try body()
+                } catch {
+                    thrown.value = error
+                }
+            }
+            ended.fulfill()
+        }
+    }
+
+    /// Waits until `condition` holds, for at most `seconds`.
+    private func waitUntil(_ seconds: TimeInterval, _ condition: () -> Bool) -> Bool {
+        let deadline = Date().addingTimeInterval(seconds)
+        while !condition(), Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.02)
+        }
+        return condition()
+    }
+
+    /// Cancelling the import kills the child textutil at once: the
+    /// conversion throws `ImportCancelled` within a second or two, long
+    /// before the child's own minute, and no child outlives it.
+    func testCancellingTheImportKillsTheRunningChildAtOnce() throws {
+        let source = try tinyFile("hang.rtf")
+        let hung = tool("/bin/sleep", ["60"], limits: limits(seconds: 30, stalled: 30))
+        let childrenBefore = WatchedProcess.runningChildCount
+        let cancellation = ImportCancellation()
+        let ended = expectation(description: "the conversion ended")
+        let thrown = LockedValue<(any Error)?>(nil)
+        conversion(under: cancellation, ended: ended, thrown: thrown) { [work] in
+            _ = try TextutilConverter.html(of: source, as: .rtf, workingIn: work, using: hung)
+        }
+        XCTAssertTrue(waitUntil(10) { WatchedProcess.runningChildCount > childrenBefore }, "The child never started")
+
+        let cancelledAt = Date()
+        cancellation.cancel()
+        wait(for: [ended], timeout: 5)
+        XCTAssertLessThan(Date().timeIntervalSince(cancelledAt), 3)
+        XCTAssertTrue(thrown.value is ImportCancelled, "\(String(describing: thrown.value))")
+        XCTAssertEqual(WatchedProcess.runningChildCount, childrenBefore)
+        assertWorkFolderEmpty()
+    }
+
+    /// An import cancelled before its conversion begins starts no child.
+    func testAnImportCancelledBeforeItsConversionStartsNoChild() throws {
+        let source = try tinyFile("early.rtf")
+        let marker = work.appendingPathComponent("marker")
+        let spy = tool("/usr/bin/touch", [marker.path])
+        let childrenBefore = WatchedProcess.runningChildCount
+        let cancellation = ImportCancellation()
+        cancellation.cancel()
+        let ended = expectation(description: "the conversion ended")
+        let thrown = LockedValue<(any Error)?>(nil)
+        conversion(under: cancellation, ended: ended, thrown: thrown) { [work] in
+            _ = try TextutilConverter.html(of: source, as: .rtf, workingIn: work, using: spy)
+        }
+        wait(for: [ended], timeout: 5)
+        XCTAssertTrue(thrown.value is ImportCancelled, "\(String(describing: thrown.value))")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path))
+        XCTAssertEqual(WatchedProcess.runningChildCount, childrenBefore)
+    }
+
+    /// A conversion outside an import (the reader's, startup maintenance's)
+    /// is never stopped by an import's Cancel, whether or not another
+    /// import's cancellation is cancelled.
+    func testAConversionOutsideAnImportIgnoresAnImportsCancel() throws {
+        let cancelled = ImportCancellation()
+        cancelled.cancel()
+        let source = try tinyFile("fine.rtf")
+        let writer = tool("/bin/sh", ["-c", "printf '<p>ok</p>' > \"$0\""], passingOutput: true)
+        XCTAssertNil(ImportCancellation.current)
+        XCTAssertEqual(try TextutilConverter.html(of: source, as: .rtf, workingIn: work, using: writer), "<p>ok</p>")
+    }
+
+    /// `ImportCancellation.whileRunning(_:then:)` tells its handler when the
+    /// cancellation is cancelled while the body runs, at once when it is
+    /// cancelled already, and never after the body has ended.
+    func testACancellationTellsOnlyTheWorkStillRunning() {
+        let heard = LockedValue(0)
+        let cancellation = ImportCancellation()
+        cancellation.whileRunning({ heard.value += 1 }, then: {
+            XCTAssertEqual(heard.value, 0)
+            cancellation.cancel()
+            XCTAssertEqual(heard.value, 1)
+        })
+
+        // Work that ended before the cancel is not told.
+        let early = ImportCancellation()
+        early.whileRunning({ heard.value += 1 }, then: {})
+        early.cancel()
+        XCTAssertEqual(heard.value, 1)
+
+        // Work that begins after the cancel is told at once.
+        early.whileRunning({ heard.value += 1 }, then: { XCTAssertEqual(heard.value, 2) })
+        XCTAssertEqual(heard.value, 2)
+    }
+
+    /// `AsyncBridge.waitForResult(cancelledBy:of:)` cancels its task with the
+    /// cancellation, and leaves `waitForResult(of:)` as it was.
+    func testTheBridgeCancelsItsTaskWithTheCancellation() throws {
+        let cancellation = ImportCancellation()
+        DispatchQueue.global().asyncAfter(deadline: .now() + 0.2) { cancellation.cancel() }
+        let startedAt = Date()
+        XCTAssertThrowsError(
+            try AsyncBridge.waitForResult(cancelledBy: cancellation) {
+                // Ends with CancellationError once its task is cancelled.
+                try await Task.sleep(nanoseconds: 30_000_000_000)
+            }
+        ) {
+            XCTAssertTrue($0 is CancellationError, "\($0)")
+        }
+        XCTAssertLessThan(Date().timeIntervalSince(startedAt), 5)
+        XCTAssertEqual(try AsyncBridge.waitForResult(of: { 7 }), 7)
+    }
+
     // MARK: - Arguments and Limits
 
     func testTheArgumentsArePinned() {
