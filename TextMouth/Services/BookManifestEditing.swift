@@ -130,7 +130,7 @@ enum BookManifestFile {
             } else {
                 location = AudioManifestLocation.forNewManifest(in: folder)
                 do {
-                    let names = try AudioBookParser.trackPaths(in: folder).map(location.name(ofTrackAt:))
+                    let names = try AudioBookParser.trackPaths(in: folder, scan: .package).map(location.name(ofTrackAt:))
                     try write(generated(for: current, names: names), at: location, of: current.id, sessions: sessions)
                     DiagnosticLog.event(.storage, "MANIFEST_WRITTEN: \(current.title): \(names.count) track(s), for editing")
                 } catch {
@@ -300,7 +300,7 @@ enum BookManifestFile {
             guard BookManifestEditing.isTrackFolder(folder, isDataless: isDataless) == true else { return false }
             guard let location = AudioManifestLocation.find(in: folder) else {
                 let location = AudioManifestLocation.forNewManifest(in: folder)
-                var manifest = generated(for: current, names: try AudioBookParser.trackPaths(in: folder).map(location.name(ofTrackAt:)))
+                var manifest = generated(for: current, names: try AudioBookParser.trackPaths(in: folder, scan: .package).map(location.name(ofTrackAt:)))
                 manifest.title = title ?? manifest.title
                 manifest.author = author ?? manifest.author
                 try write(manifest, at: location, of: current.id, sessions: sessions)
@@ -714,7 +714,7 @@ final class BookManifestEditSessions: Sendable {
         // for another reason is left to the take, which refuses it in the
         // import's words.
         do {
-            let tracks = try DatalessFiles.withoutDownloading { try AudioBookParser.trackPaths(in: folder) }
+            let tracks = try DatalessFiles.withoutDownloading { try AudioBookParser.trackPaths(in: folder, scan: .package) }
             if hasTrackOnlyInCloud(tracks, in: folder, isDataless: isDataless) { return (.inCloud, nil) }
         } catch where DatalessFiles.isDownloadRefusal(error) {
             return (.inCloud, nil)
@@ -782,7 +782,7 @@ final class BookManifestEditSessions: Sendable {
         let read: (record: BookInfo, bytes: Data, tracks: [String])
         do {
             read = try DatalessFiles.withoutDownloading {
-                (try BookInfo.load(from: book.tmbDirectory), try Data(contentsOf: location.url), try AudioBookParser.trackPaths(in: folder))
+                (try BookInfo.load(from: book.tmbDirectory), try Data(contentsOf: location.url), try AudioBookParser.trackPaths(in: folder, scan: .package))
             }
         } catch where DatalessFiles.isDownloadRefusal(error) {
             return .inCloud
@@ -973,7 +973,7 @@ final class BookManifestEditSessions: Sendable {
 
         let manifest: AudioManifest
         do {
-            manifest = try AudioManifestCheck.checkedManifest(at: location, audioFolder: folder)
+            manifest = try AudioManifestCheck.checkedManifest(at: location, audioFolder: folder, scan: .package)
         } catch {
             return refuse(error.localizedDescription)
         }

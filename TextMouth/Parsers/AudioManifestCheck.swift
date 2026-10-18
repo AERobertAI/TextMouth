@@ -182,8 +182,17 @@ enum AudioManifestCheck {
     /// The manifest at `location` in the audiobook folder `folder`, checked
     /// and read.
     ///
+    /// - Parameter scan: which tracks the manifest may name: the import's
+    ///   checks, before the conversion, take every format the import
+    ///   accepts (the default, as before); a manifest edit on a book takes
+    ///   the package's (`AudioBookParser.TrackScan`). The edit passes it
+    ///   explicitly.
     /// - Throws: `AudioManifestProblem` for the first problem found.
-    static func checkedManifest(at location: AudioManifestLocation, audioFolder folder: URL) throws -> AudioManifest {
+    static func checkedManifest(
+        at location: AudioManifestLocation,
+        audioFolder folder: URL,
+        scan: AudioBookParser.TrackScan = .importing
+    ) throws -> AudioManifest {
         let data: Data
         do {
             data = try Data(contentsOf: location.url)
@@ -194,7 +203,7 @@ enum AudioManifestCheck {
         try checkTopLevel(object)
         try checkTracksEntries(object)
         let manifest = try decodedAfterChecks(data)
-        try checkFilesNamed(by: manifest, at: location, audioFolder: folder)
+        try checkFilesNamed(by: manifest, at: location, audioFolder: folder, scan: scan)
         try checkGroupHeadings(of: manifest)
         return manifest
     }
@@ -470,14 +479,16 @@ enum AudioManifestCheck {
     /// tracks cannot be listed is left to the reading of the book, which
     /// says why.
     ///
+    /// - Parameter scan: which files count as the folder's tracks.
     /// - Throws: `.missingFiles` naming the first key whose files are not
     ///   all there, or `.repeatedFiles`.
     private static func checkFilesNamed(
         by manifest: AudioManifest,
         at location: AudioManifestLocation,
-        audioFolder folder: URL
+        audioFolder folder: URL,
+        scan: AudioBookParser.TrackScan
     ) throws {
-        guard let paths = try? AudioBookParser.trackPaths(in: folder) else { return }
+        guard let paths = try? AudioBookParser.trackPaths(in: folder, scan: scan) else { return }
         let available = Set(paths.map(location.name(ofTrackAt:)))
         let listed = (manifest.tracks ?? []).compactMap { entry -> String? in
             guard case .track(let track) = entry else { return nil }

@@ -29,10 +29,65 @@ enum AudioBookParser {
         return requested + alphabetical.filter { !requestedSet.contains($0) }
     }
 
+    /// Which tracks a scan of a folder takes. The import's scans run before
+    /// the conversion and must find every file the import converts; a
+    /// package's scans run after it, so a file of a converted format there is
+    /// not one the book plays.
+    enum TrackScan: Equatable {
+        /// A folder being imported, or the staged copy about to be
+        /// converted: every format the import accepts
+        /// (`BookFormat.audio.fileExtensions`), those it converts included.
+        case importing
+        /// A book's own folder of tracks (loading the reader, re-analysis, a
+        /// manifest edit, the library's checks): the formats TextMouth plays
+        /// as they are, and Ogg, which the library still converts
+        /// (`BookFormat.packageTrackExtensions`), and of the other converted
+        /// formats only TextMouth's own CAF (`isOwnCAF(atPath:)`).
+        /// A stray .aifc, .au, .ac3, or CAF of another origin, left by an
+        /// older ZIP import, is not a track: taking it would fail the whole
+        /// book, or decode it in TextMouth's process and shift the chapters
+        /// after it under the listener's places and bookmarks.
+        case package
+    }
+
+    /// Whether the CAF at `relativePath`, its path from the folder being
+    /// scanned, is one TextMouth wrote itself, by its name and its place.
+    /// TextMouth writes CAF files in several places, and two of them can
+    /// lie inside a folder a scan reads:
+    ///
+    /// - A recording's original take, `BookOrigin.originalTakeFileName`, at
+    ///   the package's root (the scan's top level when it reads the
+    ///   package).
+    /// - A punch-in's take, `<ID>.caf` in `AudioEditPackage.takesFolder`
+    ///   (`audioEdits/takes`), also at the package's root.
+    ///
+    /// The rest are written outside every package, so no scan meets them:
+    /// the audio editor's processed stretches and silence
+    /// (`AudioFilterProcessor`, `AudioEditComposition`) and its clips
+    /// (`AudioEditorModel`) go to this Mac's scratch folder (their
+    /// temporary files are hidden besides), and a recording's take in
+    /// progress (`RecordingTakeFiles`) to the recordings folder until it is
+    /// kept as the original take above.
+    ///
+    /// A CAF of the same name elsewhere (inside a subfolder, say) is a stray.
+    static func isOwnCAF(atPath relativePath: String) -> Bool {
+        let parts = relativePath.split(separator: "/", omittingEmptySubsequences: false).map(String.init)
+        if parts == [BookOrigin.originalTakeFileName] { return true }
+        guard parts.count == 3,
+              parts[0] == AudioEditPackage.folderName,
+              parts[1] == AudioEditPackage.takesFolderName else { return false }
+        return (parts[2] as NSString).pathExtension.lowercased() == RecordingTakeFiles.fileExtension
+    }
+
     /// Find the same playable candidates during import and reader loading.
     /// ZIPs commonly contain a wrapper folder; AppleDouble sidecars and symbolic
     /// links are not chapters, even when their names have an audio extension.
-    static func audioFiles(in directory: URL) throws -> [URL] {
+    /// - Parameter scan: which formats are tracks (`TrackScan`). Every app
+    ///   caller passes it, so each says whether it runs before the import's
+    ///   conversion or on a package; the default, the import's list, is what
+    ///   this function always did, and is only what older callers (and
+    ///   tests) that name no scan rely on.
+    static func audioFiles(in directory: URL, scan: TrackScan = .importing) throws -> [URL] {
         let keys: Set<URLResourceKey> = [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey]
         var enumerationError: Error?
         guard let enumerator = FileManager.default.enumerator(
@@ -46,6 +101,7 @@ enum AudioBookParser {
         ) else { throw AudioParseError.noAudioFiles }
 
         let extensions = Set(BookFormat.audio.fileExtensions)
+        let packageExtensions = BookFormat.packageTrackExtensions
         var files: [URL] = []
         for case let file as URL in enumerator {
             let values = try file.resourceValues(forKeys: keys)
@@ -53,8 +109,19 @@ enum AudioBookParser {
                 enumerator.skipDescendants()
                 continue
             }
-            if values.isRegularFile == true, extensions.contains(file.pathExtension.lowercased()) {
-                files.append(file)
+            guard values.isRegularFile == true else { continue }
+            let fileExtension = file.pathExtension.lowercased()
+            switch scan {
+            case .importing:
+                if extensions.contains(fileExtension) { files.append(file) }
+            case .package:
+                // A format played as it is; or a CAF of TextMouth's own,
+                // known by its place, so its path is worked out for a CAF only.
+                if packageExtensions.contains(fileExtension)
+                    || (fileExtension == RecordingTakeFiles.fileExtension
+                        && isOwnCAF(atPath: relativeName(of: file, in: directory))) {
+                    files.append(file)
+                }
             }
         }
         if let enumerationError { throw enumerationError }
@@ -65,10 +132,10 @@ enum AudioBookParser {
         }
     }
 
-    /// The path from `directory` of each track `audioFiles(in:)` finds
+    /// The path from `directory` of each track `audioFiles(in:scan:)` finds
     /// there, in Finder's order: "Disc 2/03.mp3".
-    static func trackPaths(in directory: URL) throws -> [String] {
-        try audioFiles(in: directory).map { relativeName(of: $0, in: directory) }
+    static func trackPaths(in directory: URL, scan: TrackScan = .importing) throws -> [String] {
+        try audioFiles(in: directory, scan: scan).map { relativeName(of: $0, in: directory) }
     }
 
     /// Manifest filenames are relative to the audio directory, so tracks with
@@ -156,7 +223,7 @@ enum AudioBookParser {
         url: URL,
         prober: AudioMediaProber = .avFoundation
     ) async throws -> (content: DocumentContent, filePaths: [String], segments: [AudioSegment]?) {
-        let audioFiles = try Self.audioFiles(in: url)
+        let audioFiles = try Self.audioFiles(in: url, scan: .package)
 
         guard !audioFiles.isEmpty else {
             throw AudioParseError.noAudioFiles

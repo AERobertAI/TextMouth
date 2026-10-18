@@ -305,7 +305,7 @@ enum ImportAudioConverter {
     /// hidden files, AppleDouble sidecars, and symbolic links do not), in
     /// Finder's order; none when the folder can't be read.
     private static func tracks(in folder: URL, where accepts: (URL) -> Bool) -> [URL] {
-        ((try? AudioBookParser.audioFiles(in: folder)) ?? []).filter(accepts)
+        ((try? AudioBookParser.audioFiles(in: folder, scan: .importing)) ?? []).filter(accepts)
     }
 
     // MARK: - The Settings

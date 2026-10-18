@@ -1163,7 +1163,7 @@ enum FileImportService {
             return false
         }
         // The folder is searched for DAISY books only once it is known to hold audio.
-        guard !((try? AudioBookParser.audioFiles(in: source)) ?? []).isEmpty else { return false }
+        guard !((try? AudioBookParser.audioFiles(in: source, scan: .importing)) ?? []).isEmpty else { return false }
         return !holdsDAISYBookBeneath(source)
     }
 
@@ -1211,7 +1211,7 @@ enum FileImportService {
     ) throws -> ImportedBook {
         try ImportRun.perform(importing: folder.lastPathComponent, observer: observer) { run in
             try run.begin(.readingSource)
-            var paths = try AudioBookParser.trackPaths(in: folder)
+            var paths = try AudioBookParser.trackPaths(in: folder, scan: .importing)
             if let location = AudioManifestLocation.find(in: folder) {
                 paths.append(location.prefix + AudioManifest.fileName)
             }
@@ -2322,7 +2322,7 @@ enum FileImportService {
         var author = Book.unknownAuthor
         if let location = AudioManifestLocation.find(in: audioDirectory) {
             try run.begin(.readingManifest, in: staging.directory)
-            let manifest = try AudioManifestCheck.checkedManifest(at: location, audioFolder: audioDirectory)
+            let manifest = try AudioManifestCheck.checkedManifest(at: location, audioFolder: audioDirectory, scan: .importing)
             // A blank title or author falls back as a missing one does.
             if let manifestTitle = manifest.bookTitle { title = manifestTitle }
             if let manifestAuthor = manifest.bookAuthor { author = manifestAuthor }
