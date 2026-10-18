@@ -42,6 +42,64 @@ struct AudioFileInfo: Equatable, Sendable {
         ["lpcm", "alac", "flac"].contains(formatID)
     }
 
+    // MARK: - Plausibility
+
+    /// The longest length believed at all, in seconds: one year, as
+    /// `OggHeaderReader.maximumDuration`.
+    static let maximumPlausibleDuration: TimeInterval = OggHeaderReader.maximumDuration
+
+    /// The slack a linear PCM file's bound allows over its exact size:
+    /// one percent of the length, and one second.
+    private static let pcmRelativeSlack = 1.01
+    private static let pcmAbsoluteSlackSeconds: TimeInterval = 1
+
+    /// The lowest bit rate, in bits a second, that a file of this codec can
+    /// have: no real file is smaller for its length. Linear PCM has exactly
+    /// one rate (the sample rate times the channels times the bits a sample,
+    /// 32 for floating point; 8 when afinfo gave no depth); the packed
+    /// codecs have a rate that depends on the sample rate; the rest a table
+    /// of the lowest rate the codec has.
+    var lowestPlausibleBitRate: Double {
+        let samplesPerSecond = sampleRate * Double(channels)
+        switch formatID {
+        case "lpcm":
+            return samplesPerSecond * Double(isFloat ? 32 : (bitsPerSample ?? 8))
+        case "ima4":
+            return samplesPerSecond * 4
+        case "ulaw", "alaw":
+            return samplesPerSecond * 8
+        case "samr": return 4_750
+        case "sawb": return 6_600
+        case "opus": return 6_000
+        case ".mp3", ".mp2": return 8_000
+        case ".mp1", "ac-3", "ec-3": return 32_000
+        case _ where formatID.hasPrefix("aac"): return 8_000
+        default: return 1_000
+        }
+    }
+
+    /// Whether the file's own size can hold the length it claims. A header
+    /// can say anything: a 136 KB CAF once claimed 25 billion seconds, and
+    /// the converter's time limit and output reservation grew with it. The
+    /// length is believed only when it is at most a year and at most the
+    /// file's bits divided by the codec's lowest bit rate (linear PCM, which
+    /// has exactly one rate, gets one percent and one second of slack).
+    /// - Parameter bytes: The file's size in bytes.
+    func isPlausible(inFileOfBytes bytes: Int64) -> Bool {
+        guard duration <= Self.maximumPlausibleDuration else { return false }
+        let longest = Double(max(bytes, 0)) * 8 / lowestPlausibleBitRate
+        if formatID == "lpcm" {
+            return duration <= longest * Self.pcmRelativeSlack + Self.pcmAbsoluteSlackSeconds
+        }
+        return duration <= longest
+    }
+
+    /// The log line for a file whose claimed length its size cannot hold,
+    /// with the length in whole seconds.
+    static func implausibleLogLine(file: String, duration: TimeInterval, bytes: Int64) -> String {
+        "AUDIO_INFO_IMPLAUSIBLE: \(file): claims \(String(format: "%.0f", duration)) seconds in \(bytes) bytes"
+    }
+
     // MARK: - Parsing
 
     /// Reads the first track of the first audio file in afinfo's XML output
@@ -221,8 +279,9 @@ struct AudioFileInfo: Equatable, Sendable {
     /// file itself.
     /// - Returns: The facts, or nil when the file is missing or only in the
     ///   cloud, the tool cannot start or exits with a failure, the watchdog
-    ///   kills it (logged as `AUDIO_INFO_KILLED`), or its output does not
-    ///   parse.
+    ///   kills it (logged as `AUDIO_INFO_KILLED`), its output does not
+    ///   parse, or the length it claims is more than the file's size can
+    ///   hold (logged as `AUDIO_INFO_IMPLAUSIBLE`).
     /// - Throws: `CancellationError` only.
     static func read(_ url: URL, using tool: Tool = .afinfo) async throws -> AudioFileInfo? {
         let fileManager = FileManager.default
@@ -238,7 +297,14 @@ struct AudioFileInfo: Equatable, Sendable {
         )
         switch result.outcome {
         case .exited(status: 0):
-            return parse(xml: result.output)
+            guard let info = parse(xml: result.output) else { return nil }
+            guard info.isPlausible(inFileOfBytes: bytes) else {
+                DiagnosticLog.event(
+                    .storage, implausibleLogLine(file: url.lastPathComponent, duration: info.duration, bytes: bytes)
+                )
+                return nil
+            }
+            return info
         case .exited, .couldNotStart:
             return nil
         case let .killed(reason):

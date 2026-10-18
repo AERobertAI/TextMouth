@@ -81,12 +81,46 @@ final class AudioFileInfoTests: XCTestCase {
         )
     }
 
-    /// A small file in the test's folder for a stand-in tool to be "asked
-    /// about".
-    private func makeFile() throws -> URL {
+    /// A file in the test's folder for a stand-in tool to be "asked about".
+    /// It is `bytes` long: large enough to hold the length the canned XML of
+    /// a test claims (the plausibility bound compares the two).
+    private func makeFile(bytes: Int = 4) throws -> URL {
         let url = folder.appendingPathComponent("stand-in.bin")
-        try Data([0, 1, 2, 3]).write(to: url)
+        try Data(count: bytes).write(to: url)
         return url
+    }
+
+    /// A mono 16-bit PCM CAF at 8,000 Hz holding `seconds` of silence, whose
+    /// data chunk claims `claimedDataBytes` bytes (the real size when nil):
+    /// the shape of the review's lying file. CAF numbers are big-endian.
+    private func makeCAF(seconds: Int, claimedDataBytes: Int64? = nil) throws -> URL {
+        func big<T: FixedWidthInteger>(_ value: T) -> [UInt8] {
+            withUnsafeBytes(of: value.bigEndian) { Array($0) }
+        }
+        let samples = Data(count: seconds * 8_000 * 2)
+        var bytes = Array("caff".utf8) + big(UInt16(1)) + big(UInt16(0))
+        // The 'desc' chunk: rate (Float64), format, flags (little-endian
+        // samples), bytes and frames a packet, channels, bits a channel.
+        bytes += Array("desc".utf8) + big(Int64(32)) + big(Double(8_000).bitPattern)
+        bytes += Array("lpcm".utf8) + big(UInt32(2)) + big(UInt32(2)) + big(UInt32(1))
+        bytes += big(UInt32(1)) + big(UInt32(16))
+        // The 'data' chunk: a 4-byte edit count, then the samples.
+        bytes += Array("data".utf8) + big(claimedDataBytes ?? Int64(4 + samples.count)) + big(UInt32(0))
+        let url = folder.appendingPathComponent("tones-\(claimedDataBytes ?? 0).caf")
+        try (Data(bytes) + samples).write(to: url)
+        return url
+    }
+
+    /// The facts of a 16-bit mono 22,050 Hz PCM track (or other codec) of
+    /// `duration` seconds, for the plausibility bound.
+    private func info(
+        format: String = "lpcm", channels: Int = 1, rate: Double = 22_050, bits: Int? = 16,
+        isFloat: Bool = false, duration: TimeInterval
+    ) -> AudioFileInfo {
+        AudioFileInfo(
+            fileType: "caff", formatID: format, channels: channels, sampleRate: rate,
+            duration: duration, bitsPerSample: bits, isFloat: isFloat
+        )
     }
 
     // MARK: - Parsing
@@ -257,6 +291,82 @@ final class AudioFileInfoTests: XCTestCase {
         }
     }
 
+    // MARK: - The Bound On A Claimed Length (review item 4)
+
+    /// Linear PCM has exactly one bit rate: three seconds of 16-bit mono at
+    /// 22,050 Hz is 132,300 bytes, and the bound has one percent and one
+    /// second of slack above that.
+    func testPCMLengthIsBoundedByItsExactBitRate() {
+        let claim = info(duration: 3)
+        XCTAssertEqual(claim.lowestPlausibleBitRate, 352_800)
+        XCTAssertTrue(claim.isPlausible(inFileOfBytes: 132_300))
+        // One second of slack: 3 s fits 88,200 bytes (2 s) plus 1%.
+        XCTAssertTrue(claim.isPlausible(inFileOfBytes: 89_100))
+        XCTAssertFalse(claim.isPlausible(inFileOfBytes: 80_000))
+        XCTAssertFalse(claim.isPlausible(inFileOfBytes: 0))
+    }
+
+    /// Floating-point PCM counts 32 bits a sample, whatever else is said.
+    func testFloatPCMCountsThirtyTwoBitsASample() {
+        let claim = info(channels: 2, rate: 48_000, bits: nil, isFloat: true, duration: 10)
+        XCTAssertEqual(claim.lowestPlausibleBitRate, 48_000 * 2 * 32)
+        XCTAssertTrue(claim.isPlausible(inFileOfBytes: 3_840_000))
+        XCTAssertFalse(claim.isPlausible(inFileOfBytes: 3_000_000))
+    }
+
+    /// Other codecs use the table by their format ID, the packed ones the
+    /// sample rate and channels too.
+    func testTheLowestBitRatesOfTheCodecs() {
+        let table: [(format: String, rate: Double)] = [
+            ("samr", 4_750), ("sawb", 6_600), ("opus", 6_000), ("aac ", 8_000), ("aach", 8_000),
+            (".mp3", 8_000), (".mp2", 8_000), (".mp1", 32_000), ("ac-3", 32_000), ("ec-3", 32_000),
+            ("alac", 1_000), ("flac", 1_000), ("ms..", 1_000),
+        ]
+        for entry in table {
+            XCTAssertEqual(info(format: entry.format, bits: nil, duration: 1).lowestPlausibleBitRate, entry.rate, entry.format)
+        }
+        XCTAssertEqual(info(format: "ima4", channels: 2, rate: 44_100, bits: nil, duration: 1).lowestPlausibleBitRate, 352_800)
+        XCTAssertEqual(info(format: "ulaw", channels: 1, rate: 8_000, bits: nil, duration: 1).lowestPlausibleBitRate, 64_000)
+        XCTAssertEqual(info(format: "alaw", channels: 2, rate: 8_000, bits: nil, duration: 1).lowestPlausibleBitRate, 128_000)
+    }
+
+    /// A table codec's length may not exceed the file's bits over the rate
+    /// (AC-3: 100 seconds needs 400,000 bytes), with no slack.
+    func testATableCodecsLengthIsBoundedByItsLowestRate() {
+        let claim = info(format: "ac-3", bits: nil, duration: 100)
+        XCTAssertTrue(claim.isPlausible(inFileOfBytes: 400_000))
+        XCTAssertFalse(claim.isPlausible(inFileOfBytes: 399_999))
+    }
+
+    /// Whatever the size, a length of more than a year is not believed.
+    func testNoLengthOverAYearIsBelieved() {
+        let year: TimeInterval = 365 * 24 * 3_600
+        XCTAssertEqual(AudioFileInfo.maximumPlausibleDuration, year)
+        let huge: Int64 = 1 << 50
+        XCTAssertTrue(info(format: "flac", bits: 16, duration: year).isPlausible(inFileOfBytes: huge))
+        XCTAssertFalse(info(format: "flac", bits: 16, duration: year + 1).isPlausible(inFileOfBytes: huge))
+    }
+
+    /// The log line names the file, the claimed seconds (whole), and the
+    /// size, and never a path.
+    func testTheImplausibleLengthLogLine() {
+        XCTAssertEqual(
+            AudioFileInfo.implausibleLogLine(file: "lie.caf", duration: 25_769_803_776.4, bytes: 136_000),
+            "AUDIO_INFO_IMPLAUSIBLE: lie.caf: claims 25769803776 seconds in 136000 bytes"
+        )
+    }
+
+    /// A CAF whose data chunk claims 2^50 bytes is refused by the real
+    /// afinfo's reading; a real short CAF is not.
+    func testACAFThatClaimsAnAbsurdLengthIsRefused() async throws {
+        let honest = try makeCAF(seconds: 2)
+        let honestInfo = try await AudioFileInfo.read(honest)
+        XCTAssertEqual(try XCTUnwrap(honestInfo).duration, 2, accuracy: 0.05)
+        let lie = try makeCAF(seconds: 2, claimedDataBytes: 1 << 50)
+        let lieInfo = try await AudioFileInfo.read(lie)
+        XCTAssertNil(lieInfo)
+    }
+
     // MARK: - Stand-In Tools
 
     /// A file that is not there gives nil without starting anything.
@@ -270,7 +380,9 @@ final class AudioFileInfoTests: XCTestCase {
     func testAToolThatPrintsGoodXMLGivesTheFacts() async throws {
         let canned = folder.appendingPathComponent("canned.xml")
         try xml(tracks: track()).write(to: canned)
-        let info = try await AudioFileInfo.read(try makeFile(), using: standIn("/bin/cat", [canned.path]))
+        let info = try await AudioFileInfo.read(
+            try makeFile(bytes: 1_000_000), using: standIn("/bin/cat", [canned.path])
+        )
         XCTAssertEqual(info?.formatID, "lpcm")
         XCTAssertEqual(info?.channels, 1)
     }
