@@ -19,8 +19,11 @@ import XCTest
 /// skips, so the ordinary suite never runs it.
 ///
 /// Variables: `TEXTMOUTH_IMPORT_FUZZ_SEED` (default 20261016),
-/// `TEXTMOUTH_IMPORT_FUZZ_DOCS` (comma-separated TestData names; default
-/// every book of `TextPipelineFixtures.testDataBookNames` under 300 KB),
+/// `TEXTMOUTH_IMPORT_FUZZ_DOCS` (comma-separated TestData names, such as
+/// `alice.epub` or `format-samples/rtf/headings.rtf`; default every book of
+/// `TextPipelineFixtures.testDataBookNames` and every format sample that is
+/// a single file, under 300 KB; the RTFD and NIMAS folder samples are left
+/// out, since the mutations damage the bytes of one file),
 /// `TEXTMOUTH_IMPORT_FUZZ_PDF=1` (also the two small PDFs, whose import can
 /// use Vision OCR), `TEXTMOUTH_IMPORT_FUZZ_SECONDS` (the watchdog for one
 /// import, default 60), `TEXTMOUTH_IMPORT_FUZZ_REPORT` (the report's path).
@@ -70,12 +73,15 @@ final class ImportFuzzTests: XCTestCase {
         if let named = environment["TEXTMOUTH_IMPORT_FUZZ_DOCS"], !named.isEmpty {
             documents = named.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) }
         } else {
-            // Every recorded book small enough to sweep quickly.
-            documents = try TextPipelineFixtures.testDataBookNames.filter { name in
-                let url = try requireFile(name)
-                let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? Int.max
-                return size < defaultSizeLimit
-            }
+            // Every recorded book, and every format sample that is a single
+            // file, small enough to sweep quickly. A folder has no bytes to
+            // damage, so the samples that are folders (an RTFD, a NIMAS
+            // package) are not swept by default.
+            documents = try (TextPipelineFixtures.testDataBookNames + TextPipelineFixtures.formatSampleNames)
+                .filter { name in
+                    let values = try requireFile(name).resourceValues(forKeys: [.fileSizeKey, .isDirectoryKey])
+                    return values.isDirectory != true && (values.fileSize ?? Int.max) < defaultSizeLimit
+                }
         }
         if environment["TEXTMOUTH_IMPORT_FUZZ_PDF"] == "1" {
             documents += pdfNames.filter { !documents.contains($0) }
@@ -196,8 +202,12 @@ final class ImportFuzzTests: XCTestCase {
         for fileName in settings.documents {
             let original = try requireFile(fileName)
             let originalData = try Data(contentsOf: original)
+            // A format sample may import only under another name (WordML as
+            // .xml); the damaged copy is written under that name, and the
+            // mutations that apply are chosen by it.
+            let importName = TextPipelineFixtures.formatSampleImportName(fileName)
 
-            for mutation in ImportFuzzMutator.applicable(to: fileName) {
+            for mutation in ImportFuzzMutator.applicable(to: importName) {
                 let id = ImportFuzzMutator.caseID(fileName: fileName, mutation: mutation, seed: settings.seed)
                 if let note = Self.skippedCases[id] {
                     counts.skipped += 1
@@ -207,11 +217,12 @@ final class ImportFuzzTests: XCTestCase {
                 caseNumber += 1
                 counts.cases += 1
 
-                // The damaged copy keeps the document's name, so its
-                // extension still says what the importer should read.
+                // The damaged copy keeps the document's name (the last part
+                // of its path), so its extension still says what the
+                // importer should read.
                 let caseFolder = sources.appendingPathComponent("case-\(caseNumber)", isDirectory: true)
                 try FileManager.default.createDirectory(at: caseFolder, withIntermediateDirectories: true)
-                let damagedFile = caseFolder.appendingPathComponent(fileName)
+                let damagedFile = caseFolder.appendingPathComponent(importName)
                 let damagedData = ImportFuzzMutator.apply(
                     mutation, to: originalData, fileName: fileName, seed: settings.seed
                 )
