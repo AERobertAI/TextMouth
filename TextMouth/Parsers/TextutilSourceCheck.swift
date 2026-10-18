@@ -51,9 +51,21 @@ enum TextutilSourceCheck {
     private static let streamAlignment = 64
     /// How far into a file the File Information Block is looked for.
     private static let fibSearchLimit = 8 * 1024 * 1024
-    /// The `nFib` values Word 6 to Word 2007 and later write (Word 97 and
-    /// after write 0x00C1).
-    private static let knownFibVersions: ClosedRange<UInt16> = 0x0065...0x0200
+    /// The `nFib` values of Word 97 and after (0x00C1 for Word 97, higher
+    /// for later versions, up to 0x0200). [MS-DOC] FibBase says such a
+    /// block's `nFibBack`, 12 bytes in, MUST be one of `modernFibBackValues`.
+    private static let modernFibVersions: ClosedRange<UInt16> = 0x00C1...0x0200
+    /// The only values `nFibBack` may hold in a block of `modernFibVersions`.
+    /// A match on the two signature bytes and an `nFib` alone is weak with
+    /// a 64-byte scan, and a false match would read a random flags word and
+    /// might refuse a readable document as password-protected, so this
+    /// check must pass as well.
+    private static let modernFibBackValues: Set<UInt16> = [0x00BF, 0x00C1]
+    /// The `nFib` values of Word 6 and Word 95 (0x0065 to 0x0068), whose
+    /// block predates the `nFibBack` rule and is accepted on `nFib` alone.
+    private static let legacyFibVersions: ClosedRange<UInt16> = 0x0065...0x0068
+    /// Where `nFibBack` lies in a File Information Block.
+    private static let fibBackOffset = 0x0C
     /// Where the 16-bit flags word lies in a File Information Block, and
     /// the bit of it that says the document is encrypted (`fEncrypted`;
     /// bit 0x0001 is `fDot`, a template).
@@ -89,25 +101,38 @@ enum TextutilSourceCheck {
 
     /// The offset in `data` of the first File Information Block, or nil. A
     /// block starts on a 64-byte boundary (`streamAlignment`) with `wIdent`
-    /// 0xA5EC (the bytes EC A5), then an `nFib` from 0x0065 to 0x0200, and
-    /// has room for its flags word. `data` is taken to start on such a
-    /// boundary, and `start` is the first offset looked at (512 by default,
-    /// to pass over the compound file's header sector).
+    /// 0xA5EC (the bytes EC A5), then an `nFib` that is either Word 6 or
+    /// Word 95's (0x0065 to 0x0068) or a later one (0x00C1 to 0x0200) with
+    /// a valid `nFibBack`, and has room for its fields through `nFibBack`. A
+    /// candidate that fails these is passed over and the scan goes on.
+    /// `data` is taken to start on such a boundary, and `start` is the first
+    /// offset looked at (512 by default, to pass over the compound file's
+    /// header sector).
     static func fibOffset(in data: Data, from start: Int = 512) -> Int? {
-        let blockEnd = fibFlagsOffset + 2
+        // The block as far as this check reads it: through `nFibBack`.
+        let blockEnd = fibBackOffset + 2
         for offset in stride(from: start, to: data.count, by: streamAlignment) {
             guard offset + blockEnd <= data.count else { return nil }
-            let base = data.startIndex + offset
-            guard data[base] == 0xEC, data[base + 1] == 0xA5 else { continue }
-            let version = UInt16(data[base + 2]) | UInt16(data[base + 3]) << 8
-            if knownFibVersions.contains(version) { return offset }
+            guard word(in: data, at: offset) == 0xA5EC else { continue }
+            let version = word(in: data, at: offset + 2)
+            if legacyFibVersions.contains(version) { return offset }
+            if modernFibVersions.contains(version),
+               modernFibBackValues.contains(word(in: data, at: offset + fibBackOffset)) {
+                return offset
+            }
         }
         return nil
     }
 
     /// The flags word (little-endian) of the block at `offset` in `data`.
     private static func fibFlags(in data: Data, at offset: Int) -> UInt16 {
-        let base = data.startIndex + offset + fibFlagsOffset
+        word(in: data, at: offset + fibFlagsOffset)
+    }
+
+    /// The 16-bit little-endian word at `offset` in `data`. The caller has
+    /// checked that two bytes lie there.
+    private static func word(in data: Data, at offset: Int) -> UInt16 {
+        let base = data.startIndex + offset
         return UInt16(data[base]) | UInt16(data[base + 1]) << 8
     }
 

@@ -24,6 +24,20 @@ final class TextutilSourceCheckTests: XCTestCase {
         return url
     }
 
+    /// The first 14 bytes of a File Information Block: `wIdent`, `nFib`, six
+    /// bytes of other fields, the flags word `flags`, and `nFibBack`.
+    private func fibBytes(version: UInt16, back: UInt16 = 0x00BF, flags: UInt16 = 0) -> [UInt8] {
+        [0xEC, 0xA5, UInt8(version & 0xFF), UInt8(version >> 8), 0, 0, 0, 0, 0, 0,
+         UInt8(flags & 0xFF), UInt8(flags >> 8), UInt8(back & 0xFF), UInt8(back >> 8)]
+    }
+
+    /// `data` with `bytes` written over it from `offset` on.
+    private func writing(_ bytes: [UInt8], at offset: Int, over data: Data) -> Data {
+        var data = data
+        data.replaceSubrange(offset..<offset + bytes.count, with: bytes)
+        return data
+    }
+
     /// The offset of the File Information Block in the Word document at
     /// `url`, found by the code under test, failing the test when none is.
     private func fibOffset(of url: URL) throws -> Int {
@@ -133,20 +147,55 @@ final class TextutilSourceCheckTests: XCTestCase {
     }
 
     func testTheFinderSkipsTheHeaderSectorAndBadVersions() {
-        // A block-like pattern in the header sector is passed over, a
-        // version outside 0x0065...0x0200 is refused, and a good one at 1024 found.
+        // A valid block in the header sector is passed over, versions outside
+        // 0x0065...0x0068 and 0x00C1...0x0200 are refused, and the good
+        // Word 6 block at 1024 is found.
         var data = Data(count: 2048)
-        data.replaceSubrange(0..<4, with: [0xEC, 0xA5, 0xC1, 0x00])
-        data.replaceSubrange(512..<516, with: [0xEC, 0xA5, 0x64, 0x00])
-        data.replaceSubrange(576..<580, with: [0xEC, 0xA5, 0x01, 0x02])
-        data.replaceSubrange(1024..<1028, with: [0xEC, 0xA5, 0x65, 0x00])
+        data = writing(fibBytes(version: 0x00C1), at: 0, over: data)
+        data = writing(fibBytes(version: 0x0064), at: 512, over: data)
+        data = writing(fibBytes(version: 0x0201), at: 576, over: data)
+        data = writing(fibBytes(version: 0x0065, back: 0), at: 1024, over: data)
         XCTAssertEqual(TextutilSourceCheck.fibOffset(in: data), 1024)
     }
 
-    func testABlockCutOffBeforeItsFlagsWordIsNotFound() {
-        var data = Data(count: 512 + 8)
-        data.replaceSubrange(512..<516, with: [0xEC, 0xA5, 0xC1, 0x00])
+    func testAModernBlockWithAWrongNFibBackIsPassedOver() {
+        // A look-alike at 576 (nFib 0x00C1, nFibBack 0x0000) is passed over
+        // and the valid block at 1024 is found; 0x00C1 is a valid nFibBack too.
+        var data = Data(count: 2048)
+        data = writing(fibBytes(version: 0x00C1, back: 0x0000), at: 576, over: data)
+        data = writing(fibBytes(version: 0x0101, back: 0x00BF), at: 1024, over: data)
+        XCTAssertEqual(TextutilSourceCheck.fibOffset(in: data), 1024)
+        data = writing(fibBytes(version: 0x0101, back: 0x00C1), at: 1024, over: data)
+        XCTAssertEqual(TextutilSourceCheck.fibOffset(in: data), 1024)
+        data = writing(fibBytes(version: 0x0101, back: 0x00C0), at: 1024, over: data)
         XCTAssertNil(TextutilSourceCheck.fibOffset(in: data))
+    }
+
+    func testAVersionBetweenTheTwoRangesIsPassedOver() {
+        // 0x0069 is above Word 95's range and below Word 97's.
+        var data = Data(count: 2048)
+        data = writing(fibBytes(version: 0x0069), at: 576, over: data)
+        XCTAssertNil(TextutilSourceCheck.fibOffset(in: data))
+        data = writing(fibBytes(version: 0x00C0), at: 576, over: data)
+        XCTAssertNil(TextutilSourceCheck.fibOffset(in: data))
+    }
+
+    func testAFalseMatchBeforeTheRealBlockDoesNotMakeAReadableDocumentEncrypted() throws {
+        // A look-alike with the encrypted bit set lies before the real,
+        // unencrypted block, in a compound file.
+        var bytes = Data([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]) + Data(count: 2040)
+        bytes = writing(fibBytes(version: 0x00C1, back: 0x1234, flags: 0x0100), at: 640, over: bytes)
+        bytes = writing(fibBytes(version: 0x00C1, flags: 0x0000), at: 1024, over: bytes)
+        XCTAssertFalse(TextutilSourceCheck.isEncryptedWordDocument(try file(named: "lookalike.doc", holding: bytes)))
+    }
+
+    func testABlockCutOffBeforeItsNFibBackIsNotFound() {
+        // Only 12 of the block's 14 bytes lie in the data.
+        let data = writing(Array(fibBytes(version: 0x00C1).prefix(12)), at: 512, over: Data(count: 512 + 12))
+        XCTAssertNil(TextutilSourceCheck.fibOffset(in: data))
+        // With its 14 bytes it is found.
+        let whole = writing(fibBytes(version: 0x00C1), at: 512, over: Data(count: 512 + 14))
+        XCTAssertEqual(TextutilSourceCheck.fibOffset(in: whole), 512)
     }
 
     // MARK: - A Word document with a password
@@ -177,7 +226,7 @@ final class TextutilSourceCheckTests: XCTestCase {
         var bytes = Data(count: 200_064)
         bytes.replaceSubrange(0..<8, with: [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1])
         let offset = 200_000 - 200_000 % 64
-        bytes.replaceSubrange(offset..<offset + 12, with: [0xEC, 0xA5, 0xC1, 0x00, 0, 0, 0, 0, 0, 0, 0x00, 0x01])
+        bytes = writing(fibBytes(version: 0x00C1, flags: 0x0100), at: offset, over: bytes)
         XCTAssertTrue(TextutilSourceCheck.isEncryptedWordDocument(try file(named: "late.doc", holding: bytes)))
     }
 
@@ -189,7 +238,7 @@ final class TextutilSourceCheckTests: XCTestCase {
         XCTAssertFalse(TextutilSourceCheck.isEncryptedWordDocument(try file(named: "zeros.doc", holding: signature)))
         // A block with the bit set but no signature is no Word document.
         var unsigned = Data(count: 1024)
-        unsigned.replaceSubrange(512..<524, with: [0xEC, 0xA5, 0xC1, 0x00, 0, 0, 0, 0, 0, 0, 0x00, 0x01])
+        unsigned = writing(fibBytes(version: 0x00C1, flags: 0x0100), at: 512, over: unsigned)
         XCTAssertFalse(TextutilSourceCheck.isEncryptedWordDocument(try file(named: "unsigned.doc", holding: unsigned)))
         let missing = try makeSandboxDirectory("SourceCheck").appendingPathComponent("missing.doc")
         XCTAssertFalse(TextutilSourceCheck.isEncryptedWordDocument(missing))
