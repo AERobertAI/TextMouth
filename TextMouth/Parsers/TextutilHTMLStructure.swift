@@ -18,14 +18,22 @@ enum TextutilHTMLStructure {
 
     // MARK: - Entry point
 
-    /// Rewrite `document` in place: remove pictures, turn bullet paragraphs
-    /// into lists, then turn the paragraphs that look like headings into
-    /// `h1` to `h6`. The order matters: a bullet line must never become a
-    /// heading, and a picture's file name must not count as heading text.
+    /// Rewrite `document` in place: remove pictures, remove the field
+    /// instructions of Word documents, turn bullet paragraphs into lists,
+    /// then turn the paragraphs that look like headings into `h1` to `h6`.
+    /// The order matters: a bullet line must never become a heading, a
+    /// picture's file name must not count as heading text, and a field's
+    /// instruction must be neither a heading nor read aloud.
+    ///
     /// The whole body is counted (for its body size and weight) after the
     /// pictures are gone but before the bullet paragraphs become list
     /// items: an item carries no class, so counted afterwards its characters
     /// would fall to the 12 px default and could outweigh a smaller body.
+    /// It is counted before the field instructions go too: they stand in
+    /// body paragraphs at the body's own size, and a page made mostly of
+    /// fields has a body size only if they count (the sample
+    /// `libreoffice-tdf81705_outlineLevel.doc` is a "Contents" line above
+    /// one field line).
     static func restore(in document: Document) throws {
         try removePictures(from: document)
         let rules = try classRules(in: document)
@@ -33,6 +41,7 @@ enum TextutilHTMLStructure {
             measuring: textNodes(under: document.body() ?? document),
             with: StyleResolver(rules: rules)
         )
+        try TextutilFieldCodes.removeInstructions(from: document)
         try convertBulletParagraphs(in: document)
         try convertHeadingParagraphs(in: document, rules: rules, bodyCensus: bodyCensus)
     }
@@ -57,7 +66,7 @@ enum TextutilHTMLStructure {
 
     /// Tags whose elements are blocks of text: a character's size and weight
     /// come from the elements between it and its block.
-    private static let blockTags: Set<String> = [
+    static let blockTags: Set<String> = [
         "p", "li", "td", "th", "h1", "h2", "h3", "h4", "h5", "h6",
         "div", "blockquote", "pre"
     ]
@@ -328,7 +337,7 @@ enum TextutilHTMLStructure {
     }
 
     /// Every text node under `root`, in document order.
-    private static func textNodes(under root: Node) -> [TextNode] {
+    static func textNodes(under root: Node) -> [TextNode] {
         var found: [TextNode] = []
         // An explicit stack, so a deeply nested document cannot exhaust the call stack.
         var pending: [Node] = [root]

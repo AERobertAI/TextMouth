@@ -405,4 +405,103 @@ final class TextutilHTMLStructureTests: XCTestCase {
         XCTAssertFalse(spoken.contains("*"))
         XCTAssertTrue(spoken.contains("Smoked fish, naïve prices and fresh bread"))
     }
+
+    // MARK: - Field instructions
+
+    /// The instruction text of a Word field is removed and its visible
+    /// result stays: the shapes textutil writes for the table of contents of
+    /// `libreoffice-tdf81705_outlineLevel.doc`, and the fields of other
+    /// documents (hyperlinks, sequence numbers, merge fields, dates).
+    func testFieldInstructionsAreRemovedAndTheirResultsStay() {
+        let cases: [(written: String, kept: String)] = [
+            (" TOC \\o \"1-3\" \\h \\z \\u", " "),
+            (" HYPERLINK \\l \"_Toc68096040\"", " "),
+            (" PAGEREF _Toc68096040 \\h 1", "  1"),
+            ("Figure SEQ Figure \\* ARABIC 3", "Figure  3"),
+            ("Page PAGE \\* MERGEFORMAT 7 of NUMPAGES 12", "Page  7 of  12"),
+            ("Dear MERGEFIELD FirstName \\* MERGEFORMAT Ana,", "Dear  Ana,"),
+            ("Visit HYPERLINK \"http://example.com/a\" the site.", "Visit  the site."),
+            ("Today is DATE \\@ \"dddd, d MMMM yyyy\" Monday, 5 May.", "Today is  Monday, 5 May."),
+            ("REF _Ref123456 \\h see above", " see above"),
+            ("Quoted “text” with TITLE \\* Upper Dune", "Quoted “text” with  Dune"),
+        ]
+        for (written, kept) in cases {
+            XCTAssertEqual(TextutilFieldCodes.strip(written), kept, written)
+        }
+    }
+
+    /// Capitals in ordinary prose are not instructions: an ambiguous keyword
+    /// needs a switch or a bookmark name, and the rule is case sensitive.
+    func testProseThatLooksLikeAKeywordStays() {
+        let prose = [
+            "Turn to PAGE 5 and read.",
+            "Put your INDEX finger here.",
+            "The TOC is long.",
+            "WHAT IF \"NOW\" MEANS NEVER?",
+            "TITLE: Dune, DATE: 5 May",
+            "Open the page \\h and the index \\* here.",
+            "PAGE C:\\temp\\notes",
+            "TOCQUEVILLE wrote about PAGES and INDEXES.",
+            "SEQ is short for sequence.",
+            "Mr. McDONALD said TIME flies.",
+        ]
+        for text in prose {
+            XCTAssertEqual(TextutilFieldCodes.strip(text), text, text)
+        }
+    }
+
+    /// The outline-level sample's contents line, in textutil's shape: the
+    /// paragraph reads the entry's result and page number, never the field
+    /// instructions, and a paragraph left empty disappears. The blank
+    /// paragraphs textutil wrote on its own (a `br`) are not touched.
+    func testATableOfContentsLineReadsItsResultOnly() throws {
+        let markup = html(
+            style: "p.p3 {font: 12.0px Times; min-height: 14.0px}",
+            body: """
+            <p class="p2">Contents</p>
+            <p class="p2"><span class="Apple-converted-space"> </span>TOC \\o "1-3" \\h \\z \\u<span class="Apple-converted-space"> </span></p>
+            <p class="p2"><span class="s1"> </span>HYPERLINK \\l "_Toc68096040"<span class="s1"> D</span><span class="Apple-tab-span">\t</span> PAGEREF _Toc68096040 \\h 1</p>
+            <p class="p3"><br></p>
+            \(manyPlain)
+            """
+        )
+        let document = try restored(markup)
+        XCTAssertEqual(try document.select("p.p2").eachText().first, "Contents")
+        // The instruction-only paragraph is gone; the entry remains; the
+        // blank paragraph is where it was.
+        XCTAssertEqual(try document.select("p.p3").size(), 1)
+        XCTAssertEqual(try document.select("p").size(), 1 + 1 + 6 + 1)
+        let spoken = try spokenText(markup)
+        for instruction in ["TOC", "HYPERLINK", "PAGEREF", "_Toc", "\\h"] {
+            XCTAssertFalse(spoken.contains(instruction), instruction)
+        }
+        XCTAssertTrue(spoken.contains("Contents\n\nD 1\n\nThe ferry leaves"), spoken)
+    }
+
+    /// A table cell that held only an instruction stays as an empty cell:
+    /// the table keeps its shape.
+    func testATableCellKeepsItsPlaceWhenItsFieldIsRemoved() throws {
+        let markup = html(body: """
+            <table><tbody><tr><td><p class="p2">PAGEREF _Toc1 \\h</p></td><td><p class="p2">Ferry</p></td></tr></tbody></table>
+            \(manyPlain)
+            """)
+        let document = try restored(markup)
+        XCTAssertEqual(try document.select("td").size(), 2)
+        XCTAssertEqual(try document.select("td").first()?.text(), "")
+    }
+
+    /// A paragraph of nothing but instructions, in a larger size, is not a
+    /// heading: it is gone before the sizes are read. (Before the fix its
+    /// 20 px text became a heading and pushed "Notes" to level 2.)
+    func testAFieldInstructionIsNeverAHeading() throws {
+        let markup = html(
+            style: "p.p9 {font: 20.0px Times}",
+            body: """
+            <p class="p9">HYPERLINK \\l "_Toc1" PAGEREF _Toc2 \\h</p>
+            \(manyPlain)
+            <p class="p2"><b>Notes</b></p>
+            """
+        )
+        XCTAssertEqual(try headings(markup), ["1: Notes"])
+    }
 }

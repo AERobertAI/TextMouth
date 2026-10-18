@@ -588,6 +588,7 @@
 		908314D088E46C14B666897E /* LibraryViewModel+DeleteFeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15BB9B81FF5DAAABDA1CCEE /* LibraryViewModel+DeleteFeed.swift */; };
 		90FBE928C03B75BA6E5BBED0 /* MigrationStagingLeftoversTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E841CA6FD4026AEE939DFE2 /* MigrationStagingLeftoversTests.swift */; };
 		910E8C61C226B67F1C2EA344 /* AudioEditorWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC4887ECD2AE9102C8D44278 /* AudioEditorWindowController.swift */; };
+		9164ACE87630B420197C29AB /* TextutilFieldCodes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DBE06E77AA0B0067B0BBF7C /* TextutilFieldCodes.swift */; };
 		9179B087293E92C2F8D45AD7 /* BookExportServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 185BCC9485644C567DB911FC /* BookExportServiceTests.swift */; };
 		917A43C4A88C2D914F4F56AA /* AudioEditorEndToEndTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 316931C8DD128F7F46FBA63C /* AudioEditorEndToEndTests.swift */; };
 		917F00B96C78230F4AE638BB /* LibraryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0E9AC1689CAC30509BDBD9A /* LibraryViewModel.swift */; };
@@ -1471,6 +1472,7 @@
 		5C85D306C64772F64D0FE1E1 /* DAISYParser+OPFParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DAISYParser+OPFParser.swift"; sourceTree = "<group>"; };
 		5CA860A1FCCD80831478C7AF /* PlainTextParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlainTextParser.swift; sourceTree = "<group>"; };
 		5D94C80F2648CA1147EBD0B7 /* AudioPlaybackFailureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlaybackFailureTests.swift; sourceTree = "<group>"; };
+		5DBE06E77AA0B0067B0BBF7C /* TextutilFieldCodes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextutilFieldCodes.swift; sourceTree = "<group>"; };
 		5EA8C6ADC34276D829100D9F /* ArchiveExtraction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchiveExtraction.swift; sourceTree = "<group>"; };
 		5EF89369D0568F09A675E925 /* OrphanedConversionSweepTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrphanedConversionSweepTests.swift; sourceTree = "<group>"; };
 		5F16E0089EB042580FCB623F /* PDFPageImageScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFPageImageScanner.swift; sourceTree = "<group>"; };
@@ -2687,6 +2689,7 @@
 				50FD16E1C8E5E84FC02F08E5 /* SSMLReader.swift */,
 				041F4C0852AF0AC0888BAA03 /* TextFileDecoder.swift */,
 				C47A3A805FE596CCC8861E67 /* TextutilDocumentReader.swift */,
+				5DBE06E77AA0B0067B0BBF7C /* TextutilFieldCodes.swift */,
 				047394C6E514ADEF39C7A7B4 /* TextutilHTMLStructure.swift */,
 				6287E4862BD08CA7F4904793 /* TextutilSourceCheck.swift */,
 				AF202683FEF0CC3471FBF75C /* WebArchiveReader.swift */,
@@ -4537,6 +4540,7 @@
 				E9A2A97218D04F150D466456 /* TextSubstitutionService.swift in Sources */,
 				BF03B8F7F6E7BE96EE7ED1EC /* TextutilConverter.swift in Sources */,
 				7A99D9183C2EC0D69BDB0B87 /* TextutilDocumentReader.swift in Sources */,
+				9164ACE87630B420197C29AB /* TextutilFieldCodes.swift in Sources */,
 				20F41FFD9C99D973E0FA7B34 /* TextutilHTMLStructure.swift in Sources */,
 				144B8D692EF0965492818445 /* TextutilSourceCheck.swift in Sources */,
 				82D2B1956170E11EE0A0BD9B /* TimeEntry.swift in Sources */,

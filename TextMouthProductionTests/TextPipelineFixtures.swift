@@ -127,8 +127,6 @@ enum TextPipelineFixtures {
     static let formatSamplesHeldBack = [
         "format-samples/wordml/headings.wordml":
             "table header cells \"Boat\" and \"Departs\" are read as level-3 headings",
-        "format-samples/doc/libreoffice-tdf81705_outlineLevel.doc":
-            "a table-of-contents field code (TOC \\o ... PAGEREF) is read as text",
     ]
 
     /// The folders of the format samples that macOS's own readers
