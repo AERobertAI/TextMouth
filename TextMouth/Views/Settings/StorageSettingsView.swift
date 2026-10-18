@@ -303,6 +303,16 @@ struct StorageSettingsView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
+
+                // Whether an import also keeps the original of the audio it
+                // converts (off by default); the caption says what the
+                // present state means.
+                Toggle(ConvertedOriginalWording.label, isOn: $settingsViewModel.keepsOriginalOfConvertedAudio)
+                    .accessibilityHint(ConvertedOriginalWording.hint)
+                Text(ConvertedOriginalWording.caption(keeping: settingsViewModel.keepsOriginalOfConvertedAudio))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             } header: {
                 Text("Import Behavior")
             }
