@@ -15,7 +15,7 @@ final class OggBookCommitTests: XCTestCase {
         let world = try makeIntegrationWorld("Ogg Commit No Index")
         let (book, folder) = try makeJunkBook(in: world, index: false)
 
-        let result = await world.library.convertImportedAudio(ofBook: book.id)
+        let result = await world.library.convertOggBookAudio(ofBook: book.id)
 
         guard case let .waiting(.failed(reason)) = result else {
             return XCTFail("The book must wait as failed, not \(result)")
@@ -32,7 +32,7 @@ final class OggBookCommitTests: XCTestCase {
         let world = try makeIntegrationWorld("Ogg Commit Indexed")
         let (book, folder) = try makeJunkBook(in: world, index: true)
 
-        let result = await world.library.convertImportedAudio(ofBook: book.id)
+        let result = await world.library.convertOggBookAudio(ofBook: book.id)
 
         guard case let .waiting(.failed(reason)) = result else {
             return XCTFail("The junk tracks must fail the conversion, not \(result)")

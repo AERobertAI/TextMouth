@@ -40,8 +40,8 @@ extension FileImportService {
         }
     }
 
-    /// Converts `sources`, files inside `staging` that the import converts, from the import's
-    /// own thread, which waits for each group of up to
+    /// Converts `sources`, files inside `staging` that the import converts,
+    /// from the import's own thread, which waits for each group of up to
     /// `ImportAudioConverter.maximumConcurrentConversions` converted at once,
     /// telling the run, and so the overlay, how many are done after each:
     /// "converting its audio: 12 of 176 tracks".

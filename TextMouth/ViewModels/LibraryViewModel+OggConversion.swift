@@ -64,7 +64,7 @@ enum OggConversionWording {
 
 extension LibraryViewModel {
     /// The preference that records the one-time conversion of the library's
-    /// Ogg audio (`convertImportedAudioOnce`) as made on this Mac for the library
+    /// Ogg audio (`convertOggBooksOnce`) as made on this Mac for the library
     /// this Mac expects (`DataDirectoryPreferences.expectedIdentity`), so
     /// each library has it once, as the hand-edit pass of FR18 is recorded:
     /// its version, `oggAudioConvertedVersion`, once made.
@@ -89,7 +89,7 @@ extension LibraryViewModel {
     /// once for each library on this Mac (B06): a folder of tracks, a
     /// single Ogg file, or a DAISY package's audio. The books convert one at
     /// a time, off the main thread, each committed on its own
-    /// (`convertImportedAudio(ofBook:access:)`), while the Library window's
+    /// (`convertOggBookAudio(ofBook:access:)`), while the Library window's
     /// overlay shows how far the book under way has got. A book that waits,
     /// for the cloud or for disk space, leaves the pass to be made again at
     /// the next launch; it is recorded as made only once nothing waits. The
@@ -99,7 +99,7 @@ extension LibraryViewModel {
     ///   - access: How the pass reaches the books' files (FR02).
     ///   - completion: Called on the main actor with what the pass did, or
     ///     with nil, at once, when it was made already.
-    func convertImportedAudioOnce(
+    func convertOggBooksOnce(
         preferences: UserDefaults = TextMouthRuntime.current.preferences,
         access: MaintenanceFileAccess = .live,
         then completion: (@MainActor @Sendable (OggConversionOutcome?) -> Void)? = nil
@@ -115,7 +115,7 @@ extension LibraryViewModel {
             var outcome = OggConversionOutcome()
             var waitingForSpace: [(title: String, needed: Int64)] = []
             for bookID in bookIDs {
-                switch await self.convertImportedAudio(ofBook: bookID, access: access) {
+                switch await self.convertOggBookAudio(ofBook: bookID, access: access) {
                 case .noOggAudio:
                     break
                 case .converted:
@@ -146,7 +146,7 @@ extension LibraryViewModel {
         guard !oggConversion.isConverting(bookID), !oggConversion.hasFailed(bookID) else { return }
         oggConversion.enqueue(bookID: bookID) { [weak self] in
             guard let self else { return }
-            if case let .waiting(.space(needed, _)) = await self.convertImportedAudio(ofBook: bookID, access: access),
+            if case let .waiting(.space(needed, _)) = await self.convertOggBookAudio(ofBook: bookID, access: access),
                let title = self.bookByID(bookID)?.title {
                 self.showAlert(title: OggConversionWording.notEnoughSpaceTitle, OggConversionWording.notEnoughSpace([(title, needed)]))
             }
@@ -185,7 +185,7 @@ extension LibraryViewModel {
     /// whose files are only in the cloud, waits. Nothing is downloaded.
     /// One `OGG_CONVERTED` line in the debug log counts a book converted:
     /// its tracks, the minutes taken, and its bytes before and after.
-    func convertImportedAudio(
+    func convertOggBookAudio(
         ofBook bookID: UUID,
         access: MaintenanceFileAccess = .live
     ) async -> OggBookConversionResult {
@@ -251,7 +251,7 @@ extension LibraryViewModel {
     }
 
     /// Commits the converted tracks of `book`, a book of tracks in
-    /// `folder`, as `convertImportedAudio(ofBook:access:)` describes: named,
+    /// `folder`, as `convertOggBookAudio(ofBook:access:)` describes: named,
     /// renamed in the manifest, and in the record, on the manifest sessions'
     /// queue; then the row and the open readers; then the Ogg files deleted.
     private func commitConvertedTracks(

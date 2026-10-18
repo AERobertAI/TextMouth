@@ -308,7 +308,7 @@ enum ImportAudioConverter {
 
     /// The hidden name a conversion of `source` has until it is named:
     /// ".<UUID>.audio-conversion.m4a", beside `source`. It is built from the
-    /// UUID alone, 56 characters whatever the source's name, so a source
+    /// UUID alone, 58 characters whatever the source's name, so a source
     /// with a long stem (up to the file system's limit) can still be
     /// converted; the UUID makes it unique, and `removeLeftovers(in:)` finds
     /// it by `temporarySuffix`.

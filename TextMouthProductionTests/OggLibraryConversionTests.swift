@@ -99,7 +99,7 @@ final class OggLibraryConversionTests: XCTestCase {
         let folder = URL(fileURLWithPath: book.filePath)
         try Data("no longer audio".utf8).write(to: folder.appendingPathComponent("02.ogg"))
 
-        let result = await world.library.convertImportedAudio(ofBook: book.id)
+        let result = await world.library.convertOggBookAudio(ofBook: book.id)
 
         XCTAssertEqual(result, .waiting(.failed("The Ogg audio file 02.ogg could not be read for converting to AAC.")))
         XCTAssertEqual(OggTestFixtures.names(in: folder), ["01.ogg", "02.ogg", "manifest.json"])
@@ -124,7 +124,7 @@ final class OggLibraryConversionTests: XCTestCase {
         let loaded = await eventually { reader.content != nil }
         XCTAssertTrue(loaded, "The reader never loaded its book")
 
-        guard case .waiting(.failed) = await world.library.convertImportedAudio(ofBook: book.id) else {
+        guard case .waiting(.failed) = await world.library.convertOggBookAudio(ofBook: book.id) else {
             return XCTFail("The conversion must fail")
         }
         world.library.requestOggConversion(ofBook: book.id)
@@ -253,7 +253,7 @@ final class OggLibraryConversionTests: XCTestCase {
         access: MaintenanceFileAccess = .live
     ) async -> LibraryViewModel.OggConversionOutcome? {
         await withCheckedContinuation { continuation in
-            world.library.convertImportedAudioOnce(preferences: preferences, access: access) { outcome in
+            world.library.convertOggBooksOnce(preferences: preferences, access: access) { outcome in
                 continuation.resume(returning: outcome)
             }
         }
