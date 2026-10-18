@@ -382,6 +382,54 @@ final class M3UPlaylistTests: XCTestCase {
         ])
     }
 
+    /// A colon alone is not a web address: Mac names may hold one
+    /// (`Disc1:Intro.mp3`). A scheme followed by `//`, or `data:`, `mailto:`,
+    /// `urn:`, or `spotify:`, is a web address in any case; a Windows drive
+    /// path stays outside (review item 12).
+    func testColonInANameIsNotAScheme() throws {
+        try touch("Disc1:Intro.mp3")
+        let webAddresses = [
+            "HTTP://x/a.mp3", "rtsp://host/a", "spotify:track:abc", "data:audio/mpeg;base64,AAAA",
+            "mailto:a@b.invalid", "URN:isbn:123",
+        ]
+        let resolution = resolve(["Disc1:Intro.mp3", "C:\\Music\\x.mp3"] + webAddresses)
+        XCTAssertEqual(resolution.tracks.map(\.path), ["Disc1:Intro.mp3"])
+        XCTAssertEqual(skips(resolution), [["C:\\Music\\x.mp3", "outside the playlist's folder"]]
+            + webAddresses.map { [$0, "a web address"] })
+        XCTAssertTrue(M3UPlaylist.parse("spotify:track:abc\nHTTP://x/a.mp3").listsOnlyWebAddresses)
+        XCTAssertFalse(M3UPlaylist.parse("Disc1:Intro.mp3").listsOnlyWebAddresses)
+    }
+
+    /// A path whose escapes decode to `..` is outside the folder, not merely
+    /// not found, the same as the plain spelling (review item 12).
+    func testEscapedDotsAreOutside() {
+        let entries = ["%2E%2E/x.wav", "..%2F..%2Foutside%2Fsecret.wav", "nothing%20here.wav"]
+        XCTAssertEqual(skips(resolve(entries)), [
+            ["%2E%2E/x.wav", "outside the playlist's folder"],
+            ["..%2F..%2Foutside%2Fsecret.wav", "outside the playlist's folder"],
+            ["nothing%20here.wav", "not found"],
+        ])
+    }
+
+    /// An .m3u8 is UTF-8: one stray bad byte on another line spoils only its
+    /// own line, and `Café.wav` is a track (review item 12).
+    func testM3U8WithAStrayBadByteStillReadsItsOtherPaths() throws {
+        let name = "caf\u{E9}.wav"
+        try touch(name)
+        // "#EXTM3U", a good line, then a line holding the invalid byte 0xFF.
+        var bytes = Data("#EXTM3U\n\(name)\nb".utf8)
+        bytes.append(0xFF)
+        bytes.append(Data(".wav\n".utf8))
+        let playlistFile = folder.appendingPathComponent("list.m3u8")
+        try bytes.write(to: playlistFile)
+
+        let playlist = try M3UPlaylist.read(at: playlistFile)
+        XCTAssertEqual(playlist.entries.count, 2)
+        let resolution = playlist.resolve(inFolder: folder)
+        XCTAssertEqual(resolution.tracks.map(\.path), [name])
+        XCTAssertEqual(resolution.skipped.map(\.reason.words), ["not found"])
+    }
+
     /// A playlist of web addresses only is flagged; one with a file is not.
     func testListsOnlyWebAddresses() {
         XCTAssertTrue(M3UPlaylist.parse("http://a.invalid/1.mp3\nhttps://a.invalid/2.mp3").listsOnlyWebAddresses)

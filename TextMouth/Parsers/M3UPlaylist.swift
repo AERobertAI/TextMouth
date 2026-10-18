@@ -134,8 +134,8 @@ struct M3UPlaylist: Equatable, Sendable {
     // MARK: - Reading
 
     /// The playlist in the file at `url`. The bytes (at most 4 MiB) are
-    /// decoded by `TextFileDecoder`: a legacy .m3u in Windows-1252 or Latin 1
-    /// reads by its fallback, and an .m3u8 in UTF-8 directly.
+    /// decoded by `decodedText`: a legacy .m3u by `TextFileDecoder`, in
+    /// Windows-1252 or Latin 1 by its fallback, and an .m3u8 as UTF-8.
     /// - Throws: `M3UPlaylistError.tooLarge` for a larger file, or the error
     ///   reading the file.
     static func read(at url: URL) throws -> M3UPlaylist {
@@ -147,8 +147,21 @@ struct M3UPlaylist: Equatable, Sendable {
         guard data.count <= maximumByteCount else {
             throw M3UPlaylistError.tooLarge(fileName: url.lastPathComponent)
         }
-        let decoded = try TextFileDecoder.decode(data, fileName: url.lastPathComponent, format: .txt)
-        return parse(decoded.text)
+        return parse(try decodedText(of: data, fileName: url.lastPathComponent))
+    }
+
+    /// The text in a playlist file's `data`. An .m3u8 is UTF-8 by its
+    /// specification, so it is decoded leniently as UTF-8: one stray bad byte
+    /// becomes U+FFFD alone, and every other path in the file still reads. (A
+    /// file that starts with a UTF-16 byte-order mark is no UTF-8, and takes
+    /// the general decoder, as an .m3u does.) An .m3u has no fixed encoding,
+    /// and `TextFileDecoder` finds it, falling back to Windows-1252.
+    private static func decodedText(of data: Data, fileName: String) throws -> String {
+        let isUTF16 = data.starts(with: [0xFF, 0xFE]) || data.starts(with: [0xFE, 0xFF])
+        if (fileName as NSString).pathExtension.lowercased() == "m3u8", !isUTF16 {
+            return String(decoding: data, as: UTF8.self)
+        }
+        return try TextFileDecoder.decode(data, fileName: fileName, format: .txt).text
     }
 }
 
@@ -266,32 +279,39 @@ extension M3UPlaylist {
 
     // MARK: Classifying a Location
 
+    /// The schemes that name something that is never a file even without
+    /// `//` after the colon (`mailto:`, `spotify:track:abc`).
+    private static let webSchemesWithoutSlashes: Set<String> = ["data", "mailto", "urn", "spotify"]
+
     /// What `location` names. A `file:` URL becomes its path (percent escapes
-    /// decoded); backslashes in a path become slashes.
+    /// decoded); backslashes in a path become slashes. A web address is a
+    /// scheme followed by `//` (`https://`, `rtsp://`), or one of the schemes
+    /// that never name a file; a colon alone is not one, since colons are
+    /// legal in Mac file names (`Disc1:Intro.mp3`).
     private static func location(of location: String) -> Location {
-        if hasURLScheme(location) {
-            // Only a file: URL names a file; every other scheme is the web
-            // (or something else this never fetches).
-            guard location.lowercased().hasPrefix("file:") else { return .webAddress }
-            return .path(URL(string: location)?.path ?? "")
+        if let scheme = urlScheme(of: location) {
+            if scheme == "file" { return .path(URL(string: location)?.path ?? "") }
+            let afterColon = location.dropFirst(scheme.count + 1)
+            if afterColon.hasPrefix("//") || webSchemesWithoutSlashes.contains(scheme) { return .webAddress }
         }
         let slashed = location.replacingOccurrences(of: "\\", with: "/")
         return hasWindowsDrive(slashed) ? .windowsDrive : .path(slashed)
     }
 
-    /// Whether `text` starts with a URL scheme (`https:`): a letter, then one
-    /// or more letters, digits, `+`, `.`, or `-`, then a colon. A single
-    /// letter and a colon is a Windows drive, not a scheme.
-    private static func hasURLScheme(_ text: String) -> Bool {
+    /// The lowercase URL scheme `text` starts with (`https` for `https:`): a
+    /// letter, then one or more letters, digits, `+`, `.`, or `-`, then a
+    /// colon. Nil when it starts with none. A single letter and a colon is a
+    /// Windows drive, not a scheme.
+    private static func urlScheme(of text: String) -> String? {
         var length = 0
         for scalar in text.unicodeScalars {
-            if scalar == ":" { return length >= 2 }
+            if scalar == ":" { return length >= 2 ? text.prefix(length).lowercased() : nil }
             let isLetter = ("A"..."Z").contains(scalar) || ("a"..."z").contains(scalar)
             let isOther = ("0"..."9").contains(scalar) || "+.-".unicodeScalars.contains(scalar)
-            guard isLetter || (length > 0 && isOther) else { return false }
+            guard isLetter || (length > 0 && isOther) else { return nil }
             length += 1
         }
-        return false
+        return nil
     }
 
     /// Whether `slashed` (backslashes already slashes) starts with a drive
@@ -342,19 +362,20 @@ extension M3UPlaylist {
     /// be fooled by `nothing-here/../extras/diary.m4a` with `extras` a link to
     /// another folder. Only the fully resolved path, strictly inside the
     /// folder by path components, is a file; the found URL is that path.
+    /// When no spelling finds a file and any spelling is outside, the answer
+    /// is `.outside`, so `%2E%2E/x.wav` is outside, not merely not found.
     private static func findFile(_ path: String, inFolder folder: ResolvedFolder, fileManager: FileManager) -> Found {
         guard !path.isEmpty else { return .missing }
         var spellings = [path]
         if let decoded = path.removingPercentEncoding, decoded != path { spellings.append(decoded) }
 
-        var rawWasOutside = false
-        var resolvedWasOutside = false
-        for (index, spelling) in spellings.enumerated() {
+        var anySpellingWasOutside = false
+        for spelling in spellings {
             // Built as one absolute path, so no relative URL reaches the disk.
             let base = URL(fileURLWithPath: spelling.hasPrefix("/") ? spelling : folder.textual.path + "/" + spelling)
             let candidate = canonical(base)
             guard isInside(candidate, folder.textual) else {
-                if index == 0 { rawWasOutside = true }
+                anySpellingWasOutside = true
                 continue
             }
             var isDirectory: ObjCBool = false
@@ -362,12 +383,12 @@ extension M3UPlaylist {
             // Something is there: resolve it fully before believing where it is.
             guard let real = realPath(candidate.path) else { continue }
             guard isInside(real, folder.real) else {
-                resolvedWasOutside = true
+                anySpellingWasOutside = true
                 continue
             }
             return .found(real, isDirectory: isDirectory.boolValue)
         }
-        return rawWasOutside || resolvedWasOutside ? .outside : .missing
+        return anySpellingWasOutside ? .outside : .missing
     }
 
     /// `url` with symbolic links resolved and `.`/`..` removed, by Foundation:
