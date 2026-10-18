@@ -28,22 +28,22 @@ final class OggImportConversionTests: XCTestCase {
     /// needs no count, and a failure names the step.
     func testTheStepIsCalledConvertingItsAudioAndCountsTheTracks() {
         XCTAssertEqual(
-            ImportProgressWording.book("Radio Dramas.zip", step: .convertingOggAudio(done: 12, of: 176)),
+            ImportProgressWording.book("Radio Dramas.zip", step: .convertingImportedAudio(done: 12, of: 176)),
             "“Radio Dramas.zip”, converting its audio: 12 of 176 tracks"
         )
         XCTAssertEqual(
-            ImportProgressWording.book("Radio Dramas.zip", number: 2, of: 5, step: .convertingOggAudio(done: 0, of: 2)),
+            ImportProgressWording.book("Radio Dramas.zip", number: 2, of: 5, step: .convertingImportedAudio(done: 0, of: 2)),
             "Book 2 of 5: “Radio Dramas.zip”, converting its audio: 0 of 2 tracks"
         )
         XCTAssertEqual(
-            ImportProgressWording.book("Elegy.ogg", step: .convertingOggAudio(done: 0, of: 1)),
+            ImportProgressWording.book("Elegy.ogg", step: .convertingImportedAudio(done: 0, of: 1)),
             "“Elegy.ogg”, converting its audio"
         )
         XCTAssertEqual(ImportProgressWording.tracks(done: 0, of: 1), "0 of 1 track")
         let failure = ImportFailure(
             fileName: "Elegy.ogg",
-            step: .convertingOggAudio(done: 0, of: 1),
-            underlying: OggAudioConverter.Failure.unreadable(fileName: "Elegy.ogg")
+            step: .convertingImportedAudio(done: 0, of: 1),
+            underlying: ImportAudioConverter.Failure.unreadable(fileName: "Elegy.ogg")
         )
         XCTAssertEqual(
             failure.errorDescription,
@@ -78,7 +78,7 @@ final class OggImportConversionTests: XCTestCase {
         let audio = URL(fileURLWithPath: imported.book.filePath)
         XCTAssertEqual(imported.book.title, "Harbor Dramas")
         XCTAssertEqual(try AudioBookParser.trackPaths(in: audio).sorted(), ["elegy.m4a", "two.m4a"])
-        XCTAssertTrue(OggAudioConverter.oggFiles(in: audio).isEmpty)
+        XCTAssertTrue(ImportAudioConverter.oggFiles(in: audio).isEmpty)
         let manifest = AudioManifest.read(inAudioFolder: audio)?.manifest
         XCTAssertEqual(manifest?.order, ["two.m4a", "elegy.m4a"])
         XCTAssertEqual(manifest?.chapters, ["elegy.m4a": "The Elegy"])
@@ -86,8 +86,8 @@ final class OggImportConversionTests: XCTestCase {
         XCTAssertEqual(loaded.content.chapters.map(\.title), ["two", "The Elegy"])
         XCTAssertEqual(try Data(contentsOf: archive), archiveBytes)
         guard let manifestCheck = steps.firstIndex(of: .readingManifest),
-              let firstCount = steps.firstIndex(of: .convertingOggAudio(done: 0, of: 2)),
-              let lastCount = steps.firstIndex(of: .convertingOggAudio(done: 2, of: 2)),
+              let firstCount = steps.firstIndex(of: .convertingImportedAudio(done: 0, of: 2)),
+              let lastCount = steps.firstIndex(of: .convertingImportedAudio(done: 2, of: 2)),
               let reading = steps.firstIndex(of: .readingAudio) else {
             return XCTFail("Every step must be reported: \(steps)")
         }
@@ -112,7 +112,7 @@ final class OggImportConversionTests: XCTestCase {
             XCTFail("An archive with a broken Ogg track must not import")
         } catch let failure as ImportFailure {
             XCTAssertEqual(failure.step.activity, "Converting its audio")
-            XCTAssertEqual(failure.underlying as? OggAudioConverter.Failure, .unreadable(fileName: "02.ogg"))
+            XCTAssertEqual(failure.underlying as? ImportAudioConverter.Failure, .unreadable(fileName: "02.ogg"))
         }
     }
 
@@ -158,10 +158,10 @@ final class OggImportConversionTests: XCTestCase {
         XCTAssertEqual(URL(fileURLWithPath: imported.book.filePath).lastPathComponent, "Elegy.m4a")
         XCTAssertTrue(FileManager.default.fileExists(atPath: imported.book.filePath))
         XCTAssertEqual(OggTestFixtures.names(in: URL(fileURLWithPath: imported.book.filePath).deletingLastPathComponent())
-            .filter { OggAudioConverter.isOgg(URL(fileURLWithPath: $0)) }, [])
+            .filter { ImportAudioConverter.isOgg(URL(fileURLWithPath: $0)) }, [])
         XCTAssertEqual(try Data(contentsOf: source), sourceBytes)
         XCTAssertEqual(imported.book.md5Hash, try FileImportService.md5Hash(of: source))
-        XCTAssertTrue(steps.contains(.convertingOggAudio(done: 1, of: 1)))
+        XCTAssertTrue(steps.contains(.convertingImportedAudio(done: 1, of: 1)))
         let loaded = try BookContentAnalysisService.load(book: imported.book)
         XCTAssertEqual(loaded.content.chapters.count, 1)
     }

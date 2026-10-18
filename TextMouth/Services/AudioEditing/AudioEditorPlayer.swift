@@ -87,10 +87,10 @@ final class AVAudioEditorPlayer: AudioEditorPlayback {
     func load(_ preview: AudioEditComposition, at time: TimeInterval) {
         generation += 1
         stopPlaying(reportingStop: false)
-        // Ogg audio is never handed to a player (B06): Apple's Vorbis
-        // decoder locked up playing it. A preview of Ogg audio holds no
+        // Never decode a format the import converts (B09, FMT09): Apple's
+        // Vorbis decoder once spun forever. A preview of such audio holds no
         // item, so it plays nothing; the library converts such a book.
-        guard !preview.sources.contains(where: { OggAudioConverter.isOgg($0.url) }) else {
+        guard !preview.sources.contains(where: { ImportAudioConverter.isNeverDecodedInApp($0.url) }) else {
             player.replaceCurrentItem(with: nil)
             return
         }

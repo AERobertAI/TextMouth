@@ -189,9 +189,10 @@ struct TranscriptionPlan: Equatable, Sendable {
     /// How long the audio file at `url` plays, in seconds, as AVFoundation
     /// reads it for the recognizer.
     static func duration(ofAudioFileAt url: URL) throws -> TimeInterval {
-        // Never decode Ogg in TextMouth (B09): Apple's Vorbis decoder can spin
-        // forever.
-        guard !OggAudioConverter.isOgg(url) else { throw CocoaError(.fileReadCorruptFile) }
+        // Never decode a format the import converts (B09, FMT09): Apple's
+        // Vorbis decoder once spun forever. Such audio is converted in a
+        // child process first.
+        guard !ImportAudioConverter.isNeverDecodedInApp(url) else { throw CocoaError(.fileReadCorruptFile) }
         let file = try AVAudioFile(forReading: url)
         let rate = file.processingFormat.sampleRate
         guard rate > 0 else { return 0 }

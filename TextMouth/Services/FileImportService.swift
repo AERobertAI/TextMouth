@@ -1326,10 +1326,11 @@ enum FileImportService {
     /// went (FR11, branch A2) gives the state of the record it replaces in
     /// `replacing` (`writeVerifiedRecord`), and puts the package in place of
     /// the kept one with `publish`, which otherwise renames the staged
-    /// package to its destination (`ImportStaging.publish()`). Ogg audio is
-    /// converted to AAC first, so no book is read or played from Ogg
-    /// (`convertOggAudio(of:in:run:)`, B06). `refusingBlankText` is passed on
-    /// to `readableContent(of:run:refusingBlankText:)`: only the import of a
+    /// package to its destination (`ImportStaging.publish()`). Audio the
+    /// import converts is converted first, so no book is read or played
+    /// from it (`convertImportedAudio(of:in:run:)`, B06, FMT09).
+    /// `refusingBlankText` is passed on to
+    /// `readableContent(of:run:refusingBlankText:)`: only the import of a
     /// file chosen by the user sets it, to refuse a text file with no text, and
     /// so does `adoptingDocumentNames`, which gives the book the title and
     /// author a textutil document names (`MarkdownCacheService`): the import
@@ -1345,7 +1346,7 @@ enum FileImportService {
         publish: (ImportStaging) throws -> Void = { try $0.publish() }
     ) throws -> ImportedBook {
         var staged = staged
-        try convertOggAudio(of: &staged, in: staging, run: &run)
+        try convertImportedAudio(of: &staged, in: staging, run: &run)
         let content = try readableContent(
             of: &staged, run: &run, refusingBlankText: refusingBlankText, adoptingDocumentNames: adoptingDocumentNames
         )

@@ -99,12 +99,12 @@ enum ImportProgressWording {
         let phrase = lowercasedFirst(step.activity)
         // Converting a book of several tracks counts them, as in
         // "converting its audio: 12 of 176 tracks"; one file needs no count.
-        guard case let .convertingOggAudio(done, total) = step, total > 1 else { return phrase }
+        guard case let .convertingImportedAudio(done, total) = step, total > 1 else { return phrase }
         return "\(phrase): \(tracks(done: done, of: total))"
     }
 
-    /// What the tracks of a book being converted from Ogg to AAC are
-    /// counted by (B06).
+    /// What the tracks of a book being converted at import are counted by
+    /// (B06, FMT09).
     static let trackNoun = CountWording.Noun(singular: "track", plural: "tracks")
 
     /// The tracks converted of a book's total: "12 of 176 tracks", or "0 of

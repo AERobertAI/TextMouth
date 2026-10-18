@@ -29,11 +29,11 @@ final class OggAfconvertTests: XCTestCase {
         let vorbis = try OggTestFixtures.copy(OggTestFixtures.vorbis, to: folder, as: "v.ogg")
         let opus = try OggTestFixtures.copy(OggTestFixtures.opus, to: folder, as: "o.opus")
 
-        let vorbisInfo = try XCTUnwrap(OggAudioConverter.inspect(vorbis))
+        let vorbisInfo = try XCTUnwrap(ImportAudioConverter.inspect(vorbis))
         XCTAssertEqual(vorbisInfo.sampleRate, 22_050)
         XCTAssertEqual(vorbisInfo.channels, 1)
         XCTAssertEqual(vorbisInfo.duration, 2, accuracy: 0.1)
-        let opusInfo = try XCTUnwrap(OggAudioConverter.inspect(opus))
+        let opusInfo = try XCTUnwrap(ImportAudioConverter.inspect(opus))
         XCTAssertEqual(opusInfo.channels, 1)
         XCTAssertEqual(opusInfo.duration, 2, accuracy: 0.1)
     }
@@ -42,8 +42,8 @@ final class OggAfconvertTests: XCTestCase {
     func testNothingIsReadFromAMissingFileOrOneThatIsNotAudio() throws {
         let text = folder.appendingPathComponent("text.ogg")
         try Data("not audio".utf8).write(to: text)
-        XCTAssertNil(OggAudioConverter.inspect(text))
-        XCTAssertNil(OggAudioConverter.inspect(folder.appendingPathComponent("missing.ogg")))
+        XCTAssertNil(ImportAudioConverter.inspect(text))
+        XCTAssertNil(ImportAudioConverter.inspect(folder.appendingPathComponent("missing.ogg")))
     }
 
     /// `inspect` takes its facts from the hand-written header reader
@@ -58,10 +58,10 @@ final class OggAfconvertTests: XCTestCase {
         try Data(OggStreamBuilder.opusStream(channels: 6, preSkip: 312, granule: 48_312)).write(to: opus)
 
         XCTAssertEqual(
-            OggAudioConverter.inspect(vorbis),
-            OggAudioConverter.SourceInfo(sampleRate: 44_100, channels: 2, duration: 2)
+            ImportAudioConverter.inspect(vorbis),
+            ImportAudioConverter.SourceInfo(sampleRate: 44_100, channels: 2, duration: 2)
         )
-        let opusInfo = try XCTUnwrap(OggAudioConverter.inspect(opus))
+        let opusInfo = try XCTUnwrap(ImportAudioConverter.inspect(opus))
         XCTAssertEqual(opusInfo.sampleRate, 48_000)
         XCTAssertEqual(opusInfo.channels, 6)
         XCTAssertEqual(opusInfo.duration, 1, accuracy: 0.0001)
@@ -93,17 +93,17 @@ final class OggAfconvertTests: XCTestCase {
     func testTheArgumentsChangeOnlyWhatMustChange() {
         let input = URL(fileURLWithPath: "/in/a.ogg")
         let output = URL(fileURLWithPath: "/out/.a.m4a")
-        let same = OggAudioConverter.SourceInfo(sampleRate: 44_100, channels: 2, duration: 10)
+        let same = ImportAudioConverter.SourceInfo(sampleRate: 44_100, channels: 2, duration: 10)
         XCTAssertEqual(
-            OggAudioConverter.afconvertArguments(
+            ImportAudioConverter.afconvertArguments(
                 from: input, to: output, info: same,
                 target: .init(channels: 2, sampleRate: 44_100, bitRate: 128_000)
             ),
             ["-f", "m4af", "-d", "aac", "-b", "128000", "/in/a.ogg", "/out/.a.m4a"]
         )
-        let surround = OggAudioConverter.SourceInfo(sampleRate: 88_200, channels: 6, duration: 10)
+        let surround = ImportAudioConverter.SourceInfo(sampleRate: 88_200, channels: 6, duration: 10)
         XCTAssertEqual(
-            OggAudioConverter.afconvertArguments(
+            ImportAudioConverter.afconvertArguments(
                 from: input, to: output, info: surround,
                 target: .init(channels: 2, sampleRate: 44_100, bitRate: nil)
             ),
@@ -120,7 +120,7 @@ final class OggAfconvertTests: XCTestCase {
             try OggTestFixtures.copy(OggTestFixtures.opus, to: folder, as: "b.opus"),
         ]
         for source in sources {
-            let conversion = try await OggAudioConverter.convert(source)
+            let conversion = try await ImportAudioConverter.convert(source)
             let formatID = await OggTestFixtures.formatID(of: conversion.converted)
             XCTAssertEqual(formatID, kAudioFormatMPEG4AAC)
             XCTAssertEqual(conversion.duration, 2, accuracy: 0.1)
@@ -235,9 +235,9 @@ final class OggAfconvertTests: XCTestCase {
 
     /// A stand-in converter whose child is `executable` with `arguments`, and
     /// tight limits.
-    private func tool(_ executable: String, _ arguments: [String], stalled: TimeInterval = 0.5) -> OggAudioConverter.Tool {
+    private func tool(_ executable: String, _ arguments: [String], stalled: TimeInterval = 0.5) -> ImportAudioConverter.Tool {
         let limits = limits(stalled: stalled)
-        return OggAudioConverter.Tool(
+        return ImportAudioConverter.Tool(
             command: { _, _, _, _ in (URL(fileURLWithPath: executable), arguments) },
             limits: { _ in limits },
             residentMemory: { _ in nil }
@@ -249,9 +249,9 @@ final class OggAfconvertTests: XCTestCase {
     func testAHungConversionFailsAndLeavesNothing() async throws {
         let source = try OggTestFixtures.copy(OggTestFixtures.vorbis, to: folder, as: "hung.ogg")
         do {
-            _ = try await OggAudioConverter.convert(source, using: tool("/bin/sleep", ["60"]))
+            _ = try await ImportAudioConverter.convert(source, using: tool("/bin/sleep", ["60"]))
             XCTFail("A hung conversion must fail")
-        } catch let failure as OggAudioConverter.Failure {
+        } catch let failure as ImportAudioConverter.Failure {
             XCTAssertEqual(failure, .killed(fileName: "hung.ogg", reason: "its output did not grow for 1 second"))
         }
         XCTAssertEqual(OggTestFixtures.names(in: folder), ["hung.ogg"])
@@ -262,9 +262,9 @@ final class OggAfconvertTests: XCTestCase {
     func testAFailingConversionLeavesNothing() async throws {
         let source = try OggTestFixtures.copy(OggTestFixtures.vorbis, to: folder, as: "bad.ogg")
         do {
-            _ = try await OggAudioConverter.convert(source, using: tool("/usr/bin/false", []))
+            _ = try await ImportAudioConverter.convert(source, using: tool("/usr/bin/false", []))
             XCTFail("A failing conversion must fail")
-        } catch let failure as OggAudioConverter.Failure {
+        } catch let failure as ImportAudioConverter.Failure {
             XCTAssertEqual(failure, .processFailed(fileName: "bad.ogg", status: 1))
         }
         XCTAssertEqual(OggTestFixtures.names(in: folder), ["bad.ogg"])
@@ -278,9 +278,9 @@ final class OggAfconvertTests: XCTestCase {
             try OggTestFixtures.copy(OggTestFixtures.vorbis, to: folder, as: "02.ogg"),
         ]
         do {
-            _ = try await OggAudioConverter.convertEach(sources, using: tool("/bin/sleep", ["60"]))
+            _ = try await ImportAudioConverter.convertEach(sources, using: tool("/bin/sleep", ["60"]))
             XCTFail("A batch with a hung track must fail")
-        } catch is OggAudioConverter.Failure {
+        } catch is ImportAudioConverter.Failure {
             // Expected.
         }
         XCTAssertEqual(OggTestFixtures.names(in: folder), ["01.ogg", "02.ogg"])
@@ -294,9 +294,9 @@ final class OggAfconvertTests: XCTestCase {
         let inner = folder.appendingPathComponent("inner")
         try FileManager.default.createDirectory(at: inner, withIntermediateDirectories: true)
         let stale = [
-            ".01.\(UUID().uuidString)\(OggAudioConverter.temporarySuffix)",
-            ".01.\(UUID().uuidString)\(OggAudioConverter.temporarySuffix)",
-            ".02.\(UUID().uuidString)\(OggAudioConverter.temporarySuffix)",
+            ".01.\(UUID().uuidString)\(ImportAudioConverter.temporarySuffix)",
+            ".01.\(UUID().uuidString)\(ImportAudioConverter.temporarySuffix)",
+            ".02.\(UUID().uuidString)\(ImportAudioConverter.temporarySuffix)",
         ]
         for (index, name) in stale.enumerated() {
             try Data("x".utf8).write(to: (index == 2 ? inner : folder).appendingPathComponent(name))
@@ -304,7 +304,7 @@ final class OggAfconvertTests: XCTestCase {
         try Data("keep".utf8).write(to: folder.appendingPathComponent("01.m4a"))
         try Data("keep".utf8).write(to: folder.appendingPathComponent(".hidden-but-not-ours.m4a"))
 
-        OggAudioConverter.removeLeftovers(in: folder)
+        ImportAudioConverter.removeLeftovers(in: folder)
 
         XCTAssertEqual(OggTestFixtures.names(in: folder), [".hidden-but-not-ours.m4a", "01.m4a", "inner"])
         XCTAssertEqual(OggTestFixtures.names(in: inner), [])

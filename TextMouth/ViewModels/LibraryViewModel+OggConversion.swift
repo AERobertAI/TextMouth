@@ -64,7 +64,7 @@ enum OggConversionWording {
 
 extension LibraryViewModel {
     /// The preference that records the one-time conversion of the library's
-    /// Ogg audio (`convertOggAudioOnce`) as made on this Mac for the library
+    /// Ogg audio (`convertImportedAudioOnce`) as made on this Mac for the library
     /// this Mac expects (`DataDirectoryPreferences.expectedIdentity`), so
     /// each library has it once, as the hand-edit pass of FR18 is recorded:
     /// its version, `oggAudioConvertedVersion`, once made.
@@ -89,7 +89,7 @@ extension LibraryViewModel {
     /// once for each library on this Mac (B06): a folder of tracks, a
     /// single Ogg file, or a DAISY package's audio. The books convert one at
     /// a time, off the main thread, each committed on its own
-    /// (`convertOggAudio(ofBook:access:)`), while the Library window's
+    /// (`convertImportedAudio(ofBook:access:)`), while the Library window's
     /// overlay shows how far the book under way has got. A book that waits,
     /// for the cloud or for disk space, leaves the pass to be made again at
     /// the next launch; it is recorded as made only once nothing waits. The
@@ -99,7 +99,7 @@ extension LibraryViewModel {
     ///   - access: How the pass reaches the books' files (FR02).
     ///   - completion: Called on the main actor with what the pass did, or
     ///     with nil, at once, when it was made already.
-    func convertOggAudioOnce(
+    func convertImportedAudioOnce(
         preferences: UserDefaults = TextMouthRuntime.current.preferences,
         access: MaintenanceFileAccess = .live,
         then completion: (@MainActor @Sendable (OggConversionOutcome?) -> Void)? = nil
@@ -115,7 +115,7 @@ extension LibraryViewModel {
             var outcome = OggConversionOutcome()
             var waitingForSpace: [(title: String, needed: Int64)] = []
             for bookID in bookIDs {
-                switch await self.convertOggAudio(ofBook: bookID, access: access) {
+                switch await self.convertImportedAudio(ofBook: bookID, access: access) {
                 case .noOggAudio:
                     break
                 case .converted:
@@ -146,7 +146,7 @@ extension LibraryViewModel {
         guard !oggConversion.isConverting(bookID), !oggConversion.hasFailed(bookID) else { return }
         oggConversion.enqueue(bookID: bookID) { [weak self] in
             guard let self else { return }
-            if case let .waiting(.space(needed, _)) = await self.convertOggAudio(ofBook: bookID, access: access),
+            if case let .waiting(.space(needed, _)) = await self.convertImportedAudio(ofBook: bookID, access: access),
                let title = self.bookByID(bookID)?.title {
                 self.showAlert(title: OggConversionWording.notEnoughSpaceTitle, OggConversionWording.notEnoughSpace([(title, needed)]))
             }
@@ -185,7 +185,7 @@ extension LibraryViewModel {
     /// whose files are only in the cloud, waits. Nothing is downloaded.
     /// One `OGG_CONVERTED` line in the debug log counts a book converted:
     /// its tracks, the minutes taken, and its bytes before and after.
-    func convertOggAudio(
+    func convertImportedAudio(
         ofBook bookID: UUID,
         access: MaintenanceFileAccess = .live
     ) async -> OggBookConversionResult {
@@ -211,7 +211,7 @@ extension LibraryViewModel {
             }
         }
         let container = isFolder ? bookURL : bookURL.deletingLastPathComponent()
-        let needed = await OggAudioConverter.estimatedSize(of: found) + ArchiveLimits.standard.freeSpaceReserve
+        let needed = await ImportAudioConverter.estimatedSize(of: found) + ArchiveLimits.standard.freeSpaceReserve
         if let free = ArchiveLimits.volumeFreeSpace(at: container), free < needed {
             return wait(.space(needed: needed, free: free), for: book)
         }
@@ -219,10 +219,10 @@ extension LibraryViewModel {
         oggConversion.begin(bookID: bookID, title: book.title, tracks: found.count)
         defer { oggConversion.end(bookID: bookID) }
         let progress = oggConversion
-        let conversions: [OggAudioConverter.Conversion]
+        let conversions: [ImportAudioConverter.Conversion]
         do {
-            await OffMainWork.run { OggAudioConverter.removeLeftovers(in: container) }
-            conversions = try await OggAudioConverter.convertEach(found, naming: false) { done in
+            await OffMainWork.run { ImportAudioConverter.removeLeftovers(in: container) }
+            conversions = try await ImportAudioConverter.convertEach(found, naming: false) { done in
                 Task { @MainActor in progress.reach(done) }
             }
         } catch {
@@ -251,11 +251,11 @@ extension LibraryViewModel {
     }
 
     /// Commits the converted tracks of `book`, a book of tracks in
-    /// `folder`, as `convertOggAudio(ofBook:access:)` describes: named,
+    /// `folder`, as `convertImportedAudio(ofBook:access:)` describes: named,
     /// renamed in the manifest, and in the record, on the manifest sessions'
     /// queue; then the row and the open readers; then the Ogg files deleted.
     private func commitConvertedTracks(
-        _ conversions: [OggAudioConverter.Conversion],
+        _ conversions: [ImportAudioConverter.Conversion],
         of book: Book,
         folder: URL
     ) async -> OggBookConversionResult {
@@ -290,7 +290,7 @@ extension LibraryViewModel {
     /// - Returns: The edit; nil when the record could not take it now (it
     ///   is only in the cloud, or the book moved meanwhile).
     nonisolated static func commitTracks(
-        _ conversions: [OggAudioConverter.Conversion],
+        _ conversions: [ImportAudioConverter.Conversion],
         of book: Book,
         folder: URL
     ) throws -> BookManifestEdit? {
@@ -302,16 +302,16 @@ extension LibraryViewModel {
         } catch {
             // Nothing is named yet: the hidden converted files go, so a
             // failed commit leaves no gigabytes behind (REV17a).
-            OggAudioConverter.discard(conversions)
+            ImportAudioConverter.discard(conversions)
             throw error
         }
-        var named: [OggAudioConverter.Conversion] = []
+        var named: [ImportAudioConverter.Conversion] = []
         do {
             for conversion in conversions {
-                named.append(try OggAudioConverter.givingFinalName(conversion))
+                named.append(try ImportAudioConverter.givingFinalName(conversion))
             }
         } catch {
-            OggAudioConverter.discard(named + conversions.dropFirst(named.count))
+            ImportAudioConverter.discard(named + conversions.dropFirst(named.count))
             throw error
         }
         let renames = Dictionary(
@@ -319,11 +319,11 @@ extension LibraryViewModel {
             uniquingKeysWith: { first, _ in first }
         )
         do {
-            try OggAudioConverter.renameTracks(of: named, inManifestOf: folder, bookID: book.id)
+            try ImportAudioConverter.renameTracks(of: named, inManifestOf: folder, bookID: book.id)
             let index = current.renamingAudioFiles(renames)
             guard let committed = try LibraryPersistenceService.saveContentAnalysis(for: book, index: index, cacheFormatVersion: nil) else {
-                try? OggAudioConverter.renameTracks(of: named.map(\.reversed), inManifestOf: folder, bookID: book.id)
-                OggAudioConverter.discard(named)
+                try? ImportAudioConverter.renameTracks(of: named.map(\.reversed), inManifestOf: folder, bookID: book.id)
+                ImportAudioConverter.discard(named)
                 return nil
             }
             return BookManifestEdit(
@@ -334,8 +334,8 @@ extension LibraryViewModel {
                 author: nil
             )
         } catch {
-            try? OggAudioConverter.renameTracks(of: named.map(\.reversed), inManifestOf: folder, bookID: book.id)
-            OggAudioConverter.discard(named)
+            try? ImportAudioConverter.renameTracks(of: named.map(\.reversed), inManifestOf: folder, bookID: book.id)
+            ImportAudioConverter.discard(named)
             throw error
         }
     }
@@ -344,29 +344,29 @@ extension LibraryViewModel {
     /// file takes its final name and is read as the reader will, then the
     /// row and the record name it, as a save in the audio editor does, and
     /// the Ogg file is deleted. An open reader follows the row's new path.
-    private func commitConvertedFile(_ conversions: [OggAudioConverter.Conversion], of book: Book) async -> OggBookConversionResult {
+    private func commitConvertedFile(_ conversions: [ImportAudioConverter.Conversion], of book: Book) async -> OggBookConversionResult {
         guard let conversion = conversions.first else { return .noOggAudio }
-        let analyzed: (named: OggAudioConverter.Conversion, index: BookContentIndex)
+        let analyzed: (named: ImportAudioConverter.Conversion, index: BookContentIndex)
         do {
             analyzed = try await OffMainWork.runThrowing {
-                let named = try OggAudioConverter.givingFinalName(conversion)
+                let named = try ImportAudioConverter.givingFinalName(conversion)
                 do {
                     var renamed = book
                     renamed.filePath = named.converted.path
                     return (named, try BookContentAnalysisService.analyzeAudio(book: renamed, url: named.converted).index)
                 } catch {
-                    OggAudioConverter.discard([named])
+                    ImportAudioConverter.discard([named])
                     throw error
                 }
             }
         } catch {
-            OggAudioConverter.discard([conversion])
+            ImportAudioConverter.discard([conversion])
             return .waiting(.failed(Self.loggable(error)))
         }
         // The book may have moved or left the library while it converted.
         guard let row = library.books.firstIndex(where: { $0.id == book.id }),
               library.books[row].filePath == book.filePath else {
-            OggAudioConverter.discard([analyzed.named])
+            ImportAudioConverter.discard([analyzed.named])
             return .waiting(.bookChanged)
         }
         library.books[row].filePath = analyzed.named.converted.path
@@ -403,18 +403,18 @@ extension LibraryViewModel {
             return OggFilesFound(files: [], isFolder: false)
         }
         guard isDirectory.boolValue else {
-            guard OggAudioConverter.isOgg(url) else { return OggFilesFound(files: [], isFolder: false) }
+            guard ImportAudioConverter.isOgg(url) else { return OggFilesFound(files: [], isFolder: false) } // lint-ok: the library converts Ogg books alone, the one format converted at import before October 18
             return access.isDataless(url) ? nil : OggFilesFound(files: [url], isFolder: false)
         }
         guard !access.isDataless(url) else { return nil }
-        let files = OggAudioConverter.oggFiles(in: url)
+        let files = ImportAudioConverter.oggFiles(in: url)
         return files.contains(where: access.isDataless) ? nil : OggFilesFound(files: files, isFolder: true)
     }
 
     /// `error` as the debug log may give it: a conversion's own words, which
     /// name files, never paths, or else only its domain and code.
     nonisolated static func loggable(_ error: Error) -> String {
-        if let failure = error as? OggAudioConverter.Failure, let words = failure.errorDescription { return words }
+        if let failure = error as? ImportAudioConverter.Failure, let words = failure.errorDescription { return words }
         let described = error as NSError
         return "\(described.domain) \(described.code)"
     }
@@ -422,11 +422,11 @@ extension LibraryViewModel {
 
 // MARK: - Renamed Files
 
-extension OggAudioConverter.Conversion {
+extension ImportAudioConverter.Conversion {
     /// This conversion the other way round, from its converted file back to
     /// its source, to put a manifest's names back.
-    var reversed: OggAudioConverter.Conversion {
-        OggAudioConverter.Conversion(
+    var reversed: ImportAudioConverter.Conversion {
+        ImportAudioConverter.Conversion(
             source: converted,
             converted: source,
             duration: duration,

@@ -39,7 +39,7 @@ final class OrphanedConversionSweepTests: XCTestCase {
         path: String = "/usr/bin/afconvert",
         arguments: [String]? = nil
     ) -> ProcessSnapshot {
-        let output = "/Users/x/Book/.01.\(uuid).ogg-conversion.m4a"
+        let output = "/Users/x/Book/.01.\(uuid).audio-conversion.m4a"
         return ProcessSnapshot(
             pid: pid, parentPid: parent, userID: user, path: path,
             arguments: arguments ?? ["afconvert", "-f", "m4af", "-d", "aac", "/Users/x/Book/01.ogg", output])
@@ -63,12 +63,20 @@ final class OrphanedConversionSweepTests: XCTestCase {
     }
 
     func testAnOrphanedConverterWithTheShortTemporaryNameIsKilled() {
-        let output = "/Users/x/Book/.\(uuid).ogg-conversion.m4a"
+        let output = "/Users/x/Book/.\(uuid).audio-conversion.m4a"
+        XCTAssertEqual(sweep([snapshot(arguments: ["afconvert", "in.ogg", output])]).pids, [900])
+    }
+
+    /// A converter an earlier version left running has the legacy suffix
+    /// on its output, and is swept all the same.
+    func testAnOrphanedConverterWithTheLegacyTemporaryNameIsKilled() {
+        let output = "/Users/x/Book/.01.\(uuid).ogg-conversion.m4a"
+        XCTAssertEqual(ImportAudioConverter.legacyTemporarySuffix, ".ogg-conversion.m4a")
         XCTAssertEqual(sweep([snapshot(arguments: ["afconvert", "in.ogg", output])]).pids, [900])
     }
 
     func testAFolderWithSpacesAndNonASCIICharactersIsStillMatched() {
-        let output = "/Users/x/Mein Bücher/Die Räuber – Teil 1/.01.\(uuid).ogg-conversion.m4a"
+        let output = "/Users/x/Mein Bücher/Die Räuber – Teil 1/.01.\(uuid).audio-conversion.m4a"
         XCTAssertEqual(sweep([snapshot(arguments: ["afconvert", "in.ogg", output])]).pids, [900])
     }
 
@@ -98,12 +106,12 @@ final class OrphanedConversionSweepTests: XCTestCase {
     }
 
     func testANameWithTheSuffixButNoLeadingDotIsSpared() {
-        let output = "/Users/x/Book/01.\(uuid).ogg-conversion.m4a"
+        let output = "/Users/x/Book/01.\(uuid).audio-conversion.m4a"
         XCTAssertEqual(sweep([snapshot(arguments: ["afconvert", "in.ogg", output])]).pids, [])
     }
 
     func testTheBareSuffixAsANameIsSpared() {
-        let output = "/Users/x/Book/\(OggAudioConverter.temporarySuffix)"
+        let output = "/Users/x/Book/\(ImportAudioConverter.temporarySuffix)"
         XCTAssertEqual(sweep([snapshot(arguments: ["afconvert", "in.ogg", output])]).pids, [])
     }
 
@@ -117,7 +125,7 @@ final class OrphanedConversionSweepTests: XCTestCase {
 
     func testOnlyTheLastArgumentIsJudged() {
         // A temporary name earlier on the line does not make the process ours.
-        let temporary = "/Users/x/Book/.01.\(uuid).ogg-conversion.m4a"
+        let temporary = "/Users/x/Book/.01.\(uuid).audio-conversion.m4a"
         XCTAssertEqual(sweep([snapshot(arguments: ["afconvert", temporary, "/Users/x/Book/01.m4a"])]).pids, [])
     }
 

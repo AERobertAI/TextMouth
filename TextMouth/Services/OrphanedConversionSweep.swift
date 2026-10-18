@@ -18,8 +18,8 @@ struct ProcessSnapshot: Equatable {
 /// Kills the `afconvert` processes an earlier TextMouth left running (REV17a
 /// finding 4).
 ///
-/// TextMouth converts Ogg audio by running `/usr/bin/afconvert` as a child.
-/// When TextMouth is force-quit, or leaves through the memory guard's
+/// TextMouth converts the audio the import converts by running
+/// `/usr/bin/afconvert` as a child. When TextMouth is force-quit, or leaves through the memory guard's
 /// `_exit`, the child is reparented to launchd and keeps holding memory and
 /// CPU until it ends or the Mac restarts. `WatchedProcess` makes new
 /// children die with the app; this sweep, run at launch, deals with the ones
@@ -28,8 +28,8 @@ struct ProcessSnapshot: Equatable {
 /// A process is swept only when it is all of: `/usr/bin/afconvert`, run by
 /// the current user, an orphan (parent pid 1), and given a hidden temporary
 /// output name of TextMouth's (last argument `.…` followed by
-/// `OggAudioConverter.temporarySuffix`). A converter whose parent is alive,
-/// or that belongs to another app or user, is never touched.
+/// `ImportAudioConverter.temporarySuffix`, or by the legacy suffix an earlier
+/// version used). A converter whose parent is alive, or that belongs to another app or user, is never touched.
 enum OrphanedConversionSweep {
 
     // MARK: The Rules
@@ -43,13 +43,9 @@ enum OrphanedConversionSweep {
 
     /// Whether `argument` names one of TextMouth's hidden temporary
     /// conversion outputs: a path whose last component starts with "." and
-    /// ends with the temporary suffix, with something before the suffix.
+    /// ends with a temporary suffix, with something before the suffix.
     static func isTemporaryOutputName(_ argument: String) -> Bool {
-        let name = (argument as NSString).lastPathComponent
-        let suffix = OggAudioConverter.temporarySuffix
-        // The suffix itself starts with ".", so a name equal to it would
-        // pass the first two tests with nothing in front.
-        return name.hasPrefix(".") && name.hasSuffix(suffix) && name.count > suffix.count
+        ImportAudioConverter.isTemporaryName((argument as NSString).lastPathComponent)
     }
 
     /// Whether the sweep must kill `process`: every rule in the type's

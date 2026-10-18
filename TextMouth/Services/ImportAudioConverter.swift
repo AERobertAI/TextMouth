@@ -1,20 +1,22 @@
 import AVFoundation
 import Darwin
 
-/// Converts Ogg audio (Vorbis or Opus, in .ogg, .oga, or .opus files) to
-/// AAC-LC in an .m4a file beside it (B06), so TextMouth never hands Ogg to
-/// a player.
+/// Converts the audio the import converts to AAC-LC in an .m4a file beside
+/// it, so TextMouth never hands such a source to a player or decoder. Ogg
+/// (Vorbis or Opus, in .ogg, .oga, or .opus files) was the first format
+/// (B06); `convertedExtensions` lists them all (FMT09).
 ///
 /// On October 14, 2026 Apple's Vorbis decoder, playing an Ogg track through
 /// AVPlayer at 1.5x, locked up inside AudioToolbox and grew TextMouth to
 /// 34 GB until the Mac ran out of memory. The same decoder then froze every
 /// conversion that decoded Ogg inside TextMouth with AVAssetReader (B09), and
 /// no in-process call can be stopped once it spins. So TextMouth never
-/// decodes Ogg itself: it runs Apple's own `/usr/bin/afconvert` as a child
-/// process (`WatchedProcess`), which a watchdog kills when it runs too long,
-/// holds too much memory, or stops writing (`ConversionLimits`). All that
-/// TextMouth reads of the Ogg file is its first and last bytes, parsed by
-/// hand (`OggHeaderReader`, through `inspect(_:)`), with no Apple audio API.
+/// decodes such audio itself: it runs Apple's own `/usr/bin/afconvert` as a
+/// child process (`WatchedProcess`), which a watchdog kills when it runs too
+/// long, holds too much memory, or stops writing (`ConversionLimits`). All
+/// that TextMouth reads of an Ogg file is its first and last bytes, parsed
+/// by hand (`OggHeaderReader`, through `inspect(_:)`), with no Apple audio
+/// API.
 ///
 /// A file is written at the source's own average bit rate rounded up to the
 /// next standard AAC rate, so a track stays about the same size and sounds
@@ -23,10 +25,23 @@ import Darwin
 /// the Ogg: it plays, and lasts as long as its source to within
 /// `lengthTolerance`), and only then given its final name: the source's
 /// stem with .m4a, made unique when taken.
-enum OggAudioConverter {
+enum ImportAudioConverter {
     /// The extensions of Ogg audio, in lowercase: Vorbis's, the Ogg audio
     /// container's, and Opus's.
-    static let fileExtensions: Set<String> = ["ogg", "oga", "opus"]
+    static let oggExtensions: Set<String> = ["ogg", "oga", "opus"]
+
+    /// The extensions, in lowercase, of every audio format the import
+    /// converts to AAC (FMT09). Ogg alone for now; later steps add the rest.
+    static let convertedExtensions: Set<String> = oggExtensions
+
+    /// The extensions, in lowercase, of files TextMouth writes itself from
+    /// its own samples with Apple's encoder and reads back in the app: a
+    /// recording's take (`BookOrigin.originalTakeFileName`) and the audio
+    /// editor's takes and passes (`AudioEditPackage`,
+    /// `AudioFilterProcessor`) are CAF. An imported CAF is converted at
+    /// import like every other format in `convertedExtensions`, so no CAF
+    /// from outside ever reaches a reader.
+    static let ownWorkingExtensions: Set<String> = ["caf"]
 
     /// How many files convert at once. Each conversion decodes and encodes
     /// one buffer at a time, so its memory stays small whatever the file's
@@ -47,7 +62,12 @@ enum OggAudioConverter {
     /// file (`AudioBookParser.audioFiles(in:)` skips them), and a file left
     /// behind by an interrupted conversion is found by it and removed
     /// (`removeLeftovers(in:)`).
-    static let temporarySuffix = ".ogg-conversion.m4a"
+    static let temporarySuffix = ".audio-conversion.m4a"
+
+    /// The suffix before October 18, 2026 (when the converter took every
+    /// format the import converts): still recognized, so a leftover from an
+    /// earlier version is removed (`isTemporaryName(_:)`).
+    static let legacyTemporarySuffix = ".ogg-conversion.m4a"
 
     /// The longest file name, in UTF-16 code units, that every supported
     /// file system accepts (exFAT and HFS+ count units; APFS counts
@@ -113,15 +133,41 @@ enum OggAudioConverter {
 
     /// Whether the file at `url` is Ogg audio, by its extension in any case.
     static func isOgg(_ url: URL) -> Bool {
-        fileExtensions.contains(url.pathExtension.lowercased())
+        oggExtensions.contains(url.pathExtension.lowercased())
     }
 
-    /// The Ogg files among the tracks of the folder `folder`, found by the
-    /// reader's own rules (`AudioBookParser.audioFiles(in:)`: wrapper
-    /// folders count; hidden files, AppleDouble sidecars, and symbolic links
-    /// do not), in Finder's order; none when the folder can't be read.
+    /// Whether the import converts the file at `url`, by its extension in
+    /// any case (`convertedExtensions`).
+    static func isConvertedAtImport(_ url: URL) -> Bool {
+        convertedExtensions.contains(url.pathExtension.lowercased())
+    }
+
+    /// Whether no reader may decode the file at `url`: the import converts
+    /// it, and it is not a file of TextMouth's own making
+    /// (`ownWorkingExtensions`). This is the question every reader guard
+    /// asks before Apple's decoder sees a file.
+    static func isNeverDecodedInApp(_ url: URL) -> Bool {
+        isConvertedAtImport(url) && !ownWorkingExtensions.contains(url.pathExtension.lowercased())
+    }
+
+    /// The tracks of the folder `folder` that the import converts
+    /// (`isConvertedAtImport`), found by the reader's own rules.
+    static func filesToConvert(in folder: URL) -> [URL] {
+        tracks(in: folder, where: isConvertedAtImport)
+    }
+
+    /// The Ogg files among the tracks of the folder `folder` (the library's
+    /// conversion of Ogg books uses it), found like `filesToConvert(in:)`.
     static func oggFiles(in folder: URL) -> [URL] {
-        ((try? AudioBookParser.audioFiles(in: folder)) ?? []).filter(isOgg)
+        tracks(in: folder, where: isOgg)
+    }
+
+    /// The tracks of `folder` that `accepts`, found by the reader's own
+    /// rules (`AudioBookParser.audioFiles(in:)`: wrapper folders count;
+    /// hidden files, AppleDouble sidecars, and symbolic links do not), in
+    /// Finder's order; none when the folder can't be read.
+    private static func tracks(in folder: URL, where accepts: (URL) -> Bool) -> [URL] {
+        ((try? AudioBookParser.audioFiles(in: folder)) ?? []).filter(accepts)
     }
 
     // MARK: - The Settings
@@ -261,7 +307,7 @@ enum OggAudioConverter {
     // MARK: - Converting
 
     /// The hidden name a conversion of `source` has until it is named:
-    /// ".<UUID>.ogg-conversion.m4a", beside `source`. It is built from the
+    /// ".<UUID>.audio-conversion.m4a", beside `source`. It is built from the
     /// UUID alone, 56 characters whatever the source's name, so a source
     /// with a long stem (up to the file system's limit) can still be
     /// converted; the UUID makes it unique, and `removeLeftovers(in:)` finds
@@ -279,7 +325,7 @@ enum OggAudioConverter {
     /// book's files in one step. The source is never changed, and nothing
     /// is left behind by a failure. Nothing is downloaded: a file only in
     /// the cloud is refused. The conversion runs in a child process the
-    /// watchdog of `tool` kills when it hangs (`OGG_CONVERSION_KILLED` in the
+    /// watchdog of `tool` kills when it hangs (`AUDIO_CONVERSION_KILLED` in the
     /// debug log).
     /// - Throws: `Failure`, or `CancellationError` when the task is
     ///   cancelled.
@@ -343,7 +389,7 @@ enum OggAudioConverter {
         case .couldNotStart:
             throw Failure.processFailed(fileName: name, status: -1)
         case let .killed(reason):
-            DiagnosticLog.event(.storage, "OGG_CONVERSION_KILLED: \(name): \(reason.words)")
+            DiagnosticLog.event(.storage, "AUDIO_CONVERSION_KILLED: \(name): \(reason.words)")
             throw Failure.killed(fileName: name, reason: reason.words)
         }
     }
@@ -520,13 +566,24 @@ enum OggAudioConverter {
         }
     }
 
+    /// Whether `name` is a hidden temporary name of a conversion: it starts
+    /// with ".", ends with either suffix (`temporarySuffix`,
+    /// `legacyTemporarySuffix`), and has something before the suffix.
+    static func isTemporaryName(_ name: String) -> Bool {
+        guard name.hasPrefix(".") else { return false }
+        // Each suffix starts with ".", so a name equal to one would pass the
+        // first two tests with nothing in front.
+        return [temporarySuffix, legacyTemporarySuffix].contains { suffix in
+            name.hasSuffix(suffix) && name.count > suffix.count
+        }
+    }
+
     /// Removes the files an interrupted conversion left under their hidden
     /// temporary names anywhere in `folder`, so a book converted again
     /// starts clean.
     static func removeLeftovers(in folder: URL) {
         guard let enumerator = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: nil) else { return }
-        for case let file as URL in enumerator where file.lastPathComponent.hasPrefix(".")
-            && file.lastPathComponent.hasSuffix(temporarySuffix) {
+        for case let file as URL in enumerator where isTemporaryName(file.lastPathComponent) {
             try? FileManager.default.removeItem(at: file)
         }
     }

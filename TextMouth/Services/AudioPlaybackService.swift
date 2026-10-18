@@ -883,10 +883,10 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     ) -> AudioPlaybackFailure.Reason? {
         // Every check follows symbolic links, so a broken link is missing.
         guard fileManager.fileExists(atPath: url.path) else { return .fileMissing }
-        // Ogg audio is never handed to a player (B06): Apple's Vorbis
-        // decoder locked up playing it. Every Ogg file is converted to AAC,
-        // and this refuses one that slipped through, as a last guard.
-        guard !OggAudioConverter.isOgg(url) else { return .fileUnreadable }
+        // Never decode a format the import converts (B09, FMT09): Apple's
+        // Vorbis decoder once spun forever. Such audio is converted in a
+        // child process first; this refuses one that slipped through.
+        guard !ImportAudioConverter.isNeverDecodedInApp(url) else { return .fileUnreadable }
         let resourceValues = try? url.resolvingSymlinksInPath()
             .resourceValues(forKeys: [.isRegularFileKey])
         guard resourceValues?.isRegularFile == true,
@@ -1573,14 +1573,16 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     // MARK: - Chapter/Marker Extraction
 
     /// The one place the metadata readers open an asset to probe a file.
-    /// Returns nil for an Ogg file (by extension, any case): since October 14,
-    /// 2026 Ogg audio never reaches Apple's decoders or AVFoundation's probing
-    /// in the app's process (a spinning Ogg demuxer hung the Mac, and
-    /// `AsyncBridge.waitForResult` has no timeout). Only `afconvert`, in a child
-    /// process under a watchdog, reads it; an Ogg file's tags and length come
-    /// from `OggHeaderReader` instead.
+    /// Returns nil for a file of a format the import converts (by extension,
+    /// any case; CAF too, since an import runs this on a source before
+    /// converting it, so `isConvertedAtImport` and not `isNeverDecodedInApp`):
+    /// since October 14, 2026 such audio never reaches Apple's decoders or
+    /// AVFoundation's probing in the app's process (a spinning Ogg demuxer
+    /// hung the Mac, and `AsyncBridge.waitForResult` has no timeout). Only
+    /// `afconvert`, in a child process under a watchdog, reads it; an Ogg
+    /// file's tags and length come from `OggHeaderReader` instead.
     static func metadataAsset(for url: URL) -> AVURLAsset? {
-        OggAudioConverter.isOgg(url) ? nil : AVURLAsset(url: url)
+        ImportAudioConverter.isConvertedAtImport(url) ? nil : AVURLAsset(url: url)
     }
 
     /// Extract chapter markers from an audio file (M4B, M4A with chapters).

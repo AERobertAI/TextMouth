@@ -547,7 +547,7 @@ extension LibraryViewModel {
     /// every look at a manifest, a reader's included
     /// (`keepHandEditedTitlesInManifestsOnce`); beside them all, once for
     /// each library, its Ogg audio converted to AAC, a book at a time
-    /// (`convertOggAudioOnce`, B06); then the moves of places a
+    /// (`convertImportedAudioOnce`, B06); then the moves of places a
     /// stop left undone, before any pass reads a book's places or text
     /// (`finishLeftoverPlaceMoves(access:then:)`, T06), then the edits of
     /// audiobooks' manifests made while TextMouth was closed
@@ -567,7 +567,7 @@ extension LibraryViewModel {
         keepHandEditedTitlesInManifestsOnce(access: access)
         // Ogg audio is converted to AAC beside the other passes, a book at a
         // time, since a large book takes minutes (B06).
-        convertOggAudioOnce(access: access)
+        convertImportedAudioOnce(access: access)
         finishLeftoverPlaceMoves(access: access) { [weak self] in
             guard let self else {
                 completion?()

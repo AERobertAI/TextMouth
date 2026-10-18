@@ -15,7 +15,7 @@ final class OggBookCommitTests: XCTestCase {
         let world = try makeIntegrationWorld("Ogg Commit No Index")
         let (book, folder) = try makeJunkBook(in: world, index: false)
 
-        let result = await world.library.convertOggAudio(ofBook: book.id)
+        let result = await world.library.convertImportedAudio(ofBook: book.id)
 
         guard case let .waiting(.failed(reason)) = result else {
             return XCTFail("The book must wait as failed, not \(result)")
@@ -32,7 +32,7 @@ final class OggBookCommitTests: XCTestCase {
         let world = try makeIntegrationWorld("Ogg Commit Indexed")
         let (book, folder) = try makeJunkBook(in: world, index: true)
 
-        let result = await world.library.convertOggAudio(ofBook: book.id)
+        let result = await world.library.convertImportedAudio(ofBook: book.id)
 
         guard case let .waiting(.failed(reason)) = result else {
             return XCTFail("The junk tracks must fail the conversion, not \(result)")
@@ -53,11 +53,11 @@ final class OggBookCommitTests: XCTestCase {
         let before = OggTestFixtures.names(in: folder)
 
         // Hand-made conversions: each hidden file is a real file beside its source.
-        let conversions = try Self.trackNames.map { name -> OggAudioConverter.Conversion in
+        let conversions = try Self.trackNames.map { name -> ImportAudioConverter.Conversion in
             let stem = (name as NSString).deletingPathExtension
-            let hidden = folder.appendingPathComponent(".\(stem).\(UUID().uuidString)\(OggAudioConverter.temporarySuffix)")
+            let hidden = folder.appendingPathComponent(".\(stem).\(UUID().uuidString)\(ImportAudioConverter.temporarySuffix)")
             try Data("converted".utf8).write(to: hidden)
-            return OggAudioConverter.Conversion(
+            return ImportAudioConverter.Conversion(
                 source: folder.appendingPathComponent(name),
                 converted: hidden,
                 duration: 2,
