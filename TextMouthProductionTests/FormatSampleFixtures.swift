@@ -56,4 +56,28 @@ extension XCTestCase {
     func allText(of content: DocumentContent) -> String {
         content.chapters.map(\.text).joined(separator: "\n\n")
     }
+
+    /// The document type the app's own Info.plist
+    /// (`CFBundleDocumentTypes`) declares for files named with `fileExtension`
+    /// (without its dot), or nil when none lists it. The app is the hosted
+    /// tests' main bundle, so this is what the Finder and the Open With menu
+    /// read. A test pins from it that the extension is offered in a Viewer
+    /// role, which later format tasks reuse for their own extensions.
+    func documentType(listing fileExtension: String) -> [String: Any]? {
+        documentType(listing: fileExtension, inKey: "CFBundleTypeExtensions")
+    }
+
+    /// The document type the app's Info.plist declares for the content type
+    /// `identifier` (a UTI, such as "org.idpf.epub-container"), or nil when
+    /// none lists it, found the way `documentType(listing:)` finds an
+    /// extension.
+    func documentType(listingContentType identifier: String) -> [String: Any]? {
+        documentType(listing: identifier, inKey: "LSItemContentTypes")
+    }
+
+    /// The first document type whose list under `key` holds `value`.
+    private func documentType(listing value: String, inKey key: String) -> [String: Any]? {
+        let types = Bundle.main.infoDictionary?["CFBundleDocumentTypes"] as? [[String: Any]] ?? []
+        return types.first { ($0[key] as? [String] ?? []).contains(value) }
+    }
 }
