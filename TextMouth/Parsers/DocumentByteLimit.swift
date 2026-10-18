@@ -31,15 +31,22 @@ enum DocumentByteLimit {
     /// The bytes of the document file at `url`, read whole once its size,
     /// taken from the file system before anything is read, is known to be
     /// within the limit; the bytes read are checked again, for a file that
-    /// grew meanwhile.
+    /// grew meanwhile. A symbolic link is sized by what it points to, not
+    /// by its own few bytes, so a link to a huge file is refused before
+    /// that file is read; a link that points nowhere cannot be read.
     /// - Throws: `FileImportError.noTextToRead` for an empty file,
     ///   `DocumentTooLargeError` for one past the limit, and the file
     ///   system's error for one that cannot be read.
     static func contents(of url: URL) throws -> Data {
-        let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        // Resolve the link first: the file size of a link is the length of
+        // its path, which would let any link past the limit. A link that
+        // points nowhere stays as it is, and reading it below throws, as for
+        // a missing file.
+        let target = url.resolvingSymlinksInPath()
+        let size = try target.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
         guard size > 0 else { throw FileImportError.noTextToRead }
         try check(byteCount: Int64(size))
-        let data = try Data(contentsOf: url)
+        let data = try Data(contentsOf: target)
         guard !data.isEmpty else { throw FileImportError.noTextToRead }
         try check(byteCount: Int64(data.count))
         return data

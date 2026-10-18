@@ -155,11 +155,16 @@ enum TextutilConverter {
 
     // MARK: Sizing
 
-    /// The size of the document at `url` in bytes: a file's own size, and
+    /// The size of the document at `link` in bytes: a file's own size, and
     /// for a folder (an RTFD) the sum of the sizes of the regular files
-    /// anywhere inside it. A symbolic link inside it is never followed, so a
-    /// link cannot make a small folder read a large file outside it.
-    static func documentSize(of url: URL) throws -> Int64 {
+    /// anywhere inside it. A link at the top is sized by its target, since
+    /// textutil follows it and reads the target; a symbolic link inside a
+    /// folder is never followed, so a link cannot make a small folder read a
+    /// large file outside it.
+    static func documentSize(of link: URL) throws -> Int64 {
+        // A link that points nowhere stays as it is, and sizes as the few
+        // bytes of its path: textutil then fails to read it, as before.
+        let url = link.resolvingSymlinksInPath()
         let keys: Set<URLResourceKey> = [.isDirectoryKey, .isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey]
         guard try url.resourceValues(forKeys: keys).isDirectory == true else {
             return Int64(try url.resourceValues(forKeys: keys).fileSize ?? 0)
