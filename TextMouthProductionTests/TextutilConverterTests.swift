@@ -8,7 +8,7 @@ import XCTest
 final class TextutilConverterTests: XCTestCase {
     /// The folder textutil writes its hidden output in; every conversion
     /// must leave it empty.
-    private var work: URL!
+    private var work = URL(fileURLWithPath: "/var/empty", isDirectory: true)  // replaced in setUp
 
     override func setUpWithError() throws {
         work = try makeSandboxDirectory("TextutilWork")
