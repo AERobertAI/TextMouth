@@ -1,0 +1,253 @@
+import XCTest
+import ZIPFoundation
+@testable import TextMouth
+
+/// What a document's own bytes say before `textutil` reads it (FMT13): RTF
+/// under another name, and a password in a Word 97-2003 or OpenDocument
+/// file. Every sample is a copy in the test's own folder.
+final class TextutilSourceCheckTests: XCTestCase {
+
+    // MARK: - Helpers
+
+    /// A file named `name` in a new folder of this test's own, holding `bytes`.
+    private func file(named name: String, holding bytes: Data) throws -> URL {
+        let url = try makeSandboxDirectory("SourceCheck").appendingPathComponent(name)
+        try bytes.write(to: url)
+        return url
+    }
+
+    /// A ZIP holding one file, `path`, with `text` as its contents, removed
+    /// when the test ends.
+    private func zip(holding path: String, _ text: String) throws -> URL {
+        let url = try makeTemporaryZip(prefix: "SourceCheck", entries: [path: Data(text.utf8)])
+        addTeardownBlock { try? FileManager.default.removeItem(at: url) }
+        return url
+    }
+
+    /// The offset of the File Information Block in the Word document at
+    /// `url`, found by the code under test, failing the test when none is.
+    private func fibOffset(of url: URL) throws -> Int {
+        let data = try Data(contentsOf: url)
+        return try XCTUnwrap(TextutilSourceCheck.fibOffset(in: data), "No File Information Block in \(url.lastPathComponent)")
+    }
+
+    /// The little-endian flags word of the block at `offset` in the file at `url`.
+    private func fibFlags(of url: URL, at offset: Int) throws -> UInt16 {
+        let data = try Data(contentsOf: url)
+        return UInt16(data[offset + 0x0A]) | UInt16(data[offset + 0x0B]) << 8
+    }
+
+    /// Writes `flags` as the flags word of the block at `offset` in the file at `url`.
+    private func setFibFlags(_ flags: UInt16, of url: URL, at offset: Int) throws {
+        var data = try Data(contentsOf: url)
+        data[offset + 0x0A] = UInt8(flags & 0xFF)
+        data[offset + 0x0B] = UInt8(flags >> 8)
+        try data.write(to: url)
+    }
+
+    /// Replaces `META-INF/manifest.xml` in the ZIP at `url` with `manifest`.
+    private func replaceManifest(in url: URL, with manifest: String) throws {
+        let archive = try Archive(url: url, accessMode: .update)
+        let old = try XCTUnwrap(archive["META-INF/manifest.xml"])
+        try archive.remove(old)
+        let data = Data(manifest.utf8)
+        try archive.addEntry(
+            with: "META-INF/manifest.xml",
+            type: .file,
+            uncompressedSize: Int64(data.count),
+            compressionMethod: .deflate,
+            provider: { position, size in
+                let start = Int(position)
+                return data[start..<min(start + size, data.count)]
+            }
+        )
+    }
+
+    /// A manifest whose `content.xml` entry carries encryption data.
+    private let encryptedManifest = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0" manifest:version="1.3">
+        <manifest:file-entry manifest:full-path="/" manifest:media-type="application/vnd.oasis.opendocument.text"/>
+        <manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml">\
+        <manifest:encryption-data manifest:checksum-type="SHA1/1K" manifest:checksum="AAAA"/>\
+        </manifest:file-entry>
+        </manifest:manifest>
+        """
+
+    // MARK: - RTF under another name
+
+    func testRTFSamplesBeginAsRTFWhateverTheirName() throws {
+        XCTAssertTrue(TextutilSourceCheck.beginsAsRTF(try copyOfFormatSample("rtf/headings.rtf")))
+        XCTAssertTrue(TextutilSourceCheck.beginsAsRTF(try copyOfFormatSample("rtf/headings.rtf", named: "notes.doc")))
+    }
+
+    func testRTFBehindAByteOrderMarkAndBlankLinesStillBeginsAsRTF() throws {
+        let sample = try copyOfFormatSample("rtf/headings.rtf")
+        let bytes = Data([0xEF, 0xBB, 0xBF]) + Data("\n \t\r\n".utf8) + (try Data(contentsOf: sample))
+        XCTAssertTrue(TextutilSourceCheck.beginsAsRTF(try file(named: "bom.doc", holding: bytes)))
+    }
+
+    func testOtherFilesDoNotBeginAsRTF() throws {
+        XCTAssertFalse(TextutilSourceCheck.beginsAsRTF(try copyOfFormatSample("doc/headings.doc")))
+        XCTAssertFalse(TextutilSourceCheck.beginsAsRTF(try copyOfFormatSample("odt/headings.odt")))
+        XCTAssertFalse(TextutilSourceCheck.beginsAsRTF(try file(named: "empty.rtf", holding: Data())))
+        XCTAssertFalse(TextutilSourceCheck.beginsAsRTF(try file(named: "plain.txt", holding: Data("Just some words.".utf8))))
+        // A near miss: the control word is cut short.
+        XCTAssertFalse(TextutilSourceCheck.beginsAsRTF(try file(named: "near.rtf", holding: Data(#"{\rt"#.utf8))))
+        // The folder of an RTFD package, and a file that is not there.
+        XCTAssertFalse(TextutilSourceCheck.beginsAsRTF(try copyOfFormatSample("rtfd/headings.rtfd")))
+        let missing = try makeSandboxDirectory("SourceCheck").appendingPathComponent("missing.rtf")
+        XCTAssertFalse(TextutilSourceCheck.beginsAsRTF(missing))
+    }
+
+    // MARK: - The File Information Block
+
+    func testTheBlockIsFoundInEachWordSample() throws {
+        let samples = [
+            "doc/headings.doc",
+            "doc/libreoffice-tdf104239_chapterNumbering.doc",
+            "doc/libreoffice-tdf81705_outlineLevel.doc",
+            "dot/headings-synthetic.dot",
+            "dot/libreoffice-tdf120761_zOrder.dot",
+        ]
+        for sample in samples {
+            let copy = try copyOfFormatSample(sample)
+            XCTAssertNotNil(TextutilSourceCheck.fibOffset(in: try Data(contentsOf: copy)), sample)
+            XCTAssertFalse(TextutilSourceCheck.isEncryptedWordDocument(copy), "\(sample) is not encrypted")
+        }
+    }
+
+    func testTheBlockOfAShortDocumentLiesOffASectorBoundary() throws {
+        // A stream under 4096 bytes lives in the compound file's mini
+        // stream, so this real Word file's block is 64-aligned only.
+        let copy = try copyOfFormatSample("doc/libreoffice-tdf104239_chapterNumbering.doc")
+        XCTAssertEqual(try fibOffset(of: copy), 5312)
+    }
+
+    func testTheFoundBlockIsTheRealOneBecauseItsTemplateBitMatchesTheSample() throws {
+        // The synthetic template sets fDot; the LibreOffice one does not.
+        let synthetic = try copyOfFormatSample("dot/headings-synthetic.dot")
+        XCTAssertEqual(try fibFlags(of: synthetic, at: try fibOffset(of: synthetic)) & 0x0001, 0x0001)
+        let libreOffice = try copyOfFormatSample("dot/libreoffice-tdf120761_zOrder.dot")
+        XCTAssertEqual(try fibFlags(of: libreOffice, at: try fibOffset(of: libreOffice)) & 0x0001, 0)
+    }
+
+    func testTheFinderSkipsTheHeaderSectorAndBadVersions() {
+        // A block-like pattern in the header sector is passed over, a
+        // version outside 0x0065...0x0200 is refused, and a good one at 1024 found.
+        var data = Data(count: 2048)
+        data.replaceSubrange(0..<4, with: [0xEC, 0xA5, 0xC1, 0x00])
+        data.replaceSubrange(512..<516, with: [0xEC, 0xA5, 0x64, 0x00])
+        data.replaceSubrange(576..<580, with: [0xEC, 0xA5, 0x01, 0x02])
+        data.replaceSubrange(1024..<1028, with: [0xEC, 0xA5, 0x65, 0x00])
+        XCTAssertEqual(TextutilSourceCheck.fibOffset(in: data), 1024)
+    }
+
+    func testABlockCutOffBeforeItsFlagsWordIsNotFound() {
+        var data = Data(count: 512 + 8)
+        data.replaceSubrange(512..<516, with: [0xEC, 0xA5, 0xC1, 0x00])
+        XCTAssertNil(TextutilSourceCheck.fibOffset(in: data))
+    }
+
+    // MARK: - A Word document with a password
+
+    func testTheEncryptedBitMakesAWordDocumentEncrypted() throws {
+        let copy = try copyOfFormatSample("doc/headings.doc")
+        let offset = try fibOffset(of: copy)
+        let flags = try fibFlags(of: copy, at: offset)
+
+        try setFibFlags(flags | 0x0100, of: copy, at: offset)
+        XCTAssertTrue(TextutilSourceCheck.isEncryptedWordDocument(copy))
+
+        // Only the template bit set (everything else clear) is not encrypted.
+        try setFibFlags(0x0001, of: copy, at: offset)
+        XCTAssertFalse(TextutilSourceCheck.isEncryptedWordDocument(copy))
+    }
+
+    func testTheEncryptedBitIsFoundInAShortDocumentToo() throws {
+        let copy = try copyOfFormatSample("doc/libreoffice-tdf104239_chapterNumbering.doc")
+        let offset = try fibOffset(of: copy)
+        try setFibFlags(try fibFlags(of: copy, at: offset) | 0x0100, of: copy, at: offset)
+        XCTAssertTrue(TextutilSourceCheck.isEncryptedWordDocument(copy))
+    }
+
+    func testABlockPastTheFirstChunkIsFound() throws {
+        // A compound-file header, zeros, then a block 200,000 bytes in
+        // (past the 64 KB chunks the file is read in) with the bit set.
+        var bytes = Data(count: 200_064)
+        bytes.replaceSubrange(0..<8, with: [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1])
+        let offset = 200_000 - 200_000 % 64
+        bytes.replaceSubrange(offset..<offset + 12, with: [0xEC, 0xA5, 0xC1, 0x00, 0, 0, 0, 0, 0, 0, 0x00, 0x01])
+        XCTAssertTrue(TextutilSourceCheck.isEncryptedWordDocument(try file(named: "late.doc", holding: bytes)))
+    }
+
+    func testFilesWithNoBlockAreNotEncryptedWordDocuments() throws {
+        XCTAssertFalse(TextutilSourceCheck.isEncryptedWordDocument(try copyOfFormatSample("rtf/headings.rtf", named: "notes.doc")))
+        XCTAssertFalse(TextutilSourceCheck.isEncryptedWordDocument(try file(named: "empty.doc", holding: Data())))
+        // The compound-file signature followed by zeros holds no block.
+        let signature = Data([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]) + Data(count: 4096)
+        XCTAssertFalse(TextutilSourceCheck.isEncryptedWordDocument(try file(named: "zeros.doc", holding: signature)))
+        // A block with the bit set but no signature is no Word document.
+        var unsigned = Data(count: 1024)
+        unsigned.replaceSubrange(512..<524, with: [0xEC, 0xA5, 0xC1, 0x00, 0, 0, 0, 0, 0, 0, 0x00, 0x01])
+        XCTAssertFalse(TextutilSourceCheck.isEncryptedWordDocument(try file(named: "unsigned.doc", holding: unsigned)))
+        let missing = try makeSandboxDirectory("SourceCheck").appendingPathComponent("missing.doc")
+        XCTAssertFalse(TextutilSourceCheck.isEncryptedWordDocument(missing))
+    }
+
+    // MARK: - An OpenDocument package with a password
+
+    func testAManifestWithEncryptionDataIsEncrypted() throws {
+        let copy = try copyOfFormatSample("odt/handwritten.odt")
+        try replaceManifest(in: copy, with: encryptedManifest)
+        XCTAssertTrue(TextutilSourceCheck.isEncryptedOpenDocument(copy))
+    }
+
+    func testThePrefixOfTheElementDoesNotMatter() throws {
+        let copy = try copyOfFormatSample("odt/handwritten.odt")
+        let manifest = """
+            <m:manifest xmlns:m="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0">\
+            <m:file-entry m:full-path="content.xml"><m:encryption-data m:checksum="AAAA"/></m:file-entry>\
+            </m:manifest>
+            """
+        try replaceManifest(in: copy, with: manifest)
+        XCTAssertTrue(TextutilSourceCheck.isEncryptedOpenDocument(copy))
+    }
+
+    func testThePlainOpenDocumentSamplesAreNotEncrypted() throws {
+        for sample in ["odt/handwritten.odt", "odt/headings.odt", "ott/handwritten.ott"] {
+            XCTAssertFalse(TextutilSourceCheck.isEncryptedOpenDocument(try copyOfFormatSample(sample)), sample)
+        }
+    }
+
+    func testFilesThatAreNoOpenDocumentPackageAreNotEncrypted() throws {
+        XCTAssertFalse(TextutilSourceCheck.isEncryptedOpenDocument(try copyOfFormatSample("rtf/headings.rtf")))
+        XCTAssertFalse(TextutilSourceCheck.isEncryptedOpenDocument(try file(named: "empty.odt", holding: Data())))
+        let missing = try makeSandboxDirectory("SourceCheck").appendingPathComponent("missing.odt")
+        XCTAssertFalse(TextutilSourceCheck.isEncryptedOpenDocument(missing))
+
+        // A ZIP with no manifest.
+        XCTAssertFalse(TextutilSourceCheck.isEncryptedOpenDocument(try zip(holding: "content.xml", "<a/>")))
+    }
+
+    func testAManifestPastTheLimitIsNotRead() throws {
+        // Padding takes the manifest past 1,000,000 bytes; its encryption
+        // data lies after the padding and is never reached.
+        let padding = String(repeating: " ", count: 1_000_001)
+        let manifest = "<manifest>\(padding)<encryption-data/></manifest>"
+        XCTAssertFalse(TextutilSourceCheck.isEncryptedOpenDocument(try zip(holding: "META-INF/manifest.xml", manifest)))
+    }
+
+    func testAManifestThatIsNotXMLIsNotEncrypted() throws {
+        XCTAssertFalse(TextutilSourceCheck.isEncryptedOpenDocument(try zip(holding: "META-INF/manifest.xml", "not xml at all")))
+    }
+
+    // MARK: - The refusal
+
+    func testThePasswordRefusalReadsWordForWord() {
+        XCTAssertEqual(
+            PasswordProtectedDocument().errorDescription,
+            "This document is protected by a password. Save a copy without the password, then import that copy."
+        )
+    }
+}
