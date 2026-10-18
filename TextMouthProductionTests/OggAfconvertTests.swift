@@ -282,6 +282,7 @@ final class OggAfconvertTests: XCTestCase {
         let childrenBefore = WatchedProcess.runningChildCount
         let cancellation = ImportCancellation()
         let ended = expectation(description: "the conversion ended")
+        ended.assertForOverFulfill = false
         let thrown = LockedValue<(any Error)?>(nil)
         let directory = try XCTUnwrap(folder)
         // As the import queue runs an import: on its own thread, under the

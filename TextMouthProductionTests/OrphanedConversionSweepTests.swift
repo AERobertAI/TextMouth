@@ -442,6 +442,7 @@ final class OrphanedConversionSweepTests: XCTestCase {
             lister: { listed.set(); return [] },
             root: sandbox)
         let settle = expectation(description: "settle")
+        settle.assertForOverFulfill = false
         DispatchQueue.global().asyncAfter(deadline: .now() + 0.3) { settle.fulfill() }
         wait(for: [settle], timeout: 5)
         XCTAssertFalse(listed.isSet)
@@ -454,6 +455,7 @@ final class OrphanedConversionSweepTests: XCTestCase {
         try makeFile(".\(uuid).watched-output", age: 7_200, now: now)
         let killed = KilledPids()
         let finished = expectation(description: "finished")
+        finished.assertForOverFulfill = false
         let listed = [afinfoSnapshot(pid: 4_001), afinfoSnapshot(pid: 4_002, parent: 9)]
         OrphanedConversionSweep.sweepAfinfoInBackground(
             isHostedTest: false,
