@@ -221,13 +221,20 @@ extension FileImportService {
     /// Whether `candidate` holds the same content as `source`: by the
     /// checksum its record keeps, or, without a record, by comparing its one
     /// content file with `source`'s, sizes first, so that no unrelated file
-    /// is read in full. A folder of audio tracks is matched by book ID only.
+    /// is read in full. An RTFD book's folder is compared by its folder
+    /// checksum (`contentChecksum(of:format:)`), the checksum its record
+    /// would keep, and a folder of audio tracks is matched by book ID only.
     private static func holdsSameContent(_ candidate: RetainedPackage, as source: TMBImportSource) -> Bool {
         if let recordedHash = candidate.recordedHash {
             return recordedHash == source.md5Hash
         }
-        guard let content = try? retainedContentURL(in: candidate.url),
-              !isDirectory(content),
+        guard let content = try? retainedContentURL(in: candidate.url) else { return false }
+        // An RTFD is a folder of regular files with no size of its own to
+        // compare, so its checksum is compared outright.
+        if isRTFDFolder(content) {
+            return (try? contentChecksum(of: content, format: .rtfd)) == source.md5Hash
+        }
+        guard !isDirectory(content),
               let size = fileSize(of: content),
               size == fileSize(of: source.contentURL) else { return false }
         return (try? md5Hash(of: content)) == source.md5Hash
@@ -384,18 +391,19 @@ extension FileImportService {
         dateAdded: Date
     ) throws -> Book {
         let content = try retainedContentURL(in: package)
-        // Only an audio book keeps its content as a folder (of tracks), and
-        // a folder has no tags of its own to read.
-        let isFolder = isDirectory(content)
+        // An audio book keeps its content as a folder (of tracks), which has
+        // no tags of its own to read; an RTFD book keeps its document as a
+        // folder too, but it is a document, read as any RTFD is.
+        let isTracksFolder = isDirectory(content) && !isRTFDFolder(content)
         let format: BookFormat
-        if isFolder {
+        if isTracksFolder {
             format = .audio
         } else if let detected = BookFormat.detect(from: content) {
             format = detected
         } else {
             throw FileImportError.unsupportedFormat(content.pathExtension.lowercased())
         }
-        let metadata = isFolder ? nil : ImportedFileMetadata.read(from: content, format: format)
+        let metadata = isTracksFolder ? nil : ImportedFileMetadata.read(from: content, format: format)
 
         return Book(
             id: marker.bookID,
@@ -465,8 +473,10 @@ extension FileImportService {
     /// folder of tracks was known by the checksum of the archive it came
     /// from, which is gone, so it gets a value made from its book ID, which
     /// no other book shares and which stays the same if it is taken back
-    /// again.
+    /// again. An RTFD, a folder that is a document, is known by its folder
+    /// checksum (`contentChecksum(of:format:)`), as an import computes it.
     static func contentHash(of content: URL, bookID: UUID) throws -> String {
+        if isRTFDFolder(content) { return try contentChecksum(of: content, format: .rtfd) }
         guard isDirectory(content) else { return try md5Hash(of: content) }
         return "package-\(bookID.uuidString.lowercased())"
     }

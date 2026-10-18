@@ -595,9 +595,12 @@ enum FileImportService {
     }
 
     /// Checks the content `info` names inside `packageURL`: a safe file name
-    /// that exists, in the format `info` records, and, for a file, with the
-    /// checksum it records (`content(at:hasChecksum:)`). Only an audio
-    /// book's content may be a folder.
+    /// that exists, in the format `info` records, and with the checksum it
+    /// records (`content(at:of:hasChecksum:)`). The only content that may be
+    /// a folder is an audio book's folder of tracks, which has no checksum
+    /// of its own to check, and an RTFD book's package, which is a folder
+    /// checked as a file is: its format and its folder checksum
+    /// (`contentChecksum(of:format:)`) must be the record's.
     static func inspectContent(
         of packageURL: URL,
         describedBy info: BookInfo
@@ -615,7 +618,9 @@ enum FileImportService {
 
         var contentIsDirectory: ObjCBool = false
         FileManager.default.fileExists(atPath: contentURL.path, isDirectory: &contentIsDirectory)
-        if contentIsDirectory.boolValue {
+        // A folder is a folder of tracks unless it is an RTFD, a document
+        // that happens to be a folder: that is checked below like a file.
+        if contentIsDirectory.boolValue && !isRTFDFolder(contentURL) {
             guard info.metadata.format.isAudio else {
                 throw TMBPackageImportError.invalidPackage("only audiobook content may be a directory")
             }
@@ -943,15 +948,17 @@ enum FileImportService {
     /// whose checksum is that of the regular files anywhere inside it
     /// (`folderHash(of:in:)`). A plain file named .rtfd is hashed as a file.
     /// Internal so a book's fingerprint digests its RTFD with the very same
-    /// walk the import used (`FingerprintHasher.md5`).
+    /// walk the import used (`FingerprintHasher.md5`), and a package holding
+    /// an RTFD is checked by it (`inspectContent`, `reconstructedBook`).
     static func contentChecksum(of url: URL, format: BookFormat?) throws -> String {
         guard format == .rtfd, isFolder(url) else { return try md5Hash(of: url) }
         return try folderHash(of: regularFilePaths(in: url), in: url)
     }
 
-    /// Whether the item at `url` is an RTFD: a folder named .rtfd. A plain
-    /// file with that name is not (it is read and measured as a file), and
-    /// no other folder is, since only an RTFD stands for one document.
+    /// Whether the item at `url` is an RTFD: a folder named .rtfd, the one
+    /// kind of folder, besides a folder of audio tracks, that a book's
+    /// content can be. A plain file with that name is not (it is read and
+    /// measured as a file), and no other folder is.
     static func isRTFDFolder(_ url: URL) -> Bool {
         url.pathExtension.lowercased() == "rtfd" && isFolder(url)
     }
