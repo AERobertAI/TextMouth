@@ -297,7 +297,7 @@ enum ImportAudioConverter {
     /// The Ogg files among the tracks of the folder `folder` (the library's
     /// conversion of Ogg books uses it), found like `filesToConvert(in:)`.
     static func oggFiles(in folder: URL) -> [URL] {
-        tracks(in: folder, where: isOgg)
+        tracks(in: folder, where: isOgg) // lint-ok: selects the Ogg tracks the library converts alone, opening no reader
     }
 
     /// The tracks of `folder` that `accepts`, found by the reader's own
