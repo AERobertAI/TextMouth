@@ -334,10 +334,14 @@ final class AudioContentTests: XCTestCase {
     /// PCM; left for AAC, Apple Lossless, or MP3; left when afinfo cannot
     /// read it. Unrecognized content is settled the same way.
     func testAnMPEG4FileIsSettledByWhatItsFirstTrackHolds() async throws {
+        // Each file is padded to 64 KiB, enough to hold the second the
+        // stand-in claims at every codec's lowest plausible bit rate:
+        // `AudioFileInfo` refuses a length its file's size cannot hold.
+        let padding = [UInt8](repeating: 0, count: 65_536)
         let mpeg4 = folder.appendingPathComponent("movie.m4a")
-        try Data(ftyp("M4A ")).write(to: mpeg4)
+        try Data(ftyp("M4A ") + padding).write(to: mpeg4)
         let unknown = folder.appendingPathComponent("odd.m4a")
-        try Data(Array("no known signature here".utf8)).write(to: unknown)
+        try Data(Array("no known signature here".utf8) + padding).write(to: unknown)
         for file in [mpeg4, unknown] {
             for codec in ["ac-3", "ec-3", "opus", "flac", "lpcm", "samr"] {
                 let tool = try standInAfinfo(codec: codec)
