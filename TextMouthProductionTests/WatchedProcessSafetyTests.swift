@@ -440,14 +440,15 @@ final class WatchedProcessSafetyTests: XCTestCase {
 
     /// The kernel stops a fast writer at the cap, not the watchdog: with a
     /// poll interval far longer than the test, the child still ends at once
-    /// as `wroteTooMuch`, and its file holds at most the 1 MB cap.
+    /// as `wroteTooMuch`, and its file holds at most the 1 MB cap. (`yes` is
+    /// the tool itself: a shell ignores the kernel's signal.)
     func testTheKernelStopsAFastWriterAtTheCapBetweenTwoLooks() async throws {
         let output = folder.appendingPathComponent("fast.bin")
         let cap: Int64 = 1 << 20
         let started = Date()
         let outcome = try await WatchedProcess.run(
             URL(fileURLWithPath: "/bin/sh"),
-            arguments: ["-c", "while :; do printf xxxxxxxxxxxxxxxx >> \"$0\"; done", output.path],
+            arguments: ["-c", "exec /usr/bin/yes >> \"$0\"", output.path],
             watching: output, limits: limits(outputCap: cap, poll: 30)
         )
         XCTAssertEqual(outcome, .killed(.wroteTooMuch(bytes: cap)))
@@ -460,12 +461,15 @@ final class WatchedProcessSafetyTests: XCTestCase {
     /// watchdog too slow to help, ends as `wroteTooMuch` and the 1 MB comes
     /// back whole.
     func testYesIsStoppedAtAOneMegabyteCapByTheKernel() async throws {
+        let started = Date()
         let result = try await WatchedProcess.runCapturingOutput(
             URL(fileURLWithPath: "/usr/bin/yes"), arguments: [], limits: limits(poll: 30),
             maximumOutputBytes: 1 << 20, outputFolder: folder
         )
         XCTAssertEqual(result.outcome, .killed(.wroteTooMuch(bytes: 1 << 20)))
         XCTAssertEqual(result.output.count, 1 << 20)
+        // Far sooner than the 30-second look the watchdog would have taken.
+        XCTAssertLessThan(Date().timeIntervalSince(started), 10)
     }
 
     /// The shell's limit is whole kilobytes, rounded up, clamped to a petabyte, and open without a cap.

@@ -592,9 +592,12 @@ final class AudioChannelDownmixTests: XCTestCase {
     /// the stereo PCM's size and 16 MB, review item 4) and fails the
     /// conversion, leaving nothing.
     func testARunawayStepOneIsStoppedAtItsCap() async throws {
-        let source = try copy(Self.centre51, as: "film.ac3")
-        let info = try await inspected(source)
-        let bytes = (try FileManager.default.attributesOfItem(atPath: source.path)[.size] as? NSNumber)?.int64Value ?? 0
+        // A probe copy gives the facts the cap is computed from; it goes
+        // before the conversion, which copies the fixture under its own name.
+        let probe = try copy(Self.centre51, as: "probe.ac3")
+        let info = try await inspected(probe)
+        let bytes = (try FileManager.default.attributesOfItem(atPath: probe.path)[.size] as? NSNumber)?.int64Value ?? 0
+        try FileManager.default.removeItem(at: probe)
         let cap = ImportAudioConverter.outputCap(
             of: .downmix, duration: info.duration, target: ImportAudioConverter.target(for: info, bytes: bytes))
         var runaway = tool(stalled: 30)
