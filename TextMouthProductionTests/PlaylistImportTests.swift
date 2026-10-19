@@ -511,7 +511,7 @@ final class PlaylistImportTests: XCTestCase {
 
     /// The list stops naming entries once they would pass 600 characters:
     /// ten entries of 60 characters name seven, and count three more.
-    func testTheListStopsNamingEntriesAtSixHundredCharacters() {
+    func testTheListStopsNamingEntriesAtSixHundredCharacters() throws {
         let skipped = (1...10).map { number -> M3UPlaylist.Skipped in
             let stem = "entry\(number)"
             let name = stem + String(repeating: "x", count: PlaylistImportWording.entryLimit - stem.count)
@@ -527,13 +527,14 @@ final class PlaylistImportTests: XCTestCase {
         XCTAssertLessThanOrEqual(notice.count - prefix.count, PlaylistImportWording.listLimit + ", and 3 more.".count)
 
         // The first entry is named however long its reason and name are.
+        let first = try XCTUnwrap(skipped.first)
         let one = PlaylistImportWording.notice(
             playlistName: "a.m3u",
-            skipped: [M3UPlaylist.Skipped(location: skipped[0].location, reason: .outsideFolder)]
+            skipped: [M3UPlaylist.Skipped(location: first.location, reason: .outsideFolder)]
         )
         XCTAssertEqual(
             one,
-            "TextMouth skipped 1 entry of “a.m3u”: “\(skipped[0].location)” (outside the playlist's folder)."
+            "TextMouth skipped 1 entry of “a.m3u”: “\(first.location)” (outside the playlist's folder)."
         )
     }
 
