@@ -1,19 +1,27 @@
 #!/usr/bin/env python3
 """ogg-lint: find the lines a branch ADDS to the app that open an audio file
-with one of Apple's readers, each of which must refuse Ogg first.
+with one of Apple's readers, each of which must refuse every format the import
+converts (Ogg first) before the reader sees it, and that guard with the
+Ogg-only `isOgg`, which refuses too little.
 
 On October 14, 2026 Apple's Vorbis decoder locked up inside AVPlayer, the app
 reached 34 GB of memory, and the Mac had to be reset (AGENTS.md, B06). Since
 then an Ogg file is never decoded inside TextMouth: the import converts it
-with a separate tool (`OggAudioConverter`), and every other path that opens an
-audio file has to refuse an Ogg file before AVFoundation or Core Audio sees
-it. A new call to one of these readers is therefore always a place to
-review. This script finds them in seconds, on exactly the lines a branch
-adds (no baseline needed), and says what to do about each:
+with a separate tool (`ImportAudioConverter`, which converts every format in
+its `convertedExtensions`), and every other path that opens an audio file has
+to refuse such a file before AVFoundation or Core Audio sees it. A new call to
+one of these readers is therefore always a place to review. This script finds
+them in seconds, on exactly the lines a branch adds (no baseline needed), and
+says what to do about each:
 
-  * make sure the path refuses Ogg (see `AudioMediaProbe` and
-    `OggAudioConverter` for how the existing paths do), and then
-  * excuse the line with a trailing `// lint-ok: <how this path refuses Ogg>`.
+  * make sure the path refuses every format the import converts (see
+    `AudioMediaProbe` and `ImportAudioConverter.isNeverDecodedInApp` for how
+    the existing paths do), and then
+  * excuse the line with a trailing `// lint-ok: <how this path refuses them>`.
+
+A call of `isOgg(` is a finding of its own (`ogg-only-guard`): it refuses
+Ogg alone, so a reader guarded by it lets every other converted format
+through.
 
 Usage (from anywhere inside the repository):
     python3 Scripts/test/ogg-lint.py                  # lines added since main
@@ -37,23 +45,48 @@ from difflint import ERROR, Rule  # noqa: E402
 
 DEFAULT_PATHS = ["TextMouth"]
 
-# Every line of advice ends the same way: say how the path refuses Ogg.
-ADVICE = ("make sure this path refuses an Ogg file before Apple's decoder sees it "
-          "(Ogg once locked up the Mac), then add `// lint-ok: <how it refuses>`")
+# Every line of advice ends the same way: say how the path refuses the formats.
+ADVICE = ("make sure this path refuses every format the import converts "
+          "(`ImportAudioConverter.isNeverDecodedInApp`, or `isConvertedAtImport` where an "
+          "import's source arrives) before Apple's decoder sees it (Ogg once locked up "
+          "the Mac), then add `// lint-ok: <how it refuses>`")
+
+# A reader can be named three ways, and each rule below catches all three:
+#   * called:            AVURLAsset(url: u)
+#   * named by `.init`:  AVURLAsset.init(url: u), or passed on as map(AVURLAsset.init(url:))
+#   * (bare `.init` with no argument list is flagged too: which initializer it picks is
+#     for the reviewer to say)
+# `_INIT` is the optional `.init` between a type's name and its argument list.
+_INIT = r"(?:\s*\.\s*init)?"
 
 RULES = [
-    Rule("av-url-asset", ERROR, r"(?<!\w)AVURLAsset\s*\(",
-         "AVURLAsset opens a file with AVFoundation: " + ADVICE),
-    Rule("av-asset-reader", ERROR, r"(?<!\w)AVAssetReader\s*\(",
+    Rule("av-url-asset", ERROR,
+         # AVURLAsset itself, called or named by .init; and AVAsset(url:), which makes one.
+         r"(?<!\w)AVURLAsset" + _INIT + r"\s*\(|(?<!\w)AVURLAsset\s*\.\s*init\b|"
+         r"(?<!\w)AVAsset" + _INIT + r"\s*\(\s*url\b",
+         "AVURLAsset (or AVAsset(url:), which makes one) opens a file with AVFoundation: " + ADVICE),
+    Rule("av-asset-reader", ERROR,
+         r"(?<!\w)AVAssetReader" + _INIT + r"\s*\(|(?<!\w)AVAssetReader\s*\.\s*init\b",
          "AVAssetReader decodes a file with AVFoundation: " + ADVICE),
-    Rule("av-audio-file", ERROR, r"(?<!\w)AVAudioFile\s*\(\s*forReading",
+    Rule("av-audio-file", ERROR,
+         r"(?<!\w)AVAudioFile" + _INIT + r"\s*\(\s*forReading|"
+         r"(?<!\w)AVAudioFile\s*\.\s*init\b(?!\s*\()",
          "AVAudioFile(forReading:) decodes a file with Core Audio: " + ADVICE),
     Rule("av-player", ERROR,
-         r"(?<!\w)(?:AVPlayer|AVPlayerItem|AVQueuePlayer)\s*\(\s*(?:url|asset)\b|"
-         r"(?<!\w)AVAudioPlayer\s*\(\s*(?:contentsOf|data)\b",
+         r"(?<!\w)(?:AVPlayer|AVPlayerItem|AVQueuePlayer)" + _INIT + r"\s*\(\s*(?:url|asset)\b|"
+         r"(?<!\w)AVAudioPlayer" + _INIT + r"\s*\(\s*(?:contentsOf|data)\b|"
+         r"(?<!\w)(?:AVPlayer|AVPlayerItem|AVQueuePlayer|AVAudioPlayer)\s*\.\s*init\b(?!\s*\()",
          "this player plays a file with AVFoundation: " + ADVICE),
     Rule("audio-file-open", ERROR, r"(?<!\w)(?<!func )(?:Ext)?AudioFileOpen(?:URL|WithCallbacks)\s*\(",
          "AudioFileOpen... / ExtAudioFileOpen... decode a file with Core Audio: " + ADVICE),
+    # Any use of `isOgg` except its declaration (`func isOgg(`, `var isOgg`, `let isOgg`) and a
+    # label (`isOgg:`): a call, or the function named without a call, as in
+    # `contains(where: ImportAudioConverter.isOgg)`.
+    Rule("ogg-only-guard", ERROR, r"(?<!\w)(?<!func )(?<!var )(?<!let )isOgg\b(?!\s*:)",
+         "isOgg refuses Ogg alone, while a reader must refuse every format the import "
+         "converts: guard with ImportAudioConverter.isNeverDecodedInApp (or "
+         "isConvertedAtImport for an import's source), or, on a path about Ogg alone "
+         "(the library's conversion of Ogg books), add `// lint-ok: <why Ogg alone>`"),
 ]
 
 # (rule name, snippet that must hit, snippet that must not)
@@ -67,6 +100,30 @@ SELFTEST_CASES = [
     ("av-player", "let p = try AVAudioPlayer(contentsOf: url)", "let p = AVAudioPlayerNode()"),
     ("audio-file-open", "AudioFileOpenURL(url as CFURL, .readPermission, 0, &file)", "func AudioFileOpenURLWrapper() {}\nfunc AudioFileOpenURL(_ u: URL) {}"),
     ("audio-file-open", "ExtAudioFileOpenURL(url as CFURL, &ref)", "let audioFileOpener = 1"),
+    ("ogg-only-guard", "guard !ImportAudioConverter.isOgg(url) else { return }", "static func isOgg(_ url: URL) -> Bool {"),
+    # isOgg named without a call
+    ("ogg-only-guard", "files.contains(where: ImportAudioConverter.isOgg)", "let isOggAudio = false"),
+    ("ogg-only-guard", "let check = ImportAudioConverter.isOgg", "// contains(where: ImportAudioConverter.isOgg)"),
+    ("ogg-only-guard", "return urls.filter(isOgg).isEmpty", 'let s = "isOgg(url)"'),
+    ("ogg-only-guard", "if isOgg(url) { return }", "var isOgg = false"),
+    ("ogg-only-guard", "if !ImportAudioConverter.isOgg(u) { return }", "describe(isOgg: true)"),
+    # AVAsset(url:) makes an AVURLAsset
+    ("av-url-asset", "let asset = AVAsset(url: url)", "let asset = AVAsset.empty"),
+    ("av-url-asset", "let a = try await AVAsset(url: base).load(.duration)", "let a = MyAVAsset(url: u)"),
+    ("av-url-asset", "let asset = AVAsset(url: u)", "// AVAsset(url: u)"),
+    # readers named by .init
+    ("av-url-asset", "let assets = urls.map(AVURLAsset.init(url:))", 'let s = "AVURLAsset.init(url:)"'),
+    ("av-url-asset", "let make = AVURLAsset.init", "let make = AVURLAssetBox.init"),
+    ("av-url-asset", "let a = AVAsset.init(url: u)", "let a = AVAsset.init(coder: c)"),
+    ("av-asset-reader", "let readers = assets.map(AVAssetReader.init(asset:))", "// AVAssetReader.init(asset:)"),
+    ("av-asset-reader", "let r = try AVAssetReader.init(asset: a)", "let r = FakeAVAssetReader.init(asset: a)"),
+    ("av-audio-file", "let files = urls.map(AVAudioFile.init(forReading:))", "let f = AVAudioFile.init(forWriting: u, settings: s)"),
+    ("av-audio-file", "let f = try AVAudioFile.init(forReading: url)", "let f = FakeAVAudioFile.init(forReading: u)"),
+    ("av-audio-file", "let make = AVAudioFile.init", 'let s = "AVAudioFile.init(forReading:)"'),
+    ("av-player", "let players = urls.map(AVPlayer.init(url:))", "let p = AVPlayer.init()"),
+    ("av-player", "let p = AVPlayerItem.init(asset: a)", "let p = AVPlayerItem.init(coder: c)"),
+    ("av-player", "let p = try AVAudioPlayer.init(contentsOf: url)", "// AVAudioPlayer.init(contentsOf: url)"),
+    ("av-player", "let q = AVQueuePlayer.init(url: u)", "let q = AVQueuePlayer.init(items: [])"),
 ]
 
 

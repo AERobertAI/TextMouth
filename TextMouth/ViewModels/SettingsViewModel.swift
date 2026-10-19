@@ -319,6 +319,19 @@ final class SettingsViewModel: ObservableObject {
     /// Saves config.json when a preference another service keeps changes in
     /// the store through that service's own controls.
     private var servicePreferencesObserver: PreferenceObserver?
+    /// Whether an import keeps the original of each audio file it converts
+    /// (Storage settings). Like `importDeleteBehavior`, config.json is its
+    /// only store: read from the configuration, saved there, and announced
+    /// on every change, an edit of config.json included.
+    var keepsOriginalOfConvertedAudio: Bool {
+        get { configService.config.keepsOriginalOfConvertedAudio }
+        set {
+            guard newValue != configService.config.keepsOriginalOfConvertedAudio else { return }
+            configService.config.keepsOriginalOfConvertedAudio = newValue
+            configService.saveToDisk()
+        }
+    }
+
     /// Announces each change of a choice config.json alone holds.
     private var fileOnlyChoicesCancellable: AnyCancellable?
 
@@ -434,8 +447,8 @@ final class SettingsViewModel: ObservableObject {
     /// it came from, as this model announces changes to its own preferences.
     private func announceFileOnlyChoiceChanges() {
         fileOnlyChoicesCancellable = configService.$config
-            .map(\.importDeleteBehavior)
-            .removeDuplicates()
+            .map { ($0.importDeleteBehavior, $0.keepsOriginalOfConvertedAudio) }
+            .removeDuplicates(by: ==)
             .dropFirst()
             .sink { [weak self] _ in self?.objectWillChange.send() }
     }

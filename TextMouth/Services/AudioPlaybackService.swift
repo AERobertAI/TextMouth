@@ -883,10 +883,10 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     ) -> AudioPlaybackFailure.Reason? {
         // Every check follows symbolic links, so a broken link is missing.
         guard fileManager.fileExists(atPath: url.path) else { return .fileMissing }
-        // Ogg audio is never handed to a player (B06): Apple's Vorbis
-        // decoder locked up playing it. Every Ogg file is converted to AAC,
-        // and this refuses one that slipped through, as a last guard.
-        guard !OggAudioConverter.isOgg(url) else { return .fileUnreadable }
+        // Never decode a format the import converts (B09, FMT09): Apple's
+        // Vorbis decoder once spun forever. Such audio is converted in a
+        // child process first; this refuses one that slipped through.
+        guard !ImportAudioConverter.isNeverDecodedInApp(url) else { return .fileUnreadable }
         let resourceValues = try? url.resolvingSymlinksInPath()
             .resourceValues(forKeys: [.isRegularFileKey])
         guard resourceValues?.isRegularFile == true,
@@ -1573,14 +1573,16 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     // MARK: - Chapter/Marker Extraction
 
     /// The one place the metadata readers open an asset to probe a file.
-    /// Returns nil for an Ogg file (by extension, any case): since October 14,
-    /// 2026 Ogg audio never reaches Apple's decoders or AVFoundation's probing
-    /// in the app's process (a spinning Ogg demuxer hung the Mac, and
-    /// `AsyncBridge.waitForResult` has no timeout). Only `afconvert`, in a child
-    /// process under a watchdog, reads it; an Ogg file's tags and length come
-    /// from `OggHeaderReader` instead.
+    /// Returns nil for a file of a format the import converts (by extension,
+    /// any case; CAF too, since an import runs this on a source before
+    /// converting it, so `isConvertedAtImport` and not `isNeverDecodedInApp`):
+    /// since October 14, 2026 such audio never reaches Apple's decoders or
+    /// AVFoundation's probing in the app's process (a spinning Ogg demuxer
+    /// hung the Mac, and `AsyncBridge.waitForResult` has no timeout). Only
+    /// `afconvert`, in a child process under a watchdog, reads it; an Ogg
+    /// file's tags and length come from `OggHeaderReader` instead.
     static func metadataAsset(for url: URL) -> AVURLAsset? {
-        OggAudioConverter.isOgg(url) ? nil : AVURLAsset(url: url)
+        ImportAudioConverter.isConvertedAtImport(url) ? nil : AVURLAsset(url: url) // lint-ok: refuses every converted format by extension
     }
 
     /// Extract chapter markers from an audio file (M4B, M4A with chapters).
@@ -1588,6 +1590,9 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// Everything is read through AVFoundation's asynchronous loading API
     /// (TODO Q06): a marker whose title cannot be read is named "Chapter",
     /// and a file whose markers cannot be loaded has none.
+    /// When AVFoundation finds no chapters in an MPEG-4 file (M4A, M4B, MP4,
+    /// M4V, MOV), the file's Nero `chpl` atom is read by hand instead
+    /// (`NeroChapterReader`), since some audiobook tools write only that.
     static func extractChapters(from url: URL) async -> [(title: String, startTime: TimeInterval, duration: TimeInterval)] {
         // An Ogg file never reaches AVFoundation's probing (see `metadataAsset`).
         guard let asset = metadataAsset(for: url) else { return [] }
@@ -1606,6 +1611,11 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
                 let start = CMTimeGetSeconds(group.timeRange.start)
                 let dur = CMTimeGetSeconds(group.timeRange.duration)
                 chapters.append((title: title, startTime: start.isFinite ? start : 0, duration: dur.isFinite ? dur : 0))
+            }
+            // No chapter track: try the Nero chapter list of an MPEG-4 file.
+            if chapters.isEmpty, NeroChapterReader.mayHoldChapterList(url) {
+                let length = CMTimeGetSeconds((try? await asset.load(.duration)) ?? .zero)
+                return NeroChapterReader.bookChapters(from: NeroChapterReader.read(at: url), fileDuration: length)
             }
             return chapters
         } catch {

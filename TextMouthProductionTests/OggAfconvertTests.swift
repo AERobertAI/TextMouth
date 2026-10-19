@@ -25,25 +25,29 @@ final class OggAfconvertTests: XCTestCase {
 
     /// The header of each fixture gives its rate, channels, and length with
     /// nothing decoded.
-    func testTheHeaderGivesTheRateChannelsAndLength() throws {
+    func testTheHeaderGivesTheRateChannelsAndLength() async throws {
         let vorbis = try OggTestFixtures.copy(OggTestFixtures.vorbis, to: folder, as: "v.ogg")
         let opus = try OggTestFixtures.copy(OggTestFixtures.opus, to: folder, as: "o.opus")
 
-        let vorbisInfo = try XCTUnwrap(OggAudioConverter.inspect(vorbis))
+        let vorbisInfoRead = try await ImportAudioConverter.inspect(vorbis)
+        let vorbisInfo = try XCTUnwrap(vorbisInfoRead)
         XCTAssertEqual(vorbisInfo.sampleRate, 22_050)
         XCTAssertEqual(vorbisInfo.channels, 1)
         XCTAssertEqual(vorbisInfo.duration, 2, accuracy: 0.1)
-        let opusInfo = try XCTUnwrap(OggAudioConverter.inspect(opus))
+        let opusInfoRead = try await ImportAudioConverter.inspect(opus)
+        let opusInfo = try XCTUnwrap(opusInfoRead)
         XCTAssertEqual(opusInfo.channels, 1)
         XCTAssertEqual(opusInfo.duration, 2, accuracy: 0.1)
     }
 
     /// A missing file and a file that is not audio have no header to read.
-    func testNothingIsReadFromAMissingFileOrOneThatIsNotAudio() throws {
+    func testNothingIsReadFromAMissingFileOrOneThatIsNotAudio() async throws {
         let text = folder.appendingPathComponent("text.ogg")
         try Data("not audio".utf8).write(to: text)
-        XCTAssertNil(OggAudioConverter.inspect(text))
-        XCTAssertNil(OggAudioConverter.inspect(folder.appendingPathComponent("missing.ogg")))
+        let textInfo = try await ImportAudioConverter.inspect(text)
+        XCTAssertNil(textInfo)
+        let missingInfo = try await ImportAudioConverter.inspect(folder.appendingPathComponent("missing.ogg"))
+        XCTAssertNil(missingInfo)
     }
 
     /// `inspect` takes its facts from the hand-written header reader
@@ -51,17 +55,21 @@ final class OggAfconvertTests: XCTestCase {
     /// built in memory, written under Ogg names, give their rate, channels,
     /// and length (an Opus stream always at the decoder's 48,000 Hz, less
     /// its pre-skip).
-    func testInspectReadsStreamsBuiltInMemoryThroughTheHeaderReader() throws {
+    func testInspectReadsStreamsBuiltInMemoryThroughTheHeaderReader() async throws {
         let vorbis = folder.appendingPathComponent("synthetic.ogg")
         try Data(OggStreamBuilder.vorbisStream(channels: 2, rate: 44_100, granule: 88_200)).write(to: vorbis)
         let opus = folder.appendingPathComponent("synthetic.opus")
         try Data(OggStreamBuilder.opusStream(channels: 6, preSkip: 312, granule: 48_312)).write(to: opus)
 
+        let vorbisInfo = try await ImportAudioConverter.inspect(vorbis)
         XCTAssertEqual(
-            OggAudioConverter.inspect(vorbis),
-            OggAudioConverter.SourceInfo(sampleRate: 44_100, channels: 2, duration: 2)
+            vorbisInfo,
+            ImportAudioConverter.SourceInfo(
+                sampleRate: 44_100, channels: 2, duration: 2, formatID: "vorbis", bitsPerSample: nil, isLossless: false
+            )
         )
-        let opusInfo = try XCTUnwrap(OggAudioConverter.inspect(opus))
+        let opusInfoRead = try await ImportAudioConverter.inspect(opus)
+        let opusInfo = try XCTUnwrap(opusInfoRead)
         XCTAssertEqual(opusInfo.sampleRate, 48_000)
         XCTAssertEqual(opusInfo.channels, 6)
         XCTAssertEqual(opusInfo.duration, 1, accuracy: 0.0001)
@@ -89,25 +97,30 @@ final class OggAfconvertTests: XCTestCase {
     // MARK: - afconvert's Arguments
 
     /// The arguments name the .m4a container, AAC, and the bit rate; the
-    /// sample rate and channel count only when they change.
+    /// sample rate only when it changes, and the channel count never (a
+    /// source of more than two channels is mixed down in a step of its own).
     func testTheArgumentsChangeOnlyWhatMustChange() {
         let input = URL(fileURLWithPath: "/in/a.ogg")
         let output = URL(fileURLWithPath: "/out/.a.m4a")
-        let same = OggAudioConverter.SourceInfo(sampleRate: 44_100, channels: 2, duration: 10)
+        let same = ImportAudioConverter.SourceInfo(
+            sampleRate: 44_100, channels: 2, duration: 10, formatID: "vorbis", bitsPerSample: nil, isLossless: false
+        )
         XCTAssertEqual(
-            OggAudioConverter.afconvertArguments(
+            ImportAudioConverter.afconvertArguments(
                 from: input, to: output, info: same,
                 target: .init(channels: 2, sampleRate: 44_100, bitRate: 128_000)
             ),
             ["-f", "m4af", "-d", "aac", "-b", "128000", "/in/a.ogg", "/out/.a.m4a"]
         )
-        let surround = OggAudioConverter.SourceInfo(sampleRate: 88_200, channels: 6, duration: 10)
+        let surround = ImportAudioConverter.SourceInfo(
+            sampleRate: 88_200, channels: 6, duration: 10, formatID: "vorbis", bitsPerSample: nil, isLossless: false
+        )
         XCTAssertEqual(
-            OggAudioConverter.afconvertArguments(
+            ImportAudioConverter.afconvertArguments(
                 from: input, to: output, info: surround,
                 target: .init(channels: 2, sampleRate: 44_100, bitRate: nil)
             ),
-            ["-f", "m4af", "-d", "aac@44100", "-c", "2", "/in/a.ogg", "/out/.a.m4a"]
+            ["-f", "m4af", "-d", "aac@44100", "/in/a.ogg", "/out/.a.m4a"]
         )
     }
 
@@ -120,7 +133,7 @@ final class OggAfconvertTests: XCTestCase {
             try OggTestFixtures.copy(OggTestFixtures.opus, to: folder, as: "b.opus"),
         ]
         for source in sources {
-            let conversion = try await OggAudioConverter.convert(source)
+            let conversion = try await ImportAudioConverter.convert(source)
             let formatID = await OggTestFixtures.formatID(of: conversion.converted)
             XCTAssertEqual(formatID, kAudioFormatMPEG4AAC)
             XCTAssertEqual(conversion.duration, 2, accuracy: 0.1)
@@ -235,9 +248,9 @@ final class OggAfconvertTests: XCTestCase {
 
     /// A stand-in converter whose child is `executable` with `arguments`, and
     /// tight limits.
-    private func tool(_ executable: String, _ arguments: [String], stalled: TimeInterval = 0.5) -> OggAudioConverter.Tool {
+    private func tool(_ executable: String, _ arguments: [String], stalled: TimeInterval = 0.5) -> ImportAudioConverter.Tool {
         let limits = limits(stalled: stalled)
-        return OggAudioConverter.Tool(
+        return ImportAudioConverter.Tool(
             command: { _, _, _, _ in (URL(fileURLWithPath: executable), arguments) },
             limits: { _ in limits },
             residentMemory: { _ in nil }
@@ -249,12 +262,143 @@ final class OggAfconvertTests: XCTestCase {
     func testAHungConversionFailsAndLeavesNothing() async throws {
         let source = try OggTestFixtures.copy(OggTestFixtures.vorbis, to: folder, as: "hung.ogg")
         do {
-            _ = try await OggAudioConverter.convert(source, using: tool("/bin/sleep", ["60"]))
+            _ = try await ImportAudioConverter.convert(source, using: tool("/bin/sleep", ["60"]))
             XCTFail("A hung conversion must fail")
-        } catch let failure as OggAudioConverter.Failure {
+        } catch let failure as ImportAudioConverter.Failure {
             XCTAssertEqual(failure, .killed(fileName: "hung.ogg", reason: "its output did not grow for 1 second"))
         }
         XCTAssertEqual(OggTestFixtures.names(in: folder), ["hung.ogg"])
+    }
+
+    /// Cancelling an import kills the conversions that are running at once
+    /// (review item 8): `convertTracks` throws `ImportCancelled` within
+    /// seconds, long before the stand-in's own half minute, no child outlives
+    /// it, and the folder holds the sources only.
+    func testCancellingTheImportEndsTheRunningConversionsAtOnce() throws {
+        let sources = try (1...3).map {
+            try OggTestFixtures.copy(OggTestFixtures.vorbis, to: folder, as: "0\($0).ogg")
+        }
+        let hung = tool("/bin/sleep", ["60"], stalled: 30)
+        let childrenBefore = WatchedProcess.runningChildCount
+        let cancellation = ImportCancellation()
+        let ended = expectation(description: "the conversion ended")
+        ended.assertForOverFulfill = false
+        let thrown = LockedValue<(any Error)?>(nil)
+        let directory = try XCTUnwrap(folder)
+        // As the import queue runs an import: on its own thread, under the
+        // import's cancellation.
+        DispatchQueue.global().async {
+            ImportCancellation.$current.withValue(cancellation) {
+                do {
+                    var run = ImportRun(fileName: "tracks", observer: nil)
+                    _ = try FileImportService.convertTracks(sources, inPackage: directory, using: hung, run: &run)
+                } catch {
+                    thrown.value = error
+                }
+            }
+            ended.fulfill()
+        }
+        let deadline = Date().addingTimeInterval(10)
+        while WatchedProcess.runningChildCount <= childrenBefore, Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.02)
+        }
+        XCTAssertGreaterThan(WatchedProcess.runningChildCount, childrenBefore, "No conversion started")
+
+        let cancelledAt = Date()
+        cancellation.cancel()
+        wait(for: [ended], timeout: 5)
+        XCTAssertLessThan(Date().timeIntervalSince(cancelledAt), 3)
+        XCTAssertTrue(thrown.value is ImportCancelled, "\(String(describing: thrown.value))")
+        XCTAssertEqual(WatchedProcess.runningChildCount, childrenBefore)
+        XCTAssertEqual(OggTestFixtures.names(in: folder), ["01.ogg", "02.ogg", "03.ogg"])
+    }
+
+    /// A failed conversion outside a cancellation is still an error, not a
+    /// cancelled import.
+    func testAFailedConversionIsNotACancelledImport() throws {
+        let source = try OggTestFixtures.copy(OggTestFixtures.vorbis, to: folder, as: "bad.ogg")
+        var run = ImportRun(fileName: "tracks", observer: nil)
+        do {
+            _ = try FileImportService.convertTracks(
+                [source], inPackage: folder, using: tool("/bin/sh", ["-c", "exit 3"]), run: &run)
+            XCTFail("A failed conversion must throw")
+        } catch {
+            XCTAssertTrue(error is ImportAudioConverter.Failure, "\(error)")
+        }
+        XCTAssertEqual(OggTestFixtures.names(in: folder), ["bad.ogg"])
+    }
+
+    // MARK: - The Converter Caps Each Step's Output (review item 4)
+
+    /// Four times the expected size and 16 MB, step by step: AAC at its bit
+    /// rate (or the encoder's 320,000 where it chooses), Apple Lossless and
+    /// the downmix's PCM at their uncompressed size.
+    func testTheCapIsFourTimesTheExpectedSizePlusSixteenMegabytes() {
+        typealias Target = ImportAudioConverter.Target
+        let reserve: Int64 = 16 * 1_048_576
+        let aac = Target(channels: 2, sampleRate: 44_100, bitRate: 64_000)
+        XCTAssertEqual(ImportAudioConverter.expectedOutputBytes(of: .encode, duration: 100, target: aac), 800_000)
+        XCTAssertEqual(ImportAudioConverter.outputCap(of: .encode, duration: 100, target: aac), 3_200_000 + reserve)
+        let chosen = Target(channels: 1, sampleRate: 22_050, bitRate: nil)
+        XCTAssertEqual(ImportAudioConverter.expectedOutputBytes(of: .encode, duration: 100, target: chosen), 4_000_000)
+        let lossless16 = Target(channels: 2, sampleRate: 44_100, bitRate: nil, appleLosslessBitDepth: 16)
+        XCTAssertEqual(ImportAudioConverter.expectedOutputBytes(of: .encode, duration: 10, target: lossless16), 1_764_000)
+        // A depth of 20 is written as 24-bit PCM, three bytes a sample.
+        let lossless20 = Target(channels: 2, sampleRate: 48_000, bitRate: nil, appleLosslessBitDepth: 20)
+        XCTAssertEqual(ImportAudioConverter.expectedOutputBytes(of: .encode, duration: 10, target: lossless20), 2_880_000)
+        let mono24 = Target(channels: 1, sampleRate: 96_000, bitRate: nil, appleLosslessBitDepth: 24)
+        XCTAssertEqual(ImportAudioConverter.expectedOutputBytes(of: .encode, duration: 5, target: mono24), 1_440_000)
+    }
+
+    /// The downmix's PCM is two channels at the depth step 2 keeps: 16-bit
+    /// for AAC, the Apple Lossless depth (24 for 20) for lossless.
+    func testTheDownmixStepIsCappedAtItsStereoPCM() {
+        typealias Target = ImportAudioConverter.Target
+        let aac = Target(channels: 2, sampleRate: 44_100, bitRate: 64_000)
+        XCTAssertEqual(ImportAudioConverter.expectedOutputBytes(of: .downmix, duration: 10, target: aac), 1_764_000)
+        let lossless = Target(channels: 2, sampleRate: 48_000, bitRate: nil, appleLosslessBitDepth: 24)
+        XCTAssertEqual(ImportAudioConverter.expectedOutputBytes(of: .downmix, duration: 10, target: lossless), 2_880_000)
+        XCTAssertEqual(
+            ImportAudioConverter.outputCap(of: .downmix, duration: 10, target: lossless), 4 * 2_880_000 + 16 * 1_048_576
+        )
+    }
+
+    /// A lying header cannot trap the arithmetic or take the reserve away.
+    func testTheCapSurvivesAbsurdFacts() {
+        let reserve: Int64 = 16 * 1_048_576
+        let wild = ImportAudioConverter.Target(channels: 2, sampleRate: 1e300, bitRate: nil, appleLosslessBitDepth: 32)
+        for duration in [TimeInterval.infinity, .nan, 1e300, -5, 0] {
+            for step in [ImportAudioConverter.Step.encode, .downmix] {
+                XCTAssertGreaterThanOrEqual(ImportAudioConverter.outputCap(of: step, duration: duration, target: wild), reserve)
+            }
+        }
+        let nan = ImportAudioConverter.Target(channels: 2, sampleRate: .nan, bitRate: 64_000)
+        XCTAssertEqual(ImportAudioConverter.outputCap(of: .downmix, duration: 10, target: nan), reserve)
+    }
+
+    /// A conversion whose child writes without end is stopped at the cap, by
+    /// the kernel or the watchdog: it fails as killed with the cap in its
+    /// words, and the partial file is removed.
+    func testAConversionThatWritesPastItsCapIsStopped() async throws {
+        let source = try OggTestFixtures.copy(OggTestFixtures.vorbis, to: folder, as: "runaway.ogg")
+        let read = try await ImportAudioConverter.inspect(source)
+        let info = try XCTUnwrap(read)
+        let bytes = (try FileManager.default.attributesOfItem(atPath: source.path)[.size] as? NSNumber)?.int64Value ?? 0
+        let cap = ImportAudioConverter.outputCap(
+            of: .encode, duration: info.duration, target: ImportAudioConverter.target(for: info, bytes: bytes))
+        var runaway = tool("/bin/true", [], stalled: 30)
+        runaway.command = { _, output, _, _ in
+            (URL(fileURLWithPath: "/bin/sh"), ["-c", "exec /usr/bin/yes >> \"$0\"", output.path])
+        }
+
+        do {
+            _ = try await ImportAudioConverter.convert(source, using: runaway)
+            XCTFail("A runaway conversion must fail")
+        } catch let failure as ImportAudioConverter.Failure {
+            XCTAssertEqual(
+                failure, .killed(fileName: "runaway.ogg", reason: WatchedProcess.KillReason.wroteTooMuch(bytes: cap).words))
+        }
+        XCTAssertEqual(OggTestFixtures.names(in: folder), ["runaway.ogg"])
     }
 
     /// A conversion whose child fails reports the exit status and leaves
@@ -262,9 +406,9 @@ final class OggAfconvertTests: XCTestCase {
     func testAFailingConversionLeavesNothing() async throws {
         let source = try OggTestFixtures.copy(OggTestFixtures.vorbis, to: folder, as: "bad.ogg")
         do {
-            _ = try await OggAudioConverter.convert(source, using: tool("/usr/bin/false", []))
+            _ = try await ImportAudioConverter.convert(source, using: tool("/usr/bin/false", []))
             XCTFail("A failing conversion must fail")
-        } catch let failure as OggAudioConverter.Failure {
+        } catch let failure as ImportAudioConverter.Failure {
             XCTAssertEqual(failure, .processFailed(fileName: "bad.ogg", status: 1))
         }
         XCTAssertEqual(OggTestFixtures.names(in: folder), ["bad.ogg"])
@@ -278,9 +422,9 @@ final class OggAfconvertTests: XCTestCase {
             try OggTestFixtures.copy(OggTestFixtures.vorbis, to: folder, as: "02.ogg"),
         ]
         do {
-            _ = try await OggAudioConverter.convertEach(sources, using: tool("/bin/sleep", ["60"]))
+            _ = try await ImportAudioConverter.convertEach(sources, using: tool("/bin/sleep", ["60"]))
             XCTFail("A batch with a hung track must fail")
-        } catch is OggAudioConverter.Failure {
+        } catch is ImportAudioConverter.Failure {
             // Expected.
         }
         XCTAssertEqual(OggTestFixtures.names(in: folder), ["01.ogg", "02.ogg"])
@@ -294,9 +438,9 @@ final class OggAfconvertTests: XCTestCase {
         let inner = folder.appendingPathComponent("inner")
         try FileManager.default.createDirectory(at: inner, withIntermediateDirectories: true)
         let stale = [
-            ".01.\(UUID().uuidString)\(OggAudioConverter.temporarySuffix)",
-            ".01.\(UUID().uuidString)\(OggAudioConverter.temporarySuffix)",
-            ".02.\(UUID().uuidString)\(OggAudioConverter.temporarySuffix)",
+            ".01.\(UUID().uuidString)\(ImportAudioConverter.temporarySuffix)",
+            ".01.\(UUID().uuidString)\(ImportAudioConverter.temporarySuffix)",
+            ".02.\(UUID().uuidString)\(ImportAudioConverter.temporarySuffix)",
         ]
         for (index, name) in stale.enumerated() {
             try Data("x".utf8).write(to: (index == 2 ? inner : folder).appendingPathComponent(name))
@@ -304,7 +448,7 @@ final class OggAfconvertTests: XCTestCase {
         try Data("keep".utf8).write(to: folder.appendingPathComponent("01.m4a"))
         try Data("keep".utf8).write(to: folder.appendingPathComponent(".hidden-but-not-ours.m4a"))
 
-        OggAudioConverter.removeLeftovers(in: folder)
+        ImportAudioConverter.removeLeftovers(in: folder)
 
         XCTAssertEqual(OggTestFixtures.names(in: folder), [".hidden-but-not-ours.m4a", "01.m4a", "inner"])
         XCTAssertEqual(OggTestFixtures.names(in: inner), [])

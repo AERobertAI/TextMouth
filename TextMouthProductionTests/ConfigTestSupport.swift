@@ -31,6 +31,7 @@ extension ConfigService.AppConfig {
         config.lastOpenedBookID = "8E4C2D71-5B0A-4F6B-9C3E-2A7D1F9B6E05"
         config.autoPlayOnNavigate = true
         config.moveToTrashInsteadOfDeleting = false
+        config.keepsOriginalOfConvertedAudio = true
         config.bluetoothMonitoringEnabled = false
         config.bluetoothDisconnectDelay = 7
         config.restartTimerGestureEnabled = true

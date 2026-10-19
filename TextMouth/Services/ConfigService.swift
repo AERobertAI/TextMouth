@@ -259,6 +259,11 @@ final class ConfigService: ObservableObject {
         var autoPlayOnNavigate: Bool = false
         /// Move deleted books to Trash instead of permanently deleting
         var moveToTrashInsteadOfDeleting: Bool = true
+        /// Whether an import keeps the original of each audio file it
+        /// converts (Ogg, AC-3, and the rest) in the book's package, beside
+        /// the converted file. Off by default; feed episodes never keep one.
+        /// Only imports made while it is on keep anything.
+        var keepsOriginalOfConvertedAudio: Bool = false
         /// Whether Bluetooth disconnect monitoring is enabled
         var bluetoothMonitoringEnabled: Bool = true
         /// Suppress window duration (seconds) after Bluetooth disconnect
@@ -448,6 +453,10 @@ final class ConfigService: ObservableObject {
                 .moveToTrashInsteadOfDeleting,
                 default: fallback.moveToTrashInsteadOfDeleting
             )
+            keepsOriginalOfConvertedAudio = fields.value(
+                .keepsOriginalOfConvertedAudio,
+                default: fallback.keepsOriginalOfConvertedAudio
+            )
             bluetoothMonitoringEnabled = fields.value(
                 .bluetoothMonitoringEnabled,
                 default: fallback.bluetoothMonitoringEnabled
@@ -617,7 +626,10 @@ final class ConfigService: ObservableObject {
 
             /// Portable preferences config.json alone holds: the Storage
             /// settings' import and removal choices.
-            static let fileOnly = ["importDeleteBehavior", "confirmBeforeDelete", "moveToTrashInsteadOfDeleting"]
+            static let fileOnly = [
+                "importDeleteBehavior", "confirmBeforeDelete", "moveToTrashInsteadOfDeleting",
+                "keepsOriginalOfConvertedAudio",
+            ]
 
             /// Preferences-store keys an earlier release wrote, read once to
             /// move what they held and never written again, so each stays

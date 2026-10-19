@@ -41,7 +41,7 @@ enum AudioEditorTracks: Equatable, Sendable {
         // Each track by its path from the folder, as the parse names it,
         // and by its path inside the package, as the edit history does.
         let package = book.tmbDirectory
-        let files = try AudioBookParser.audioFiles(in: folder)
+        let files = try AudioBookParser.audioFiles(in: folder, scan: .package)
         var packagePaths: [String: String] = [:]
         for file in files {
             guard let path = AudioEditPackage.path(of: file, in: package),

@@ -405,7 +405,10 @@ final class ContinueToNextBookTests: XCTestCase {
 
         XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Third Volume"])
         XCTAssertEqual(asked().map(\.nextBookID), [next.id])
-        XCTAssertTrue(world.requests.hasRequest(for: next.id))
+        // The request reaches the world's queue just after the ask is
+        // recorded: wait for it, as `asked()` was waited for, so a busy Mac
+        // cannot read it too soon.
+        XCTAssertTrue(eventually { world.requests.hasRequest(for: next.id) }, "The next book was never requested")
         XCTAssertFalse(world.requests.hasRequest(for: finishedBefore.id), "The finished book was asked for")
     }
 

@@ -19,11 +19,11 @@ enum ImportStep: Equatable, Sendable {
     case readingManifest
     /// Converting a DAISY book's audio into TextMouth's audio layout.
     case convertingAudio
-    /// Converting the book's Ogg audio to AAC (B06), `done` of `total`
-    /// tracks so far: after the archive's extraction and its manifest's
-    /// check, before the audio is read, since Ogg is never handed to a
-    /// player.
-    case convertingOggAudio(done: Int, of: Int)
+    /// Converting the audio the import converts to .m4a (B06, FMT09), `done`
+    /// of `total` tracks so far: after the archive's extraction and its
+    /// manifest's check, before the audio is read, since such audio is
+    /// never handed to a player.
+    case convertingImportedAudio(done: Int, of: Int)
     /// Checking a .tmb package and the book it holds.
     case checkingPackage
     /// Reading the book's text into its content.md cache, as the reader will.
@@ -48,7 +48,7 @@ enum ImportStep: Equatable, Sendable {
         case .extractingArchive: return "Extracting the archive"
         case .readingManifest: return "Reading its manifest"
         case .convertingAudio: return "Converting its DAISY audio"
-        case .convertingOggAudio: return "Converting its audio"
+        case .convertingImportedAudio: return "Converting its audio"
         case .checkingPackage: return "Checking the package"
         case .readingText: return "Reading its text"
         case .readingAudio: return "Reading its audio"

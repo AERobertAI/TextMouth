@@ -68,6 +68,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // mid-conversion, and for the working folders (with their hidden
         // output) older than an hour that it left in the temporary directory.
         OrphanedConversionSweep.sweepTextutilInBackground()
+        // And for an afinfo orphaned mid-read, and the hidden `.watched-output`
+        // files older than an hour that it (or a killed app) left behind.
+        OrphanedConversionSweep.sweepAfinfoInBackground()
         // The hidden copy a data-directory move staged beside its
         // destination is removed when the move ends; when the destination's
         // volume was unplugged or the app force-quit, it was not. The

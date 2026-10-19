@@ -31,7 +31,7 @@ extension ReaderViewModel {
             refuseOggAudio(ReaderOggWording.beingConverted)
             return false
         }
-        guard chapterAudioSource(forChapterAt: currentChapterIndex).files.contains(where: OggAudioConverter.isOgg) else {
+        guard chapterAudioSource(forChapterAt: currentChapterIndex).files.contains(where: ImportAudioConverter.isOgg) else { // lint-ok: the library converts Ogg books alone, the one format converted at import before October 18
             return true
         }
         DiagnosticLog.event(

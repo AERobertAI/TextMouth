@@ -364,6 +364,8 @@ final class TMBPackageImportTests: XCTestCase {
         XCTAssertEqual(model.library.books.map(\.id), [partial.id])
         XCTAssertTrue(model.showError)
         XCTAssertEqual(model.errorMessage, ImportedBook(book: partial, report: report).warning)
+        // The book was added, so the alert is no error (review item 11).
+        XCTAssertEqual(model.errorTitle, "Book Imported")
 
         model.showError = false
         model.errorMessage = nil

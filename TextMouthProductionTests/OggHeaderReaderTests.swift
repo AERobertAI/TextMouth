@@ -1248,3 +1248,169 @@ final class OggMetadataReadersTests: XCTestCase {
         XCTAssertEqual(longMetadata.duration, "10:00")
     }
 }
+
+// MARK: - Ogg FLAC streams
+
+/// Builds the packets of an Ogg FLAC stream (xiph.org/flac/ogg_mapping.html).
+extension OggStreamBuilder {
+    /// An Ogg FLAC identification packet: 0x7F "FLAC", the mapping's version,
+    /// the count of header packets after it, "fLaC", the STREAMINFO block
+    /// header, and STREAMINFO with its rate, channels, bits and total samples
+    /// packed as the format has them (20, 3, 5, then 36 bits).
+    static func flacID(rate: UInt32 = 22_050, channels: Int = 1, bits: Int = 16,
+                       totalSamples: UInt64 = 88_200, major: UInt8 = 1, headerCount: UInt16 = 1,
+                       magic: String = "fLaC", blockType: UInt8 = 0, blockLength: UInt8 = 34) -> [UInt8] {
+        var bytes: [UInt8] = [0x7F] + Array("FLAC".utf8) + [major, 0]
+        bytes += [UInt8(headerCount >> 8), UInt8(headerCount & 0xFF)] + Array(magic.utf8)
+        bytes += [blockType, 0, 0, blockLength]
+        // STREAMINFO: block sizes (2 x 16 bits) and frame sizes (2 x 24 bits), all unknown (0).
+        bytes += [UInt8](repeating: 0, count: 10)
+        // Then the packed word (rate, channels less one, bits less one, total samples) and the MD5.
+        let packed = (UInt64(rate) << 44) | (UInt64(channels - 1) << 41) | (UInt64(bits - 1) << 36) | totalSamples
+        bytes += (0..<8).map { UInt8(truncatingIfNeeded: packed >> (8 * UInt64(7 - $0))) }
+        bytes += [UInt8](repeating: 0, count: 16)
+        return bytes
+    }
+
+    /// A FLAC metadata block as a header packet: its type (the high bit
+    /// marks the last block), a 24-bit big-endian length (`declaredLength`
+    /// when a test needs it to lie), and `body`.
+    static func flacBlock(type: UInt8, last: Bool, body: [UInt8], declaredLength: Int? = nil) -> [UInt8] {
+        let length = declaredLength ?? body.count
+        return [type | (last ? 0x80 : 0), UInt8((length >> 16) & 0xFF), UInt8((length >> 8) & 0xFF),
+                UInt8(length & 0xFF)] + body
+    }
+
+    /// A VORBIS_COMMENT block (type 4): a Vorbis comment with no signature or framing bit.
+    static func flacComments(_ comments: [String], last: Bool = true, declaredLength: Int? = nil) -> [UInt8] {
+        flacBlock(type: 4, last: last, body: commentPacket(signature: [], comments: comments.map { Array($0.utf8) }),
+                  declaredLength: declaredLength)
+    }
+
+    /// A whole Ogg FLAC stream: the identification page, one packet's pages
+    /// for each of `headers` (by default one comment block carrying
+    /// `comments`), an audio page, and a last page ending at `granule`.
+    static func flacStream(id: [UInt8] = flacID(), headers: [[UInt8]]? = nil, granule: Int64 = 88_200,
+                           comments: [String] = [], serial: UInt32 = 1) -> [UInt8] {
+        var pages = [page(type: 0x02, granule: 0, serial: serial, sequence: 0, lacing: [UInt8(id.count)], payload: id)]
+        for packet in headers ?? [flacComments(comments)] {
+            pages += self.pages(carrying: packet, serial: serial, firstSequence: UInt32(pages.count))
+        }
+        pages += audioPages(serial: serial, firstSequence: UInt32(pages.count), granule: granule)
+        return pages.flatMap { $0 }
+    }
+}
+
+extension OggHeaderReaderTests {
+    func testAnOggFlacStreamGivesItsFormatDurationAndTags() throws {
+        let stream = Builder.flacStream(comments: ["TITLE=Three Tones", "ARTIST=A Test Rig"])
+        let header = try XCTUnwrap(parse(stream))
+        XCTAssertEqual(header.codec, .flac)
+        XCTAssertEqual(header.channels, 1)
+        XCTAssertEqual(header.sampleRate, 22_050)
+        XCTAssertEqual(header.bitsPerSample, 16)
+        XCTAssertEqual(header.duration, 4.0, accuracy: 0.0001)
+        XCTAssertEqual(header.tags.title, "Three Tones")
+        XCTAssertEqual(header.tags.artist, "A Test Rig")
+    }
+
+    func testVorbisAndOpusStreamsHaveNoBitsPerSample() throws {
+        XCTAssertNil(try XCTUnwrap(parse(Builder.vorbisStream())).bitsPerSample)
+        XCTAssertNil(try XCTUnwrap(parse(Builder.opusStream())).bitsPerSample)
+    }
+
+    /// The widest values each packed STREAMINFO field holds read back whole.
+    func testStreamInfoFieldsAtTheirLimitsReadBackWhole() throws {
+        let id = Builder.flacID(rate: 1_048_575, channels: 8, bits: 32, totalSamples: 0)
+        let header = try XCTUnwrap(parse(Builder.flacStream(id: id, granule: 2_097_150)))
+        XCTAssertEqual(header.sampleRate, 1_048_575)
+        XCTAssertEqual(header.channels, 8)
+        XCTAssertEqual(header.bitsPerSample, 32)
+        XCTAssertEqual(header.duration, 2.0, accuracy: 0.0001)
+        // The smallest depth, with total samples (needing 36 bits' low end) agreeing with the granule.
+        let narrow = Builder.flacID(rate: 44_100, channels: 2, bits: 4, totalSamples: 44_100 * 100)
+        let small = try XCTUnwrap(parse(Builder.flacStream(id: narrow, granule: 44_100 * 100)))
+        XCTAssertEqual(small.bitsPerSample, 4)
+        XCTAssertEqual(small.channels, 2)
+    }
+
+    func testAnUnknownTotalOfSamplesLeavesTheGranuleAlone() throws {
+        let id = Builder.flacID(totalSamples: 0)
+        XCTAssertEqual(try XCTUnwrap(parse(Builder.flacStream(id: id))).duration, 4.0, accuracy: 0.0001)
+    }
+
+    func testTotalSamplesWithinASecondOfTheGranuleAreBelieved() throws {
+        // 0.9 seconds more than the granule says (19,845 samples at 22,050 Hz).
+        let id = Builder.flacID(totalSamples: 88_200 + 19_845)
+        let header = try XCTUnwrap(parse(Builder.flacStream(id: id)))
+        XCTAssertEqual(header.duration, 4.0, accuracy: 0.0001)
+    }
+
+    // MARK: Refusals
+
+    func testAnOggFlacStreamContradictingItselfIsRefused() {
+        // Two seconds more, and two seconds fewer, than the granule says.
+        for total: UInt64 in [88_200 + 44_100, 44_100] {
+            XCTAssertNil(parse(Builder.flacStream(id: Builder.flacID(totalSamples: total))), "total \(total)")
+        }
+    }
+
+    func testAnOggFlacIdentificationThatIsNotFlacIsRefused() {
+        let bad: [(String, [UInt8])] = [
+            ("major version 2", Builder.flacID(major: 2)),
+            ("major version 0", Builder.flacID(major: 0)),
+            ("no fLaC", Builder.flacID(magic: "fLaX")),
+            ("a PADDING block first", Builder.flacID(blockType: 1)),
+            ("a STREAMINFO of 33 bytes", Builder.flacID(blockLength: 33)),
+            ("a sample rate of 0", Builder.flacID(rate: 0)),
+            ("a STREAMINFO cut short", Array(Builder.flacID().prefix(50))),
+        ]
+        for (name, id) in bad {
+            XCTAssertNil(parse(Builder.flacStream(id: id)), name)
+        }
+    }
+
+    // MARK: Header packets
+
+    func testAHeaderCountOfZeroEndsAtTheBlockMarkedLast() throws {
+        // The comment block is the last header packet; the stream does not count them.
+        let id = Builder.flacID(headerCount: 0)
+        let stream = Builder.flacStream(id: id, comments: ["TITLE=Counted by the last flag"])
+        XCTAssertEqual(try XCTUnwrap(parse(stream)).tags.title, "Counted by the last flag")
+    }
+
+    func testBlocksBeforeAndAfterTheCommentsArePassedOver() throws {
+        // A SEEKTABLE (type 3), the comments (not last), then PADDING (type 1, last).
+        let headers = [Builder.flacBlock(type: 3, last: false, body: [UInt8](repeating: 0, count: 18)),
+                       Builder.flacComments(["ARTIST=Between Blocks"], last: false),
+                       Builder.flacBlock(type: 1, last: true, body: [UInt8](repeating: 0, count: 40))]
+        for count: UInt16 in [3, 0] {
+            let stream = Builder.flacStream(id: Builder.flacID(headerCount: count), headers: headers)
+            XCTAssertEqual(try XCTUnwrap(parse(stream)).tags.artist, "Between Blocks", "count \(count)")
+        }
+    }
+
+    func testAStreamWithNoCommentBlockHasEmptyTags() throws {
+        // STREAMINFO alone: no header packets follow, and the first audio packet is not a comment block.
+        let id = Builder.flacID(headerCount: 0)
+        let stream = Builder.flacStream(id: id, headers: [])
+        XCTAssertEqual(try XCTUnwrap(parse(stream)).tags, OggHeaderReader.Tags())
+    }
+
+    func testACommentBlockLongerThanItsPacketGivesEmptyTags() throws {
+        // The block declares 1,000 bytes more than the packet holds.
+        let honest = Builder.flacComments(["TITLE=Cut Short"])
+        let lying = Builder.flacComments(["TITLE=Cut Short"], declaredLength: honest.count - 4 + 1_000)
+        let header = try XCTUnwrap(parse(Builder.flacStream(headers: [lying])))
+        XCTAssertEqual(header.tags, OggHeaderReader.Tags())
+        // The stream's facts do not depend on its tags.
+        XCTAssertEqual(header.duration, 4.0, accuracy: 0.0001)
+    }
+
+    func testOggFlacCutAnywhereNeverTraps() {
+        let stream = Builder.flacStream(comments: ["TITLE=Cut"])
+        for length in stride(from: 0, through: stream.count, by: 7) {
+            _ = OggHeaderReader.parse(head: Array(stream[0..<length]), tail: stream)
+        }
+    }
+}

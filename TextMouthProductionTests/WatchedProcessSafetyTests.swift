@@ -35,11 +35,13 @@ final class WatchedProcessSafetyTests: XCTestCase {
 
     /// Limits that keep a test short: the watchdog looks every 0.1 second.
     private func limits(
-        seconds: TimeInterval = 60, stalled: TimeInterval = 60, cpu: TimeInterval? = nil
+        seconds: TimeInterval = 60, stalled: TimeInterval = 60, cpu: TimeInterval? = nil,
+        outputCap: Int64? = nil, poll: TimeInterval = 0.1
     ) -> WatchedProcess.Limits {
         WatchedProcess.Limits(
             maximumSeconds: seconds, maximumResidentBytes: 1 << 30,
-            maximumStalledSeconds: stalled, pollInterval: 0.1, maximumCPUSeconds: cpu
+            maximumStalledSeconds: stalled, pollInterval: poll, maximumCPUSeconds: cpu,
+            maximumOutputBytes: outputCap
         )
     }
 
@@ -304,5 +306,207 @@ final class WatchedProcessSafetyTests: XCTestCase {
         let before = WatchedProcess.runningChildCount
         WatchedProcess.terminateAll()
         XCTAssertEqual(WatchedProcess.runningChildCount, before)
+    }
+
+    // MARK: - Capturing The Output (FMT09)
+
+    /// How many hidden `.watched-output` files the test's own folder holds
+    /// (every capturing run in these tests is given that folder, so another
+    /// test's or another app's file can never be counted).
+    private func capturedOutputFileCount() -> Int {
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []
+        return names.filter { $0.hasSuffix(WatchedProcess.outputFileSuffix) }.count
+    }
+
+    /// What the child prints comes back, and its exit is reported.
+    func testRunCapturingOutputReturnsWhatTheChildPrints() async throws {
+        let result = try await WatchedProcess.runCapturingOutput(
+            URL(fileURLWithPath: "/bin/echo"), arguments: ["hello", "there"], limits: limits(),
+            outputFolder: folder
+        )
+        XCTAssertEqual(result.outcome, .exited(status: 0))
+        XCTAssertEqual(String(data: result.output, encoding: .utf8), "hello there\n")
+    }
+
+    /// Only the first `maximumOutputBytes` bytes come back.
+    func testRunCapturingOutputKeepsOnlyTheFirstBytes() async throws {
+        let result = try await WatchedProcess.runCapturingOutput(
+            URL(fileURLWithPath: "/bin/echo"), arguments: ["abcdefghij"], limits: limits(),
+            maximumOutputBytes: 4, outputFolder: folder
+        )
+        XCTAssertEqual(String(data: result.output, encoding: .utf8), "abcd")
+    }
+
+    /// The hidden file is gone after an exit, a kill, and a failure to start.
+    func testRunCapturingOutputLeavesNoFileBehind() async throws {
+        XCTAssertEqual(capturedOutputFileCount(), 0)
+        _ = try await WatchedProcess.runCapturingOutput(
+            URL(fileURLWithPath: "/bin/echo"), arguments: ["x"], limits: limits(), outputFolder: folder
+        )
+        let killed = try await WatchedProcess.runCapturingOutput(
+            URL(fileURLWithPath: "/bin/sleep"), arguments: ["30"], limits: limits(seconds: 0.3),
+            outputFolder: folder
+        )
+        XCTAssertEqual(killed.outcome, .killed(.tookTooLong(seconds: 0.3)))
+        let missing = try await WatchedProcess.runCapturingOutput(
+            folder.appendingPathComponent("no-such-tool"), arguments: [], limits: limits(), outputFolder: folder
+        )
+        XCTAssertEqual(missing.outcome, .couldNotStart)
+        XCTAssertTrue(missing.output.isEmpty)
+        XCTAssertEqual(capturedOutputFileCount(), 0)
+    }
+
+    /// A cancelled run throws, kills the child, and removes its file too.
+    func testACancelledCapturingRunRemovesItsFile() async throws {
+        let limits = limits()
+        let folder = try XCTUnwrap(folder)
+        let task = Task { () -> Data in
+            try await WatchedProcess.runCapturingOutput(
+                URL(fileURLWithPath: "/bin/sleep"), arguments: ["30"], limits: limits, outputFolder: folder
+            ).output
+        }
+        // Long enough for the child to have started: its file is in the
+        // folder the run was given, and nowhere else.
+        try await Task.sleep(nanoseconds: 500_000_000)
+        XCTAssertEqual(capturedOutputFileCount(), 1)
+        task.cancel()
+        do {
+            _ = try await task.value
+            XCTFail("A cancelled run must throw")
+        } catch is CancellationError {
+            // Expected.
+        }
+        XCTAssertEqual(capturedOutputFileCount(), 0)
+    }
+
+    /// The stall clock of a capturing run counts from the child's start: a
+    /// silent child is killed as making no progress.
+    func testASilentCapturingChildIsKilledAsMakingNoProgress() async throws {
+        let result = try await WatchedProcess.runCapturingOutput(
+            URL(fileURLWithPath: "/bin/sleep"), arguments: ["30"], limits: limits(stalled: 0.3),
+            outputFolder: folder
+        )
+        XCTAssertEqual(result.outcome, .killed(.madeNoProgress(seconds: 0.3)))
+    }
+
+    /// Output is not progress for a capturing run: a child that prints ten
+    /// lines a second is still killed when the stall allowance (afinfo's is
+    /// its whole time limit) is spent, since the clock runs from the start.
+    func testPrintingIsNotProgressForACapturingRun() async throws {
+        let result = try await WatchedProcess.runCapturingOutput(
+            URL(fileURLWithPath: "/bin/sh"), arguments: ["-c", "while :; do echo x; sleep 0.1; done"],
+            limits: limits(seconds: 20, stalled: 0.5), outputFolder: folder
+        )
+        XCTAssertEqual(result.outcome, .killed(.madeNoProgress(seconds: 0.5)))
+        // What it printed before it was killed still comes back.
+        XCTAssertFalse(result.output.isEmpty)
+    }
+
+    /// A child that prints without end is still killed at its time limit
+    /// (the stall allowance equal to it, as afinfo's is).
+    func testAChildThatPrintsWithoutEndIsKilledAtItsTimeLimit() async throws {
+        let result = try await WatchedProcess.runCapturingOutput(
+            URL(fileURLWithPath: "/bin/sh"), arguments: ["-c", "while :; do echo x; sleep 0.1; done"],
+            limits: limits(seconds: 1, stalled: 1), outputFolder: folder
+        )
+        XCTAssertEqual(result.outcome, .killed(.tookTooLong(seconds: 1)))
+    }
+
+    /// The cap is on the file itself: `yes` is killed once its output passes
+    /// `maximumOutputBytes`, and the first bytes up to the cap come back.
+    func testRunCapturingOutputKillsAChildThatWritesPastTheCap() async throws {
+        let result = try await WatchedProcess.runCapturingOutput(
+            URL(fileURLWithPath: "/usr/bin/yes"), arguments: [], limits: limits(poll: 0.02),
+            maximumOutputBytes: 1_000, outputFolder: folder
+        )
+        XCTAssertEqual(result.outcome, .killed(.wroteTooMuch(bytes: 1_000)))
+        XCTAssertEqual(result.output, Data(String(repeating: "y\n", count: 500).utf8))
+        // The killed run's file is gone too.
+        XCTAssertEqual(capturedOutputFileCount(), 0)
+    }
+
+    // MARK: - The Output Cap (review items 4 and 9)
+
+    /// `run` kills a child whose watched file passes `maximumOutputBytes`.
+    func testRunKillsAChildThatWritesPastTheCap() async throws {
+        let output = folder.appendingPathComponent("out.bin")
+        let outcome = try await WatchedProcess.run(
+            URL(fileURLWithPath: "/bin/sh"),
+            arguments: ["-c", "while :; do printf xxxxxxxxxx >> \"$0\"; done", output.path],
+            watching: output, limits: limits(outputCap: 1_000, poll: 0.02)
+        )
+        XCTAssertEqual(outcome, .killed(.wroteTooMuch(bytes: 1_000)))
+    }
+
+    /// The kernel stops a fast writer at the cap, not the watchdog: with a
+    /// poll interval far longer than the test, the child still ends at once
+    /// as `wroteTooMuch`, and its file holds at most the 1 MB cap. (`yes` is
+    /// the tool itself: a shell ignores the kernel's signal.)
+    func testTheKernelStopsAFastWriterAtTheCapBetweenTwoLooks() async throws {
+        let output = folder.appendingPathComponent("fast.bin")
+        let cap: Int64 = 1 << 20
+        let started = Date()
+        let outcome = try await WatchedProcess.run(
+            URL(fileURLWithPath: "/bin/sh"),
+            arguments: ["-c", "exec /usr/bin/yes >> \"$0\"", output.path],
+            watching: output, limits: limits(outputCap: cap, poll: 30)
+        )
+        XCTAssertEqual(outcome, .killed(.wroteTooMuch(bytes: cap)))
+        XCTAssertLessThan(Date().timeIntervalSince(started), 10)
+        let size = (try FileManager.default.attributesOfItem(atPath: output.path)[.size] as? NSNumber)?.int64Value
+        XCTAssertLessThanOrEqual(try XCTUnwrap(size), cap)
+    }
+
+    /// `yes` writing into a capturing run's file under a 1 MB cap, with the
+    /// watchdog too slow to help, ends as `wroteTooMuch` and the 1 MB comes
+    /// back whole.
+    func testYesIsStoppedAtAOneMegabyteCapByTheKernel() async throws {
+        let started = Date()
+        let result = try await WatchedProcess.runCapturingOutput(
+            URL(fileURLWithPath: "/usr/bin/yes"), arguments: [], limits: limits(poll: 30),
+            maximumOutputBytes: 1 << 20, outputFolder: folder
+        )
+        XCTAssertEqual(result.outcome, .killed(.wroteTooMuch(bytes: 1 << 20)))
+        XCTAssertEqual(result.output.count, 1 << 20)
+        // Far sooner than the 30-second look the watchdog would have taken.
+        XCTAssertLessThan(Date().timeIntervalSince(started), 10)
+    }
+
+    /// The shell's limit is whole kilobytes, rounded up, clamped to a petabyte, and open without a cap.
+    func testTheFileSizeLimitGivenToTheShell() {
+        XCTAssertEqual(WatchedProcess.fileSizeLimitForShell(nil), "unlimited")
+        XCTAssertEqual(WatchedProcess.fileSizeLimitForShell(0), "1")
+        XCTAssertEqual(WatchedProcess.fileSizeLimitForShell(1_024), "1")
+        XCTAssertEqual(WatchedProcess.fileSizeLimitForShell(1_025), "2")
+        XCTAssertEqual(WatchedProcess.fileSizeLimitForShell(1 << 20), "1024")
+        XCTAssertEqual(WatchedProcess.fileSizeLimitForShell(Int64.max), "1099511627776")
+    }
+
+    /// A child under the cap, and a run with no cap at all, are left alone
+    /// until some other limit ends them.
+    func testAChildUnderTheCapOrWithNoCapIsNotKilledForItsOutput() async throws {
+        let output = folder.appendingPathComponent("slow.bin")
+        let (executable, arguments) = writer(to: output)
+        let capped = try await WatchedProcess.run(
+            executable, arguments: arguments, watching: output,
+            limits: limits(seconds: 0.4, outputCap: 1_000_000)
+        )
+        XCTAssertEqual(capped, .killed(.tookTooLong(seconds: 0.4)))
+        let uncapped = try await WatchedProcess.run(
+            executable, arguments: arguments, watching: output, limits: limits(seconds: 0.4)
+        )
+        XCTAssertEqual(uncapped, .killed(.tookTooLong(seconds: 0.4)))
+    }
+
+    /// The reason reads as whole megabytes, and the converter's message
+    /// carries it to the listener.
+    func testTheOutputCapReasonReadsAsWords() {
+        let reason = WatchedProcess.KillReason.wroteTooMuch(bytes: 120 << 20)
+        XCTAssertEqual(reason.words, "its output passed 120 MB")
+        XCTAssertEqual(
+            ImportAudioConverter.Failure.killed(fileName: "a.ac3", reason: reason.words).errorDescription,
+            "Converting a.ac3 was stopped because its output passed 120 MB."
+        )
+        XCTAssertEqual(WatchedProcess.KillReason.wroteTooMuch(bytes: 1 << 20).words, "its output passed 1 MB")
     }
 }

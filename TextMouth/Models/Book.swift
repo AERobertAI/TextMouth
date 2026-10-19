@@ -64,11 +64,14 @@ enum BookFormat: String, Codable, CaseIterable {
     /// takes one, and a video episode's package imports again.
     ///
     /// Ogg audio (.ogg, .oga, and .opus, the extensions Core Audio itself
-    /// lists for its Ogg file type, holding Vorbis, Opus, or FLAC) plays
-    /// through AVFoundation from macOS 15.4 on. On an earlier macOS the
-    /// import's playability check (`AudioMediaProbe`) refuses each Ogg file
-    /// by name, saying it cannot be opened as audio, as for any file the Mac
-    /// cannot play.
+    /// lists for its Ogg file type) and the formats macOS decodes that
+    /// TextMouth does not play as they are
+    /// (`ImportAudioConverter.coreAudioExtensions`: AC-3, AMR, MP2, CAF,
+    /// AIFC, AU, Wave64, 3GPP audio, and the like) are converted at import
+    /// to an .m4a file, by afconvert in a child process
+    /// (`ImportAudioConverter`), and only the converted file is played. A
+    /// Mac whose afconvert cannot read a format (Ogg before macOS 15.4, for
+    /// one) refuses such a file by name at "Converting its audio".
     ///
     /// A Word template (.dotx), a macro-enabled document (.docm), and a
     /// macro-enabled template (.dotm) are the same Office Open XML package
@@ -98,7 +101,31 @@ enum BookFormat: String, Codable, CaseIterable {
         case .pdf: return ["pdf"]
         case .audio:
             return ["mp3", "m4a", "m4b", "wav", "aiff", "aif", "flac", "alac", "aac", "ogg", "oga", "opus", "mp4", "m4v", "mov"]
+                + ImportAudioConverter.coreAudioExtensions.sorted()
         }
+    }
+
+    /// The extensions, in lowercase, that a package's track scan takes as
+    /// tracks: the audio list without the formats added on October 18, 2026
+    /// (`ImportAudioConverter.coreAudioExtensions`: AIFC, AU, AC-3, CAF, and
+    /// the rest of the formats macOS decodes that the import converts). A
+    /// package holds the converted file of each such track, so one of them
+    /// found in it is a stray, an older ZIP import's leftover or a file put
+    /// there by hand, and is neither played nor counted as a chapter, as
+    /// taking it would fail the book or shift the chapters after it under
+    /// the listener's places. What Open Book, an import, a playlist, a feed,
+    /// and Export accept is the whole audio list (`fileExtensions`), not
+    /// this one. TextMouth's own CAF, the one of those formats it also
+    /// writes, is taken by its name and place
+    /// (`AudioBookParser.isOwnCAF(atPath:)`), never by this list.
+    ///
+    /// Ogg (`ImportAudioConverter.oggExtensions`) stays in the list, as it
+    /// was before October 18: the library converts the Ogg books it already
+    /// holds, and that conversion reads a book's index before converting it,
+    /// which needs the book's Ogg tracks found. The reader's guards refuse
+    /// an Ogg track by name and by content.
+    static var packageTrackExtensions: Set<String> {
+        Set(BookFormat.audio.fileExtensions).subtracting(ImportAudioConverter.coreAudioExtensions)
     }
 
     var isAudio: Bool { self == .audio }

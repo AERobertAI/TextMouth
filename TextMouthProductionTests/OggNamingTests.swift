@@ -37,10 +37,10 @@ final class OggNamingTests: XCTestCase {
 
     /// A finished conversion of `stem`.ogg whose hidden file holds
     /// "converted"; `makeFile` false leaves the hidden file unmade.
-    private func conversion(stem: String, makeFile: Bool = true) throws -> OggAudioConverter.Conversion {
-        let hidden = OggAudioConverter.temporaryURL(beside: source(stem: stem))
+    private func conversion(stem: String, makeFile: Bool = true) throws -> ImportAudioConverter.Conversion {
+        let hidden = ImportAudioConverter.temporaryURL(beside: source(stem: stem))
         if makeFile { try Data("converted".utf8).write(to: hidden) }
-        return OggAudioConverter.Conversion(
+        return ImportAudioConverter.Conversion(
             source: source(stem: stem),
             converted: hidden,
             duration: 1,
@@ -72,18 +72,18 @@ final class OggNamingTests: XCTestCase {
     // MARK: - The Temporary Name
 
     func testTemporaryNameIsHiddenShortAndBesideTheSource() {
-        let url = OggAudioConverter.temporaryURL(beside: source(stem: "Chapter"))
+        let url = ImportAudioConverter.temporaryURL(beside: source(stem: "Chapter"))
         let name = url.lastPathComponent
         XCTAssertEqual(url.deletingLastPathComponent().standardizedFileURL, folder.standardizedFileURL)
         XCTAssertTrue(name.hasPrefix("."))
-        XCTAssertTrue(name.hasSuffix(OggAudioConverter.temporarySuffix))
-        XCTAssertEqual(name.count, 56)
+        XCTAssertTrue(name.hasSuffix(ImportAudioConverter.temporarySuffix))
+        XCTAssertEqual(name.count, 58)
     }
 
     func testTemporaryNamesDifferAndIgnoreTheStemsLength() {
-        let short = OggAudioConverter.temporaryURL(beside: source(stem: "a.b.c"))
-        let again = OggAudioConverter.temporaryURL(beside: source(stem: "a.b.c"))
-        let long = OggAudioConverter.temporaryURL(beside: source(stem: String(repeating: "x", count: 251)))
+        let short = ImportAudioConverter.temporaryURL(beside: source(stem: "a.b.c"))
+        let again = ImportAudioConverter.temporaryURL(beside: source(stem: "a.b.c"))
+        let long = ImportAudioConverter.temporaryURL(beside: source(stem: String(repeating: "x", count: 251)))
         XCTAssertNotEqual(short.lastPathComponent, again.lastPathComponent)
         XCTAssertEqual(short.lastPathComponent.count, long.lastPathComponent.count)
     }
@@ -91,17 +91,17 @@ final class OggNamingTests: XCTestCase {
     func testAFileCanBeMadeUnderTheTemporaryNameOfALongestStemAndIsSwept() throws {
         // A 251-character stem makes a 255-character source name, the longest
         // there is: the old temporary name (57 characters more) was refused.
-        let url = OggAudioConverter.temporaryURL(beside: source(stem: String(repeating: "x", count: 251)))
+        let url = ImportAudioConverter.temporaryURL(beside: source(stem: String(repeating: "x", count: 251)))
         try Data("partial".utf8).write(to: url)
         XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
-        OggAudioConverter.removeLeftovers(in: folder)
+        ImportAudioConverter.removeLeftovers(in: folder)
         XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
     }
 
     // MARK: - The Final Name
 
     func testTheFinalNameIsTheStemWithM4aAndTheContentsArrive() throws {
-        let named = try OggAudioConverter.givingFinalName(try conversion(stem: "x"))
+        let named = try ImportAudioConverter.givingFinalName(try conversion(stem: "x"))
         XCTAssertEqual(named.converted.lastPathComponent, "x.m4a")
         XCTAssertEqual(contents(of: "x.m4a"), "converted")
         XCTAssertEqual(fileNames(), ["x.m4a"], "the hidden file is gone")
@@ -109,9 +109,9 @@ final class OggNamingTests: XCTestCase {
 
     func testATakenNameGetsTheNextFreeNumberAndReplacesNothing() throws {
         try write("first", named: "x.m4a")
-        let second = try OggAudioConverter.givingFinalName(try conversion(stem: "x"))
+        let second = try ImportAudioConverter.givingFinalName(try conversion(stem: "x"))
         XCTAssertEqual(second.converted.lastPathComponent, "x 2.m4a")
-        let third = try OggAudioConverter.givingFinalName(try conversion(stem: "x"))
+        let third = try ImportAudioConverter.givingFinalName(try conversion(stem: "x"))
         XCTAssertEqual(third.converted.lastPathComponent, "x 3.m4a")
         XCTAssertEqual(contents(of: "x.m4a"), "first")
         XCTAssertEqual(contents(of: "x 2.m4a"), "converted")
@@ -122,7 +122,7 @@ final class OggNamingTests: XCTestCase {
 
     func testEachUnsupportedErrnoFallsBackToAnExclusiveCreate() throws {
         for code in [ENOTSUP, EOPNOTSUPP] {
-            let named = try OggAudioConverter.givingFinalName(
+            let named = try ImportAudioConverter.givingFinalName(
                 try conversion(stem: "x"),
                 exclusiveRename: failing(with: code)
             )
@@ -136,7 +136,7 @@ final class OggNamingTests: XCTestCase {
     func testTheFallbackSkipsTakenNamesAndReplacesNothing() throws {
         try write("first", named: "x.m4a")
         try write("second", named: "x 2.m4a")
-        let named = try OggAudioConverter.givingFinalName(
+        let named = try ImportAudioConverter.givingFinalName(
             try conversion(stem: "x"),
             exclusiveRename: failing(with: ENOTSUP)
         )
@@ -149,9 +149,9 @@ final class OggNamingTests: XCTestCase {
     func testAnotherErrnoIsCannotNameAndLeavesTheHiddenFile() throws {
         let pending = try conversion(stem: "x")
         XCTAssertThrowsError(
-            try OggAudioConverter.givingFinalName(pending, exclusiveRename: failing(with: EACCES))
+            try ImportAudioConverter.givingFinalName(pending, exclusiveRename: failing(with: EACCES))
         ) { error in
-            XCTAssertEqual(error as? OggAudioConverter.Failure, .cannotName(fileName: "x.ogg"))
+            XCTAssertEqual(error as? ImportAudioConverter.Failure, .cannotName(fileName: "x.ogg"))
         }
         XCTAssertTrue(FileManager.default.fileExists(atPath: pending.converted.path))
         XCTAssertEqual(fileNames(), [pending.converted.lastPathComponent])
@@ -161,9 +161,9 @@ final class OggNamingTests: XCTestCase {
         // The converted file is gone, so renaming it over the reservation fails.
         let missing = try conversion(stem: "x", makeFile: false)
         XCTAssertThrowsError(
-            try OggAudioConverter.givingFinalName(missing, exclusiveRename: failing(with: ENOTSUP))
+            try ImportAudioConverter.givingFinalName(missing, exclusiveRename: failing(with: ENOTSUP))
         ) { error in
-            XCTAssertEqual(error as? OggAudioConverter.Failure, .cannotName(fileName: "x.ogg"))
+            XCTAssertEqual(error as? ImportAudioConverter.Failure, .cannotName(fileName: "x.ogg"))
         }
         XCTAssertEqual(fileNames(), [], "the empty reservation is removed")
     }
@@ -174,7 +174,7 @@ final class OggNamingTests: XCTestCase {
     /// returns the name it got.
     private func numberedName(forStem stem: String) throws -> String {
         try write("first", named: "\(stem).m4a")
-        let named = try OggAudioConverter.givingFinalName(try conversion(stem: stem))
+        let named = try ImportAudioConverter.givingFinalName(try conversion(stem: stem))
         XCTAssertEqual(contents(of: "\(stem).m4a"), "first", "the taken file is untouched")
         return named.converted.lastPathComponent
     }

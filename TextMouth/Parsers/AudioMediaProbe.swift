@@ -90,9 +90,10 @@ enum AudioMediaProbe {
     /// How long the audio file at `url` plays, in seconds, or why it cannot
     /// be played. See the type's documentation for each check.
     static func duration(of url: URL) async -> Result<TimeInterval, AudioMediaProblem> {
-        // Never decode Ogg in TextMouth (B09): Apple's Vorbis decoder can spin
-        // forever. Ogg audio is converted to AAC, in a child process, first.
-        guard !OggAudioConverter.isOgg(url) else { return .failure(.cannotOpen) }
+        // Never decode a format the import converts (B09, FMT09): Apple's
+        // Vorbis decoder once spun forever. Such audio is converted in a
+        // child process first.
+        guard !ImportAudioConverter.isNeverDecodedInApp(url) else { return .failure(.cannotOpen) }
         let asset = AVURLAsset(url: url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true])
 
         // Opening: any load error means AVFoundation cannot read the file

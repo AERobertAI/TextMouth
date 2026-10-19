@@ -26,7 +26,8 @@ enum BookExportWording {
         case .audio:
             return "The book's audio: its file, or its tracks in a folder named after the book, each named for its chapter."
         case .originalFile:
-            return "The book's own file, as it was imported."
+            return "The book's own file, as it was imported; for an audiobook, its audio files as they were before "
+                + "TextMouth converted them."
         case .markdown:
             return "The book's text as Markdown, the file TextMouth reads it from, with a line marking each chapter."
         case .plainText:

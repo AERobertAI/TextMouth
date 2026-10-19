@@ -254,6 +254,46 @@
 		</dict>
 		<dict>
 			<key>CFBundleTypeName</key>
+			<string>Audio Converted at Import</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>aifc</string>
+				<string>caf</string>
+				<string>au</string>
+				<string>snd</string>
+				<string>w64</string>
+				<string>ac3</string>
+				<string>ec3</string>
+				<string>eac3</string>
+				<string>mp1</string>
+				<string>mp2</string>
+				<string>mpa</string>
+				<string>amr</string>
+				<string>awb</string>
+				<string>3gp</string>
+				<string>3g2</string>
+				<string>3ga</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.aifc-audio</string>
+				<string>com.apple.coreaudio-format</string>
+				<string>public.au-audio</string>
+				<string>com.sony.wave64</string>
+				<string>public.ac3-audio</string>
+				<string>public.enhanced-ac3-audio</string>
+				<string>public.mp2</string>
+				<string>org.3gpp.adaptive-multi-rate-audio</string>
+				<string>public.3gpp</string>
+				<string>public.3gpp2</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
 			<string>ALAC Audio</string>
 			<key>CFBundleTypeExtensions</key>
 			<array>
@@ -262,6 +302,23 @@
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>com.apple.coreaudio-format</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>M3U Playlist</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>m3u</string>
+				<string>m3u8</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.m3u-playlist</string>
 			</array>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>

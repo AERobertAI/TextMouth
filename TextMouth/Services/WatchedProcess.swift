@@ -10,13 +10,18 @@ import os
 ///
 /// Once a second the watchdog (`Limits`) kills the child, with SIGKILL, when
 /// it has run longer than allowed, its resident memory has passed the limit,
-/// or the file it writes has not grown for too long. The child's standard
+/// the file it writes has not grown for too long, or that file has grown
+/// past its cap. The child's standard
 /// input, output, and errors are closed (the null device), so nothing it
 /// prints can fill a pipe and stall it.
 ///
-/// Three more guards keep a runaway child from outliving its watcher:
+/// Four more guards keep a runaway child from outliving its watcher:
 /// - the kernel itself ends the child (SIGXCPU) when it has used its CPU
 ///   allowance, `ulimit -t`, even if TextMouth is not watching any more;
+/// - when the output has a cap, the kernel ends the child (SIGXFSZ) the
+///   moment a write would pass it, `ulimit -f`: the watchdog looks once a
+///   second, and a fast writer can put gigabytes on the disk between two
+///   looks;
 /// - a tiny reaper shell kills the child as soon as TextMouth's own process
 ///   is gone, however it went (quit, force-quit, or the memory guard's
 ///   `_exit`);
@@ -39,6 +44,11 @@ enum WatchedProcess {
         /// the kernel (`ulimit -t`). Nil means four times `maximumSeconds`:
         /// a few cores' work for the whole wall-clock allowance.
         var maximumCPUSeconds: TimeInterval?
+        /// The most the watched file may grow to, in bytes. Nil means no cap.
+        /// A child whose output passes it is killed (`wroteTooMuch`): a
+        /// header that lies about a file's length can make a converter
+        /// reserve and write gigabytes the disk does not have.
+        var maximumOutputBytes: Int64?
 
         /// The CPU allowance in force: the explicit one, else four times
         /// `maximumSeconds`.
@@ -57,6 +67,8 @@ enum WatchedProcess {
         case madeNoProgress(seconds: TimeInterval)
         /// The kernel ended it (SIGXCPU) after `seconds` of processor time.
         case usedTooMuchProcessorTime(seconds: TimeInterval)
+        /// Its watched output file grew past `bytes`.
+        case wroteTooMuch(bytes: Int64)
 
         /// The reason as a phrase: "it ran longer than 62 seconds" (counted with
         /// `CountWording`, so one second reads "1 second").
@@ -70,6 +82,8 @@ enum WatchedProcess {
                 return "its output did not grow for \(CountWording.seconds(Int(seconds.rounded(.up))))"
             case let .usedTooMuchProcessorTime(seconds):
                 return "it used more than \(CountWording.seconds(Int(seconds.rounded(.up)))) of processor time"
+            case let .wroteTooMuch(bytes):
+                return "its output passed \(bytes / 1_048_576) MB"
             }
         }
     }
@@ -222,6 +236,18 @@ enum WatchedProcess {
         Int(min(max(seconds.rounded(.up), 1), 1_000_000_000))
     }
 
+    /// What `ulimit -f` is given for an output cap of `bytes`: whole
+    /// kilobytes (the unit of `/bin/sh`'s `ulimit -f`, measured: 3 stops a
+    /// writer at 3,072 bytes), rounded up, at least 1; "unlimited" without a
+    /// cap. A cap above a petabyte is given as a petabyte: the shell refuses
+    /// a number whose bytes overflow, and the child could not start.
+    static func fileSizeLimitForShell(_ bytes: Int64?) -> String {
+        guard let requested = bytes else { return "unlimited" }
+        let bytes = min(requested, 1 << 50)
+        let kilobyte: Int64 = 1_024
+        return String(max(1, bytes / kilobyte + (bytes % kilobyte > 0 ? 1 : 0)))
+    }
+
     /// Runs `executable` with `arguments` and waits for it, off the main
     /// thread, under `limits`, watching the growth of the file `output`.
     /// - Parameters:
@@ -239,6 +265,90 @@ enum WatchedProcess {
         residentMemory: @escaping @Sendable (pid_t) -> Int64? = WatchedProcess.residentMemory(of:),
         uptime: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
     ) async throws -> Outcome {
+        try await runWatched(
+            executable, arguments: arguments, output: output, standardOutput: nil,
+            outputIsProgress: true, limits: limits, residentMemory: residentMemory, uptime: uptime
+        )
+    }
+
+    /// Runs `executable` as `run` does, and keeps what the child prints
+    /// (FMT09): its standard output goes to a new hidden file,
+    /// `.<UUID>.watched-output`, in the temporary directory, which the
+    /// watchdog watches. The file is removed however the run ends: an exit, a
+    /// kill, a failure to start, or a cancellation.
+    ///
+    /// Output is not progress here: a child that prints without end must
+    /// still end at its time limit, and one that prints only when it ends
+    /// (afinfo) must not be killed for being silent, so the stall clock runs
+    /// from the child's start whatever it prints.
+    /// - Parameters:
+    ///   - maximumOutputBytes: How much of the output is returned, and the
+    ///     most the file may grow to: a child that writes more is killed
+    ///     (`wroteTooMuch`) and the bytes up to the cap are still returned.
+    ///   - outputFolder: Where the hidden file is made: the temporary
+    ///     directory, unless a test gives its own.
+    /// - Returns: How the child ended, and the first `maximumOutputBytes`
+    ///   bytes it printed (empty when it printed nothing or never started).
+    /// - Throws: `CancellationError`, as `run` does.
+    static func runCapturingOutput(
+        _ executable: URL,
+        arguments: [String],
+        limits: Limits,
+        maximumOutputBytes: Int = 1 << 20,
+        outputFolder: URL = FileManager.default.temporaryDirectory,
+        residentMemory: @escaping @Sendable (pid_t) -> Int64? = WatchedProcess.residentMemory(of:),
+        uptime: @escaping @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
+    ) async throws -> (outcome: Outcome, output: Data) {
+        let file = outputFolder.appendingPathComponent(".\(UUID().uuidString)\(outputFileSuffix)")
+        guard FileManager.default.createFile(atPath: file.path, contents: nil),
+              let handle = try? FileHandle(forWritingTo: file)
+        else {
+            // No place to put the output: the child is not started.
+            try? FileManager.default.removeItem(at: file)
+            return (.couldNotStart, Data())
+        }
+        // However the run ends, the file goes (the handle first closes).
+        defer {
+            try? handle.close()
+            try? FileManager.default.removeItem(at: file)
+        }
+        // The file itself is capped at the number of bytes that come back.
+        var cappedLimits = limits
+        cappedLimits.maximumOutputBytes = min(limits.maximumOutputBytes ?? .max, Int64(maximumOutputBytes))
+        let outcome = try await runWatched(
+            executable, arguments: arguments, output: file, standardOutput: handle,
+            outputIsProgress: false, limits: cappedLimits, residentMemory: residentMemory, uptime: uptime
+        )
+        return (outcome, firstBytes(of: file, upTo: maximumOutputBytes))
+    }
+
+    /// What every captured-output file's name ends with (the launch sweeps
+    /// look for it).
+    static let outputFileSuffix = ".watched-output"
+
+    /// The first `count` bytes of the file at `url`; empty when it cannot be
+    /// read.
+    private static func firstBytes(of url: URL, upTo count: Int) -> Data {
+        guard count > 0, let reader = try? FileHandle(forReadingFrom: url) else { return Data() }
+        defer { try? reader.close() }
+        return (try? reader.read(upToCount: count)) ?? Data()
+    }
+
+    /// The core of `run` and `runCapturingOutput`: starts the child on a
+    /// background queue, under `limits`, with the cancellation handler.
+    /// `standardOutput`, when given, takes the null device's place for the
+    /// child's standard output. `outputIsProgress` says whether the watched
+    /// file's growth resets the stall clock.
+    private static func runWatched(
+        _ executable: URL,
+        arguments: [String],
+        output: URL,
+        standardOutput: FileHandle?,
+        outputIsProgress: Bool,
+        limits: Limits,
+        residentMemory: @escaping @Sendable (pid_t) -> Int64?,
+        uptime: @escaping @Sendable () -> TimeInterval
+    ) async throws -> Outcome {
         try Task.checkCancellation()
         // The child's pid and the cancellation flag, shared with the handler.
         let gate = ChildGate()
@@ -246,7 +356,8 @@ enum WatchedProcess {
             await withCheckedContinuation { continuation in
                 DispatchQueue.global(qos: .utility).async {
                     continuation.resume(returning: watch(
-                        executable, arguments: arguments, output: output, limits: limits,
+                        executable, arguments: arguments, output: output,
+                        standardOutput: standardOutput, outputIsProgress: outputIsProgress, limits: limits,
                         residentMemory: residentMemory, uptime: uptime, gate: gate
                     ))
                 }
@@ -261,13 +372,15 @@ enum WatchedProcess {
     /// Starts the child and watches it until it ends or is killed; blocks
     /// its thread, so call it on a background queue.
     ///
-    /// The child is `/bin/sh` setting the CPU limit and then replacing itself
-    /// with the tool (`exec`), so the pid seen, measured, and killed here is
+    /// The child is `/bin/sh` setting the CPU and file-size limits and then
+    /// replacing itself with the tool (`exec`), so the pid seen, measured, and killed here is
     /// the tool's own.
     private static func watch(
         _ executable: URL,
         arguments: [String],
         output: URL,
+        standardOutput: FileHandle?,
+        outputIsProgress: Bool,
         limits: Limits,
         residentMemory: @Sendable (pid_t) -> Int64?,
         uptime: @Sendable () -> TimeInterval,
@@ -279,11 +392,12 @@ enum WatchedProcess {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/sh")
         process.arguments = [
-            "-c", "ulimit -t \"$1\" || exit 126; shift; exec \"$@\"", "sh",
-            String(cpuSecondsForShell(maximumCPU)), executable.path,
+            "-c", "ulimit -t \"$1\" || exit 126; ulimit -f \"$2\" || exit 126; shift 2; exec \"$@\"", "sh",
+            String(cpuSecondsForShell(maximumCPU)), fileSizeLimitForShell(limits.maximumOutputBytes),
+            executable.path,
         ] + arguments
         process.standardInput = FileHandle.nullDevice
-        process.standardOutput = FileHandle.nullDevice
+        process.standardOutput = standardOutput ?? FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
         // Signalled as the child ends, so the loop below wakes at once.
         let ended = DispatchSemaphore(value: 0)
@@ -316,12 +430,15 @@ enum WatchedProcess {
             let currentSize = size(of: output)
             if currentSize > lastSize {
                 lastSize = currentSize
-                lastGrowth = now
+                // Output counts as progress only when the caller says so.
+                if outputIsProgress { lastGrowth = now }
             }
             if now - started > limits.maximumSeconds {
                 reason = .tookTooLong(seconds: limits.maximumSeconds)
             } else if let memory = residentMemory(pid), memory > limits.maximumResidentBytes {
                 reason = .usedTooMuchMemory(bytes: limits.maximumResidentBytes)
+            } else if let cap = limits.maximumOutputBytes, currentSize > cap {
+                reason = .wroteTooMuch(bytes: cap)
             } else if now - lastGrowth > limits.maximumStalledSeconds {
                 reason = .madeNoProgress(seconds: limits.maximumStalledSeconds)
             } else {
@@ -334,9 +451,14 @@ enum WatchedProcess {
                 return .killed(reason)
             }
         }
-        // The kernel's own CPU limit ended it: say so rather than "exited".
-        if process.terminationReason == .uncaughtSignal, process.terminationStatus == SIGXCPU {
-            return .killed(.usedTooMuchProcessorTime(seconds: maximumCPU))
+        // The kernel's own limits ended it: say so rather than "exited".
+        if process.terminationReason == .uncaughtSignal {
+            if process.terminationStatus == SIGXCPU {
+                return .killed(.usedTooMuchProcessorTime(seconds: maximumCPU))
+            }
+            if process.terminationStatus == SIGXFSZ, let cap = limits.maximumOutputBytes {
+                return .killed(.wroteTooMuch(bytes: cap))
+            }
         }
         return .exited(status: process.terminationStatus)
     }
