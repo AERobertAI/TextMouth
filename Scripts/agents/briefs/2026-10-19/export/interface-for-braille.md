@@ -23,12 +23,12 @@ Markdown is the base: every text book becomes `content.md`, and every writer rea
 - `ExportBlock` (an enum):
   - `.heading(ExportHeading)`: `level` 1 to 6, `runs`, `id` (unique, ASCII letters, digits, hyphens), `plainText`.
   - `.paragraph([ExportRun])`.
-  - `.list(ExportList)`: `isOrdered`, `start` (first number), `depth` (0 for a list in no other list, 1 inside an item of one, and so on), `items: [ExportListItem]`. Each item has `blocks` (its paragraphs and any list inside it) and `plainText` (its own words, without the lists inside it).
+  - `.list(ExportList)`: `isOrdered`, `start` (first number), `depth` (0 for a list in no other list, 1 inside an item of one, and so on), `items: [ExportListItem]`. Each item has `blocks` (its paragraphs and any list inside it, in reading order) and `plainText` (its whole text in reading order, the lists inside it included where they stand: the item "Alpha", an inner list of "Xray" and "Yankee", then "Bravo" reads "Alpha", "Xray", "Yankee", "Bravo", one a line). To indent a list inside an item, as braille layout does, walk the item's `blocks` and recurse into each `.list`; never take an item's `plainText` and its inner lists separately.
   - `.blockQuote([ExportBlock])`.
   - `.codeBlock(String)`: lines joined by line feeds, none at the end.
   - `.thematicBreak`.
   - `.table(ExportTable)`: `rows: [[String]]` (cells as plain text), `hasHeaderRow`.
-  - `plainText`: one call away for every block (a heading's or paragraph's runs joined; a list's items one a line; and so on, as its comment says).
+  - `plainText`: one call away for every block, always in reading order (a heading's or paragraph's runs joined; a list's items' text, apart by line feeds; and so on, as its comment says). (Changed in the review round: an item's `plainText` once left out its inner lists, and a list's put them after the item's other paragraphs, out of order.)
 - `ExportRun`: `text` (a line feed in it is a hard line break), `isEmphasis`, `isStrong`, `isCode`, `link: String?` (only http, https, and mailto addresses; any other link is plain text). `[ExportRun].plainText` joins the texts, and `[ExportRun].linkGroups` gives them grouped as the HTML and RTF writers write them (`ExportRunGroup`: a link's neighbouring runs together, every other run alone).
 - **XML.** PEF is XML: put every text and attribute through `XMLEscaping.text(_:)` and `XMLEscaping.attribute(_:)` (`TextMouth/Services/Export/XMLEscaping.swift`), which also leave out the characters XML 1.0 forbids, as the HTML writer does.
 
