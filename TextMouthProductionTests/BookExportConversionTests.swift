@@ -488,23 +488,47 @@ private struct StoppingWriter: TextExportWriter {
 
 // MARK: - Reading an Exported Page
 
-/// The text of an XHTML page as an XML parser reads it: every element's
-/// characters, with a space after each block element and line break, so the
-/// words of two paragraphs never run together while the words of one, around
-/// its emphasis and links, stay as they are.
+/// The text of an XHTML page's body as an XML parser reads it, the contents
+/// list left out: every element's characters, with a space after each block
+/// element and line break, so the words of two paragraphs never run together
+/// while the words of one, around its emphasis and links, stay as they are.
+/// The head's title and the `<nav>` repeat the book's title and headings, so
+/// a word missing from the text could otherwise be found there instead.
 private final class PageText: NSObject, XMLParserDelegate {
-    /// The page's text so far.
+    /// The body's text so far.
     private(set) var text = ""
+    /// Whether the parser is inside `<body>`.
+    private var isInBody = false
+    /// How many `<nav>` elements the parser is inside.
+    private var navDepth = 0
 
-    /// The elements after which a page's words stop: its blocks, its
-    /// contents list's items, its table's cells, and its line breaks.
+    /// The elements after which a page's words stop: its blocks, its lists'
+    /// items, its table's cells, and its line breaks.
     private static let breakingElements: Set<String> = [
-        "title", "h1", "h2", "h3", "h4", "h5", "h6", "p", "li", "pre", "blockquote",
-        "hr", "br", "th", "td", "tr", "nav", "ol", "ul", "table",
+        "h1", "h2", "h3", "h4", "h5", "h6", "p", "li", "pre", "blockquote",
+        "hr", "br", "th", "td", "tr", "ol", "ul", "table",
     ]
 
+    /// Whether the characters met now are the body's own text.
+    private var isReading: Bool {
+        isInBody && navDepth == 0
+    }
+
+    func parser(
+        _ parser: XMLParser,
+        didStartElement elementName: String,
+        namespaceURI: String?,
+        qualifiedName qName: String?,
+        attributes attributeDict: [String: String] = [:]
+    ) {
+        if elementName == "body" { isInBody = true }
+        if elementName == "nav" { navDepth += 1 }
+    }
+
     func parser(_ parser: XMLParser, foundCharacters string: String) {
-        text += string
+        if isReading {
+            text += string
+        }
     }
 
     func parser(
@@ -513,7 +537,9 @@ private final class PageText: NSObject, XMLParserDelegate {
         namespaceURI: String?,
         qualifiedName qName: String?
     ) {
-        if Self.breakingElements.contains(elementName) {
+        if elementName == "body" { isInBody = false }
+        if elementName == "nav" { navDepth = max(0, navDepth - 1) }
+        if isReading && Self.breakingElements.contains(elementName) {
             text += " "
         }
     }

@@ -114,24 +114,36 @@ final class RTFExportWriterTests: XCTestCase {
 
     /// The style sheet and the heading paragraphs carry `\sN` and `\outlinelevel(N-1)` for each level.
     func testEachLevelCarriesItsStyleAndOutlineLevel() throws {
-        let sizes = [44, 38, 34, 30, 28, 26]
         let document = documentOf((1...6).map { heading($0, "Level \($0)") })
         let lines = try RTFExportWriter.rtf(of: document).components(separatedBy: "\n")
+        let body = try XCTUnwrap(Self.size(in: lines.first { $0.hasSuffix(" Normal;}") }), "no Normal style")
 
+        // The sizes as the writer wrote them, each level's read from its style.
+        var sizes: [Int] = []
         for level in 1...6 {
-            let controls = #"\s\#(level)\sb240\sa120\keepn\outlinelevel\#(level - 1)\b\f0\fs\#(sizes[level - 1])"#
-            XCTAssertTrue(
-                lines.contains("{" + controls + #"\sbasedon0\snext0 heading \#(level);}"#),
-                "the style sheet defines heading \(level)"
-            )
+            let style = lines.first { $0.hasPrefix(#"{\s\#(level)\sb240"#) && $0.hasSuffix(" heading \(level);}") }
+            let size = try XCTUnwrap(Self.size(in: style), "the style sheet does not define heading \(level)")
+            let controls = #"\s\#(level)\sb240\sa120\keepn\outlinelevel\#(level - 1)\b\f0\fs\#(size)"#
+            XCTAssertEqual(style, "{" + controls + #"\sbasedon0\snext0 heading \#(level);}"#, "heading \(level)'s style")
             XCTAssertTrue(
                 lines.contains(#"\pard\plain"# + controls + " Level \(level)" + #"\par"#),
-                "the paragraph of level \(level)"
+                "the paragraph of level \(level) has its style's controls and size"
             )
+            sizes.append(size)
         }
-        // Each level is larger than the body (12 points) and than the next.
+        // Each level is larger than the body and than the next, so a reader
+        // that ignores styles still ranks them.
+        XCTAssertEqual(body, 24, "the body is 12 points")
         XCTAssertEqual(sizes, sizes.sorted(by: >))
-        XCTAssertTrue(sizes.allSatisfy { $0 > 24 })
+        XCTAssertEqual(Set(sizes).count, sizes.count, "two levels share a size: \(sizes)")
+        XCTAssertTrue(sizes.allSatisfy { $0 > body }, "a heading is no larger than the body: \(sizes)")
+    }
+
+    /// The size in half-points that the first `\fsN` of `line` gives, or nil
+    /// for a missing line or one without a size.
+    private static func size(in line: String?) -> Int? {
+        guard let line, let range = line.range(of: #"\\fs[0-9]+"#, options: .regularExpression) else { return nil }
+        return Int(line[range].dropFirst(3))
     }
 
     /// A level outside 1 to 6 is held to RTF's six styles.
@@ -176,9 +188,16 @@ final class RTFExportWriterTests: XCTestCase {
         ])])
         let read = try applesReading(of: try RTFExportWriter.rtf(of: document))
         let string = read.string as NSString
-        let boldFont = try XCTUnwrap(read.attribute(.font, at: string.range(of: "bold").location, effectiveRange: nil) as? NSFont)
+        // A word Apple's reader lost fails the test rather than raising an
+        // exception at NSNotFound.
+        let bold = string.range(of: "bold")
+        let site = string.range(of: "site")
+        guard bold.location != NSNotFound, site.location != NSNotFound else {
+            return XCTFail("Apple's reader lost a word: \(read.string)")
+        }
+        let boldFont = try XCTUnwrap(read.attribute(.font, at: bold.location, effectiveRange: nil) as? NSFont)
         XCTAssertTrue(NSFontManager.shared.traits(of: boldFont).contains(.boldFontMask))
-        let link = read.attribute(.link, at: string.range(of: "site").location, effectiveRange: nil)
+        let link = read.attribute(.link, at: site.location, effectiveRange: nil)
         XCTAssertEqual((link as? URL)?.absoluteString ?? link as? String, "https://example.com/a")
     }
 

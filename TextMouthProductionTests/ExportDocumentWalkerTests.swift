@@ -300,8 +300,9 @@ final class ExportDocumentWalkerTests: XCTestCase {
         XCTAssertEqual(document.blocks.map(\.plainText), ["Alpha\nXray\nYankee\nBravo"])
     }
 
-    /// A task-list checkbox is ignored, and an ordered list's start is kept
-    /// within a range every writer can print.
+    /// A task-list checkbox is ignored; an ordered list keeps the largest
+    /// start CommonMark allows, nine digits, exactly, and a longer number
+    /// begins no list at all.
     func testTaskItemsAndHugeStarts() throws {
         let tasks = try walk("- [x] done\n- [ ] not yet")
         XCTAssertEqual(tasks.blocks, [.list(ExportList(isOrdered: false, start: 1, depth: 0, items: [
@@ -310,9 +311,10 @@ final class ExportDocumentWalkerTests: XCTestCase {
         ]))])
 
         let huge = try walk("999999999. big")
-        guard case .list(let list)? = huge.blocks.first else { return XCTFail("No list in \(huge.blocks)") }
-        XCTAssertLessThanOrEqual(list.start, 1_000_000_000)
-        XCTAssertTrue(list.isOrdered)
+        XCTAssertEqual(huge.blocks, [.list(ExportList(isOrdered: true, start: 999_999_999, depth: 0, items: [
+            ExportListItem(blocks: [paragraph("big")])
+        ]))])
+        XCTAssertEqual(try walk("1234567890. big").blocks, [paragraph("1234567890. big")])
     }
 
     // MARK: - Quotes, Code, Breaks, and Tables
@@ -380,10 +382,9 @@ final class ExportDocumentWalkerTests: XCTestCase {
         let listDepth = deepest(lists.blocks)
         XCTAssertEqual(listDepth.nesting, ExportDocument.maximumNesting)
         XCTAssertLessThanOrEqual(listDepth.listDepth, ExportDocument.maximumNesting)
-        let words = lists.blocks.map(\.plainText).joined(separator: "\n")
-        for index in 0..<12 {
-            XCTAssertTrue(words.contains("item\(index)"), "item\(index) lost")
-        }
+        // Every item, whole and in order: "item1" must not pass for "item10".
+        let items = lists.blocks.map(\.plainText).joined(separator: "\n").split(separator: "\n").map(String.init)
+        XCTAssertEqual(items, (0..<12).map { "item\($0)" })
     }
 
     // MARK: - The Title Heading

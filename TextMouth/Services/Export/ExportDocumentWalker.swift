@@ -212,9 +212,10 @@ private struct Walk {
             return listBlocks(of: list, isOrdered: false, start: 1, nesting: nesting, listDepth: listDepth)
 
         case let list as Markdown.OrderedList:
-            // The start comes from the file, which is untrusted: keep it in
-            // a range every writer can print.
-            let start = min(max(Int(clamping: list.startIndex), 0), 1_000_000_000)
+            // CommonMark allows a start of at most nine digits (a longer
+            // number is no list), so the parser's start always fits; the
+            // conversion clamps all the same, so it can never trap.
+            let start = Int(clamping: list.startIndex)
             return listBlocks(of: list, isOrdered: true, start: start, nesting: nesting, listDepth: listDepth)
 
         case let quote as Markdown.BlockQuote:
