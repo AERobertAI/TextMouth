@@ -49,6 +49,15 @@ targets:
     platform: macOS
     sources:
       - TextMouth
+      # liblouis's braille tables (FMT21), copied unchanged as one folder
+      # into Contents/Resources/liblouis/tables, where the braille helper
+      # finds them (see the liblouis target below).
+      - path: Vendor/liblouis/tables
+        type: folder
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: liblouis
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouth
@@ -98,6 +107,15 @@ targets:
       - target: LAME
       # The Objective-C exception catcher (ObjCException).
       - target: ObjCExceptionCatcher
+      # The braille helper (FMT21), a command-line program copied into
+      # Contents/MacOS beside the app's own executable, where
+      # Bundle.main.url(forAuxiliaryExecutable:) finds it; never linked.
+      - target: TextMouthBraille
+        link: false
+        embed: true
+        codeSign: true
+        copy:
+          destination: executables
   # LAME 3.100's MP3 encoder (FR04), vendored in Vendor/lame and built as a
   # static library the app links, so TextMouth writes MP3 itself
   # (MP3Encoder) rather than only through an installed ffmpeg.
@@ -238,6 +256,36 @@ targets:
         SKIP_INSTALL: YES
         # Its own config.h, never LAME's (see USE_HEADERMAP in LAME's target).
         USE_HEADERMAP: NO
+  # The braille helper (FMT21): TextMouthBraille/main.c, TextMouth's own
+  # code, a command-line program that links liblouis and translates one
+  # book's paragraphs per run, print to braille or braille to print, with
+  # the bundle's own tables. The app runs it under its watchdog
+  # (BrailleTranslator, through WatchedProcess), so a hang or a crash in
+  # liblouis costs one run of the helper, never the app. The app target
+  # copies it into Contents/MacOS. Optimized for size, and stripped in the
+  # Release configuration as the app is.
+  TextMouthBraille:
+    type: tool
+    platform: macOS
+    sources:
+      - path: TextMouthBraille
+    dependencies:
+      - target: liblouis
+    settings:
+      base:
+        PRODUCT_NAME: TextMouthBraille
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        CODE_SIGN_IDENTITY: "-"
+        HEADER_SEARCH_PATHS:
+          - $(SRCROOT)/Vendor/liblouis/include
+        GCC_OPTIMIZATION_LEVEL: s
+        SKIP_INSTALL: YES
+      configs:
+        Release:
+          DEPLOYMENT_POSTPROCESSING: true
+          STRIP_INSTALLED_PRODUCT: true
+          STRIP_STYLE: all
+          DEAD_CODE_STRIPPING: true
   TextMouthProductionTests:
     type: bundle.unit-test
     platform: macOS
