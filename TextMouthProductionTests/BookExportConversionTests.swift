@@ -1,3 +1,4 @@
+import AppKit
 import os
 import XCTest
 @testable import TextMouth
@@ -305,6 +306,73 @@ final class BookExportConversionTests: XCTestCase {
         XCTAssertEqual(heard.withLock { $0 }, [[1, 2], [2, 2]])
     }
 
+    // MARK: - A Real Book
+
+    /// A real book (the EPUB of `TestData/alice.epub`, whose content.md marks
+    /// its chapters), exported off the main thread as the dialog exports it,
+    /// to HTML, RTF, and Word 97-2003: each file reads back, through an XML
+    /// parser or Apple's own reader, with every word the reader reads, in
+    /// order. What a listener gets from an export is proved on a real book,
+    /// not only on made-up strings.
+    func testARealBookExportsToEveryWriterOffTheMainThreadWithEveryWord() async throws {
+        let world = try makeIntegrationWorld("Export Convert Real Book")
+        let copy = try makeSandboxDirectory("Export Convert Real Book Source").appendingPathComponent("alice.epub")
+        try FileManager.default.copyItem(at: try requireFile("alice.epub"), to: copy)
+        let book = try world.importBook(from: copy)
+        let readerWords = try Self.readerWords(of: book)
+        XCTAssertGreaterThan(readerWords.count, 1_000, "the sample is a whole book")
+        let offer = BookExportService.offer(for: book)
+        let stem = BookExportService.fileNameStem(for: book.title)
+        let writers: [any TextExportWriter] = [HTMLExportWriter(), RTFExportWriter(), WordDocExportWriter()]
+
+        for writer in writers {
+            let conversion = BookExportConversion.text(TextExportWriters.optionsState(for: writer).conversion())
+            let destination = try makeSandboxDirectory("Export Convert Real Book \(writer.id)")
+            let outcome = await OffMainWork.run {
+                BookExportService.export([offer], kinds: [.markdown], conversions: [.markdown: conversion], to: destination)
+            }
+
+            let file = destination.appendingPathComponent("\(stem) - Text.\(writer.fileExtension)")
+            XCTAssertEqual(outcome.failures, [], writer.id)
+            XCTAssertEqual(outcome.exported, [file], writer.id)
+            let words = try Self.words(of: file, writtenBy: writer.id)
+            XCTAssertNil(
+                firstWordMissing(of: readerWords, from: words),
+                "\(writer.id): a word the reader reads is missing from the file"
+            )
+        }
+    }
+
+    /// The words of `book`'s reading text as the reader parses its
+    /// content.md, in order.
+    private static func readerWords(of book: Book) throws -> [String] {
+        let url = MarkdownCacheService.cacheURL(for: book)
+        let markdown = try MarkdownCacheService.cacheText(from: Data(contentsOf: url), at: url)
+        let content = MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: book.title, bookAuthor: "")
+        return content.chapters.map(\.text).joined(separator: "\n\n").split(whereSeparator: \.isWhitespace).map(String.init)
+    }
+
+    /// The words of the exported `file` as its own kind of reader reads it:
+    /// an XML parser for HTML, and Apple's reader for RTF and Word 97-2003.
+    private static func words(of file: URL, writtenBy writerID: String) throws -> [String] {
+        let text: String
+        switch writerID {
+        case "html":
+            let page = PageText()
+            let parser = XMLParser(data: try Data(contentsOf: file))
+            parser.delegate = page
+            XCTAssertTrue(parser.parse(), "the page is not well-formed: \(String(describing: parser.parserError))")
+            text = page.text
+        case "rtf", "doc":
+            let type: NSAttributedString.DocumentType = writerID == "rtf" ? .rtf : .docFormat
+            text = try NSAttributedString(url: file, options: [.documentType: type], documentAttributes: nil).string
+        default:
+            XCTFail("no reader for the writer \(writerID)")
+            return []
+        }
+        return text.split(whereSeparator: \.isWhitespace).map(String.init)
+    }
+
     // MARK: - Fixtures
 
     /// A book with chapter markers and "## Notes" under each of its three
@@ -415,5 +483,55 @@ private struct StoppingWriter: TextExportWriter {
         if !finishesFirst {
             try cancellation.checkCancelled()
         }
+    }
+}
+
+// MARK: - Reading an Exported Page
+
+/// The text of an XHTML page as an XML parser reads it: every element's
+/// characters, with a space after each block element and line break, so the
+/// words of two paragraphs never run together while the words of one, around
+/// its emphasis and links, stay as they are.
+private final class PageText: NSObject, XMLParserDelegate {
+    /// The page's text so far.
+    private(set) var text = ""
+
+    /// The elements after which a page's words stop: its blocks, its
+    /// contents list's items, its table's cells, and its line breaks.
+    private static let breakingElements: Set<String> = [
+        "title", "h1", "h2", "h3", "h4", "h5", "h6", "p", "li", "pre", "blockquote",
+        "hr", "br", "th", "td", "tr", "nav", "ol", "ul", "table",
+    ]
+
+    func parser(_ parser: XMLParser, foundCharacters string: String) {
+        text += string
+    }
+
+    func parser(
+        _ parser: XMLParser,
+        didEndElement elementName: String,
+        namespaceURI: String?,
+        qualifiedName qName: String?
+    ) {
+        if Self.breakingElements.contains(elementName) {
+            text += " "
+        }
+    }
+}
+
+// MARK: - Words in Order
+
+extension XCTestCase {
+    /// The first of `words` missing from `available` when both are read in
+    /// order (`words` a subsequence of `available`), or nil when none is:
+    /// how an export's tests on real books check that every word the reader
+    /// reads reaches what was written.
+    func firstWordMissing(of words: [String], from available: [String]) -> String? {
+        var next = available.startIndex
+        for word in words {
+            guard let found = available[next...].firstIndex(of: word) else { return word }
+            next = available.index(after: found)
+        }
+        return nil
     }
 }

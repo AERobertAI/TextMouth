@@ -490,17 +490,6 @@ final class ExportDocumentWalkerTests: XCTestCase {
         return (document, readerWords)
     }
 
-    /// The first of `words` missing from `available` when both are read in
-    /// order (`words` a subsequence of `available`), or nil when none is.
-    private func firstWordMissing(of words: [String], from available: [String]) -> String? {
-        var next = available.startIndex
-        for word in words {
-            guard let found = available[next...].firstIndex(of: word) else { return word }
-            next = available.index(after: found)
-        }
-        return nil
-    }
-
     /// On the real EPUB (chapters with markers) and Markdown file (none): no
     /// comment reaches the walk, and every word the reader has is in the
     /// walk, in order.
