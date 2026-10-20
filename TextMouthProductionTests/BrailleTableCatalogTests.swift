@@ -16,17 +16,17 @@ final class BrailleTableCatalogTests: XCTestCase {
     func testTheBundledCatalogOffersFourTablesInOrder() throws {
         let tables = BrailleTableCatalog.bundled
         XCTAssertEqual(tables.map(\.id), ["en-us-g1.ctb", "en_US.tbl", "en-ueb-g1.ctb", "en-ueb-g2.ctb"])
-        guard tables.count == 4 else { return }
-
-        XCTAssertEqual(tables[0].displayName, "English uncontracted braille as used in the U.S.")
-        XCTAssertEqual(tables[1].displayName, "English contracted braille as used in the U.S.")
-        XCTAssertEqual(tables[2].displayName, "Unified English uncontracted braille")
-        XCTAssertEqual(tables[3].displayName, "Unified English contracted braille")
+        XCTAssertEqual(tables.map(\.displayName), [
+            "English uncontracted braille as used in the U.S.",
+            "English contracted braille as used in the U.S.",
+            "Unified English uncontracted braille",
+            "Unified English contracted braille",
+        ])
         XCTAssertEqual(tables.map(\.language), ["en", "en", "en", "en"])
         XCTAssertEqual(tables.map(\.system), ["ebae", "ebae", "ueb", "ueb"])
         XCTAssertEqual(tables.map(\.contraction), [.no, .full, .no, .full])
         XCTAssertEqual(tables.map(\.grade), ["1", "2", "1", "2"])
-        XCTAssertEqual(tables[3].indexName, "English, unified, contracted")
+        XCTAssertEqual(tables.last?.indexName, "English, unified, contracted")
 
         let work = try makeSandboxDirectory("BrailleCatalogCheck")
         for table in tables {
