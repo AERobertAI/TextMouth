@@ -276,7 +276,10 @@ targets:
         PRODUCT_NAME: TextMouthBraille
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         CODE_SIGN_IDENTITY: "-"
-        HEADER_SEARCH_PATHS:
+        # liblouis.h is liblouis's own header, as a system header, so the
+        # warnings of its comments (five @deprecated commands without a
+        # deprecation attribute) are not shown; main.c's own are.
+        SYSTEM_HEADER_SEARCH_PATHS:
           - $(SRCROOT)/Vendor/liblouis/include
         GCC_OPTIMIZATION_LEVEL: s
         SKIP_INSTALL: YES

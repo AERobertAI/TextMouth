@@ -5071,9 +5071,6 @@
 				DEAD_CODE_STRIPPING = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_OPTIMIZATION_LEVEL = s;
-				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/Vendor/liblouis/include",
-				);
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -5085,6 +5082,9 @@
 				SKIP_INSTALL = YES;
 				STRIP_INSTALLED_PRODUCT = YES;
 				STRIP_STYLE = all;
+				SYSTEM_HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/Vendor/liblouis/include",
+				);
 			};
 			name = Release;
 		};
@@ -5374,9 +5374,6 @@
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
 				GCC_OPTIMIZATION_LEVEL = s;
-				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/Vendor/liblouis/include",
-				);
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -5386,6 +5383,9 @@
 				PRODUCT_NAME = TextMouthBraille;
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
+				SYSTEM_HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/Vendor/liblouis/include",
+				);
 			};
 			name = Debug;
 		};
