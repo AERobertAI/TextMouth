@@ -125,8 +125,13 @@ struct BrailleTable: Equatable, Hashable, Sendable, Identifiable {
     /// The table's region, such as "en-US", when its `region` (or `locale`)
     /// names one other than its language; nil otherwise.
     let region: String?
+    /// Whether the table's metadata says `dots: 6`. Decision 3 offers such a
+    /// table on its word; one with no `dots` line is taken only once its
+    /// check's sample comes out in six-dot cells (`MacBrailleTableCheck`).
+    let declaresSixDots: Bool
 
-    /// A table of these fields; `region` is nil unless given.
+    /// A table of these fields; `region` is nil and `declaresSixDots` false
+    /// unless given.
     init(
         id: String,
         displayName: String,
@@ -135,7 +140,8 @@ struct BrailleTable: Equatable, Hashable, Sendable, Identifiable {
         system: String,
         contraction: Contraction,
         grade: String?,
-        region: String? = nil
+        region: String? = nil,
+        declaresSixDots: Bool = false
     ) {
         self.id = id
         self.displayName = displayName
@@ -145,6 +151,7 @@ struct BrailleTable: Equatable, Hashable, Sendable, Identifiable {
         self.contraction = contraction
         self.grade = grade
         self.region = region
+        self.declaresSixDots = declaresSixDots
     }
 
     /// Where the table comes from, as its stored value says.
@@ -357,7 +364,8 @@ enum BrailleTableCatalog {
             // liblouis's own default: a table with no region has its
             // language tag's, so "akk-Latn" and a `locale` of "de-CH" keep
             // what follows their language as a region.
-            region: region(fields["region"] ?? fields["locale"] ?? tag, of: language)
+            region: region(fields["region"] ?? fields["locale"] ?? tag, of: language),
+            declaresSixDots: fields["dots"] == "6"
         )
     }
 

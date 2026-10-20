@@ -54,10 +54,15 @@ final class MacBrailleTableCheckTests: XCTestCase {
     }
 
     /// A table this Mac offers, for the stand-in tests, which need one the
-    /// catalog accepts but never run it; skips on a Mac with none.
-    private func anyOfferedMacTable() throws -> String {
-        guard let table = BrailleTableCatalog.offeredTables.first(where: { $0.source == .mac }) else {
-            throw XCTSkip("This Mac offers no VoiceOver braille tables (\(BrailleTableCatalog.macTablesFolder.path))")
+    /// catalog accepts but never run it: one whose metadata says six dots
+    /// when `declaringSixDots` is true, one with no dots line when it is
+    /// false, and any when it is nil. Skips on a Mac with none.
+    private func anyOfferedMacTable(declaringSixDots: Bool? = false) throws -> String {
+        let table = BrailleTableCatalog.offeredTables.first { table in
+            table.source == .mac && declaringSixDots.map { table.declaresSixDots == $0 } ?? true
+        }
+        guard let table else {
+            throw XCTSkip("This Mac offers no such VoiceOver braille table (\(BrailleTableCatalog.macTablesFolder.path))")
         }
         return table.id
     }
@@ -82,7 +87,12 @@ final class MacBrailleTableCheckTests: XCTestCase {
         XCTAssertFalse(MacBrailleTableCheck.writesSixDotsOnly("\u{2801}\u{2843}"), "dot 7")
         XCTAssertFalse(MacBrailleTableCheck.writesSixDotsOnly("\u{2881}"), "dot 8")
         XCTAssertFalse(MacBrailleTableCheck.writesSixDotsOnly("\u{2801} "), "a space is no braille cell")
-        XCTAssertEqual(MacBrailleTableCheck.sample, "Braille 2026, ABC abc.")
+        XCTAssertEqual(
+            MacBrailleTableCheck.sample,
+            "Braille 2026, ABC abc: it\u{2019}s \u{2018}one\u{2019}, \u{201C}two\u{201D}, \u{201E}three\u{201C} and "
+                + "\u{00AB}four\u{00BB} \u{2013} five \u{2014} six\u{2026} \u{2019} \u{2018} \u{201C} \u{201D} \u{201E} "
+                + "\u{00AB} \u{00BB} \u{2013} \u{2014} \u{2026} 0123456789."
+        )
     }
 
     /// The escape backslash is what liblouis really writes for a character
@@ -233,6 +243,18 @@ final class MacBrailleTableCheckTests: XCTestCase {
         assertWorkFolderEmpty()
     }
 
+    /// A table whose metadata says six dots is offered on its word
+    /// (decision 3): eight-dot cells in its sample do not refuse it, as they
+    /// refuse a table with no dots line (review R1).
+    func testATableDeclaringSixDotsIsNotRefusedForItsSample() throws {
+        let declared = try anyOfferedMacTable(declaringSixDots: true)
+        let eightDots = shell(#"[ "$1" = check ] && exit 0; printf '\342\241\203\n' > "$2""#)
+        try isolated(tool: eightDots) {
+            XCTAssertEqual(try MacBrailleTableCheck.check(declared, workingIn: work), .usable)
+        }
+        assertWorkFolderEmpty()
+    }
+
     /// A refusal that says something of the table writes one event line,
     /// naming the table and the reason.
     func testARefusalIsLogged() throws {
@@ -315,6 +337,24 @@ final class MacBrailleTableCheckTests: XCTestCase {
             assertWorkFolderEmpty()
         }
         try XCTSkipIf(checked == 0, "This Mac offers none of its French, German, or Spanish tables")
+    }
+
+    /// This Mac's Hungarian tables, which give no dots line, write ’ and ‘
+    /// with eight dots, so the typographic sample refuses them (review R1);
+    /// its Swedish table says six dots, so it is offered though it writes «
+    /// with eight dots, and an export that meets « fails, naming it.
+    func testHungarianIsRefusedForEightDotsAndSwedishIsOffered() throws {
+        var checked = 0
+        for (id, expected) in [("mac:hu.tbl", MacBrailleTableCheck.Verdict.refused(.writesEightDots)),
+                               ("mac:hu-hu-g2.ctb", .refused(.writesEightDots)), ("mac:sv-g1.ctb", .usable)]
+        where BrailleTableCatalog.table(withID: id) != nil {
+            checked += 1
+            try isolated {
+                XCTAssertEqual(try MacBrailleTableCheck.check(id, workingIn: work), expected, id)
+            }
+        }
+        assertWorkFolderEmpty()
+        try XCTSkipIf(checked == 0, "This Mac offers none of its Hungarian or Swedish tables")
     }
 
     /// This Mac's Greek table does not load in TextMouth's liblouis, so the

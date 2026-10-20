@@ -100,10 +100,17 @@ enum MacBrailleTableCheck {
     /// The print a table translates in its check, chosen by translating it
     /// with every table this Mac had on October 20, 2026. It holds capitals,
     /// which eight-dot tables write with dot 7, lowercase letters, digits,
-    /// which some write with dot 8, and punctuation. Of the Mac's 57
-    /// eight-dot tables it found eight dots in 50 (digits alone, in 33), and
-    /// it found them in none of the six-dot tables the catalog offers.
-    static let sample = "Braille 2026, ABC abc."
+    /// which some write with dot 8, and punctuation: of the Mac's 57
+    /// eight-dot tables its first words found eight dots in 50 (digits
+    /// alone, in 33). Review R1 added typographic punctuation (’ ‘ “ ” „ « »
+    /// – — …), each standing alone and in the places it takes in a text,
+    /// such as the apostrophe in "it’s": the Mac's Hungarian tables write
+    /// ’ and ‘ with eight dots (⡈ and ⡶) alone or inside a word, but not
+    /// around one, and its Chinese tables for Hong Kong and Taiwan write
+    /// eight-dot cells too.
+    static let sample = "Braille 2026, ABC abc: it\u{2019}s \u{2018}one\u{2019}, \u{201C}two\u{201D}, "
+        + "\u{201E}three\u{201C} and \u{00AB}four\u{00BB} \u{2013} five \u{2014} six\u{2026} "
+        + "\u{2019} \u{2018} \u{201C} \u{201D} \u{201E} \u{00AB} \u{00BB} \u{2013} \u{2014} \u{2026} 0123456789."
 
     /// liblouis's escape backslash: the cell it writes the backslash of its
     /// escape notation with (`'\x0041'` for a character a table lacks) when
@@ -125,26 +132,30 @@ enum MacBrailleTableCheck {
     }
 
     /// The check of `tableID`, made now, with the helper's hidden files in
-    /// `folder`: whether the table loads, and whether it writes the sample
-    /// in six-dot cells. A bundled table is not checked and is usable. A
-    /// refusal that says something of the table is logged.
+    /// `folder`: whether the table loads, and, for a table whose metadata
+    /// gives no `dots` line, whether it writes the sample in six-dot cells
+    /// (decision 3 offers a table that says `dots: 6` on its word; an
+    /// eight-dot cell such a table writes for a book fails that book's
+    /// export, naming the character). A bundled table is not checked and is
+    /// usable. A refusal that says something of the table is logged.
     /// - Throws: only `ImportCancelled` or `CancellationError`, when an
     ///   import's Cancel or the task's own cancellation stops the helper.
     static func check(_ tableID: String, workingIn folder: URL) throws -> Verdict {
         guard BrailleTableSource.parse(tableID).source == .mac else { return .usable }
         let verdict: Verdict
-        if BrailleTableCatalog.table(withID: tableID) == nil {
-            verdict = .refused(.gone)
-        } else {
+        if let table = BrailleTableCatalog.table(withID: tableID) {
             do {
                 try BrailleTranslator.check(table: tableID, workingIn: folder)
                 let cells = try BrailleTranslator.translate(
                     [sample], table: tableID, direction: .printToBraille, workingIn: folder, checksMacTable: false
                 )
-                verdict = cells.allSatisfy(writesSixDotsOnly) ? .usable : .refused(.writesEightDots)
+                let sixDots = table.declaresSixDots || cells.allSatisfy(writesSixDotsOnly)
+                verdict = sixDots ? .usable : .refused(.writesEightDots)
             } catch let failure as BrailleTranslator.Failure {
                 verdict = .refused(refusal(for: failure))
             }
+        } else {
+            verdict = .refused(.gone)
         }
         if case let .refused(refusal) = verdict, !refusal.isUnchecked {
             DiagnosticLog.event(.import, "BRAILLE_MAC_TABLE_REFUSED: \(tableID): \(refusal.reason)")
