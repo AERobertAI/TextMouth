@@ -225,10 +225,11 @@ final class BrailleTranslatorTests: XCTestCase {
 
     // MARK: - Tables
 
-    /// Every table the app offers (and EBAE's Computer Braille table)
-    /// loads.
+    /// Every table the app offers loads: the four of the catalog.
     func testEveryTableChecks() throws {
-        for table in ["en-ueb-g1.ctb", "en-ueb-g2.ctb", "en-us-g1.ctb", "en_US.tbl"] {
+        let offered = ["en-ueb-g1.ctb", "en-ueb-g2.ctb", "en-us-g1.ctb", "en_US.tbl"]
+        XCTAssertEqual(Set(BrailleTableCatalog.bundled.map(\.id)), Set(offered))
+        for table in offered {
             XCTAssertNoThrow(try BrailleTranslator.check(table: table, workingIn: work), table)
             assertWorkFolderEmpty()
         }
@@ -250,6 +251,45 @@ final class BrailleTranslatorTests: XCTestCase {
             BrailleTranslator.Failure.unknownTable("en-xx.ctb").errorDescription,
             "TextMouth has no braille table named \u{201C}en-xx.ctb\u{201D}."
         )
+    }
+
+    /// A file of the tables folder that the catalog does not offer is
+    /// refused by name, from translate and from check (review finding L2):
+    /// an edited record naming an include file such as `spaces.uti` would
+    /// otherwise load it, and the book would read as liblouis escapes. The
+    /// files exist in the bundle, so only the catalog refuses them; the
+    /// stand-in that would leave a marker is never started.
+    func testFilesOfTheTablesFolderThatTheCatalogLacksAreRefused() throws {
+        let tables = try XCTUnwrap(BrailleTranslator.Tool.helper.tablesFolder)
+        let marker = work.appendingPathComponent("marker")
+        let spy = standIn("/usr/bin/touch", [marker.path])
+        try with(spy) {
+            for table in ["spaces.uti", "en-ueb-chardefs.uti", "en-us-compbrl.uti"] {
+                XCTAssertTrue(FileManager.default.fileExists(atPath: tables.appendingPathComponent(table).path), table)
+                XCTAssertNil(BrailleTableCatalog.table(withID: table), table)
+                XCTAssertThrowsError(try translate(["⠁"], table, .brailleToPrint), table) {
+                    XCTAssertEqual($0 as? BrailleTranslator.Failure, .unknownTable(table))
+                }
+                XCTAssertThrowsError(try BrailleTranslator.check(table: table, workingIn: work), table) {
+                    XCTAssertEqual($0 as? BrailleTranslator.Failure, .unknownTable(table))
+                }
+            }
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path))
+        // With the real tool the answer is the same, and the sentence is the
+        // unknown-table one.
+        for table in ["spaces.uti", "en-ueb-chardefs.uti"] {
+            XCTAssertThrowsError(try translate(["⠁"], table, .brailleToPrint), table) {
+                XCTAssertEqual(
+                    ($0 as? LocalizedError)?.errorDescription,
+                    "TextMouth has no braille table named \u{201C}\(table)\u{201D}."
+                )
+            }
+            XCTAssertThrowsError(try BrailleTranslator.check(table: table, workingIn: work), table) {
+                XCTAssertEqual($0 as? BrailleTranslator.Failure, .unknownTable(table))
+            }
+        }
+        assertWorkFolderEmpty()
     }
 
     /// A malformed table name never starts the helper, even with no work to

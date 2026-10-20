@@ -166,7 +166,8 @@ enum BrailleTranslator {
     /// piece by piece; no UEB or EBAE contraction spans a blank cell, so a
     /// cut there changes no translation.
     /// - Parameters:
-    ///   - table: A bare file name of a table in the tables folder.
+    ///   - table: The file name of one of the tables TextMouth offers
+    ///     (`BrailleTableCatalog`), such as "en-ueb-g2.ctb".
     ///   - direction: Which way to translate.
     /// - Throws: `Failure`, `ImportCancelled` when the import is cancelled
     ///   meanwhile, and `CancellationError` for any other cancelled task.
@@ -176,7 +177,7 @@ enum BrailleTranslator {
         direction: Direction,
         workingIn folder: URL
     ) throws -> [String] {
-        guard isBareTableName(table) else { throw Failure.unknownTable(table) }
+        try requireOfferedTable(table)
         // Split every text into pieces, and number the pieces in the order
         // they go to the helper, one line each.
         let split = texts.map { pieces(of: $0, direction: direction) }
@@ -225,7 +226,7 @@ enum BrailleTranslator {
     /// - Throws: `Failure.unknownTable` for a table that is not there or
     ///   does not compile, as `translate` does, and its other failures.
     static func check(table: String, workingIn folder: URL) throws {
-        guard isBareTableName(table) else { throw Failure.unknownTable(table) }
+        try requireOfferedTable(table)
         // The watchdog needs a file to watch; a check writes none, so an
         // empty one stands in.
         let watched = folder.appendingPathComponent(".\(UUID().uuidString)\(checkSuffix)")
@@ -317,11 +318,17 @@ enum BrailleTranslator {
         String(String.UnicodeScalarView(scalars))
     }
 
-    /// Whether `table` is a bare file name: not empty, no "/", not starting
-    /// with ".", no "," (liblouis separates a list of tables with it), and
-    /// no NUL. Anything else names no table of the tables folder.
-    static func isBareTableName(_ table: String) -> Bool {
-        !table.isEmpty && !table.hasPrefix(".") && !table.unicodeScalars.contains { $0 == "/" || $0 == "," || $0 == "\0" }
+    /// Throws `Failure.unknownTable` unless `table` is one of the tables
+    /// TextMouth offers (`BrailleTableCatalog`), before anything starts.
+    /// That is the whole list of names the helper may be given: a record
+    /// could be edited to name any other file of the tables folder, such as
+    /// an include file (`spaces.uti`), which liblouis would load and the
+    /// book would read as its escapes. A name the catalog lacks is also never
+    /// a path ("../x"), a list ("a,b"), or empty. The stored name is never
+    /// changed: a library from a newer TextMouth, with more tables, keeps its
+    /// books' tables, and such a book is refused by name.
+    private static func requireOfferedTable(_ table: String) throws {
+        guard BrailleTableCatalog.table(withID: table) != nil else { throw Failure.unknownTable(table) }
     }
 
     // MARK: Running
