@@ -302,6 +302,8 @@ final class BraillePageAnalyzerTests: XCTestCase {
     /// first row would go on the third: the style changes nothing else.
     func testABlockStyleParagraphThatGoesOnOverThePageStaysOne() {
         var pages = blockStylePages()
+        XCTAssertEqual(pages.count, 2)
+        guard pages.count == 2, pages[1].first == "" else { return XCTFail("page 2 should begin with a blank row") }
         pages[1].removeFirst()
         let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
         XCTAssertEqual(structure.blocks.count, 3)
