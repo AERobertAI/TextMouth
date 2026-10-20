@@ -145,6 +145,11 @@ targets:
         GCC_OPTIMIZATION_LEVEL: s
         GCC_WARN_INHIBIT_ALL_WARNINGS: YES
         SKIP_INSTALL: YES
+        # LAME and liblouis each include their own "config.h". Xcode's header
+        # map lists every header of the project under its bare name, so it
+        # can hand either target the other's; without it, each target finds
+        # its own through its search paths above.
+        USE_HEADERMAP: NO
   # One C function that runs a block and returns the Objective-C exception it
   # raised (TMCatchException), for the few framework calls that raise one
   # Swift cannot catch. Built as LAME is: a static library with a module
@@ -165,6 +170,74 @@ targets:
           - $(SRCROOT)/Vendor/ObjCExceptionCatcher/include
         CLANG_ENABLE_OBJC_ARC: YES
         SKIP_INSTALL: YES
+  # liblouis 3.39.0, the braille translator (FMT21), vendored in
+  # Vendor/liblouis and built as a static library that only the braille
+  # helper links: liblouis is C that reads untrusted braille and text, it has
+  # had memory-safety bugs, and it is not thread-safe, so it never runs in
+  # TextMouth's own process.
+  #
+  # Vendor/liblouis holds, unchanged, these files of liblouis's release
+  # tarball liblouis-3.39.0.tar.gz, from
+  # https://github.com/liblouis/liblouis/releases/tag/v3.39.0 (SHA-256
+  # 629fa8cb0dfd9ad457c5bf47a42f0953b673e62c8ad6b1d03ddc4e2bd20008f1, the
+  # digest GitHub publishes for it): COPYING.LESSER, the GNU Lesser General
+  # Public License, version 2.1, under which the library and its tables are
+  # distributed ("or any later version"); README, AUTHORS, and NEWS; the
+  # library's sources and headers in liblouis/, the ones its Makefile.am
+  # builds liblouis from (liblouis.h.in among them); and in tables/ the four
+  # English tables TextMouth offers, with every table they include:
+  # Unified English Braille uncontracted (en-ueb-g1.ctb) and contracted
+  # (en-ueb-g2.ctb), and English Braille, American Edition, uncontracted
+  # (en-us-g1.ctb) and contracted (en_US.tbl), 17 files in all. Seven files
+  # (lou_translateString.c, lou_backTranslateString.c,
+  # compileTranslationTable.c, metadata.c, liblouis.h.in, en-ueb-g2.ctb, and
+  # en_US.tbl) were compared with the same files at the v3.39.0 tag (commit
+  # 2e775aca674cd2910e272eed7736acceb4c2e4a2) and are identical. Nothing of
+  # the release was run: not configure, make, or any script. No code of its
+  # tools/ folder, which is GPL 3, is used.
+  #
+  # TextMouth adds two files: config.h, in place of the one configure
+  # writes, and include/liblouis.h, the release's liblouis.h.in with its one
+  # substitution made, 32-bit wide characters (UCS-4, as --enable-ucs4
+  # makes them), so every Unicode character and braille cell fits. Static
+  # linking suits the LGPL here, as it does LAME's licence: the app's whole
+  # source, liblouis's included, is in the repository, so the app can be
+  # rebuilt with a changed liblouis. To update it, replace those files from
+  # a newer release, make include/liblouis.h again from its liblouis.h.in,
+  # compare config.h with what the new sources read, and run make check.
+  #
+  # The library is optimized for size in every configuration, and its
+  # compiler warnings are liblouis's own and are not shown; the gate counts
+  # Swift warnings only. Its preprocessor definitions are its own, without
+  # the DEBUG=1 of the Debug configuration, which would turn on liblouis's
+  # debugging output.
+  liblouis:
+    type: library.static
+    platform: macOS
+    # C alone, with no Objective-C class or category for the linker to keep.
+    requiresObjCLinking: false
+    sources:
+      - path: Vendor/liblouis/liblouis
+        headerVisibility: project
+        excludes:
+          - liblouis.h.in
+      - path: Vendor/liblouis/config.h
+        headerVisibility: project
+      - path: Vendor/liblouis/include/liblouis.h
+        headerVisibility: project
+    settings:
+      base:
+        PRODUCT_NAME: louis
+        HEADER_SEARCH_PATHS:
+          - $(SRCROOT)/Vendor/liblouis
+          - $(SRCROOT)/Vendor/liblouis/include
+          - $(SRCROOT)/Vendor/liblouis/liblouis
+        GCC_PREPROCESSOR_DEFINITIONS: LIBLOUIS_FOR_TEXTMOUTH=1
+        GCC_OPTIMIZATION_LEVEL: s
+        GCC_WARN_INHIBIT_ALL_WARNINGS: YES
+        SKIP_INSTALL: YES
+        # Its own config.h, never LAME's (see USE_HEADERMAP in LAME's target).
+        USE_HEADERMAP: NO
   TextMouthProductionTests:
     type: bundle.unit-test
     platform: macOS
