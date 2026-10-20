@@ -276,6 +276,44 @@ final class BrailleImportTests: XCTestCase {
                 + "This file is eight-dot braille, which TextMouth does not read.")
     }
 
+    /// A new file of `bytes` bytes, all holes (a sparse file, made at once),
+    /// named `name` in a new folder of this test's own.
+    private func sparseFile(named name: String, bytes: Int64) throws -> URL {
+        let url = try makeSandboxDirectory("BrailleImport").appendingPathComponent(name)
+        XCTAssertTrue(FileManager.default.createFile(atPath: url.path, contents: nil))
+        let handle = try FileHandle(forWritingTo: url)
+        try handle.truncate(atOffset: UInt64(bytes))
+        try handle.close()
+        return url
+    }
+
+    /// A braille file of more than 32 MB is refused before it is read, by
+    /// exactly this sentence (E5), through the import.
+    func testABrailleFileOver32MBIsRefused() throws {
+        XCTAssertEqual(BrailleBookReader.maximumFileBytes, 32 * 1_048_576)
+        let sentence = "This braille file holds more than 32 MB, the most TextMouth reads from one braille file."
+        XCTAssertEqual(BrailleFileError.fileTooLarge.errorDescription, sentence)
+        let url = try sparseFile(named: "huge.brf", bytes: BrailleBookReader.maximumFileBytes + 1)
+        try assertRefused(url, saying: "Could not import “huge.brf”. Reading its text failed: \(sentence)")
+    }
+
+    /// A symbolic link is sized by its target, so a link to a file past the
+    /// limit is refused; a file of exactly the limit passes the size check
+    /// (the zeros in it are then refused as not braille).
+    func testTheLimitSizesALinkByItsTargetAndAllowsTheLimitItself() throws {
+        let huge = try sparseFile(named: "huge.brf", bytes: BrailleBookReader.maximumFileBytes + 1)
+        let link = huge.deletingLastPathComponent().appendingPathComponent("link.brf")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: huge)
+        XCTAssertThrowsError(try BrailleBookReader.markdown(of: link, table: grade1)) {
+            XCTAssertEqual($0 as? BrailleFileError, .fileTooLarge)
+        }
+
+        let exact = try sparseFile(named: "exact.brf", bytes: BrailleBookReader.maximumFileBytes)
+        XCTAssertThrowsError(try BrailleBookReader.markdown(of: exact, table: grade1)) {
+            XCTAssertNotEqual($0 as? BrailleFileError, .fileTooLarge)
+        }
+    }
+
     /// A table TextMouth does not have is refused by name.
     func testAnUnknownTableIsRefused() throws {
         let copy = try copyOfFormatSample("brf/grade2-short.brf")

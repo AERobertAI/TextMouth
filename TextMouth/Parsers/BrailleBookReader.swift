@@ -32,6 +32,27 @@ enum BrailleBookReader {
         }
     }
 
+    // MARK: - The size
+
+    /// The most bytes of braille TextMouth reads from one file: 32 MB, about
+    /// six times a long novel's BRF. The translation holds a book's blocks,
+    /// its pieces, and their translations at once, several times the file's
+    /// size, so a file past this is refused before it is read (review finding
+    /// E5). `BrailleFileError.fileTooLarge` says it in words.
+    static let maximumFileBytes: Int64 = 32 * 1_048_576
+
+    /// Refuses the file at `url` when it is larger than `maximumFileBytes`,
+    /// by the size the file system gives, before anything is read. A
+    /// symbolic link is sized by what it points to, as `DocumentByteLimit`
+    /// sizes a file, so a link to a huge file is refused. A file that cannot
+    /// be sized passes: reading it then throws the file system's own error.
+    /// - Throws: `BrailleFileError.fileTooLarge`.
+    private static func requireSizeWithinLimit(of url: URL) throws {
+        let target = url.resolvingSymlinksInPath()
+        let size = (try? target.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
+        guard Int64(size) <= maximumFileBytes else { throw BrailleFileError.fileTooLarge }
+    }
+
     // MARK: - Reading
 
     /// The Markdown of the braille book at `url`, translated to print with
@@ -41,11 +62,14 @@ enum BrailleBookReader {
     /// - Parameters:
     ///   - url: The book's file.
     ///   - table: A bare file name in the bundle's tables folder.
-    /// - Throws: `BrailleFileError` for a file that is not braille,
+    /// - Throws: `BrailleFileError` for a file that is not braille or is
+    ///   larger than `maximumFileBytes`,
     ///   `FileImportError.noTextToRead` when the book has no blocks or no
     ///   print text, `BrailleTranslator.Failure` for a table that is unknown
     ///   or a translation that fails, and what the file's reading throws.
     static func markdown(of url: URL, table: String) throws -> String {
+        // A file past the limit is refused before a byte of it is read.
+        try requireSizeWithinLimit(of: url)
         // The file's pages, then the blocks the pages hold (a BRL file has
         // no layout to read, so its analysis is not "formatted").
         let fileKind = kind(of: url)

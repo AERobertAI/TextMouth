@@ -199,6 +199,9 @@ enum BrailleFileError: LocalizedError, Equatable {
     case tooManyPages
     /// A file of more than `BrailleFilePages.maxRows` rows of braille.
     case tooManyRows
+    /// A file of more than `BrailleBookReader.maximumFileBytes` bytes, which
+    /// no book could be: a long novel's BRF is 2 to 5 MB (review finding E5).
+    case fileTooLarge
 
     var errorDescription: String? {
         switch self {
@@ -212,6 +215,8 @@ enum BrailleFileError: LocalizedError, Equatable {
             return "This file has more than 100,000 braille pages, the most TextMouth reads."
         case .tooManyRows:
             return "This file has more than 4,000,000 lines of braille, the most TextMouth reads."
+        case .fileTooLarge:
+            return "This braille file holds more than 32 MB, the most TextMouth reads from one braille file."
         }
     }
 
