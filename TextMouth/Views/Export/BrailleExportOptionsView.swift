@@ -61,8 +61,9 @@ enum BrailleExportWording {
 /// contracts. They edit one table, by its file name; the first chooses the
 /// table's code and the second its contraction, so each offers only what the
 /// bundled tables have (`BrailleSettingsChoice`). Their labels are the
-/// Braille tab's; the hints are the caller's, since each place speaks of a
-/// different use of the table.
+/// Braille tab's. The pop-up style and size are the caller's (a form draws
+/// them its way, the Export dialog as menus), and so are the hints, since
+/// each place speaks of a different use of the table.
 struct BrailleTablePickers: View {
     /// The table in use, by its file name.
     @Binding var table: String
@@ -138,8 +139,6 @@ struct BrailleTablePickers: View {
                 }
             }
         }
-        .pickerStyle(.menu)
-        .fixedSize()
         .accessibilityLabel(BrailleSettingsWording.codeLabel)
         .accessibilityHint(codeHint)
     }
@@ -151,8 +150,6 @@ struct BrailleTablePickers: View {
                 Text(table.contractionLabel).tag(table.id)
             }
         }
-        .pickerStyle(.menu)
-        .fixedSize()
         .accessibilityLabel(BrailleSettingsWording.contractionLabel)
         .accessibilityHint(contractionHint)
     }
@@ -176,12 +173,19 @@ struct BrailleExportOptionsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            BrailleTablePickers(
-                table: $options.table,
-                codes: codes,
-                codeHint: BrailleExportWording.codeHint,
-                contractionHint: BrailleExportWording.contractionHint
-            )
+            // The dialog draws the pop-ups as menus at their own size, as it
+            // draws its Convert to picker; the Braille tab leaves them to its
+            // form.
+            VStack(alignment: .leading, spacing: 6) {
+                BrailleTablePickers(
+                    table: $options.table,
+                    codes: codes,
+                    codeHint: BrailleExportWording.codeHint,
+                    contractionHint: BrailleExportWording.contractionHint
+                )
+            }
+            .pickerStyle(.menu)
+            .fixedSize()
             stepperRow(
                 label: BrailleExportWording.cellsLabel,
                 hint: BrailleExportWording.cellsHint,

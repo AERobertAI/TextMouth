@@ -84,41 +84,10 @@ struct BrailleSettingsView: View {
     /// its own (an empty list is the broken bundle).
     var codes: [BrailleCode] = BrailleTableCatalog.bundledCodes
 
-    /// The table in use, when one of the codes has it.
-    private var currentTable: BrailleTable? {
-        codes.flatMap(\.tables).first { $0.id == settingsViewModel.brailleTable }
-    }
-
-    /// The code the pop-up shows: the table in use's, else the first
-    /// (so the pop-up never shows a selection it has no item for).
-    private var currentCode: BrailleCode? {
-        codes.first { code in currentTable.map { code.tables.contains($0) } ?? false } ?? codes.first
-    }
-
-    /// The code pop-up's selection: the chosen code's identifier. Choosing a
-    /// code stores its table of the current contraction
-    /// (`BrailleSettingsChoice.table(in:matching:)`).
-    private var codeSelection: Binding<String> {
+    /// The table in use, as the setting stores it (`SettingsViewModel.brailleTable`).
+    private var tableBinding: Binding<String> {
         Binding(
-            get: { currentCode?.id ?? "" },
-            set: { id in
-                guard let code = codes.first(where: { $0.id == id }),
-                      let table = BrailleSettingsChoice.table(in: code, matching: currentTable) else { return }
-                settingsViewModel.brailleTable = table.id
-            }
-        )
-    }
-
-    /// The contraction pop-up's selection: the identifier of the table in
-    /// use, or of the code's first table when the table in use is another
-    /// code's.
-    private var tableSelection: Binding<String> {
-        Binding(
-            get: {
-                guard let code = currentCode else { return "" }
-                if let table = currentTable, code.tables.contains(table) { return table.id }
-                return code.tables.first?.id ?? ""
-            },
+            get: { settingsViewModel.brailleTable },
             set: { settingsViewModel.brailleTable = $0 }
         )
     }
@@ -145,10 +114,12 @@ struct BrailleSettingsView: View {
             Section {
                 switch Content.of(codes: codes) {
                 case .choices:
-                    if let code = currentCode {
-                        codePicker
-                        contractionPicker(for: code)
-                    }
+                    BrailleTablePickers(
+                        table: tableBinding,
+                        codes: codes,
+                        codeHint: BrailleSettingsWording.codeHint,
+                        contractionHint: BrailleSettingsWording.contractionHint
+                    )
                 case .noTables(let sentence):
                     Text(sentence)
                 }
@@ -160,39 +131,5 @@ struct BrailleSettingsView: View {
                 Text(BrailleSettingsWording.sectionHeader)
             }
         }
-    }
-
-    /// The pop-up of braille codes, each by its name; grouped under each
-    /// language's name when the codes have more than one language.
-    private var codePicker: some View {
-        let groups = BrailleSettingsChoice.languageGroups(of: codes)
-        return Picker(BrailleSettingsWording.codeLabel, selection: codeSelection) {
-            if groups.count > 1 {
-                ForEach(groups) { group in
-                    Section(BrailleTableCatalog.languageName(group.language)) {
-                        ForEach(group.codes) { code in
-                            Text(code.name).tag(code.id)
-                        }
-                    }
-                }
-            } else {
-                ForEach(codes) { code in
-                    Text(code.name).tag(code.id)
-                }
-            }
-        }
-        .accessibilityLabel(BrailleSettingsWording.codeLabel)
-        .accessibilityHint(BrailleSettingsWording.codeHint)
-    }
-
-    /// The pop-up of the contractions `code`'s tables have.
-    private func contractionPicker(for code: BrailleCode) -> some View {
-        Picker(BrailleSettingsWording.contractionLabel, selection: tableSelection) {
-            ForEach(code.tables) { table in
-                Text(table.contractionLabel).tag(table.id)
-            }
-        }
-        .accessibilityLabel(BrailleSettingsWording.contractionLabel)
-        .accessibilityHint(BrailleSettingsWording.contractionHint)
     }
 }
