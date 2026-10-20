@@ -79,6 +79,11 @@ enum {
 #define FIRST_ROOM 8
 #define MOST_ROOM 64
 
+/* The cells of output room that must be left over for a translation to be
+   believed (see `translate`): more than the 10 cells of the longest escape
+   liblouis writes for a character a table lacks. */
+#define MIN_SPARE_ROOM 16
+
 /*
  * Decodes the UTF-8 bytes `bytes[0..count)` into `out`, which holds at least
  * `count` widechars (a UTF-8 sequence is never shorter than the character it
@@ -222,11 +227,20 @@ table_path(const char *folder, const char *name) {
  * ("\46/,"), which a listener would hear mid-sentence. The emphasis itself
  * is not kept: TextMouth reads the words aloud.
  *
- * liblouis answers an output that fills its room in either of two ways: it
- * stops early, using only part of the input, or it fails. Either way the
- * line is translated again with twice the room, from FIRST_ROOM to
- * MOST_ROOM times the input's length; only a line that fails with the most
- * room is a failure.
+ * liblouis answers an output that fills its room in one of three ways: it
+ * stops early, using only part of the input; it fails; or, when the text
+ * holds a character the table lacks, it CUTS the output at the room, and
+ * still reports success with all of the input used. The reviewer saw the
+ * third: 100 emoji at the first room of 864 cells gave ok=1, used=100,
+ * written=864, where 1,664 cells of room gave all 900 cells; 20 CJK
+ * characters at a room of 64 also reported used=20. So a translation counts
+ * only when it succeeded, used all of the input, and left at least
+ * MIN_SPARE_ROOM cells of the room unwritten: a cut output ends within one
+ * escape of the room's end, and the longest escape liblouis writes for one
+ * character is 10 cells, so 16 spare cells prove nothing was cut. Otherwise
+ * the line is translated again with twice the room, from FIRST_ROOM to
+ * MOST_ROOM times the input's length; a line that never leaves 16 cells over
+ * is a failure (exit status 5). Back-translation is held to the same rule.
  */
 static widechar *
 translate(const char *table, int forward, const widechar *in, int length, int *out_length) {
@@ -248,7 +262,7 @@ translate(const char *table, int forward, const widechar *in, int length, int *o
 					 : lou_backTranslateString(
 							   table, in, &used, out, &written, emphasis, NULL, mode);
 		free(emphasis);
-		if (ok && used >= length) {
+		if (ok && used >= length && room - written >= MIN_SPARE_ROOM) {
 			*out_length = written;
 			return out;
 		}

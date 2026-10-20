@@ -173,6 +173,56 @@ final class BrailleTranslatorTests: XCTestCase {
         }
     }
 
+    // MARK: - Characters a Table Lacks
+
+    /// The cells liblouis writes for the one character `character`, which
+    /// the table lacks: its escape notation, forward with Grade 2.
+    private func escape(of character: String) throws -> String {
+        let escape = try XCTUnwrap(try translate([character], "en-ueb-g2.ctb", .printToBraille).first)
+        // An escape is several cells; one cell would mean the table has the character.
+        XCTAssertGreaterThan(escape.unicodeScalars.count, 1, character)
+        return escape
+    }
+
+    /// Forward output is never silently cut (review finding M1). When the
+    /// output fills its room on characters the table lacks, liblouis reports
+    /// success, says it used all the input, and cuts the output: 100 emoji
+    /// at the helper's first room (864 cells) gave 864 of their 900 cells.
+    /// The helper now asks for more room until 16 cells are spare, so every
+    /// run here gives one escape for each character.
+    func testForwardOutputForCharactersATableLacksIsNeverCut() throws {
+        let emoji = "\u{1F600}"
+        let emojiEscape = try escape(of: emoji)
+        let cjkEscape = try escape(of: "\u{4E2D}")
+        let party = try XCTUnwrap(try translate(["Party time"], "en-ueb-g2.ctb", .printToBraille).first)
+
+        // 100 emoji; words and then 160 emoji; 20 CJK characters (liblouis
+        // reported all 20 used at a room of 64 cells, and cut the output).
+        let result = try translate(
+            [
+                String(repeating: emoji, count: 100),
+                "Party time " + String(repeating: emoji, count: 160),
+                String(repeating: "\u{4E2D}", count: 20),
+            ],
+            "en-ueb-g2.ctb", .printToBraille
+        )
+        XCTAssertEqual(result.count, 3)
+        guard result.count == 3 else { return }
+        XCTAssertEqual(result[0], String(repeating: emojiEscape, count: 100))
+        XCTAssertEqual(result[1], party + "\u{2800}" + String(repeating: emojiEscape, count: 160))
+        XCTAssertEqual(result[2], String(repeating: cjkEscape, count: 20))
+    }
+
+    /// A paragraph of 4,000 control characters, which liblouis writes as
+    /// escapes 24 times as long as the input in bytes, translates: it needs
+    /// more room than the helper's first, and is not a failure.
+    func testAParagraphOfControlCharactersTranslates() throws {
+        let control = "\u{1}"
+        let controlEscape = try escape(of: control)
+        let result = try translate([String(repeating: control, count: 4_000)], "en-ueb-g2.ctb", .printToBraille)
+        XCTAssertEqual(result, [String(repeating: controlEscape, count: 4_000)])
+    }
+
     // MARK: - Tables
 
     /// Every table the app offers (and EBAE's Computer Braille table)
