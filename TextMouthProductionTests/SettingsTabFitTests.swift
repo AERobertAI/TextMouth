@@ -29,13 +29,14 @@ final class SettingsTabFitTests: XCTestCase {
 
     // MARK: - The Tabs
 
-    /// The window offers its nine tabs in the order they have always had,
-    /// each with a symbol that exists, and only Text, whose rule list
-    /// scrolls by itself, does not scroll as a whole.
-    func testTheWindowOffersItsNineTabsInTheirOrder() {
+    /// The window offers its ten tabs in the order they have always had
+    /// (Braille, added with FMT21, after Text), each with a symbol that
+    /// exists, and only Text, whose rule list scrolls by itself, does not
+    /// scroll as a whole.
+    func testTheWindowOffersItsTenTabsInTheirOrder() {
         XCTAssertEqual(
             SettingsTab.allCases.map(\.title),
-            ["Voice", "Playback", "Shortcuts", "Text", "Sounds", "Stats", "Feeds", "Storage", "Miscellaneous"]
+            ["Voice", "Playback", "Shortcuts", "Text", "Braille", "Sounds", "Stats", "Feeds", "Storage", "Miscellaneous"]
         )
         for tab in SettingsTab.allCases {
             XCTAssertNotNil(NSImage(systemSymbolName: tab.systemImage, accessibilityDescription: nil), tab.title)

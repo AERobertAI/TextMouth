@@ -414,6 +414,7 @@
 		64E871B55330D8F36C069FFC /* OrphanAdoptionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F0CB769352C797FEABDF780 /* OrphanAdoptionTests.swift */; };
 		6520A31BE995437677E4FDE6 /* AccessibilityTestSupportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B87E6FD11908D7D16656C0C /* AccessibilityTestSupportTests.swift */; };
 		655AF0676B22196C37EF3267 /* AddToLibraryChoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DD3E3A8DA8C8CC35A66D833 /* AddToLibraryChoice.swift */; };
+		65B9C9DF4B771B62D4B00DE8 /* BrailleSettingsViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D74ECF5C1E9782911D9CB5D5 /* BrailleSettingsViewTests.swift */; };
 		65C11ECFFE6B47AC313415C3 /* CollectionTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B2A3F577E6F3A616378DECC /* CollectionTestSupport.swift */; };
 		65E10E1AC486486D1EFEC697 /* LibraryFeedRemoveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 429282AD39285FA43E6C6A3F /* LibraryFeedRemoveTests.swift */; };
 		660A36E42E6AC01AEDBD81E6 /* ReaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227031800A34F0E8E5166D55 /* ReaderView.swift */; };
@@ -977,6 +978,7 @@
 		E39BDAD399C494EA11014901 /* Book.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A7970E91CA6E948DFB0B82 /* Book.swift */; };
 		E3CB5A0159A78044A37C8AE0 /* VoiceSweepReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2CC72857348BF3D10A02112 /* VoiceSweepReport.swift */; };
 		E43DD0261215090DED4C19B2 /* LibraryFeedUnsubscribeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB02A771B3FC5A4EDBD37B2 /* LibraryFeedUnsubscribeTests.swift */; };
+		E44628D7C27151E4F2ACE968 /* BrailleSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28AFC3B3F51ED0B400EA98D2 /* BrailleSettingsView.swift */; };
 		E44FBDD071C5356FA630914C /* DataDirectoryConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E827731A2A08A947B65B4B20 /* DataDirectoryConfigTests.swift */; };
 		E4785EEEF80F1BE198D66FDB /* OggHeaderReaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1935CE6ABC9C36926C23483C /* OggHeaderReaderTests.swift */; };
 		E486F6EA16704655AD09FC1F /* FeedCommandRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8605D0B22B797912B1E97570 /* FeedCommandRunner.swift */; };
@@ -1358,6 +1360,7 @@
 		27B0A6A99A05BE2B716407A0 /* LibraryBookSorter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryBookSorter.swift; sourceTree = "<group>"; };
 		281E20A89D2813228F72279E /* utils.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = utils.c; sourceTree = "<group>"; };
 		2853424E04196A2DCB1FD89B /* UseThisLibraryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UseThisLibraryTests.swift; sourceTree = "<group>"; };
+		28AFC3B3F51ED0B400EA98D2 /* BrailleSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleSettingsView.swift; sourceTree = "<group>"; };
 		28D3594AE5B5CA713E9BCEBD /* RecordingPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingPreferences.swift; sourceTree = "<group>"; };
 		28DD51FA8DC94329723F1037 /* FolderOperationConflict.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderOperationConflict.swift; sourceTree = "<group>"; };
 		294FE48D6A5767A537A8B23B /* UnsavedChangesTerminationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnsavedChangesTerminationTests.swift; sourceTree = "<group>"; };
@@ -2115,6 +2118,7 @@
 		D698FC46AC11743C02CE3951 /* BookAuthorPlaceholderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookAuthorPlaceholderTests.swift; sourceTree = "<group>"; };
 		D6CF814833EA245F32E97171 /* BrailleLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleLayoutTests.swift; sourceTree = "<group>"; };
 		D727BAF0951B18B90DEBAA4C /* RecordingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingService.swift; sourceTree = "<group>"; };
+		D74ECF5C1E9782911D9CB5D5 /* BrailleSettingsViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleSettingsViewTests.swift; sourceTree = "<group>"; };
 		D798DCAF9215F6BBFD707A30 /* KeyboardReachabilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardReachabilityTests.swift; sourceTree = "<group>"; };
 		D7B458AED7F7DC72AD3AEA8D /* TextAnchorCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextAnchorCapture.swift; sourceTree = "<group>"; };
 		D8F95DC6ACCB88FB3CC4EE78 /* AudioEditorPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorPreferences.swift; sourceTree = "<group>"; };
@@ -2637,6 +2641,7 @@
 			children = (
 				FC7EDCC74508AC75F91D0AC4 /* AudioEditingSettingsSection.swift */,
 				A8A6614EFD0FB24ED11FDE51 /* AudioFilterPresetsView.swift */,
+				28AFC3B3F51ED0B400EA98D2 /* BrailleSettingsView.swift */,
 				A7A4BAB023D70F975ADA702C /* DuplicateFinderView.swift */,
 				EFF42C04B513F41E43AD9841 /* KeyboardShortcutsSettingsView.swift */,
 				CB782467B0C65A1556A61344 /* LogsSettingsSection.swift */,
@@ -3010,6 +3015,7 @@
 				A90CC3DBF530227B54EE9E57 /* BrailleFileWriterTests.swift */,
 				D6CF814833EA245F32E97171 /* BrailleLayoutTests.swift */,
 				A985391BC67E6497E264978C /* BraillePageAnalyzerTests.swift */,
+				D74ECF5C1E9782911D9CB5D5 /* BrailleSettingsViewTests.swift */,
 				C2A9614130B87AF85BFCC298 /* BrailleTableCatalogTests.swift */,
 				21DCC7EAD2395E4AF650BF99 /* BrailleTranslatorTests.swift */,
 				DF9FA767F3F6013D0359B401 /* BuildIdentityTests.swift */,
@@ -3961,6 +3967,7 @@
 				1070B8D83EE7A9F6611E95AE /* BrailleFileWriterTests.swift in Sources */,
 				BF813BAFB01C549F53A8E674 /* BrailleLayoutTests.swift in Sources */,
 				0E17B62C11F17D7F43D5122F /* BraillePageAnalyzerTests.swift in Sources */,
+				65B9C9DF4B771B62D4B00DE8 /* BrailleSettingsViewTests.swift in Sources */,
 				B16BBDC6F50633D9BBE57B5F /* BrailleTableCatalogTests.swift in Sources */,
 				341DA372EF8FD040EB2A252D /* BrailleTranslatorTests.swift in Sources */,
 				146A7A5E7BCA6C21044F99B8 /* BugRegressionTests.swift in Sources */,
@@ -4581,6 +4588,7 @@
 				B06B739ECFE94A038DD00EE5 /* BrailleFileWriter.swift in Sources */,
 				1658467685F1D0B55E149340 /* BrailleLayout.swift in Sources */,
 				D1D17DFF563F4875F8E7CF98 /* BraillePageAnalyzer.swift in Sources */,
+				E44628D7C27151E4F2ACE968 /* BrailleSettingsView.swift in Sources */,
 				A8B58A8E997575544D7BE7A6 /* BrailleTableCatalog.swift in Sources */,
 				42FBD9DFE86FDFDDA519A0CD /* BrailleTranslator.swift in Sources */,
 				224C5E69897A8AC4AB2D40CF /* BuildIdentity.swift in Sources */,

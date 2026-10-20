@@ -1,0 +1,178 @@
+import SwiftUI
+
+// MARK: - Wording
+
+/// Every sentence the Braille tab of Settings shows or speaks (FMT21),
+/// kept together so a test pins each one exactly.
+enum BrailleSettingsWording {
+    /// The tab's name in the Settings window's toolbar.
+    static let tabTitle = "Braille"
+    /// The heading of the tab's only group.
+    static let sectionHeader = "Braille"
+    /// The label of the pop-up that chooses the braille code.
+    static let codeLabel = "Braille code"
+    /// What the code pop-up does, spoken after its label and value.
+    static let codeHint = "The braille code TextMouth reads braille files with and writes braille in."
+    /// The label of the pop-up that chooses how far the code contracts.
+    static let contractionLabel = "Contraction"
+    /// What the contraction pop-up does, spoken after its label and value.
+    static let contractionHint =
+        "Whether that code's braille is contracted. Contracted braille writes common words and letter groups in fewer cells."
+    /// The caption under the pop-ups: where the setting is used, and what it
+    /// leaves alone.
+    static let caption =
+        "TextMouth reads braille files (BRF, BRL, and PEF) with this code, and exports braille with it unless you choose another in the Export dialog. A book keeps the code it was imported with."
+    /// What the group says in place of the pop-ups when the app's bundle
+    /// holds no braille tables.
+    static let noTables = "TextMouth found no braille tables in its bundle."
+}
+
+// MARK: - Choices
+
+/// The choices the Braille tab offers (FMT21), as pure functions of the
+/// codes they are given, so a test can pass codes of its own.
+enum BrailleSettingsChoice {
+    /// The codes of one language, as the code pop-up groups them.
+    struct LanguageGroup: Identifiable {
+        /// The language, such as "en".
+        let language: String
+        /// The language's codes, in the order the catalog gives them.
+        var codes: [BrailleCode]
+
+        var id: String { language }
+    }
+
+    /// The codes grouped by language, in the order each language first
+    /// appears, each group keeping the codes' order.
+    static func languageGroups(of codes: [BrailleCode]) -> [LanguageGroup] {
+        var groups: [LanguageGroup] = []
+        for code in codes {
+            if let index = groups.firstIndex(where: { $0.language == code.language }) {
+                groups[index].codes.append(code)
+            } else {
+                groups.append(LanguageGroup(language: code.language, codes: [code]))
+            }
+        }
+        return groups
+    }
+
+    /// The table to use once `code` is chosen while `current` is the table
+    /// in use: the code's table of the same contraction when it has one,
+    /// else its `full` table, else its first. Nil only for a code with no
+    /// tables.
+    static func table(in code: BrailleCode, matching current: BrailleTable?) -> BrailleTable? {
+        if let current, let same = code.tables.first(where: { $0.contraction == current.contraction }) {
+            return same
+        }
+        return code.tables.first(where: { $0.contraction == .full }) ?? code.tables.first
+    }
+}
+
+// MARK: - The Tab
+
+/// The Braille tab of Settings (FMT21): the braille code TextMouth reads
+/// braille files with and writes braille in, and how far that code
+/// contracts. Both pop-ups edit one setting, the table
+/// (`SettingsViewModel.brailleTable`, mirrored in config.json); the first
+/// chooses the table's code and the second its contraction, so each offers
+/// only what the bundled tables have. If the bundle holds no tables, the tab
+/// says so instead of showing pop-ups with nothing to choose.
+struct BrailleSettingsView: View {
+    @EnvironmentObject var settingsViewModel: SettingsViewModel
+
+    /// The codes the pop-up offers: the bundled ones, unless a test shows
+    /// its own (an empty list is the broken bundle).
+    var codes: [BrailleCode] = BrailleTableCatalog.bundledCodes
+
+    /// The table in use, when one of the codes has it.
+    private var currentTable: BrailleTable? {
+        codes.flatMap(\.tables).first { $0.id == settingsViewModel.brailleTable }
+    }
+
+    /// The code the pop-up shows: the table in use's, else the first
+    /// (so the pop-up never shows a selection it has no item for).
+    private var currentCode: BrailleCode? {
+        codes.first { code in currentTable.map { code.tables.contains($0) } ?? false } ?? codes.first
+    }
+
+    /// The code pop-up's selection: the chosen code's identifier. Choosing a
+    /// code stores its table of the current contraction
+    /// (`BrailleSettingsChoice.table(in:matching:)`).
+    private var codeSelection: Binding<String> {
+        Binding(
+            get: { currentCode?.id ?? "" },
+            set: { id in
+                guard let code = codes.first(where: { $0.id == id }),
+                      let table = BrailleSettingsChoice.table(in: code, matching: currentTable) else { return }
+                settingsViewModel.brailleTable = table.id
+            }
+        )
+    }
+
+    /// The contraction pop-up's selection: the identifier of the table in
+    /// use, or of the code's first table when the table in use is another
+    /// code's.
+    private var tableSelection: Binding<String> {
+        Binding(
+            get: {
+                guard let code = currentCode else { return "" }
+                if let table = currentTable, code.tables.contains(table) { return table.id }
+                return code.tables.first?.id ?? ""
+            },
+            set: { settingsViewModel.brailleTable = $0 }
+        )
+    }
+
+    var body: some View {
+        Form {
+            Section {
+                if let code = currentCode {
+                    codePicker
+                    contractionPicker(for: code)
+                } else {
+                    Text(BrailleSettingsWording.noTables)
+                }
+                Text(BrailleSettingsWording.caption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } header: {
+                Text(BrailleSettingsWording.sectionHeader)
+            }
+        }
+    }
+
+    /// The pop-up of braille codes, each by its name; grouped under each
+    /// language's name when the codes have more than one language.
+    private var codePicker: some View {
+        let groups = BrailleSettingsChoice.languageGroups(of: codes)
+        return Picker(BrailleSettingsWording.codeLabel, selection: codeSelection) {
+            if groups.count > 1 {
+                ForEach(groups) { group in
+                    Section(BrailleTableCatalog.languageName(group.language)) {
+                        ForEach(group.codes) { code in
+                            Text(code.name).tag(code.id)
+                        }
+                    }
+                }
+            } else {
+                ForEach(codes) { code in
+                    Text(code.name).tag(code.id)
+                }
+            }
+        }
+        .accessibilityLabel(BrailleSettingsWording.codeLabel)
+        .accessibilityHint(BrailleSettingsWording.codeHint)
+    }
+
+    /// The pop-up of the contractions `code`'s tables have.
+    private func contractionPicker(for code: BrailleCode) -> some View {
+        Picker(BrailleSettingsWording.contractionLabel, selection: tableSelection) {
+            ForEach(code.tables) { table in
+                Text(table.contractionLabel).tag(table.id)
+            }
+        }
+        .accessibilityLabel(BrailleSettingsWording.contractionLabel)
+        .accessibilityHint(BrailleSettingsWording.contractionHint)
+    }
+}
