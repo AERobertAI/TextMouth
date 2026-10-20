@@ -346,6 +346,100 @@ final class RTFExportWriterTests: XCTestCase {
         XCTAssertEqual(TextExportWriters.writer(id: "rtf")?.name, "RTF")
     }
 
+    // MARK: - Word 97-2003
+
+    /// The file begins with the signature of a compound file, the container of Word 97-2003.
+    func testTheWordFileIsACompoundFile() throws {
+        let url = try makeFolder().appendingPathComponent("book.doc")
+        try WordDocExportWriter().write(
+            fullDocument(), options: NoTextExportOptions(), to: url, cancellation: BookExportCancellation()
+        )
+        let bytes = try Data(contentsOf: url)
+        XCTAssertEqual(Array(bytes.prefix(8)), [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1])
+    }
+
+    /// Read back as Word 97-2003, the file's text is exactly the text Apple's reader makes of the RTF.
+    func testTheWordFileReadsBackAsTheRTFDoes() throws {
+        let document = fullDocument()
+        let url = try makeFolder().appendingPathComponent("book.doc")
+        try WordDocExportWriter().write(
+            document, options: NoTextExportOptions(), to: url, cancellation: BookExportCancellation()
+        )
+        let read = try NSAttributedString(
+            data: try Data(contentsOf: url),
+            options: [.documentType: NSAttributedString.DocumentType.docFormat],
+            documentAttributes: nil
+        )
+        XCTAssertEqual(read.string, try applesReading(of: try RTFExportWriter.rtf(of: document)).string)
+        XCTAssertTrue(read.string.contains("Harbour Pilots"))
+    }
+
+    /// The title and author are in the file's properties.
+    func testTheWordFileCarriesTheTitleAndAuthor() throws {
+        let url = try makeFolder().appendingPathComponent("book.doc")
+        try WordDocExportWriter().write(
+            fullDocument(), options: NoTextExportOptions(), to: url, cancellation: BookExportCancellation()
+        )
+        var attributes: NSDictionary?
+        _ = try NSAttributedString(
+            data: try Data(contentsOf: url),
+            options: [.documentType: NSAttributedString.DocumentType.docFormat],
+            documentAttributes: &attributes
+        )
+        XCTAssertEqual(attributes?[NSAttributedString.DocumentAttributeKey.title] as? String, "Harbour Pilots")
+        XCTAssertEqual(attributes?[NSAttributedString.DocumentAttributeKey.author] as? String, "Odette Varga")
+    }
+
+    /// A book with no text still makes a Word file.
+    func testAnEmptyBookStillMakesAWordFile() throws {
+        let url = try makeFolder().appendingPathComponent("empty.doc")
+        try WordDocExportWriter().write(
+            documentOf([]), options: NoTextExportOptions(), to: url, cancellation: BookExportCancellation()
+        )
+        XCTAssertEqual(Array(try Data(contentsOf: url).prefix(4)), [0xD0, 0xCF, 0x11, 0xE0])
+    }
+
+    /// A second write to the same place throws and leaves the first file as it was.
+    func testTheWordWriterNeverWritesOverAFile() throws {
+        let url = try makeFolder().appendingPathComponent("book.doc")
+        let writer = WordDocExportWriter()
+        try writer.write(fullDocument(), options: NoTextExportOptions(), to: url, cancellation: BookExportCancellation())
+        let firstBytes = try Data(contentsOf: url)
+
+        XCTAssertThrowsError(
+            try writer.write(documentOf([]), options: NoTextExportOptions(), to: url, cancellation: BookExportCancellation())
+        )
+        XCTAssertEqual(try Data(contentsOf: url), firstBytes, "the first file is as it was")
+    }
+
+    /// A cancelled export writes no Word file, whether it was stopped before the call or is stopped partway.
+    func testACancelledWordExportWritesNothing() throws {
+        let folder = try makeFolder()
+        let cancellation = BookExportCancellation()
+        cancellation.cancel()
+        for (index, document) in [documentOf([]), documentOf([.thematicBreak])].enumerated() {
+            let url = folder.appendingPathComponent("cancelled-\(index).doc")
+            XCTAssertThrowsError(
+                try WordDocExportWriter().write(document, options: NoTextExportOptions(), to: url, cancellation: cancellation)
+            ) { XCTAssertTrue($0 is CancellationError) }
+            XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
+        }
+    }
+
+    /// The Word writer's words are exactly these, and the writers are listed in the picker's order.
+    func testTheWordWritersWordsAndTheListOfWriters() {
+        let writer = WordDocExportWriter()
+        XCTAssertEqual(writer.id, "doc")
+        XCTAssertEqual(writer.name, "Word 97-2003 (.doc)")
+        XCTAssertEqual(writer.fileExtension, "doc")
+        XCTAssertEqual(
+            writer.hint,
+            "Word 97-2003 document. Its headings are plain text, so Word's navigation pane does not list them."
+        )
+        XCTAssertEqual(TextExportWriters.all.map(\.id), ["html", "rtf", "doc"])
+        XCTAssertEqual(TextExportWriters.writer(id: "doc")?.name, "Word 97-2003 (.doc)")
+    }
+
     // MARK: - Helpers
 
     /// `lines` as a text: each ended by a line feed.

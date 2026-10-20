@@ -219,6 +219,7 @@ enum TextExportWriters {
     static let all: [any TextExportWriter] = [
         HTMLExportWriter(),
         RTFExportWriter(),
+        WordDocExportWriter(),
     ]
 
     /// The picker's tag for Markdown, the book's content.md copied as it is
