@@ -103,10 +103,15 @@ final class BookExportConvertToTests: XCTestCase {
     // MARK: - The Picker's Choices
 
     /// The picker beside "Text as Markdown" lists Markdown, then each writer,
-    /// with the hints the user hears; no other kind has a picker.
+    /// with the hints the user hears; no other kind has a picker. The first
+    /// four choices are pinned exactly (Markdown and tonight's three
+    /// writers); every choice after Markdown is then checked against
+    /// `TextExportWriters.all`, so a writer added later is checked against
+    /// itself and this test stays green.
     func testThePickersChoicesAreMarkdownThenEachWriter() {
+        let choices = BookExportModel.conversionChoices(for: .markdown)
         XCTAssertEqual(
-            BookExportModel.conversionChoices(for: .markdown),
+            Array(choices.prefix(4)),
             [
                 BookExportConversionChoice(
                     id: "markdown",
@@ -129,6 +134,11 @@ final class BookExportConvertToTests: XCTestCase {
                     hint: "Word 97-2003 document. Its headings are plain text, so Word's navigation pane does not list them."
                 ),
             ]
+        )
+        // After Markdown, the choices are exactly the writers, in order.
+        XCTAssertEqual(
+            Array(choices.dropFirst()),
+            TextExportWriters.all.map { BookExportConversionChoice(id: $0.id, name: $0.name, hint: $0.hint) }
         )
         for kind in BookExportKind.allCases where kind != .markdown {
             XCTAssertEqual(BookExportModel.conversionChoices(for: kind), [], "\(kind) has no picker")
@@ -183,17 +193,20 @@ final class BookExportConvertToTests: XCTestCase {
         XCTAssertEqual(model.hint(for: .originalFile), BookExportWording.hint(for: .originalFile))
     }
 
-    /// No writer of tonight takes options, so no options view shows under
-    /// the picker for Markdown or for any of them, checked or not.
+    /// Tonight's writers (HTML, RTF, and Word 97-2003) take no options, so no
+    /// options view shows under the picker for Markdown or for any of them,
+    /// checked or not. Only those three are checked: a writer added later may
+    /// have options.
     func testNoOptionsViewShowsForTonightsWriters() async throws {
         let dialog = try await makeDialog("Export Convert Options")
         let model = dialog.model
         model.setChecked(true, for: .markdown)
 
         XCTAssertNil(model.optionsView(for: .markdown), "Markdown has no options")
-        for writer in TextExportWriters.all {
-            model.setConversionID(writer.id, for: .markdown)
-            XCTAssertNil(model.optionsView(for: .markdown), "\(writer.name) has no options")
+        for id in ["html", "rtf", "doc"] {
+            model.setConversionID(id, for: .markdown)
+            XCTAssertEqual(model.conversionID(for: .markdown), id, "\(id) is chosen")
+            XCTAssertNil(model.optionsView(for: .markdown), "\(id) has no options")
         }
     }
 
