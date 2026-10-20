@@ -128,17 +128,21 @@ enum ExportBlock: Equatable, Sendable {
     /// A table.
     case table(ExportTable)
 
-    /// The block's plain text, as braille and any writer without styles
-    /// read it:
+    /// The block's plain text, in reading order, as braille and any writer
+    /// without styles read it:
     /// - a heading's or a paragraph's runs, joined;
-    /// - a list's items' own words (`ExportListItem.plainText`), an item a
-    ///   line, each followed by the lists inside it, if any, and no line for
-    ///   an item with no words of its own;
+    /// - a list's items' text (`ExportListItem.plainText`), each item's in
+    ///   order with the lists inside it where they stand, apart by a line
+    ///   feed, an item with no text left out;
     /// - a quote's blocks' text, apart by a blank line;
     /// - a code block's code, as it is;
     /// - nothing for a thematic break;
     /// - a table's rows, a row a line, its cells that have words apart by a
     ///   space, as the reader reads a row.
+    ///
+    /// No text is ever moved out of the order the book reads it in. A
+    /// writer that sets a list inside an item apart, indenting it as braille
+    /// and RTF do, walks the item's `blocks` instead.
     var plainText: String {
         switch self {
         case .heading(let heading):
@@ -146,12 +150,7 @@ enum ExportBlock: Equatable, Sendable {
         case .paragraph(let runs):
             return runs.plainText
         case .list(let list):
-            return list.items.flatMap { item in
-                [item.plainText] + item.blocks.compactMap { block in
-                    if case .list = block { return block.plainText }
-                    return nil
-                }
-            }.filter { !$0.isEmpty }.joined(separator: "\n")
+            return list.items.map(\.plainText).filter { !$0.isEmpty }.joined(separator: "\n")
         case .blockQuote(let blocks):
             return blocks.map(\.plainText).joined(separator: "\n\n")
         case .codeBlock(let code):
@@ -221,14 +220,14 @@ struct ExportListItem: Equatable, Sendable {
     /// The item's blocks, in order: its paragraphs, and any list inside it.
     var blocks: [ExportBlock]
 
-    /// The item's own words: the plain text of its blocks other than the
-    /// lists inside it, apart by a line feed. A list inside the item is a
-    /// list of its own, with its own items.
+    /// The item's text in reading order: the plain text of each of its
+    /// blocks, the lists inside it included where they stand, apart by a
+    /// line feed, a block with no text left out. So the item "Alpha", a list
+    /// inside it of "Xray" and "Yankee", and then "Bravo" reads "Alpha",
+    /// "Xray", "Yankee", "Bravo", one a line. A writer that indents the list
+    /// inside an item walks `blocks`, recursing into each `.list`.
     var plainText: String {
-        blocks.compactMap { block -> String? in
-            if case .list = block { return nil }
-            return block.plainText
-        }.joined(separator: "\n")
+        blocks.map(\.plainText).filter { !$0.isEmpty }.joined(separator: "\n")
     }
 }
 

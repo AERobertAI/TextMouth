@@ -279,8 +279,25 @@ final class ExportDocumentWalkerTests: XCTestCase {
         ])
         XCTAssertEqual(document.blocks, [.list(outer)])
 
-        XCTAssertEqual(outer.items.map(\.plainText), ["Fruit", "Veg\nMore veg"])
+        XCTAssertEqual(outer.items.map(\.plainText), ["Fruit\nApple\nPear", "Veg\nMore veg"])
         XCTAssertEqual(ExportBlock.list(outer).plainText, "Fruit\nApple\nPear\nVeg\nMore veg")
+    }
+
+    /// An item's text stays in reading order around the list inside it: the
+    /// item "Alpha", its list of "Xray" and "Yankee", then "Bravo" reads
+    /// "Alpha", "Xray", "Yankee", "Bravo" (a reviewer's case: the paragraph
+    /// after the inner list once moved ahead of it).
+    func testAnItemReadsInOrderAroundTheListInsideIt() throws {
+        let document = try walk(text("- Alpha", "", "  - Xray", "  - Yankee", "", "  Bravo"))
+        let inner = ExportList(isOrdered: false, start: 1, depth: 1, items: [
+            ExportListItem(blocks: [paragraph("Xray")]),
+            ExportListItem(blocks: [paragraph("Yankee")])
+        ])
+        let item = ExportListItem(blocks: [paragraph("Alpha"), .list(inner), paragraph("Bravo")])
+        XCTAssertEqual(document.blocks, [.list(ExportList(isOrdered: false, start: 1, depth: 0, items: [item]))])
+
+        XCTAssertEqual(item.plainText, "Alpha\nXray\nYankee\nBravo")
+        XCTAssertEqual(document.blocks.map(\.plainText), ["Alpha\nXray\nYankee\nBravo"])
     }
 
     /// A task-list checkbox is ignored, and an ordered list's start is kept

@@ -223,6 +223,20 @@ final class HTMLExportWriterTests: XCTestCase {
         XCTAssertFalse(result.unicodeScalars.contains { [0x01, 0x0C, 0xFFFF].contains($0.value) })
     }
 
+    // MARK: - Lists in Reading Order
+
+    /// A list item's paragraph after the list inside it stays after it: the
+    /// walk of "Alpha", an inner list of "Xray" and "Yankee", and "Bravo" is
+    /// written in that order (a reviewer's case).
+    func testAnItemsParagraphAfterItsInnerListStaysAfterIt() throws {
+        let markdown = "- Alpha\n\n  - Xray\n  - Yankee\n\n  Bravo"
+        let document = try ExportDocumentWalker.document(fromMarkdown: markdown, book: ExportBookDetails(title: ""))
+
+        XCTAssertEqual(try bodyLines(of: document), [
+            "<ul>", "<li>Alpha", "<ul>", "<li>Xray</li>", "<li>Yankee</li>", "</ul>", "<p>Bravo</p>", "</li>", "</ul>",
+        ])
+    }
+
     // MARK: - Links
 
     /// A link whose address may not be one is plain text; a mail link is a link.

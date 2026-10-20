@@ -440,6 +440,25 @@ final class RTFExportWriterTests: XCTestCase {
         XCTAssertEqual(TextExportWriters.writer(id: "doc")?.name, "Word 97-2003 (.doc)")
     }
 
+    // MARK: - Lists in Reading Order
+
+    /// A list item's paragraph after the list inside it stays after it, and
+    /// at the item's indent: the walk of "Alpha", an inner list of "Xray"
+    /// and "Yankee", and "Bravo" is written in that order (a reviewer's case).
+    func testAnItemsParagraphAfterItsInnerListStaysAfterIt() throws {
+        let markdown = "- Alpha\n\n  - Xray\n  - Yankee\n\n  Bravo"
+        let document = try ExportDocumentWalker.document(fromMarkdown: markdown, book: ExportBookDetails(title: ""))
+        let paragraphs = try RTFExportWriter.rtf(of: document).components(separatedBy: "\n").filter { $0.hasPrefix(#"\pard"#) }
+
+        let bullet = #"\u8226?\tab "#
+        XCTAssertEqual(paragraphs, [
+            #"\pard\plain\s0\sa60\li360\fi-360\f0\fs24 "# + bullet + #"Alpha\par"#,
+            #"\pard\plain\s0\sa60\li720\fi-360\f0\fs24 "# + bullet + #"Xray\par"#,
+            #"\pard\plain\s0\sa60\li720\fi-360\f0\fs24 "# + bullet + #"Yankee\par"#,
+            #"\pard\plain\s0\sa60\li360\f0\fs24 Bravo\par"#,
+        ])
+    }
+
     // MARK: - Helpers
 
     /// `lines` as a text: each ended by a line feed.
