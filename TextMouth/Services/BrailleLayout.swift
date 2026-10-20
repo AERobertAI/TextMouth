@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Page format
 
 /// How braille pages are laid out (FMT22): the export's page options.
-struct BraillePageFormat: Equatable, Sendable {
+struct BraillePageFormat: Equatable, Hashable, Sendable {
     /// Cells per line, 18 to 80 (BANA's 40 by default).
     var cellsPerLine = 40
     /// Lines per page, 4 to 50 (BANA's 25 by default).

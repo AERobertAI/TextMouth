@@ -5,7 +5,7 @@ import Foundation
 /// The line end a BRF file writes after each row (FMT22). Embossers and
 /// braille displays read both; CR LF is the default, the user's choice of
 /// October 17.
-enum BrailleLineEnd: Equatable, Sendable {
+enum BrailleLineEnd: Equatable, Hashable, Sendable {
     /// Carriage return, then line feed.
     case crlf
     /// Line feed alone.

@@ -3,8 +3,10 @@ import Foundation
 // MARK: - Options
 
 /// What a braille export writes (FMT22): the user's October 17 defaults,
-/// each changeable in the Export dialog.
-struct BrailleExportOptions: Equatable, Sendable {
+/// each changeable in the Export dialog, whose options view sets them
+/// (`BrailleExportOptionsView`); the BRF and PEF writers take them as their
+/// `TextExportOptions`.
+struct BrailleExportOptions: TextExportOptions {
     /// Cells per line, lines per page, and whether pages carry numbers.
     var page = BraillePageFormat()
     /// The table, by file name: the code and its contraction.
