@@ -413,6 +413,11 @@ final class ConfigService: ObservableObject {
         /// Whether TextMouth offers to transcribe each audiobook just
         /// imported (`TranscriptionPreferences.offerAfterImport`).
         var offerTranscriptionAfterImport: Bool?
+        /// The braille table TextMouth reads and writes braille with
+        /// (`BraillePreferences`), by its file name, such as
+        /// "en-ueb-g2.ctb". Empty keeps the current choice, as does a name
+        /// no bundled table has.
+        var brailleTable: String = ""
 
         /// Decodes config.json one field at a time, because people edit it
         /// by hand. A missing field keeps its default (older files lack newer
@@ -539,6 +544,9 @@ final class ConfigService: ObservableObject {
                 TranscriptionLanguage.validated($0) ?? ""
             }
             offerTranscriptionAfterImport = fields.optionalFlag(.offerTranscriptionAfterImport)
+            brailleTable = fields.value(.brailleTable, default: fallback.brailleTable) {
+                BrailleTableCatalog.table(withID: $0)?.id ?? ""
+            }
         }
 
         init() {}
@@ -621,6 +629,8 @@ final class ConfigService: ObservableObject {
                 // TranscriptionLanguage keeps, and whether it is offered
                 // after an import (FR05).
                 mirrored += sameNames(["transcriptionLocale", "offerTranscriptionAfterImport"])
+                // Braille (FMT21): the table braille files are read and written with.
+                mirrored += sameNames(["brailleTable"])
                 return mirrored
             }()
 

@@ -270,3 +270,35 @@ enum BrailleTableCatalog {
         return "\(code(of: table)?.name ?? table.displayName), \(label.prefix(1).lowercased() + label.dropFirst())"
     }
 }
+
+// MARK: - The Setting
+
+/// The preference that chooses the braille table (FMT21), kept in the
+/// preferences store and mirrored in config.json as `brailleTable`.
+enum BraillePreferences {
+    /// The table braille files are read and written with, by its file name.
+    /// It reads as the stored name when that is a bundled table, and as the
+    /// default table otherwise.
+    static let table = StoredPreference<String>(
+        key: "brailleTable",
+        read: { store, key in
+            guard let stored = store.string(forKey: key), BrailleTableCatalog.table(withID: stored) != nil else {
+                return BrailleTableCatalog.defaultTableID
+            }
+            return stored
+        },
+        write: { id, store, key in store.set(id, forKey: key) }
+    )
+
+    /// The table an import uses in place of the setting, bound by a hosted
+    /// test (`$tableForImports.withValue("en-ueb-g1.ctb") { ... }`) so it
+    /// never writes the real preferences store. Like
+    /// `DocumentByteLimit.current`, it is read on the caller's thread.
+    @TaskLocal static var tableForImports: String? = nil
+
+    /// The table an import reads or writes braille with: the one a test
+    /// bound, else the setting in the standard preferences store.
+    static func importTable() -> String {
+        tableForImports ?? table.read(from: .standard)
+    }
+}

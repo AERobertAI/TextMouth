@@ -225,4 +225,80 @@ final class BrailleTableCatalogTests: XCTestCase {
         XCTAssertEqual(name("Dutch contracted braille"), "Dutch braille")
         XCTAssertEqual(name("Welsh braille"), "Welsh braille")
     }
+
+    // MARK: - The Setting
+
+    /// The setting reads as the default until a bundled table is stored,
+    /// and a stored name no table has reads as the default.
+    func testTheSettingReadsABundledTableElseTheDefault() throws {
+        let defaults = try isolatedDefaults()
+        XCTAssertEqual(BraillePreferences.table.key, "brailleTable")
+        XCTAssertEqual(BraillePreferences.table.read(from: defaults), "en-ueb-g2.ctb")
+
+        BraillePreferences.table.write("en-us-g1.ctb", to: defaults)
+        XCTAssertEqual(defaults.string(forKey: "brailleTable"), "en-us-g1.ctb")
+        XCTAssertEqual(BraillePreferences.table.read(from: defaults), "en-us-g1.ctb")
+
+        defaults.set("nonsense.ctb", forKey: "brailleTable")
+        XCTAssertEqual(BraillePreferences.table.read(from: defaults), "en-ueb-g2.ctb")
+        defaults.set(42, forKey: "brailleTable")
+        XCTAssertEqual(BraillePreferences.table.read(from: defaults), "en-ueb-g2.ctb")
+    }
+
+    /// A test chooses an import's table without writing the real store.
+    func testAnImportTableCanBeBoundByATest() {
+        BraillePreferences.$tableForImports.withValue("en-us-g1.ctb") {
+            XCTAssertEqual(BraillePreferences.importTable(), "en-us-g1.ctb")
+        }
+        XCTAssertNil(BraillePreferences.tableForImports)
+    }
+
+    /// The table chosen in settings is saved to the store and to
+    /// config.json and announced; a name no bundled table has changes
+    /// nothing; an edit of config.json reaches the setting, and an edit
+    /// naming no table leaves it.
+    func testTheTableFollowsSettingsAndConfigJSON() throws {
+        let defaults = try isolatedDefaults()
+        let url = try makeConfigFileURL()
+        let service = ConfigService(fileURL: url)
+        let settings = SettingsViewModel(
+            notificationCenter: NotificationCenter(),
+            initializeServices: false,
+            userDefaults: defaults,
+            configService: service
+        )
+        var announced = 0
+        let subscription = settings.objectWillChange.sink { announced += 1 }
+        defer { subscription.cancel() }
+
+        XCTAssertEqual(settings.brailleTable, "en-ueb-g2.ctb")
+        settings.brailleTable = "en-us-g1.ctb"
+        service.flushScheduledSave()
+
+        XCTAssertEqual(settings.brailleTable, "en-us-g1.ctb")
+        XCTAssertGreaterThan(announced, 0, "choosing a table announced nothing")
+        XCTAssertEqual(defaults.string(forKey: "brailleTable"), "en-us-g1.ctb")
+        let saved = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any]
+        XCTAssertEqual(saved?["brailleTable"] as? String, "en-us-g1.ctb")
+
+        var before = announced
+        settings.brailleTable = "nonsense.ctb"
+        XCTAssertEqual(settings.brailleTable, "en-us-g1.ctb", "a name no table has was taken")
+        settings.brailleTable = "en-us-g1.ctb"
+        XCTAssertEqual(announced, before, "choosing the current table announced a change")
+
+        var edit = service.config
+        edit.brailleTable = "en_US.tbl"
+        settings.applyConfigChanges(edit)
+        XCTAssertEqual(settings.brailleTable, "en_US.tbl")
+        XCTAssertGreaterThan(announced, before, "the edit of config.json announced nothing")
+
+        before = announced
+        edit.brailleTable = "nonsense.ctb"
+        settings.applyConfigChanges(edit)
+        XCTAssertEqual(settings.brailleTable, "en_US.tbl", "an unknown name in config.json was taken")
+        edit.brailleTable = ""
+        settings.applyConfigChanges(edit)
+        XCTAssertEqual(settings.brailleTable, "en_US.tbl", "an empty name in config.json was taken")
+    }
 }
