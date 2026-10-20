@@ -33,8 +33,9 @@ struct BraillePageFormat: Equatable, Hashable, Sendable {
 ///
 /// Pure Swift, with no file or process access. Its input is braille already
 /// translated: each block's text is Unicode cells with a blank cell (U+2800)
-/// between words. A scalar of the text counts as one cell; the layout does
-/// not look at which cell it is. Any white space in the text is treated as a
+/// between words. A scalar of the text counts as one cell; the layout looks
+/// at which cell it is only to cut a word too long for a line well
+/// (`cutLength(of:room:)`). Any white space in the text is treated as a
 /// blank cell, so a stray newline cannot break a row.
 enum BrailleLayout {
     /// A row of cells while it is built: scalars, joined into a `String` once
@@ -197,8 +198,9 @@ enum BrailleLayout {
     ///
     /// The one exception is a word longer than a whole line from its own
     /// indent: it begins a line (a word that follows others begins a new
-    /// one), fills it to its last cell, and goes on at the next line's indent,
-    /// as many lines as it needs. A word exactly a line long fits whole.
+    /// one), is cut where `cutLength(of:room:)` says, and goes on at the next
+    /// line's indent, as many lines as it needs. A word exactly a line long
+    /// fits whole.
     private static func wrap(_ words: [Row], width: Int, firstIndent: Int, runIndent: Int) -> [Row] {
         var lines: [Row] = []
         var line = Row(repeating: BrailleCells.blank, count: firstIndent)
@@ -228,13 +230,14 @@ enum BrailleLayout {
                     continue
                 }
             }
-            // A word longer than a whole line from its indent: fill each
-            // line to its last cell and put the rest at the next indent.
+            // A word longer than a whole line from its indent: cut it to fit
+            // each line and put the rest at the next indent.
             var rest = word[...]
             while line.count + rest.count > width {
                 let room = max(width - line.count, 1)
-                line.append(contentsOf: rest.prefix(room))
-                rest = rest.dropFirst(room)
+                let cut = cutLength(of: rest, room: room)
+                line.append(contentsOf: rest.prefix(cut))
+                rest = rest.dropFirst(cut)
                 lines.append(line)
                 line = runIndentCells
             }
@@ -243,6 +246,64 @@ enum BrailleLayout {
         }
         lines.append(line)
         return lines
+    }
+
+    // MARK: Cutting a long word
+
+    /// The cells of the number sign (dots 3456, U+283C), the hyphen (dots 36,
+    /// U+2824), and the slash (the two cells dots 456 and dots 34, U+2838
+    /// U+280C), which decide where a word too long for a line is cut.
+    private enum CutCells {
+        static let numberSign: Unicode.Scalar = "\u{283C}"
+        static let hyphen: Unicode.Scalar = "\u{2824}"
+        /// The slash's first cell (dots 456) and its second (dots 34).
+        static let slashFirst: Unicode.Scalar = "\u{2838}"
+        static let slashSecond: Unicode.Scalar = "\u{280C}"
+        /// The cells a number holds after its number sign: the digit cells
+        /// (the cells of the letters a to j), the comma, and the period.
+        static let numberCells = Set("\u{2801}\u{2803}\u{2809}\u{2819}\u{2811}\u{280B}\u{281B}\u{2813}\u{280A}\u{281A}\u{2802}\u{2832}".unicodeScalars)
+    }
+
+    /// How many cells of `word`, which is longer than `room`, go on the
+    /// line that has `room` cells left (FMT22, second review round, E7).
+    ///
+    /// - The cut falls just after a hyphen or after a slash within the room,
+    ///   the last such place, so that the break reads as the print's own.
+    /// - Without one, it falls at the line's end, except that it never
+    ///   separates a number sign from the cells after it: when the line's last
+    ///   cell would be a number sign or a cell of the number it begins, the cut
+    ///   moves back to just before that number sign, unless that leaves
+    ///   the line with nothing of the word. A number is one word to the
+    ///   reader, and on import the cells after a stranded sign would be
+    ///   read as letters ("1342" as "acdb"). For the same reason the
+    ///   slash's two cells are not parted: a cut between them moves back
+    ///   to just before the slash.
+    ///
+    /// No indicator is added at the cut, neither BANA's hyphen nor UEB's
+    /// continuation indicator: the follow-up the reviewer named, to be made
+    /// before narrow pages become usual. At the 40 cells BANA gives, a book
+    /// has hardly a word to cut.
+    /// - Returns: A number from 1 to `room`.
+    private static func cutLength(of word: ArraySlice<Unicode.Scalar>, room: Int) -> Int {
+        let head = Array(word.prefix(room))
+        // The last place just after a hyphen or a slash, from the end.
+        for end in stride(from: head.count, through: 1, by: -1) {
+            let afterHyphen = head[end - 1] == CutCells.hyphen
+            let afterSlash = end >= 2 && head[end - 2] == CutCells.slashFirst && head[end - 1] == CutCells.slashSecond
+            if afterHyphen || afterSlash { return end }
+        }
+        // Else the line's end, which keeps a slash's two cells together.
+        var end = head.count
+        if end >= 2, head[end - 1] == CutCells.slashFirst, word.dropFirst(end).first == CutCells.slashSecond {
+            end -= 1
+        }
+        // The cut keeps a number whole: when the last cell before it lies in a
+        // number, it moves back to the number's sign, if something of the
+        // word stays before the sign.
+        var sign = end - 1
+        while sign >= 0, CutCells.numberCells.contains(head[sign]) { sign -= 1 }
+        if sign >= 1, head[sign] == CutCells.numberSign { return sign }
+        return end
     }
 
     /// `line` centered in `width` cells: (width - length) / 2 blank cells

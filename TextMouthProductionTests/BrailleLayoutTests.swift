@@ -186,6 +186,69 @@ final class BrailleLayoutTests: XCTestCase {
         XCTAssertEqual(rowAt(result, 0, 2), "")
     }
 
+    /// A cut never parts a number sign from the cells after it (second review
+    /// round, E7): a word of ten letter cells joined to a number sign and
+    /// twelve digit cells (23 cells) at 18 is cut just before its sign, as the
+    /// line's last cell would have been a digit of the number.
+    func testAWordIsCutBeforeANumberNotInsideIt() throws {
+        let word = "PQRSTUVWXY#ABCDEABCDEAB"
+        let result = pages([paragraph(word)], cells: 18)
+        XCTAssertEqual(rowAt(result, 0, 0), "  PQRSTUVWXY")
+        XCTAssertEqual(rowAt(result, 0, 1), "#ABCDEABCDEAB")
+
+        // A word whose line would end on the sign itself moves it too.
+        let signLast = pages([paragraph("PQRSTUVWXYZPQRS#ABCDEABCDEABCD")], cells: 18)
+        XCTAssertEqual(rowAt(signLast, 0, 0), "  PQRSTUVWXYZPQRS")
+        XCTAssertEqual(rowAt(signLast, 0, 1), "#ABCDEABCDEABCD")
+    }
+
+    /// A number sign and 30 digit cells alone have nothing before the sign, so
+    /// moving the cut would leave the line empty: the cut stays at the line's
+    /// end (a number sign and 15 digits, then the other 15).
+    func testANumberAloneIsCutAtTheLineEnd() throws {
+        let result = pages([paragraph("#" + String(repeating: "A", count: 30))], cells: 18)
+        XCTAssertEqual(rowAt(result, 0, 0), "  #" + String(repeating: "A", count: 15))
+        XCTAssertEqual(rowAt(result, 0, 1), String(repeating: "A", count: 15))
+    }
+
+    /// A long address is cut just after a slash, the last the line has room
+    /// for, at 18 and at 20 cells. At 18 the second line would end between the
+    /// slash's two cells, so it ends before the slash, and no row ends on the
+    /// number sign. Every cell of the address is still there, in order.
+    func testALongAddressIsCutAfterASlash() throws {
+        // https://www.gutenberg.org/ebooks/1342 in braille ASCII, with ":" as
+        // "3" and "." as "4"; a slash is the two cells "_/".
+        let address = "HTTPS3_/_/WWW4GUTENBERG4ORG_/EBOOKS_/#ACDB"
+        let narrow = pages([paragraph(address)], cells: 18)
+        XCTAssertEqual(rowAt(narrow, 0, 0), "  HTTPS3_/_/")
+        XCTAssertEqual(rowAt(narrow, 0, 1), "WWW4GUTENBERG4ORG")
+        XCTAssertEqual(rowAt(narrow, 0, 2), "_/EBOOKS_/#ACDB")
+
+        let wide = pages([paragraph(address)], cells: 20)
+        XCTAssertEqual(rowAt(wide, 0, 0), "  HTTPS3_/_/")
+        XCTAssertEqual(rowAt(wide, 0, 1), "WWW4GUTENBERG4ORG_/")
+        XCTAssertEqual(rowAt(wide, 0, 2), "EBOOKS_/#ACDB")
+
+        for result in [narrow, wide] {
+            let rows = (result.first ?? []).prefix(3).map { $0.trimmingCharacters(in: .whitespaces) }
+            XCTAssertEqual(rows.joined(), address)
+        }
+    }
+
+    /// A long word with a hyphen inside the line's room is cut after the last
+    /// such hyphen; without a hyphen in reach it is cut at the line's end.
+    func testALongWordIsCutAfterAHyphen() throws {
+        // Two hyphens inside the first line's 16 cells: the cut is after the last.
+        var result = pages([paragraph("ABCD-EF-GHIJKLMNOPQRSTUV")], cells: 18)
+        XCTAssertEqual(rowAt(result, 0, 0), "  ABCD-EF-")
+        XCTAssertEqual(rowAt(result, 0, 1), "GHIJKLMNOPQRSTUV")
+
+        // A hyphen beyond the room does not count: the cut is at the line's end.
+        result = pages([paragraph("ABCDEFGHIJKLMNOPQR-STUVWXYZ")], cells: 18)
+        XCTAssertEqual(rowAt(result, 0, 0), "  ABCDEFGHIJKLMNOP")
+        XCTAssertEqual(rowAt(result, 0, 1), "QR-STUVWXYZ")
+    }
+
     /// Doubled blank cells, and white space other than the blank cell, make
     /// no empty words or odd gaps.
     func testExtraBlanksBetweenWordsAreSingle() throws {
