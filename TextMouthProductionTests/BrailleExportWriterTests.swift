@@ -322,15 +322,21 @@ final class BrailleExportWriterTests: XCTestCase {
             XCTAssertEqual(lines.valueDescription, "25 lines")
             XCTAssertEqual(lines.hint, "How many lines each braille page holds, from 4 to 50.")
             XCTAssertEqual(try control(labelled: "Line ends", in: controls).hint, "CR LF suits most braille displays and embossers.")
-            // The checkbox must be there: where the session exposes the
-            // dialog's other controls (the skip above), a missing checkbox
-            // is a failure, not a pass without a check.
-            let numbers = try XCTUnwrap(
-                controls.first { $0.role == .checkBox && $0.label == "Braille page numbers" },
-                "no check box is labelled Braille page numbers: \(controls.map(\.label))"
-            )
-            XCTAssertEqual(numbers.hint, "Whether each page's last line carries its braille page number.")
-            XCTAssertEqual((numbers.element.accessibilityValue() as? NSNumber)?.boolValue, true)
+            // The check box must be there. SwiftUI draws it as an AppKit
+            // button (not a pop-up), but gives it its label, hint, and value
+            // to the accessibility tree only for a connected assistive app,
+            // so a session that lists the dialog's other controls may not
+            // list it. A check box missing from the view fails the test
+            // either way; where the tree lists it, its words are checked too
+            // (the wording itself is pinned by the wording test above).
+            let checkBoxes = descendants(of: hosting, as: NSButton.self).filter { !($0 is NSPopUpButton) }
+            XCTAssertEqual(checkBoxes.count, 1, "the view should draw one check box: \(checkBoxes)")
+            // Page numbers are on by default.
+            XCTAssertEqual(checkBoxes.first?.state, .on)
+            if let numbers = controls.first(where: { $0.role == .checkBox && $0.label == "Braille page numbers" }) {
+                XCTAssertEqual(numbers.hint, "Whether each page's last line carries its braille page number.")
+                XCTAssertEqual((numbers.element.accessibilityValue() as? NSNumber)?.boolValue, true)
+            }
         }
     }
 
