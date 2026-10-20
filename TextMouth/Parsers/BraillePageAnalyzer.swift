@@ -66,6 +66,9 @@ enum BraillePageAnalyzer {
     private static let numberSign: UInt8 = 0x3C
     /// Dots 3-6 (U+2824), the cell a print page change line is drawn with.
     private static let changeDash: UInt8 = 0x24
+    /// The hyphen and the dash end with the same cell, dots 3-6, and a word
+    /// may be divided after either at a line's end.
+    private static let hyphen: UInt8 = changeDash
     /// The ten digit cells, a to j: ⠁⠃⠉⠙⠑⠋⠛⠓⠊⠚.
     private static let digits: Set<UInt8> = [0x01, 0x03, 0x09, 0x19, 0x11, 0x0B, 0x1B, 0x13, 0x0A, 0x1A]
 
@@ -544,9 +547,19 @@ enum BraillePageAnalyzer {
     private struct OpenBlock {
         /// 2 or 3 for a heading, nil for a paragraph.
         let headingLevel: Int?
-        /// The indent of the heading's rows (its following rows must match).
+        /// The indent of the block's first row (a heading's following rows must match).
         let indent: Int
+        /// For a paragraph, the indent of its first row that goes on, nil
+        /// until it has one: 0 for BANA's paragraph, and the first row's
+        /// indent plus 2 for a list item (cell 3 for an item in cell 1).
+        var runoverIndent: Int?
         var text: CellText
+
+        init(headingLevel: Int?, indent: Int, text: CellText) {
+            self.headingLevel = headingLevel
+            self.indent = indent
+            self.text = text
+        }
     }
 
     /// Whether `row` is centered: at least 3 blank cells on each side, the
@@ -575,6 +588,10 @@ enum BraillePageAnalyzer {
         private var open: OpenBlock?
         /// Whether the row before this one belonged to a heading.
         private var previousWasHeading = false
+        /// The length of the open paragraph's last row, its indent included,
+        /// and whether that row ends in a hyphen or a dash (see `goesOn`).
+        private var lastRowLength = 0
+        private var lastRowEndsInHyphen = false
         /// The buffer the text of each block is built in, and handed back to
         /// when the block is made a string. It has room for the whole file's
         /// cells, which no block can pass, so it never grows, and the room
@@ -624,6 +641,59 @@ enum BraillePageAnalyzer {
             }
         }
 
+        /// Notes `row` as the last row of the open paragraph.
+        private mutating func noteLastRow(_ row: Row) {
+            lastRowLength = row.indent + row.content.count
+            lastRowEndsInHyphen = book.cells[row.content.range.upperBound - 1] == BraillePageAnalyzer.hyphen
+        }
+
+        /// Whether the first word of `row` could not have fitted on the open
+        /// paragraph's last row: the row's length, a blank cell, and the
+        /// word's length come to more than the line. A layout never divides
+        /// a word and fills each line greedily (BANA 1.10.1), so a row that
+        /// goes on a block could not have fitted on the row above it, and a
+        /// row that could have is the start of another block. A row that
+        /// follows a row ending in a hyphen or a dash is taken as going on,
+        /// since a word may be divided there.
+        private func couldNotHaveFitted(_ row: Row) -> Bool {
+            guard !lastRowEndsInHyphen else { return true }
+            // The first word's length, counted no further than the line
+            // (a row may be very long, and a longer word could not fit anyway).
+            var wordLength = 0
+            var cell = row.content.range.lowerBound
+            while cell < row.content.range.upperBound, book.cells[cell] != BraillePageAnalyzer.blank, wordLength <= width {
+                wordLength += 1
+                cell += 1
+            }
+            return lastRowLength + 1 + wordLength > width
+        }
+
+        /// Whether `row`, which is not blank, goes on the open paragraph
+        /// `paragraph` (FMT20, E6). The row's indent tells where it goes:
+        ///
+        /// - A row in cell 1 goes on the paragraph, as it always has (BANA's
+        ///   paragraph runs over in cell 1, and so does one in block style),
+        ///   unless the paragraph has already run over in a further cell: a
+        ///   list item does, in cell 3 for an item in cell 1, and a row in
+        ///   cell 1 is then the next item. Rows are not told apart by length
+        ///   here: few files fill every line, and BANA's paragraph begins
+        ///   its runovers in cell 1 whatever the row above holds.
+        /// - A row two cells further in than the paragraph's first row (or in
+        ///   the cell its first runover was in) is a list item's runover when
+        ///   it could not have fitted on the row above (`couldNotHaveFitted`),
+        ///   and the first row of the next item when it could. At a page's
+        ///   top, though, the first such row is a heading when the row above
+        ///   is the paragraph's only row (a heading in cell 5 follows a
+        ///   paragraph of one row as a runover would, and the page break
+        ///   leaves no blank row to tell them apart).
+        /// - A row of any other indent begins another block.
+        private func goesOn(_ row: Row, _ paragraph: OpenBlock, atPageTop: Bool) -> Bool {
+            if row.indent == 0 { return (paragraph.runoverIndent ?? 0) == 0 }
+            if atPageTop && paragraph.runoverIndent == nil { return false }
+            let expected = paragraph.runoverIndent ?? paragraph.indent + 2
+            return row.indent == expected && couldNotHaveFitted(row)
+        }
+
         /// Reads the rows `rows` of page `page`.
         mutating func read(_ rows: [Row], onPage page: Int) {
             /// Whether row `index` comes after a blank row, or the top of its page.
@@ -669,16 +739,28 @@ enum BraillePageAnalyzer {
                     index += 1
                     continue
                 }
-                // 2 to 4. A heading, at a row that may begin one: after a blank
+                // 2. A row that goes on the open paragraph, a list item's runover
+                // among them. It comes before the headings, so that a runover at
+                // a page's top, in the cell where a heading of level 2 or 3
+                // starts, is not read as one.
+                if let paragraph = open, paragraph.headingLevel == nil, goesOn(row, paragraph, atPageTop: index == 0) {
+                    open?.runoverIndent = paragraph.runoverIndent ?? row.indent
+                    open?.text.append(row: book.cells[row.content.range])
+                    noteLastRow(row)
+                    noteRow(onPage: page)
+                    index += 1
+                    continue
+                }
+                // 3 and 4. A heading, at a row that may begin one: after a blank
                 // row, at the top of a page, or after another heading.
                 if startsAfterBreak(index) || previousWasHeading {
-                    // 2. A centered heading: the run of centered rows here, every
+                    // 3. A centered heading: the run of centered rows here, every
                     // indent counted (a line with a margin of 4 or 6 cells is
                     // as centered as any other). It is one level-1 heading,
                     // unless all its rows share the indent of a cell-5 or
                     // cell-7 heading, which a long heading in cell 5 or 7
                     // also measures as (it ends within a cell of the right
-                    // margin that its indent has on the left): that is rule 3's.
+                    // margin that its indent has on the left): that is rule 4's.
                     if let end = centeredRun(from: index),
                        !(isCellFiveOrSeven(row) && rows[index..<end].allSatisfy({ $0.indent == row.indent })) {
                         closeOpenBlock()
@@ -690,7 +772,7 @@ enum BraillePageAnalyzer {
                         index = end
                         continue
                     }
-                    // 3. A cell-5 (level 2) or cell-7 (level 3) heading, which
+                    // 4. A cell-5 (level 2) or cell-7 (level 3) heading, which
                     // takes the following rows of its indent.
                     if isCellFiveOrSeven(row) {
                         closeOpenBlock()
@@ -703,15 +785,12 @@ enum BraillePageAnalyzer {
                         continue
                     }
                 }
-                // 4 and 5. A paragraph: a row of indent 0 goes on the open
-                // paragraph, or starts one; any other indent starts one.
-                if row.indent == 0, let paragraph = open, paragraph.headingLevel == nil {
-                    open?.text.append(row: book.cells[row.content.range])
-                } else {
-                    closeOpenBlock()
-                    open = OpenBlock(headingLevel: nil, indent: row.indent, text: newText())
-                    open?.text.append(row: book.cells[row.content.range])
-                }
+                // 5. Any other row starts a paragraph (one that goes on the
+                // open paragraph was taken by rule 2).
+                closeOpenBlock()
+                open = OpenBlock(headingLevel: nil, indent: row.indent, text: newText())
+                open?.text.append(row: book.cells[row.content.range])
+                noteLastRow(row)
                 noteRow(onPage: page)
                 previousWasHeading = false
                 index += 1

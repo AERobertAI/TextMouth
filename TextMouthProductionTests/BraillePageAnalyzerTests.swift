@@ -596,6 +596,106 @@ final class BraillePageAnalyzerTests: XCTestCase {
         XCTAssertEqual(structure.blocks.count, 2)
     }
 
+    // MARK: List items
+
+    /// Text of exactly `length` cells (a length of 4, 9, 14, ... and so on,
+    /// one less than a multiple of 5): words of four cells and single blanks.
+    private func filler(_ length: Int) -> String {
+        String(repeating: "WWWW ", count: (length + 1) / 5).dropLast().description
+    }
+
+    /// The row of a list item in `ascii` words, of `length` cells with
+    /// `indent` blank cells before it.
+    private func fillerRow(_ indent: Int, _ length: Int) -> String { row(indent, filler(length)) }
+
+    /// A row of 39 cells followed by a word of four cannot be a line a layout
+    /// filled: the word could not have fitted on it (39 + 1 + 4 > 40). So a
+    /// row of cell 3 under a first row of cell 1 is its runover.
+    func testARowThatCouldNotHaveFittedOnTheRowAboveIsAListItemsRunover() {
+        let structure = formattedStructure([fillerRow(0, 39), row(2, "WWWW"), rightAligned("#A")])
+        XCTAssertEqual(structure.blocks, [paragraph(filler(39) + " WWWW")])
+    }
+
+    /// One that could have fitted is the first row of another block.
+    func testARowThatCouldHaveFittedOnTheRowAboveBeginsAnotherBlock() {
+        let structure = formattedStructure([row(0, "ITEM ONE"), row(2, "ITEM TWO"), rightAligned("#A")])
+        XCTAssertEqual(structure.blocks, [paragraph("ITEM ONE"), paragraph("ITEM TWO")])
+    }
+
+    /// After a row that ends in a hyphen a word may be divided, so the row
+    /// below goes on whatever its length.
+    func testARowAfterAHyphenGoesOn() {
+        let structure = formattedStructure([row(0, "ITEM-"), row(2, "TWO"), rightAligned("#A")])
+        XCTAssertEqual(structure.blocks, [paragraph("ITEM- TWO")])
+    }
+
+    /// Items in cell 1 that run over in cell 3 are one paragraph each: a row
+    /// in cell 1 after an item's runover is the next item, not a runover.
+    func testItemsInCellOneThatRunOverInCellThreeAreOneParagraphEach() {
+        let structure = formattedStructure([
+            fillerRow(0, 39), row(2, "FIRST END"), fillerRow(0, 39), row(2, "SECOND END"), rightAligned("#A"),
+        ])
+        XCTAssertEqual(structure.blocks, [
+            paragraph(filler(39) + " FIRST END"), paragraph(filler(39) + " SECOND END"),
+        ])
+    }
+
+    /// BANA's paragraph still runs over in cell 1, whatever the length of the rows.
+    func testRowsInCellOneStillGoOnAParagraph() {
+        let structure = formattedStructure([row(2, "A PARAGRAPH"), row(0, "WITH SHORT"), row(0, "ROWS"), rightAligned("#A")])
+        XCTAssertEqual(structure.blocks, [paragraph("A PARAGRAPH WITH SHORT ROWS")])
+    }
+
+    /// The layout's list items, in cells 1 and 3 and in 3 and 5, read back
+    /// one paragraph for each, after a heading (the blank row after it
+    /// starts a new block). The last row of each item is short, so the
+    /// first word of the item below could have fitted on it.
+    func testTextMouthsOwnListItemsInTwoDepthsReadBackOneParagraphEach() {
+        let items: [BrailleBlock] = [
+            .listItem(depth: 1, text: cells(filler(64))),
+            .listItem(depth: 2, text: cells(filler(79))),
+            .listItem(depth: 2, text: cells(filler(54))),
+            .listItem(depth: 1, text: cells(filler(64))),
+            .paragraph(text: cells(filler(64))),
+        ]
+        let blocks: [BrailleBlock] = [.heading(level: 1, text: cells("LISTS"))] + items
+        let pages = BrailleLayout.pages(of: blocks, format: BraillePageFormat())
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertEqual(structure.blocks, [.heading(level: 1, text: cells("LISTS"))] + items.map { .paragraph(text: $0.text) })
+    }
+
+    /// A nested item's runover at a page's top is not a heading (it begins
+    /// in cell 5, where a heading of level 2 does): the item goes on over
+    /// the page break as one paragraph.
+    func testANestedItemsRunoverAtAPagesTopIsNotAHeading() {
+        let page1 = [fillerRow(2, 34), fillerRow(4, 34), rightAligned("#A")]
+        let page2 = [row(4, "WWWW"), rightAligned("#B")]
+        let structure = BraillePageAnalyzer.structure(of: [page1, page2], formatted: true)
+        XCTAssertEqual(structure.blocks, [paragraph(filler(34) + " " + filler(34) + " WWWW")])
+    }
+
+    /// The same through the layout: a depth-2 item that runs over a page.
+    func testANestedItemOverAPageBreakFromTheLayoutIsOneParagraph() {
+        let item = BrailleBlock.listItem(depth: 2, text: cells(filler(199)))
+        let blocks: [BrailleBlock] = [.heading(level: 1, text: cells("LISTS")), item, .paragraph(text: cells(filler(49)))]
+        let pages = BrailleLayout.pages(of: blocks, format: BraillePageFormat(cellsPerLine: 40, linesPerPage: 6, numbersPages: true))
+        XCTAssertGreaterThan(pages.count, 1)
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertEqual(structure.blocks, [
+            .heading(level: 1, text: cells("LISTS")), .paragraph(text: item.text), .paragraph(text: cells(filler(49))),
+        ])
+    }
+
+    /// A heading in cell 5 at a page's top, under a paragraph of one row that
+    /// fills the line, is a heading: it could be the runover of a list item
+    /// as well, and the page break leaves no blank row to tell which.
+    func testAHeadingAtAPagesTopUnderAOneRowParagraphStaysAHeading() {
+        let page1 = [fillerRow(2, 34), rightAligned("#A")]
+        let page2 = [row(4, "WWWW"), "", row(2, "TEXT"), rightAligned("#B")]
+        let structure = BraillePageAnalyzer.structure(of: [page1, page2], formatted: true)
+        XCTAssertEqual(structure.blocks, [paragraph(filler(34)), .heading(level: 2, text: cells("WWWW")), paragraph("TEXT")])
+    }
+
     // MARK: Width without page numbers
 
     /// A short book 40 cells wide with no page numbers: a title centered in
