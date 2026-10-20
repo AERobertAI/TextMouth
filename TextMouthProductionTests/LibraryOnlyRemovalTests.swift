@@ -583,6 +583,64 @@ final class LibraryOnlyRemovalTests: XCTestCase {
         )
     }
 
+    // MARK: - A Braille Book Added Back
+
+    /// A braille book removed from the library only and added back by its
+    /// package keeps its table (FMT21). The removal deletes bookInfo.json,
+    /// which held the table, so the rebuilt book takes it from the marker;
+    /// without it the text would be read again with the default table.
+    @MainActor
+    func testABrailleBookAddedBackKeepsItsTableAndItsText() throws {
+        // Grade 1 UEB reads this Grade 2 sample in other words ("∫ boy ..."),
+        // so a rebuild with the default table would show in the text.
+        let table = "en-ueb-g1.ctb"
+        let imported = try BraillePreferences.$tableForImports.withValue(table) {
+            try importedForTest(copyOfFormatSample("brf/grade2-short.brf"))
+        }
+        let book = imported.book
+        XCTAssertEqual(book.brailleTable, table)
+        let textBefore = allText(of: try openedContent(of: book))
+        // The table must matter, or the final comparison could not fail: the
+        // default table reads this file in other words.
+        let defaultReading = try BrailleBookReader.markdown(
+            of: URL(fileURLWithPath: book.filePath), table: BrailleTableCatalog.defaultTableID)
+        XCTAssertNotEqual(
+            try MarkdownDocParser.parse(markdown: defaultReading, title: "x").allText, textBefore)
+
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [book])
+        model.removeBooksFromLibraryOnly([book])
+        XCTAssertNil(model.bookByID(book.id))
+        XCTAssertFalse(exists(record(of: book)), "the removal deletes the record that held the table")
+        LibraryPersistenceService.flushPendingSave()
+
+        let returned = try FileImportService.importTMBPackageWithReport(from: book.tmbDirectory).book
+
+        XCTAssertEqual(returned.id, book.id)
+        XCTAssertEqual(returned.brailleTable, table)
+        XCTAssertEqual(allText(of: try openedContent(of: returned)), textBefore)
+    }
+
+    /// A marker written before it held a braille table has none, and still
+    /// reads without a table: the field is optional.
+    func testAMarkerWithoutABrailleTableStillReads() throws {
+        let package = try makeScratchPackage()
+        var book = fixtureBook(title: "Older Marker")
+        book.brailleTable = "en_US.tbl"
+        try RemovedFromLibraryMarker(book: book).write(into: package)
+        XCTAssertEqual(try RemovedFromLibraryMarker.read(in: package).brailleTable, "en_US.tbl")
+
+        // Take the field out of the file, as a marker from an earlier build.
+        let url = TextMouthPaths.removedFromLibraryMarkerPath(in: package)
+        var fields = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        fields.removeValue(forKey: "brailleTable")
+        try JSONSerialization.data(withJSONObject: fields).write(to: url)
+
+        let marker = try RemovedFromLibraryMarker.read(in: package)
+        XCTAssertEqual(marker.bookID, book.id)
+        XCTAssertNil(marker.brailleTable)
+    }
+
     // MARK: - Fixtures
 
     /// A folder name unique to this test, so leftovers in the shared test

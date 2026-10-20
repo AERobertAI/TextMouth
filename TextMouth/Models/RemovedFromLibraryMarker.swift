@@ -25,6 +25,12 @@ struct RemovedFromLibraryMarker: Codable, Equatable, Sendable {
     let author: String
     /// When the book was removed.
     let removedAt: Date
+    /// The braille table the book was read with when it was removed (FMT21),
+    /// or nil for a book that is not braille. bookInfo.json, which also holds
+    /// it, is deleted by the removal, so a book added back from this marker
+    /// would otherwise be read again with the default table. A marker written
+    /// before this field existed has none, and decodes without it.
+    let brailleTable: String?
 
     /// The marker recording that `book` was removed at `removedAt`.
     init(book: Book, removedAt: Date = Date()) {
@@ -32,6 +38,7 @@ struct RemovedFromLibraryMarker: Codable, Equatable, Sendable {
         title = book.title
         author = book.author
         self.removedAt = removedAt
+        brailleTable = book.brailleTable
     }
 }
 

@@ -379,7 +379,7 @@ extension FileImportService {
 
     /// The book a retained package holds, rebuilt for a package whose
     /// bookInfo.json is gone, as Remove from Library Only deletes it. The
-    /// book keeps its ID, title, and author from the removal marker; its
+    /// book keeps its ID, title, author, and braille table from the removal marker; its
     /// format and checksum come from its one content entry, and the rest of
     /// its metadata is read from that file as an import reads it. Its
     /// reading position, bookmarks, and per-book settings lived only in the
@@ -423,7 +423,12 @@ extension FileImportService {
             epubISBN: metadata?.epub?.isbn,
             epubLanguage: metadata?.epub?.language,
             epubIdentifier: metadata?.epub?.identifier,
-            epubVersion: metadata?.epub?.epubVersion
+            epubVersion: metadata?.epub?.epubVersion,
+            // A braille book is read with the table it was imported with
+            // (FMT21). The record that held it is gone, so the marker carries
+            // it; without it the text would be read again with the default
+            // table. Only a braille book has one.
+            brailleTable: format == .braille ? marker.brailleTable : nil
         )
     }
 
