@@ -297,8 +297,11 @@ enum BraillePreferences {
     @TaskLocal static var tableForImports: String? = nil
 
     /// The table an import reads or writes braille with: the one a test
-    /// bound, else the setting in the standard preferences store.
+    /// bound, else the setting in the runtime's preferences store. That store
+    /// is `UserDefaults.standard` in the app and the sandboxed store in hosted
+    /// tests, as every other runtime read of a preference uses it, so an
+    /// import in a test never reads the user's real setting.
     static func importTable() -> String {
-        tableForImports ?? table.read(from: .standard)
+        tableForImports ?? table.read(from: TextMouthRuntime.current.preferences)
     }
 }

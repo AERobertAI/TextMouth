@@ -253,6 +253,30 @@ final class BrailleTableCatalogTests: XCTestCase {
         XCTAssertNil(BraillePreferences.tableForImports)
     }
 
+    /// With no table bound, an import reads the setting from the runtime's
+    /// store, which hosted tests sandbox, never the user's real preferences:
+    /// the default while the sandbox has none, and the stored table once one
+    /// is written there (removed again when the test ends).
+    func testTheImportTableReadsTheRuntimesStore() {
+        let store = TextMouthRuntime.current.preferences
+        let key = BraillePreferences.table.key
+        let kept = store.object(forKey: key)
+        defer {
+            if let kept { store.set(kept, forKey: key) } else { store.removeObject(forKey: key) }
+        }
+        store.removeObject(forKey: key)
+        XCTAssertNil(BraillePreferences.tableForImports)
+        XCTAssertEqual(BraillePreferences.importTable(), BrailleTableCatalog.defaultTableID)
+
+        BraillePreferences.table.write("en-us-g1.ctb", to: store)
+
+        XCTAssertEqual(BraillePreferences.importTable(), "en-us-g1.ctb")
+        // A bound table still wins over the store.
+        BraillePreferences.$tableForImports.withValue("en-ueb-g1.ctb") {
+            XCTAssertEqual(BraillePreferences.importTable(), "en-ueb-g1.ctb")
+        }
+    }
+
     /// The table chosen in settings is saved to the store and to
     /// config.json and announced; a name no bundled table has changes
     /// nothing; an edit of config.json reaches the setting, and an edit
