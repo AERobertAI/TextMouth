@@ -834,7 +834,8 @@ final class ContentAnalysisMergeTests: XCTestCase {
                 fields: [Book.MetadataField.allCases[seed % Book.MetadataField.allCases.count]],
                 sinceImport: seed.isMultiple(of: 2)
             ),
-            feedLink: FeedBookLink(feedID: UUID(), itemID: "item-\(seed)")
+            feedLink: FeedBookLink(feedID: UUID(), itemID: "item-\(seed)"),
+            brailleTable: "table-\(seed).ctb"
         )
     }
 
