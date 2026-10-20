@@ -527,13 +527,14 @@ final class HTMLExportWriterTests: XCTestCase {
     /// tests read through `navLines(of:)`).
     private func bodyLines(of document: ExportDocument, file: StaticString = #filePath, line: UInt = #line) throws -> [String] {
         let lines = try page(of: document, file: file, line: line).components(separatedBy: "\n")
-        guard let start = lines.firstIndex(of: "<body>"), let end = lines.firstIndex(of: "</body>") else {
+        guard let start = lines.firstIndex(of: "<body>"), let end = lines.firstIndex(of: "</body>"), start < end else {
             XCTFail("the page has no body", file: file, line: line)
             return []
         }
         let body = Array(lines[(start + 1)..<end])
         guard let navStart = body.firstIndex(of: "<nav aria-label=\"Contents\">"),
-              let navEnd = body.firstIndex(of: "</nav>")
+              let navEnd = body.firstIndex(of: "</nav>"),
+              navStart < navEnd
         else { return body }
         return Array(body[..<navStart]) + Array(body[(navEnd + 1)...])
     }
@@ -541,7 +542,8 @@ final class HTMLExportWriterTests: XCTestCase {
     /// The lines of the page's contents, `<nav>` and `</nav>` included.
     private func navLines(of document: ExportDocument, file: StaticString = #filePath, line: UInt = #line) throws -> [String] {
         let lines = try page(of: document, file: file, line: line).components(separatedBy: "\n")
-        guard let start = lines.firstIndex(of: "<nav aria-label=\"Contents\">"), let end = lines.firstIndex(of: "</nav>") else {
+        guard let start = lines.firstIndex(of: "<nav aria-label=\"Contents\">"), let end = lines.firstIndex(of: "</nav>"),
+              start < end else {
             XCTFail("the page has no contents", file: file, line: line)
             return []
         }
