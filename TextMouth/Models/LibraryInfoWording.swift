@@ -47,6 +47,25 @@ struct BookInfoFacts: Equatable {
     /// The book's place in the reading list, counted as the Reading List
     /// shows it (FR09), or nil for a book not in it.
     var readingListPlace: ReadingListPlace? = nil
+    /// The braille code a braille book was imported with, such as "Unified
+    /// English Braille, contracted (Grade 2)" (`Book.brailleCodeDescription`,
+    /// FMT21), which only the full summary says; nil for every other book.
+    var brailleCode: String? = nil
+}
+
+// MARK: - A Braille Book's Code (FMT21)
+
+extension Book {
+    /// The braille code this braille book is read in, in words: the
+    /// description of the table it was imported with, or of the default
+    /// table for a braille book whose row and record lack one, such as
+    /// "Unified English Braille, contracted (Grade 2)". Nil for a book that
+    /// is not braille. Book Information and Speak Info both say it, from
+    /// this one expression.
+    var brailleCodeDescription: String? {
+        guard format == .braille else { return nil }
+        return BrailleTableCatalog.description(ofTableID: brailleTable ?? BrailleTableCatalog.defaultTableID)
+    }
 }
 
 /// What Speak Info knows of a folder.
@@ -195,13 +214,18 @@ enum LibraryInfoWording {
     /// and whether it is kept on this Mac, and whether a reader window has
     /// it open. Example: "Added September 1 at 9:00 AM. Last opened today
     /// at 3:05 PM. 3 bookmarks. File size 1.2 MB. In Cloud. Kept on this
-    /// Mac. Open in a reader window."
+    /// Mac. Open in a reader window." A braille book says its code right
+    /// after its bookmarks: "3 bookmarks. Braille code: Unified English
+    /// Braille, contracted (Grade 2). File size 1.2 MB."
     static func fullParts(of book: BookInfoFacts, now: Date, calendar: Calendar, locale: Locale) -> [String] {
         var parts = ["Added \(FeedWording.moment(book.dateAdded, now: now, calendar: calendar, locale: locale))"]
         if let lastOpened = book.lastOpened {
             parts.append("Last opened \(FeedWording.moment(lastOpened, now: now, calendar: calendar, locale: locale))")
         }
         parts.append(CountWording.bookmarks(book.bookmarkCount))
+        if let code = book.brailleCode {
+            parts.append("Braille code: \(code)")
+        }
         if let size = book.fileSize {
             parts.append("File size \(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))")
         }
