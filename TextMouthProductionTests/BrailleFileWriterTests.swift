@@ -63,8 +63,12 @@ final class BrailleFileWriterTests: XCTestCase {
     }
 
     /// A cell with dot 7 (U+2841) cannot be written in braille ASCII, so a
-    /// BRF writes its six-dot part, ⠁ (A); a PEF keeps the cell.
-    func testADotSevenCellIsWrittenAsItsSixDotPartInABRFButKeptInAPEF() throws {
+    /// BRF writes its six-dot part, ⠁ (A); a PEF writes the same cells,
+    /// because TextMouth writes and reads six-dot braille only (review
+    /// finding M6: a PEF that kept dots 7 and 8 was refused on import as
+    /// eight-dot braille). This test used to pin the PEF keeping the cell;
+    /// the lead approved reversing it for M6 (message #3446).
+    func testADotSevenCellIsWrittenAsItsSixDotPartInABRFAndInAPEF() throws {
         let row = "\u{2841}\u{28FF}\u{2840}"
         // U+2841 is ⠁ with dot 7: A. U+28FF is all eight dots: all six dots,
         // "=". U+2840 is dot 7 alone: no dot left, the blank cell, which
@@ -73,7 +77,28 @@ final class BrailleFileWriterTests: XCTestCase {
         XCTAssertEqual(String(data: brf, encoding: .ascii), "A=\n")
 
         let pef = try pefText([[row]])
-        XCTAssertTrue(pef.contains("<row>\(row)</row>"))
+        XCTAssertTrue(pef.contains("<row>\u{2801}\u{283F}</row>"), pef)
+        XCTAssertFalse(pef.contains("\u{2841}") || pef.contains("\u{28FF}") || pef.contains("\u{2840}"))
+    }
+
+    /// The eight-dot backslash of liblouis's escape notation, U+2873, is
+    /// written as ⠳ (U+2833) in a PEF and as braille ASCII's backslash in a
+    /// BRF, so the two files hold the same cells (review finding M6).
+    func testTheEscapesBackslashCellIsSixDotInBothFiles() throws {
+        let row = "\u{2804}\u{2873}\u{2835}"
+        XCTAssertTrue(try pefText([[row]]).contains("<row>\u{2804}\u{2833}\u{2835}</row>"))
+        let brf = BrailleFileWriter.brf(pages: [[row]], lineEnd: .lf)
+        // Dot 3 is the apostrophe, dots 1, 2, 5, and 6 the backslash, and
+        // dots 1, 3, 5, and 6 the letter Z.
+        XCTAssertEqual(String(data: brf, encoding: .ascii), "'\\Z\n")
+    }
+
+    /// A row that ends in cells that are blank once their dots 7 and 8 are
+    /// cleared is a blank row in a PEF, as in a BRF: the trailing cells are
+    /// left out and an all-blank row is `<row/>`.
+    func testCellsThatAreBlankInSixDotsEndAPEFRowToo() throws {
+        let text = try pefText([["\u{2801}\u{2840}\u{2880}", "\u{2840}"]])
+        XCTAssertTrue(text.contains("\t\t\t\t\t<row>\u{2801}</row>\n\t\t\t\t\t<row/>\n"), text)
     }
 
     /// A scalar that is no braille pattern is written as a blank cell in a

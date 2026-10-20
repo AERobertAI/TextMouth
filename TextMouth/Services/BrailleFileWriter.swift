@@ -54,8 +54,8 @@ enum BrailleFileWriter {
     /// A BRF has six dots to a cell. A cell with dot 7 or 8 (U+2840 to
     /// U+28FF) is written as its six-dot part, its value with dots 7 and 8
     /// cleared, and a scalar that is no braille pattern is written as a blank
-    /// cell, so that no row loses its columns. Trailing blank cells of a row
-    /// are not written.
+    /// cell, so that no row loses its columns (`sixDotCells(of:)`, which the
+    /// PEF writer uses too). Trailing blank cells of a row are not written.
     static func brf(pages: [[String]], lineEnd: BrailleLineEnd = .crlf) -> Data {
         var bytes: [UInt8] = []
         for (index, page) in pages.enumerated() {
@@ -68,15 +68,30 @@ enum BrailleFileWriter {
         return Data(bytes)
     }
 
-    /// `row` as braille ASCII bytes, without its trailing blank cells (a cell
-    /// that is blank once its dots 7 and 8 are cleared counts as one).
+    /// `row` as braille ASCII bytes, without its trailing blank cells.
     private static func asciiBytes(of row: String) -> [UInt8] {
-        var bytes = row.unicodeScalars.map { scalar in
-            // Dots 7 and 8 have no braille ASCII character: keep dots 1 to 6.
-            BrailleCells.ascii(for: sixDotPart(of: scalar)) ?? UInt8(ascii: " ")
-        }
-        while bytes.last == UInt8(ascii: " ") { bytes.removeLast() }
-        return bytes
+        // A six-dot cell always has a braille ASCII character; the blank
+        // cell's is the space.
+        sixDotCells(of: row).map { BrailleCells.ascii(for: $0) ?? UInt8(ascii: " ") }
+    }
+
+    /// The cells of `row` as TextMouth writes them to a file: each reduced to
+    /// its six-dot part (`sixDotPart(of:)`), and the cells after the last
+    /// one that is not blank left out. A cell that is blank once its dots 7
+    /// and 8 are cleared counts as blank, so a row never ends in cells that
+    /// look empty.
+    ///
+    /// TextMouth writes and reads six-dot braille only, in both formats, so
+    /// that a BRF and a PEF of the same pages hold the same cells. This
+    /// matters for liblouis's escape notation for a character a table lacks
+    /// (an emoji, Chinese, Cyrillic): it writes the escape's backslash as the
+    /// eight-dot cell U+2873, which becomes ⠳, braille ASCII's own backslash,
+    /// and TextMouth's reader accepts the file. A PEF that kept U+2873 would
+    /// be refused on import as eight-dot braille.
+    private static func sixDotCells(of row: String) -> [Unicode.Scalar] {
+        var cells = row.unicodeScalars.map(sixDotPart(of:))
+        while cells.last == BrailleCells.blank { cells.removeLast() }
+        return cells
     }
 
     /// The six-dot cell of `scalar`: the same cell with dots 7 and 8
@@ -87,20 +102,14 @@ enum BrailleFileWriter {
         return Unicode.Scalar(BrailleCells.blank.value + (scalar.value & 0x3F)) ?? BrailleCells.blank
     }
 
-    /// The cells of `row` up to its last cell that is not blank.
-    private static func trimmedCells(of row: String) -> ArraySlice<Unicode.Scalar> {
-        let scalars = Array(row.unicodeScalars)
-        guard let last = scalars.lastIndex(where: { $0 != BrailleCells.blank }) else { return [] }
-        return scalars[...last]
-    }
-
     // MARK: PEF
 
     /// `pages` as the bytes of a PEF 2008-1 file (UTF-8): one volume of
     /// `format`'s cells by lines, one section, a `page` per page, and a `row`
     /// per row, with a blank row as `<row/>`. The rows hold Unicode braille
-    /// cells (a scalar that is no braille pattern becomes a blank cell, as
-    /// PEF allows nothing else), tabs indent, and every line ends in LF.
+    /// cells of six dots, as a BRF does (`sixDotCells(of:)`; a scalar that
+    /// is no braille pattern becomes a blank cell, as PEF allows nothing
+    /// else), tabs indent, and every line ends in LF.
     ///
     /// The head holds the metadata, each text XML-escaped; an empty author
     /// leaves out `dc:creator`. The volume's size is `format` held to its
@@ -133,14 +142,11 @@ enum BrailleFileWriter {
         for page in pages {
             lines.append("\t\t\t\t<page>")
             for row in page {
-                let cells = trimmedCells(of: row)
+                let cells = sixDotCells(of: row)
                 if cells.isEmpty {
                     lines.append("\t\t\t\t\t<row/>")
                 } else {
-                    let text = String(String.UnicodeScalarView(cells.map { scalar in
-                        BrailleCells.isPattern(scalar) ? scalar : BrailleCells.blank
-                    }))
-                    lines.append("\t\t\t\t\t<row>\(text)</row>")
+                    lines.append("\t\t\t\t\t<row>\(String(String.UnicodeScalarView(cells)))</row>")
                 }
             }
             lines.append("\t\t\t\t</page>")

@@ -254,6 +254,60 @@ final class BrailleDocumentWriterTests: XCTestCase {
         assertWorkFolderEmpty()
     }
 
+    // MARK: - Characters a Table Lacks, Exported and Read Back
+
+    /// The text blocks of the book `url` imports as, with `table` as the
+    /// Braille setting's table: the reader's text with the blank lines
+    /// between blocks left out.
+    private func importedBlocks(from url: URL, table: String) throws -> [String] {
+        let book = try BraillePreferences.$tableForImports.withValue(table) {
+            try importedForTest(url).book
+        }
+        return allText(of: try openedContent(of: book))
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+    }
+
+    /// TextMouth reads back the BRF and the PEF it writes for characters a
+    /// table lacks (review finding M6). With Grade 2, liblouis writes
+    /// Cyrillic, Chinese, and an emoji as escapes whose backslash is the
+    /// eight-dot cell U+2873; the writers write six-dot cells only, so the
+    /// backslash is ⠳ in both files and neither import is refused (the PEF
+    /// used to be, as eight-dot braille).
+    ///
+    /// The expected texts are liblouis's reading of its own escape notation,
+    /// not the print: an escape is not a letter, and back-translation turns
+    /// its cells into whatever the table's rules make of them. The test
+    /// pins them to catch a change in either direction, and to show that
+    /// both files give the same text.
+    func testEscapedCharactersExportedAsBRFAndPEFAreReadBackFromBoth() throws {
+        let table = "en-ueb-g2.ctb"
+        // The widest page, so that no paragraph wraps: the longest, Москва,
+        // is 48 cells, and a wrapped row would be read with a break in it.
+        var options = options(table)
+        options.page = BraillePageFormat(cellsPerLine: BraillePageFormat.cellsPerLineRange.upperBound)
+        let blocks: [BrailleBlock] = ["Москва", "中文", "\u{1F642}"].map { .paragraph(text: $0) }
+        let expected = [
+            "'oux\"diseac''oux\"discce''oux\"dis.,''oux\"discca''oux\"disccbb''oux\".:\"'",
+            "'oux.ebbd''ouxffen?\u{2032}'",
+            "'ouyeaf!.be'",
+        ]
+        let folder = try makeSandboxDirectory("BrailleRoundTrip")
+
+        let brfURL = folder.appendingPathComponent("escapes.brf")
+        try BrailleDocumentWriter.brf(of: blocks, options: options, workingIn: work).write(to: brfURL)
+        let pefURL = folder.appendingPathComponent("escapes.pef")
+        try BrailleDocumentWriter.pef(of: blocks, metadata: sampleMetadata, options: options, workingIn: work)
+            .write(to: pefURL)
+        assertWorkFolderEmpty()
+
+        let fromBRF = try importedBlocks(from: brfURL, table: table)
+        let fromPEF = try importedBlocks(from: pefURL, table: table)
+        XCTAssertEqual(fromBRF, expected)
+        XCTAssertEqual(fromPEF, expected)
+    }
+
     /// No blocks give an empty BRF and a PEF with no page.
     func testNoBlocksGiveAnEmptyBRFAndAPEFWithoutPages() throws {
         let options = options("en-ueb-g1.ctb")
