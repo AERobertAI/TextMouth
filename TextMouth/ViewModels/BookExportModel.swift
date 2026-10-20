@@ -137,6 +137,9 @@ final class BookExportModel: ObservableObject, Identifiable {
 
     /// How files are checked and read without downloading (FR02).
     private let access: MaintenanceFileAccess
+    /// The text writers the Convert to picker offers after Markdown, in its
+    /// order.
+    private let writers: [any TextExportWriter]
     /// The books as the library holds them now, for the export.
     private let currentBooks: @MainActor ([Book]) -> [Book]
     /// The export under way's Cancel.
@@ -168,15 +171,20 @@ final class BookExportModel: ObservableObject, Identifiable {
     ///     `defaultDestination`.
     ///   - access: How files are checked and read; tests pass a cloud of
     ///     their own.
+    ///   - writers: The text writers the picker offers. The app always
+    ///     passes all of them (`TextExportWriters.all`); a test passes
+    ///     writers of its own, such as one with options.
     init(
         books: [Book],
         library: LibraryViewModel? = nil,
         destination: URL? = nil,
-        access: MaintenanceFileAccess = .live
+        access: MaintenanceFileAccess = .live,
+        writers: [any TextExportWriter] = TextExportWriters.all
     ) {
         self.books = books
         self.destination = destination ?? Self.defaultDestination
         self.access = access
+        self.writers = writers
         currentBooks = { [weak library] chosen in
             chosen.map { library?.bookByID($0.id) ?? $0 }
         }
@@ -263,16 +271,22 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// The choices of the Convert to picker beside the checkbox of `kind`:
     /// Markdown, then each text writer in order, for a kind whose text a
     /// writer can convert; none for any other kind.
-    static func conversionChoices(for kind: BookExportKind) -> [BookExportConversionChoice] {
+    func conversionChoices(for kind: BookExportKind) -> [BookExportConversionChoice] {
         guard kind.convertsText else { return [] }
         let markdown = BookExportConversionChoice(
             id: TextExportWriters.markdownID,
             name: BookExportWording.markdownChoiceName,
             hint: BookExportWording.markdownChoiceHint
         )
-        return [markdown] + TextExportWriters.all.map {
+        return [markdown] + writers.map {
             BookExportConversionChoice(id: $0.id, name: $0.name, hint: $0.hint)
         }
+    }
+
+    /// The writer whose `id` is `id` among the picker's writers; nil for
+    /// Markdown and for an unknown `id`.
+    private func writer(id: String) -> (any TextExportWriter)? {
+        writers.first { $0.id == id }
     }
 
     /// The `id` of the picker's choice for `kind`: Markdown until another is
@@ -286,9 +300,9 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// first time a writer is chosen, its options are made as each dialog
     /// starts them.
     func setConversionID(_ id: String, for kind: BookExportKind) {
-        guard Self.conversionChoices(for: kind).contains(where: { $0.id == id }) else { return }
+        guard conversionChoices(for: kind).contains(where: { $0.id == id }) else { return }
         conversionIDs[kind] = id
-        if let writer = TextExportWriters.writer(id: id), optionsStates[id] == nil {
+        if let writer = writer(id: id), optionsStates[id] == nil {
             optionsStates[id] = TextExportWriters.optionsState(for: writer)
         }
     }
@@ -297,14 +311,14 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// kind with no picker.
     func conversionChoice(for kind: BookExportKind) -> BookExportConversionChoice? {
         let id = conversionID(for: kind)
-        return Self.conversionChoices(for: kind).first { $0.id == id }
+        return conversionChoices(for: kind).first { $0.id == id }
     }
 
     /// The name of the writer `kind`'s text is converted to; nil on Markdown
     /// and for a kind with no picker, which the checkbox says as it is.
     private func conversionName(for kind: BookExportKind) -> String? {
         guard kind.convertsText else { return nil }
-        return TextExportWriters.writer(id: conversionID(for: kind))?.name
+        return writer(id: conversionID(for: kind))?.name
     }
 
     /// The label of `choice`'s checkbox, saying the conversion chosen.

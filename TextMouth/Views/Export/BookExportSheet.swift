@@ -91,13 +91,14 @@ struct BookExportSheet: View {
                     .disabled(!choice.isAvailable || model.isExporting)
                     .accessibilityHint(model.hint(for: choice.kind))
                     .modifier(InitialVoiceOverFocusModifier(isTarget: choice.kind == model.choices.first?.kind))
-                if model.isChecked(choice.kind), !BookExportModel.conversionChoices(for: choice.kind).isEmpty {
+                if model.isChecked(choice.kind), !model.conversionChoices(for: choice.kind).isEmpty {
                     conversionPicker(for: choice.kind)
                 }
             }
             if let options = model.optionsView(for: choice.kind) {
                 options
                     .padding(.leading, 24)
+                    .disabled(model.isExporting)
             }
         }
     }
@@ -107,7 +108,7 @@ struct BookExportSheet: View {
     /// what that choice exports as its hint.
     private func conversionPicker(for kind: BookExportKind) -> some View {
         Picker(BookExportWording.convertToLabel, selection: conversionBinding(for: kind)) {
-            ForEach(BookExportModel.conversionChoices(for: kind)) { option in
+            ForEach(model.conversionChoices(for: kind)) { option in
                 Text(option.name).tag(option.id)
             }
         }

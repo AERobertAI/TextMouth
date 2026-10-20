@@ -1,4 +1,5 @@
 import AppKit
+import os
 import SwiftUI
 import XCTest
 @testable import TextMouth
@@ -110,7 +111,8 @@ final class BookExportConvertToTests: XCTestCase {
     /// `TextExportWriters.all`, so a writer added later is checked against
     /// itself and this test stays green.
     func testThePickersChoicesAreMarkdownThenEachWriter() {
-        let choices = BookExportModel.conversionChoices(for: .markdown)
+        let model = BookExportModel(books: [])
+        let choices = model.conversionChoices(for: .markdown)
         XCTAssertEqual(
             Array(choices.prefix(4)),
             [
@@ -142,7 +144,7 @@ final class BookExportConvertToTests: XCTestCase {
             TextExportWriters.all.map { BookExportConversionChoice(id: $0.id, name: $0.name, hint: $0.hint) }
         )
         for kind in BookExportKind.allCases where kind != .markdown {
-            XCTAssertEqual(BookExportModel.conversionChoices(for: kind), [], "\(kind) has no picker")
+            XCTAssertEqual(model.conversionChoices(for: kind), [], "\(kind) has no picker")
         }
     }
 
@@ -338,6 +340,164 @@ final class BookExportConvertToTests: XCTestCase {
         }
     }
 
+    // MARK: - A Writer With Options
+
+    /// A model given a writer of its own offers Markdown, then that writer,
+    /// and shows the writer's options view only while the kind is checked and
+    /// the writer chosen.
+    func testAWriterWithOptionsShowsItsViewWhileChosenAndChecked() {
+        let writer = OptionsTestWriter()
+        let model = BookExportModel(books: [], writers: [writer])
+
+        XCTAssertEqual(
+            model.conversionChoices(for: .markdown).map(\.id),
+            ["markdown", "options-test"],
+            "the model offers the writers it was given"
+        )
+        model.setChecked(true, for: .markdown)
+        XCTAssertNil(model.optionsView(for: .markdown), "Markdown has no options")
+
+        model.setConversionID("options-test", for: .markdown)
+        XCTAssertNotNil(model.optionsView(for: .markdown), "the writer chosen and the kind checked")
+
+        model.setChecked(false, for: .markdown)
+        XCTAssertNil(model.optionsView(for: .markdown), "the kind unchecked")
+
+        model.setChecked(true, for: .markdown)
+        model.setConversionID("markdown", for: .markdown)
+        XCTAssertNil(model.optionsView(for: .markdown), "back on Markdown")
+    }
+
+    /// The dialog draws the writer's option as one more checkbox while the
+    /// kind is checked and the writer chosen, and takes it away when the kind
+    /// is unchecked.
+    func testTheDialogDrawsTheWritersOptionsOnlyWhileChosenAndChecked() throws {
+        let world = try makeIntegrationWorld("Export Convert Options Drawn")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md"))
+        let model = BookExportModel(
+            books: [book],
+            destination: try makeSandboxDirectory("Export Convert Options Drawn Folder"),
+            writers: [OptionsTestWriter()]
+        )
+
+        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 3 }) { hostingView in
+            model.setChecked(true, for: .markdown)
+            XCTAssertTrue(waitUntil(timeout: 5) {
+                hostingView.layoutSubtreeIfNeeded()
+                return self.popUps(in: hostingView).count == 1
+            }, "checking the kind draws the picker")
+            let withMarkdown = checkboxes(in: hostingView).count
+            XCTAssertEqual(withMarkdown, 3, "Markdown has no options to draw")
+
+            model.setConversionID("options-test", for: .markdown)
+            XCTAssertTrue(waitUntil(timeout: 5) {
+                hostingView.layoutSubtreeIfNeeded()
+                return self.checkboxes(in: hostingView).count == withMarkdown + 1
+            }, "the writer chosen draws its option as one more checkbox")
+
+            model.setChecked(false, for: .markdown)
+            XCTAssertTrue(waitUntil(timeout: 5) {
+                hostingView.layoutSubtreeIfNeeded()
+                return self.checkboxes(in: hostingView).count == withMarkdown
+            }, "unchecking the kind takes the option away")
+        }
+    }
+
+    /// While an export runs, the writer's option is disabled with the
+    /// checkboxes and the picker, and enabled again once the export ends.
+    func testTheWritersOptionsAreDisabledWhileExporting() throws {
+        let world = try makeIntegrationWorld("Export Convert Options Busy")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md"))
+        let folder = try makeSandboxDirectory("Export Convert Options Busy Folder")
+        // The writer holds the export until the test lets it go (it gives up
+        // after 10 seconds, so a failing test never hangs).
+        let writer = OptionsTestWriter(holdsExport: true)
+        let model = BookExportModel(books: [book], destination: folder, writers: [writer])
+        let announcements = AnnouncementCapture()
+        defer {
+            writer.letGo()
+            announcements.stop()
+        }
+
+        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 3 }) { hostingView in
+            model.setChecked(false, for: .originalFile)
+            model.setChecked(true, for: .markdown)
+            model.setConversionID("options-test", for: .markdown)
+            XCTAssertTrue(waitUntil(timeout: 5) {
+                hostingView.layoutSubtreeIfNeeded()
+                return self.optionCheckbox(in: hostingView)?.isEnabled == true
+            }, "the option is drawn, and enabled while nothing is exported")
+            XCTAssertTrue(model.choices.allSatisfy(\.isAvailable), "every kind is on this Mac")
+
+            let export = Task { await model.export() }
+            _ = export
+            XCTAssertTrue(waitUntil(timeout: 10) { writer.hasStarted && model.isExporting }, "the export is under way")
+            XCTAssertTrue(waitUntil(timeout: 5) {
+                hostingView.layoutSubtreeIfNeeded()
+                return self.optionCheckbox(in: hostingView)?.isEnabled == false
+            }, "the option is disabled while the export runs")
+            XCTAssertTrue(
+                checkboxes(in: hostingView).allSatisfy { !$0.isEnabled },
+                "so are the kinds' checkboxes"
+            )
+
+            writer.letGo()
+            XCTAssertTrue(waitUntil(timeout: 10) { self.hasFinished(model) }, "the export ends")
+            XCTAssertTrue(waitUntil(timeout: 5) {
+                hostingView.layoutSubtreeIfNeeded()
+                return self.optionCheckbox(in: hostingView)?.isEnabled == true
+            }, "the option is enabled again once the export has ended")
+        }
+        XCTAssertEqual(
+            try FileManager.default.contentsOfDirectory(atPath: folder.path),
+            ["\(BookExportService.fileNameStem(for: book.title)) - Text.tst"],
+            "the export wrote the test writer's file"
+        )
+    }
+
+    /// An option set in the drawn dialog reaches the writer's `write`: the
+    /// writer is given the options as the user left them. SwiftUI gives its
+    /// checkboxes no action a test can press, so the option is set through
+    /// the binding the options view was given, which the checkbox sets when
+    /// it is pressed; the drawn checkbox must then show it.
+    func testTheOptionsSetInTheDialogReachTheWriter() throws {
+        let world = try makeIntegrationWorld("Export Convert Options Reach")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md"))
+        let folder = try makeSandboxDirectory("Export Convert Options Reach Folder")
+        let probe = OptionsProbe()
+        let writer = OptionsTestWriter(probe: probe)
+        let model = BookExportModel(books: [book], destination: folder, writers: [writer])
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+
+        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 3 }) { hostingView in
+            model.setChecked(false, for: .originalFile)
+            model.setChecked(true, for: .markdown)
+            model.setConversionID("options-test", for: .markdown)
+            XCTAssertTrue(waitUntil(timeout: 5) {
+                hostingView.layoutSubtreeIfNeeded()
+                return self.optionCheckbox(in: hostingView) != nil && probe.binding != nil
+            }, "the option is drawn")
+            XCTAssertEqual(optionCheckbox(in: hostingView)?.state, .off, "the option starts off")
+
+            probe.binding?.wrappedValue.isOn = true
+            XCTAssertEqual(
+                model.conversions[.markdown],
+                .text(TextExportConversion(writer, options: OptionsTestWriter.Options(isOn: true))),
+                "setting the option changes the options the export will take"
+            )
+            XCTAssertTrue(waitUntil(timeout: 5) {
+                hostingView.layoutSubtreeIfNeeded()
+                return self.optionCheckbox(in: hostingView)?.state == .on
+            }, "the drawn checkbox shows the option on")
+
+            let export = Task { await model.export() }
+            _ = export
+            XCTAssertTrue(waitUntil(timeout: 10) { self.hasFinished(model) }, "the export ends")
+        }
+        XCTAssertEqual(writer.givenOptions, [OptionsTestWriter.Options(isOn: true)])
+    }
+
     // MARK: - Support
 
     /// A dialog on a one-book library, listed, with the folder it exports to.
@@ -384,6 +544,29 @@ final class BookExportConvertToTests: XCTestCase {
         return file
     }
 
+    /// The checkbox of the test writer's option inside `view`: the one drawn
+    /// furthest right, since the options view is indented under its row while
+    /// every kind's checkbox is at the left edge; nil while only the kinds'
+    /// checkboxes are drawn.
+    private func optionCheckbox(in view: NSView) -> NSButton? {
+        /// Where the left edge of `box` is in `view`.
+        func leftEdge(_ box: NSButton) -> CGFloat {
+            box.convert(box.bounds, to: view).minX
+        }
+        let boxes = checkboxes(in: view)
+        guard let furthest = boxes.max(by: { leftEdge($0) < leftEdge($1) }),
+              let nearest = boxes.min(by: { leftEdge($0) < leftEdge($1) }),
+              leftEdge(furthest) > leftEdge(nearest) + 1
+        else { return nil }
+        return furthest
+    }
+
+    /// Whether the export of `model` has ended.
+    private func hasFinished(_ model: BookExportModel) -> Bool {
+        if case .finished = model.phase { return true }
+        return false
+    }
+
     /// The checkboxes SwiftUI drew inside `view`: the untitled AppKit
     /// buttons, leaving out the picker's pop-up button.
     private func checkboxes(in view: NSView) -> [NSButton] {
@@ -393,5 +576,93 @@ final class BookExportConvertToTests: XCTestCase {
     /// The pop-up buttons SwiftUI drew inside `view`: the Convert to picker.
     private func popUps(in view: NSView) -> [NSPopUpButton] {
         descendants(of: view, as: NSPopUpButton.self)
+    }
+}
+
+// MARK: - A Test Writer With Options
+
+/// Keeps the binding a test writer's options view was last given, so a test
+/// can set the option as the checkbox does.
+@MainActor
+private final class OptionsProbe {
+    /// The binding of the options, as the options view last drew them.
+    var binding: Binding<OptionsTestWriter.Options>?
+}
+
+/// A text writer of the tests' own, which has one option (a checkbox), writes
+/// a short file, and records the options it was given. Given `holdsExport`,
+/// its `write` waits, at most 10 seconds, until the test calls `letGo()`, so
+/// a test can look at the dialog while an export runs and a failing test can
+/// never hang.
+private struct OptionsTestWriter: TextExportWriter {
+    /// The writer's one option.
+    struct Options: TextExportOptions {
+        /// Whether the test option is on.
+        var isOn = false
+    }
+
+    let id = "options-test"
+    let name = "Test Writer"
+    let hint = "A writer for tests."
+    let fileExtension = "tst"
+
+    /// Whether `write` waits for `letGo()`.
+    let holdsExport: Bool
+    /// Where the options view leaves its binding, if a test wants it.
+    private let probe: OptionsProbe?
+    /// Signalled by `letGo()`.
+    private let release = DispatchSemaphore(value: 0)
+    /// Whether `write` has begun.
+    private let started = OSAllocatedUnfairLock(initialState: false)
+    /// The options each `write` was given, in order.
+    private let given = OSAllocatedUnfairLock(initialState: [Options]())
+
+    /// A writer that holds its export while `holdsExport`, and leaves the
+    /// options view's binding in `probe`.
+    init(holdsExport: Bool = false, probe: OptionsProbe? = nil) {
+        self.holdsExport = holdsExport
+        self.probe = probe
+    }
+
+    /// Whether `write` has begun.
+    var hasStarted: Bool {
+        started.withLock { $0 }
+    }
+
+    /// The options each `write` was given.
+    var givenOptions: [Options] {
+        given.withLock { $0 }
+    }
+
+    /// Lets a held `write` go on.
+    func letGo() {
+        release.signal()
+    }
+
+    @MainActor func defaultOptions() -> Options {
+        Options()
+    }
+
+    @MainActor func optionsView(_ options: Binding<Options>) -> some View {
+        probe?.binding = options
+        return Toggle("Test option", isOn: options.isOn)
+            .toggleStyle(.checkbox)
+            .accessibilityHint("A test option.")
+    }
+
+    /// Records `options`, says it has begun, waits when it holds the export,
+    /// and writes a short file.
+    func write(
+        _ document: ExportDocument,
+        options: Options,
+        to url: URL,
+        cancellation: BookExportCancellation
+    ) throws {
+        given.withLock { $0.append(options) }
+        started.withLock { $0 = true }
+        if holdsExport {
+            _ = release.wait(timeout: .now() + 10)
+        }
+        try Data("test writer file".utf8).write(to: url)
     }
 }
