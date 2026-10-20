@@ -6,8 +6,8 @@ Worker `export-dialog`, branch `export/dialog` from `team/export`. FMT18. The jo
 - `TextMouth/ViewModels/BookExportModel.swift` (378 lines): the dialog's model.
 - `TextMouth/Views/Export/BookExportSheet.swift` (162 lines): the dialog.
 - `TextMouth/Models/BookExportWording.swift` lines 1 to 125: the words.
-- `TextMouth/Services/Export/TextExportWriter.swift` lines 150 to 250: `TextExportOptionsEditing`, `TextExportOptionsState`, and `TextExportWriters` (`all`, `markdownID`, `writer(id:)`, `optionsState(for:)`).
-- `TextMouth/Services/BookExportService.swift` lines 195 to 240: `BookExportKind.convertsText` and `BookExportConversion`.
+- `TextMouth/Services/Export/TextExportWriter.swift` lines 152 to 248: `TextExportOptionsEditing`, `TextExportOptionsState`, and `TextExportWriters` (`all`, `markdownID`, `writer(id:)`, `optionsState(for:)`).
+- `TextMouth/Services/BookExportService.swift` lines 200 to 250: `BookExportKind.convertsText` and `BookExportConversion`.
 - `TextMouthProductionTests/BookExportSheetTests.swift` lines 1 to 75, 200 to 265, and 420 to 455: how the dialog is tested (`AnnouncementCapture` is shared; `withHostedView` and `descendants(of:as:)` are in `AccessibilityTestSupport.swift`).
 
 ## The changes
