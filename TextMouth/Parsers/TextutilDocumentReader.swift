@@ -211,7 +211,10 @@ enum TextutilDocumentReader {
     /// (the temporary directory), removed afterwards: neither a library
     /// package (perhaps in a cloud folder) nor the folder of a file being
     /// imported ever receives one.
-    private static func withWorkingFolder<Output>(for url: URL, _ body: (URL) throws -> Output) throws -> Output {
+    ///
+    /// The braille reader (`BrailleBookReader`) uses this too, for the hidden
+    /// files the braille helper reads and writes.
+    static func withWorkingFolder<Output>(for url: URL, _ body: (URL) throws -> Output) throws -> Output {
         let parent = url.deletingLastPathComponent()
         if ImportStaging.isStagedPackageName(parent.lastPathComponent) {
             return try body(parent)
