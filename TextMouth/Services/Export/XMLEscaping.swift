@@ -11,7 +11,10 @@ import Foundation
 enum XMLEscaping {
     /// `text` made safe for the content of an element: `&` as `&amp;`, `<`
     /// as `&lt;`, and `>` as `&gt;`, and every character XML 1.0 forbids
-    /// left out. Line feeds, tabs, and carriage returns are kept as they are.
+    /// left out, but for vertical tab and form feed, which are white space
+    /// and are each written as a space, so the words they kept apart stay
+    /// apart ("page", a form feed, "Start" is "page Start"). Line feeds,
+    /// tabs, and carriage returns are kept as they are.
     static func text(_ text: String) -> String {
         escape(text, replacing: textReplacements)
     }
@@ -55,13 +58,20 @@ enum XMLEscaping {
     }
 
     /// `text` with each scalar in `replacements` written as its
-    /// replacement, and each forbidden scalar left out. It walks scalars,
+    /// replacement, and each forbidden scalar left out, or written as a
+    /// space when it is white space (vertical tab and form feed). It walks scalars,
     /// not characters, because one Character can hold "\r\n" whole, and an
     /// emoji must pass through in one piece.
     private static func escape(_ text: String, replacing replacements: [Unicode.Scalar: String]) -> String {
         var result = String.UnicodeScalarView()
         for scalar in text.unicodeScalars {
-            if isForbidden(scalar) { continue }
+            if isForbidden(scalar) {
+                // White space XML cannot hold still keeps two words apart.
+                if scalar.properties.isWhitespace {
+                    result.append(" ")
+                }
+                continue
+            }
             if let replacement = replacements[scalar] {
                 result.append(contentsOf: replacement.unicodeScalars)
             } else {

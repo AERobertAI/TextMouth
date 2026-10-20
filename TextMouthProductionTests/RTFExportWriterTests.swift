@@ -12,10 +12,20 @@ final class RTFExportWriterTests: XCTestCase {
         XCTAssertEqual(RTFExportWriter.escaped(#"a\b{c}d"#), #"a\\b\{c\}d"#)
     }
 
-    /// A line feed is `\line `, a tab `\tab `; the other controls and DEL are left out.
-    func testControlCharactersAreTurnedIntoControlWordsOrLeftOut() {
+    /// A line feed is `\line `, a tab `\tab `; a vertical tab, a form feed,
+    /// and a carriage return, which are white space, are a space; the other
+    /// controls and DEL are left out.
+    func testControlCharactersAreTurnedIntoControlWordsSpacesOrLeftOut() {
         XCTAssertEqual(RTFExportWriter.escaped("a\nb\tc"), #"a\line b\tab c"#)
-        let others: [UInt32] = Array(0x00...0x08) + [0x0B, 0x0C, 0x0D] + Array(0x0E...0x1F) + [0x7F]
+        XCTAssertEqual(RTFExportWriter.escaped("page\u{0C}Start"), "page Start")
+        for value: UInt32 in [0x0B, 0x0C, 0x0D] {
+            guard let scalar = Unicode.Scalar(value) else {
+                XCTFail("U+\(String(value, radix: 16)) is not a scalar")
+                continue
+            }
+            XCTAssertEqual(RTFExportWriter.escaped("a\(Character(scalar))b"), "a b", "U+\(String(value, radix: 16))")
+        }
+        let others: [UInt32] = Array(0x00...0x08) + Array(0x0E...0x1F) + [0x7F]
         for value in others {
             guard let scalar = Unicode.Scalar(value) else {
                 XCTFail("U+\(String(value, radix: 16)) is not a scalar")

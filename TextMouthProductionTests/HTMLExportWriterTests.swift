@@ -27,8 +27,9 @@ final class HTMLExportWriterTests: XCTestCase {
         XCTAssertEqual(XMLEscaping.attribute("x\r\ny"), "x&#13;&#10;y")
     }
 
-    /// Every scalar XML 1.0 forbids is left out of both; its neighbours stay.
-    func testEveryForbiddenScalarIsLeftOut() {
+    /// Every scalar XML 1.0 forbids is left out of both, but vertical tab and
+    /// form feed, which are white space, are a space; the neighbours stay.
+    func testEveryForbiddenScalarIsLeftOutAndForbiddenWhiteSpaceIsASpace() {
         let forbidden: [UInt32] = Array(0x00...0x08) + [0x0B, 0x0C] + Array(0x0E...0x1F) + [0xFFFE, 0xFFFF]
         for value in forbidden {
             guard let scalar = Unicode.Scalar(value) else {
@@ -36,8 +37,9 @@ final class HTMLExportWriterTests: XCTestCase {
                 continue
             }
             let input = "a\(Character(scalar))b"
-            XCTAssertEqual(XMLEscaping.text(input), "ab", "U+\(String(value, radix: 16)) in text")
-            XCTAssertEqual(XMLEscaping.attribute(input), "ab", "U+\(String(value, radix: 16)) in an attribute")
+            let expected = value == 0x0B || value == 0x0C ? "a b" : "ab"
+            XCTAssertEqual(XMLEscaping.text(input), expected, "U+\(String(value, radix: 16)) in text")
+            XCTAssertEqual(XMLEscaping.attribute(input), expected, "U+\(String(value, radix: 16)) in an attribute")
         }
         // The white space XML allows, and the scalars next to the forbidden ranges, stay.
         XCTAssertEqual(XMLEscaping.text("\t\n\r\u{20}\u{7F}\u{FFFD}"), "\t\n\r\u{20}\u{7F}\u{FFFD}")
@@ -201,25 +203,28 @@ final class HTMLExportWriterTests: XCTestCase {
     }
 
     /// Characters XML forbids are left out of the title, a heading, a
-    /// paragraph, and a code block, and the page still parses.
+    /// paragraph, and a code block, a form feed (white space) as a space, and
+    /// the page still parses.
     func testForbiddenCharactersAreLeftOutAndThePageParses() throws {
         let dirty = "a\u{01}b\u{0C}c\u{FFFF}d"
         let document = ExportDocument(
             book: ExportBookDetails(title: dirty, author: dirty, language: nil),
             blocks: [
-                heading(2, dirty, id: "abcd"),
+                heading(2, dirty, id: "ab-cd"),
                 .paragraph([ExportRun(dirty)]),
                 .codeBlock(dirty),
+                .paragraph([ExportRun("page\u{0C}Start")]),
             ]
         )
 
         let result = try page(of: document)
 
-        XCTAssertTrue(result.contains("<title>abcd</title>\n"))
-        XCTAssertTrue(result.contains("content=\"abcd\""))
-        XCTAssertTrue(result.contains("<h2 id=\"abcd\">abcd</h2>\n"))
-        XCTAssertTrue(result.contains("<p>abcd</p>\n"))
-        XCTAssertTrue(result.contains("<pre><code>abcd</code></pre>\n"))
+        XCTAssertTrue(result.contains("<title>ab cd</title>\n"))
+        XCTAssertTrue(result.contains("content=\"ab cd\""))
+        XCTAssertTrue(result.contains("<h2 id=\"ab-cd\">ab cd</h2>\n"))
+        XCTAssertTrue(result.contains("<p>ab cd</p>\n"))
+        XCTAssertTrue(result.contains("<pre><code>ab cd</code></pre>\n"))
+        XCTAssertTrue(result.contains("<p>page Start</p>\n"), "a form feed between two words keeps them apart")
         XCTAssertFalse(result.unicodeScalars.contains { [0x01, 0x0C, 0xFFFF].contains($0.value) })
     }
 

@@ -121,6 +121,8 @@ struct RTFExportWriter: TextExportWriter {
     /// `text` as RTF text, scalar by scalar:
     /// - a backslash, a left brace, and a right brace get a backslash before them;
     /// - a line feed is `\line ` and a tab `\tab `;
+    /// - a vertical tab, a form feed, and a carriage return, white space all,
+    ///   are a space;
     /// - every other character below U+0020, and U+007F, is left out;
     /// - U+0020 to U+007E stay as they are;
     /// - every character above is `\uN?` once for each of its UTF-16 code
@@ -139,6 +141,11 @@ struct RTFExportWriter: TextExportWriter {
                 result += #"\line "#
             case 0x09:
                 result += #"\tab "#
+            case 0x0B, 0x0C, 0x0D:
+                // Vertical tab, form feed, and carriage return are white
+                // space RTF cannot hold: a space keeps the words they
+                // kept apart apart ("page", a form feed, "Start" is "page Start").
+                result += " "
             case 0x00..<0x20, 0x7F:
                 continue
             case 0x20..<0x7F:
