@@ -52,9 +52,14 @@ enum BrailleSettingsWording {
     /// What VoiceOver hears when one of this Mac's tables, chosen in the
     /// Braille tab or in Export's braille options, is refused by its check
     /// (decision 5): the table's display name and why. The pop-ups have
-    /// already returned to the table in use.
+    /// already returned to the table in use. A check that could not be made
+    /// says so, and why, and that choosing the table again tries again
+    /// (review R7).
     static func refusal(ofTableNamed name: String, because refusal: MacBrailleTableCheck.Refusal) -> String {
-        "TextMouth can't use this Mac's table \u{201C}\(name)\u{201D}: \(refusal.reason)."
+        if refusal.isUnchecked {
+            return "TextMouth could not check this Mac's table \u{201C}\(name)\u{201D}: \(refusal.reason). Choose it again to try once more."
+        }
+        return "TextMouth can't use this Mac's table \u{201C}\(name)\u{201D}: \(refusal.reason)."
     }
 }
 

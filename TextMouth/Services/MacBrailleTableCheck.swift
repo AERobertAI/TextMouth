@@ -38,14 +38,16 @@ enum MacBrailleTableCheck {
         case doesNotLoad
         /// Its translation of the sample holds eight-dot cells.
         case writesEightDots
-        /// The check could not be made: the helper is missing, failed, or
-        /// was stopped, or no working folder could be made. It says nothing
-        /// of the table, so it is not kept for the session, and the next
-        /// choice checks again.
-        case couldNotCheck
+        /// The check could not be made, for the reason `why` gives in words
+        /// (review R7): the helper is missing, failed, or was stopped, or no
+        /// working folder could be made. It says nothing of the table, so it
+        /// is not kept for the session, and the next choice or import checks
+        /// again.
+        case couldNotCheck(why: String)
 
         /// The reason in words, which ends the sentence the listener hears
-        /// when a chosen table is refused, and the log's line.
+        /// when a chosen table is refused, and the log's line. For a check
+        /// that could not be made, why it could not.
         var reason: String {
             switch self {
             case .gone:
@@ -54,9 +56,27 @@ enum MacBrailleTableCheck {
                 return "it does not load in TextMouth's liblouis \(BrailleTableCatalog.bundledLiblouisVersion)"
             case .writesEightDots:
                 return "it writes eight-dot braille, and TextMouth uses six-dot braille only"
-            case .couldNotCheck:
-                return "it could not be checked"
+            case let .couldNotCheck(why):
+                return why
             }
+        }
+
+        /// Why a check could not be made when the helper failed.
+        static let helperFailed = couldNotCheck(why: "the braille helper failed")
+        /// Why a check could not be made when no working folder could be made.
+        static let noWorkingFolder = couldNotCheck(why: "TextMouth could not make a folder to check it in")
+
+        /// Why a check could not be made when the watchdog stopped the
+        /// helper, for `reason` (`WatchedProcess.KillReason.words`), such as
+        /// "it ran longer than 10 seconds".
+        static func helperStopped(because reason: String) -> Refusal {
+            couldNotCheck(why: "the braille helper was stopped because \(reason)")
+        }
+
+        /// Whether the check itself could not be made.
+        var isUnchecked: Bool {
+            if case .couldNotCheck = self { return true }
+            return false
         }
     }
 
@@ -69,7 +89,10 @@ enum MacBrailleTableCheck {
 
         /// Whether the session keeps the verdict: every one but a check that
         /// could not be made.
-        var lastsTheSession: Bool { self != .refused(.couldNotCheck) }
+        var lastsTheSession: Bool {
+            if case let .refused(refusal) = self { return !refusal.isUnchecked }
+            return true
+        }
     }
 
     // MARK: The Check
@@ -120,15 +143,27 @@ enum MacBrailleTableCheck {
                 )
                 verdict = cells.allSatisfy(writesSixDotsOnly) ? .usable : .refused(.writesEightDots)
             } catch let failure as BrailleTranslator.Failure {
-                // Status 2 is a table the helper cannot load; any other
-                // failure is the helper's own, which the translator logs.
-                if case .unknownTable = failure { verdict = .refused(.doesNotLoad) } else { verdict = .refused(.couldNotCheck) }
+                verdict = .refused(refusal(for: failure))
             }
         }
-        if case let .refused(refusal) = verdict, refusal != .couldNotCheck {
+        if case let .refused(refusal) = verdict, !refusal.isUnchecked {
             DiagnosticLog.event(.import, "BRAILLE_MAC_TABLE_REFUSED: \(tableID): \(refusal.reason)")
         }
         return verdict
+    }
+
+    /// The refusal a translator's `failure` in a check makes. Status 2 is a
+    /// table the helper cannot load; any other failure is the helper's own,
+    /// which the translator logs, and leaves the table unchecked, saying why.
+    private static func refusal(for failure: BrailleTranslator.Failure) -> Refusal {
+        switch failure {
+        case .unknownTable:
+            return .doesNotLoad
+        case let .stopped(reason):
+            return .helperStopped(because: reason)
+        case .failed, .uncheckedTable:
+            return .helperFailed
+        }
     }
 
     // MARK: The Session's Verdicts
@@ -169,16 +204,22 @@ enum MacBrailleTableCheck {
 
     // MARK: Asking
 
-    /// Throws `BrailleTranslator.Failure.unknownTable(tableID)` unless the
-    /// table can be used: the kept verdict, else a check made now in
-    /// `folder`. A bundled table passes at once. The translator asks this
-    /// before a Mac table's first use, so a table that fails, or is gone, is
-    /// refused by name, as an unknown table is (decision 5).
+    /// Throws unless the table can be used: the kept verdict, else a check
+    /// made now in `folder`. A bundled table passes at once. The translator
+    /// asks this before a Mac table's first use, so a table that fails, or
+    /// is gone, is refused by name, as an unknown table is (decision 5),
+    /// with `BrailleTranslator.Failure.unknownTable(tableID)`. A check that
+    /// could not be made says so, and why, with `.uncheckedTable`, and is
+    /// not kept, so the next import tries again (review R7).
     /// - Throws: also `ImportCancelled` or `CancellationError` from the check.
     static func requireUsable(_ tableID: String, workingIn folder: URL) throws {
         guard BrailleTableSource.parse(tableID).source == .mac else { return }
         let verdict = try verdicts.verdict(for: tableID) { try check(tableID, workingIn: folder) }
-        if case .refused = verdict { throw BrailleTranslator.Failure.unknownTable(tableID) }
+        guard case let .refused(refusal) = verdict else { return }
+        if case let .couldNotCheck(why) = refusal {
+            throw BrailleTranslator.Failure.uncheckedTable(tableID, why: why)
+        }
+        throw BrailleTranslator.Failure.unknownTable(tableID)
     }
 
     /// The verdict for `tableID` as the pop-ups need it: the kept one at
@@ -203,7 +244,7 @@ enum MacBrailleTableCheck {
                         // No import's Cancel reaches this check, so only a
                         // working folder that could not be made, or a
                         // cancelled task, ends here: the check was not made.
-                        return .refused(.couldNotCheck)
+                        return .refused(.noWorkingFolder)
                     }
                 }
             }

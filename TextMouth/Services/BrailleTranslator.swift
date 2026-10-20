@@ -52,6 +52,10 @@ enum BrailleTranslator {
         /// The helper could not translate: it is missing, could not start,
         /// failed, or wrote something other than one line for each piece.
         case failed
+        /// One of this Mac's tables could not be checked before its use, for
+        /// the reason `why` gives (`MacBrailleTableCheck`, review R7). The
+        /// table is not refused: the next use checks it again.
+        case uncheckedTable(String, why: String)
 
         var errorDescription: String? {
             switch self {
@@ -61,6 +65,8 @@ enum BrailleTranslator {
                 return "TextMouth stopped the braille translation because \(reason)."
             case .failed:
                 return "TextMouth could not translate this braille."
+            case let .uncheckedTable(name, why):
+                return "TextMouth could not check this Mac's braille table \u{201C}\(name)\u{201D}: \(why). Try again."
             }
         }
     }

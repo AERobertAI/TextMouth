@@ -32,10 +32,10 @@ final class MacBrailleTableCheckTests: XCTestCase {
     }
 
     /// A stand-in helper that runs `/bin/sh -c script sh MODE OUTPUT`, with
-    /// limits that keep a test short.
-    private func shell(_ script: String) -> BrailleTranslator.Tool {
+    /// limits that keep a test short: `seconds` for each run.
+    private func shell(_ script: String, seconds: TimeInterval = 5) -> BrailleTranslator.Tool {
         let limits = WatchedProcess.Limits(
-            maximumSeconds: 5, maximumResidentBytes: 1 << 30, maximumStalledSeconds: 5, pollInterval: 0.1
+            maximumSeconds: seconds, maximumResidentBytes: 1 << 30, maximumStalledSeconds: seconds, pollInterval: 0.1
         )
         return BrailleTranslator.Tool(
             command: { mode, _, _, output in
@@ -108,10 +108,18 @@ final class MacBrailleTableCheckTests: XCTestCase {
             MacBrailleTableCheck.Refusal.writesEightDots.reason,
             "it writes eight-dot braille, and TextMouth uses six-dot braille only"
         )
-        XCTAssertEqual(MacBrailleTableCheck.Refusal.couldNotCheck.reason, "it could not be checked")
+        XCTAssertEqual(MacBrailleTableCheck.Refusal.helperFailed.reason, "the braille helper failed")
+        XCTAssertEqual(MacBrailleTableCheck.Refusal.noWorkingFolder.reason, "TextMouth could not make a folder to check it in")
+        XCTAssertEqual(
+            MacBrailleTableCheck.Refusal.helperStopped(because: "it ran longer than 1 second").reason,
+            "the braille helper was stopped because it ran longer than 1 second"
+        )
+        XCTAssertTrue(MacBrailleTableCheck.Refusal.helperFailed.isUnchecked)
+        XCTAssertFalse(MacBrailleTableCheck.Refusal.doesNotLoad.isUnchecked)
         XCTAssertTrue(MacBrailleTableCheck.Verdict.usable.lastsTheSession)
         XCTAssertTrue(MacBrailleTableCheck.Verdict.refused(.doesNotLoad).lastsTheSession)
-        XCTAssertFalse(MacBrailleTableCheck.Verdict.refused(.couldNotCheck).lastsTheSession)
+        XCTAssertFalse(MacBrailleTableCheck.Verdict.refused(.helperFailed).lastsTheSession)
+        XCTAssertFalse(MacBrailleTableCheck.Verdict.refused(.noWorkingFolder).lastsTheSession)
     }
 
     /// The verdicts keep a lasting one, so a second ask checks nothing, and
@@ -127,9 +135,9 @@ final class MacBrailleTableCheckTests: XCTestCase {
         XCTAssertEqual(verdicts.verdict(for: "mac:a.ctb"), .usable)
 
         checks = 0
-        let failing = { () -> MacBrailleTableCheck.Verdict in checks += 1; return .refused(.couldNotCheck) }
-        XCTAssertEqual(verdicts.verdict(for: "mac:b.ctb", checking: failing), .refused(.couldNotCheck))
-        XCTAssertEqual(verdicts.verdict(for: "mac:b.ctb", checking: failing), .refused(.couldNotCheck))
+        let failing = { () -> MacBrailleTableCheck.Verdict in checks += 1; return .refused(.helperFailed) }
+        XCTAssertEqual(verdicts.verdict(for: "mac:b.ctb", checking: failing), .refused(.helperFailed))
+        XCTAssertEqual(verdicts.verdict(for: "mac:b.ctb", checking: failing), .refused(.helperFailed))
         XCTAssertEqual(checks, 2)
         XCTAssertNil(verdicts.verdict(for: "mac:b.ctb"))
     }
@@ -152,8 +160,9 @@ final class MacBrailleTableCheckTests: XCTestCase {
     /// The helper's answers become verdicts: status 2 is a table that does
     /// not load, eight-dot cells in the sample's translation are refused,
     /// six-dot ones (with the escape backslash) are usable, and any other
-    /// failure is a check that could not be made. Each leaves the working
-    /// folder empty.
+    /// failure is a check that could not be made, saying why: the helper
+    /// failed, or the watchdog stopped it. Each leaves the working folder
+    /// empty.
     func testTheHelpersAnswersBecomeVerdicts() throws {
         let table = try anyOfferedMacTable()
         // "check" passes; "forward" writes one line of `cells` to the output.
@@ -162,7 +171,8 @@ final class MacBrailleTableCheckTests: XCTestCase {
         }
         let cases: [(BrailleTranslator.Tool, MacBrailleTableCheck.Verdict)] = [
             (shell("exit 2"), .refused(.doesNotLoad)),
-            (shell("exit 1"), .refused(.couldNotCheck)),
+            (shell("exit 1"), .refused(.helperFailed)),
+            (shell("sleep 5", seconds: 0.5), .refused(.helperStopped(because: "it ran longer than 1 second"))),
             (writing(#"\342\241\203"#), .refused(.writesEightDots)),  // U+2843, dots 1, 2, and 7
             (writing(#"\342\240\201\342\241\263"#), .usable),  // ⠁ and the escape backslash
         ]
@@ -196,6 +206,30 @@ final class MacBrailleTableCheckTests: XCTestCase {
             }
         }
         XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path), "a kept refusal ran the helper again")
+        assertWorkFolderEmpty()
+    }
+
+    /// A check that could not be made refuses the translation saying so,
+    /// and why, rather than naming a table TextMouth has not got; it is not
+    /// kept, so the next translation checks again, and with a helper that
+    /// works it translates (review R7).
+    func testACheckThatCouldNotBeMadeSaysWhyAndIsTriedAgain() throws {
+        let table = try anyOfferedMacTable()
+        try MacBrailleTableCheck.$verdicts.withValue(MacBrailleTableCheck.Verdicts()) {
+            try BrailleTranslator.$tool.withValue(shell("exit 1")) {
+                XCTAssertThrowsError(try BrailleTranslator.translate(["a"], table: table, direction: .printToBraille, workingIn: work)) {
+                    XCTAssertEqual($0 as? BrailleTranslator.Failure, .uncheckedTable(table, why: "the braille helper failed"))
+                    XCTAssertEqual(
+                        ($0 as? LocalizedError)?.errorDescription,
+                        "TextMouth could not check this Mac's braille table \u{201C}\(table)\u{201D}: the braille helper failed. Try again."
+                    )
+                }
+            }
+            // Every run of this stand-in writes one six-dot cell, ⠁.
+            try BrailleTranslator.$tool.withValue(shell(#"[ "$1" = check ] && exit 0; printf '\342\240\201\n' > "$2""#)) {
+                XCTAssertEqual(try BrailleTranslator.translate(["a"], table: table, direction: .printToBraille, workingIn: work), ["\u{2801}"])
+            }
+        }
         assertWorkFolderEmpty()
     }
 

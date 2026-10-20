@@ -315,8 +315,8 @@ final class BrailleSettingsViewTests: XCTestCase {
             "TextMouth can't use this Mac's table \u{201C}Greek braille\u{201D}: this Mac no longer has it."
         )
         XCTAssertEqual(
-            BrailleSettingsWording.refusal(ofTableNamed: name, because: .couldNotCheck),
-            "TextMouth can't use this Mac's table \u{201C}Greek braille\u{201D}: it could not be checked."
+            BrailleSettingsWording.refusal(ofTableNamed: name, because: .helperFailed),
+            "TextMouth could not check this Mac's table \u{201C}Greek braille\u{201D}: the braille helper failed. Choose it again to try once more."
         )
     }
 
