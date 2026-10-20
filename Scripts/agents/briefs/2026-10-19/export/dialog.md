@@ -44,7 +44,7 @@ Worker `export-dialog`, branch `export/dialog` from `team/export`. FMT18. The jo
 7. Every new word of item 1, pinned exactly: `convertToLabel`, `markdownChoiceName`, `markdownChoiceHint`, `name(of:convertedTo:)` and `hint(for:convertedTo:)` for HTML and for "Word 97-2003 (.doc)", and a `choiceLabel` with `convertedTo` for one book and for several.
 
 ## Build and test
-Through `python3 Scripts/test/run-area.py BookExportConvertToTests BookExportSheetTests BookExportServiceTests KeyboardReachabilityTests` (read `-h` first), with your own build folder as `teams-common.md` says. Then `make lint-a11y LINT_BASE=team/export` and `make lint-tests LINT_BASE=team/export`, and fix what they find in your lines.
+Through `python3 Scripts/test/run-area.py BookExportConvertToTests BookExportSheetTests BookExportServiceTests KeyboardReachabilityTests HTMLExportWriterTests RTFExportWriterTests` (the last two check a change of the lead's to the writers) (read `-h` first), with your own build folder as `teams-common.md` says. Then `make lint-a11y LINT_BASE=team/export` and `make lint-tests LINT_BASE=team/export`, and fix what they find in your lines.
 
 ## Do not touch
 `BookExportService.swift`, the files under `TextMouth/Services/Export/`, the existing tests (`BookExportSheetTests` must pass as it is: every label without a conversion stays exactly as today), or any `*.md` file. If one of them seems to need a change, stop and ask `export-lead` on the board.
