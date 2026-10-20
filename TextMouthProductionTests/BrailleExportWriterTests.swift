@@ -5,8 +5,9 @@ import XCTest
 
 /// The BRF and PEF writers of the Export dialog (FMT22, Phase B) with the
 /// real liblouis helper: the braille blocks the export model makes, the two
-/// writers' files, their options and the options view, and the writers'
-/// registration and cancellation.
+/// writers' files, their options and the options view, the writers'
+/// registration and cancellation, and the round trips through the dialog's
+/// own path (a book exported, then the file imported again).
 @MainActor
 final class BrailleExportWriterTests: XCTestCase {
 
@@ -399,6 +400,56 @@ final class BrailleExportWriterTests: XCTestCase {
         }
     }
 
+    // MARK: - Round Trips
+
+    /// Decision 15: a book of the Grade 2 sample's three sentences, each its
+    /// own paragraph, exported to BRF through the dialog's own path (the
+    /// export service with the writer chosen and its options) and imported
+    /// again, reads as its heading and the three sentences. Liblouis reads
+    /// the contractions back as the print it was given (the table is the one
+    /// the sample was written with).
+    func testTheGrade2BookSurvivesTheRoundTrip() throws {
+        let sentences = try String(contentsOf: formatSampleURL("brf/grade2-short.txt"), encoding: .utf8)
+            .components(separatedBy: "\n").filter { !$0.isEmpty }
+        XCTAssertEqual(sentences.count, 3)
+        let markdown = "# Grade Two Sample\n\n" + sentences.joined(separator: "\n\n") + "\n"
+        let table = "en-ueb-g2.ctb"
+        let conversion = BookExportConversion.text(
+            TextExportConversion(BRFExportWriter(), options: BrailleExportOptions(table: table))
+        )
+        let imported = try roundTrip(markdown: markdown, conversion: conversion, table: table)
+        XCTAssertEqual(imported, ["Grade Two Sample"] + sentences)
+    }
+
+    /// M6 through the dialog's path: a book whose paragraphs are Москва,
+    /// 中文, and a smiling face, which the table has no braille for, exports
+    /// to BRF and to PEF and imports again from each: neither import is
+    /// refused (the eight-dot cell of liblouis's escape backslash is written
+    /// as six dots), and both read as the heading and the texts
+    /// `BrailleDocumentWriterTests` pins for these three paragraphs, which
+    /// are liblouis's reading of its own escape notation, not the print.
+    func testTextTheTableCannotWriteSurvivesTheRoundTrip() throws {
+        let markdown = "# Odd Scripts\n\nМосква\n\n中文\n\n\u{1F642}\n"
+        let table = "en-ueb-g2.ctb"
+        // The widest page, so that no paragraph wraps: a wrapped row would
+        // be read back with a break in it.
+        var options = BrailleExportOptions(table: table)
+        options.page = BraillePageFormat(cellsPerLine: BraillePageFormat.cellsPerLineRange.upperBound)
+        let expected = [
+            "Odd Scripts",
+            "'oux\"diseac''oux\"discce''oux\"dis.,''oux\"discca''oux\"disccbb''oux\".:\"'",
+            "'oux.ebbd''ouxffen?\u{2032}'",
+            "'ouyeaf!.be'",
+        ]
+        let conversions: [(name: String, conversion: BookExportConversion)] = [
+            ("BRF", .text(TextExportConversion(BRFExportWriter(), options: options))),
+            ("PEF", .text(TextExportConversion(PEFExportWriter(), options: options))),
+        ]
+        for (name, conversion) in conversions {
+            XCTAssertEqual(try roundTrip(markdown: markdown, conversion: conversion, table: table), expected, name)
+        }
+    }
+
     // MARK: - Helpers
 
     /// A heading of `level` and `text` for a hand-built document.
@@ -426,6 +477,35 @@ final class BrailleExportWriterTests: XCTestCase {
             fromMarkdown: markdown,
             book: ExportBookDetails(title: texts[0], author: "Jane Austen", language: language)
         )
+    }
+
+    /// The text blocks of the book `markdown` makes, exported to a file
+    /// through the export service with `conversion` chosen, then imported
+    /// again with `table` as the Braille setting: the blocks the reader shows
+    /// (blank lines left out).
+    private func roundTrip(markdown: String, conversion: BookExportConversion, table: String) throws -> [String] {
+        let world = try makeIntegrationWorld("Braille Export Round Trip")
+        let source = try makeSandboxDirectory("Braille Export Source").appendingPathComponent("Round Trip.md")
+        try Data(markdown.utf8).write(to: source)
+        let book = try world.importBook(from: source)
+        let destination = try makeSandboxDirectory("Braille Export Destination")
+
+        let outcome = BookExportService.export(
+            [BookExportService.offer(for: book)], kinds: [.markdown], conversions: [.markdown: conversion], to: destination
+        )
+        XCTAssertEqual(outcome.failures, [])
+        XCTAssertEqual(outcome.exported.count, 1)
+        guard let file = outcome.exported.first else { return [] }
+        XCTAssertEqual(file.pathExtension, conversion.fileExtension)
+
+        let reimported = try BraillePreferences.$tableForImports.withValue(table) {
+            try importedForTest(file).book
+        }
+        XCTAssertEqual(reimported.format, .braille)
+        return allText(of: try openedContent(of: reimported))
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
     }
 
     /// Hosts the options view at the dialog's width until it has drawn
