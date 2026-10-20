@@ -301,6 +301,84 @@ final class MacBrailleTableCatalogTests: XCTestCase {
         XCTAssertEqual(BrailleTableCatalog.description(ofTableID: "mac:no-such-table.ctb"), "mac:no-such-table.ctb")
     }
 
+    // MARK: - Tables With No Contraction Line (review R6)
+
+    /// A table with no contraction line is offered: its grade gives the
+    /// contraction (0 or 1 uncontracted, a whole 2 or more contracted,
+    /// between them partly), else "As the table defines", which Book Info
+    /// leaves out; a stated contraction TextMouth does not know still
+    /// leaves the table out.
+    func testATableWithNoContractionLine() throws {
+        let folder = try makeSandboxDirectory("MacBrailleNoContraction")
+        let base = ["type:literary", "language:it"]
+        try writeTable("g0.utb", base + ["display-name:Zero braille", "grade:0"], in: folder)
+        try writeTable("g1.utb", base + ["display-name:One braille", "grade:1"], in: folder)
+        try writeTable("g15.ctb", base + ["display-name:Half braille", "grade:1.5"], in: folder)
+        try writeTable("g3.ctb", base + ["display-name:Three braille", "grade:3"], in: folder)
+        try writeTable("none.tbl", base + ["display-name:Italian braille"], in: folder)
+        try writeTable("word.tbl", base + ["display-name:Word braille", "grade:two"], in: folder)
+        try writeTable("odd.tbl", base + ["display-name:Odd braille", "contraction:sometimes"], in: folder)
+
+        let tables = BrailleTableCatalog.tables(in: folder, source: .mac)
+        let byFile = Dictionary(uniqueKeysWithValues: tables.map { ($0.fileName, $0) })
+        XCTAssertNil(byFile["odd.tbl"])
+        XCTAssertEqual(byFile["g0.utb"]?.contractionLabel, "Uncontracted (Grade 0)")
+        XCTAssertEqual(byFile["g1.utb"]?.contraction, .no)
+        XCTAssertEqual(byFile["g15.ctb"]?.contraction, .partial)
+        XCTAssertEqual(byFile["g3.ctb"]?.contractionLabel, "Contracted (Grade 3)")
+        XCTAssertEqual(byFile["none.tbl"]?.contraction, .unstated)
+        XCTAssertEqual(byFile["none.tbl"]?.contractionLabel, "As the table defines")
+        XCTAssertEqual(byFile["word.tbl"]?.contractionLabel, "As the table defines", "a grade that is no number")
+        XCTAssertNil(Contraction.stated("unstated"), "only no, partial, and full can be stated")
+        let italian = try XCTUnwrap(byFile["none.tbl"])
+        XCTAssertEqual(BrailleTableCatalog.description(of: italian, language: "Italian"), "Italian braille, in Italian")
+    }
+
+    /// A table that only includes a table offered here is left out, so the
+    /// listener never meets one table twice, in whatever code; one that
+    /// includes no offered table, or has a rule of its own, stays.
+    func testAnIncludeOnlyTableOfAnOfferedTableIsLeftOut() throws {
+        let folder = try makeSandboxDirectory("MacBrailleAliases")
+        try writeTable("lt-6dot.utb", ["type:literary", "language:lt", "contraction:no", "display-name:Lithuanian 6-dot braille"],
+                       in: folder)
+        func write(_ name: String, _ text: String) throws {
+            try text.write(to: folder.appendingPathComponent(name), atomically: true, encoding: .utf8)
+        }
+        try write("lt-6dot.tbl", "#+type:literary\n#+language:lt\n#+contraction:no\n#+display-name:Lithuanian braille\ninclude lt-6dot.utb\n")
+        try write("es.tbl", "#+type:literary\n#+locale:es\n#+contraction:no\n#+display-name:Spanish braille\ninclude es-g1.ctb\ninclude hyph_es_ES.dic\n")
+        try write("rules.tbl", "#+type:literary\n#+language:ga\n#+contraction:full\n#+display-name:Irish braille\ninclude lt-6dot.utb\nnoback sign \\x2019 3\n")
+
+        XCTAssertEqual(Set(BrailleTableCatalog.tables(in: folder, source: .mac).map(\.fileName)), ["lt-6dot.utb", "es.tbl", "rules.tbl"])
+        XCTAssertEqual(BrailleTableCatalog.includeOnlyTargets(ofTableAt: folder.appendingPathComponent("lt-6dot.tbl")), ["lt-6dot.utb"])
+        XCTAssertEqual(BrailleTableCatalog.includeOnlyTargets(ofTableAt: folder.appendingPathComponent("es.tbl")), ["es-g1.ctb", "hyph_es_ES.dic"])
+        XCTAssertNil(BrailleTableCatalog.includeOnlyTargets(ofTableAt: folder.appendingPathComponent("rules.tbl")))
+        XCTAssertNil(BrailleTableCatalog.includeOnlyTargets(ofTableAt: folder.appendingPathComponent("missing.tbl")))
+        // A file longer than an alias needs is taken to have rules of its own.
+        try write("long.tbl", "include lt-6dot.utb\n" + String(repeating: "# filler\n", count: 600))
+        XCTAssertNil(BrailleTableCatalog.includeOnlyTargets(ofTableAt: folder.appendingPathComponent("long.tbl")))
+    }
+
+    /// This Mac's Italian, Latvian, and Georgian tables, which state no
+    /// contraction, are offered; its lt-6dot.tbl, which only includes
+    /// lt-6dot.utb, is not, and lt-6dot.utb is. Tables this Mac lacks are
+    /// passed over.
+    func testThisMacOffersTablesWithNoContractionLine() throws {
+        _ = try requireThisMacsTables()
+        func has(_ name: String) -> Bool {
+            FileManager.default.fileExists(atPath: BrailleTableCatalog.macTablesFolder.appendingPathComponent(name).path)
+        }
+        let offered = Set(BrailleTableCatalog.offeredTables.map(\.id))
+        for name in ["it.tbl", "lv.tbl", "ka.utb", "lt-6dot.utb"] where has(name) {
+            XCTAssertTrue(offered.contains("mac:\(name)"), name)
+        }
+        if has("lt-6dot.tbl") {
+            XCTAssertFalse(offered.contains("mac:lt-6dot.tbl"))
+        }
+        if has("it.tbl") {
+            XCTAssertEqual(BrailleTableCatalog.table(withID: "mac:it.tbl")?.contractionLabel, "As the table defines")
+        }
+    }
+
     // MARK: - This Mac's Own Tables
 
     /// The real folder: its version is recorded; French contracted, a German

@@ -66,10 +66,36 @@ enum Contraction: String, Sendable, CaseIterable {
     case partial
     /// Every contraction the code has is used (Grade 2).
     case full
+    /// The table says neither its contraction nor its grade (review R6), as
+    /// the Mac's Italian and Georgian tables do: the table's own rules
+    /// decide.
+    case unstated
 
     /// Where this contraction falls among the cases, for sorting.
     var rank: Int {
         Contraction.allCases.firstIndex(of: self) ?? Contraction.allCases.count
+    }
+
+    /// The contraction a `contraction` line states: "no", "partial", or
+    /// "full", in any case; nil for any other value.
+    static func stated(_ value: String) -> Contraction? {
+        Contraction(rawValue: value.lowercased()).flatMap { $0 == .unstated ? nil : $0 }
+    }
+
+    /// The contraction a table's `grade` implies when it has no `contraction`
+    /// line (review R6): grade 0 or 1 is uncontracted, as such tables of
+    /// liblouis's are (the Indian, Catalan, Czech, Polish, and Latvian
+    /// ones); a whole grade of 2 or more is contracted; a grade between, such
+    /// as 1.5, is partly contracted. Nil for a grade that is no number.
+    init?(grade: String) {
+        guard let value = Double(grade), value.isFinite, value >= 0 else { return nil }
+        if value <= 1 {
+            self = .no
+        } else if value == value.rounded() {
+            self = .full
+        } else {
+            self = .partial
+        }
     }
 }
 
@@ -129,14 +155,16 @@ struct BrailleTable: Equatable, Hashable, Sendable, Identifiable {
     var fileName: String { BrailleTableSource.parse(id).fileName }
 
     /// The contraction in words the listener hears: "Uncontracted
-    /// (Grade 1)", "Contracted (Grade 2)", or "Partly contracted". A table
-    /// with no grade leaves the bracket out.
+    /// (Grade 1)", "Contracted (Grade 2)", "Partly contracted", or, for a
+    /// table that says neither its contraction nor its grade, "As the table
+    /// defines". A table with no grade leaves the bracket out.
     var contractionLabel: String {
         let bracket = grade.map { " (Grade \($0))" } ?? ""
         switch contraction {
         case .no: return "Uncontracted" + bracket
         case .full: return "Contracted" + bracket
         case .partial: return "Partly contracted"
+        case .unstated: return "As the table defines"
         }
     }
 }
@@ -259,7 +287,11 @@ enum BrailleTableCatalog {
     /// - a `display-name`;
     /// - a `language`, or else the older `locale`, which liblouis reads as
     ///   both the language and the region (`analyzeTable` in `metadata.c`);
-    /// - a `contraction` of `no`, `partial`, or `full`;
+    /// - a `contraction` of `no`, `partial`, or `full`, or no `contraction`
+    ///   line at all (review R6: decision 3 asks for none), when the
+    ///   contraction is the one its `grade` implies (`Contraction(grade:)`),
+    ///   else `unstated`, as for the Mac's Italian, Latvian, and Georgian
+    ///   tables;
     /// - a `direction` of `both`, or none, since TextMouth reads braille as
     ///   well as writing it.
     ///
@@ -272,9 +304,17 @@ enum BrailleTableCatalog {
               fields["dots"].map({ $0 == "6" }) ?? true,
               let displayName = fields["display-name"],
               let tag = fields["language"] ?? fields["locale"],
-              let language = tag.split(separator: "-").first.map(String.init),
-              let contraction = fields["contraction"].flatMap({ Contraction(rawValue: $0.lowercased()) })
+              let language = tag.split(separator: "-").first.map(String.init)
         else { return nil }
+        // A stated contraction must be one TextMouth knows; with none, the
+        // grade says it, or the table's own rules decide.
+        let contraction: Contraction
+        if let stated = fields["contraction"] {
+            guard let known = Contraction.stated(stated) else { return nil }
+            contraction = known
+        } else {
+            contraction = fields["grade"].flatMap(Contraction.init(grade:)) ?? .unstated
+        }
         if let direction = fields["direction"], direction.lowercased() != "both" { return nil }
         return BrailleTable(
             id: source.storedValue(ofFile: file.lastPathComponent),
@@ -291,6 +331,32 @@ enum BrailleTableCatalog {
         )
     }
 
+    /// The most bytes a table that only includes others is thought to hold:
+    /// such a table is a few lines (the Mac's `lt-6dot.tbl` is 260 bytes),
+    /// so a longer file is read no further and taken to have rules of its own.
+    static let maximumIncludeOnlyBytes = 4_096
+
+    /// The tables the table file at `url` includes when it does nothing else
+    /// (review R6): every line that is neither blank nor a comment is
+    /// `include` and a file name, such as "include lt-6dot.utb". Nil for any
+    /// other file, for one that cannot be read, and for one longer than
+    /// `maximumIncludeOnlyBytes`.
+    static func includeOnlyTargets(ofTableAt url: URL) -> [String]? {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+        defer { try? handle.close() }
+        guard let data = try? handle.read(upToCount: maximumIncludeOnlyBytes + 1),
+              data.count <= maximumIncludeOnlyBytes
+        else { return nil }
+        var targets: [String] = []
+        for rawLine in String(decoding: data, as: UTF8.self).split(whereSeparator: \.isNewline) {
+            let words = rawLine.split(whereSeparator: { $0 == " " || $0 == "\t" })
+            guard let first = words.first, !first.hasPrefix("#") else { continue }
+            guard first.lowercased() == "include", words.count >= 2 else { return nil }
+            targets.append(String(words[1]))
+        }
+        return targets.isEmpty ? nil : targets
+    }
+
     /// A table's region as the catalog keeps it: `region`, unless it is
     /// absent, the language itself (as liblouis's `locale` makes it), or a
     /// pattern such as "*-IL", which names no one region.
@@ -302,18 +368,28 @@ enum BrailleTableCatalog {
     }
 
     /// The tables TextMouth offers among the regular files of `folder`, by
-    /// language, then system, then contraction (no, partial, full), then
-    /// file name, each with `source`'s stored value. Included files, other
-    /// files, and tables that cannot be read both ways are left out.
+    /// language, then system, then contraction (no, partial, full, then
+    /// unstated), then file name, each with `source`'s stored value.
+    /// Included files, other files, and tables that cannot be read both ways
+    /// are left out, and so is a table that only includes a table offered
+    /// here (review R6), such as the Mac's `lt-6dot.tbl`, which holds only
+    /// "include lt-6dot.utb": the table it includes is listed instead, in
+    /// whatever code.
     static func tables(in folder: URL, source: BrailleTableSource = .bundled) -> [BrailleTable] {
         let files = (try? FileManager.default.contentsOfDirectory(
             at: folder,
             includingPropertiesForKeys: [.isRegularFileKey],
             options: [.skipsHiddenFiles]
         )) ?? []
-        return files
+        let found = files
             .filter { (try? $0.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true }
-            .compactMap { table(at: $0, source: source) }
+            .compactMap { file in table(at: file, source: source).map { (file: file, table: $0) } }
+        let offeredFiles = Set(found.map(\.table.fileName))
+        return found
+            .filter { found in
+                !(includeOnlyTargets(ofTableAt: found.file)?.contains(where: offeredFiles.contains) ?? false)
+            }
+            .map(\.table)
             .sorted { lhs, rhs in
                 // A tuple of the sort keys, compared in order.
                 (lhs.language, lhs.system, lhs.contraction.rank, lhs.id)
@@ -596,10 +672,15 @@ enum BrailleTableCatalog {
     }
 
     /// `table` in words the listener hears, as `description(ofTableID:)`
-    /// says them, with ", in" and `language` after them when it is given.
+    /// says them, with ", in" and `language` after them when it is given. A
+    /// table that says nothing of its contraction is named by its code alone,
+    /// as "Italian braille, in Italian".
     static func description(of table: BrailleTable, language: String?) -> String {
         let label = table.contractionLabel
-        let words = "\(codeName(of: table)), \(label.prefix(1).lowercased() + label.dropFirst())"
+        var words = codeName(of: table)
+        if table.contraction != .unstated {
+            words += ", \(label.prefix(1).lowercased() + label.dropFirst())"
+        }
         return language.map { "\(words), in \($0)" } ?? words
     }
 }
