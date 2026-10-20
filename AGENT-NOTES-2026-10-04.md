@@ -2720,3 +2720,68 @@ There were 34 commits in all.
 - swift-markdown's recursion;
 - progress within a long book;
 - Transcript.md's Convert to.
+
+## From the braille team (team/braille, FMT20, FMT21, FMT22), Oct 19 and 20
+
+**The team.** An Opus lead, `braille-lead`, with Sonnet workers:
+- **Phase A, 8 workers:** reader, pages, translator, layout, tables, settings, writer, and import (which then did info). Six were accepted as they were, and two after one lead fix each.
+- **The lead's own work first:** it vendored liblouis, wrote the helper, and made the shared cell table and block type. It also ran the helper on the samples before writing briefs, which found the italic-indicator bug and pinned liblouis's own differences.
+- **First review round:** two Opus reviewers (C: liblouis, the helper, the translator, the tables, and the setting; D: the readers, the page analysis, the layout and writers, and the import) made 18 findings. Three workers fixed them (fixhelper, fixlibrary, fixpages), and a fourth did Phase B.
+- **Second review round:** a third Opus reviewer (E) read the fixes and Phase B and made 8 findings. Two workers took them (review2a, review2b).
+- **Two stops.** The Claude login expired at about 23:30 on October 19, and the lead's two running workers were resumed by message with their uncommitted work intact. A restart of the user's Claude Code session at about 14:35 on October 20 left the lead and review2a unresumable ("No transcript found"). An Opus finisher, `braille-finish`, then fast-forwarded review2a's four commits, made the last E6 change, and checked E1, E4, E6, and E8.
+
+There were 66 commits in all.
+
+**Test runs:**
+- Phase A's full run: 7654 tests, 76 skipped, 1 failure. A fixture listed every field of `Book`, and the new `brailleTable` field was missing from it.
+- The orchestrator's full run on 2e532bee, after round 1: 7830 tests, 76 skipped, 0 failures.
+- The finisher's last run, of the braille, import, and export areas plus the touched classes: 1795 tests, 6 skipped, 0 failures.
+- `make lint-tests` and `make lint-a11y` are clean.
+
+**Decisions:**
+- **The helper.**
+  - It is C (`TextMouthBraille/main.c`), with three modes: check, forward, and back.
+  - It works in /var/empty and loads a table by its bare name from inside the bundle's tables folder, so a comma in the app's path is harmless.
+  - It accepts only the catalog's four tables.
+  - Back mode passes a typeform buffer, or liblouis writes UEB's italic indicator as `\46/,`, which a listener would hear.
+  - A translation counts only when at least 16 cells of room are left over; otherwise it is retried with more room, since liblouis reports success when output fills on an escape.
+  - The forward output cap is 32 times the input plus 1 MiB.
+- **Build settings.** Header maps are off for LAME, liblouis, and the helper, because Xcode's header map handed liblouis LAME's `config.h`.
+- **File types.** `com.textmouth.brf`, `com.textmouth.brl`, and `org.daisy.pef`. `.pef` is also a Pentax raw photo, so Open Book accepts the system's type, and the import tells the two apart by content.
+- **Reading:**
+  - Pages are kept as one buffer of cell bytes with 32-bit offsets.
+  - Centered runs are tried before the cell-5 and cell-7 rule, so multi-line titles read whole.
+  - The width comes from the page-number column, from PEF's `cols`, or, in BRF without numbers, from the centered headings.
+  - Blank rows at a page's top are dropped, except in books of block-style paragraphs.
+- **Writing:**
+  - Six-dot cells only: the eight-dot escape backslash becomes ⠳, and characters a table lacks, such as Chinese, Cyrillic, and emoji, are written in liblouis's escape notation and read back as it.
+  - A list gets a blank line before and after (BANA 2016, 8.3.2a), and an item's first two lines stay on one page.
+  - A word longer than a line is cut after a hyphen or slash if it can be, never inside a number.
+- **Settings.** The window is 780 points wide for ten tabs, and the Braille tab and Export's options share one pop-up view (`BrailleTablePickers`).
+- **Older builds.** `BookFormat.braille` is new, so an older build cannot open a library that holds a braille book. Nothing else in the branch locks an older build out.
+
+**Measured.**
+- liblouis translated 10 MB of braille to print in 0.54 s and 10 MB of print to Grade 2 in 15.3 s, at under 4 MB of memory.
+- A realistic 32 MB BRF peaked at 212 MB in reading before round 2's cut copies of the translation step. Braille files are now refused above 32 MB.
+
+**Not verified:**
+- the braille options and the Braille tab with VoiceOver;
+- whether ten Settings tabs fit the toolbar at 780 points;
+- Finder's Open With for `.pef`, and the open panel by hand;
+- a real embosser or braille display, and a real BARD or Bookshare BRF;
+- `make build` signing the embedded helper.
+
+The samples were made on this Mac. A hosted test of Book Information's sheet skips, so the row's words are tested without the sheet.
+
+**Follow-ups:** in the TODO's open follow-ups paragraph:
+- page navigation;
+- reading a book again with another code;
+- the Mac's tables;
+- emphasis in exported braille;
+- PEF's language;
+- running heads, Roman numerals, and divided words;
+- the list cases;
+- long words;
+- Stop during a translation;
+- XcodeGen's phase order;
+- the checks by hand.
