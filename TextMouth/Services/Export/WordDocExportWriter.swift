@@ -21,6 +21,12 @@ import Foundation
 ///
 /// Apple's RTF reader and `.docFormat` writer need no main thread (only
 /// its HTML reader does), so the export may call this one off it.
+///
+/// Apple's RTF reader drops six characters the RTF holds: the bidirectional
+/// embedding and override controls U+202A to U+202E, and U+FFFD, which it
+/// reads as "?". So a Word file loses them where the RTF keeps them; a
+/// reviewer round-tripped every other assigned character of the Basic
+/// Multilingual Plane unchanged.
 struct WordDocExportWriter: TextExportWriter {
     let id = "doc"
     let name = "Word 97-2003 (.doc)"
@@ -42,13 +48,24 @@ struct WordDocExportWriter: TextExportWriter {
         try data.write(to: url, options: .withoutOverwriting)
     }
 
-    /// The bytes of the Word 97-2003 document of `document`. A stop passes
-    /// through as `CancellationError`; any error of Apple's reader or writer
-    /// becomes a `TextExportError`.
+    /// The sentence a Word export fails with when Apple's reader or writer
+    /// refuses the book's text; the dialog names it after the file's name.
+    static let failureSentence = "The book's text could not be made into a Word 97-2003 document."
+
+    /// The bytes of the Word 97-2003 document of `document`, made from the
+    /// RTF writer's text of it, the one source of both writers.
     private static func wordData(of document: ExportDocument, cancellation: BookExportCancellation) throws -> Data {
+        let rtf = try RTFExportWriter.rtf(of: document, cancellation: cancellation)
+        return try wordData(ofRTF: rtf, book: document.book, cancellation: cancellation)
+    }
+
+    /// The bytes of the Word 97-2003 document Apple's `.docFormat` writer
+    /// makes of `rtf` as Apple's RTF reader reads it, with `book`'s title and
+    /// author in the file's properties. A stop passes through as
+    /// `CancellationError`; any error of Apple's reader or writer becomes
+    /// `TextExportError(failureSentence)`.
+    static func wordData(ofRTF rtf: String, book: ExportBookDetails, cancellation: BookExportCancellation) throws -> Data {
         do {
-            // The one source: the RTF, read back as Apple reads any RTF.
-            let rtf = try RTFExportWriter.rtf(of: document, cancellation: cancellation)
             let attributed = try NSAttributedString(
                 data: Data(rtf.utf8),
                 options: [.documentType: NSAttributedString.DocumentType.rtf],
@@ -59,9 +76,9 @@ struct WordDocExportWriter: TextExportWriter {
             // The title and author go in the file's properties.
             var properties: [NSAttributedString.DocumentAttributeKey: Any] = [
                 .documentType: NSAttributedString.DocumentType.docFormat,
-                .title: document.book.title,
+                .title: book.title,
             ]
-            if let author = document.book.author {
+            if let author = book.author {
                 properties[.author] = author
             }
             return try attributed.data(
@@ -71,7 +88,7 @@ struct WordDocExportWriter: TextExportWriter {
         } catch is CancellationError {
             throw CancellationError()
         } catch {
-            throw TextExportError("The book's text could not be made into a Word 97-2003 document.")
+            throw TextExportError(failureSentence)
         }
     }
 }

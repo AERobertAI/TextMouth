@@ -450,6 +450,26 @@ final class RTFExportWriterTests: XCTestCase {
         XCTAssertEqual(TextExportWriters.writer(id: "doc")?.name, "Word 97-2003 (.doc)")
     }
 
+    /// When Apple's reader or writer refuses the book's text, the Word
+    /// writer fails with its own sentence, word for word.
+    func testARefusedWordFileFailsWithItsSentence() {
+        XCTAssertEqual(
+            WordDocExportWriter.failureSentence,
+            "The book's text could not be made into a Word 97-2003 document."
+        )
+        // Apple's RTF reader refuses text that is not RTF.
+        XCTAssertThrowsError(
+            try WordDocExportWriter.wordData(
+                ofRTF: "not RTF at all",
+                book: ExportBookDetails(title: "Book"),
+                cancellation: BookExportCancellation()
+            )
+        ) { error in
+            XCTAssertEqual(error as? TextExportError, TextExportError(WordDocExportWriter.failureSentence))
+            XCTAssertEqual(error.localizedDescription, "The book's text could not be made into a Word 97-2003 document.")
+        }
+    }
+
     // MARK: - Lists in Reading Order
 
     /// A list item's paragraph after the list inside it stays after it, and
