@@ -487,12 +487,37 @@ enum BrailleTableCatalog {
         guard FileManager.default.fileExists(atPath: folder.path, isDirectory: &isFolder), isFolder.boolValue else {
             return nil
         }
-        let properties = (try? Data(contentsOf: propertyList))
+        return MacTables(tables: tables(in: folder, source: .mac), liblouisVersion: liblouisVersion(inPropertyList: propertyList))
+    }
+
+    /// The liblouis version the property list at `url` records
+    /// (`OpenSourceVersion`), or nil when it cannot be read or names none.
+    static func liblouisVersion(inPropertyList url: URL) -> String? {
+        let properties = (try? Data(contentsOf: url))
             .flatMap { try? PropertyListSerialization.propertyList(from: $0, format: nil) } as? [String: Any]
-        return MacTables(
-            tables: tables(in: folder, source: .mac),
-            liblouisVersion: properties?["OpenSourceVersion"] as? String
-        )
+        return properties?["OpenSourceVersion"] as? String
+    }
+
+    /// The property list of a fixture's tables, whose liblouis version
+    /// `currentMacLiblouisVersion()` reads, freshly each time, in place of
+    /// this Mac's: a test binds it with `$fixtureMacPropertyList
+    /// .withValue(_:operation:)` and changes the version under a book
+    /// (review R2). Read on the caller's thread.
+    @TaskLocal static var fixtureMacPropertyList: URL?
+
+    /// The liblouis version of this Mac's tables now: the Mac's property
+    /// list's, read once with its tables (`mac`), or a test's fixture's;
+    /// nil when none says.
+    static func currentMacLiblouisVersion() -> String? {
+        if let fixture = fixtureMacPropertyList { return liblouisVersion(inPropertyList: fixture) }
+        return mac?.liblouisVersion
+    }
+
+    /// The version a book read with `table` keeps (`Book.brailleTableVersion`,
+    /// review R2): the liblouis version of this Mac's tables for one of
+    /// them, and nil for a bundled table, which changes only with TextMouth.
+    static func versionToRecord(forTable table: String) -> String? {
+        BrailleTableSource.parse(table).source == .mac ? currentMacLiblouisVersion() : nil
     }
 
     /// This Mac's tables, read once, when first needed (the Braille tab, the

@@ -57,6 +57,11 @@ enum BrailleTranslator {
         /// the reason `why` gives (`MacBrailleTableCheck`, review R7). The
         /// table is not refused: the next use checks it again.
         case uncheckedTable(String, why: String)
+        /// A book was read with one of this Mac's tables under liblouis
+        /// `then`, and the Mac's tables now have version `now` (nil when they
+        /// name none): reading the book again could move its text, so it is
+        /// refused (review R2, decision 8).
+        case changedTable(String, then: String, now: String?)
 
         var errorDescription: String? {
             switch self {
@@ -68,6 +73,12 @@ enum BrailleTranslator {
                 return "TextMouth could not translate this braille."
             case let .uncheckedTable(name, why):
                 return "TextMouth could not check this Mac's braille table \u{201C}\(name)\u{201D}: \(why). Try again."
+            case let .changedTable(name, then, now?):
+                return "This Mac's braille table \u{201C}\(name)\u{201D} has changed since the book was read with it, "
+                    + "from liblouis \(then) to \(now), so TextMouth keeps the book's text as it was."
+            case let .changedTable(name, then, nil):
+                return "This Mac's braille table \u{201C}\(name)\u{201D} may have changed since the book was read with "
+                    + "liblouis \(then), so TextMouth keeps the book's text as it was."
             }
         }
     }

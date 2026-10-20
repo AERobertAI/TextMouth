@@ -130,6 +130,10 @@ struct BookMetadata: Codable {
     /// the file name of one of this Mac's tables), nil for every other book
     /// and for a record written before braille books.
     var brailleTable: String? = nil
+    /// The liblouis version of this Mac's tables the book was read with
+    /// (`Book.brailleTableVersion`, review R2); nil for a bundled table and
+    /// for a record written before it was kept.
+    var brailleTableVersion: String? = nil
 
     init(
         title: String = "Untitled",

@@ -320,6 +320,18 @@ struct Book: Identifiable, Codable, Hashable {
     /// record lack one. Kept in the row and the record.
     var brailleTable: String?
 
+    /// The liblouis version of this Mac's tables when this braille book was
+    /// read with one of them (review R2, decision 8), such as "3.34.0", from
+    /// the property list beside the Mac's tables. Apple installs liblouis's
+    /// tables whole and unmodified, recording the release they come from, so
+    /// a macOS update that changes a table changes this version. A rebuild
+    /// that finds another version fails by name and keeps the book's text
+    /// (`BrailleBookReader.requireUnchangedTable(_:recordedVersion:)`). Nil
+    /// for a bundled table, for a book imported before it was recorded, and
+    /// when the Mac's tables name no version. Kept in the row, the record,
+    /// and the removal marker.
+    var brailleTableVersion: String?
+
     /// Whether this row is a feed item's download (FR11): its feed lists it,
     /// and the library's own lists, counts, and maintenance leave it out.
     var isFeedItem: Bool {
@@ -382,7 +394,8 @@ struct Book: Identifiable, Codable, Hashable {
         metadataReaderVersion: String? = nil,
         handEdits: HandEdits? = nil,
         feedLink: FeedBookLink? = nil,
-        brailleTable: String? = nil
+        brailleTable: String? = nil,
+        brailleTableVersion: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -428,6 +441,7 @@ struct Book: Identifiable, Codable, Hashable {
         self.handEdits = handEdits
         self.feedLink = feedLink
         self.brailleTable = brailleTable
+        self.brailleTableVersion = brailleTableVersion
     }
 
     // Custom decoding to handle missing fields from old library.json.
@@ -507,6 +521,7 @@ struct Book: Identifiable, Codable, Hashable {
         // so the book reads with the default table instead of the whole
         // library failing over one damaged field.
         brailleTable = fields.optionalValue(.brailleTable) { $0 }
+        brailleTableVersion = fields.optionalValue(.brailleTableVersion) { $0 }
     }
 
     /// The .tmb package directory URL: in the library, or, while an import
@@ -953,7 +968,8 @@ struct Book: Identifiable, Codable, Hashable {
     /// never carried a link, or whose link was cleared, never erases it.
     ///
     /// A braille book's table (`BookMetadata.brailleTable`, FMT21) is kept
-    /// the same way: the stored record's survives a row that lost it.
+    /// the same way: the stored record's survives a row that lost it; and so
+    /// is the Mac's liblouis version it was read with (review R2).
     ///
     /// The revision is one more than the stored record's, or one more than
     /// `revisionFloor` when that is higher. The metadata queue passes the
@@ -978,6 +994,7 @@ struct Book: Identifiable, Codable, Hashable {
         info.metadata.feedLink = feedLink ?? stored?.info.metadata.feedLink
         // The braille table: the row's, or else the stored record's (FMT21).
         info.metadata.brailleTable = brailleTable ?? stored?.info.metadata.brailleTable
+        info.metadata.brailleTableVersion = brailleTableVersion ?? stored?.info.metadata.brailleTableVersion
         return info
     }
 
@@ -1037,6 +1054,7 @@ struct Book: Identifiable, Codable, Hashable {
         )
         info.metadata.feedLink = feedLink
         info.metadata.brailleTable = brailleTable
+        info.metadata.brailleTableVersion = brailleTableVersion
         return info
     }
 
@@ -1094,7 +1112,8 @@ struct Book: Identifiable, Codable, Hashable {
             metadataReaderVersion: metadata.metadataReaderVersion,
             handEdits: metadata.handEdits,
             feedLink: metadata.feedLink,
-            brailleTable: metadata.brailleTable
+            brailleTable: metadata.brailleTable,
+            brailleTableVersion: metadata.brailleTableVersion
         )
     }
 

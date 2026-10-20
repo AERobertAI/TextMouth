@@ -68,16 +68,101 @@ final class MacBrailleTableBookTests: XCTestCase {
         XCTAssertEqual(try lines(of: book), [sentence])
     }
 
-    /// The removal marker carries a Mac table's stored value as it is, so a
-    /// book added back keeps it.
+    /// The removal marker carries a Mac table's stored value as it is, and
+    /// the Mac's liblouis version the book was read with (review R2), so a
+    /// book added back keeps both.
     func testTheRemovalMarkerCarriesAMacTable() throws {
         let package = try makeSandboxDirectory("MacBrailleMarker")
         let book = Book(
             title: "Le chat", format: .braille, filePath: package.appendingPathComponent("Le chat.brf").path,
-            md5Hash: "mac-braille-marker", brailleTable: french
+            md5Hash: "mac-braille-marker", brailleTable: french, brailleTableVersion: "3.34.0"
         )
         try RemovedFromLibraryMarker(book: book).write(into: package)
-        XCTAssertEqual(try RemovedFromLibraryMarker.read(in: package).brailleTable, french)
+        let marker = try RemovedFromLibraryMarker.read(in: package)
+        XCTAssertEqual(marker.brailleTable, french)
+        XCTAssertEqual(marker.brailleTableVersion, "3.34.0")
+        // The record keeps it too, and a row made from the record has it.
+        XCTAssertEqual(book.makeBookInfo().metadata.brailleTableVersion, "3.34.0")
+    }
+
+    // MARK: - A Mac Table That Changed (review R2)
+
+    /// A book of one of this Mac's tables records the Mac's liblouis
+    /// version, in its row and its record; a book of a bundled table records
+    /// none.
+    func testABookRecordsTheMacsLiblouisVersion() throws {
+        let bundled = try BraillePreferences.$tableForImports.withValue("en-ueb-g2.ctb") {
+            try importedForTest(copyOfFormatSample("brf/grade2-short.brf")).book
+        }
+        XCTAssertNil(bundled.brailleTableVersion)
+        XCTAssertNil(BrailleTableCatalog.versionToRecord(forTable: "en-ueb-g2.ctb"))
+
+        try XCTSkipIf(BrailleTableCatalog.table(withID: french) == nil,
+                      "This Mac does not offer its French contracted table (\(BrailleTableCatalog.macTablesFolder.path))")
+        let version = try XCTUnwrap(BrailleTableCatalog.currentMacLiblouisVersion(), "this Mac's tables name no version")
+        let folder = try makeSandboxDirectory("MacBrailleVersion")
+        let url = folder.appendingPathComponent("Le chat.brf")
+        try BrailleDocumentWriter.brf(
+            of: [.paragraph(text: sentence)], options: BrailleExportOptions(table: french), workingIn: folder
+        ).write(to: url)
+        let book = try BraillePreferences.$tableForImports.withValue(french) { try importedForTest(url).book }
+        XCTAssertEqual(book.brailleTableVersion, version)
+        XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).metadata.brailleTableVersion, version)
+    }
+
+    /// A book read with one of this Mac's tables under one liblouis version
+    /// keeps its text when the Mac's tables change: with a fixture whose
+    /// version goes from 3.34.0 to 3.35.0, the same version passes, and the
+    /// new one refuses the cache's rebuild and the content analysis's
+    /// reading by name, leaving the old content.md. Tables that name no
+    /// version refuse it too; a bundled table, and a book that recorded no
+    /// version, are never refused.
+    func testARebuildRefusesAChangedMacTableAndKeepsTheText() throws {
+        let copy = try copyOfFormatSample("brf/grade2-short.brf")
+        var book = try BraillePreferences.$tableForImports.withValue("en-ueb-g2.ctb") { try importedForTest(copy).book }
+        let before = try lines(of: book)
+        book.brailleTable = french
+        book.brailleTableVersion = "3.34.0"
+
+        let fixture = try makeSandboxDirectory("MacBrailleChangedTables").appendingPathComponent("Tables.plist")
+        func setVersion(_ version: String) throws {
+            try PropertyListSerialization.data(fromPropertyList: ["OpenSourceVersion": version], format: .xml, options: 0)
+                .write(to: fixture)
+        }
+        try setVersion("3.34.0")
+        try BrailleTableCatalog.$fixtureMacPropertyList.withValue(fixture) {
+            XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable(french, recordedVersion: "3.34.0"))
+            try setVersion("3.35.0")
+            let changed = BrailleTranslator.Failure.changedTable(french, then: "3.34.0", now: "3.35.0")
+            XCTAssertThrowsError(try MarkdownCacheService.generateReportedCacheContent(for: book)) {
+                XCTAssertEqual($0 as? BrailleTranslator.Failure, changed)
+            }
+            XCTAssertThrowsError(try BookParser.parse(
+                url: URL(fileURLWithPath: book.filePath), format: .braille,
+                brailleTable: book.brailleTable, brailleTableVersion: book.brailleTableVersion
+            )) {
+                XCTAssertEqual($0 as? BrailleTranslator.Failure, changed)
+            }
+            XCTAssertEqual(
+                changed.errorDescription,
+                "This Mac's braille table \u{201C}\(french)\u{201D} has changed since the book was read with it, "
+                    + "from liblouis 3.34.0 to 3.35.0, so TextMouth keeps the book's text as it was."
+            )
+            XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable("en-ueb-g2.ctb", recordedVersion: "3.34.0"))
+            XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable(french, recordedVersion: nil))
+        }
+        XCTAssertEqual(try lines(of: book), before)
+
+        // Tables that no longer name a version may have changed: refused.
+        try BrailleTableCatalog.$fixtureMacPropertyList.withValue(fixture.deletingLastPathComponent().appendingPathComponent("none.plist")) {
+            XCTAssertThrowsError(try BrailleBookReader.requireUnchangedTable(french, recordedVersion: "3.34.0")) {
+                XCTAssertEqual(
+                    ($0 as? LocalizedError)?.errorDescription,
+                    "This Mac's braille table \u{201C}\(french)\u{201D} may have changed since the book was read with "
+                        + "liblouis 3.34.0, so TextMouth keeps the book's text as it was."
+                )
+            }
+        }
     }
 
     // MARK: - A Mac Table That Is Gone

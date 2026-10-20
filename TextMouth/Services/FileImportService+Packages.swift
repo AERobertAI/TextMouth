@@ -428,7 +428,8 @@ extension FileImportService {
             // (FMT21). The record that held it is gone, so the marker carries
             // it; without it the text would be read again with the default
             // table. Only a braille book has one.
-            brailleTable: format == .braille ? marker.brailleTable : nil
+            brailleTable: format == .braille ? marker.brailleTable : nil,
+            brailleTableVersion: format == .braille ? marker.brailleTableVersion : nil
         )
     }
 

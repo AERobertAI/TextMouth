@@ -78,7 +78,9 @@ enum BookContentAnalysisService {
                 return regenerated(generated)
             }
             if !hadExistingCache {
-                let content = try BookParser.parse(url: url, format: book.format, brailleTable: book.brailleTable)
+                let content = try BookParser.parse(
+                    url: url, format: book.format, brailleTable: book.brailleTable, brailleTableVersion: book.brailleTableVersion
+                )
                 let index = content.contentIndex.replacingFormat(book.format)
                 return Result(
                     content: DocumentContent(

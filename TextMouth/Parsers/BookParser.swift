@@ -12,7 +12,16 @@ enum BookParser {
     ///   (`Book.brailleTable`), a bundled table or one of this Mac's. Nil
     ///   reads with `BrailleTableCatalog.defaultTableID`; every other format
     ///   ignores it.
-    static func parse(url: URL, format: BookFormat, brailleTable: String? = nil) throws -> DocumentContent {
+    /// - Parameter brailleTableVersion: For a braille book of one of this
+    ///   Mac's tables, the Mac's liblouis version it was read with
+    ///   (`Book.brailleTableVersion`); another version refuses the reading
+    ///   (review R2).
+    static func parse(
+        url: URL,
+        format: BookFormat,
+        brailleTable: String? = nil,
+        brailleTableVersion: String? = nil
+    ) throws -> DocumentContent {
         switch format {
         case .epub:
             return try EPUBParser.parse(url: url)
@@ -45,7 +54,8 @@ enum BookParser {
             return try BrailleBookReader.parse(
                 url: url,
                 title: url.deletingPathExtension().lastPathComponent,
-                table: brailleTable ?? BrailleTableCatalog.defaultTableID
+                table: brailleTable ?? BrailleTableCatalog.defaultTableID,
+                recordedVersion: brailleTableVersion
             )
         case .daisy:
             return try DAISYParser.parse(url: url)

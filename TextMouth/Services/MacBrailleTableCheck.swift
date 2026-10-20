@@ -326,7 +326,7 @@ enum MacBrailleTableCheck {
             case .wroteTooMuch?, nil:
                 return .helperStopped(because: reason)
             }
-        case .failed, .uncheckedTable:
+        case .failed, .uncheckedTable, .changedTable:
             return .helperFailed
         }
     }

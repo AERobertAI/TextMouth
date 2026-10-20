@@ -63,12 +63,31 @@ enum BrailleBookReader {
     ///   - url: The book's file.
     ///   - table: The stored value of an offered table: a bundled table's
     ///     bare file name, or "mac:" and one of this Mac's.
+    ///   - recordedVersion: The liblouis version of this Mac's tables the
+    ///     book was read with (`Book.brailleTableVersion`), which a rebuild
+    ///     requires them to have still (review R2); nil for a first reading.
     /// - Throws: `BrailleFileError` for a file that is not braille or is
     ///   larger than `maximumFileBytes`,
     ///   `FileImportError.noTextToRead` when the book has no blocks or no
     ///   print text, `BrailleTranslator.Failure` for a table that is unknown
     ///   or a translation that fails, and what the file's reading throws.
-    static func markdown(of url: URL, table: String) throws -> String {
+    /// Throws `BrailleTranslator.Failure.changedTable` when the book was read
+    /// with one of this Mac's tables under liblouis `recorded`, and the Mac's
+    /// tables now have another version, or name none (review R2, decision
+    /// 8): Apple installs liblouis's tables whole, recording their release,
+    /// so a macOS update that changes a table changes the version, and
+    /// reading the book with the changed rules could move its text under its
+    /// places. The rebuild then fails by name and keeps the old content.md.
+    /// A bundled table, and a book that recorded no version, pass.
+    static func requireUnchangedTable(_ table: String, recordedVersion recorded: String?) throws {
+        guard let recorded, BrailleTableSource.parse(table).source == .mac else { return }
+        let now = BrailleTableCatalog.currentMacLiblouisVersion()
+        guard now == recorded else { throw BrailleTranslator.Failure.changedTable(table, then: recorded, now: now) }
+    }
+
+    static func markdown(of url: URL, table: String, recordedVersion: String? = nil) throws -> String {
+        // A book whose Mac table changed is not read again (review R2).
+        try requireUnchangedTable(table, recordedVersion: recordedVersion)
         // A file past the limit is refused before a byte of it is read.
         try requireSizeWithinLimit(of: url)
         // The file's pages, then the blocks the pages hold (a BRL file has
@@ -109,7 +128,7 @@ enum BrailleBookReader {
     /// - Parameters:
     ///   - title: The book's title.
     ///   - table: The table the book was imported with.
-    static func parse(url: URL, title: String, table: String) throws -> DocumentContent {
-        try MarkdownDocParser.parse(markdown: markdown(of: url, table: table), title: title)
+    static func parse(url: URL, title: String, table: String, recordedVersion: String? = nil) throws -> DocumentContent {
+        try MarkdownDocParser.parse(markdown: markdown(of: url, table: table, recordedVersion: recordedVersion), title: title)
     }
 }
