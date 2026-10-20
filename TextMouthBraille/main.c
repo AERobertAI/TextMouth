@@ -25,10 +25,12 @@
  *
  * The table is a bare file name, such as en-ueb-g2.ctb, of a table in the
  * tables folder, which is the app bundle's own (Contents/Resources/liblouis/
- * tables). The folder, the input, and the output are absolute paths. The helper names the table by its full path and sets
- * LOUIS_TABLEPATH to that folder alone, so liblouis resolves every include
- * there and never reads a table installed elsewhere on the Mac (see
- * TABLESDIR in Vendor/liblouis/config.h).
+ * tables). The folder, the input, and the output are absolute paths. The
+ * helper changes into the folder, sets LOUIS_TABLEPATH to "." and loads the
+ * table by its bare name, so liblouis resolves every include there, no path
+ * it sees holds a comma (it splits paths at commas), and it never reads a
+ * table installed elsewhere on the Mac (see TABLESDIR in
+ * Vendor/liblouis/config.h). It then changes into /var/empty.
  *
  * Exit status: 0 done; 1 the arguments are wrong; 2 the table cannot be
  * loaded (no such table in the folder, or it does not compile); 3 the input
@@ -183,36 +185,45 @@ is_bare_table_name(const char *name) {
 }
 
 /*
- * Points liblouis at the tables folder `folder` and only there, and returns
- * the full path of the table `name` in it, which the caller frees; NULL when
- * the name is not a bare file name or names no regular file in the folder.
+ * Makes `folder` the only place liblouis reads tables from, and checks that
+ * `name` is a regular file in it. Returns 0, or -1 when the name is not a bare
+ * file name, the folder cannot be entered, or the name is no regular file
+ * there.
  *
- * liblouis tries a table's name against the current directory before
- * LOUIS_TABLEPATH, so the current directory becomes /var/empty, which macOS
- * keeps empty and no one can write to. That also keeps a helper built with
- * code coverage (as the hosted tests' builds are) from leaving the profile
- * it writes on exit, default.profraw, anywhere.
+ * liblouis splits both a list of tables and LOUIS_TABLEPATH at commas, so a
+ * path that holds one (TextMouth.app in a folder named "Apps, old") would
+ * make every table unloadable. So the helper changes into the folder, sets
+ * LOUIS_TABLEPATH to "." and lets liblouis resolve the bare table name, and
+ * every table it includes, against it: no path liblouis sees holds a comma,
+ * and it reads no table installed elsewhere on the Mac (see TABLESDIR in
+ * Vendor/liblouis/config.h). `leave_tables_folder` changes out again.
  */
-static char *
-table_path(const char *folder, const char *name) {
+static int
+enter_tables_folder(const char *folder, const char *name) {
 	struct stat info;
-	char *path;
-	size_t size;
-	if (!is_bare_table_name(name)) return NULL;
-	if (setenv("LOUIS_TABLEPATH", folder, 1) != 0 || chdir("/var/empty") != 0) return NULL;
-	size = strlen(folder) + strlen(name) + 2;
-	path = malloc(size);
-	if (path == NULL) return NULL;
-	snprintf(path, size, "%s/%s", folder, name);
-	if (stat(path, &info) != 0 || !S_ISREG(info.st_mode)) {
-		free(path);
-		return NULL;
-	}
-	return path;
+	if (!is_bare_table_name(name)) return -1;
+	if (chdir(folder) != 0 || setenv("LOUIS_TABLEPATH", ".", 1) != 0) return -1;
+	if (stat(name, &info) != 0 || !S_ISREG(info.st_mode)) return -1;
+	return 0;
 }
 
 /*
- * Translates `in[0..length)` with the table at `table`, forward (print to
+ * Changes into /var/empty, which macOS keeps empty and no one can write to.
+ * Once `lou_checkTable` has loaded the table, liblouis keeps it by its name
+ * and reads no file again, so the tables folder is no longer needed. This
+ * keeps a helper built with code coverage (as the hosted tests' builds are)
+ * from leaving the profile it writes on exit, default.profraw, in the app
+ * bundle. The input and output paths are absolute (see `main`), so they are
+ * still found.
+ */
+static void
+leave_tables_folder(void) {
+	(void)chdir("/var/empty");
+}
+
+/*
+ * Translates `in[0..length)` with the table named `table` (already loaded by
+ * `main`, which liblouis keeps by that name), forward (print to
  * braille) or back, into a buffer it allocates and returns, with the
  * output's length in `*out_length`; NULL when liblouis fails. The braille
  * side is Unicode braille: dotsIO with ucBrl makes liblouis read each input
@@ -365,7 +376,8 @@ main(int argc, char **argv) {
 	int is_check = strcmp(mode, "check") == 0;
 	int is_forward = strcmp(mode, "forward") == 0;
 	int is_back = strcmp(mode, "back") == 0;
-	char *table;
+	const char *table = argc > 3 ? argv[3] : "";
+	int table_loaded;
 	int status;
 	int paths_absolute = 1;
 	/* Every path is absolute: the helper changes its current directory
@@ -382,14 +394,15 @@ main(int argc, char **argv) {
 	}
 	/* liblouis's warnings would only slow a long book down; errors stay. */
 	lou_setLogLevel(LOU_LOG_ERROR);
-	table = table_path(argv[2], argv[3]);
-	if (table == NULL || !lou_checkTable(table)) {
-		free(table);
+	/* The table is loaded, with every table it includes, from the tables
+	   folder; then the helper leaves the folder, whether it loaded or not. */
+	table_loaded = enter_tables_folder(argv[2], table) == 0 && lou_checkTable(table);
+	leave_tables_folder();
+	if (!table_loaded) {
 		lou_free();
 		return EXIT_TABLE;
 	}
 	status = is_check ? EXIT_DONE : translate_file(table, is_forward, argv[4], argv[5]);
-	free(table);
 	lou_free();
 	return status;
 }

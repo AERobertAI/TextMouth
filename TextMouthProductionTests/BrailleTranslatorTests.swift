@@ -264,6 +264,41 @@ final class BrailleTranslatorTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path))
     }
 
+    // MARK: - A Comma in the Bundle's Path
+
+    /// The real helper, on a copy of the bundle's tables folder at
+    /// `<sandbox>/Apps, old/tables` (review finding L1). liblouis splits a
+    /// table list and LOUIS_TABLEPATH at commas, so a path holding one broke
+    /// every table; the helper now loads a table by its bare name from
+    /// inside its folder. `check` passes and the Grade 2 sample's rows give
+    /// its print, which also shows that translating still works once the
+    /// helper has left the folder (liblouis keeps the loaded table by name).
+    func testTheHelperWorksFromAFolderWhoseNameHoldsAComma() throws {
+        let bundled = try XCTUnwrap(BrailleTranslator.Tool.helper.tablesFolder)
+        let parent = try makeSandboxDirectory("BrailleComma").appendingPathComponent("Apps, old", isDirectory: true)
+        try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
+        let tables = parent.appendingPathComponent("tables", isDirectory: true)
+        try FileManager.default.copyItem(at: bundled, to: tables)
+        XCTAssertTrue(tables.path.contains(","), tables.path)
+
+        // The real executable, pointed at the copy instead of the bundle's folder.
+        let executable = try XCTUnwrap(Bundle.main.url(forAuxiliaryExecutable: "TextMouthBraille"))
+        let tool = BrailleTranslator.Tool(
+            command: { mode, table, input, output in
+                (executable, [mode, tables.path, table] + [input, output].compactMap { $0?.path })
+            },
+            limits: { BrailleTranslator.limits(for: $0, bytes: $1) },
+            residentMemory: { WatchedProcess.residentMemory(of: $0) },
+            tablesFolder: tables
+        )
+        try with(tool) {
+            XCTAssertNoThrow(try BrailleTranslator.check(table: "en-ueb-g2.ctb", workingIn: work))
+            let rows = try grade2Rows().map(cells)
+            XCTAssertEqual(try translate(rows, "en-ueb-g2.ctb", .brailleToPrint), try grade2Lines())
+        }
+        assertWorkFolderEmpty()
+    }
+
     // MARK: - Long Texts and Line Breaks
 
     /// A long text is cut at its blank cells and put together again: 2,000
