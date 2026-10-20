@@ -433,6 +433,88 @@ final class BraillePageAnalyzerTests: XCTestCase {
         }
     }
 
+    // MARK: Centered headings of several lines
+
+    /// Every title of the sample `wrapped-titles.brf` (the chapter titles of
+    /// Pride and Prejudice, wrapped at 34 cells, as BANA's margins of three
+    /// cells allow) is one level-1 heading. A title's row may begin after 4 or 6
+    /// blank cells, where a cell-5 or cell-7 heading begins, and Phase A read
+    /// all of them whole; a reading that cut such a row off made 98 of the
+    /// 233 titles headings of a lower level or paragraphs.
+    func testEveryTitleOfTheWrappedTitlesSampleIsOneLevelOneHeading() throws {
+        let file = try BrailleFileReader.read(copyOfFormatSample("brf/wrapped-titles.brf"), as: .brf)
+        XCTAssertEqual(file.pageCount, 233)
+        let blocks = BraillePageAnalyzer.structure(of: file).blocks
+        // Each page: a paragraph, the title, a paragraph.
+        XCTAssertEqual(blocks.count, 3 * 233)
+        guard blocks.count == 3 * 233 else { return }
+        let misread = (0..<233).filter { page in
+            guard case .heading(level: 1, _) = blocks[3 * page + 1] else { return true }
+            guard case .paragraph = blocks[3 * page], case .paragraph = blocks[3 * page + 2] else { return true }
+            return false
+        }
+        XCTAssertEqual(misread, [], "pages (from 0) whose title did not read as one level-1 heading")
+    }
+
+    /// A title of two rows, the first with a left margin of 4 cells (the
+    /// reviewer's `twoline-title.brf`), is one level-1 heading.
+    func testATwoRowTitleWhoseFirstRowHasMarginFourIsOneLevelOneHeading() {
+        let first = "PPPPPPP QQQQQQQQ RRRRRRRR SSSSSS"
+        let second = "TTTTTTTTT UUUUUUUUUU"
+        let structure = formattedStructure([
+            row(2, "BEFORE"), "", row(4, first), row(10, second), "", row(2, "AFTER"), rightAligned("#A"),
+        ])
+        XCTAssertEqual(structure.blocks, [
+            paragraph("BEFORE"), .heading(level: 1, text: cells(first + " " + second)), paragraph("AFTER"),
+        ])
+    }
+
+    /// Centered rows of several margins, 4 and 6 among them, are one level-1
+    /// heading, in whatever order the margins come.
+    func testCenteredRowsOfMixedMarginsAreOneLevelOneHeading() {
+        let rows = [(4, word(32)), (12, word(16)), (6, word(28)), (3, word(34)), (5, word(30))]
+        let structure = formattedStructure(
+            [row(2, "BEFORE"), ""] + rows.map { row($0.0, $0.1) } + ["", row(2, "AFTER"), rightAligned("#A")])
+        XCTAssertEqual(structure.blocks, [
+            paragraph("BEFORE"), .heading(level: 1, text: cells(rows.map(\.1).joined(separator: " "))), paragraph("AFTER"),
+        ])
+    }
+
+    /// The lengths that M2 made level 2 at cell 5 (31 to 33 cells at 40) and
+    /// level 3 at cell 7 (27 to 29) still read so, alone or wrapped to the
+    /// same margin on a second row.
+    func testRowsAllAtMarginFourOrSixStayACellFiveOrCellSevenHeading() {
+        for (indent, level, lengths) in [(4, 2, 31...33), (6, 3, 27...29)] {
+            for length in lengths {
+                XCTAssertEqual(headingBlock([row(indent, word(length))]),
+                               .heading(level: level, text: cells(word(length))), "margin \(indent), \(length) cells")
+                XCTAssertEqual(headingBlock([row(indent, word(length)), row(indent, word(length))]),
+                               .heading(level: level, text: cells(word(length) + " " + word(length))),
+                               "margin \(indent), two rows of \(length) cells")
+            }
+        }
+    }
+
+    /// A run of centered rows that goes straight on into a row that is neither
+    /// blank nor centered is no heading: its rows are paragraphs, as before.
+    func testCenteredRowsThatGoOnIntoTextWithoutABlankRowAreNotAHeading() {
+        let structure = formattedStructure([
+            row(2, "BEFORE"), "", centered("AAAA"), centered("BBBBBB"), row(0, "RUNS ON"), "", rightAligned("#A"),
+        ])
+        XCTAssertEqual(structure.blocks, [paragraph("BEFORE"), paragraph("AAAA"), paragraph("BBBBBB RUNS ON")])
+    }
+
+    /// A long stretch of rows that all look centered (margins 4 and 6 in turn)
+    /// and end in a row that does not is scanned once, not once for each row.
+    func testALongStretchOfCenteredRowsWithoutAnEndIsReadInAReasonableTime() {
+        let stretch = (0..<40_000).map { row($0 % 2 == 0 ? 4 : 6, word($0 % 2 == 0 ? 32 : 28)) }
+        let page = [row(2, "BEFORE"), ""] + stretch + [row(2, "NOT CENTERED"), rightAligned("#A")]
+        let structure = BraillePageAnalyzer.structure(of: [page], formatted: true)
+        XCTAssertEqual(structure.blocks.first, paragraph("BEFORE"))
+        // No heading run: each row is a cell-5 or cell-7 heading, and the last row a paragraph.
+        XCTAssertEqual(structure.blocks.count, 1 + 40_000 + 1)
+    }
+
     // MARK: Width
 
     func testTheWidthIsTheLongestRowOfTheFile() {
