@@ -181,6 +181,54 @@ final class BookExportCancellation: Sendable {
     func cancel() {
         cancelled.withLock { $0 = true }
     }
+
+    /// Throws `CancellationError` once the export is to stop: what a
+    /// conversion calls between its steps and a writer between its blocks
+    /// (FMT18), so that Stop ends a book partway.
+    func checkCancelled() throws {
+        if isCancelled {
+            throw CancellationError()
+        }
+    }
+}
+
+// MARK: - Converting Instead of Copying (FMT18)
+
+extension BookExportKind {
+    /// Whether the kind's file is a text book's content.md, which a text
+    /// writer can convert: "Text as Markdown" alone, whose Convert to choice
+    /// is Markdown, copying it as it is, unless another is chosen.
+    var convertsText: Bool {
+        self == .markdown
+    }
+}
+
+/// How an export makes one kind's files instead of copying them (FMT18).
+///
+/// Text tonight: a text book's content.md, walked into an `ExportDocument`
+/// and written by the writer chosen in the Convert to picker. An audio kind
+/// can gain a case of its own later (FMT30, FMT43) without the job runner
+/// changing shape: each case names the extension its files take and how a
+/// file is made.
+enum BookExportConversion: Sendable, Equatable {
+    /// content.md, walked and written by a text writer with its options.
+    case text(TextExportConversion)
+
+    /// The extension, without its dot, of the files the conversion makes.
+    var fileExtension: String {
+        switch self {
+        case .text(let conversion):
+            return conversion.fileExtension
+        }
+    }
+
+    /// The conversion's name, as the Convert to picker says it.
+    var name: String {
+        switch self {
+        case .text(let conversion):
+            return conversion.name
+        }
+    }
 }
 
 // MARK: - Listing and Exporting
