@@ -185,7 +185,8 @@ enum BraillePageAnalyzer {
     /// page change line. Returns the numbers and the rows left, in order: a
     /// row that held nothing but a number is dropped (it is not a blank row,
     /// and must not end a paragraph that goes on over the page), a row that
-    /// was blank stays blank, and the rows after the braille page number go.
+    /// was blank stays blank (except at the page's top, where blank rows
+    /// go), and the rows after the braille page number go.
     private static func extractNumbers(from rawRows: [[Unicode.Scalar]], width: Int)
         -> (BraillePageNumbers, [[Unicode.Scalar]]) {
         var numbers = BraillePageNumbers(firstBlockIndex: 0)
@@ -223,7 +224,13 @@ enum BraillePageAnalyzer {
         if numbers.braillePageNumber != nil, let lastIndex {
             rows.removeSubrange((lastIndex + 1)...)
         }
-        return (numbers, rows.compactMap { $0 })
+        // BANA never starts a page with a blank line, so a blank row at the
+        // top is the file's own doing: a form feed followed by a line end, or
+        // on a line of its own, starts the next page with an empty row. It
+        // must not end a paragraph that goes on over the page, so the blank
+        // rows before the page's first row with text (after the numbers are
+        // out) are dropped.
+        return (numbers, Array(rows.compactMap { $0 }.drop { $0.isEmpty }))
     }
 
     // MARK: Blocks

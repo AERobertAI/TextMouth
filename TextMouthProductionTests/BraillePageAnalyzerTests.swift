@@ -180,6 +180,44 @@ final class BraillePageAnalyzerTests: XCTestCase {
         XCTAssertEqual(structure.blocks, [paragraph("A PARAGRAPH THAT GOES ON")])
     }
 
+    /// The sample's bytes with every form feed replaced by `replacement`, read
+    /// by the real reader and analyzed.
+    private func structureOfSample(replacingFormFeedWith replacement: [UInt8]) throws -> BrailleStructure {
+        var bytes: [UInt8] = []
+        for byte in try sampleBytes("brf/pride-and-prejudice-ch1-grade1.brf") {
+            if byte == 0x0C { bytes += replacement } else { bytes.append(byte) }
+        }
+        let pages = try BrailleFileReader.pages(fromASCII: Data(bytes), kind: .brf).pages
+        return BraillePageAnalyzer.structure(of: pages, formatted: true)
+    }
+
+    func testABlankRowAtAPagesTopDoesNotEndAParagraphOverThePage() throws {
+        // The sample ends page 1 with a line end; a form feed that is followed
+        // by a line end, or sits on a line of its own, starts page 2 with a blank row.
+        let original = try structureOfSample(replacingFormFeedWith: [0x0C])
+        XCTAssertEqual(original.blocks.count, 14)
+        for (label, replacement) in [("FF CR LF", [0x0C, 0x0D, 0x0A] as [UInt8]),
+                                     ("FF LF", [0x0C, 0x0A]),
+                                     ("FF CR", [0x0C, 0x0D]),
+                                     ("FF on its own line", [0x0D, 0x0A, 0x0C, 0x0D, 0x0A])] {
+            let structure = try structureOfSample(replacingFormFeedWith: replacement)
+            XCTAssertEqual(structure.blocks, original.blocks, label)
+            XCTAssertEqual(structure.pages.map(\.braillePageNumber), ["⠼⠁", "⠼⠃"], label)
+            XCTAssertEqual(structure.pages.map(\.firstBlockIndex), [0, 8], label)
+        }
+    }
+
+    func testBlankRowsAtAPagesTopAreDroppedBeforeItsFirstRowWithText() {
+        // Two blank rows and a print page number alone on a row, then text.
+        let page1 = [row(2, "A PARAGRAPH THAT"), rightAligned("#A")]
+        let page2 = ["", cells("   "), rightAligned("#C"), "", row(0, "GOES ON"), "", row(2, "NEW"), rightAligned("#B")]
+        let structure = BraillePageAnalyzer.structure(of: [page1, page2], formatted: true)
+        XCTAssertEqual(structure.blocks, [paragraph("A PARAGRAPH THAT GOES ON"), paragraph("NEW")])
+        XCTAssertEqual(structure.pages.map(\.firstBlockIndex), [0, 0])
+        // The print page number was taken, and the blank row in the middle of the page still ends a paragraph.
+        XCTAssertEqual(structure.pages.last?.printPageNumber, "⠼⠉")
+    }
+
     // MARK: Print page numbers and change lines
 
     func testPrintPageNumberAtTheRightOfTheFirstRowIsTakenAndTheTextKept() {
