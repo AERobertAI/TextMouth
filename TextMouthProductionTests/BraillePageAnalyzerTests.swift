@@ -570,6 +570,44 @@ final class BraillePageAnalyzerTests: XCTestCase {
         XCTAssertEqual(structure.blocks.count, 1 + 40_000 + 1)
     }
 
+    /// A word of `length` random cells from `generator`, none of them the
+    /// number sign, so that no row can pass for a page number.
+    private func randomWord(_ length: Int, using generator: inout SplitMix64) -> String {
+        String(String.UnicodeScalarView((0..<length).map { _ -> Unicode.Scalar in
+            var value: UInt32
+            repeat { value = UInt32.random(in: 0x2801...0x283F, using: &generator) } while value == 0x283C
+            return Unicode.Scalar(value) ?? "\u{2801}"
+        }))
+    }
+
+    /// TextMouth's own centered headings read back whole at 18 to 23 cells,
+    /// where a line of a heading may have a margin of 4 or 6 cells: as one
+    /// level-1 heading, or as one of a lower level when every line has such
+    /// a margin, but always with all their text, between paragraphs that
+    /// read back as written. A reading that cut such a line off lost 60 to
+    /// 74 of 400 random headings per width at 18 to 21 cells.
+    func testCenteredHeadingsAtNarrowWidthsReadBackWithTheirWholeText() {
+        var generator = SplitMix64(seed: 7)
+        let blank = String(BrailleCells.blank)
+        let paragraph = BrailleBlock.paragraph(
+            text: (0..<30).map { _ in randomWord(5, using: &generator) }.joined(separator: blank))
+        var misread: [String] = []
+        for width in 18...23 {
+            let format = BraillePageFormat(cellsPerLine: width, linesPerPage: 25, numbersPages: true)
+            for index in 0..<200 {
+                let heading = (0..<Int.random(in: 1...4, using: &generator)).map { _ in
+                    randomWord(Int.random(in: 1...9, using: &generator), using: &generator)
+                }.joined(separator: blank)
+                let pages = BrailleLayout.pages(of: [paragraph, .heading(level: 1, text: heading), paragraph], format: format)
+                let blocks = BraillePageAnalyzer.structure(of: pages, formatted: true).blocks
+                if blocks.count == 3, blocks[0] == paragraph, blocks[2] == paragraph,
+                   case let .heading(_, text) = blocks[1], text == heading { continue }
+                misread.append("width \(width), heading \(index)")
+            }
+        }
+        XCTAssertEqual(misread, [], "headings that did not read back whole between their paragraphs")
+    }
+
     // MARK: Width
 
     func testTheWidthIsTheLongestRowOfTheFile() {
