@@ -9,6 +9,11 @@ enum BrailleSettingsWording {
     static let tabTitle = "Braille"
     /// The heading of the tab's only group.
     static let sectionHeader = "Braille"
+    /// The label of the pop-up that chooses the language, before the code
+    /// (October 20, 2026, decision 4); Export's braille options share it.
+    static let languageLabel = "Language"
+    /// What the language pop-up does, spoken after its label and value.
+    static let languageHint = "The language of the braille code TextMouth reads braille files with and writes braille in."
     /// The label of the pop-up that chooses the braille code.
     static let codeLabel = "Braille code"
     /// What the code pop-up does, spoken after its label and value.
@@ -25,6 +30,32 @@ enum BrailleSettingsWording {
     /// What the group says in place of the pop-ups when the app's bundle
     /// holds no braille tables.
     static let noTables = "TextMouth found no braille tables in its bundle."
+
+    /// The sentence under the pop-ups that says where the chosen table comes
+    /// from (decision 4): built into TextMouth, or this Mac's VoiceOver
+    /// tables, each with its liblouis version when known, or that this Mac
+    /// no longer has the chosen Mac table (`isOffered` false), as after a
+    /// macOS update that removed it.
+    static func source(ofTable tableID: String, isOffered: Bool, macLiblouisVersion: String?) -> String {
+        guard BrailleTableSource.parse(tableID).source == .mac else {
+            return "The chosen table is built into TextMouth (liblouis \(BrailleTableCatalog.bundledLiblouisVersion))."
+        }
+        guard isOffered else {
+            return "This Mac no longer has the chosen table, \u{201C}\(tableID)\u{201D}; choose another."
+        }
+        guard let version = macLiblouisVersion else {
+            return "The chosen table is one of this Mac's VoiceOver braille tables."
+        }
+        return "The chosen table is one of this Mac's VoiceOver braille tables (liblouis \(version))."
+    }
+
+    /// What VoiceOver hears when one of this Mac's tables, chosen in the
+    /// Braille tab or in Export's braille options, is refused by its check
+    /// (decision 5): the table's display name and why. The pop-ups have
+    /// already returned to the table in use.
+    static func refusal(ofTableNamed name: String, because refusal: MacBrailleTableCheck.Refusal) -> String {
+        "TextMouth can't use this Mac's table \u{201C}\(name)\u{201D}: \(refusal.reason)."
+    }
 }
 
 // MARK: - Choices
@@ -32,28 +63,15 @@ enum BrailleSettingsWording {
 /// The choices the Braille tab offers (FMT21), as pure functions of the
 /// codes they are given, so a test can pass codes of its own.
 enum BrailleSettingsChoice {
-    /// The codes of one language, as the code pop-up groups them.
-    struct LanguageGroup: Identifiable {
-        /// The language, such as "en".
-        let language: String
-        /// The language's codes, in the order the catalog gives them.
-        var codes: [BrailleCode]
-
-        var id: String { language }
-    }
-
-    /// The codes grouped by language, in the order each language first
-    /// appears, each group keeping the codes' order.
-    static func languageGroups(of codes: [BrailleCode]) -> [LanguageGroup] {
-        var groups: [LanguageGroup] = []
-        for code in codes {
-            if let index = groups.firstIndex(where: { $0.language == code.language }) {
-                groups[index].codes.append(code)
-            } else {
-                groups.append(LanguageGroup(language: code.language, codes: [code]))
-            }
-        }
-        return groups
+    /// The table to use once `language` is chosen while `current` is the
+    /// table in use (decision 4): in the language's code that holds the
+    /// default table (Unified English Braille, for English), else in its
+    /// first code, the table `table(in:matching:)` picks. Nil only for a
+    /// language with no tables.
+    static func table(in language: BrailleLanguage, matching current: BrailleTable?) -> BrailleTable? {
+        let code = language.codes.first { code in code.tables.contains { $0.id == BrailleTableCatalog.defaultTableID } }
+            ?? language.codes.first
+        return code.flatMap { table(in: $0, matching: current) }
     }
 
     /// The table to use once `code` is chosen while `current` is the table
@@ -70,19 +88,20 @@ enum BrailleSettingsChoice {
 
 // MARK: - The Tab
 
-/// The Braille tab of Settings (FMT21): the braille code TextMouth reads
-/// braille files with and writes braille in, and how far that code
-/// contracts. Both pop-ups edit one setting, the table
-/// (`SettingsViewModel.brailleTable`, mirrored in config.json); the first
-/// chooses the table's code and the second its contraction, so each offers
-/// only what the bundled tables have. If the bundle holds no tables, the tab
-/// says so instead of showing pop-ups with nothing to choose.
+/// The Braille tab of Settings (FMT21): the language, the braille code
+/// TextMouth reads braille files with and writes braille in, and how far
+/// that code contracts. The three pop-ups (`BrailleTablePickers`) edit one
+/// setting, the table (`SettingsViewModel.brailleTable`, mirrored in
+/// config.json), and offer the bundled tables and this Mac's (October 20,
+/// 2026). Under them, one sentence says where the chosen table comes from.
+/// If the bundle holds no tables, the tab says so instead of showing pop-ups
+/// with nothing to choose.
 struct BrailleSettingsView: View {
     @EnvironmentObject var settingsViewModel: SettingsViewModel
 
-    /// The codes the pop-up offers: the bundled ones, unless a test shows
-    /// its own (an empty list is the broken bundle).
-    var codes: [BrailleCode] = BrailleTableCatalog.bundledCodes
+    /// The codes the pop-ups offer: the bundled tables' and this Mac's,
+    /// unless a test shows its own (an empty list is the broken bundle).
+    var codes: [BrailleCode] = BrailleTableCatalog.offeredCodes
 
     /// The table in use, as the setting stores it (`SettingsViewModel.brailleTable`).
     private var tableBinding: Binding<String> {
@@ -109,6 +128,17 @@ struct BrailleSettingsView: View {
         }
     }
 
+    /// The sentence that says where the table in use comes from
+    /// (`BrailleSettingsWording.source(ofTable:isOffered:macLiblouisVersion:)`).
+    private var sourceSentence: String {
+        let id = settingsViewModel.brailleTable
+        return BrailleSettingsWording.source(
+            ofTable: id,
+            isOffered: codes.contains { code in code.tables.contains { $0.id == id } },
+            macLiblouisVersion: BrailleTableCatalog.mac?.liblouisVersion
+        )
+    }
+
     var body: some View {
         Form {
             Section {
@@ -117,9 +147,14 @@ struct BrailleSettingsView: View {
                     BrailleTablePickers(
                         table: tableBinding,
                         codes: codes,
+                        languageHint: BrailleSettingsWording.languageHint,
                         codeHint: BrailleSettingsWording.codeHint,
                         contractionHint: BrailleSettingsWording.contractionHint
                     )
+                    Text(sourceSentence)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 case .noTables(let sentence):
                     Text(sentence)
                 }

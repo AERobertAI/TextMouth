@@ -260,6 +260,7 @@ final class BrailleExportWriterTests: XCTestCase {
 
     /// Each sentence the options view shows or speaks, pinned exactly.
     func testEveryWordingConstantIsPinned() {
+        XCTAssertEqual(BrailleExportWording.languageHint, "The language of the braille code the book is written in.")
         XCTAssertEqual(BrailleExportWording.codeHint, "The braille code the book is written in.")
         XCTAssertEqual(BrailleExportWording.contractionHint, "Whether that code's braille is contracted.")
         XCTAssertEqual(BrailleExportWording.cellsLabel, "Cells per line")
@@ -303,14 +304,15 @@ final class BrailleExportWriterTests: XCTestCase {
 
     // MARK: - The Options View
 
-    /// A BRF's options view has the two table pop-ups, the line ends pop-up,
+    /// A BRF's options view has the three table pop-ups, the line ends pop-up,
     /// the two steppers saying their numbers with units, and the page numbers
     /// checkbox, each by its label with its hint exactly.
     func testTheBRFOptionsViewIsLabelledAndHinted() throws {
         try skipUnlessHostedWindowsExposeAccessibility()
         let box = OptionsBox(BrailleExportOptions(table: "en-ueb-g2.ctb"))
-        try withOptionsView(box, choosesLineEnds: true, popUps: 3) { hosting in
+        try withOptionsView(box, choosesLineEnds: true, popUps: 4) { hosting in
             let controls = accessibleControls(in: hosting)
+            XCTAssertEqual(try control(labelled: "Language", in: controls).hint, "The language of the braille code the book is written in.")
             XCTAssertEqual(try control(labelled: "Braille code", in: controls).hint, "The braille code the book is written in.")
             XCTAssertEqual(try control(labelled: "Contraction", in: controls).hint, "Whether that code's braille is contracted.")
             let cells = try control(labelled: "Cells per line", in: controls)
@@ -341,16 +343,16 @@ final class BrailleExportWriterTests: XCTestCase {
     }
 
     /// A PEF's options view has everything but the line ends pop-up: only
-    /// the code and contraction pop-ups.
+    /// the language, code, and contraction pop-ups.
     func testThePEFOptionsViewHasNoLineEnds() throws {
         try skipUnlessHostedWindowsExposeAccessibility()
         let box = OptionsBox(BrailleExportOptions(table: "en-ueb-g2.ctb"))
-        try withOptionsView(box, choosesLineEnds: false, popUps: 2) { hosting in
+        try withOptionsView(box, choosesLineEnds: false, popUps: 3) { hosting in
             let controls = accessibleControls(in: hosting)
             XCTAssertFalse(controls.contains { $0.label == "Line ends" }, "\(controls.map(\.label))")
             _ = try control(labelled: "Braille code", in: controls)
             _ = try control(labelled: "Cells per line", in: controls)
-            XCTAssertEqual(descendants(of: hosting, as: NSPopUpButton.self).count, 2)
+            XCTAssertEqual(descendants(of: hosting, as: NSPopUpButton.self).count, 3)
         }
     }
 
@@ -363,12 +365,13 @@ final class BrailleExportWriterTests: XCTestCase {
         // runner does not expose: skip there, as the other hosted checks do.
         try skipUnlessHostedWindowsExposeAccessibility()
         let box = OptionsBox(BrailleExportOptions(table: "en-ueb-g2.ctb"))
-        try withOptionsView(box, choosesLineEnds: true, popUps: 3) { hosting in
+        try withOptionsView(box, choosesLineEnds: true, popUps: 4) { hosting in
             let found = descendants(of: hosting, as: NSPopUpButton.self)
-            XCTAssertEqual(found.count, 3)
-            guard found.count == 3 else { return }
-            // In reading order: code, contraction, line ends.
-            let (code, contraction, lineEnds) = (found[0], found[1], found[2])
+            XCTAssertEqual(found.count, 4)
+            guard found.count == 4 else { return }
+            // In reading order: language, code, contraction, line ends.
+            let (language, code, contraction, lineEnds) = (found[0], found[1], found[2], found[3])
+            XCTAssertEqual(language.itemTitles, [Locale.current.localizedString(forIdentifier: "en") ?? "en"])
             XCTAssertEqual(code.titleOfSelectedItem, "Unified English Braille")
             XCTAssertEqual(code.itemTitles, ["English Braille, American Edition", "Unified English Braille"])
             XCTAssertEqual(contraction.titleOfSelectedItem, "Contracted (Grade 2)")
@@ -383,19 +386,19 @@ final class BrailleExportWriterTests: XCTestCase {
             XCTAssertTrue(waitUntil {
                 hosting.layoutSubtreeIfNeeded()
                 let now = self.descendants(of: hosting, as: NSPopUpButton.self)
-                return now.count == 3 && now[0].titleOfSelectedItem == "English Braille, American Edition"
-                    && now[1].titleOfSelectedItem == "Contracted (Grade 2)"
+                return now.count == 4 && now[1].titleOfSelectedItem == "English Braille, American Edition"
+                    && now[2].titleOfSelectedItem == "Contracted (Grade 2)"
             })
             // Then its Grade 1 table.
             let next = descendants(of: hosting, as: NSPopUpButton.self)
-            guard next.count == 3 else { return XCTFail("\(next.count) pop-ups") }
-            next[1].menu?.performActionForItem(at: 0)
+            guard next.count == 4 else { return XCTFail("\(next.count) pop-ups") }
+            next[2].menu?.performActionForItem(at: 0)
             XCTAssertTrue(waitUntil { box.options.table == "en-us-g1.ctb" }, "the table is \(box.options.table)")
 
             // The line end.
             let again = descendants(of: hosting, as: NSPopUpButton.self)
-            guard again.count == 3 else { return XCTFail("\(again.count) pop-ups") }
-            again[2].menu?.performActionForItem(at: 1)
+            guard again.count == 4 else { return XCTFail("\(again.count) pop-ups") }
+            again[3].menu?.performActionForItem(at: 1)
             XCTAssertTrue(waitUntil { box.options.lineEnd == .lf })
 
             // The steppers, raised once each, as VoiceOver raises them.
@@ -550,13 +553,14 @@ private final class OptionsBox: ObservableObject {
     }
 }
 
-/// The options view bound to a box.
+/// The options view bound to a box, offering only the bundled codes, so
+/// the pop-ups list the same items on any Mac, whatever tables it has.
 private struct OptionsHarness: View {
     @ObservedObject var box: OptionsBox
     let choosesLineEnds: Bool
 
     var body: some View {
-        BrailleExportOptionsView(options: $box.options, choosesLineEnds: choosesLineEnds)
+        BrailleExportOptionsView(options: $box.options, choosesLineEnds: choosesLineEnds, codes: BrailleTableCatalog.bundledCodes)
     }
 }
 
