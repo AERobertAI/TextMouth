@@ -223,6 +223,21 @@ final class BrailleTranslatorTests: XCTestCase {
         XCTAssertEqual(result, [String(repeating: controlEscape, count: 4_000)])
     }
 
+    /// Cyrillic, which no table has, translates forward with Grade 2: each
+    /// letter becomes an escape, the output is 11 times the input's bytes,
+    /// and that is above the old output cap (10 times plus 1 MiB) once the
+    /// input passes half a megabyte (review finding L3). 600 KB of unbroken
+    /// letters, cut into 75 pieces, is such an input.
+    func testLargeCyrillicTranslatesForward() throws {
+        let letter = "\u{436}"
+        let letterEscape = try escape(of: letter)
+        let letters = 300_000
+        let result = try translate([String(repeating: letter, count: letters)], "en-ueb-g2.ctb", .printToBraille)
+        XCTAssertEqual(result.count, 1)
+        guard result.count == 1 else { return }
+        XCTAssertEqual(result[0].unicodeScalars.count, letters * letterEscape.unicodeScalars.count)
+    }
+
     // MARK: - Tables
 
     /// Every table the app offers loads: the four of the catalog.
@@ -578,11 +593,18 @@ final class BrailleTranslatorTests: XCTestCase {
         XCTAssertEqual(check.maximumSeconds, 10, accuracy: 0.0001)
         XCTAssertEqual(BrailleTranslator.limits(for: nil, bytes: 5_000_000).maximumSeconds, 10, accuracy: 0.0001)
 
-        for (limits, bytes) in [(back, tenMB), (forward, tenMB), (check, 0)] {
+        // The output cap: forward may grow 32 times (liblouis writes 11 times
+        // the input for Cyrillic and 24 times for control characters), back
+        // and check 10 times; each has 1 MiB besides.
+        let caps: [(limits: WatchedProcess.Limits, bytes: Int64, growth: Int64)] = [
+            (back, tenMB, 10), (forward, tenMB, 32), (check, 0, 10),
+        ]
+        for (limits, bytes, growth) in caps {
             XCTAssertEqual(limits.maximumStalledSeconds, limits.maximumSeconds)
             XCTAssertEqual(limits.maximumResidentBytes, 16 * 1_048_576)
-            XCTAssertEqual(limits.maximumOutputBytes, 10 * bytes + 1_048_576)
+            XCTAssertEqual(limits.maximumOutputBytes, growth * bytes + 1_048_576)
         }
+        XCTAssertEqual(BrailleTranslator.limits(for: .printToBraille, bytes: 1_000).maximumOutputBytes, 32 * 1_000 + 1_048_576)
     }
 
     /// The real tool names the helper and the tables inside the app bundle.

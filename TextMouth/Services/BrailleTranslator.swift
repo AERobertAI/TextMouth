@@ -126,6 +126,13 @@ enum BrailleTranslator {
     /// second for each MB; forward, six seconds for each MB; a check, the 10
     /// seconds alone. The stall allowance equals the time allowance, since a
     /// short input's output is written only at the end.
+    ///
+    /// The output cap (review finding L3) follows how far liblouis's output
+    /// can outgrow its input. Back to print and the check stay at 10 times
+    /// the input plus 1 MiB. Forward is 32 times plus 1 MiB: a character a
+    /// table lacks is written as an escape of several cells of 3 bytes each,
+    /// which for Cyrillic is 11 times the input's bytes in all four tables
+    /// and for control characters 24 times, above the old 10 times.
     static func limits(for direction: Direction?, bytes: Int64) -> WatchedProcess.Limits {
         let megabytes = Double(bytes) / 1_000_000
         let seconds: TimeInterval
@@ -138,7 +145,7 @@ enum BrailleTranslator {
             maximumSeconds: seconds,
             maximumResidentBytes: 16 * 1_048_576,
             maximumStalledSeconds: seconds,
-            maximumOutputBytes: 10 * bytes + 1_048_576
+            maximumOutputBytes: (direction == .printToBraille ? 32 : 10) * bytes + 1_048_576
         )
     }
 
