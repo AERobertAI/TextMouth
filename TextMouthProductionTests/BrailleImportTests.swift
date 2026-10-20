@@ -179,6 +179,52 @@ final class BrailleImportTests: XCTestCase {
         XCTAssertEqual(try blocks(of: book), [sentences.joined(separator: " ")])
     }
 
+    // MARK: - Books written without page numbers
+
+    /// The headings of the book that the Grade 2 sample's sentences make
+    /// under a title heading, "Grade Two Sample", written by TextMouth's own
+    /// export as a BRF or a PEF of `cells` cells by 25 lines with page
+    /// numbers off, then imported with the Grade 2 table, as "level: text"
+    /// lines. The title is the one heading the book has.
+    private func headingsOfGrade2BookWritten(as kind: BrailleFileKind, cells: Int) throws -> [String] {
+        let sentences = try sampleText("brf/grade2-short.txt").components(separatedBy: "\n").filter { !$0.isEmpty }
+        XCTAssertEqual(sentences.count, 3)
+        let blocks: [BrailleBlock] = [.heading(level: 1, text: "Grade Two Sample")] + sentences.map { .paragraph(text: $0) }
+        var options = BrailleExportOptions(table: grade2)
+        options.page = BraillePageFormat(cellsPerLine: cells, linesPerPage: 25, numbersPages: false)
+
+        // The helper makes its hidden files in a folder of its own.
+        let work = try makeSandboxDirectory("BrailleImportWork")
+        let url = try makeSandboxDirectory("BrailleImportBook").appendingPathComponent("book.\(kind == .pef ? "pef" : "brf")")
+        switch kind {
+        case .pef:
+            let metadata = PEFMetadata(title: "Grade Two Sample", author: "Test Author", language: "en",
+                                       identifier: "urn:uuid:5b0a3f6e-6c1d-4a35-9d57-0e2f6a1b7c10", date: "2026-10-20")
+            try BrailleDocumentWriter.pef(of: blocks, metadata: metadata, options: options, workingIn: work).write(to: url)
+        default:
+            try BrailleDocumentWriter.brf(of: blocks, options: options, workingIn: work).write(to: url)
+        }
+        let book = try BraillePreferences.$tableForImports.withValue(grade2) { try importedForTest(url).book }
+        return headingLines(of: try openedContent(of: book))
+    }
+
+    /// Decision 15's Grade 2 book, exported at 40 by 25 with page numbers off,
+    /// keeps its title as a heading when it is imported, from the BRF (whose
+    /// width is measured) and from the PEF (which declares it). With no
+    /// page numbers to measure, the longest row is a few cells short of the
+    /// line, and the title measured off center.
+    func testTheGrade2BookWrittenWithoutPageNumbersKeepsItsTitleAsAHeading() throws {
+        for kind in [BrailleFileKind.brf, .pef] {
+            XCTAssertEqual(try headingsOfGrade2BookWritten(as: kind, cells: 40), ["1: Grade Two Sample"], "\(kind)")
+        }
+    }
+
+    /// The same at 32 cells, where the sentences wrap to a row as long as the
+    /// line and the width is the longest row.
+    func testAGrade2BookOf32CellsWithoutPageNumbersKeepsItsTitleAsAHeading() throws {
+        XCTAssertEqual(try headingsOfGrade2BookWritten(as: .brf, cells: 32), ["1: Grade Two Sample"])
+    }
+
     // MARK: - A book keeps its table
 
     /// A change of the setting never moves an existing book's text: the cache

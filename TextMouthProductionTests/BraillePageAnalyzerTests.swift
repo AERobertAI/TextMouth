@@ -541,6 +541,104 @@ final class BraillePageAnalyzerTests: XCTestCase {
         XCTAssertEqual(structure.blocks.count, 2)
     }
 
+    // MARK: Width without page numbers
+
+    /// A short book 40 cells wide with no page numbers: a title centered in
+    /// 40 cells (15 blank cells before it, 16 after) and a sentence whose row
+    /// is 30 cells, the longest. Against a width of 30 the title is off center.
+    private func shortBook() -> [String] {
+        [centered("THE TITLE"), "", row(2, "A SENTENCE OF ABOUT THIRTY C")]
+    }
+
+    /// A centered title in a short book with no page numbers is a heading,
+    /// as the export writes it (decision 15's Grade 2 book at 40 by 25).
+    func testACenteredTitleOfAShortBookWithoutPageNumbersIsAHeading() {
+        let structure = formattedStructure(shortBook())
+        XCTAssertEqual(structure.blocks, [.heading(level: 1, text: cells("THE TITLE")), paragraph("A SENTENCE OF ABOUT THIRTY C")])
+    }
+
+    /// The title may be several rows, each centered, and the width they imply
+    /// is the same.
+    func testAWrappedTitleOfAShortBookWithoutPageNumbersIsOneHeading() {
+        let structure = formattedStructure([
+            centered("THE LONG TITLE OF"), centered("A SHORT BOOK"), "", row(2, "A SENTENCE OF ABOUT THIRTY C"),
+        ])
+        XCTAssertEqual(structure.blocks, [
+            .heading(level: 1, text: cells("THE LONG TITLE OF A SHORT BOOK")), paragraph("A SENTENCE OF ABOUT THIRTY C"),
+        ])
+    }
+
+    /// With page numbers to measure, they are the width, and a lone row that
+    /// implies a wider one does not move it.
+    func testAPageNumberColumnIsTheWidthWhateverALoneRowImplies() {
+        let page = [centered("THE TITLE"), "", row(2, "TEXT"), "", row(20, "WIDE"), rightAligned("#A")]
+        XCTAssertEqual(formattedStructure(page).blocks.first, .heading(level: 1, text: cells("THE TITLE")))
+    }
+
+    /// Two headings centered in 40 cells outvote a lone row that implies 45.
+    func testTheWidthTheMostHeadingsImplyWins() {
+        let structure = formattedStructure([
+            centered("FIRST TITLE"), "", row(2, "A SENTENCE OF ABOUT THIRTY C"), "", centered("SECOND ONE"), "",
+            row(20, "WIDE"),
+        ])
+        XCTAssertEqual(structure.blocks, [
+            .heading(level: 1, text: cells("FIRST TITLE")), paragraph("A SENTENCE OF ABOUT THIRTY C"),
+            .heading(level: 1, text: cells("SECOND ONE")), paragraph("WIDE"),
+        ])
+    }
+
+    /// A long heading in cell 5 stands alone too, but it is no vote: its row
+    /// implies 44 cells, and the title, centered in 40, keeps the width.
+    func testACellFiveHeadingDoesNotMoveTheImpliedWidth() {
+        let structure = formattedStructure([
+            centered("THE TITLE"), "", row(2, "A SENTENCE OF ABOUT THIRTY C"), "", row(4, word(36)), "", row(2, "TEXT"),
+        ])
+        XCTAssertEqual(structure.blocks, [
+            .heading(level: 1, text: cells("THE TITLE")), paragraph("A SENTENCE OF ABOUT THIRTY C"),
+            .heading(level: 2, text: cells(word(36))), paragraph("TEXT"),
+        ])
+    }
+
+    /// A print page change line stands alone with its dashes at the left, and
+    /// is no vote either.
+    func testAPrintPageChangeLineIsNoVote() {
+        let structure = formattedStructure([
+            centered("THE TITLE"), "", row(2, "A SENTENCE OF ABOUT THIRTY C"), "",
+            row(5, String(repeating: "-", count: 30) + "#E"),
+        ])
+        XCTAssertEqual(structure.blocks.first, .heading(level: 1, text: cells("THE TITLE")))
+    }
+
+    // MARK: A PEF's declared width
+
+    /// The pages of `rows` as a PEF that declares `width`.
+    private func pef(declaring width: Int?, _ rows: [String]) -> BrailleFilePages {
+        var pages = BrailleFilePages(kind: .pef, pages: [rows])
+        pages.lineWidth = width
+        return pages
+    }
+
+    /// A declared width is the line width before any other rule: a last row
+    /// of 30 cells that ends in a page number is a numbered page when nothing
+    /// is declared, and plain text when 40 is.
+    func testADeclaredWidthComesBeforeTheRowsThatMeasureOne() {
+        let rows = [centered("THE TITLE"), "", row(2, "TEXT"), rightAligned("#A", width: 30)]
+        XCTAssertEqual(BraillePageAnalyzer.structure(of: pef(declaring: nil, rows)).pages.first?.braillePageNumber, "⠼⠁")
+        let declared = BraillePageAnalyzer.structure(of: pef(declaring: 40, rows))
+        XCTAssertNil(declared.pages.first?.braillePageNumber)
+        XCTAssertEqual(declared.blocks.first, .heading(level: 1, text: cells("THE TITLE")))
+    }
+
+    /// A width outside 18 to 80 is ignored, so the rows measure it.
+    func testADeclaredWidthOutsideTheRangeIsIgnored() {
+        let rows = [centered("THE TITLE"), "", row(2, "TEXT"), rightAligned("#A")]
+        let measured = BraillePageAnalyzer.structure(of: pef(declaring: nil, rows))
+        for width in [0, 17, 81, 1000, -40] {
+            XCTAssertEqual(BraillePageAnalyzer.structure(of: pef(declaring: width, rows)), measured, "\(width)")
+        }
+        XCTAssertEqual(measured.pages.first?.braillePageNumber, "⠼⠁")
+    }
+
     // MARK: Unformatted files
 
     func testUnformattedRowsEachBecomeATrimmedParagraph() {

@@ -381,6 +381,43 @@ final class BrailleFileReaderTests: XCTestCase {
         XCTAssertEqual(try BrailleFileReader.pages(fromPEF: pef("<volume><section/></volume>")).pages, [])
     }
 
+    /// A volume's `cols` is kept as the PEF's line width when it is a whole
+    /// number from 18 to 80; the sample declares 40.
+    func testAVolumesColsIsKeptAsTheLineWidth() throws {
+        let sample = try BrailleFileReader.read(copyOfFormatSample("pef/pride-and-prejudice-ch1-grade1.pef"), as: .pef)
+        XCTAssertEqual(sample.lineWidth, 40)
+        for (cols, expected) in [("18", 18), ("32", 32), ("80", 80), ("040", 40)] {
+            let data = pef("<volume cols=\"\(cols)\"><section><page><row>⠁</row></page></section></volume>")
+            XCTAssertEqual(try BrailleFileReader.pages(fromPEF: data).lineWidth, expected, cols)
+        }
+    }
+
+    /// A `cols` that is missing, outside the range, or not a whole number
+    /// written in digits is ignored (the attribute is untrusted), and a BRF
+    /// or BRL declares no width.
+    func testAnUnusableColsGivesNoLineWidth() throws {
+        let values = ["", "17", "81", "0", "1000", "-40", "+40", " 40", "40 ", "4e1", "40.0", "٤٠", "forty",
+                      "99999999999999999999"]
+        for cols in values {
+            let data = pef("<volume cols=\"\(cols)\"><section><page><row>⠁</row></page></section></volume>")
+            XCTAssertNil(try BrailleFileReader.pages(fromPEF: data).lineWidth, "cols=\"\(cols)\"")
+        }
+        XCTAssertNil(try BrailleFileReader.pages(fromPEF: pef(pages: [["⠁"]])).lineWidth)
+        XCTAssertNil(try BrailleFileReader.pages(fromASCII: Data("A\r\n".utf8), kind: .brf).lineWidth)
+        XCTAssertNil(try BrailleFileReader.pages(fromASCII: Data("A\r\n".utf8), kind: .brl).lineWidth)
+    }
+
+    /// Of several volumes the first one with a usable `cols` gives the width,
+    /// and a `cols` on any other element is not the volume's.
+    func testTheFirstUsableVolumeColsGivesTheLineWidth() throws {
+        let data = pef("""
+        <volume cols="7"><section cols="30"><page><row>⠁</row></page></section></volume>
+        <volume cols="24"><section><page><row>⠃</row></page></section></volume>
+        <volume cols="50"><section><page><row>⠉</row></page></section></volume>
+        """)
+        XCTAssertEqual(try BrailleFileReader.pages(fromPEF: data).lineWidth, 24)
+    }
+
     /// The metadata is the first of each Dublin Core element, trimmed, and
     /// nil when it is empty or absent.
     func testPEFMetadataIsTrimmedAndTheFirstOfEach() throws {

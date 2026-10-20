@@ -40,13 +40,17 @@ struct BraillePageNumbers: Equatable, Sendable {
 enum BraillePageAnalyzer {
     // MARK: Constants
 
-    /// The shortest and longest line width the analyzer measures a file as.
-    private static let widthRange = 18...80
+    /// The shortest and longest line width the analyzer measures a file as
+    /// (and the widths a PEF's `cols` may declare).
+    static let widthRange = 18...80
     /// The most cells a number word (such as ⠼⠁ or ⠏⠼⠁) holds.
     private static let maxNumberWordLength = 8
     /// The fewest blank cells that stand before a page number at the right
     /// of a row, and on each side of a centered heading.
     private static let minGap = 3
+    /// The most rows a heading that stands alone may have, to count toward
+    /// the implied width of a book (see `Book.lineWidth()`).
+    private static let maxStandAloneRows = 12
     /// The fewest dots-3-6 cells a print page change line starts with.
     private static let minChangeDashes = 3
     /// The indent of a level-2 heading's rows: it starts in cell 5.
@@ -175,18 +179,27 @@ enum BraillePageAnalyzer {
 
         // MARK: Width
 
-        /// The line width of a formatted book, held to `widthRange`: the most
-        /// common length among the pages' last rows that end in a number word
-        /// after at least 3 blank cells (a braille page number, as the layout
-        /// writes it at the right margin), the longer length on a tie; and,
-        /// when no page has such a row, the length of the longest row.
+        /// The line width of a formatted book, held to `widthRange`:
+        ///
+        /// 1. a PEF's declared width (its volume's `cols`), when there is one;
+        /// 2. else the most common length among the pages' last rows that end
+        ///    in a number word after at least 3 blank cells (a braille page
+        ///    number, as the layout writes it at the right margin), the longer
+        ///    length on a tie;
+        /// 3. else, when no page has such a row, the longest row, or a wider
+        ///    width that the headings set apart in the book imply (see
+        ///    `WidthVotes.bestWidth(atLeast:)`).
         ///
         /// The page-number column is what the width is, so one row that runs a
         /// cell past it (a stray overlong line) cannot shift it and leave the
         /// page numbers in the text.
         func lineWidth() -> Int {
-            // How many pages have a numbered last row of each length.
+            if let declared = file.lineWidth, widthRange.contains(declared) { return declared }
+
+            // How many pages have a numbered last row of each length, and
+            // which widths the headings set apart vote for.
             var numberedLengths: [Int: Int] = [:]
+            var votes = WidthVotes()
             var longest = 0
             for page in 0..<file.pageCount {
                 let rows = self.rows(ofPage: page)
@@ -194,10 +207,99 @@ enum BraillePageAnalyzer {
                 if let last = rows.last(where: { !$0.isEmpty }), numberWordAtRight(of: last) != nil {
                     numberedLengths[last.count, default: 0] += 1
                 }
+                noteImpliedWidths(ofRows: rows, in: &votes)
             }
             // The most common length; the longer of two that are as common.
-            let common = numberedLengths.max { ($0.value, $0.key) < ($1.value, $1.key) }?.key
-            return min(max(common ?? longest, widthRange.lowerBound), widthRange.upperBound)
+            if let common = numberedLengths.max(by: { ($0.value, $0.key) < ($1.value, $1.key) })?.key {
+                return min(max(common, widthRange.lowerBound), widthRange.upperBound)
+            }
+            // Without a page number to measure, a short book's centered
+            // heading would measure off center against its longest row, which
+            // may be shorter than the line. TextMouth's own export centers its
+            // headings, so a heading that stands alone gives the width it was
+            // centered in: the book is at least that wide.
+            let atLeast = min(max(longest, widthRange.lowerBound), widthRange.upperBound)
+            return votes.bestWidth(atLeast: atLeast) ?? atLeast
+        }
+
+        /// The widths that the rows set apart in a book vote for (FMT20).
+        ///
+        /// A row centered in a line of `width` cells has an implied width, twice
+        /// its left margin plus its length, of `width` or one less (the extra
+        /// cell of an odd difference falls on the right), or one more (the
+        /// layout moves it to the left when the margin would be 4 or 6). So a
+        /// row votes for every width from its implied width less one to its
+        /// implied width plus one at which it is still centered: with at
+        /// least 3 blank cells on its right as on its left. The width with the
+        /// most votes is the one the most rows are centered in.
+        struct WidthVotes {
+            /// How many votes begin at each width, less those that ended before it
+            /// (a difference array: the votes for a width are the sum up to it).
+            private var changes = [Int](repeating: 0, count: widthRange.upperBound + 2)
+
+            /// Adds the vote of a row of `length` cells, margin included, that has
+            /// `margin` blank cells before it.
+            mutating func add(margin: Int, length: Int) {
+                let implied = margin + length
+                let first = max(implied - 1, length + minGap, widthRange.lowerBound)
+                let last = min(implied + 1, widthRange.upperBound)
+                guard first <= last else { return }
+                changes[first] += 1
+                changes[last + 1] -= 1
+            }
+
+            /// The width of at least `floor` that most rows vote for, or nil when
+            /// none does. Of several runs of widths with as many votes the last
+            /// (widest) run is taken, and the middle of that run, the lower
+            /// middle for an even run: one row votes for three widths, and its
+            /// own implied width is the middle one.
+            func bestWidth(atLeast floor: Int) -> Int? {
+                var votes = 0
+                var best = 0
+                var run: ClosedRange<Int>?
+                for width in widthRange.lowerBound...widthRange.upperBound {
+                    votes += changes[width]
+                    guard width >= floor, votes > 0, votes >= best else { continue }
+                    if votes > best {
+                        best = votes
+                        run = width...width
+                    } else if let current = run, current.upperBound == width - 1 {
+                        run = current.lowerBound...width
+                    } else {
+                        run = width...width
+                    }
+                }
+                return run.map { ($0.lowerBound + $0.upperBound) / 2 }
+            }
+        }
+
+        /// Adds the votes of the rows of a page that stand alone.
+        ///
+        /// A row stands alone when a blank row or a page's edge comes before
+        /// and after it, or, for a heading of several rows, before its first
+        /// row and after its last (up to `maxStandAloneRows` rows, each with
+        /// at least 3 blank cells before it). A print page change line is
+        /// no such row, and neither is a row that starts where a cell-5 or
+        /// cell-7 heading does: a long heading there is as likely to be one,
+        /// and its implied width is far past the line's.
+        private func noteImpliedWidths(ofRows rows: [Span], in votes: inout WidthVotes) {
+            var start = 0
+            while start < rows.count {
+                // Skip blank rows; a stretch of rows with text begins here.
+                guard !rows[start].isEmpty else { start += 1; continue }
+                var end = start
+                while end < rows.count, !rows[end].isEmpty { end += 1 }
+                defer { start = end }
+                // A stretch is set apart on both ends by construction; a long
+                // one is a paragraph or a list, not a heading.
+                guard end - start <= maxStandAloneRows else { continue }
+                let margins = rows[start..<end].map { makeRow($0).indent }
+                guard margins.allSatisfy({ $0 >= minGap }) else { continue }
+                for (row, margin) in zip(rows[start..<end], margins)
+                where margin != cellFiveIndent && margin != cellSevenIndent && changeLineNumber(of: row) == nil {
+                    votes.add(margin: margin, length: row.count)
+                }
+            }
         }
 
         // MARK: Unformatted files

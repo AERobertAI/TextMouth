@@ -28,6 +28,11 @@ struct BrailleFilePages: Equatable, Sendable {
     var title: String? = nil
     var author: String? = nil
     var language: String? = nil
+    /// The line width a PEF declares in its volume's `cols` attribute, when
+    /// that is a whole number from 18 to 80; nil for BRF and BRL, and for a
+    /// PEF that declares none or a number outside the range. The analyzer
+    /// takes it as the width before it measures any row (FMT20).
+    var lineWidth: Int? = nil
 
     /// Every cell of the file, a byte each, page after page and row after
     /// row: the cell's dots (dot 1 is 1, dot 8 is 128), so the byte is the
@@ -457,6 +462,7 @@ enum BrailleFileReader {
         result.title = collector.title
         result.author = collector.author
         result.language = collector.language
+        result.lineWidth = collector.lineWidth
         return result
     }
 
@@ -500,6 +506,8 @@ private final class PEFCollector: NSObject, XMLParserDelegate {
     private(set) var title: String?
     private(set) var author: String?
     private(set) var language: String?
+    /// The first valid `cols` of a volume (see `BrailleFilePages.lineWidth`).
+    private(set) var lineWidth: Int?
     /// Why the parse was aborted, when the collector did it.
     private(set) var refusal: BrailleFileError?
 
@@ -517,6 +525,15 @@ private final class PEFCollector: NSObject, XMLParserDelegate {
     private static let rowWhitespace: Set<Unicode.Scalar> = [" ", "\t", "\r", "\n"]
 
     init(stopsAfterHead: Bool = false) { self.stopsAfterHead = stopsAfterHead }
+
+    /// The width a `cols` attribute declares: a whole number written in digits
+    /// only, within the widths the analyzer measures; nil for anything else
+    /// (the attribute is untrusted, so a sign, a space, or a huge number is ignored).
+    private static func declaredWidth(_ cols: String?) -> Int? {
+        guard let cols, !cols.isEmpty, cols.utf8.count <= 3, cols.utf8.allSatisfy({ $0 >= 0x30 && $0 <= 0x39 }),
+              let width = Int(cols), BraillePageAnalyzer.widthRange.contains(width) else { return nil }
+        return width
+    }
 
     /// Record `error` as the refusal and stop the parse.
     private func refuse(_ error: BrailleFileError, _ parser: XMLParser) {
@@ -540,6 +557,8 @@ private final class PEFCollector: NSObject, XMLParserDelegate {
         let isPEF = namespaceURI == BrailleFileReader.pefNamespace
         if isPEF && elementName == "page" {
             inPage = true
+        } else if isPEF && elementName == "volume", lineWidth == nil {
+            lineWidth = Self.declaredWidth(attributeDict["cols"])
         } else if isPEF && elementName == "row" {
             // A row belongs to a page.
             guard inPage else { return refuse(.damagedPEF, parser) }
