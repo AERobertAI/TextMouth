@@ -465,7 +465,9 @@ final class RTFExportWriterTests: XCTestCase {
             writer.hint,
             "Word 97-2003 document. Its headings are plain text, so Word's navigation pane does not list them."
         )
-        XCTAssertEqual(TextExportWriters.all.map(\.id), ["html", "rtf", "doc"])
+        // Tonight's writers come first, in the picker's order; writers added
+        // later (braille's) follow them.
+        XCTAssertEqual(Array(TextExportWriters.all.map(\.id).prefix(3)), ["html", "rtf", "doc"])
         XCTAssertEqual(TextExportWriters.writer(id: "doc")?.name, "Word 97-2003 (.doc)")
     }
 
