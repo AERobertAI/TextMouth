@@ -72,8 +72,10 @@ enum BrailleTranslator {
     /// and tight limits.
     struct Tool: Sendable {
         /// The executable and arguments of a run in `mode` ("forward",
-        /// "back", or "check") on `table`, reading `input` and writing
-        /// `output` (both nil for "check"); nil when the helper is missing.
+        /// "back", or "check") on `table`, a stored value
+        /// (`BrailleTableSource`), reading `input` and writing `output` (both
+        /// nil for "check"); nil when the helper or the table's folder is
+        /// missing.
         var command: @Sendable (_ mode: String, _ table: String, _ input: URL?, _ output: URL?)
             -> (executable: URL, arguments: [String])?
         /// What the watchdog allows a run in `direction` (nil for "check")
@@ -86,16 +88,26 @@ enum BrailleTranslator {
         var tablesFolder: URL?
 
         /// The helper built into the app: `Contents/MacOS/TextMouthBraille`,
-        /// reading the tables in `Contents/Resources/liblouis/tables`.
+        /// reading the bundled tables in `Contents/Resources/liblouis/tables`
+        /// and this Mac's in its own folder
+        /// (`BrailleTableCatalog.macTablesFolder`).
         static let helper: Tool = {
             let executable = Bundle.main.url(forAuxiliaryExecutable: "TextMouthBraille")
             let tables = Bundle.main.resourceURL?.appendingPathComponent("liblouis/tables", isDirectory: true)
             return Tool(
                 command: { mode, table, input, output in
-                    guard let executable, let tables else { return nil }
+                    // The stored value names the table's folder (decision 6):
+                    // one of this Mac's tables is loaded from inside the
+                    // Mac's folder, by its bare file name, exactly as a
+                    // bundled one is from the bundle's. A run reads one
+                    // folder, never both, so a table's includes come from its
+                    // own liblouis version.
+                    let (source, fileName) = BrailleTableSource.parse(table)
+                    let folder: URL? = source == .mac ? BrailleTableCatalog.macTablesFolder : tables
+                    guard let executable, let folder else { return nil }
                     // The helper's usage: `mode tables table [input output]`.
                     let files = [input, output].compactMap { $0?.path }
-                    return (executable, [mode, tables.path, table] + files)
+                    return (executable, [mode, folder.path, fileName] + files)
                 },
                 limits: { BrailleTranslator.limits(for: $0, bytes: $1) },
                 residentMemory: { WatchedProcess.residentMemory(of: $0) },
@@ -172,9 +184,15 @@ enum BrailleTranslator {
     /// its word breaks into pieces (`pieces(of:direction:)`) and translated
     /// piece by piece; no UEB or EBAE contraction spans a blank cell, so a
     /// cut there changes no translation.
+    ///
+    /// One of this Mac's tables is used only once its check passes, made
+    /// before its first use in the session (`MacBrailleTableCheck`,
+    /// decision 5); a table that fails it, or is gone, is refused by name, as
+    /// an unknown table is. A call with no work checks nothing.
     /// - Parameters:
-    ///   - table: The file name of one of the tables TextMouth offers
-    ///     (`BrailleTableCatalog`), such as "en-ueb-g2.ctb".
+    ///   - table: The stored value of one of the tables TextMouth offers
+    ///     (`BrailleTableCatalog`), such as "en-ueb-g2.ctb" or
+    ///     "mac:fr-bfu-g2.ctb".
     ///   - direction: Which way to translate.
     /// - Throws: `Failure`, `ImportCancelled` when the import is cancelled
     ///   meanwhile, and `CancellationError` for any other cancelled task.
@@ -183,6 +201,20 @@ enum BrailleTranslator {
         table: String,
         direction: Direction,
         workingIn folder: URL
+    ) throws -> [String] {
+        try translate(texts, table: table, direction: direction, workingIn: folder, checksMacTable: true)
+    }
+
+    /// `translate(_:table:direction:workingIn:)`, checking one of this Mac's
+    /// tables first unless `checksMacTable` is false: only the check's own
+    /// sample translation passes false (`MacBrailleTableCheck.check`), which
+    /// would otherwise check itself forever.
+    static func translate(
+        _ texts: [String],
+        table: String,
+        direction: Direction,
+        workingIn folder: URL,
+        checksMacTable: Bool
     ) throws -> [String] {
         try requireOfferedTable(table)
         let id = UUID().uuidString
@@ -214,6 +246,9 @@ enum BrailleTranslator {
         }
         // No work, no run: an empty list, or only empty texts, has no pieces.
         guard layout.pieceCount > 0 else { return texts.map { _ in "" } }
+
+        // One of this Mac's tables runs only once its check has passed.
+        if checksMacTable { try MacBrailleTableCheck.requireUsable(table, workingIn: folder) }
 
         try runHelper(
             mode: direction.rawValue, table: table, input: input, output: output,
@@ -408,13 +443,15 @@ enum BrailleTranslator {
 
     /// Throws `Failure.unknownTable` unless `table` is one of the tables
     /// TextMouth offers (`BrailleTableCatalog`), before anything starts.
-    /// That is the whole list of names the helper may be given: a record
-    /// could be edited to name any other file of the tables folder, such as
-    /// an include file (`spaces.uti`), which liblouis would load and the
-    /// book would read as its escapes. A name the catalog lacks is also never
-    /// a path ("../x"), a list ("a,b"), or empty. The stored name is never
-    /// changed: a library from a newer TextMouth, with more tables, keeps its
-    /// books' tables, and such a book is refused by name.
+    /// That is the whole list of names the helper may be given, from either
+    /// source (decision 6): a record could be edited to name any other file
+    /// of a tables folder, such as an include file (`spaces.uti`), which
+    /// liblouis would load and the book would read as its escapes. A name
+    /// the catalog lacks is also never a path ("../x"), a list ("a,b"), or
+    /// empty. The stored name is never changed: a library from a newer
+    /// TextMouth, with more tables, keeps its books' tables, and such a book
+    /// is refused by name, as is a book of one of this Mac's tables once a
+    /// macOS update has removed it.
     private static func requireOfferedTable(_ table: String) throws {
         guard BrailleTableCatalog.table(withID: table) != nil else { throw Failure.unknownTable(table) }
     }

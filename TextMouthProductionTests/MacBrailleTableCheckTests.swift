@@ -1,0 +1,298 @@
+import XCTest
+@testable import TextMouth
+
+/// The check one of this Mac's braille tables passes before TextMouth uses it
+/// (October 20, 2026, decision 5): six-dot cells with liblouis's escape
+/// backslash aside, the refusals stand-in helpers give, the verdicts a
+/// session keeps, the translator refusing by name, and this Mac's real
+/// French, German, Spanish, and Greek tables.
+///
+/// Every test binds verdicts of its own, so no stand-in's failure is kept
+/// for a real table. The tests that need this Mac's folder skip, saying
+/// why, on a Mac that has none. Nothing here touches the real preferences
+/// store or plays sound.
+final class MacBrailleTableCheckTests: XCTestCase {
+    /// The folder the helper's hidden files are made in; every call must
+    /// leave it empty.
+    private var work = URL(fileURLWithPath: "/var/empty", isDirectory: true)  // replaced in setUp
+
+    override func setUpWithError() throws {
+        work = try makeSandboxDirectory("MacBrailleCheck")
+    }
+
+    // MARK: - Helpers
+
+    /// Runs `body` with verdicts of its own and, when given, `tool` standing
+    /// in for the helper.
+    private func isolated<T>(tool: BrailleTranslator.Tool? = nil, _ body: () throws -> T) throws -> T {
+        try MacBrailleTableCheck.$verdicts.withValue(MacBrailleTableCheck.Verdicts()) {
+            guard let tool else { return try body() }
+            return try BrailleTranslator.$tool.withValue(tool, operation: body)
+        }
+    }
+
+    /// A stand-in helper that runs `/bin/sh -c script sh MODE OUTPUT`, with
+    /// limits that keep a test short.
+    private func shell(_ script: String) -> BrailleTranslator.Tool {
+        let limits = WatchedProcess.Limits(
+            maximumSeconds: 5, maximumResidentBytes: 1 << 30, maximumStalledSeconds: 5, pollInterval: 0.1
+        )
+        return BrailleTranslator.Tool(
+            command: { mode, _, _, output in
+                (URL(fileURLWithPath: "/bin/sh"), ["-c", script, "sh", mode, output?.path ?? ""])
+            },
+            limits: { _, _ in limits },
+            residentMemory: { _ in nil },
+            tablesFolder: nil
+        )
+    }
+
+    /// Asserts that the working folder holds nothing, hidden files included.
+    private func assertWorkFolderEmpty(file: StaticString = #filePath, line: UInt = #line) {
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: work.path)) ?? ["<unreadable>"]
+        XCTAssertEqual(names, [], file: file, line: line)
+    }
+
+    /// A table this Mac offers, for the stand-in tests, which need one the
+    /// catalog accepts but never run it; skips on a Mac with none.
+    private func anyOfferedMacTable() throws -> String {
+        guard let table = BrailleTableCatalog.offeredTables.first(where: { $0.source == .mac }) else {
+            throw XCTSkip("This Mac offers no VoiceOver braille tables (\(BrailleTableCatalog.macTablesFolder.path))")
+        }
+        return table.id
+    }
+
+    /// The Mac table `id`, when this Mac offers it; skips, saying why, when not.
+    private func requireOffered(_ id: String) throws -> String {
+        guard BrailleTableCatalog.table(withID: id) != nil else {
+            throw XCTSkip("This Mac does not offer \(id) (\(BrailleTableCatalog.macTablesFolder.path))")
+        }
+        return id
+    }
+
+    // MARK: - Six Dots
+
+    /// Six-dot cells pass, and so does liblouis's escape backslash; a cell
+    /// with dot 7 or 8, and anything that is not braille, does not.
+    func testSixDotCellsOnly() {
+        XCTAssertEqual(MacBrailleTableCheck.escapeBackslash, Unicode.Scalar(0x2873))
+        XCTAssertTrue(MacBrailleTableCheck.writesSixDotsOnly(""))
+        XCTAssertTrue(MacBrailleTableCheck.writesSixDotsOnly("\u{2801}\u{2803}\u{2800}\u{283F}"))
+        XCTAssertTrue(MacBrailleTableCheck.writesSixDotsOnly("\u{2804}\u{2873}\u{282D}\u{2804}"))
+        XCTAssertFalse(MacBrailleTableCheck.writesSixDotsOnly("\u{2801}\u{2843}"), "dot 7")
+        XCTAssertFalse(MacBrailleTableCheck.writesSixDotsOnly("\u{2881}"), "dot 8")
+        XCTAssertFalse(MacBrailleTableCheck.writesSixDotsOnly("\u{2801} "), "a space is no braille cell")
+        XCTAssertEqual(MacBrailleTableCheck.sample, "Braille 2026, ABC abc.")
+    }
+
+    /// The escape backslash is what liblouis really writes for a character
+    /// a table lacks: the bundled Grade 2 table writes it for a Chinese
+    /// character, and the check counts that as six-dot braille.
+    func testTheEscapeBackslashIsLiblouisOwn() throws {
+        let escape = try XCTUnwrap(try BrailleTranslator.translate(
+            ["\u{4E2D}"], table: "en-ueb-g2.ctb", direction: .printToBraille, workingIn: work
+        ).first)
+        XCTAssertTrue(escape.unicodeScalars.contains(MacBrailleTableCheck.escapeBackslash), escape)
+        XCTAssertTrue(MacBrailleTableCheck.writesSixDotsOnly(escape))
+        assertWorkFolderEmpty()
+    }
+
+    // MARK: - Verdicts
+
+    /// Each refusal's reason, pinned; only a check that could not be made is
+    /// not kept for the session.
+    func testTheReasons() {
+        XCTAssertEqual(MacBrailleTableCheck.Refusal.gone.reason, "this Mac no longer has it")
+        XCTAssertEqual(MacBrailleTableCheck.Refusal.doesNotLoad.reason, "it does not load in TextMouth's liblouis 3.39.0")
+        XCTAssertEqual(
+            MacBrailleTableCheck.Refusal.writesEightDots.reason,
+            "it writes eight-dot braille, and TextMouth uses six-dot braille only"
+        )
+        XCTAssertEqual(MacBrailleTableCheck.Refusal.couldNotCheck.reason, "it could not be checked")
+        XCTAssertTrue(MacBrailleTableCheck.Verdict.usable.lastsTheSession)
+        XCTAssertTrue(MacBrailleTableCheck.Verdict.refused(.doesNotLoad).lastsTheSession)
+        XCTAssertFalse(MacBrailleTableCheck.Verdict.refused(.couldNotCheck).lastsTheSession)
+    }
+
+    /// The verdicts keep a lasting one, so a second ask checks nothing, and
+    /// never keep a check that could not be made.
+    func testTheSessionKeepsLastingVerdicts() {
+        let verdicts = MacBrailleTableCheck.Verdicts()
+        var checks = 0
+        let usable = { () -> MacBrailleTableCheck.Verdict in checks += 1; return .usable }
+        XCTAssertNil(verdicts.verdict(for: "mac:a.ctb"))
+        XCTAssertEqual(verdicts.verdict(for: "mac:a.ctb", checking: usable), .usable)
+        XCTAssertEqual(verdicts.verdict(for: "mac:a.ctb", checking: usable), .usable)
+        XCTAssertEqual(checks, 1)
+        XCTAssertEqual(verdicts.verdict(for: "mac:a.ctb"), .usable)
+
+        checks = 0
+        let failing = { () -> MacBrailleTableCheck.Verdict in checks += 1; return .refused(.couldNotCheck) }
+        XCTAssertEqual(verdicts.verdict(for: "mac:b.ctb", checking: failing), .refused(.couldNotCheck))
+        XCTAssertEqual(verdicts.verdict(for: "mac:b.ctb", checking: failing), .refused(.couldNotCheck))
+        XCTAssertEqual(checks, 2)
+        XCTAssertNil(verdicts.verdict(for: "mac:b.ctb"))
+    }
+
+    // MARK: - The Check With Stand-ins
+
+    /// A bundled table is never checked, and a Mac value this Mac does not
+    /// offer is gone; neither starts the helper.
+    func testBundledTablesPassAndGoneOnesAreRefusedWithoutAHelper() throws {
+        let marker = work.appendingPathComponent("marker")
+        let spy = shell("touch '\(marker.path)'")
+        try isolated(tool: spy) {
+            XCTAssertEqual(try MacBrailleTableCheck.check("en-ueb-g2.ctb", workingIn: work), .usable)
+            XCTAssertEqual(try MacBrailleTableCheck.check("mac:no-such-table.ctb", workingIn: work), .refused(.gone))
+            XCTAssertNoThrow(try MacBrailleTableCheck.requireUsable("en-ueb-g2.ctb", workingIn: work))
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path))
+    }
+
+    /// The helper's answers become verdicts: status 2 is a table that does
+    /// not load, eight-dot cells in the sample's translation are refused,
+    /// six-dot ones (with the escape backslash) are usable, and any other
+    /// failure is a check that could not be made. Each leaves the working
+    /// folder empty.
+    func testTheHelpersAnswersBecomeVerdicts() throws {
+        let table = try anyOfferedMacTable()
+        // "check" passes; "forward" writes one line of `cells` to the output.
+        func writing(_ octal: String) -> BrailleTranslator.Tool {
+            shell(#"[ "$1" = check ] && exit 0; printf '\#(octal)\n' > "$2""#)
+        }
+        let cases: [(BrailleTranslator.Tool, MacBrailleTableCheck.Verdict)] = [
+            (shell("exit 2"), .refused(.doesNotLoad)),
+            (shell("exit 1"), .refused(.couldNotCheck)),
+            (writing(#"\342\241\203"#), .refused(.writesEightDots)),  // U+2843, dots 1, 2, and 7
+            (writing(#"\342\240\201\342\241\263"#), .usable),  // ⠁ and the escape backslash
+        ]
+        for (tool, expected) in cases {
+            try isolated(tool: tool) {
+                XCTAssertEqual(try MacBrailleTableCheck.check(table, workingIn: work), expected)
+            }
+            assertWorkFolderEmpty()
+        }
+    }
+
+    /// The translator refuses a Mac table whose check fails by name, as an
+    /// unknown table, and keeps the verdict: the second translation starts
+    /// no helper at all. A call with no work checks nothing.
+    func testTheTranslatorRefusesAFailingMacTableByName() throws {
+        let table = try anyOfferedMacTable()
+        let marker = work.appendingPathComponent("marker")
+        try MacBrailleTableCheck.$verdicts.withValue(MacBrailleTableCheck.Verdicts()) {
+            try BrailleTranslator.$tool.withValue(shell("exit 2")) {
+                XCTAssertThrowsError(try BrailleTranslator.translate(["a"], table: table, direction: .printToBraille, workingIn: work)) {
+                    XCTAssertEqual($0 as? BrailleTranslator.Failure, .unknownTable(table))
+                    XCTAssertEqual(
+                        ($0 as? LocalizedError)?.errorDescription,
+                        "TextMouth has no braille table named \u{201C}\(table)\u{201D}."
+                    )
+                }
+            }
+            try BrailleTranslator.$tool.withValue(shell("touch '\(marker.path)'")) {
+                XCTAssertThrowsError(try BrailleTranslator.translate(["a"], table: table, direction: .brailleToPrint, workingIn: work))
+                XCTAssertEqual(try BrailleTranslator.translate([], table: table, direction: .printToBraille, workingIn: work), [])
+            }
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path), "a kept refusal ran the helper again")
+        assertWorkFolderEmpty()
+    }
+
+    /// A refusal that says something of the table writes one event line,
+    /// naming the table and the reason.
+    func testARefusalIsLogged() throws {
+        let table = try anyOfferedMacTable()
+        try TextMouthPaths.ensureDirectoryStructure()
+        try isolated(tool: shell("exit 2")) {
+            _ = try MacBrailleTableCheck.check(table, workingIn: work)
+        }
+        let lines = debugLogLines(containing: "BRAILLE_MAC_TABLE_REFUSED: \(table): it does not load")
+        XCTAssertFalse(lines.isEmpty, "no event line for the refusal")
+    }
+
+    /// The pop-ups' check runs off the main thread with the tool and the
+    /// verdicts of the caller, and keeps its verdict.
+    func testTheCheckOffTheMainThreadKeepsItsVerdict() async throws {
+        let table = try anyOfferedMacTable()
+        let verdicts = MacBrailleTableCheck.Verdicts()
+        let root = try makeSandboxDirectory("MacBrailleCheckRoot")
+        let verdict = await MacBrailleTableCheck.$verdicts.withValue(verdicts) {
+            await BrailleTranslator.$tool.withValue(shell("exit 2")) {
+                await TextutilDocumentReader.$temporaryRoot.withValue(root) {
+                    await MacBrailleTableCheck.verdictOffTheMainThread(for: table)
+                }
+            }
+        }
+        XCTAssertEqual(verdict, .refused(.doesNotLoad))
+        XCTAssertEqual(verdicts.verdict(for: table), .refused(.doesNotLoad))
+        // Its working folder is gone again.
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: root.path), [])
+    }
+
+    // MARK: - The Real Tool
+
+    /// The real tool runs a Mac table from the Mac's folder by its bare file
+    /// name, and a bundled one from the bundle's, as before.
+    func testTheRealToolRunsEachTableFromItsOwnFolder() throws {
+        let tool = BrailleTranslator.Tool.helper
+        let bundled = try XCTUnwrap(tool.tablesFolder)
+        XCTAssertEqual(
+            try XCTUnwrap(tool.command("check", "mac:fr-bfu-g2.ctb", nil, nil)).arguments,
+            ["check", BrailleTableCatalog.macTablesFolder.path, "fr-bfu-g2.ctb"]
+        )
+        XCTAssertEqual(try XCTUnwrap(tool.command("check", "en-ueb-g2.ctb", nil, nil)).arguments, ["check", bundled.path, "en-ueb-g2.ctb"])
+    }
+
+    /// TextMouth's own liblouis version, which the refusal names, is the one
+    /// vendored in `Vendor/liblouis/config.h`.
+    func testTheBundledLiblouisVersionIsTheVendoredOne() throws {
+        let config = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Vendor/liblouis/config.h")
+        let text = try String(contentsOf: config, encoding: .utf8)
+        XCTAssertTrue(
+            text.contains("#define PACKAGE_VERSION \"\(BrailleTableCatalog.bundledLiblouisVersion)\""),
+            "config.h names another version than \(BrailleTableCatalog.bundledLiblouisVersion)"
+        )
+    }
+
+    // MARK: - This Mac's Real Tables
+
+    /// This Mac's contracted French, partly contracted German, and
+    /// uncontracted Spanish tables pass the check, and a sentence in each
+    /// goes to six-dot braille and back unchanged through the translator.
+    func testFrenchGermanAndSpanishPassAndRoundTrip() throws {
+        let cases = [
+            ("mac:fr-bfu-g2.ctb", "Le chat est noir."),
+            ("mac:de-g1-detailed.ctb", "Der Hund ist klein."),
+            ("mac:es.tbl", "El perro es grande."),
+        ]
+        var checked = 0
+        for (id, sentence) in cases {
+            guard BrailleTableCatalog.table(withID: id) != nil else { continue }
+            checked += 1
+            try isolated {
+                XCTAssertEqual(try MacBrailleTableCheck.check(id, workingIn: work), .usable, id)
+                let braille = try BrailleTranslator.translate([sentence], table: id, direction: .printToBraille, workingIn: work)
+                XCTAssertTrue(braille.allSatisfy(MacBrailleTableCheck.writesSixDotsOnly), "\(id): \(braille)")
+                XCTAssertEqual(try BrailleTranslator.translate(braille, table: id, direction: .brailleToPrint, workingIn: work), [sentence], id)
+            }
+            assertWorkFolderEmpty()
+        }
+        try XCTSkipIf(checked == 0, "This Mac offers none of its French, German, or Spanish tables")
+    }
+
+    /// This Mac's Greek table does not load in TextMouth's liblouis, so the
+    /// check refuses it, and an import or export with it is refused by name.
+    func testGreekDoesNotLoadAndIsRefusedByName() throws {
+        let greek = try requireOffered("mac:el.ctb")
+        try isolated {
+            XCTAssertEqual(try MacBrailleTableCheck.check(greek, workingIn: work), .refused(.doesNotLoad))
+            XCTAssertThrowsError(try BrailleTranslator.translate(["a"], table: greek, direction: .printToBraille, workingIn: work)) {
+                XCTAssertEqual($0 as? BrailleTranslator.Failure, .unknownTable(greek))
+            }
+        }
+        assertWorkFolderEmpty()
+    }
+}

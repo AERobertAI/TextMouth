@@ -219,6 +219,15 @@ enum TextutilDocumentReader {
         if ImportStaging.isStagedPackageName(parent.lastPathComponent) {
             return try body(parent)
         }
+        return try withTemporaryWorkingFolder(body)
+    }
+
+    /// Runs `body` with a new folder in `temporaryRoot` (the temporary
+    /// directory), removed afterwards: the working folder of a conversion
+    /// outside a staged package, and of work with no file of its own, such
+    /// as the check of one of this Mac's braille tables chosen in Settings
+    /// (`MacBrailleTableCheck`).
+    static func withTemporaryWorkingFolder<Output>(_ body: (URL) throws -> Output) throws -> Output {
         let folder = temporaryRoot
             .appendingPathComponent("TextMouth-textutil-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

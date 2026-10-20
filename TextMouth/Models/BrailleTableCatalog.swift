@@ -328,6 +328,11 @@ enum BrailleTableCatalog {
         return tables(in: folder)
     }()
 
+    /// The liblouis TextMouth's braille helper is built from
+    /// (`Vendor/liblouis`, `PACKAGE_VERSION` in its config.h), which reads
+    /// the tables of both sources. A test keeps the two the same.
+    static let bundledLiblouisVersion = "3.39.0"
+
     // MARK: This Mac's Tables
 
     /// VoiceOver's own liblouis tables (decision 2). On macOS 26.3 the folder
