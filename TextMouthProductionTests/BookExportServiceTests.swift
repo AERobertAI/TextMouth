@@ -630,6 +630,98 @@ final class BookExportServiceTests: XCTestCase {
         )
     }
 
+    /// `moveExclusively` refuses a name that is taken: it throws
+    /// `fileWriteFileExists`, the file there keeps its bytes, and the source
+    /// stays where it was.
+    func testMovingExclusivelyRefusesAnExistingTarget() throws {
+        let folder = try makeSandboxDirectory("Export Exclusive Refuse")
+        let source = folder.appendingPathComponent("source.txt")
+        let target = folder.appendingPathComponent("target.txt")
+        try Data("new".utf8).write(to: source)
+        try Data("Someone else's".utf8).write(to: target)
+
+        XCTAssertThrowsError(try BookExportService.moveExclusively(source, to: target)) { error in
+            XCTAssertEqual((error as? CocoaError)?.code, .fileWriteFileExists)
+        }
+
+        XCTAssertEqual(try String(contentsOf: target, encoding: .utf8), "Someone else's")
+        XCTAssertEqual(try String(contentsOf: source, encoding: .utf8), "new")
+    }
+
+    /// `moveExclusively` moves a file, and a folder, to a free name.
+    func testMovingExclusivelyMovesToAFreeTarget() throws {
+        let folder = try makeSandboxDirectory("Export Exclusive Move")
+        let source = folder.appendingPathComponent("source.txt")
+        let target = folder.appendingPathComponent("target.txt")
+        try Data("new".utf8).write(to: source)
+        let package = folder.appendingPathComponent("package.rtfd", isDirectory: true)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        try Data("inside".utf8).write(to: package.appendingPathComponent("TXT.rtf"))
+        let movedPackage = folder.appendingPathComponent("moved.rtfd", isDirectory: true)
+
+        try BookExportService.moveExclusively(source, to: target)
+        try BookExportService.moveExclusively(package, to: movedPackage)
+
+        XCTAssertEqual(try String(contentsOf: target, encoding: .utf8), "new")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: source.path))
+        XCTAssertEqual(try String(contentsOf: movedPackage.appendingPathComponent("TXT.rtf"), encoding: .utf8), "inside")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: package.path))
+    }
+
+    /// When the rename cannot be exclusive across volumes (`EXDEV`) the
+    /// move copies with exclusive creation: it still refuses a name that is
+    /// taken, leaving both files as they are, and copies, then removes the
+    /// source, for a free one, a file or a folder.
+    func testMovingExclusivelyCopiesWhereTheRenameCannot() throws {
+        let folder = try makeSandboxDirectory("Export Exclusive Copy")
+        let source = folder.appendingPathComponent("source.txt")
+        let taken = folder.appendingPathComponent("taken.txt")
+        let free = folder.appendingPathComponent("free.txt")
+        try Data("new".utf8).write(to: source)
+        try Data("Someone else's".utf8).write(to: taken)
+        let package = folder.appendingPathComponent("package.rtfd", isDirectory: true)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        try Data("inside".utf8).write(to: package.appendingPathComponent("TXT.rtf"))
+        let freePackage = folder.appendingPathComponent("free.rtfd", isDirectory: true)
+        let otherVolume: (URL, URL) -> Int32 = { _, _ in
+            errno = EXDEV
+            return -1
+        }
+
+        XCTAssertThrowsError(try BookExportService.moveExclusively(source, to: taken, rename: otherVolume)) { error in
+            XCTAssertEqual((error as? CocoaError)?.code, .fileWriteFileExists)
+        }
+        XCTAssertEqual(try String(contentsOf: taken, encoding: .utf8), "Someone else's")
+        XCTAssertEqual(try String(contentsOf: source, encoding: .utf8), "new")
+
+        try BookExportService.moveExclusively(source, to: free, rename: otherVolume)
+        try BookExportService.moveExclusively(package, to: freePackage, rename: otherVolume)
+
+        XCTAssertEqual(try String(contentsOf: free, encoding: .utf8), "new")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: source.path), "the source was kept")
+        XCTAssertEqual(try String(contentsOf: freePackage.appendingPathComponent("TXT.rtf"), encoding: .utf8), "inside")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: package.path), "the source folder was kept")
+    }
+
+    /// Any other error of the rename is thrown as it is, and nothing moves.
+    func testMovingExclusivelyThrowsAnyOtherError() throws {
+        let folder = try makeSandboxDirectory("Export Exclusive Error")
+        let source = folder.appendingPathComponent("source.txt")
+        try Data("new".utf8).write(to: source)
+        let target = folder.appendingPathComponent("target.txt")
+
+        XCTAssertThrowsError(
+            try BookExportService.moveExclusively(source, to: target, rename: { _, _ in
+                errno = EACCES
+                return -1
+            })
+        ) { error in
+            XCTAssertEqual((error as? POSIXError)?.code, .EACCES)
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: target.path))
+    }
+
     // MARK: - Words
 
     /// Books in the cloud are named, up to three, then counted, with what

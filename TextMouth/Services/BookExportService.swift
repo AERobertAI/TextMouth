@@ -895,13 +895,14 @@ enum BookExportService {
     /// Makes `target` whole or not at all: `write` makes the file (or folder,
     /// such as an RTFD package) at a scratch URL of the target's name in a new
     /// scratch folder, and once Stop has not been pressed it is moved to
-    /// `target`, which fails rather than replace a file that appeared since
-    /// the plan. The folder of `target` is made only then, so a stopped export
-    /// leaves none. The scratch folder is removed in every case, so a stopped
-    /// or failed file leaves nothing behind, and nothing is ever removed from
-    /// the folder chosen. Every source kind goes through it: a copy and the
-    /// reading text as well as a conversion, an audio one (FMT30, FMT43) as
-    /// well as a text one.
+    /// `target` by `moveExclusively`, which fails rather than replace a file
+    /// that appeared since the plan, atomically on one volume and by
+    /// exclusive creation across volumes. The folder of `target` is made only
+    /// then, so a stopped export leaves none. The scratch folder is removed
+    /// in every case, so a stopped or failed file leaves nothing behind, and
+    /// nothing is ever removed from the folder chosen. Every source kind goes
+    /// through it: a copy and the reading text as well as a conversion, an
+    /// audio one (FMT30, FMT43) as well as a text one.
     private static func writeThroughScratchFile(
         to target: URL,
         cancellation: BookExportCancellation,
@@ -913,7 +914,74 @@ enum BookExportService {
         try write(scratch)
         try cancellation.checkCancelled()
         try makeFolder(of: target)
-        try FileManager.default.moveItem(at: scratch, to: target)
+        try moveExclusively(scratch, to: target)
+    }
+
+    /// Moves `source` (a file, or a folder such as an RTFD package) to
+    /// `target`, which must not exist: if anything is there, even something
+    /// that appeared an instant ago, it throws `CocoaError.fileWriteFileExists`
+    /// and leaves both as they are. `FileManager.moveItem` checks and then
+    /// renames, so a file made between the two is replaced (a reviewer's race
+    /// replaced 2,995 of 3,000); this renames with `RENAME_EXCL`, which the
+    /// file system makes atomic.
+    ///
+    /// Where that cannot be done (`EXDEV`: the scratch folder is on another
+    /// volume than `target`; `ENOTSUP` and `EINVAL`: a volume without
+    /// exclusive rename) the source is copied with exclusive creation and
+    /// then removed; a copy that fails other than for an existing target
+    /// removes only what it created itself.
+    ///
+    /// `rename` stands for `renamex_np(RENAME_EXCL)` and returns 0, or -1
+    /// with `errno` set; it exists only so a test can make it report
+    /// `EXDEV` and so check the copy on one volume.
+    static func moveExclusively(
+        _ source: URL,
+        to target: URL,
+        rename: (_ source: URL, _ target: URL) -> Int32 = renameWithoutReplacing
+    ) throws {
+        guard rename(source, target) != 0 else { return }
+        // Read at once: anything that follows may change errno.
+        let code = errno
+        switch code {
+        case EEXIST:
+            throw targetExistsError(target)
+        case EXDEV, ENOTSUP, EINVAL:
+            try copyExclusively(source, to: target)
+            try FileManager.default.removeItem(at: source)
+        default:
+            throw POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO)
+        }
+    }
+
+    /// Renames `source` to `target` unless something is already there
+    /// (`RENAME_EXCL`), atomically. 0 when done, else -1 with `errno` set.
+    private static func renameWithoutReplacing(_ source: URL, _ target: URL) -> Int32 {
+        renamex_np(source.path, target.path, UInt32(RENAME_EXCL))
+    }
+
+    /// Copies `source`, a file or a folder with all it holds, to `target`,
+    /// which is created exclusively: if anything is there, nothing is
+    /// written and it throws `CocoaError.fileWriteFileExists`. When the copy
+    /// fails for another reason, what it made at `target` (which was made by
+    /// the copy, since it did not exist) is removed, and the error thrown.
+    private static func copyExclusively(_ source: URL, to target: URL) throws {
+        var flags = copyfile_flags_t(COPYFILE_ALL | COPYFILE_EXCL)
+        if isFolder(source) {
+            flags |= copyfile_flags_t(COPYFILE_RECURSIVE)
+        }
+        guard copyfile(source.path, target.path, nil, flags) != 0 else { return }
+        let code = errno
+        if code == EEXIST {
+            throw targetExistsError(target)
+        }
+        // Not EEXIST, so the exclusive creation of `target` was ours.
+        try? FileManager.default.removeItem(at: target)
+        throw POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO)
+    }
+
+    /// The error for a move or copy onto a name that is taken.
+    private static func targetExistsError(_ target: URL) -> CocoaError {
+        CocoaError(.fileWriteFileExists, userInfo: [NSFilePathErrorKey: target.path, NSURLErrorKey: target])
     }
 
     /// A new, empty scratch folder: one the system keeps on the volume of the
