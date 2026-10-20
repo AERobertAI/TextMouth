@@ -1,0 +1,32 @@
+# Review fixes, part 1: the helper, the translator, and the PEF writer (M1, M6, L1, L2, L3)
+
+- **Slug:** `braille-fixhelper`. **Branch:** `braille/fix-helper`, made with `git checkout -b braille/fix-helper team/braille`.
+- Read `Scripts/agents/briefs/2026-10-19/braille/common.md` first.
+- **Files (yours alone):** `TextMouthBraille/main.c`; `TextMouth/Services/BrailleTranslator.swift`; `TextMouth/Services/BrailleFileWriter.swift`; `TextMouthProductionTests/BrailleTranslatorTests.swift`, `BrailleFileWriterTests.swift`, `BrailleDocumentWriterTests.swift`. Touch nothing else.
+- **Read first:** `TextMouthBraille/main.c` (all, about 330 lines); `BrailleTranslator.swift` lines 100 to 330; `BrailleFileWriter.swift` (all); the reviewer's repro tools in `/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/8d971e15-7103-46cf-b45e-5c4d099f2f74/scratchpad/review-braille-c/tools/` (`exp12_truncation.py`, `exp13_trigger.py`, `probe.c`, `build-helper.sh`: read them as text, and copy what you need into your own scratch folder before running anything).
+- One commit per item, each with its tests, in this order.
+
+## M1: forward output is silently cut (`main.c`, `translate`, about line 225 to 260)
+When forward output fills its room on a character the table lacks, liblouis reports success, says it used all the input, and cuts the output. The reviewer reproduced it with `lou_translateString` called as the helper calls it: 100 emoji at the first room of 864 cells gave ok=1, used=100, written=864, while 1,664 cells of room gave all 900; 20 CJK characters at a room of 64 also reported used=20. The longest escape is 10 cells.
+1. A translation counts only when `ok`, all the input was used, and at least 16 cells of room were left over (`room - written >= 16`); otherwise it is tried again with twice the room, as now, up to `MOST_ROOM` times the input. A translation that never leaves 16 cells over is a failure (exit status 5). Do the same in both directions. Make the comment say exactly this, with the reviewer's numbers.
+2. Tests (`BrailleTranslatorTests`, real helper): 100 emoji forward with `en-ueb-g2.ctb` give exactly 100 escapes (count the escape's leading cell, or compare with 100 copies of one emoji's translation); `Party time ` and 160 emoji the same; 20 CJK characters give 20 escapes; one paragraph of 4,000 control characters (U+0001) translates without failing.
+
+## L1: a comma in the bundle's path breaks every table (`main.c`, `table_path`, about line 190 to 215)
+liblouis splits both the table list and `LOUIS_TABLEPATH` at commas, so TextMouth.app in a folder such as `Apps, old` refuses every table.
+1. Change into the tables folder, set `LOUIS_TABLEPATH` to `.`, and load the table by its bare name with `lou_checkTable`, so liblouis resolves it and its includes against that folder and no path holds a comma. Then change into `/var/empty` before translating (liblouis keeps a loaded table by its name and reads no file again; prove it with the test below), so that a helper built with code coverage still leaves no `default.profraw` in the bundle. The output and input paths are absolute, as now.
+2. Test (`BrailleTranslatorTests`): copy the bundle's tables folder into a sandbox folder named `Apps, old/tables`, and run the helper on it with a stand-in `Tool` whose command uses that folder (the real executable, `Bundle.main.url(forAuxiliaryExecutable: "TextMouthBraille")`): `check` passes and a Grade 2 back-translation of the Grade 2 sample's rows gives its print.
+
+## L2: a record may name any file in the tables folder (`BrailleTranslator.swift`, `isBareTableName` and its callers, about line 323)
+An edited record naming `spaces.uti`, an include file, imports, and the book reads as liblouis escapes. Accept only the tables the catalog offers: `translate` and `check` throw `Failure.unknownTable(table)` when `BrailleTableCatalog.table(withID: table)` is nil, before starting anything. The stored value is never changed (a library from a newer TextMouth with more tables must keep its books' tables); such a book is refused by name, as an unknown table is now. Update `BrailleTranslatorTests.testEveryTableChecks`, which also checks `en-us-compbrl.uti`: that table is now refused by name, which the test pins. Test: `spaces.uti` and `en-ueb-chardefs.uti` are refused with the unknown-table sentence, from `translate` and from `check`.
+
+## L3: the forward output cap is too small (`BrailleTranslator.swift`, `limits(for:bytes:)`, about line 141)
+liblouis's forward growth for text a table lacks is 11 times for Cyrillic in all four tables and 24 times for control characters, above the cap of 10 times the input plus 1 MiB. Forward runs get `maximumOutputBytes = 32 * bytes + 1_048_576`; back and check keep theirs. Update the comment with these ratios, and `testTheLimitsArePinned`. Test: 200 KB of Cyrillic forward with `en-ueb-g2.ctb` translates.
+
+## M6: TextMouth would write PEF it cannot read back (`BrailleFileWriter.swift`, `pef`, about line 141)
+With all four tables, liblouis writes a character it has no rule for (an emoji, a check mark, Chinese, Cyrillic) as an escape whose backslash is the eight-dot cell U+2873. The BRF writer already writes a cell's six-dot part; the PEF writer keeps U+2873, and the reader refuses the file as eight-dot braille.
+1. Both writers write six-dot cells only: one private function gives a scalar's six-dot part (the existing `sixDotPart(of:)`, which both now use), so BRF and PEF hold the same cells. The comments say why (TextMouth writes and reads six-dot braille only; the escape's backslash then becomes braille ASCII's own backslash, ⠳).
+2. Test (`BrailleFileWriterTests`): a page holding U+2873 gives ⠳ (U+2833) in the PEF and `\` in the BRF.
+3. **The round trip** (`BrailleDocumentWriterTests`): a book of three paragraphs, `Москва`, `中文`, and `🙂`, exported with `en-ueb-g2.ctb` through `BrailleDocumentWriter.brf(of:…)` and `.pef(of:…)`, each file written into a sandbox folder (`.brf`, `.pef`) and imported with `importedForTest` inside `BraillePreferences.$tableForImports.withValue("en-ueb-g2.ctb")`: neither import is refused, and each book's text is exactly what liblouis reads the escapes as. Pin that text in the test, and say in its comment that it is liblouis's reading of its own escape notation, not the print.
+
+## Tests to run
+`BrailleTranslatorTests`, `BrailleFileWriterTests`, `BrailleDocumentWriterTests`, `BrailleImportTests`, `BrailleTableCatalogTests`, `LogContentPolicyTests`.
