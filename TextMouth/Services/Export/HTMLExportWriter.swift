@@ -220,26 +220,14 @@ struct HTMLExportWriter: TextExportWriter {
     /// The markup of `runs`, which every block that has runs shares.
     /// Neighbouring runs with the same link, when that link may be a link,
     /// are one `<a>`; any other run stands alone, and a link that may not be
-    /// one (`ExportRun.isAllowedLinkAddress`) is written as plain text.
+    /// one (`ExportRun.isAllowedLinkAddress`) is written as plain text
+    /// (`linkGroups`, which the RTF writer shares).
     private static func runsMarkup(_ runs: [ExportRun]) -> String {
-        var markup = ""
-        var index = runs.startIndex
-        while index < runs.endIndex {
-            let run = runs[index]
-            guard let address = run.link, ExportRun.isAllowedLinkAddress(address) else {
-                markup += styledMarkup(of: run)
-                index = runs.index(after: index)
-                continue
-            }
-            // Gather this run and the neighbours linking to the same address.
-            var inner = ""
-            while index < runs.endIndex, runs[index].link == address {
-                inner += styledMarkup(of: runs[index])
-                index = runs.index(after: index)
-            }
-            markup += "<a href=\"\(XMLEscaping.attribute(address))\">\(inner)</a>"
-        }
-        return markup
+        runs.linkGroups.map { group in
+            let inner = group.runs.map(styledMarkup).joined()
+            guard let address = group.link else { return inner }
+            return "<a href=\"\(XMLEscaping.attribute(address))\">\(inner)</a>"
+        }.joined()
     }
 
     /// One run's text, escaped, each line feed a `<br/>`, wrapped from the

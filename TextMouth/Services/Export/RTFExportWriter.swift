@@ -279,26 +279,14 @@ struct RTFExportWriter: TextExportWriter {
     /// The RTF of `runs`, which every block that has runs shares.
     /// Neighbouring runs with the same link, when that link may be a link,
     /// are one field; any other run stands alone, and a link that may not be
-    /// one (`ExportRun.isAllowedLinkAddress`) is written as plain text.
+    /// one (`ExportRun.isAllowedLinkAddress`) is written as plain text
+    /// (`linkGroups`, which the HTML writer shares).
     private static func runsText(_ runs: [ExportRun]) -> String {
-        var text = ""
-        var index = runs.startIndex
-        while index < runs.endIndex {
-            let run = runs[index]
-            guard let address = run.link, ExportRun.isAllowedLinkAddress(address) else {
-                text += styledText(of: run)
-                index = runs.index(after: index)
-                continue
-            }
-            // Gather this run and the neighbours linking to the same address.
-            var inner = ""
-            while index < runs.endIndex, runs[index].link == address {
-                inner += styledText(of: runs[index])
-                index = runs.index(after: index)
-            }
-            text += linkText(address: address, inner: inner)
-        }
-        return text
+        runs.linkGroups.map { group in
+            let inner = group.runs.map(styledText).joined()
+            guard let address = group.link else { return inner }
+            return linkText(address: address, inner: inner)
+        }.joined()
     }
 
     /// `inner`, already RTF, as an underlined field that links to `address`.

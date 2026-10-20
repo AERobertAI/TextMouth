@@ -290,9 +290,38 @@ struct ExportRun: Equatable, Sendable {
     }
 }
 
+/// Neighbouring runs that a writer writes together: the runs of one link,
+/// or one run outside any link.
+struct ExportRunGroup: Equatable, Sendable {
+    /// The address the runs link to, one that may be a link
+    /// (`ExportRun.isAllowedLinkAddress(_:)`); nil for a run outside any.
+    var link: String?
+    /// The runs, in order.
+    var runs: [ExportRun]
+}
+
 extension Array where Element == ExportRun {
     /// The runs' text, joined: a heading's or a paragraph's plain text.
     var plainText: String {
         map(\.text).joined()
+    }
+
+    /// The runs in the groups writers write them in: neighbouring runs that
+    /// link to the same address, when that address may be a link, make one
+    /// group with that link (HTML writes it as one `<a>`, RTF as one field);
+    /// every other run is a group of its own with no link, even one whose
+    /// address may not be a link, which the writers trust no caller to have
+    /// left out.
+    var linkGroups: [ExportRunGroup] {
+        var groups: [ExportRunGroup] = []
+        for run in self {
+            let link = run.link.flatMap { ExportRun.isAllowedLinkAddress($0) ? $0 : nil }
+            if let link, let last = groups.last, last.link == link {
+                groups[groups.count - 1].runs.append(run)
+            } else {
+                groups.append(ExportRunGroup(link: link, runs: [run]))
+            }
+        }
+        return groups
     }
 }
