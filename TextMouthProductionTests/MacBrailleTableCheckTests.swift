@@ -31,20 +31,27 @@ final class MacBrailleTableCheckTests: XCTestCase {
         }
     }
 
-    /// A stand-in helper that runs `/bin/sh -c script sh MODE OUTPUT`, with
-    /// limits that keep a test short: `seconds` for each run.
+    /// A stand-in helper that runs `/bin/sh -c script sh MODE OUTPUT INPUT`,
+    /// with limits that keep a test short: `seconds` for each run.
     private func shell(_ script: String, seconds: TimeInterval = 5) -> BrailleTranslator.Tool {
         let limits = WatchedProcess.Limits(
             maximumSeconds: seconds, maximumResidentBytes: 1 << 30, maximumStalledSeconds: seconds, pollInterval: 0.1
         )
         return BrailleTranslator.Tool(
-            command: { mode, _, _, output in
-                (URL(fileURLWithPath: "/bin/sh"), ["-c", script, "sh", mode, output?.path ?? ""])
+            command: { mode, _, input, output in
+                (URL(fileURLWithPath: "/bin/sh"), ["-c", script, "sh", mode, output?.path ?? "", input?.path ?? ""])
             },
             limits: { _, _ in limits },
             residentMemory: { _ in nil },
             tablesFolder: nil
         )
+    }
+
+    /// A stand-in helper whose "check" passes and whose translations write
+    /// `cells` for each line of their input, both ways, after running
+    /// `before` (a shell command, such as a sleep).
+    private func echoing(_ cells: String, before: String = ":", seconds: TimeInterval = 5) -> BrailleTranslator.Tool {
+        shell(#"[ "$1" = check ] && exit 0; "# + before + #"; awk '{ print "\#(cells)" }' "$3" > "$2""#, seconds: seconds)
     }
 
     /// Asserts that the working folder holds nothing, hidden files included.
@@ -126,7 +133,10 @@ final class MacBrailleTableCheckTests: XCTestCase {
         )
         XCTAssertTrue(MacBrailleTableCheck.Refusal.helperFailed.isUnchecked)
         XCTAssertFalse(MacBrailleTableCheck.Refusal.doesNotLoad.isUnchecked)
-        XCTAssertTrue(MacBrailleTableCheck.Verdict.usable.lastsTheSession)
+        XCTAssertEqual(MacBrailleTableCheck.Refusal.needsTooMuchMemory.reason, "it needs more than 64 MB of memory")
+        XCTAssertEqual(MacBrailleTableCheck.Refusal.tooSlow.reason, "it translates too slowly, under 50 KB a second")
+        XCTAssertTrue(MacBrailleTableCheck.Verdict.usable(.none).lastsTheSession)
+        XCTAssertTrue(MacBrailleTableCheck.Verdict.refused(.tooSlow).lastsTheSession)
         XCTAssertTrue(MacBrailleTableCheck.Verdict.refused(.doesNotLoad).lastsTheSession)
         XCTAssertFalse(MacBrailleTableCheck.Verdict.refused(.helperFailed).lastsTheSession)
         XCTAssertFalse(MacBrailleTableCheck.Verdict.refused(.noWorkingFolder).lastsTheSession)
@@ -137,12 +147,12 @@ final class MacBrailleTableCheckTests: XCTestCase {
     func testTheSessionKeepsLastingVerdicts() {
         let verdicts = MacBrailleTableCheck.Verdicts()
         var checks = 0
-        let usable = { () -> MacBrailleTableCheck.Verdict in checks += 1; return .usable }
+        let usable = { () -> MacBrailleTableCheck.Verdict in checks += 1; return .usable(.none) }
         XCTAssertNil(verdicts.verdict(for: "mac:a.ctb"))
-        XCTAssertEqual(verdicts.verdict(for: "mac:a.ctb", checking: usable), .usable)
-        XCTAssertEqual(verdicts.verdict(for: "mac:a.ctb", checking: usable), .usable)
+        XCTAssertEqual(verdicts.verdict(for: "mac:a.ctb", checking: usable), .usable(.none))
+        XCTAssertEqual(verdicts.verdict(for: "mac:a.ctb", checking: usable), .usable(.none))
         XCTAssertEqual(checks, 1)
-        XCTAssertEqual(verdicts.verdict(for: "mac:a.ctb"), .usable)
+        XCTAssertEqual(verdicts.verdict(for: "mac:a.ctb"), .usable(.none))
 
         checks = 0
         let failing = { () -> MacBrailleTableCheck.Verdict in checks += 1; return .refused(.helperFailed) }
@@ -160,7 +170,7 @@ final class MacBrailleTableCheckTests: XCTestCase {
         let marker = work.appendingPathComponent("marker")
         let spy = shell("touch '\(marker.path)'")
         try isolated(tool: spy) {
-            XCTAssertEqual(try MacBrailleTableCheck.check("en-ueb-g2.ctb", workingIn: work), .usable)
+            XCTAssertEqual(try MacBrailleTableCheck.check("en-ueb-g2.ctb", workingIn: work), .usable(.none))
             XCTAssertEqual(try MacBrailleTableCheck.check("mac:no-such-table.ctb", workingIn: work), .refused(.gone))
             XCTAssertNoThrow(try MacBrailleTableCheck.requireUsable("en-ueb-g2.ctb", workingIn: work))
         }
@@ -169,29 +179,135 @@ final class MacBrailleTableCheckTests: XCTestCase {
 
     /// The helper's answers become verdicts: status 2 is a table that does
     /// not load, eight-dot cells in the sample's translation are refused,
-    /// six-dot ones (with the escape backslash) are usable, and any other
-    /// failure is a check that could not be made, saying why: the helper
-    /// failed, or the watchdog stopped it. Each leaves the working folder
-    /// empty.
+    /// six-dot ones (with the escape backslash) are usable, a run stopped
+    /// for its time is too slow (review R1), and any other failure is a
+    /// check that could not be made, saying why. Each leaves the working
+    /// folder empty.
     func testTheHelpersAnswersBecomeVerdicts() throws {
         let table = try anyOfferedMacTable()
-        // "check" passes; "forward" writes one line of `cells` to the output.
-        func writing(_ octal: String) -> BrailleTranslator.Tool {
-            shell(#"[ "$1" = check ] && exit 0; printf '\#(octal)\n' > "$2""#)
-        }
-        let cases: [(BrailleTranslator.Tool, MacBrailleTableCheck.Verdict)] = [
-            (shell("exit 2"), .refused(.doesNotLoad)),
-            (shell("exit 1"), .refused(.helperFailed)),
-            (shell("sleep 5", seconds: 0.5), .refused(.helperStopped(because: "it ran longer than 1 second"))),
-            (writing(#"\342\241\203"#), .refused(.writesEightDots)),  // U+2843, dots 1, 2, and 7
-            (writing(#"\342\240\201\342\241\263"#), .usable),  // ⠁ and the escape backslash
+        // Nil stands for a usable table.
+        let cases: [(BrailleTranslator.Tool, MacBrailleTableCheck.Refusal?)] = [
+            (shell("exit 2"), .doesNotLoad),
+            (shell("exit 1"), .helperFailed),
+            (shell("sleep 5", seconds: 0.5), .tooSlow),
+            (echoing("\u{2843}"), .writesEightDots),  // dots 1, 2, and 7
+            (echoing("\u{2801}\u{2873}"), nil),  // ⠁ and the escape backslash
         ]
         for (tool, expected) in cases {
             try isolated(tool: tool) {
-                XCTAssertEqual(try MacBrailleTableCheck.check(table, workingIn: work), expected)
+                let verdict = try MacBrailleTableCheck.check(table, workingIn: work)
+                if let expected {
+                    XCTAssertEqual(verdict, .refused(expected))
+                } else {
+                    XCTAssertTrue(verdict.isUsable, "\(verdict)")
+                }
             }
             assertWorkFolderEmpty()
         }
+    }
+
+    // MARK: - Needs and Limits (review R1)
+
+    /// A table's measured needs raise the limits of its runs to at least
+    /// twice its memory and four times its time, each way, and never lower
+    /// a limit; a bundled table's needs change nothing.
+    func testTheNeedsRaiseTheLimitsAndNeverLowerThem() {
+        let needs = MacBrailleTableCheck.TableNeeds(
+            loadSeconds: 0.1, forwardSecondsPerMB: 1.5, backSecondsPerMB: 7.6, peakResidentBytes: 28 * 1_048_576
+        )
+        let back = BrailleTranslator.limits(for: .brailleToPrint, bytes: 1_000_000)
+        let raised = needs.limits(raising: back, direction: .brailleToPrint, bytes: 1_000_000)
+        XCTAssertEqual(raised.maximumSeconds, 4 * (0.1 + 7.6), accuracy: 1e-9)
+        XCTAssertEqual(raised.maximumStalledSeconds, raised.maximumSeconds)
+        XCTAssertEqual(raised.maximumResidentBytes, 56 * 1_048_576)
+        XCTAssertEqual(raised.maximumOutputBytes, back.maximumOutputBytes)
+        // Forward, today's six seconds a megabyte is more than four times 1.5.
+        let forward = BrailleTranslator.limits(for: .printToBraille, bytes: 1_000_000)
+        XCTAssertEqual(needs.limits(raising: forward, direction: .printToBraille, bytes: 1_000_000).maximumSeconds, forward.maximumSeconds)
+        // A check run needs only the load, far under today's ten seconds.
+        let check = BrailleTranslator.limits(for: nil, bytes: 0)
+        XCTAssertEqual(needs.limits(raising: check, direction: nil, bytes: 0).maximumSeconds, check.maximumSeconds)
+        XCTAssertEqual(MacBrailleTableCheck.TableNeeds.none.limits(raising: back, direction: .brailleToPrint, bytes: 1_000_000), back)
+    }
+
+    /// Needs past a ceiling refuse the table: more than 64 MB of memory, or
+    /// slower than 20 seconds a megabyte either way.
+    func testTheCeilings() {
+        XCTAssertEqual(MacBrailleTableCheck.memoryCeilingBytes, 64 * 1_048_576)
+        XCTAssertEqual(MacBrailleTableCheck.secondsPerMBCeiling, 20)
+        func needs(memory: Int64 = 1_048_576, forward: TimeInterval = 1, back: TimeInterval = 1) -> MacBrailleTableCheck.TableNeeds {
+            .init(loadSeconds: 0.1, forwardSecondsPerMB: forward, backSecondsPerMB: back, peakResidentBytes: memory)
+        }
+        XCTAssertEqual(MacBrailleTableCheck.verdict(for: needs(memory: 65 * 1_048_576), timedSeconds: 1), .refused(.needsTooMuchMemory))
+        XCTAssertEqual(MacBrailleTableCheck.verdict(for: needs(forward: 21), timedSeconds: 1), .refused(.tooSlow))
+        XCTAssertEqual(MacBrailleTableCheck.verdict(for: needs(back: 21), timedSeconds: 1), .refused(.tooSlow))
+        XCTAssertEqual(MacBrailleTableCheck.verdict(for: needs(memory: 28 * 1_048_576, back: 7.6), timedSeconds: 1),
+                       .usable(needs(memory: 28 * 1_048_576, back: 7.6)))
+        // A rate over a run of a few hundredths of a second is the time of
+        // starting a process, and refuses nothing.
+        XCTAssertEqual(MacBrailleTableCheck.minimumTimedSeconds, 0.25)
+        XCTAssertEqual(MacBrailleTableCheck.verdict(for: needs(back: 60), timedSeconds: 0.03), .usable(needs(back: 60)))
+        // A rate is the run's seconds beyond loading for each MB of input.
+        XCTAssertEqual(MacBrailleTableCheck.secondsPerMB(0.5, input: [String(repeating: "a", count: 499_999)]), 1, accuracy: 1e-9)
+        XCTAssertEqual(MacBrailleTableCheck.secondsPerMB(-0.1, input: ["a"]), 0)
+        XCTAssertEqual(MacBrailleTableCheck.secondsPerMB(1, input: []), 0)
+    }
+
+    /// A table that holds more memory than the ceiling is stopped in its
+    /// check and refused for it: a stand-in that holds 100 MB is stopped
+    /// within a moment, its memory read every millisecond.
+    func testATableNeedingTooMuchMemoryIsRefused() throws {
+        let table = try anyOfferedMacTable()
+        let hog = BrailleTranslator.Tool(
+            command: { _, _, _, _ in
+                (URL(fileURLWithPath: "/usr/bin/perl"), ["-e", "my $held = 'a' x (100 * 1024 * 1024); sleep 3;"])
+            },
+            limits: { _, _ in WatchedProcess.Limits(maximumSeconds: 5, maximumResidentBytes: 1 << 30, maximumStalledSeconds: 5) },
+            residentMemory: { WatchedProcess.residentMemory(of: $0) },
+            tablesFolder: nil
+        )
+        try XCTSkipUnless(FileManager.default.isExecutableFile(atPath: "/usr/bin/perl"), "This Mac has no /usr/bin/perl")
+        try isolated(tool: hog) {
+            XCTAssertEqual(try MacBrailleTableCheck.check(table, workingIn: work), .refused(.needsTooMuchMemory))
+        }
+        assertWorkFolderEmpty()
+    }
+
+    /// A table slower than the ceiling is refused: a stand-in that takes
+    /// more than half a second to read back half a kilobyte of braille.
+    func testATableTooSlowIsRefused() throws {
+        let table = try anyOfferedMacTable()
+        try isolated(tool: echoing("\u{2801}", before: #"[ "$1" = back ] && sleep 0.6"#)) {
+            XCTAssertEqual(try MacBrailleTableCheck.check(table, workingIn: work), .refused(.tooSlow))
+        }
+        assertWorkFolderEmpty()
+    }
+
+    /// A run of a table found usable gets the limits its needs call for: a
+    /// stand-in taking a second passes under a tool limit of half a second
+    /// once the table's load is a second, and is stopped with no needs.
+    func testARunGetsTheLimitsItsTablesNeedsCallFor() throws {
+        let table = try anyOfferedMacTable()
+        let slowStart = echoing("\u{2801}", before: "sleep 1", seconds: 0.5)
+        let needs = MacBrailleTableCheck.TableNeeds(loadSeconds: 1, forwardSecondsPerMB: 0, backSecondsPerMB: 0, peakResidentBytes: 0)
+        for (kept, passes) in [(needs, true), (.none, false)] {
+            let verdicts = MacBrailleTableCheck.Verdicts()
+            _ = verdicts.verdict(for: table) { .usable(kept) }
+            try MacBrailleTableCheck.$verdicts.withValue(verdicts) {
+                let limits = MacBrailleTableCheck.limits(
+                    for: table, raising: slowStart.limits(.printToBraille, 2), direction: .printToBraille, bytes: 2
+                )
+                XCTAssertEqual(limits.maximumSeconds, passes ? 4 : 0.5, accuracy: 1e-9)
+                try BrailleTranslator.$tool.withValue(slowStart) {
+                    if passes {
+                        XCTAssertEqual(try BrailleTranslator.translate(["a"], table: table, direction: .printToBraille, workingIn: work), ["\u{2801}"])
+                    } else {
+                        XCTAssertThrowsError(try BrailleTranslator.translate(["a"], table: table, direction: .printToBraille, workingIn: work))
+                    }
+                }
+            }
+        }
+        assertWorkFolderEmpty()
     }
 
     /// The translator refuses a Mac table whose check fails by name, as an
@@ -235,8 +351,8 @@ final class MacBrailleTableCheckTests: XCTestCase {
                     )
                 }
             }
-            // Every run of this stand-in writes one six-dot cell, ⠁.
-            try BrailleTranslator.$tool.withValue(shell(#"[ "$1" = check ] && exit 0; printf '\342\240\201\n' > "$2""#)) {
+            // Every line this stand-in translates becomes one six-dot cell, ⠁.
+            try BrailleTranslator.$tool.withValue(echoing("\u{2801}")) {
                 XCTAssertEqual(try BrailleTranslator.translate(["a"], table: table, direction: .printToBraille, workingIn: work), ["\u{2801}"])
             }
         }
@@ -248,9 +364,8 @@ final class MacBrailleTableCheckTests: XCTestCase {
     /// refuse a table with no dots line (review R1).
     func testATableDeclaringSixDotsIsNotRefusedForItsSample() throws {
         let declared = try anyOfferedMacTable(declaringSixDots: true)
-        let eightDots = shell(#"[ "$1" = check ] && exit 0; printf '\342\241\203\n' > "$2""#)
-        try isolated(tool: eightDots) {
-            XCTAssertEqual(try MacBrailleTableCheck.check(declared, workingIn: work), .usable)
+        try isolated(tool: echoing("\u{2843}")) {
+            XCTAssertTrue(try MacBrailleTableCheck.check(declared, workingIn: work).isUsable)
         }
         assertWorkFolderEmpty()
     }
@@ -329,7 +444,12 @@ final class MacBrailleTableCheckTests: XCTestCase {
             guard BrailleTableCatalog.table(withID: id) != nil else { continue }
             checked += 1
             try isolated {
-                XCTAssertEqual(try MacBrailleTableCheck.check(id, workingIn: work), .usable, id)
+                let verdict = try MacBrailleTableCheck.check(id, workingIn: work)
+                guard case let .usable(needs) = verdict else { return XCTFail("\(id): \(verdict)") }
+                // The check measured the table: its load, and its memory.
+                XCTAssertGreaterThan(needs.loadSeconds, 0, id)
+                XCTAssertGreaterThan(needs.peakResidentBytes, 0, id)
+                XCTAssertLessThan(needs.peakResidentBytes, MacBrailleTableCheck.memoryCeilingBytes, id)
                 let braille = try BrailleTranslator.translate([sentence], table: id, direction: .printToBraille, workingIn: work)
                 XCTAssertTrue(braille.allSatisfy(MacBrailleTableCheck.writesSixDotsOnly), "\(id): \(braille)")
                 XCTAssertEqual(try BrailleTranslator.translate(braille, table: id, direction: .brailleToPrint, workingIn: work), [sentence], id)
@@ -345,12 +465,18 @@ final class MacBrailleTableCheckTests: XCTestCase {
     /// with eight dots, and an export that meets « fails, naming it.
     func testHungarianIsRefusedForEightDotsAndSwedishIsOffered() throws {
         var checked = 0
-        for (id, expected) in [("mac:hu.tbl", MacBrailleTableCheck.Verdict.refused(.writesEightDots)),
-                               ("mac:hu-hu-g2.ctb", .refused(.writesEightDots)), ("mac:sv-g1.ctb", .usable)]
+        // Nil stands for a usable table.
+        for (id, expected) in [("mac:hu.tbl", MacBrailleTableCheck.Refusal?.some(.writesEightDots)),
+                               ("mac:hu-hu-g2.ctb", .writesEightDots), ("mac:sv-g1.ctb", nil)]
         where BrailleTableCatalog.table(withID: id) != nil {
             checked += 1
             try isolated {
-                XCTAssertEqual(try MacBrailleTableCheck.check(id, workingIn: work), expected, id)
+                let verdict = try MacBrailleTableCheck.check(id, workingIn: work)
+                if let expected {
+                    XCTAssertEqual(verdict, .refused(expected), id)
+                } else {
+                    XCTAssertTrue(verdict.isUsable, "\(id): \(verdict)")
+                }
             }
         }
         assertWorkFolderEmpty()

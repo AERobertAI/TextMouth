@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 /// Translates paragraphs between print and braille through liblouis (FMT21).
 ///
@@ -128,6 +129,67 @@ enum BrailleTranslator {
     /// detached task does not inherit it.
     @TaskLocal static var tool: Tool = .helper
 
+    // MARK: Measuring
+
+    /// The measure of the runs one of this Mac's tables makes in its check
+    /// (`MacBrailleTableCheck`, review R1). Each measured run keeps the
+    /// tool's time limits, but may hold memory up to `memoryCeiling`, and
+    /// the watchdog reads the child's memory every `pollInterval` so that a
+    /// run of a fraction of a second is measured too. The measure keeps the
+    /// most resident memory any reading saw, how long the last run took, and
+    /// why the watchdog stopped a run, if it did. The watchdog reads memory
+    /// on its own thread, so the readings are kept behind a lock.
+    final class RunMeasure: Sendable {
+        /// The most resident memory a measured run may hold, in bytes.
+        let memoryCeiling: Int64
+        /// How often the watchdog reads a measured run's memory, in seconds.
+        let pollInterval: TimeInterval
+
+        /// The readings so far.
+        private struct Readings: Sendable {
+            var peakResidentBytes: Int64 = 0
+            var lastRunSeconds: TimeInterval = 0
+            var stop: WatchedProcess.KillReason?
+        }
+        private let readings = OSAllocatedUnfairLock(initialState: Readings())
+
+        /// A measure allowing `memoryCeiling` bytes, reading every
+        /// `pollInterval` seconds.
+        init(memoryCeiling: Int64, pollInterval: TimeInterval) {
+            self.memoryCeiling = memoryCeiling
+            self.pollInterval = pollInterval
+        }
+
+        /// The most resident memory any reading of any run saw, in bytes.
+        var peakResidentBytes: Int64 { readings.withLock { $0.peakResidentBytes } }
+        /// How long the last measured run took, in seconds, start to end.
+        var lastRunSeconds: TimeInterval { readings.withLock { $0.lastRunSeconds } }
+        /// Why the watchdog stopped a measured run, if it stopped one.
+        var stop: WatchedProcess.KillReason? { readings.withLock { $0.stop } }
+
+        /// `limits` as a measured run gets them: memory up to the ceiling,
+        /// and read every `pollInterval` (or more often, if they say so).
+        fileprivate func measuring(_ limits: WatchedProcess.Limits) -> WatchedProcess.Limits {
+            var measured = limits
+            measured.maximumResidentBytes = memoryCeiling
+            measured.pollInterval = min(limits.pollInterval, pollInterval)
+            return measured
+        }
+
+        fileprivate func note(memory bytes: Int64?) {
+            guard let bytes else { return }
+            readings.withLock { $0.peakResidentBytes = max($0.peakResidentBytes, bytes) }
+        }
+
+        fileprivate func note(seconds: TimeInterval) {
+            readings.withLock { $0.lastRunSeconds = seconds }
+        }
+
+        fileprivate func note(stop reason: WatchedProcess.KillReason) {
+            readings.withLock { $0.stop = reason }
+        }
+    }
+
     // MARK: Limits
 
     /// What the watchdog allows the helper, from the lead's measurements of
@@ -151,6 +213,11 @@ enum BrailleTranslator {
     /// table lacks is written as an escape of several cells of 3 bytes each,
     /// which for Cyrillic is 11 times the input's bytes in all four tables
     /// and for control characters 24 times, above the old 10 times.
+    ///
+    /// These were measured with the bundled English tables. One of this
+    /// Mac's tables may need more, so its runs get these raised to fit what
+    /// its check measured, and never lowered (`MacBrailleTableCheck
+    /// .limits(for:raising:direction:bytes:)`, review R1).
     static func limits(for direction: Direction?, bytes: Int64) -> WatchedProcess.Limits {
         let megabytes = Double(bytes) / 1_000_000
         let seconds: TimeInterval
@@ -213,14 +280,16 @@ enum BrailleTranslator {
 
     /// `translate(_:table:direction:workingIn:)`, checking one of this Mac's
     /// tables first unless `checksMacTable` is false: only the check's own
-    /// sample translation passes false (`MacBrailleTableCheck.check`), which
-    /// would otherwise check itself forever.
+    /// runs pass false (`MacBrailleTableCheck.check`), which would otherwise
+    /// check themselves forever, and they pass a `measure` too, which the
+    /// helper's run is measured by (review R1).
     static func translate(
         _ texts: [String],
         table: String,
         direction: Direction,
         workingIn folder: URL,
-        checksMacTable: Bool
+        checksMacTable: Bool,
+        measure: RunMeasure? = nil
     ) throws -> [String] {
         try requireOfferedTable(table)
         let id = UUID().uuidString
@@ -258,7 +327,7 @@ enum BrailleTranslator {
 
         try runHelper(
             mode: direction.rawValue, table: table, input: input, output: output,
-            watching: output, inputBytes: writer.bytesWritten, direction: direction
+            watching: output, inputBytes: writer.bytesWritten, direction: direction, measure: measure
         )
 
         // The output has one line for each piece, in order.
@@ -278,10 +347,11 @@ enum BrailleTranslator {
     }
 
     /// Checks that the helper can load `table`, with every table it
-    /// includes, by running its "check" mode.
+    /// includes, by running its "check" mode, measured by `measure` when
+    /// one of this Mac's tables is checked (review R1).
     /// - Throws: `Failure.unknownTable` for a table that is not there or
     ///   does not compile, as `translate` does, and its other failures.
-    static func check(table: String, workingIn folder: URL) throws {
+    static func check(table: String, workingIn folder: URL, measure: RunMeasure? = nil) throws {
         try requireOfferedTable(table)
         // The watchdog needs a file to watch; a check writes none, so an
         // empty one stands in.
@@ -292,7 +362,7 @@ enum BrailleTranslator {
         }
         try runHelper(
             mode: "check", table: table, input: nil, output: nil,
-            watching: watched, inputBytes: 0, direction: nil
+            watching: watched, inputBytes: 0, direction: nil, measure: measure
         )
     }
 
@@ -470,6 +540,10 @@ enum BrailleTranslator {
     ///   - watching: The file the watchdog watches for growth.
     ///   - inputBytes: The input's size, which sets the limits.
     ///   - direction: The direction, nil for "check".
+    ///   - measure: The measure of a Mac table's check, which this run is
+    ///     measured by and runs under (review R1); nil for any other run,
+    ///     which gets the tool's limits raised by the needs its table's
+    ///     check measured (`MacBrailleTableCheck.limits(for:raising:direction:bytes:)`).
     /// - Throws: `Failure`, and `ImportCancelled` when the import's Cancel
     ///   killed the child.
     private static func runHelper(
@@ -479,16 +553,27 @@ enum BrailleTranslator {
         output: URL?,
         watching: URL,
         inputBytes: Int64,
-        direction: Direction?
+        direction: Direction?,
+        measure: RunMeasure?
     ) throws {
-        // The tool and the import's cancellation are read here, on the
-        // caller's thread: the detached task below inherits no task-locals.
+        // The tool, the import's cancellation, and the verdicts that set a
+        // Mac table's limits are read here, on the caller's thread: the
+        // detached task below inherits no task-locals.
         let tool = BrailleTranslator.tool
         let cancellation = ImportCancellation.current
         guard let command = tool.command(mode, table, input, output) else {
             throw logged(.failed, mode, table, "the helper is missing")
         }
-        let limits = tool.limits(direction, inputBytes)
+        let toolLimits = tool.limits(direction, inputBytes)
+        let limits = measure?.measuring(toolLimits)
+            ?? MacBrailleTableCheck.limits(for: table, raising: toolLimits, direction: direction, bytes: inputBytes)
+        // A measured run's memory readings are kept as they are made.
+        let residentMemory: @Sendable (pid_t) -> Int64? = { pid in
+            let bytes = tool.residentMemory(pid)
+            measure?.note(memory: bytes)
+            return bytes
+        }
+        let started = ProcessInfo.processInfo.systemUptime
         let outcome: WatchedProcess.Outcome
         do {
             outcome = try AsyncBridge.waitForResult(cancelledBy: cancellation) {
@@ -497,7 +582,7 @@ enum BrailleTranslator {
                     arguments: command.arguments,
                     watching: watching,
                     limits: limits,
-                    residentMemory: tool.residentMemory
+                    residentMemory: residentMemory
                 )
             }
         } catch is CancellationError where cancellation?.isCancelled == true {
@@ -505,6 +590,7 @@ enum BrailleTranslator {
             // import ends as a cancelled one does.
             throw ImportCancelled()
         }
+        measure?.note(seconds: ProcessInfo.processInfo.systemUptime - started)
 
         switch outcome {
         case .exited(status: 0):
@@ -518,6 +604,7 @@ enum BrailleTranslator {
             throw logged(.failed, mode, table, "could not start")
         case let .killed(reason):
             DiagnosticLog.event(.import, "BRAILLE_HELPER_KILLED: \(mode) \(table): \(reason.words)")
+            measure?.note(stop: reason)
             throw Failure.stopped(reason: reason.words)
         }
     }
