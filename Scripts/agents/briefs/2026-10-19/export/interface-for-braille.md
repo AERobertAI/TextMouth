@@ -1,13 +1,13 @@
 # The export interface, for team braille (October 19, 2026)
 
-From `export-lead`, on `team/export`. The model and the writer interface are committed at `cee0eb42` ("Add the export document model and the text writer interface (FMT18)"); the walker, the HTML, RTF, and Word writers, the job runner, and the dialog's Convert to picker follow on the same branch tonight. Code your BRF and PEF writers against the names below: they do not change. Plug in once `team/export` is merged into main.
+From `export-lead`, on `team/export`. The model and the writer interface are committed at `cee0eb42` ("Add the export document model and the text writer interface (FMT18)"); the walker, the HTML, RTF, and Word writers, the job runner, and the dialog's Convert to picker followed on the same branch the same night, all under the names below. Code your BRF and PEF writers against the names below: they do not change. Plug in once `team/export` is merged into main.
 
 ## Where things are
 
 - `TextMouth/Services/Export/ExportDocument.swift`: the model.
 - `TextMouth/Services/Export/TextExportWriter.swift`: the writer protocol, its options, its error, the erased conversion, the dialog's options state, and the registry.
-- `TextMouth/Services/Export/ExportDocumentWalker.swift` (coming, task `export-walker`): the one walker of `content.md`.
-- `TextMouth/Services/Export/HTMLExportWriter.swift`, `RTFExportWriter.swift`, `WordDocExportWriter.swift` (coming): the first writers, examples to copy.
+- `TextMouth/Services/Export/ExportDocumentWalker.swift`: the one walker of `content.md`.
+- `TextMouth/Services/Export/HTMLExportWriter.swift`, `RTFExportWriter.swift`, `WordDocExportWriter.swift`: the first writers, examples to copy.
 - `BookExportService.swift`: `BookExportCancellation.checkCancelled()` and `BookExportConversion` (the runner's conversion; text now, audio later).
 
 ## The model: `ExportDocument`
@@ -29,7 +29,8 @@ Markdown is the base: every text book becomes `content.md`, and every writer rea
   - `.thematicBreak`.
   - `.table(ExportTable)`: `rows: [[String]]` (cells as plain text), `hasHeaderRow`.
   - `plainText`: one call away for every block (a heading's or paragraph's runs joined; a list's items one a line; and so on, as its comment says).
-- `ExportRun`: `text` (a line feed in it is a hard line break), `isEmphasis`, `isStrong`, `isCode`, `link: String?` (only http, https, and mailto addresses; any other link is plain text). `[ExportRun].plainText` joins the texts.
+- `ExportRun`: `text` (a line feed in it is a hard line break), `isEmphasis`, `isStrong`, `isCode`, `link: String?` (only http, https, and mailto addresses; any other link is plain text). `[ExportRun].plainText` joins the texts, and `[ExportRun].linkGroups` gives them grouped as the HTML and RTF writers write them (`ExportRunGroup`: a link's neighbouring runs together, every other run alone).
+- **XML.** PEF is XML: put every text and attribute through `XMLEscaping.text(_:)` and `XMLEscaping.attribute(_:)` (`TextMouth/Services/Export/XMLEscaping.swift`), which also leave out the characters XML 1.0 forbids, as the HTML writer does.
 
 What the model leaves out: `content.md`'s marker lines (`<!-- chapter: Title -->`), the navigation annotations, and any raw HTML. A chapter with a title and no heading of its own gets its title as a level-1 heading, as the reader's heading list shows it. Images are their alternative text, as plain runs.
 
@@ -67,7 +68,7 @@ The second decodes the bytes as the reader decodes `content.md` and throws for b
 - Build an `ExportDocument` by hand, or walk Markdown with `ExportDocumentWalker.document(fromMarkdown:book:)`.
 - Call `YourWriter().write(document, options: ..., to: <a sandbox URL>, cancellation: BookExportCancellation())`, then read the file back.
 - A cancelled `BookExportCancellation()` (call `cancel()` first) must make `write` throw `CancellationError`.
-- For the whole export path: `BookExportService.export(offers, kinds: [.markdown], conversions: [.markdown: .text(TextExportConversion(YourWriter(), options: ...))], to: folder)` (the `conversions` parameter lands with task `export-runner` tonight).
+- For the whole export path: `BookExportService.export(offers, kinds: [.markdown], conversions: [.markdown: .text(TextExportConversion(YourWriter(), options: ...))], to: folder)`.
 
 ## Not yours, and not ours
 
