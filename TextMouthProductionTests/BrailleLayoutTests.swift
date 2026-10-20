@@ -274,10 +274,14 @@ final class BrailleLayoutTests: XCTestCase {
     /// wrapped, and each line is centered with 3 or more blanks on each side.
     func testALongCenteredHeadingIsWrappedAndEachLineCentered() throws {
         let result = pages([heading(1, "ABCDE FGHIJ KLMNO"), paragraph("X")], cells: 18)
-        XCTAssertEqual(rowAt(result, 0, 0), blanks(3) + "ABCDE FGHIJ")
-        XCTAssertEqual(rowAt(result, 0, 1), blanks(6) + "KLMNO")
-        XCTAssertEqual(rowAt(result, 0, 2), "")
-        XCTAssertEqual(rowAt(result, 0, 3), "  X")
+        // "KLMNO" would stand in cell 7 (a margin of 6), which reads back as a
+        // cell-7 heading, so the heading is wrapped again, narrower, and its
+        // lines (a margin of 6 moved to 7 by a cell) are all clear of cells 5 and 7.
+        XCTAssertEqual(rowAt(result, 0, 0), blanks(7) + "ABCDE")
+        XCTAssertEqual(rowAt(result, 0, 1), blanks(7) + "FGHIJ")
+        XCTAssertEqual(rowAt(result, 0, 2), blanks(7) + "KLMNO")
+        XCTAssertEqual(rowAt(result, 0, 3), "")
+        XCTAssertEqual(rowAt(result, 0, 4), "  X")
         // A line as long as the most allowed has exactly 3 blanks each side,
         // so a word of 12 cells fills a centered line.
         let full = pages([heading(1, String(repeating: "A", count: 12))], cells: 18)
@@ -286,6 +290,75 @@ final class BrailleLayoutTests: XCTestCase {
         let cut = pages([heading(1, String(repeating: "A", count: 13))], cells: 18)
         XCTAssertEqual(rowAt(cut, 0, 0), blanks(3) + String(repeating: "A", count: 12))
         XCTAssertEqual(rowAt(cut, 0, 1), blanks(8) + "A")
+    }
+
+    /// The blocks the analyzer reads from `blocks` laid out at `cells` by 25 lines.
+    private func readBack(_ blocks: [BrailleBlock], cells: Int = 40) -> [BrailleBlock] {
+        let format = BraillePageFormat(cellsPerLine: cells, linesPerPage: 25, numbersPages: true)
+        return BraillePageAnalyzer.structure(of: BrailleLayout.pages(of: blocks, format: format), formatted: true).blocks
+    }
+
+    /// A centered line of 31, 32, 27, or 28 cells at 40 would stand with a
+    /// margin of 4 or 6 cells, which the reader takes for a heading of cell 5
+    /// or 7; the heading is wrapped again at 26 cells (a margin of 7 or
+    /// more) and reads back as the level-1 heading it is.
+    func testCenteredHeadingLinesWithMarginFourOrSixAreWrappedAt26() throws {
+        // Two words that make a first line of 31, 32, 27, or 28 cells.
+        for (first, second) in [(15, 15), (15, 16), (13, 13), (13, 14)] {
+            let a = String(repeating: "A", count: first), b = String(repeating: "B", count: second)
+            let result = pages([heading(1, a + " " + b), paragraph("X")])
+            XCTAssertEqual(rowAt(result, 0, 0), blanks((40 - first) / 2) + a, "\(first + 1 + second) cells")
+            XCTAssertEqual(rowAt(result, 0, 1), blanks((40 - second) / 2) + b, "\(first + 1 + second) cells")
+            XCTAssertEqual(rowAt(result, 0, 2), "")
+            XCTAssertEqual(readBack([heading(1, a + " " + b), paragraph("X")]).first,
+                           .heading(level: 1, text: brailleCells(a + " " + b)), "\(first + 1 + second) cells")
+        }
+    }
+
+    /// Lines of 30, 29, 33, 34, and 26 cells have margins 5, 5, 3, 3, and 7:
+    /// no heading is wrapped again for them.
+    func testCenteredHeadingLinesWithOtherMarginsKeepTheirWrapping() throws {
+        for (first, second, margin) in [(15, 14, 5), (14, 14, 5), (16, 16, 3), (17, 16, 3), (13, 12, 7)] {
+            let a = String(repeating: "A", count: first), b = String(repeating: "B", count: second)
+            let result = pages([heading(2, a + " " + b), paragraph("X")])
+            // One line, centered at BANA's margin.
+            XCTAssertEqual(rowAt(result, 0, 0), blanks(margin) + a + " " + b, "\(first + 1 + second) cells")
+            XCTAssertEqual(rowAt(result, 0, 1), "")
+            XCTAssertEqual(readBack([heading(2, a + " " + b), paragraph("X")]).first?.text,
+                           brailleCells(a + " " + b), "\(first + 1 + second) cells")
+        }
+    }
+
+    /// The narrow page's heading keeps its words whole, and a line whose
+    /// margin would be 6 (an odd difference) stands a cell further right, so
+    /// the reader still takes it for a centered heading.
+    func testANarrowHeadingKeepsItsWordsAndMovesAnAmbiguousLine() throws {
+        // At 18 cells a 5-cell line has a margin of 6 (13 / 2).
+        let result = pages([heading(1, "ABCDE"), paragraph("X")], cells: 18)
+        XCTAssertEqual(rowAt(result, 0, 0), blanks(7) + "ABCDE")
+        XCTAssertEqual(readBack([heading(1, "ABCDE"), paragraph("X")], cells: 18).first,
+                       .heading(level: 1, text: brailleCells("ABCDE")))
+        // A word of 8 cells at 20 stands in cell 7 whatever is done (a margin
+        // of 6, the difference being even): the text is still whole.
+        let stuck = readBack([heading(1, "ABCDEFGH"), paragraph("X")], cells: 20)
+        XCTAssertEqual(stuck.first, .heading(level: 3, text: brailleCells("ABCDEFGH")))
+    }
+
+    /// Laid out and read back, the BRL sample's blocks are the sample's: two
+    /// level-1 headings and twelve paragraphs.
+    func testTheSampleBlocksReadBackFromTheirLayout() throws {
+        let brl = try copyOfFormatSample("brl/pride-and-prejudice-ch1-grade1.brl")
+        let text = try XCTUnwrap(String(data: Data(contentsOf: brl), encoding: .ascii))
+        let lines = text.split(whereSeparator: \.isNewline).map(String.init)
+        XCTAssertEqual(lines.count, 14)
+        guard lines.count == 14 else { return }
+        var blocks: [BrailleBlock] = [heading(1, lines[0]), heading(2, lines[1])]
+        blocks += lines[2...].map { paragraph($0) }
+        let expected = blocks.map { block -> BrailleBlock in
+            if case let .heading(_, text) = block { return .heading(level: 1, text: text) }
+            return block
+        }
+        XCTAssertEqual(readBack(blocks), expected)
     }
 
     // MARK: Blank lines

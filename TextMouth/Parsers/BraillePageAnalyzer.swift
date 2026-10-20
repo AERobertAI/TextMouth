@@ -46,6 +46,10 @@ enum BraillePageAnalyzer {
     private static let minGap = 3
     /// The fewest dots-3-6 cells a print page change line starts with.
     private static let minChangeDashes = 3
+    /// The indent of a level-2 heading's rows: it starts in cell 5.
+    static let cellFiveIndent = 4
+    /// The indent of a level-3 heading's rows: it starts in cell 7.
+    static let cellSevenIndent = 6
 
     /// The cell between words: U+2800.
     private static let blank = BrailleCells.blank
@@ -283,6 +287,13 @@ enum BraillePageAnalyzer {
         return left >= minGap && right >= minGap && abs(left - right) <= 1
     }
 
+    /// Whether `row` can be a line of a centered heading: it is centered, and
+    /// its indent is not the one a cell-5 or cell-7 heading starts at, which
+    /// is read by its indent first (see `readBlocks`).
+    private static func isCenteredHeadingRow(_ row: Row, width: Int) -> Bool {
+        row.indent != cellFiveIndent && row.indent != cellSevenIndent && isCentered(row, width: width)
+    }
+
     /// Reads the blocks from the rows of all the pages, in order. Returns the
     /// blocks and, for each page that holds text, the index of the first block
     /// that has a row there (nil for a page with no text).
@@ -342,11 +353,28 @@ enum BraillePageAnalyzer {
                 index += 1
                 continue
             }
-            // 2. A centered heading: a run of centered rows, set apart on both ends.
-            if startsAfterBreak(index), isCentered(row, width: width) {
+            // 2. A cell-5 (level 2) or cell-7 (level 3) heading. The indent
+            // decides, before the right margin is looked at: a long heading
+            // in cell 5 or 7 ends within a cell of the right margin that its
+            // indent has on the left, so it measures as centered too. A
+            // centered heading whose left margin is 4 or 6 cells is therefore
+            // read as level 2 or 3: still a heading, its text whole.
+            if (row.indent == cellFiveIndent || row.indent == cellSevenIndent),
+               startsAfterBreak(index) || previousWasHeading {
+                closeOpenBlock()
+                noteRow(index)
+                open = OpenBlock(headingLevel: row.indent == cellFiveIndent ? 2 : 3,
+                                 indent: row.indent, rows: [row.content])
+                previousWasHeading = true
+                index += 1
+                continue
+            }
+            // 3. A centered heading: a run of centered rows, set apart on
+            // both ends. Only a row of any other indent can be one.
+            if startsAfterBreak(index), isCenteredHeadingRow(row, width: width) {
                 var end = index
                 while end < rows.count, rows[end].page == row.page, !rows[end].isBlank,
-                      isCentered(rows[end], width: width) { end += 1 }
+                      isCenteredHeadingRow(rows[end], width: width) { end += 1 }
                 if endsRun(before: end) {
                     closeOpenBlock()
                     noteRow(index)
@@ -355,16 +383,6 @@ enum BraillePageAnalyzer {
                     index = end
                     continue
                 }
-            }
-            // 3. A cell-5 (level 2) or cell-7 (level 3) heading.
-            if (row.indent == 4 || row.indent == 6), !isCentered(row, width: width),
-               startsAfterBreak(index) || previousWasHeading {
-                closeOpenBlock()
-                noteRow(index)
-                open = OpenBlock(headingLevel: row.indent == 4 ? 2 : 3, indent: row.indent, rows: [row.content])
-                previousWasHeading = true
-                index += 1
-                continue
             }
             // 4 and 5. A paragraph: a row of indent 0 goes on the open
             // paragraph, or starts one; any other indent starts one.

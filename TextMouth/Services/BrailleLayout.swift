@@ -53,6 +53,13 @@ enum BrailleLayout {
         static let heading4to6 = 6
         /// A centered heading keeps at least 3 blank cells on each side.
         static let centeredSide = 3
+        /// The side margin a centered heading wrapped again keeps: the
+        /// first that is past both cells where a level-2 or level-3
+        /// heading would start (the margins 4 and 6, below).
+        static let centeredSideWhenNarrowed = 7
+        /// The left margins at which a centered line would read back as a
+        /// heading that starts in cell 5 or 7 (`heading3`, `heading4to6`).
+        static let ambiguousForCentered: Set<Int> = [heading3, heading4to6]
     }
 
     /// The pages `blocks` make at `format` (held to its ranges), each exactly
@@ -127,7 +134,7 @@ enum BrailleLayout {
                 // Levels 1 and 2 are centered, in at most width-6 cells so
                 // that 3 blank cells remain on each side, and have a blank
                 // line before and after.
-                let lines = wrap(words, width: width - 2 * Margin.centeredSide, firstIndent: 0, runIndent: 0)
+                let lines = centeredHeadingLines(words, width: width)
                 let rows = lines.map { centered($0, width: width) }
                 return LaidOutBlock(rows: rows, isHeading: true, blankBefore: true, blankAfter: true)
             }
@@ -137,6 +144,34 @@ enum BrailleLayout {
             let rows = wrap(words, width: width, firstIndent: indent, runIndent: indent)
             return LaidOutBlock(rows: rows, isHeading: true, blankBefore: true, blankAfter: false)
         }
+    }
+
+    /// The lines of a centered heading of `words`, before they are centered.
+    ///
+    /// They are wrapped at `width - 6` cells, so that 3 blank cells remain
+    /// on each side. A line centered with a left margin of 4 or 6 cells
+    /// would read back as a heading that starts in cell 5 or 7 (the reader
+    /// decides by the indent first), which is a different level, and a
+    /// heading of several lines as several. When any line would, the whole
+    /// heading is wrapped again at `width - 14` cells, so that every margin
+    /// is at least 7.
+    ///
+    /// On a narrow page a word wider than that takes its line whole (it is
+    /// never cut for this), and the line may still have such a margin;
+    /// `centered` then moves it a cell when it can, and otherwise the line
+    /// is read back as a heading of another level, with its text whole.
+    private static func centeredHeadingLines(_ words: [Row], width: Int) -> [Row] {
+        let widest = width - 2 * Margin.centeredSide
+        let first = wrap(words, width: widest, firstIndent: 0, runIndent: 0)
+        let ambiguous = first.contains {
+            Margin.ambiguousForCentered.contains(centeringPadding(of: $0, width: width))
+        }
+        guard ambiguous else { return first }
+
+        // The longest word is kept whole, as far as the first width allows.
+        let longestWord = min(words.map(\.count).max() ?? 1, widest)
+        let narrowed = max(width - 2 * Margin.centeredSideWhenNarrowed, longestWord)
+        return wrap(words, width: narrowed, firstIndent: 0, runIndent: 0)
     }
 
     /// The words of `text`, each a run of cells between blank cells or white
@@ -213,9 +248,22 @@ enum BrailleLayout {
     /// `line` centered in `width` cells: (width - length) / 2 blank cells
     /// before it, rounded down, so the extra cell of an odd difference falls
     /// on the right (BANA 4.4.2).
+    ///
+    /// When even that leaves a margin of 4 or 6 cells (a heading wrapped
+    /// again cannot always avoid it, as a word of one of those lengths
+    /// takes its line whole), an odd difference puts its extra cell on the
+    /// left instead: the margin is then 5 or 7, and the line is still
+    /// centered to within a cell, as the reader measures it.
     private static func centered(_ line: Row, width: Int) -> Row {
-        let padding = max((width - line.count) / 2, 0)
+        var padding = centeringPadding(of: line, width: width)
+        if Margin.ambiguousForCentered.contains(padding), (width - line.count) % 2 == 1 { padding += 1 }
         return Row(repeating: BrailleCells.blank, count: padding) + line
+    }
+
+    /// The blank cells BANA puts before `line` to center it in `width`
+    /// cells: half the difference, rounded down.
+    private static func centeringPadding(of line: Row, width: Int) -> Int {
+        max((width - line.count) / 2, 0)
     }
 
     // MARK: Placing blocks on pages

@@ -341,6 +341,79 @@ final class BraillePageAnalyzerTests: XCTestCase {
         XCTAssertEqual(structure.pages.map(\.firstBlockIndex), [0, 2])
     }
 
+    // MARK: Long cell-5 and cell-7 headings
+
+    /// A numbered 40-cell page: a paragraph, a blank row, `headingRows`, a
+    /// blank row, a paragraph, and the page number at cell 40.
+    private func pageWithHeading(_ headingRows: [String]) -> BrailleStructure {
+        formattedStructure([row(2, "BEFORE"), ""] + headingRows + ["", row(2, "AFTER"), rightAligned("#A")])
+    }
+
+    /// The block after the first paragraph, of the page `pageWithHeading` makes
+    /// (nil if the page has fewer blocks, so a test never indexes past the end).
+    private func headingBlock(_ headingRows: [String]) -> BrailleBlock? {
+        pageWithHeading(headingRows).blocks.dropFirst().first
+    }
+
+    /// `length` cells of one word.
+    private func word(_ length: Int) -> String { String(repeating: "H", count: length) }
+
+    /// A cell-5 heading of 1 to 36 cells is level 2, and a cell-7 heading of
+    /// 1 to 34 is level 3, at 40 cells: the right margin does not matter.
+    /// The lengths from 30 to 34 (cell 5) and 26 to 30 (cell 7) measured as
+    /// centered, since their right margin is within a cell of the indent.
+    func testCellFiveAndSevenHeadingsOfEveryLengthAreHeadings() {
+        for (indent, level) in [(4, 2), (6, 3)] {
+            for length in 1...(40 - indent) {
+                let structure = pageWithHeading([row(indent, word(length))])
+                XCTAssertEqual(structure.blocks, [
+                    paragraph("BEFORE"), .heading(level: level, text: cells(word(length))), paragraph("AFTER"),
+                ], "indent \(indent), \(length) cells")
+            }
+        }
+    }
+
+    /// The boundary lengths named, so a failure says where it breaks.
+    func testTheLengthsThatMeasuredAsCenteredAreHeadings() {
+        for length in 30...34 {
+            XCTAssertEqual(headingBlock([row(4, word(length))]),
+                           .heading(level: 2, text: cells(word(length))), "cell 5, \(length) cells")
+        }
+        for length in 26...30 {
+            XCTAssertEqual(headingBlock([row(6, word(length))]),
+                           .heading(level: 3, text: cells(word(length))), "cell 7, \(length) cells")
+        }
+    }
+
+    /// A cell-5 heading wrapped to two rows is one heading, whether its first
+    /// row reaches the right margin or measures as centered.
+    func testAWrappedLongHeadingIsOneHeading() {
+        for firstLength in [20, 31, 32, 33] {
+            let structure = pageWithHeading([row(4, word(firstLength)), row(4, "SECOND")])
+            XCTAssertEqual(structure.blocks, [
+                paragraph("BEFORE"),
+                .heading(level: 2, text: cells(word(firstLength) + " SECOND")),
+                paragraph("AFTER"),
+            ], "first row \(firstLength) cells")
+        }
+        let seven = pageWithHeading([row(6, word(28)), row(6, "SECOND")])
+        XCTAssertEqual(seven.blocks.dropFirst().first, .heading(level: 3, text: cells(word(28) + " SECOND")))
+    }
+
+    /// A centered heading whose left margin is 4 or 6 cells is read as level
+    /// 2 or 3: still a heading, its text whole. Centered rows of every other
+    /// margin are still a level-1 heading.
+    func testACenteredHeadingWithMarginFourOrSixIsALowerHeadingWithItsTextWhole() {
+        // 40 - 31 = 9 and 40 - 32 = 8 give a margin of 4; 27 and 28, 6.
+        XCTAssertEqual(headingBlock([centered(word(32))]), .heading(level: 2, text: cells(word(32))))
+        XCTAssertEqual(headingBlock([centered(word(28))]), .heading(level: 3, text: cells(word(28))))
+        // Margins 3, 5, 7: level 1.
+        for length in [34, 30, 26] {
+            XCTAssertEqual(headingBlock([centered(word(length))]),
+                           .heading(level: 1, text: cells(word(length))), "\(length) cells")
+        }
+    }
+
     // MARK: Width
 
     func testTheWidthIsTheLongestRowOfTheFile() {
