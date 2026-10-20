@@ -28,9 +28,9 @@ enum FileImportError: LocalizedError {
     /// would add a silent, empty book. An import refuses it
     /// (`FileImportService.readableContent(of:run:refusingBlankText:)`).
     case noTextToRead
-    /// An .xml file whose root element is neither a DTBook's nor Word 2003
-    /// XML's: XML is a container for countless things, and TextMouth reads
-    /// only those two kinds (`XMLDocumentSniffer`, FMT04 and FMT13).
+    /// An .xml file whose root element is not a DTBook's, Word 2003 XML's, or
+    /// a PEF's: XML is a container for countless things, and TextMouth reads
+    /// only those three kinds (`XMLDocumentSniffer`, FMT04, FMT13, and FMT20).
     case unsupportedXML
 
     var errorDescription: String? {
@@ -45,7 +45,7 @@ enum FileImportError: LocalizedError {
         case .archivePathOutside: return "The archive holds a file whose path leads outside it, which is never extracted."
         case .noTextToRead: return "This file has no text to read."
         case .unsupportedXML:
-            return "This XML file is neither a DTBook book nor a Word 2003 XML document, the kinds of XML file TextMouth reads."
+            return "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the kinds of XML file TextMouth reads."
         }
     }
 }
@@ -943,7 +943,11 @@ enum FileImportService {
                 // New from Text, and an audio or DAISY archive take their
                 // names from elsewhere than the file the refresh reads, and
                 // a package keeps the record it carries.
-                handEdits: .noneSinceImport
+                handEdits: .noneSinceImport,
+                // A braille book keeps the table it is read with (FMT21): the
+                // Braille setting's, as it stands for this import. Every
+                // later reading of the book uses this one.
+                brailleTable: format == .braille ? BraillePreferences.importTable() : nil
             )
             var imported = try publishReadableBook(
                 staged, from: staging, run: &run, refusingBlankText: true, adoptingDocumentNames: true
@@ -2419,6 +2423,17 @@ enum FileImportService {
         // always offers .ssml.
         types.append(.webArchive)
         types.append(UTType(importedAs: "org.w3.ssml", conformingTo: .xml))
+        // Braille files (FMT20): BRF and BRL, which macOS declares no type
+        // for, and PEF, which macOS takes for a Pentax raw photo by its
+        // extension; the import tells them apart by their contents.
+        types.append(UTType(importedAs: "com.textmouth.brf", conformingTo: .plainText))
+        types.append(UTType(importedAs: "com.textmouth.brl", conformingTo: .plainText))
+        let pefType = UTType(importedAs: "org.daisy.pef", conformingTo: .xml)
+        types.append(pefType)
+        // Whatever type the system gives a .pef, so one can be chosen.
+        if let systemPEF = UTType(filenameExtension: "pef"), systemPEF != pefType {
+            types.append(systemPEF)
+        }
         // Rich text, read by textutil (FMT13).
         types.append(.rtf)
         // Rich text with attachments: a package, which the panel shows as a
