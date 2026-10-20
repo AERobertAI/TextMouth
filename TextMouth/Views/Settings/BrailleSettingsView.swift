@@ -123,14 +123,34 @@ struct BrailleSettingsView: View {
         )
     }
 
+    /// What the group shows above its caption: the two pop-ups, or the
+    /// sentence that says the bundle holds no tables. A pure choice of the
+    /// codes, so a test can pin it without drawing the view (hosted SwiftUI
+    /// text is not exposed to the tests).
+    enum Content: Equatable {
+        /// The code and contraction pop-ups.
+        case choices
+        /// The sentence shown instead of the pop-ups.
+        case noTables(String)
+
+        /// The content for `codes`: the pop-ups when there is a code to
+        /// choose, else the no-tables sentence.
+        static func of(codes: [BrailleCode]) -> Content {
+            codes.isEmpty ? .noTables(BrailleSettingsWording.noTables) : .choices
+        }
+    }
+
     var body: some View {
         Form {
             Section {
-                if let code = currentCode {
-                    codePicker
-                    contractionPicker(for: code)
-                } else {
-                    Text(BrailleSettingsWording.noTables)
+                switch Content.of(codes: codes) {
+                case .choices:
+                    if let code = currentCode {
+                        codePicker
+                        contractionPicker(for: code)
+                    }
+                case .noTables(let sentence):
+                    Text(sentence)
                 }
                 Text(BrailleSettingsWording.caption)
                     .font(.caption)

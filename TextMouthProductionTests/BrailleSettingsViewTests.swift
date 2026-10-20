@@ -97,7 +97,9 @@ final class BrailleSettingsViewTests: XCTestCase {
             // The pop-ups follow: the contraction is still Contracted.
             XCTAssertTrue(waitUntil {
                 hosting.layoutSubtreeIfNeeded()
-                guard let (code, contraction) = try? self.popUps(in: hosting) else { return false }
+                // Not `popUps(in:)`, which asserts: a redraw in between may
+                // show fewer pop-ups for a moment, and the wait retries.
+                guard let (code, contraction) = self.popUpPair(in: hosting) else { return false }
                 return code.titleOfSelectedItem == "English Braille, American Edition"
                     && contraction.titleOfSelectedItem == "Contracted (Grade 2)"
             }, "the pop-ups did not follow the new code")
@@ -110,8 +112,17 @@ final class BrailleSettingsViewTests: XCTestCase {
         }
     }
 
-    /// A broken bundle (no codes) shows no pop-ups, only the sentence that
-    /// says so.
+    /// A broken bundle (no codes) shows the sentence that says so in place
+    /// of the pop-ups; a bundle with codes shows the pop-ups.
+    func testNoCodesShowTheSentenceInPlaceOfThePopUps() {
+        XCTAssertEqual(
+            BrailleSettingsView.Content.of(codes: []),
+            .noTables("TextMouth found no braille tables in its bundle."))
+        XCTAssertEqual(BrailleSettingsView.Content.of(codes: [code("a", [table("a-g1", .no)])]), .choices)
+        XCTAssertEqual(BrailleSettingsView.Content.of(codes: BrailleTableCatalog.bundledCodes), .choices)
+    }
+
+    /// With no codes the tab draws no pop-up.
     func testNoCodesDrawNoPopUps() throws {
         let view = BrailleSettingsView(codes: [])
             .environmentObject(try makeSettings())
@@ -213,6 +224,15 @@ final class BrailleSettingsViewTests: XCTestCase {
         // A failure, not a skip: the tab must draw both pop-ups.
         XCTAssertEqual(found.count, 2, "expected two pop-ups")
         return (try XCTUnwrap(found.first), try XCTUnwrap(found.last))
+    }
+
+    /// The same two pop-ups as `popUps(in:)`, or nil unless exactly two are
+    /// drawn, with no assertion: for a `waitUntil` condition, which is asked
+    /// again until it holds and must not record a failure on the way.
+    private func popUpPair(in hosting: NSView) -> (code: NSPopUpButton, contraction: NSPopUpButton)? {
+        let found = descendants(of: hosting, as: NSPopUpButton.self)
+        guard found.count == 2, let first = found.first, let last = found.last else { return nil }
+        return (first, last)
     }
 
     /// A table for the choice tests.
