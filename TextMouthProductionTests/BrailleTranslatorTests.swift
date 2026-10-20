@@ -1,3 +1,4 @@
+import os
 import XCTest
 @testable import TextMouth
 
@@ -388,6 +389,86 @@ final class BrailleTranslatorTests: XCTestCase {
     /// others are still translated.
     func testEmptyTextsAmongOthersKeepTheirPlaces() throws {
         XCTAssertEqual(try translate(["", "⠁", ""], "en-ueb-g1.ctb", .brailleToPrint), ["", "a", ""])
+    }
+
+    /// 3,000 texts of every kind, long ones cut at a break, unbroken ones cut
+    /// mid-word, short ones, and empty ones, still join exactly as they did
+    /// when the input was made whole in memory (E5). The input is some 9 MB,
+    /// so the buffer it is written through is flushed several times.
+    func testThreeThousandMixedTextsStillJoinExactly() throws {
+        let truthCells = "\u{281E}\u{2817}\u{2825}\u{281E}\u{2813}"
+        var texts: [String] = []
+        var expected: [String] = []
+        for index in 0..<3_000 {
+            switch index % 10 {
+            case 0:
+                // 900 words, 5,399 cells: two pieces, cut at a blank cell.
+                texts.append(Array(repeating: truthCells, count: 900).joined(separator: "\u{2800}"))
+                expected.append(Array(repeating: "truth", count: 900).joined(separator: " "))
+            case 5:
+                // 4,500 cells with no break: two pieces, cut mid-word.
+                texts.append(String(repeating: "\u{2801}", count: 4_500))
+                expected.append(String(repeating: "a", count: 4_500))
+            case 3:
+                texts.append("")
+                expected.append("")
+            default:
+                texts.append("\u{2801}\u{2800}\u{2803}")
+                expected.append("a b")
+            }
+        }
+        let result = try translate(texts, "en-ueb-g1.ctb", .brailleToPrint)
+        XCTAssertEqual(result.count, expected.count)
+        // One assertion for the whole list, so a failure prints no 3,000 lines.
+        XCTAssertTrue(result == expected, "the joined translations differ from the expected ones")
+    }
+
+    /// The input file holds every piece and its line feed, written through a
+    /// buffer, and the size the watchdog's limits are drawn from is the file's
+    /// exact size (E5). A stand-in that copies its input to its output also
+    /// shows the pieces come back in order and join to the texts.
+    func testTheInputIsWrittenPieceByPieceAndSizedExactly() throws {
+        let word = "\u{281E}\u{2817}\u{2825}\u{281E}\u{2813}"
+        let long = Array(repeating: word, count: 900).joined(separator: "\u{2800}")
+        // 200 long texts of about 16 KB each, with short and empty ones among them.
+        let texts = (0..<600).map { $0 % 3 == 0 ? long : ($0 % 3 == 1 ? "\u{2801}\u{2803}" : "") }
+        let expectedBytes = texts
+            .flatMap { BrailleTranslator.pieces(of: $0, direction: .brailleToPrint) }
+            .reduce(Int64(0)) { $0 + Int64($1.text.utf8.count) + 1 }
+        XCTAssertGreaterThan(expectedBytes, 2 * Int64(1_048_576), "the input should pass the buffer's size twice")
+
+        // What the stand-in saw of the input file, and what the limits were asked for.
+        let fileSize = OSAllocatedUnfairLock<Int64>(initialState: -1)
+        let limitBytes = OSAllocatedUnfairLock<Int64>(initialState: -1)
+        let allowed = limits(seconds: 20)
+        let tool = BrailleTranslator.Tool(
+            command: { _, _, input, output in
+                guard let input, let output else { return nil }
+                let attributes = try? FileManager.default.attributesOfItem(atPath: input.path)
+                let size = (attributes?[.size] as? NSNumber)?.int64Value ?? -2
+                fileSize.withLock { $0 = size }
+                return (URL(fileURLWithPath: "/bin/cp"), [input.path, output.path])
+            },
+            limits: { _, bytes in
+                limitBytes.withLock { $0 = bytes }
+                return allowed
+            },
+            residentMemory: { _ in nil },
+            tablesFolder: nil
+        )
+        let result = try with(tool) {
+            try BrailleTranslator.translate(texts, table: "en-ueb-g1.ctb", direction: .brailleToPrint, workingIn: work)
+        }
+        XCTAssertEqual(fileSize.withLock { $0 }, expectedBytes)
+        XCTAssertEqual(limitBytes.withLock { $0 }, expectedBytes)
+
+        // Copied pieces, joined: the only difference from a text is a space
+        // where a cut dropped a blank cell, which was put back as a space.
+        XCTAssertEqual(result.count, texts.count)
+        let rejoined = result.map { $0.replacingOccurrences(of: " ", with: "\u{2800}") }
+        XCTAssertTrue(rejoined == texts, "the copied pieces do not join to the texts")
+        XCTAssertTrue(result.contains { $0.contains(" ") }, "no long text was cut")
+        assertWorkFolderEmpty()
     }
 
     /// The preparation of a text: every line break one word break, NUL

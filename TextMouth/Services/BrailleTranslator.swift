@@ -185,13 +185,6 @@ enum BrailleTranslator {
         workingIn folder: URL
     ) throws -> [String] {
         try requireOfferedTable(table)
-        // Split every text into pieces, and number the pieces in the order
-        // they go to the helper, one line each.
-        let split = texts.map { pieces(of: $0, direction: direction) }
-        let lines = split.flatMap { $0.map(\.text) }
-        // No work, no run: an empty list, or only empty texts, has no pieces.
-        guard !lines.isEmpty else { return texts.map { _ in "" } }
-
         let id = UUID().uuidString
         let input = folder.appendingPathComponent(".\(id)\(inputSuffix)")
         let output = folder.appendingPathComponent(".\(id)\(outputSuffix)")
@@ -200,29 +193,44 @@ enum BrailleTranslator {
             try? FileManager.default.removeItem(at: output)
         }
 
-        // One piece per line, each ending in a line feed (no piece holds one).
-        let data = Data((lines.joined(separator: "\n") + "\n").utf8)
+        // Cut each text into pieces and write them to the input file as they
+        // are made, one piece per line, each ending in a line feed (no piece
+        // holds one). Only how many pieces each text has, and which end at a
+        // word break, is kept: joining the output needs no more. The texts'
+        // pieces are never all in memory at once, nor joined into one string
+        // or copied into a whole-input `Data` (review finding E5: a 32 MB
+        // book's translation peaked at 431 MB that way).
+        var writer = InputWriter(at: input)
+        var layout = PieceLayout()
         do {
-            try data.write(to: input)
+            for text in texts {
+                let made = pieces(of: text, direction: direction)
+                for piece in made { try writer.append(piece.text) }
+                layout.add(made)
+            }
+            try writer.finish()
         } catch {
             throw logged(.failed, direction.rawValue, table, "could not write the input: \(error.localizedDescription)")
         }
+        // No work, no run: an empty list, or only empty texts, has no pieces.
+        guard layout.pieceCount > 0 else { return texts.map { _ in "" } }
 
         try runHelper(
             mode: direction.rawValue, table: table, input: input, output: output,
-            watching: output, inputBytes: Int64(data.count), direction: direction
+            watching: output, inputBytes: writer.bytesWritten, direction: direction
         )
 
         // The output has one line for each piece, in order.
-        let translated = try outputLines(of: output, expecting: lines.count, mode: direction.rawValue, table: table)
-        var next = translated.startIndex
-        return split.map { pieces in
+        let translated = try outputLines(of: output, expecting: layout.pieceCount, mode: direction.rawValue, table: table)
+        // The index of the next piece, in `translated` and in the layout.
+        var next = 0
+        return layout.counts.map { count in
             var result = ""
-            for (index, piece) in pieces.enumerated() {
+            for index in 0..<count {
                 result += translated[next]
-                next += 1
                 // Between two pieces, the word break the cut dropped is back.
-                if index < pieces.count - 1, piece.endsAtBreak { result.unicodeScalars.append(direction.outputBreak) }
+                if index < count - 1, layout.endsAtBreak[next] { result.unicodeScalars.append(direction.outputBreak) }
+                next += 1
             }
             return result
         }
@@ -258,6 +266,79 @@ enum BrailleTranslator {
         /// translations of this piece and the next are joined by a break.
         /// False for a piece cut in the middle of a word, and for the last.
         var endsAtBreak: Bool
+    }
+
+    /// What joining the output needs to know of every text's pieces
+    /// (FMT21, review finding E5): how many pieces each text has, and, for
+    /// every piece of every text in order, whether it ends at a word break.
+    /// Two flat arrays, with no array of its own for each text.
+    private struct PieceLayout {
+        /// How many pieces each text has.
+        private(set) var counts: [Int] = []
+        /// For each piece of each text, in order, `Piece.endsAtBreak`.
+        private(set) var endsAtBreak: [Bool] = []
+
+        /// The number of pieces in all.
+        var pieceCount: Int { endsAtBreak.count }
+
+        /// Records the pieces of the next text.
+        mutating func add(_ pieces: [Piece]) {
+            counts.append(pieces.count)
+            endsAtBreak.append(contentsOf: pieces.lazy.map(\.endsAtBreak))
+        }
+    }
+
+    /// Writes the helper's input file one piece at a time, through a buffer
+    /// of about `bufferBytes`, so that the input is never held whole
+    /// (FMT21, review finding E5). The file is made when the first piece
+    /// arrives, so an input with no pieces makes none.
+    private struct InputWriter {
+        /// About how many bytes wait in memory before they are written.
+        static let bufferBytes = 1_048_576
+
+        private let url: URL
+        private var handle: FileHandle?
+        /// The bytes not yet written.
+        private var buffer = Data()
+        /// The bytes already written to the file.
+        private var written: Int64 = 0
+
+        init(at url: URL) {
+            self.url = url
+        }
+
+        /// How many bytes the input holds so far, written or waiting.
+        var bytesWritten: Int64 { written + Int64(buffer.count) }
+
+        /// Adds `piece` and its line feed.
+        /// - Throws: The file system's error for a file that cannot be made or written.
+        mutating func append(_ piece: String) throws {
+            buffer.append(contentsOf: piece.utf8)
+            buffer.append(0x0A)
+            if buffer.count >= Self.bufferBytes { try flush() }
+        }
+
+        /// Writes what waits and closes the file.
+        mutating func finish() throws {
+            try flush()
+            try handle?.close()
+            handle = nil
+        }
+
+        /// Writes the waiting bytes to the file, which it makes first if it
+        /// is not yet made.
+        private mutating func flush() throws {
+            guard !buffer.isEmpty else { return }
+            if handle == nil {
+                guard FileManager.default.createFile(atPath: url.path, contents: nil) else {
+                    throw CocoaError(.fileWriteUnknown, userInfo: [NSFilePathErrorKey: url.path])
+                }
+                handle = try FileHandle(forWritingTo: url)
+            }
+            try handle?.write(contentsOf: buffer)
+            written += Int64(buffer.count)
+            buffer.removeAll(keepingCapacity: true)
+        }
     }
 
     /// The pieces `text` is sent in, for `direction`: its line breaks made
