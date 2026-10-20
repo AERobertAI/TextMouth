@@ -171,6 +171,9 @@ enum BookExportWording {
     /// The button that exports, and its hint.
     static let exportTitle = "Export"
     static let exportHint = "Exports the checked items to the folder."
+    /// The Export button's hint while a braille table just chosen in the
+    /// options is still being checked, which an export waits for (review R5).
+    static let exportWaitsHint = "Exports the checked items to the folder once the braille table just chosen has been checked."
 
     /// The button that stops an export under way, and its hint.
     static let stopTitle = "Stop"

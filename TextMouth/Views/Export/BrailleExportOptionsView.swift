@@ -246,7 +246,7 @@ struct BrailleTablePickers: View {
             return
         }
         pending = chosen.id
-        Task { @MainActor in
+        BrailleTableChoiceChecks.shared.run {
             let verdict = await MacBrailleTableCheck.verdictOffTheMainThread(for: chosen.id)
             guard pending == chosen.id else { return }
             pending = nil
@@ -257,6 +257,46 @@ struct BrailleTablePickers: View {
                 let sentence = BrailleSettingsWording.refusal(ofTableNamed: chosen.displayName, because: refusal)
                 VoiceOverAnnouncer.afterSheetCloses { VoiceOverAnnouncer.announce(sentence) }
             }
+        }
+    }
+}
+
+// MARK: - Checks of Chosen Tables
+
+/// The checks of Mac tables chosen in the pop-ups that are still running
+/// (review R5): Export's options take a Mac table only once its check passes,
+/// so an export started meanwhile waits for them (`BookExportModel.export`),
+/// and writes with the table the pop-ups show once the check has passed, or
+/// the one they returned to, never the one they just left. The Export
+/// button's hint tells of the wait (`BookExportWording.exportWaitsHint`).
+@MainActor
+final class BrailleTableChoiceChecks: ObservableObject {
+    /// The checks of the app's pop-ups, in Settings and in Export alike.
+    static let shared = BrailleTableChoiceChecks()
+
+    /// The checks running, by an identifier of their own.
+    private var running: [UUID: Task<Void, Never>] = [:]
+
+    /// Whether any check is running.
+    @Published private(set) var isChecking = false
+
+    /// Runs `work`, a choice's check and what follows it, as a task counted
+    /// as running until it ends. The task cannot begin before it is counted:
+    /// both are on the main actor, which this holds.
+    func run(_ work: @escaping @MainActor () async -> Void) {
+        let id = UUID()
+        running[id] = Task { @MainActor in
+            await work()
+            self.running[id] = nil
+            self.isChecking = !self.running.isEmpty
+        }
+        isChecking = true
+    }
+
+    /// Returns once every check running now has ended.
+    func finished() async {
+        for task in running.values {
+            await task.value
         }
     }
 }

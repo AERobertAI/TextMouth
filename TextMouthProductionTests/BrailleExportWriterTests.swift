@@ -285,6 +285,10 @@ final class BrailleExportWriterTests: XCTestCase {
     /// being made.
     func testTheExportAndStopHintsAreCurrent() {
         XCTAssertEqual(BookExportWording.exportHint, "Exports the checked items to the folder.")
+        XCTAssertEqual(
+            BookExportWording.exportWaitsHint,
+            "Exports the checked items to the folder once the braille table just chosen has been checked."
+        )
         XCTAssertEqual(BookExportWording.stopHint, "Stops the export. The file being made is not kept.")
     }
 

@@ -243,6 +243,31 @@ final class MacBrailleTableBookTests: XCTestCase {
         )
     }
 
+    // MARK: - An Export During a Check (review R5)
+
+    /// An export started while a table just chosen in the pop-ups is still
+    /// being checked waits for that check before it reads its options, and
+    /// the checks are counted as running meanwhile, which the Export
+    /// button's hint tells of.
+    @MainActor
+    func testAnExportWaitsForTheCheckOfATableJustChosen() async {
+        /// Whether the stand-in check has ended.
+        final class Ended {
+            var value = false
+        }
+        let ended = Ended()
+        let checks = BrailleTableChoiceChecks.shared
+        checks.run {
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            ended.value = true
+        }
+        XCTAssertTrue(checks.isChecking)
+        let model = BookExportModel(books: [])
+        _ = await model.export()
+        XCTAssertTrue(ended.value, "the export did not wait for the check")
+        XCTAssertFalse(checks.isChecking)
+    }
+
     // MARK: - config.json
 
     /// config.json may name one of this Mac's tables, which is taken by its
