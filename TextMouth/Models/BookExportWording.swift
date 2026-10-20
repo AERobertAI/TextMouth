@@ -42,6 +42,35 @@ enum BookExportWording {
         }
     }
 
+    // MARK: Convert To
+
+    /// The name of the Convert to picker beside the Text as Markdown
+    /// checkbox.
+    static let convertToLabel = "Convert to"
+
+    /// What the picker calls its first choice, today's export: the book's
+    /// content.md copied as it is.
+    static let markdownChoiceName = "Markdown"
+
+    /// What the picker's hint says while Markdown is chosen.
+    static let markdownChoiceHint = "The book's text as Markdown, the file TextMouth reads it from, as it is."
+
+    /// What `kind` is called while its text is converted to `conversionName`:
+    /// "Text as HTML". A kind whose text is not converted, or no conversion
+    /// (nil), keeps `name(of:)`.
+    static func name(of kind: BookExportKind, convertedTo conversionName: String?) -> String {
+        guard let conversionName, kind.convertsText else { return name(of: kind) }
+        return "Text as \(conversionName)"
+    }
+
+    /// What the checkbox of `kind` exports while its text is converted to
+    /// `conversionName`. A kind whose text is not converted, or no
+    /// conversion (nil), keeps `hint(for:)`.
+    static func hint(for kind: BookExportKind, convertedTo conversionName: String?) -> String {
+        guard let conversionName, kind.convertsText else { return hint(for: kind) }
+        return "The book's text as \(conversionName), made from the Markdown TextMouth reads it from."
+    }
+
     // MARK: The Dialog
 
     /// The commands' title in the File menu and the reader's toolbar.
@@ -93,15 +122,20 @@ enum BookExportWording {
     ///   - fileCount: How many files those items are.
     ///   - byteCount: Their size in bytes.
     ///   - inCloudCount: How many books hold it only in the cloud.
+    ///   - conversionName: The name of the writer the kind's text is
+    ///     converted to ("HTML"), which the label says and sizes as "about"
+    ///     like reading text; nil for the kind as it is.
     static func choiceLabel(
         kind: BookExportKind,
         bookCount: Int,
         availableItemCount: Int,
         fileCount: Int,
         byteCount: Int64,
-        inCloudCount: Int
+        inCloudCount: Int,
+        convertedTo conversionName: String? = nil
     ) -> String {
-        var parts = [name(of: kind)]
+        let converted = conversionName != nil && kind.convertsText
+        var parts = [name(of: kind, convertedTo: conversionName)]
         if bookCount > 1 {
             if availableItemCount > 0 {
                 parts.append(CountWording.books(availableItemCount))
@@ -111,7 +145,7 @@ enum BookExportWording {
         }
         if availableItemCount > 0 {
             let size = ByteCountFormatter.string(fromByteCount: byteCount, countStyle: .file)
-            parts.append(kind == .plainText ? "about \(size)" : size)
+            parts.append(kind == .plainText || converted ? "about \(size)" : size)
         }
         if inCloudCount > 0 {
             parts.append(bookCount > 1 ? "\(CountWording.books(inCloudCount)) in the cloud" : "in the cloud")
