@@ -1,0 +1,56 @@
+# Task `translator`: BrailleTranslator, the only caller of the braille helper (FMT21)
+
+- **Slug:** `braille-translator`. **Branch:** `braille/translator`, made with `git checkout -b braille/translator team/braille`.
+- Read `Scripts/agents/briefs/2026-10-19/braille/common.md` first.
+- **Files (yours alone):** new `TextMouth/Services/BrailleTranslator.swift`; new `TextMouthProductionTests/BrailleTranslatorTests.swift`; the regenerated `project.pbxproj`.
+- **Read first:**
+  - `TextMouthBraille/main.c` lines 1 to 45 (the helper's usage, protocol, and exit statuses; it is the lead's, already built into the app at `Contents/MacOS/TextMouthBraille`, with the tables at `Contents/Resources/liblouis/tables`).
+  - `TextMouth/Services/TextutilConverter.swift` lines 44 to 267: your model. Copy its shape: a `Failure` enum, a `Tool` struct a test can replace through a `@TaskLocal`, limits by input size, the run through `AsyncBridge.waitForResult(cancelledBy:)` and `WatchedProcess.run`, `ImportCancellation.current` read on the caller's thread, the hidden files removed by `defer`, and one `DiagnosticLog.event` line per failure.
+  - `TextMouth/Services/WatchedProcess.swift` lines 32 to 100 (`Limits`, `KillReason.words`, `Outcome`) and 255 to 290 (`run`).
+  - `TextMouthProductionTests/TextutilConverterTests.swift`: how its tests use stand-in children (`/bin/sleep`, `/usr/bin/false`) and tight limits, check the working folder is left empty, and cancel.
+- **Not yours:** the helper (`TextMouthBraille/main.c`), the tables, the list of tables offered (task `tables`), and every reader and writer. Touch nothing else.
+
+## What to build
+`BrailleTranslator` (an `enum`) translates paragraphs between print and braille through the helper. Every other file goes through it; it never calls liblouis itself.
+
+1. **`enum Direction: String, Sendable { case printToBraille = "forward", brailleToPrint = "back" }`**: the raw values are the helper's mode arguments.
+2. **`static func translate(_ texts: [String], table: String, direction: Direction, workingIn folder: URL) throws -> [String]`**, synchronous (the import and the cache run off the main thread). It returns one translation for each text, in order. Print is ordinary text; braille is Unicode cells, the blank cell U+2800 between words.
+   1. **No work, no run:** an empty list returns `[]`, and a list of empty texts returns as many empty strings, without starting the helper.
+   2. **The table** must be a bare file name (not empty, no `/`, not starting with `.`, no `,`) of a file in the tables folder; anything else throws `Failure.unknownTable(table)` without starting the helper.
+   3. **Before sending,** each text's line breaks (CR LF as one, CR, LF, U+0085, U+2028, U+2029) become one space in print or one blank cell in braille, and NUL characters are removed. In braille, an ASCII space becomes U+2800 too.
+   4. **Long texts are split** into pieces of at most 4,000 Unicode scalars, each cut at the last break at or before that length: a space in print, a blank cell in braille. The break itself is dropped, and the pieces' translations are joined again with a space (back: the output is print) or a blank cell (forward: the output is braille). A piece with no break in its first 4,000 scalars is cut at 4,000, and that piece's translation is joined to the next with nothing between. (No UEB or EBAE contraction spans a blank cell, so a cut there changes no translation.)
+   5. **The input file** holds every piece, one per line, each ending in a LF, in UTF-8, in `folder` as `.<UUID>.braille-in.txt`; the helper writes `.<UUID>.braille-out.txt` there. Both are removed however the call ends (`defer`).
+   6. **The run:** `tool.command(direction.rawValue, table, input, output)` gives the executable and arguments (for the real helper: `[mode, tablesFolder.path, table, input.path, output.path]`), run with `WatchedProcess.run(_:arguments:watching: output, limits: tool.limits(direction, inputBytes), residentMemory: tool.residentMemory)` inside `AsyncBridge.waitForResult(cancelledBy: ImportCancellation.current)`, as `TextutilConverter.html` does; a `CancellationError` while that cancellation is cancelled becomes `ImportCancelled()`.
+   7. **Outcomes:** `.exited(0)`: read the output (UTF-8; invalid bytes become U+FFFD), split it at LF, drop the empty string after the last LF; there must be exactly one line per piece, else `.failed`. `.exited(2)`: `.unknownTable(table)`. Any other status, `.couldNotStart`, or a helper the bundle lacks: `.failed`. `.killed(reason)`: `.stopped(reason: reason.words)`. Each failure but `unknownTable` writes one line, `DiagnosticLog.event(.import, "BRAILLE_HELPER_FAILED: <mode> <table>: <what happened>")` or `"BRAILLE_HELPER_KILLED: <mode> <table>: <reason.words>"`; no line holds any book text.
+3. **`static func check(table: String, workingIn folder: URL) throws`** runs the helper's `check` mode (arguments `["check", tablesFolder.path, table]`), watching an empty hidden file `.<UUID>.braille-check` in `folder` (removed by `defer`), with `tool.limits(nil, 0)`: status 0 returns; 2 is `unknownTable`; the rest as item 2.7.
+4. **`enum Failure: LocalizedError, Equatable`**, each sentence read after the import's own ("Could not import “book.brf”. Reading its text failed: "), so none names the file. Exactly:
+   - `unknownTable(String)`: `TextMouth has no braille table named “en-xx.ctb”.` (the name in curly quotes)
+   - `stopped(reason: String)`: `TextMouth stopped the braille translation because it ran longer than 26 seconds.` (the reason is `KillReason.words`)
+   - `failed`: `TextMouth could not translate this braille.`
+5. **`struct Tool: Sendable`** with `command: @Sendable (_ mode: String, _ table: String, _ input: URL?, _ output: URL?) -> (executable: URL, arguments: [String])?` (nil when the helper is missing: then `.failed`), `limits: @Sendable (Direction?, Int64) -> WatchedProcess.Limits` (nil direction is `check`), `residentMemory: @Sendable (pid_t) -> Int64?`, and `tablesFolder: URL?`. `static let helper` is the real one: the executable is `Bundle.main.url(forAuxiliaryExecutable: "TextMouthBraille")`, the folder `Bundle.main.resourceURL?.appendingPathComponent("liblouis/tables", isDirectory: true)`. `@TaskLocal static var tool: Tool = .helper`, read on the caller's thread. A unit test runs inside the app (the test host), so `.helper` is the real helper in every test.
+6. **`static func limits(for direction: Direction?, bytes: Int64) -> WatchedProcess.Limits`.** Measured by the lead on October 19, 2026 (Release build, Apple silicon): 10 MB of braille back to print with en-ueb-g2.ctb, 0.54 s and 3.5 MB resident; 10 MB of print to Grade 2, 15.3 s and 3.7 MB, its output 2.3 times its input; a table's check, a few hundredths of a second. The limits give about four times that, and 10 seconds for starting and compiling the table on a busy Mac; write these figures in the comment:
+   - back: `maximumSeconds = 10 + Double(bytes) / 4_000_000` (a quarter second per MB);
+   - forward: `maximumSeconds = 10 + 6 * Double(bytes) / 1_000_000` (six seconds per MB);
+   - check: `maximumSeconds = 10`;
+   - always `maximumStalledSeconds = maximumSeconds` (a short input's output is written only at the end), `maximumResidentBytes = 16 * 1_048_576`, and `maximumOutputBytes = 10 * bytes + 1_048_576`.
+
+## Tests (`BrailleTranslatorTests`), with the real helper unless a test says otherwise
+Make the samples' paragraphs in the test: the BRL sample's 14 lines (split at CR LF) converted to cells with `BrailleCells.cell(forASCII:)`, the print text's 14 blocks (`pride-and-prejudice-ch1.txt` split at blank lines), the Grade 2 sample's first 3 rows converted, and `grade2-short.txt`'s 3 lines.
+1. **Grade 1, braille to print** (`en-ueb-g1.ctb`): the 14 BRL lines give the 14 print blocks, except for two differences that are liblouis's own, each named in the test's comment and pinned:
+   - UEB writes both curly double quotes with cells that liblouis reads back as the straight quote `"`: compare with the print text after replacing “ and ” with `"`, and assert the output holds no curly quote.
+   - The print's `_You_` (Project Gutenberg's mark for italics) comes back as `You`: liblouis reads UEB's italic word indicator ⠨⠂ and drops it, since TextMouth keeps no emphasis. So block 10 (1-based) is compared with `_You_` replaced by `You`, and no output holds a backslash (liblouis's notation for a cell it could not read).
+2. **Grade 2, braille to print** (`en-ueb-g2.ctb`): the three rows give `grade2-short.txt`'s three lines exactly.
+3. **Grade 2, print to braille** (`en-ueb-g2.ctb`): the three lines give the three rows exactly.
+4. **Grade 1, print to braille** (`en-ueb-g1.ctb`): the 14 print blocks give the BRL lines with exactly two kinds of difference, from the prototype that wrote the sample, each named in the test: a question mark at a word's end is ⠦ alone in liblouis (its `postpunc` rule), where the sample has ⠰⠦ (in braille ASCII, the sample's `;8` is liblouis's `8`, three times); and the underscores of `_You_` are characters to liblouis, each written as the underscore sign ⠨⠤ (`.-`), where the sample has the italic word indicator ⠨⠂ (`.1`) before the word. Build the expected lines from the BRL lines by replacing `;8` with `8` and `.1,YOU` with `.-,YOU.-`, then convert, and compare all 14.
+5. **Every table checks:** `check` passes for `en-ueb-g1.ctb`, `en-ueb-g2.ctb`, `en-us-g1.ctb`, and `en_US.tbl`.
+6. **Unknown tables:** `en-xx.ctb` throws `.unknownTable("en-xx.ctb")`, from `translate` and from `check`, with the sentence exactly; `../en-ueb-g1.ctb` and `` (empty) throw it too.
+7. **A long text:** 2,000 copies of ⠞⠗⠥⠞⠓ joined by blank cells (11,999 cells) back with `en-ueb-g1.ctb` give 2,000 copies of `truth` joined by spaces; 3,000 copies of `truth` joined by spaces, forward, give the cells joined by blank cells. A run of 9,000 ⠁ with no blank cell gives 9,000 `a` (pieces cut in mid-word are joined with nothing).
+8. **Line breaks inside a text:** `"one\ntwo"` and `"one\r\ntwo"` forward give what `"one two"` gives; `"⠁\n⠃"` back gives what `"⠁\u{2800}⠃"` gives.
+9. **No run for no work:** with a stand-in tool whose command is `/usr/bin/false`, `translate([], …)` returns `[]` and `translate(["", ""], …)` returns `["", ""]` (had it run, it would have thrown `.failed`).
+10. **Stopped:** a stand-in tool running `/bin/sleep 30` with `maximumSeconds` 1 throws `.stopped(reason:)` whose sentence is exactly `TextMouth stopped the braille translation because it ran longer than 1 second.`
+11. **Failed:** a stand-in `/usr/bin/false` throws `.failed` with its sentence; a command of nil (no helper) does too.
+12. **Cancelled:** with `ImportCancellation.$current` bound to a cancellation that is cancelled half a second into a `/bin/sleep 30` stand-in, `translate` throws `ImportCancelled`, as `TextutilConverterTests` cancels.
+13. **Tidy:** after every call above, success or failure, the working folder holds no file (hidden ones included).
+14. **Limits:** `limits(for:bytes:)` for 10 MB back is 12.5 s, for 10 MB forward 70 s, for check 10 s, each with the memory and output caps above.
+
+Run `BrailleTranslatorTests`, `BrailleCellsTests`, `LogContentPolicyTests`, and `UncheckedConcurrencyPolicyTests`.

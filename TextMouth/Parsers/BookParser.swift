@@ -7,7 +7,11 @@ enum BookParser {
     /// Markdown, and plain-text sources are decoded by `TextFileDecoder`,
     /// exactly as the Markdown cache decodes them, so both readings start
     /// from the same text whatever the file's encoding and line endings.
-    static func parse(url: URL, format: BookFormat) throws -> DocumentContent {
+    /// - Parameter brailleTable: For a braille book (FMT21), the table its
+    ///   text is read with: the one it was imported with (`Book.brailleTable`).
+    ///   Nil reads with `BrailleTableCatalog.defaultTableID`; every other
+    ///   format ignores it.
+    static func parse(url: URL, format: BookFormat, brailleTable: String? = nil) throws -> DocumentContent {
         switch format {
         case .epub:
             return try EPUBParser.parse(url: url)
@@ -34,6 +38,14 @@ enum BookParser {
         case .rtf, .rtfd, .doc, .odt, .wordml:
             // textutil's formats, read through a child process (FMT13).
             return try TextutilDocumentReader.parse(url: url, bookFormat: format)
+        case .braille:
+            // Read through liblouis in the braille helper (FMT20, FMT21), as
+            // the Markdown cache reads it.
+            return try BrailleBookReader.parse(
+                url: url,
+                title: url.deletingPathExtension().lastPathComponent,
+                table: brailleTable ?? BrailleTableCatalog.defaultTableID
+            )
         case .daisy:
             return try DAISYParser.parse(url: url)
         case .pdf:

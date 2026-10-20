@@ -170,11 +170,11 @@ enum BookExportWording {
 
     /// The button that exports, and its hint.
     static let exportTitle = "Export"
-    static let exportHint = "Copies the checked items to the folder."
+    static let exportHint = "Exports the checked items to the folder."
 
     /// The button that stops an export under way, and its hint.
     static let stopTitle = "Stop"
-    static let stopHint = "Stops the export before its next item."
+    static let stopHint = "Stops the export. The file being made is not kept."
 
     /// The button that closes the dialog without exporting.
     static let cancelTitle = "Cancel"

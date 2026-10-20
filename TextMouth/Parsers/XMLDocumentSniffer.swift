@@ -2,13 +2,15 @@ import Foundation
 
 // MARK: - The Kinds of XML File
 
-/// What a loose XML file is, by the element it begins with (FMT04, FMT13).
+/// What a loose XML file is, by the element it begins with (FMT04, FMT13, FMT20).
 enum XMLRootKind: Equatable, Sendable {
     /// A DTBook, DAISY 3's XML text: a `dtbook` root in any namespace or none.
     case dtbook
     /// A Word 2003 XML (WordML) document: a `wordDocument` root in Word's
     /// 2003 namespace.
     case wordML
+    /// A PEF braille file (FMT20): a `pef` root in PEF 2008-1's namespace.
+    case pef
     /// Any other XML file, a file that is not XML, an empty file, and a file
     /// that cannot be read.
     case other
@@ -18,7 +20,8 @@ enum XMLRootKind: Equatable, Sendable {
 
 /// Names the kind of an XML file by its root element, never by its
 /// extension alone. A loose .xml file may be a DTBook book (read by the
-/// DAISY reader), a Word 2003 XML document (handed to textutil), or any of
+/// DAISY reader), a Word 2003 XML document (handed to textutil), a PEF
+/// braille file (read by the braille reader), or any of
 /// the countless other things that are XML (refused by name), and only the
 /// element the file begins with tells which.
 enum XMLDocumentSniffer {
@@ -30,6 +33,9 @@ enum XMLDocumentSniffer {
 
     /// The namespace of Word 2003 XML's `wordDocument` element.
     private static let wordMLNamespace = "http://schemas.microsoft.com/office/word/2003/wordml"
+
+    /// The namespace of PEF 2008-1's `pef` element (FMT20).
+    private static let pefNamespace = "http://www.daisy.org/ns/2008/pef"
 
     /// The kind of the file at `url`, from its first `scanLength` bytes.
     /// A missing file, a folder, and a file that cannot be read are `.other`.
@@ -91,16 +97,18 @@ enum XMLDocumentSniffer {
         guard let root = finder.root else { return .other }
         if root.localName == "dtbook" { return .dtbook }
         if root.localName == "wordDocument" && root.namespaceURI == wordMLNamespace { return .wordML }
+        if root.localName == "pef" && root.namespaceURI == pefNamespace { return .pef }
         return .other
     }
 
     /// The book format a loose .xml file at `url` imports as: `.daisy` for a
-    /// DTBook, `.wordml` for a Word 2003 XML document, nil for every other
-    /// kind.
+    /// DTBook, `.wordml` for a Word 2003 XML document, `.braille` for a
+    /// PEF braille file, nil for every other kind.
     static func bookFormat(ofFileAt url: URL) -> BookFormat? {
         switch rootKind(ofFileAt: url) {
         case .dtbook: return .daisy
         case .wordML: return .wordml
+        case .pef: return .braille
         case .other: return nil
         }
     }

@@ -85,6 +85,7 @@ extension ConfigService.AppConfig {
         config.logLocation = LogLocation.machine.rawValue
         config.transcriptionLocale = TranscriptFixtures.languageOtherThanTheDefault
         config.offerTranscriptionAfterImport = true
+        config.brailleTable = "en-us-g1.ctb"
         return config
     }
 }

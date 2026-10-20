@@ -838,7 +838,9 @@ final class SettingsViewModel: ObservableObject {
 
     /// The store keys of the preferences other services keep.
     static var servicePreferenceKeys: [String] {
-        SoundEffectService.preferenceKeys
+        // The list is built in two parts, because the compiler cannot
+        // type-check one sum of this many arrays in reasonable time.
+        let earlier: [String] = SoundEffectService.preferenceKeys
             + FeedSettings.preferenceKeys
             + TextSubstitutionService.preferenceKeys
             + RecordingPreferences.keys
@@ -847,11 +849,12 @@ final class SettingsViewModel: ObservableObject {
             + [KeyboardShortcutManager.doublePressTimePreference.key]
             + [TranscriptionLanguage.preference.key, TranscriptionPreferences.offerAfterImport.key]
             + [BookExportPreferences.showInReaderToolbar.key]
+        return earlier + [BraillePreferences.table.key]
     }
 
     /// The keys of the preferences other services keep that this model
     /// shows (the log location, the reader toolbar's Export button, the
-    /// feed settings, and the transcription settings), whose changes it
+    /// feed settings, the transcription settings, and the braille table), whose changes it
     /// announces wherever they are made, such as in config.json, so the
     /// controls showing them follow.
     private static let shownServicePreferenceKeys = Set([
@@ -859,6 +862,7 @@ final class SettingsViewModel: ObservableObject {
         BookExportPreferences.showInReaderToolbar.key,
         TranscriptionLanguage.preference.key,
         TranscriptionPreferences.offerAfterImport.key,
+        BraillePreferences.table.key,
     ] + FeedSettings.preferenceKeys)
 
     /// The language transcription uses (FR05), in Playback settings'
@@ -871,6 +875,20 @@ final class SettingsViewModel: ObservableObject {
             guard let chosen = TranscriptionLanguage.validated(newValue), chosen != transcriptionLanguage else { return }
             objectWillChange.send()
             TranscriptionLanguage.preference.write(chosen, to: preferences)
+        }
+    }
+
+    /// The braille table braille files are read and written with (FMT21),
+    /// by its file name, such as "en-ueb-g2.ctb". Imports read it
+    /// (`BraillePreferences`), and config.json follows it through the
+    /// observer below, which also announces a change made anywhere else.
+    /// A name no bundled table has changes nothing.
+    var brailleTable: String {
+        get { BraillePreferences.table.read(from: preferences) }
+        set {
+            guard let chosen = BrailleTableCatalog.table(withID: newValue)?.id, chosen != brailleTable else { return }
+            objectWillChange.send()
+            BraillePreferences.table.write(chosen, to: preferences)
         }
     }
 
@@ -987,6 +1005,7 @@ final class SettingsViewModel: ObservableObject {
         config.logLocation = LogLocation.preference.read(from: preferences).rawValue
         config.transcriptionLocale = TranscriptionLanguage.preference.read(from: preferences)
         config.offerTranscriptionAfterImport = TranscriptionPreferences.offerAfterImport.read(from: preferences)
+        config.brailleTable = BraillePreferences.table.read(from: preferences)
     }
 
     /// Writes the values config.json asks for into the store, where their
@@ -1066,6 +1085,8 @@ final class SettingsViewModel: ObservableObject {
         // So does an empty language, or one that cannot be an identifier.
         adopt(TranscriptionLanguage.validated(config.transcriptionLocale), into: TranscriptionLanguage.preference)
         adopt(config.offerTranscriptionAfterImport, into: TranscriptionPreferences.offerAfterImport)
+        // An empty or unknown table name leaves the current table alone.
+        adopt(BrailleTableCatalog.table(withID: config.brailleTable)?.id, into: BraillePreferences.table)
         return shortcutsWereRepaired
     }
 

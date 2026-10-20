@@ -5,10 +5,11 @@ import AVFoundation
 /// order, each shown as `SettingsTabPage` shows it.
 struct SettingsView: View {
     /// The window's size, which every tab shares and none can change. Wide
-    /// enough for the nine tabs' toolbar to show every one, so none hides in
-    /// the toolbar's overflow menu. A tab taller than this scrolls
-    /// (`SettingsTab.scrollsAsAWhole`, TODO A10).
-    nonisolated static let windowSize = CGSize(width: 700, height: 540)
+    /// enough for the ten tabs' toolbar to show every one, so none hides in
+    /// the toolbar's overflow menu (each tab added has needed about 80
+    /// points). A tab taller than this scrolls (`SettingsTab.scrollsAsAWhole`,
+    /// TODO A10).
+    nonisolated static let windowSize = CGSize(width: 780, height: 540)
 
     var body: some View {
         TabView {
@@ -39,6 +40,8 @@ enum SettingsTab: CaseIterable, Identifiable {
     case playback
     case shortcuts
     case text
+    /// The braille code and contraction braille is read and written with (FMT21).
+    case braille
     case sounds
     case stats
     /// The podcast and article feeds' settings (FR03).
@@ -55,6 +58,7 @@ enum SettingsTab: CaseIterable, Identifiable {
         case .playback: return "Playback"
         case .shortcuts: return "Shortcuts"
         case .text: return "Text"
+        case .braille: return BrailleSettingsWording.tabTitle
         case .sounds: return "Sounds"
         case .stats: return "Stats"
         case .feeds: return FeedSettingsWording.tabTitle
@@ -70,6 +74,7 @@ enum SettingsTab: CaseIterable, Identifiable {
         case .playback: return "play.circle"
         case .shortcuts: return "keyboard"
         case .text: return "textformat.abc"
+        case .braille: return "hand.point.up.braille"
         case .sounds: return "speaker.badge.exclamationmark"
         case .stats: return "chart.bar"
         case .feeds: return "dot.radiowaves.up.forward"
@@ -100,6 +105,7 @@ struct SettingsTabContent: View {
         case .playback: PlaybackSettingsView()
         case .shortcuts: KeyboardShortcutsSettingsView()
         case .text: SubstitutionsSettingsView()
+        case .braille: BrailleSettingsView()
         case .sounds: SoundEffectsSettingsView()
         case .stats: ReadingStatsView()
         case .feeds: FeedSettingsView()
