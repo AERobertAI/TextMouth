@@ -20,6 +20,14 @@ extension XCTestCase {
         })
     }
 
+    /// Row `row` of page `page` of `pages`, or nil when the layout gave no
+    /// such row, so that a test reading a row never traps the test host on
+    /// a page shorter than it expects.
+    func rowAt(_ pages: [[String]], _ page: Int, _ row: Int) -> String? {
+        guard pages.indices.contains(page), pages[page].indices.contains(row) else { return nil }
+        return pages[page][row]
+    }
+
     /// The pages of a BRF file's bytes as rows of Unicode cells: split at the
     /// form feeds, then at the line ends (CR LF or LF), each byte converted
     /// with `BrailleCells.cell(forASCII:)`. A page's last line end is not a
@@ -118,8 +126,8 @@ final class BrailleLayoutTests: XCTestCase {
         guard let page = result.first else { return }
         // Cells 3 to 18 hold 16 cells: five words and their blanks take 14,
         // and a sixth would take 3 more.
-        XCTAssertEqual(page[0], "  AB CD EF GH IJ")
-        XCTAssertEqual(page[1], "KL MN")
+        XCTAssertEqual(rowAt([page], 0, 0), "  AB CD EF GH IJ")
+        XCTAssertEqual(rowAt([page], 0, 1), "KL MN")
     }
 
     /// Whatever the widths, no word is ever divided: every row's words are
@@ -145,25 +153,25 @@ final class BrailleLayoutTests: XCTestCase {
     func testAWordLongerThanALineIsCutAtTheLineEnd() throws {
         // 20 cells at an 18-cell line: 16 after the first-line indent, then 4.
         var result = pages([paragraph("ABCDEFGHIJKLMNOPQRST")], cells: 18)
-        XCTAssertEqual(result.first?[0], "  ABCDEFGHIJKLMNOP")
-        XCTAssertEqual(result.first?[1], "QRST")
+        XCTAssertEqual(rowAt(result, 0, 0), "  ABCDEFGHIJKLMNOP")
+        XCTAssertEqual(rowAt(result, 0, 1), "QRST")
 
         // A word that follows another one begins a new line, fills it to its
         // last cell (from the runover indent, cell 1), and goes on.
         result = pages([paragraph("AB ABCDEFGHIJKLMNOPQRST")], cells: 18)
-        XCTAssertEqual(result.first?[0], "  AB")
-        XCTAssertEqual(result.first?[1], "ABCDEFGHIJKLMNOPQR")
-        XCTAssertEqual(result.first?[2], "ST")
+        XCTAssertEqual(rowAt(result, 0, 0), "  AB")
+        XCTAssertEqual(rowAt(result, 0, 1), "ABCDEFGHIJKLMNOPQR")
+        XCTAssertEqual(rowAt(result, 0, 2), "ST")
 
         // Later words follow the cut word's last piece on its line.
         result = pages([paragraph("ABCDEFGHIJKLMNOPQRST UV")], cells: 18)
-        XCTAssertEqual(result.first?[1], "QRST UV")
+        XCTAssertEqual(rowAt(result, 0, 1), "QRST UV")
 
         // A word of 40 cells at 18 needs three lines: 16, 18, and 6.
         result = pages([paragraph(String(repeating: "A", count: 40))], cells: 18)
-        XCTAssertEqual(result.first?[0], "  " + String(repeating: "A", count: 16))
-        XCTAssertEqual(result.first?[1], String(repeating: "A", count: 18))
-        XCTAssertEqual(result.first?[2], String(repeating: "A", count: 6))
+        XCTAssertEqual(rowAt(result, 0, 0), "  " + String(repeating: "A", count: 16))
+        XCTAssertEqual(rowAt(result, 0, 1), String(repeating: "A", count: 18))
+        XCTAssertEqual(rowAt(result, 0, 2), String(repeating: "A", count: 6))
     }
 
     /// A word exactly as long as the line from its indent fits, uncut.
@@ -173,16 +181,16 @@ final class BrailleLayoutTests: XCTestCase {
         // 16 cells after the 2-cell first indent fill an 18-cell line, and an
         // 18-cell word after it fills the next line whole.
         let result = pages([paragraph("\(sixteen) \(eighteen)")], cells: 18)
-        XCTAssertEqual(result.first?[0], "  " + sixteen)
-        XCTAssertEqual(result.first?[1], eighteen)
-        XCTAssertEqual(result.first?[2], "")
+        XCTAssertEqual(rowAt(result, 0, 0), "  " + sixteen)
+        XCTAssertEqual(rowAt(result, 0, 1), eighteen)
+        XCTAssertEqual(rowAt(result, 0, 2), "")
     }
 
     /// Doubled blank cells, and white space other than the blank cell, make
     /// no empty words or odd gaps.
     func testExtraBlanksBetweenWordsAreSingle() throws {
         let result = pages([.paragraph(text: brailleCells("AB   CD") + "\n" + brailleCells("EF "))])
-        XCTAssertEqual(result.first?[0], "  AB CD EF")
+        XCTAssertEqual(rowAt(result, 0, 0), "  AB CD EF")
     }
 
     // MARK: Margins
@@ -192,35 +200,35 @@ final class BrailleLayoutTests: XCTestCase {
         let result = pages([paragraph("AAAAAA BBBBBB CCCCCC DDDDDD EEEEEE")], cells: 20)
         // The first line has 18 cells for text, which two words take (13) and
         // a third would overrun; the runover has all 20, which three fill.
-        XCTAssertEqual(result.first?[0], "  AAAAAA BBBBBB")
-        XCTAssertEqual(result.first?[1], "CCCCCC DDDDDD EEEEEE")
-        XCTAssertEqual(result.first?[2], "")
+        XCTAssertEqual(rowAt(result, 0, 0), "  AAAAAA BBBBBB")
+        XCTAssertEqual(rowAt(result, 0, 1), "CCCCCC DDDDDD EEEEEE")
+        XCTAssertEqual(rowAt(result, 0, 2), "")
     }
 
     /// A list item at depth 1 starts in cell 1 and runs over in cell 3.
     func testListItemAtDepthOneStartsInCellOneAndRunsOverInCellThree() throws {
         let result = pages([item(1, "AAAAAA BBBBBB CCCCCC DDDDDD EEEEEE")], cells: 20)
-        XCTAssertEqual(result.first?[0], "AAAAAA BBBBBB CCCCCC")
-        XCTAssertEqual(result.first?[1], "  DDDDDD EEEEEE")
+        XCTAssertEqual(rowAt(result, 0, 0), "AAAAAA BBBBBB CCCCCC")
+        XCTAssertEqual(rowAt(result, 0, 1), "  DDDDDD EEEEEE")
     }
 
     /// At depth 2 the first line starts in cell 3 and the runovers in cell 5.
     func testListItemAtDepthTwoStartsInCellThreeAndRunsOverInCellFive() throws {
         let result = pages([item(2, "AAAAAA BBBBBB CCCCCC DDDDDD EEEEEE FFFFFF")], cells: 24)
-        XCTAssertEqual(result.first?[0], "  AAAAAA BBBBBB CCCCCC")
-        XCTAssertEqual(result.first?[1], "    DDDDDD EEEEEE FFFFFF")
+        XCTAssertEqual(rowAt(result, 0, 0), "  AAAAAA BBBBBB CCCCCC")
+        XCTAssertEqual(rowAt(result, 0, 1), "    DDDDDD EEEEEE FFFFFF")
     }
 
     /// The depth is held so that the runover indent is at most a third of the
     /// line: at 18 cells, 6 cells (depth 3) is the most, so depth 9 is 3.
     func testListDepthIsHeldToAThirdOfTheLine() throws {
         let result = pages([item(9, "AAAA BBBB CCCC DDDD EEEE FFFF")], cells: 18)
-        XCTAssertEqual(result.first?[0], "    AAAA BBBB CCCC")
-        XCTAssertEqual(result.first?[1], "      DDDD EEEE")
-        XCTAssertEqual(result.first?[2], "      FFFF")
+        XCTAssertEqual(rowAt(result, 0, 0), "    AAAA BBBB CCCC")
+        XCTAssertEqual(rowAt(result, 0, 1), "      DDDD EEEE")
+        XCTAssertEqual(rowAt(result, 0, 2), "      FFFF")
         // A depth below 1 is read as 1.
         let low = pages([item(0, "AAAA")], cells: 18)
-        XCTAssertEqual(low.first?[0], "AAAA")
+        XCTAssertEqual(rowAt(low, 0, 0), "AAAA")
     }
 
     /// A level-3 heading starts in cell 5 and a level-5 heading in cell 7,
@@ -240,11 +248,11 @@ final class BrailleLayoutTests: XCTestCase {
     /// runover lines start at the same cell.
     func testHeadingRunoversStayAtTheHeadingsCell() throws {
         let result = pages([heading(3, "AAAAAA BBBBBB CCCCCC DDDDDD")], cells: 24)
-        XCTAssertEqual(result.first?[0], "    AAAAAA BBBBBB CCCCCC")
-        XCTAssertEqual(result.first?[1], "    DDDDDD")
+        XCTAssertEqual(rowAt(result, 0, 0), "    AAAAAA BBBBBB CCCCCC")
+        XCTAssertEqual(rowAt(result, 0, 1), "    DDDDDD")
         let deeper = pages([heading(6, "AAAAAA BBBBBB CCCCCC")], cells: 24)
-        XCTAssertEqual(deeper.first?[0], "      AAAAAA BBBBBB")
-        XCTAssertEqual(deeper.first?[1], "      CCCCCC")
+        XCTAssertEqual(rowAt(deeper, 0, 0), "      AAAAAA BBBBBB")
+        XCTAssertEqual(rowAt(deeper, 0, 1), "      CCCCCC")
     }
 
     // MARK: Centered headings
@@ -254,30 +262,30 @@ final class BrailleLayoutTests: XCTestCase {
     func testCenteredHeadingsOfEvenAndOddLength() throws {
         // 40 - 4 = 36, 18 blanks; 40 - 5 = 35, 17 blanks.
         var result = pages([heading(1, "ABCD"), paragraph("X")])
-        XCTAssertEqual(result.first?[0], blanks(18) + "ABCD")
-        XCTAssertEqual(result.first?[1], "")
-        XCTAssertEqual(result.first?[2], "  X")
+        XCTAssertEqual(rowAt(result, 0, 0), blanks(18) + "ABCD")
+        XCTAssertEqual(rowAt(result, 0, 1), "")
+        XCTAssertEqual(rowAt(result, 0, 2), "  X")
         result = pages([heading(2, "ABCDE"), paragraph("X")])
-        XCTAssertEqual(result.first?[0], blanks(17) + "ABCDE")
-        XCTAssertEqual(result.first?[1], "")
+        XCTAssertEqual(rowAt(result, 0, 0), blanks(17) + "ABCDE")
+        XCTAssertEqual(rowAt(result, 0, 1), "")
     }
 
     /// A heading too long for one centered line (at most width - 6 cells) is
     /// wrapped, and each line is centered with 3 or more blanks on each side.
     func testALongCenteredHeadingIsWrappedAndEachLineCentered() throws {
         let result = pages([heading(1, "ABCDE FGHIJ KLMNO"), paragraph("X")], cells: 18)
-        XCTAssertEqual(result.first?[0], blanks(3) + "ABCDE FGHIJ")
-        XCTAssertEqual(result.first?[1], blanks(6) + "KLMNO")
-        XCTAssertEqual(result.first?[2], "")
-        XCTAssertEqual(result.first?[3], "  X")
+        XCTAssertEqual(rowAt(result, 0, 0), blanks(3) + "ABCDE FGHIJ")
+        XCTAssertEqual(rowAt(result, 0, 1), blanks(6) + "KLMNO")
+        XCTAssertEqual(rowAt(result, 0, 2), "")
+        XCTAssertEqual(rowAt(result, 0, 3), "  X")
         // A line as long as the most allowed has exactly 3 blanks each side,
         // so a word of 12 cells fills a centered line.
         let full = pages([heading(1, String(repeating: "A", count: 12))], cells: 18)
-        XCTAssertEqual(full.first?[0], blanks(3) + String(repeating: "A", count: 12))
+        XCTAssertEqual(rowAt(full, 0, 0), blanks(3) + String(repeating: "A", count: 12))
         // A word of 13 is cut at 12.
         let cut = pages([heading(1, String(repeating: "A", count: 13))], cells: 18)
-        XCTAssertEqual(cut.first?[0], blanks(3) + String(repeating: "A", count: 12))
-        XCTAssertEqual(cut.first?[1], blanks(8) + "A")
+        XCTAssertEqual(rowAt(cut, 0, 0), blanks(3) + String(repeating: "A", count: 12))
+        XCTAssertEqual(rowAt(cut, 0, 1), blanks(8) + "A")
     }
 
     // MARK: Blank lines
@@ -296,7 +304,7 @@ final class BrailleLayoutTests: XCTestCase {
         XCTAssertEqual(Array(page.prefix(8)), [
             "    ONE", "", blanks(18) + "TWO", "", blanks(17) + "THREE", "", "  A", "",
         ])
-        XCTAssertEqual(Array(page[8...10]), ["    FOUR", "", "    FIVE"])
+        XCTAssertEqual(Array(page.dropFirst(8).prefix(3)), ["    FOUR", "", "    FIVE"])
         // No two blank rows in a row between the first row and the last row
         // of text (blank rows after the text only pad the page, and the last
         // row is the page number).
@@ -341,9 +349,9 @@ final class BrailleLayoutTests: XCTestCase {
         guard result.count == 2 else { return }
         XCTAssertEqual(result[0].count, 6)
         XCTAssertEqual(result[0].prefix(5).map { $0 }, ["  " + sixteen, sixteen, sixteen, "", ""])
-        XCTAssertEqual(result[0][5], blanks(16) + "#A")
+        XCTAssertEqual(rowAt(result, 0, 5), blanks(16) + "#A")
         XCTAssertEqual(Array(result[1].prefix(2)), ["    BB", "  CC"])
-        XCTAssertEqual(result[1][5], blanks(16) + "#B")
+        XCTAssertEqual(rowAt(result, 1, 5), blanks(16) + "#B")
 
         // With one line more the heading, its blank line, and a line fit.
         let fits = pages([threeRows, heading(3, "BB"), paragraph("CC")], cells: 18, lines: 7)
@@ -386,8 +394,8 @@ final class BrailleLayoutTests: XCTestCase {
         ))
         XCTAssertEqual(result.count, 12)
         guard result.count == 12 else { return }
-        XCTAssertEqual(result[0][3], String(repeating: "\u{2800}", count: 16) + "\u{283C}\u{2801}")
-        XCTAssertEqual(result[11][3], String(repeating: "\u{2800}", count: 15) + "\u{283C}\u{2801}\u{2803}")
+        XCTAssertEqual(rowAt(result, 0, 3), String(repeating: "\u{2800}", count: 16) + "\u{283C}\u{2801}")
+        XCTAssertEqual(rowAt(result, 11, 3), String(repeating: "\u{2800}", count: 15) + "\u{283C}\u{2801}\u{2803}")
         // Every page has its four rows and its number on the fourth.
         for (index, page) in result.enumerated() {
             XCTAssertEqual(page.count, 4)
