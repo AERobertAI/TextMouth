@@ -683,6 +683,33 @@ final class BraillePageAnalyzerTests: XCTestCase {
         XCTAssertEqual(structure.blocks, blocks.map { .paragraph(text: $0.text) })
     }
 
+    /// The layout's list items read back one paragraph each wherever a page
+    /// break falls in the list: after 0 to 23 paragraphs of one row, a
+    /// heading, items of three rows at depths 1 and 2, and a paragraph, so
+    /// that the break falls after each of the list's rows in turn. An item's
+    /// first row alone at a page's foot left its runover at the next page's
+    /// top, where it began a paragraph (and each runover after it another),
+    /// or, in cell 5, a heading.
+    func testListItemsReadBackOneParagraphEachWhereverAPageBreakFalls() {
+        let list: [BrailleBlock] = [
+            .listItem(depth: 1, text: cells(filler(99))),
+            .listItem(depth: 2, text: cells(filler(99))),
+            .listItem(depth: 2, text: cells(filler(99))),
+            .listItem(depth: 1, text: cells(filler(99))),
+        ]
+        for lead in 0..<24 {
+            let blocks = [BrailleBlock](repeating: .paragraph(text: cells(filler(29))), count: lead)
+                + [.heading(level: 1, text: cells("LISTS"))] + list + [.paragraph(text: cells(filler(64)))]
+            let expected = blocks.map { block -> BrailleBlock in
+                if case .listItem = block { return .paragraph(text: block.text) }
+                return block
+            }
+            let pages = BrailleLayout.pages(of: blocks, format: BraillePageFormat())
+            XCTAssertEqual(BraillePageAnalyzer.structure(of: pages, formatted: true).blocks, expected,
+                           "after \(lead) paragraphs")
+        }
+    }
+
     /// A nested item's runover at a page's top is not a heading (it begins
     /// in cell 5, where a heading of level 2 does): the item goes on over
     /// the page break as one paragraph.

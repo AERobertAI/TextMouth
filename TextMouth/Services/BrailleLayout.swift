@@ -124,6 +124,10 @@ enum BrailleLayout {
 
         /// Whether the block is a heading, which keeps with the text after it.
         var isHeading: Bool { kind == .centeredHeading || kind == .indentedHeading }
+
+        /// The lines at the block's start that go on one page: a list item's
+        /// first two when it runs over, else its first (see `Paginator.run`).
+        var linesKeptTogether: Int { kind == .listItem ? min(rows.count, 2) : 1 }
     }
 
     /// `block` laid out in rows for lines of `width` cells, or nil when its
@@ -406,6 +410,14 @@ enum BrailleLayout {
                     finishPage()
                 }
                 if block.blankBefore { addBlank() }
+                // A list item that runs over begins on a page with room for
+                // its first two lines (FMT20, E6). Alone at a page's foot, its
+                // first line would leave its runover at the next page's top,
+                // where a reader cannot tell it from the start of another
+                // block, or, in cell 5 or 7, from a heading: there is no
+                // line above it to measure it against. Any other block needs
+                // only a line, as before.
+                if !current.isEmpty, block.linesKeptTogether > usableLines - current.count { finishPage() }
                 for row in block.rows { addText(row) }
                 if block.blankAfter { addBlank() }
             }
@@ -416,9 +428,10 @@ enum BrailleLayout {
         /// The lines that the heading at `index` and what it must stay with
         /// take if placed now: its blank line before (when one would be
         /// added), its lines, its blank line after, and further headings that
-        /// follow it directly, then one line of the first block that is not a
-        /// heading. Counting stops as soon as the total passes a page, since
-        /// no more can be learned from it.
+        /// follow it directly, then the lines that the first block that is
+        /// not a heading keeps together (one, or a list item's first two).
+        /// Counting stops as soon as the total passes a page, since no more
+        /// can be learned from it.
         private func linesNeeded(fromHeadingAt index: Int) -> Int {
             var needed = 0
             // A blank line is added only below text, so one is already
@@ -426,7 +439,7 @@ enum BrailleLayout {
             var aboveIsBlank = current.last?.isEmpty ?? true
             for block in blocks[index...] {
                 guard block.isHeading else {
-                    needed += 1
+                    needed += block.linesKeptTogether
                     break
                 }
                 if block.blankBefore && !aboveIsBlank { needed += 1 }

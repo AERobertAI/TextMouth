@@ -563,6 +563,45 @@ final class BrailleLayoutTests: XCTestCase {
         XCTAssertEqual(Array(result[1].prefix(4)), ["    BB", "", "    CC", "  DD"])
     }
 
+    /// A heading keeps with it the first two lines of a list item that runs
+    /// over, as it keeps one line of a paragraph: where the heading and one
+    /// line would fit at the page's foot but not two, the heading begins the
+    /// next page, and is never the page's last text.
+    func testAHeadingKeepsTheFirstTwoLinesOfAListItemAfterIt() throws {
+        let sixteen = String(repeating: "A", count: 16)
+        let threeRows = paragraph([sixteen, sixteen, sixteen].joined(separator: " "))
+        // At 18 by 7 (6 text lines) three rows leave three: room for a blank
+        // line, the heading, and one line (testAHeadingNeverEndsAPage).
+        let result = pages([threeRows, heading(3, "BB"), item(1, "DDDDDD EEEEEE FFFFFF")], cells: 18, lines: 7)
+        XCTAssertEqual(result.count, 2)
+        guard result.count == 2 else { return }
+        XCTAssertEqual(Array(result[0].prefix(6)), ["  " + sixteen, sixteen, sixteen, "", "", ""])
+        XCTAssertEqual(Array(result[1].prefix(3)), ["    BB", "DDDDDD EEEEEE", "  FFFFFF"])
+    }
+
+    // MARK: List items and the page's end
+
+    /// A list item that runs over begins on a page with room for its first
+    /// two lines, at either depth: alone at a page's foot, its first line
+    /// would leave its runover at the next page's top, where a reader cannot
+    /// tell it from a new block, or, in cell 5, from a heading. An item of
+    /// one line may still end a page.
+    func testAListItemThatRunsOverNeverLeavesItsFirstLineAloneAtAPagesFoot() throws {
+        for depth in [1, 2] {
+            let indent = blanks(2 * depth - 2)
+            // At 18 by 5 (4 text lines) three items of one line leave one.
+            let result = pages([item(1, "AAA"), item(1, "BBB"), item(1, "CCC"), item(depth, "DDDDDD EEEEEE FFFFFF")],
+                               cells: 18, lines: 5)
+            XCTAssertEqual(result.count, 2, "depth \(depth)")
+            guard result.count == 2 else { continue }
+            XCTAssertEqual(Array(result[0].prefix(4)), ["AAA", "BBB", "CCC", ""], "depth \(depth)")
+            XCTAssertEqual(Array(result[1].prefix(2)), [indent + "DDDDDD EEEEEE", indent + "  FFFFFF"], "depth \(depth)")
+        }
+        let fits = pages([item(1, "AAA"), item(1, "BBB"), item(1, "CCC"), item(2, "DDD")], cells: 18, lines: 5)
+        XCTAssertEqual(fits.count, 1)
+        XCTAssertEqual(Array(fits.first?.prefix(4) ?? []), ["AAA", "BBB", "CCC", "  DDD"])
+    }
+
     /// A heading that is the book's last block is never moved for this.
     func testALastHeadingStaysWhereItFalls() throws {
         let sixteen = String(repeating: "A", count: 16)
