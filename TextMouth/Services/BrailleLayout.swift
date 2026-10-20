@@ -71,7 +71,8 @@ enum BrailleLayout {
         let format = format.clamped
         // Lay each block out in its own rows first; the paginator then only
         // has to place whole blocks, and look ahead from a heading.
-        let laidOut = blocks.compactMap { laidOutBlock($0, width: format.cellsPerLine) }
+        var laidOut = blocks.compactMap { laidOutBlock($0, width: format.cellsPerLine) }
+        setListsApart(&laidOut)
         var paginator = Paginator(
             blocks: laidOut,
             width: format.cellsPerLine,
@@ -102,15 +103,27 @@ enum BrailleLayout {
 
     /// One block's rows, and how it sits among the blocks around it.
     private struct LaidOutBlock {
+        /// What a block is, as far as the blank lines around it go.
+        enum Kind {
+            case paragraph
+            case listItem
+            /// A heading of level 1 or 2, centered.
+            case centeredHeading
+            /// A heading of level 3 or more, in cell 5 or cell 7.
+            case indentedHeading
+        }
+
         /// The block's text lines, wrapped, indented, or centered.
         var rows: [Row]
-        /// Whether the block is a heading, which keeps with the text after it.
-        var isHeading: Bool
+        var kind: Kind
         /// Whether a blank line comes before the block (unless the page's top
         /// or the line above is blank already).
         var blankBefore: Bool
         /// Whether a blank line comes after the block.
         var blankAfter: Bool
+
+        /// Whether the block is a heading, which keeps with the text after it.
+        var isHeading: Bool { kind == .centeredHeading || kind == .indentedHeading }
     }
 
     /// `block` laid out in rows for lines of `width` cells, or nil when its
@@ -122,14 +135,16 @@ enum BrailleLayout {
         case .paragraph:
             // First line in cell 3, runovers in cell 1.
             let rows = wrap(words, width: width, firstIndent: Margin.paragraphFirst, runIndent: Margin.paragraphRun)
-            return LaidOutBlock(rows: rows, isHeading: false, blankBefore: false, blankAfter: false)
+            return LaidOutBlock(rows: rows, kind: .paragraph, blankBefore: false, blankAfter: false)
         case let .listItem(depth, _):
             // First line in cell 2d-1, runovers in cell 2d+1, with the depth
             // held so that the runover indent (2d cells) is at most a third
-            // of the line. A depth below 1 is read as 1.
+            // of the line. A depth below 1 is read as 1. The blank lines
+            // around a list depend on the blocks beside it, and are set once
+            // every block is laid out (`setListsApart`).
             let heldDepth = min(max(depth, 1), max(width / 6, 1))
             let rows = wrap(words, width: width, firstIndent: 2 * heldDepth - 2, runIndent: 2 * heldDepth)
-            return LaidOutBlock(rows: rows, isHeading: false, blankBefore: false, blankAfter: false)
+            return LaidOutBlock(rows: rows, kind: .listItem, blankBefore: false, blankAfter: false)
         case let .heading(level, _):
             if level <= 2 {
                 // Levels 1 and 2 are centered, in at most width-6 cells so
@@ -137,13 +152,40 @@ enum BrailleLayout {
                 // line before and after.
                 let lines = centeredHeadingLines(words, width: width)
                 let rows = lines.map { centered($0, width: width) }
-                return LaidOutBlock(rows: rows, isHeading: true, blankBefore: true, blankAfter: true)
+                return LaidOutBlock(rows: rows, kind: .centeredHeading, blankBefore: true, blankAfter: true)
             }
             // Level 3 starts in cell 5, levels 4 to 6 (and above) in cell 7,
             // their runovers at the same cell, with a blank line before only.
             let indent = level == 3 ? Margin.heading3 : Margin.heading4to6
             let rows = wrap(words, width: width, firstIndent: indent, runIndent: indent)
-            return LaidOutBlock(rows: rows, isHeading: true, blankBefore: true, blankAfter: false)
+            return LaidOutBlock(rows: rows, kind: .indentedHeading, blankBefore: true, blankAfter: false)
+        }
+    }
+
+    /// Sets each list apart from the text around it, as BANA's Braille
+    /// Formats (2016) does (FMT22, E6): a blank line before a list's first
+    /// item and after its last (8.3.2a), none before a list that follows a
+    /// heading in cell 5 or cell 7 (8.3.3a), and none between its items. A
+    /// list is a run of list items, of any depth, with no other block
+    /// between them.
+    ///
+    /// The blank lines are also what tell a list from the text around it
+    /// when the book is read back (FMT20). An item's first line starts in
+    /// cell 1, as a paragraph's runover lines do, so an item right after a
+    /// paragraph would read as more of the paragraph; and a paragraph's first
+    /// line starts in cell 3, as a top-level item's runover lines do, so a
+    /// paragraph right after a list could read as more of its last item.
+    /// After a heading in cell 5 or 7 the reader starts a new block anyway.
+    ///
+    /// So no block right after a heading has a blank line of its own to add
+    /// (after a centered heading one is there already), which the heading's
+    /// look-ahead, `Paginator.linesNeeded(fromHeadingAt:)`, counts on.
+    private static func setListsApart(_ blocks: inout [LaidOutBlock]) {
+        for index in blocks.indices where blocks[index].kind == .listItem {
+            let before = index > blocks.startIndex ? blocks[index - 1].kind : nil
+            let after = index < blocks.endIndex - 1 ? blocks[index + 1].kind : nil
+            if before != .listItem && before != .indentedHeading { blocks[index].blankBefore = true }
+            if after != .listItem { blocks[index].blankAfter = true }
         }
     }
 

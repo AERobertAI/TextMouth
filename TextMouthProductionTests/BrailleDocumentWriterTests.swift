@@ -220,13 +220,15 @@ final class BrailleDocumentWriterTests: XCTestCase {
     // MARK: - Kinds, Errors, and No Blocks
 
     /// A block keeps its kind through the translation: a paragraph starts in
-    /// cell 3, a list item of depth 1 in cell 1.
+    /// cell 3, a list item of depth 1 in cell 1, after the blank line that
+    /// sets a list apart from the paragraph above it.
     func testBlocksKeepTheirKinds() throws {
         let result = try pages([.paragraph(text: "go"), .listItem(depth: 1, text: "go")], options("en-ueb-g2.ctb"))
         XCTAssertEqual(result.count, 1)
         guard let page = result.first, page.count == 25 else { return }
         let paragraph = Array(page[0].unicodeScalars)
-        let item = Array(page[1].unicodeScalars)
+        XCTAssertEqual(page[1], "", "the blank line before the list")
+        let item = Array(page[2].unicodeScalars)
         XCTAssertGreaterThan(paragraph.count, 2)
         XCTAssertGreaterThan(item.count, 0)
         guard paragraph.count > 2, !item.isEmpty else { return }

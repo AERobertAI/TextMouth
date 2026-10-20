@@ -664,6 +664,25 @@ final class BraillePageAnalyzerTests: XCTestCase {
         XCTAssertEqual(structure.blocks, [.heading(level: 1, text: cells("LISTS"))] + items.map { .paragraph(text: $0.text) })
     }
 
+    /// A list between two paragraphs reads back one paragraph for each item,
+    /// as the layout sets the list apart with a blank row before and after
+    /// it. Without the row before, the first item, in cell 1, went on the
+    /// paragraph above as its runovers do; without the row after, the
+    /// paragraph below, in cell 3 under the last item's runover of 36 cells
+    /// that its first word could not have joined, went on the item.
+    func testAListBetweenParagraphsFromTheLayoutReadsBackOneParagraphForEachItem() {
+        let blocks: [BrailleBlock] = [
+            .paragraph(text: cells(filler(64))),
+            .listItem(depth: 1, text: cells(filler(64))),
+            .listItem(depth: 2, text: cells(filler(79))),
+            .listItem(depth: 1, text: cells(filler(74))),
+            .paragraph(text: cells(filler(64))),
+        ]
+        let pages = BrailleLayout.pages(of: blocks, format: BraillePageFormat())
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertEqual(structure.blocks, blocks.map { .paragraph(text: $0.text) })
+    }
+
     /// A nested item's runover at a page's top is not a heading (it begins
     /// in cell 5, where a heading of level 2 does): the item goes on over
     /// the page break as one paragraph.

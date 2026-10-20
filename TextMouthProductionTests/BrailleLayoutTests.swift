@@ -471,6 +471,60 @@ final class BrailleLayoutTests: XCTestCase {
         XCTAssertEqual(moved.last?.first, "    BB")
     }
 
+    /// A list has a blank line before its first item and after its last, and
+    /// none between its items, whatever their depth (BANA 8.3.2a). A list is
+    /// a run of items with nothing else between them, so a paragraph between
+    /// two runs makes two lists.
+    func testAListHasABlankLineBeforeAndAfterIt() throws {
+        let result = pages([
+            paragraph("AAA"), item(1, "BBB"), item(2, "CCC"), item(1, "DDD"), paragraph("EEE"), item(1, "FFF"),
+            paragraph("GGG"),
+        ])
+        XCTAssertEqual(result.count, 1)
+        guard let page = result.first else { return }
+        XCTAssertEqual(Array(page.prefix(11)), [
+            "  AAA", "", "BBB", "  CCC", "DDD", "", "  EEE", "", "FFF", "", "  GGG",
+        ])
+    }
+
+    /// A list right after a heading in cell 5 or cell 7 has no blank line
+    /// before it (BANA 8.3.3a), and one right after a centered heading has
+    /// only the heading's own; the blank line after each list stays.
+    func testAListAfterAHeadingHasNoBlankLineOfItsOwnBeforeIt() throws {
+        let result = pages([
+            heading(3, "ONE"), item(1, "AAA"), paragraph("BBB"), heading(5, "TWO"), item(1, "CCC"), item(2, "DDD"),
+            heading(1, "THREE"), item(1, "EEE"), paragraph("FFF"),
+        ])
+        XCTAssertEqual(result.count, 1)
+        guard let page = result.first else { return }
+        XCTAssertEqual(Array(page.prefix(15)), [
+            "    ONE", "AAA", "", "  BBB", "", "      TWO", "CCC", "  DDD", "", blanks(17) + "THREE", "", "EEE", "",
+            "  FFF", "",
+        ])
+    }
+
+    /// A list that begins a page has no blank line above it, and one that
+    /// ends a page leaves no blank line at the top of the next.
+    func testAListAtAPagesTopOrFootHasNoBlankLineThere() throws {
+        let sixteen = String(repeating: "A", count: 16)
+        let threeRows = paragraph([sixteen, sixteen, sixteen].joined(separator: " "))
+        // At 18 by 5 (4 text lines) the paragraph's three rows and the
+        // list's blank line fill page 1, and the list begins page 2.
+        let begins = pages([threeRows, item(1, "BBB"), item(1, "CCC"), paragraph("DDD")], cells: 18, lines: 5)
+        XCTAssertEqual(begins.count, 2)
+        guard begins.count == 2 else { return }
+        XCTAssertEqual(Array(begins[0].prefix(4)), ["  " + sixteen, sixteen, sixteen, ""])
+        XCTAssertEqual(Array(begins[1].prefix(4)), ["BBB", "CCC", "", "  DDD"])
+
+        // Four items fill page 1, and the paragraph after them begins page 2.
+        let ends = pages([item(1, "AAA"), item(1, "BBB"), item(1, "CCC"), item(1, "DDD"), paragraph("EEE")],
+                         cells: 18, lines: 5)
+        XCTAssertEqual(ends.count, 2)
+        guard ends.count == 2 else { return }
+        XCTAssertEqual(Array(ends[0].prefix(4)), ["AAA", "BBB", "CCC", "DDD"])
+        XCTAssertEqual(ends[1].first, "  EEE")
+    }
+
     // MARK: Headings and the page's end
 
     /// A heading that would be the last text on a page moves to the next
