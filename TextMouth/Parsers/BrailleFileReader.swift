@@ -37,6 +37,11 @@ enum BrailleFileError: LocalizedError, Equatable {
         case character(Character)
         /// A control character (Unicode category Cc), by its code.
         case controlCharacter(UInt32)
+        /// A character that cannot be told apart on the screen or by ear:
+        /// white space (Zs, Zl, Zp, such as U+00A0), a format character (Cf,
+        /// such as U+200B or U+FEFF), or a combining mark (Mn, Mc, Me).
+        /// Named by its code, as a control character is.
+        case unseenCharacter(UInt32)
         /// A byte that begins no valid UTF-8 character.
         case byte(UInt8)
     }
@@ -66,6 +71,7 @@ enum BrailleFileError: LocalizedError, Equatable {
         switch found {
         case let .character(character): return "“\(character)”"
         case let .controlCharacter(code): return "the control character \(hex("U+", code, minimumDigits: 4))"
+        case let .unseenCharacter(code): return "the character \(hex("U+", code, minimumDigits: 4))"
         case let .byte(byte): return "the byte \(hex("0x", UInt32(byte), minimumDigits: 2))"
         }
     }
@@ -89,6 +95,8 @@ enum BrailleFileReader {
     static let linesPerUnmarkedPage = 25
     /// How much of a PEF file `pefMetadata(of:)` reads: its head comes first.
     static let metadataByteCount = 65_536
+    /// The bytes of a UTF-8 byte order mark (U+FEFF).
+    private static let utf8ByteOrderMark: [UInt8] = [0xEF, 0xBB, 0xBF]
 
     /// The pages of the braille file at `url`, read as `kind`.
     /// - Throws: `FileImportError.noTextToRead` for an empty file,
@@ -112,8 +120,11 @@ enum BrailleFileReader {
     static func pages(fromASCII data: Data, kind: BrailleFileKind) throws -> BrailleFilePages {
         guard kind != .pef else { return try pages(fromPEF: data) }
 
-        // A final Ctrl-Z is an old DOS end-of-file mark, not braille.
+        // A UTF-8 byte order mark at the very start is dropped, as
+        // TextMouth's text decoder drops it; it is no braille either.
         var bytes = Array(data)
+        if bytes.starts(with: utf8ByteOrderMark) { bytes.removeFirst(utf8ByteOrderMark.count) }
+        // A final Ctrl-Z is an old DOS end-of-file mark, not braille.
         if bytes.last == 0x1A { bytes.removeLast() }
 
         var scanner = ASCIIScanner(formFeedsEndPages: kind == .brf)
@@ -218,7 +229,8 @@ enum BrailleFileReader {
 
         /// What the file holds at `start`, the first byte that is no braille
         /// ASCII: the UTF-8 character that begins there, named as itself
-        /// or, for a control character, by its code; or, when the bytes
+        /// or, for a control, white space, format, or combining character,
+        /// by its code; or, when the bytes
         /// begin no valid character, the byte.
         private static func found(at start: Int, in bytes: [UInt8]) -> BrailleFileError.Found {
             // The length a UTF-8 character has, from its first byte.
@@ -230,14 +242,27 @@ enum BrailleFileReader {
             case 0xF0...0xF4: length = 4
             default: length = 0
             }
+            // Decoded by the UTF-8 codec itself, since `String(bytes:encoding:)`
+            // drops a byte order mark, which would leave nothing to name.
+            var iterator = bytes[start..<min(start + length, bytes.count)].makeIterator()
+            var decoder = UTF8()
             guard length > 0, start + length <= bytes.count,
-                  let text = String(bytes: bytes[start..<start + length], encoding: .utf8),
-                  text.unicodeScalars.count == 1,
-                  let scalar = text.unicodeScalars.first else {
+                  case let .scalarValue(scalar) = decoder.decode(&iterator),
+                  // The character must use all the bytes its first byte promised.
+                  case .emptyInput = decoder.decode(&iterator) else {
                 return .byte(bytes[start])
             }
-            if scalar.properties.generalCategory == .control { return .controlCharacter(scalar.value) }
-            return .character(Character(scalar))
+            switch scalar.properties.generalCategory {
+            case .control:
+                return .controlCharacter(scalar.value)
+            case .spaceSeparator, .lineSeparator, .paragraphSeparator, .format,
+                 .nonspacingMark, .spacingMark, .enclosingMark:
+                // These show as nothing, or join the character before them
+                // in quotes, so a listener could not tell what was found.
+                return .unseenCharacter(scalar.value)
+            default:
+                return .character(Character(scalar))
+            }
         }
     }
 

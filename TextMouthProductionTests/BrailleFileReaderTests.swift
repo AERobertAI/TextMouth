@@ -205,6 +205,44 @@ final class BrailleFileReaderTests: XCTestCase {
         XCTAssertEqual(refusal(of: [0x41, 0xC3]), .notBrailleASCII(.byte(0xC3), line: 1))
     }
 
+    /// White space, format characters, and combining marks are named by
+    /// their code, since a quoted one shows as nothing or joins its neighbour.
+    func testUnseenCharactersAreNamedByTheirCode() {
+        // A no-break space (Zs), a zero-width space (Cf), a byte order mark
+        // inside the file (Cf), and a line separator (Zl).
+        XCTAssertEqual(refusal(of: Array("A\u{A0}".utf8))?.errorDescription,
+                       "Line 1 holds the character U+00A0, which is not braille ASCII.")
+        XCTAssertEqual(refusal(of: Array("A\nB\u{200B}".utf8))?.errorDescription,
+                       "Line 2 holds the character U+200B, which is not braille ASCII.")
+        XCTAssertEqual(refusal(of: Array("A\u{FEFF}".utf8))?.errorDescription,
+                       "Line 1 holds the character U+FEFF, which is not braille ASCII.")
+        XCTAssertEqual(refusal(of: Array("A\u{2028}".utf8))?.errorDescription,
+                       "Line 1 holds the character U+2028, which is not braille ASCII.")
+        // A combining acute (Mn) after a letter, which would join the quote.
+        XCTAssertEqual(refusal(of: Array("A\u{301}".utf8))?.errorDescription,
+                       "Line 1 holds the character U+0301, which is not braille ASCII.")
+        // A printable character keeps its quotes, and a control character its words.
+        XCTAssertEqual(refusal(of: Array("A\u{2603}".utf8))?.errorDescription,
+                       "Line 1 holds “\u{2603}”, which is not braille ASCII.")
+        XCTAssertEqual(refusal(of: Array("A\u{07}".utf8))?.errorDescription,
+                       "Line 1 holds the control character U+0007, which is not braille ASCII.")
+    }
+
+    /// A UTF-8 byte order mark at the very start is dropped, in a BRF and a BRL.
+    func testAByteOrderMarkAtTheStartIsDropped() throws {
+        let mark: [UInt8] = [0xEF, 0xBB, 0xBF]
+        let text = Array(",PRIDE\nAND\n".utf8)
+        for kind in [BrailleFileKind.brf, .brl] {
+            let plain = try BrailleFileReader.pages(fromASCII: Data(text), kind: kind)
+            let marked = try BrailleFileReader.pages(fromASCII: Data(mark + text), kind: kind)
+            XCTAssertEqual(marked, plain, "\(kind)")
+            XCTAssertEqual(marked.pages.first?.first, cells(",PRIDE"))
+        }
+        // A mark anywhere else is a refusal, on the line it is on.
+        XCTAssertEqual(refusal(of: Array("A\n".utf8) + mark)?.errorDescription,
+                       "Line 2 holds the character U+FEFF, which is not braille ASCII.")
+    }
+
     /// Lines are counted by line ends, CR LF, LF, and lone CR each once, and
     /// a form feed does not start a line.
     func testTheRefusedLineIsCountedByLineEnds() {
