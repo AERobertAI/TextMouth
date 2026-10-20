@@ -59,9 +59,11 @@ extension Book {
     /// The braille code this braille book is read in, in words: the
     /// description of the table it was imported with, or of the default
     /// table for a braille book whose row and record lack one, such as
-    /// "Unified English Braille, contracted (Grade 2)". Nil for a book that
-    /// is not braille. Book Information and Speak Info both say it, from
-    /// this one expression.
+    /// "Unified English Braille, contracted (Grade 2)"; one of this Mac's
+    /// tables also names its language, as "French braille, contracted (Grade
+    /// 2), in French" (`BrailleTableCatalog.description(ofTableID:)`). Nil
+    /// for a book that is not braille. Book Information and Speak Info both
+    /// say it, from this one expression.
     var brailleCodeDescription: String? {
         guard format == .braille else { return nil }
         return BrailleTableCatalog.description(ofTableID: brailleTable ?? BrailleTableCatalog.defaultTableID)

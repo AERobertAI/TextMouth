@@ -8,9 +8,10 @@ enum BookParser {
     /// exactly as the Markdown cache decodes them, so both readings start
     /// from the same text whatever the file's encoding and line endings.
     /// - Parameter brailleTable: For a braille book (FMT21), the table its
-    ///   text is read with: the one it was imported with (`Book.brailleTable`).
-    ///   Nil reads with `BrailleTableCatalog.defaultTableID`; every other
-    ///   format ignores it.
+    ///   text is read with, by its stored value: the one it was imported with
+    ///   (`Book.brailleTable`), a bundled table or one of this Mac's. Nil
+    ///   reads with `BrailleTableCatalog.defaultTableID`; every other format
+    ///   ignores it.
     static func parse(url: URL, format: BookFormat, brailleTable: String? = nil) throws -> DocumentContent {
         switch format {
         case .epub:

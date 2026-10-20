@@ -9,7 +9,8 @@ import Foundation
 struct BrailleExportOptions: TextExportOptions {
     /// Cells per line, lines per page, and whether pages carry numbers.
     var page = BraillePageFormat()
-    /// The table, by file name: the code and its contraction.
+    /// The table, by its stored value (a bundled table's file name, or "mac:"
+    /// and one of this Mac's): the code and its contraction.
     var table = BrailleTableCatalog.defaultTableID
     /// The line end a BRF file writes after each row (a PEF always uses LF).
     var lineEnd = BrailleLineEnd.crlf

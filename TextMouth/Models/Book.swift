@@ -307,11 +307,15 @@ struct Book: Identifiable, Codable, Hashable {
     var feedLink: FeedBookLink?
 
     /// The braille table this braille book's text was read with (FMT21), by
-    /// its file name in the bundle's tables folder, such as "en-ueb-g2.ctb":
-    /// the Braille setting's table when the book was imported, which every
-    /// later reading of the book uses, the Markdown cache's rebuild included,
-    /// so a change of the setting never moves the book's text under its
-    /// places. Nil for every other book, and read as
+    /// its stored value (`BrailleTableSource`): a bundled table's file name,
+    /// such as "en-ueb-g2.ctb", or "mac:" and the file name of one of this
+    /// Mac's VoiceOver tables, such as "mac:fr-bfu-g2.ctb" (October 20,
+    /// 2026): the Braille setting's table when the book was imported, which
+    /// every later reading of the book uses, the Markdown cache's rebuild
+    /// included, so a change of the setting never moves the book's text
+    /// under its places. A Mac table a macOS update removes or changes is
+    /// kept: the book keeps its text, and a rebuild that needs the table
+    /// fails by name. Nil for every other book, and read as
     /// `BrailleTableCatalog.defaultTableID` for a braille book whose row and
     /// record lack one. Kept in the row and the record.
     var brailleTable: String?

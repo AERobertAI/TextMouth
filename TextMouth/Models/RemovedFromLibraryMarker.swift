@@ -26,7 +26,9 @@ struct RemovedFromLibraryMarker: Codable, Equatable, Sendable {
     /// When the book was removed.
     let removedAt: Date
     /// The braille table the book was read with when it was removed (FMT21),
-    /// or nil for a book that is not braille. bookInfo.json, which also holds
+    /// by its stored value as `Book.brailleTable` keeps it ("mac:" before
+    /// the file name of one of this Mac's tables), or nil for a book that is
+    /// not braille. bookInfo.json, which also holds
     /// it, is deleted by the removal, so a book added back from this marker
     /// would otherwise be read again with the default table. A marker written
     /// before this field existed has none, and decodes without it.

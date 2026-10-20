@@ -414,9 +414,12 @@ final class ConfigService: ObservableObject {
         /// imported (`TranscriptionPreferences.offerAfterImport`).
         var offerTranscriptionAfterImport: Bool?
         /// The braille table TextMouth reads and writes braille with
-        /// (`BraillePreferences`), by its file name, such as
-        /// "en-ueb-g2.ctb". Empty keeps the current choice, as does a name
-        /// no bundled table has.
+        /// (`BraillePreferences`), by its stored value: a bundled table's
+        /// file name, such as "en-ueb-g2.ctb", or "mac:" and the file name of
+        /// one of this Mac's VoiceOver tables, such as "mac:fr-bfu-g2.ctb".
+        /// Empty keeps the current choice, as does a value no offered table
+        /// has. A Mac table named here is checked before its first use, as
+        /// one chosen in Settings is (`MacBrailleTableCheck`).
         var brailleTable: String = ""
 
         /// Decodes config.json one field at a time, because people edit it

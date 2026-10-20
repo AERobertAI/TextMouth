@@ -61,7 +61,8 @@ enum BrailleBookReader {
     /// text that merely looks like Markdown is read as written.
     /// - Parameters:
     ///   - url: The book's file.
-    ///   - table: A bare file name in the bundle's tables folder.
+    ///   - table: The stored value of an offered table: a bundled table's
+    ///     bare file name, or "mac:" and one of this Mac's.
     /// - Throws: `BrailleFileError` for a file that is not braille or is
     ///   larger than `maximumFileBytes`,
     ///   `FileImportError.noTextToRead` when the book has no blocks or no

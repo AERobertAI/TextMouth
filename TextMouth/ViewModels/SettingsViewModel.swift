@@ -879,10 +879,12 @@ final class SettingsViewModel: ObservableObject {
     }
 
     /// The braille table braille files are read and written with (FMT21),
-    /// by its file name, such as "en-ueb-g2.ctb". Imports read it
-    /// (`BraillePreferences`), and config.json follows it through the
-    /// observer below, which also announces a change made anywhere else.
-    /// A name no bundled table has changes nothing.
+    /// by its stored value, such as "en-ueb-g2.ctb", or "mac:fr-bfu-g2.ctb"
+    /// for one of this Mac's tables. Imports read it (`BraillePreferences`),
+    /// and config.json follows it through the observer below, which also
+    /// announces a change made anywhere else. A value no offered table has
+    /// changes nothing; the Braille tab's pop-ups set a Mac table only once
+    /// its check passes (`BrailleTablePickers`).
     var brailleTable: String {
         get { BraillePreferences.table.read(from: preferences) }
         set {
