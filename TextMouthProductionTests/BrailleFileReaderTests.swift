@@ -31,6 +31,11 @@ final class BrailleFileReaderTests: XCTestCase {
         }
     }
 
+    /// The UTF-8 bytes of `text` repeated `count` times.
+    private func repeating(_ text: String, _ count: Int) -> [UInt8] {
+        Array([[UInt8]](repeating: Array(text.utf8), count: count).joined())
+    }
+
     /// A PEF document with `body` after a head holding `head`, in the PEF
     /// namespace unless `namespace` says another, under the root `root`.
     private func pef(_ body: String, head: String = "", root: String = "pef",
@@ -261,6 +266,78 @@ final class BrailleFileReaderTests: XCTestCase {
                        "This file could not be read as a PEF braille file. It may be damaged, or another kind of file.")
         XCTAssertEqual(BrailleFileError.eightDotBraille.errorDescription,
                        "This file is eight-dot braille, which TextMouth does not read.")
+    }
+
+    // MARK: - The Compact Form
+
+    /// The pages are three flat arrays: each cell a byte of its dots, where
+    /// each row ends, and the rows in the pages up to and including each page.
+    func testThePagesAreKeptAsCellBytesAndOffsets() throws {
+        // A, B, and a blank row; then C; two form feeds make an empty page between.
+        let result = try BrailleFileReader.pages(fromASCII: Data("AB\n\nC\u{0C}\u{0C}D".utf8), kind: .brf)
+        XCTAssertEqual(result.cells, [0x01, 0x03, 0x09, 0x19])
+        XCTAssertEqual(result.rowEnds, [2, 2, 3, 4])
+        XCTAssertEqual(result.pageEnds, [3, 3, 4])
+        XCTAssertEqual(result.pageCount, 3)
+        XCTAssertEqual(result.rowCount, 4)
+        XCTAssertEqual(result.rows(ofPage: 1), 3..<3)
+        XCTAssertEqual(result.cellRange(ofRow: 2), 2..<3)
+        XCTAssertEqual(result.pages, [[cells("AB"), "", cells("C")], [], [cells("D")]])
+        // An index past the end is an empty range, not a trap.
+        XCTAssertEqual(result.rows(ofPage: 3), 0..<0)
+        XCTAssertEqual(result.cellRange(ofRow: 4), 0..<0)
+    }
+
+    /// Pages made of text keep the blank cells, and a scalar that is no
+    /// braille pattern becomes the cell of all eight dots.
+    func testPagesMadeOfTextKeepTheirRows() {
+        let rows = ["\u{2801}\u{2800}\u{2803}\u{2800}", "", "\u{283F}"]
+        let made = BrailleFilePages(kind: .pef, pages: [rows, []])
+        XCTAssertEqual(made.pages, [rows, []])
+        XCTAssertEqual(made.cells, [0x01, 0x00, 0x03, 0x00, 0x3F])
+        XCTAssertEqual(BrailleFilePages(kind: .brf, pages: [["A"]]).cells, [0xFF])
+    }
+
+    // MARK: - The Limits
+
+    /// More than 100,000 pages are refused with exactly this sentence; 100,000 are read.
+    func testMoreThanOneHundredThousandPagesAreRefused() throws {
+        let sentence = "This file has more than 100,000 braille pages, the most TextMouth reads."
+        XCTAssertEqual(BrailleFileError.tooManyPages.errorDescription, sentence)
+        XCTAssertEqual(BrailleFilePages.maxPages, 100_000)
+        // Each "A" and form feed is a page.
+        let hundredThousand = try BrailleFileReader.pages(
+            fromASCII: Data(repeating("A\u{0C}", 100_000)), kind: .brf)
+        XCTAssertEqual(hundredThousand.pageCount, 100_000)
+        let tooMany = refusal(of: repeating("A\u{0C}", 100_001))
+        XCTAssertEqual(tooMany, .tooManyPages)
+        XCTAssertEqual(tooMany?.errorDescription, sentence)
+    }
+
+    /// More than 4,000,000 rows are refused with exactly this sentence; 4,000,000 are read
+    /// (as a BRL, which is one page), and a BRF with no form feed is cut into pages of 25,
+    /// so 2,500,001 rows of it are past the pages' limit.
+    func testMoreThanFourMillionRowsAreRefused() throws {
+        let sentence = "This file has more than 4,000,000 lines of braille, the most TextMouth reads."
+        XCTAssertEqual(BrailleFileError.tooManyRows.errorDescription, sentence)
+        XCTAssertEqual(BrailleFilePages.maxRows, 4_000_000)
+        let fourMillion = try BrailleFileReader.pages(
+            fromASCII: Data([UInt8](repeating: 0x0A, count: 4_000_000)), kind: .brl)
+        XCTAssertEqual(fourMillion.rowCount, 4_000_000)
+        XCTAssertEqual(fourMillion.pageCount, 1)
+        let tooMany = refusal(of: [UInt8](repeating: 0x0A, count: 4_000_001), kind: .brl)
+        XCTAssertEqual(tooMany, .tooManyRows)
+        XCTAssertEqual(tooMany?.errorDescription, sentence)
+        // The same lines as a BRF cut into pages of 25 run past the pages' limit first.
+        XCTAssertEqual(refusal(of: [UInt8](repeating: 0x0A, count: 2_500_001)), .tooManyPages)
+    }
+
+    /// A PEF with more than 100,000 pages is refused as a BRF is.
+    func testAPEFWithTooManyPagesIsRefused() {
+        let pages = String(repeating: "<page/>", count: 100_001)
+        XCTAssertEqual(pefRefusal(pef("<volume><section>\(pages)</section></volume>")), .tooManyPages)
+        let enough = String(repeating: "<page/>", count: 100_000)
+        XCTAssertNil(pefRefusal(pef("<volume><section>\(enough)</section></volume>")))
     }
 
     // MARK: - PEF

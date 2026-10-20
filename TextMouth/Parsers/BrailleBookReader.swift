@@ -50,7 +50,7 @@ enum BrailleBookReader {
         // no layout to read, so its analysis is not "formatted").
         let fileKind = kind(of: url)
         let pages = try BrailleFileReader.read(url, as: fileKind)
-        let blocks = BraillePageAnalyzer.structure(of: pages.pages, formatted: fileKind != .brl).blocks
+        let blocks = BraillePageAnalyzer.structure(of: pages).blocks
         guard !blocks.isEmpty else { throw FileImportError.noTextToRead }
 
         // One run of the helper translates every block, in a working folder

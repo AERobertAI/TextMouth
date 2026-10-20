@@ -87,6 +87,25 @@ final class BraillePageAnalyzerTests: XCTestCase {
         XCTAssertEqual(structure.pages[1].firstBlockIndex, 8)
     }
 
+    /// The analyzer reads the compact pages a reader gives; the pages as text
+    /// are only a way to make them, so both give the same structure.
+    func testTheCompactPagesAndThePagesAsTextGiveOneStructure() throws {
+        for (path, kind) in [("brf/pride-and-prejudice-ch1-grade1.brf", BrailleFileKind.brf),
+                             ("brl/pride-and-prejudice-ch1-grade1.brl", .brl),
+                             ("brf/grade2-short.brf", .brf)] {
+            let file = try BrailleFileReader.read(copyOfFormatSample(path), as: kind)
+            let fromCompact = BraillePageAnalyzer.structure(of: file)
+            XCTAssertEqual(fromCompact, BraillePageAnalyzer.structure(of: file.pages, formatted: kind != .brl), path)
+            XCTAssertFalse(fromCompact.blocks.isEmpty, path)
+        }
+        // The sample, read as a PEF, gives the BRF's blocks and page numbers.
+        let brf = try BrailleFileReader.read(
+            copyOfFormatSample("brf/pride-and-prejudice-ch1-grade1.brf"), as: .brf)
+        let pef = try BrailleFileReader.read(
+            copyOfFormatSample("pef/pride-and-prejudice-ch1-grade1.pef"), as: .pef)
+        XCTAssertEqual(BraillePageAnalyzer.structure(of: pef), BraillePageAnalyzer.structure(of: brf))
+    }
+
     func testGrade2SampleIsOneParagraphOfThreeLines() throws {
         let pages = try sampleBRFPages("brf/grade2-short.brf")
         let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
