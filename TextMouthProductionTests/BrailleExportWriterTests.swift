@@ -349,6 +349,9 @@ final class BrailleExportWriterTests: XCTestCase {
     /// options, as the Braille tab does, and a stepper raised as VoiceOver
     /// raises it sets its number.
     func testTheControlsSetTheOptions() throws {
+        // The steppers are read through the accessibility tree, which a CI
+        // runner does not expose: skip there, as the other hosted checks do.
+        try skipUnlessHostedWindowsExposeAccessibility()
         let box = OptionsBox(BrailleExportOptions(table: "en-ueb-g2.ctb"))
         try withOptionsView(box, choosesLineEnds: true, popUps: 3) { hosting in
             let found = descendants(of: hosting, as: NSPopUpButton.self)
