@@ -540,6 +540,11 @@ final class BookExportServiceTests: XCTestCase {
         XCTAssertEqual(BookExportService.safeFileName("..hidden\tname\n", fallback: "x"), "hidden name")
         XCTAssertEqual(BookExportService.safeFileName("  ", fallback: "Untitled"), "Untitled")
         XCTAssertEqual(BookExportService.fileNameStem(for: "..."), "Untitled")
+        // Dots mixed with white space of any kind never leave a leading dot.
+        XCTAssertEqual(BookExportService.safeFileName("\u{00A0}.config", fallback: "x"), "config")
+        XCTAssertEqual(BookExportService.safeFileName("\u{3000}.config", fallback: "x"), "config")
+        XCTAssertEqual(BookExportService.safeFileName(". .config", fallback: "x"), "config")
+        XCTAssertEqual(BookExportService.safeFileName(". . .", fallback: "x"), "x")
         let long = String(repeating: "é", count: 200)
         let cut = BookExportService.safeFileName(long, fallback: "x")
         XCTAssertLessThanOrEqual(cut.utf8.count, BookExportService.maximumStemByteCount)

@@ -1069,9 +1069,11 @@ enum BookExportService {
     /// `name` made safe as one file or folder name: a slash or colon
     /// becomes a hyphen (Finder shows a colon as a slash), a control
     /// character becomes a space, runs of spaces become one, leading dots,
-    /// which would hide the file, and surrounding spaces go, and the result
-    /// is cut, between characters, to `maximumStemByteCount` bytes of
-    /// UTF-8. `fallback` stands for a name with nothing left.
+    /// which would hide the file, and white space (any Unicode White_Space,
+    /// mixed with the dots in any order) go from the start, white space
+    /// from the end, and the result is cut, between characters, to
+    /// `maximumStemByteCount` bytes of UTF-8. `fallback` stands for a name
+    /// with nothing left.
     static func safeFileName(_ name: String, fallback: String) -> String {
         var safe = ""
         for scalar in name.unicodeScalars {
@@ -1084,10 +1086,13 @@ enum BookExportService {
             }
         }
         safe = safe.split(separator: " ", omittingEmptySubsequences: true).joined(separator: " ")
-        while safe.hasPrefix(".") {
+        // Leading dots and white space go together, in whatever order they
+        // come, so that ". .config" or "\u{00A0}.config" cannot leave a name
+        // that begins with a dot (and is hidden in Finder).
+        while let first = safe.first,
+              first == "." || first.unicodeScalars.allSatisfy(\.properties.isWhitespace) {
             safe.removeFirst()
         }
-        safe = safe.trimmingCharacters(in: .whitespaces)
         var cut = ""
         for character in safe {
             guard cut.utf8.count + String(character).utf8.count <= maximumStemByteCount else { break }
