@@ -220,6 +220,8 @@ enum TextExportWriters {
         HTMLExportWriter(),
         RTFExportWriter(),
         WordDocExportWriter(),
+        BRFExportWriter(),
+        PEFExportWriter(),
     ]
 
     /// The picker's tag for Markdown, the book's content.md copied as it is

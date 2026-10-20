@@ -3,12 +3,259 @@ import SwiftUI
 import XCTest
 @testable import TextMouth
 
-/// The braille options of the Export dialog (FMT22, Phase B): the options
-/// view's controls, labels, hints, and spoken values.
+/// The BRF and PEF writers of the Export dialog (FMT22, Phase B) with the
+/// real liblouis helper: the braille blocks the export model makes, the two
+/// writers' files, their options and the options view, and the writers'
+/// registration and cancellation.
 @MainActor
 final class BrailleExportWriterTests: XCTestCase {
 
-    // MARK: - The Wording
+    // MARK: - Blocks
+
+    /// A document with a title heading, headings of levels 1 to 3, a
+    /// paragraph with emphasis and a link, an ordered list from 3 with an
+    /// unordered list inside it, a quote, a two-line code block, a table, and
+    /// a thematic break gives exactly the blocks the rules say, depths
+    /// included: the paragraph's plain text only, the ordered items numbered,
+    /// the unordered items not, and nothing for the break.
+    func testBlocksOfAHandBuiltDocument() {
+        let inner = ExportList(
+            isOrdered: false, start: 1, depth: 1,
+            items: [ExportListItem(blocks: [.paragraph([ExportRun("Xray")])]), ExportListItem(blocks: [.paragraph([ExportRun("Yankee")])])]
+        )
+        let outer = ExportList(
+            isOrdered: true, start: 3, depth: 0,
+            items: [
+                ExportListItem(blocks: [.paragraph([ExportRun("Alpha")]), .list(inner)]),
+                ExportListItem(blocks: [.paragraph([ExportRun("Bravo")])]),
+            ]
+        )
+        let document = ExportDocument(
+            book: ExportBookDetails(title: "Harbour Notes"),
+            titleHeading: heading(1, "Harbour Notes"),
+            blocks: [
+                .heading(heading(1, "Part One")),
+                .heading(heading(2, "Chapter")),
+                .heading(heading(3, "Section")),
+                .paragraph([
+                    ExportRun("A "), ExportRun("sharp", isEmphasis: true), ExportRun(" turn, see "),
+                    ExportRun("the chart", link: "https://example.org/chart"), ExportRun("."),
+                ]),
+                .list(outer),
+                .blockQuote([.paragraph([ExportRun("Quoted words")])]),
+                .codeBlock("first line\n\nsecond line"),
+                .table(ExportTable(rows: [["Name", "Depth"], ["Pier", "4"]], hasHeaderRow: true)),
+                .thematicBreak,
+            ]
+        )
+
+        XCTAssertEqual(BrailleExportBlocks.blocks(of: document), [
+            .heading(level: 1, text: "Harbour Notes"),
+            .heading(level: 1, text: "Part One"),
+            .heading(level: 2, text: "Chapter"),
+            .heading(level: 3, text: "Section"),
+            .paragraph(text: "A sharp turn, see the chart."),
+            .listItem(depth: 1, text: "3. Alpha"),
+            .listItem(depth: 2, text: "Xray"),
+            .listItem(depth: 2, text: "Yankee"),
+            .listItem(depth: 1, text: "4. Bravo"),
+            .paragraph(text: "Quoted words"),
+            .paragraph(text: "first line"),
+            .paragraph(text: "second line"),
+            .paragraph(text: "Name; Depth"),
+            .paragraph(text: "Pier; 4"),
+        ])
+    }
+
+    /// An empty document has no blocks. A numbered item that begins with a
+    /// list or a heading keeps its number on a line of its own, a list in a
+    /// numbered list is numbered from its own start at its own depth, and the
+    /// text of a quote or a code block inside an item is the item's.
+    func testNumbersAndTheTextInsideAnItem() {
+        XCTAssertEqual(BrailleExportBlocks.blocks(of: ExportDocument(book: ExportBookDetails(title: "x"), blocks: [])), [])
+
+        let nested = ExportList(
+            isOrdered: true, start: 7, depth: 1,
+            items: [ExportListItem(blocks: [.paragraph([ExportRun("Deep")])])]
+        )
+        let quoteInside = ExportListItem(blocks: [
+            .blockQuote([.paragraph([ExportRun("Said")])]), .codeBlock("code one\ncode two"),
+        ])
+        let list = ExportList(
+            isOrdered: true, start: 1, depth: 0,
+            items: [
+                ExportListItem(blocks: [.list(nested)]),
+                ExportListItem(blocks: [.heading(heading(2, "Inside")), .paragraph([ExportRun("After")])]),
+                quoteInside,
+            ]
+        )
+        let document = ExportDocument(book: ExportBookDetails(title: "x"), blocks: [.list(list)])
+
+        XCTAssertEqual(BrailleExportBlocks.blocks(of: document), [
+            .listItem(depth: 1, text: "1."),
+            .listItem(depth: 2, text: "7. Deep"),
+            .listItem(depth: 1, text: "2."),
+            .heading(level: 2, text: "Inside"),
+            .listItem(depth: 1, text: "After"),
+            .listItem(depth: 1, text: "3. Said"),
+            .listItem(depth: 1, text: "code one"),
+            .listItem(depth: 1, text: "code two"),
+        ])
+    }
+
+    // MARK: - The Writers
+
+    /// The BRF of the Pride and Prejudice sample, walked from Markdown, is
+    /// exactly what `BrailleDocumentWriter` writes for the blocks of the
+    /// document, at 40 by 25 with the Grade 1 table, and leaves the working
+    /// folder holding that one file.
+    func testTheBRFWriterWritesWhatTheDocumentWriterWrites() throws {
+        let document = try prideDocument()
+        let blocks = BrailleExportBlocks.blocks(of: document)
+        // The title, the chapter heading, and 12 paragraphs, with the
+        // sample's text but for Markdown's reading of _You_ as emphasis.
+        XCTAssertEqual(blocks.count, 14)
+        let texts = try prideTexts().map { $0.replacingOccurrences(of: "_You_", with: "You") }
+        XCTAssertEqual(blocks.map(\.text), texts)
+        XCTAssertEqual(blocks.first, .heading(level: 1, text: "Pride and Prejudice"))
+
+        let options = BrailleExportOptions(table: "en-ueb-g1.ctb")
+        let folder = try makeSandboxDirectory("BrailleExportBRF")
+        let url = folder.appendingPathComponent("book.brf")
+        try BRFExportWriter().write(document, options: options, to: url, cancellation: BookExportCancellation())
+
+        let expected = try BrailleDocumentWriter.brf(of: blocks, options: options, workingIn: folder)
+        let written = try Data(contentsOf: url)
+        XCTAssertFalse(written.isEmpty)
+        XCTAssertEqual(written, expected)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), ["book.brf"])
+    }
+
+    /// The PEF has the book's title, author, and language, a `urn:uuid:`
+    /// identifier, and today's date, and holds the pages the BRF's blocks
+    /// make.
+    func testThePEFWriterWritesTheBooksMetadataAndPages() throws {
+        let document = try prideDocument(language: "en-GB")
+        let options = BrailleExportOptions(table: "en-ueb-g1.ctb")
+        let folder = try makeSandboxDirectory("BrailleExportPEF")
+        let url = folder.appendingPathComponent("book.pef")
+        // The day the file was made lies between these two, so a write at
+        // midnight cannot fail the test.
+        let before = PEFExportWriter.dayString(of: Date())
+        try PEFExportWriter().write(document, options: options, to: url, cancellation: BookExportCancellation())
+        let after = PEFExportWriter.dayString(of: Date())
+
+        let text = try String(contentsOf: url, encoding: .utf8)
+        XCTAssertTrue(text.contains("<dc:title>Pride and Prejudice</dc:title>"))
+        XCTAssertTrue(text.contains("<dc:creator>Jane Austen</dc:creator>"))
+        XCTAssertTrue(text.contains("<dc:language>en-GB</dc:language>"))
+        XCTAssertTrue(
+            text.contains("<dc:date>\(before)</dc:date>") || text.contains("<dc:date>\(after)</dc:date>"),
+            "no date of \(before) in the file"
+        )
+        let identifierPattern = #"<dc:identifier>urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}</dc:identifier>"#
+        XCTAssertNotNil(text.range(of: identifierPattern, options: .regularExpression))
+        let pages = try BrailleDocumentWriter.pef(
+            of: BrailleExportBlocks.blocks(of: document),
+            metadata: PEFExportWriter.metadata(of: document.book), options: options, workingIn: folder
+        )
+        // The same pages, whatever the identifier and date.
+        XCTAssertEqual(
+            text.components(separatedBy: "<page>").count, String(decoding: pages, as: UTF8.self).components(separatedBy: "<page>").count
+        )
+        XCTAssertTrue(text.contains(#"cols="40" rows="25""#))
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), ["book.pef"])
+    }
+
+    /// The metadata names an unknown author as nothing and an unknown
+    /// language as English, makes a new identifier each time, and writes the
+    /// date as yyyy-MM-dd in the Gregorian calendar.
+    func testThePEFMetadataDefaultsAndDate() throws {
+        let book = ExportBookDetails(title: "Harbour Pilots")
+        let first = PEFExportWriter.metadata(of: book)
+        let second = PEFExportWriter.metadata(of: book)
+        XCTAssertEqual(first.title, "Harbour Pilots")
+        XCTAssertEqual(first.author, "")
+        XCTAssertEqual(first.language, "en")
+        XCTAssertTrue(first.identifier.hasPrefix("urn:uuid:"))
+        XCTAssertNotEqual(first.identifier, second.identifier)
+        XCTAssertNotNil(UUID(uuidString: String(first.identifier.dropFirst("urn:uuid:".count))))
+
+        // A fixed day, made in the Mac's own time zone so it reads the same.
+        let gregorian = Calendar(identifier: .gregorian)
+        let day = try XCTUnwrap(gregorian.date(from: DateComponents(year: 2026, month: 3, day: 9, hour: 12)))
+        XCTAssertEqual(PEFExportWriter.dayString(of: day), "2026-03-09")
+        XCTAssertEqual(first.date.count, 10)
+    }
+
+    /// An unknown table fails with the translator's sentence as a
+    /// `TextExportError`, so the dialog says what stopped it, and leaves no
+    /// file and no hidden file behind.
+    func testATranslatorFailureBecomesTheExportsSentence() throws {
+        let document = try prideDocument()
+        let folder = try makeSandboxDirectory("BrailleExportFailure")
+        let options = BrailleExportOptions(table: "en-xx.ctb")
+        for (writer, name) in [(AnyBrailleWriter(BRFExportWriter()), "book.brf"), (AnyBrailleWriter(PEFExportWriter()), "book.pef")] {
+            XCTAssertThrowsError(
+                try writer.write(document, options, folder.appendingPathComponent(name), BookExportCancellation())
+            ) {
+                XCTAssertEqual(
+                    $0 as? TextExportError,
+                    TextExportError("TextMouth has no braille table named \u{201C}en-xx.ctb\u{201D}.")
+                )
+            }
+        }
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), [])
+    }
+
+    /// A file already at the planned place is an error and is left as it
+    /// was.
+    func testAnExistingFileIsNeverReplaced() throws {
+        let document = try prideDocument()
+        let folder = try makeSandboxDirectory("BrailleExportExisting")
+        let url = folder.appendingPathComponent("book.brf")
+        try Data("mine".utf8).write(to: url)
+        XCTAssertThrowsError(
+            try BRFExportWriter().write(
+                document, options: BrailleExportOptions(table: "en-ueb-g1.ctb"), to: url, cancellation: BookExportCancellation()
+            )
+        )
+        XCTAssertEqual(try Data(contentsOf: url), Data("mine".utf8))
+    }
+
+    /// A cancelled export makes the writers throw `CancellationError` and
+    /// write nothing.
+    func testACancelledExportWritesNothing() throws {
+        let document = try prideDocument()
+        let folder = try makeSandboxDirectory("BrailleExportCancelled")
+        let cancellation = BookExportCancellation()
+        cancellation.cancel()
+        let options = BrailleExportOptions(table: "en-ueb-g1.ctb")
+        for (writer, name) in [(AnyBrailleWriter(BRFExportWriter()), "book.brf"), (AnyBrailleWriter(PEFExportWriter()), "book.pef")] {
+            XCTAssertThrowsError(try writer.write(document, options, folder.appendingPathComponent(name), cancellation)) {
+                XCTAssertTrue($0 is CancellationError, "\($0)")
+            }
+        }
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), [])
+    }
+
+    // MARK: - Registration and Wording
+
+    /// The registry lists BRF and PEF after Word 97-2003, and finds both by
+    /// their ids, with the names, hints, and extensions the picker shows.
+    func testTheWritersAreRegisteredAfterWord() throws {
+        let ids = TextExportWriters.all.map(\.id)
+        XCTAssertEqual(Array(ids.suffix(3)), ["doc", "brf", "pef"])
+        let brf = try XCTUnwrap(TextExportWriters.writer(id: "brf"))
+        let pef = try XCTUnwrap(TextExportWriters.writer(id: "pef"))
+        XCTAssertEqual([brf.name, pef.name], ["BRF", "PEF"])
+        XCTAssertEqual([brf.fileExtension, pef.fileExtension], ["brf", "pef"])
+        XCTAssertEqual(brf.hint, "Braille Ready Format: pages of braille ASCII, for braille displays and embossers.")
+        XCTAssertEqual(pef.hint, "Portable Embosser Format: pages of Unicode braille in XML, for embossers.")
+        // Both take braille options, which the dialog keeps and draws.
+        XCTAssertTrue(TextExportWriters.optionsState(for: brf).hasOptions)
+        XCTAssertTrue(TextExportWriters.optionsState(for: pef).hasOptions)
+    }
 
     /// Each sentence the options view shows or speaks, pinned exactly.
     func testEveryWordingConstantIsPinned() {
@@ -29,6 +276,20 @@ final class BrailleExportWriterTests: XCTestCase {
         // The ranges the hints state are the layout's.
         XCTAssertEqual(BraillePageFormat.cellsPerLineRange, 18...80)
         XCTAssertEqual(BraillePageFormat.linesPerPageRange, 4...50)
+    }
+
+    // MARK: - Options
+
+    /// The writers start from the user's October 17 defaults with the
+    /// Braille setting's table.
+    func testDefaultOptionsTakeTheSettingsTable() {
+        BraillePreferences.$tableForImports.withValue("en-us-g1.ctb") {
+            for options in [BRFExportWriter().defaultOptions(), PEFExportWriter().defaultOptions()] {
+                XCTAssertEqual(options.table, "en-us-g1.ctb")
+                XCTAssertEqual(options.page, BraillePageFormat(cellsPerLine: 40, linesPerPage: 25, numbersPages: true))
+                XCTAssertEqual(options.lineEnd, .crlf)
+            }
+        }
     }
 
     // MARK: - The Options View
@@ -132,6 +393,33 @@ final class BrailleExportWriterTests: XCTestCase {
 
     // MARK: - Helpers
 
+    /// A heading of `level` and `text` for a hand-built document.
+    private func heading(_ level: Int, _ text: String) -> ExportHeading {
+        ExportHeading(level: level, runs: [ExportRun(text)], id: "h-\(level)-\(text.count)")
+    }
+
+    /// The 14 print blocks of the Pride and Prejudice sample: the title, the
+    /// heading, and 12 paragraphs, split at blank lines.
+    private func prideTexts() throws -> [String] {
+        let texts = try String(contentsOf: formatSampleURL("brf/pride-and-prejudice-ch1.txt"), encoding: .utf8)
+            .trimmingCharacters(in: .newlines)
+            .components(separatedBy: "\n\n")
+        XCTAssertEqual(texts.count, 14)
+        return texts
+    }
+
+    /// The sample as the walker makes it from Markdown: `# title`, `##
+    /// chapter`, then the 12 paragraphs, of a book by Jane Austen.
+    private func prideDocument(language: String? = nil) throws -> ExportDocument {
+        let texts = try prideTexts()
+        guard texts.count >= 2 else { throw XCTSkip("the sample has too few blocks") }
+        let markdown = "# \(texts[0])\n\n## \(texts[1])\n\n" + texts.dropFirst(2).joined(separator: "\n\n") + "\n"
+        return try ExportDocumentWalker.document(
+            fromMarkdown: markdown,
+            book: ExportBookDetails(title: texts[0], author: "Jane Austen", language: language)
+        )
+    }
+
     /// Hosts the options view at the dialog's width until it has drawn
     /// `popUps` pop-up buttons, and passes the hosting view to `body`.
     private func withOptionsView(
@@ -168,5 +456,17 @@ private struct OptionsHarness: View {
 
     var body: some View {
         BrailleExportOptionsView(options: $box.options, choosesLineEnds: choosesLineEnds)
+    }
+}
+
+/// A BRF or PEF writer, its type forgotten so a test loops over both.
+private struct AnyBrailleWriter {
+    /// The writer's `write`, with the arguments in the order the writers take them.
+    let write: (ExportDocument, BrailleExportOptions, URL, BookExportCancellation) throws -> Void
+
+    init<Writer: TextExportWriter>(_ writer: Writer) where Writer.Options == BrailleExportOptions {
+        write = { document, options, url, cancellation in
+            try writer.write(document, options: options, to: url, cancellation: cancellation)
+        }
     }
 }
