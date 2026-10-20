@@ -243,6 +243,7 @@
 		3B53F510158A1B5C8A21801B /* LibraryFolderSettingsTargetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D31E8B59AF004AAA9AF4CD19 /* LibraryFolderSettingsTargetTests.swift */; };
 		3BE77B4CA2712462D9738070 /* DAISYParser+DTBookHeadParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = B06E8CAC9CFB99C1CDEA0BA4 /* DAISYParser+DTBookHeadParser.swift */; };
 		3C005CAC3196E4368DF92A35 /* XMLEscaping.swift in Sources */ = {isa = PBXBuildFile; fileRef = B58F082AAE3EEAA289F481B0 /* XMLEscaping.swift */; };
+		3CADD05F5455AC234CDBCE9B /* HTMLExportWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C41B525DDFE13CE2BFA7DD3 /* HTMLExportWriter.swift */; };
 		3CB123670FD34FAB38561317 /* NetworkReachability.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF8D8C98A4DC2012095FBF66 /* NetworkReachability.swift */; };
 		3CC7807AEDA9D1353976EA72 /* PlaceRelocationAtLoadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0A7EE7CD6618DE9798EC23 /* PlaceRelocationAtLoadTests.swift */; };
 		3CF4287E30B09B5526B352DA /* AudioManifestTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 213D2314D56DB1B10A8BEAE4 /* AudioManifestTests.swift */; };
@@ -1432,6 +1433,7 @@
 		4BEA84806F314B2E9E9E8677 /* set_get.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = set_get.h; sourceTree = "<group>"; };
 		4C0300C325A52EC48826E704 /* AudioFilterPresetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioFilterPresetTests.swift; sourceTree = "<group>"; };
 		4C18B1994A8EDC91E08FF9D1 /* DAISYMultiClipSectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DAISYMultiClipSectionTests.swift; sourceTree = "<group>"; };
+		4C41B525DDFE13CE2BFA7DD3 /* HTMLExportWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTMLExportWriter.swift; sourceTree = "<group>"; };
 		4C432236D180EDBB838C8475 /* AudioMediaProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioMediaProbe.swift; sourceTree = "<group>"; };
 		4C5626EAB5CFCF504305747F /* EPUBParser+Navigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EPUBParser+Navigation.swift"; sourceTree = "<group>"; };
 		4C626E53CE9170545EE20A94 /* AudioEngineService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngineService.swift; sourceTree = "<group>"; };
@@ -3493,6 +3495,7 @@
 			isa = PBXGroup;
 			children = (
 				023053943F17582DBD53523B /* ExportDocument.swift */,
+				4C41B525DDFE13CE2BFA7DD3 /* HTMLExportWriter.swift */,
 				05E2889F3175EB0B213D978F /* TextExportWriter.swift */,
 				B58F082AAE3EEAA289F481B0 /* XMLEscaping.swift */,
 			);
@@ -4414,6 +4417,7 @@
 				5135B32E1AEF4A4927C8FE08 /* FolderPathEquivalence.swift in Sources */,
 				2E69C5FB4C3DBDE6F01A646A /* FolderSettingsSheet.swift in Sources */,
 				5B710B1A645C2A3788662DB3 /* FolderSettingsWording.swift in Sources */,
+				3CADD05F5455AC234CDBCE9B /* HTMLExportWriter.swift in Sources */,
 				7227E74C504DC25F3E45D30C /* HTMLParser.swift in Sources */,
 				D6CFE3C60A674711A0A2657D /* HTMLReadingText.swift in Sources */,
 				0AEB6C95A50C3F69F67AFEE0 /* HTMLToMarkdownConverter.swift in Sources */,

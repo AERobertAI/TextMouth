@@ -217,6 +217,7 @@ private struct TextExportOptionsHost<Writer: TextExportWriter>: View {
 enum TextExportWriters {
     /// Every writer, in the picker's order.
     static let all: [any TextExportWriter] = [
+        HTMLExportWriter(),
     ]
 
     /// The picker's tag for Markdown, the book's content.md copied as it is
