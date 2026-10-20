@@ -2669,3 +2669,54 @@ An Opus lead and sixteen Sonnet workers: nine built the items (afinfo, convert, 
 **Not verified:** Apple's decoders on macOS 14 and 15; .awb (no sample); a real file with only a Nero chapter list; VoiceOver on the new setting and on Export's Original file; opening an .m3u from the Finder. Most new tests need APIs their fixes add, so their failing runs put the old behaviour back behind the new APIs rather than running the old code; item 7's failing run came before its Ogg change; the added Ogg FLAC skips can fail only on macOS 14 to 15.3; the `ContinueToNextBookTests` flake shows only on a busy Mac. afconvert on macOS 26.3.1 cannot write Ogg FLAC, so its fixture was made with `flac --ogg`. One existing test's fixture grew to 1 MB, its expectations unchanged, because 4 bytes cannot hold the length its XML claims.
 
 **Follow-ups:** in the TODO's open follow-ups paragraph (tags of the new formats, the downmix's level, playlist entries by file identity, Cancel during the afinfo check, a ZIP batch's "Error" title, a linked `manifest.json`, the fuzz of converted formats).
+
+## From the export team (team/export, FMT18, FMT19), Oct 19
+
+**The team.** An Opus lead and seven Sonnet workers:
+- five built the items: walker, html, rtf (RTF and Word), runner, and dialog, all accepted as they were apart from one lead fix to the HTML tests;
+- the lead wrote the model and the writer protocol first, so the workers coded against fixed names and asked no questions;
+- two fresh Opus reviewers then read the branch (the walker and writers; the runner, dialog, and registry), and of their 12 findings the lead fixed the model, writer, and test items itself, while two more workers (fixrunner, fixdialog) took the rest.
+
+There were 34 commits in all.
+
+**Test runs:**
+- The lead's full run before the review round: 7588 tests, 75 skipped, 1 failure. The failure was `ViewsAndWindowsReaderSheetTests`' redraw count, which passed alone. Reviewer B traced it: it shares no code with the branch.
+- After the fixes, the export area, the sheets area, and the touched classes: 293 tests, 9 skipped, 0 failures.
+- `make lint-tests` and `make lint-a11y` are clean.
+
+**Decisions:**
+- **Cancellation.** `write` takes a cancellation token, so Stop ends a book partway.
+- **Word 97-2003** is made from TextMouth's own RTF through Apple's reader and `.docFormat` writer, so the two formats cannot differ.
+- **Announcements.** The dialog announces once at the end, as before, naming every failure.
+- **The checkbox.** Its name follows the picker ("Text as HTML") and gives no size while a writer is chosen.
+- **Headings and the contents list:**
+  - A chapter with no heading of its own gets its title as a level-1 heading.
+  - The book's title becomes a level-1 heading only when the text has none.
+  - The contents list leaves that title out.
+  - Ids are ASCII slugs ("notes", "notes-2").
+- **Model text.**
+  - Every `plainText` of the model is in reading order. A list item's includes its inner lists.
+  - A vertical tab or form feed becomes a space.
+- **RTF.** List items are paragraphs that start with a bullet or number and a tab, which TextMouth's reader turns back into lists. Tables wider than 63 columns become tab-separated paragraphs.
+- **File safety.** Every exported file goes through one scratch file and an exclusive rename, or an exclusive copy across volumes. An export never replaces or removes a file in the chosen folder.
+- **No new `BookFormat` value**, so older builds are unaffected.
+
+**Not verified:**
+- No real Word, Pages, or LibreOffice was opened, so FMT19's check of Word's navigation pane is still to do.
+- VoiceOver did not speak the picker; its words are pinned in tests.
+- The options view is drawn only by tests, with a test writer that has options.
+- **The scratch-folder fallback:**
+  - Reviewer B tried it with a disk image of its own: another volume, and a read-only one.
+  - The cross-volume copy is simulated in tests.
+  - Cloud folders and network shares were not tried.
+- A tool garbled `\u` escapes in a brief and in one test, both times turning four hex digits into the character. Both were caught and fixed; later briefs should write such escapes with a script.
+
+**Follow-ups:** in the TODO's open follow-ups paragraph:
+- Word's navigation pane;
+- the .doc's six lost characters;
+- the cross-volume fallback's cleanup;
+- anchors for navigation annotations;
+- the three older escapers;
+- swift-markdown's recursion;
+- progress within a long book;
+- Transcript.md's Convert to.
