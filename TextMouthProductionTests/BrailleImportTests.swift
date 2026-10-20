@@ -115,8 +115,11 @@ final class BrailleImportTests: XCTestCase {
         let content = try openedContent(of: book)
         XCTAssertEqual(headingLines(of: content), ["1: Pride and Prejudice", "1: Chapter I"])
         // The braille page numbers (#A and #B on the pages' last lines) are
-        // layout, not text.
+        // layout, not text. liblouis would read a number sign and a letter
+        // as the digit 1 or 2, not as "#", so a page number left in shows as
+        // a digit. The sample's print has no digit at all.
         let text = allText(of: content)
+        XCTAssertNil(text.rangeOfCharacter(from: .decimalDigits), "a digit in the text: \(text.prefix(80))")
         XCTAssertFalse(text.contains("#"))
         XCTAssertFalse(text.contains("\u{283C}"))
     }
