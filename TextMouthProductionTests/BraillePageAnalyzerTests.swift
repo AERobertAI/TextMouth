@@ -266,6 +266,61 @@ final class BraillePageAnalyzerTests: XCTestCase {
         XCTAssertEqual(structure.pages.last?.printPageNumber, "⠼⠉")
     }
 
+    // MARK: Block-style paragraphs
+
+    /// A book of block-style paragraphs (the reviewer's `block-style.brf`):
+    /// each begins in cell 1 after a blank row, on two numbered pages. The
+    /// fourth begins page 2, after the empty row that a form feed followed
+    /// by a line end leaves at its top.
+    private func blockStylePages() -> [[String]] {
+        let blankRows = [String](repeating: "", count: 17)
+        let page1 = [
+            row(0, "FIRST BLOCK PARAGRAPH ENDS HERE4"), "", row(0, "SECOND BLOCK PARAGRAPH4"),
+        ] + blankRows + [
+            row(0, "THIRD BLOCK PARAGRAPH ENDS AT THE PAGE4"), row(0, "LAST LINE OF PAGE ONE4"), rightAligned("#A"),
+        ]
+        let page2 = ["", row(0, "FOURTH BLOCK PARAGRAPH4")] + [String](repeating: "", count: 22) + [rightAligned("#B")]
+        return [page1, page2]
+    }
+
+    /// A blank row at the top of a page ends the paragraph before it when
+    /// the book's paragraphs are set apart by blank rows, as the blank row
+    /// before the second paragraph shows. Dropped, it joined the fourth to
+    /// the third.
+    func testABlankRowAtAPagesTopEndsABlockStyleParagraph() {
+        let structure = BraillePageAnalyzer.structure(of: blockStylePages(), formatted: true)
+        XCTAssertEqual(structure.blocks, [
+            paragraph("FIRST BLOCK PARAGRAPH ENDS HERE4"),
+            paragraph("SECOND BLOCK PARAGRAPH4"),
+            paragraph("THIRD BLOCK PARAGRAPH ENDS AT THE PAGE4 LAST LINE OF PAGE ONE4"),
+            paragraph("FOURTH BLOCK PARAGRAPH4"),
+        ])
+        XCTAssertEqual(structure.pages.map(\.firstBlockIndex), [0, 3])
+    }
+
+    /// Without that blank row at the top of page 2, the fourth paragraph's
+    /// first row would go on the third: the style changes nothing else.
+    func testABlockStyleParagraphThatGoesOnOverThePageStaysOne() {
+        var pages = blockStylePages()
+        pages[1].removeFirst()
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertEqual(structure.blocks.count, 3)
+        XCTAssertEqual(structure.blocks.last,
+                       paragraph("THIRD BLOCK PARAGRAPH ENDS AT THE PAGE4 LAST LINE OF PAGE ONE4 FOURTH BLOCK PARAGRAPH4"))
+    }
+
+    /// BANA's paragraphs outnumber the blocks, so their pages' blank top rows
+    /// go: a book of paragraphs in cell 3, one of them (a runover that
+    /// follows a blank row, as after a print page change) in cell 1.
+    func testBlankRowsAtAPagesTopStillGoInABookOfParagraphsInCellThree() {
+        let page1 = [row(2, "ONE"), "", row(2, "TWO"), "", row(0, "RUNOVER"), row(2, "A PARAGRAPH THAT"), rightAligned("#A")]
+        let page2 = ["", row(0, "GOES ON"), rightAligned("#B")]
+        let structure = BraillePageAnalyzer.structure(of: [page1, page2], formatted: true)
+        XCTAssertEqual(structure.blocks, [
+            paragraph("ONE"), paragraph("TWO"), paragraph("RUNOVER"), paragraph("A PARAGRAPH THAT GOES ON"),
+        ])
+    }
+
     // MARK: Print page numbers and change lines
 
     func testPrintPageNumberAtTheRightOfTheFirstRowIsTakenAndTheTextKept() {

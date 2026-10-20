@@ -49,7 +49,7 @@ enum BraillePageAnalyzer {
     /// of a row, and on each side of a centered heading.
     private static let minGap = 3
     /// The most rows a heading that stands alone may have, to count toward
-    /// the implied width of a book (see `Book.lineWidth()`).
+    /// the implied width of a book (see `Book.measure()`).
     private static let maxStandAloneRows = 12
     /// The fewest dots-3-6 cells a print page change line starts with.
     private static let minChangeDashes = 3
@@ -88,8 +88,10 @@ enum BraillePageAnalyzer {
         let book = Book(file: file)
         guard file.kind != .brl else { return book.unformattedStructure() }
 
-        // The line width is measured before anything is taken out of any row.
-        let width = book.lineWidth()
+        // The line width, and the book's style of paragraph, are measured
+        // before anything is taken out of any row.
+        let measure = book.measure()
+        let width = measure.width
 
         // One page at a time: take its numbers and change lines out, keeping
         // the rows left, and read its rows into blocks.
@@ -97,7 +99,8 @@ enum BraillePageAnalyzer {
         pageNumbers.reserveCapacity(file.pageCount)
         var reader = BlockReader(book: book, width: width, pageCount: file.pageCount)
         for pageIndex in 0..<file.pageCount {
-            let (numbers, kept) = book.extractNumbers(fromPage: pageIndex, width: width)
+            let (numbers, kept) = book.extractNumbers(
+                fromPage: pageIndex, width: width, dropsTopBlankRows: measure.dropsPageTopBlankRows)
             pageNumbers.append(numbers)
             reader.read(kept, onPage: pageIndex)
         }
@@ -179,7 +182,19 @@ enum BraillePageAnalyzer {
 
         // MARK: Width
 
-        /// The line width of a formatted book, held to `widthRange`:
+        /// What a formatted book's pages measure before its rows are read.
+        struct Measure {
+            /// The line width, held to `widthRange` (see `lineWidth`).
+            let width: Int
+            /// Whether a blank row at a page's top is dropped: whether the
+            /// book's paragraphs are BANA's (see `ParagraphStarts`).
+            let dropsPageTopBlankRows: Bool
+        }
+
+        /// Measures the book in one pass over its rows: the line width and the
+        /// style of its paragraphs.
+        ///
+        /// The line width is held to `widthRange`:
         ///
         /// 1. a PEF's declared width (its volume's `cols`), when there is one;
         /// 2. else the most common length among the pages' last rows that end
@@ -193,13 +208,12 @@ enum BraillePageAnalyzer {
         /// The page-number column is what the width is, so one row that runs a
         /// cell past it (a stray overlong line) cannot shift it and leave the
         /// page numbers in the text.
-        func lineWidth() -> Int {
-            if let declared = file.lineWidth, widthRange.contains(declared) { return declared }
-
-            // How many pages have a numbered last row of each length, and
-            // which widths the headings set apart vote for.
+        func measure() -> Measure {
+            // How many pages have a numbered last row of each length, which
+            // widths the headings set apart vote for, and where paragraphs begin.
             var numberedLengths: [Int: Int] = [:]
             var votes = WidthVotes()
+            var starts = ParagraphStarts()
             var longest = 0
             for page in 0..<file.pageCount {
                 let rows = self.rows(ofPage: page)
@@ -208,7 +222,15 @@ enum BraillePageAnalyzer {
                     numberedLengths[last.count, default: 0] += 1
                 }
                 noteImpliedWidths(ofRows: rows, in: &votes)
+                noteParagraphStarts(ofRows: rows, in: &starts)
             }
+            return Measure(width: lineWidth(longest: longest, numberedLengths: numberedLengths, votes: votes),
+                           dropsPageTopBlankRows: starts.beginInCellThree)
+        }
+
+        /// The line width of a book that has been measured (see `measure`).
+        private func lineWidth(longest: Int, numberedLengths: [Int: Int], votes: WidthVotes) -> Int {
+            if let declared = file.lineWidth, widthRange.contains(declared) { return declared }
             // The most common length; the longer of two that are as common.
             if let common = numberedLengths.max(by: { ($0.value, $0.key) < ($1.value, $1.key) })?.key {
                 return min(max(common, widthRange.lowerBound), widthRange.upperBound)
@@ -220,6 +242,47 @@ enum BraillePageAnalyzer {
             // centered in: the book is at least that wide.
             let atLeast = min(max(longest, widthRange.lowerBound), widthRange.upperBound)
             return votes.bestWidth(atLeast: atLeast) ?? atLeast
+        }
+
+        // MARK: Paragraph style
+
+        /// How many paragraphs of each style begin in a book (FMT20).
+        ///
+        /// BANA's paragraphs begin in cell 3 (indent 2) and run over in cell 1.
+        /// A book of block-style paragraphs begins them in cell 1 after a
+        /// blank row instead. A blank row at the top of a page is the file's
+        /// own doing in the first (a form feed followed by a line end starts
+        /// the next page with an empty row, and it must not end a paragraph
+        /// that goes on over the page), but it is a paragraph's end in the
+        /// second, whose paragraphs are set apart by blank rows.
+        struct ParagraphStarts {
+            /// The rows that begin in cell 3.
+            var indentTwo = 0
+            /// The rows that begin in cell 1 after a blank row in the middle of a page.
+            var indentZeroAfterBlank = 0
+
+            /// Whether the book's paragraphs are BANA's: more begin in cell 3
+            /// than in cell 1 after a blank row.
+            var beginInCellThree: Bool { indentTwo > indentZeroAfterBlank }
+        }
+
+        /// Counts the paragraph starts in the rows of a page. A blank row at the
+        /// page's top (before any row with text) does not count a start after
+        /// it: that is the very case the style decides.
+        private func noteParagraphStarts(ofRows rows: [Span], in starts: inout ParagraphStarts) {
+            var seenText = false
+            var afterBlankInPage = false
+            for row in rows {
+                guard !row.isEmpty else { afterBlankInPage = seenText; continue }
+                let indent = makeRow(row).indent
+                if indent == 2 {
+                    starts.indentTwo += 1
+                } else if indent == 0, afterBlankInPage, changeLineNumber(of: row) == nil {
+                    starts.indentZeroAfterBlank += 1
+                }
+                seenText = true
+                afterBlankInPage = false
+            }
         }
 
         /// The widths that the rows set apart in a book vote for (FMT20).
@@ -376,8 +439,8 @@ enum BraillePageAnalyzer {
         /// row that held nothing but a number is dropped (it is not a blank row,
         /// and must not end a paragraph that goes on over the page), a row that
         /// was blank stays blank (except at the page's top, where blank rows
-        /// go), and the rows after the braille page number go.
-        func extractNumbers(fromPage page: Int, width: Int) -> (BraillePageNumbers, [Row]) {
+        /// go when `dropsTopBlankRows`), and the rows after the braille page number go.
+        func extractNumbers(fromPage page: Int, width: Int, dropsTopBlankRows: Bool) -> (BraillePageNumbers, [Row]) {
             let rawRows = rows(ofPage: page)
             var numbers = BraillePageNumbers(firstBlockIndex: 0)
             // The rows a number was taken from (shortened, or dropped when
@@ -423,12 +486,13 @@ enum BraillePageAnalyzer {
             // starts the next page with an empty row. It must not end a
             // paragraph that goes on over the page either, so the blank rows
             // before the page's first row with text (after the numbers are
-            // out) are dropped.
+            // out) are dropped. In a book of block-style paragraphs (see
+            // `ParagraphStarts`) they are kept, and end the paragraph before.
             let end = numbers.braillePageNumber != nil ? (lastIndex ?? -1) + 1 : rawRows.count
             var kept: [Row] = []
             for index in 0..<end where !dropped.contains(index) {
                 let row = makeRow(shortened[index] ?? rawRows[index])
-                if kept.isEmpty && row.isBlank { continue }
+                if dropsTopBlankRows && kept.isEmpty && row.isBlank { continue }
                 kept.append(row)
             }
             return (numbers, kept)
