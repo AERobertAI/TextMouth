@@ -180,17 +180,44 @@ final class BrailleImportTests: XCTestCase {
 
     /// A change of the setting never moves an existing book's text: the cache
     /// regenerated while the setting names another table is the same text.
+    /// The Grade 2 sample is used because the two tables read it in different
+    /// words (the Grade 1 sample reads the same with both, which would let
+    /// this pass whatever table the rebuild used), and the test shows that.
     func testABookKeepsItsTableWhenTheCacheIsRebuilt() throws {
-        let book = try importedSample("brf/pride-and-prejudice-ch1-grade1.brf", table: grade1)
+        let book = try importedSample("brf/grade2-short.brf", table: grade2)
+        let sentences = try sampleText("brf/grade2-short.txt")
+            .components(separatedBy: .newlines)
+            .filter { !$0.isEmpty }
         let before = try blocks(of: book)
-        XCTAssertEqual(before.count, 14)
+        XCTAssertEqual(before, [sentences.joined(separator: " ")])
+        // The other table reads the same file differently, so a rebuild with
+        // the setting's table instead of the book's would show.
+        let otherReading = try BrailleBookReader.markdown(of: URL(fileURLWithPath: book.filePath), table: grade1)
+        XCTAssertTrue(otherReading.hasPrefix("\u{222B} boy"), String(otherReading.prefix(40)))
+
+        try BraillePreferences.$tableForImports.withValue(grade1) {
+            XCTAssertNotNil(try MarkdownCacheService.generateReportedCacheContent(for: book))
+        }
+
+        XCTAssertEqual(try blocks(of: book), before)
+        XCTAssertEqual(book.brailleTable, grade2)
+    }
+
+    /// A rebuild reads the book's own table, the one in its row: a book whose
+    /// table is changed to Grade 1 reads its text again in the Grade 1 words,
+    /// whatever the setting names.
+    func testARebuildReadsTheBooksOwnTable() throws {
+        var book = try importedSample("brf/grade2-short.brf", table: grade2)
+        let before = try blocks(of: book)
+        book.brailleTable = grade1
 
         try BraillePreferences.$tableForImports.withValue(grade2) {
             XCTAssertNotNil(try MarkdownCacheService.generateReportedCacheContent(for: book))
         }
 
-        XCTAssertEqual(try blocks(of: book), before)
-        XCTAssertEqual(book.brailleTable, grade1)
+        let after = try blocks(of: book)
+        XCTAssertNotEqual(after, before)
+        XCTAssertEqual(after.first?.hasPrefix("\u{222B} boy"), true, after.first ?? "no text")
     }
 
     /// A book whose row and record lack a table reads with the default table.
