@@ -80,7 +80,7 @@ final class MacBrailleTableCheckTests: XCTestCase {
     /// Six-dot cells pass, and so does liblouis's escape backslash; a cell
     /// with dot 7 or 8, and anything that is not braille, does not.
     func testSixDotCellsOnly() {
-        XCTAssertEqual(MacBrailleTableCheck.escapeBackslash, Unicode.Scalar(0x2873))
+        XCTAssertEqual(BrailleCells.escapeBackslash, Unicode.Scalar(0x2873))
         XCTAssertTrue(MacBrailleTableCheck.writesSixDotsOnly(""))
         XCTAssertTrue(MacBrailleTableCheck.writesSixDotsOnly("\u{2801}\u{2803}\u{2800}\u{283F}"))
         XCTAssertTrue(MacBrailleTableCheck.writesSixDotsOnly("\u{2804}\u{2873}\u{282D}\u{2804}"))
@@ -102,7 +102,7 @@ final class MacBrailleTableCheckTests: XCTestCase {
         let escape = try XCTUnwrap(try BrailleTranslator.translate(
             ["\u{4E2D}"], table: "en-ueb-g2.ctb", direction: .printToBraille, workingIn: work
         ).first)
-        XCTAssertTrue(escape.unicodeScalars.contains(MacBrailleTableCheck.escapeBackslash), escape)
+        XCTAssertTrue(escape.unicodeScalars.contains(BrailleCells.escapeBackslash), escape)
         XCTAssertTrue(MacBrailleTableCheck.writesSixDotsOnly(escape))
         assertWorkFolderEmpty()
     }

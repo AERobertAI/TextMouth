@@ -121,7 +121,7 @@ final class BrailleDocumentWriterTests: XCTestCase {
         let options = options("en-ueb-g1.ctb")
         XCTAssertEqual(options.page, BraillePageFormat())
         XCTAssertEqual(options.lineEnd, .crlf)
-        let expected = BrailleFileWriter.brf(
+        let expected = try BrailleFileWriter.brf(
             pages: BrailleLayout.pages(of: try expectedBrailleBlocks(), format: options.page), lineEnd: .crlf
         )
 
@@ -137,7 +137,7 @@ final class BrailleDocumentWriterTests: XCTestCase {
     /// metadata.
     func testGrade1PEFMatchesTheSampleButForTheTwoNamedDifferences() throws {
         let options = options("en-ueb-g1.ctb")
-        let expected = BrailleFileWriter.pef(
+        let expected = try BrailleFileWriter.pef(
             pages: BrailleLayout.pages(of: try expectedBrailleBlocks(), format: options.page),
             metadata: sampleMetadata,
             format: options.page
@@ -201,7 +201,7 @@ final class BrailleDocumentWriterTests: XCTestCase {
         let brf = try BrailleDocumentWriter.brf(of: try printBlocks(), options: options, workingIn: work)
         assertWorkFolderEmpty()
         XCTAssertFalse(brf.contains(0x0D))
-        XCTAssertEqual(brf, BrailleFileWriter.brf(pages: result, lineEnd: .lf))
+        XCTAssertEqual(brf, try BrailleFileWriter.brf(pages: result, lineEnd: .lf))
     }
 
     /// `standard()` takes its table from the Braille setting, and holds the

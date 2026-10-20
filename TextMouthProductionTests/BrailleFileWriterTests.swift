@@ -21,7 +21,7 @@ final class BrailleFileWriterTests: XCTestCase {
     private func pefText(
         _ pages: [[String]], metadata: PEFMetadata? = nil, format: BraillePageFormat = BraillePageFormat()
     ) throws -> String {
-        let data = BrailleFileWriter.pef(pages: pages, metadata: metadata ?? sampleMetadata, format: format)
+        let data = try BrailleFileWriter.pef(pages: pages, metadata: metadata ?? sampleMetadata, format: format)
         return try XCTUnwrap(String(data: data, encoding: .utf8))
     }
 
@@ -35,11 +35,11 @@ final class BrailleFileWriterTests: XCTestCase {
         let pages = brfPages(sample)
         XCTAssertEqual(pages.count, 2)
 
-        XCTAssertEqual(BrailleFileWriter.brf(pages: pages, lineEnd: .crlf), sample)
+        XCTAssertEqual(try BrailleFileWriter.brf(pages: pages, lineEnd: .crlf), sample)
         // CR LF is the default.
-        XCTAssertEqual(BrailleFileWriter.brf(pages: pages), sample)
+        XCTAssertEqual(try BrailleFileWriter.brf(pages: pages), sample)
         let lfSample = Data(sample.filter { $0 != 0x0D })
-        XCTAssertEqual(BrailleFileWriter.brf(pages: pages, lineEnd: .lf), lfSample)
+        XCTAssertEqual(try BrailleFileWriter.brf(pages: pages, lineEnd: .lf), lfSample)
         XCTAssertLessThan(lfSample.count, sample.count)
     }
 
@@ -50,35 +50,52 @@ final class BrailleFileWriterTests: XCTestCase {
         let sample = try Data(contentsOf: copy)
         let pages = brfPages(sample)
         XCTAssertEqual(pages.count, 1)
-        XCTAssertEqual(BrailleFileWriter.brf(pages: pages), sample)
+        XCTAssertEqual(try BrailleFileWriter.brf(pages: pages), sample)
     }
 
-    /// A BRF is ASCII only, whatever the rows hold.
+    /// A BRF is ASCII only, whatever the rows hold that it can write.
     func testABRFIsAlwaysASCII() throws {
-        // Every six-dot cell, an eight-dot cell, a print letter, and a blank.
+        // Every six-dot cell, liblouis's eight-dot escape backslash, a print
+        // letter, and a blank.
         let allCells = String(String.UnicodeScalarView((0x2800...0x283F).compactMap { Unicode.Scalar($0) }))
-        let data = BrailleFileWriter.brf(pages: [[allCells + "\u{28FF}x\u{2800}"]])
+        let data = try BrailleFileWriter.brf(pages: [[allCells + "\u{2873}x\u{2800}"]])
         XCTAssertNotNil(String(data: data, encoding: .ascii))
         XCTAssertTrue(data.allSatisfy { $0 < 0x80 })
     }
 
-    /// A cell with dot 7 (U+2841) cannot be written in braille ASCII, so a
-    /// BRF writes its six-dot part, ⠁ (A); a PEF writes the same cells,
-    /// because TextMouth writes and reads six-dot braille only (review
-    /// finding M6: a PEF that kept dots 7 and 8 was refused on import as
-    /// eight-dot braille). This test used to pin the PEF keeping the cell;
-    /// the lead approved reversing it for M6 (message #3446).
-    func testADotSevenCellIsWrittenAsItsSixDotPartInABRFAndInAPEF() throws {
-        let row = "\u{2841}\u{28FF}\u{2840}"
-        // U+2841 is ⠁ with dot 7: A. U+28FF is all eight dots: all six dots,
-        // "=". U+2840 is dot 7 alone: no dot left, the blank cell, which
-        // ends the row and so is not written.
-        let brf = BrailleFileWriter.brf(pages: [[row]], lineEnd: .lf)
-        XCTAssertEqual(String(data: brf, encoding: .ascii), "A=\n")
+    /// A cell with dot 7 or 8 (here U+2841, ⠁ with dot 7) cannot be held by
+    /// TextMouth's six-dot files, and dropping its extra dots would change
+    /// what it means, so a BRF and a PEF both refuse it, naming its dots
+    /// (review R1). It used to be written as its six-dot part (review
+    /// finding M6), which hid what the table wrote.
+    func testAnEightDotCellIsRefusedInABRFAndInAPEF() throws {
+        let row = "\u{2801}\u{2841}"
+        let refusal = BrailleFileWriter.EightDotCell(cell: "\u{2841}")
+        XCTAssertThrowsError(try BrailleFileWriter.brf(pages: [[row]], lineEnd: .lf)) {
+            XCTAssertEqual($0 as? BrailleFileWriter.EightDotCell, refusal)
+        }
+        XCTAssertThrowsError(try pefText([[row]])) {
+            XCTAssertEqual($0 as? BrailleFileWriter.EightDotCell, refusal)
+        }
+        XCTAssertEqual(
+            refusal.errorDescription,
+            "The braille table writes an eight-dot cell, dots 1 and 7, and TextMouth writes BRF and PEF files in six-dot braille only."
+        )
+        XCTAssertEqual(
+            BrailleFileWriter.EightDotCell(cell: "\u{2848}", character: "\u{2019}").errorDescription,
+            "The braille table writes \u{201C}\u{2019}\u{201D} as an eight-dot cell, and TextMouth writes BRF and PEF files in six-dot braille only."
+        )
+    }
 
-        let pef = try pefText([[row]])
-        XCTAssertTrue(pef.contains("<row>\u{2801}\u{283F}</row>"), pef)
-        XCTAssertFalse(pef.contains("\u{2841}") || pef.contains("\u{28FF}") || pef.contains("\u{2840}"))
+    /// The first cell a six-dot file cannot hold is any with dot 7 or 8 but
+    /// liblouis's escape backslash; a cell's dots are said in words.
+    func testEightDotCellsAndTheirDots() {
+        XCTAssertNil(BrailleCells.firstEightDotCell(in: "\u{2801}\u{2873}\u{2800}"))
+        XCTAssertEqual(BrailleCells.firstEightDotCell(in: "\u{2801}\u{2873}\u{28E4}\u{2848}"), "\u{28E4}")
+        XCTAssertEqual(BrailleCells.dotsInWords(of: "\u{2800}"), "no dots")
+        XCTAssertEqual(BrailleCells.dotsInWords(of: "\u{2840}"), "dot 7")
+        XCTAssertEqual(BrailleCells.dotsInWords(of: "\u{2848}"), "dots 4 and 7")
+        XCTAssertEqual(BrailleCells.dotsInWords(of: "\u{28E4}"), "dots 3, 6, 7, and 8")
     }
 
     /// The eight-dot backslash of liblouis's escape notation, U+2873, is
@@ -87,17 +104,16 @@ final class BrailleFileWriterTests: XCTestCase {
     func testTheEscapesBackslashCellIsSixDotInBothFiles() throws {
         let row = "\u{2804}\u{2873}\u{2835}"
         XCTAssertTrue(try pefText([[row]]).contains("<row>\u{2804}\u{2833}\u{2835}</row>"))
-        let brf = BrailleFileWriter.brf(pages: [[row]], lineEnd: .lf)
+        let brf = try BrailleFileWriter.brf(pages: [[row]], lineEnd: .lf)
         // Dot 3 is the apostrophe, dots 1, 2, 5, and 6 the backslash, and
         // dots 1, 3, 5, and 6 the letter Z.
         XCTAssertEqual(String(data: brf, encoding: .ascii), "'\\Z\n")
     }
 
-    /// A row that ends in cells that are blank once their dots 7 and 8 are
-    /// cleared is a blank row in a PEF, as in a BRF: the trailing cells are
-    /// left out and an all-blank row is `<row/>`.
-    func testCellsThatAreBlankInSixDotsEndAPEFRowToo() throws {
-        let text = try pefText([["\u{2801}\u{2840}\u{2880}", "\u{2840}"]])
+    /// A row's trailing blank cells are left out of a PEF, as of a BRF, and
+    /// an all-blank row is `<row/>`.
+    func testTrailingBlankCellsEndAPEFRowToo() throws {
+        let text = try pefText([["\u{2801}\u{2800}\u{2800}", "\u{2800}"]])
         XCTAssertTrue(text.contains("\t\t\t\t\t<row>\u{2801}</row>\n\t\t\t\t\t<row/>\n"), text)
     }
 
@@ -106,7 +122,7 @@ final class BrailleFileWriterTests: XCTestCase {
     /// valid.
     func testAScalarThatIsNoCellBecomesABlankCell() throws {
         let row = "\u{2801}x\u{2803}"
-        XCTAssertEqual(String(data: BrailleFileWriter.brf(pages: [[row]], lineEnd: .lf), encoding: .ascii), "A B\n")
+        XCTAssertEqual(String(data: try BrailleFileWriter.brf(pages: [[row]], lineEnd: .lf), encoding: .ascii), "A B\n")
         XCTAssertTrue(try pefText([[row]]).contains("<row>\u{2801}\u{2800}\u{2803}</row>"))
     }
 
@@ -114,7 +130,7 @@ final class BrailleFileWriterTests: XCTestCase {
     /// is an empty line.
     func testTrailingBlankCellsAreNotWritten() throws {
         let rows = ["\u{2801}\u{2800}\u{2800}", "\u{2800}\u{2800}", ""]
-        let data = BrailleFileWriter.brf(pages: [rows], lineEnd: .lf)
+        let data = try BrailleFileWriter.brf(pages: [rows], lineEnd: .lf)
         XCTAssertEqual(String(data: data, encoding: .ascii), "A\n\n\n")
     }
 
@@ -123,15 +139,15 @@ final class BrailleFileWriterTests: XCTestCase {
     func testFormFeedsSeparatePagesAndEndNone() throws {
         let page = ["\u{2801}"]
         let formFeed = UInt8(0x0C)
-        let two = BrailleFileWriter.brf(pages: [page, page], lineEnd: .lf)
+        let two = try BrailleFileWriter.brf(pages: [page, page], lineEnd: .lf)
         XCTAssertEqual(Array(two), [0x41, 0x0A, formFeed, 0x41, 0x0A])
-        let three = BrailleFileWriter.brf(pages: [page, page, page], lineEnd: .crlf)
+        let three = try BrailleFileWriter.brf(pages: [page, page, page], lineEnd: .crlf)
         XCTAssertEqual(three.filter { $0 == formFeed }.count, 2)
         XCTAssertNotEqual(three.last, formFeed)
-        let one = BrailleFileWriter.brf(pages: [page])
+        let one = try BrailleFileWriter.brf(pages: [page])
         XCTAssertFalse(one.contains(formFeed))
         XCTAssertEqual(Array(one), [0x41, 0x0D, 0x0A])
-        XCTAssertTrue(BrailleFileWriter.brf(pages: []).isEmpty)
+        XCTAssertTrue(try BrailleFileWriter.brf(pages: []).isEmpty)
     }
 
     // MARK: PEF
@@ -142,7 +158,7 @@ final class BrailleFileWriterTests: XCTestCase {
         let pef = try Data(contentsOf: copyOfFormatSample("pef/pride-and-prejudice-ch1-grade1.pef"))
         let pages = try brfSamplePages()
         XCTAssertEqual(pages.count, 2)
-        let written = BrailleFileWriter.pef(pages: pages, metadata: sampleMetadata, format: BraillePageFormat())
+        let written = try BrailleFileWriter.pef(pages: pages, metadata: sampleMetadata, format: BraillePageFormat())
         XCTAssertEqual(written, pef)
     }
 

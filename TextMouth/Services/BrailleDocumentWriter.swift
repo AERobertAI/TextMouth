@@ -40,7 +40,10 @@ enum BrailleDocumentWriter {
     /// for them, but still refuses an unknown table).
     /// - Parameter folder: Where the translator makes its hidden files; it is
     ///   left empty again.
-    /// - Throws: whatever `BrailleTranslator.translate` throws, unchanged.
+    /// - Throws: whatever `BrailleTranslator.translate` throws, unchanged;
+    ///   and `BrailleFileWriter.EightDotCell`, naming the character, when
+    ///   the table writes a block with an eight-dot cell that TextMouth's
+    ///   six-dot files cannot hold (review R1).
     static func pages(
         of blocks: [BrailleBlock],
         options: BrailleExportOptions,
@@ -54,15 +57,43 @@ enum BrailleDocumentWriter {
         guard braille.count == blocks.count else {
             throw BrailleTranslator.Failure.failed
         }
+        // An eight-dot cell is never written as its six-dot part: the book
+        // fails, naming the character (review R1). Some tables write one for
+        // a character they define so, such as the Mac's Swedish tables for «.
+        for (block, cells) in zip(blocks, braille) {
+            guard let cell = BrailleCells.firstEightDotCell(in: cells) else { continue }
+            let character = try character(writtenWithEightDotsIn: block.text, table: options.table, workingIn: folder)
+            throw BrailleFileWriter.EightDotCell(cell: cell, character: character)
+        }
         let translated = zip(blocks, braille).map { block, cells in block.withText(cells) }
         return BrailleLayout.pages(of: translated, format: options.page)
     }
 
+    /// The character of `text` that `table` writes with an eight-dot cell:
+    /// each distinct character of `text` but white space is translated
+    /// alone, in one run of the helper, and the first whose cells hold such
+    /// a cell is the one. Nil when no character does so alone, as for a rule
+    /// that spans several characters.
+    /// - Throws: whatever `BrailleTranslator.translate` throws.
+    private static func character(
+        writtenWithEightDotsIn text: String,
+        table: String,
+        workingIn folder: URL
+    ) throws -> Character? {
+        var seen = Set<Character>()
+        let characters = text.filter { !$0.isWhitespace && seen.insert($0).inserted }
+        let cells = try BrailleTranslator.translate(
+            characters.map(String.init), table: table, direction: .printToBraille, workingIn: folder
+        )
+        return zip(characters, cells).first { BrailleCells.firstEightDotCell(in: $0.1) != nil }?.0
+    }
+
     /// `blocks` (print) as the bytes of a BRF file: the pages of `pages(of:…)`
     /// as braille ASCII with `options.lineEnd`. No blocks give an empty file.
-    /// - Throws: the translator's errors, unchanged.
+    /// - Throws: the translator's errors, unchanged, and
+    ///   `BrailleFileWriter.EightDotCell` (review R1).
     static func brf(of blocks: [BrailleBlock], options: BrailleExportOptions, workingIn folder: URL) throws -> Data {
-        BrailleFileWriter.brf(
+        try BrailleFileWriter.brf(
             pages: try pages(of: blocks, options: options, workingIn: folder), lineEnd: options.lineEnd
         )
     }
@@ -70,14 +101,15 @@ enum BrailleDocumentWriter {
     /// `blocks` (print) as the bytes of a PEF file: the pages of `pages(of:…)`
     /// under `metadata`, in a volume the size of `options.page`. No blocks
     /// give a PEF with no `page`.
-    /// - Throws: the translator's errors, unchanged.
+    /// - Throws: the translator's errors, unchanged, and
+    ///   `BrailleFileWriter.EightDotCell` (review R1).
     static func pef(
         of blocks: [BrailleBlock],
         metadata: PEFMetadata,
         options: BrailleExportOptions,
         workingIn folder: URL
     ) throws -> Data {
-        BrailleFileWriter.pef(
+        try BrailleFileWriter.pef(
             pages: try pages(of: blocks, options: options, workingIn: folder), metadata: metadata, format: options.page
         )
     }

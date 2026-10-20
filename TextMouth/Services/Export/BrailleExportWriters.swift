@@ -126,6 +126,10 @@ private enum BrailleExportWriting {
         } catch let failure as BrailleTranslator.Failure {
             // The dialog names the file before this sentence.
             throw TextExportError(failure.localizedDescription)
+        } catch let cell as BrailleFileWriter.EightDotCell {
+            // A cell TextMouth's six-dot files cannot hold, never masked
+            // (review R1): the sentence names the character.
+            throw TextExportError(cell.localizedDescription)
         }
         // The translation may have taken a while; Stop may have been pressed.
         try cancellation.checkCancelled()

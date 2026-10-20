@@ -112,22 +112,16 @@ enum MacBrailleTableCheck {
         + "\u{201E}three\u{201C} and \u{00AB}four\u{00BB} \u{2013} five \u{2014} six\u{2026} "
         + "\u{2019} \u{2018} \u{201C} \u{201D} \u{201E} \u{00AB} \u{00BB} \u{2013} \u{2014} \u{2026} 0123456789."
 
-    /// liblouis's escape backslash: the cell it writes the backslash of its
-    /// escape notation with (`'\x0041'` for a character a table lacks) when
-    /// the table has no backslash of its own, braille ASCII's ⠳ with dot 7
-    /// (`_lou_charToFallbackDots` in `Vendor/liblouis/liblouis/utils.c`).
-    /// It is liblouis's cell, not the table's, and TextMouth's writers make
-    /// it ⠳ (`BrailleFileWriter`), so it is not counted as eight-dot braille:
-    /// the Mac's Urdu tables, which have no Latin letters, write it for the
-    /// sample's letters and are still six-dot tables.
-    static let escapeBackslash = Unicode.Scalar(0x2873)!
-
     /// Whether every scalar of `cells` is a six-dot braille cell, U+2800 to
-    /// U+283F, `escapeBackslash` aside: a cell with dot 7 or 8, or a scalar
-    /// that is no braille cell, is not.
+    /// U+283F, liblouis's escape backslash aside (`BrailleCells
+    /// .escapeBackslash`, which TextMouth's files write as ⠳): a cell with
+    /// dot 7 or 8, or a scalar that is no braille cell, is not. The escape
+    /// backslash is liblouis's cell, not the table's: the Mac's Urdu tables,
+    /// which have no Latin letters, write it for the sample's letters and
+    /// are still six-dot tables.
     static func writesSixDotsOnly(_ cells: String) -> Bool {
         cells.unicodeScalars.allSatisfy { scalar in
-            scalar == escapeBackslash || (BrailleCells.isPattern(scalar) && !BrailleCells.usesEightDots(scalar))
+            scalar == BrailleCells.escapeBackslash || (BrailleCells.isPattern(scalar) && !BrailleCells.usesEightDots(scalar))
         }
     }
 

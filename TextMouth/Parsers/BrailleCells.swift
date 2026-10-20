@@ -77,6 +77,35 @@ enum BrailleCells {
         (lastSixDotPattern + 1...lastPattern).contains(scalar.value)
     }
 
+    /// liblouis's escape backslash: the cell it writes the backslash of its
+    /// escape notation with (`'\x0041'` for a character a table lacks) when
+    /// the table has no backslash of its own, braille ASCII's ⠳ with dot 7
+    /// (`_lou_charToFallbackDots` in `Vendor/liblouis/liblouis/utils.c`).
+    /// It is liblouis's cell, not a table's, and TextMouth's files write it
+    /// as ⠳ (`BrailleFileWriter`, review finding M6): the one eight-dot
+    /// cell they hold in six dots.
+    static let escapeBackslash = Unicode.Scalar(0x2873)!
+
+    /// The first cell of `cells` that uses dot 7 or 8 and is not
+    /// `escapeBackslash`: a cell TextMouth's six-dot files cannot hold, which
+    /// they never write as its six-dot part (review R1). Nil when there is
+    /// none.
+    static func firstEightDotCell(in cells: String) -> Unicode.Scalar? {
+        cells.unicodeScalars.first { usesEightDots($0) && $0 != escapeBackslash }
+    }
+
+    /// The dots of the braille pattern `cell` in words, as "dot 7" or
+    /// "dots 4 and 7" or "dots 1, 2, and 7"; "no dots" for the blank cell.
+    static func dotsInWords(of cell: Unicode.Scalar) -> String {
+        let dots = (1...8).filter { cell.value & (1 << ($0 - 1)) != 0 }.map(String.init)
+        switch dots.count {
+        case 0: return "no dots"
+        case 1: return "dot \(dots[0])"
+        case 2: return "dots \(dots[0]) and \(dots[1])"
+        default: return "dots \(dots.dropLast().joined(separator: ", ")), and \(dots[dots.count - 1])"
+        }
+    }
+
     /// The text of `cells` with every blank cell made a space, for a
     /// test's or a log's sake: "⠠⠮ ⠃⠕⠽" reads more easily than with U+2800.
     static func spaced(_ cells: String) -> String {
