@@ -540,10 +540,191 @@ final class BookExportServiceTests: XCTestCase {
         XCTAssertEqual(BookExportService.safeFileName("..hidden\tname\n", fallback: "x"), "hidden name")
         XCTAssertEqual(BookExportService.safeFileName("  ", fallback: "Untitled"), "Untitled")
         XCTAssertEqual(BookExportService.fileNameStem(for: "..."), "Untitled")
+        // Dots mixed with white space of any kind never leave a leading dot.
+        XCTAssertEqual(BookExportService.safeFileName("\u{00A0}.config", fallback: "x"), "config")
+        XCTAssertEqual(BookExportService.safeFileName("\u{3000}.config", fallback: "x"), "config")
+        XCTAssertEqual(BookExportService.safeFileName(". .config", fallback: "x"), "config")
+        XCTAssertEqual(BookExportService.safeFileName(". . .", fallback: "x"), "x")
         let long = String(repeating: "é", count: 200)
         let cut = BookExportService.safeFileName(long, fallback: "x")
         XCTAssertLessThanOrEqual(cut.utf8.count, BookExportService.maximumStemByteCount)
         XCTAssertEqual(cut, String(repeating: "é", count: BookExportService.maximumStemByteCount / 2))
+    }
+
+    // MARK: - Never Removing a File
+
+    /// Exports `kinds` of a new text book to a new folder. After the first
+    /// file is done, each of the `rivals` (names in the folder) gets a file of
+    /// someone else's, as another Export dialog's would.
+    /// Returns the outcome, the folder, and the book's name stem.
+    private func exportWithRivals(
+        _ name: String,
+        kinds: Set<BookExportKind>,
+        conversions: [BookExportKind: BookExportConversion] = [:],
+        rivals: (_ stem: String) -> [String]
+    ) throws -> (outcome: BookExportOutcome, destination: URL, stem: String) {
+        let world = try makeIntegrationWorld(name)
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md", Self.twoChapters))
+        let stem = BookExportService.fileNameStem(for: book.title)
+        let destination = try makeSandboxDirectory("\(name) Destination")
+        let rivalURLs = rivals(stem).map { destination.appendingPathComponent($0) }
+
+        let outcome = BookExportService.export(
+            [BookExportService.offer(for: book)],
+            kinds: kinds,
+            conversions: conversions,
+            to: destination,
+            progress: { done, _ in
+                // Once the first file is done the others are already planned
+                // (and free); now they are taken.
+                guard done == 1 else { return }
+                for url in rivalURLs {
+                    try? Data("Someone else's".utf8).write(to: url)
+                }
+            }
+        )
+        return (outcome, destination, stem)
+    }
+
+    /// A file that appears at the target of a copied or a reading-text file
+    /// after the plan fails that file, which is named, and stays exactly as
+    /// it is: the export never removes anything from the folder.
+    func testAFileThatAppearsAfterThePlanSurvivesACopyAndAReadingText() throws {
+        let (outcome, destination, stem) = try exportWithRivals(
+            "Export Rival Copy",
+            kinds: [.originalFile, .markdown, .plainText],
+            rivals: { ["\($0) - Text.md", "\($0) - Text.txt"] }
+        )
+
+        XCTAssertEqual(outcome.exported.map(\.lastPathComponent), ["Harbour Pilots.md"])
+        XCTAssertEqual(outcome.failures.map(\.name), ["\(stem) - Text.md", "\(stem) - Text.txt"])
+        for name in ["\(stem) - Text.md", "\(stem) - Text.txt"] {
+            XCTAssertEqual(
+                try String(contentsOf: destination.appendingPathComponent(name), encoding: .utf8),
+                "Someone else's",
+                "\(name) was removed or written over"
+            )
+        }
+        XCTAssertEqual(
+            try Set(FileManager.default.contentsOfDirectory(atPath: destination.path)),
+            ["Harbour Pilots.md", "\(stem) - Text.md", "\(stem) - Text.txt"],
+            "the failed files left something else behind"
+        )
+    }
+
+    /// The same for a converted file: its HTML is made whole in a scratch
+    /// file, and the move refuses a file that has appeared at the target.
+    func testAFileThatAppearsAfterThePlanSurvivesAConversion() throws {
+        let html = BookExportConversion.text(TextExportConversion(HTMLExportWriter(), options: NoTextExportOptions()))
+        let (outcome, destination, stem) = try exportWithRivals(
+            "Export Rival Conversion",
+            kinds: [.originalFile, .markdown],
+            conversions: [.markdown: html],
+            rivals: { ["\($0) - Text.html"] }
+        )
+
+        XCTAssertEqual(outcome.exported.map(\.lastPathComponent), ["Harbour Pilots.md"])
+        XCTAssertEqual(outcome.failures.map(\.name), ["\(stem) - Text.html"])
+        XCTAssertEqual(
+            try String(contentsOf: destination.appendingPathComponent("\(stem) - Text.html"), encoding: .utf8),
+            "Someone else's"
+        )
+        XCTAssertEqual(
+            try Set(FileManager.default.contentsOfDirectory(atPath: destination.path)),
+            ["Harbour Pilots.md", "\(stem) - Text.html"]
+        )
+    }
+
+    /// `moveExclusively` refuses a name that is taken: it throws
+    /// `fileWriteFileExists`, the file there keeps its bytes, and the source
+    /// stays where it was.
+    func testMovingExclusivelyRefusesAnExistingTarget() throws {
+        let folder = try makeSandboxDirectory("Export Exclusive Refuse")
+        let source = folder.appendingPathComponent("source.txt")
+        let target = folder.appendingPathComponent("target.txt")
+        try Data("new".utf8).write(to: source)
+        try Data("Someone else's".utf8).write(to: target)
+
+        XCTAssertThrowsError(try BookExportService.moveExclusively(source, to: target)) { error in
+            XCTAssertEqual((error as? CocoaError)?.code, .fileWriteFileExists)
+        }
+
+        XCTAssertEqual(try String(contentsOf: target, encoding: .utf8), "Someone else's")
+        XCTAssertEqual(try String(contentsOf: source, encoding: .utf8), "new")
+    }
+
+    /// `moveExclusively` moves a file, and a folder, to a free name.
+    func testMovingExclusivelyMovesToAFreeTarget() throws {
+        let folder = try makeSandboxDirectory("Export Exclusive Move")
+        let source = folder.appendingPathComponent("source.txt")
+        let target = folder.appendingPathComponent("target.txt")
+        try Data("new".utf8).write(to: source)
+        let package = folder.appendingPathComponent("package.rtfd", isDirectory: true)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        try Data("inside".utf8).write(to: package.appendingPathComponent("TXT.rtf"))
+        let movedPackage = folder.appendingPathComponent("moved.rtfd", isDirectory: true)
+
+        try BookExportService.moveExclusively(source, to: target)
+        try BookExportService.moveExclusively(package, to: movedPackage)
+
+        XCTAssertEqual(try String(contentsOf: target, encoding: .utf8), "new")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: source.path))
+        XCTAssertEqual(try String(contentsOf: movedPackage.appendingPathComponent("TXT.rtf"), encoding: .utf8), "inside")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: package.path))
+    }
+
+    /// When the rename cannot be exclusive across volumes (`EXDEV`) the
+    /// move copies with exclusive creation: it still refuses a name that is
+    /// taken, leaving both files as they are, and copies, then removes the
+    /// source, for a free one, a file or a folder.
+    func testMovingExclusivelyCopiesWhereTheRenameCannot() throws {
+        let folder = try makeSandboxDirectory("Export Exclusive Copy")
+        let source = folder.appendingPathComponent("source.txt")
+        let taken = folder.appendingPathComponent("taken.txt")
+        let free = folder.appendingPathComponent("free.txt")
+        try Data("new".utf8).write(to: source)
+        try Data("Someone else's".utf8).write(to: taken)
+        let package = folder.appendingPathComponent("package.rtfd", isDirectory: true)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        try Data("inside".utf8).write(to: package.appendingPathComponent("TXT.rtf"))
+        let freePackage = folder.appendingPathComponent("free.rtfd", isDirectory: true)
+        let otherVolume: (URL, URL) -> Int32 = { _, _ in
+            errno = EXDEV
+            return -1
+        }
+
+        XCTAssertThrowsError(try BookExportService.moveExclusively(source, to: taken, rename: otherVolume)) { error in
+            XCTAssertEqual((error as? CocoaError)?.code, .fileWriteFileExists)
+        }
+        XCTAssertEqual(try String(contentsOf: taken, encoding: .utf8), "Someone else's")
+        XCTAssertEqual(try String(contentsOf: source, encoding: .utf8), "new")
+
+        try BookExportService.moveExclusively(source, to: free, rename: otherVolume)
+        try BookExportService.moveExclusively(package, to: freePackage, rename: otherVolume)
+
+        XCTAssertEqual(try String(contentsOf: free, encoding: .utf8), "new")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: source.path), "the source was kept")
+        XCTAssertEqual(try String(contentsOf: freePackage.appendingPathComponent("TXT.rtf"), encoding: .utf8), "inside")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: package.path), "the source folder was kept")
+    }
+
+    /// Any other error of the rename is thrown as it is, and nothing moves.
+    func testMovingExclusivelyThrowsAnyOtherError() throws {
+        let folder = try makeSandboxDirectory("Export Exclusive Error")
+        let source = folder.appendingPathComponent("source.txt")
+        try Data("new".utf8).write(to: source)
+        let target = folder.appendingPathComponent("target.txt")
+
+        XCTAssertThrowsError(
+            try BookExportService.moveExclusively(source, to: target, rename: { _, _ in
+                errno = EACCES
+                return -1
+            })
+        ) { error in
+            XCTAssertEqual((error as? POSIXError)?.code, .EACCES)
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: target.path))
     }
 
     // MARK: - Words

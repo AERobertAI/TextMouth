@@ -10,6 +10,11 @@ import SwiftUI
 /// button has its own words, from `BookExportWording`, the same on screen
 /// and in speech; a kind only in the cloud is shown unavailable, which
 /// VoiceOver speaks, with the reason in the line below the checkboxes.
+///
+/// Beside the "Text as Markdown" checkbox, while it is checked, a Convert to
+/// picker (FMT18) chooses Markdown, today's export, or a text writer (HTML,
+/// RTF, Word); the checkbox's label and hint then name the writer, and the
+/// writer's own options view, when it has one, shows under the row.
 struct BookExportSheet: View {
     /// The dialog's state, and the export.
     @ObservedObject var model: BookExportModel
@@ -68,16 +73,51 @@ struct BookExportSheet: View {
         } else {
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(model.choices) { choice in
-                    Toggle(choice.label, isOn: checkedBinding(for: choice.kind))
-                        .toggleStyle(.checkbox)
-                        .disabled(!choice.isAvailable || model.isExporting)
-                        .accessibilityHint(BookExportWording.hint(for: choice.kind))
-                        .modifier(InitialVoiceOverFocusModifier(isTarget: choice.kind == model.choices.first?.kind))
+                    choiceRow(choice)
                 }
             }
             .accessibilityElement(children: .contain)
             .accessibilityLabel(BookExportWording.choicesLabel)
         }
+    }
+
+    /// One kind's checkbox, with its Convert to picker beside it while it is
+    /// checked, and the chosen writer's options view under it.
+    private func choiceRow(_ choice: BookExportChoice) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Toggle(model.label(for: choice), isOn: checkedBinding(for: choice.kind))
+                    .toggleStyle(.checkbox)
+                    .disabled(!choice.isAvailable || model.isExporting)
+                    .accessibilityHint(model.hint(for: choice.kind))
+                    .modifier(InitialVoiceOverFocusModifier(isTarget: choice.kind == model.choices.first?.kind))
+                if model.isChecked(choice.kind), !model.conversionChoices(for: choice.kind).isEmpty {
+                    conversionPicker(for: choice.kind)
+                }
+            }
+            if let options = model.optionsView(for: choice.kind) {
+                options
+                    .padding(.leading, 24)
+                    .disabled(model.isExporting)
+            }
+        }
+    }
+
+    /// The Convert to picker of `kind`: a pop-up menu of Markdown and the
+    /// writers, spoken as "Convert to", with the choice made as its value and
+    /// what that choice exports as its hint.
+    private func conversionPicker(for kind: BookExportKind) -> some View {
+        Picker(BookExportWording.convertToLabel, selection: conversionBinding(for: kind)) {
+            ForEach(model.conversionChoices(for: kind)) { option in
+                Text(option.name).tag(option.id)
+            }
+        }
+        .pickerStyle(.menu)
+        .fixedSize()
+        .disabled(model.isExporting)
+        .accessibilityLabel(BookExportWording.convertToLabel)
+        .accessibilityValue(model.conversionChoice(for: kind)?.name ?? "")
+        .accessibilityHint(model.conversionChoice(for: kind)?.hint ?? "")
     }
 
     /// The folder the items go to, and the button choosing another.
@@ -146,6 +186,15 @@ struct BookExportSheet: View {
         Binding(
             get: { model.isChecked(kind) },
             set: { model.setChecked($0, for: kind) }
+        )
+    }
+
+    /// The Convert to picker's choice for `kind`, read from and written to the
+    /// model.
+    private func conversionBinding(for kind: BookExportKind) -> Binding<String> {
+        Binding(
+            get: { model.conversionID(for: kind) },
+            set: { model.setConversionID($0, for: kind) }
         )
     }
 

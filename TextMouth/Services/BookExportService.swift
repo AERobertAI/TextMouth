@@ -55,11 +55,17 @@ struct BookExportFile: Equatable, Sendable {
         /// The book's reading text, made from the text cache (content.md)
         /// at the URL (`BookExportService.plainText(of:)`).
         case readingText(fromMarkdown: URL)
+        /// The file at `from`, made into another by the conversion `by`, for
+        /// the book `book` (FMT18): a text book's content.md, walked and
+        /// written by a text writer. (Every kind is written to a scratch file
+        /// and moved into place once whole, so no half-written file is ever
+        /// left in the folder chosen.)
+        case converted(from: URL, book: ExportBookDetails, by: BookExportConversion)
 
         /// The package file whose bytes are read.
         var url: URL {
             switch self {
-            case .copy(let url), .readingText(let url):
+            case .copy(let url), .readingText(let url), .converted(let url, _, _):
                 return url
             }
         }
@@ -180,6 +186,64 @@ final class BookExportCancellation: Sendable {
     /// Stops the export before its next file.
     func cancel() {
         cancelled.withLock { $0 = true }
+    }
+
+    /// Throws `CancellationError` once the export is to stop: what a
+    /// conversion calls between its steps and a writer between its blocks
+    /// (FMT18), so that Stop ends a book partway.
+    func checkCancelled() throws {
+        if isCancelled {
+            throw CancellationError()
+        }
+    }
+}
+
+// MARK: - Converting Instead of Copying (FMT18)
+
+extension BookExportKind {
+    /// Whether the kind's file is a text book's content.md, which a text
+    /// writer can convert: "Text as Markdown" alone, whose Convert to choice
+    /// is Markdown, copying it as it is, unless another is chosen.
+    var convertsText: Bool {
+        self == .markdown
+    }
+}
+
+/// How an export makes one kind's files instead of copying them (FMT18).
+///
+/// Text tonight: a text book's content.md, walked into an `ExportDocument`
+/// and written by the writer chosen in the Convert to picker. An audio kind
+/// can gain a case of its own later (FMT30, FMT43) without the job runner
+/// changing shape: each case names the extension its files take and how a
+/// file is made.
+enum BookExportConversion: Sendable, Equatable {
+    /// content.md, walked and written by a text writer with its options.
+    case text(TextExportConversion)
+
+    /// The extension, without its dot, of the files the conversion makes.
+    var fileExtension: String {
+        switch self {
+        case .text(let conversion):
+            return conversion.fileExtension
+        }
+    }
+
+    /// Whether the conversion can make the files of `kind`: a text
+    /// conversion makes those of a kind whose `convertsText` is true, and
+    /// is ignored for any other.
+    func applies(to kind: BookExportKind) -> Bool {
+        switch self {
+        case .text:
+            return kind.convertsText
+        }
+    }
+
+    /// The conversion's name, as the Convert to picker says it.
+    var name: String {
+        switch self {
+        case .text(let conversion):
+            return conversion.name
+        }
     }
 }
 
@@ -610,9 +674,17 @@ enum BookExportService {
     /// No name already taken in a folder is used again: a name `fileExists`
     /// finds, or one planned before, is followed by a number, as in
     /// "Moby-Dick 2.md", so an export never writes over anything.
+    ///
+    /// A kind with a conversion in `conversions` (FMT18) is converted, not
+    /// copied: each of its files becomes a `.converted` file whose name has
+    /// the conversion's extension in place of its own, as "Moby-Dick -
+    /// Text.md" becoming "Moby-Dick - Text.html", and is then named uniquely
+    /// like any other. A conversion given for a kind it cannot make
+    /// (`BookExportConversion.applies(to:)`) is ignored.
     static func plan(
         _ offers: [BookExportOffer],
         kinds: Set<BookExportKind>,
+        conversions: [BookExportKind: BookExportConversion] = [:],
         in destination: URL,
         fileExists: @escaping (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) }
     ) -> (files: [PlannedFile], booksInCloud: [BookExportBookName]) {
@@ -641,7 +713,7 @@ enum BookExportService {
                 if !foldersPerBook, let folderName = item.folderName {
                     folder = names.claim(folderName, in: destination)
                 }
-                for file in item.files {
+                for file in files(of: item, for: book, conversions: conversions) {
                     // A file inside folders of its own keeps them, below a
                     // folder that is new; a name of its own is made unique.
                     let target = file.path.contains("/")
@@ -654,8 +726,39 @@ enum BookExportService {
         return (planned, cloud.booksInCloud)
     }
 
+    /// The files of `item` of `book` to write: as they are, unless the item's
+    /// kind has a conversion in `conversions` that applies to it, when each
+    /// copied file becomes one converted by it, named with the conversion's
+    /// extension (FMT18). Files that are not plain copies are left as they are.
+    private static func files(
+        of item: BookExportItem,
+        for book: Book,
+        conversions: [BookExportKind: BookExportConversion]
+    ) -> [BookExportFile] {
+        guard let conversion = conversions[item.kind], conversion.applies(to: item.kind) else {
+            return item.files
+        }
+        let details = ExportBookDetails(book)
+        return item.files.map { file in
+            guard case .copy(let url) = file.source else { return file }
+            // The name keeps any folders and swaps only the last extension.
+            let path = (file.path as NSString).deletingPathExtension + "." + conversion.fileExtension
+            return BookExportFile(
+                source: .converted(from: url, book: details, by: conversion),
+                path: path,
+                byteCount: file.byteCount
+            )
+        }
+    }
+
     /// Exports the `kinds` chosen of `offers` into `destination`, as `plan`
     /// lays them out, and says what it did.
+    ///
+    /// `conversions` (FMT18) makes a kind's files by converting them instead of
+    /// copying (`plan`): each converted file is written by its writer.
+    /// Every file, converted or copied, is made in a scratch folder and moved
+    /// into place once whole, so Stop or a failure partway leaves nothing of
+    /// it in `destination`.
     ///
     /// Each file is checked just before it is written: one that is only in
     /// the cloud by then is not written, and its book is named among those
@@ -663,27 +766,36 @@ enum BookExportService {
     /// the cloud (`MaintenanceFileAccess.read`), so a file that goes to the
     /// cloud while it is copied fails rather than downloading. A file that
     /// cannot be written is named with the reason; the others are still
-    /// written. Nothing already in `destination` is ever written over.
+    /// written. Nothing already in `destination` is ever written over, and
+    /// nothing in it is ever removed, not even a file that appeared there
+    /// since the plan.
     ///
-    /// `cancellation` stops the export before its next file, and `progress`
+    /// `cancellation` stops the export before its next file, or partway
+    /// through a file, which is then not written at all; `progress`
     /// hears how many files are done after each one, out of how many. Runs
     /// on the caller's thread: call it off the main thread.
     static func export(
         _ offers: [BookExportOffer],
         kinds: Set<BookExportKind>,
+        conversions: [BookExportKind: BookExportConversion] = [:],
         to destination: URL,
         access: MaintenanceFileAccess = .live,
         cancellation: BookExportCancellation? = nil,
         progress: (@Sendable (_ done: Int, _ total: Int) -> Void)? = nil
     ) -> BookExportOutcome {
-        let (files, booksInCloud) = plan(offers, kinds: kinds, in: destination)
+        let (files, booksInCloud) = plan(offers, kinds: kinds, conversions: conversions, in: destination)
         var outcome = BookExportOutcome(destination: destination, booksInCloud: booksInCloud)
+        // One token for the whole export, so a conversion has one to check
+        // even when the caller passed none.
+        let token = cancellation ?? BookExportCancellation()
         for (number, planned) in files.enumerated() {
-            if cancellation?.isCancelled == true {
+            if token.isCancelled {
                 outcome.wasCancelled = true
                 break
             }
-            write(planned, access: access, into: &outcome)
+            write(planned, access: access, cancellation: token, into: &outcome)
+            // A Stop pressed during this file ended it, and the export too.
+            if outcome.wasCancelled { break }
             progress?(number + 1, files.count)
         }
         logOutcome(outcome, offers: offers)
@@ -691,43 +803,209 @@ enum BookExportService {
     }
 
     /// Writes one planned file, recording in `outcome` that it was written,
-    /// that its book is in the cloud, or why it failed.
-    private static func write(_ planned: PlannedFile, access: MaintenanceFileAccess, into outcome: inout BookExportOutcome) {
+    /// that its book is in the cloud, or why it failed. A Stop pressed while a
+    /// file is written (`CancellationError`) sets `outcome.wasCancelled`: the
+    /// file is then neither exported nor a failure. Whatever fails, nothing is
+    /// removed from the folder chosen: the file is made in a scratch folder
+    /// and only moved in whole.
+    private static func write(
+        _ planned: PlannedFile,
+        access: MaintenanceFileAccess,
+        cancellation: BookExportCancellation,
+        into outcome: inout BookExportOutcome
+    ) {
         let source = planned.file.source.url
         guard access.itemInCloud(source) == nil else {
             outcome.noteInCloud(planned.book)
             return
         }
-        // A write that fails partway may leave part of a file; that part is
-        // removed, but never a file someone put there since the plan.
-        let existedBefore = FileManager.default.fileExists(atPath: planned.target.path)
-        func removePartialFile() {
-            if !existedBefore {
-                try? FileManager.default.removeItem(at: planned.target)
-            }
-        }
+        // Every file is made at a scratch URL and moved to the target, which
+        // is refused if a file is there by then (`writeThroughScratchFile`),
+        // so a failure or Stop leaves nothing in the folder chosen and the
+        // export never removes anything from it.
         do {
-            try FileManager.default.createDirectory(
-                at: planned.target.deletingLastPathComponent(),
-                withIntermediateDirectories: true
-            )
             switch planned.file.source {
             case .copy(let url):
-                try access.read(url) { try FileManager.default.copyItem(at: url, to: planned.target) }
+                // A file, or a folder such as an RTFD package.
+                try writeThroughScratchFile(to: planned.target, cancellation: cancellation) { scratch in
+                    try access.read(url) { try FileManager.default.copyItem(at: url, to: scratch) }
+                }
             case .readingText(let markdown):
-                let bytes = try access.read(markdown) { try Data(contentsOf: markdown) }
-                let text = try plainText(fromMarkdown: bytes, at: markdown, title: planned.book.title)
-                // Never over a file that appeared since the plan was made.
-                try Data(text.utf8).write(to: planned.target, options: .withoutOverwriting)
+                try writeThroughScratchFile(to: planned.target, cancellation: cancellation) { scratch in
+                    let bytes = try access.read(markdown) { try Data(contentsOf: markdown) }
+                    let text = try plainText(fromMarkdown: bytes, at: markdown, title: planned.book.title)
+                    try Data(text.utf8).write(to: scratch, options: .withoutOverwriting)
+                }
+            case .converted(let url, let book, let conversion):
+                try writeConverted(url, book: book, by: conversion, to: planned.target, access: access, cancellation: cancellation)
             }
             outcome.exported.append(planned.target)
+        } catch is CancellationError {
+            // Stop: nothing of this file is left, and it is not a failure.
+            outcome.wasCancelled = true
         } catch where DatalessFiles.isDownloadRefusal(error) {
-            removePartialFile()
             outcome.noteInCloud(planned.book)
         } catch {
-            removePartialFile()
             outcome.failures.append(BookExportFailure(name: planned.target.lastPathComponent, reason: error.localizedDescription))
         }
+    }
+
+    /// Makes the folder that holds `target`, and any above it that are
+    /// missing.
+    private static func makeFolder(of target: URL) throws {
+        try FileManager.default.createDirectory(
+            at: target.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+    }
+
+    /// Writes the file at `source`, converted by `conversion` for `book`, to
+    /// `target`: its bytes are read as the reading text's are (a file in the
+    /// cloud is not downloaded), walked into a document, and written by the
+    /// conversion into a scratch file that `writeThroughScratchFile` moves to
+    /// `target` once whole. Stop is checked after the read, during the walk
+    /// and the writing, and once more before the move.
+    /// - Throws: `CancellationError` when stopped, the walk's or the
+    ///   writer's error, and the move's, which fails rather than replace a
+    ///   file that appeared since the plan.
+    private static func writeConverted(
+        _ source: URL,
+        book: ExportBookDetails,
+        by conversion: BookExportConversion,
+        to target: URL,
+        access: MaintenanceFileAccess,
+        cancellation: BookExportCancellation
+    ) throws {
+        let bytes = try access.read(source) { try Data(contentsOf: source) }
+        try cancellation.checkCancelled()
+        switch conversion {
+        case .text(let text):
+            let document = try ExportDocumentWalker.document(
+                fromContentBytes: bytes,
+                at: source,
+                book: book,
+                cancellation: cancellation
+            )
+            try writeThroughScratchFile(to: target, cancellation: cancellation) { scratch in
+                try text.write(document, to: scratch, cancellation: cancellation)
+            }
+        }
+    }
+
+    /// Makes `target` whole or not at all: `write` makes the file (or folder,
+    /// such as an RTFD package) at a scratch URL of the target's name in a new
+    /// scratch folder, and once Stop has not been pressed it is moved to
+    /// `target` by `moveExclusively`, which fails rather than replace a file
+    /// that appeared since the plan, atomically on one volume and by
+    /// exclusive creation across volumes. The folder of `target` is made only
+    /// then, so a stopped export leaves none. The scratch folder is removed
+    /// in every case, so a stopped or failed file leaves nothing behind, and
+    /// nothing is ever removed from the folder chosen. Every source kind goes
+    /// through it: a copy and the reading text as well as a conversion, an
+    /// audio one (FMT30, FMT43) as well as a text one.
+    private static func writeThroughScratchFile(
+        to target: URL,
+        cancellation: BookExportCancellation,
+        write: (_ scratch: URL) throws -> Void
+    ) throws {
+        let scratchFolder = try makeScratchFolder(near: target)
+        defer { try? FileManager.default.removeItem(at: scratchFolder) }
+        let scratch = scratchFolder.appendingPathComponent(target.lastPathComponent)
+        try write(scratch)
+        try cancellation.checkCancelled()
+        try makeFolder(of: target)
+        try moveExclusively(scratch, to: target)
+    }
+
+    /// Moves `source` (a file, or a folder such as an RTFD package) to
+    /// `target`, which must not exist: if anything is there, even something
+    /// that appeared an instant ago, it throws `CocoaError.fileWriteFileExists`
+    /// and leaves both as they are. `FileManager.moveItem` checks and then
+    /// renames, so a file made between the two is replaced (a reviewer's race
+    /// replaced 2,995 of 3,000); this renames with `RENAME_EXCL`, which the
+    /// file system makes atomic.
+    ///
+    /// Where that cannot be done (`EXDEV`: the scratch folder is on another
+    /// volume than `target`; `ENOTSUP` and `EINVAL`: a volume without
+    /// exclusive rename) the source is copied with exclusive creation and
+    /// then removed; a copy that fails other than for an existing target
+    /// removes only what it created itself.
+    ///
+    /// `rename` stands for `renamex_np(RENAME_EXCL)` and returns 0, or -1
+    /// with `errno` set; it exists only so a test can make it report
+    /// `EXDEV` and so check the copy on one volume.
+    static func moveExclusively(
+        _ source: URL,
+        to target: URL,
+        rename: (_ source: URL, _ target: URL) -> Int32 = renameWithoutReplacing
+    ) throws {
+        guard rename(source, target) != 0 else { return }
+        // Read at once: anything that follows may change errno.
+        let code = errno
+        switch code {
+        case EEXIST:
+            throw targetExistsError(target)
+        case EXDEV, ENOTSUP, EINVAL:
+            try copyExclusively(source, to: target)
+            try FileManager.default.removeItem(at: source)
+        default:
+            throw POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO)
+        }
+    }
+
+    /// Renames `source` to `target` unless something is already there
+    /// (`RENAME_EXCL`), atomically. 0 when done, else -1 with `errno` set.
+    private static func renameWithoutReplacing(_ source: URL, _ target: URL) -> Int32 {
+        renamex_np(source.path, target.path, UInt32(RENAME_EXCL))
+    }
+
+    /// Copies `source`, a file or a folder with all it holds, to `target`,
+    /// which is created exclusively: if anything is there, nothing is
+    /// written and it throws `CocoaError.fileWriteFileExists`. When the copy
+    /// fails for another reason, what it made at `target` (which was made by
+    /// the copy, since it did not exist) is removed, and the error thrown.
+    private static func copyExclusively(_ source: URL, to target: URL) throws {
+        var flags = copyfile_flags_t(COPYFILE_ALL | COPYFILE_EXCL)
+        if isFolder(source) {
+            flags |= copyfile_flags_t(COPYFILE_RECURSIVE)
+        }
+        guard copyfile(source.path, target.path, nil, flags) != 0 else { return }
+        let code = errno
+        if code == EEXIST {
+            throw targetExistsError(target)
+        }
+        // Not EEXIST, so the exclusive creation of `target` was ours.
+        try? FileManager.default.removeItem(at: target)
+        throw POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO)
+    }
+
+    /// The error for a move or copy onto a name that is taken.
+    private static func targetExistsError(_ target: URL) -> CocoaError {
+        CocoaError(.fileWriteFileExists, userInfo: [NSFilePathErrorKey: target.path, NSURLErrorKey: target])
+    }
+
+    /// A new, empty scratch folder: one the system keeps on the volume of the
+    /// nearest folder above `target` that exists, so that the move is a
+    /// rename, or, when the system makes none, a new folder "TextMouth Export
+    /// <UUID>" in the temporary directory.
+    private static func makeScratchFolder(near target: URL) throws -> URL {
+        // The target's folder may not exist yet: its first folder that does.
+        var existing = target.deletingLastPathComponent()
+        while existing.path != "/", !FileManager.default.fileExists(atPath: existing.path) {
+            existing = existing.deletingLastPathComponent()
+        }
+        if let replacement = try? FileManager.default.url(
+            for: .itemReplacementDirectory,
+            in: .userDomainMask,
+            appropriateFor: existing,
+            create: true
+        ) {
+            return replacement
+        }
+        let fallback = FileManager.default.temporaryDirectory
+            .appendingPathComponent("TextMouth Export \(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: fallback, withIntermediateDirectories: true)
+        return fallback
     }
 
     /// Records in the debug log how an export ended: one line saying how
@@ -791,9 +1069,11 @@ enum BookExportService {
     /// `name` made safe as one file or folder name: a slash or colon
     /// becomes a hyphen (Finder shows a colon as a slash), a control
     /// character becomes a space, runs of spaces become one, leading dots,
-    /// which would hide the file, and surrounding spaces go, and the result
-    /// is cut, between characters, to `maximumStemByteCount` bytes of
-    /// UTF-8. `fallback` stands for a name with nothing left.
+    /// which would hide the file, and white space (any Unicode White_Space,
+    /// mixed with the dots in any order) go from the start, white space
+    /// from the end, and the result is cut, between characters, to
+    /// `maximumStemByteCount` bytes of UTF-8. `fallback` stands for a name
+    /// with nothing left.
     static func safeFileName(_ name: String, fallback: String) -> String {
         var safe = ""
         for scalar in name.unicodeScalars {
@@ -806,10 +1086,13 @@ enum BookExportService {
             }
         }
         safe = safe.split(separator: " ", omittingEmptySubsequences: true).joined(separator: " ")
-        while safe.hasPrefix(".") {
+        // Leading dots and white space go together, in whatever order they
+        // come, so that ". .config" or "\u{00A0}.config" cannot leave a name
+        // that begins with a dot (and is hidden in Finder).
+        while let first = safe.first,
+              first == "." || first.unicodeScalars.allSatisfy(\.properties.isWhitespace) {
             safe.removeFirst()
         }
-        safe = safe.trimmingCharacters(in: .whitespaces)
         var cut = ""
         for character in safe {
             guard cut.utf8.count + String(character).utf8.count <= maximumStemByteCount else { break }

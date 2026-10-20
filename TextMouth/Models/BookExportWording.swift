@@ -42,6 +42,35 @@ enum BookExportWording {
         }
     }
 
+    // MARK: Convert To
+
+    /// The name of the Convert to picker beside the Text as Markdown
+    /// checkbox.
+    static let convertToLabel = "Convert to"
+
+    /// What the picker calls its first choice, today's export: the book's
+    /// content.md copied as it is.
+    static let markdownChoiceName = "Markdown"
+
+    /// What the picker's hint says while Markdown is chosen.
+    static let markdownChoiceHint = "The book's text as Markdown, the file TextMouth reads it from, as it is."
+
+    /// What `kind` is called while its text is converted to `conversionName`:
+    /// "Text as HTML". A kind whose text is not converted, or no conversion
+    /// (nil), keeps `name(of:)`.
+    static func name(of kind: BookExportKind, convertedTo conversionName: String?) -> String {
+        guard let conversionName, kind.convertsText else { return name(of: kind) }
+        return "Text as \(conversionName)"
+    }
+
+    /// What the checkbox of `kind` exports while its text is converted to
+    /// `conversionName`. A kind whose text is not converted, or no
+    /// conversion (nil), keeps `hint(for:)`.
+    static func hint(for kind: BookExportKind, convertedTo conversionName: String?) -> String {
+        guard let conversionName, kind.convertsText else { return hint(for: kind) }
+        return "The book's text as \(conversionName), made from the Markdown TextMouth reads it from."
+    }
+
     // MARK: The Dialog
 
     /// The commands' title in the File menu and the reader's toolbar.
@@ -85,7 +114,8 @@ enum BookExportWording {
     /// size ("about" for reading text, made from the Markdown it is sized
     /// by); and what is in the cloud. As in "Original file, 1.2 MB", "Audio,
     /// 12 files, 340 MB", "Audio, 2 books, 680 MB, 1 book in the cloud", or
-    /// "Text as Markdown, in the cloud".
+    /// "Text as Markdown, in the cloud". A converted text says no size:
+    /// "Text as HTML", "Text as RTF, 2 books, 1 book in the cloud".
     /// - Parameters:
     ///   - kind: The checkbox's kind.
     ///   - bookCount: How many books the dialog exports from.
@@ -93,15 +123,23 @@ enum BookExportWording {
     ///   - fileCount: How many files those items are.
     ///   - byteCount: Their size in bytes.
     ///   - inCloudCount: How many books hold it only in the cloud.
+    ///   - conversionName: The name of the writer the kind's text is
+    ///     converted to ("HTML"), which the label says and leaves the size
+    ///     out for: a converted file's size is not known until it is written,
+    ///     and the Markdown's would mislead (RTF of Cyrillic text is about
+    ///     3.2 times larger, Word 97-2003 two or more times); nil for the
+    ///     kind as it is.
     static func choiceLabel(
         kind: BookExportKind,
         bookCount: Int,
         availableItemCount: Int,
         fileCount: Int,
         byteCount: Int64,
-        inCloudCount: Int
+        inCloudCount: Int,
+        convertedTo conversionName: String? = nil
     ) -> String {
-        var parts = [name(of: kind)]
+        let converted = conversionName != nil && kind.convertsText
+        var parts = [name(of: kind, convertedTo: conversionName)]
         if bookCount > 1 {
             if availableItemCount > 0 {
                 parts.append(CountWording.books(availableItemCount))
@@ -109,7 +147,9 @@ enum BookExportWording {
         } else if fileCount > 1 {
             parts.append(CountWording.phrase(fileCount, singular: "file", plural: "files"))
         }
-        if availableItemCount > 0 {
+        // A converted file's size is unknown until it is written, and the
+        // Markdown's would mislead, so a conversion says none.
+        if availableItemCount > 0, !converted {
             let size = ByteCountFormatter.string(fromByteCount: byteCount, countStyle: .file)
             parts.append(kind == .plainText ? "about \(size)" : size)
         }

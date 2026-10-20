@@ -1,6 +1,7 @@
 import AppKit
 import Combine
 import Foundation
+import SwiftUI
 
 // MARK: - The Export Setting
 
@@ -46,6 +47,12 @@ struct BookExportChoice: Equatable, Identifiable {
     /// The checkbox's label, which the screen shows and VoiceOver speaks
     /// (`BookExportWording.choiceLabel`).
     var label: String {
+        label(convertedTo: nil)
+    }
+
+    /// The checkbox's label while its text is converted to the writer named
+    /// `conversionName` (nil: as it is), as in "Text as HTML, about 12 KB".
+    func label(convertedTo conversionName: String?) -> String {
         let available = availableItems
         return BookExportWording.choiceLabel(
             kind: kind,
@@ -53,7 +60,8 @@ struct BookExportChoice: Equatable, Identifiable {
             availableItemCount: available.count,
             fileCount: available.reduce(0) { $0 + $1.files.count },
             byteCount: available.reduce(0) { $0 + $1.byteCount },
-            inCloudCount: inCloudCount
+            inCloudCount: inCloudCount,
+            convertedTo: conversionName
         )
     }
 
@@ -65,6 +73,19 @@ struct BookExportChoice: Equatable, Identifiable {
             return items.isEmpty ? nil : BookExportChoice(kind: kind, items: items, bookCount: offers.count)
         }
     }
+}
+
+// MARK: - One Choice of the Convert To Picker
+
+/// One choice of the Convert to picker (FMT18): Markdown, today's export, or
+/// a text writer.
+struct BookExportConversionChoice: Identifiable, Equatable {
+    /// The writer's `id`, or `TextExportWriters.markdownID` for Markdown.
+    let id: String
+    /// The choice's name, as the picker lists it and VoiceOver speaks it.
+    let name: String
+    /// What the picker's hint says while this choice is made.
+    let hint: String
 }
 
 // MARK: - The Dialog's Model
@@ -109,13 +130,24 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// What the last export said, kept in the dialog when it did not do
     /// everything asked.
     @Published private(set) var summary: String?
+    /// The Convert to picker's choice for each kind that has one: a writer's
+    /// `id`. A kind not here is on Markdown, so a dialog nobody touched
+    /// exports as it always has.
+    @Published private(set) var conversionIDs: [BookExportKind: String] = [:]
 
     /// How files are checked and read without downloading (FR02).
     private let access: MaintenanceFileAccess
+    /// The text writers the Convert to picker offers after Markdown, in its
+    /// order.
+    private let writers: [any TextExportWriter]
     /// The books as the library holds them now, for the export.
     private let currentBooks: @MainActor ([Book]) -> [Book]
     /// The export under way's Cancel.
     private var cancellation: BookExportCancellation?
+    /// The options of each writer chosen so far, by writer `id`, kept for the
+    /// dialog's life so that choosing another writer and coming back finds
+    /// them as they were.
+    private var optionsStates: [String: any TextExportOptionsEditing] = [:]
 
     /// The folder an export went to last this session, which the next
     /// dialog starts in.
@@ -139,15 +171,20 @@ final class BookExportModel: ObservableObject, Identifiable {
     ///     `defaultDestination`.
     ///   - access: How files are checked and read; tests pass a cloud of
     ///     their own.
+    ///   - writers: The text writers the picker offers. The app always
+    ///     passes all of them (`TextExportWriters.all`); a test passes
+    ///     writers of its own, such as one with options.
     init(
         books: [Book],
         library: LibraryViewModel? = nil,
         destination: URL? = nil,
-        access: MaintenanceFileAccess = .live
+        access: MaintenanceFileAccess = .live,
+        writers: [any TextExportWriter] = TextExportWriters.all
     ) {
         self.books = books
         self.destination = destination ?? Self.defaultDestination
         self.access = access
+        self.writers = writers
         currentBooks = { [weak library] chosen in
             chosen.map { library?.bookByID($0.id) ?? $0 }
         }
@@ -229,6 +266,95 @@ final class BookExportModel: ObservableObject, Identifiable {
         return BookExportWording.progress(done: done, total: total)
     }
 
+    // MARK: Converting
+
+    /// The choices of the Convert to picker beside the checkbox of `kind`:
+    /// Markdown, then each text writer in order, for a kind whose text a
+    /// writer can convert; none for any other kind.
+    func conversionChoices(for kind: BookExportKind) -> [BookExportConversionChoice] {
+        guard kind.convertsText else { return [] }
+        let markdown = BookExportConversionChoice(
+            id: TextExportWriters.markdownID,
+            name: BookExportWording.markdownChoiceName,
+            hint: BookExportWording.markdownChoiceHint
+        )
+        return [markdown] + writers.map {
+            BookExportConversionChoice(id: $0.id, name: $0.name, hint: $0.hint)
+        }
+    }
+
+    /// The writer whose `id` is `id` among the picker's writers; nil for
+    /// Markdown and for an unknown `id`.
+    private func writer(id: String) -> (any TextExportWriter)? {
+        writers.first { $0.id == id }
+    }
+
+    /// The `id` of the picker's choice for `kind`: Markdown until another is
+    /// chosen.
+    func conversionID(for kind: BookExportKind) -> String {
+        conversionIDs[kind] ?? TextExportWriters.markdownID
+    }
+
+    /// Chooses `id` in the picker beside the checkbox of `kind`. A kind with
+    /// no picker, and an `id` the picker does not list, change nothing. The
+    /// first time a writer is chosen, its options are made as each dialog
+    /// starts them.
+    func setConversionID(_ id: String, for kind: BookExportKind) {
+        guard conversionChoices(for: kind).contains(where: { $0.id == id }) else { return }
+        conversionIDs[kind] = id
+        if let writer = writer(id: id), optionsStates[id] == nil {
+            optionsStates[id] = TextExportWriters.optionsState(for: writer)
+        }
+    }
+
+    /// The choice the picker beside the checkbox of `kind` shows; nil for a
+    /// kind with no picker.
+    func conversionChoice(for kind: BookExportKind) -> BookExportConversionChoice? {
+        let id = conversionID(for: kind)
+        return conversionChoices(for: kind).first { $0.id == id }
+    }
+
+    /// The name of the writer `kind`'s text is converted to; nil on Markdown
+    /// and for a kind with no picker, which the checkbox says as it is.
+    private func conversionName(for kind: BookExportKind) -> String? {
+        guard kind.convertsText else { return nil }
+        return writer(id: conversionID(for: kind))?.name
+    }
+
+    /// The label of `choice`'s checkbox, saying the conversion chosen.
+    func label(for choice: BookExportChoice) -> String {
+        choice.label(convertedTo: conversionName(for: choice.kind))
+    }
+
+    /// The hint of the checkbox of `kind`, saying the conversion chosen.
+    func hint(for kind: BookExportKind) -> String {
+        BookExportWording.hint(for: kind, convertedTo: conversionName(for: kind))
+    }
+
+    /// The options view of the writer chosen for `kind`, to show under the
+    /// picker; nil while the kind is unchecked, on Markdown, or when the
+    /// writer takes no options.
+    func optionsView(for kind: BookExportKind) -> AnyView? {
+        guard isChecked(kind), let state = optionsStates[conversionID(for: kind)], state.hasOptions else {
+            return nil
+        }
+        return state.makeView()
+    }
+
+    /// The conversions an export makes now: for each checked kind on a
+    /// writer, that writer with its options as they are. Markdown has no
+    /// options state, so a kind on Markdown has no conversion and is copied
+    /// as it always was.
+    var conversions: [BookExportKind: BookExportConversion] {
+        var made: [BookExportKind: BookExportConversion] = [:]
+        for kind in checked {
+            if let state = optionsStates[conversionID(for: kind)] {
+                made[kind] = .text(state.conversion())
+            }
+        }
+        return made
+    }
+
     // MARK: Exporting
 
     /// Exports the checked kinds of the books, as the library holds them
@@ -240,6 +366,9 @@ final class BookExportModel: ObservableObject, Identifiable {
     func export(announcingFrom window: NSWindow? = nil) async -> BookExportOutcome? {
         guard canExport else { return nil }
         let kinds = checked
+        // The conversions are read here, on the main actor, with the options
+        // as they are now; the export takes the copy off the main thread.
+        let conversions = self.conversions
         let folder = destination
         guard !Self.isInsideDataDirectory(folder) else {
             summary = BookExportWording.destinationInLibrary
@@ -270,6 +399,7 @@ final class BookExportModel: ObservableObject, Identifiable {
             return BookExportService.export(
                 offers,
                 kinds: kinds,
+                conversions: conversions,
                 to: folder,
                 access: access,
                 cancellation: cancellation,
