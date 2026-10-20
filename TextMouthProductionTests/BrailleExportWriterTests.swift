@@ -322,11 +322,15 @@ final class BrailleExportWriterTests: XCTestCase {
             XCTAssertEqual(lines.valueDescription, "25 lines")
             XCTAssertEqual(lines.hint, "How many lines each braille page holds, from 4 to 50.")
             XCTAssertEqual(try control(labelled: "Line ends", in: controls).hint, "CR LF suits most braille displays and embossers.")
-            // SwiftUI's checkbox joins the tree only for some sessions.
-            if let numbers = controls.first(where: { $0.role == .checkBox && $0.label == "Braille page numbers" }) {
-                XCTAssertEqual(numbers.hint, "Whether each page's last line carries its braille page number.")
-                XCTAssertEqual((numbers.element.accessibilityValue() as? NSNumber)?.boolValue, true)
-            }
+            // The checkbox must be there: where the session exposes the
+            // dialog's other controls (the skip above), a missing checkbox
+            // is a failure, not a pass without a check.
+            let numbers = try XCTUnwrap(
+                controls.first { $0.role == .checkBox && $0.label == "Braille page numbers" },
+                "no check box is labelled Braille page numbers: \(controls.map(\.label))"
+            )
+            XCTAssertEqual(numbers.hint, "Whether each page's last line carries its braille page number.")
+            XCTAssertEqual((numbers.element.accessibilityValue() as? NSNumber)?.boolValue, true)
         }
     }
 
