@@ -546,6 +546,90 @@ final class BookExportServiceTests: XCTestCase {
         XCTAssertEqual(cut, String(repeating: "é", count: BookExportService.maximumStemByteCount / 2))
     }
 
+    // MARK: - Never Removing a File
+
+    /// Exports `kinds` of a new text book to a new folder. After the first
+    /// file is done, each of the `rivals` (names in the folder) gets a file of
+    /// someone else's, as another Export dialog's would.
+    /// Returns the outcome, the folder, and the book's name stem.
+    private func exportWithRivals(
+        _ name: String,
+        kinds: Set<BookExportKind>,
+        conversions: [BookExportKind: BookExportConversion] = [:],
+        rivals: (_ stem: String) -> [String]
+    ) throws -> (outcome: BookExportOutcome, destination: URL, stem: String) {
+        let world = try makeIntegrationWorld(name)
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md", Self.twoChapters))
+        let stem = BookExportService.fileNameStem(for: book.title)
+        let destination = try makeSandboxDirectory("\(name) Destination")
+        let rivalURLs = rivals(stem).map { destination.appendingPathComponent($0) }
+
+        let outcome = BookExportService.export(
+            [BookExportService.offer(for: book)],
+            kinds: kinds,
+            conversions: conversions,
+            to: destination,
+            progress: { done, _ in
+                // Once the first file is done the others are already planned
+                // (and free); now they are taken.
+                guard done == 1 else { return }
+                for url in rivalURLs {
+                    try? Data("Someone else's".utf8).write(to: url)
+                }
+            }
+        )
+        return (outcome, destination, stem)
+    }
+
+    /// A file that appears at the target of a copied or a reading-text file
+    /// after the plan fails that file, which is named, and stays exactly as
+    /// it is: the export never removes anything from the folder.
+    func testAFileThatAppearsAfterThePlanSurvivesACopyAndAReadingText() throws {
+        let (outcome, destination, stem) = try exportWithRivals(
+            "Export Rival Copy",
+            kinds: [.originalFile, .markdown, .plainText],
+            rivals: { ["\($0) - Text.md", "\($0) - Text.txt"] }
+        )
+
+        XCTAssertEqual(outcome.exported.map(\.lastPathComponent), ["Harbour Pilots.md"])
+        XCTAssertEqual(outcome.failures.map(\.name), ["\(stem) - Text.md", "\(stem) - Text.txt"])
+        for name in ["\(stem) - Text.md", "\(stem) - Text.txt"] {
+            XCTAssertEqual(
+                try String(contentsOf: destination.appendingPathComponent(name), encoding: .utf8),
+                "Someone else's",
+                "\(name) was removed or written over"
+            )
+        }
+        XCTAssertEqual(
+            try Set(FileManager.default.contentsOfDirectory(atPath: destination.path)),
+            ["Harbour Pilots.md", "\(stem) - Text.md", "\(stem) - Text.txt"],
+            "the failed files left something else behind"
+        )
+    }
+
+    /// The same for a converted file: its HTML is made whole in a scratch
+    /// file, and the move refuses a file that has appeared at the target.
+    func testAFileThatAppearsAfterThePlanSurvivesAConversion() throws {
+        let html = BookExportConversion.text(TextExportConversion(HTMLExportWriter(), options: NoTextExportOptions()))
+        let (outcome, destination, stem) = try exportWithRivals(
+            "Export Rival Conversion",
+            kinds: [.originalFile, .markdown],
+            conversions: [.markdown: html],
+            rivals: { ["\($0) - Text.html"] }
+        )
+
+        XCTAssertEqual(outcome.exported.map(\.lastPathComponent), ["Harbour Pilots.md"])
+        XCTAssertEqual(outcome.failures.map(\.name), ["\(stem) - Text.html"])
+        XCTAssertEqual(
+            try String(contentsOf: destination.appendingPathComponent("\(stem) - Text.html"), encoding: .utf8),
+            "Someone else's"
+        )
+        XCTAssertEqual(
+            try Set(FileManager.default.contentsOfDirectory(atPath: destination.path)),
+            ["Harbour Pilots.md", "\(stem) - Text.html"]
+        )
+    }
+
     // MARK: - Words
 
     /// Books in the cloud are named, up to three, then counted, with what

@@ -57,9 +57,9 @@ struct BookExportFile: Equatable, Sendable {
         case readingText(fromMarkdown: URL)
         /// The file at `from`, made into another by the conversion `by`, for
         /// the book `book` (FMT18): a text book's content.md, walked and
-        /// written by a text writer. The export writes it to a scratch file
-        /// and moves it into place once whole, so no half-written file is
-        /// ever left in the folder chosen.
+        /// written by a text writer. (Every kind is written to a scratch file
+        /// and moved into place once whole, so no half-written file is ever
+        /// left in the folder chosen.)
         case converted(from: URL, book: ExportBookDetails, by: BookExportConversion)
 
         /// The package file whose bytes are read.
@@ -755,9 +755,10 @@ enum BookExportService {
     /// lays them out, and says what it did.
     ///
     /// `conversions` (FMT18) makes a kind's files by converting them instead of
-    /// copying (`plan`): each converted file is written by its writer into a
-    /// scratch file and moved into place once whole, so Stop or a failure
-    /// partway leaves nothing of it in `destination`.
+    /// copying (`plan`): each converted file is written by its writer.
+    /// Every file, converted or copied, is made in a scratch folder and moved
+    /// into place once whole, so Stop or a failure partway leaves nothing of
+    /// it in `destination`.
     ///
     /// Each file is checked just before it is written: one that is only in
     /// the cloud by then is not written, and its book is named among those
@@ -765,10 +766,12 @@ enum BookExportService {
     /// the cloud (`MaintenanceFileAccess.read`), so a file that goes to the
     /// cloud while it is copied fails rather than downloading. A file that
     /// cannot be written is named with the reason; the others are still
-    /// written. Nothing already in `destination` is ever written over.
+    /// written. Nothing already in `destination` is ever written over, and
+    /// nothing in it is ever removed, not even a file that appeared there
+    /// since the plan.
     ///
     /// `cancellation` stops the export before its next file, or partway
-    /// through a converted one, which is then not written at all; `progress`
+    /// through a file, which is then not written at all; `progress`
     /// hears how many files are done after each one, out of how many. Runs
     /// on the caller's thread: call it off the main thread.
     static func export(
@@ -802,7 +805,9 @@ enum BookExportService {
     /// Writes one planned file, recording in `outcome` that it was written,
     /// that its book is in the cloud, or why it failed. A Stop pressed while a
     /// file is written (`CancellationError`) sets `outcome.wasCancelled`: the
-    /// file is then neither exported nor a failure.
+    /// file is then neither exported nor a failure. Whatever fails, nothing is
+    /// removed from the folder chosen: the file is made in a scratch folder
+    /// and only moved in whole.
     private static func write(
         _ planned: PlannedFile,
         access: MaintenanceFileAccess,
@@ -814,41 +819,33 @@ enum BookExportService {
             outcome.noteInCloud(planned.book)
             return
         }
-        // A write that fails partway may leave part of a file; that part is
-        // removed, but never a file someone put there since the plan.
-        let existedBefore = FileManager.default.fileExists(atPath: planned.target.path)
-        func removePartialFile() {
-            // A converted file's target exists only once it is whole, so
-            // there is never a part of it to remove.
-            if case .converted = planned.file.source { return }
-            if !existedBefore {
-                try? FileManager.default.removeItem(at: planned.target)
-            }
-        }
+        // Every file is made at a scratch URL and moved to the target, which
+        // is refused if a file is there by then (`writeThroughScratchFile`),
+        // so a failure or Stop leaves nothing in the folder chosen and the
+        // export never removes anything from it.
         do {
             switch planned.file.source {
             case .copy(let url):
-                try makeFolder(of: planned.target)
-                try access.read(url) { try FileManager.default.copyItem(at: url, to: planned.target) }
+                // A file, or a folder such as an RTFD package.
+                try writeThroughScratchFile(to: planned.target, cancellation: cancellation) { scratch in
+                    try access.read(url) { try FileManager.default.copyItem(at: url, to: scratch) }
+                }
             case .readingText(let markdown):
-                try makeFolder(of: planned.target)
-                let bytes = try access.read(markdown) { try Data(contentsOf: markdown) }
-                let text = try plainText(fromMarkdown: bytes, at: markdown, title: planned.book.title)
-                // Never over a file that appeared since the plan was made.
-                try Data(text.utf8).write(to: planned.target, options: .withoutOverwriting)
+                try writeThroughScratchFile(to: planned.target, cancellation: cancellation) { scratch in
+                    let bytes = try access.read(markdown) { try Data(contentsOf: markdown) }
+                    let text = try plainText(fromMarkdown: bytes, at: markdown, title: planned.book.title)
+                    try Data(text.utf8).write(to: scratch, options: .withoutOverwriting)
+                }
             case .converted(let url, let book, let conversion):
                 try writeConverted(url, book: book, by: conversion, to: planned.target, access: access, cancellation: cancellation)
             }
             outcome.exported.append(planned.target)
         } catch is CancellationError {
             // Stop: nothing of this file is left, and it is not a failure.
-            removePartialFile()
             outcome.wasCancelled = true
         } catch where DatalessFiles.isDownloadRefusal(error) {
-            removePartialFile()
             outcome.noteInCloud(planned.book)
         } catch {
-            removePartialFile()
             outcome.failures.append(BookExportFailure(name: planned.target.lastPathComponent, reason: error.localizedDescription))
         }
     }
@@ -865,9 +862,9 @@ enum BookExportService {
     /// Writes the file at `source`, converted by `conversion` for `book`, to
     /// `target`: its bytes are read as the reading text's are (a file in the
     /// cloud is not downloaded), walked into a document, and written by the
-    /// conversion into a scratch file that is moved to `target` once whole.
-    /// Stop is checked after the read, during the walk and the writing, and
-    /// once more before the move.
+    /// conversion into a scratch file that `writeThroughScratchFile` moves to
+    /// `target` once whole. Stop is checked after the read, during the walk
+    /// and the writing, and once more before the move.
     /// - Throws: `CancellationError` when stopped, the walk's or the
     ///   writer's error, and the move's, which fails rather than replace a
     ///   file that appeared since the plan.
@@ -895,15 +892,16 @@ enum BookExportService {
         }
     }
 
-    /// Makes `target` whole or not at all: `write` makes the file at a
-    /// scratch URL of the target's name in a new scratch folder, and once
-    /// Stop has not been pressed the file is moved to `target`, which fails
-    /// rather than replace a file that appeared since the plan. The folder of
-    /// `target` is made only then, so a stopped export leaves none. The
-    /// scratch folder is removed in every case, so a stopped or failed
-    /// conversion leaves nothing behind, and nothing is ever removed from the
-    /// folder chosen. Any conversion can use it, an audio one (FMT30, FMT43)
-    /// as well as a text one.
+    /// Makes `target` whole or not at all: `write` makes the file (or folder,
+    /// such as an RTFD package) at a scratch URL of the target's name in a new
+    /// scratch folder, and once Stop has not been pressed it is moved to
+    /// `target`, which fails rather than replace a file that appeared since
+    /// the plan. The folder of `target` is made only then, so a stopped export
+    /// leaves none. The scratch folder is removed in every case, so a stopped
+    /// or failed file leaves nothing behind, and nothing is ever removed from
+    /// the folder chosen. Every source kind goes through it: a copy and the
+    /// reading text as well as a conversion, an audio one (FMT30, FMT43) as
+    /// well as a text one.
     private static func writeThroughScratchFile(
         to target: URL,
         cancellation: BookExportCancellation,
