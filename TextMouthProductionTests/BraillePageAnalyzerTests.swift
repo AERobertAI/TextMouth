@@ -132,9 +132,38 @@ final class BraillePageAnalyzerTests: XCTestCase {
     }
 
     func testANumberThatDoesNotEndAtTheLineWidthIsNotTaken() {
-        // The longest row is 24 cells, so the width is 24; the footer ends at 20.
-        let structure = formattedStructure([row(2, String(repeating: "X", count: 22)), rightAligned("#A", width: 20)])
-        XCTAssertNil(structure.pages.first?.braillePageNumber)
+        // Two pages are numbered at cell 24, which is the width; the third page's
+        // footer ends at 20, so it is a row of text and not a number.
+        let text = row(2, String(repeating: "X", count: 22))
+        let pages = [[text, rightAligned("#A", width: 24)], [text, rightAligned("#B", width: 24)],
+                     [text, rightAligned("#C", width: 20)]]
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertEqual(structure.pages.map(\.braillePageNumber), ["⠼⠁", "⠼⠃", nil])
+    }
+
+    func testOneOverlongRowDoesNotMoveThePageNumberColumn() {
+        // Pages numbered at cell 40, and one row of 41 cells: the width is the
+        // column the numbers stand in, so neither number is left in the text.
+        let text = row(2, "A PARAGRAPH")
+        let overlong = row(0, String(repeating: "X", count: 41))
+        let pages = [[text, overlong, rightAligned("#A")], [row(0, "GOES ON"), rightAligned("#B")]]
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertEqual(structure.pages.map(\.braillePageNumber), ["⠼⠁", "⠼⠃"])
+        XCTAssertEqual(structure.blocks, [paragraph("A PARAGRAPH " + String(repeating: "X", count: 41) + " GOES ON")])
+    }
+
+    func testTheWidthIsTheMostCommonNumberedLastRowAndTiesTakeTheLonger() {
+        let text = row(2, "TEXT")
+        // Two pages numbered at 30 and one at 40: the width is 30, so a row of
+        // 40 cells is no footer, and the page numbered at 40 keeps its number in the text.
+        let common = [[text, rightAligned("#A", width: 30)], [text, rightAligned("#B", width: 30)],
+                      [text, rightAligned("#C", width: 40)]]
+        XCTAssertEqual(BraillePageAnalyzer.structure(of: common, formatted: true).pages.map(\.braillePageNumber),
+                       ["⠼⠁", "⠼⠃", nil])
+        // One page each at 30 and 40: the tie goes to the longer, 40.
+        let tie = [[text, rightAligned("#A", width: 30)], [text, rightAligned("#B", width: 40)]]
+        XCTAssertEqual(BraillePageAnalyzer.structure(of: tie, formatted: true).pages.map(\.braillePageNumber),
+                       [nil, "⠼⠃"])
     }
 
     func testPreliminaryAndContinuationPageNumbersAreTaken() {

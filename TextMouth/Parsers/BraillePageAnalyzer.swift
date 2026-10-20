@@ -73,8 +73,7 @@ enum BraillePageAnalyzer {
         guard formatted else { return unformattedStructure(of: rawPages) }
 
         // The line width is measured before anything is taken out of any row.
-        let longest = rawPages.lazy.flatMap { $0 }.map(\.count).max() ?? 0
-        let width = min(max(longest, widthRange.lowerBound), widthRange.upperBound)
+        let width = lineWidth(of: rawPages)
 
         // Take each page's numbers and change lines out, keeping the rows left.
         var pageNumbers: [BraillePageNumbers] = []
@@ -95,6 +94,30 @@ enum BraillePageAnalyzer {
             pageNumbers[index].firstBlockIndex = nextFirstBlock
         }
         return BrailleStructure(blocks: blocks, pages: pageNumbers)
+    }
+
+    /// The line width of a formatted book, held to `widthRange`: the most
+    /// common length among the pages' last rows that end in a number word
+    /// after at least 3 blank cells (a braille page number, as the layout
+    /// writes it at the right margin), the longer length on a tie; and,
+    /// when no page has such a row, the length of the longest row.
+    ///
+    /// The page-number column is what the width is, so one row that runs a
+    /// cell past it (a stray overlong line) cannot shift it and leave the
+    /// page numbers in the text.
+    private static func lineWidth(of rawPages: [[[Unicode.Scalar]]]) -> Int {
+        // How many pages have a numbered last row of each length.
+        var numberedLengths: [Int: Int] = [:]
+        var longest = 0
+        for rawRows in rawPages {
+            for row in rawRows { longest = max(longest, row.count) }
+            if let last = rawRows.last(where: { !$0.isEmpty }), numberWordAtRight(of: last) != nil {
+                numberedLengths[last.count, default: 0] += 1
+            }
+        }
+        // The most common length; the longer of two that are as common.
+        let common = numberedLengths.max { ($0.value, $0.key) < ($1.value, $1.key) }?.key
+        return min(max(common ?? longest, widthRange.lowerBound), widthRange.upperBound)
     }
 
     // MARK: Unformatted files
@@ -169,6 +192,13 @@ enum BraillePageAnalyzer {
     private static func numberAtRight(of row: [Unicode.Scalar], width: Int)
         -> (word: ArraySlice<Unicode.Scalar>, rest: [Unicode.Scalar])? {
         guard row.count == width else { return nil }
+        return numberWordAtRight(of: row)
+    }
+
+    /// `numberAtRight(of:width:)` for a row of any length: the number word
+    /// that ends `row` after at least 3 blank cells, and the row before it.
+    private static func numberWordAtRight(of row: [Unicode.Scalar])
+        -> (word: ArraySlice<Unicode.Scalar>, rest: [Unicode.Scalar])? {
         // The last word starts after the last blank cell.
         let start = (row.lastIndex(of: blank) ?? -1) + 1
         let word = row[start...]
