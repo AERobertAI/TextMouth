@@ -278,9 +278,12 @@ targets:
         CODE_SIGN_IDENTITY: "-"
         # liblouis.h is liblouis's own header, as a system header, so the
         # warnings of its comments (five @deprecated commands without a
-        # deprecation attribute) are not shown; main.c's own are.
+        # deprecation attribute) are not shown; main.c's own are. Without a
+        # header map, which would list it among the project's own headers
+        # and find it there first, "liblouis.h" is found on this path.
         SYSTEM_HEADER_SEARCH_PATHS:
           - $(SRCROOT)/Vendor/liblouis/include
+        USE_HEADERMAP: NO
         GCC_OPTIMIZATION_LEVEL: s
         SKIP_INSTALL: YES
       configs:

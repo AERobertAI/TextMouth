@@ -5105,6 +5105,7 @@
 				SYSTEM_HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/Vendor/liblouis/include",
 				);
+				USE_HEADERMAP = NO;
 			};
 			name = Release;
 		};
@@ -5406,6 +5407,7 @@
 				SYSTEM_HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/Vendor/liblouis/include",
 				);
+				USE_HEADERMAP = NO;
 			};
 			name = Debug;
 		};
