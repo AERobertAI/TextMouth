@@ -10,16 +10,37 @@ struct BrailleExportOptions: TextExportOptions {
     /// Cells per line, lines per page, and whether pages carry numbers.
     var page = BraillePageFormat()
     /// The table, by its stored value (a bundled table's file name, or "mac:"
-    /// and one of this Mac's): the code and its contraction.
-    var table = BrailleTableCatalog.defaultTableID
+    /// and one of this Mac's): the code and its contraction. Choosing
+    /// another forgets `replacedTable`.
+    var table = BrailleTableCatalog.defaultTableID {
+        didSet { if table != oldValue { replacedTable = nil } }
+    }
     /// The line end a BRF file writes after each row (a PEF always uses LF).
     var lineEnd = BrailleLineEnd.crlf
+    /// The Braille setting's table, when this Mac cannot use it and the
+    /// options start from the default table instead (review R4), which the
+    /// options view says; nil otherwise.
+    var replacedTable: String?
 
     /// The defaults (40 cells by 25 lines, page numbers on, CR LF), with the
     /// table the Braille setting chose (`BraillePreferences.importTable()`:
-    /// the setting, or a test's bound table).
+    /// the setting, or a test's bound table). One of this Mac's tables that
+    /// this Mac does not offer (gone, or a bundled table's twin), or that its
+    /// check refused this session, is replaced by the default table, so the
+    /// pop-ups show what the export will use (review R4).
     static func standard() -> BrailleExportOptions {
-        BrailleExportOptions(table: BraillePreferences.importTable())
+        let setting = BraillePreferences.importTable()
+        guard isUnusableMacTable(setting) else { return BrailleExportOptions(table: setting) }
+        return BrailleExportOptions(table: BrailleTableCatalog.defaultTableID, replacedTable: setting)
+    }
+
+    /// Whether `table` is one of this Mac's tables that an export cannot
+    /// start from: not offered, or refused by a check that lasts the session.
+    static func isUnusableMacTable(_ table: String) -> Bool {
+        guard BrailleTableSource.parse(table).source == .mac else { return false }
+        guard BrailleTableCatalog.table(withID: table) != nil else { return true }
+        if case .refused? = MacBrailleTableCheck.verdicts.verdict(for: table) { return true }
+        return false
     }
 }
 

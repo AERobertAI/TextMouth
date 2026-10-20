@@ -56,6 +56,14 @@ enum BrailleExportWording {
         case .lf: return lfName
         }
     }
+
+    /// What the options say when the Braille setting's table, `table`, is one
+    /// of this Mac's that this Mac cannot use, and the export starts from
+    /// the default table instead (review R4).
+    static func startsFromDefault(replacing table: String) -> String {
+        "TextMouth can't use the braille table chosen in Settings, \u{201C}\(table)\u{201D}, so this export starts from "
+            + "\(BrailleTableCatalog.description(ofTableID: BrailleTableCatalog.defaultTableID))."
+    }
 }
 
 // MARK: - The Table Pop-ups
@@ -286,6 +294,12 @@ struct BrailleExportOptionsView: View {
             }
             .pickerStyle(.menu)
             .fixedSize()
+            // The setting's table could not be used: say so, until another
+            // table is chosen here (review R4).
+            if let replaced = options.replacedTable {
+                Text(BrailleExportWording.startsFromDefault(replacing: replaced))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             stepperRow(
                 label: BrailleExportWording.cellsLabel,
                 hint: BrailleExportWording.cellsHint,

@@ -206,6 +206,43 @@ final class MacBrailleTableBookTests: XCTestCase {
         XCTAssertEqual((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? [], [])
     }
 
+    // MARK: - Export's Options (review R4)
+
+    /// Export's options start from the default table, and say so, when the
+    /// Braille setting names one of this Mac's tables that this Mac cannot
+    /// use: one no Mac has, or one its check refused this session. A usable
+    /// setting is kept, and choosing another table forgets the replacement.
+    func testExportStartsFromTheDefaultWhenTheSettingsMacTableCannotBeUsed() throws {
+        BraillePreferences.$tableForImports.withValue(gone) {
+            let options = BrailleExportOptions.standard()
+            XCTAssertEqual(options.table, BrailleTableCatalog.defaultTableID)
+            XCTAssertEqual(options.replacedTable, gone)
+        }
+        BraillePreferences.$tableForImports.withValue("en-us-g1.ctb") {
+            XCTAssertEqual(BrailleExportOptions.standard(), BrailleExportOptions(table: "en-us-g1.ctb"))
+        }
+        if let offered = BrailleTableCatalog.offeredTables.first(where: { $0.source == .mac })?.id {
+            let verdicts = MacBrailleTableCheck.Verdicts()
+            _ = verdicts.verdict(for: offered) { .refused(.doesNotLoad) }
+            MacBrailleTableCheck.$verdicts.withValue(verdicts) {
+                BraillePreferences.$tableForImports.withValue(offered) {
+                    XCTAssertEqual(BrailleExportOptions.standard().replacedTable, offered)
+                }
+            }
+            BraillePreferences.$tableForImports.withValue(offered) {
+                XCTAssertEqual(BrailleExportOptions.standard(), BrailleExportOptions(table: offered), "a table not yet checked is kept")
+            }
+        }
+        var options = BrailleExportOptions(table: BrailleTableCatalog.defaultTableID, replacedTable: gone)
+        options.table = "en-us-g1.ctb"
+        XCTAssertNil(options.replacedTable)
+        XCTAssertEqual(
+            BrailleExportWording.startsFromDefault(replacing: gone),
+            "TextMouth can't use the braille table chosen in Settings, \u{201C}\(gone)\u{201D}, so this export starts from "
+                + "Unified English Braille, contracted (Grade 2)."
+        )
+    }
+
     // MARK: - config.json
 
     /// config.json may name one of this Mac's tables, which is taken by its
