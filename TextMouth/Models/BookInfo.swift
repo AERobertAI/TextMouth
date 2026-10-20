@@ -125,6 +125,11 @@ struct BookMetadata: Codable {
     /// when the row has none (`Book.bookInfo(replacing:contentIndex:revisionFloor:)`).
     var feedLink: FeedBookLink? = nil
 
+    /// The braille table a braille book's text was read with (FMT21): the
+    /// row's field (`Book.brailleTable`), nil for every other book and for a
+    /// record written before braille books.
+    var brailleTable: String? = nil
+
     init(
         title: String = "Untitled",
         author: String = Book.unknownAuthor,

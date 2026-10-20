@@ -34,6 +34,13 @@ enum BookFormat: String, Codable, CaseIterable {
     case doc
     case odt
     case wordml
+    // Braille books (FMT20): a BRF, a BRL, and a PEF, read through liblouis
+    // in the braille helper (FMT21). Like every raw value here, written into
+    // the library index and never changed: a TextMouth built before this case
+    // refuses a library that holds a braille book (it keeps the library's
+    // file and writes nothing), so the documentation warns the user before
+    // they go back to an older build.
+    case braille
     case daisy
     case pdf
     case audio
@@ -52,6 +59,7 @@ enum BookFormat: String, Codable, CaseIterable {
         case .doc: return "Word 97-2003 Document"
         case .odt: return "OpenDocument Text"
         case .wordml: return "Word 2003 XML"
+        case .braille: return "Braille"
         case .daisy: return "DAISY"
         case .pdf: return "PDF"
         case .audio: return "Audio"
@@ -97,6 +105,7 @@ enum BookFormat: String, Codable, CaseIterable {
         // WordML is an .xml file, known by its root element through
         // `XMLDocumentSniffer` (see `detect(from:)`), never by an extension.
         case .wordml: return []
+        case .braille: return ["brf", "brl", "pef"]
         case .daisy: return ["daisy", "opf"]
         case .pdf: return ["pdf"]
         case .audio:
@@ -297,6 +306,16 @@ struct Book: Identifiable, Codable, Hashable {
     /// row's link is cleared.
     var feedLink: FeedBookLink?
 
+    /// The braille table this braille book's text was read with (FMT21), by
+    /// its file name in the bundle's tables folder, such as "en-ueb-g2.ctb":
+    /// the Braille setting's table when the book was imported, which every
+    /// later reading of the book uses, the Markdown cache's rebuild included,
+    /// so a change of the setting never moves the book's text under its
+    /// places. Nil for every other book, and read as
+    /// `BrailleTableCatalog.defaultTableID` for a braille book whose row and
+    /// record lack one. Kept in the row and the record.
+    var brailleTable: String?
+
     /// Whether this row is a feed item's download (FR11): its feed lists it,
     /// and the library's own lists, counts, and maintenance leave it out.
     var isFeedItem: Bool {
@@ -358,7 +377,8 @@ struct Book: Identifiable, Codable, Hashable {
         textCacheFingerprint: TextCacheFingerprint? = nil,
         metadataReaderVersion: String? = nil,
         handEdits: HandEdits? = nil,
-        feedLink: FeedBookLink? = nil
+        feedLink: FeedBookLink? = nil,
+        brailleTable: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -403,6 +423,7 @@ struct Book: Identifiable, Codable, Hashable {
         self.metadataReaderVersion = metadataReaderVersion
         self.handEdits = handEdits
         self.feedLink = feedLink
+        self.brailleTable = brailleTable
     }
 
     // Custom decoding to handle missing fields from old library.json.
@@ -478,6 +499,10 @@ struct Book: Identifiable, Codable, Hashable {
         // then a book of the library's own rather than the whole library
         // failing over it.
         feedLink = fields.optionalValue(.feedLink) { $0 }
+        // A braille table name that cannot be read counts as none (FMT21),
+        // so the book reads with the default table instead of the whole
+        // library failing over one damaged field.
+        brailleTable = fields.optionalValue(.brailleTable) { $0 }
     }
 
     /// The .tmb package directory URL: in the library, or, while an import
@@ -923,6 +948,9 @@ struct Book: Identifiable, Codable, Hashable {
     /// (FR11), and otherwise the one the stored record holds, so a row that
     /// never carried a link, or whose link was cleared, never erases it.
     ///
+    /// A braille book's table (`BookMetadata.brailleTable`, FMT21) is kept
+    /// the same way: the stored record's survives a row that lost it.
+    ///
     /// The revision is one more than the stored record's, or one more than
     /// `revisionFloor` when that is higher. The metadata queue passes the
     /// highest revision it has written for this book, so its revisions keep
@@ -944,6 +972,8 @@ struct Book: Identifiable, Codable, Hashable {
         info.state.revision = BookState.revision(after: max(stored?.info.state.revision ?? 0, revisionFloor))
         // The feed item: the row's, or else the stored record's (FR03, FR11).
         info.metadata.feedLink = feedLink ?? stored?.info.metadata.feedLink
+        // The braille table: the row's, or else the stored record's (FMT21).
+        info.metadata.brailleTable = brailleTable ?? stored?.info.metadata.brailleTable
         return info
     }
 
@@ -1002,6 +1032,7 @@ struct Book: Identifiable, Codable, Hashable {
             bookmarks: bookmarks
         )
         info.metadata.feedLink = feedLink
+        info.metadata.brailleTable = brailleTable
         return info
     }
 
@@ -1058,7 +1089,8 @@ struct Book: Identifiable, Codable, Hashable {
             textCacheFingerprint: state.textCacheFingerprint,
             metadataReaderVersion: metadata.metadataReaderVersion,
             handEdits: metadata.handEdits,
-            feedLink: metadata.feedLink
+            feedLink: metadata.feedLink,
+            brailleTable: metadata.brailleTable
         )
     }
 

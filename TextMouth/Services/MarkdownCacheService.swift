@@ -160,7 +160,7 @@ enum MarkdownCacheService {
 
         let extracted: ExtractedCache
         do {
-            extracted = try extractCache(from: fileURL, format: book.format)
+            extracted = try extractCache(from: fileURL, format: book.format, brailleTable: book.brailleTable)
         } catch EPUBParserError.noReadableChapters(let report) {
             // Nothing can be cached, but which chapters could not be read is
             // still worth recording before the failure is passed on.
@@ -443,7 +443,11 @@ enum MarkdownCacheService {
     /// blocks while it runs: like DOCX's regeneration, this runs off the main
     /// thread, in the import queue, startup maintenance, Redo Text
     /// Extraction, and the reader's background load.
-    private static func extractCache(from url: URL, format: BookFormat) throws -> ExtractedCache {
+    /// A braille book (FMT20) is read through liblouis in the braille helper,
+    /// which blocks the same way, with the table the book was imported with
+    /// (`brailleTable`, `Book.brailleTable`; the default table for a book
+    /// that has none), so a rebuild of the cache never changes its text.
+    private static func extractCache(from url: URL, format: BookFormat, brailleTable: String?) throws -> ExtractedCache {
         let markdown: String
         switch format {
         case .epub:
@@ -472,6 +476,8 @@ enum MarkdownCacheService {
             // textutil's HTML holds.
             let extraction = try TextutilDocumentReader.extract(from: url, bookFormat: format)
             return ExtractedCache(markdown: extraction.markdown, title: extraction.title, author: extraction.author)
+        case .braille:
+            markdown = try BrailleBookReader.markdown(of: url, table: brailleTable ?? BrailleTableCatalog.defaultTableID)
         case .daisy:
             markdown = try DAISYParser.extractMarkdown(from: url)
         case .pdf:

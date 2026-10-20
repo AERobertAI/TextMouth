@@ -161,7 +161,7 @@ struct ImportedFileMetadata {
     /// Markdown, or HTML file keeps no title or author it reads.
     static func readsFile(of format: BookFormat) -> Bool {
         switch format {
-        case .epub, .docx, .rtf, .rtfd, .doc, .odt, .wordml, .pdf, .daisy, .audio: return true
+        case .epub, .docx, .rtf, .rtfd, .doc, .odt, .wordml, .braille, .pdf, .daisy, .audio: return true
         case .txt, .markdown, .html, .webarchive, .ssml: return false
         }
     }
@@ -214,6 +214,14 @@ struct ImportedFileMetadata {
             // reading of the text fails with its sentence.
             if readingTextutilNames, let named = try? TextutilDocumentReader.readMetadata(from: url, bookFormat: format) {
                 adopt(title: named.title, author: named.author)
+            }
+        case .braille:
+            // A PEF names its title and author in its head (FMT20); a BRF
+            // or a BRL names nothing, so it keeps its file's name and the
+            // unknown author.
+            if BrailleBookReader.kind(of: url) == .pef {
+                let named = BrailleFileReader.pefMetadata(of: url)
+                adopt(title: named.title ?? "", author: named.author ?? "")
             }
         case .pdf:
             // Title and author from the document's attributes.
@@ -1511,12 +1519,15 @@ enum FileImportService {
 
     /// The formats whose import is refused when the file holds no text
     /// (`FileImportError.noTextToRead`): the plain ones, and the five that
-    /// textutil reads. A rich text, Word, or OpenDocument file whose text is
-    /// only white space (a few empty paragraphs) converts without error, so
-    /// without this it would be added as a silent book. EPUB, DOCX, DAISY,
-    /// and PDF have their own refusals or none.
+    /// textutil reads, and braille books (FMT20), whose reading already
+    /// refuses a file with no blocks, and this refuses a book whose blocks
+    /// translate to nothing but white space. A rich text, Word, or
+    /// OpenDocument file whose text is only white space (a few empty
+    /// paragraphs) converts without error, so without this it would be added
+    /// as a silent book. EPUB, DOCX, DAISY, and PDF have their own refusals
+    /// or none.
     private static let formatsRefusedWhenBlank: Set<BookFormat> = [
-        .txt, .markdown, .html, .webarchive, .ssml, .rtf, .rtfd, .doc, .odt, .wordml,
+        .txt, .markdown, .html, .webarchive, .ssml, .rtf, .rtfd, .doc, .odt, .wordml, .braille,
     ]
 
     /// Whether an import of `book` is refused when the book holds no text:

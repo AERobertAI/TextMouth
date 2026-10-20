@@ -20,7 +20,7 @@ final class DocumentTypeDeclarationTests: XCTestCase {
     }
 
     /// The document types the text formats added (FMT01, FMT03, FMT04, FMT07,
-    /// and FMT13) declare, in the order the Info.plist lists them.
+    /// FMT13, and FMT20) declare, in the order the Info.plist lists them.
     private let declarations = [
         Declaration(name: "Rich Text Document (RTF)", extensions: ["rtf"], contentTypes: ["public.rtf"]),
         Declaration(name: "Rich Text Document with Attachments (RTFD)", extensions: ["rtfd"],
@@ -29,10 +29,13 @@ final class DocumentTypeDeclarationTests: XCTestCase {
                     contentTypes: ["com.microsoft.word.doc", "com.microsoft.word.dot"]),
         Declaration(name: "OpenDocument Text (ODT)", extensions: ["odt", "ott"],
                     contentTypes: ["org.oasis-open.opendocument.text", "org.oasis-open.opendocument.text-template"]),
-        Declaration(name: "XML Document (DTBook or Word 2003 XML)", extensions: ["xml"],
+        Declaration(name: "XML Document (DTBook, Word 2003 XML, or PEF)", extensions: ["xml"],
                     contentTypes: ["public.xml"]),
         Declaration(name: "Web Archive", extensions: ["webarchive"], contentTypes: ["com.apple.webarchive"]),
-        Declaration(name: "SSML Document", extensions: ["ssml"], contentTypes: ["org.w3.ssml"])
+        Declaration(name: "SSML Document", extensions: ["ssml"], contentTypes: ["org.w3.ssml"]),
+        Declaration(name: "BRF Braille File", extensions: ["brf"], contentTypes: ["com.textmouth.brf"]),
+        Declaration(name: "BRL Braille File", extensions: ["brl"], contentTypes: ["com.textmouth.brl"]),
+        Declaration(name: "PEF Braille File", extensions: ["pef"], contentTypes: ["org.daisy.pef"])
     ]
 
     // MARK: - Document types
