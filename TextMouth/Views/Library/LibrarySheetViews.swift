@@ -47,9 +47,9 @@ struct LibraryBookInfoSheet: View {
                 // A braille book names its code (FMT21), which VoiceOver
                 // reads as "Braille Code, Unified English Braille,
                 // contracted (Grade 2)".
-                if let code = book.brailleCodeDescription {
-                    LabeledContent("Braille Code") {
-                        Text(code)
+                if let row = book.bookInfoBrailleCodeRow {
+                    LabeledContent(row.label) {
+                        Text(row.value)
                     }
                 }
                 LabeledContent("Added") {

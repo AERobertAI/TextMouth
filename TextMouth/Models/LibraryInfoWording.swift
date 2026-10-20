@@ -66,6 +66,22 @@ extension Book {
         guard format == .braille else { return nil }
         return BrailleTableCatalog.description(ofTableID: brailleTable ?? BrailleTableCatalog.defaultTableID)
     }
+
+    /// The words of Book Information's "Braille Code" row for this book: the
+    /// label and the code, which VoiceOver reads as "Braille Code, Unified
+    /// English Braille, contracted (Grade 2)". Nil for a book that is not
+    /// braille, which has no such row. The sheet draws the row from this, so
+    /// a test can pin the words without a hosted sheet.
+    var bookInfoBrailleCodeRow: (label: String, value: String)? {
+        brailleCodeDescription.map { (BrailleCodeWording.bookInfoLabel, $0) }
+    }
+}
+
+/// The words around a braille book's code (FMT21), kept together so a test
+/// pins them.
+enum BrailleCodeWording {
+    /// The label of Book Information's row that names a braille book's code.
+    static let bookInfoLabel = "Braille Code"
 }
 
 /// What Speak Info knows of a folder.

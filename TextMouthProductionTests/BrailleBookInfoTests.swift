@@ -66,6 +66,29 @@ final class BrailleBookInfoTests: XCTestCase {
         XCTAssertNil(stray.brailleCodeDescription)
     }
 
+    // MARK: - Book Information's Row
+
+    /// The words of Book Information's "Braille Code" row, which the sheet
+    /// draws from `bookInfoBrailleCodeRow`: its label and the code for a
+    /// braille book (the default table's when it has none of its own), and no
+    /// row for an EPUB. This needs no hosted sheet, whose texts SwiftUI does
+    /// not always expose to a test run.
+    func testTheBookInfoRowIsLabelledBrailleCodeForABrailleBookOnly() throws {
+        XCTAssertEqual(BrailleCodeWording.bookInfoLabel, "Braille Code")
+
+        let row = try XCTUnwrap(brailleBook(table: "en-ueb-g2.ctb").bookInfoBrailleCodeRow)
+        XCTAssertEqual(row.label, "Braille Code")
+        XCTAssertEqual(row.value, "Unified English Braille, contracted (Grade 2)")
+
+        let uncontracted = try XCTUnwrap(brailleBook(table: "en-us-g1.ctb").bookInfoBrailleCodeRow)
+        XCTAssertEqual(uncontracted.value, "English Braille, American Edition, uncontracted (Grade 1)")
+
+        let untabled = try XCTUnwrap(brailleBook(table: nil).bookInfoBrailleCodeRow)
+        XCTAssertEqual(untabled.value, "Unified English Braille, contracted (Grade 2)")
+
+        XCTAssertNil(epubBook().bookInfoBrailleCodeRow)
+    }
+
     // MARK: - Speak Info
 
     /// The full summary of a braille book says its code right after the
