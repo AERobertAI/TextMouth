@@ -123,24 +123,30 @@ final class MacBrailleTableBookTests: XCTestCase {
 
     // MARK: - config.json
 
-    /// config.json may name one of this Mac's tables: one no Mac has is read
-    /// as no choice, which leaves the setting alone; one this Mac offers is
-    /// taken, by its stored value.
+    /// config.json may name one of this Mac's tables, which is taken by its
+    /// stored value without reading this Mac's tables (review R3): one no
+    /// Mac has is kept too, and refused by name when an import uses it; a
+    /// malformed one leaves the setting alone.
     @MainActor
     func testConfigJSONNamesAMacTable() throws {
         func decoded(_ value: String) throws -> String {
             try JSONDecoder().decode(ConfigService.AppConfig.self, from: Data(#"{"brailleTable": "\#(value)"}"#.utf8)).brailleTable
         }
-        XCTAssertEqual(try decoded(gone), "")
+        XCTAssertEqual(try decoded(gone), gone)
+        XCTAssertEqual(try decoded("mac:../escape.ctb"), "")
         let defaults = try isolatedDefaults()
         let service = ConfigService(fileURL: try makeConfigFileURL())
         let settings = SettingsViewModel(
             notificationCenter: NotificationCenter(), initializeServices: false, userDefaults: defaults, configService: service
         )
         var edit = service.config
-        edit.brailleTable = gone
+        edit.brailleTable = "mac:../escape.ctb"
         settings.applyConfigChanges(edit)
         XCTAssertEqual(settings.brailleTable, "en-ueb-g2.ctb")
+        edit.brailleTable = gone
+        settings.applyConfigChanges(edit)
+        XCTAssertEqual(settings.brailleTable, gone)
+        XCTAssertEqual(BraillePreferences.table.read(from: defaults), gone)
 
         let spanish = "mac:es.tbl"
         try XCTSkipIf(BrailleTableCatalog.table(withID: spanish) == nil,

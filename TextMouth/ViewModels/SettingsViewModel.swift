@@ -1087,8 +1087,10 @@ final class SettingsViewModel: ObservableObject {
         // So does an empty language, or one that cannot be an identifier.
         adopt(TranscriptionLanguage.validated(config.transcriptionLocale), into: TranscriptionLanguage.preference)
         adopt(config.offerTranscriptionAfterImport, into: TranscriptionPreferences.offerAfterImport)
-        // An empty or unknown table name leaves the current table alone.
-        adopt(BrailleTableCatalog.table(withID: config.brailleTable)?.id, into: BraillePreferences.table)
+        // An empty or unknown table name leaves the current table alone; a
+        // Mac table's value is taken without reading this Mac's tables
+        // (review R3), and refused by name when it is used if the Mac lacks it.
+        adopt(BrailleTableCatalog.storableValue(config.brailleTable), into: BraillePreferences.table)
         return shortcutsWereRepaired
     }
 

@@ -91,6 +91,51 @@ final class MacBrailleTableCatalogTests: XCTestCase {
         XCTAssertEqual(BraillePreferences.table.read(from: defaults), "en-ueb-g2.ctb")
     }
 
+    /// A stored value is kept when it is a bundled table or names a Mac
+    /// table by a bare file name, without reading this Mac's folder: a Mac
+    /// table no Mac has is kept too, to be refused by name when used
+    /// (review R3).
+    func testStorableValues() {
+        XCTAssertEqual(BrailleTableCatalog.storableValue("en-ueb-g2.ctb"), "en-ueb-g2.ctb")
+        XCTAssertEqual(BrailleTableCatalog.storableValue("mac:no-such-table-on-any-mac.ctb"), "mac:no-such-table-on-any-mac.ctb")
+        for value in ["nonsense.ctb", "", "mac:", "mac:../x.ctb", "en-ueb-chardefs.uti"] {
+            XCTAssertNil(BrailleTableCatalog.storableValue(value), value)
+        }
+    }
+
+    // MARK: - Reading Only the Header (review R3)
+
+    /// Reading a table's metadata reads no more of the file than its header
+    /// needs: a short header before 200 KB of rules costs one read of 4 KB,
+    /// and a header longer than one read is read whole.
+    func testOnlyTheHeaderIsRead() throws {
+        let folder = try makeSandboxDirectory("MacBrailleHeaderOnly")
+        let short = folder.appendingPathComponent("short.ctb")
+        let rules = String(repeating: "always the 2346-1-2346\n", count: 9_000)
+        try ("#+language:fr\n#+type:literary\ninclude chars.uti\n" + rules).write(to: short, atomically: true, encoding: .utf8)
+        XCTAssertEqual(BrailleTableCatalog.headerData(ofTableAt: short).count, BrailleTableCatalog.headerChunkBytes)
+        XCTAssertEqual(BrailleTableCatalog.metadata(ofTableAt: short), ["language": "fr", "type": "literary"])
+
+        // A header of more than one read: every field is found, and the
+        // reading stops in the read that holds the first rule line.
+        let long = folder.appendingPathComponent("long.ctb")
+        let comments = String(repeating: "# a comment line of some length\n", count: 200)
+        try ("#+language:de\n" + comments + "#+type:literary\ninclude chars.uti\n" + rules).write(to: long, atomically: true, encoding: .utf8)
+        XCTAssertEqual(BrailleTableCatalog.metadata(ofTableAt: long), ["language": "de", "type": "literary"])
+        XCTAssertEqual(BrailleTableCatalog.headerData(ofTableAt: long).count, 2 * BrailleTableCatalog.headerChunkBytes)
+        XCTAssertEqual(BrailleTableCatalog.headerData(ofTableAt: folder.appendingPathComponent("missing.ctb")), Data())
+    }
+
+    /// The background load makes the offered codes, which then hold the
+    /// bundled tables first.
+    func testTheBackgroundLoadMakesTheOfferedCodes() async {
+        await BrailleTableCatalog.loadInBackground().value
+        XCTAssertEqual(
+            Array(BrailleTableCatalog.offeredTables.prefix(BrailleTableCatalog.bundled.count)).map(\.id),
+            BrailleTableCatalog.bundled.map(\.id)
+        )
+    }
+
     // MARK: - Which Files Are Offered
 
     /// Both sources share one set of rules: a literary table of six dots or

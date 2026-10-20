@@ -235,16 +235,28 @@ enum BrailleTableCatalog {
     /// with each run of white space made one space; the first value of a
     /// key wins.
     static func metadata(fromHeader text: String) -> [String: String] {
+        headerFields(of: text).fields
+    }
+
+    /// The fields of `text`'s header, as `metadata(fromHeader:)` reads them,
+    /// and whether the header's end, a line that is neither blank nor a
+    /// comment, is in `text`. Lines are looked at one at a time from the top,
+    /// and none past the header's end is split off (review R3), so a table
+    /// of 64 KB costs no more than its header.
+    private static func headerFields(of text: String) -> (fields: [String: String], ended: Bool) {
         var fields: [String: String] = [:]
-        for rawLine in text.split(whereSeparator: \.isNewline) {
-            let line = rawLine.trimmingCharacters(in: .whitespaces)
+        var rest = text[...]
+        while !rest.isEmpty {
+            let end = rest.firstIndex(where: \.isNewline) ?? rest.endIndex
+            let line = rest[..<end].trimmingCharacters(in: .whitespaces)
+            rest = end == rest.endIndex ? rest[end...] : rest[rest.index(after: end)...]
             if line.isEmpty { continue }
             // The first line of anything but comment ends the header.
-            guard line.hasPrefix("#") else { break }
+            guard line.hasPrefix("#") else { return (fields, true) }
             guard let (key, value) = field(inCommentLine: line), fields[key] == nil else { continue }
             fields[key] = value
         }
-        return fields
+        return (fields, false)
     }
 
     /// The key and value a comment line holds, or nil when it is a plain
@@ -264,14 +276,32 @@ enum BrailleTableCatalog {
         return (key, value)
     }
 
-    /// The fields in the header of the table file at `url`, read from its
-    /// first `maximumHeaderBytes` bytes (UTF-8, with invalid bytes
-    /// replaced). A file that cannot be read has none.
+    /// How many bytes of a table file are read at a time for its header: a
+    /// header is a few hundred bytes, so one read nearly always holds it.
+    static let headerChunkBytes = 4_096
+
+    /// The fields in the header of the table file at `url` (UTF-8, with
+    /// invalid bytes replaced), from the bytes `headerData(ofTableAt:)`
+    /// reads. A file that cannot be read has none.
     static func metadata(ofTableAt url: URL) -> [String: String] {
-        guard let handle = try? FileHandle(forReadingFrom: url) else { return [:] }
+        headerFields(of: String(decoding: headerData(ofTableAt: url), as: UTF8.self)).fields
+    }
+
+    /// The first bytes of the table file at `url`, read `headerChunkBytes`
+    /// at a time until they hold the header's end (review R3), the file
+    /// ends, or `maximumHeaderBytes` are read: no more of the file than its
+    /// header needs. Empty for a file that cannot be read.
+    static func headerData(ofTableAt url: URL) -> Data {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return Data() }
         defer { try? handle.close() }
-        guard let data = try? handle.read(upToCount: maximumHeaderBytes) else { return [:] }
-        return metadata(fromHeader: String(decoding: data, as: UTF8.self))
+        var data = Data()
+        while data.count < maximumHeaderBytes,
+              let chunk = try? handle.read(upToCount: min(headerChunkBytes, maximumHeaderBytes - data.count)),
+              !chunk.isEmpty {
+            data.append(chunk)
+            if headerFields(of: String(decoding: data, as: UTF8.self)).ended { break }
+        }
+        return data
     }
 
     // MARK: Tables
@@ -495,6 +525,33 @@ enum BrailleTableCatalog {
         }
     }
 
+    /// The value the setting and config.json keep for `value`: a bundled
+    /// table's file name when the bundle offers it, and a Mac table's value
+    /// as it is when it names one by a bare file name
+    /// (`BrailleTableSource.isMacValue(_:)`); nil for anything else. It
+    /// never reads this Mac's folder (review R3), so reading the setting or
+    /// decoding config.json, which happens on the main thread at every
+    /// launch, never reads the Mac's table headers. A Mac table this Mac
+    /// does not offer is kept so, and refused by name when it is used
+    /// (decision 5).
+    static func storableValue(_ value: String) -> String? {
+        if BrailleTableSource.isMacValue(value) { return value }
+        return bundled.first { $0.id == value }?.id
+    }
+
+    /// Reads this Mac's tables, and makes the offered codes, on a background
+    /// task (review R3): the app asks once at launch, so the Braille tab,
+    /// Export's braille options, and Book Info find them made and never read
+    /// the Mac's 485 table headers on the main thread. Asking again, or
+    /// using them meanwhile, reads nothing twice: Swift makes each `static
+    /// let` once, and a thread that needs one while another makes it waits.
+    @discardableResult
+    static func loadInBackground() -> Task<Void, Never> {
+        Task.detached(priority: .utility) {
+            _ = offeredTables
+        }
+    }
+
     /// The table braille is read and written with until one is chosen:
     /// Unified English Braille, contracted (the user's choice, October 17).
     static let defaultTableID = "en-ueb-g2.ctb"
@@ -702,12 +759,7 @@ enum BraillePreferences {
     static let table = StoredPreference<String>(
         key: "brailleTable",
         read: { store, key in
-            guard let stored = store.string(forKey: key),
-                  BrailleTableSource.isMacValue(stored) || BrailleTableCatalog.table(withID: stored) != nil
-            else {
-                return BrailleTableCatalog.defaultTableID
-            }
-            return stored
+            store.string(forKey: key).flatMap(BrailleTableCatalog.storableValue) ?? BrailleTableCatalog.defaultTableID
         },
         write: { id, store, key in store.set(id, forKey: key) }
     )

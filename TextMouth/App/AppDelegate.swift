@@ -71,6 +71,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // And for an afinfo orphaned mid-read, and the hidden `.watched-output`
         // files older than an hour that it (or a killed app) left behind.
         OrphanedConversionSweep.sweepAfinfoInBackground()
+        // This Mac's VoiceOver braille tables are read once, off the main
+        // thread, so the Braille tab, Export, and Book Info find them ready.
+        BrailleTableCatalog.loadInBackground()
         // The hidden copy a data-directory move staged beside its
         // destination is removed when the move ends; when the destination's
         // volume was unplugged or the app force-quit, it was not. The
