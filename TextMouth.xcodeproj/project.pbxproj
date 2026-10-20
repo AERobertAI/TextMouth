@@ -1048,6 +1048,7 @@
 		EF201F0849109958AEC128B7 /* TranscriptDeletion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A266D14E5F47C51DBE339582 /* TranscriptDeletion.swift */; };
 		EF2819408490A168E37A09B7 /* AudioFileInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73377647AE4360CFDBEFD209 /* AudioFileInfo.swift */; };
 		EF29685D3661E9A7ADDF6D0C /* AudioDirectoryImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7B5C9E379A21CF1A377B17A /* AudioDirectoryImportTests.swift */; };
+		EF3F0E3C164B88B12AA35F3B /* MacBrailleTableCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B135D639620E6AFB866BA7BE /* MacBrailleTableCatalogTests.swift */; };
 		EF6583234490117B3D1AB84B /* NeroChapterReaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F966DCB889D6205B134EAE6 /* NeroChapterReaderTests.swift */; };
 		EFD58266429FEADAC1118971 /* TranscriptionJobCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2407E683442CCA65E8DA7B /* TranscriptionJobCenter.swift */; };
 		EFEB4830BEB53C274FA370ED /* AudioEditListTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E72A671B175010808B02B6E6 /* AudioEditListTests.swift */; };
@@ -1997,6 +1998,7 @@
 		B0A08D74C351B71DD984E214 /* DAISYAudioTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DAISYAudioTests.swift; sourceTree = "<group>"; };
 		B0CE51BFB689CBF4303F135F /* CompletionGenerationReaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionGenerationReaderTests.swift; sourceTree = "<group>"; };
 		B0E7DFC7DA4B15C1FF0227CF /* SpeakInfoShortcutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakInfoShortcutTests.swift; sourceTree = "<group>"; };
+		B135D639620E6AFB866BA7BE /* MacBrailleTableCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacBrailleTableCatalogTests.swift; sourceTree = "<group>"; };
 		B14660DC6960F2C8B25397B7 /* lou_backTranslateString.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = lou_backTranslateString.c; sourceTree = "<group>"; };
 		B15A2B20C0938F0817168E2C /* RecordingTake.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingTake.swift; sourceTree = "<group>"; };
 		B176EFC20EB9C8A6BEE63212 /* SettingsTabFitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTabFitTests.swift; sourceTree = "<group>"; };
@@ -3319,6 +3321,7 @@
 				7737CBC22E37E0A50EFE0839 /* LogTestSupport.swift */,
 				9A0A2769737DFEEFA52348F7 /* LogWriteSafetyTests.swift */,
 				22214DEEBC1166F8B81251D8 /* M3UPlaylistTests.swift */,
+				B135D639620E6AFB866BA7BE /* MacBrailleTableCatalogTests.swift */,
 				B4F32AB3DA0F671C6BC0A243 /* ManualOrderRearrangingTests.swift */,
 				96C3CE7A47FA15F716CC1AAB /* MarkdownTableReadingTests.swift */,
 				29579D025E7BA9A74D8CD948 /* MediaCommandPlaybackTests.swift */,
@@ -4291,6 +4294,7 @@
 				36C912295E8CD024460FCD5D /* LogsSettingsSectionTests.swift in Sources */,
 				DDE401150A283A9A871D6158 /* M3UPlaylistTests.swift in Sources */,
 				63FB5830267D30C2A3674A08 /* MP3EncoderTests.swift in Sources */,
+				EF3F0E3C164B88B12AA35F3B /* MacBrailleTableCatalogTests.swift in Sources */,
 				A9ECB9D052834E627365F468 /* ManualOrderRearrangingTests.swift in Sources */,
 				6231DDA46A3CB9AFF7CCDEFC /* ManualOrderTests.swift in Sources */,
 				641C7DA4F39D0DF30DDBAC26 /* MarkdownTableReadingTests.swift in Sources */,
