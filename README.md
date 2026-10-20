@@ -15,7 +15,7 @@ TextMouth no longer plays Ogg audio (.ogg, .oga, or .opus) itself. On October 14
 - [Adding books](docs/user/adding-books.md): Open Book, Finder, ZIP archives, Import Folder… for DAISY books and folders of tracks, New from Text.
 - [The Library window](docs/user/library-window.md): categories, folders, sorting, searching, and the commands on books.
 - [Reader windows](docs/user/reader-windows.md): playing, navigating, bookmarks, Where Am I?, and the sleep timer.
-- [Exporting books](docs/user/exporting-books.md): what Export copies out of the library, and the Convert to menu that makes a text book's text HTML, RTF, or a Word 97-2003 document.
+- [Exporting books](docs/user/exporting-books.md): what Export copies out of the library, and the Convert to menu that makes a text book's text HTML, RTF, a Word 97-2003 document, or a braille file (BRF or PEF).
 - [Editing a book's text](docs/user/editing-book-text.md): Edit Text in your own editor.
 - [Transcribing an audiobook](docs/user/transcribing.md): Transcribe Audio and Clean Up Transcript, on macOS 26 and later.
 - [Settings](docs/user/settings.md): every tab of the Settings window.
