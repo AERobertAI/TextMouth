@@ -71,9 +71,10 @@ final class BrailleFileReaderTests: XCTestCase {
             copyOfFormatSample("pef/pride-and-prejudice-ch1-grade1.pef"), as: .pef)
         XCTAssertEqual(brf.kind, .brf)
         XCTAssertNil(brf.title)
-        XCTAssertEqual(brf.pages.count, 2)
-        guard brf.pages.count == 2 else { return }
         XCTAssertEqual(brf.pages.map(\.count), [25, 25])
+        // Rows 1 and 25 of page 1 are read below, so both pages' rows are
+        // counted before any row is.
+        guard brf.pages.map(\.count) == [25, 25] else { return }
         XCTAssertEqual(BrailleCells.spaced(brf.pages[0][0]), "         ⠠⠏⠗⠊⠙⠑ ⠁⠝⠙ ⠠⠏⠗⠑⠚⠥⠙⠊⠉⠑")
         XCTAssertEqual(brf.pages[0][24], String(repeating: blank, count: 38) + "⠼⠁")
         XCTAssertEqual(brf.pages, pefPages.pages)
