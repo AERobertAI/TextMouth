@@ -278,6 +278,14 @@ final class BrailleExportWriterTests: XCTestCase {
         XCTAssertEqual(BraillePageFormat.linesPerPageRange, 4...50)
     }
 
+    /// The Export dialog's two buttons say what they do now that Export
+    /// converts as well as copies, and that Stop keeps no part of the file
+    /// being made.
+    func testTheExportAndStopHintsAreCurrent() {
+        XCTAssertEqual(BookExportWording.exportHint, "Exports the checked items to the folder.")
+        XCTAssertEqual(BookExportWording.stopHint, "Stops the export. The file being made is not kept.")
+    }
+
     // MARK: - Options
 
     /// The writers start from the user's October 17 defaults with the
