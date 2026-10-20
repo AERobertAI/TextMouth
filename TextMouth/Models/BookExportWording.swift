@@ -114,7 +114,8 @@ enum BookExportWording {
     /// size ("about" for reading text, made from the Markdown it is sized
     /// by); and what is in the cloud. As in "Original file, 1.2 MB", "Audio,
     /// 12 files, 340 MB", "Audio, 2 books, 680 MB, 1 book in the cloud", or
-    /// "Text as Markdown, in the cloud".
+    /// "Text as Markdown, in the cloud". A converted text says no size:
+    /// "Text as HTML", "Text as RTF, 2 books, 1 book in the cloud".
     /// - Parameters:
     ///   - kind: The checkbox's kind.
     ///   - bookCount: How many books the dialog exports from.
@@ -123,8 +124,11 @@ enum BookExportWording {
     ///   - byteCount: Their size in bytes.
     ///   - inCloudCount: How many books hold it only in the cloud.
     ///   - conversionName: The name of the writer the kind's text is
-    ///     converted to ("HTML"), which the label says and sizes as "about"
-    ///     like reading text; nil for the kind as it is.
+    ///     converted to ("HTML"), which the label says and leaves the size
+    ///     out for: a converted file's size is not known until it is written,
+    ///     and the Markdown's would mislead (RTF of Cyrillic text is about
+    ///     3.2 times larger, Word 97-2003 two or more times); nil for the
+    ///     kind as it is.
     static func choiceLabel(
         kind: BookExportKind,
         bookCount: Int,
@@ -143,9 +147,11 @@ enum BookExportWording {
         } else if fileCount > 1 {
             parts.append(CountWording.phrase(fileCount, singular: "file", plural: "files"))
         }
-        if availableItemCount > 0 {
+        // A converted file's size is unknown until it is written, and the
+        // Markdown's would mislead, so a conversion says none.
+        if availableItemCount > 0, !converted {
             let size = ByteCountFormatter.string(fromByteCount: byteCount, countStyle: .file)
-            parts.append(kind == .plainText || converted ? "about \(size)" : size)
+            parts.append(kind == .plainText ? "about \(size)" : size)
         }
         if inCloudCount > 0 {
             parts.append(bookCount > 1 ? "\(CountWording.books(inCloudCount)) in the cloud" : "in the cloud")

@@ -57,9 +57,10 @@ final class BookExportConvertToTests: XCTestCase {
         }
     }
 
-    /// A converted checkbox's label names the conversion and sizes it as
-    /// "about", for one book and for several; without a conversion, every
-    /// label is today's.
+    /// A converted checkbox's label names the conversion and says no size (a
+    /// converted file's size is not known until it is written), for one book
+    /// and for several; without a conversion, every label is today's, size
+    /// included.
     func testAConvertedChoiceLabel() {
         let size = ByteCountFormatter.string(fromByteCount: 1_200_000, countStyle: .file)
         XCTAssertEqual(
@@ -67,14 +68,14 @@ final class BookExportConvertToTests: XCTestCase {
                 kind: .markdown, bookCount: 1, availableItemCount: 1, fileCount: 1, byteCount: 1_200_000,
                 inCloudCount: 0, convertedTo: "HTML"
             ),
-            "Text as HTML, about \(size)"
+            "Text as HTML"
         )
         XCTAssertEqual(
             BookExportWording.choiceLabel(
                 kind: .markdown, bookCount: 3, availableItemCount: 2, fileCount: 2, byteCount: 1_200_000,
                 inCloudCount: 1, convertedTo: "RTF"
             ),
-            "Text as RTF, 2 books, about \(size), 1 book in the cloud"
+            "Text as RTF, 2 books, 1 book in the cloud"
         )
         XCTAssertEqual(
             BookExportWording.choiceLabel(
@@ -170,7 +171,7 @@ final class BookExportConvertToTests: XCTestCase {
 
         XCTAssertEqual(model.conversionID(for: .markdown), "html")
         XCTAssertEqual(model.conversionChoice(for: .markdown)?.name, "HTML")
-        XCTAssertEqual(model.label(for: markdownChoice), "Text as HTML, about \(size)")
+        XCTAssertEqual(model.label(for: markdownChoice), "Text as HTML", "a conversion says no size")
         XCTAssertEqual(
             model.hint(for: .markdown),
             "The book's text as HTML, made from the Markdown TextMouth reads it from."
