@@ -308,6 +308,18 @@ final class ParserContentFidelityTests: XCTestCase {
         XCTAssertEqual(MarkdownLiteral.escaped("a\u{FEFF}b"), "a&#xFEFF;b")
     }
 
+    /// Letters, digits, and marks of every script are flanking-safe beside
+    /// an emphasis delimiter; white space, punctuation, symbols, and
+    /// controls are not, ASCII or not.
+    func testMarkdownLiteralFlankingSafeCharacters() {
+        for safe in "aZ\u{E9}\u{3B1}\u{416}\u{5D0}\u{4E2D}\u{2B0}09\u{663}\u{2160}\u{BD}\u{301}\u{903}\u{20DD}".unicodeScalars {
+            XCTAssertTrue(MarkdownLiteral.isFlankingSafe(safe), "U+\(String(safe.value, radix: 16))")
+        }
+        for unsafe in " \t\n\u{A0}\u{2003}*_\\.,!?\"'()[]\u{2014}\u{201C}\u{2026}\u{A7}$+\u{20AC}\u{2192}\u{1F600}\u{0}\u{7F}".unicodeScalars {
+            XCTAssertFalse(MarkdownLiteral.isFlankingSafe(unsafe), "U+\(String(unsafe.value, radix: 16))")
+        }
+    }
+
     /// The invariant on one book that mixes every heading style, every
     /// construct the cache used to reinterpret, Unicode, inner tabs, and all
     /// line endings: the direct and cached readings are one text with one

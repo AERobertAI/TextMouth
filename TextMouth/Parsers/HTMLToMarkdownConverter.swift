@@ -619,7 +619,7 @@ enum HTMLToMarkdownConverter {
             let scalar = scalars[lower]
             if scalar == "\\" {
                 lower = scalars.index(lower, offsetBy: 2, limitedBy: upper) ?? upper
-            } else if scalar == " " || (!scalar.isASCII && !isFlankingSafe(scalar)) {
+            } else if scalar == " " || (!scalar.isASCII && !MarkdownLiteral.isFlankingSafe(scalar)) {
                 lower = scalars.index(after: lower)
             } else {
                 break
@@ -629,7 +629,7 @@ enum HTMLToMarkdownConverter {
         while upper > lower {
             let last = scalars.index(before: upper)
             let scalar = scalars[last]
-            if scalar == " " || (!scalar.isASCII && !isFlankingSafe(scalar)) {
+            if scalar == " " || (!scalar.isASCII && !MarkdownLiteral.isFlankingSafe(scalar)) {
                 upper = last
             } else if MarkdownLiteral.isASCIIPunctuation(scalar), isEscaped(last, in: scalars, notBefore: lower) {
                 upper = scalars.index(before: last)
@@ -641,23 +641,9 @@ enum HTMLToMarkdownConverter {
         let previous = lower > scalars.startIndex ? scalars[scalars.index(before: lower)] : nil
         let followsBoundary = previous.map { $0 == " " || $0 == "\n" || MarkdownLiteral.isASCIIPunctuation($0) } ?? true
         guard previous != "*",
-              isFlankingSafe(scalars[lower]) || followsBoundary,
-              isFlankingSafe(scalars[scalars.index(before: upper)]) else { return nil }
+              MarkdownLiteral.isFlankingSafe(scalars[lower]) || followsBoundary,
+              MarkdownLiteral.isFlankingSafe(scalars[scalars.index(before: upper)]) else { return nil }
         return InlineSpan(contentStart: contentStart, lower: lower, upper: upper)
-    }
-
-    /// Letters, digits, and marks. CommonMark counts none of them as
-    /// whitespace or punctuation, so a delimiter beside one is flanking on
-    /// that side whatever stands on its other side.
-    private static func isFlankingSafe(_ scalar: Unicode.Scalar) -> Bool {
-        switch scalar.properties.generalCategory {
-        case .uppercaseLetter, .lowercaseLetter, .titlecaseLetter, .modifierLetter, .otherLetter,
-             .decimalNumber, .letterNumber, .otherNumber,
-             .nonspacingMark, .spacingMark, .enclosingMark:
-            return true
-        default:
-            return false
-        }
     }
 
     /// Whether the ASCII punctuation at `index` is escaped: an odd number of
