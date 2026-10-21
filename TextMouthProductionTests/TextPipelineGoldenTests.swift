@@ -52,7 +52,7 @@ final class TextPipelineGoldenTests: XCTestCase {
         "frankenstein.html": "ca20689835e6a4af",
         "hyperion_daisy.zip": "538946f073739b22",
         "lathe_of_heaven_daisy.zip": "01eb5d0b116fe9b4",
-        "navigation.epub": "7fb5af1466eab9ab",
+        "navigation.epub": "81a7213b61c9db3a",
         "ncx.epub": "f7ee1d34be3f7637",
         "pride.txt": "b66f077f6e38e5db",
         "sample.md": "2d9a584acbd95311",
@@ -168,7 +168,7 @@ final class TextPipelineGoldenTests: XCTestCase {
         "navigation.epub": (
             markdown: [
                 "c65f192e68d054e3",
-                "bfde0f8260eb0068",
+                "058f65047c591628",
                 "ba5a0ebb74638753",
                 "3c6cb98a64eaf8e7",
                 "fc43daeac9c69ca8",

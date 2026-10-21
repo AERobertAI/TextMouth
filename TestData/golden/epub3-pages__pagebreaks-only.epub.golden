@@ -1,0 +1,16 @@
+# TextMouth document golden, format 2
+file: epub3-pages__pagebreaks-only.epub
+format: epub
+title: Survey Notes
+author: Ingrid Vasquez-Holm
+chapters: 1
+words: 39
+text length: 243
+text checksum: ea4f1c9910834f24
+first 300: Survey Notes\n\nThe first sheet closes with the tide tables. The second sheet opens with the gauge readings.\n\nNothing was written here. The unmarked break joins two sentences.\n\nSurvey Methods\n\nReadings were taken at noon. Each was checked twice.
+last 300: Survey Notes\n\nThe first sheet closes with the tide tables. The second sheet opens with the gauge readings.\n\nNothing was written here. The unmarked break joins two sentences.\n\nSurvey Methods\n\nReadings were taken at noon. Each was checked twice.
+heading: 1 | Survey Notes
+heading: 2 | Survey Methods
+page: 5 | 0:59 | The second sheet opens w
+page: 6 | 0:175 | Survey Methods\n\nReadings
+page: 7 | 0:220 | Each was checked twice.
