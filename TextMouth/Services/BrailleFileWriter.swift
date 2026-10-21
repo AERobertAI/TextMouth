@@ -44,6 +44,26 @@ enum BrailleFileWriter {
     /// The form feed that ends a page in a BRF file.
     private static let formFeed: UInt8 = 0x0C
 
+    // MARK: Eight Dots
+
+    /// Why braille cannot be written to a BRF or PEF file (review R1): it
+    /// holds an eight-dot cell, which TextMouth's six-dot files cannot hold
+    /// and never write as its six-dot part. The sentence names the print
+    /// character the table writes with that cell when it is known
+    /// (`BrailleDocumentWriter` finds it), and the cell's dots otherwise.
+    struct EightDotCell: LocalizedError, Equatable, Sendable {
+        /// The cell, U+2840 to U+28FF, but never liblouis's escape backslash.
+        let cell: Unicode.Scalar
+        /// The print character the table writes with the cell, when known.
+        var character: Character?
+
+        var errorDescription: String? {
+            let what = character.map { "writes \u{201C}\($0)\u{201D} as an eight-dot cell" }
+                ?? "writes an eight-dot cell, \(BrailleCells.dotsInWords(of: cell))"
+            return "The braille table \(what), and TextMouth writes BRF and PEF files in six-dot braille only."
+        }
+    }
+
     // MARK: BRF
 
     /// `pages` as the bytes of a BRF file: every row as North American
@@ -51,17 +71,20 @@ enum BrailleFileWriter {
     /// and one form feed between pages and none after the last. The result is
     /// ASCII only.
     ///
-    /// A BRF has six dots to a cell. A cell with dot 7 or 8 (U+2840 to
-    /// U+28FF) is written as its six-dot part, its value with dots 7 and 8
-    /// cleared, and a scalar that is no braille pattern is written as a blank
-    /// cell, so that no row loses its columns (`sixDotCells(of:)`, which the
-    /// PEF writer uses too). Trailing blank cells of a row are not written.
-    static func brf(pages: [[String]], lineEnd: BrailleLineEnd = .crlf) -> Data {
+    /// A BRF has six dots to a cell. liblouis's escape backslash (U+2873)
+    /// is written as ⠳; any other cell with dot 7 or 8 is refused, never
+    /// written as its six-dot part (review R1); and a scalar that is no
+    /// braille pattern is written as a blank cell, so that no row loses its
+    /// columns (`sixDotCells(of:)`, which the PEF writer uses too). Trailing
+    /// blank cells of a row are not written.
+    /// - Throws: `EightDotCell` for an eight-dot cell other than the escape
+    ///   backslash.
+    static func brf(pages: [[String]], lineEnd: BrailleLineEnd = .crlf) throws -> Data {
         var bytes: [UInt8] = []
         for (index, page) in pages.enumerated() {
             if index > 0 { bytes.append(formFeed) }
             for row in page {
-                bytes.append(contentsOf: asciiBytes(of: row))
+                bytes.append(contentsOf: try asciiBytes(of: row))
                 bytes.append(contentsOf: lineEnd.bytes)
             }
         }
@@ -69,36 +92,42 @@ enum BrailleFileWriter {
     }
 
     /// `row` as braille ASCII bytes, without its trailing blank cells.
-    private static func asciiBytes(of row: String) -> [UInt8] {
+    /// - Throws: `EightDotCell`, as `sixDotCells(of:)` does.
+    private static func asciiBytes(of row: String) throws -> [UInt8] {
         // A six-dot cell always has a braille ASCII character; the blank
         // cell's is the space.
-        sixDotCells(of: row).map { BrailleCells.ascii(for: $0) ?? UInt8(ascii: " ") }
+        try sixDotCells(of: row).map { BrailleCells.ascii(for: $0) ?? UInt8(ascii: " ") }
     }
 
-    /// The cells of `row` as TextMouth writes them to a file: each reduced to
-    /// its six-dot part (`sixDotPart(of:)`), and the cells after the last
-    /// one that is not blank left out. A cell that is blank once its dots 7
-    /// and 8 are cleared counts as blank, so a row never ends in cells that
-    /// look empty.
+    /// The cells of `row` as TextMouth writes them to a file
+    /// (`sixDotCell(of:)`), and the cells after the last one that is not
+    /// blank left out.
     ///
     /// TextMouth writes and reads six-dot braille only, in both formats, so
-    /// that a BRF and a PEF of the same pages hold the same cells. This
-    /// matters for liblouis's escape notation for a character a table lacks
-    /// (an emoji, Chinese, Cyrillic): it writes the escape's backslash as the
-    /// eight-dot cell U+2873, which becomes ⠳, braille ASCII's own backslash,
-    /// and TextMouth's reader accepts the file. A PEF that kept U+2873 would
-    /// be refused on import as eight-dot braille.
-    private static func sixDotCells(of row: String) -> [Unicode.Scalar] {
-        var cells = row.unicodeScalars.map(sixDotPart(of:))
+    /// that a BRF and a PEF of the same pages hold the same cells. liblouis's
+    /// escape notation for a character a table lacks (an emoji, Chinese,
+    /// Cyrillic) writes the escape's backslash as the eight-dot cell U+2873,
+    /// which becomes ⠳, braille ASCII's own backslash, and TextMouth's reader
+    /// accepts the file (review finding M6); a PEF that kept U+2873 would be
+    /// refused on import as eight-dot braille. Any other eight-dot cell is a
+    /// table's own, and dropping its dots 7 and 8 would change what it
+    /// means, so the row is refused instead (review R1).
+    /// - Throws: `EightDotCell` for an eight-dot cell other than U+2873.
+    private static func sixDotCells(of row: String) throws -> [Unicode.Scalar] {
+        var cells = try row.unicodeScalars.map(sixDotCell(of:))
         while cells.last == BrailleCells.blank { cells.removeLast() }
         return cells
     }
 
-    /// The six-dot cell of `scalar`: the same cell with dots 7 and 8
-    /// cleared, or the blank cell for a scalar that is no braille pattern.
-    private static func sixDotPart(of scalar: Unicode.Scalar) -> Unicode.Scalar {
+    /// The six-dot cell `scalar` is written as: itself for a six-dot cell,
+    /// ⠳ for liblouis's escape backslash, and the blank cell for a scalar
+    /// that is no braille pattern.
+    /// - Throws: `EightDotCell` for any other eight-dot cell.
+    private static func sixDotCell(of scalar: Unicode.Scalar) throws -> Unicode.Scalar {
         guard BrailleCells.isPattern(scalar) else { return BrailleCells.blank }
-        // The low six bits of a pattern are dots 1 to 6.
+        guard BrailleCells.usesEightDots(scalar) else { return scalar }
+        guard scalar == BrailleCells.escapeBackslash else { throw EightDotCell(cell: scalar) }
+        // The low six bits of a pattern are dots 1 to 6: ⠳.
         return Unicode.Scalar(BrailleCells.blank.value + (scalar.value & 0x3F)) ?? BrailleCells.blank
     }
 
@@ -109,12 +138,14 @@ enum BrailleFileWriter {
     /// per row, with a blank row as `<row/>`. The rows hold Unicode braille
     /// cells of six dots, as a BRF does (`sixDotCells(of:)`; a scalar that
     /// is no braille pattern becomes a blank cell, as PEF allows nothing
-    /// else), tabs indent, and every line ends in LF.
+    /// else, and an eight-dot cell but the escape backslash is refused),
+    /// tabs indent, and every line ends in LF.
     ///
     /// The head holds the metadata, each text XML-escaped; an empty author
     /// leaves out `dc:creator`. The volume's size is `format` held to its
     /// ranges, as the layout holds it.
-    static func pef(pages: [[String]], metadata: PEFMetadata, format: BraillePageFormat) -> Data {
+    /// - Throws: `EightDotCell`, as `brf(pages:lineEnd:)` does.
+    static func pef(pages: [[String]], metadata: PEFMetadata, format: BraillePageFormat) throws -> Data {
         let format = format.clamped
         var lines = [
             #"<?xml version="1.0" encoding="UTF-8"?>"#,
@@ -142,7 +173,7 @@ enum BrailleFileWriter {
         for page in pages {
             lines.append("\t\t\t\t<page>")
             for row in page {
-                let cells = sixDotCells(of: row)
+                let cells = try sixDotCells(of: row)
                 if cells.isEmpty {
                     lines.append("\t\t\t\t\t<row/>")
                 } else {

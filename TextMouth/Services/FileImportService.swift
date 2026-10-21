@@ -913,6 +913,9 @@ enum FileImportService {
             try run.begin(.copying, in: staging.directory)
             let stagedFile = try stageContent(of: sourceURL, format: format, package: package, in: staging.directory)
 
+            // A braille book's table, read from the setting once, so the
+            // version recorded with it is that table's (review R2).
+            let brailleTable = format == .braille ? BraillePreferences.importTable() : nil
             let staged = Book(
                 id: bookID,
                 title: metadata.title,
@@ -946,8 +949,10 @@ enum FileImportService {
                 handEdits: .noneSinceImport,
                 // A braille book keeps the table it is read with (FMT21): the
                 // Braille setting's, as it stands for this import. Every
-                // later reading of the book uses this one.
-                brailleTable: format == .braille ? BraillePreferences.importTable() : nil
+                // later reading of the book uses this one, and one of this
+                // Mac's tables keeps the Mac's liblouis version too (review R2).
+                brailleTable: brailleTable,
+                brailleTableVersion: brailleTable.flatMap(BrailleTableCatalog.versionToRecord(forTable:))
             )
             var imported = try publishReadableBook(
                 staged, from: staging, run: &run, refusingBlankText: true, adoptingDocumentNames: true

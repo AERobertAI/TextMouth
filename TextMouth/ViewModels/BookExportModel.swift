@@ -364,6 +364,10 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// - Returns: What the export did; nil when it could not start.
     @discardableResult
     func export(announcingFrom window: NSWindow? = nil) async -> BookExportOutcome? {
+        // A braille table just chosen in the options may still be checked;
+        // the export waits, so it writes with the table the pop-ups show
+        // once the check has passed, or the one they returned to (review R5).
+        await BrailleTableChoiceChecks.shared.finished()
         guard canExport else { return nil }
         let kinds = checked
         // The conversions are read here, on the main actor, with the options

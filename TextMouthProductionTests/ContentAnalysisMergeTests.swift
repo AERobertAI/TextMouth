@@ -835,7 +835,8 @@ final class ContentAnalysisMergeTests: XCTestCase {
                 sinceImport: seed.isMultiple(of: 2)
             ),
             feedLink: FeedBookLink(feedID: UUID(), itemID: "item-\(seed)"),
-            brailleTable: "table-\(seed).ctb"
+            brailleTable: "table-\(seed).ctb",
+            brailleTableVersion: "liblouis-\(seed)"
         )
     }
 

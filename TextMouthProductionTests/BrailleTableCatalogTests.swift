@@ -49,7 +49,7 @@ final class BrailleTableCatalogTests: XCTestCase {
     /// contracted table, named as the listener hears them.
     func testTheCodesAndTheirWords() {
         let codes = BrailleTableCatalog.bundledCodes
-        XCTAssertEqual(codes.map(\.id), ["en/ebae", "en/ueb"])
+        XCTAssertEqual(codes.map(\.id), ["en/English Braille, American Edition", "en/Unified English Braille"])
         XCTAssertEqual(codes.map(\.name), ["English Braille, American Edition", "Unified English Braille"])
         for code in codes {
             XCTAssertEqual(code.tables.map(\.contraction), [.no, .full], code.id)
@@ -69,7 +69,7 @@ final class BrailleTableCatalogTests: XCTestCase {
         )
         XCTAssertEqual(BrailleTableCatalog.description(ofTableID: "en-xx.ctb"), "en-xx.ctb")
         if let table = BrailleTableCatalog.table(withID: "en_US.tbl") {
-            XCTAssertEqual(BrailleTableCatalog.code(of: table)?.id, "en/ebae")
+            XCTAssertEqual(BrailleTableCatalog.code(of: table)?.id, "en/English Braille, American Edition")
         } else {
             XCTFail("en_US.tbl is not bundled")
         }
@@ -159,9 +159,11 @@ final class BrailleTableCatalogTests: XCTestCase {
     }
 
     /// A forward-only table, a non-literary one, one with no display name,
-    /// and one with an unknown contraction are left out, as are included
-    /// files and a stray file; a table that reads both ways, with the
-    /// direction said or not, is offered.
+    /// one with no language, and one with an unknown contraction are left
+    /// out, as are included files and a stray file; a table that reads both
+    /// ways, with the direction said or not, is offered, and so is one that
+    /// names no system (October 20, 2026: many of this Mac's tables name
+    /// none), which sorts first with an empty one.
     func testOnlyUsableTablesAreOffered() throws {
         let folder = try makeSandboxDirectory("BrailleOffered")
         try writeTable("a-forward.ctb", fields: offeredFields() + ["direction:forward"], in: folder)
@@ -180,7 +182,8 @@ final class BrailleTableCatalogTests: XCTestCase {
             at: folder.appendingPathComponent("j-folder.ctb"), withIntermediateDirectories: false
         )
 
-        XCTAssertEqual(BrailleTableCatalog.tables(in: folder).map(\.id), ["h-both.ctb", "i-silent.ctb"])
+        XCTAssertEqual(BrailleTableCatalog.tables(in: folder).map(\.id), ["g-no-system.ctb", "h-both.ctb", "i-silent.ctb"])
+        XCTAssertEqual(BrailleTableCatalog.tables(in: folder).first?.system, "")
         XCTAssertEqual(BrailleTableCatalog.tables(in: folder.appendingPathComponent("nowhere")), [])
     }
 
@@ -213,7 +216,7 @@ final class BrailleTableCatalogTests: XCTestCase {
 
         let codes = BrailleTableCatalog.codes(of: BrailleTableCatalog.tables(in: folder))
         XCTAssertEqual(codes.map(\.name), ["Klingon braille"])
-        XCTAssertEqual(codes.map(\.id), ["en/xyz"])
+        XCTAssertEqual(codes.map(\.id), ["en/Klingon braille"])
 
         // The other phrases, and a name that has none, are handled too.
         func name(_ displayName: String) -> String? {

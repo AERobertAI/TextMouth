@@ -3,11 +3,14 @@ import SwiftUI
 import XCTest
 @testable import TextMouth
 
-/// The Braille tab of Settings (FMT21): the tab itself, its two pop-ups
-/// (the braille code and its contraction) with their labels and hints, what
-/// they show and store, and every sentence it speaks. Each test's settings
-/// live in a sandboxed preferences store and a config.json of the test's
-/// own; nothing touches the real ones.
+/// The Braille tab of Settings (FMT21): the tab itself, its three pop-ups
+/// (the language, the braille code, and its contraction; the language since
+/// October 20, 2026) with their labels and hints, what they show and store,
+/// this Mac's tables taken only once their check passes, and every sentence
+/// it speaks. Each test's settings live in a sandboxed preferences store and
+/// a config.json of the test's own; nothing touches the real ones. The
+/// hosted tests show the bundled codes unless they say otherwise, so their
+/// pop-ups list the same items on any Mac.
 @MainActor
 final class BrailleSettingsViewTests: XCTestCase {
 
@@ -32,11 +35,13 @@ final class BrailleSettingsViewTests: XCTestCase {
 
     // MARK: - The Pop-ups
 
-    /// Both pop-ups are found by their labels, with their hints exactly.
+    /// The three pop-ups are found by their labels, with their hints exactly.
     func testThePopUpsAreLabelledAndHinted() throws {
         try skipUnlessHostedWindowsExposeAccessibility()
         try withBrailleTab(settings: makeSettings()) { hosting, _ in
             let controls = accessibleControls(in: hosting)
+            let language = try control(labelled: "Language", in: controls)
+            XCTAssertEqual(language.hint, "The language of the braille code TextMouth reads braille files with and writes braille in.")
             let code = try control(labelled: "Braille code", in: controls)
             XCTAssertEqual(code.hint, "The braille code TextMouth reads braille files with and writes braille in.")
             let contraction = try control(labelled: "Contraction", in: controls)
@@ -47,21 +52,22 @@ final class BrailleSettingsViewTests: XCTestCase {
         }
     }
 
-    /// With the default setting, the code shown is Unified English Braille
-    /// and the contraction Contracted (Grade 2).
+    /// With the default setting, the language shown is English, the code
+    /// Unified English Braille, and the contraction Contracted (Grade 2).
     func testTheDefaultShowsUnifiedEnglishBrailleContracted() throws {
         try withBrailleTab(settings: makeSettings()) { hosting, _ in
-            let (code, contraction) = try popUps(in: hosting)
+            let (language, code, contraction) = try popUps(in: hosting)
+            XCTAssertEqual(language.titleOfSelectedItem, english)
             XCTAssertEqual(code.titleOfSelectedItem, "Unified English Braille")
             XCTAssertEqual(contraction.titleOfSelectedItem, "Contracted (Grade 2)")
         }
     }
 
-    /// The code pop-up offers each bundled code by name, with no language
-    /// grouping while there is only one language.
+    /// The code pop-up offers each bundled code by name.
     func testTheCodePopUpOffersTheBundledCodes() throws {
         try withBrailleTab(settings: makeSettings()) { hosting, _ in
-            let (code, _) = try popUps(in: hosting)
+            let (language, code, _) = try popUps(in: hosting)
+            XCTAssertEqual(language.itemTitles, [english])
             XCTAssertEqual(code.itemTitles, ["English Braille, American Edition", "Unified English Braille"])
         }
     }
@@ -74,7 +80,7 @@ final class BrailleSettingsViewTests: XCTestCase {
             let settings = try makeSettings()
             settings.brailleTable = table
             try withBrailleTab(settings: settings) { hosting, _ in
-                let (_, contraction) = try popUps(in: hosting)
+                let (_, _, contraction) = try popUps(in: hosting)
                 XCTAssertEqual(contraction.itemTitles, expected, "for \(table)")
             }
         }
@@ -88,7 +94,7 @@ final class BrailleSettingsViewTests: XCTestCase {
         let settings = try makeSettings(defaults: defaults)
         XCTAssertEqual(settings.brailleTable, "en-ueb-g2.ctb")
         try withBrailleTab(settings: settings) { hosting, _ in
-            let (code, _) = try popUps(in: hosting)
+            let (_, code, _) = try popUps(in: hosting)
             let american = try XCTUnwrap(code.itemTitles.firstIndex(of: "English Braille, American Edition"))
             code.menu?.performActionForItem(at: american)
             XCTAssertTrue(waitUntil { settings.brailleTable == "en_US.tbl" }, "choosing the code kept \(settings.brailleTable)")
@@ -99,12 +105,12 @@ final class BrailleSettingsViewTests: XCTestCase {
                 hosting.layoutSubtreeIfNeeded()
                 // Not `popUps(in:)`, which asserts: a redraw in between may
                 // show fewer pop-ups for a moment, and the wait retries.
-                guard let (code, contraction) = self.popUpPair(in: hosting) else { return false }
+                guard let (_, code, contraction) = self.popUpTriple(in: hosting) else { return false }
                 return code.titleOfSelectedItem == "English Braille, American Edition"
                     && contraction.titleOfSelectedItem == "Contracted (Grade 2)"
             }, "the pop-ups did not follow the new code")
 
-            let (_, contraction) = try popUps(in: hosting)
+            let (_, _, contraction) = try popUps(in: hosting)
             let uncontracted = try XCTUnwrap(contraction.itemTitles.firstIndex(of: "Uncontracted (Grade 1)"))
             contraction.menu?.performActionForItem(at: uncontracted)
             XCTAssertTrue(waitUntil { settings.brailleTable == "en-us-g1.ctb" }, "choosing the contraction kept \(settings.brailleTable)")
@@ -134,6 +140,83 @@ final class BrailleSettingsViewTests: XCTestCase {
         }
     }
 
+    // MARK: - This Mac's Tables in the Pop-ups
+
+    /// With a language of this Mac's beside English, the language pop-up
+    /// lists English first; the code pop-up lists only the shown language's
+    /// codes.
+    func testTheLanguagePopUpListsEnglishFirst() throws {
+        try withBrailleTab(settings: makeSettings(), codes: codesWithAFixtureMacLanguage()) { hosting, _ in
+            let (language, code, _) = try popUps(in: hosting)
+            XCTAssertEqual(language.itemTitles, [english, french])
+            XCTAssertEqual(language.titleOfSelectedItem, english)
+            XCTAssertEqual(code.itemTitles, ["English Braille, American Edition", "Unified English Braille"])
+        }
+    }
+
+    /// Choosing a Mac table whose check fails takes nothing: the setting
+    /// keeps its table, the pop-ups return to it, and VoiceOver hears the
+    /// table's name and why. The fixture's table is on no Mac, so its check
+    /// finds it gone without running the helper.
+    func testARefusedMacTableIsNotTakenAndVoiceOverHearsWhy() throws {
+        let defaults = try isolatedDefaults()
+        let settings = try makeSettings(defaults: defaults)
+        var heard: [String] = []
+        let previousPoster = VoiceOverAnnouncer.poster
+        VoiceOverAnnouncer.poster = { announcement, _ in heard.append(announcement.message) }
+        defer { VoiceOverAnnouncer.poster = previousPoster }
+        let expected = "TextMouth can't use this Mac's table \u{201C}Fixture French contracted braille\u{201D}: this Mac no longer has it."
+
+        try withBrailleTab(settings: settings, codes: codesWithAFixtureMacLanguage()) { hosting, _ in
+            let (language, _, _) = try popUps(in: hosting)
+            let frenchItem = try XCTUnwrap(language.itemTitles.firstIndex(of: french))
+            language.menu?.performActionForItem(at: frenchItem)
+            XCTAssertTrue(waitUntil(timeout: 5) { heard.contains(expected) }, "VoiceOver heard \(heard)")
+            XCTAssertEqual(settings.brailleTable, "en-ueb-g2.ctb")
+            XCTAssertEqual(BraillePreferences.table.read(from: defaults), "en-ueb-g2.ctb")
+            XCTAssertTrue(waitUntil {
+                hosting.layoutSubtreeIfNeeded()
+                guard let (language, code, contraction) = self.popUpTriple(in: hosting) else { return false }
+                return language.titleOfSelectedItem == self.english && code.titleOfSelectedItem == "Unified English Braille"
+                    && contraction.titleOfSelectedItem == "Contracted (Grade 2)"
+            }, "the pop-ups did not return to the table in use")
+        }
+    }
+
+    /// Choosing French on this Mac takes its contracted table, keeping the
+    /// contraction, once the real check passes, and stores it with the Mac
+    /// prefix, in the preferences store and in config.json.
+    func testChoosingThisMacsFrenchTakesItOnceItsCheckPasses() throws {
+        try XCTSkipIf(BrailleTableCatalog.table(withID: "mac:fr-bfu-g2.ctb") == nil,
+                      "This Mac does not offer its French contracted table (\(BrailleTableCatalog.macTablesFolder.path))")
+        let defaults = try isolatedDefaults()
+        let url = try makeConfigFileURL()
+        let service = ConfigService(fileURL: url)
+        let settings = SettingsViewModel(
+            notificationCenter: NotificationCenter(), initializeServices: false, userDefaults: defaults, configService: service
+        )
+        let checkRoot = try makeSandboxDirectory("BrailleTabFrenchCheck")
+        try withBrailleTab(settings: settings, codes: BrailleTableCatalog.offeredCodes, checkRoot: checkRoot) { hosting, _ in
+            let (language, _, _) = try popUps(in: hosting)
+            XCTAssertEqual(language.itemTitles.first, english)
+            let frenchItem = try XCTUnwrap(language.itemTitles.firstIndex(of: french))
+            language.menu?.performActionForItem(at: frenchItem)
+            XCTAssertTrue(waitUntil(timeout: 10) { settings.brailleTable == "mac:fr-bfu-g2.ctb" }, "the table is \(settings.brailleTable)")
+            XCTAssertTrue(waitUntil {
+                hosting.layoutSubtreeIfNeeded()
+                guard let (language, code, contraction) = self.popUpTriple(in: hosting) else { return false }
+                return language.titleOfSelectedItem == self.french && code.titleOfSelectedItem == "French braille"
+                    && contraction.titleOfSelectedItem == "Contracted (Grade 2)"
+            }, "the pop-ups did not show French")
+        }
+        service.flushScheduledSave()
+        // The check worked in the sandbox's folder, and left nothing there.
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: checkRoot.path), [])
+        XCTAssertEqual(BraillePreferences.table.read(from: defaults), "mac:fr-bfu-g2.ctb")
+        let saved = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any]
+        XCTAssertEqual(saved?["brailleTable"] as? String, "mac:fr-bfu-g2.ctb")
+    }
+
     // MARK: - The Choices
 
     /// Choosing a code keeps the contraction when the code has it, else
@@ -152,15 +235,17 @@ final class BrailleSettingsViewTests: XCTestCase {
         XCTAssertNil(BrailleSettingsChoice.table(in: code("d", []), matching: g1))
     }
 
-    /// Codes group by language in the order each language first appears.
-    func testCodesGroupByLanguage() {
-        let english = code("en/x", [table("en-x", .full)], language: "en")
-        let german = code("de/y", [table("de-y", .full)], language: "de")
-        let englishToo = code("en/z", [table("en-z", .full)], language: "en")
-        let groups = BrailleSettingsChoice.languageGroups(of: [english, german, englishToo])
-        XCTAssertEqual(groups.map(\.language), ["en", "de"])
-        XCTAssertEqual(groups.map { $0.codes.map(\.id) }, [["en/x", "en/z"], ["de/y"]])
-        XCTAssertEqual(BrailleSettingsChoice.languageGroups(of: []).count, 0)
+    /// Choosing a language takes the table of its code that holds the
+    /// default table, else of its first code, keeping the contraction where
+    /// it can; a language with no codes gives none.
+    func testTheTableChosenForALanguage() throws {
+        let english = try XCTUnwrap(BrailleTableCatalog.languages(of: BrailleTableCatalog.bundledCodes).first)
+        // English's first code is the American one, but the default's code wins.
+        XCTAssertEqual(BrailleSettingsChoice.table(in: english, matching: table("x-g1", .no))?.id, "en-ueb-g1.ctb")
+        XCTAssertEqual(BrailleSettingsChoice.table(in: english, matching: nil)?.id, "en-ueb-g2.ctb")
+        let other = BrailleLanguage(id: "xx", name: "X", codes: [code("x/one", [table("x-g1", .no), table("x-g2", .full)])])
+        XCTAssertEqual(BrailleSettingsChoice.table(in: other, matching: table("y-g1", .no))?.id, "x-g1")
+        XCTAssertNil(BrailleSettingsChoice.table(in: BrailleLanguage(id: "zz", name: "Z", codes: []), matching: nil))
     }
 
     // MARK: - The Wording
@@ -169,6 +254,11 @@ final class BrailleSettingsViewTests: XCTestCase {
     func testEveryWordingConstantIsPinned() {
         XCTAssertEqual(BrailleSettingsWording.tabTitle, "Braille")
         XCTAssertEqual(BrailleSettingsWording.sectionHeader, "Braille")
+        XCTAssertEqual(BrailleSettingsWording.languageLabel, "Language")
+        XCTAssertEqual(
+            BrailleSettingsWording.languageHint,
+            "The language of the braille code TextMouth reads braille files with and writes braille in."
+        )
         XCTAssertEqual(BrailleSettingsWording.codeLabel, "Braille code")
         XCTAssertEqual(
             BrailleSettingsWording.codeHint,
@@ -186,7 +276,69 @@ final class BrailleSettingsViewTests: XCTestCase {
         XCTAssertEqual(BrailleSettingsWording.noTables, "TextMouth found no braille tables in its bundle.")
     }
 
+    /// The sentence that says where the chosen table comes from, for a
+    /// bundled table, a Mac one with and without a known version, and a Mac
+    /// one this Mac no longer has.
+    func testTheSourceSentences() {
+        XCTAssertEqual(
+            BrailleSettingsWording.source(ofTable: "en-ueb-g2.ctb", isOffered: true, macLiblouisVersion: "3.34.0"),
+            "The chosen table is built into TextMouth (liblouis 3.39.0)."
+        )
+        XCTAssertEqual(
+            BrailleSettingsWording.source(ofTable: "mac:fr-bfu-g2.ctb", isOffered: true, macLiblouisVersion: "3.34.0"),
+            "The chosen table is one of this Mac's VoiceOver braille tables (liblouis 3.34.0)."
+        )
+        XCTAssertEqual(
+            BrailleSettingsWording.source(ofTable: "mac:fr-bfu-g2.ctb", isOffered: true, macLiblouisVersion: nil),
+            "The chosen table is one of this Mac's VoiceOver braille tables."
+        )
+        XCTAssertEqual(
+            BrailleSettingsWording.source(ofTable: "mac:fr-bfu-g2.ctb", isOffered: false, macLiblouisVersion: "3.34.0"),
+            "This Mac no longer has the chosen table, \u{201C}mac:fr-bfu-g2.ctb\u{201D}; choose another."
+        )
+    }
+
+    /// The sentence VoiceOver hears for each refusal of a chosen Mac table.
+    func testTheRefusalSentences() {
+        let name = "Greek braille"
+        XCTAssertEqual(
+            BrailleSettingsWording.refusal(ofTableNamed: name, because: .doesNotLoad),
+            "TextMouth can't use this Mac's table \u{201C}Greek braille\u{201D}: it does not load in TextMouth's liblouis 3.39.0."
+        )
+        XCTAssertEqual(
+            BrailleSettingsWording.refusal(ofTableNamed: name, because: .writesEightDots),
+            "TextMouth can't use this Mac's table \u{201C}Greek braille\u{201D}: it writes eight-dot braille, and TextMouth uses six-dot braille only."
+        )
+        XCTAssertEqual(
+            BrailleSettingsWording.refusal(ofTableNamed: name, because: .gone),
+            "TextMouth can't use this Mac's table \u{201C}Greek braille\u{201D}: this Mac no longer has it."
+        )
+        XCTAssertEqual(
+            BrailleSettingsWording.refusal(ofTableNamed: name, because: .helperFailed),
+            "TextMouth could not check this Mac's table \u{201C}Greek braille\u{201D}: the braille helper failed. Choose it again to try once more."
+        )
+    }
+
     // MARK: - Fixtures
+
+    /// English and French in the user's own language, as the language
+    /// pop-up names them.
+    private var english: String { Locale.current.localizedString(forIdentifier: "en") ?? "en" }
+    private var french: String { Locale.current.localizedString(forIdentifier: "fr") ?? "fr" }
+
+    /// The bundled codes and a French code of this Mac's whose tables no Mac
+    /// has: an uncontracted and a contracted one.
+    private func codesWithAFixtureMacLanguage() -> [BrailleCode] {
+        let tables = ["no": "Fixture French uncontracted braille", "full": "Fixture French contracted braille"]
+            .sorted { $0.key > $1.key }
+            .map { contraction, name in
+                BrailleTable(
+                    id: "mac:fixture-fr-\(contraction).ctb", displayName: name, indexName: nil, language: "fr",
+                    system: "", contraction: Contraction(rawValue: contraction) ?? .no, grade: nil
+                )
+            }
+        return BrailleTableCatalog.bundledCodes + BrailleTableCatalog.codes(of: tables)
+    }
 
     /// A settings model on a sandboxed store (the test's own, or `defaults`)
     /// and a config.json of the test's own.
@@ -200,39 +352,50 @@ final class BrailleSettingsViewTests: XCTestCase {
         )
     }
 
-    /// Hosts the tab at the Settings window's size, waits until both
-    /// pop-ups are drawn, and passes the hosting view to `body`.
+    /// Hosts the tab, showing `codes`, at the Settings window's size, waits
+    /// until its three pop-ups are drawn, and passes the hosting view to
+    /// `body`. A Mac table chosen there is checked with verdicts of the
+    /// test's own, in a working folder made in `checkRoot` (a sandbox folder
+    /// of its own when nil), given through the environment, so neither
+    /// depends on when SwiftUI calls the pop-ups' bindings (review R8).
     private func withBrailleTab(
         settings: SettingsViewModel,
+        codes: [BrailleCode] = BrailleTableCatalog.bundledCodes,
+        checkRoot: URL? = nil,
         _ body: (NSView, SettingsViewModel) throws -> Void
     ) throws {
-        let view = BrailleSettingsView()
+        let context = BrailleTableCheckContext(
+            verdicts: MacBrailleTableCheck.Verdicts(),
+            temporaryRoot: try checkRoot ?? makeSandboxDirectory("BrailleTabCheck")
+        )
+        let view = BrailleSettingsView(codes: codes)
+            .environment(\.brailleTableCheck, context)
             .environmentObject(settings)
             .frame(width: SettingsView.windowSize.width, height: SettingsView.windowSize.height)
         try withHostedView(
             view,
             size: NSSize(width: SettingsView.windowSize.width, height: SettingsView.windowSize.height),
-            until: { self.descendants(of: $0, as: NSPopUpButton.self).count == 2 }
+            until: { self.descendants(of: $0, as: NSPopUpButton.self).count == 3 }
         ) { hosting in
             try body(hosting, settings)
         }
     }
 
-    /// The code pop-up and the contraction pop-up, in reading order.
-    private func popUps(in hosting: NSView) throws -> (code: NSPopUpButton, contraction: NSPopUpButton) {
+    /// The language, code, and contraction pop-ups, in reading order.
+    private func popUps(in hosting: NSView) throws -> (language: NSPopUpButton, code: NSPopUpButton, contraction: NSPopUpButton) {
         let found = descendants(of: hosting, as: NSPopUpButton.self)
-        // A failure, not a skip: the tab must draw both pop-ups.
-        XCTAssertEqual(found.count, 2, "expected two pop-ups")
-        return (try XCTUnwrap(found.first), try XCTUnwrap(found.last))
+        // A failure, not a skip: the tab must draw all three pop-ups.
+        XCTAssertEqual(found.count, 3, "expected three pop-ups")
+        return (try XCTUnwrap(found.first), try XCTUnwrap(found.dropFirst().first), try XCTUnwrap(found.last))
     }
 
-    /// The same two pop-ups as `popUps(in:)`, or nil unless exactly two are
-    /// drawn, with no assertion: for a `waitUntil` condition, which is asked
-    /// again until it holds and must not record a failure on the way.
-    private func popUpPair(in hosting: NSView) -> (code: NSPopUpButton, contraction: NSPopUpButton)? {
+    /// The same three pop-ups as `popUps(in:)`, or nil unless exactly three
+    /// are drawn, with no assertion: for a `waitUntil` condition, which is
+    /// asked again until it holds and must not record a failure on the way.
+    private func popUpTriple(in hosting: NSView) -> (language: NSPopUpButton, code: NSPopUpButton, contraction: NSPopUpButton)? {
         let found = descendants(of: hosting, as: NSPopUpButton.self)
-        guard found.count == 2, let first = found.first, let last = found.last else { return nil }
-        return (first, last)
+        guard found.count == 3 else { return nil }
+        return (found[0], found[1], found[2])
     }
 
     /// A table for the choice tests.

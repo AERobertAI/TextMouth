@@ -115,6 +115,20 @@ final class BrailleBookInfoTests: XCTestCase {
         XCTAssertFalse(fullSummary(of: epubBook()).contains("Braille code"))
     }
 
+    /// A book of one of this Mac's tables is named by its code, how far it
+    /// contracts, and its language (October 20, 2026, decision 8), in Book
+    /// Information's row and in Speak Info, from the one expression both use.
+    func testAMacTableIsNamedWithItsLanguage() throws {
+        try XCTSkipIf(BrailleTableCatalog.table(withID: "mac:fr-bfu-g2.ctb") == nil,
+                      "This Mac does not offer its French contracted table (\(BrailleTableCatalog.macTablesFolder.path))")
+        let language = Locale.current.localizedString(forIdentifier: "fr") ?? "fr"
+        let words = "French braille, contracted (Grade 2), in \(language)"
+        let book = brailleBook(table: "mac:fr-bfu-g2.ctb")
+        XCTAssertEqual(book.brailleCodeDescription, words)
+        XCTAssertEqual(book.bookInfoBrailleCodeRow?.value, words)
+        XCTAssertTrue(fullSummary(of: book).contains("Braille code: \(words)."), fullSummary(of: book))
+    }
+
     /// The braille part sits between the bookmarks and the parts after them
     /// (the file size, the cloud note), in `fullParts`'s own order.
     func testThePartsPutTheCodeAfterTheBookmarks() throws {

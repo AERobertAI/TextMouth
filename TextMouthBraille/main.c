@@ -24,13 +24,17 @@
  *   U+28FF), the blank cell U+2800 included; a space is never braille.
  *
  * The table is a bare file name, such as en-ueb-g2.ctb, of a table in the
- * tables folder, which is the app bundle's own (Contents/Resources/liblouis/
- * tables). The folder, the input, and the output are absolute paths. The
- * helper changes into the folder, sets LOUIS_TABLEPATH to "." and loads the
- * table by its bare name, so liblouis resolves every include there, no path
- * it sees holds a comma (it splits paths at commas), and it never reads a
- * table installed elsewhere on the Mac (see TABLESDIR in
- * Vendor/liblouis/config.h). It then changes into /var/empty.
+ * tables folder: the app bundle's own (Contents/Resources/liblouis/tables),
+ * or, for one of this Mac's VoiceOver tables (October 20, 2026), the Mac's
+ * own liblouis folder, which the app names (BrailleTableCatalog
+ * .macTablesFolder) and reads in place. The folder, the input, and the
+ * output are absolute paths. The helper changes into the folder, sets
+ * LOUIS_TABLEPATH to "." and loads the table by its bare name, so liblouis
+ * resolves every include there, no path it sees holds a comma (it splits
+ * paths at commas), and it never reads a table installed elsewhere on the
+ * Mac (see TABLESDIR in Vendor/liblouis/config.h). One run reads one folder,
+ * never both, so a Mac table's includes come from the Mac's own liblouis
+ * version. It then changes into /var/empty.
  *
  * Exit status: 0 done; 1 the arguments are wrong; 2 the table cannot be
  * loaded (no such table in the folder, or it does not compile); 3 the input

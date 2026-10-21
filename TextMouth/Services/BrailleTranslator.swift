@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 /// Translates paragraphs between print and braille through liblouis (FMT21).
 ///
@@ -52,6 +53,15 @@ enum BrailleTranslator {
         /// The helper could not translate: it is missing, could not start,
         /// failed, or wrote something other than one line for each piece.
         case failed
+        /// One of this Mac's tables could not be checked before its use, for
+        /// the reason `why` gives (`MacBrailleTableCheck`, review R7). The
+        /// table is not refused: the next use checks it again.
+        case uncheckedTable(String, why: String)
+        /// A book was read with one of this Mac's tables under liblouis
+        /// `then`, and the Mac's tables now have version `now` (nil when they
+        /// name none): reading the book again could move its text, so it is
+        /// refused (review R2, decision 8).
+        case changedTable(String, then: String, now: String?)
 
         var errorDescription: String? {
             switch self {
@@ -61,6 +71,14 @@ enum BrailleTranslator {
                 return "TextMouth stopped the braille translation because \(reason)."
             case .failed:
                 return "TextMouth could not translate this braille."
+            case let .uncheckedTable(name, why):
+                return "TextMouth could not check this Mac's braille table \u{201C}\(name)\u{201D}: \(why). Try again."
+            case let .changedTable(name, then, now?):
+                return "This Mac's braille table \u{201C}\(name)\u{201D} has changed since the book was read with it, "
+                    + "from liblouis \(then) to \(now), so TextMouth keeps the book's text as it was."
+            case let .changedTable(name, then, nil):
+                return "This Mac's braille table \u{201C}\(name)\u{201D} may have changed since the book was read with "
+                    + "liblouis \(then), so TextMouth keeps the book's text as it was."
             }
         }
     }
@@ -72,8 +90,10 @@ enum BrailleTranslator {
     /// and tight limits.
     struct Tool: Sendable {
         /// The executable and arguments of a run in `mode` ("forward",
-        /// "back", or "check") on `table`, reading `input` and writing
-        /// `output` (both nil for "check"); nil when the helper is missing.
+        /// "back", or "check") on `table`, a stored value
+        /// (`BrailleTableSource`), reading `input` and writing `output` (both
+        /// nil for "check"); nil when the helper or the table's folder is
+        /// missing.
         var command: @Sendable (_ mode: String, _ table: String, _ input: URL?, _ output: URL?)
             -> (executable: URL, arguments: [String])?
         /// What the watchdog allows a run in `direction` (nil for "check")
@@ -86,16 +106,26 @@ enum BrailleTranslator {
         var tablesFolder: URL?
 
         /// The helper built into the app: `Contents/MacOS/TextMouthBraille`,
-        /// reading the tables in `Contents/Resources/liblouis/tables`.
+        /// reading the bundled tables in `Contents/Resources/liblouis/tables`
+        /// and this Mac's in its own folder
+        /// (`BrailleTableCatalog.macTablesFolder`).
         static let helper: Tool = {
             let executable = Bundle.main.url(forAuxiliaryExecutable: "TextMouthBraille")
             let tables = Bundle.main.resourceURL?.appendingPathComponent("liblouis/tables", isDirectory: true)
             return Tool(
                 command: { mode, table, input, output in
-                    guard let executable, let tables else { return nil }
+                    // The stored value names the table's folder (decision 6):
+                    // one of this Mac's tables is loaded from inside the
+                    // Mac's folder, by its bare file name, exactly as a
+                    // bundled one is from the bundle's. A run reads one
+                    // folder, never both, so a table's includes come from its
+                    // own liblouis version.
+                    let (source, fileName) = BrailleTableSource.parse(table)
+                    let folder: URL? = source == .mac ? BrailleTableCatalog.macTablesFolder : tables
+                    guard let executable, let folder else { return nil }
                     // The helper's usage: `mode tables table [input output]`.
                     let files = [input, output].compactMap { $0?.path }
-                    return (executable, [mode, tables.path, table] + files)
+                    return (executable, [mode, folder.path, fileName] + files)
                 },
                 limits: { BrailleTranslator.limits(for: $0, bytes: $1) },
                 residentMemory: { WatchedProcess.residentMemory(of: $0) },
@@ -109,6 +139,67 @@ enum BrailleTranslator {
     /// read on the caller's thread, as `TextutilConverter.tool` is: a
     /// detached task does not inherit it.
     @TaskLocal static var tool: Tool = .helper
+
+    // MARK: Measuring
+
+    /// The measure of the runs one of this Mac's tables makes in its check
+    /// (`MacBrailleTableCheck`, review R1). Each measured run keeps the
+    /// tool's time limits, but may hold memory up to `memoryCeiling`, and
+    /// the watchdog reads the child's memory every `pollInterval` so that a
+    /// run of a fraction of a second is measured too. The measure keeps the
+    /// most resident memory any reading saw, how long the last run took, and
+    /// why the watchdog stopped a run, if it did. The watchdog reads memory
+    /// on its own thread, so the readings are kept behind a lock.
+    final class RunMeasure: Sendable {
+        /// The most resident memory a measured run may hold, in bytes.
+        let memoryCeiling: Int64
+        /// How often the watchdog reads a measured run's memory, in seconds.
+        let pollInterval: TimeInterval
+
+        /// The readings so far.
+        private struct Readings: Sendable {
+            var peakResidentBytes: Int64 = 0
+            var lastRunSeconds: TimeInterval = 0
+            var stop: WatchedProcess.KillReason?
+        }
+        private let readings = OSAllocatedUnfairLock(initialState: Readings())
+
+        /// A measure allowing `memoryCeiling` bytes, reading every
+        /// `pollInterval` seconds.
+        init(memoryCeiling: Int64, pollInterval: TimeInterval) {
+            self.memoryCeiling = memoryCeiling
+            self.pollInterval = pollInterval
+        }
+
+        /// The most resident memory any reading of any run saw, in bytes.
+        var peakResidentBytes: Int64 { readings.withLock { $0.peakResidentBytes } }
+        /// How long the last measured run took, in seconds, start to end.
+        var lastRunSeconds: TimeInterval { readings.withLock { $0.lastRunSeconds } }
+        /// Why the watchdog stopped a measured run, if it stopped one.
+        var stop: WatchedProcess.KillReason? { readings.withLock { $0.stop } }
+
+        /// `limits` as a measured run gets them: memory up to the ceiling,
+        /// and read every `pollInterval` (or more often, if they say so).
+        fileprivate func measuring(_ limits: WatchedProcess.Limits) -> WatchedProcess.Limits {
+            var measured = limits
+            measured.maximumResidentBytes = memoryCeiling
+            measured.pollInterval = min(limits.pollInterval, pollInterval)
+            return measured
+        }
+
+        fileprivate func note(memory bytes: Int64?) {
+            guard let bytes else { return }
+            readings.withLock { $0.peakResidentBytes = max($0.peakResidentBytes, bytes) }
+        }
+
+        fileprivate func note(seconds: TimeInterval) {
+            readings.withLock { $0.lastRunSeconds = seconds }
+        }
+
+        fileprivate func note(stop reason: WatchedProcess.KillReason) {
+            readings.withLock { $0.stop = reason }
+        }
+    }
 
     // MARK: Limits
 
@@ -133,6 +224,11 @@ enum BrailleTranslator {
     /// table lacks is written as an escape of several cells of 3 bytes each,
     /// which for Cyrillic is 11 times the input's bytes in all four tables
     /// and for control characters 24 times, above the old 10 times.
+    ///
+    /// These were measured with the bundled English tables. One of this
+    /// Mac's tables may need more, so its runs get these raised to fit what
+    /// its check measured, and never lowered (`MacBrailleTableCheck
+    /// .limits(for:raising:direction:bytes:)`, review R1).
     static func limits(for direction: Direction?, bytes: Int64) -> WatchedProcess.Limits {
         let megabytes = Double(bytes) / 1_000_000
         let seconds: TimeInterval
@@ -172,9 +268,15 @@ enum BrailleTranslator {
     /// its word breaks into pieces (`pieces(of:direction:)`) and translated
     /// piece by piece; no UEB or EBAE contraction spans a blank cell, so a
     /// cut there changes no translation.
+    ///
+    /// One of this Mac's tables is used only once its check passes, made
+    /// before its first use in the session (`MacBrailleTableCheck`,
+    /// decision 5); a table that fails it, or is gone, is refused by name, as
+    /// an unknown table is. A call with no work checks nothing.
     /// - Parameters:
-    ///   - table: The file name of one of the tables TextMouth offers
-    ///     (`BrailleTableCatalog`), such as "en-ueb-g2.ctb".
+    ///   - table: The stored value of one of the tables TextMouth offers
+    ///     (`BrailleTableCatalog`), such as "en-ueb-g2.ctb" or
+    ///     "mac:fr-bfu-g2.ctb".
     ///   - direction: Which way to translate.
     /// - Throws: `Failure`, `ImportCancelled` when the import is cancelled
     ///   meanwhile, and `CancellationError` for any other cancelled task.
@@ -183,6 +285,22 @@ enum BrailleTranslator {
         table: String,
         direction: Direction,
         workingIn folder: URL
+    ) throws -> [String] {
+        try translate(texts, table: table, direction: direction, workingIn: folder, checksMacTable: true)
+    }
+
+    /// `translate(_:table:direction:workingIn:)`, checking one of this Mac's
+    /// tables first unless `checksMacTable` is false: only the check's own
+    /// runs pass false (`MacBrailleTableCheck.check`), which would otherwise
+    /// check themselves forever, and they pass a `measure` too, which the
+    /// helper's run is measured by (review R1).
+    static func translate(
+        _ texts: [String],
+        table: String,
+        direction: Direction,
+        workingIn folder: URL,
+        checksMacTable: Bool,
+        measure: RunMeasure? = nil
     ) throws -> [String] {
         try requireOfferedTable(table)
         let id = UUID().uuidString
@@ -215,9 +333,12 @@ enum BrailleTranslator {
         // No work, no run: an empty list, or only empty texts, has no pieces.
         guard layout.pieceCount > 0 else { return texts.map { _ in "" } }
 
+        // One of this Mac's tables runs only once its check has passed.
+        if checksMacTable { try MacBrailleTableCheck.requireUsable(table, workingIn: folder) }
+
         try runHelper(
             mode: direction.rawValue, table: table, input: input, output: output,
-            watching: output, inputBytes: writer.bytesWritten, direction: direction
+            watching: output, inputBytes: writer.bytesWritten, direction: direction, measure: measure
         )
 
         // The output has one line for each piece, in order.
@@ -237,10 +358,11 @@ enum BrailleTranslator {
     }
 
     /// Checks that the helper can load `table`, with every table it
-    /// includes, by running its "check" mode.
+    /// includes, by running its "check" mode, measured by `measure` when
+    /// one of this Mac's tables is checked (review R1).
     /// - Throws: `Failure.unknownTable` for a table that is not there or
     ///   does not compile, as `translate` does, and its other failures.
-    static func check(table: String, workingIn folder: URL) throws {
+    static func check(table: String, workingIn folder: URL, measure: RunMeasure? = nil) throws {
         try requireOfferedTable(table)
         // The watchdog needs a file to watch; a check writes none, so an
         // empty one stands in.
@@ -251,7 +373,7 @@ enum BrailleTranslator {
         }
         try runHelper(
             mode: "check", table: table, input: nil, output: nil,
-            watching: watched, inputBytes: 0, direction: nil
+            watching: watched, inputBytes: 0, direction: nil, measure: measure
         )
     }
 
@@ -408,13 +530,15 @@ enum BrailleTranslator {
 
     /// Throws `Failure.unknownTable` unless `table` is one of the tables
     /// TextMouth offers (`BrailleTableCatalog`), before anything starts.
-    /// That is the whole list of names the helper may be given: a record
-    /// could be edited to name any other file of the tables folder, such as
-    /// an include file (`spaces.uti`), which liblouis would load and the
-    /// book would read as its escapes. A name the catalog lacks is also never
-    /// a path ("../x"), a list ("a,b"), or empty. The stored name is never
-    /// changed: a library from a newer TextMouth, with more tables, keeps its
-    /// books' tables, and such a book is refused by name.
+    /// That is the whole list of names the helper may be given, from either
+    /// source (decision 6): a record could be edited to name any other file
+    /// of a tables folder, such as an include file (`spaces.uti`), which
+    /// liblouis would load and the book would read as its escapes. A name
+    /// the catalog lacks is also never a path ("../x"), a list ("a,b"), or
+    /// empty. The stored name is never changed: a library from a newer
+    /// TextMouth, with more tables, keeps its books' tables, and such a book
+    /// is refused by name, as is a book of one of this Mac's tables once a
+    /// macOS update has removed it.
     private static func requireOfferedTable(_ table: String) throws {
         guard BrailleTableCatalog.table(withID: table) != nil else { throw Failure.unknownTable(table) }
     }
@@ -427,6 +551,10 @@ enum BrailleTranslator {
     ///   - watching: The file the watchdog watches for growth.
     ///   - inputBytes: The input's size, which sets the limits.
     ///   - direction: The direction, nil for "check".
+    ///   - measure: The measure of a Mac table's check, which this run is
+    ///     measured by and runs under (review R1); nil for any other run,
+    ///     which gets the tool's limits raised by the needs its table's
+    ///     check measured (`MacBrailleTableCheck.limits(for:raising:direction:bytes:)`).
     /// - Throws: `Failure`, and `ImportCancelled` when the import's Cancel
     ///   killed the child.
     private static func runHelper(
@@ -436,16 +564,27 @@ enum BrailleTranslator {
         output: URL?,
         watching: URL,
         inputBytes: Int64,
-        direction: Direction?
+        direction: Direction?,
+        measure: RunMeasure?
     ) throws {
-        // The tool and the import's cancellation are read here, on the
-        // caller's thread: the detached task below inherits no task-locals.
+        // The tool, the import's cancellation, and the verdicts that set a
+        // Mac table's limits are read here, on the caller's thread: the
+        // detached task below inherits no task-locals.
         let tool = BrailleTranslator.tool
         let cancellation = ImportCancellation.current
         guard let command = tool.command(mode, table, input, output) else {
             throw logged(.failed, mode, table, "the helper is missing")
         }
-        let limits = tool.limits(direction, inputBytes)
+        let toolLimits = tool.limits(direction, inputBytes)
+        let limits = measure?.measuring(toolLimits)
+            ?? MacBrailleTableCheck.limits(for: table, raising: toolLimits, direction: direction, bytes: inputBytes)
+        // A measured run's memory readings are kept as they are made.
+        let residentMemory: @Sendable (pid_t) -> Int64? = { pid in
+            let bytes = tool.residentMemory(pid)
+            measure?.note(memory: bytes)
+            return bytes
+        }
+        let started = ProcessInfo.processInfo.systemUptime
         let outcome: WatchedProcess.Outcome
         do {
             outcome = try AsyncBridge.waitForResult(cancelledBy: cancellation) {
@@ -454,7 +593,7 @@ enum BrailleTranslator {
                     arguments: command.arguments,
                     watching: watching,
                     limits: limits,
-                    residentMemory: tool.residentMemory
+                    residentMemory: residentMemory
                 )
             }
         } catch is CancellationError where cancellation?.isCancelled == true {
@@ -462,6 +601,7 @@ enum BrailleTranslator {
             // import ends as a cancelled one does.
             throw ImportCancelled()
         }
+        measure?.note(seconds: ProcessInfo.processInfo.systemUptime - started)
 
         switch outcome {
         case .exited(status: 0):
@@ -475,6 +615,7 @@ enum BrailleTranslator {
             throw logged(.failed, mode, table, "could not start")
         case let .killed(reason):
             DiagnosticLog.event(.import, "BRAILLE_HELPER_KILLED: \(mode) \(table): \(reason.words)")
+            measure?.note(stop: reason)
             throw Failure.stopped(reason: reason.words)
         }
     }

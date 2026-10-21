@@ -8,10 +8,20 @@ enum BookParser {
     /// exactly as the Markdown cache decodes them, so both readings start
     /// from the same text whatever the file's encoding and line endings.
     /// - Parameter brailleTable: For a braille book (FMT21), the table its
-    ///   text is read with: the one it was imported with (`Book.brailleTable`).
-    ///   Nil reads with `BrailleTableCatalog.defaultTableID`; every other
-    ///   format ignores it.
-    static func parse(url: URL, format: BookFormat, brailleTable: String? = nil) throws -> DocumentContent {
+    ///   text is read with, by its stored value: the one it was imported with
+    ///   (`Book.brailleTable`), a bundled table or one of this Mac's. Nil
+    ///   reads with `BrailleTableCatalog.defaultTableID`; every other format
+    ///   ignores it.
+    /// - Parameter brailleTableVersion: For a braille book of one of this
+    ///   Mac's tables, the Mac's liblouis version it was read with
+    ///   (`Book.brailleTableVersion`); another version refuses the reading
+    ///   (review R2).
+    static func parse(
+        url: URL,
+        format: BookFormat,
+        brailleTable: String? = nil,
+        brailleTableVersion: String? = nil
+    ) throws -> DocumentContent {
         switch format {
         case .epub:
             return try EPUBParser.parse(url: url)
@@ -44,7 +54,8 @@ enum BookParser {
             return try BrailleBookReader.parse(
                 url: url,
                 title: url.deletingPathExtension().lastPathComponent,
-                table: brailleTable ?? BrailleTableCatalog.defaultTableID
+                table: brailleTable ?? BrailleTableCatalog.defaultTableID,
+                recordedVersion: brailleTableVersion
             )
         case .daisy:
             return try DAISYParser.parse(url: url)

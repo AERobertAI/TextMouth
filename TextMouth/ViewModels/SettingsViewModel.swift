@@ -879,10 +879,12 @@ final class SettingsViewModel: ObservableObject {
     }
 
     /// The braille table braille files are read and written with (FMT21),
-    /// by its file name, such as "en-ueb-g2.ctb". Imports read it
-    /// (`BraillePreferences`), and config.json follows it through the
-    /// observer below, which also announces a change made anywhere else.
-    /// A name no bundled table has changes nothing.
+    /// by its stored value, such as "en-ueb-g2.ctb", or "mac:fr-bfu-g2.ctb"
+    /// for one of this Mac's tables. Imports read it (`BraillePreferences`),
+    /// and config.json follows it through the observer below, which also
+    /// announces a change made anywhere else. A value no offered table has
+    /// changes nothing; the Braille tab's pop-ups set a Mac table only once
+    /// its check passes (`BrailleTablePickers`).
     var brailleTable: String {
         get { BraillePreferences.table.read(from: preferences) }
         set {
@@ -1085,8 +1087,10 @@ final class SettingsViewModel: ObservableObject {
         // So does an empty language, or one that cannot be an identifier.
         adopt(TranscriptionLanguage.validated(config.transcriptionLocale), into: TranscriptionLanguage.preference)
         adopt(config.offerTranscriptionAfterImport, into: TranscriptionPreferences.offerAfterImport)
-        // An empty or unknown table name leaves the current table alone.
-        adopt(BrailleTableCatalog.table(withID: config.brailleTable)?.id, into: BraillePreferences.table)
+        // An empty or unknown table name leaves the current table alone; a
+        // Mac table's value is taken without reading this Mac's tables
+        // (review R3), and refused by name when it is used if the Mac lacks it.
+        adopt(BrailleTableCatalog.storableValue(config.brailleTable), into: BraillePreferences.table)
         return shortcutsWereRepaired
     }
 

@@ -367,6 +367,8 @@ final class LogContentPolicyTests: XCTestCase {
         // Transcriptions (FR05): one starting, and one finishing with its words and seconds, cancelled, or
         // failed with why.
         "TRANSCRIPTION_STARTED", "TRANSCRIPTION_FINISHED", "TRANSCRIPTION_CANCELLED", "TRANSCRIPTION_FAILED",
+        // Braille (October 20, 2026): one of this Mac's tables refused by its check, and why.
+        "BRAILLE_MAC_TABLE_REFUSED",
     ]
 
     /// Each tag still begins a string literal in the app's code, so none was

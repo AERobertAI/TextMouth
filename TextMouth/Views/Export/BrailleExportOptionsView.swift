@@ -4,10 +4,14 @@ import SwiftUI
 
 /// Every sentence the braille options of the Export dialog show or speak
 /// (FMT22, Phase B), kept together so a test pins each one exactly. The
-/// code and contraction pop-ups keep the labels of the Braille tab
-/// (`BrailleSettingsWording`) and have hints of their own, which speak of
-/// the book rather than of reading braille files.
+/// language, code, and contraction pop-ups keep the labels of the Braille
+/// tab (`BrailleSettingsWording`), and its sentence for a refused Mac table,
+/// and have hints of their own, which speak of the book rather than of
+/// reading braille files.
 enum BrailleExportWording {
+    /// What the language pop-up does, spoken after its label and value
+    /// (October 20, 2026).
+    static let languageHint = "The language of the braille code the book is written in."
     /// What the braille code pop-up does, spoken after its label and value.
     static let codeHint = "The braille code the book is written in."
     /// What the contraction pop-up does, spoken after its label and value.
@@ -52,55 +56,128 @@ enum BrailleExportWording {
         case .lf: return lfName
         }
     }
+
+    /// What the options say when the Braille setting's table, `table`, is one
+    /// of this Mac's that this Mac cannot use, and the export starts from
+    /// the default table instead (review R4).
+    static func startsFromDefault(replacing table: String) -> String {
+        "TextMouth can't use the braille table chosen in Settings, \u{201C}\(table)\u{201D}, so this export starts from "
+            + "\(BrailleTableCatalog.description(ofTableID: BrailleTableCatalog.defaultTableID))."
+    }
 }
 
 // MARK: - The Table Pop-ups
 
-/// The two pop-ups that choose a braille table, as the Braille tab of
-/// Settings has them (FMT21, FMT22): the braille code, and how far that code
-/// contracts. They edit one table, by its file name; the first chooses the
-/// table's code and the second its contraction, so each offers only what the
-/// bundled tables have (`BrailleSettingsChoice`). Their labels are the
-/// Braille tab's. The pop-up style and size are the caller's (a form draws
-/// them its way, the Export dialog as menus), and so are the hints, since
-/// each place speaks of a different use of the table.
+/// The three pop-ups that choose a braille table, as the Braille tab of
+/// Settings has them (FMT21, FMT22; the language since October 20, 2026):
+/// the language, the braille code, and how far that code contracts. They
+/// edit one table, by its stored value; the first chooses the table's
+/// language, the second its code among that language's, and the third its
+/// contraction, so each offers only what the tables have
+/// (`BrailleSettingsChoice`). The Braille tab and Export's braille options
+/// both draw these pop-ups, so the two can never differ (decision 4).
+///
+/// The bundled tables are taken at once. One of this Mac's is taken only
+/// once its check passes (`MacBrailleTableCheck`, decision 5), made off the
+/// main thread; while it runs the pop-ups show the choice and nothing else
+/// waits. A table that fails is not taken: the pop-ups return to the table
+/// in use, and VoiceOver hears the table's name and why.
+///
+/// Their labels are the Braille tab's. The pop-up style and size are the
+/// caller's (a form draws them its way, the Export dialog as menus), and so
+/// are the hints, since each place speaks of a different use of the table.
 struct BrailleTablePickers: View {
-    /// The table in use, by its file name.
+    /// The table in use, by its stored value.
     @Binding var table: String
-    /// The codes the pop-ups offer: the bundled ones, unless a test shows
-    /// its own (an empty list is the broken bundle, which draws nothing).
-    var codes: [BrailleCode] = BrailleTableCatalog.bundledCodes
+    /// The codes the pop-ups offer: the bundled tables' and this Mac's,
+    /// unless a test shows its own (an empty list is the broken bundle,
+    /// which draws nothing).
+    let codes: [BrailleCode]
+    /// What the language pop-up does.
+    let languageHint: String
     /// What the code pop-up does.
     let codeHint: String
     /// What the contraction pop-up does.
     let contractionHint: String
+    /// The languages of `codes`, in the order the language pop-up lists them.
+    private let languages: [BrailleLanguage]
 
-    /// The table in use, when one of the codes has it.
+    /// One of this Mac's tables chosen and being checked, which the pop-ups
+    /// show until its check ends; nil when none is.
+    @State private var pending: String?
+
+    /// What a chosen Mac table is checked with: the app's verdicts and
+    /// temporary directory, unless a hosted test gives its own (review R8).
+    @Environment(\.brailleTableCheck) private var checkContext
+
+    /// Pop-ups for `table` among `codes`, with each pop-up's hint.
+    init(
+        table: Binding<String>,
+        codes: [BrailleCode] = BrailleTableCatalog.offeredCodes,
+        languageHint: String,
+        codeHint: String,
+        contractionHint: String
+    ) {
+        _table = table
+        self.codes = codes
+        self.languageHint = languageHint
+        self.codeHint = codeHint
+        self.contractionHint = contractionHint
+        languages = BrailleTableCatalog.languages(of: codes)
+    }
+
+    /// The stored value the pop-ups show: the table being checked, else the
+    /// table in use.
+    private var shownID: String { pending ?? table }
+
+    /// The table the pop-ups show, when one of the codes has it.
     private var currentTable: BrailleTable? {
-        codes.flatMap(\.tables).first { $0.id == table }
+        codes.lazy.flatMap(\.tables).first { $0.id == shownID }
     }
 
-    /// The code the pop-up shows: the table in use's, else the first (so the
-    /// pop-up never shows a selection it has no item for).
+    /// The language the pop-up shows: the shown table's, else the first (so
+    /// the pop-up never shows a selection it has no item for).
+    private var currentLanguage: BrailleLanguage? {
+        currentTable.flatMap { table in languages.first { $0.codes.contains { $0.tables.contains(table) } } }
+            ?? languages.first
+    }
+
+    /// The code the pop-up shows: the shown table's, else the first of the
+    /// language shown.
     private var currentCode: BrailleCode? {
-        codes.first { code in currentTable.map { code.tables.contains($0) } ?? false } ?? codes.first
+        let codes = currentLanguage?.codes ?? []
+        return currentTable.flatMap { table in codes.first { $0.tables.contains(table) } } ?? codes.first
     }
 
-    /// The code pop-up's selection: the chosen code's identifier. Choosing a
+    /// The language pop-up's selection: the shown language's identifier.
+    /// Choosing a language takes its default code's table, else its first
+    /// code's, of the current contraction where it can.
+    private var languageSelection: Binding<String> {
+        Binding(
+            get: { currentLanguage?.id ?? "" },
+            set: { id in
+                guard let language = languages.first(where: { $0.id == id }),
+                      let chosen = BrailleSettingsChoice.table(in: language, matching: currentTable) else { return }
+                choose(chosen)
+            }
+        )
+    }
+
+    /// The code pop-up's selection: the shown code's identifier. Choosing a
     /// code takes its table of the current contraction.
     private var codeSelection: Binding<String> {
         Binding(
             get: { currentCode?.id ?? "" },
             set: { id in
-                guard let code = codes.first(where: { $0.id == id }),
+                guard let code = currentLanguage?.codes.first(where: { $0.id == id }),
                       let chosen = BrailleSettingsChoice.table(in: code, matching: currentTable) else { return }
-                table = chosen.id
+                choose(chosen)
             }
         )
     }
 
-    /// The contraction pop-up's selection: the identifier of the table in
-    /// use, or of the code's first table when the table in use is another
+    /// The contraction pop-up's selection: the identifier of the shown
+    /// table, or of the code's first table when the shown table is another
     /// code's.
     private var tableSelection: Binding<String> {
         Binding(
@@ -109,34 +186,37 @@ struct BrailleTablePickers: View {
                 if let current = currentTable, code.tables.contains(current) { return current.id }
                 return code.tables.first?.id ?? ""
             },
-            set: { table = $0 }
+            set: { id in
+                guard let chosen = currentCode?.tables.first(where: { $0.id == id }) else { return }
+                choose(chosen)
+            }
         )
     }
 
     var body: some View {
-        if let code = currentCode {
-            codePicker
+        if let language = currentLanguage, let code = currentCode {
+            languagePicker
+            codePicker(for: language)
             contractionPicker(for: code)
         }
     }
 
-    /// The pop-up of braille codes, each by its name; grouped under each
-    /// language's name when the codes have more than one language.
-    private var codePicker: some View {
-        let groups = BrailleSettingsChoice.languageGroups(of: codes)
-        return Picker(BrailleSettingsWording.codeLabel, selection: codeSelection) {
-            if groups.count > 1 {
-                ForEach(groups) { group in
-                    Section(BrailleTableCatalog.languageName(group.language)) {
-                        ForEach(group.codes) { code in
-                            Text(code.name).tag(code.id)
-                        }
-                    }
-                }
-            } else {
-                ForEach(codes) { code in
-                    Text(code.name).tag(code.id)
-                }
+    /// The pop-up of languages, each by its name in the user's language.
+    private var languagePicker: some View {
+        Picker(BrailleSettingsWording.languageLabel, selection: languageSelection) {
+            ForEach(languages) { language in
+                Text(language.name).tag(language.id)
+            }
+        }
+        .accessibilityLabel(BrailleSettingsWording.languageLabel)
+        .accessibilityHint(languageHint)
+    }
+
+    /// The pop-up of `language`'s braille codes, each by its name.
+    private func codePicker(for language: BrailleLanguage) -> some View {
+        Picker(BrailleSettingsWording.codeLabel, selection: codeSelection) {
+            ForEach(language.codes) { code in
+                Text(code.name).tag(code.id)
             }
         }
         .accessibilityLabel(BrailleSettingsWording.codeLabel)
@@ -153,23 +233,136 @@ struct BrailleTablePickers: View {
         .accessibilityLabel(BrailleSettingsWording.contractionLabel)
         .accessibilityHint(contractionHint)
     }
+
+    /// Takes `chosen`: a bundled table at once, and one of this Mac's once
+    /// its check passes (decision 5). The check of a table already checked
+    /// this session answers at once; any other runs off the main thread
+    /// while the pop-ups show the choice. A later choice replaces a pending
+    /// one, whose verdict is then only kept. A refused table is not taken:
+    /// the pop-ups return to the table in use, and VoiceOver hears why once
+    /// the pop-up's menu has closed and VoiceOver has spoken the value
+    /// (`VoiceOverAnnouncer.afterSheetCloses(_:)`).
+    private func choose(_ chosen: BrailleTable) {
+        guard chosen.id != shownID else { return }
+        guard chosen.source == .mac else {
+            pending = nil
+            table = chosen.id
+            return
+        }
+        pending = chosen.id
+        // Read now, as the choice is made, not once the task has begun.
+        let context = checkContext
+        BrailleTableChoiceChecks.shared.run {
+            let verdict = await context.verdict(for: chosen.id)
+            guard pending == chosen.id else { return }
+            pending = nil
+            switch verdict {
+            case .usable:
+                table = chosen.id
+            case let .refused(refusal):
+                let sentence = BrailleSettingsWording.refusal(ofTableNamed: chosen.displayName, because: refusal)
+                VoiceOverAnnouncer.afterSheetCloses { VoiceOverAnnouncer.announce(sentence) }
+            }
+        }
+    }
+}
+
+// MARK: - Where a Chosen Table Is Checked
+
+/// What the pop-ups check a chosen Mac table with: the verdicts to keep it
+/// in and the folder to make the check's working folder in, each the app's
+/// own unless a hosted test gives its own through the environment
+/// (`.environment(\.brailleTableCheck, ...)`, review R8). An environment
+/// value reaches the pop-ups however late SwiftUI calls their bindings,
+/// where a task-local bound around a click may not.
+struct BrailleTableCheckContext: Sendable {
+    /// The verdicts to keep the check in; nil for the session's.
+    var verdicts: MacBrailleTableCheck.Verdicts?
+    /// The folder the check's working folder is made in; nil for the
+    /// temporary directory.
+    var temporaryRoot: URL?
+
+    /// The verdict for `tableID`, checked off the main thread as
+    /// `MacBrailleTableCheck.verdictOffTheMainThread(for:)` does, with this
+    /// context's verdicts and folder.
+    func verdict(for tableID: String) async -> MacBrailleTableCheck.Verdict {
+        await MacBrailleTableCheck.$verdicts.withValue(verdicts ?? MacBrailleTableCheck.verdicts) {
+            await TextutilDocumentReader.$temporaryRoot.withValue(temporaryRoot ?? TextutilDocumentReader.temporaryRoot) {
+                await MacBrailleTableCheck.verdictOffTheMainThread(for: tableID)
+            }
+        }
+    }
+}
+
+/// The environment's key for `BrailleTableCheckContext`.
+private struct BrailleTableCheckKey: EnvironmentKey {
+    static let defaultValue = BrailleTableCheckContext()
+}
+
+extension EnvironmentValues {
+    /// What the braille table pop-ups check a chosen Mac table with.
+    var brailleTableCheck: BrailleTableCheckContext {
+        get { self[BrailleTableCheckKey.self] }
+        set { self[BrailleTableCheckKey.self] = newValue }
+    }
+}
+
+// MARK: - Checks of Chosen Tables
+
+/// The checks of Mac tables chosen in the pop-ups that are still running
+/// (review R5): Export's options take a Mac table only once its check passes,
+/// so an export started meanwhile waits for them (`BookExportModel.export`),
+/// and writes with the table the pop-ups show once the check has passed, or
+/// the one they returned to, never the one they just left. The Export
+/// button's hint tells of the wait (`BookExportWording.exportWaitsHint`).
+@MainActor
+final class BrailleTableChoiceChecks: ObservableObject {
+    /// The checks of the app's pop-ups, in Settings and in Export alike.
+    static let shared = BrailleTableChoiceChecks()
+
+    /// The checks running, by an identifier of their own.
+    private var running: [UUID: Task<Void, Never>] = [:]
+
+    /// Whether any check is running.
+    @Published private(set) var isChecking = false
+
+    /// Runs `work`, a choice's check and what follows it, as a task counted
+    /// as running until it ends. The task cannot begin before it is counted:
+    /// both are on the main actor, which this holds.
+    func run(_ work: @escaping @MainActor () async -> Void) {
+        let id = UUID()
+        running[id] = Task { @MainActor in
+            await work()
+            self.running[id] = nil
+            self.isChecking = !self.running.isEmpty
+        }
+        isChecking = true
+    }
+
+    /// Returns once every check running now has ended.
+    func finished() async {
+        for task in running.values {
+            await task.value
+        }
+    }
 }
 
 // MARK: - The Options View
 
 /// The braille options of the Export dialog (FMT22, Phase B), shown under the
-/// Convert to picker while BRF or PEF is chosen: the braille code and its
-/// contraction, the cells in a line, the lines on a page, whether pages are
-/// numbered, and (BRF only, since a PEF always ends a row with a line feed)
-/// the line end. Every control has a label, a hint, and a spoken value, and
-/// is reached by the keyboard.
+/// Convert to picker while BRF or PEF is chosen: the language, the braille
+/// code and its contraction (the Braille tab's own pop-ups, so one of this
+/// Mac's tables can be chosen here too), the cells in a line, the lines on a
+/// page, whether pages are numbered, and (BRF only, since a PEF always ends a
+/// row with a line feed) the line end. Every control has a label, a hint,
+/// and a spoken value, and is reached by the keyboard.
 struct BrailleExportOptionsView: View {
     /// The options the view sets.
     @Binding var options: BrailleExportOptions
     /// Whether the line end is chosen here: a BRF's is, a PEF's is not.
     let choosesLineEnds: Bool
     /// The codes the table pop-ups offer (see `BrailleTablePickers`).
-    var codes: [BrailleCode] = BrailleTableCatalog.bundledCodes
+    var codes: [BrailleCode] = BrailleTableCatalog.offeredCodes
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -180,12 +373,19 @@ struct BrailleExportOptionsView: View {
                 BrailleTablePickers(
                     table: $options.table,
                     codes: codes,
+                    languageHint: BrailleExportWording.languageHint,
                     codeHint: BrailleExportWording.codeHint,
                     contractionHint: BrailleExportWording.contractionHint
                 )
             }
             .pickerStyle(.menu)
             .fixedSize()
+            // The setting's table could not be used: say so, until another
+            // table is chosen here (review R4).
+            if let replaced = options.replacedTable {
+                Text(BrailleExportWording.startsFromDefault(replacing: replaced))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             stepperRow(
                 label: BrailleExportWording.cellsLabel,
                 hint: BrailleExportWording.cellsHint,

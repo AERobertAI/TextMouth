@@ -18,6 +18,9 @@ import SwiftUI
 struct BookExportSheet: View {
     /// The dialog's state, and the export.
     @ObservedObject var model: BookExportModel
+    /// The checks of braille tables just chosen in the options, which an
+    /// export waits for and the Export button's hint tells of (review R5).
+    @ObservedObject private var choiceChecks = BrailleTableChoiceChecks.shared
     /// Closes the dialog.
     let close: () -> Void
     /// The sheet's own window, where the folder chooser opens and the
@@ -175,7 +178,7 @@ struct BookExportSheet: View {
             }
             .keyboardShortcut(.defaultAction)
             .disabled(!model.canExport)
-            .accessibilityHint(BookExportWording.exportHint)
+            .accessibilityHint(choiceChecks.isChecking ? BookExportWording.exportWaitsHint : BookExportWording.exportHint)
         }
     }
 
