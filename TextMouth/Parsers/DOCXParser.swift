@@ -52,7 +52,9 @@ enum DOCXParser {
 
     /// Parse a DOCX file into DocumentContent for reading/playback
     static func parse(url: URL) throws -> DocumentContent {
-        let markdown = try extractMarkdown(from: url)
+        // This parse reads no page markers (its Markdown goes to the plain
+        // `MarkdownDocParser.parse`), so none are written (PG07).
+        let markdown = try extractMarkdown(from: url, includesPages: false)
         let title = url.deletingPathExtension().lastPathComponent
         let metadata = try? readMetadata(from: url)
 
