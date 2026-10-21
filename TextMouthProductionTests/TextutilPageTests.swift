@@ -125,13 +125,19 @@ final class TextutilPageTests: XCTestCase {
         assertTheSamplesPages(of: try read("wordml/page-breaks.wordml", as: .wordml).chapter)
     }
 
-    func testTheDirectReaderFindsTheSamePages() throws {
+    func testTheDirectReaderReadsTheSameWordsAsTheCache() throws {
         let copy = try copyOfFormatSample("rtf/page-breaks.rtf")
         let content = try TextutilDocumentReader.$temporaryRoot.withValue(work) {
             try TextutilDocumentReader.parse(url: copy, bookFormat: .rtf)
         }
-        XCTAssertEqual(content.pages.breaks.map(\.label), ["1", "2"])
-        XCTAssertEqual(content.pages.total, 2)
+        // The direct reader does not read page markers (as it reads no
+        // heading annotations), but its words must be the cache's, so that a
+        // place saved in one is the same place in the other: one space (B13).
+        XCTAssertEqual(content.chapters.count, 1)
+        guard let chapter = content.chapters.first else { return }
+        XCTAssertTrue(chapter.text.contains("runs on and continues here."), chapter.text)
+        XCTAssertEqual(chapter.text, try read("rtf/page-breaks.rtf", as: .rtf).chapter.text)
+        XCTAssertEqual(content.pages, BookPages.none)
     }
 
     func testReadingTheNamesAloneRunsNoSecondPass() throws {
