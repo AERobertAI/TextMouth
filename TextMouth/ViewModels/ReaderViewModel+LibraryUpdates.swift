@@ -18,7 +18,8 @@ import Foundation
 /// audio that is playing stops reading the book's files until the move is
 /// over, then plays on from the same place. A load whose read of the book's
 /// files fails because they moved loads the book again from where it is
-/// then, rather than say the book cannot be read.
+/// then, rather than say the book cannot be read, and a load asked for
+/// while they move reads nothing until the move is over.
 extension ReaderViewModel {
 
     /// Audio set aside while the book's package moves: playing when the
@@ -229,6 +230,25 @@ extension ReaderViewModel {
     /// too.
     var isPackageMoving: Bool {
         libraryViewModel.bookUpdates.isPackageMoving(book.id)
+    }
+
+    /// Begins a read of the book's files for a load (`loadContent()`,
+    /// `loadDownloadedBook()`), unless the library is moving the book's
+    /// package: then the load waits, the reader still loading, and the
+    /// move's end loads the book from the start, from wherever it is then
+    /// (`loadAfterPackageMove()`). So nothing reads a package as it moves,
+    /// as the load of a reader opened in the moment a move of many books
+    /// takes once did, finding the package gone and saying the book could
+    /// not be read (TODO P10).
+    ///
+    /// - Returns: Whether the read may begin now.
+    func beginReadingForLoad() -> Bool {
+        guard !isPackageMoving else {
+            loadWaitsForPackageMove = true
+            DiagnosticLog.trace(.storage, "a load waits for the book's package to finish moving")
+            return false
+        }
+        return true
     }
 
     /// Loads the book again, rather than show why a load could not read its

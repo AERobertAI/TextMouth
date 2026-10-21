@@ -495,11 +495,12 @@ final class ReaderViewModel: ObservableObject {
     /// the move's end leaves the book as the listener left it.
     var audioPausedForMove: AudioPausedForMove?
     /// Whether the book loads once the move of its package under way is
-    /// over (`isPackageMoving`): a load's read of the book's files failed
-    /// while the package moved, its files perhaps gone from under it. The
-    /// move's end loads the book from the start, from wherever it is then
-    /// (`loadAfterPackageMove()`, TODO P10). Accessed from the
-    /// LibraryUpdates extension.
+    /// over (`isPackageMoving`): a load was asked for while the package
+    /// moved, and has read nothing yet (`beginReadingForLoad()`), or a
+    /// load's read of the book's files failed meanwhile, its files perhaps
+    /// gone from under it. The move's end loads the book from the start,
+    /// from wherever it is then (`loadAfterPackageMove()`, TODO P10).
+    /// Accessed from the LibraryUpdates extension.
     var loadWaitsForPackageMove = false
     /// The book's edited text, with the moves of its places the edit took,
     /// when the user's edit was taken while this reader was still loading
@@ -1298,9 +1299,11 @@ final class ReaderViewModel: ObservableObject {
     /// it always was. A book in a cloud location goes on through its cloud
     /// state (`continueOpening(in:found:)`): downloaded first when any of its
     /// files is only in the cloud, and then read without ever waiting on the
-    /// network.
+    /// network. A book whose package the library is moving is read once the
+    /// move is over (`beginReadingForLoad()`, TODO P10).
     func loadContent() {
         isLoading = true
+        guard beginReadingForLoad() else { return }
         let bookCopy = book
         let storage = cloudServices.storage
         let package = BookPackage(bookCopy)

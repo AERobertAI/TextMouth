@@ -870,6 +870,31 @@ final class ReaderRefreshTests: XCTestCase {
         }
     }
 
+    /// A reader opens a book while the library moves its package, as a
+    /// book can be opened from the library list in the moment a Move to
+    /// Folder… of many books takes. The reader reads nothing of the book
+    /// until the move is over, and then opens it from where it is now, with
+    /// no error. So for an audiobook of tracks, a text book, and a DAISY
+    /// audiobook. Before, its load read the package as it moved and said the
+    /// book could not be read.
+    func testABookOpenedWhileItsPackageMovesOpensOnceTheMoveIsOver() throws {
+        for kind in LoadedBookKind.allCases {
+            let context = "\(kind.name), opened as it moved"
+            let world = try makeIntegrationWorld("Reader Refresh Opened During Move \(kind)")
+            let book = try makeBook(kind, readyFor: .moveToFolder, in: world)
+            let loads = holdLoads()
+            let opened = OpenedReader()
+
+            try commit(.moveToFolder, of: book, in: world) {
+                opened.reader = world.openReader(for: book, loadQueue: loads.queue)
+                loads.letReadAndHandOver()
+            }
+
+            let reader = try XCTUnwrap(opened.reader, "\(context): no reader opened")
+            try assertOpensFromWhereItIsNow(reader, kind, in: world, context)
+        }
+    }
+
     /// An audiobook whose second track is damaged, and which keeps no index,
     /// so that every load checks its tracks, moves while its reader's load
     /// reads it. The reader loads it again once the move is over, and that
@@ -1469,6 +1494,12 @@ final class ReaderRefreshTests: XCTestCase {
     @MainActor
     private final class HandOver {
         var isDone = false
+    }
+
+    /// The reader a test opens while a package moves, kept for the test.
+    @MainActor
+    private final class OpenedReader {
+        var reader: ReaderViewModel?
     }
 
     /// A three-chapter EPUB about tides, each chapter listed in its table

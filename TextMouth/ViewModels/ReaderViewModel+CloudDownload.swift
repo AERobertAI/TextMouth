@@ -327,9 +327,12 @@ extension ReaderViewModel {
     /// An audiobook is first cloned into a working copy, which playback then
     /// reads. A read refused because a file was only in the cloud again goes
     /// back to the download step once; a second refusal ends the opening.
+    /// A book whose package the library is moving is opened afresh once the
+    /// move is over (`beginReadingForLoad()`, TODO P10).
     func loadDownloadedBook() {
         isLoading = true
         cloudPhase = nil
+        guard beginReadingForLoad() else { return }
         let bookCopy = book
         let package = BookPackage(bookCopy)
         let isDataless = cloudServices.isDataless
