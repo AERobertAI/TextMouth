@@ -870,6 +870,32 @@ final class ReaderRefreshTests: XCTestCase {
         }
     }
 
+    /// A book's folder changes, by Move to Folder… or Rename Folder…, after
+    /// its reader's load began but before the load reads the book's files:
+    /// the whole move is over first, and the reader has been told where the
+    /// book is now. The load reads where the book was and finds nothing
+    /// there, and the reader loads the book again from where it is now,
+    /// opening it with no error. So for an audiobook of tracks, a text book,
+    /// and a DAISY audiobook.
+    func testALoadThatReadsAfterItsBookMovedOpensTheBookFromWhereItIsNow() throws {
+        for kind in LoadedBookKind.allCases {
+            for change in FolderChange.allCases {
+                let context = "\(kind.name), read after \(change.name) moved it"
+                let world = try makeIntegrationWorld("Reader Refresh Read After \(change) \(kind)")
+                let book = try makeBook(kind, readyFor: change, in: world)
+                let loads = holdLoads()
+                let reader = world.openReader(for: book, loadQueue: loads.queue)
+                XCTAssertTrue(reader.isLoading, context)
+
+                let made = outcome { await self.runCommand(change, on: book, in: world) }
+                XCTAssertTrue(made.succeeded, "\(context): \(made.failureMessage ?? "")")
+                loads.letRead()
+
+                try assertOpensFromWhereItIsNow(reader, kind, in: world, context)
+            }
+        }
+    }
+
     /// A reader opens a book while the library moves its package, as a
     /// book can be opened from the library list in the moment a Move to
     /// Folder… of many books takes. The reader reads nothing of the book
@@ -1403,6 +1429,21 @@ final class ReaderRefreshTests: XCTestCase {
             let shelf = try XCTUnwrap(proposed.folders.first { $0.fullPath == shelfPath }, "There is no folder Shelf")
             try proposed.renameFolderThrowing(id: shelf.id, to: "Stacks")
             return proposed
+        }
+    }
+
+    /// Makes `change` to `book`'s folder through its Library window command,
+    /// whose package moves off the main actor, and returns what happened.
+    private func runCommand(_ change: FolderChange, on book: Book, in world: IntegrationWorld) async -> OperationOutcome {
+        switch change {
+        case .moveToFolder:
+            return await world.library.moveBooksReturningOutcome([book], toFolder: Self.shelfPath(in: world))
+        case .renameFolder:
+            let shelfPath = Self.shelfPath(in: world)
+            guard let shelf = world.library.library.folders.first(where: { $0.fullPath == shelfPath }) else {
+                return .failure("There is no folder Shelf to rename.")
+            }
+            return await world.library.renameFolderReturningOutcome(shelf, to: "Stacks")
         }
     }
 
