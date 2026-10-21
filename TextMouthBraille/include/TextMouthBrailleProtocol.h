@@ -25,6 +25,9 @@
  *   code line. `back` (braille to print) reads braille with an empty code
  *   line (braille holds its emphasis in its cells) and writes the print
  *   with the codes of the emphasis liblouis reported.
+ * - Both carry only the emphasis liblouis reads back exactly with the
+ *   table, which the helper checks on each run: a table whose indicators it
+ *   cannot read back, such as EBAE's, writes and reads plain braille.
  *
  * Protocol 1 (October 19, 2026) was one line for each paragraph, with no
  * header and no emphasis.

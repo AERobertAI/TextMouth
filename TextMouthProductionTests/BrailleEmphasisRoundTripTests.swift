@@ -2,41 +2,78 @@ import XCTest
 @testable import TextMouth
 
 /// Emphasis through braille and back (October 21, 2026): a book whose
-/// content.md has italic, bold, and both is exported to BRF with each of the
-/// four bundled tables through the Export dialog's own writer, then read
-/// back as a braille book is imported (`BrailleBookReader.markdown`). The
-/// user asked that reading braille keep "all text formatting extractable
-/// from the braille", and that exported braille mark italics.
+/// content.md has italic, bold, and both is exported to BRF through the
+/// Export dialog's own writer, then read back as a braille book is imported
+/// (`BrailleBookReader.markdown`). The user asked that reading braille keep
+/// "all text formatting extractable from the braille", and that exported
+/// braille mark italics.
 ///
-/// In UEB, uncontracted and contracted, every word comes back with the
-/// Markdown emphasis it went out with, and the Markdown itself is the same
-/// but for escaping. In EBAE the export writes EBAE's own signs, but
-/// liblouis 3.39.0 cannot read them back, so the words come back plain, and
-/// liblouis's own readings of EBAE's signs, pinned here by name, change the
-/// text: the italic sign before "italic" is read as a period.
+/// - **UEB** writes its indicators, and every word of the sample comes back
+///   with the Markdown emphasis it went out with, uncontracted and
+///   contracted alike.
+/// - **EBAE**, and a table of this Mac's that liblouis cannot read back
+///   either (Norwegian), write no emphasis at all (review E2): liblouis
+///   3.39.0 misreads their signs, which changed words of TextMouth's own
+///   exports when they were read again. Their export is the export of the
+///   same book plain, byte for byte, and comes back word for word.
 final class BrailleEmphasisRoundTripTests: XCTestCase {
     /// The book's content.md: a heading with an italic word, then italic,
-    /// bold, and both, on single words and on passages of two to four words.
+    /// bold, and both, on single words and on passages of two to five words,
+    /// two of them ending at punctuation, the review's EBAE cases (a stray
+    /// sign before the comma read as ">", a passage before a period).
     private let source = """
     # The *Sea* Chapter
 
     A plain line with an *italic* word, a **bold** word, and ***both*** at once.
 
     *Three italic words* and then **four bold words here** and ***two both*** done.
+
+    *one two three four five*, six
+
+    *it was not at all*.
     """
+
+    /// The same book with no emphasis: `source` without its delimiters, which
+    /// are its only asterisks.
+    private var plainSource: String {
+        source.replacingOccurrences(of: "*", with: "")
+    }
+
+    /// The content.md of `plainSource` as a braille book's reader writes it,
+    /// every punctuation character escaped: what a table that writes no
+    /// emphasis brings back, word for word.
+    private let plainReadBack = """
+    # The Sea Chapter
+
+    A plain line with an italic word\\, a bold word\\, and both at once\\.
+
+    Three italic words and then four bold words here and two both done\\.
+
+    one two three four five\\, six
+
+    it was not at all\\.
+    """
+
+    /// The table of this Mac's that the Norwegian test uses: uncontracted
+    /// Norwegian, whose emphasis indicators liblouis cannot read back. The
+    /// helper written before review E2 wrote them, and 98 of 120 random
+    /// emphasized sentences came back changed, with ";" or "\56/" in their
+    /// words.
+    private let norwegian = "mac:no-no-g0.utb"
 
     // MARK: - Helpers
 
-    /// `source` exported to BRF with `table`, then read back as an import
-    /// reads it: the content.md a braille book of that file would have.
-    private func roundTrip(_ table: String) throws -> String {
-        let document = try ExportDocumentWalker.document(fromMarkdown: source, book: ExportBookDetails(title: "The Sea"))
+    /// `markdown` exported to BRF with `table` through the Export dialog's
+    /// own writer: the file's bytes, and the content.md a braille book of
+    /// that file would have.
+    private func roundTrip(_ markdown: String, _ table: String) throws -> (brf: Data, readBack: String) {
+        let document = try ExportDocumentWalker.document(fromMarkdown: markdown, book: ExportBookDetails(title: "The Sea"))
         let folder = try makeSandboxDirectory("BrailleEmphasisRoundTrip")
         let url = folder.appendingPathComponent("sea.brf")
         try BRFExportWriter().write(
             document, options: BrailleExportOptions(table: table), to: url, cancellation: BookExportCancellation()
         )
-        return try BrailleBookReader.markdown(of: url, table: table)
+        return (try Data(contentsOf: url), try BrailleBookReader.markdown(of: url, table: table))
     }
 
     /// The words of `markdown`'s headings and paragraphs, in order, each
@@ -76,11 +113,24 @@ final class BrailleEmphasisRoundTripTests: XCTestCase {
         return words
     }
 
+    /// Asserts that `table` writes no emphasis and loses no word: the BRF of
+    /// `source` is the BRF of `plainSource`, byte for byte, so it holds no
+    /// emphasis sign, and it reads back as `plainReadBack`.
+    private func assertWritesNoEmphasis(_ table: String, file: StaticString = #filePath, line: UInt = #line) throws {
+        let emphasized = try roundTrip(source, table)
+        let plain = try roundTrip(plainSource, table)
+        XCTAssertFalse(emphasized.brf.isEmpty, table, file: file, line: line)
+        XCTAssertEqual(emphasized.brf, plain.brf, "\(table): the BRF holds emphasis signs", file: file, line: line)
+        XCTAssertEqual(emphasized.readBack, plainReadBack, table, file: file, line: line)
+        XCTAssertEqual(try words(emphasized.readBack), try words(plainSource), table, file: file, line: line)
+    }
+
     // MARK: - UEB
 
-    /// UEB, uncontracted and contracted: every word comes back with its
-    /// emphasis, the heading's italic word too, and content.md is exactly
-    /// the source in the reader's own form, its punctuation escaped.
+    /// UEB, uncontracted and contracted: every word of the sample comes back
+    /// with its emphasis, the heading's italic word and the passages that end
+    /// at punctuation too, and content.md is exactly the source in the
+    /// reader's own form, its punctuation escaped.
     func testUEBBringsEveryWordsEmphasisBack() throws {
         let expected = """
         # The *Sea* Chapter
@@ -88,38 +138,36 @@ final class BrailleEmphasisRoundTripTests: XCTestCase {
         A plain line with an *italic* word\\, a **bold** word\\, and ***both*** at once\\.
 
         *Three italic words* and then **four bold words here** and ***two both*** done\\.
+
+        *one two three four five*\\, six
+
+        *it was not at all*\\.
         """
         for table in ["en-ueb-g1.ctb", "en-ueb-g2.ctb"] {
-            let back = try roundTrip(table)
+            let back = try roundTrip(source, table).readBack
             XCTAssertEqual(try words(back), try words(source), table)
             XCTAssertEqual(back, expected, table)
         }
     }
 
-    // MARK: - EBAE
+    // MARK: - Tables liblouis Cannot Read Back
 
-    /// EBAE, uncontracted and contracted: the BRF holds EBAE's own signs for
-    /// the emphasis (`BrailleHelperProtocolTests` pins them), but liblouis
-    /// 3.39.0 reads none back, so no word comes back emphasized. Its own
-    /// readings of the signs, by name, the same in both tables:
-    /// - the italic sign (dots 4-6) before "italic", in both paragraphs, is
-    ///   read as a period, ".italic";
-    /// - the same sign before "Sea" and "Three" (where the capital sign
-    ///   follows it) and before "words" is read as nothing;
-    /// - the bold sign (dots 4-5-6, 4-6), and the signs of a bold passage
-    ///   and of words both bold and italic, are read as nothing.
-    func testEBAEBringsTheWordsBackPlainWithLiblouisOwnPeriods() throws {
-        let expected = """
-        # The Sea Chapter
-
-        A plain line with an \\.italic word\\, a bold word\\, and both at once\\.
-
-        Three \\.italic words and then four bold words here and two both done\\.
-        """
+    /// EBAE, uncontracted and contracted, writes no emphasis: liblouis 3.39.0
+    /// read the italic sign before a word as a period (".italic"), and the
+    /// stray sign it wrote before the comma after a passage as ">"
+    /// (".five> six"), so the export holds no sign, and every word comes back.
+    func testEBAEWritesNoEmphasisAndBringsEveryWordBack() throws {
         for table in ["en-us-g1.ctb", "en_US.tbl"] {
-            let back = try roundTrip(table)
-            XCTAssertFalse(try words(back).contains { !$0.hasSuffix("/") }, "\(table): \(back)")
-            XCTAssertEqual(back, expected, table)
+            try assertWritesNoEmphasis(table)
         }
+    }
+
+    /// One of this Mac's tables liblouis cannot read back, uncontracted
+    /// Norwegian, writes no emphasis either, and every word comes back. Skips
+    /// on a Mac that does not offer it.
+    func testAMacTableLiblouisCannotReadBackWritesNoEmphasis() throws {
+        try XCTSkipIf(BrailleTableCatalog.table(withID: norwegian) == nil,
+                      "This Mac does not offer its uncontracted Norwegian table (\(BrailleTableCatalog.macTablesFolder.path))")
+        try assertWritesNoEmphasis(norwegian)
     }
 }

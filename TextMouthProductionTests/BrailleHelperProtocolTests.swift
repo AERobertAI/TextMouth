@@ -360,30 +360,27 @@ final class BrailleHelperProtocolTests: XCTestCase {
         assertWorkFolderEmpty()
     }
 
-    /// EBAE writes emphasis its own way: the italic sign (dots 4-6) before
-    /// an italic word, the bold sign (dots 4-5-6, 4-6) before a bold one,
-    /// and for a passage of four words or more the doubled sign before its
-    /// first word and the single one before its last. liblouis 3.39.0
-    /// cannot read EBAE's emphasis back (its "before" closing sign shares
-    /// the word sign's cells), so the helper reports none: the words come
-    /// back with no emphasis. And liblouis's own reading of the italic
-    /// sign alone is a period, pinned here by name: "a .cat sat".
-    func testEBAEWritesItsOwnSignsAndReadsNoneBack() throws {
-        let sentence = emphasized("a cat sat", [(2..<5, .italic)])
-        let bold = emphasized("a cat sat", [(2..<5, .bold)])
-        let passage = emphasized("one two three four five", [(0..<18, .italic)])
+    /// EBAE writes no emphasis (review E2, October 21, 2026). liblouis 3.39.0
+    /// cannot read EBAE's signs back: its "before" closing sign shares the
+    /// word sign's cells, it reads the italic sign alone as a period
+    /// ("a .cat sat"), and after a passage it writes a stray sign before
+    /// punctuation, which it reads as ">" ("*one two three four five*, six"
+    /// came back ".five> six"). So the helper's readability check fails
+    /// EBAE's classes, forward sends liblouis none of them, and the braille
+    /// of emphasized text is the braille of the same text plain: read back,
+    /// it gives the words exactly, with no emphasis.
+    func testEBAEWritesNoEmphasisAndReadsTheWordsBack() throws {
+        let texts = [
+            emphasized("a cat sat", [(2..<5, .italic)]),
+            emphasized("a cat sat", [(2..<5, .bold)]),
+            emphasized("one two three four five, six", [(0..<23, .italic)]),
+            emphasized("it was not at all.", [(0..<17, [.italic, .bold])]),
+        ]
+        let plain = texts.map { EmphasizedText($0.text) }
         for table in ebae {
-            let braille = try BrailleTranslator.translate([sentence, bold, passage], table: table, direction: .printToBraille, workingIn: work)
-            XCTAssertEqual(braille.count, 3)
-            guard braille.count == 3 else { continue }
-            XCTAssertTrue(BrailleCells.spaced(braille[0].text).contains(" \u{2828}\u{2809}"), "the italic sign, \(table)")
-            XCTAssertTrue(BrailleCells.spaced(braille[1].text).contains(" \u{2838}\u{2828}\u{2809}"), "the bold sign, \(table)")
-            XCTAssertTrue(braille[2].text.hasPrefix("\u{2828}\u{2828}"), "the doubled italic sign, \(table)")
-
-            let back = try BrailleTranslator.translate(braille, table: table, direction: .brailleToPrint, workingIn: work)
-            XCTAssertFalse(back.contains { $0.hasEmphasis }, table)
-            XCTAssertEqual(back.first?.text, "a .cat sat", table)
-            XCTAssertEqual(back.dropFirst().first?.text, "a cat sat", table)
+            let braille = try BrailleTranslator.translate(texts, table: table, direction: .printToBraille, workingIn: work)
+            XCTAssertEqual(braille, try BrailleTranslator.translate(plain, table: table, direction: .printToBraille, workingIn: work), table)
+            XCTAssertEqual(try BrailleTranslator.translate(braille, table: table, direction: .brailleToPrint, workingIn: work), plain, table)
         }
         assertWorkFolderEmpty()
     }

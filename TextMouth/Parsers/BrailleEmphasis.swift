@@ -14,7 +14,8 @@ private import TextMouthBrailleProtocol
 /// extractable from the braille converted to the intermediate format". So
 /// reading braille keeps the emphasis liblouis reports, and writing braille
 /// passes the book's emphasis to liblouis, which writes the table's
-/// indicators.
+/// indicators: both only for the tables whose indicators liblouis reads
+/// back exactly (UEB's), checked by the helper on each run.
 struct BrailleEmphasis: OptionSet, Hashable, Sendable {
     let rawValue: UInt8
 

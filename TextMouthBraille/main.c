@@ -24,9 +24,11 @@
  *   the paragraph's text on one line and its emphasis codes on the next, one
  *   code for each character, or an empty line for none. `forward` writes the
  *   emphasis it is given into the braille as the table's indicators, and
- *   `back` reports the emphasis liblouis reads from the indicators. Braille,
- *   in and out, is Unicode braille patterns (U+2800 to U+28FF), the blank
- *   cell U+2800 included; a space is never braille.
+ *   `back` reports the emphasis liblouis reads from the indicators, both of
+ *   only the classes liblouis reads back exactly with the table
+ *   (`check_readable`). Braille, in and out, is Unicode braille patterns
+ *   (U+2800 to U+28FF), the blank cell U+2800 included; a space is never
+ *   braille.
  *
  * The table is a bare file name, such as en-ueb-g2.ctb, of a table in the
  * tables folder: the app bundle's own (Contents/Resources/liblouis/tables),
@@ -106,11 +108,11 @@ enum {
  * classes in the order the table declares them, so the same bit means
  * "script" in one table and "transnote" in another; names are the only
  * thing tables share. The five transcriber-defined typefaces share one
- * flag, and a flag written forward goes to the first class listed with it
- * ("trans1" for TMB_EMPHASIS_TRANSCRIBER). Classes not listed here, such as
- * UEB's "transnote" (a transcriber's note, no typeface of the print), are
- * not carried: liblouis still reads their indicators as indicators, and the
- * text they mark comes back plain.
+ * flag, and a flag written forward goes to the first readable class listed
+ * with it ("trans1" for TMB_EMPHASIS_TRANSCRIBER in UEB). Classes not listed
+ * here, such as UEB's "transnote" (a transcriber's note, no typeface of the
+ * print), are not carried: liblouis still reads their indicators as
+ * indicators, and the text they mark comes back plain.
  */
 static const struct {
 	const char *name;
@@ -131,12 +133,14 @@ static const struct {
 /*
  * The loaded table's emphasis: for each class of EMPHASIS_CLASSES, its
  * typeform bit in the table (0 when the table has no such class), and
- * whether `back` reports it, which only a class that passed
- * `check_readable` does.
+ * whether liblouis reads it back exactly with this table
+ * (`check_readable`). Both directions carry only the readable classes:
+ * `forward` writes no indicator `back` could not read, and `back` reports
+ * no emphasis it may have misread.
  */
 typedef struct {
 	formtype bit[EMPHASIS_CLASS_COUNT];
-	int reported[EMPHASIS_CLASS_COUNT];
+	int readable[EMPHASIS_CLASS_COUNT];
 } table_emphasis;
 
 /*
@@ -314,8 +318,9 @@ leave_tables_folder(void) {
  * - Forward, `in_typeform` holds each input character's emphasis, or is
  *   NULL for a paragraph with none, which then translates exactly as it did
  *   before protocol 2. liblouis writes the indicators the table's rules
- *   give: UEB's word, passage, and terminator indicators, EBAE's own, and
- *   nothing from a table with no rules for the class. liblouis also WRITES
+ *   give, such as UEB's word, passage, and terminator indicators, and
+ *   nothing from a table with no rules for the class (the bits it is given
+ *   are only of readable classes: `typeform_for_flags`). liblouis also WRITES
  *   into the array it is given, a '0' or '8' for each output cell
  *   (lou_translateString.c), however long the output is, so the array
  *   passed is a fresh copy as long as the output's room, never the
@@ -395,8 +400,12 @@ all_braille(const widechar *chars, size_t count) {
 
 /*
  * The table's typeform bits for TextMouth's flags `flags`: for each flag,
- * the bit of the first class EMPHASIS_CLASSES lists with it, and nothing for
- * a class the table lacks, so such a table writes plain braille.
+ * the bit of the first readable class EMPHASIS_CLASSES lists with it, and
+ * nothing for a flag with no readable class, so a table liblouis cannot read
+ * back, or that has no such class, writes plain braille (October 21, 2026,
+ * review E2: EBAE's indicators, written, came back as stray periods and
+ * ">" signs, and some of this Mac's tables' as ";", "_", or U+007F around a
+ * word, so reading TextMouth's own export changed its words).
  */
 static formtype
 typeform_for_flags(const table_emphasis *emphasis, unsigned flags) {
@@ -404,6 +413,7 @@ typeform_for_flags(const table_emphasis *emphasis, unsigned flags) {
 	unsigned done = 0;
 	for (size_t i = 0; i < EMPHASIS_CLASS_COUNT; i++) {
 		unsigned flag = EMPHASIS_CLASSES[i].flag;
+		if (!emphasis->readable[i]) continue;
 		if ((flags & flag) && !(done & flag)) typeform |= emphasis->bit[i];
 		done |= flag;
 	}
@@ -412,29 +422,38 @@ typeform_for_flags(const table_emphasis *emphasis, unsigned flags) {
 
 /*
  * TextMouth's flags for the table's typeform bits `typeform`, counting only
- * the classes `back` reports.
+ * the readable classes.
  */
 static unsigned
 flags_for_typeform(const table_emphasis *emphasis, formtype typeform) {
 	unsigned flags = 0;
 	for (size_t i = 0; i < EMPHASIS_CLASS_COUNT; i++)
-		if (emphasis->reported[i] && (typeform & emphasis->bit[i])) flags |= EMPHASIS_CLASSES[i].flag;
+		if (emphasis->readable[i] && (typeform & emphasis->bit[i])) flags |= EMPHASIS_CLASSES[i].flag;
 	return flags;
 }
 
 /* The probe of `check_readable`: plain lowercase words, which every bundled
-   table reads back letter for letter, contracted or not. */
-static const char PROBE[] = "alpha bravo charlie delta echo foxtrot golf hotel india juliett";
+   table reads back letter for letter, contracted or not, with punctuation
+   where its emphasized words end. */
+static const char PROBE[] =
+		"alpha bravo, charlie delta echo foxtrot golf hotel. india juliett; kilo lima: mike "
+		"november! oscar's papa? quebec";
 
 /*
  * Whether the probe's character at `index` lies in its marked stretches:
- * the word "bravo" alone, and the passage "delta echo foxtrot golf hotel",
- * five words with the spaces between them, longer than every bundled table's
- * shortest passage (UEB's three words, EBAE's four).
+ * the passage "delta echo foxtrot golf hotel", five words with the spaces
+ * between them, longer than every bundled table's shortest passage (UEB's
+ * three words, EBAE's four), and the words "bravo", "juliett", "lima",
+ * "november", "oscar", and "papa" alone. The punctuation after each, a
+ * comma, a period, a semicolon, a colon, an exclamation mark, a possessive,
+ * and a question mark, is not marked: emphasis that ends at punctuation is
+ * where EBAE and several of this Mac's tables write signs liblouis reads as
+ * punctuation of their own (Thai Grade 2 read "word;" back as "wordbb").
  */
 static int
 is_probe_marked(size_t index) {
-	static const char *marked[] = {"bravo", "delta echo foxtrot golf hotel"};
+	static const char *marked[] = {
+			"bravo", "delta echo foxtrot golf hotel", "juliett", "lima", "november", "oscar", "papa"};
 	for (size_t k = 0; k < sizeof marked / sizeof marked[0]; k++) {
 		size_t start = (size_t)(strstr(PROBE, marked[k]) - PROBE);
 		if (index >= start && index < start + strlen(marked[k])) return 1;
@@ -443,24 +462,28 @@ is_probe_marked(size_t index) {
 }
 
 /*
- * Marks in `emphasis->reported` each class that liblouis reads back exactly
- * as it writes it with this table, so that `back` never reports emphasis it
- * cannot read. For each class the table has, the probe is translated
+ * Marks in `emphasis->readable` each class that liblouis reads back exactly
+ * as it writes it with this table, so that `forward` never writes an
+ * indicator `back` would misread and `back` never reports emphasis it may
+ * have misread. For each class the table has, the probe is translated
  * forward with the class on its marked stretches, then back, and the class
- * passes when the text comes back as the probe and the class's bit (and no
- * other carried class's) lies on exactly the marked letters; spaces are not
- * looked at, since liblouis gives a word's following space its emphasis.
+ * passes when the text comes back as the probe, punctuation included, and
+ * the class's bit (and no other carried class's) lies on exactly the marked
+ * letters; spaces and punctuation are not looked at for emphasis, since
+ * liblouis gives a word's following space its emphasis.
  *
  * liblouis 3.39.0 reads UEB's emphasis back exactly, but not EBAE's or that
- * of ten of this Mac's tables, which end a passage with an indicator BEFORE
- * its last word (`endemphphrase ... before`), as UEB never does: it reads
- * EBAE's italic word indicator (dots 4-6) as a period, its bold one (dots
- * 4-5-6, 4-6) as the end of a bold passage, which drops it, and lets a
- * passage run to the end of the paragraph. Reported, that would put
- * emphasis the book never had into its Markdown. Measured on each run rather
- * than listed by name, so that a table liblouis learns to read passes
- * without a change here, and one of this Mac's tables is judged by what its
- * own rules do.
+ * of most of this Mac's tables that have emphasis rules. EBAE, like ten of
+ * this Mac's tables, ends a passage with an indicator BEFORE its last word
+ * (`endemphphrase ... before`), as UEB never does: liblouis reads EBAE's
+ * italic word indicator (dots 4-6) as a period, its bold one (dots 4-5-6,
+ * 4-6) as the end of a bold passage, which drops it, lets a passage run to
+ * the end of the paragraph, and writes a stray sign before punctuation that
+ * follows a passage. Written or reported, that would change the words of a
+ * book TextMouth exported and read again, or put emphasis it never had into
+ * its Markdown. Measured on each run rather than listed by name, so that a
+ * table liblouis learns to read passes without a change here, and one of
+ * this Mac's tables is judged by what its own rules do.
  */
 static void
 check_readable(const char *table, table_emphasis *emphasis) {
@@ -494,8 +517,8 @@ check_readable(const char *table, table_emphasis *emphasis) {
 		passes = print != NULL && print_length == (int)length &&
 				memcmp(print, probe, length * sizeof(widechar)) == 0;
 		for (size_t k = 0; passes && k < length; k++)
-			if (PROBE[k] != ' ') passes = (read[k] & carried) == marked[k];
-		emphasis->reported[i] = passes;
+			if (PROBE[k] >= 'a' && PROBE[k] <= 'z') passes = (read[k] & carried) == marked[k];
+		emphasis->readable[i] = passes;
 		free(braille);
 		free(print);
 		free(read);
@@ -505,14 +528,15 @@ check_readable(const char *table, table_emphasis *emphasis) {
 
 /*
  * Reads the table's bit for each class of EMPHASIS_CLASSES into `emphasis`,
- * and, for `back`, which classes it reports (`check_readable`).
+ * and which classes liblouis reads back exactly (`check_readable`), the
+ * only ones either direction carries.
  */
 static void
-look_up_emphasis(const char *table, int forward, table_emphasis *emphasis) {
+look_up_emphasis(const char *table, table_emphasis *emphasis) {
 	memset(emphasis, 0, sizeof *emphasis);
 	for (size_t i = 0; i < EMPHASIS_CLASS_COUNT; i++)
 		emphasis->bit[i] = lou_getTypeformForEmphClass(table, EMPHASIS_CLASSES[i].name);
-	if (!forward) check_readable(table, emphasis);
+	check_readable(table, emphasis);
 }
 
 /*
@@ -686,7 +710,7 @@ main(int argc, char **argv) {
 	if (is_check) {
 		status = EXIT_DONE;
 	} else {
-		look_up_emphasis(table, is_forward, &emphasis);
+		look_up_emphasis(table, &emphasis);
 		status = translate_file(table, is_forward, &emphasis, argv[4], argv[5]);
 	}
 	lou_free();

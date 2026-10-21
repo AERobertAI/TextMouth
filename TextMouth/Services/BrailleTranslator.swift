@@ -292,9 +292,12 @@ enum BrailleTranslator {
     /// Print sent forward gives liblouis each character's emphasis, and the
     /// braille that comes back holds it as the table's indicators, with no
     /// emphasis of its own. Braille sent back comes back as print with the
-    /// emphasis liblouis read from the indicators, of the classes the helper
-    /// found liblouis reads back exactly with this table (`check_readable`
-    /// in `TextMouthBraille/main.c`): UEB's, but not EBAE's.
+    /// emphasis liblouis read from the indicators. Both directions carry
+    /// only the classes the helper finds liblouis reads back exactly with
+    /// this table (`check_readable` in `TextMouthBraille/main.c`): UEB's.
+    /// EBAE's, and those of most of this Mac's tables, liblouis misreads,
+    /// so with them emphasis is neither written nor read, and an export
+    /// read back keeps its words (review E2, October 21, 2026).
     ///
     /// Line breaks inside a text become one space (print) or blank cell
     /// (braille), and NUL characters are removed, with their emphasis. A

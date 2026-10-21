@@ -50,9 +50,11 @@ struct BrailleExportOptions: TextExportOptions {
 /// (FMT22; emphasis since October 21, 2026): what `BrailleDocumentWriter`
 /// translates. The export model's emphasis and strong emphasis reach
 /// liblouis this way (`BrailleExportBlocks.printBlocks(of:)`), and liblouis
-/// writes the table's indicators for them: UEB's word, passage, and
-/// terminator indicators, EBAE's own signs, and nothing at all from a table
-/// with no rules for them.
+/// writes the table's indicators for those it reads back exactly with the
+/// table (`check_readable` in the helper): UEB's word, passage, and
+/// terminator indicators. A table whose indicators it would misread, EBAE
+/// or most of this Mac's, writes plain braille, as a table with no rules
+/// for them does.
 struct BraillePrintBlock: Equatable, Sendable {
     /// The block: its kind, its level or depth, and its print.
     private(set) var block: BrailleBlock
@@ -123,7 +125,8 @@ enum BrailleDocumentWriter {
 
     /// The pages `blocks` make as braille: each block's print translated
     /// with `options.table`, with its emphasis, which liblouis writes as the
-    /// table's indicators (keeping its kind and its level or depth), then
+    /// table's indicators where it reads them back exactly
+    /// (`BraillePrintBlock`), keeping its kind and its level or depth, then
     /// laid out at `options.page`. No blocks give no pages (the translator
     /// runs no helper for them, but still refuses an unknown table).
     /// - Parameter folder: Where the translator makes its hidden files; it is
