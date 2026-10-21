@@ -21,6 +21,15 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case goForward = "Go Forward"
     case nextHeading = "Next Heading"
     case previousHeading = "Previous Heading"
+    /// Navigate > Next Page: moves to the start of the next page of a book
+    /// that has pages, and says its label (PG02).
+    case nextPage = "Next Page"
+    /// Navigate > Previous Page: moves to the start of the page being read,
+    /// or of the one before it when the place is at the page's start (PG02).
+    case previousPage = "Previous Page"
+    /// Navigate > Go to Page…: opens the reader's page field, where the user
+    /// types a page as the book numbers it (PG03).
+    case goToPage = "Go to Page…"
     /// Opens the book below this one in the reading list, for a book read
     /// from the list (FR09). It has no key until the user gives it one in
     /// Settings.
@@ -268,6 +277,9 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .navigateUpLevel: return .navigateUpLevel
         case .nextHeading: return .nextHeading
         case .previousHeading: return .previousHeading
+        case .nextPage: return .nextPage
+        case .previousPage: return .previousPage
+        case .goToPage: return .goToPage
         case .nextInReadingList: return .nextInReadingList
         case .previousInReadingList: return .previousInReadingList
         case .addBookmark: return .addBookmark
@@ -328,7 +340,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
              .increaseSpeed, .decreaseSpeed, .copyReadingPosition, .searchInBook:
             return "Playback"
         case .goToLibrary, .goBack, .goForward, .navigateUpLevel, .nextHeading, .previousHeading,
-             .nextInReadingList, .previousInReadingList:
+             .nextPage, .previousPage, .goToPage, .nextInReadingList, .previousInReadingList:
             return "Navigation"
         case .addBookmark, .nextBookmark, .previousBookmark, .showBookmarkList:
             return "Bookmarks"
@@ -1539,6 +1551,17 @@ extension ShortcutAction {
             ],
             .previousHeading: [
                 KeyBinding(key: "upArrow", command: true, option: true)
+            ],
+            // Pages (PG02, PG03): Option-Command with the horizontal arrows
+            // and G, which no other default uses.
+            .nextPage: [
+                KeyBinding(key: "rightArrow", command: true, option: true)
+            ],
+            .previousPage: [
+                KeyBinding(key: "leftArrow", command: true, option: true)
+            ],
+            .goToPage: [
+                KeyBinding(key: "g", command: true, option: true)
             ],
             // No keys by default (FR09): the user gives them keys of their
             // choosing in Settings, as the reading list's Library commands.

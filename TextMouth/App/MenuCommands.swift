@@ -47,6 +47,22 @@ extension FocusedValues {
     }
 }
 
+/// Whether the book of the reader whose window is key has pages (PG02),
+/// which Navigate > Next Page, Previous Page, and Go to Page… need. The
+/// reader's window publishes it as a scene value (`BookReaderWindowView`),
+/// so the commands stay available while VoiceOver reads the window's text,
+/// which holds no keyboard focus.
+struct ReaderHasPagesKey: FocusedValueKey {
+    typealias Value = Bool
+}
+
+extension FocusedValues {
+    var readerHasPages: Bool? {
+        get { self[ReaderHasPagesKey.self] }
+        set { self[ReaderHasPagesKey.self] = newValue }
+    }
+}
+
 /// The key Library window's selection as the Library menu's Remove names
 /// it: Delete Download for feed items alone (REV11 F2). Each Library window
 /// publishes its own as a scene value (`LibraryView`), so the title follows
@@ -200,6 +216,9 @@ struct PlaybackCommands: Commands {
 struct NavigationCommands: Commands {
     /// Whether the key reader reads its book from the reading list (FR09).
     @FocusedValue(\.readsFromReadingList) var readsFromReadingList
+    /// Whether the key reader's book has pages (PG02), which Next Page,
+    /// Previous Page, and Go to Page… need.
+    @FocusedValue(\.readerHasPages) var readerHasPages
 
     var body: some Commands {
         CommandMenu("Navigate") {
@@ -224,6 +243,23 @@ struct NavigationCommands: Commands {
             Button("Previous Heading") {
                 NotificationCenter.default.post(name: .previousHeading, object: nil)
             }
+
+            // Pages (PG02, PG03): available while the key reader's book has
+            // pages. Their keys are the manager's, as the headings' are.
+            Button(ShortcutAction.nextPage.title) {
+                NotificationCenter.default.post(name: .nextPage, object: nil)
+            }
+            .disabled(readerHasPages != true)
+
+            Button(ShortcutAction.previousPage.title) {
+                NotificationCenter.default.post(name: .previousPage, object: nil)
+            }
+            .disabled(readerHasPages != true)
+
+            Button(ShortcutAction.goToPage.title) {
+                NotificationCenter.default.post(name: .goToPage, object: nil)
+            }
+            .disabled(readerHasPages != true)
 
             Divider()
 
@@ -762,6 +798,15 @@ extension Notification.Name {
     static let decreaseSpeed = Notification.Name("decreaseSpeed")
     static let nextHeading = Notification.Name("nextHeading")
     static let previousHeading = Notification.Name("previousHeading")
+    /// Posted by Navigate > Next Page, and by its key (PG02): the key reader
+    /// moves to the start of the next page.
+    static let nextPage = Notification.Name("nextPage")
+    /// Posted by Navigate > Previous Page, and by its key (PG02): the key
+    /// reader moves to the start of the page being read, or the one before.
+    static let previousPage = Notification.Name("previousPage")
+    /// Posted by Navigate > Go to Page…, and by its key (PG03): the key
+    /// reader opens its page field.
+    static let goToPage = Notification.Name("goToPage")
     /// Posted by Navigate > Next in Reading List, and by its key when the
     /// user gave it one (FR09): the key reader, reading its book from the
     /// reading list, opens the book below it there.

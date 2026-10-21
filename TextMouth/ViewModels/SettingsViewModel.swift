@@ -42,6 +42,10 @@ enum SkipUnit: String, CaseIterable, Codable {
     case seconds60 = "60 seconds"
     case sentence = "Sentence"
     case paragraph = "Paragraph"
+    /// A page of the book (PG02), as the book numbers its pages. A book
+    /// without pages has none to move by, and the unit cycle passes over it
+    /// there (`ReaderViewModel.unit(after:bookHasPages:)`).
+    case page = "Page"
     case heading = "Heading"
     case subheading = "Subheading"
     case bookmark = "Bookmark"
@@ -54,7 +58,7 @@ enum SkipUnit: String, CaseIterable, Codable {
         case .seconds15: return max(1, Int(wpm * 15.0 / 60.0))
         case .seconds30: return max(1, Int(wpm * 30.0 / 60.0))
         case .seconds60: return max(1, Int(wpm * 60.0 / 60.0))
-        case .sentence, .paragraph, .heading, .subheading, .bookmark: return nil
+        case .sentence, .paragraph, .page, .heading, .subheading, .bookmark: return nil
         }
     }
 
@@ -118,6 +122,7 @@ enum SkipUnit: String, CaseIterable, Codable {
         case (.sentence, true): return "text.line.last.and.arrowtriangle.forward"
         case (.paragraph, false): return "text.justify.left"
         case (.paragraph, true): return "text.justify.right"
+        case (.page, _): return "doc.text"
         case (.heading, false), (.subheading, false): return "backward.end.fill"
         case (.heading, true), (.subheading, true): return "forward.end.fill"
         case (.bookmark, _): return "bookmark.fill"
