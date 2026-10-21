@@ -555,6 +555,91 @@ final class DOCXPageTests: XCTestCase {
         XCTAssertTrue(reading.chapter.pages.isEmpty)
     }
 
+    // MARK: - The Sample and the Real Documents
+
+    /// The synthetic sample holds every kind of page start in order, and each
+    /// page begins at the words it should: the page `w:br` mid-sentence, the
+    /// style with `w:pageBreakBefore`, the explicit and rendered breaks that
+    /// are one page, the Roman-numbered section, the decimal section that
+    /// restarts, the page inside a table (after it), and the page inside a
+    /// heading (before it).
+    func testTheSampleHasEveryKindOfPageInOrder() throws {
+        let reading = try read(at: copyOfDocument("format-samples/docx/page-breaks.docx"), includesPages: true)
+
+        XCTAssertEqual(reading.labels, ["1", "2", "3", "4", "i", "ii", "1", "2", "3"])
+        XCTAssertEqual(reading.openings(), [
+            "Pages in a", "continues here on", "The third page", "The fourth page", "The second section",
+            "page ii begins", "The third section", "A heading that", "A heading that",
+        ])
+        XCTAssertEqual(reading.content.chapters.count, 1)
+        XCTAssertEqual(reading.markdown.components(separatedBy: "<!-- page:").count - 1, 9)
+
+        // One space joins the words around the page break, and the two breaks
+        // that mark the fourth page are one page.
+        XCTAssertTrue(reading.chapter.text.contains("The first page runs on and continues here on the second page."))
+        XCTAssertTrue(reading.markdown.contains("runs on and <!-- page: 2 -->continues here"), reading.markdown)
+
+        // The table's page is after the table; the heading's, before the heading,
+        // and the heading line holds only its words.
+        let tableEnd = try XCTUnwrap(reading.markdown.range(of: "cell B\\. |", options: .backwards)).upperBound
+        let tablePage = try XCTUnwrap(reading.markdown.range(of: "<!-- page: 2 -->\n", range: tableEnd..<reading.markdown.endIndex))
+        let headingPage = try XCTUnwrap(reading.markdown.range(of: "<!-- page: 3 -->\n", range: tableEnd..<reading.markdown.endIndex))
+        let heading = try XCTUnwrap(reading.markdown.range(of: "# A heading that crosses a page"))
+        XCTAssertLessThan(tablePage.upperBound, headingPage.lowerBound)
+        XCTAssertLessThan(headingPage.upperBound, heading.lowerBound)
+        XCTAssertEqual(
+            reading.chapter.headings.map(\.text), ["Pages in a Word Document", "A heading that crosses a page"]
+        )
+    }
+
+    /// Every DOCX in the repository reads the same with pages as without
+    /// (the same chapters, reading text, and headings, so no saved place
+    /// moves), and without pages it holds no marker. Each has at least page 1.
+    func testEveryDocumentReadsTheSameWithAndWithoutPages() throws {
+        for name in [
+            "format-samples/docx/page-breaks.docx", "alice.docx", "test_book.docx",
+            "format-samples/docm/headings-synthetic.docm", "format-samples/docm/libreoffice-hello.docm",
+            "format-samples/dotm/headings-synthetic.dotm", "format-samples/dotm/libreoffice-autotext-dotm.dotm",
+            "format-samples/dotx/headings-synthetic.dotx", "format-samples/dotx/libreoffice-sample.dotx",
+        ] {
+            let copy = try copyOfDocument(name)
+            let with = try read(at: copy, includesPages: true)
+            let without = try read(at: copy, includesPages: false)
+
+            XCTAssertFalse(without.markdown.contains("<!-- page:"), name)
+            XCTAssertTrue(without.chapter.pages.isEmpty, name)
+            XCTAssertFalse(with.content.pages.isEmpty, name)
+            assertSameReading(with, without)
+        }
+    }
+
+    /// alice.docx, from Project Gutenberg through Word, holds 18
+    /// `w:pageBreakBefore` set on (and one set off): the first, on "Table of
+    /// Contents", is page 1 itself, so there are 18 pages. Seventeen begin at a
+    /// heading; the one that does not begins the paragraph that ends the book.
+    func testAliceHasEighteenPagesAtItsHeadings() throws {
+        let reading = try read(at: copyOfDocument("alice.docx"), includesPages: true)
+
+        XCTAssertEqual(reading.content.chapters.count, 1)
+        XCTAssertEqual(reading.labels, (1...18).map(String.init))
+        let headingOffsets = Set(reading.chapter.headings.map(\.characterOffset))
+        let notAtHeadings = zip(reading.chapter.pages, reading.openings(words: 4))
+            .filter { !headingOffsets.contains($0.0.characterOffset) }
+            .map(\.1)
+        XCTAssertEqual(notAtHeadings, ["*** END OF THE"])
+        XCTAssertEqual(reading.openings(words: 3).first, "Table of Contents")
+    }
+
+    /// A copy of the document at `path`, a format sample ("format-samples/…")
+    /// or a book in TestData, in a new folder of this test's own: samples are
+    /// untrusted input and are never read in place.
+    func copyOfDocument(_ path: String) throws -> URL {
+        let source = try requireFile(path)
+        let copy = try makeSandboxDirectory("DOCXPages").appendingPathComponent(source.lastPathComponent)
+        try FileManager.default.copyItem(at: source, to: copy)
+        return copy
+    }
+
     // MARK: - Helpers
 
     /// The WordprocessingML namespace each part declares.
