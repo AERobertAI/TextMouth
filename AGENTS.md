@@ -72,9 +72,20 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - A test host that joins the system's media session takes the user's AirPods; it never does now, but a branch older than that fix still can until it rebases.
 - A tool call that waits on a permission prompt stops its agent until the user answers, and the user may be away. Claude Code asks before an `rm` through a shell variable: on October 18, 2026 a team lead's `rm -f "$D/$out"` in a throwaway test loop waited five hours while its team stood still. Every `rm`, in a brief or the orchestrator's own commands, takes literal paths. While agents work, the orchestrator runs `python3 -I Scripts/agents/stall-watch.py --subagents ~/.claude/projects/<project folder>/<session id>/subagents` as a background task; it exits naming any agent whose tool call has waited fifteen minutes for its result.
 
-## Where things stood on October 20, 2026
+## Where things stood on October 21, 2026
 
-On October 19 the user asked: "Go ahead and try working on the braille reading features tonight. and the export feature, for the braille I want it possible to have multiple braille tables and contracted and uncontracted settings and use the library. (see how much it increases app size)". Two teams worked on it, each an Opus lead with Sonnet workers (`Scripts/agents/briefs/2026-10-19/`), and fresh Opus reviewers read every branch before its merge. Merged into main:
+**October 21.** The user asked for three things: fix the failing test ("send a team to see if its a real problem"), carry text formatting through braille, and pages across formats as a navigation unit, "the feature set implemented first today". Today's line was 30% of the week left. Merged into main:
+- **`fix/reader-load-race` (825a3f23).** The race was real: a book moved while a reader opened it was called damaged. A moving package is now noted, and the reader waits and reloads, in cloud libraries too.
+- **`braille/emphasis` (b4ca969e).** Helper protocol 2 carries emphasis both ways where liblouis reads it back: UEB, but not EBAE or most of this Mac's tables.
+- **`team/pages` (77e798a0).**
+  - A `<!-- page: LABEL -->` marker in content.md.
+  - Page as a navigation unit, with Next Page, Previous Page, and Go to Page…, and the page on the reader screen and in Where Am I?.
+  - Pages for EPUB, PDF, DOCX, DAISY text, and textutil's formats.
+  - B12 (a finished Edit Text change is kept by automatic re-reads) and B13 (textutil's joined words).
+  - **PG09's launch re-read of existing books is merged switched off:** its Opus review found it unsafe for the live library. PG16 holds those findings.
+- **Research and documentation:** `research/pages` (3c7d43b1), and the documentation pass `docs/oct21` (5c8a2a07).
+
+**October 19 and 20.** On October 19 the user asked: "Go ahead and try working on the braille reading features tonight. and the export feature, for the braille I want it possible to have multiple braille tables and contracted and uncontracted settings and use the library. (see how much it increases app size)". Two teams worked on it, each an Opus lead with Sonnet workers (`Scripts/agents/briefs/2026-10-19/`), and fresh Opus reviewers read every branch before its merge. Merged into main:
 - `team/export` (0db62a38): FMT18 and FMT19. The Export dialog's Convert to picker offers Markdown, HTML, RTF, and Word 97-2003. One swift-markdown walker of content.md feeds every writer. Every exported file is made in a scratch folder and moved in with an exclusive rename. 12 review findings were dealt with.
 - `team/braille` (3996434d): FMT20, FMT21, and FMT22.
   - liblouis 3.39.0 runs in the TextMouthBraille helper, with four English tables and a Braille tab.
@@ -84,11 +95,24 @@ On October 19 the user asked: "Go ahead and try working on the braille reading f
 - Documentation passes: `docs/oct19` (c77c9cf4), `docs/oct19b` (bc5ef365), and `docs/oct20` (077b4e1e).
 
 **State at the end:**
-- **Main's suite:** **7940 tests, 73 skipped, 0 failures**, about 18 minutes of test time.
+- **Main's suite:** **8216 tests, 75 skipped, 0 failures**, about 18 minutes of test time.
 - **Older builds:** a TextMouth built before the braille merge cannot open a library that holds a braille book.
-- **Questions:** in `humanQuestions/2026-10-19.md`. Question 1 is answered (English stays built in and the default), and question 4 is built. Questions 2 (emphasis in exported braille) and 3 (moving by page in a braille book) wait, as do the older question files.
+- **Questions:**
+  - `humanQuestions/2026-10-21.md`, about pages, all built with their recommended answers;
+  - `2026-10-19.md`, whose questions 1 to 4 are answered or built.
 - **Pending with the user:** the push and install, the October 18 questions, and the rm-hook offer.
-- **The next candidates:** FMT43 (speech to audio in Export), questions 2 and 3, and the braille follow-ups in the TODO (lists, running heads, long words, and Mac refusals remembered across launches).
+- **The next candidates:**
+  - PG16, so existing books gain pages, then PG12 (braille pages);
+  - the EBAE and UEB emphasis reading passes;
+  - FMT43 (speech to audio in Export);
+  - the TODO's pages and race follow-ups.
+
+**Lessons of October 21:**
+- **A review of the whole branch is worth its cost for anything that rewrites the live library.** The pages review found the launch re-read unsafe (heading-only edits invisible to its check, kept books unprotected afterwards, an interrupted batch turned into false edits), and switching it off let the rest ship.
+- **A fix to a shared writer needs the golden and heading-annotation classes in its targeted run.** pagesfix's marker change passed 388 tests and failed three others at the merge, and merge-chain had already committed the merge. main was reset to its parent (local and unpushed), and the branch was fixed and merged again.
+- **Disk.** It hit 0 GB at 04:44, with six workers and two other agents building on about 6 GB, and every shell call failed. Run one build at a time when under 10 GB free, and delete build/DerivedData-main right after each merge suite: an idle one blocked the pages team for 45 minutes.
+- **Untracked fixtures.** TestData zips that only the main checkout has (the DAISY audio books, the transcription fixtures) are missing from worktrees, so goldens that read them are first checked at the merge.
+- **merge-chain** must be started with the Bash tool's background mode. A shell `&` worked once, but gave no notice when it ended.
 
 **Lessons of October 19 and 20:**
 - **A login expiry** stops every agent and watcher silently; the usage monitor exits with "AUTH PROBLEM". After the user logs in, a SendMessage to each agent id resumes it, and workers came back with their uncommitted work intact.
