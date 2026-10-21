@@ -2822,3 +2822,36 @@ The samples were made on this Mac. A hosted test of Book Information's sheet ski
 - one-way tables offered for export only;
 - refusals remembered across launches, so that languages always refused leave the pop-up;
 - the reader-load race.
+
+## From the pages team (team/pages, PG01 to PG09, PG11, B12, B13), Oct 21
+
+**The team.** An Opus lead, `pages-lead`, with eight Sonnet workers: marker (PG01), reader (PG02 to PG04), epub (PG05), pdf (PG06), docx (PG07), daisy (PG08), upgrade (B12, then PG09), and textutil (PG11).
+- The lead wrote an interface note (`Scripts/agents/briefs/2026-10-21/pages/interface.md`) after PG01, so the five format and reader tasks could run in parallel.
+- Every worker was accepted, some after answered questions.
+- The lead cherry-picked each worker's commits in a straight line, and rebased onto main after the racefix and braille emphasis merges.
+- One Opus reviewer then read the branch: PG09 was not safe for the live library. An Opus fix agent, `pagesfix`, switched PG09's launch re-read off and fixed the findings that touched new imports.
+
+**Test runs:**
+- the lead's full run: 8205 tests, 78 skipped, 1 real failure, PerformanceBaselineTests' launch fixture, fixed in a8e7fa2e;
+- the fix agent's targeted run: 388 tests, 2 skipped, 0 failures.
+
+**Decisions:**
+- **The marker.** `<!-- page: LABEL -->`, escaped as `PAGES-RESEARCH-2026-10-21.md` §2.2 says, and placed only through `MarkdownMarkerWriter`. That never begins a line: inside a list item or quote it is a block within it, and after a hard break it goes at the end of the previous line.
+- **Where a page begins.** At its first whole word. A page after a chapter's last word begins at the next chapter's first word.
+- **"Of N"** is the largest whole-number label.
+- **Every extraction takes `includesPages`.** With false, it reproduces cache format 3.0.7. Tests that pin a parser's exact Markdown read with false.
+- **Page unit.** It sits between Paragraph and Heading.
+- **textutil.** DOC, RTF, ODT, and WordML read a second watched textutil run to plain text, and align its form feeds by letter and digit counts, with a 16-character check.
+- **B12.** `Book.editedText` records a finished Edit Text change. Redo Text Extraction keeps a copy of replaced text as `content.md.edited-<time>`, which is never deleted.
+- **PG09.** It is built, with `Book.pageReaderVersion` and `PageReaderVersions`, but `launchRereadIsOn = false` until PG16.
+
+**Not verified:**
+- the status row's page button with VoiceOver (its hosted check skips);
+- Go to Page… and the settings by ear;
+- a 2,000-page PDF's launch cost.
+
+**Lessons:**
+- **Disk.** Six workers plus two other agents, on about 6 GB free, hit 0 GB at 04:44, and every shell call failed. One build at a time then serialized phase 2 for about three hours. The orchestrator's idle merge build folder (2 GB) blocked the team for 45 minutes.
+- **Briefs.** They should list a parser's exact-output tests, and pre-authorize `includesPages: false` for them.
+
+**Follow-ups:** PG16, and the TODO's open follow-ups paragraph.
