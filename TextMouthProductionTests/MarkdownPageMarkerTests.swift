@@ -156,7 +156,11 @@ final class MarkdownPageMarkerTests: XCTestCase {
         // The opening of a list item, quote, or heading, before its words.
         XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "- "), .containerStart(continuation: "  "))
         XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "a\n- \n  "), .containerStart(continuation: "  "))
-        XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "    12. "), .containerStart(continuation: "        "))
+        XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "12. "), .containerStart(continuation: "    "))
+        // Four columns in, the opening may be code in a list broken apart.
+        XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "    12. "), .blockStart)
+        XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "a\n\t- \n  "), .blockStart)
+        XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "a\n    words\n"), .blockStart)
         XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "> - "), .containerStart(continuation: ">   "))
         XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "## \n  "), .headingStart)
         // Lines no paragraph continues are followed by a block.

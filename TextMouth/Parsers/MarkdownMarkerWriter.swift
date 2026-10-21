@@ -15,7 +15,8 @@ enum MarkdownMarkerWriter {
         case continuationLine
         /// At the start of a new block: the beginning, after a blank line, or
         /// after a line no paragraph continues (a heading, a thematic break
-        /// or setext underline, a code fence, or a list item's marker alone).
+        /// or setext underline, a code fence, or a list item's marker alone),
+        /// or one that may be code (`Line.mayBeCode`).
         case blockStart
         /// After the opening of a list item or block quote ("- ", "1. ", "> ",
         /// "> - "), before any of its words, also when a line of whitespace
@@ -52,6 +53,11 @@ enum MarkdownMarkerWriter {
     ///   its own line would be too few in a list item. The page still begins
     ///   at the next word, since a page that begins in whitespace begins at
     ///   the word after it (`PageBreak.firstWordStart`).
+    /// - None of these is written on a line indented four columns or more
+    ///   before its first opening or word, which may be code in a list the
+    ///   source's whitespace broke apart (a DTBook's item holding a
+    ///   paragraph): the marker is a block of its own there, at the margin,
+    ///   where nothing can make it code.
     ///
     /// - Parameters:
     ///   - marker: The complete comment to write.
@@ -61,9 +67,6 @@ enum MarkdownMarkerWriter {
     ///     (a DOCX page `w:br`, textutil's HTML): within a line, a space is
     ///     written beside the marker unless the words are apart already
     ///     (`spaceSide(keepingWordsApartAfter:in:)`).
-    ///   - indentation: Written before a marker that is a block of its own, so
-    ///     that it stays in the list item holding the list being written (a
-    ///     DAISY list's items keep theirs); none for any other converter.
     ///   - continuationAtMargin: Whether the caller writes each line of a
     ///     block at that block's own margin and indents it there itself, as
     ///     the HTML converter does, converting a list item's or quote's
@@ -83,7 +86,6 @@ enum MarkdownMarkerWriter {
         _ marker: String,
         inline: Bool,
         keepingWordsApart: Bool = false,
-        indentation: String = "",
         continuationAtMargin: Bool = false,
         into markdown: inout String
     ) {
@@ -114,7 +116,7 @@ enum MarkdownMarkerWriter {
             markdown += " " + marker
         case .blockStart:
             ensureBlankLine(&markdown)
-            markdown += indentation + marker + "\n\n"
+            markdown += marker + "\n\n"
         }
     }
 
@@ -159,7 +161,7 @@ enum MarkdownMarkerWriter {
             return Placement(position: .withinLine, index: last.wordsStart)
         }
         if last.opensContainer {
-            return last.containerStart
+            return last.mayBeCode ? Placement(position: .blockStart, index: scalars.endIndex) : last.containerStart
         }
 
         // The last line is blank: what comes before it decides.
@@ -176,6 +178,9 @@ enum MarkdownMarkerWriter {
         }
         if continuationAtMargin {
             return Placement(position: .continuationLine, index: scalars.endIndex)
+        }
+        guard !previous.mayBeCode else {
+            return Placement(position: .blockStart, index: scalars.endIndex)
         }
         if previous.words.isEmpty {
             // An opening followed by a line of whitespace has no words yet
@@ -228,12 +233,27 @@ extension MarkdownMarkerWriter {
         /// Whether the openings hold a block quote or list item marker, rather
         /// than only indentation.
         let opensContainer: Bool
+        /// The columns of indentation before the first opening or word, a tab
+        /// reaching the next multiple of four, as in CommonMark.
+        let leadingColumns: Int
 
         /// The line's words: everything after its openings.
         var words: Substring.UnicodeScalarView { scalars[wordsStart...] }
 
+        /// Whether the line is indented four columns or more before its first
+        /// opening or word, so that it is code wherever no container holds it,
+        /// as in a list the source's whitespace broke apart: no marker is
+        /// written on it, nor after its opening.
+        var mayBeCode: Bool { leadingColumns >= 4 }
+
         init(_ scalars: Substring.UnicodeScalarView) {
             self.scalars = scalars
+            var columns = 0
+            for scalar in scalars {
+                guard Self.isIndentation(scalar) else { break }
+                columns += scalar == "\t" ? 4 - columns % 4 : 1
+            }
+            leadingColumns = columns
             var index = scalars.startIndex
             var opensContainer = false
             while true {

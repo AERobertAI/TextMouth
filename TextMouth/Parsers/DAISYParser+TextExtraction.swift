@@ -159,7 +159,7 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
             ensureNewline()
 
         case "li":
-            let indent = listItemIndentation
+            let indent = String(repeating: "    ", count: max(0, listDepth - 1))
             if let currentType = listTypeStack.last {
                 if currentType == "ol" {
                     let count = (listCounterStack.last ?? 0) + 1
@@ -388,16 +388,14 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
     ///
     /// At a block boundary (nothing yet, or the Markdown ends with a line
     /// break) the marker is a block of its own, which names the same place as
-    /// the block after it; in a list it is indented as the list's items are,
-    /// so it stays in the item holding a nested list, and the items after it,
-    /// indented as they are, do not become code. Anywhere else the shared
-    /// writer places it (`MarkdownMarkerWriter.write`): inline in running
-    /// text, with a space first when none is there, so
-    /// "before<pagenum>12</pagenum>after" reads "before after"; at the opening
-    /// of a list item, quote, or heading (`- `, `3. `, `> `, `## `), even with
-    /// the source's whitespace after it, inside it before its words; after a
-    /// line break, at the end of the line before. A marker written after an
-    /// opening would make an HTML block of the item's whole first line.
+    /// the block after it. Anywhere else the shared writer places it
+    /// (`MarkdownMarkerWriter.write`): inline in running text, with a space
+    /// first when none is there, so "before<pagenum>12</pagenum>after" reads
+    /// "before after"; at the opening of a list item, quote, or heading
+    /// (`- `, `3. `, `> `, `## `), even with the source's whitespace after
+    /// it, inside it before its words; after a line break, at the end of the
+    /// line before. A marker written after an opening would make an HTML
+    /// block of the item's whole first line.
     private func writePageMarker() {
         pagesRead += 1
         let marker = MarkdownPageMarker(label: pageLabel, ordinal: pagesRead).markdown
@@ -405,19 +403,11 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
         pageLabelDepth = 0
 
         let atBlockBoundary = markdown.unicodeScalars.last.map { $0 == "\n" } ?? true
-        MarkdownMarkerWriter.write(
-            marker, inline: !atBlockBoundary, keepingWordsApart: true, indentation: listItemIndentation, into: &markdown
-        )
+        MarkdownMarkerWriter.write(marker, inline: !atBlockBoundary, keepingWordsApart: true, into: &markdown)
         dropsLeadingSpace = !atBlockBoundary
     }
 
     // MARK: - Helpers
-
-    /// The spaces before a list item's marker at the current list depth:
-    /// four for each list the current one is nested in, none outside a list.
-    private var listItemIndentation: String {
-        String(repeating: "    ", count: max(0, listDepth - 1))
-    }
 
     /// Ensure the output ends with at least one blank line (two newlines)
     private func ensureBlankLine() {

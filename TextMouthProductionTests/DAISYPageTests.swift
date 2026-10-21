@@ -445,19 +445,25 @@ final class DAISYPageTests: XCTestCase {
         XCTAssertEqual(pageLines(of: heading), ["9: Chapter Two\n\nB"])
     }
 
-    /// Page numbers in nested lists keep every item's words. One between two
-    /// items of a nested list is a block indented as those items are, so it
-    /// stays in the item holding the list and the next item is not read as
-    /// code; one opening a nested item is a block inside that item; one
-    /// between two items with only spaces around it is written at the end of
-    /// the item before, not on a line the next item would run into.
+    /// Page numbers in lists keep every word and are never read. A nested
+    /// item's paragraph breaks the list apart, as the source's whitespace
+    /// and the item's `<p>` leave it, and its lines four columns in are code:
+    /// a page number after that paragraph is a block at the margin, never
+    /// on one of those lines (are-you-ready-d3-audio's page 11). One opening
+    /// a nested item is a block after the item's opening, four columns in;
+    /// one between two items with only spaces around it is written at the
+    /// end of the item before, not on a line the next item would run into.
     func testPageNumbersInNestedListsKeepEveryItemsWords() throws {
-        let between = parsed(try convertDTBook(
-            "<list type=\"ul\"><li>Alpha<list type=\"ul\"><li>Beta</li><pagenum>8</pagenum><li>Gamma</li></list></li>"
-                + "<li>Delta</li></list>"
+        let brokenApart = parsed(try convertDTBook(
+            "<list type=\"ul\"><li><p>One.</p><list type=\"ol\"><li><p>Two words.</p>\n  <pagenum>11</pagenum>\n</li>"
+                + "<li><p>Three words.</p></li></list></li></list>"
         ))
-        XCTAssertEqual(spokenText(of: between), "Alpha\n\nBeta\n\nGamma\n\nDelta")
-        XCTAssertEqual(pageLines(of: between, opening: 5), ["8: Gamma"])
+        let spoken = spokenText(of: brokenApart)
+        XCTAssertFalse(spoken.contains("<!--"), spoken)
+        for words in ["One.", "Two words.", "Three words."] {
+            XCTAssertTrue(spoken.contains(words), "\(words) is missing from: \(spoken)")
+        }
+        XCTAssertEqual(brokenApart.pages.breaks.map(\.label), ["11"])
 
         let opening = parsed(try convertDTBook(
             "<list type=\"ul\"><li>Alpha<list type=\"ol\"><li>Beta</li><li><pagenum>8</pagenum>Gamma words</li></list></li></list>"
