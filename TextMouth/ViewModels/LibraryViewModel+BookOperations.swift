@@ -358,17 +358,27 @@ extension LibraryViewModel {
     /// (`library(after:current:)`), and a moved book whose row changed has its
     /// record saved again at its new place, as one whose row changed while a
     /// failed transition was put back has at its old one.
+    ///
+    /// `beforeMovingPackages` runs on the main actor before anything moves:
+    /// once the storage work is held and the work already under way has
+    /// finished, or at once for a transition that moves no package. A
+    /// folder's case-only rename renames its directory there, telling the
+    /// readers of the books inside first, so that no reader waits on other
+    /// storage work to read its book (TODO P10). Should it throw, nothing
+    /// moves, and the error is thrown.
     func performLibraryTransition(
         _ proposedLibrary: Library,
         affectedBookIDs: Set<UUID>,
         equivalence: FolderPathEquivalence = .library,
-        disk: LibraryTransitionDisk = .system
+        disk: LibraryTransitionDisk = .system,
+        beforeMovingPackages: () throws -> Void = {}
     ) async throws {
         let plan = try planLibraryTransition(proposedLibrary, affectedBookIDs: affectedBookIDs, equivalence: equivalence)
         guard !plan.moves.isEmpty else {
             // No package moves and no record is rewritten, as for an empty
             // folder: only folders are made, at once, which no storage work
             // can be in the way of.
+            try beforeMovingPackages()
             try LibraryTransitionDiskWork.perform(plan, disk: disk, restoringThrough: self)
             publish(plan)
             return
@@ -379,6 +389,7 @@ extension LibraryViewModel {
             VoiceOverAnnouncer.announce(work.waitingMessage)
         }
         LibraryPersistenceService.flushPendingSave()
+        try beforeMovingPackages()
 
         bookUpdates.packagesWillMove(plan.movingBookIDs)
         defer { bookUpdates.packagesDidMove(plan.movingBookIDs) }

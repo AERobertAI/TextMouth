@@ -823,6 +823,235 @@ final class ReaderRefreshTests: XCTestCase {
         reader.stop()
     }
 
+    // MARK: - Loading During a Package Move
+    //
+    // A reader loads its book off the main thread, reading the book's files
+    // where the book was when the load began, and hands what it read back to
+    // the main thread. A move made off the main thread
+    // (`performLibraryTransition`) can take those files away while they are
+    // read, and the read's failure can reach the reader before the library
+    // says where the book is now: a full suite on October 20, 2026 saw an
+    // audiobook moved as it loaded say "The file “Tracks” in this audiobook
+    // is damaged or incomplete" (`testABookMovedWhileItLoadsOpensFromWhereItIsNow`).
+    // These tests hold each load on a queue of their own (`HeldLoads`) and
+    // let it read at the moment they choose, such as inside the disk's move
+    // of `commitLibraryTransition`, which runs on the main thread between the
+    // move's two events: once the package has moved, the main run loop
+    // turning while the load hands over what it read, as the main thread
+    // turns while a move made off it is under way.
+
+    /// A book's folder changes, by Move to Folder… or Rename Folder…, in
+    /// the moment its reader's load reads the book's files: the package has
+    /// left the place the load reads, and the read's failure reaches the
+    /// reader before the library says where the book is now. The reader
+    /// takes the failure for the move's doing, not the book's: once the move
+    /// is over, it loads the book again from where it is now, and opens it
+    /// with no error, naming its files there; an audiobook plays from there.
+    /// So for an audiobook of tracks, a text book, and a DAISY audiobook.
+    /// Before, the reader said the book could not be read, an audiobook
+    /// naming its moved folder as a damaged file ("The file “Tracks” in this
+    /// audiobook is damaged or incomplete").
+    func testALoadThatReadsAsItsBookMovesOpensTheBookFromWhereItIsNow() throws {
+        for kind in LoadedBookKind.allCases {
+            for change in FolderChange.allCases {
+                let context = "\(kind.name), read as \(change.name) moved it"
+                let world = try makeIntegrationWorld("Reader Refresh Read During \(change) \(kind)")
+                let book = try makeBook(kind, readyFor: change, in: world)
+                let loads = holdLoads()
+                let reader = world.openReader(for: book, loadQueue: loads.queue)
+                XCTAssertTrue(reader.isLoading, context)
+
+                try commit(change, of: book, in: world) {
+                    loads.letReadAndHandOver()
+                }
+
+                try assertOpensFromWhereItIsNow(reader, kind, in: world, context)
+            }
+        }
+    }
+
+    /// A book's folder changes, by Move to Folder… or Rename Folder…, after
+    /// its reader's load began but before the load reads the book's files:
+    /// the whole move is over first, and the reader has been told where the
+    /// book is now. The load reads where the book was and finds nothing
+    /// there, and the reader loads the book again from where it is now,
+    /// opening it with no error. So for an audiobook of tracks, a text book,
+    /// and a DAISY audiobook.
+    func testALoadThatReadsAfterItsBookMovedOpensTheBookFromWhereItIsNow() throws {
+        for kind in LoadedBookKind.allCases {
+            for change in FolderChange.allCases {
+                let context = "\(kind.name), read after \(change.name) moved it"
+                let world = try makeIntegrationWorld("Reader Refresh Read After \(change) \(kind)")
+                let book = try makeBook(kind, readyFor: change, in: world)
+                let loads = holdLoads()
+                let reader = world.openReader(for: book, loadQueue: loads.queue)
+                XCTAssertTrue(reader.isLoading, context)
+
+                let made = outcome { await self.runCommand(change, on: book, in: world) }
+                XCTAssertTrue(made.succeeded, "\(context): \(made.failureMessage ?? "")")
+                loads.letRead()
+
+                try assertOpensFromWhereItIsNow(reader, kind, in: world, context)
+            }
+        }
+    }
+
+    /// A reader opens a book while the library moves its package, as a
+    /// book can be opened from the library list in the moment a Move to
+    /// Folder… of many books takes. The reader reads nothing of the book
+    /// until the move is over, not even where the book was: its storage,
+    /// which every load asks first where the library is, hears nothing from
+    /// it while the package moves, though its loads are let read. Then it
+    /// reads the book once, from where it is now, and opens it with no
+    /// error. So for an audiobook of tracks, a text book, and a DAISY
+    /// audiobook. Before, its load read the package as it moved and said the
+    /// book could not be read.
+    func testABookOpenedWhileItsPackageMovesOpensOnceTheMoveIsOver() throws {
+        for kind in LoadedBookKind.allCases {
+            let context = "\(kind.name), opened as it moved"
+            let world = try makeIntegrationWorld("Reader Refresh Opened During Move \(kind)")
+            let book = try makeBook(kind, readyFor: .moveToFolder, in: world)
+            let loads = holdLoads()
+            let storage = ObservedBookStorage()
+            let opened = OpenedReader()
+
+            try commit(.moveToFolder, of: book, in: world) {
+                opened.reader = world.openReader(
+                    for: book,
+                    loadQueue: loads.queue,
+                    cloud: ReaderCloudServices(storage: storage, states: BookCloudStates())
+                )
+                loads.letReadAndHandOver()
+                opened.readsDuringTheMove = storage.readsBegun
+            }
+
+            XCTAssertEqual(opened.readsDuringTheMove, 0, "\(context): the reader read its book as its package moved")
+            let reader = try XCTUnwrap(opened.reader, "\(context): no reader opened")
+            try assertOpensFromWhereItIsNow(reader, kind, in: world, context)
+            XCTAssertEqual(storage.readsBegun, 1, "\(context): the book was not read once the move was over")
+        }
+    }
+
+    /// A move of a book's package fails once the package has moved, so the
+    /// library puts it back where it was. The reader's load read the book in
+    /// the moment its package was away, and the read's failure reaches the
+    /// reader while the move is under way, or only once the move has been
+    /// put back. Either way the reader loads the book again from where it
+    /// still is, and opens it with no error. Before, it said the book was
+    /// damaged.
+    func testALoadThatReadsAsAMoveIsPutBackOpensTheBookWhereItStillIs() throws {
+        for failureArrivesDuringTheMove in [true, false] {
+            let context = failureArrivesDuringTheMove
+                ? "the read's failure taken during the move"
+                : "the read's failure taken after the move was put back"
+            let world = try makeIntegrationWorld("Reader Refresh Read During Failed Move \(failureArrivesDuringTheMove)")
+            let book = try makeBook(.tracks, readyFor: .moveToFolder, in: world)
+            let loads = holdLoads()
+            let reader = world.openReader(for: book, loadQueue: loads.queue)
+
+            XCTAssertThrowsError(
+                try commit(.moveToFolder, of: book, in: world, failing: true, whileMoving: {
+                    if failureArrivesDuringTheMove {
+                        loads.letReadAndHandOver()
+                    } else {
+                        loads.letReadBeforeHandingOver()
+                    }
+                }),
+                context
+            )
+
+            XCTAssertEqual(try row(of: book, in: world.library).folderPath, world.folder.path, "\(context): the move was kept")
+            try assertOpensFromWhereItIsNow(reader, .tracks, in: world, context)
+        }
+    }
+
+    /// An audiobook whose second track is damaged, and which keeps no index,
+    /// so that every load checks its tracks, moves while its reader's load
+    /// reads it. The reader loads it again once the move is over, and that
+    /// load, from where the book is now, finds the damage: the reader says
+    /// the book is damaged, naming the track, exactly as it says when
+    /// nothing moves. Before, it named the book's moved folder of tracks as
+    /// the damaged file.
+    func testADamagedBookMovedAsItLoadsStillSaysWhichFileIsDamaged() throws {
+        let world = try makeIntegrationWorld("Reader Refresh Damaged During Move")
+        let book = try world.makeSilentAudioBook(title: "Breakwater Soundings", trackDurations: [1, 1])
+        // Damaged once indexed, and the index removed, so loads check the tracks.
+        try Data("Not a recording at all.".utf8).write(to: URL(fileURLWithPath: book.filePath).appendingPathComponent("02.wav"))
+        try FileManager.default.removeItem(at: TextMouthPaths.contentIndexPath(in: book.tmbDirectory))
+
+        // Where nothing moves, the reader names the damaged track.
+        let unmoved = world.openReader(for: book)
+        waitForReaderToLoad(unmoved)
+        let damage = try XCTUnwrap(unmoved.errorMessage, "The damaged book opened")
+        XCTAssertTrue(damage.contains("“02.wav”"), "The reader did not name the damaged track: \(damage)")
+        unmoved.close()
+
+        let loads = holdLoads()
+        let reader = world.openReader(for: book, loadQueue: loads.queue)
+        try commit(.moveToFolder, of: book, in: world) {
+            loads.letReadAndHandOver()
+        }
+        waitForReaderToLoad(reader)
+
+        XCTAssertEqual(reader.errorMessage, damage, "The moved book is not said to be damaged as it is")
+        XCTAssertNil(reader.content, "The damaged book opened")
+    }
+
+    /// A case-only rename of the folder holding a text book, as Rename
+    /// Folder… makes it, first waits for an import under way to finish, as
+    /// every folder edit waits for the storage work under way, saying so. A
+    /// reader that opens the book meanwhile loads it at once: the rename
+    /// tells the book's readers that its package will move only once it has
+    /// stopped waiting, and the folder keeps its spelling until then. Once
+    /// the import finishes, the rename does too, and the reader names the
+    /// folder's new spelling. Before, the rename told the readers before it
+    /// waited, and a reader stayed on Loading, unannounced, for as long as
+    /// the import ran, longer than a finished book's request to play the
+    /// next one lasts. (A text book is read without storage work; the load
+    /// of an audiobook of tracks looks at its manifest as storage work,
+    /// which waits for the rename's own hold on the storage work.)
+    func testABookInAFolderBeingRespelledLoadsWhileTheRenameWaitsForAnImport() throws {
+        let world = try makeIntegrationWorld("Reader Refresh Respelling Waits")
+        let shelf = BookFolder(name: "shelf", parentPath: world.folder.path)
+        world.library.library.folders = [BookFolder(name: world.folder.path), shelf]
+        let created = try world.importBook(from: writeTideTablesEPUB())
+        let move = outcome { await world.library.moveBooksReturningOutcome([created], toFolder: shelf.fullPath) }
+        XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
+        let book = try row(of: created, in: world.library)
+        // An import holds the storage work, paused as it copies its file.
+        let importing = holdFirstImport(of: world.library)
+        world.library.importSingleFileAsync(from: try writeImportSource(), toFolder: world.folder.path)
+        wait(for: [importing.reached], timeout: 10)
+        let announced = VoiceOverAnnouncer.recordedAnnouncements.count
+
+        try FolderPathEquivalence.withLibraryRule(.caseInsensitive) {
+            let rename = RenameOutcome()
+            Task { @MainActor in
+                rename.outcome = await world.library.renameFolderReturningOutcome(shelf, to: "Shelf")
+            }
+            XCTAssertTrue(
+                waitUntil(timeout: 10) {
+                    VoiceOverAnnouncer.recordedAnnouncements.dropFirst(announced).map(\.message)
+                        .contains(StorageWork.importing.waitingMessage)
+                },
+                "The rename did not wait for the import"
+            )
+
+            let reader = world.openReader(for: book)
+            waitForReaderToLoad(reader)
+            XCTAssertNil(reader.errorMessage, "The book did not open")
+            XCTAssertNotNil(reader.content, "The book did not open")
+            XCTAssertNil(rename.outcome, "The rename did not wait for the import")
+
+            importing.gate.signal()
+            XCTAssertTrue(waitUntil(timeout: 10) { rename.outcome != nil }, "The rename never finished")
+            let renamed = try XCTUnwrap(rename.outcome)
+            XCTAssertTrue(renamed.succeeded, renamed.failureMessage ?? "")
+            XCTAssertEqual(reader.book.folderPath, "\(world.folder.path)/Shelf", "The reader does not name the new spelling")
+            XCTAssertNil(reader.errorMessage)
+        }
+    }
+
     // MARK: - Stale Fields
 
     /// Every field of `reader` that no longer matches `library`'s row for
@@ -1160,6 +1389,249 @@ final class ReaderRefreshTests: XCTestCase {
                 try book.saveBookInfoThrowing()
             }
         )
+    }
+
+    // MARK: Loading During a Package Move
+
+    /// The kinds of book a reader loads each in its own way: an audiobook of
+    /// tracks (its saved index, then its tracks' tags), a text book (its
+    /// text cache), and a DAISY audiobook, whose headings play clips of
+    /// several files.
+    private enum LoadedBookKind: CaseIterable {
+        case tracks
+        case text
+        case daisy
+
+        /// What a failure message calls it.
+        var name: String {
+            switch self {
+            case .tracks: return "an audiobook of tracks"
+            case .text: return "a text book"
+            case .daisy: return "a DAISY audiobook"
+            }
+        }
+
+        /// Whether it is an audiobook, which the reader plays from its files.
+        var isAudio: Bool {
+            self != .text
+        }
+
+        /// How many chapters it opens with (`makeBook(_:readyFor:in:)`).
+        var chapterCount: Int {
+            switch self {
+            case .tracks: return 2
+            case .text: return 3
+            case .daisy: return 2
+            }
+        }
+    }
+
+    /// The changes of a book's folder that move the book's package, each as
+    /// its Library window command makes it.
+    private enum FolderChange: CaseIterable {
+        /// Move to Folder… moves the book into the folder Shelf.
+        case moveToFolder
+        /// Rename Folder… renames Shelf, the folder holding the book, to
+        /// Stacks.
+        case renameFolder
+
+        /// What a failure message calls it.
+        var name: String {
+            switch self {
+            case .moveToFolder: return "Move to Folder…"
+            case .renameFolder: return "Rename Folder…"
+            }
+        }
+    }
+
+    /// The folder Shelf in `world`'s folder, as books and folders name it.
+    private static func shelfPath(in world: IntegrationWorld) -> String {
+        "\(world.folder.path)/Shelf"
+    }
+
+    /// A book of `kind` in `world`'s folder, listed in the library, with as
+    /// many chapters as `kind` says; for Rename Folder…, moved first into
+    /// the folder Shelf, which the rename renames. Returns the book's row as
+    /// the library then holds it.
+    private func makeBook(_ kind: LoadedBookKind, readyFor change: FolderChange, in world: IntegrationWorld) throws -> Book {
+        let book: Book
+        switch kind {
+        case .tracks:
+            book = try world.makeSilentAudioBook(title: "Breakwater Soundings", trackDurations: [1, 1])
+        case .text:
+            book = try world.importBook(from: writeTideTablesEPUB())
+        case .daisy:
+            book = try world.makeSegmentedAudioBook(
+                title: "Harbour Soundings",
+                files: ["intro.wav": 1, "a.wav": 1, "b.wav": 1],
+                sections: [
+                    AudioSegment(title: "Opening", file: "intro.wav", startTime: 0, endTime: 1),
+                    try XCTUnwrap(AudioSegment(title: "Harbour Survey", clips: [
+                        AudioClip(file: "a.wav", startTime: 0, endTime: 1),
+                        AudioClip(file: "b.wav", startTime: 0, endTime: 1)
+                    ]))
+                ]
+            )
+        }
+        guard change == .renameFolder else { return book }
+        world.library.library.folders = [
+            BookFolder(name: world.folder.path),
+            BookFolder(name: "Shelf", parentPath: world.folder.path)
+        ]
+        let move = outcome { await world.library.moveBooksReturningOutcome([book], toFolder: Self.shelfPath(in: world)) }
+        XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
+        return try row(of: book, in: world.library)
+    }
+
+    /// The library `change` proposes for `book`, in `world`, as its command
+    /// proposes it to the library's transition.
+    private func proposedLibrary(_ change: FolderChange, of book: Book, in world: IntegrationWorld) throws -> Library {
+        switch change {
+        case .moveToFolder:
+            return Self.library(world.library.library, moving: book.id, to: Self.shelfPath(in: world))
+        case .renameFolder:
+            var proposed = world.library.library
+            let shelfPath = Self.shelfPath(in: world)
+            let shelf = try XCTUnwrap(proposed.folders.first { $0.fullPath == shelfPath }, "There is no folder Shelf")
+            try proposed.renameFolderThrowing(id: shelf.id, to: "Stacks")
+            return proposed
+        }
+    }
+
+    /// Makes `change` to `book`'s folder through its Library window command,
+    /// whose package moves off the main actor, and returns what happened.
+    private func runCommand(_ change: FolderChange, on book: Book, in world: IntegrationWorld) async -> OperationOutcome {
+        switch change {
+        case .moveToFolder:
+            return await world.library.moveBooksReturningOutcome([book], toFolder: Self.shelfPath(in: world))
+        case .renameFolder:
+            let shelfPath = Self.shelfPath(in: world)
+            guard let shelf = world.library.library.folders.first(where: { $0.fullPath == shelfPath }) else {
+                return .failure("There is no folder Shelf to rename.")
+            }
+            return await world.library.renameFolderReturningOutcome(shelf, to: "Stacks")
+        }
+    }
+
+    /// Makes `change` to `book`'s folder through the library's transition,
+    /// as its command proposes it, running `whileMoving` once, after the
+    /// book's package has moved on disk and before the library holds its
+    /// new row, as anything can run on the main thread then while a move
+    /// made off it is under way. With `failing`, the book's record cannot be
+    /// written after its package has moved, so the transition is put back,
+    /// the package moving back where it was, and the error is thrown.
+    private func commit(
+        _ change: FolderChange,
+        of book: Book,
+        in world: IntegrationWorld,
+        failing: Bool = false,
+        whileMoving: @escaping @MainActor @Sendable () -> Void
+    ) throws {
+        let proposed = try proposedLibrary(change, of: book, in: world)
+        try world.library.commitLibraryTransition(
+            proposed,
+            affectedBookIDs: world.library.bookIDsChangingFolder(in: proposed),
+            disk: .movingPackages(failingRecords: failing, afterFirstMove: whileMoving)
+        )
+    }
+
+    /// Waits for `reader` to load its book, of `kind`, and checks that it
+    /// opened with no error, with all its chapters, naming its files where
+    /// `world`'s library has the book now, and that an audiobook plays from
+    /// there; `context` begins each failure.
+    private func assertOpensFromWhereItIsNow(
+        _ reader: ReaderViewModel,
+        _ kind: LoadedBookKind,
+        in world: IntegrationWorld,
+        _ context: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        waitForReaderToLoad(reader, file: file, line: line)
+        XCTAssertNil(reader.errorMessage, "\(context): the book did not open", file: file, line: line)
+        XCTAssertEqual(reader.content?.chapters.count, kind.chapterCount, "\(context): the chapters", file: file, line: line)
+        let stale = staleFields(of: reader, in: world.library, after: context)
+        XCTAssertTrue(stale.isEmpty, Self.report(stale), file: file, line: line)
+        guard kind.isAudio else { return }
+        reader.play()
+        XCTAssertEqual(
+            Self.folderPath(of: reader.audioPlaybackService.loadedURL),
+            Self.standardizedPath(try row(of: reader.book, in: world.library).filePath),
+            "\(context): the audio does not play from where the book is now",
+            file: file,
+            line: line
+        )
+        reader.stop()
+    }
+
+    /// The reader a test opens while a package moves, kept for the test,
+    /// with how many reads of its book had begun when the package had moved.
+    @MainActor
+    private final class OpenedReader {
+        var reader: ReaderViewModel?
+        var readsDuringTheMove: Int?
+    }
+
+    /// An import a test holds as it copies its file (`holdFirstImport(of:)`).
+    private struct HeldImport {
+        /// Fulfilled once the import is held.
+        let reached: XCTestExpectation
+        /// Signalled to let the import go on.
+        let gate: DispatchSemaphore
+    }
+
+    /// The first import `library` runs, held as it copies its file, and so
+    /// holding the storage work, until the test signals the returned gate;
+    /// later imports pass. The import is let go, and the seam removed, when
+    /// the test ends at the latest.
+    private func holdFirstImport(of library: LibraryViewModel) -> HeldImport {
+        let reached = expectation(description: "the import began to copy its file")
+        // Fulfilled once only, which `FirstClaim` sees to as well: a second
+        // fulfilment would abort the test host.
+        reached.assertForOverFulfill = false
+        let held = HeldImport(reached: reached, gate: DispatchSemaphore(value: 0))
+        let first = FirstClaim()
+        let queue = library.importOperationQueue
+        queue.stepObserver = { step, _ in
+            guard step == .copying, first.claim() else { return }
+            held.reached.fulfill()
+            _ = held.gate.wait(timeout: .now() + 60)
+        }
+        addTeardownBlock {
+            queue.stepObserver = nil
+            held.gate.signal()
+        }
+        return held
+    }
+
+    /// A short text file to import, in a folder of this test's own.
+    private func writeImportSource() throws -> URL {
+        let file = try makeSandboxDirectory("ReaderRefreshImport").appendingPathComponent("Slipway Notes.txt")
+        try Data("Slipway Notes\n\nThe pilot boards at the fairway buoy.\n".utf8).write(to: file)
+        return file
+    }
+
+    /// What a folder edit a test started returned, once it has.
+    @MainActor
+    private final class RenameOutcome {
+        var outcome: OperationOutcome?
+    }
+
+    /// Whether something has been claimed yet, as an import's step observer
+    /// asks from its own thread. `@unchecked Sendable`: its one property is
+    /// read and written with `lock` held.
+    private final class FirstClaim: @unchecked Sendable {
+        private let lock = NSLock()
+        private var claimed = false
+
+        /// Whether this is the first claim.
+        func claim() -> Bool {
+            lock.withLock {
+                guard !claimed else { return false }
+                claimed = true
+                return true
+            }
+        }
     }
 
     /// A three-chapter EPUB about tides, each chapter listed in its table

@@ -71,7 +71,9 @@ struct LibraryBookUpdate {
 /// Changes that move a book's package on disk are bracketed as well
 /// (`packagesWillMove(_:)` and `packagesDidMove(_:)`), so a reader playing
 /// the book's audio can stop reading its files before they move and play on
-/// from the same place once they have.
+/// from the same place once they have. Whether a book's package is moving
+/// can also be asked (`isPackageMoving(_:)`), by a reader that opens the
+/// book during a move.
 ///
 /// Every event is delivered synchronously on the main actor, while the
 /// change that caused it is being made.
@@ -94,9 +96,11 @@ final class LibraryBookUpdates {
     /// The latest update revision of every book ever updated, by ID. Kept
     /// after a book's readers close, so its revisions keep rising.
     private var revisions: [UUID: Int] = [:]
-    /// How many package-move brackets are open for each book. Brackets
-    /// nest: a book hears `packageWillMove` when its first one opens and
-    /// `packageMoveEnded` when its last one closes.
+    /// How many package-move brackets are open for each book whose package
+    /// is moving, whether a reader has it open or not, so that a reader
+    /// opening it during the move can know (`isPackageMoving(_:)`). Brackets
+    /// nest: a book's readers hear `packageWillMove` when its first one
+    /// opens and `packageMoveEnded` when its last one closes.
     private var openMoveBrackets: [UUID: Int] = [:]
     /// True while updates are being sent. A reader applying one can change
     /// the library again (by saving its position, say); that change is
@@ -213,15 +217,17 @@ final class LibraryBookUpdates {
 
     // MARK: - Package Moves
 
-    /// Tells the readers of each watched book in `bookIDs` that its package
-    /// is about to move on disk. Each call is closed by a call of
-    /// `packagesDidMove(_:)` with the same books once the move is over,
-    /// whether it succeeded or was put back.
+    /// Notes that the package of each book in `bookIDs` is about to move on
+    /// disk, and tells the readers of each watched one. Each call is closed
+    /// by a call of `packagesDidMove(_:)` with the same books once the move
+    /// is over, whether it succeeded or was put back. A book no reader has
+    /// open hears nothing, but is noted as moving all the same, so a reader
+    /// that opens it before the move is over knows (`isPackageMoving(_:)`).
     func packagesWillMove(_ bookIDs: some Sequence<UUID>) {
-        for bookID in Set(bookIDs) where watches[bookID] != nil {
+        for bookID in Set(bookIDs) {
             let open = openMoveBrackets[bookID] ?? 0
             openMoveBrackets[bookID] = open + 1
-            if open == 0 {
+            if open == 0, watches[bookID] != nil {
                 events.send(.packageWillMove(bookID: bookID))
             }
         }
@@ -230,6 +236,8 @@ final class LibraryBookUpdates {
     /// Tells the readers of each book in `bookIDs` that the move announced
     /// by `packagesWillMove(_:)` is over. Call it after the library holds
     /// the books' new rows, so their readers carry on from the new places.
+    /// A reader that opened the book during the move hears the end too,
+    /// though it never heard the start.
     func packagesDidMove(_ bookIDs: some Sequence<UUID>) {
         for bookID in Set(bookIDs) {
             guard let open = openMoveBrackets[bookID] else { continue }
@@ -237,8 +245,20 @@ final class LibraryBookUpdates {
                 openMoveBrackets[bookID] = open - 1
             } else {
                 openMoveBrackets[bookID] = nil
-                events.send(.packageMoveEnded(bookID: bookID))
+                if watches[bookID] != nil {
+                    events.send(.packageMoveEnded(bookID: bookID))
+                }
             }
         }
+    }
+
+    /// Whether the package of the book `bookID` is moving on disk now:
+    /// between the opening of its first package-move bracket
+    /// (`packagesWillMove(_:)`) and the closing of its last
+    /// (`packagesDidMove(_:)`), whether a reader had it open as the move
+    /// began or not, so that a reader that opens the book during the move,
+    /// and never heard its start, can know.
+    func isPackageMoving(_ bookID: UUID) -> Bool {
+        openMoveBrackets[bookID] != nil
     }
 }

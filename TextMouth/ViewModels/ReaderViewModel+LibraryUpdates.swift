@@ -16,7 +16,10 @@ import Foundation
 ///
 /// Before the library moves the book's package on disk, it says so, and
 /// audio that is playing stops reading the book's files until the move is
-/// over, then plays on from the same place.
+/// over, then plays on from the same place. A load whose read of the book's
+/// files fails because they moved loads the book again from where it is
+/// then, rather than say the book cannot be read, and a load asked for
+/// while they move reads nothing until the move is over.
 extension ReaderViewModel {
 
     /// Audio set aside while the book's package moves: playing when the
@@ -31,11 +34,13 @@ extension ReaderViewModel {
         guard !hasClosed else { return }
         switch event {
         case .packageWillMove:
+            noteLoadMeetingPackageMove()
             pauseAudioForPackageMove()
         case .updated(let update):
             applyLibraryUpdate(update)
         case .packageMoveEnded:
             resumeAudioAfterPackageMove()
+            loadAfterPackageMove()
         case .textReplaced(_, let content, let movedPlaces):
             showEditedText(content, movedPlaces: movedPlaces)
         case .transcriptReplaced(_, let text):
@@ -214,6 +219,95 @@ extension ReaderViewModel {
         audioPlaybackService.stop()
         audioPlaybackService.setVolume(volume)
         playAudioChapter()
+    }
+
+    // MARK: - Loading Around Package Moves
+
+    /// Whether the library is moving the book's package on disk now
+    /// (`LibraryBookUpdates.isPackageMoving(_:)`): from just before the
+    /// package moves until the library holds its new place, or has put it
+    /// back. Asked of the library rather than kept by the reader, so that a
+    /// reader opened during a move, which heard nothing of its start, knows
+    /// too.
+    var isPackageMoving: Bool {
+        libraryViewModel.bookUpdates.isPackageMoving(book.id)
+    }
+
+    /// Begins a read of the book's files for a load (`loadContent()`,
+    /// `loadDownloadedBook()`), unless the library is moving the book's
+    /// package: then the load waits, the reader still loading, and the
+    /// move's end loads the book from the start, from wherever it is then
+    /// (`loadAfterPackageMove()`). So nothing reads a package as it moves,
+    /// as the load of a reader opened in the moment a move of many books
+    /// takes once did, finding the package gone and saying the book could
+    /// not be read (TODO P10).
+    ///
+    /// - Returns: Whether the read may begin now.
+    func beginReadingForLoad() -> Bool {
+        guard !isPackageMoving else {
+            loadWaitsForPackageMove = true
+            DiagnosticLog.trace(.storage, "a load waits for the book's package to finish moving")
+            return false
+        }
+        // The read beginning now has met no move yet.
+        loadMetPackageMove = false
+        return true
+    }
+
+    /// Notes, as the library says the book's package will move, that the
+    /// load under way, if any, meets the move: its read may find the
+    /// package gone, even when its failure reaches the reader only once the
+    /// move is over, or has been put back.
+    private func noteLoadMeetingPackageMove() {
+        if isLoading {
+            loadMetPackageMove = true
+        }
+    }
+
+    /// Loads the book again, rather than show why a load could not read its
+    /// files at `filePath`, or say that they have not arrived on this Mac or
+    /// must be downloaded (`continueOpening(in:found:at:)`), when the library
+    /// may have taken those files away: once the move of the book's package
+    /// under way is over, or at once when a move began while the book
+    /// loaded, even one put back, or the library has given the book another
+    /// path since the load began. The library moves a package before it
+    /// says where the package went, and a move made off the main thread
+    /// lets a read's failure reach the reader in between, so the read of a
+    /// moving package fails for the move, not for the book. Loaded again, a
+    /// book that really is damaged or missing says so as it would have
+    /// without a move. Before, the failure showed in place of the book, an
+    /// audiobook naming its moved folder of tracks as a damaged file
+    /// (TODO P10).
+    ///
+    /// - Returns: Whether the book loads again, so the failure is not shown.
+    func loadAgainAfterMove(ofFilesReadAt filePath: String) -> Bool {
+        if isPackageMoving {
+            loadWaitsForPackageMove = true
+            DiagnosticLog.event(
+                .storage,
+                "READER_LOAD_AFTER_MOVE: \(book.title): its files were not where the load looked, "
+                    + "as its package moved; it loads again once the move is over"
+            )
+            return true
+        }
+        guard loadMetPackageMove || book.filePath != filePath else { return false }
+        DiagnosticLog.event(
+            .storage,
+            "READER_LOAD_AFTER_MOVE: \(book.title): its files moved after the load began; "
+                + "it loads again from where the book is now"
+        )
+        loadContent()
+        return true
+    }
+
+    /// The move of the book's package is over: a load that waited for it
+    /// loads the book from the start, from wherever the book is now: the
+    /// new place, which the library's update has already given the reader,
+    /// or the old one, for a move put back.
+    private func loadAfterPackageMove() {
+        guard loadWaitsForPackageMove else { return }
+        loadWaitsForPackageMove = false
+        loadContent()
     }
 
     /// Shows the book's metadata as the library now has it wherever the

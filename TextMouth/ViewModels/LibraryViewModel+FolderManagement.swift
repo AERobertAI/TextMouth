@@ -240,25 +240,35 @@ extension LibraryViewModel {
         }
 
         // A case-only or normalization-only rename still names the same
-        // directory on this volume. Rename that directory in place first; the
-        // transition then only rewrites the book paths and package records.
+        // directory on this volume. That directory is renamed in place before
+        // anything else, and the transition then only rewrites the book paths
+        // and package records.
         let respellsDirectory = equivalence.areEquivalent(oldPath, newPath)
         let affectedBookIDs = bookIDsChangingFolder(in: proposed)
-        // Respelling renames the books' directory before the transition runs,
-        // so readers playing them stop reading their files first, as the
-        // transition's own moves make them do (TODO P10).
-        let respelledBookIDs = respellsDirectory ? affectedBookIDs : []
-        bookUpdates.packagesWillMove(respelledBookIDs)
+        // The books' readers hear that their packages will move before the
+        // directory is renamed, so readers playing them stop reading their
+        // files first, as the transition's own moves make them do; but only
+        // once the transition holds the storage work and the work already
+        // under way has finished, since a reader that hears of a move reads
+        // nothing of its book until the move is over, and would otherwise
+        // wait on Loading for as long as an import or a text extraction ran.
+        // They hear that the move is over once the library holds the new
+        // paths, or once a rename that failed has given the directory back
+        // its spelling (TODO P10).
+        var respelledBookIDs: Set<UUID> = []
         defer { bookUpdates.packagesDidMove(respelledBookIDs) }
         var respelled = false
         do {
-            if respellsDirectory {
-                respelled = try TextMouthPaths.respellLibrarySubfolder(from: oldPath, to: newPath)
-            }
             try await performLibraryTransition(
                 proposed,
                 affectedBookIDs: affectedBookIDs,
-                equivalence: equivalence
+                equivalence: equivalence,
+                beforeMovingPackages: {
+                    guard respellsDirectory else { return }
+                    respelledBookIDs = affectedBookIDs
+                    bookUpdates.packagesWillMove(respelledBookIDs)
+                    respelled = try TextMouthPaths.respellLibrarySubfolder(from: oldPath, to: newPath)
+                }
             )
             return .success(nil)
         } catch {

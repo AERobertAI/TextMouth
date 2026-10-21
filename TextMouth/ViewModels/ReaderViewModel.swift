@@ -274,6 +274,12 @@ final class ReaderViewModel: ObservableObject {
     /// library is in a cloud location (FR02): the app's, unless the reader
     /// was created with its own, as tests do.
     let cloudServices: ReaderCloudServices
+    /// The queue each load reads the book's files on, off the main thread
+    /// (`loadContent()`, `loadDownloadedBook()`): a global queue, unless the
+    /// reader was created with its own, as tests do to hold a load's read
+    /// until the moment they choose, such as the middle of a move of the
+    /// book's package.
+    let loadQueue: DispatchQueue
     /// The reader's cloud work: its download, its working copy, and where
     /// the library was found to be (FR02).
     var cloudSession = ReaderCloudSession()
@@ -488,6 +494,23 @@ final class ReaderViewModel: ObservableObject {
     /// lets the audio go (`letGoOfAudioSetAsideForMove(because:)`), so that
     /// the move's end leaves the book as the listener left it.
     var audioPausedForMove: AudioPausedForMove?
+    /// Whether the book loads once the move of its package under way is
+    /// over (`isPackageMoving`): a load was asked for while the package
+    /// moved, and has read nothing yet (`beginReadingForLoad()`), or a
+    /// load's read of the book's files failed meanwhile, its files perhaps
+    /// gone from under it. The move's end loads the book from the start,
+    /// from wherever it is then (`loadAfterPackageMove()`, TODO P10).
+    /// Accessed from the LibraryUpdates extension.
+    var loadWaitsForPackageMove = false
+    /// Whether a move of the book's package began while the book loaded, so
+    /// that a failure of the read under way may be the move's doing, its
+    /// files gone from where the read began even when the move was put
+    /// back: the book is then loaded again rather than said to be
+    /// unreadable (`loadAgainAfterMove(ofFilesReadAt:)`, TODO P10). Set as
+    /// the library says the package will move, and cleared as each read of
+    /// the book's files begins (`beginReadingForLoad()`). Accessed from the
+    /// LibraryUpdates extension.
+    var loadMetPackageMove = false
     /// The book's edited text, with the moves of its places the edit took,
     /// when the user's edit was taken while this reader was still loading
     /// the text it had (FR05): shown once loading ends
@@ -625,6 +648,9 @@ final class ReaderViewModel: ObservableObject {
     ///   - nowPlaying: The Now Playing coordinator the reader's media session
     ///     joins. Nil uses the app's shared one; tests pass their own, made
     ///     without system integrations, to send it the system's commands.
+    ///   - loadQueue: The queue each load reads the book's files on. Nil uses
+    ///     a global queue; tests pass a queue of their own that holds the
+    ///     reads until they let them begin.
     init(
         book: Book,
         libraryViewModel: LibraryViewModel,
@@ -635,7 +661,8 @@ final class ReaderViewModel: ObservableObject {
         notificationCenter: NotificationCenter = .default,
         renderScheduler: (any SpeechRenderScheduling)? = nil,
         cloud: ReaderCloudServices? = nil,
-        nowPlaying: NowPlayingService? = nil
+        nowPlaying: NowPlayingService? = nil,
+        loadQueue: DispatchQueue? = nil
     ) {
         self.book = book
         self.libraryViewModel = libraryViewModel
@@ -649,6 +676,7 @@ final class ReaderViewModel: ObservableObject {
         self.renderScheduler = renderScheduler ?? SpeechRenderCoordinator.shared
         self.cloudServices = cloud ?? .app
         self.nowPlayingCoordinator = nowPlaying ?? .shared
+        self.loadQueue = loadQueue ?? .global(qos: .userInitiated)
         self.bookmarks = book.bookmarks
 
         libraryViewModel.registerOpenBook(book.id)
@@ -1280,18 +1308,20 @@ final class ReaderViewModel: ObservableObject {
     /// it always was. A book in a cloud location goes on through its cloud
     /// state (`continueOpening(in:found:)`): downloaded first when any of its
     /// files is only in the cloud, and then read without ever waiting on the
-    /// network.
+    /// network. A book whose package the library is moving is read once the
+    /// move is over (`beginReadingForLoad()`, TODO P10).
     func loadContent() {
         isLoading = true
+        guard beginReadingForLoad() else { return }
         let bookCopy = book
         let storage = cloudServices.storage
         let package = BookPackage(bookCopy)
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+        loadQueue.async { [weak self] in
             let location = storage.libraryLocation()
             if location.isCloud {
                 let state = storage.state(of: package)
                 DispatchQueue.main.async { [weak self] in
-                    self?.continueOpening(in: location, found: state)
+                    self?.continueOpening(in: location, found: state, at: bookCopy.filePath)
                 }
                 return
             }
@@ -1575,13 +1605,14 @@ final class ReaderViewModel: ObservableObject {
     }
 
     /// Shows why the book at `filePath` could not be read, in place of the
-    /// reader.
+    /// reader, unless the library moved the book's files from under the
+    /// load: then the book loads again, from where it is now.
     func showLoadFailure(_ error: Error, readFrom filePath: String) {
-        // The library moved the book while it loaded, so the
-        // files the load read may have gone from under it: load
-        // it again from where the book is now (TODO P10).
-        if book.filePath != filePath {
-            loadContent()
+        // The library moved the book while it loaded, or is moving it,
+        // so the files the load read may have gone from under it: load
+        // it again from where the book is, once any move is over
+        // (TODO P10).
+        if loadAgainAfterMove(ofFilesReadAt: filePath) {
             return
         }
         errorMessage = error.localizedDescription
