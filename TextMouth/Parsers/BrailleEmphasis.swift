@@ -54,6 +54,26 @@ struct BrailleEmphasis: OptionSet, Hashable, Sendable {
     /// The first line of every file the helper reads and writes: the
     /// protocol and its version.
     static let protocolHeader: String = TMB_PROTOCOL_HEADER
+
+    // MARK: Markdown
+
+    /// How content.md, which TextMouth's reader reads, carries these flags:
+    /// italic as emphasis (`*…*`), bold as strong emphasis (`**…**`), both as
+    /// both (`***…***`). Markdown has no underline, script, or
+    /// transcriber-defined typeface, and none of TextMouth's other readers
+    /// carries underline into content.md today: DOCX keeps bold, italic, and
+    /// strikethrough (`DOCXParser+Converter`), and HTML, which RTF and Word
+    /// 97-2003 reach through textutil, keeps `em`, `i`, `strong`, and `b`
+    /// (`HTMLToMarkdownConverter`); both drop underline. So these three are
+    /// carried as emphasis, the nearest thing the reader holds, rather than
+    /// lost (the user, October 21, 2026: "keeping all text formatting
+    /// extractable from the braille").
+    var markdownStyle: MarkdownEmphasis.Style {
+        var style: MarkdownEmphasis.Style = []
+        if !isDisjoint(with: [.italic, .underline, .script, .transcriber]) { style.insert(.emphasis) }
+        if contains(.bold) { style.insert(.strong) }
+        return style
+    }
 }
 
 // MARK: - Text With Its Emphasis
