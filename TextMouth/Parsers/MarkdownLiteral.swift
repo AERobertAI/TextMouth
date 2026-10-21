@@ -70,4 +70,20 @@ enum MarkdownLiteral {
             return false
         }
     }
+
+    /// Letters, digits, and marks. CommonMark counts none of them as
+    /// whitespace or punctuation, so an emphasis delimiter beside one is
+    /// flanking on that side whatever stands on its other side. Both
+    /// writers of emphasis keep their delimiters beside such characters:
+    /// `HTMLToMarkdownConverter` and `MarkdownEmphasis`.
+    static func isFlankingSafe(_ scalar: Unicode.Scalar) -> Bool {
+        switch scalar.properties.generalCategory {
+        case .uppercaseLetter, .lowercaseLetter, .titlecaseLetter, .modifierLetter, .otherLetter,
+             .decimalNumber, .letterNumber, .otherNumber,
+             .nonspacingMark, .spacingMark, .enclosingMark:
+            return true
+        default:
+            return false
+        }
+    }
 }

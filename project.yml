@@ -98,9 +98,11 @@ targets:
         CODE_SIGN_IDENTITY: "-"
         PRODUCT_NAME: TextMouth
         GENERATE_INFOPLIST_FILE: false
-        # Where Swift finds the LAME module (Vendor/lame/include/module.modulemap)
-        # and the exception catcher's (Vendor/ObjCExceptionCatcher/include/module.modulemap).
-        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include
+        # Where Swift finds the LAME module (Vendor/lame/include/module.modulemap),
+        # the exception catcher's (Vendor/ObjCExceptionCatcher/include/module.modulemap),
+        # and the braille helper's protocol (TextMouthBraille/include/module.modulemap),
+        # which the helper's main.c includes too.
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include
       # The Release app, which `make build` packages and `make install`
       # copies, is built to be small. Debug, where the hosted tests run, is
       # left as it is.
@@ -290,7 +292,11 @@ targets:
   # (BrailleTranslator, through WatchedProcess), so a hang or a crash in
   # liblouis costs one run of the helper, never the app. The app target
   # copies it into Contents/MacOS. Optimized for size, and stripped in the
-  # Release configuration as the app is.
+  # Release configuration as the app is. Its line protocol is defined once,
+  # in TextMouthBraille/include/TextMouthBrailleProtocol.h, which main.c
+  # includes by its path beside it and the app imports through the module
+  # map in the same folder (see SWIFT_INCLUDE_PATHS above), so the two sides
+  # cannot disagree about it.
   TextMouthBraille:
     type: tool
     platform: macOS
@@ -354,7 +360,7 @@ targets:
         INFOPLIST_FILE: TextMouthProductionTests/Info.plist
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/TextMouth.app/Contents/MacOS/TextMouth"
         BUNDLE_LOADER: "$(TEST_HOST)"
-        # The LAME and exception-catcher modules, which `@testable import TextMouth` may load.
-        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include
+        # The LAME, exception-catcher, and braille-protocol modules, which `@testable import TextMouth` may load.
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include
     dependencies:
       - target: TextMouth

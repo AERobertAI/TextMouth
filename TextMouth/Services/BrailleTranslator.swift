@@ -15,6 +15,15 @@ import os
 ///
 /// Braille, in and out, is Unicode braille patterns (`BrailleCells`), with
 /// the blank cell U+2800 between words and never an ASCII space.
+///
+/// Each paragraph travels with the emphasis of each of its characters
+/// (protocol 2, October 21, 2026, defined once for both sides in
+/// `TextMouthBraille/include/TextMouthBrailleProtocol.h`): print sent
+/// forward carries the book's italic and bold, which liblouis writes as the
+/// table's indicators, and print read back carries the emphasis liblouis
+/// found in the braille's indicators (`EmphasizedText`, `BrailleEmphasis`).
+/// Callers that need only the words use the `[String]` form, which sends
+/// none and drops what comes back.
 enum BrailleTranslator {
     // MARK: Direction
 
@@ -262,16 +271,44 @@ enum BrailleTranslator {
     static let outputSuffix = ".braille-out.txt"
     static let checkSuffix = ".braille-check"
 
-    /// The translation of each of `texts`, in order. Synchronous, for the
-    /// import and the cache, which run off the main thread. `folder` holds
-    /// the hidden files the helper reads and writes, which are removed
-    /// however this ends.
+    /// The translation of each of `texts`, in order, without emphasis: the
+    /// words alone, for the callers that need nothing else. See
+    /// `translate(_:table:direction:workingIn:)` for `EmphasizedText`, which
+    /// this is.
+    static func translate(
+        _ texts: [String],
+        table: String,
+        direction: Direction,
+        workingIn folder: URL
+    ) throws -> [String] {
+        try translate(texts, table: table, direction: direction, workingIn: folder, checksMacTable: true)
+    }
+
+    /// The translation of each of `texts`, in order, with its emphasis.
+    /// Synchronous, for the import and the cache, which run off the main
+    /// thread. `folder` holds the hidden files the helper reads and writes,
+    /// which are removed however this ends.
+    ///
+    /// Print sent forward gives liblouis each character's emphasis, and the
+    /// braille that comes back holds it as the table's indicators, with no
+    /// emphasis of its own. Braille sent back comes back as print with the
+    /// emphasis liblouis read from the indicators. Both directions carry
+    /// only the classes the helper finds liblouis reads back exactly with
+    /// this table (`check_readable` in `TextMouthBraille/main.c`): UEB's.
+    /// EBAE's, and those of most of this Mac's tables, liblouis misreads,
+    /// so with them emphasis is neither written nor read, and an export
+    /// read back keeps its words (review E2, October 21, 2026).
     ///
     /// Line breaks inside a text become one space (print) or blank cell
-    /// (braille), and NUL characters are removed. A long text is split at
-    /// its word breaks into pieces (`pieces(of:direction:)`) and translated
-    /// piece by piece; no UEB or EBAE contraction spans a blank cell, so a
-    /// cut there changes no translation.
+    /// (braille), and NUL characters are removed, with their emphasis. A
+    /// long text is split at its word breaks into pieces
+    /// (`pieces(of:direction:)`) and translated piece by piece; no UEB or
+    /// EBAE contraction spans a blank cell, so a cut there changes no
+    /// translation. An emphasized passage that spans a cut is written as two
+    /// passages, each with its own indicators. Read back, liblouis reads each
+    /// piece on its own, so where braille is cut inside a passage, the
+    /// passage's words after the cut come back plain; only a paragraph of
+    /// more than `maximumPieceScalars` cells is cut at all.
     ///
     /// One of this Mac's tables is used only once its check passes, made
     /// before its first use in the session (`MacBrailleTableCheck`,
@@ -285,19 +322,19 @@ enum BrailleTranslator {
     /// - Throws: `Failure`, `ImportCancelled` when the import is cancelled
     ///   meanwhile, and `CancellationError` for any other cancelled task.
     static func translate(
-        _ texts: [String],
+        _ texts: [EmphasizedText],
         table: String,
         direction: Direction,
         workingIn folder: URL
-    ) throws -> [String] {
+    ) throws -> [EmphasizedText] {
         try translate(texts, table: table, direction: direction, workingIn: folder, checksMacTable: true)
     }
 
-    /// `translate(_:table:direction:workingIn:)`, checking one of this Mac's
-    /// tables first unless `checksMacTable` is false: only the check's own
-    /// runs pass false (`MacBrailleTableCheck.check`), which would otherwise
-    /// check themselves forever, and they pass a `measure` too, which the
-    /// helper's run is measured by (review R1).
+    /// `translate(_:table:direction:workingIn:)` of words alone, checking
+    /// one of this Mac's tables first unless `checksMacTable` is false: only
+    /// the check's own runs pass false (`MacBrailleTableCheck.check`), which
+    /// would otherwise check themselves forever, and they pass a `measure`
+    /// too, which the helper's run is measured by (review R1).
     static func translate(
         _ texts: [String],
         table: String,
@@ -306,6 +343,23 @@ enum BrailleTranslator {
         checksMacTable: Bool,
         measure: RunMeasure? = nil
     ) throws -> [String] {
+        try translate(
+            texts.map { EmphasizedText($0) }, table: table, direction: direction, workingIn: folder,
+            checksMacTable: checksMacTable, measure: measure
+        ).map(\.text)
+    }
+
+    /// `translate(_:table:direction:workingIn:)`, checking one of this Mac's
+    /// tables first unless `checksMacTable` is false, and measured by
+    /// `measure`, as the `[String]` form says.
+    static func translate(
+        _ texts: [EmphasizedText],
+        table: String,
+        direction: Direction,
+        workingIn folder: URL,
+        checksMacTable: Bool,
+        measure: RunMeasure? = nil
+    ) throws -> [EmphasizedText] {
         try requireOfferedTable(table)
         let id = UUID().uuidString
         let input = folder.appendingPathComponent(".\(id)\(inputSuffix)")
@@ -316,18 +370,18 @@ enum BrailleTranslator {
         }
 
         // Cut each text into pieces and write them to the input file as they
-        // are made, one piece per line, each ending in a line feed (no piece
-        // holds one). Only how many pieces each text has, and which end at a
-        // word break, is kept: joining the output needs no more. The texts'
-        // pieces are never all in memory at once, nor joined into one string
-        // or copied into a whole-input `Data` (review finding E5: a 32 MB
-        // book's translation peaked at 431 MB that way).
+        // are made, one record per piece (`InputWriter`). Only how many
+        // pieces each text has, and which end at a word break, is kept:
+        // joining the output needs no more. The texts' pieces are never all
+        // in memory at once, nor joined into one string or copied into a
+        // whole-input `Data` (review finding E5: a 32 MB book's translation
+        // peaked at 431 MB that way).
         var writer = InputWriter(at: input)
         var layout = PieceLayout()
         do {
             for text in texts {
                 let made = pieces(of: text, direction: direction)
-                for piece in made { try writer.append(piece.text) }
+                for piece in made { try writer.append(piece) }
                 layout.add(made)
             }
             try writer.finish()
@@ -335,7 +389,7 @@ enum BrailleTranslator {
             throw logged(.failed, direction.rawValue, table, "could not write the input: \(error.localizedDescription)")
         }
         // No work, no run: an empty list, or only empty texts, has no pieces.
-        guard layout.pieceCount > 0 else { return texts.map { _ in "" } }
+        guard layout.pieceCount > 0 else { return texts.map { _ in EmphasizedText() } }
 
         // One of this Mac's tables runs only once its check has passed.
         if checksMacTable { try MacBrailleTableCheck.requireUsable(table, workingIn: folder) }
@@ -345,16 +399,21 @@ enum BrailleTranslator {
             watching: output, inputBytes: writer.bytesWritten, direction: direction, measure: measure
         )
 
-        // The output has one line for each piece, in order.
-        let translated = try outputLines(of: output, expecting: layout.pieceCount, mode: direction.rawValue, table: table)
+        // The output has one record for each piece, in order.
+        let translated = try outputRecords(of: output, expecting: layout.pieceCount, mode: direction.rawValue, table: table)
         // The index of the next piece, in `translated` and in the layout.
         var next = 0
         return layout.counts.map { count in
-            var result = ""
+            var result = EmphasizedText()
             for index in 0..<count {
-                result += translated[next]
-                // Between two pieces, the word break the cut dropped is back.
-                if index < count - 1, layout.endsAtBreak[next] { result.unicodeScalars.append(direction.outputBreak) }
+                result.append(translated[next])
+                // Between two pieces, the word break the cut dropped is back,
+                // with the emphasis both its neighbours have, so that a
+                // passage cut there reads as one.
+                if index < count - 1, layout.endsAtBreak[next] {
+                    let shared = translated[next].lastEmphasis.intersection(translated[next + 1].firstEmphasis)
+                    result.append(direction.outputBreak, shared)
+                }
                 next += 1
             }
             return result
@@ -388,6 +447,9 @@ enum BrailleTranslator {
         /// The piece's text: no line break, and no break at its ends that
         /// the cut dropped.
         var text: String
+        /// The emphasis of each Unicode scalar of `text`, in order; empty
+        /// when none has any, as most pieces have.
+        var emphasis: [BrailleEmphasis] = []
         /// Whether the cut was at a word break, which it dropped; the
         /// translations of this piece and the next are joined by a break.
         /// False for a piece cut in the middle of a word, and for the last.
@@ -418,6 +480,12 @@ enum BrailleTranslator {
     /// of about `bufferBytes`, so that the input is never held whole
     /// (FMT21, review finding E5). The file is made when the first piece
     /// arrives, so an input with no pieces makes none.
+    ///
+    /// The file is in the helper's protocol (`TextMouthBrailleProtocol.h`):
+    /// the header line, then a record for each piece, its text on one line
+    /// and the code of each scalar's emphasis on the next (`BrailleEmphasis
+    /// .code`), or an empty line for a piece with none. No piece holds a
+    /// line feed, and no code is one.
     private struct InputWriter {
         /// About how many bytes wait in memory before they are written.
         static let bufferBytes = 1_048_576
@@ -428,6 +496,9 @@ enum BrailleTranslator {
         private var buffer = Data()
         /// The bytes already written to the file.
         private var written: Int64 = 0
+        /// Whether the header has been put in the buffer: before the first
+        /// piece, so that an input with no pieces stays unwritten.
+        private var hasHeader = false
 
         init(at url: URL) {
             self.url = url
@@ -436,10 +507,18 @@ enum BrailleTranslator {
         /// How many bytes the input holds so far, written or waiting.
         var bytesWritten: Int64 { written + Int64(buffer.count) }
 
-        /// Adds `piece` and its line feed.
+        /// Adds the record of `piece`: its text and its codes, each with its
+        /// line feed, after the header when it is the first.
         /// - Throws: The file system's error for a file that cannot be made or written.
-        mutating func append(_ piece: String) throws {
-            buffer.append(contentsOf: piece.utf8)
+        mutating func append(_ piece: Piece) throws {
+            if !hasHeader {
+                buffer.append(contentsOf: BrailleEmphasis.protocolHeader.utf8)
+                buffer.append(0x0A)
+                hasHeader = true
+            }
+            buffer.append(contentsOf: piece.text.utf8)
+            buffer.append(0x0A)
+            buffer.append(contentsOf: piece.emphasis.lazy.map(\.code))
             buffer.append(0x0A)
             if buffer.count >= Self.bufferBytes { try flush() }
         }
@@ -467,21 +546,37 @@ enum BrailleTranslator {
         }
     }
 
+    /// The pieces `text` is sent in, for `direction`, with no emphasis: see
+    /// `pieces(of:direction:)` for `EmphasizedText`, which this is.
+    static func pieces(of text: String, direction: Direction) -> [Piece] {
+        pieces(of: EmphasizedText(text), direction: direction)
+    }
+
     /// The pieces `text` is sent in, for `direction`: its line breaks made
     /// word breaks and its NULs removed (`prepared(_:direction:)`), then cut
     /// into pieces of at most `maximumPieceScalars` scalars, each at the last
     /// word break within that length, the break dropped. A piece with no
     /// break in its first `maximumPieceScalars` scalars is cut at that
-    /// length, mid-word. An empty text has no pieces.
-    static func pieces(of text: String, direction: Direction) -> [Piece] {
-        let scalars = prepared(text, direction: direction)
+    /// length, mid-word. An empty text has no pieces. Each piece keeps the
+    /// emphasis of its own scalars, or none when they have none.
+    static func pieces(of text: EmphasizedText, direction: Direction) -> [Piece] {
+        let (scalars, emphasis) = prepared(text, direction: direction)
         let wordBreak = direction.inputBreak
         var pieces: [Piece] = []
         var start = 0
+        // The piece of `scalars[range]`, with their emphasis when any has some.
+        func piece(_ range: Range<Int>, endsAtBreak: Bool) -> Piece {
+            let flags = emphasis.isEmpty ? [] : emphasis[range]
+            return Piece(
+                text: string(scalars[range]),
+                emphasis: flags.contains { !$0.isEmpty } ? Array(flags) : [],
+                endsAtBreak: endsAtBreak
+            )
+        }
         while start < scalars.count {
             // The rest fits in one piece.
             if scalars.count - start <= maximumPieceScalars {
-                pieces.append(Piece(text: string(scalars[start...]), endsAtBreak: false))
+                pieces.append(piece(start..<scalars.count, endsAtBreak: false))
                 break
             }
             // Look back from the longest cut for a word break. One at the
@@ -491,40 +586,56 @@ enum BrailleTranslator {
             var cut = limit
             while cut > start, scalars[cut] != wordBreak { cut -= 1 }
             if cut > start {
-                pieces.append(Piece(text: string(scalars[start..<cut]), endsAtBreak: true))
+                pieces.append(piece(start..<cut, endsAtBreak: true))
                 start = cut + 1  // the break itself is dropped
             } else {
-                pieces.append(Piece(text: string(scalars[start..<limit]), endsAtBreak: false))
+                pieces.append(piece(start..<limit, endsAtBreak: false))
                 start = limit
             }
         }
         return pieces
     }
 
+    /// `text`'s scalars as the helper takes them, with no emphasis: see
+    /// `prepared(_:direction:)` for `EmphasizedText`, which this is.
+    static func prepared(_ text: String, direction: Direction) -> [Unicode.Scalar] {
+        prepared(EmphasizedText(text), direction: direction).scalars
+    }
+
     /// `text`'s scalars as the helper takes them: every line break (CR LF as
     /// one, CR, LF, U+0085, U+2028, U+2029) one word break, NUL removed, and
-    /// in braille an ASCII space the blank cell too.
-    static func prepared(_ text: String, direction: Direction) -> [Unicode.Scalar] {
-        var result: [Unicode.Scalar] = []
-        result.reserveCapacity(text.unicodeScalars.count)
+    /// in braille an ASCII space the blank cell too. `emphasis` keeps each
+    /// remaining scalar's emphasis in step (a break takes its line break's;
+    /// a CR LF's, its CR's), or is empty when the text has none.
+    static func prepared(
+        _ text: EmphasizedText,
+        direction: Direction
+    ) -> (scalars: [Unicode.Scalar], emphasis: [BrailleEmphasis]) {
+        var scalars: [Unicode.Scalar] = []
+        var emphasis: [BrailleEmphasis] = []
+        scalars.reserveCapacity(text.text.unicodeScalars.count)
+        if text.hasEmphasis { emphasis.reserveCapacity(text.emphasis.count) }
         var previousWasCR = false
-        for scalar in text.unicodeScalars {
+        for (index, scalar) in text.text.unicodeScalars.enumerated() {
             let isCR = scalar == "\r"
             defer { previousWasCR = isCR }
+            let kept: Unicode.Scalar
             switch scalar.value {
             case 0:
                 continue
             case 0x0A where previousWasCR:
                 continue  // the LF of a CR LF: one break, already added
             case 0x0A, 0x0D, 0x85, 0x2028, 0x2029:
-                result.append(direction.inputBreak)
+                kept = direction.inputBreak
             case 0x20 where direction == .brailleToPrint:
-                result.append(BrailleCells.blank)
+                kept = BrailleCells.blank
             default:
-                result.append(scalar)
+                kept = scalar
             }
+            scalars.append(kept)
+            if text.hasEmphasis { emphasis.append(text.emphasis[index]) }
         }
-        return result
+        return (scalars, emphasis)
     }
 
     /// The string of `scalars`.
@@ -624,9 +735,18 @@ enum BrailleTranslator {
         }
     }
 
-    /// The lines of the helper's output at `output`, which must number
-    /// `count`: one for each piece sent. Invalid UTF-8 becomes U+FFFD.
-    private static func outputLines(of output: URL, expecting count: Int, mode: String, table: String) throws -> [String] {
+    /// The records of the helper's output at `output`, which must begin with
+    /// the protocol's header and hold `count` records: one for each piece
+    /// sent, its text and its emphasis codes (`InputWriter` writes the same
+    /// form). Invalid UTF-8 becomes U+FFFD. An output of another protocol,
+    /// of the wrong length, or with codes that do not fit their text is a
+    /// failure, never read as far as it goes.
+    private static func outputRecords(
+        of output: URL,
+        expecting count: Int,
+        mode: String,
+        table: String
+    ) throws -> [EmphasizedText] {
         let data: Data
         do {
             data = try Data(contentsOf: output)
@@ -637,10 +757,36 @@ enum BrailleTranslator {
         // own), and drop the empty string after the last line feed.
         var lines = data.split(separator: 0x0A, omittingEmptySubsequences: false)
         if lines.last?.isEmpty == true { lines.removeLast() }
-        guard lines.count == count else {
-            throw logged(.failed, mode, table, "wrote \(lines.count) lines for \(count) pieces")
+        guard let header = lines.first, String(decoding: header, as: UTF8.self) == BrailleEmphasis.protocolHeader else {
+            throw logged(.failed, mode, table, "wrote no protocol header")
         }
-        return lines.map { String(decoding: $0, as: UTF8.self) }
+        guard lines.count == 1 + 2 * count else {
+            throw logged(.failed, mode, table, "wrote \(lines.count - 1) lines for \(count) pieces")
+        }
+        var records: [EmphasizedText] = []
+        records.reserveCapacity(count)
+        for index in 0..<count {
+            let text = String(decoding: lines[1 + 2 * index], as: UTF8.self)
+            guard let record = record(text, codes: lines[2 + 2 * index]) else {
+                throw logged(.failed, mode, table, "wrote codes that do not fit their text")
+            }
+            records.append(record)
+        }
+        return records
+    }
+
+    /// `text` with the emphasis its code line `codes` gives, one code for
+    /// each of its scalars, or no emphasis for an empty line; nil when a
+    /// byte is no code or the codes do not number the scalars.
+    private static func record(_ text: String, codes: Data.SubSequence) -> EmphasizedText? {
+        guard !codes.isEmpty else { return EmphasizedText(text) }
+        var emphasis: [BrailleEmphasis] = []
+        emphasis.reserveCapacity(codes.count)
+        for byte in codes {
+            guard let flags = BrailleEmphasis(code: byte) else { return nil }
+            emphasis.append(flags)
+        }
+        return EmphasizedText(text, emphasis: emphasis)
     }
 
     /// `failure`, after writing one import event for it. The line names the

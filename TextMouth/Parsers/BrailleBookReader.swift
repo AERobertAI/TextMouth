@@ -8,8 +8,9 @@ import Foundation
 /// file's pages, `BraillePageAnalyzer` finds the headings and paragraphs,
 /// and `BrailleTranslator` turns each block's cells into print through
 /// liblouis in the braille helper, with the table the book was imported
-/// with. Both reading paths, the direct parse and the Markdown cache, call
-/// `markdown(of:table:)`, so they read the same text.
+/// with, and with the emphasis liblouis reads from the braille's
+/// indicators. Both reading paths, the direct parse and the Markdown cache,
+/// call `markdown(of:table:)`, so they read the same text.
 enum BrailleBookReader {
 
     /// Separates the blocks of the Markdown, a blank line, as
@@ -55,22 +56,6 @@ enum BrailleBookReader {
 
     // MARK: - Reading
 
-    /// The Markdown of the braille book at `url`, translated to print with
-    /// `table`: a heading as an ATX heading of its level, a paragraph or a
-    /// list item as a paragraph, every one written as a Markdown literal so
-    /// text that merely looks like Markdown is read as written.
-    /// - Parameters:
-    ///   - url: The book's file.
-    ///   - table: The stored value of an offered table: a bundled table's
-    ///     bare file name, or "mac:" and one of this Mac's.
-    ///   - recordedVersion: The liblouis version of this Mac's tables the
-    ///     book was read with (`Book.brailleTableVersion`), which a rebuild
-    ///     requires them to have still (review R2); nil for a first reading.
-    /// - Throws: `BrailleFileError` for a file that is not braille or is
-    ///   larger than `maximumFileBytes`,
-    ///   `FileImportError.noTextToRead` when the book has no blocks or no
-    ///   print text, `BrailleTranslator.Failure` for a table that is unknown
-    ///   or a translation that fails, and what the file's reading throws.
     /// Throws `BrailleTranslator.Failure.changedTable` when the book was read
     /// with one of this Mac's tables under liblouis `recorded`, and the Mac's
     /// tables now have another version, or name none (review R2, decision
@@ -85,6 +70,39 @@ enum BrailleBookReader {
         guard now == recorded else { throw BrailleTranslator.Failure.changedTable(table, then: recorded, now: now) }
     }
 
+    /// The Markdown of the braille book at `url`, translated to print with
+    /// `table`: a heading as an ATX heading of its level, a paragraph or a
+    /// list item as a paragraph, every one written as a Markdown literal so
+    /// text that merely looks like Markdown is read as written.
+    ///
+    /// Reading keeps the emphasis the braille carries (the user, October 21,
+    /// 2026: "keeping all text formatting extractable from the braille
+    /// converted to the intermediate format"): each block's print comes back
+    /// from liblouis with the emphasis it read from the braille's
+    /// indicators, which becomes Markdown's own (`markdownLine(of:)`).
+    ///
+    /// Emphasis changes no word the reader reads. Markdown's delimiters are
+    /// never text, so every block reads, scalar for scalar, as it read before
+    /// emphasis was kept, and so do the heading list's labels and offsets
+    /// (`BrailleImportTests` pins it). So a braille book imported before
+    /// keeps its content.md until something rebuilds it (Redo Text
+    /// Extraction, a changed file, a new cache version; nothing forces one),
+    /// and the rebuild then only adds the delimiters: each saved place's
+    /// anchor still meets the same words where it is (T06's direct check,
+    /// `TextAnchorFinder`), and no place or bookmark moves.
+    /// - Parameters:
+    ///   - url: The book's file.
+    ///   - table: The stored value of an offered table: a bundled table's
+    ///     bare file name, or "mac:" and one of this Mac's.
+    ///   - recordedVersion: The liblouis version of this Mac's tables the
+    ///     book was read with (`Book.brailleTableVersion`), which a rebuild
+    ///     requires them to have still (review R2); nil for a first reading.
+    /// - Throws: `BrailleFileError` for a file that is not braille or is
+    ///   larger than `maximumFileBytes`,
+    ///   `FileImportError.noTextToRead` when the book has no blocks or no
+    ///   print text, `BrailleTranslator.Failure` for a table that is unknown,
+    ///   has changed (`requireUnchangedTable(_:recordedVersion:)`), or a
+    ///   translation that fails, and what the file's reading throws.
     static func markdown(of url: URL, table: String, recordedVersion: String? = nil) throws -> String {
         // A book whose Mac table changed is not read again (review R2).
         try requireUnchangedTable(table, recordedVersion: recordedVersion)
@@ -99,9 +117,11 @@ enum BrailleBookReader {
 
         // One run of the helper translates every block, in a working folder
         // beside the staged package during an import and a temporary one
-        // otherwise.
+        // otherwise, with the emphasis liblouis reads.
         let printed = try TextutilDocumentReader.withWorkingFolder(for: url) { folder in
-            try BrailleTranslator.translate(blocks.map(\.text), table: table, direction: .brailleToPrint, workingIn: folder)
+            try BrailleTranslator.translate(
+                blocks.map { EmphasizedText($0.text) }, table: table, direction: .brailleToPrint, workingIn: folder
+            )
         }
 
         // Each block's print, trimmed at both ends, as Markdown; a block with
@@ -109,17 +129,26 @@ enum BrailleBookReader {
         // translation that answered short could not be indexed past its end.
         var pieces: [String] = []
         for (block, text) in zip(blocks, printed) {
-            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { continue }
-            let literal = MarkdownLiteral.escaped(trimmed)
+            let trimmed = text.trimmingWhitespace()
+            guard !trimmed.text.isEmpty else { continue }
+            let line = markdownLine(of: trimmed)
             if case let .heading(level, _) = block {
-                pieces.append(String(repeating: "#", count: level) + " " + literal)
+                pieces.append(String(repeating: "#", count: level) + " " + line)
             } else {
-                pieces.append(literal)
+                pieces.append(line)
             }
         }
         guard !pieces.isEmpty else { throw FileImportError.noTextToRead }
         return pieces.joined(separator: blockSeparator)
+    }
+
+    /// One block's print, trimmed, as one line of Markdown: every character
+    /// a literal, so text that merely looks like Markdown (an asterisk, an
+    /// underscore, a backslash) is read as written, and its emphasis as
+    /// Markdown's (`BrailleEmphasis.markdownStyle`), with delimiters CommonMark
+    /// always pairs, so none is ever read aloud (`MarkdownEmphasis`).
+    static func markdownLine(of text: EmphasizedText) -> String {
+        MarkdownEmphasis.markdown(text.text, styles: text.emphasis.map(\.markdownStyle))
     }
 
     /// The parsed content of the braille book at `url`, from the Markdown
