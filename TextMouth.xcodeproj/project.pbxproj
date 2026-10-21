@@ -341,6 +341,7 @@
 		50ADE0C8695EFFAC74E8F14C /* DAISYInlineFragmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AF5D78231C95D456E935D64 /* DAISYInlineFragmentTests.swift */; };
 		510C6CB83E85D5866485E19F /* MetadataEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6356D9B0A96ADE86ED7338A9 /* MetadataEditorView.swift */; };
 		512F82A8059BC86875596353 /* BookWaitingSkipTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF029A8F2284D5ED116F01C /* BookWaitingSkipTests.swift */; };
+		5130EBBB81F37C14901C9F34 /* BrailleEmphasis.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4905328B6D1E11EB0F166B2 /* BrailleEmphasis.swift */; };
 		5135B32E1AEF4A4927C8FE08 /* FolderPathEquivalence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31DD12BF0D978201500B48D6 /* FolderPathEquivalence.swift */; };
 		51484C49E737EFBE02DD511F /* LibraryInfoWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE6809E5CA41DDFC40A2947C /* LibraryInfoWording.swift */; };
 		51A2E29CF93218D6575F7FB6 /* AudioExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C6B17E0F6F50CD3C22ADC1D /* AudioExportTests.swift */; };
@@ -442,6 +443,7 @@
 		6B28BB678A244EFF7A7A418C /* VoiceOverAnnouncer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62EE36091339AF90887BEAA8 /* VoiceOverAnnouncer.swift */; };
 		6B2B29AB56E8361E183AAA80 /* DiagnosticLogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95B4849005FDCA266FC12995 /* DiagnosticLogTests.swift */; };
 		6B7B7F800C3448359FF78563 /* AudioEditorLevels.swift in Sources */ = {isa = PBXBuildFile; fileRef = D24AA24D0EA8298E59D097B6 /* AudioEditorLevels.swift */; };
+		6BD18C619CDC62D3146A48C2 /* BrailleHelperProtocolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2580130FEEDAA657E518D59 /* BrailleHelperProtocolTests.swift */; };
 		6BE753CC4F340B995350ED40 /* DiskImageDrillTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A92BC79AEE7C29A2E74EF44F /* DiskImageDrillTests.swift */; };
 		6D3203DAE85C21F900F5EB2E /* Library.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE0B3D346828CB907524B46A /* Library.swift */; };
 		6D3C6BB9DB52E7E0086B0545 /* BookTextEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8182A1E2EB301CEF555ACDE9 /* BookTextEditing.swift */; };
@@ -1850,6 +1852,7 @@
 		929CA99B0F2D2205B65D8F8B /* KeyboardShortcutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutTests.swift; sourceTree = "<group>"; };
 		92BDB2E2EF1B369DA910AB56 /* BookReaderWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookReaderWindowView.swift; sourceTree = "<group>"; };
 		92D133F0245F04B20A9009CD /* encoder.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = encoder.c; sourceTree = "<group>"; };
+		931BDF29C0B1DA3F0C24E32F /* TextMouthBrailleProtocol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TextMouthBrailleProtocol.h; sourceTree = "<group>"; };
 		93581DF09202F50E6492C7C2 /* TranscriptCleanupRuleFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptCleanupRuleFile.swift; sourceTree = "<group>"; };
 		9366E47AB00CC4D0B40B73D2 /* ReaderViewModel+LibraryUpdates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ReaderViewModel+LibraryUpdates.swift"; sourceTree = "<group>"; };
 		93E530F2A6D2E0D2E6419925 /* OrphanedConversionSweep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrphanedConversionSweep.swift; sourceTree = "<group>"; };
@@ -2281,6 +2284,7 @@
 		F1FD96A6FACE9F60B9E59799 /* ListeningDays.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListeningDays.swift; sourceTree = "<group>"; };
 		F21240DBDB9081FF3B899D53 /* EPUBMetadataSave.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EPUBMetadataSave.swift; sourceTree = "<group>"; };
 		F22A2D8D42A5F6AC10001ACD /* TranscriptCleanupRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptCleanupRules.swift; sourceTree = "<group>"; };
+		F2580130FEEDAA657E518D59 /* BrailleHelperProtocolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleHelperProtocolTests.swift; sourceTree = "<group>"; };
 		F26395ADCD8B217C5D612A70 /* PlaceClockTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceClockTests.swift; sourceTree = "<group>"; };
 		F2A64569FF85BD4A1F7EAF3E /* BookContentIndexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookContentIndexTests.swift; sourceTree = "<group>"; };
 		F2BED1520F63F09117E5FFF4 /* FeedUIOPMLTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedUIOPMLTests.swift; sourceTree = "<group>"; };
@@ -2294,6 +2298,7 @@
 		F35F611B57A2075D6BC08D4D /* PersistenceFailureBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceFailureBanner.swift; sourceTree = "<group>"; };
 		F3E29D832389E3ED253DAD11 /* LibraryViewModel+ListeningOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LibraryViewModel+ListeningOptions.swift"; sourceTree = "<group>"; };
 		F4899FF7F5009BBF76906D24 /* TextutilConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextutilConverter.swift; sourceTree = "<group>"; };
+		F4905328B6D1E11EB0F166B2 /* BrailleEmphasis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleEmphasis.swift; sourceTree = "<group>"; };
 		F497945DA7F4CA87BB541B14 /* TranscriptDeletionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptDeletionTests.swift; sourceTree = "<group>"; };
 		F49C5239174BAC5C7265A7D3 /* LibraryFeedMoveToFolderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryFeedMoveToFolderTests.swift; sourceTree = "<group>"; };
 		F53ACDEF6500A6643AB1D41C /* TextMouthRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextMouthRuntime.swift; sourceTree = "<group>"; };
@@ -2336,6 +2341,7 @@
 		FD1C69C9713E5669A3247A48 /* RecordingTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingTestSupport.swift; sourceTree = "<group>"; };
 		FD345AC5DD9D23B1670900A8 /* ReadingStatsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingStatsService.swift; sourceTree = "<group>"; };
 		FD38D535DB0ECB01D3DE1043 /* AudioEditorListeningTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorListeningTests.swift; sourceTree = "<group>"; };
+		FD619115F066C84E7EE9B31A /* module.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = module.modulemap; sourceTree = "<group>"; };
 		FD6B1B7FB41719E130C84969 /* LibraryViewModel+Feeds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LibraryViewModel+Feeds.swift"; sourceTree = "<group>"; };
 		FDD7BC7D2012446B0B0039B9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		FE229E5FAE14E92B0ABD84A5 /* TextPipelineBenchmarkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPipelineBenchmarkTests.swift; sourceTree = "<group>"; };
@@ -2595,6 +2601,15 @@
 			);
 			name = include;
 			path = Vendor/ObjCExceptionCatcher/include;
+			sourceTree = "<group>";
+		};
+		49683AF5C71CB2A838E76370 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				FD619115F066C84E7EE9B31A /* module.modulemap */,
+				931BDF29C0B1DA3F0C24E32F /* TextMouthBrailleProtocol.h */,
+			);
+			path = include;
 			sourceTree = "<group>";
 		};
 		4E2A00CDDD6095FEBE6D9866 /* include */ = {
@@ -2936,6 +2951,7 @@
 				0ADA01E6BE651B28BC03B976 /* BookParser.swift */,
 				8E0159E46F4899BFEDF262E8 /* BrailleBookReader.swift */,
 				F2F062FF8317902F68288CA4 /* BrailleCells.swift */,
+				F4905328B6D1E11EB0F166B2 /* BrailleEmphasis.swift */,
 				900A5AD2B60753FBEC15C791 /* BrailleFileReader.swift */,
 				4D54F59DFDAEB0C53606CA3A /* BraillePageAnalyzer.swift */,
 				3A6F70F94BC31DE799BD148D /* DAISYParser.swift */,
@@ -3079,6 +3095,7 @@
 				8CD1B3006DAA910AEFA0062E /* BrailleExportWriterTests.swift */,
 				EBEE87F9F742B4C259CC28FA /* BrailleFileReaderTests.swift */,
 				A90CC3DBF530227B54EE9E57 /* BrailleFileWriterTests.swift */,
+				F2580130FEEDAA657E518D59 /* BrailleHelperProtocolTests.swift */,
 				0B570C71A0B6F7289B63C3D2 /* BrailleImportTests.swift */,
 				D6CF814833EA245F32E97171 /* BrailleLayoutTests.swift */,
 				A985391BC67E6497E264978C /* BraillePageAnalyzerTests.swift */,
@@ -3577,6 +3594,7 @@
 			isa = PBXGroup;
 			children = (
 				7D8ABAF885921CCC9068372C /* main.c */,
+				49683AF5C71CB2A838E76370 /* include */,
 			);
 			path = TextMouthBraille;
 			sourceTree = "<group>";
@@ -4043,6 +4061,7 @@
 				300935A0EAF74C123A15F126 /* BrailleExportWriterTests.swift in Sources */,
 				D28DCB151E81D6F89EA8A45F /* BrailleFileReaderTests.swift in Sources */,
 				1070B8D83EE7A9F6611E95AE /* BrailleFileWriterTests.swift in Sources */,
+				6BD18C619CDC62D3146A48C2 /* BrailleHelperProtocolTests.swift in Sources */,
 				B88DF3448DCC3856CA6AD74C /* BrailleImportTests.swift in Sources */,
 				BF813BAFB01C549F53A8E674 /* BrailleLayoutTests.swift in Sources */,
 				0E17B62C11F17D7F43D5122F /* BraillePageAnalyzerTests.swift in Sources */,
@@ -4669,6 +4688,7 @@
 				8EA8E2293F356C1994378979 /* BrailleBookReader.swift in Sources */,
 				93258556B54A1E86ECBBCDF0 /* BrailleCells.swift in Sources */,
 				D4247BA72FBE618C91FA6395 /* BrailleDocumentWriter.swift in Sources */,
+				5130EBBB81F37C14901C9F34 /* BrailleEmphasis.swift in Sources */,
 				6A87EA3FE1B0E11C8DD8F32A /* BrailleExportOptionsView.swift in Sources */,
 				E41C74BB43C71BC9CF89B9BD /* BrailleExportWriters.swift in Sources */,
 				9C14865C9E7CD208E1A6A0B4 /* BrailleFileReader.swift in Sources */,
@@ -5284,7 +5304,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouth;
 				PRODUCT_NAME = TextMouth;
 				SDKROOT = macosx;
-				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include";
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include";
 				TEXTMOUTH_BUILD_DATE = unknown;
 				TEXTMOUTH_GIT_COMMIT = unknown;
 			};
@@ -5361,7 +5381,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouthProductionTests;
 				SDKROOT = macosx;
-				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include";
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TextMouth.app/Contents/MacOS/TextMouth";
 			};
 			name = Release;
@@ -5428,7 +5448,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouthProductionTests;
 				SDKROOT = macosx;
-				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include";
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TextMouth.app/Contents/MacOS/TextMouth";
 			};
 			name = Debug;
@@ -5522,7 +5542,7 @@
 				SDKROOT = macosx;
 				STRIP_INSTALLED_PRODUCT = YES;
 				STRIP_STYLE = all;
-				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include";
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include";
 				TEXTMOUTH_BUILD_DATE = unknown;
 				TEXTMOUTH_GIT_COMMIT = unknown;
 			};

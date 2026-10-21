@@ -1,0 +1,8 @@
+// The Clang module the app imports the braille helper's line protocol by:
+// `private import TextMouthBrailleProtocol`, in BrailleEmphasis.swift, the
+// only Swift file that does. Its one header is the protocol's single
+// definition, which the helper's main.c includes too (see that header).
+module TextMouthBrailleProtocol {
+    header "TextMouthBrailleProtocol.h"
+    export *
+}

@@ -16,12 +16,17 @@
  *
  * - `check` compiles the table, with every table it includes, and exits 0
  *   when it compiles.
- * - `forward` translates print to braille, and `back` braille to print. The
- *   input file holds one paragraph per line, in UTF-8, each line ending in a
- *   line feed. The output file gets one line for each input line, in the
- *   same order, so line N of the output is the translation of line N of the
- *   input. Braille, in and out, is Unicode braille patterns (U+2800 to
- *   U+28FF), the blank cell U+2800 included; a space is never braille.
+ * - `forward` translates print to braille, and `back` braille to print, in
+ *   the line protocol that include/TextMouthBrailleProtocol.h defines, the
+ *   one place the app reads it from too (protocol 2, October 21, 2026). In
+ *   short: each file begins with the protocol's header line, then holds one
+ *   record for each paragraph, in the same order in both files; a record is
+ *   the paragraph's text on one line and its emphasis codes on the next, one
+ *   code for each character, or an empty line for none. `forward` writes the
+ *   emphasis it is given into the braille as the table's indicators, and
+ *   `back` reports the emphasis liblouis reads from the indicators. Braille,
+ *   in and out, is Unicode braille patterns (U+2800 to U+28FF), the blank
+ *   cell U+2800 included; a space is never braille.
  *
  * The table is a bare file name, such as en-ueb-g2.ctb, of a table in the
  * tables folder: the app bundle's own (Contents/Resources/liblouis/tables),
@@ -39,10 +44,13 @@
  * Exit status: 0 done; 1 the arguments are wrong; 2 the table cannot be
  * loaded (no such table in the folder, or it does not compile); 3 the input
  * cannot be read; 4 the input is not what the mode takes (not UTF-8, a NUL,
- * a line longer than MAX_LINE characters, or in `back` a character that is
- * not a braille cell); 5 liblouis could not translate a line; 6 the output
- * cannot be written. The helper prints nothing to its standard output, and
- * liblouis's own errors go to standard error, which TextMouth discards.
+ * a line longer than MAX_LINE characters, a record without its code line,
+ * codes that do not fit their text, or in `back` a character that is not a
+ * braille cell or any code at all); 5 liblouis could not translate a line;
+ * 6 the output cannot be written; 7 the input does not begin with this
+ * protocol's header, as an input written for another version would not.
+ * The helper prints nothing to its standard output, and liblouis's own
+ * errors go to standard error, which TextMouth discards.
  *
  * This file is TextMouth's own, under TextMouth's MIT License. It only calls
  * liblouis's public API (liblouis.h); no code of liblouis's tools/ folder,
@@ -57,6 +65,7 @@
 #include <unistd.h>
 
 #include "liblouis.h"
+#include "include/TextMouthBrailleProtocol.h"
 
 /* The exit statuses, as the header comment lists them. */
 enum {
@@ -67,6 +76,7 @@ enum {
 	EXIT_INPUT_INVALID = 4,
 	EXIT_TRANSLATION = 5,
 	EXIT_OUTPUT = 6,
+	EXIT_PROTOCOL = 7,
 };
 
 /* The most characters one input line may hold. TextMouth sends paragraphs
@@ -89,6 +99,45 @@ enum {
    believed (see `translate`): more than the 10 cells of the longest escape
    liblouis writes for a character a table lacks. */
 #define MIN_SPARE_ROOM 16
+
+/*
+ * The emphasis classes the protocol carries, by the names liblouis's tables
+ * give them, each with TextMouth's flag for it. liblouis numbers a table's
+ * classes in the order the table declares them, so the same bit means
+ * "script" in one table and "transnote" in another; names are the only
+ * thing tables share. The five transcriber-defined typefaces share one
+ * flag, and a flag written forward goes to the first class listed with it
+ * ("trans1" for TMB_EMPHASIS_TRANSCRIBER). Classes not listed here, such as
+ * UEB's "transnote" (a transcriber's note, no typeface of the print), are
+ * not carried: liblouis still reads their indicators as indicators, and the
+ * text they mark comes back plain.
+ */
+static const struct {
+	const char *name;
+	unsigned flag;
+} EMPHASIS_CLASSES[] = {
+		{"italic", TMB_EMPHASIS_ITALIC},
+		{"bold", TMB_EMPHASIS_BOLD},
+		{"underline", TMB_EMPHASIS_UNDERLINE},
+		{"script", TMB_EMPHASIS_SCRIPT},
+		{"trans1", TMB_EMPHASIS_TRANSCRIBER},
+		{"trans2", TMB_EMPHASIS_TRANSCRIBER},
+		{"trans3", TMB_EMPHASIS_TRANSCRIBER},
+		{"trans4", TMB_EMPHASIS_TRANSCRIBER},
+		{"trans5", TMB_EMPHASIS_TRANSCRIBER},
+};
+#define EMPHASIS_CLASS_COUNT (sizeof EMPHASIS_CLASSES / sizeof EMPHASIS_CLASSES[0])
+
+/*
+ * The loaded table's emphasis: for each class of EMPHASIS_CLASSES, its
+ * typeform bit in the table (0 when the table has no such class), and
+ * whether `back` reports it, which only a class that passed
+ * `check_readable` does.
+ */
+typedef struct {
+	formtype bit[EMPHASIS_CLASS_COUNT];
+	int reported[EMPHASIS_CLASS_COUNT];
+} table_emphasis;
 
 /*
  * Decodes the UTF-8 bytes `bytes[0..count)` into `out`, which holds at least
@@ -178,6 +227,33 @@ write_line(FILE *file, const widechar *chars, size_t count) {
 }
 
 /*
+ * Writes the code line of a record to `file`: the code of each of
+ * `flags[0..count)`, TextMouth's flags for each character, then a line
+ * feed; or the line feed alone when every flag is 0 (or `flags` is NULL), as
+ * the protocol writes a text with no emphasis. Returns 0, or -1 when the
+ * file cannot take them.
+ */
+static int
+write_codes(FILE *file, const unsigned char *flags, size_t count) {
+	int any = 0;
+	for (size_t i = 0; flags != NULL && i < count && !any; i++) any = flags[i] != 0;
+	for (size_t i = 0; any && i < count; i++)
+		if (fputc(TMB_EMPHASIS_CODE_PLAIN + flags[i], file) == EOF) return -1;
+	return fputc('\n', file) == EOF ? -1 : 0;
+}
+
+/*
+ * Whether the line `line[0..bytes)`, as `getline` read it, is the protocol's
+ * header, with or without its line feed.
+ */
+static int
+is_header(const char *line, size_t bytes) {
+	size_t length = strlen(TMB_PROTOCOL_HEADER);
+	if (bytes > 0 && line[bytes - 1] == '\n') bytes--;
+	return bytes == length && memcmp(line, TMB_PROTOCOL_HEADER, length) == 0;
+}
+
+/*
  * Whether `name` is a bare file name that can only name a file inside the
  * tables folder: not empty, not starting with a dot, and holding no slash
  * and no comma (liblouis reads a comma as the start of another table).
@@ -234,13 +310,23 @@ leave_tables_folder(void) {
  * cell's dots from the low byte of U+28xx and write each output cell as
  * U+2800 plus its dots, with no display table in between.
  *
- * Back-translation is given a typeform buffer, one entry for each output
- * character, which it fills with the emphasis it finds. liblouis takes an
- * emphasis indicator, such as UEB's italic word indicator ⠨⠂, as an
- * indicator only when there is such a buffer to record it in; without one
- * it writes the cells as its notation for cells it cannot translate
- * ("\46/,"), which a listener would hear mid-sentence. The emphasis itself
- * is not kept: TextMouth reads the words aloud.
+ * Emphasis travels in typeform arrays of the table's own bits:
+ * - Forward, `in_typeform` holds each input character's emphasis, or is
+ *   NULL for a paragraph with none, which then translates exactly as it did
+ *   before protocol 2. liblouis writes the indicators the table's rules
+ *   give: UEB's word, passage, and terminator indicators, EBAE's own, and
+ *   nothing from a table with no rules for the class. liblouis also WRITES
+ *   into the array it is given, a '0' or '8' for each output cell
+ *   (lou_translateString.c), however long the output is, so the array
+ *   passed is a fresh copy as long as the output's room, never the
+ *   caller's.
+ * - Back, liblouis is always given an array, one entry for each output
+ *   character, which it fills with the emphasis it finds; it is returned in
+ *   `*out_typeform`, which the caller frees, unless that is NULL. liblouis
+ *   takes an emphasis indicator, such as UEB's italic word indicator ⠨⠂, as
+ *   an indicator only when there is such an array to record it in; without
+ *   one it writes the cells as its notation for cells it cannot translate
+ *   ("\46/,"), which a listener would hear mid-sentence.
  *
  * liblouis answers an output that fills its room in one of three ways: it
  * stops early, using only part of the input; it fails; or, when the text
@@ -258,29 +344,38 @@ leave_tables_folder(void) {
  * is a failure (exit status 5). Back-translation is held to the same rule.
  */
 static widechar *
-translate(const char *table, int forward, const widechar *in, int length, int *out_length) {
+translate(const char *table, int forward, const widechar *in, const formtype *in_typeform, int length,
+		int *out_length, formtype **out_typeform) {
 	const int mode = dotsIO | ucBrl;
 	for (int multiple = FIRST_ROOM; multiple <= MOST_ROOM; multiple *= 2) {
 		/* MAX_LINE * MOST_ROOM + 64 is far below INT_MAX. */
 		int room = length * multiple + 64;
+		int wants_typeform = !forward || in_typeform != NULL;
 		widechar *out = malloc((size_t)room * sizeof(widechar));
-		formtype *emphasis = forward ? NULL : malloc((size_t)room * sizeof(formtype));
+		/* calloc: the entries past the input's (forward) start plain. */
+		formtype *typeform = wants_typeform ? calloc((size_t)room, sizeof(formtype)) : NULL;
 		int used = length;
 		int written = room;
 		int ok;
-		if (out == NULL || (!forward && emphasis == NULL)) {
+		if (out == NULL || (wants_typeform && typeform == NULL)) {
 			free(out);
-			free(emphasis);
+			free(typeform);
 			return NULL;
 		}
-		ok = forward ? lou_translateString(table, in, &used, out, &written, NULL, NULL, mode)
+		if (forward && in_typeform != NULL)
+			memcpy(typeform, in_typeform, (size_t)length * sizeof(formtype));
+		ok = forward ? lou_translateString(table, in, &used, out, &written, typeform, NULL, mode)
 					 : lou_backTranslateString(
-							   table, in, &used, out, &written, emphasis, NULL, mode);
-		free(emphasis);
+							   table, in, &used, out, &written, typeform, NULL, mode);
 		if (ok && used >= length && room - written >= MIN_SPARE_ROOM) {
 			*out_length = written;
+			if (out_typeform != NULL && !forward)
+				*out_typeform = typeform;
+			else
+				free(typeform);
 			return out;
 		}
+		free(typeform);
 		free(out);
 	}
 	return NULL;
@@ -299,17 +394,224 @@ all_braille(const widechar *chars, size_t count) {
 }
 
 /*
- * Translates each line of the file at `input_path` into the file at
- * `output_path`, as the header comment says, and returns the exit status.
- * The output is written line by line, so the watchdog sees it grow while a
- * long book is translated.
+ * The table's typeform bits for TextMouth's flags `flags`: for each flag,
+ * the bit of the first class EMPHASIS_CLASSES lists with it, and nothing for
+ * a class the table lacks, so such a table writes plain braille.
+ */
+static formtype
+typeform_for_flags(const table_emphasis *emphasis, unsigned flags) {
+	formtype typeform = 0;
+	unsigned done = 0;
+	for (size_t i = 0; i < EMPHASIS_CLASS_COUNT; i++) {
+		unsigned flag = EMPHASIS_CLASSES[i].flag;
+		if ((flags & flag) && !(done & flag)) typeform |= emphasis->bit[i];
+		done |= flag;
+	}
+	return typeform;
+}
+
+/*
+ * TextMouth's flags for the table's typeform bits `typeform`, counting only
+ * the classes `back` reports.
+ */
+static unsigned
+flags_for_typeform(const table_emphasis *emphasis, formtype typeform) {
+	unsigned flags = 0;
+	for (size_t i = 0; i < EMPHASIS_CLASS_COUNT; i++)
+		if (emphasis->reported[i] && (typeform & emphasis->bit[i])) flags |= EMPHASIS_CLASSES[i].flag;
+	return flags;
+}
+
+/* The probe of `check_readable`: plain lowercase words, which every bundled
+   table reads back letter for letter, contracted or not. */
+static const char PROBE[] = "alpha bravo charlie delta echo foxtrot golf hotel india juliett";
+
+/*
+ * Whether the probe's character at `index` lies in its marked stretches:
+ * the word "bravo" alone, and the passage "delta echo foxtrot golf hotel",
+ * five words with the spaces between them, longer than every bundled table's
+ * shortest passage (UEB's three words, EBAE's four).
  */
 static int
-translate_file(const char *table, int forward, const char *input_path, const char *output_path) {
+is_probe_marked(size_t index) {
+	static const char *marked[] = {"bravo", "delta echo foxtrot golf hotel"};
+	for (size_t k = 0; k < sizeof marked / sizeof marked[0]; k++) {
+		size_t start = (size_t)(strstr(PROBE, marked[k]) - PROBE);
+		if (index >= start && index < start + strlen(marked[k])) return 1;
+	}
+	return 0;
+}
+
+/*
+ * Marks in `emphasis->reported` each class that liblouis reads back exactly
+ * as it writes it with this table, so that `back` never reports emphasis it
+ * cannot read. For each class the table has, the probe is translated
+ * forward with the class on its marked stretches, then back, and the class
+ * passes when the text comes back as the probe and the class's bit (and no
+ * other carried class's) lies on exactly the marked letters; spaces are not
+ * looked at, since liblouis gives a word's following space its emphasis.
+ *
+ * liblouis 3.39.0 reads UEB's emphasis back exactly, but not EBAE's or that
+ * of ten of this Mac's tables, which end a passage with an indicator BEFORE
+ * its last word (`endemphphrase ... before`), as UEB never does: it reads
+ * EBAE's italic word indicator (dots 4-6) as a period, its bold one (dots
+ * 4-5-6, 4-6) as the end of a bold passage, which drops it, and lets a
+ * passage run to the end of the paragraph. Reported, that would put
+ * emphasis the book never had into its Markdown. Measured on each run rather
+ * than listed by name, so that a table liblouis learns to read passes
+ * without a change here, and one of this Mac's tables is judged by what its
+ * own rules do.
+ */
+static void
+check_readable(const char *table, table_emphasis *emphasis) {
+	size_t length = strlen(PROBE);
+	widechar probe[sizeof PROBE];
+	formtype marked[sizeof PROBE];
+	formtype carried = 0;
+	widechar *braille, *print;
+	formtype *read = NULL;
+	int braille_length = 0, print_length = 0;
+	for (size_t i = 0; i < length; i++) probe[i] = (widechar)(unsigned char)PROBE[i];
+	for (size_t i = 0; i < EMPHASIS_CLASS_COUNT; i++) carried |= emphasis->bit[i];
+
+	/* The probe must come back as itself when plain, or nothing can be judged. */
+	braille = translate(table, 1, probe, NULL, (int)length, &braille_length, NULL);
+	print = braille == NULL ? NULL : translate(table, 0, braille, NULL, braille_length, &print_length, NULL);
+	int plain_reads_back = print != NULL && print_length == (int)length &&
+			memcmp(print, probe, length * sizeof(widechar)) == 0;
+	free(braille);
+	free(print);
+	if (!plain_reads_back) return;
+
+	for (size_t i = 0; i < EMPHASIS_CLASS_COUNT; i++) {
+		formtype bit = emphasis->bit[i];
+		int passes;
+		if (bit == 0) continue;
+		for (size_t k = 0; k < length; k++) marked[k] = is_probe_marked(k) ? bit : 0;
+		braille = translate(table, 1, probe, marked, (int)length, &braille_length, NULL);
+		print = braille == NULL ? NULL
+								: translate(table, 0, braille, NULL, braille_length, &print_length, &read);
+		passes = print != NULL && print_length == (int)length &&
+				memcmp(print, probe, length * sizeof(widechar)) == 0;
+		for (size_t k = 0; passes && k < length; k++)
+			if (PROBE[k] != ' ') passes = (read[k] & carried) == marked[k];
+		emphasis->reported[i] = passes;
+		free(braille);
+		free(print);
+		free(read);
+		read = NULL;
+	}
+}
+
+/*
+ * Reads the table's bit for each class of EMPHASIS_CLASSES into `emphasis`,
+ * and, for `back`, which classes it reports (`check_readable`).
+ */
+static void
+look_up_emphasis(const char *table, int forward, table_emphasis *emphasis) {
+	memset(emphasis, 0, sizeof *emphasis);
+	for (size_t i = 0; i < EMPHASIS_CLASS_COUNT; i++)
+		emphasis->bit[i] = lou_getTypeformForEmphClass(table, EMPHASIS_CLASSES[i].name);
+	if (!forward) check_readable(table, emphasis);
+}
+
+/*
+ * Translates one record, the text `line[0..bytes)` and its codes
+ * `codes[0..code_bytes)`, each as `getline` read it, and writes its record
+ * to `output`. Returns the exit status.
+ */
+static int
+translate_record(const char *table, int forward, const table_emphasis *emphasis, const char *line,
+		size_t bytes, const char *codes, size_t code_bytes, FILE *output) {
+	size_t count = 0;
+	widechar *chars;
+	widechar *out;
+	formtype *typeform = NULL;
+	formtype *read = NULL;
+	unsigned char *flags = NULL;
+	int out_length = 0;
+	int status = EXIT_DONE;
+	/* Each line feed ends its line; it is not part of the record. */
+	if (bytes > 0 && line[bytes - 1] == '\n') bytes--;
+	if (code_bytes > 0 && codes[code_bytes - 1] == '\n') code_bytes--;
+	if (bytes > (size_t)MAX_LINE * 4 || code_bytes > MAX_LINE) return EXIT_INPUT_INVALID;
+	/* Braille holds its emphasis in its cells, so it brings no codes. */
+	if (!forward && code_bytes > 0) return EXIT_INPUT_INVALID;
+	/* An empty paragraph translates to an empty record, without liblouis. */
+	if (bytes == 0) {
+		if (code_bytes > 0) return EXIT_INPUT_INVALID;
+		return fputs("\n\n", output) == EOF ? EXIT_OUTPUT : EXIT_DONE;
+	}
+	chars = malloc(bytes * sizeof(widechar));
+	if (chars == NULL) return EXIT_TRANSLATION;
+	if (decode_utf8((const unsigned char *)line, bytes, chars, &count) != 0 || count > MAX_LINE ||
+			(!forward && !all_braille(chars, count)) || (code_bytes > 0 && code_bytes != count)) {
+		free(chars);
+		return EXIT_INPUT_INVALID;
+	}
+	/* Forward: each character's codes as the table's bits, or no array at
+	   all when every character is plain. */
+	if (code_bytes > 0) {
+		int any = 0;
+		typeform = malloc(count * sizeof(formtype));
+		if (typeform == NULL) {
+			free(chars);
+			return EXIT_TRANSLATION;
+		}
+		for (size_t i = 0; i < count && status == EXIT_DONE; i++) {
+			unsigned char code = (unsigned char)codes[i];
+			if (code < TMB_EMPHASIS_CODE_PLAIN || code > TMB_EMPHASIS_CODE_PLAIN + TMB_EMPHASIS_ALL) {
+				status = EXIT_INPUT_INVALID;
+				break;
+			}
+			typeform[i] = typeform_for_flags(emphasis, code - TMB_EMPHASIS_CODE_PLAIN);
+			any = any || typeform[i] != 0;
+		}
+		if (status != EXIT_DONE || !any) {
+			free(typeform);
+			typeform = NULL;
+		}
+		if (status != EXIT_DONE) {
+			free(chars);
+			return status;
+		}
+	}
+	out = translate(table, forward, chars, typeform, (int)count, &out_length, forward ? NULL : &read);
+	free(chars);
+	free(typeform);
+	if (out == NULL) return EXIT_TRANSLATION;
+	/* Back: the flags of the emphasis liblouis read, for each character. */
+	if (!forward && read != NULL) {
+		flags = malloc((size_t)out_length + 1);
+		if (flags == NULL) status = EXIT_TRANSLATION;
+		for (int i = 0; flags != NULL && i < out_length; i++)
+			flags[i] = (unsigned char)flags_for_typeform(emphasis, read[i]);
+	}
+	if (status == EXIT_DONE &&
+			(write_line(output, out, (size_t)out_length) != 0 ||
+					write_codes(output, flags, (size_t)out_length) != 0))
+		status = EXIT_OUTPUT;
+	free(out);
+	free(read);
+	free(flags);
+	return status;
+}
+
+/*
+ * Translates each record of the file at `input_path` into the file at
+ * `output_path`, as the header comment says, and returns the exit status.
+ * The output is written record by record, so the watchdog sees it grow
+ * while a long book is translated.
+ */
+static int
+translate_file(const char *table, int forward, const table_emphasis *emphasis, const char *input_path,
+		const char *output_path) {
 	FILE *input = fopen(input_path, "rb");
 	FILE *output;
 	char *line = NULL;
-	size_t capacity = 0;
+	char *codes = NULL;
+	size_t line_capacity = 0;
+	size_t codes_capacity = 0;
 	ssize_t got;
 	int status = EXIT_DONE;
 	if (input == NULL) return EXIT_INPUT_UNREADABLE;
@@ -318,53 +620,27 @@ translate_file(const char *table, int forward, const char *input_path, const cha
 		fclose(input);
 		return EXIT_OUTPUT;
 	}
-	while ((got = getline(&line, &capacity, input)) != -1) {
-		size_t bytes = (size_t)got;
-		size_t count = 0;
-		widechar *chars;
-		widechar *out;
-		int out_length = 0;
-		/* The line feed ends the line; it is not part of the paragraph. */
-		if (bytes > 0 && line[bytes - 1] == '\n') bytes--;
-		if (bytes > (size_t)MAX_LINE * 4) {
-			status = EXIT_INPUT_INVALID;
+	/* The header: an input of another protocol is not read at all. */
+	got = getline(&line, &line_capacity, input);
+	if (got == -1 || !is_header(line, (size_t)got))
+		status = ferror(input) ? EXIT_INPUT_UNREADABLE : EXIT_PROTOCOL;
+	else if (fputs(TMB_PROTOCOL_HEADER "\n", output) == EOF)
+		status = EXIT_OUTPUT;
+	while (status == EXIT_DONE && (got = getline(&line, &line_capacity, input)) != -1) {
+		/* Every text line has its code line; an input that ends between
+		   them was cut short. */
+		ssize_t code_bytes = getline(&codes, &codes_capacity, input);
+		if (code_bytes == -1) {
+			status = ferror(input) ? EXIT_INPUT_UNREADABLE : EXIT_INPUT_INVALID;
 			break;
 		}
-		/* An empty paragraph translates to an empty line, without liblouis. */
-		if (bytes == 0) {
-			if (fputc('\n', output) == EOF) {
-				status = EXIT_OUTPUT;
-				break;
-			}
-			continue;
-		}
-		chars = malloc(bytes * sizeof(widechar));
-		if (chars == NULL) {
-			status = EXIT_TRANSLATION;
-			break;
-		}
-		if (decode_utf8((const unsigned char *)line, bytes, chars, &count) != 0 ||
-				count > MAX_LINE || (!forward && !all_braille(chars, count))) {
-			free(chars);
-			status = EXIT_INPUT_INVALID;
-			break;
-		}
-		out = translate(table, forward, chars, (int)count, &out_length);
-		free(chars);
-		if (out == NULL) {
-			status = EXIT_TRANSLATION;
-			break;
-		}
-		if (write_line(output, out, (size_t)out_length) != 0) {
-			free(out);
-			status = EXIT_OUTPUT;
-			break;
-		}
-		free(out);
+		status = translate_record(
+				table, forward, emphasis, line, (size_t)got, codes, (size_t)code_bytes, output);
 	}
 	/* A read error ends the loop as the end of the file does. */
 	if (status == EXIT_DONE && ferror(input)) status = EXIT_INPUT_UNREADABLE;
 	free(line);
+	free(codes);
 	fclose(input);
 	if (fclose(output) != 0 && status == EXIT_DONE) status = EXIT_OUTPUT;
 	return status;
@@ -384,6 +660,7 @@ main(int argc, char **argv) {
 	int table_loaded;
 	int status;
 	int paths_absolute = 1;
+	table_emphasis emphasis;
 	/* Every path is absolute: the helper changes its current directory
 	   (see table_path) before it opens the input and the output. */
 	for (int i = 2; i < argc; i++)
@@ -406,7 +683,12 @@ main(int argc, char **argv) {
 		lou_free();
 		return EXIT_TABLE;
 	}
-	status = is_check ? EXIT_DONE : translate_file(table, is_forward, argv[4], argv[5]);
+	if (is_check) {
+		status = EXIT_DONE;
+	} else {
+		look_up_emphasis(table, is_forward, &emphasis);
+		status = translate_file(table, is_forward, &emphasis, argv[4], argv[5]);
+	}
 	lou_free();
 	return status;
 }

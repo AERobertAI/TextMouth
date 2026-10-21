@@ -49,10 +49,13 @@ final class MacBrailleTableCheckTests: XCTestCase {
     }
 
     /// A stand-in helper whose "check" passes and whose translations write
-    /// `cells` for each line of their input, both ways, after running
-    /// `before` (a shell command, such as a sleep).
+    /// `cells` for each paragraph of their input, both ways, after running
+    /// `before` (a shell command, such as a sleep). It writes the helper's
+    /// protocol: the input's header line, then for each record the cells
+    /// and an empty code line (`TextMouthBrailleProtocol.h`).
     private func echoing(_ cells: String, before: String = ":", seconds: TimeInterval = 5) -> BrailleTranslator.Tool {
-        shell(#"[ "$1" = check ] && exit 0; "# + before + #"; awk '{ print "\#(cells)" }' "$3" > "$2""#, seconds: seconds)
+        let records = #"NR == 1 { print; next } NR % 2 == 0 { print "\#(cells)"; next } { print "" }"#
+        return shell(#"[ "$1" = check ] && exit 0; "# + before + #"; awk '\#(records)' "$3" > "$2""#, seconds: seconds)
     }
 
     /// Asserts that the working folder holds nothing, hidden files included.
@@ -343,7 +346,7 @@ final class MacBrailleTableCheckTests: XCTestCase {
             }
             try BrailleTranslator.$tool.withValue(shell("touch '\(marker.path)'")) {
                 XCTAssertThrowsError(try BrailleTranslator.translate(["a"], table: table, direction: .brailleToPrint, workingIn: work))
-                XCTAssertEqual(try BrailleTranslator.translate([], table: table, direction: .printToBraille, workingIn: work), [])
+                XCTAssertEqual(try BrailleTranslator.translate([] as [String], table: table, direction: .printToBraille, workingIn: work), [])
             }
         }
         XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path), "a kept refusal ran the helper again")

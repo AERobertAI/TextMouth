@@ -121,7 +121,8 @@ final class BrailleTranslatorTests: XCTestCase {
         // text is compared with its curly quotes made straight.
         // Second: the print's _You_ (Project Gutenberg's mark for italics)
         // comes back as You, since liblouis reads UEB's italic word
-        // indicator and drops it (TextMouth keeps no emphasis): block 10
+        // indicator as emphasis, which this form of `translate` drops (the
+        // emphasized form keeps it: `BrailleHelperProtocolTests`): block 10
         // (1-based) is compared with _You_ replaced by You.
         for (index, block) in expected.enumerated() {
             var print = block.replacingOccurrences(of: "\u{201C}", with: "\"").replacingOccurrences(of: "\u{201D}", with: "\"")
@@ -423,18 +424,21 @@ final class BrailleTranslatorTests: XCTestCase {
         XCTAssertTrue(result == expected, "the joined translations differ from the expected ones")
     }
 
-    /// The input file holds every piece and its line feed, written through a
-    /// buffer, and the size the watchdog's limits are drawn from is the file's
-    /// exact size (E5). A stand-in that copies its input to its output also
-    /// shows the pieces come back in order and join to the texts.
+    /// The input file holds the protocol's header and then every piece's
+    /// record (its text, a line feed, and the empty code line of a piece with
+    /// no emphasis), written through a buffer, and the size the watchdog's
+    /// limits are drawn from is the file's exact size (E5). A stand-in that
+    /// copies its input to its output, which is then a well-formed output,
+    /// also shows the pieces come back in order and join to the texts.
     func testTheInputIsWrittenPieceByPieceAndSizedExactly() throws {
         let word = "\u{281E}\u{2817}\u{2825}\u{281E}\u{2813}"
         let long = Array(repeating: word, count: 900).joined(separator: "\u{2800}")
         // 200 long texts of about 16 KB each, with short and empty ones among them.
         let texts = (0..<600).map { $0 % 3 == 0 ? long : ($0 % 3 == 1 ? "\u{2801}\u{2803}" : "") }
+        let header = Int64(BrailleEmphasis.protocolHeader.utf8.count) + 1
         let expectedBytes = texts
             .flatMap { BrailleTranslator.pieces(of: $0, direction: .brailleToPrint) }
-            .reduce(Int64(0)) { $0 + Int64($1.text.utf8.count) + 1 }
+            .reduce(header) { $0 + Int64($1.text.utf8.count) + 2 }
         XCTAssertGreaterThan(expectedBytes, 2 * Int64(1_048_576), "the input should pass the buffer's size twice")
 
         // What the stand-in saw of the input file, and what the limits were asked for.
@@ -539,7 +543,13 @@ final class BrailleTranslatorTests: XCTestCase {
     func testNoWorkRunsNothing() throws {
         let failing = standIn("/usr/bin/false")
         try with(failing) {
-            XCTAssertEqual(try BrailleTranslator.translate([], table: "en-ueb-g1.ctb", direction: .printToBraille, workingIn: work), [])
+            XCTAssertEqual(
+                try BrailleTranslator.translate([] as [String], table: "en-ueb-g1.ctb", direction: .printToBraille, workingIn: work), []
+            )
+            XCTAssertEqual(
+                try BrailleTranslator.translate([] as [EmphasizedText], table: "en-ueb-g1.ctb", direction: .printToBraille, workingIn: work),
+                []
+            )
             XCTAssertEqual(
                 try BrailleTranslator.translate(["", ""], table: "en-ueb-g1.ctb", direction: .brailleToPrint, workingIn: work),
                 ["", ""]
