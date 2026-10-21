@@ -302,8 +302,8 @@ set_version() {
 # and how it called xcodegen. The copy finds its repository from its own
 # location, so it can change only the sandbox's project.yml, and the stand-in
 # is the only xcodegen it can reach: no case can touch the real project.yml
-# or regenerate the real project. The last cases check the Makefile's wiring
-# of the script, with make -n, which runs nothing.
+# or regenerate the real project. The last cases check that the Makefile runs
+# the script and this selftest, with make -n, which runs nothing.
 #
 # Output: one "ok" or "not ok" line per case, with the reasons and the
 # script's report under each failure, then the totals.
@@ -704,9 +704,9 @@ xcodegen_cases() {
   end_case
 }
 
-# makefile_cases: the Makefile runs this script for make set-version, and
-# lists set-version in its help. make -n prints what a target would run and
-# runs none of it.
+# makefile_cases: the Makefile runs this script for make set-version, runs
+# this selftest in make check-selftest, and lists set-version in its help.
+# make -n prints what a target would run and runs none of it.
 makefile_cases() {
   local real_make
   real_make=$(command -v make) || {
@@ -723,6 +723,13 @@ makefile_cases() {
   status=$?
   expect_status 0
   expect_report 'Scripts/set-version.sh "0.2.0"'
+  end_case
+
+  begin_check "make -n check-selftest runs this selftest"
+  output=$(cd "$WORK/make" && "$real_make" -n check-selftest 2>&1)
+  status=$?
+  expect_status 0
+  expect_report "Scripts/set-version.sh --selftest"
   end_case
 
   begin_check "make help lists set-version"
