@@ -221,6 +221,53 @@ final class EPUBPageListTests: XCTestCase {
         }
     }
 
+    /// A page list most often names empty anchors: between words with a space
+    /// on either side, or after a space at the end of a paragraph or a line.
+    /// Such a book reads the same with pages as without, every word and space
+    /// alike, so places counted in its text do not move: the space after an
+    /// anchor is dropped as it is without the marker, and the space before
+    /// one that ends a line is trimmed as the line's last. Before, "One
+    /// <span/> two" read "One  two" at every page, and phrase search could not
+    /// cross a page. The EPUB 2 sample, whose anchors stand before their
+    /// words, reads the same too.
+    func testEmptyPageAnchorsReadTheSameWithAndWithoutPages() throws {
+        let labels = ["1", "2", "3", "4", "5", "6", "7"]
+        let nav = xhtml("""
+            <nav epub:type="toc"><ol><li><a href="ch1.xhtml">The Crossing</a></li></ol></nav>
+            <nav epub:type="page-list"><ol>\(labels.map { "<li><a href=\"ch1.xhtml#p\($0)\">\($0)</a></li>" }.joined())</ol></nav>
+            """)
+        let chapter = xhtml("""
+            <h1>The Crossing</h1>
+            <p>The ferry left <span id="p1"></span> at noon.</p>
+            <p>It crossed <a id="p2"></a> the strait <em>and <span id="p3"></span> docked</em> by two.</p>
+            <ul><li>Rope <span id="p4"></span> and tar</li></ul>
+            <p>The pier <span id="p5"></span>
+            stood empty. <span id="p6"></span></p>
+            <p>A gull called. <span id="p7"></span><br/>Nobody answered.</p>
+            """)
+        let epub = try makeEPUB(
+            manifest: """
+                <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+                <item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>
+                """,
+            spine: "<itemref idref=\"ch1\"/>",
+            members: ["nav.xhtml": nav, "ch1.xhtml": chapter]
+        )
+
+        let withPages = try EPUBParser.prepareBook(url: epub).chapters.map(\.chapter)
+        let withoutPages = try EPUBParser.prepareBook(url: epub, includesPages: false).chapters.map(\.chapter)
+        XCTAssertEqual(withPages.map(\.text), withoutPages.map(\.text))
+        XCTAssertEqual(withPages.first?.pages.map(\.label), labels)
+        let text = withPages.first?.text ?? ""
+        XCTAssertFalse(text.contains("  "), text)
+        XCTAssertTrue(text.contains("It crossed the strait and docked by two."), text)
+
+        let sample = "epub2-pages/pagelist.epub"
+        XCTAssertEqual(
+            try chaptersOf(sample).map(\.chapter.text), try chaptersOf(sample, includesPages: false).map(\.chapter.text)
+        )
+    }
+
     // MARK: - Page-break elements without a page list
 
     /// With no page list every labelled page-break element is a page: labelled

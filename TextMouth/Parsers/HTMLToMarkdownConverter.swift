@@ -245,6 +245,7 @@ enum HTMLToMarkdownConverter {
 
         // Line breaks
         case "br":
+            dropSpaceBeforeTrailingPageMarkers(in: &result)
             result += "  \n"
 
         // Emphasis and strong emphasis. Only the outermost is marked: emphasis
@@ -537,6 +538,7 @@ enum HTMLToMarkdownConverter {
                 result += " "
             }
         case .paragraph:
+            dropSpaceBeforeTrailingPageMarkers(in: &result)
             MarkdownMarkerWriter.ensureBlankLine(&result)
         }
     }
@@ -548,10 +550,58 @@ enum HTMLToMarkdownConverter {
     private static let writtenWhitespace = CharacterSet(charactersIn: " \n")
 
     /// Whether the next text begins a word: at the start of the Markdown, of
-    /// a line, or after a space.
+    /// a line, or after a space, with any page markers that end the Markdown
+    /// passed over. Were a marker taken for a word's end, the space after an
+    /// empty page anchor between two words would be kept beside the one
+    /// before it, and "One <span id="p2"/> two" would read "One  two".
     private static func isAtWordStart(_ result: String) -> Bool {
-        guard let last = result.unicodeScalars.last else { return true }
+        guard let last = beforeTrailingPageMarkers(of: result).unicodeScalars.last else { return true }
         return last == " " || last == "\n"
+    }
+
+    // MARK: - Page Markers Between Words
+
+    /// `result` without the page markers that end it, if any. A page marker
+    /// is never read, so the words before it decide where the next words
+    /// begin (`isAtWordStart(_:)`) and whether a line ends with a space
+    /// (`dropSpaceBeforeTrailingPageMarkers(in:)`), and the book reads the
+    /// same with pages as without. A heading annotation is not passed over:
+    /// the Markdown without pages, which holds annotations, stays as cache
+    /// format 3.0.7 wrote it.
+    private static func beforeTrailingPageMarkers(of result: String) -> Substring {
+        var text = Substring(result)
+        while text.hasSuffix("-->"), let open = lastCommentOpening(in: text),
+              MarkdownPageMarker.decode(String(text[open...])) != nil {
+            text = text[..<open]
+        }
+        return text
+    }
+
+    /// Where the last "<!--" in `text` begins, searched for from the end, so
+    /// finding the opening of a marker that ends the Markdown reads only the
+    /// marker. A marker's label never holds "<!--" (`MarkdownPageMarker`).
+    private static func lastCommentOpening(in text: Substring) -> String.Index? {
+        let bytes = text.utf8
+        var index = bytes.endIndex
+        while index > bytes.startIndex {
+            index = bytes.index(before: index)
+            if bytes[index...].starts(with: "<!--".utf8) { return index }
+        }
+        return nil
+    }
+
+    /// Where a line ends, at a paragraph boundary or a line break, drop the
+    /// space before page markers that end `result`. Without the markers the
+    /// parser trims that space from the end of the line; before them it was
+    /// kept, and "Words <!-- page: 6 -->" read "Words " where the book
+    /// without pages reads "Words". The page still begins at the next word
+    /// (`PageBreak.firstWordStart`). An inline wrapper still open, whose
+    /// start this may move, holds the line's end, so it is never written
+    /// (`wrapSpan`, `emphasisSpan`).
+    private static func dropSpaceBeforeTrailingPageMarkers(in result: inout String) {
+        let words = beforeTrailingPageMarkers(of: result)
+        guard words.endIndex < result.endIndex, words.unicodeScalars.last == " " else { return }
+        result.unicodeScalars.remove(at: result.unicodeScalars.index(before: words.endIndex))
     }
 
     // MARK: - Literal Text
