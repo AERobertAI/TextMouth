@@ -60,7 +60,8 @@ All in the new `TextMouth/Models/BookPages.swift`.
 `MarkdownDocParser.parseChapter` reads markers only where it reads heading annotations (`includeNavigationHeadings`: content.md and an EPUB's prepared chapters); everywhere else a marker is an ordinary comment, unseen.
 - A marker in a block takes the offset of the block after it (the extractor's `separateBlock()` first, as for an annotation); an inline one takes its exact place, or the heading's start inside a heading line.
 - Offsets are shifted by the trimmed leading whitespace and clamped to the chapter's text, as navigation headings are.
-- **A page that begins inside a word begins at that word's start** (`ReaderViewModel.snappedWordStart(in:at:)`), so the place a listener lands on and the page shown agree, and Next Page never lands short of the page it names.
+- **A page begins at its first whole word** (`PageBreak.firstWordStart(in:at:)`, built in PG01): a marker standing at whitespace moves forward to the next word, and one inside a word moves back to that word's start (`ReaderViewModel.snappedWordStart(in:at:)`). So the place a listener lands on and the page shown agree, and Next Page never lands short of the page it names. A writer therefore need not place an inline marker exactly before a word: one just before the space that begins a page lands on the same word.
+- **Built:** PG01 is on the team branch (commits d5e2120c to eba1a60d).
 
 ## 4. `includesPages`
 
