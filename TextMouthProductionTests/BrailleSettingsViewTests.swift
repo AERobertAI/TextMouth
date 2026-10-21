@@ -195,8 +195,7 @@ final class BrailleSettingsViewTests: XCTestCase {
         let settings = SettingsViewModel(
             notificationCenter: NotificationCenter(), initializeServices: false, userDefaults: defaults, configService: service
         )
-        let checkRoot = try makeSandboxDirectory("BrailleTabFrenchCheck")
-        try withBrailleTab(settings: settings, codes: BrailleTableCatalog.offeredCodes, checkRoot: checkRoot) { hosting, _ in
+        try withBrailleTab(settings: settings, codes: BrailleTableCatalog.offeredCodes) { hosting, _ in
             let (language, _, _) = try popUps(in: hosting)
             XCTAssertEqual(language.itemTitles.first, english)
             let frenchItem = try XCTUnwrap(language.itemTitles.firstIndex(of: french))
@@ -210,11 +209,32 @@ final class BrailleSettingsViewTests: XCTestCase {
             }, "the pop-ups did not show French")
         }
         service.flushScheduledSave()
-        // The check worked in the sandbox's folder, and left nothing there.
-        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: checkRoot.path), [])
         XCTAssertEqual(BraillePreferences.table.read(from: defaults), "mac:fr-bfu-g2.ctb")
         let saved = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any]
         XCTAssertEqual(saved?["brailleTable"] as? String, "mac:fr-bfu-g2.ctb")
+    }
+
+    /// The pop-ups check a chosen table in the folder the environment gives
+    /// (review F7): given a folder under a plain file, where no working
+    /// folder can be made, the check says so, where a check in the real
+    /// temporary directory would find the fixture's table gone instead.
+    func testTheCheckWorksInTheFolderTheEnvironmentGives() throws {
+        let settings = try makeSettings()
+        var heard: [String] = []
+        let previousPoster = VoiceOverAnnouncer.poster
+        VoiceOverAnnouncer.poster = { announcement, _ in heard.append(announcement.message) }
+        defer { VoiceOverAnnouncer.poster = previousPoster }
+        let file = try makeSandboxDirectory("BrailleTabCheckRoot").appendingPathComponent("plain.txt")
+        try "not a folder".write(to: file, atomically: true, encoding: .utf8)
+        let expected = "TextMouth could not check this Mac's table \u{201C}Fixture French contracted braille\u{201D}: "
+            + "TextMouth could not make a folder to check it in. Choose it again to try once more."
+
+        try withBrailleTab(settings: settings, codes: codesWithAFixtureMacLanguage(), checkRoot: file) { hosting, _ in
+            let (language, _, _) = try popUps(in: hosting)
+            language.menu?.performActionForItem(at: try XCTUnwrap(language.itemTitles.firstIndex(of: french)))
+            XCTAssertTrue(waitUntil(timeout: 5) { heard.contains(expected) }, "VoiceOver heard \(heard)")
+        }
+        XCTAssertEqual(settings.brailleTable, "en-ueb-g2.ctb")
     }
 
     // MARK: - The Choices

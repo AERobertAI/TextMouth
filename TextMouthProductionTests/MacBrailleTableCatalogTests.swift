@@ -1,3 +1,4 @@
+import os
 import XCTest
 @testable import TextMouth
 
@@ -126,9 +127,14 @@ final class MacBrailleTableCatalogTests: XCTestCase {
         XCTAssertEqual(BrailleTableCatalog.headerData(ofTableAt: folder.appendingPathComponent("missing.ctb")), Data())
     }
 
-    /// The background load makes the offered codes, which then hold the
-    /// bundled tables first.
-    func testTheBackgroundLoadMakesTheOfferedCodes() async {
+    /// The background load runs off the main thread (review F7: a load on
+    /// the caller's thread, or none, fails here), and the app's makes the
+    /// offered codes, which then hold the bundled tables first.
+    func testTheBackgroundLoadRunsOffTheMainThreadAndMakesTheCodes() async {
+        let seen = OSAllocatedUnfairLock(initialState: (ran: false, onMainThread: true))
+        await BrailleTableCatalog.loadInBackground { seen.withLock { $0 = (true, Thread.isMainThread) } }.value
+        XCTAssertTrue(seen.withLock { $0.ran }, "the load never ran")
+        XCTAssertFalse(seen.withLock { $0.onMainThread }, "the load ran on the main thread")
         await BrailleTableCatalog.loadInBackground().value
         XCTAssertEqual(
             Array(BrailleTableCatalog.offeredTables.prefix(BrailleTableCatalog.bundled.count)).map(\.id),

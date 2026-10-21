@@ -610,10 +610,12 @@ enum BrailleTableCatalog {
     /// the Mac's 485 table headers on the main thread. Asking again, or
     /// using them meanwhile, reads nothing twice: Swift makes each `static
     /// let` once, and a thread that needs one while another makes it waits.
+    /// - Parameter load: The loading, which a test replaces to see where it
+    ///   runs; the app's reads the offered tables.
     @discardableResult
-    static func loadInBackground() -> Task<Void, Never> {
+    static func loadInBackground(_ load: @escaping @Sendable () -> Void = { _ = offeredTables }) -> Task<Void, Never> {
         Task.detached(priority: .utility) {
-            _ = offeredTables
+            load()
         }
     }
 
