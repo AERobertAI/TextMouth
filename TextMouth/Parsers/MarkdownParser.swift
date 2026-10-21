@@ -15,6 +15,11 @@ enum MarkdownDocParser {
     /// Parse one chapter without constructing an intermediate DocumentContent.
     /// Multi-chapter cache loading uses this to avoid calculating book metrics
     /// once per chapter and then again for the assembled document.
+    ///
+    /// - Parameter includeNavigationHeadings: Whether the generated markers of
+    ///   content.md are read: heading annotations, which add navigation
+    ///   headings, and page markers (PG01), which add pages. Everywhere else
+    ///   they are ordinary comments, unseen.
     static func parseChapter(
         markdown: String,
         title: String = "Untitled",
@@ -53,7 +58,18 @@ enum MarkdownDocParser {
         // Use first heading as title if available
         let docTitle = headings.first?.text ?? title
 
-        return Chapter(title: docTitle, text: plainText, headings: headings)
+        // Pages come from the same walk, so they are already in reading order.
+        // A page that begins in whitespace or inside a word begins at the
+        // nearest whole word (PG01), so Next Page and the page shown agree.
+        let pages = textExtractor.pages.map { page in
+            let offset = min(textLength, max(0, page.offset - trimmedPrefixLength))
+            return PageBreak(
+                label: page.label,
+                characterOffset: PageBreak.firstWordStart(in: plainText, at: offset)
+            )
+        }
+
+        return Chapter(title: docTitle, text: plainText, headings: headings, pages: pages)
     }
 }
 
@@ -64,6 +80,9 @@ private struct PlainTextExtractor: MarkupWalker {
     var result = ""
     var headings: [(level: Int, text: String, offset: Int)] = []
     var navigationHeadings: [(level: Int, text: String, offset: Int)] = []
+    /// The page markers met, in reading order, with the offset at which each
+    /// stood in `result` (PG01). Read under the same rule as navigation headings.
+    var pages: [(label: String, offset: Int)] = []
     private var utf16Length = 0
     /// Start of the heading being walked, if any. Caches written before format
     /// 3.0.5 could place an annotation inside a heading line; it names that
@@ -74,7 +93,8 @@ private struct PlainTextExtractor: MarkupWalker {
     /// (`append(_:)`), so an empty cell writes nothing, not even a space.
     private var cellBoundaryIsPending = false
 
-    /// Only generated cache/EPUB Markdown opts into navigation annotations.
+    /// Only generated cache/EPUB Markdown opts into navigation annotations
+    /// and page markers (PG01).
     init(includeNavigationHeadings: Bool) {
         self.includeNavigationHeadings = includeNavigationHeadings
     }
@@ -227,18 +247,28 @@ private struct PlainTextExtractor: MarkupWalker {
     /// Block annotations precede a chapter or block target; establish the same
     /// paragraph boundary as the following block without adding label text.
     mutating func visitHTMLBlock(_ html: HTMLBlock) {
-        guard includeNavigationHeadings,
-              let annotation = MarkdownHeadingAnnotation.decode(html.rawHTML) else { return }
-        separateBlock()
-        navigationHeadings.append((annotation.level, annotation.text, utf16Length))
+        guard includeNavigationHeadings else { return }
+        if let annotation = MarkdownHeadingAnnotation.decode(html.rawHTML) {
+            separateBlock()
+            navigationHeadings.append((annotation.level, annotation.text, utf16Length))
+        } else if let marker = MarkdownPageMarker.decode(html.rawHTML) {
+            // A page marker names the same place as the block after it (PG01).
+            separateBlock()
+            pages.append((marker.label, utf16Length))
+        }
     }
 
-    /// Inline anchors keep their precise location within the current paragraph.
+    /// Inline anchors and page markers keep their precise location within the
+    /// current paragraph.
     /// Inside a heading an anchor names the heading itself, so it shares the
     /// heading's offset instead of adding a row partway through its label.
     mutating func visitInlineHTML(_ html: InlineHTML) {
-        guard includeNavigationHeadings,
-              let annotation = MarkdownHeadingAnnotation.decode(html.rawHTML) else { return }
-        navigationHeadings.append((annotation.level, annotation.text, currentHeadingOffset ?? utf16Length))
+        guard includeNavigationHeadings else { return }
+        if let annotation = MarkdownHeadingAnnotation.decode(html.rawHTML) {
+            navigationHeadings.append((annotation.level, annotation.text, currentHeadingOffset ?? utf16Length))
+        } else if let marker = MarkdownPageMarker.decode(html.rawHTML) {
+            // Likewise a page marker: its exact place, or the heading's start.
+            pages.append((marker.label, currentHeadingOffset ?? utf16Length))
+        }
     }
 }

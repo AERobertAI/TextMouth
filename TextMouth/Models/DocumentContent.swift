@@ -10,6 +10,11 @@ struct DocumentContent {
     /// laid over `chapters`, which stay the audio's: what the reader shows
     /// while the book plays its audio. Nil for every other book.
     var transcript: TranscriptText? = nil
+    /// The book's pages in book order, each break with its chapter's index in
+    /// `chapters` (PG01). Built once, here, because the status row asks for
+    /// them often; `chapters` is never changed after `init` (nothing assigns
+    /// it), so the pages cannot go stale.
+    let pages: BookPages
 
     init(
         title: String,
@@ -20,6 +25,9 @@ struct DocumentContent {
         self.title = title
         self.author = author
         self.chapters = chapters
+        pages = BookPages(breaks: chapters.enumerated().flatMap { index, chapter in
+            chapter.pages.map { PageBreak(label: $0.label, chapterIndex: index, characterOffset: $0.characterOffset) }
+        })
         self.contentIndex = contentIndex ?? BookContentIndex.build(
             fromChapters: chapters,
             format: .txt
@@ -91,6 +99,11 @@ struct Chapter {
     var title: String
     var text: String
     var headings: [Heading]
+    /// The pages that begin in this chapter, in reading order, as the parse
+    /// found their markers (PG01). Their `chapterIndex` is 0, as the chapter's
+    /// headings' is; `DocumentContent.pages` holds the book's, with each
+    /// chapter's index.
+    var pages: [PageBreak]
 
     /// Character ranges for each heading within this chapter's text
     var headingRanges: [(heading: Heading, range: Range<String.Index>)]
@@ -144,11 +157,18 @@ struct Chapter {
         return count
     }
 
-    init(title: String = "", text: String = "", headings: [Heading] = [], headingRanges: [(heading: Heading, range: Range<String.Index>)] = []) {
+    init(
+        title: String = "",
+        text: String = "",
+        headings: [Heading] = [],
+        headingRanges: [(heading: Heading, range: Range<String.Index>)] = [],
+        pages: [PageBreak] = []
+    ) {
         self.title = title
         self.text = text
         self.headings = headings
         self.headingRanges = headingRanges
+        self.pages = pages
     }
 }
 
