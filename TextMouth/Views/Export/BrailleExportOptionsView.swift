@@ -339,10 +339,15 @@ final class BrailleTableChoiceChecks: ObservableObject {
         isChecking = true
     }
 
-    /// Returns once every check running now has ended.
-    func finished() async {
-        for task in running.values {
-            await task.value
+    /// How often `finished(unless:)` looks again, in seconds.
+    static let waitInterval: TimeInterval = 0.02
+
+    /// Returns once no check is running, a check started meanwhile included,
+    /// or as soon as `cancellation` is cancelled (review F3): the export's
+    /// Stop, or the dialog closing, ends the wait at once.
+    func finished(unless cancellation: BookExportCancellation? = nil) async {
+        while !running.isEmpty, cancellation?.isCancelled != true {
+            try? await Task.sleep(nanoseconds: UInt64(Self.waitInterval * 1_000_000_000))
         }
     }
 }

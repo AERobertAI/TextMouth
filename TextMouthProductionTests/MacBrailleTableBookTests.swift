@@ -243,29 +243,74 @@ final class MacBrailleTableBookTests: XCTestCase {
         )
     }
 
-    // MARK: - An Export During a Check (review R5)
+    // MARK: - An Export During a Check (review R5, F3)
 
-    /// An export started while a table just chosen in the pop-ups is still
-    /// being checked waits for that check before it reads its options, and
-    /// the checks are counted as running meanwhile, which the Export
-    /// button's hint tells of.
+    /// Whether a stand-in check has ended.
+    private final class Ended {
+        var value = false
+    }
+
+    /// The wait for the checks of tables just chosen lasts until none is
+    /// running, a check started during the wait included, and ends at once
+    /// when the export is stopped.
     @MainActor
-    func testAnExportWaitsForTheCheckOfATableJustChosen() async {
-        /// Whether the stand-in check has ended.
-        final class Ended {
-            var value = false
-        }
-        let ended = Ended()
+    func testTheWaitLastsUntilNoCheckIsPendingOrTheExportStops() async {
         let checks = BrailleTableChoiceChecks.shared
+        let first = Ended(), second = Ended()
         checks.run {
-            try? await Task.sleep(nanoseconds: 300_000_000)
-            ended.value = true
+            try? await Task.sleep(nanoseconds: 100_000_000)
+            first.value = true
+            // A table chosen while the export waits.
+            checks.run {
+                try? await Task.sleep(nanoseconds: 200_000_000)
+                second.value = true
+            }
         }
         XCTAssertTrue(checks.isChecking)
-        let model = BookExportModel(books: [])
-        _ = await model.export()
-        XCTAssertTrue(ended.value, "the export did not wait for the check")
+        await checks.finished()
+        XCTAssertTrue(first.value && second.value, "the wait ended before every check")
         XCTAssertFalse(checks.isChecking)
+
+        let stopped = BookExportCancellation()
+        stopped.cancel()
+        let late = Ended()
+        checks.run {
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            late.value = true
+        }
+        await checks.finished(unless: stopped)
+        XCTAssertFalse(late.value, "a stopped export waited for the check")
+        await checks.finished()
+    }
+
+    /// An export waiting for a check is exporting, so Stop is offered, and
+    /// Stop ends it before it writes anything; the dialog is then as it was.
+    @MainActor
+    func testWaitingForACheckIsPartOfExportingAndStopEndsIt() async throws {
+        let world = try makeIntegrationWorld("Mac Braille Export Wait")
+        let source = try makeSandboxDirectory("MacBrailleExportWaitSource").appendingPathComponent("Harbour Notes.md")
+        try "# Harbour Notes\n\nThe tide turns at noon.\n".write(to: source, atomically: true, encoding: .utf8)
+        let book = try world.importBook(from: source)
+        let folder = try makeSandboxDirectory("MacBrailleExportWaitFolder")
+        let model = BookExportModel(books: [book], destination: folder)
+        // What the dialog's sheet does as it opens: list what the book holds.
+        await model.load()
+        XCTAssertTrue(model.canExport, "the dialog never became ready")
+
+        let checks = BrailleTableChoiceChecks.shared
+        checks.run { try? await Task.sleep(nanoseconds: 1_000_000_000) }
+        let export = Task { await model.export() }
+        for _ in 0..<200 where !model.isExporting {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertTrue(model.isExporting, "Stop is not offered while the export waits")
+        model.stop()
+        let outcome = await export.value
+        XCTAssertNil(outcome)
+        XCTAssertFalse(model.isExporting)
+        XCTAssertTrue(model.canExport, "the dialog is not as it was")
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), [])
+        await checks.finished()
     }
 
     // MARK: - config.json
