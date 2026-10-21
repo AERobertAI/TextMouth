@@ -41,14 +41,16 @@ final class TextPipelineGoldenTests: XCTestCase {
 
     /// content.md as the import writes it for each golden book, recorded on
     /// main before PERF18: at a4d6e10, and for the two DAISY audio books
-    /// that only some checkouts hold, at 6cef1d0 with them present.
+    /// that only some checkouts hold, at 6cef1d0 with them present. The
+    /// books that gained pages (PG05 to PG08) were recorded again with their
+    /// pages; the two audio books last, in a checkout that holds them.
     private static let recordedCaches: [String: String] = [
         "alice.docx": "1a06c9f538a8d627",
         "alice.epub": "7693c954870e8e27",
-        "are-you-ready-d3-audio.zip": "d1d3f9c2159d5732",
+        "are-you-ready-d3-audio.zip": "465cacd1e1c6c93f",
         "converted-12.epub": "65ea3c4fb57ed662",
         "daisy202_test.zip": "73cbd773fe100236",
-        "fire-safety-d202-audio.zip": "38d5759450e06358",
+        "fire-safety-d202-audio.zip": "22a292ece75845b7",
         "frankenstein.html": "ca20689835e6a4af",
         "hyperion_daisy.zip": "538946f073739b22",
         "lathe_of_heaven_daisy.zip": "01eb5d0b116fe9b4",
@@ -70,10 +72,10 @@ final class TextPipelineGoldenTests: XCTestCase {
     private static let recordedReadings: [String: String] = [
         "alice.docx": "6a2383388d488ef7",
         "alice.epub": "98ad24b7bb26f619",
-        "are-you-ready-d3-audio.zip": "ac2c4fe996e672c4",
+        "are-you-ready-d3-audio.zip": "225dce740444f269",
         "converted-12.epub": "a9fe607222334425",
         "daisy202_test.zip": "62d8163491526652",
-        "fire-safety-d202-audio.zip": "f473b2fbaff21ccb",
+        "fire-safety-d202-audio.zip": "223ac40dd3f7dcba",
         "frankenstein.html": "33e7c31909a348d3",
         "hyperion_daisy.zip": "eaa1858c33d55019",
         "lathe_of_heaven_daisy.zip": "4a55f5aedf83c3b3",
