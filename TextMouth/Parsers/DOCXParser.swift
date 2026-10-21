@@ -70,7 +70,8 @@ enum DOCXParser {
 
     /// Extract Markdown text from a DOCX file. This is the main conversion entry point
     /// used by MarkdownCacheService for generating the content.md cache.
-    /// - Parameter includesPages: whether page markers are written (PG07); false writes what cache format 3.0.7 wrote. Not used yet.
+    /// - Parameter includesPages: whether page markers are written where each
+    ///   page begins (PG07); false writes what cache format 3.0.7 wrote, byte for byte.
     /// - Parameter reportIncompleteContent: receives a diagnostic when the
     ///   document's text part broke off after some of its text was read.
     ///   That text stays in the result; the diagnostic never enters it. The
@@ -105,7 +106,8 @@ enum DOCXParser {
             file: Part.document,
             styles: styles,
             numbering: numbering,
-            relationships: relationships
+            relationships: relationships,
+            includesPages: includesPages
         ).convert()
         if let diagnostic = conversion.diagnostic {
             reportIncompleteContent(diagnostic)
