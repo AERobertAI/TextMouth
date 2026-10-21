@@ -30,7 +30,7 @@ TextMouth no longer plays Ogg audio (.ogg, .oga, or .opus) itself. On October 14
 
 ## For people building TextMouth
 
-- [Building TextMouth](docs/developer/building.md): what you need, the make targets (`make build`, then `make install` to put the app in Applications), and the make check gate.
+- [Building TextMouth](docs/developer/building.md): what you need, the make targets (`make build`, then `make install` to put the app in Applications), how the version number is set (`make set-version`), and the make check gate.
 - [Testing TextMouth](docs/developer/testing.md): the hosted test suite, the performance baselines, and the tests on real cloud drives. It also covers the reusable test tools in `Scripts/test/`: run only some tests (`make test-area AREAS="feeds bookmarks"`), check the lines a branch adds (`make lint-tests`, `make lint-a11y`, `make lint-ogg`), record and compare document goldens (`Scripts/test/update-goldens.sh`), report on a folder of documents (`Scripts/test/corpus-report.sh`), and the opt-in sweeps for voices, damaged imports, and storage failures.
 - [Architecture](ARCHITECTURE.md): who owns each kind of state, how a book is read, the shared helpers, and the duplication left in place.
 - [Third-party code](docs/developer/third-party-code.md): the libraries TextMouth includes, and their licences.
