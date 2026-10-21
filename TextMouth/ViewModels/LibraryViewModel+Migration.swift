@@ -964,6 +964,22 @@ extension LibraryViewModel {
                 )
                 return ContentAnalysisSummary(recovered: recovered, record: record)
             }
+            // A book behind only in its pages is compared with its file
+            // first (PG09, PG16), before an edit saved while TextMouth was
+            // closed is looked for: a batch stopped between writing
+            // content.md and committing its record leaves TextMouth's own
+            // text there, which would otherwise be taken for the user's. An
+            // edit Edit Text took is kept below, as every re-read keeps one.
+            if isBehindOnlyInPages(book), !BookTextEditSessions.holdsTakenEdit(book, access: access) {
+                switch try pageUpgradeCheck(of: book, access: access) {
+                case .readAgain, .stale:
+                    break
+                case .writtenWithPages:
+                    return stampedText(of: book, access: access)
+                case .changed:
+                    return keptText(of: book, access: access)
+                }
+            }
             // The record no longer describes content.md: it may hold an
             // edit saved while TextMouth was closed, taken now when it
             // parses, and otherwise kept beside it before the rebuild below.
@@ -976,12 +992,6 @@ extension LibraryViewModel {
             // so the batch does not visit the book again at the next launch.
             if BookTextEditSessions.holdsTakenEdit(book, access: access) {
                 BookTextEditSessions.logEditedTextKept(of: book)
-                return keptText(of: book, access: access)
-            }
-            // A book behind only in its pages is read again without them
-            // first: a content.md that is not exactly what its file gives
-            // was changed by hand, and is kept as it is (PG09, PG16).
-            if isBehindOnlyInPages(book), try pageUpgradeCheck(of: book, access: access) == .changed {
                 return keptText(of: book, access: access)
             }
         }
@@ -1038,19 +1048,26 @@ extension LibraryViewModel {
     /// - A content.md that is exactly the file's text without pages is
     ///   TextMouth's own, and is read again with pages (`readAgain`), as is
     ///   a book with no content.md, which has nothing to keep.
+    /// - A content.md that is exactly the file's text with its pages is
+    ///   TextMouth's own too (`writtenWithPages`): a batch wrote it, then
+    ///   stopped before it committed the book's record, since a quit does
+    ///   not wait for the batch. Only the record is stamped then; it is
+    ///   never taken for an edit saved while TextMouth was closed.
     /// - Any other content.md is kept as it is (`changed`): text changed by
     ///   hand, or by an older TextMouth on another Mac, or written by an
     ///   extraction this build cannot repeat exactly, which is never taken
     ///   for TextMouth's own.
-    /// - A book whose file changed since content.md was written, or whose
-    ///   content.md did, by the fingerprints its record keeps, is not
-    ///   compared (`stale`): the checks every book has decide, and it is
-    ///   read again as any stale cache is.
+    /// - A book whose file changed since content.md was written is not
+    ///   compared (`stale`): it is read again as any stale cache is. Nor is
+    ///   a content.md changed since then, unless it is the text with pages:
+    ///   the check for an edit saved while TextMouth was closed decides.
     /// - Throws: why content.md or the file could not be read.
     nonisolated private static func pageUpgradeCheck(of book: Book, access: MaintenanceFileAccess) throws -> PageUpgradeCheck {
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
         let sourceURL = book.bookFileURL
         guard FileStamp(of: cacheURL) != nil else { return .readAgain }
+        // Whether content.md holds other bytes than its record describes.
+        var contentChanged = false
         if let recorded = BookTextEditSessions.recordedTextCacheFingerprint(of: book, access: access) {
             let hasher = access.hasher
             let verification = try recorded.verify(
@@ -1062,12 +1079,44 @@ extension LibraryViewModel {
                 sourceIsDataless: access.isDataless(sourceURL),
                 cacheIsDataless: access.isDataless(cacheURL)
             )
-            guard case .current = verification else { return .stale }
+            switch verification {
+            case .current:
+                break
+            case .stale(.sourceChanged):
+                return .stale
+            case .stale(.cacheChanged):
+                contentChanged = true
+            }
         }
         let kept = try access.read(cacheURL) { try Data(contentsOf: cacheURL) }
-        // A generation writes exactly the UTF-8 of the Markdown it extracts.
-        let withoutPages = try MarkdownCacheService.extractedMarkdown(for: book, includesPages: false)
-        return withoutPages.map { Data($0.utf8) } == kept ? .readAgain : .changed
+        if !contentChanged, try reread(book, includesPages: false) == kept {
+            return .readAgain
+        }
+        if try reread(book, includesPages: true) == kept {
+            return .writtenWithPages
+        }
+        return contentChanged ? .stale : .changed
+    }
+
+    /// The bytes a generation would write to `book`'s content.md now, read
+    /// from its file with page markers or without them: exactly the UTF-8
+    /// of the Markdown extracted (`MarkdownCacheService.extractedMarkdown`).
+    /// Nil for a book with no text cache.
+    /// - Throws: why the file could not be read.
+    nonisolated private static func reread(_ book: Book, includesPages: Bool) throws -> Data? {
+        try MarkdownCacheService.extractedMarkdown(for: book, includesPages: includesPages).map { Data($0.utf8) }
+    }
+
+    /// Settles a book whose content.md is TextMouth's own text with its
+    /// format's pages, written by a batch that stopped before it committed
+    /// the book's record (PG16): only the record is stamped, with the page
+    /// reader its format has now, as the batch would have stamped it. The
+    /// text is not read again, nor taken for an edit, and the places stay
+    /// where they are: the launch's place recovery moved them with the text
+    /// first (`finishLeftoverPlaceMoves(access:then:)`). Nil when nothing
+    /// was committed; a later launch tries again.
+    nonisolated private static func stampedText(of book: Book, access: MaintenanceFileAccess) -> ContentAnalysisSummary? {
+        settledText(of: book, pageReaderVersion: .some(PageReaderVersions.current(for: book.format)), access: access)
     }
 
     /// Settles a book whose content.md is kept as it is: its summary, once
@@ -1083,7 +1132,19 @@ extension LibraryViewModel {
         }
         // Nil leaves the record's own page reader, for a book not behind.
         let stamp: String?? = behindInPages ? .some(PageReaderVersions.current(for: book.format)) : nil
-        return BookTextEditSessions.shared.settleKeptText(of: book, pageReaderVersion: stamp, access: access)
+        return settledText(of: book, pageReaderVersion: stamp, access: access)
+    }
+
+    /// The summary of `book` once its content.md, kept as it is, is indexed
+    /// and committed to its record with `pageReaderVersion`
+    /// (`BookTextEditSessions.settleKeptText(of:pageReaderVersion:access:)`),
+    /// or nil when nothing was committed.
+    nonisolated private static func settledText(
+        of book: Book,
+        pageReaderVersion: String??,
+        access: MaintenanceFileAccess
+    ) -> ContentAnalysisSummary? {
+        BookTextEditSessions.shared.settleKeptText(of: book, pageReaderVersion: pageReaderVersion, access: access)
             .map { ContentAnalysisSummary(committed: $0) }
     }
 
@@ -1964,8 +2025,13 @@ private enum PageUpgradeCheck: Equatable {
     /// from before pages, or there is none: the file is read again, with its
     /// pages.
     case readAgain
-    /// The file or content.md changed since content.md was written: the
-    /// checks every book has decide, as for any stale cache.
+    /// content.md is exactly the file's text with its pages, TextMouth's own
+    /// from a batch that stopped before it committed the book's record: only
+    /// the record is stamped.
+    case writtenWithPages
+    /// The file changed since content.md was written, or content.md did and
+    /// is not the text with pages: the checks every book has decide, as for
+    /// any stale cache, and for an edit saved while TextMouth was closed.
     case stale
     /// content.md is not exactly what the file gives: it is kept as it is.
     case changed

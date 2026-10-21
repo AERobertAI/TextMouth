@@ -275,6 +275,40 @@ final class PagesUpgradeTests: XCTestCase {
         }
     }
 
+    /// A batch that wrote a book's content.md with its pages and stopped
+    /// before it committed the record, as a quit leaves it, is finished at
+    /// the next launch (PG16): content.md is exactly what the file gives
+    /// with pages, so it is TextMouth's own text. Only the row and the
+    /// record are stamped; the text is not read again, nor taken for an
+    /// edit saved while TextMouth was closed, and the places stay.
+    func testTextWrittenWithPagesBeforeAStopIsOnlyStamped() async throws {
+        let world = try makeIntegrationWorld("Pages Upgrade Stopped")
+        let fixture = try makeBookBeforePages(sample: "pdf/labelled-pages.pdf", places: Self.pdfPlaces, in: world)
+        // What the stopped batch wrote, while the record still describes the
+        // text from before pages.
+        let cacheURL = MarkdownCacheService.cacheURL(for: fixture.book)
+        let withPages = Data(try XCTUnwrap(MarkdownCacheService.extractedMarkdown(for: fixture.book, includesPages: true)).utf8)
+        XCTAssertNotEqual(withPages, fixture.bytes, "the pages should change content.md")
+        try withPages.write(to: cacheURL, options: .atomic)
+
+        await runBatch(in: world)
+
+        XCTAssertEqual(try Data(contentsOf: cacheURL), withPages, "the text was written again")
+        let row = try XCTUnwrap(world.library.bookByID(fixture.book.id))
+        let record = try BookInfo.load(from: fixture.book.tmbDirectory).state
+        XCTAssertEqual(row.pageReaderVersion, "1.0.0", "the row was not stamped")
+        XCTAssertEqual(record.pageReaderVersion, "1.0.0", "the record was not stamped")
+        XCTAssertNil(row.editedText, "TextMouth's own text was taken for an edit")
+        XCTAssertNil(record.editedText, "TextMouth's own text was taken for an edit")
+        XCTAssertEqual(row.readingPosition?.characterOffset, fixture.book.readingPosition?.characterOffset)
+        XCTAssertEqual(row.bookmarks.first?.characterOffset, fixture.book.bookmarks.first?.characterOffset)
+        let content = try MarkdownCacheService.loadFromCache(for: row)
+        XCTAssertEqual(content.pages.breaks.map(\.label), ["i", "ii", "1", "2", "A-1"])
+        assertPlaces(of: row, areAt: Self.pdfPlaces, in: content)
+        XCTAssertEqual(debugLogLines(containing: "PAGES_SKIPPED_CHANGED_TEXT: \(row.title)").count, 0)
+        XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([row], access: .live), [], "the next launch would look again")
+    }
+
     // MARK: - The Switch
 
     /// With the launch re-read switched off, as the app ships it, the batch
