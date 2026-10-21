@@ -146,6 +146,34 @@ final class PageModelTests: XCTestCase {
         XCTAssertEqual(content.chapters[1].pages.map(\.chapterIndex), [0, 0])
     }
 
+    /// A page after its chapter's last word begins at the first word of the
+    /// next chapter with words, where the reader can rest; one after the
+    /// book's last word stays where it is. The chapters keep their own pages
+    /// where their text puts them.
+    func testAPageAfterAChaptersLastWordBeginsAtTheNextChaptersFirstWord() {
+        let content = MarkdownCacheService.parseMultiChapterMarkdown(
+            "<!-- chapter: One -->\n<!-- page: 1 -->\n\nFirst.\n\n<!-- page: 2 -->\n\n"
+                + "<!-- chapter: Two -->\n\nSecond.\n\n<!-- page: 3 -->",
+            bookTitle: "B", bookAuthor: "A")
+        XCTAssertEqual(content.pages.breaks, [
+            PageBreak(label: "1", chapterIndex: 0, characterOffset: 0),
+            PageBreak(label: "2", chapterIndex: 1, characterOffset: 0),
+            PageBreak(label: "3", chapterIndex: 1, characterOffset: 7),
+        ])
+        XCTAssertEqual(content.chapters.first?.pages.map(\.characterOffset), [0, 6])
+
+        // A chapter without words is passed for the next one with words.
+        let chapters = [
+            Chapter(title: "One", text: "First.", pages: [PageBreak(label: "1", characterOffset: 6)]),
+            Chapter(title: "Blank", text: "  "),
+            Chapter(title: "Three", text: " Third.", pages: [PageBreak(label: "2", characterOffset: 1)]),
+        ]
+        XCTAssertEqual(DocumentContent(title: "B", author: "A", chapters: chapters).pages.breaks, [
+            PageBreak(label: "1", chapterIndex: 2, characterOffset: 1),
+            PageBreak(label: "2", chapterIndex: 2, characterOffset: 1),
+        ])
+    }
+
     // MARK: - The page total
 
     func testTheTotalIsTheLargestWholeNumberLabel() {

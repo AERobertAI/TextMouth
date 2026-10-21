@@ -11,9 +11,10 @@ struct DocumentContent {
     /// while the book plays its audio. Nil for every other book.
     var transcript: TranscriptText? = nil
     /// The book's pages in book order, each break with its chapter's index in
-    /// `chapters` (PG01). Built once, here, because the status row asks for
-    /// them often; `chapters` is never changed after `init` (nothing assigns
-    /// it), so the pages cannot go stale.
+    /// `chapters` (PG01), and a page after a chapter's last word moved to the
+    /// next chapter's first (`pageBreaks(of:)`). Built once, here, because the
+    /// status row asks for them often; `chapters` is never changed after
+    /// `init` (nothing assigns it), so the pages cannot go stale.
     let pages: BookPages
 
     init(
@@ -25,13 +26,47 @@ struct DocumentContent {
         self.title = title
         self.author = author
         self.chapters = chapters
-        pages = BookPages(breaks: chapters.enumerated().flatMap { index, chapter in
-            chapter.pages.map { PageBreak(label: $0.label, chapterIndex: index, characterOffset: $0.characterOffset) }
-        })
+        pages = BookPages(breaks: Self.pageBreaks(of: chapters))
         self.contentIndex = contentIndex ?? BookContentIndex.build(
             fromChapters: chapters,
             format: .txt
         )
+    }
+
+    /// The pages `chapters` hold, each with its chapter's index. A page
+    /// begins at its first word (PG01), so one that a marker puts after its
+    /// chapter's last word, where a chapter's last page break often stands,
+    /// begins at the first word of the next chapter that has words. The
+    /// reader never rests at a chapter's very end, so it could not reach the
+    /// page there: Next Page would land on the page before and find the same
+    /// page again at every press. After the book's last word such a page
+    /// stays where it is, a page without words, which Next Page passes over
+    /// (`ReaderViewModel.nextPage()`).
+    private static func pageBreaks(of chapters: [Chapter]) -> [PageBreak] {
+        var breaks: [PageBreak] = []
+        for (index, chapter) in chapters.enumerated() where !chapter.pages.isEmpty {
+            let length = chapter.text.utf16Length
+            // Looked for only when a page needs it.
+            let next = chapter.pages.contains { $0.characterOffset >= length }
+                ? firstWord(after: index, in: chapters)
+                : nil
+            for page in chapter.pages {
+                if page.characterOffset >= length, let next {
+                    breaks.append(PageBreak(label: page.label, chapterIndex: next.chapterIndex, characterOffset: next.offset))
+                } else {
+                    breaks.append(PageBreak(label: page.label, chapterIndex: index, characterOffset: page.characterOffset))
+                }
+            }
+        }
+        return breaks
+    }
+
+    /// Where the first word after chapter `index` of `chapters` begins: in the
+    /// next chapter that has words, or nil when none does.
+    private static func firstWord(after index: Int, in chapters: [Chapter]) -> (chapterIndex: Int, offset: Int)? {
+        guard let later = chapters[(index + 1)...].firstIndex(where: { chapter in chapter.text.contains { !$0.isWhitespace } })
+        else { return nil }
+        return (later, PageBreak.firstWordStart(in: chapters[later].text, at: 0))
     }
 
     var allText: String {

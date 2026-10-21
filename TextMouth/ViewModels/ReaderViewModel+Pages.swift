@@ -80,21 +80,28 @@ extension ReaderViewModel {
 
     // MARK: - Skipped sections
 
-    /// Hands `body` a check that says whether a page is passed over, as
-    /// speech passes over a skipped section: the page starts inside one. Each
+    /// Hands `body` a check that says whether a page is passed over: it
+    /// starts inside a skipped section, as speech passes over the section, or
+    /// after the book's last word, where it has no words and the reader
+    /// cannot rest (`DocumentContent` moves a page after any other chapter's
+    /// last word to the next chapter's first). Landing there, Next Page would
+    /// stop on the page before and find the same page at every press. Each
     /// chapter's skipped ranges are worked out at most once per move, and
     /// not at all when the book skips nothing.
     private func withPassedOverCheck<Result>(
         _ body: (_ isPassedOver: (PageBreak) -> Bool) -> Result
     ) -> Result {
+        guard let content else { return body { _ in false } }
         let skippedIDs = skippedHeadingIDs
-        guard !skippedIDs.isEmpty, let content else { return body { _ in false } }
         var rangesByChapter: [Int: [Range<Int>]] = [:]
         return body { page in
             guard content.chapters.indices.contains(page.chapterIndex) else { return false }
+            let textLength = content.chapters[page.chapterIndex].text.utf16Length
+            if page.characterOffset >= textLength { return true }
+            guard !skippedIDs.isEmpty else { return false }
             if rangesByChapter[page.chapterIndex] == nil {
                 rangesByChapter[page.chapterIndex] = SkippedSectionFilter.excludedRanges(
-                    textLength: content.chapters[page.chapterIndex].text.utf16Length,
+                    textLength: textLength,
                     headings: headings.filter { $0.chapterIndex == page.chapterIndex },
                     skippedIDs: skippedIDs
                 )
@@ -107,7 +114,9 @@ extension ReaderViewModel {
 
     /// Move to the start of the next page and say its label ("Page 13").
     /// Without pages it says so and moves nothing; after the last page it
-    /// does nothing, as Next Heading does after the last heading.
+    /// does nothing, as Next Heading does after the last heading. A page
+    /// after the book's last word has no words to move to, and is passed
+    /// over (`withPassedOverCheck(_:)`).
     func nextPage() {
         guard hasPages else {
             announceToVoiceOver(ReaderPageWording.noPages)

@@ -149,6 +149,43 @@ final class PageNavigationTests: XCTestCase {
         XCTAssertEqual(reader.lastAnnouncement, "unchanged")
     }
 
+    /// Next Page never says a page twice. A page after chapter One's last
+    /// word (offset 200 of 200) is reached at chapter Two's first word, and
+    /// one after the book's last word, which has no words, is passed over:
+    /// each press moves on and says the page the row shows, until the last
+    /// page there is to reach. Previous Page goes back the same way. Before,
+    /// a page at a chapter's very end was clamped onto the page before it,
+    /// and every press said it again.
+    func testNextPageNeverSaysAPageTwice() {
+        let pages = [
+            PageBreak(label: "1", chapterIndex: 0, characterOffset: 0),
+            PageBreak(label: "2", chapterIndex: 0, characterOffset: 100),
+            PageBreak(label: "3", chapterIndex: 0, characterOffset: 200),
+            PageBreak(label: "4", chapterIndex: 1, characterOffset: 50),
+            PageBreak(label: "5", chapterIndex: 1, characterOffset: 100),
+        ]
+        let reader = makePagedReader(pages: pages)
+        defer { reader.close() }
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 0
+
+        // Each press's announcement and place, until a press says nothing.
+        func presses(_ command: () -> Void) -> [String] {
+            var said: [String] = []
+            for _ in 0..<pages.count + 1 {
+                reader.lastAnnouncement = nil
+                command()
+                guard let announcement = reader.lastAnnouncement else { break }
+                said.append("\(announcement) at \(pagedPlace(of: reader))")
+                XCTAssertEqual(announcement, "Page \(reader.currentPagePosition.page?.label ?? "none")", "the row says otherwise")
+            }
+            return said
+        }
+
+        XCTAssertEqual(presses { reader.nextPage() }, ["Page 2 at 0:100", "Page 3 at 1:0", "Page 4 at 1:50"])
+        XCTAssertEqual(presses { reader.previousPage() }, ["Page 3 at 1:0", "Page 2 at 0:100", "Page 1 at 0:0"])
+    }
+
     /// Go Back after Next Page returns to where Next Page started.
     func testGoBackReturnsToWhereNextPageStarted() {
         let reader = makePagedReader(pages: Self.fivePages)
