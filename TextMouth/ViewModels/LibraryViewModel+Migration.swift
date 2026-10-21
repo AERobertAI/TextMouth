@@ -955,6 +955,8 @@ extension LibraryViewModel {
         pages: PageUpgradeTally?
     ) throws -> ContentAnalysisSummary? {
         let currentVersion = MarkdownCacheService.currentCacheVersion
+        // The copy kept of text the re-read for pages replaces, when it does.
+        var replacedTextCopy: URL?
         if !force {
             if let saved = try BookContentAnalysisService.recoveredTextCache(
                 for: book,
@@ -995,9 +997,17 @@ extension LibraryViewModel {
                 case .writtenWithPages:
                     pages?.record(.gainedPages)
                     return stampedText(of: book, access: access)
-                case .changed:
-                    pages?.record(.keptChanged)
-                    return keptChangedText(of: book, access: access)
+                case .changed(let bytes):
+                    // Nothing records an edit of this text, and nothing can
+                    // tell one made before B12 from an extraction that
+                    // changed since: a copy of it is kept beside content.md,
+                    // and the book is read again with its pages below. With
+                    // no copy, the text is kept as it is.
+                    guard let copy = PageUpgradeCopies.keep(MarkdownCacheService.cacheURL(for: book), bytes: bytes) else {
+                        pages?.record(.keptChanged)
+                        return keptChangedText(of: book, access: access)
+                    }
+                    replacedTextCopy = copy
                 case .tryAgainNextLaunch:
                     pages?.record(.failed)
                     logCheckDeferred(of: book)
@@ -1048,8 +1058,14 @@ extension LibraryViewModel {
                 // The content.md just written has its format's pages (PG09).
                 pageReaderVersion: .some(generated.pageReaderVersion)
             ) else { return nil }
-            // A run for the pages that failed gave none (PG16).
-            pages?.record(PageReaderVersions.notesFailure(generated.pageReaderVersion) ? .failed : .gainedPages)
+            if let replacedTextCopy {
+                // The text read over is beside the new one, under this name.
+                DiagnosticLog.event(.storage, "PAGES_REPLACED_TEXT: \(book.title); kept as \(replacedTextCopy.lastPathComponent)")
+                pages?.record(.replacedText)
+            } else {
+                // A run for the pages that failed gave none (PG16).
+                pages?.record(PageReaderVersions.notesFailure(generated.pageReaderVersion) ? .failed : .gainedPages)
+            }
             return ContentAnalysisSummary(committed: committed, movedPlaces: generated.movedPlaces)
         } catch {
             // Leave the library version unchanged so startup retries
@@ -1084,18 +1100,19 @@ extension LibraryViewModel {
     ///   stopped before it committed the book's record, since a quit does
     ///   not wait for the batch. Only the record is stamped then; it is
     ///   never taken for an edit saved while TextMouth was closed.
-    /// - Any other content.md is kept as it is (`changed`): text changed by
-    ///   hand, or by an older TextMouth on another Mac, or written by an
-    ///   extraction this build cannot repeat exactly, which is never taken
-    ///   for TextMouth's own.
+    /// - Any other content.md (`changed`) may be text changed by hand before
+    ///   B12 recorded such edits, by an older TextMouth on another Mac, or
+    ///   written by an extraction this build cannot repeat exactly, and
+    ///   nothing tells these apart: a copy of it is kept beside content.md
+    ///   before the book is read again with pages, and with no copy it is
+    ///   kept as it is.
     /// - A book whose file changed since content.md was written is not
     ///   compared (`stale`): it is read again as any stale cache is. Nor is
     ///   a content.md changed since then, unless it is the text with pages:
     ///   the check for an edit saved while TextMouth was closed decides.
-    /// - A book whose file is missing, or no longer extracts, has nothing to
-    ///   compare its text with, nor pages to read (`unreadable`). A file
-    ///   that extracts without pages but not with them matches nothing, and
-    ///   the text is kept as changed.
+    /// - A book whose file is missing, or no longer extracts, with pages or
+    ///   without them, has nothing to compare its text with, nor pages to
+    ///   read (`unreadable`).
     /// - When the read with pages could not read them (textutil's run for
     ///   them failed), it is never taken to match: a content.md changed
     ///   since its record is looked at again at the next launch
@@ -1149,19 +1166,22 @@ extension LibraryViewModel {
         do {
             withPages = try MarkdownCacheService.extractedText(for: book, includesPages: true)
         } catch where !DatalessFiles.isDownloadRefusal(error) {
-            withPages = nil
+            // A file that reads without pages but not with them can't be read
+            // again with them either: its text stays, as a file's that no
+            // longer reads does, unless the edit check decides.
+            return contentChanged ? .stale : .unreadable(why: error.localizedDescription, missingFile: false)
         }
         if withPages?.pageRunFailed == true {
             // The read has no pages, so it can't say whether content.md is
             // TextMouth's own text with them: never stamp it as such, nor
             // take a content.md changed since its record for an edit saved
             // while TextMouth was closed, but look again at the next launch.
-            return contentChanged ? .tryAgainNextLaunch : .changed
+            return contentChanged ? .tryAgainNextLaunch : .changed(kept)
         }
         if withPages?.bytes == kept {
             return .writtenWithPages
         }
-        return contentChanged ? .stale : .changed
+        return contentChanged ? .stale : .changed(kept)
     }
 
     /// Records, in the debug log, that `book`, whose content.md changed since
@@ -1222,14 +1242,14 @@ extension LibraryViewModel {
         return settledText(of: book, pageReaderVersion: stamp, access: access)
     }
 
-    /// Settles a book whose content.md the read for pages found changed by
-    /// hand (PG16): kept as it is, without pages; its row and record stamped
-    /// with its format's page reader, so the check runs once; and recorded
-    /// as edited (`Book.editedText`, B12), so that no later automatic
-    /// re-read, such as a cache-format bump, replaces the text either. Only
-    /// Redo Text Extraction reads the book's file again over it.
-    /// `PAGES_SKIPPED_CHANGED_TEXT: <title>` is logged. Nil when nothing was
-    /// committed; a later launch tries again.
+    /// Settles a book whose content.md the read for pages found changed, and
+    /// of which no copy could be kept (PG16): kept as it is, without pages;
+    /// its row and record stamped with its format's page reader, so the
+    /// check runs once; and recorded as edited (`Book.editedText`, B12), so
+    /// that no later automatic re-read, such as a cache-format bump, replaces
+    /// the text either. Only Redo Text Extraction reads the book's file again
+    /// over it. `PAGES_SKIPPED_CHANGED_TEXT: <title>` is logged. Nil when
+    /// nothing was committed; a later launch tries again.
     nonisolated private static func keptChangedText(of book: Book, access: MaintenanceFileAccess) -> ContentAnalysisSummary? {
         logChangedTextKept(of: book)
         return settledText(
@@ -2146,8 +2166,9 @@ enum PageUpgradeCheck: Equatable {
     /// is not the text with pages: the checks every book has decide, as for
     /// any stale cache, and for an edit saved while TextMouth was closed.
     case stale
-    /// content.md is not exactly what the file gives: it is kept as it is.
-    case changed
+    /// content.md, whose bytes these are, is not exactly what the file gives:
+    /// a copy is kept, and the book is read again with pages.
+    case changed(Data)
     /// content.md changed since its record, and the run for the pages
     /// failed, so nothing says whose text it is: the book is left as it is
     /// until the next launch.
@@ -2166,8 +2187,12 @@ private final class PageUpgradeTally: Sendable {
     enum Outcome {
         /// Read again with its pages, or found written with them already.
         case gainedPages
-        /// Kept as it is, without pages: its text was changed by hand,
-        /// with Edit Text, or in an edit not taken yet.
+        /// Read again with its pages over text the compare could not match,
+        /// a copy of which was kept first (`PAGES_REPLACED_TEXT`).
+        case replacedText
+        /// Kept as it is, without pages: its text was changed with Edit
+        /// Text, or in an edit not taken yet, or differs and no copy of it
+        /// could be kept.
         case keptChanged
         /// Left as it is: a file it needs is only in the cloud.
         case skippedInCloud
@@ -2186,15 +2211,17 @@ private final class PageUpgradeTally: Sendable {
         counts.withLock { $0[outcome, default: 0] += 1 }
     }
 
-    /// The summary, as in "PAGES_UPGRADE_SUMMARY: 412 given pages, 3 kept
-    /// as changed, 5 skipped (4 in the cloud, 1 missing), 2 failed"; nil
-    /// when the batch chose no book for its pages.
+    /// The summary, as in "PAGES_UPGRADE_SUMMARY: 410 given pages, 2
+    /// replaced keeping a copy, 1 kept as changed, 5 skipped (4 in the
+    /// cloud, 1 missing), 2 failed"; nil when the batch chose no book for its
+    /// pages.
     var logLine: String? {
         let counts = counts.withLock { $0 }
         guard !counts.isEmpty else { return nil }
         let count = { (outcome: Outcome) in counts[outcome, default: 0] }
         let skipped = count(.skippedInCloud) + count(.skippedMissing)
-        return "PAGES_UPGRADE_SUMMARY: \(count(.gainedPages)) given pages, \(count(.keptChanged)) kept as changed, "
+        return "PAGES_UPGRADE_SUMMARY: \(count(.gainedPages)) given pages, \(count(.replacedText)) replaced keeping a copy, "
+            + "\(count(.keptChanged)) kept as changed, "
             + "\(skipped) skipped (\(count(.skippedInCloud)) in the cloud, \(count(.skippedMissing)) missing), "
             + "\(count(.failed)) failed"
     }
@@ -2204,6 +2231,36 @@ private final class PageUpgradeTally: Sendable {
     func log() {
         if let logLine {
             DiagnosticLog.event(.storage, logLine)
+        }
+    }
+}
+
+/// How the launch's re-read for pages keeps a copy of text it reads over
+/// (PG16): `BookTextEditSessions.keepCopy(of:bytes:)`, which writes
+/// `content.md.edited-<UTC time>` beside content.md. Only that name is
+/// used: a package rebuild would take another unknown file for the book's
+/// own document (`FileImportService.isPackageContentName`). A test can make
+/// every copy fail, to reach the text kept when none can be made.
+enum PageUpgradeCopies {
+    /// A copy of the content.md at `url`, holding `bytes`; nil when none
+    /// could be made, or a test made every copy fail.
+    static func keep(_ url: URL, bytes: Data) -> URL? {
+        guard !copiesFail.withLock({ $0 }) else { return nil }
+        return BookTextEditSessions.keepCopy(of: url, bytes: bytes)
+    }
+
+    /// Whether a test made every copy fail, held under a lock, since the
+    /// batch asks on its worker threads.
+    private static let copiesFail = OSAllocatedUnfairLock(initialState: false)
+
+    /// Makes every copy fail, or not, for a test, and returns how it was,
+    /// for the test to put back. The app never calls it.
+    @discardableResult
+    static func _setCopiesFailForTesting(_ fail: Bool) -> Bool {
+        copiesFail.withLock { fails in
+            let previous = fails
+            fails = fail
+            return previous
         }
     }
 }

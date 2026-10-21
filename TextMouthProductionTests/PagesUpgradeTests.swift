@@ -5,10 +5,11 @@ import XCTest
 /// launch (PG09, `PageReaderVersions`): every EPUB, HTML, PDF, Word, and
 /// DAISY book whose content.md was written by no page reader, or an older
 /// one, is read again, with the saved places, bookmarks, and skipped
-/// headings moved onto the same words. A book whose text was changed by hand
-/// is left as it is, without pages, and its row is stamped so that the check
-/// runs once (`PAGES_SKIPPED_CHANGED_TEXT: <title>`); only Redo Text
-/// Extraction reads such a book again.
+/// headings moved onto the same words. A book whose text an edit record
+/// names is left as it is, without pages, and its row is stamped so that the
+/// check runs once (`PAGES_SKIPPED_CHANGED_TEXT: <title>`); a book whose text
+/// differs from its file's but no record names is read again once a copy of
+/// that text is kept beside it (`PAGES_REPLACED_TEXT`).
 ///
 /// Every book here is imported from a copy of a sample, then put back into
 /// the state before pages: content.md as the book's file gives it without
@@ -173,47 +174,43 @@ final class PagesUpgradeTests: XCTestCase {
         XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([row], access: .live), [], "the next launch would read it again")
     }
 
-    /// A book whose text was changed by hand (a word replaced), and which no
-    /// edit recorded, keeps content.md byte for byte and gains no pages; the
-    /// log says so once, its row is stamped, and a second pass picks nothing.
-    func testChangedTextIsKeptWithoutPagesAndTheCheckRunsOnce() async throws {
-        let world = try makeIntegrationWorld("Pages Upgrade Changed")
-        let fixture = try makeBookBeforePages(
-            sample: Self.epubSample, changingText: { $0.replacingOccurrences(of: "crate", with: "carton") }, in: world
-        )
-        let skippedLine = "PAGES_SKIPPED_CHANGED_TEXT: \(fixture.book.title)"
-        XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([fixture.book], access: .live).map(\.id), [fixture.book.id])
+    /// A book whose text differs from its file's (a word replaced), which no
+    /// edit record names, could hold an edit made before B12 or an older
+    /// extraction, and nothing tells which (PG16 review): a copy of its
+    /// content.md is kept as content.md.edited-<time>, and the book is read
+    /// again with its pages, its places following their words. The log says
+    /// so once, and a second pass picks nothing.
+    func testChangedTextIsReadAgainWithPagesKeepingACopyOnce() async throws {
+        let replaced = try await assertReplacedKeepingACopy("Pages Upgrade Changed") {
+            $0.replacingOccurrences(of: "crate", with: "carton")
+        }
+        XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([replaced.row], access: .live), [])
 
-        await runBatch(in: world)
+        await runBatch(in: replaced.world)
 
-        XCTAssertEqual(try Data(contentsOf: MarkdownCacheService.cacheURL(for: fixture.book)), fixture.bytes, "the text was read over")
-        let row = try XCTUnwrap(world.library.bookByID(fixture.book.id))
-        XCTAssertEqual(row.pageReaderVersion, "1.0.0", "the row was not stamped")
-        XCTAssertEqual(try BookInfo.load(from: fixture.book.tmbDirectory).state.pageReaderVersion, "1.0.0")
-        XCTAssertTrue(try MarkdownCacheService.loadFromCache(for: row).pages.isEmpty)
-        XCTAssertEqual(debugLogLines(containing: skippedLine).count, 1)
-        XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([row], access: .live), [])
-        try assertRecordedAsEdited(row, holding: fixture.bytes)
-        // The places did not move: the text did not.
-        XCTAssertEqual(row.readingPosition?.characterOffset, fixture.book.readingPosition?.characterOffset)
-
-        await runBatch(in: world)
-
-        XCTAssertEqual(debugLogLines(containing: skippedLine).count, 1, "the second pass looked at the book again")
-        XCTAssertEqual(try Data(contentsOf: MarkdownCacheService.cacheURL(for: fixture.book)), fixture.bytes)
+        XCTAssertEqual(debugLogLines(containing: "PAGES_REPLACED_TEXT: \(replaced.row.title);").count, 1, "the second pass looked again")
+        XCTAssertEqual(keptCopies(of: replaced.row).count, 1)
     }
 
-    /// A book kept as changed by hand is recorded as edited (PG16), so a
-    /// later automatic re-read keeps it as well: after a cache-format bump,
-    /// which reads every other book's file again, its text is still byte
-    /// for byte what the user left, and the bump says it kept it.
-    func testAKeptBookSurvivesALaterCacheFormatBump() async throws {
+    /// When no copy of differing text can be kept, the text is kept as it
+    /// is, without pages, and recorded as edited (PG16), so a later automatic
+    /// re-read keeps it as well: after a cache-format bump, which reads every
+    /// other book's file again, it is still byte for byte what it was, and
+    /// the bump says it kept it.
+    func testDifferingTextNoCopyCanBeMadeOfIsKeptAndSurvivesABump() async throws {
+        let copiesFailedBefore = PageUpgradeCopies._setCopiesFailForTesting(true)
+        defer { PageUpgradeCopies._setCopiesFailForTesting(copiesFailedBefore) }
         let world = try makeIntegrationWorld("Pages Upgrade Kept Then Bumped")
         let fixture = try makeBookBeforePages(
             sample: Self.epubSample, changingText: { $0.replacingOccurrences(of: "crate", with: "carton") }, in: world
         )
         await runBatch(in: world)
         let kept = try XCTUnwrap(world.library.bookByID(fixture.book.id))
+        XCTAssertEqual(try Data(contentsOf: MarkdownCacheService.cacheURL(for: kept)), fixture.bytes, "the text was read over")
+        XCTAssertTrue(try MarkdownCacheService.loadFromCache(for: kept).pages.isEmpty)
+        XCTAssertEqual(kept.pageReaderVersion, "1.0.0", "the row was not stamped")
+        XCTAssertEqual(keptCopies(of: kept), [])
+        XCTAssertEqual(debugLogLines(containing: "PAGES_SKIPPED_CHANGED_TEXT: \(kept.title)").count, 1)
         try assertRecordedAsEdited(kept, holding: fixture.bytes)
 
         // A later release's cache format: the row and its record both name
@@ -235,26 +232,28 @@ final class PagesUpgradeTests: XCTestCase {
         try assertRecordedAsEdited(row, holding: fixture.bytes)
     }
 
-    /// A paragraph made a heading by hand changes no word, and is kept: the
-    /// whole content.md is compared, not only its reading text (PG16).
-    func testAParagraphMadeAHeadingIsKept() async throws {
-        try await assertKeptAsChanged("Pages Upgrade Heading") {
+    /// A paragraph made a heading by hand changes no word, and is found: the
+    /// whole content.md is compared, not only its reading text (PG16), and
+    /// the text is copied before the book is read again.
+    func testAParagraphMadeAHeadingIsCopiedBeforeTheReRead() async throws {
+        try await assertReplacedKeepingACopy("Pages Upgrade Heading") {
             $0.replacingOccurrences(
                 of: "(?m)^The coil was wound tight", with: "# The coil was wound tight", options: .regularExpression
             )
         }
     }
 
-    /// A heading whose level was changed by hand is kept.
-    func testAHeadingWithAnotherLevelIsKept() async throws {
-        try await assertKeptAsChanged("Pages Upgrade Level") {
+    /// A heading whose level was changed by hand is found and copied.
+    func testAHeadingWithAnotherLevelIsCopiedBeforeTheReRead() async throws {
+        try await assertReplacedKeepingACopy("Pages Upgrade Level") {
             $0.replacingOccurrences(of: "(?m)^## Opening the Crate", with: "### Opening the Crate", options: .regularExpression)
         }
     }
 
-    /// A chapter renamed by hand in its `<!-- chapter: -->` line is kept.
-    func testARenamedChapterIsKept() async throws {
-        try await assertKeptAsChanged("Pages Upgrade Chapter") {
+    /// A chapter renamed by hand in its `<!-- chapter: -->` line is found
+    /// and copied.
+    func testARenamedChapterIsCopiedBeforeTheReRead() async throws {
+        try await assertReplacedKeepingACopy("Pages Upgrade Chapter") {
             $0.replacingOccurrences(
                 of: MarkdownCacheService.chapterMarker(title: "Second Delivery"),
                 with: MarkdownCacheService.chapterMarker(title: "The Second Delivery")
@@ -391,7 +390,8 @@ final class PagesUpgradeTests: XCTestCase {
         let missing = try makeBookBeforePages(sample: "pdf/labelled-pages.pdf", places: Self.pdfPlaces, in: world)
         try FileManager.default.removeItem(at: missing.book.bookFileURL)
         world.library.library.books = [plain.book, changed.book, missing.book]
-        let summary = "PAGES_UPGRADE_SUMMARY: 1 given pages, 1 kept as changed, 1 skipped (0 in the cloud, 1 missing), 0 failed"
+        let summary = "PAGES_UPGRADE_SUMMARY: 1 given pages, 1 replaced keeping a copy, 0 kept as changed, "
+            + "1 skipped (0 in the cloud, 1 missing), 0 failed"
         let summariesBefore = debugLogLines(containing: summary).count
 
         await runBatch(in: world)
@@ -682,29 +682,47 @@ final class PagesUpgradeTests: XCTestCase {
         return BookBeforePages(book: recorded, oldText: oldText, bytes: bytes)
     }
 
-    /// Asserts that the batch keeps, byte for byte and without pages, an EPUB
-    /// from before pages whose content.md `change` altered, with its row
-    /// stamped and one `PAGES_SKIPPED_CHANGED_TEXT` line logged. The world is
-    /// named `worldName`.
-    private func assertKeptAsChanged(
+    /// Asserts that the batch, given an EPUB from before pages whose
+    /// content.md `change` altered, keeps one copy of that content.md beside
+    /// it holding its bytes, logs `PAGES_REPLACED_TEXT` naming the copy once,
+    /// and reads the book again with its pages, its places on their words,
+    /// stamped and recorded as no edit. The world is named `worldName`.
+    /// - Returns: The world, the fixture, and the book's row after the batch.
+    @discardableResult
+    private func assertReplacedKeepingACopy(
         _ worldName: String,
         file: StaticString = #filePath,
         line: UInt = #line,
         change: @escaping (String) -> String
-    ) async throws {
+    ) async throws -> (world: IntegrationWorld, fixture: BookBeforePages, row: Book) {
         let world = try makeIntegrationWorld(worldName)
         let fixture = try makeBookBeforePages(sample: Self.epubSample, changingText: change, in: world)
 
         await runBatch(in: world)
 
         let row = try XCTUnwrap(world.library.bookByID(fixture.book.id), file: file, line: line)
-        let cacheURL = MarkdownCacheService.cacheURL(for: row)
-        XCTAssertEqual(try Data(contentsOf: cacheURL), fixture.bytes, "the edit was read over", file: file, line: line)
-        XCTAssertTrue(try MarkdownCacheService.loadFromCache(for: row).pages.isEmpty, "pages were added", file: file, line: line)
-        XCTAssertEqual(row.pageReaderVersion, "1.0.0", "the row was not stamped", file: file, line: line)
-        try assertRecordedAsEdited(row, holding: fixture.bytes, file: file, line: line)
+        let copies = keptCopies(of: row)
+        XCTAssertEqual(copies.count, 1, "no copy of the text was kept", file: file, line: line)
+        let copy = try XCTUnwrap(copies.first, file: file, line: line)
+        XCTAssertEqual(try Data(contentsOf: copy), fixture.bytes, "the copy does not hold the text read over", file: file, line: line)
         XCTAssertEqual(
-            debugLogLines(containing: "PAGES_SKIPPED_CHANGED_TEXT: \(row.title)").count, 1, file: file, line: line
+            debugLogLines(containing: "PAGES_REPLACED_TEXT: \(row.title); kept as \(copy.lastPathComponent)").count, 1,
+            file: file, line: line
+        )
+        let content = try MarkdownCacheService.loadFromCache(for: row)
+        XCTAssertFalse(content.pages.isEmpty, "the book gained no pages", file: file, line: line)
+        XCTAssertEqual(row.pageReaderVersion, "1.0.0", "the row was not stamped", file: file, line: line)
+        XCTAssertNil(row.editedText, "the text read again was recorded as an edit", file: file, line: line)
+        assertPlaces(of: row, areAt: Self.epubPlaces, in: content, file: file, line: line)
+        return (world, fixture, row)
+    }
+
+    /// The copies of text kept beside `book`'s content.md, as
+    /// content.md.edited- and a time (`BookTextEditSessions.keepCopy`).
+    private func keptCopies(of book: Book) -> [URL] {
+        LibraryIndexQuarantine.existingCopies(
+            of: MarkdownCacheService.cacheURL(for: book),
+            marker: TextMouthPaths.keptTextCopyMarker
         )
     }
 

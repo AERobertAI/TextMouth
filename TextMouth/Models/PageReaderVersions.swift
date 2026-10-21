@@ -121,11 +121,15 @@ enum PageReaderVersions {
     ///    file read again without pages, where only the chapters' reading
     ///    text was, so an Edit Text change made before B12 that only turned
     ///    a paragraph into a heading, changed a heading's level, or renamed a
-    ///    chapter is kept as surely as one that changed words. Text the
-    ///    compare cannot match exactly is kept too.
-    /// 2. A book kept as changed by hand is recorded as edited (`editedText`,
-    ///    B12), so no later automatic re-read, such as a cache-format bump,
-    ///    replaces its text either.
+    ///    chapter is found as surely as one that changed words. Nothing tells
+    ///    such an edit from an extraction that changed since, so text the
+    ///    compare cannot match, which no edit record names, is copied beside
+    ///    content.md (`content.md.edited-<UTC time>`, `PAGES_REPLACED_TEXT`)
+    ///    before the book is read again with pages.
+    /// 2. A book whose differing text could not be copied is kept as it is
+    ///    and recorded as edited (`editedText`, B12), so no later automatic
+    ///    re-read, such as a cache-format bump, replaces its text either; a
+    ///    book with an edit record is kept the same way.
     /// 3. A content.md that is exactly the file read with its pages is taken
     ///    for TextMouth's own, written by a batch that stopped before it
     ///    committed the record (a quit does not wait for the batch): only the
