@@ -75,6 +75,10 @@ enum MarkdownCacheService {
         /// document that names none.
         var title: String? = nil
         var author: String? = nil
+        /// The version of the page reader that wrote this content.md
+        /// (`PageReaderVersions`, PG09): the format's current one, since a
+        /// generation always writes pages; nil for a format without pages.
+        var pageReaderVersion: String? = nil
     }
 
     // MARK: - Cache Generation
@@ -249,8 +253,42 @@ enum MarkdownCacheService {
         let movedPlaces = snapshot.flatMap { $0.movePlaces(to: content, at: Date()) }
         return GeneratedCache(
             content: content, report: extracted.report, movedPlaces: movedPlaces,
-            title: extracted.title, author: extracted.author
+            title: extracted.title, author: extracted.author,
+            pageReaderVersion: PageReaderVersions.current(for: book.format)
         )
+    }
+
+    /// The content.md that reading `book`'s file again without page markers
+    /// (`includesPages: false`) would write: the text as it was written
+    /// before pages (PG09). It extracts exactly as a generation does, and
+    /// writes nothing: no content.md, no snapshot, no record.
+    /// - Returns: The Markdown; nil for a book with no text cache (an audio
+    ///   book, or one without a package).
+    /// - Throws: why the file could not be read, as a generation does.
+    static func markdownWithoutPages(for book: Book) throws -> String? {
+        guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return nil }
+        let boundary = StorageBoundary.shared
+        return try boundary.perform(.textExtraction) { _ in
+            let current = boundary.rebasedToCurrent(book)
+            return try extractCache(
+                from: URL(fileURLWithPath: current.filePath), format: current.format,
+                brailleTable: current.brailleTable, brailleTableVersion: current.brailleTableVersion,
+                includesPages: false
+            ).markdown
+        }
+    }
+
+    /// The reading text of each chapter that content.md would have if
+    /// `book`'s file were read again without page markers, parsed as the
+    /// reader parses content.md (`markdownWithoutPages(for:)`). The upgrade
+    /// to pages compares it with the chapters of the content.md the book
+    /// has, to tell a text TextMouth wrote from one changed by hand.
+    /// - Returns: The chapters' reading texts; empty for a book with no text
+    ///   cache (an audio book, or one without a package).
+    /// - Throws: why the file could not be read, as a generation does.
+    static func readingTextsWithoutPages(for book: Book) throws -> [String] {
+        guard let markdown = try markdownWithoutPages(for: book) else { return [] }
+        return parseMultiChapterMarkdown(markdown, bookTitle: book.title, bookAuthor: book.author).chapters.map(\.text)
     }
 
     /// Copies the book's old content.md aside with its saved places, before
@@ -341,6 +379,8 @@ enum MarkdownCacheService {
             for: book, adoptingDocumentNames: adoptingDocumentNames, replacingEditedText: replacingEditedText
         ) else { return nil }
         book.cacheFormatVersion = currentCacheVersion
+        // The content.md just written has its format's pages (PG09).
+        book.pageReaderVersion = generated.pageReaderVersion
         book.applyContentIndexSummary(generated.content.contentIndex)
         if adoptingDocumentNames {
             if let title = generated.title { book.title = title }

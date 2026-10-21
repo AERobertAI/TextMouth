@@ -610,7 +610,7 @@ final class BookTextEditSessions: Sendable {
     /// (nil when it could not be fingerprinted). One place builds the index
     /// of text taken as the book's own, whether an edit just saved
     /// (`check(_:against:access:readingTexts:keepingTextAside:placesFrom:)`)
-    /// or one kept through a version bump (`settleKeptEdit(of:access:)`).
+    /// or one kept through a version bump (`settleKeptText(of:pageReaderVersion:access:)`).
     private static func takenIndex(
         of parsed: DocumentContent,
         for book: Book,
@@ -622,15 +622,21 @@ final class BookTextEditSessions: Sendable {
         return index
     }
 
-    /// Settles, once, a book whose content.md holds the text of an edit
-    /// taken (`holdsTakenEdit(_:access:)`, B12), when its record is
-    /// outdated: a cache-format bump, or a changed or re-dated source or
-    /// content.md. The text is not read from the book's own file again
-    /// (only Redo Text Extraction does that). It is parsed and indexed as
-    /// the edit was, fingerprinted with the files as they are now, and
-    /// committed with the current cache format, keeping the record of the
-    /// edit, so the launch's batch does not visit the book again. One
-    /// `TEXT_EDIT_KEPT` line is logged. Nothing is written to content.md.
+    /// Settles, once, a book whose content.md is kept as it is: the text of
+    /// an edit taken (`holdsTakenEdit(_:access:)`, B12), or text changed by
+    /// hand that a read for pages found different from its file's (PG09),
+    /// when its record is outdated: a cache-format bump, a page reader
+    /// newer than the book's, or a changed or re-dated source or content.md.
+    /// The text is not read from the book's own file again (only Redo Text
+    /// Extraction does that). It is parsed and indexed as the edit was,
+    /// fingerprinted with the files as they are now, and committed with the
+    /// current cache format, keeping the record of an edit, so the launch's
+    /// batch does not visit the book again. `pageReaderVersion` is the page
+    /// reader to record (`LibraryPersistenceService.saveContentAnalysis`):
+    /// the current one when the book was outdated by it, so the check runs
+    /// once, and nil to leave the record's own. Nothing is written to
+    /// content.md, and nothing is logged: the caller says why the text was
+    /// kept.
     ///
     /// Checked as storage work, with `access` reaching the files (FR02).
     /// - Returns: The book as its record now holds it; nil when nothing was
@@ -638,7 +644,7 @@ final class BookTextEditSessions: Sendable {
     ///   could not take the analysis now (it is only in the cloud, or the
     ///   book moved). The book then keeps what it had, and a later launch
     ///   tries again.
-    func settleKeptEdit(of book: Book, access: MaintenanceFileAccess) -> Book? {
+    func settleKeptText(of book: Book, pageReaderVersion: String??, access: MaintenanceFileAccess) -> Book? {
         boundary.perform(.contentAnalysis) { _ in
             let current = boundary.rebasedToCurrent(book)
             let cacheURL = MarkdownCacheService.cacheURL(for: current)
@@ -648,7 +654,6 @@ final class BookTextEditSessions: Sendable {
                   let bytes = try? access.read(cacheURL, { try Data(contentsOf: cacheURL) }),
                   let text = try? MarkdownCacheService.cacheText(from: bytes, at: cacheURL)
             else { return nil }
-            Self.logEditedTextKept(of: current)
             let parsed = MarkdownCacheService.parseMultiChapterMarkdown(
                 text, bookTitle: current.title, bookAuthor: current.author
             )
@@ -663,7 +668,8 @@ final class BookTextEditSessions: Sendable {
                 for: current,
                 index: index,
                 cacheFormatVersion: MarkdownCacheService.currentCacheVersion,
-                editedText: current.editedText
+                editedText: current.editedText,
+                pageReaderVersion: pageReaderVersion
             )
         }
     }
