@@ -49,6 +49,9 @@ enum MacBrailleTableCheck {
         case needsTooMuchMemory
         /// It translates more slowly than `secondsPerMBCeiling` either way,
         /// or a run of its check passed the helper's time limit (review R1).
+        /// It rests on a fraction of a second of timed work, which a stall
+        /// of the Mac could make, so it is not kept for the session: the
+        /// next choice or import measures again (review F8).
         case tooSlow
         /// The check could not be made, for the reason `why` gives in words
         /// (review R7): the helper is missing, failed, or was stopped, or no
@@ -94,6 +97,16 @@ enum MacBrailleTableCheck {
             if case .couldNotCheck = self { return true }
             return false
         }
+
+        /// Whether the session keeps the refusal: every one but a check that
+        /// could not be made, which says nothing of the table, and a table
+        /// found too slow, which the next check measures again (review F8).
+        var lastsTheSession: Bool {
+            switch self {
+            case .couldNotCheck, .tooSlow: return false
+            case .gone, .doesNotLoad, .writesEightDots, .needsTooMuchMemory: return true
+            }
+        }
     }
 
     /// What a check found.
@@ -110,10 +123,10 @@ enum MacBrailleTableCheck {
             return false
         }
 
-        /// Whether the session keeps the verdict: every one but a check that
-        /// could not be made.
+        /// Whether the session keeps the verdict: a usable table's, and a
+        /// refusal that lasts (`Refusal.lastsTheSession`).
         var lastsTheSession: Bool {
-            if case let .refused(refusal) = self { return !refusal.isUnchecked }
+            if case let .refused(refusal) = self { return refusal.lastsTheSession }
             return true
         }
     }
@@ -205,6 +218,17 @@ enum MacBrailleTableCheck {
     /// ’ and ‘ with eight dots (⡈ and ⡶) alone or inside a word, but not
     /// around one, and its Chinese tables for Hong Kong and Taiwan write
     /// eight-dot cells too.
+    ///
+    /// The sample decides only whether a table is offered. Each book is
+    /// decided at its export: an eight-dot cell a table makes from an
+    /// ordinary character fails that book's export, naming the character
+    /// (`BrailleDocumentWriter`, review R1c), so nothing is ever written
+    /// wrong silently. The sample therefore holds the letters, digits, and
+    /// punctuation of ordinary text, and no rarer symbol such as @, [, ], ^,
+    /// or the non-breaking hyphen: a table that writes one of those in
+    /// eight-dot computer braille stays offered, for reading braille files
+    /// too, where eight dots never arise, and a book holding one fails its
+    /// export by name (the coordinator's decision on review F5).
     static let sample = "Braille 2026, ABC abc: it\u{2019}s \u{2018}one\u{2019}, \u{201C}two\u{201D}, "
         + "\u{201E}three\u{201C} and \u{00AB}four\u{00BB} \u{2013} five \u{2014} six\u{2026} "
         + "\u{2019} \u{2018} \u{201C} \u{201D} \u{201E} \u{00AB} \u{00BB} \u{2013} \u{2014} \u{2026} 0123456789."

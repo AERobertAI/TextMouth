@@ -364,26 +364,37 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// - Returns: What the export did; nil when it could not start.
     @discardableResult
     func export(announcingFrom window: NSWindow? = nil) async -> BookExportOutcome? {
-        // A braille table just chosen in the options may still be checked;
-        // the export waits, so it writes with the table the pop-ups show
-        // once the check has passed, or the one they returned to (review R5).
-        await BrailleTableChoiceChecks.shared.finished()
         guard canExport else { return nil }
+        let earlier = (phase: phase, summary: summary)
+        let cancellation = BookExportCancellation()
+        self.cancellation = cancellation
+        summary = nil
+        phase = .exporting(done: 0, total: 0)
+        // A braille table just chosen in the options may still be checked.
+        // Waiting for it is part of exporting (review R5, F3): Stop is offered
+        // meanwhile, and Stop, or the dialog closing, ends the export before
+        // it reads its options or writes anything. It then writes with the
+        // table the pop-ups show once the check has passed, or the one they
+        // returned to.
+        await BrailleTableChoiceChecks.shared.finished(unless: cancellation)
+        guard !cancellation.isCancelled else {
+            self.cancellation = nil
+            (phase, summary) = earlier
+            return nil
+        }
         let kinds = checked
         // The conversions are read here, on the main actor, with the options
         // as they are now; the export takes the copy off the main thread.
         let conversions = self.conversions
         let folder = destination
         guard !Self.isInsideDataDirectory(folder) else {
+            self.cancellation = nil
+            phase = earlier.phase
             summary = BookExportWording.destinationInLibrary
             VoiceOverAnnouncer.announce(BookExportWording.destinationInLibrary, from: window)
             return nil
         }
         let access = self.access
-        let cancellation = BookExportCancellation()
-        self.cancellation = cancellation
-        summary = nil
-        phase = .exporting(done: 0, total: 0)
         Self.lastDestination = folder
 
         let books = currentBooks(self.books)

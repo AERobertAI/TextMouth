@@ -59,9 +59,12 @@ enum BrailleExportWording {
 
     /// What the options say when the Braille setting's table, `table`, is one
     /// of this Mac's that this Mac cannot use, and the export starts from
-    /// the default table instead (review R4).
+    /// the default table instead (review R4). The table is named as the
+    /// refusal names it, by its display name, or by its file name when this
+    /// Mac no longer offers it (review F6).
     static func startsFromDefault(replacing table: String) -> String {
-        "TextMouth can't use the braille table chosen in Settings, \u{201C}\(table)\u{201D}, so this export starts from "
+        let name = BrailleTableCatalog.table(withID: table)?.displayName ?? BrailleTableSource.parse(table).fileName
+        return "TextMouth can't use the braille table chosen in Settings, \u{201C}\(name)\u{201D}, so this export starts from "
             + "\(BrailleTableCatalog.description(ofTableID: BrailleTableCatalog.defaultTableID))."
     }
 }
@@ -339,10 +342,15 @@ final class BrailleTableChoiceChecks: ObservableObject {
         isChecking = true
     }
 
-    /// Returns once every check running now has ended.
-    func finished() async {
-        for task in running.values {
-            await task.value
+    /// How often `finished(unless:)` looks again, in seconds.
+    static let waitInterval: TimeInterval = 0.02
+
+    /// Returns once no check is running, a check started meanwhile included,
+    /// or as soon as `cancellation` is cancelled (review F3): the export's
+    /// Stop, or the dialog closing, ends the wait at once.
+    func finished(unless cancellation: BookExportCancellation? = nil) async {
+        while !running.isEmpty, cancellation?.isCancelled != true {
+            try? await Task.sleep(nanoseconds: UInt64(Self.waitInterval * 1_000_000_000))
         }
     }
 }

@@ -236,36 +236,89 @@ final class MacBrailleTableBookTests: XCTestCase {
         var options = BrailleExportOptions(table: BrailleTableCatalog.defaultTableID, replacedTable: gone)
         options.table = "en-us-g1.ctb"
         XCTAssertNil(options.replacedTable)
+        // The table is named by its file name when no Mac offers it, and by
+        // its display name when this one does (review F6).
         XCTAssertEqual(
             BrailleExportWording.startsFromDefault(replacing: gone),
-            "TextMouth can't use the braille table chosen in Settings, \u{201C}\(gone)\u{201D}, so this export starts from "
-                + "Unified English Braille, contracted (Grade 2)."
+            "TextMouth can't use the braille table chosen in Settings, \u{201C}no-such-table-on-any-mac.ctb\u{201D}, "
+                + "so this export starts from Unified English Braille, contracted (Grade 2)."
         )
+        if let offered = BrailleTableCatalog.offeredTables.first(where: { $0.source == .mac }) {
+            XCTAssertTrue(
+                BrailleExportWording.startsFromDefault(replacing: offered.id).contains("\u{201C}\(offered.displayName)\u{201D}"),
+                offered.id
+            )
+        }
     }
 
-    // MARK: - An Export During a Check (review R5)
+    // MARK: - An Export During a Check (review R5, F3)
 
-    /// An export started while a table just chosen in the pop-ups is still
-    /// being checked waits for that check before it reads its options, and
-    /// the checks are counted as running meanwhile, which the Export
-    /// button's hint tells of.
+    /// Whether a stand-in check has ended.
+    private final class Ended {
+        var value = false
+    }
+
+    /// The wait for the checks of tables just chosen lasts until none is
+    /// running, a check started during the wait included, and ends at once
+    /// when the export is stopped.
     @MainActor
-    func testAnExportWaitsForTheCheckOfATableJustChosen() async {
-        /// Whether the stand-in check has ended.
-        final class Ended {
-            var value = false
-        }
-        let ended = Ended()
+    func testTheWaitLastsUntilNoCheckIsPendingOrTheExportStops() async {
         let checks = BrailleTableChoiceChecks.shared
+        let first = Ended(), second = Ended()
         checks.run {
-            try? await Task.sleep(nanoseconds: 300_000_000)
-            ended.value = true
+            try? await Task.sleep(nanoseconds: 100_000_000)
+            first.value = true
+            // A table chosen while the export waits.
+            checks.run {
+                try? await Task.sleep(nanoseconds: 200_000_000)
+                second.value = true
+            }
         }
         XCTAssertTrue(checks.isChecking)
-        let model = BookExportModel(books: [])
-        _ = await model.export()
-        XCTAssertTrue(ended.value, "the export did not wait for the check")
+        await checks.finished()
+        XCTAssertTrue(first.value && second.value, "the wait ended before every check")
         XCTAssertFalse(checks.isChecking)
+
+        let stopped = BookExportCancellation()
+        stopped.cancel()
+        let late = Ended()
+        checks.run {
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            late.value = true
+        }
+        await checks.finished(unless: stopped)
+        XCTAssertFalse(late.value, "a stopped export waited for the check")
+        await checks.finished()
+    }
+
+    /// An export waiting for a check is exporting, so Stop is offered, and
+    /// Stop ends it before it writes anything; the dialog is then as it was.
+    @MainActor
+    func testWaitingForACheckIsPartOfExportingAndStopEndsIt() async throws {
+        let world = try makeIntegrationWorld("Mac Braille Export Wait")
+        let source = try makeSandboxDirectory("MacBrailleExportWaitSource").appendingPathComponent("Harbour Notes.md")
+        try "# Harbour Notes\n\nThe tide turns at noon.\n".write(to: source, atomically: true, encoding: .utf8)
+        let book = try world.importBook(from: source)
+        let folder = try makeSandboxDirectory("MacBrailleExportWaitFolder")
+        let model = BookExportModel(books: [book], destination: folder)
+        // What the dialog's sheet does as it opens: list what the book holds.
+        await model.load()
+        XCTAssertTrue(model.canExport, "the dialog never became ready")
+
+        let checks = BrailleTableChoiceChecks.shared
+        checks.run { try? await Task.sleep(nanoseconds: 1_000_000_000) }
+        let export = Task { await model.export() }
+        for _ in 0..<200 where !model.isExporting {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertTrue(model.isExporting, "Stop is not offered while the export waits")
+        model.stop()
+        let outcome = await export.value
+        XCTAssertNil(outcome)
+        XCTAssertFalse(model.isExporting)
+        XCTAssertTrue(model.canExport, "the dialog is not as it was")
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), [])
+        await checks.finished()
     }
 
     // MARK: - config.json
@@ -336,6 +389,39 @@ final class MacBrailleTableBookTests: XCTestCase {
             ))
         }
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), ["plain.brf"])
+    }
+
+    /// A table that writes a rare symbol in eight-dot computer braille stays
+    /// offered, and a book holding the symbol fails its export by name (the
+    /// coordinator's decision on review F5): the Mac's Ethiopic and Mainland
+    /// Chinese tables pass their check, yet write "@" with eight dots, so a
+    /// book holding an e-mail address fails, naming "@", in a BRF and a PEF
+    /// alike, and leaves no file.
+    func testABookHoldingAnAtSignFailsItsExportByName() throws {
+        guard let table = ["mac:gez.tbl", "mac:zh_CHN.tbl"].first(where: { BrailleTableCatalog.table(withID: $0) != nil }) else {
+            throw XCTSkip("This Mac offers neither its Ethiopic nor its Mainland Chinese table (\(BrailleTableCatalog.macTablesFolder.path))")
+        }
+        let folder = try makeSandboxDirectory("MacBrailleAtSign")
+        let note = try ExportDocumentWalker.document(
+            fromMarkdown: "write to info@example.org\n", book: ExportBookDetails(title: "Note", author: nil, language: nil)
+        )
+        let options = BrailleExportOptions(table: table)
+        let sentence = "The braille table writes \u{201C}@\u{201D} as an eight-dot cell, "
+            + "and TextMouth writes BRF and PEF files in six-dot braille only."
+        try MacBrailleTableCheck.$verdicts.withValue(MacBrailleTableCheck.Verdicts()) {
+            XCTAssertTrue(try MacBrailleTableCheck.check(table, workingIn: folder).isUsable, "\(table) is not offered")
+            XCTAssertThrowsError(try BRFExportWriter().write(
+                note, options: options, to: folder.appendingPathComponent("note.brf"), cancellation: BookExportCancellation()
+            )) {
+                XCTAssertEqual($0 as? TextExportError, TextExportError(sentence), table)
+            }
+            XCTAssertThrowsError(try PEFExportWriter().write(
+                note, options: options, to: folder.appendingPathComponent("note.pef"), cancellation: BookExportCancellation()
+            )) {
+                XCTAssertEqual($0 as? TextExportError, TextExportError(sentence), table)
+            }
+        }
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), [])
     }
 
     /// An export with a Mac table that is gone is refused by name.

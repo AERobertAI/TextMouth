@@ -127,8 +127,8 @@ enum BrailleFileWriter {
         guard BrailleCells.isPattern(scalar) else { return BrailleCells.blank }
         guard BrailleCells.usesEightDots(scalar) else { return scalar }
         guard scalar == BrailleCells.escapeBackslash else { throw EightDotCell(cell: scalar) }
-        // The low six bits of a pattern are dots 1 to 6: ⠳.
-        return Unicode.Scalar(BrailleCells.blank.value + (scalar.value & 0x3F)) ?? BrailleCells.blank
+        // ⠳, braille ASCII's backslash.
+        return BrailleCells.sixDotPart(of: scalar)
     }
 
     // MARK: PEF

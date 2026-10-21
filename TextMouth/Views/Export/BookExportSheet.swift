@@ -57,6 +57,9 @@ struct BookExportSheet: View {
         .padding(20)
         .frame(minWidth: 460, alignment: .leading)
         .background(WindowAccessor(onWindowFound: { window = $0 }))
+        // However the dialog closes, an export still under way, or still
+        // waiting for a braille table's check, stops (review F3).
+        .onDisappear { model.stop() }
         .task {
             await model.load()
         }
