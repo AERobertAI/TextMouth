@@ -41,7 +41,7 @@ final class PageNavigationTests: XCTestCase {
             let settings = try makeIsolatedSettings("page-cycle")
             settings.playbackNavigationUnitControlMode = .none
             settings.skipForwardUnit = .paragraph
-            let reader = makeReader(pages: withPages ? Self.fivePages : [], settings: settings)
+            let reader = makePagedReader(pages: withPages ? Self.fivePages : [], settings: settings)
             defer { reader.close() }
 
             reader.cyclePlaybackSkipUnit(direction: .forward)
@@ -121,46 +121,46 @@ final class PageNavigationTests: XCTestCase {
     /// where Next Page started; at the last page nothing moves and nothing
     /// new is said.
     func testNextAndPreviousPageMoveTheCursorAndSayThePage() {
-        let reader = makeReader(pages: Self.fivePages)
+        let reader = makePagedReader(pages: Self.fivePages)
         defer { reader.close() }
         reader.currentChapterIndex = 0
         reader.currentCharacterOffset = 100
 
         reader.nextPage()
-        XCTAssertEqual(place(of: reader), "1:0")
+        XCTAssertEqual(pagedPlace(of: reader), "1:0")
         XCTAssertEqual(reader.lastAnnouncement, "Page 4")
 
         reader.previousPage()
-        XCTAssertEqual(place(of: reader), "0:100")
+        XCTAssertEqual(pagedPlace(of: reader), "0:100")
         XCTAssertEqual(reader.lastAnnouncement, "Page 2")
 
         reader.nextPage()
         reader.nextPage()
-        XCTAssertEqual(place(of: reader), "1:50")
+        XCTAssertEqual(pagedPlace(of: reader), "1:50")
         XCTAssertEqual(reader.lastAnnouncement, "Page 5")
 
         reader.returnToSavedPosition()
-        XCTAssertEqual(place(of: reader), "1:0")
+        XCTAssertEqual(pagedPlace(of: reader), "1:0")
 
         reader.currentCharacterOffset = 50
         reader.lastAnnouncement = "unchanged"
         reader.nextPage()
-        XCTAssertEqual(place(of: reader), "1:50")
+        XCTAssertEqual(pagedPlace(of: reader), "1:50")
         XCTAssertEqual(reader.lastAnnouncement, "unchanged")
     }
 
     /// Go Back after Next Page returns to where Next Page started.
     func testGoBackReturnsToWhereNextPageStarted() {
-        let reader = makeReader(pages: Self.fivePages)
+        let reader = makePagedReader(pages: Self.fivePages)
         defer { reader.close() }
         reader.currentChapterIndex = 0
         reader.currentCharacterOffset = 30
 
         reader.nextPage()
-        XCTAssertEqual(place(of: reader), "0:100")
+        XCTAssertEqual(pagedPlace(of: reader), "0:100")
 
         reader.returnToSavedPosition()
-        XCTAssertEqual(place(of: reader), "0:30")
+        XCTAssertEqual(pagedPlace(of: reader), "0:30")
     }
 
     /// Next Page and Previous Page pass over a page that begins inside a
@@ -175,7 +175,7 @@ final class PageNavigationTests: XCTestCase {
             PageBreak(label: "2", chapterIndex: 0, characterOffset: 100),
             PageBreak(label: "3", chapterIndex: 1, characterOffset: 0),
         ]
-        let reader = makeReader(pages: pages, chapterZeroHeadings: headings)
+        let reader = makePagedReader(pages: pages, chapterZeroHeadings: headings)
         defer { reader.close() }
         let two = try XCTUnwrap(reader.headings.first { $0.text == "Two" })
         reader.toggleHeadingSkip(two)
@@ -183,13 +183,13 @@ final class PageNavigationTests: XCTestCase {
         reader.currentChapterIndex = 0
         reader.currentCharacterOffset = 0
         reader.nextPage()
-        XCTAssertEqual(place(of: reader), "1:0")
+        XCTAssertEqual(pagedPlace(of: reader), "1:0")
         XCTAssertEqual(reader.lastAnnouncement, "Page 3")
 
         reader.currentChapterIndex = 1
         reader.currentCharacterOffset = 5
         reader.previousPage()
-        XCTAssertEqual(place(of: reader), "0:0")
+        XCTAssertEqual(pagedPlace(of: reader), "0:0")
         XCTAssertEqual(reader.lastAnnouncement, "Page 1")
     }
 
@@ -199,25 +199,25 @@ final class PageNavigationTests: XCTestCase {
             PageBreak(label: "1", chapterIndex: 0, characterOffset: 0),
             PageBreak(label: "2", chapterIndex: 0, characterOffset: 100),
         ]
-        let reader = makeReader(pages: pages)
+        let reader = makePagedReader(pages: pages)
         defer { reader.close() }
         reader.currentChapterIndex = 0
         reader.currentCharacterOffset = 0
 
         reader.nextPage()
-        XCTAssertEqual(place(of: reader), "0:100")
+        XCTAssertEqual(pagedPlace(of: reader), "0:100")
     }
 
     /// In a book without pages every page command says so and moves nothing.
     func testABookWithoutPagesSaysSoAndMovesNothing() {
-        let reader = makeReader(pages: [])
+        let reader = makePagedReader(pages: [])
         defer { reader.close() }
         reader.currentChapterIndex = 0
         reader.currentCharacterOffset = 50
 
         reader.performSkip(unit: .page, forward: true)
         XCTAssertEqual(reader.lastAnnouncement, "This book has no pages.")
-        XCTAssertEqual(place(of: reader), "0:50")
+        XCTAssertEqual(pagedPlace(of: reader), "0:50")
 
         reader.lastAnnouncement = nil
         reader.nextPage()
@@ -225,27 +225,27 @@ final class PageNavigationTests: XCTestCase {
         reader.lastAnnouncement = nil
         reader.previousPage()
         XCTAssertEqual(reader.lastAnnouncement, "This book has no pages.")
-        XCTAssertEqual(place(of: reader), "0:50")
+        XCTAssertEqual(pagedPlace(of: reader), "0:50")
         XCTAssertFalse(reader.hasPages)
     }
 
     /// The Page unit skips by page from the playback bar's buttons.
     func testPerformSkipByPageMovesByPage() {
-        let reader = makeReader(pages: Self.fivePages)
+        let reader = makePagedReader(pages: Self.fivePages)
         defer { reader.close() }
         reader.currentChapterIndex = 1
         reader.currentCharacterOffset = 5
 
         reader.performSkip(unit: .page, forward: true)
-        XCTAssertEqual(place(of: reader), "1:50")
+        XCTAssertEqual(pagedPlace(of: reader), "1:50")
         reader.performSkip(unit: .page, forward: false)
-        XCTAssertEqual(place(of: reader), "1:0")
+        XCTAssertEqual(pagedPlace(of: reader), "1:0")
     }
 
     /// The reader describes its place by page, at the cursor and at the
     /// place the screen shows.
     func testThePagePositionsDescribeThePlace() {
-        let reader = makeReader(pages: Self.fivePages)
+        let reader = makePagedReader(pages: Self.fivePages)
         defer { reader.close() }
         XCTAssertTrue(reader.hasPages)
         XCTAssertEqual(reader.bookPages.count, 5)
@@ -281,14 +281,18 @@ final class PageNavigationTests: XCTestCase {
             "Forward navigation unit: Page"
         )
     }
+}
 
-    // MARK: - Fixtures
+// MARK: - Fixtures
 
+/// The paged readers `PageNavigationTests` and `GoToPageTests` share.
+extension XCTestCase {
     /// A stopped reader of a book of two chapters, 200 and 100 characters of
     /// five-character words (so every offset used here is a word start), with
     /// `pages` placed as chapters hold them, read from memory: nothing plays,
     /// and nothing is read from disk.
-    private func makeReader(
+    @MainActor
+    func makePagedReader(
         pages: [PageBreak],
         chapterZeroHeadings: [Heading] = [],
         settings: SettingsViewModel? = nil
@@ -332,7 +336,8 @@ final class PageNavigationTests: XCTestCase {
     }
 
     /// Where `reader`'s cursor is, as "chapter:offset".
-    private func place(of reader: ReaderViewModel) -> String {
+    @MainActor
+    func pagedPlace(of reader: ReaderViewModel) -> String {
         "\(reader.currentChapterIndex):\(reader.currentCharacterOffset)"
     }
 }

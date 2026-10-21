@@ -526,6 +526,26 @@ struct PlaybackSettingsView: View {
                 Text(ReaderTimeWording.settingSection)
             }
 
+            // Pages (PG03): whether the reader screen shows the page being
+            // read. An explicit binding, so the model's setter publishes
+            // the change to open readers.
+            Section {
+                Toggle(ReaderPageWording.showInReaderTitle, isOn: Binding(
+                    get: { settingsViewModel.showsPageInReader },
+                    set: { settingsViewModel.showsPageInReader = $0 }
+                ))
+                    .accessibilityHint(ReaderPageWording.showInReaderHint)
+
+                // The hint for the eye; VoiceOver hears it once, as the
+                // checkbox's hint.
+                Text(ReaderPageWording.showInReaderHint)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
+            } header: {
+                Text(ReaderPageWording.settingSection)
+            }
+
             // The reader's toolbar (FR05): File > Export… is always there;
             // this adds a button for it beside the reader's other tools.
             Section {

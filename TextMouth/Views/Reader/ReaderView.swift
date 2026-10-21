@@ -1189,13 +1189,15 @@ enum BookSettingsWording {
 
 // MARK: - Book Info Bar
 
-/// The strip above the reader text showing progress, time-remaining,
-/// total time, and (when active) the sleep timer. The percent and the
-/// time-remaining labels are now buttons — clicking either one
-/// expands a collapsible jump panel below the bar with a field for
-/// jumping to a specific point (`ReaderJumpPanels.swift`). The "Total"
-/// label and the sleep timer indicator are non-interactive (no jump UI;
-/// that would just duplicate the percent / time-remaining flows).
+/// The strip above the reader text showing progress, the page (PG03, for a
+/// book with pages, while the setting that shows it is on), time-remaining,
+/// total time, and (when active) the sleep timer. The percent, page, and
+/// time-remaining labels are buttons — clicking one expands a collapsible
+/// jump panel below the bar with a field for jumping to a specific point
+/// (`ReaderJumpPanels.swift`). The "Total" label and the sleep timer
+/// indicator are non-interactive (no jump UI; that would just duplicate the
+/// percent / time-remaining flows). Go to Page… opens the page panel even
+/// while the page button is not drawn.
 struct BookInfoBar: View {
     @ObservedObject var viewModel: ReaderViewModel
     /// The settings, observed so the time left and the total follow the
@@ -1209,12 +1211,13 @@ struct BookInfoBar: View {
     }
 
     /// Mutually-exclusive expansion state — clicking percent collapses
-    /// any open time panel and vice-versa, so the bar never grows by
+    /// any open time or page panel and vice-versa, so the bar never grows by
     /// two panel-heights at once. Nil means everything collapsed.
     @State private var expandedPanel: ExpandedPanel?
 
     enum ExpandedPanel {
         case percent
+        case page
         case time
     }
 
@@ -1224,6 +1227,16 @@ struct BookInfoBar: View {
             if expandedPanel == .percent {
                 JumpToPercentPanel(
                     viewModel: viewModel,
+                    onJump: { expandedPanel = nil },
+                    onCancel: { expandedPanel = nil }
+                )
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            } else if expandedPanel == .page {
+                // Shown whether or not the page button is drawn, so Go to
+                // Page… works with the setting that shows the page off.
+                JumpToPagePanel(
+                    viewModel: viewModel,
+                    focusRequests: viewModel.goToPageRequests,
                     onJump: { expandedPanel = nil },
                     onCancel: { expandedPanel = nil }
                 )
@@ -1239,6 +1252,15 @@ struct BookInfoBar: View {
         }
         .background(Color.secondary.opacity(0.08))
         .accessibilityElement(children: .contain)
+        // Go to Page… (PG03): opens the page panel, and never closes it; a
+        // request made while it is open puts the keyboard back in its field.
+        .onChange(of: viewModel.goToPageRequests) { _, _ in
+            withAnimation(.easeInOut(duration: 0.15)) { expandedPanel = .page }
+        }
+        // A book that no longer has pages has no page panel to leave open.
+        .onChange(of: viewModel.hasPages) { _, hasPages in
+            if !hasPages && expandedPanel == .page { expandedPanel = nil }
+        }
     }
 
     /// The status row — percent / time-remaining / total / sleep
@@ -1261,6 +1283,26 @@ struct BookInfoBar: View {
             .accessibilityElement(children: .combine)
             .accessibilityLabel("\(viewModel.displayFormattedPercentComplete) through the book")
             .accessibilityHint(percentButtonHint)
+
+            // The page — click to open jump-to-page (PG03). Drawn for a book
+            // with pages while the setting that shows it is on.
+            if settingsViewModel.showsPageInReader && viewModel.hasPages {
+                Button {
+                    togglePanel(.page)
+                } label: {
+                    Label {
+                        Text(viewModel.displayPagePosition.label)
+                    } icon: {
+                        Image(systemName: "doc.text")
+                            .foregroundColor(.purple)
+                    }
+                    .font(.caption)
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(viewModel.displayPagePosition.label)
+                .accessibilityHint(pageButtonHint)
+            }
 
             // Time remaining — click to open jump-to-time. With the setting
             // on, it and the total name the speed they count at (P08).
@@ -1345,7 +1387,7 @@ struct BookInfoBar: View {
         switch expandedPanel {
         case nil: return "Opens jump to percent controls"
         case .percent: return "Hides jump to percent controls"
-        case .time: return "Switches to jump to percent controls"
+        case .page, .time: return "Switches to jump to percent controls"
         }
     }
 
@@ -1355,7 +1397,16 @@ struct BookInfoBar: View {
         switch expandedPanel {
         case nil: return "Opens jump to time controls"
         case .time: return "Hides jump to time controls"
-        case .percent: return "Switches to jump to time controls"
+        case .percent, .page: return "Switches to jump to time controls"
+        }
+    }
+
+    /// Same three-state pattern, mirrored for the page button (PG03).
+    private var pageButtonHint: String {
+        switch expandedPanel {
+        case nil: return ReaderPageWording.openHint
+        case .page: return ReaderPageWording.hideHint
+        case .percent, .time: return ReaderPageWording.switchHint
         }
     }
 }

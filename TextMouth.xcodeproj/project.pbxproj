@@ -853,6 +853,7 @@
 		C0DBE4E9E6F68A5F1FEB2638 /* CloudDriveIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 157A94E67B2B61B08D37DD8C /* CloudDriveIntegrationTests.swift */; };
 		C1106159071E4B22A4AA876E /* LegacyBookMigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85CA7CFEF983403DB1ED1E8C /* LegacyBookMigrationTests.swift */; };
 		C13442373A990BF50B15D23A /* FeedUISettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E68239E404B1B7FFD4E31228 /* FeedUISettingsTests.swift */; };
+		C1A160383EC1B0B07529CB54 /* GoToPageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 187079F2A539DB00F53E76F5 /* GoToPageTests.swift */; };
 		C1AF3A7D006E9E3F495D999C /* FeedItemPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 316D3160A1DB5B5996DDA902 /* FeedItemPolicyTests.swift */; };
 		C1F03176F1150A436E7B2DE4 /* MacBrailleTableCheckTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60C014F48888BBAFBE4CC23A /* MacBrailleTableCheckTests.swift */; };
 		C27AF83A000840D1E6EDA4BA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DD447A0AC11EA0281C75E54B /* Assets.xcassets */; };
@@ -1177,22 +1178,22 @@
 		9279BF2ABA7F3526AB66874A /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/LAME;
+			dstPath = Licenses/liblouis;
 			dstSubfolderSpec = 7;
 			files = (
-				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
-				943853340D2809882740233D /* LICENSE in CopyFiles */,
+				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
+				41F911ECAF492222AF723C10 /* README in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		BF489798E33F1F27D1434BD7 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/liblouis;
+			dstPath = Licenses/LAME;
 			dstSubfolderSpec = 7;
 			files = (
-				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
-				41F911ECAF492222AF723C10 /* README in CopyFiles */,
+				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
+				943853340D2809882740233D /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1350,6 +1351,7 @@
 		185A12AEF625B62F290B1D30 /* PDFExtractionDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFExtractionDiagnostics.swift; sourceTree = "<group>"; };
 		185BCC9485644C567DB911FC /* BookExportServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookExportServiceTests.swift; sourceTree = "<group>"; };
 		186793069C8793F7A4F5BCBF /* PDFTestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFTestFixtures.swift; sourceTree = "<group>"; };
+		187079F2A539DB00F53E76F5 /* GoToPageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoToPageTests.swift; sourceTree = "<group>"; };
 		18D0EE9D1A6D95C0EBA2F1A9 /* LogWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogWriter.swift; sourceTree = "<group>"; };
 		19147E615DC5F74E6CE9AC15 /* MP3EncoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MP3EncoderTests.swift; sourceTree = "<group>"; };
 		1935CE6ABC9C36926C23483C /* OggHeaderReaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OggHeaderReaderTests.swift; sourceTree = "<group>"; };
@@ -3279,6 +3281,7 @@
 				E78C7EA14F0CDCFFB6E75C99 /* FormatSampleFixtures.swift */,
 				E815796B553C5037C0DC9663 /* FullSummaryActionTests.swift */,
 				E2951D919349752CDF65E5A5 /* FullSummaryReaderTests.swift */,
+				187079F2A539DB00F53E76F5 /* GoToPageTests.swift */,
 				B6B6D30D85C0A58A0DC21D2F /* HandEditedMetadataTests.swift */,
 				42AEA4D419C8003AC0251522 /* HeadingAnnouncementTests.swift */,
 				BF904F13242FA4B489428071 /* HeadingSheetRecordingTimeTests.swift */,
@@ -4262,6 +4265,7 @@
 				E63B450EF6E901FF00312691 /* FormatSampleFixtures.swift in Sources */,
 				054E7CB5CC74959574FF910A /* FullSummaryActionTests.swift in Sources */,
 				E8228E773CC9B9B4619986FD /* FullSummaryReaderTests.swift in Sources */,
+				C1A160383EC1B0B07529CB54 /* GoToPageTests.swift in Sources */,
 				8020CD3B51381A2AB1B23266 /* HTMLExportWriterTests.swift in Sources */,
 				9EEC682BF31B78C3E541BD2A /* HandEditedMetadataTests.swift in Sources */,
 				841351FC036D927D0D55E7BB /* HeadingAnnouncementTests.swift in Sources */,

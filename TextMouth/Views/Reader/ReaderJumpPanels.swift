@@ -21,6 +21,39 @@ enum JumpInputValidator {
         case error(String)
     }
 
+    /// A page of the book, or why not (PG03).
+    enum PageResult: Equatable {
+        /// The index in the book's `BookPages.breaks` of the page typed.
+        case page(Int)
+        case error(String)
+    }
+
+    /// Go to Page's field (PG03): the page `raw` names, as the book numbers
+    /// its pages, spaces and line breaks around it ignored and case ignored
+    /// ("XII" is page xii); a book without pages has none to name. A label used by more than one page ("2" on the
+    /// plates and in the text) is taken at its first page after
+    /// `currentIndex`, else at its first in the book, so asking again reaches
+    /// the next one and then wraps. `currentIndex` is the index of the page
+    /// holding the reading place, nil before the first page.
+    static func page(_ raw: String, in pages: BookPages, currentIndex: Int?) -> PageResult {
+        guard !pages.isEmpty else { return .error(ReaderPageWording.noPages) }
+        let typed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !typed.isEmpty else { return .error(ReaderPageWording.emptyField) }
+        let matches = pages.breaks.indices.filter {
+            pages.breaks[$0].label.caseInsensitiveCompare(typed) == .orderedSame
+        }
+        // The first match after the current page, else the first in the book.
+        if let index = matches.first(where: { $0 > (currentIndex ?? -1) }) ?? matches.first {
+            return .page(index)
+        }
+        return .error(ReaderPageWording.noSuchPage(
+            typed,
+            first: pages.breaks.first?.label ?? "",
+            last: pages.breaks.last?.label ?? "",
+            count: pages.count
+        ))
+    }
+
     /// Go to Percent's field: a number from 0 to 100, spaces around it
     /// ignored.
     static func percent(_ raw: String) -> PercentResult {
@@ -159,6 +192,36 @@ struct JumpToTimePanel: View {
     }
 }
 
+/// Go to Page's panel (PG03): one field, "Page", taking a page as the book
+/// numbers it ("12", "xii"), starting at the label of the page being read,
+/// which jumps to the start of the page typed. Go to Page… pressed again
+/// while the panel is open puts the keyboard back in the field
+/// (`focusRequests`).
+struct JumpToPagePanel: View {
+    @ObservedObject var viewModel: ReaderViewModel
+    /// How many times Go to Page… was asked for
+    /// (`ReaderViewModel.goToPageRequests`); a change focuses the field.
+    var focusRequests = 0
+    let onJump: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        JumpFieldPanel(
+            label: ReaderPageWording.fieldLabel,
+            hint: ReaderPageWording.fieldHint,
+            fieldWidth: 80,
+            // The current page's label, so the user can adjust it rather
+            // than type from nothing.
+            startingText: { viewModel.goToPageStartingText },
+            submit: viewModel.goToPage(typed:),
+            announce: viewModel.announceToVoiceOver,
+            onJump: onJump,
+            onCancel: onCancel,
+            focusRequests: focusRequests
+        )
+    }
+}
+
 /// One labelled field below the status row, as Go to Percent and Go to
 /// Time each are: its name shown before it for the eye and spoken as the
 /// field's own label, the field starting at a value and taking the keyboard
@@ -198,6 +261,10 @@ struct JumpFieldPanel: View {
     let onJump: () -> Void
     /// Closes the panel with nothing done.
     let onCancel: () -> Void
+    /// A count that, when it changes, puts the keyboard back in the field:
+    /// Go to Page… pressed again while its panel is open (PG03). The other
+    /// panels leave it at 0.
+    var focusRequests = 0
 
     /// What is typed in the field.
     @State private var text: String = ""
@@ -270,6 +337,11 @@ struct JumpFieldPanel: View {
         .onDisappear {
             focusTask?.cancel()
             focusTask = nil
+        }
+        // Another request for this panel while it is open: the keyboard
+        // goes back into the field.
+        .onChange(of: focusRequests) { _, _ in
+            inputFocused = true
         }
     }
 

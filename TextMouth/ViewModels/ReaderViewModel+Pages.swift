@@ -146,6 +146,36 @@ extension ReaderViewModel {
         if let page { go(to: page) }
     }
 
+    // MARK: - Go to Page (PG03)
+
+    /// Go to Page's starting value: the label of the page holding the
+    /// reading position, or nothing before the first page, so typing the
+    /// first page's label still jumps there. The panel never takes the
+    /// value it started at as an answer (`JumpFieldOutcome.unchanged`).
+    var goToPageStartingText: String {
+        currentPagePosition.page?.label ?? ""
+    }
+
+    /// Go to Page's answer: jumps to the start of the page `text` names,
+    /// keeping a Return position, says "Jumped to page 12." and returns nil;
+    /// or returns why it will not do (`JumpInputValidator.page`), as a
+    /// sentence the panel shows and announces, and moves nothing.
+    func goToPage(typed text: String) -> String? {
+        let pages = bookPages
+        let currentIndex = pages.index(ofPageAtChapter: currentChapterIndex, offset: currentCharacterOffset)
+        switch JumpInputValidator.page(text, in: pages, currentIndex: currentIndex) {
+        case .page(let index):
+            // The index comes from the pages themselves; check it anyway.
+            guard pages.breaks.indices.contains(index) else { return ReaderPageWording.noPages }
+            let page = pages.breaks[index]
+            navigatePreservingReturnPosition(chapterIndex: page.chapterIndex, characterOffset: page.characterOffset)
+            announceToVoiceOver(ReaderPageWording.jumped(to: page.label))
+            return nil
+        case .error(let message):
+            return message
+        }
+    }
+
     /// Ask for the page field (Go to Page…, PG03): the status row opens it at
     /// each request, and puts the keyboard in it. A book without pages says
     /// so and opens nothing.

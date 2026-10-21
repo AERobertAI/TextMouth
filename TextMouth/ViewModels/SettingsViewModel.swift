@@ -259,6 +259,13 @@ final class SettingsViewModel: ObservableObject {
     @AppStorage var includeSpeedWithTimes: Bool {
         didSet { objectWillChange.send(); syncToConfig() }
     }
+    /// Whether the reader screen shows the page being read, such as "Page 12
+    /// of 300", beside the percent, for a book with pages (PG03), in
+    /// Playback settings. On by default. Its change is published, so open
+    /// readers follow it at once.
+    @AppStorage var showsPageInReader: Bool {
+        didSet { objectWillChange.send(); syncToConfig() }
+    }
     @AppStorage var playbackNavigationUnitControlModeRaw: String {
         didSet { publishPlaybackControlsChange(); syncToConfig() }
     }
@@ -514,6 +521,7 @@ final class SettingsViewModel: ObservableObject {
             wrappedValue: true, "showSpeedInPlaybackControls", store: userDefaults
         )
         _includeSpeedWithTimes = AppStorage(wrappedValue: false, "includeSpeedWithTimes", store: userDefaults)
+        _showsPageInReader = AppStorage(wrappedValue: true, "showsPageInReader", store: userDefaults)
         _playbackNavigationUnitControlModeRaw =
             SettingsPolicy.playbackNavigationUnitControlMode.appStorage(in: userDefaults)
         _bluetoothMonitoringEnabled = AppStorage(
@@ -666,6 +674,7 @@ final class SettingsViewModel: ObservableObject {
         config.showBookmarkInPlaybackControls = showBookmarkInPlaybackControls
         config.showSpeedInPlaybackControls = showSpeedInPlaybackControls
         config.includeSpeedWithTimes = includeSpeedWithTimes
+        config.showsPageInReader = showsPageInReader
         writeServicePreferences(into: &config)
         // Preserve dataDirectoryPath — it's managed by the Storage settings tab
         config.dataDirectoryPath = ConfigService.AppConfig.currentDataDirectoryPath
@@ -764,6 +773,7 @@ final class SettingsViewModel: ObservableObject {
             adopt(config.showBookmarkInPlaybackControls, into: \.showBookmarkInPlaybackControls)
             adopt(config.showSpeedInPlaybackControls, into: \.showSpeedInPlaybackControls)
             adopt(config.includeSpeedWithTimes, into: \.includeSpeedWithTimes)
+            adopt(config.showsPageInReader, into: \.showsPageInReader)
             shortcutsWereRepaired = adoptServicePreferences(from: config)
             requestDataDirectoryMove(to: config.dataDirectoryPath)
         }
