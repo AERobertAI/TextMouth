@@ -9,18 +9,20 @@ enum HTMLToMarkdownConverter {
     static func convert(
         _ html: String,
         stripDuplicateNavigation: Bool = false,
-        headingTargets: [String: MarkdownHeadingAnnotation] = [:]
+        headingTargets: [String: MarkdownHeadingAnnotation] = [:],
+        includesPages: Bool = true
     ) throws -> String {
         try convert(
             document: SwiftSoup.parse(html),
             readingFlow: PublicationSemantics.ReadingFlow(source: html),
             stripDuplicateNavigation: stripDuplicateNavigation,
-            headingTargets: headingTargets
+            headingTargets: headingTargets,
+            includesPages: includesPages
         )
     }
 
     /// Convert `document`, already parsed from markup whose reading-flow
-    /// rules are `readingFlow`, exactly as `convert(_:stripDuplicateNavigation:headingTargets:)`
+    /// rules are `readingFlow`, exactly as `convert(_:stripDuplicateNavigation:headingTargets:includesPages:)`
     /// converts that markup, so a reader that has parsed a document for
     /// other reasons need not parse it again. Removing duplicate navigation
     /// changes `document`.
@@ -28,7 +30,8 @@ enum HTMLToMarkdownConverter {
         document: Document,
         readingFlow: PublicationSemantics.ReadingFlow,
         stripDuplicateNavigation: Bool = false,
-        headingTargets: [String: MarkdownHeadingAnnotation] = [:]
+        headingTargets: [String: MarkdownHeadingAnnotation] = [:],
+        includesPages: Bool = true
     ) throws -> String {
         let body = document.body() ?? document
         if stripDuplicateNavigation {
@@ -36,7 +39,7 @@ enum HTMLToMarkdownConverter {
         }
 
         var result = ""
-        convertNode(body, into: &result, context: Context(headingTargets: headingTargets, readingFlow: readingFlow))
+        convertNode(body, into: &result, context: Context(headingTargets: headingTargets, readingFlow: readingFlow, includesPages: includesPages))
         return result.trimmingCharacters(in: writtenWhitespace)
     }
 
@@ -116,6 +119,9 @@ enum HTMLToMarkdownConverter {
         var headingTargets: [String: MarkdownHeadingAnnotation]
         /// Which elements of the document are outside its reading flow.
         var readingFlow: PublicationSemantics.ReadingFlow
+        /// Whether page markers are written (PG05); false converts as cache
+        /// format 3.0.7 did. Not used yet.
+        var includesPages: Bool
         /// Inside a link. Markdown cannot nest links, so a link here keeps
         /// only its words.
         var insideLink = false
@@ -283,51 +289,10 @@ enum HTMLToMarkdownConverter {
 
     // MARK: - Navigation Annotations
 
-    /// Where the next output lands in the Markdown being built.
-    private enum LinePosition {
-        /// After visible content on the current line.
-        case withinLine
-        /// At the start of a line that continues a paragraph (after a hard break).
-        case continuationLine
-        /// At the start of a new block: the beginning, or after a blank line.
-        case blockStart
-    }
-
-    /// Classify the end of `result` from its last two lines only, so the cost
-    /// does not grow with the chapter. Spaces and tabs are indentation, not
-    /// content, as in CommonMark. Scalars keep "\r\n" from hiding a newline.
-    private static func linePosition(of result: String) -> LinePosition {
-        let scalars = result.unicodeScalars
-        let isIndentation: (Unicode.Scalar) -> Bool = { $0 == " " || $0 == "\t" }
-        guard let lineBreak = scalars.lastIndex(of: "\n") else {
-            return scalars.allSatisfy(isIndentation) ? .blockStart : .withinLine
-        }
-        guard scalars[scalars.index(after: lineBreak)...].allSatisfy(isIndentation) else { return .withinLine }
-        let earlierLines = scalars[..<lineBreak]
-        let previousLineStart = earlierLines.lastIndex(of: "\n").map { earlierLines.index(after: $0) }
-            ?? earlierLines.startIndex
-        return earlierLines[previousLineStart...].allSatisfy(isIndentation) ? .blockStart : .continuationLine
-    }
-
-    /// Write a destination without changing the words around it. CommonMark
-    /// opens an HTML block at any line that begins with "<!--", and that block
-    /// swallows the rest of the line: an anchor at the start of a paragraph
-    /// used to delete the paragraph's words from speech. An annotation therefore
-    /// never begins a line. At a block boundary it becomes a block of its own,
-    /// which names the same position as the block that follows. After a hard
-    /// line break, four spaces keep it inside the paragraph, because an HTML
-    /// block may be indented by at most three and a continuation line's
-    /// indentation is not part of its text.
+    /// Write a destination without changing the words around it; see
+    /// `MarkdownMarkerWriter.write`, which places every marker alike.
     private static func emit(_ annotation: MarkdownHeadingAnnotation, inline: Bool, into result: inout String) {
-        switch inline ? linePosition(of: result) : .blockStart {
-        case .withinLine:
-            result += annotation.markdown
-        case .continuationLine:
-            result += "    " + annotation.markdown
-        case .blockStart:
-            ensureBlankLine(&result)
-            result += annotation.markdown + "\n\n"
-        }
+        MarkdownMarkerWriter.write(annotation.markdown, inline: inline, into: &result)
     }
 
     /// The TOC destination an element carries through its id, or through the
@@ -415,9 +380,9 @@ enum HTMLToMarkdownConverter {
     private static func appendBlock(_ markdown: String, to result: inout String) {
         let trimmed = markdown.trimmingCharacters(in: writtenWhitespace)
         guard !trimmed.isEmpty else { return }
-        ensureBlankLine(&result)
+        MarkdownMarkerWriter.ensureBlankLine(&result)
         result += trimmed
-        ensureBlankLine(&result)
+        MarkdownMarkerWriter.ensureBlankLine(&result)
     }
 
     // MARK: - Whitespace Helpers
@@ -435,19 +400,7 @@ enum HTMLToMarkdownConverter {
                 result += " "
             }
         case .paragraph:
-            ensureBlankLine(&result)
-        }
-    }
-
-    /// Ensure the result ends with a blank line (two newlines).
-    private static func ensureBlankLine(_ result: inout String) {
-        if result.isEmpty { return }
-        if !result.hasSuffix("\n\n") {
-            if result.hasSuffix("\n") {
-                result += "\n"
-            } else {
-                result += "\n\n"
-            }
+            MarkdownMarkerWriter.ensureBlankLine(&result)
         }
     }
 
