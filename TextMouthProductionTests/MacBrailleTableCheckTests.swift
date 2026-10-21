@@ -1,3 +1,4 @@
+import os
 import XCTest
 @testable import TextMouth
 
@@ -138,7 +139,9 @@ final class MacBrailleTableCheckTests: XCTestCase {
         XCTAssertEqual(MacBrailleTableCheck.Refusal.needsTooMuchMemory.reason, "it needs more than 64 MB of memory")
         XCTAssertEqual(MacBrailleTableCheck.Refusal.tooSlow.reason, "it translates too slowly, under 50 KB a second")
         XCTAssertTrue(MacBrailleTableCheck.Verdict.usable(.none).lastsTheSession)
-        XCTAssertTrue(MacBrailleTableCheck.Verdict.refused(.tooSlow).lastsTheSession)
+        // A table found too slow is measured again at its next use (review F8).
+        XCTAssertFalse(MacBrailleTableCheck.Verdict.refused(.tooSlow).lastsTheSession)
+        XCTAssertTrue(MacBrailleTableCheck.Verdict.refused(.needsTooMuchMemory).lastsTheSession)
         XCTAssertTrue(MacBrailleTableCheck.Verdict.refused(.doesNotLoad).lastsTheSession)
         XCTAssertFalse(MacBrailleTableCheck.Verdict.refused(.helperFailed).lastsTheSession)
         XCTAssertFalse(MacBrailleTableCheck.Verdict.refused(.noWorkingFolder).lastsTheSession)
@@ -275,13 +278,25 @@ final class MacBrailleTableCheckTests: XCTestCase {
         assertWorkFolderEmpty()
     }
 
-    /// A table slower than the ceiling is refused: a stand-in that takes
-    /// more than half a second to read back half a kilobyte of braille.
-    func testATableTooSlowIsRefused() throws {
+    /// A table slower than the ceiling is refused, and not kept for the
+    /// session: by a scripted clock (review F8), loading takes a hundredth of
+    /// a second and reading half a kilobyte of braille back a whole second,
+    /// whatever the Mac's load. The next import checks it again.
+    func testATableTooSlowIsRefusedAndMeasuredAgain() throws {
         let table = try anyOfferedMacTable()
-        try isolated(tool: echoing("\u{2801}", before: #"[ "$1" = back ] && sleep 0.6"#)) {
-            XCTAssertEqual(try MacBrailleTableCheck.check(table, workingIn: work), .refused(.tooSlow))
+        // Each run reads the clock as it starts and as it ends: the load,
+        // the print, and the reading back, then the same again.
+        let times = OSAllocatedUnfairLock(initialState: [0, 0.01, 1, 1.02, 2, 3, 10, 10.01, 11, 11.02, 12, 13])
+        var tool = echoing("\u{2801}")
+        tool.uptime = { times.withLock { $0.isEmpty ? 0 : $0.removeFirst() } }
+        let verdicts = MacBrailleTableCheck.Verdicts()
+        try MacBrailleTableCheck.$verdicts.withValue(verdicts) {
+            try BrailleTranslator.$tool.withValue(tool) {
+                XCTAssertEqual(try MacBrailleTableCheck.check(table, workingIn: work), .refused(.tooSlow))
+                XCTAssertThrowsError(try MacBrailleTableCheck.requireUsable(table, workingIn: work))
+            }
         }
+        XCTAssertNil(verdicts.verdict(for: table), "a table found too slow was kept for the session")
         assertWorkFolderEmpty()
     }
 

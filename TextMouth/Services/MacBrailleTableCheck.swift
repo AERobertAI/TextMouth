@@ -49,6 +49,9 @@ enum MacBrailleTableCheck {
         case needsTooMuchMemory
         /// It translates more slowly than `secondsPerMBCeiling` either way,
         /// or a run of its check passed the helper's time limit (review R1).
+        /// It rests on a fraction of a second of timed work, which a stall
+        /// of the Mac could make, so it is not kept for the session: the
+        /// next choice or import measures again (review F8).
         case tooSlow
         /// The check could not be made, for the reason `why` gives in words
         /// (review R7): the helper is missing, failed, or was stopped, or no
@@ -94,6 +97,16 @@ enum MacBrailleTableCheck {
             if case .couldNotCheck = self { return true }
             return false
         }
+
+        /// Whether the session keeps the refusal: every one but a check that
+        /// could not be made, which says nothing of the table, and a table
+        /// found too slow, which the next check measures again (review F8).
+        var lastsTheSession: Bool {
+            switch self {
+            case .couldNotCheck, .tooSlow: return false
+            case .gone, .doesNotLoad, .writesEightDots, .needsTooMuchMemory: return true
+            }
+        }
     }
 
     /// What a check found.
@@ -110,10 +123,10 @@ enum MacBrailleTableCheck {
             return false
         }
 
-        /// Whether the session keeps the verdict: every one but a check that
-        /// could not be made.
+        /// Whether the session keeps the verdict: a usable table's, and a
+        /// refusal that lasts (`Refusal.lastsTheSession`).
         var lastsTheSession: Bool {
-            if case let .refused(refusal) = self { return !refusal.isUnchecked }
+            if case let .refused(refusal) = self { return refusal.lastsTheSession }
             return true
         }
     }

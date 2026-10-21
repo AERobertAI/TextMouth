@@ -104,6 +104,10 @@ enum BrailleTranslator {
         /// The folder of braille tables the helper reads, nil when the
         /// bundle lacks it.
         var tablesFolder: URL?
+        /// The clock a measured run is timed by, in seconds, which never runs
+        /// backwards: the system uptime, unless a test scripts its own
+        /// (review F8).
+        var uptime: @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
 
         /// The helper built into the app: `Contents/MacOS/TextMouthBraille`,
         /// reading the bundled tables in `Contents/Resources/liblouis/tables`
@@ -584,7 +588,7 @@ enum BrailleTranslator {
             measure?.note(memory: bytes)
             return bytes
         }
-        let started = ProcessInfo.processInfo.systemUptime
+        let started = tool.uptime()
         let outcome: WatchedProcess.Outcome
         do {
             outcome = try AsyncBridge.waitForResult(cancelledBy: cancellation) {
@@ -601,7 +605,7 @@ enum BrailleTranslator {
             // import ends as a cancelled one does.
             throw ImportCancelled()
         }
-        measure?.note(seconds: ProcessInfo.processInfo.systemUptime - started)
+        measure?.note(seconds: tool.uptime() - started)
 
         switch outcome {
         case .exited(status: 0):
