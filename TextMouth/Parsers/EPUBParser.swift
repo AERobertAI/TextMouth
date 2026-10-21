@@ -76,7 +76,7 @@ enum EPUBParser {
     /// names. The direct reader and the Markdown cache both read EPUBs here,
     /// so they share navigation recovery, exact text coordinates, and the
     /// report of chapters left out.
-    /// - Parameter includesPages: whether page markers are written (PG05); false writes what cache format 3.0.7 wrote. Not used yet.
+    /// - Parameter includesPages: whether page markers are written (PG05); false writes what cache format 3.0.7 wrote.
     /// - Throws: `EPUBParserError` when the file is missing, is not a ZIP
     ///   archive, or lacks a readable container or package document, and
     ///   `.noReadableChapters` when no chapter holds text.
@@ -94,7 +94,9 @@ enum EPUBParser {
         let opfData = try parseOPF(opfXML)
 
         // Step 3: Read the chapters in spine order, recording any left out.
-        let prepared = try preparedChapters(archive: archive, opfPath: opfPath, opfData: opfData)
+        let prepared = try preparedChapters(
+            archive: archive, opfPath: opfPath, opfData: opfData, includesPages: includesPages
+        )
         return PreparedBook(
             title: opfData.title,
             author: opfData.author,
