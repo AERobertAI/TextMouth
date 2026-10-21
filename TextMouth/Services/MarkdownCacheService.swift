@@ -270,28 +270,49 @@ enum MarkdownCacheService {
         )
     }
 
-    /// The content.md that reading `book`'s file again would write, exactly:
+    /// What reading a book's file again gives (`extractedText(for:includesPages:)`):
+    /// the Markdown a generation would write, and whether the run that reads
+    /// its pages failed.
+    struct ExtractedText: Equatable {
+        /// The Markdown.
+        var markdown: String
+        /// Whether pages were asked for and textutil's run for them failed or
+        /// was stopped, so the Markdown has none (PG16); false for every
+        /// other format, and without pages.
+        var pageRunFailed: Bool
+
+        /// The bytes a generation writes for `markdown`: its UTF-8.
+        var bytes: Data { Data(markdown.utf8) }
+    }
+
+    /// What reading `book`'s file again would write to content.md, exactly:
     /// with page markers, as every generation writes it, or without them
     /// (`includesPages: false`), as it was written before pages (PG09). The
     /// launch's re-read for pages compares each, byte for byte, with the
     /// content.md the book has, to tell a text TextMouth wrote from one
-    /// changed by hand (PG16). It extracts exactly as a generation does, and
-    /// writes nothing: no content.md, no snapshot, no record.
-    /// - Returns: The Markdown, whose UTF-8 is the bytes a generation would
-    ///   write; nil for a book with no text cache (an audio book, or one
-    ///   without a package).
+    /// changed by hand, and needs to know when the run for the pages failed
+    /// (PG16). It extracts exactly as a generation does, and writes nothing:
+    /// no content.md, no snapshot, no record.
+    /// - Returns: The text; nil for a book with no text cache (an audio
+    ///   book, or one without a package).
     /// - Throws: why the file could not be read, as a generation does.
-    static func extractedMarkdown(for book: Book, includesPages: Bool) throws -> String? {
+    static func extractedText(for book: Book, includesPages: Bool) throws -> ExtractedText? {
         guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return nil }
         let boundary = StorageBoundary.shared
         return try boundary.perform(.textExtraction) { _ in
             let current = boundary.rebasedToCurrent(book)
-            return try extractCache(
+            let extracted = try extractCache(
                 from: URL(fileURLWithPath: current.filePath), format: current.format,
                 brailleTable: current.brailleTable, brailleTableVersion: current.brailleTableVersion,
                 includesPages: includesPages
-            ).markdown
+            )
+            return ExtractedText(markdown: extracted.markdown, pageRunFailed: extracted.pageRunFailed)
         }
+    }
+
+    /// The Markdown of `extractedText(for:includesPages:)`.
+    static func extractedMarkdown(for book: Book, includesPages: Bool) throws -> String? {
+        try extractedText(for: book, includesPages: includesPages)?.markdown
     }
 
     /// Copies the book's old content.md aside with its saved places, before

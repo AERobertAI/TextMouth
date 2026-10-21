@@ -320,6 +320,31 @@ final class PagesUpgradeTests: XCTestCase {
         }
     }
 
+    /// A batch that stopped after writing a textutil document's content.md
+    /// with pages leaves it differing from its record. When the next
+    /// launch's run for the pages fails, nothing says whether that text is
+    /// TextMouth's own (PG16 review, findings 2 and 3): the check neither
+    /// takes it for TextMouth's text with pages, to stamp, nor leaves it to
+    /// be taken for an edit saved while TextMouth was closed, but looks again
+    /// at the next launch, whose run, when it works, finds TextMouth's own.
+    func testAStoppedBatchsTextIsCheckedAgainWhenTheRunForPagesFails() throws {
+        let world = try makeIntegrationWorld("Pages Upgrade Stopped Textutil")
+        let fixture = try makeBookBeforePages(
+            sample: "rtf/page-breaks.rtf",
+            places: FixturePlaces(position: "First page paragraph one", bookmark: "Third paragraph begins", skippedHeading: nil),
+            in: world
+        )
+        let withPages = Data(try XCTUnwrap(MarkdownCacheService.extractedMarkdown(for: fixture.book, includesPages: true)).utf8)
+        XCTAssertNotEqual(withPages, fixture.bytes, "the pages should change content.md")
+        try withPages.write(to: MarkdownCacheService.cacheURL(for: fixture.book), options: .atomic)
+
+        let failedRun = try TextutilConverter.$tool.withValue(Self.failingPageRun) {
+            try LibraryViewModel.pageUpgradeCheck(of: fixture.book, access: .live)
+        }
+        XCTAssertEqual(failedRun, .tryAgainNextLaunch)
+        XCTAssertEqual(try LibraryViewModel.pageUpgradeCheck(of: fixture.book, access: .live), .writtenWithPages)
+    }
+
     /// A book whose file is missing, or no longer extracts, gives nothing to
     /// compare its text with, nor pages to read (PG16). It keeps content.md
     /// byte for byte, is stamped with a failure note, not recorded as

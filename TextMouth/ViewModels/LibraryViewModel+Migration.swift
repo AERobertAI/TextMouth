@@ -998,6 +998,10 @@ extension LibraryViewModel {
                 case .changed:
                     pages?.record(.keptChanged)
                     return keptChangedText(of: book, access: access)
+                case .tryAgainNextLaunch:
+                    pages?.record(.failed)
+                    logCheckDeferred(of: book)
+                    return nil
                 case let .unreadable(why, missingFile):
                     pages?.record(missingFile ? .skippedMissing : .failed)
                     return unreadableText(of: book, why: why, access: access)
@@ -1092,9 +1096,15 @@ extension LibraryViewModel {
     ///   compare its text with, nor pages to read (`unreadable`). A file
     ///   that extracts without pages but not with them matches nothing, and
     ///   the text is kept as changed.
+    /// - When the read with pages could not read them (textutil's run for
+    ///   them failed), it is never taken to match: a content.md changed
+    ///   since its record is looked at again at the next launch
+    ///   (`tryAgainNextLaunch`), and any other is `changed`.
+    ///
+    /// Internal, not private, for its tests.
     /// - Throws: why content.md could not be read, and the refusal of a read
     ///   that met a file only in the cloud.
-    nonisolated private static func pageUpgradeCheck(of book: Book, access: MaintenanceFileAccess) throws -> PageUpgradeCheck {
+    nonisolated static func pageUpgradeCheck(of book: Book, access: MaintenanceFileAccess) throws -> PageUpgradeCheck {
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
         let sourceURL = book.bookFileURL
         guard FileStamp(of: cacheURL) != nil else { return .readAgain }
@@ -1125,35 +1135,44 @@ extension LibraryViewModel {
         }
         let kept = try access.read(cacheURL) { try Data(contentsOf: cacheURL) }
         if !contentChanged {
-            let withoutPages: Data?
+            let withoutPages: MarkdownCacheService.ExtractedText?
             do {
-                withoutPages = try reread(book, includesPages: false)
+                withoutPages = try MarkdownCacheService.extractedText(for: book, includesPages: false)
             } catch where !DatalessFiles.isDownloadRefusal(error) {
                 return .unreadable(why: error.localizedDescription, missingFile: false)
             }
-            if withoutPages == kept {
+            if withoutPages?.bytes == kept {
                 return .readAgain
             }
         }
-        let withPages: Data?
+        let withPages: MarkdownCacheService.ExtractedText?
         do {
-            withPages = try reread(book, includesPages: true)
+            withPages = try MarkdownCacheService.extractedText(for: book, includesPages: true)
         } catch where !DatalessFiles.isDownloadRefusal(error) {
             withPages = nil
         }
-        if withPages == kept {
+        if withPages?.pageRunFailed == true {
+            // The read has no pages, so it can't say whether content.md is
+            // TextMouth's own text with them: never stamp it as such, nor
+            // take a content.md changed since its record for an edit saved
+            // while TextMouth was closed, but look again at the next launch.
+            return contentChanged ? .tryAgainNextLaunch : .changed
+        }
+        if withPages?.bytes == kept {
             return .writtenWithPages
         }
         return contentChanged ? .stale : .changed
     }
 
-    /// The bytes a generation would write to `book`'s content.md now, read
-    /// from its file with page markers or without them: exactly the UTF-8
-    /// of the Markdown extracted (`MarkdownCacheService.extractedMarkdown`).
-    /// Nil for a book with no text cache.
-    /// - Throws: why the file could not be read.
-    nonisolated private static func reread(_ book: Book, includesPages: Bool) throws -> Data? {
-        try MarkdownCacheService.extractedMarkdown(for: book, includesPages: includesPages).map { Data($0.utf8) }
+    /// Records, in the debug log, that `book`, whose content.md changed since
+    /// its record and whose run for its pages failed, is left as it is
+    /// (PG16): neither stamped nor taken for an edit, and looked at again at
+    /// the next launch. One `PAGES_DEFERRED` line naming the title.
+    nonisolated private static func logCheckDeferred(of book: Book) {
+        DiagnosticLog.event(
+            .storage,
+            "PAGES_DEFERRED: \(book.title): its pages could not be read to check its text; it is checked again at the next launch"
+        )
     }
 
     /// Settles a book whose content.md is TextMouth's own text with its
@@ -2114,7 +2133,7 @@ extension LibraryViewModel {
 
 /// What comparing a book's content.md with its file found, for the launch's
 /// re-read for pages (`LibraryViewModel.pageUpgradeCheck(of:access:)`).
-private enum PageUpgradeCheck: Equatable {
+enum PageUpgradeCheck: Equatable {
     /// content.md is exactly the file's text without pages, TextMouth's own
     /// from before pages, or there is none: the file is read again, with its
     /// pages.
@@ -2129,6 +2148,10 @@ private enum PageUpgradeCheck: Equatable {
     case stale
     /// content.md is not exactly what the file gives: it is kept as it is.
     case changed
+    /// content.md changed since its record, and the run for the pages
+    /// failed, so nothing says whose text it is: the book is left as it is
+    /// until the next launch.
+    case tryAgainNextLaunch
     /// The file is missing (`missingFile`), or no longer extracts, for
     /// `why`: content.md is kept as it is, and the check runs once.
     case unreadable(why: String, missingFile: Bool)
