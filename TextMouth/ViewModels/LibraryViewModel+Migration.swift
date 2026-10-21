@@ -977,7 +977,7 @@ extension LibraryViewModel {
                 case .writtenWithPages:
                     return stampedText(of: book, access: access)
                 case .changed:
-                    return keptText(of: book, access: access)
+                    return keptChangedText(of: book, access: access)
                 }
             }
             // The record no longer describes content.md: it may hold an
@@ -1128,24 +1128,50 @@ extension LibraryViewModel {
     nonisolated private static func keptText(of book: Book, access: MaintenanceFileAccess) -> ContentAnalysisSummary? {
         let behindInPages = PageReaderVersions.isDueForPages(book)
         if behindInPages {
-            DiagnosticLog.event(.storage, "PAGES_SKIPPED_CHANGED_TEXT: \(book.title)")
+            logChangedTextKept(of: book)
         }
         // Nil leaves the record's own page reader, for a book not behind.
         let stamp: String?? = behindInPages ? .some(PageReaderVersions.current(for: book.format)) : nil
         return settledText(of: book, pageReaderVersion: stamp, access: access)
     }
 
+    /// Settles a book whose content.md the read for pages found changed by
+    /// hand (PG16): kept as it is, without pages; its row and record stamped
+    /// with its format's page reader, so the check runs once; and recorded
+    /// as edited (`Book.editedText`, B12), so that no later automatic
+    /// re-read, such as a cache-format bump, replaces the text either. Only
+    /// Redo Text Extraction reads the book's file again over it.
+    /// `PAGES_SKIPPED_CHANGED_TEXT: <title>` is logged. Nil when nothing was
+    /// committed; a later launch tries again.
+    nonisolated private static func keptChangedText(of book: Book, access: MaintenanceFileAccess) -> ContentAnalysisSummary? {
+        logChangedTextKept(of: book)
+        return settledText(
+            of: book, pageReaderVersion: .some(PageReaderVersions.current(for: book.format)), recordingEdit: true, access: access
+        )
+    }
+
+    /// Records, in the debug log, that `book` keeps its text without pages,
+    /// since the text was changed: one `PAGES_SKIPPED_CHANGED_TEXT` line
+    /// naming the title only, never text.
+    nonisolated private static func logChangedTextKept(of book: Book) {
+        DiagnosticLog.event(.storage, "PAGES_SKIPPED_CHANGED_TEXT: \(book.title)")
+    }
+
     /// The summary of `book` once its content.md, kept as it is, is indexed
-    /// and committed to its record with `pageReaderVersion`
-    /// (`BookTextEditSessions.settleKeptText(of:pageReaderVersion:access:)`),
+    /// and committed to its record with `pageReaderVersion`, and recorded as
+    /// an edit with `recordingEdit`
+    /// (`BookTextEditSessions.settleKeptText(of:pageReaderVersion:recordingEdit:access:)`),
     /// or nil when nothing was committed.
     nonisolated private static func settledText(
         of book: Book,
         pageReaderVersion: String??,
+        recordingEdit: Bool = false,
         access: MaintenanceFileAccess
     ) -> ContentAnalysisSummary? {
-        BookTextEditSessions.shared.settleKeptText(of: book, pageReaderVersion: pageReaderVersion, access: access)
-            .map { ContentAnalysisSummary(committed: $0) }
+        BookTextEditSessions.shared.settleKeptText(
+            of: book, pageReaderVersion: pageReaderVersion, recordingEdit: recordingEdit, access: access
+        )
+        .map { ContentAnalysisSummary(committed: $0) }
     }
 
     /// Deletes the copies of an edit's old text that no session of this run

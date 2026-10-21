@@ -181,6 +181,7 @@ final class PagesUpgradeTests: XCTestCase {
         XCTAssertTrue(try MarkdownCacheService.loadFromCache(for: row).pages.isEmpty)
         XCTAssertEqual(debugLogLines(containing: skippedLine).count, 1)
         XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([row], access: .live), [])
+        try assertRecordedAsEdited(row, holding: fixture.bytes)
         // The places did not move: the text did not.
         XCTAssertEqual(row.readingPosition?.characterOffset, fixture.book.readingPosition?.characterOffset)
 
@@ -188,6 +189,38 @@ final class PagesUpgradeTests: XCTestCase {
 
         XCTAssertEqual(debugLogLines(containing: skippedLine).count, 1, "the second pass looked at the book again")
         XCTAssertEqual(try Data(contentsOf: MarkdownCacheService.cacheURL(for: fixture.book)), fixture.bytes)
+    }
+
+    /// A book kept as changed by hand is recorded as edited (PG16), so a
+    /// later automatic re-read keeps it as well: after a cache-format bump,
+    /// which reads every other book's file again, its text is still byte
+    /// for byte what the user left, and the bump says it kept it.
+    func testAKeptBookSurvivesALaterCacheFormatBump() async throws {
+        let world = try makeIntegrationWorld("Pages Upgrade Kept Then Bumped")
+        let fixture = try makeBookBeforePages(
+            sample: Self.epubSample, changingText: { $0.replacingOccurrences(of: "crate", with: "carton") }, in: world
+        )
+        await runBatch(in: world)
+        let kept = try XCTUnwrap(world.library.bookByID(fixture.book.id))
+        try assertRecordedAsEdited(kept, holding: fixture.bytes)
+
+        // A later release's cache format: the row and its record both name
+        // an older one, as every book's do after a bump.
+        var bumped = kept
+        bumped.cacheFormatVersion = "3.0.3"
+        try bumped.saveBookInfoThrowing(contentIndex: XCTUnwrap(BookInfo.load(from: kept.tmbDirectory).contentIndex))
+        LibraryPersistenceService.flushPendingSave()
+        world.library.library.books = [bumped]
+        XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([bumped], access: .live).map(\.id), [bumped.id])
+
+        await runBatch(in: world)
+
+        let cacheURL = MarkdownCacheService.cacheURL(for: bumped)
+        XCTAssertEqual(try Data(contentsOf: cacheURL), fixture.bytes, "the bump read the book's file over the kept text")
+        XCTAssertEqual(debugLogLines(containing: "TEXT_EDIT_KEPT: \(bumped.title):").count, 1)
+        let row = try XCTUnwrap(world.library.bookByID(fixture.book.id))
+        XCTAssertEqual(row.cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
+        try assertRecordedAsEdited(row, holding: fixture.bytes)
     }
 
     /// A paragraph made a heading by hand changes no word, and is kept: the
@@ -496,8 +529,23 @@ final class PagesUpgradeTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: cacheURL), fixture.bytes, "the edit was read over", file: file, line: line)
         XCTAssertTrue(try MarkdownCacheService.loadFromCache(for: row).pages.isEmpty, "pages were added", file: file, line: line)
         XCTAssertEqual(row.pageReaderVersion, "1.0.0", "the row was not stamped", file: file, line: line)
+        try assertRecordedAsEdited(row, holding: fixture.bytes, file: file, line: line)
         XCTAssertEqual(
             debugLogLines(containing: "PAGES_SKIPPED_CHANGED_TEXT: \(row.title)").count, 1, file: file, line: line
+        )
+    }
+
+    /// Asserts that `row` and its package record both record content.md,
+    /// whose bytes are `bytes`, as an edit (`Book.editedText`, B12), which
+    /// no automatic re-read replaces.
+    private func assertRecordedAsEdited(
+        _ row: Book, holding bytes: Data, file: StaticString = #filePath, line: UInt = #line
+    ) throws {
+        let digest = MaintenanceFileAccess.live.hasher.digestOfData(bytes)
+        XCTAssertEqual(row.editedText?.cacheDigest, digest, "the row records no edit", file: file, line: line)
+        XCTAssertEqual(
+            try BookInfo.load(from: row.tmbDirectory).state.editedText?.cacheDigest, digest,
+            "the record records no edit", file: file, line: line
         )
     }
 
