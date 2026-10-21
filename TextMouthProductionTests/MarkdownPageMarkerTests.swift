@@ -105,6 +105,16 @@ final class MarkdownPageMarkerTests: XCTestCase {
         XCTAssertEqual(MarkdownPageMarker.decode("<!-- page: %e4%b8%ad -->")?.label, "中")
     }
 
+    /// A label that begins with a combining mark reads back: the mark and
+    /// the space before it are one Character, so the marker is found by
+    /// its Unicode scalars, not its Characters.
+    func testALabelBeginningWithACombiningMarkReadsBack() {
+        let marker = MarkdownPageMarker(label: "\u{301}x", ordinal: 1)
+        XCTAssertEqual(marker.label, "\u{301}x")
+        XCTAssertEqual(MarkdownPageMarker.decode(marker.markdown)?.label, "\u{301}x")
+        XCTAssertEqual(MarkdownPageMarker.decode("<!-- page: x\u{301} -->")?.label, "x\u{301}")
+    }
+
     func testAnythingElseIsNotAMarker() {
         let refused = [
             "<!--page: 12 -->",

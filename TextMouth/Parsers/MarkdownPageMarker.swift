@@ -46,12 +46,21 @@ struct MarkdownPageMarker: Equatable, Sendable {
     /// source itself carried). Only our exact form is accepted, so ordinary
     /// source comments stay invisible, as with heading annotations.
     static func decode(_ comment: String) -> MarkdownPageMarker? {
-        let trimmed = comment.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Compared as Unicode scalars, not Characters: a label that begins
+        // with a combining mark makes one Character of it and the prefix's
+        // last space, which a Character comparison would not find, and the
+        // page would be lost.
+        let scalars = comment.trimmingCharacters(in: .whitespacesAndNewlines).unicodeScalars
+        let prefixScalars = prefix.unicodeScalars
+        let suffixScalars = suffix.unicodeScalars
         // The count check also refuses a prefix and a suffix that overlap
         // ("<!-- page: -->"), which `dropFirst` and `dropLast` would mishandle.
-        guard trimmed.count >= prefix.count + suffix.count,
-              trimmed.hasPrefix(prefix), trimmed.hasSuffix(suffix) else { return nil }
-        let encoded = String(trimmed.dropFirst(prefix.count).dropLast(suffix.count))
+        guard scalars.count >= prefixScalars.count + suffixScalars.count,
+              scalars.starts(with: prefixScalars),
+              scalars.reversed().starts(with: suffixScalars.reversed()) else { return nil }
+        let encoded = String(String.UnicodeScalarView(
+            scalars.dropFirst(prefixScalars.count).dropLast(suffixScalars.count)
+        ))
         // Our writer escapes these, so a raw one means the text is not ours:
         // `<` and `>` could open or close other markup, and `--` is where a
         // comment ends or is refused.
