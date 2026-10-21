@@ -53,13 +53,20 @@ enum TextutilDocumentReader {
         var markdown: String
         var title: String?
         var author: String?
+        /// Whether pages were asked for and textutil's run for them failed
+        /// or was stopped, so the Markdown has none (PG16): the book's page
+        /// reader is then not recorded as done
+        /// (`PageReaderVersions.stamp(for:pageRunFailed:previous:)`).
+        var pageRunFailed = false
 
         /// `markdown` with the names its document's head holds
-        /// (`metadata(in:)`), each nil when empty.
-        fileprivate init(markdown: String, named: (title: String, author: String)) {
+        /// (`metadata(in:)`), each nil when empty, and whether the run for
+        /// its pages failed.
+        fileprivate init(markdown: String, named: (title: String, author: String), pageRunFailed: Bool = false) {
             self.markdown = markdown
             title = named.title.isEmpty ? nil : named.title
             author = named.author.isEmpty ? nil : named.author
+            self.pageRunFailed = pageRunFailed
         }
     }
 
@@ -89,7 +96,8 @@ enum TextutilDocumentReader {
         let named = metadata(in: document)
         return Extraction(
             markdown: try markdown(from: document, source: source, fileName: url.lastPathComponent, includesPages: includesPages),
-            named: named
+            named: named,
+            pageRunFailed: source.pageRunFailed
         )
     }
 
@@ -142,6 +150,9 @@ enum TextutilDocumentReader {
         /// break as a form feed (PG11); nil when pages were not asked for or
         /// the plain-text run failed, and for a web page.
         var plainText: String?
+        /// Whether pages were asked for and the plain-text run failed or was
+        /// stopped (PG16).
+        var pageRunFailed = false
     }
 
     /// How a document is read, decided from its first bytes
@@ -206,8 +217,11 @@ enum TextutilDocumentReader {
 
         return try withWorkingFolder(for: url) { folder in
             let html = try TextutilConverter.html(of: url, as: format, workingIn: folder)
-            let plainText = includesPages ? try pageText(of: url, as: format, workingIn: folder) : nil
-            return Source(html: html, plainText: plainText)
+            guard includesPages else { return Source(html: html) }
+            let plainText = try pageText(of: url, as: format, workingIn: folder)
+            // A failed run is noted, so the book's pages are not recorded as
+            // read (PG16).
+            return Source(html: html, plainText: plainText, pageRunFailed: plainText == nil)
         }
     }
 

@@ -303,8 +303,10 @@ struct Book: Identifiable, Codable, Hashable {
     /// book whose format has a newer page reader is read again at launch
     /// (`LibraryViewModel.booksNeedingCacheUpdate`) while that re-read is
     /// switched on (`PageReaderVersions.launchRereadIsOn`, off for now),
-    /// unless the user changed its text, which is kept as it is. An
-    /// analysis field, like the cache's own version.
+    /// unless the user changed its text, which is kept as it is. A note
+    /// after the version, as in "1.0.0+failed-once", says that reader could
+    /// not read the book's pages (`PageReaderVersions.stamp(for:pageRunFailed:previous:)`).
+    /// An analysis field, like the cache's own version.
     var pageReaderVersion: String?
     /// The version of the metadata reader (`ImportedFileMetadata.readerVersion`)
     /// that last read this book's file for its title and author: the

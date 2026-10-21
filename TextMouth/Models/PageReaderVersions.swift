@@ -36,9 +36,63 @@ enum PageReaderVersions {
     /// Whether a book of `format` that recorded `stored` as its page reader
     /// (nil when it recorded none) is behind the format's current one. False
     /// for a format without pages: such a book is never read again for them.
+    ///
+    /// A stamp's failure note is not part of its version (`stamp(for:pageRunFailed:previous:)`):
+    /// "1.0.0+failed" is page reader 1.0.0, which tried and is not tried
+    /// again, while "1.0.0+failed-once" is behind, so that the book is read
+    /// once more, unless a newer TextMouth on another Mac wrote it (FR02).
     static func isOutdated(format: BookFormat, stored: String?) -> Bool {
         guard let current = current(for: format) else { return false }
-        return SemanticVersion.isOutdated(stored: stored, current: current)
+        guard let stored else { return true }
+        let version = String(stored.prefix { $0 != noteSeparator })
+        if stored.hasSuffix(failedOnceNote) {
+            // Tried once more by this reader or a newer one, never an older.
+            return !SemanticVersion.isOutdated(stored: current, current: version)
+        }
+        return SemanticVersion.isOutdated(stored: version, current: current)
+    }
+
+    // MARK: - A Page Run That Failed (PG16)
+
+    /// What begins a stamp's note, after its version.
+    private static let noteSeparator: Character = "+"
+
+    /// The note of a page run that failed once: the book is read again for
+    /// its pages at the next launch.
+    private static let failedOnceNote = "+failed-once"
+
+    /// The note of a page run that failed again, or of a book whose file
+    /// could not be read for its pages at all: it is not read again for
+    /// them until its format's page reader changes, or Redo Text Extraction
+    /// reads it.
+    private static let failedNote = "+failed"
+
+    /// The page reader a generation records for a book of `format` whose
+    /// stamp was `previous` (PG16): the format's current one when its pages
+    /// were read, nil for a format without pages. When the run that reads
+    /// them failed or was stopped (`pageRunFailed`, textutil's second run),
+    /// the book was read without pages, and the stamp notes it rather than
+    /// record its pages as done: "1.0.0+failed-once" the first time, which
+    /// the next launch reads again, and "1.0.0+failed" when that try fails
+    /// too, so a document that always fails is not read at every launch.
+    static func stamp(for format: BookFormat, pageRunFailed: Bool, previous: String?) -> String? {
+        guard let current = current(for: format) else { return nil }
+        guard pageRunFailed else { return current }
+        return previous == current + failedOnceNote ? current + failedNote : current + failedOnceNote
+    }
+
+    /// Whether `stamp` notes a failure (`stamp(for:pageRunFailed:previous:)`).
+    static func notesFailure(_ stamp: String?) -> Bool {
+        stamp?.contains(noteSeparator) ?? false
+    }
+
+    /// The line logged for `title`'s book when its run for pages failed and
+    /// `stamp` notes it, saying whether the next launch reads it again.
+    static func failedRunLogLine(title: String, stamp: String?) -> String {
+        let next = stamp?.hasSuffix(failedOnceNote) == true
+            ? "it is read again for them at the next launch"
+            : "it keeps its text without them until Redo Text Extraction"
+        return "PAGES_RUN_FAILED: \(title): its pages could not be read; \(next)"
     }
 
     /// Whether `book`'s content.md predates its format's page reader.

@@ -60,6 +60,25 @@ final class PagesUpgradeTests: XCTestCase {
         XCTAssertFalse(PageReaderVersions.isOutdated(text))
     }
 
+    /// A stamp's failure note is read with its version (PG16): a first
+    /// failure is read once more, by this page reader or a newer one, never
+    /// an older; a second is not, until a newer reader comes. A failed run
+    /// stamps the first note, then the second, and a run that reads the
+    /// pages stamps the version alone.
+    func testAFailureNoteIsReadWithItsVersion() {
+        for (stored, outdated) in [
+            ("1.0.0+failed-once", true), ("1.0.0+failed", false), ("9.0.0+failed-once", false), ("0.9.0+failed", true),
+        ] {
+            XCTAssertEqual(PageReaderVersions.isOutdated(format: .rtf, stored: stored), outdated, "stored \"\(stored)\"")
+        }
+        XCTAssertEqual(PageReaderVersions.stamp(for: .rtf, pageRunFailed: true, previous: nil), "1.0.0+failed-once")
+        XCTAssertEqual(PageReaderVersions.stamp(for: .rtf, pageRunFailed: true, previous: "1.0.0+failed-once"), "1.0.0+failed")
+        XCTAssertEqual(PageReaderVersions.stamp(for: .rtf, pageRunFailed: false, previous: "1.0.0+failed-once"), "1.0.0")
+        XCTAssertNil(PageReaderVersions.stamp(for: .txt, pageRunFailed: true, previous: nil))
+        XCTAssertTrue(PageReaderVersions.notesFailure("1.0.0+failed"))
+        XCTAssertFalse(PageReaderVersions.notesFailure("1.0.0"))
+    }
+
     // MARK: - The Record
 
     /// The page reader is an analysis field: it is read and written with the
@@ -307,6 +326,67 @@ final class PagesUpgradeTests: XCTestCase {
             print("PAGES_COMPARISON_SECONDS: \(name): \(Date().timeIntervalSince(started))")
         }
     }
+
+    /// textutil's run for a document's pages can fail or time out (PG16,
+    /// finding 7). The document is then read without pages, and its page
+    /// reader is not recorded as done: the next launch reads it once more.
+    /// When that run fails too, the stamp says so, and no later launch
+    /// reads the book again; when it works, the book gains its pages. Each
+    /// launch's re-read runs this generation on the row it found.
+    func testAFailedTextutilPageRunIsTriedAtOneMoreLaunch() throws {
+        let world = try makeIntegrationWorld("Pages Upgrade Textutil")
+        var book = try world.importBook(from: copyOfFormatSample("rtf/page-breaks.rtf"))
+        book.title = "Pages Upgrade Textutil \(UUID().uuidString)"
+        let failedLine = "PAGES_RUN_FAILED: \(book.title):"
+        let cacheURL = MarkdownCacheService.cacheURL(for: book)
+
+        // The first launch: the run for the pages fails.
+        _ = try TextutilConverter.$tool.withValue(Self.failingPageRun) {
+            try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &book)
+        }
+        XCTAssertEqual(book.pageReaderVersion, "1.0.0+failed-once")
+        XCTAssertTrue(PageReaderVersions.notesFailure(book.pageReaderVersion))
+        XCTAssertTrue(try MarkdownCacheService.loadFromCache(for: book).pages.isEmpty)
+        XCTAssertEqual(
+            LibraryViewModel.booksNeedingCacheUpdate([book], access: .live).map(\.id), [book.id],
+            "the next launch would not try again"
+        )
+        // content.md is the file's text without pages, which the next
+        // launch's compare takes for TextMouth's own and reads again.
+        let withoutPages = try XCTUnwrap(MarkdownCacheService.extractedMarkdown(for: book, includesPages: false))
+        XCTAssertEqual(try Data(contentsOf: cacheURL), Data(withoutPages.utf8))
+
+        // The next launch, where the run fails again: no later one tries.
+        var failedAgain = book
+        _ = try TextutilConverter.$tool.withValue(Self.failingPageRun) {
+            try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &failedAgain)
+        }
+        XCTAssertEqual(failedAgain.pageReaderVersion, "1.0.0+failed")
+        XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([failedAgain], access: .live), [])
+        XCTAssertEqual(debugLogLines(containing: failedLine).count, 2)
+
+        // Or the next launch, where the run works: the book gains its pages.
+        var succeeded = book
+        _ = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &succeeded)
+        XCTAssertEqual(succeeded.pageReaderVersion, "1.0.0")
+        XCTAssertFalse(try MarkdownCacheService.loadFromCache(for: succeeded).pages.isEmpty, "the book gained no pages")
+        XCTAssertEqual(debugLogLines(containing: failedLine).count, 2)
+    }
+
+    /// A stand-in for textutil whose run for a document's pages, its plain
+    /// text, fails at once, while its run for the HTML is Apple's own.
+    private static let failingPageRun: TextutilConverter.Tool = {
+        let real = TextutilConverter.Tool.textutil
+        return TextutilConverter.Tool(
+            command: { input, format, output in
+                output.lastPathComponent.hasSuffix(TextutilConverter.plainTextTemporarySuffix)
+                    ? (URL(fileURLWithPath: "/usr/bin/false"), [])
+                    : real.command(input, format, output)
+            },
+            limits: real.limits,
+            residentMemory: real.residentMemory
+        )
+    }()
 
     /// A batch that wrote a book's content.md with its pages and stopped
     /// before it committed the record, as a quit leaves it, is finished at

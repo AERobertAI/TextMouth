@@ -49,13 +49,16 @@ enum MarkdownCacheService {
     /// do not report omissions leave it empty. A document that names its own
     /// title and author, as a textutil format does in the head of its HTML,
     /// gives them in `title` and `author`, read from the one conversion that
-    /// made the Markdown; every other format leaves them nil.
+    /// made the Markdown; every other format leaves them nil. A textutil
+    /// format whose run for the pages failed says so in `pageRunFailed`
+    /// (PG16); every other format, and a run that succeeded, leaves it false.
     private struct ExtractedCache {
         var markdown: String
         var chapters: [Chapter]? = nil
         var report = ExtractionReport()
         var title: String? = nil
         var author: String? = nil
+        var pageRunFailed = false
     }
 
     /// What one successful cache generation produced: the book's reading
@@ -77,7 +80,9 @@ enum MarkdownCacheService {
         var author: String? = nil
         /// The version of the page reader that wrote this content.md
         /// (`PageReaderVersions`, PG09): the format's current one, since a
-        /// generation always writes pages; nil for a format without pages.
+        /// generation always writes pages, noting a failure when the run for
+        /// them failed (`PageReaderVersions.stamp(for:pageRunFailed:previous:)`,
+        /// PG16); nil for a format without pages.
         var pageReaderVersion: String? = nil
     }
 
@@ -251,10 +256,17 @@ enum MarkdownCacheService {
         logIncompleteContent(extracted.report, of: book)
         // The places move from the copied old text to the text just written.
         let movedPlaces = snapshot.flatMap { $0.movePlaces(to: content, at: Date()) }
+        // A run for the pages that failed records no pages as read (PG16).
+        let pageReaderVersion = PageReaderVersions.stamp(
+            for: book.format, pageRunFailed: extracted.pageRunFailed, previous: book.pageReaderVersion
+        )
+        if extracted.pageRunFailed {
+            DiagnosticLog.event(.storage, PageReaderVersions.failedRunLogLine(title: book.title, stamp: pageReaderVersion))
+        }
         return GeneratedCache(
             content: content, report: extracted.report, movedPlaces: movedPlaces,
             title: extracted.title, author: extracted.author,
-            pageReaderVersion: PageReaderVersions.current(for: book.format)
+            pageReaderVersion: pageReaderVersion
         )
     }
 
@@ -544,7 +556,10 @@ enum MarkdownCacheService {
             // One conversion gives the Markdown and the names the head of
             // textutil's HTML holds.
             let extraction = try TextutilDocumentReader.extract(from: url, bookFormat: format, includesPages: includesPages)
-            return ExtractedCache(markdown: extraction.markdown, title: extraction.title, author: extraction.author)
+            return ExtractedCache(
+                markdown: extraction.markdown, title: extraction.title, author: extraction.author,
+                pageRunFailed: extraction.pageRunFailed
+            )
         case .braille:
             markdown = try BrailleBookReader.markdown(
                 of: url, table: brailleTable ?? BrailleTableCatalog.defaultTableID, recordedVersion: brailleTableVersion
