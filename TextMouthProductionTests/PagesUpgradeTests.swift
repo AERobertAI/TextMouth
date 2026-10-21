@@ -190,6 +190,33 @@ final class PagesUpgradeTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: MarkdownCacheService.cacheURL(for: fixture.book)), fixture.bytes)
     }
 
+    /// A paragraph made a heading by hand changes no word, and is kept: the
+    /// whole content.md is compared, not only its reading text (PG16).
+    func testAParagraphMadeAHeadingIsKept() async throws {
+        try await assertKeptAsChanged("Pages Upgrade Heading") {
+            $0.replacingOccurrences(
+                of: "(?m)^The coil was wound tight", with: "# The coil was wound tight", options: .regularExpression
+            )
+        }
+    }
+
+    /// A heading whose level was changed by hand is kept.
+    func testAHeadingWithAnotherLevelIsKept() async throws {
+        try await assertKeptAsChanged("Pages Upgrade Level") {
+            $0.replacingOccurrences(of: "(?m)^## Opening the Crate", with: "### Opening the Crate", options: .regularExpression)
+        }
+    }
+
+    /// A chapter renamed by hand in its `<!-- chapter: -->` line is kept.
+    func testARenamedChapterIsKept() async throws {
+        try await assertKeptAsChanged("Pages Upgrade Chapter") {
+            $0.replacingOccurrences(
+                of: MarkdownCacheService.chapterMarker(title: "Second Delivery"),
+                with: MarkdownCacheService.chapterMarker(title: "The Second Delivery")
+            )
+        }
+    }
+
     /// A book with a recorded edit (Edit Text took it) is kept the same way,
     /// whether or not its text still equals its file's: its page reader is
     /// stamped, and the log says both that the edit was kept and that pages
@@ -243,7 +270,7 @@ final class PagesUpgradeTests: XCTestCase {
             try FileManager.default.copyItem(at: requireFile(name), to: copy)
             let book = try world.importBook(from: copy)
             let started = Date()
-            _ = try MarkdownCacheService.readingTextsWithoutPages(for: book)
+            _ = try MarkdownCacheService.extractedMarkdown(for: book, includesPages: false)
             print("PAGES_COMPARISON_SECONDS: \(name): \(Date().timeIntervalSince(started))")
         }
     }
@@ -358,7 +385,7 @@ final class PagesUpgradeTests: XCTestCase {
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
 
         // The text as it was written before pages.
-        var markdown = try XCTUnwrap(MarkdownCacheService.markdownWithoutPages(for: book))
+        var markdown = try XCTUnwrap(MarkdownCacheService.extractedMarkdown(for: book, includesPages: false))
         if let changingText {
             let changed = changingText(markdown)
             XCTAssertNotEqual(changed, markdown, "the change should alter the text")
@@ -413,6 +440,31 @@ final class PagesUpgradeTests: XCTestCase {
         )
         world.library.library.books = [recorded]
         return BookBeforePages(book: recorded, oldText: oldText, bytes: bytes)
+    }
+
+    /// Asserts that the batch keeps, byte for byte and without pages, an EPUB
+    /// from before pages whose content.md `change` altered, with its row
+    /// stamped and one `PAGES_SKIPPED_CHANGED_TEXT` line logged. The world is
+    /// named `worldName`.
+    private func assertKeptAsChanged(
+        _ worldName: String,
+        file: StaticString = #filePath,
+        line: UInt = #line,
+        change: @escaping (String) -> String
+    ) async throws {
+        let world = try makeIntegrationWorld(worldName)
+        let fixture = try makeBookBeforePages(sample: Self.epubSample, changingText: change, in: world)
+
+        await runBatch(in: world)
+
+        let row = try XCTUnwrap(world.library.bookByID(fixture.book.id), file: file, line: line)
+        let cacheURL = MarkdownCacheService.cacheURL(for: row)
+        XCTAssertEqual(try Data(contentsOf: cacheURL), fixture.bytes, "the edit was read over", file: file, line: line)
+        XCTAssertTrue(try MarkdownCacheService.loadFromCache(for: row).pages.isEmpty, "pages were added", file: file, line: line)
+        XCTAssertEqual(row.pageReaderVersion, "1.0.0", "the row was not stamped", file: file, line: line)
+        XCTAssertEqual(
+            debugLogLines(containing: "PAGES_SKIPPED_CHANGED_TEXT: \(row.title)").count, 1, file: file, line: line
+        )
     }
 
     /// Where `phrase` begins in the first chapter of `chapters` that holds it.

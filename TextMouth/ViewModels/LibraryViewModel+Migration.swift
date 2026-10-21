@@ -979,9 +979,9 @@ extension LibraryViewModel {
                 return keptText(of: book, access: access)
             }
             // A book behind only in its pages is read again without them
-            // first: text that differs from what its file gives was changed
-            // by hand, and is kept as it is (PG09).
-            if isBehindOnlyInPages(book), try textChangedSinceExtraction(of: book, access: access) {
+            // first: a content.md that is not exactly what its file gives
+            // was changed by hand, and is kept as it is (PG09, PG16).
+            if isBehindOnlyInPages(book), try pageUpgradeCheck(of: book, access: access) == .changed {
                 return keptText(of: book, access: access)
             }
         }
@@ -1028,15 +1028,29 @@ extension LibraryViewModel {
             && !MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion)
     }
 
-    /// Whether `book`'s content.md holds other reading text than its file
-    /// gives when read without pages (PG09): text changed by hand, or by an
-    /// older TextMouth on another Mac. A book whose file changed since
-    /// content.md was written, or whose content.md did, is not compared: it
-    /// is read again as any stale cache is.
+    /// What the launch's re-read for pages makes of `book`, whose content.md
+    /// predates its format's page reader (PG09). The whole content.md is
+    /// compared, byte for byte, with what reading the book's file again
+    /// without pages would write (PG16): chapter lines, headings and their
+    /// levels, and every word, so an edit that only made a paragraph a
+    /// heading, changed a heading's level, or renamed a chapter is found as
+    /// surely as one that changed words.
+    /// - A content.md that is exactly the file's text without pages is
+    ///   TextMouth's own, and is read again with pages (`readAgain`), as is
+    ///   a book with no content.md, which has nothing to keep.
+    /// - Any other content.md is kept as it is (`changed`): text changed by
+    ///   hand, or by an older TextMouth on another Mac, or written by an
+    ///   extraction this build cannot repeat exactly, which is never taken
+    ///   for TextMouth's own.
+    /// - A book whose file changed since content.md was written, or whose
+    ///   content.md did, by the fingerprints its record keeps, is not
+    ///   compared (`stale`): the checks every book has decide, and it is
+    ///   read again as any stale cache is.
     /// - Throws: why content.md or the file could not be read.
-    nonisolated private static func textChangedSinceExtraction(of book: Book, access: MaintenanceFileAccess) throws -> Bool {
+    nonisolated private static func pageUpgradeCheck(of book: Book, access: MaintenanceFileAccess) throws -> PageUpgradeCheck {
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
         let sourceURL = book.bookFileURL
+        guard FileStamp(of: cacheURL) != nil else { return .readAgain }
         if let recorded = BookTextEditSessions.recordedTextCacheFingerprint(of: book, access: access) {
             let hasher = access.hasher
             let verification = try recorded.verify(
@@ -1048,12 +1062,12 @@ extension LibraryViewModel {
                 sourceIsDataless: access.isDataless(sourceURL),
                 cacheIsDataless: access.isDataless(cacheURL)
             )
-            guard case .current = verification else { return false }
+            guard case .current = verification else { return .stale }
         }
-        let kept = try access.read(cacheURL) {
-            try MarkdownCacheService.loadFromCache(for: book).chapters.map(\.text)
-        }
-        return try MarkdownCacheService.readingTextsWithoutPages(for: book) != kept
+        let kept = try access.read(cacheURL) { try Data(contentsOf: cacheURL) }
+        // A generation writes exactly the UTF-8 of the Markdown it extracts.
+        let withoutPages = try MarkdownCacheService.extractedMarkdown(for: book, includesPages: false)
+        return withoutPages.map { Data($0.utf8) } == kept ? .readAgain : .changed
     }
 
     /// Settles a book whose content.md is kept as it is: its summary, once
@@ -1939,6 +1953,22 @@ extension LibraryViewModel {
         }
         return (total, known, unknown)
     }
+}
+
+// MARK: - The Launch Re-read for Pages (PG09, PG16)
+
+/// What comparing a book's content.md with its file found, for the launch's
+/// re-read for pages (`LibraryViewModel.pageUpgradeCheck(of:access:)`).
+private enum PageUpgradeCheck: Equatable {
+    /// content.md is exactly the file's text without pages, TextMouth's own
+    /// from before pages, or there is none: the file is read again, with its
+    /// pages.
+    case readAgain
+    /// The file or content.md changed since content.md was written: the
+    /// checks every book has decide, as for any stale cache.
+    case stale
+    /// content.md is not exactly what the file gives: it is kept as it is.
+    case changed
 }
 
 // MARK: - Opening TextMouth Again (FR02)
