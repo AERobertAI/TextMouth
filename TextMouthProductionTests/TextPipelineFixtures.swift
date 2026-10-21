@@ -108,6 +108,7 @@ enum TextPipelineFixtures {
         "format-samples/odt/handwritten.odt",
         "format-samples/odt/headings.odt",
         "format-samples/ott/handwritten.ott",
+        "format-samples/pdf/labelled-pages.pdf",
         "format-samples/rtf/headings.rtf",
         "format-samples/rtf/word-list-table.rtf",
         "format-samples/rtf/word-styles.rtf",
@@ -131,13 +132,14 @@ enum TextPipelineFixtures {
     /// commit. `testHeldBackSamplesAreFormatSamples` keeps the list honest.
     static let formatSamplesHeldBack: [String: String] = [:]
 
-    /// The folders of the format samples that macOS's own readers
-    /// (`/usr/bin/textutil`) read. What they give can change with macOS, as
-    /// a PDF's text does, so their goldens are compared only on a Mac of the
-    /// major version that recorded them. The other samples are read by
+    /// The folders of the format samples that macOS's own readers read
+    /// (`/usr/bin/textutil`, and PDFKit for "pdf", PG06). What they give can
+    /// change with macOS, as a PDF's text does, so their goldens are
+    /// compared only on a Mac of the major version that recorded them. The
+    /// other samples are read by
     /// TextMouth's own readers and are compared everywhere.
     static let macOSDependentFormatSampleFolders: Set<String> = [
-        "doc", "dot", "odt", "ott", "rtf", "rtfd", "wordml",
+        "doc", "dot", "odt", "ott", "pdf", "rtf", "rtfd", "wordml",
     ]
 
     /// The path of the sample `name` (one of `formatSampleNames`) inside the
