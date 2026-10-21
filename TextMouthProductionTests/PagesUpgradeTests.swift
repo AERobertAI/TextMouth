@@ -20,7 +20,7 @@ final class PagesUpgradeTests: XCTestCase {
     /// Only the formats that gained pages have a page reader; every other
     /// format has none, so no book of it is ever read again for pages.
     func testOnlyTheFormatsWithPagesHaveAPageReader() {
-        let withPages: Set<BookFormat> = [.epub, .html, .pdf, .docx, .daisy]
+        let withPages: Set<BookFormat> = [.epub, .html, .pdf, .docx, .daisy, .rtf, .rtfd, .doc, .odt, .wordml]
         for format in BookFormat.allCases {
             XCTAssertEqual(
                 PageReaderVersions.current(for: format),
