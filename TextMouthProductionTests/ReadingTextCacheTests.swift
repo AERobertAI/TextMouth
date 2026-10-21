@@ -33,6 +33,31 @@ final class ReadingTextCacheTests: XCTestCase {
         }
     }
 
+    /// Pages kept are read back exactly (PG01): every label, chapter number,
+    /// and offset, including a page after an emoji, whose UTF-16 offset is
+    /// not its Character count.
+    func testKeptPagesReadBackExactly() throws {
+        let cache = try makeCache()
+        let book = UUID()
+        let key = Self.key()
+        let chapters = [
+            Chapter(title: "One", text: "😀😀 one two three", pages: [
+                PageBreak(label: "xii", characterOffset: 0),
+                PageBreak(label: "13", characterOffset: 9),
+            ]),
+            Chapter(title: "Two", text: "Four five.", pages: [
+                PageBreak(label: "A-3", chapterIndex: 1, characterOffset: 5),
+            ]),
+            Chapter(title: "Three", text: "No pages here."),
+        ]
+
+        try cache.store(chapters, for: book, key: key)
+
+        let read = try XCTUnwrap(found(cache.chapters(for: book, key: key)))
+        XCTAssertEqual(read.map(\.pages), chapters.map(\.pages))
+        XCTAssertEqual(read.first?.pages.last?.characterOffset, 9)
+    }
+
     /// A book is read back as often as it is asked for, and each store
     /// replaces what was kept for the book before.
     func testStoreReplacesWhatWasKept() throws {

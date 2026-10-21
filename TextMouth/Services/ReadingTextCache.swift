@@ -77,7 +77,7 @@ struct ReadingTextKey: Codable, Hashable, Sendable {
 /// What looking for a book's cached reading text found.
 enum ReadingTextLookup {
     /// The book's chapters, exactly as parsing its content.md gave them:
-    /// each title, reading text, and heading.
+    /// each title, reading text, heading, and page.
     case found([Chapter])
     /// Nothing that can be used, and nothing worth reporting: no file, or
     /// one stored for another content.md, another title, another file
@@ -95,7 +95,7 @@ enum ReadingTextLookup {
 /// opened lately (PERF22), so that opening one again reads its chapters
 /// instead of parsing its content.md.
 ///
-/// - **What is kept:** every chapter's title, reading text, and headings,
+/// - **What is kept:** every chapter's title, reading text, headings, and pages,
 ///   exactly as parsing content.md gave them, for a book whose content.md
 ///   holds at least `minimumContentByteCount` bytes. Smaller books parse in
 ///   a few tens of milliseconds and are never kept. Nothing about speech is
@@ -127,10 +127,10 @@ enum ReadingTextLookup {
 ///
 /// The file holds a fixed prefix (the bytes "TMRT", the file layout, and
 /// the header's length, as little-endian 32-bit numbers), a JSON header
-/// (who wrote it, its key, and each chapter's title, UTF-8 length, and
-/// headings), then every chapter's text as UTF-8, one after another. It is
-/// written to a partial file and renamed into place, so a reader never finds
-/// half a file under a book's name.
+/// (who wrote it, its key, and each chapter's title, UTF-8 length,
+/// headings, and pages), then every chapter's text as UTF-8, one after
+/// another. It is written to a partial file and renamed into place, so a
+/// reader never finds half a file under a book's name.
 struct ReadingTextCache: Sendable {
     /// The app's cache, in this Mac's Caches folder.
     static let shared = ReadingTextCache(folder: MachineLocalPaths.readingTextCache)
@@ -148,7 +148,8 @@ struct ReadingTextCache: Sendable {
 
     /// The layout of the file this version writes. Raise it when the layout
     /// changes; a file of another layout is never read.
-    static let formatVersion: UInt32 = 1
+    /// 2: each chapter's pages (PG01).
+    static let formatVersion: UInt32 = 2
 
     /// The extension of a book's file.
     static let fileExtension = "readingtext"
@@ -267,7 +268,12 @@ struct ReadingTextCache: Sendable {
                 guard let text = try readText(byteCount: entry.byteCount, from: handle) else {
                     return .damaged("chapter \(position)'s text is cut short or is not UTF-8")
                 }
-                chapters.append(Chapter(title: entry.title, text: text, headings: entry.headings.map(\.heading)))
+                chapters.append(Chapter(
+                    title: entry.title,
+                    text: text,
+                    headings: entry.headings.map(\.heading),
+                    pages: entry.pages.map(\.page)
+                ))
             }
             if let extra = try handle.read(upToCount: 1), !extra.isEmpty {
                 return .damaged("it holds more than its chapters")
@@ -322,7 +328,8 @@ struct ReadingTextCache: Sendable {
                 ChapterEntry(
                     title: chapter.title,
                     byteCount: chapter.text.utf8.count,
-                    headings: chapter.headings.map(HeadingEntry.init)
+                    headings: chapter.headings.map(HeadingEntry.init),
+                    pages: chapter.pages.map(PageEntry.init)
                 )
             }
         )
@@ -450,11 +457,12 @@ struct ReadingTextCache: Sendable {
     }
 
     /// One chapter in the header: its title, the length of its text in
-    /// UTF-8 bytes, and its headings. The text follows the header.
+    /// UTF-8 bytes, its headings, and its pages. The text follows the header.
     private struct ChapterEntry: Codable {
         var title: String
         var byteCount: Int
         var headings: [HeadingEntry]
+        var pages: [PageEntry]
     }
 
     /// One heading of a chapter, as parsing gave it: its level, its label,
@@ -478,6 +486,27 @@ struct ReadingTextCache: Sendable {
         /// The heading this entry describes.
         var heading: Heading {
             Heading(level: level, text: text, chapterIndex: chapterIndex, characterOffset: characterOffset)
+        }
+    }
+
+    /// One page of a chapter, as parsing gave it (PG01): its label, the
+    /// chapter number it carries, and where its first word starts in the
+    /// chapter, in UTF-16 units.
+    private struct PageEntry: Codable {
+        var label: String
+        var chapterIndex: Int
+        var characterOffset: Int
+
+        /// The entry for `page`.
+        init(_ page: PageBreak) {
+            label = page.label
+            chapterIndex = page.chapterIndex
+            characterOffset = page.characterOffset
+        }
+
+        /// The page this entry describes.
+        var page: PageBreak {
+            PageBreak(label: label, chapterIndex: chapterIndex, characterOffset: characterOffset)
         }
     }
 }
