@@ -1,0 +1,17 @@
+# TextMouth document golden, format 2
+file: pdf__labelled-pages.pdf
+macOS: 26.3
+format: pdf
+title: labelled-pages
+author: Unknown
+chapters: 1
+words: 20
+text length: 97
+text checksum: 426e7381f8348c79
+first 300: This is page one.\n\nThis is page two.\n\nThis is page three.\n\nThis is page four.\n\nThis is page five.
+last 300: This is page one.\n\nThis is page two.\n\nThis is page three.\n\nThis is page four.\n\nThis is page five.
+page: i | 0:0 | This is page one.\n\nThis 
+page: ii | 0:19 | This is page two.\n\nThis 
+page: 1 | 0:38 | This is page three.\n\nThi
+page: 2 | 0:59 | This is page four.\n\nThis
+page: A-1 | 0:79 | This is page five.

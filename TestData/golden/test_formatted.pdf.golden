@@ -1,4 +1,4 @@
-# TextMouth document golden, format 1
+# TextMouth document golden, format 2
 file: test_formatted.pdf
 macOS: 26.3
 format: pdf
@@ -18,3 +18,6 @@ heading: 1 | Chapter 2: Summer
 heading: 2 | Heat Management
 heading: 1 | Chapter 3: Autumn
 heading: 2 | Preserving the Harvest
+page: 1 | 0:0 | The Seasonal Almanac\n\nby
+page: 2 | 0:892 | Chapter 2: Summer\n\nThe l
+page: 3 | 0:1329 | Chapter 3: Autumn\n\nThe h

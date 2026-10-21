@@ -1,0 +1,16 @@
+# TextMouth document golden, format 2
+file: epub2-pages__pagelist.epub
+format: epub
+title: Sacks and Slates
+author: Tobias Lindqvist-Amadi
+chapters: 2
+words: 38
+text length: 195
+text checksum: 7a1210c3e398c824
+first 300: The Weighing\n\nEach sack was weighed twice before it left the yard.\n\nThe foreman wrote the figure on a slate and wiped it clean again.\nThe Count\n\nAt dusk the tally was read out loud, sack by sack.
+last 300: The Weighing\n\nEach sack was weighed twice before it left the yard.\n\nThe foreman wrote the figure on a slate and wiped it clean again.\nThe Count\n\nAt dusk the tally was read out loud, sack by sack.
+heading: 1 | The Weighing
+heading: 1 | The Count
+page: A-1 | 0:14 | Each sack was weighed tw
+page: 3 | 0:97 | on a slate and wiped it 
+page: 4 | 1:11 | At dusk the tally was re

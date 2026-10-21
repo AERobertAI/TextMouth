@@ -83,15 +83,18 @@ enum TextPipelineFixtures {
     /// The format samples the document goldens record and the import fuzz
     /// sweeps, as paths inside TestData, one per line: every file and folder
     /// sample of the RTF, RTFD, Word, OpenDocument, WordML, web archive,
-    /// SSML, and DTBook folders. `rtf/headings-source.html` is left out: it
+    /// SSML, and DTBook folders, and the EPUB page samples (`epub2-pages`
+    /// and `epub3-pages`, PG05). `rtf/headings-source.html` is left out: it
     /// is only the HTML the other RTF samples were made from. A folder
     /// sample (an RTFD, a NIMAS package) is named as the folder.
     static let formatSampleNames = [
         "format-samples/doc/headings.doc",
         "format-samples/doc/libreoffice-tdf104239_chapterNumbering.doc",
         "format-samples/doc/libreoffice-tdf81705_outlineLevel.doc",
+        "format-samples/doc/page-breaks.doc",
         "format-samples/docm/headings-synthetic.docm",
         "format-samples/docm/libreoffice-hello.docm",
+        "format-samples/docx/page-breaks.docx",
         "format-samples/dot/headings-synthetic.dot",
         "format-samples/dot/libreoffice-tdf120761_zOrder.dot",
         "format-samples/dotm/headings-synthetic.dotm",
@@ -100,10 +103,16 @@ enum TextPipelineFixtures {
         "format-samples/dotx/libreoffice-sample.dotx",
         "format-samples/dtbook/harbour-standalone.xml",
         "format-samples/dtbook/nimas-style-package",
+        "format-samples/dtbook/pages-front-and-inline.xml",
+        "format-samples/epub2-pages/pagelist.epub",
+        "format-samples/epub3-pages/page-list.epub",
+        "format-samples/epub3-pages/pagebreaks-only.epub",
         "format-samples/odt/handwritten.odt",
         "format-samples/odt/headings.odt",
         "format-samples/ott/handwritten.ott",
+        "format-samples/pdf/labelled-pages.pdf",
         "format-samples/rtf/headings.rtf",
+        "format-samples/rtf/page-breaks.rtf",
         "format-samples/rtf/word-list-table.rtf",
         "format-samples/rtf/word-styles.rtf",
         "format-samples/rtfd/headings.rtfd",
@@ -111,6 +120,7 @@ enum TextPipelineFixtures {
         "format-samples/ssml/passage.ssml",
         "format-samples/webarchive/headings.webarchive",
         "format-samples/wordml/headings.wordml",
+        "format-samples/wordml/page-breaks.wordml",
     ]
 
     /// The samples of `formatSampleNames` that import only under another
@@ -118,6 +128,7 @@ enum TextPipelineFixtures {
     /// an .xml file.
     static let formatSampleImportNames = [
         "format-samples/wordml/headings.wordml": "headings.xml",
+        "format-samples/wordml/page-breaks.wordml": "page-breaks.xml",
     ]
 
     /// Samples whose recorded golden showed a reader bug, by sample, with the
@@ -126,13 +137,14 @@ enum TextPipelineFixtures {
     /// commit. `testHeldBackSamplesAreFormatSamples` keeps the list honest.
     static let formatSamplesHeldBack: [String: String] = [:]
 
-    /// The folders of the format samples that macOS's own readers
-    /// (`/usr/bin/textutil`) read. What they give can change with macOS, as
-    /// a PDF's text does, so their goldens are compared only on a Mac of the
-    /// major version that recorded them. The other samples are read by
+    /// The folders of the format samples that macOS's own readers read
+    /// (`/usr/bin/textutil`, and PDFKit for "pdf", PG06). What they give can
+    /// change with macOS, as a PDF's text does, so their goldens are
+    /// compared only on a Mac of the major version that recorded them. The
+    /// other samples are read by
     /// TextMouth's own readers and are compared everywhere.
     static let macOSDependentFormatSampleFolders: Set<String> = [
-        "doc", "dot", "odt", "ott", "rtf", "rtfd", "wordml",
+        "doc", "dot", "odt", "ott", "pdf", "rtf", "rtfd", "wordml",
     ]
 
     /// The path of the sample `name` (one of `formatSampleNames`) inside the

@@ -450,7 +450,11 @@ enum BookContentAnalysisService {
         } catch {
             return nil
         }
+        // A record whose content.md predates its format's page reader is not
+        // recovered either while the launch re-read is switched on: the book
+        // is read again for its pages (PG09).
         guard info.state.cacheFormatVersion == MarkdownCacheService.currentCacheVersion,
+              !PageReaderVersions.isDueForPages(format: book.format, stored: info.state.pageReaderVersion),
               let index = info.contentIndex,
               let trustedIndex = trusted(index, for: book, audioBaseURL: nil) else { return nil }
         guard let recorded = info.state.textCacheFingerprint else { return RecoveredTextCache(index: trustedIndex, record: info) }

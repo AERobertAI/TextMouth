@@ -1,4 +1,4 @@
-# TextMouth document golden, format 1
+# TextMouth document golden, format 2
 file: doc__libreoffice-tdf81705_outlineLevel.doc
 macOS: 26.3
 format: doc
@@ -11,3 +11,4 @@ text checksum: 658db01949d4d8ef
 first 300: A\n\nB\n\nC\n\nD\n\nContents\n\nD 1
 last 300: A\n\nB\n\nC\n\nD\n\nContents\n\nD 1
 heading: 1 | Contents
+page: 1 | 0:0 | A\n\nB\n\nC\n\nD\n\nContents\n\nD 

@@ -1,12 +1,12 @@
-# TextMouth document golden, format 1
+# TextMouth document golden, format 2
 file: lathe_of_heaven_daisy.zip
 format: daisy
 title: The Lathe of Heaven
 author: Ursula K. Le Guin
 chapters: 1
-words: 60402
-text length: 340040
-text checksum: 54b61569fc4f1fb2
+words: 60399
+text length: 339987
+text checksum: d7580dc84c0e2a96
 first 300: The Lathe of Heaven\n\nUrsula K. Le Guin\n\nNOTICE\n\nThis accessible media has been made available to people with bona fide disabilities that affect reading.  This notice tells you about restrictions on the use of this accessible media, which could be a book, a periodical, or other content.\n\nCopyright No
 last 300:  titles and authors from Diversion Books, free excerpts, special promotions, contests, and more:\n\n      ![Twitter](images/twitter.png)\n\n\n@DiversionBooks\n\n      ![facebook](images/facebook.png)\n\n\nwww.Facebook.com/DiversionBooks\n\n      ![Newsletter](images/newsletter.png)\n\n\nDiversion Books eNewsletter
 heading: 1 | The Lathe of Heaven
@@ -30,3 +30,4 @@ heading: 1 | 9
 heading: 1 | 10
 heading: 1 | 11
 heading: 1 | Connect with Diversion Books
+page: 1 | 0:4803 | The Lathe of Heaven\n\nUrs

@@ -30,7 +30,7 @@ private func parseMarkdown(markdown: String, title: String) throws -> DocumentCo
 /// Markdown unchanged but still write a false alarm to the debug log.
 private func assertPinnedMarkdown(_ name: String, bytes: Int, sha256: String) throws {
     var damageReports: [DOCXParserError] = []
-    let markdown = try DOCXParser.extractMarkdown(from: try requireFile(name)) { damageReports.append($0) }
+    let markdown = try DOCXParser.extractMarkdown(from: try requireFile(name), includesPages: false) { damageReports.append($0) }
     try assertTrue(damageReports.isEmpty, "\(name) was reported as damaged: \(damageReports)")
     let actualBytes = markdown.utf8.count
     let actualDigest = SHA256.hash(data: Data(markdown.utf8)).map { String(format: "%02x", $0) }.joined()

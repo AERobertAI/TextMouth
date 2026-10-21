@@ -41,18 +41,20 @@ final class TextPipelineGoldenTests: XCTestCase {
 
     /// content.md as the import writes it for each golden book, recorded on
     /// main before PERF18: at a4d6e10, and for the two DAISY audio books
-    /// that only some checkouts hold, at 6cef1d0 with them present.
+    /// that only some checkouts hold, at 6cef1d0 with them present. The
+    /// books that gained pages (PG05 to PG08) were recorded again with their
+    /// pages; the two audio books last, in a checkout that holds them.
     private static let recordedCaches: [String: String] = [
-        "alice.docx": "3cd03f3458bf2cb1",
+        "alice.docx": "1a06c9f538a8d627",
         "alice.epub": "7693c954870e8e27",
-        "are-you-ready-d3-audio.zip": "d1d3f9c2159d5732",
+        "are-you-ready-d3-audio.zip": "465cacd1e1c6c93f",
         "converted-12.epub": "65ea3c4fb57ed662",
         "daisy202_test.zip": "73cbd773fe100236",
-        "fire-safety-d202-audio.zip": "38d5759450e06358",
+        "fire-safety-d202-audio.zip": "22a292ece75845b7",
         "frankenstein.html": "ca20689835e6a4af",
         "hyperion_daisy.zip": "538946f073739b22",
-        "lathe_of_heaven_daisy.zip": "c64cfa237817b844",
-        "navigation.epub": "7fb5af1466eab9ab",
+        "lathe_of_heaven_daisy.zip": "01eb5d0b116fe9b4",
+        "navigation.epub": "81a7213b61c9db3a",
         "ncx.epub": "f7ee1d34be3f7637",
         "pride.txt": "b66f077f6e38e5db",
         "sample.md": "2d9a584acbd95311",
@@ -60,8 +62,8 @@ final class TextPipelineGoldenTests: XCTestCase {
         "synthetic-256k-plain.html": "f96a6fae58fbd3bf",
         "synthetic-256k.md": "c16d170995d4e3ea",
         "synthetic-256k.txt": "806aeb6f5aae9ae1",
-        "test_book.docx": "03acb604568b522c",
-        "wipo-treaty-d202-text-only.zip": "8dda044877b014a8",
+        "test_book.docx": "e0bf2ec6c616ae28",
+        "wipo-treaty-d202-text-only.zip": "ed5780d1c2b47e85",
     ]
 
     /// What each golden book opens to (`TextPipelineFixtures.digest(of:index:)`
@@ -70,13 +72,13 @@ final class TextPipelineGoldenTests: XCTestCase {
     private static let recordedReadings: [String: String] = [
         "alice.docx": "6a2383388d488ef7",
         "alice.epub": "98ad24b7bb26f619",
-        "are-you-ready-d3-audio.zip": "ac2c4fe996e672c4",
+        "are-you-ready-d3-audio.zip": "225dce740444f269",
         "converted-12.epub": "a9fe607222334425",
         "daisy202_test.zip": "62d8163491526652",
-        "fire-safety-d202-audio.zip": "f473b2fbaff21ccb",
+        "fire-safety-d202-audio.zip": "223ac40dd3f7dcba",
         "frankenstein.html": "33e7c31909a348d3",
         "hyperion_daisy.zip": "eaa1858c33d55019",
-        "lathe_of_heaven_daisy.zip": "24cdd2a8c98160f0",
+        "lathe_of_heaven_daisy.zip": "4a55f5aedf83c3b3",
         "navigation.epub": "1f70d1864a1fcac1",
         "ncx.epub": "e30260221f303883",
         "pride.txt": "13cc79a1071a228a",
@@ -86,7 +88,7 @@ final class TextPipelineGoldenTests: XCTestCase {
         "synthetic-256k.md": "aebbd93e18ff88df",
         "synthetic-256k.txt": "9279d920ee2030b6",
         "test_book.docx": "073d8be3776366b6",
-        "wipo-treaty-d202-text-only.zip": "604aaf38d809f5ad",
+        "wipo-treaty-d202-text-only.zip": "274542e5146da72a",
     ]
 
     /// Every golden book imports to the content.md recorded for it, and
@@ -168,7 +170,7 @@ final class TextPipelineGoldenTests: XCTestCase {
         "navigation.epub": (
             markdown: [
                 "c65f192e68d054e3",
-                "bfde0f8260eb0068",
+                "058f65047c591628",
                 "ba5a0ebb74638753",
                 "3c6cb98a64eaf8e7",
                 "fc43daeac9c69ca8",

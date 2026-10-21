@@ -121,7 +121,7 @@ final class TextutilLeftoverSweepTests: XCTestCase {
     }
 
     func testAnotherSuffixIsNotKilled() {
-        let other = Self.arguments(output: "/tmp/.\(uuid).textutil.txt")
+        let other = Self.arguments(output: "/tmp/.\(uuid).textutil.rtf")
         XCTAssertTrue(sweep([snapshot(arguments: other)]).pids.isEmpty)
     }
 

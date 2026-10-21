@@ -1,4 +1,4 @@
-# TextMouth document golden, format 1
+# TextMouth document golden, format 2
 file: doc__libreoffice-tdf104239_chapterNumbering.doc
 macOS: 26.3
 format: doc
@@ -16,3 +16,4 @@ heading: 3 | Heading 3
 heading: 4 | Heading 4
 heading: 5 | Heading 5
 heading: 5 | Heading 6
+page: 1 | 0:0 | Heading 1\n\nHeading 2\n\nHe

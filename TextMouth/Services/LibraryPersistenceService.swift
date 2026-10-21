@@ -606,6 +606,18 @@ enum LibraryPersistenceService {
     /// discarded once they are written; a result dropped, or a write that
     /// throws, keeps it for the next launch to finish.
     ///
+    /// `editedText` is the record of an edit the user made with Edit Text,
+    /// which the analysis of that very edit passes (B12): the merged book
+    /// takes it after the analysis is applied, so it survives the rule that
+    /// drops a record content.md no longer matches. Nil leaves the record
+    /// the analysis keeps or drops by that rule.
+    ///
+    /// `pageReaderVersion` is the page reader that wrote the content.md the
+    /// analysis describes (`Book.pageReaderVersion`, PG09), which a
+    /// generation or a text kept as it is passes. It is a double optional:
+    /// nil keeps the record's own, and `.some(version)` sets it, `.some(nil)`
+    /// for a format without pages.
+    ///
     /// A result is dropped, with one CONTENT_ANALYSIS_DROPPED line in the
     /// debug log, when the latest state describes other content than was
     /// analyzed (`contentChange(from:to:)`), or when it would have to be
@@ -627,7 +639,9 @@ enum LibraryPersistenceService {
         for analyzed: Book,
         index: BookContentIndex,
         cacheFormatVersion: String?,
-        movedPlaces: MovedPlaces? = nil
+        movedPlaces: MovedPlaces? = nil,
+        editedText: EditedText? = nil,
+        pageReaderVersion: String?? = nil
     ) throws -> Book? {
         guard !analyzed.tmbDirectoryName.isEmpty else { return nil }
 
@@ -646,6 +660,12 @@ enum LibraryPersistenceService {
 
             var merged = state.latest
             merged.applyContentAnalysis(index, cacheFormatVersion: cacheFormatVersion)
+            if let editedText {
+                merged.editedText = editedText
+            }
+            if let pageReaderVersion {
+                merged.pageReaderVersion = pageReaderVersion
+            }
             // The places a rebuild moved, each only where the latest state
             // still holds it as it was when the old text was copied aside.
             if let movedPlaces {

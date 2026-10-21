@@ -58,6 +58,9 @@ struct BookReaderWindowView: View {
             // available while this reader reads its book from the list
             // (FR09), whether or not a view of it holds keyboard focus.
             .focusedSceneValue(\.readsFromReadingList, viewModel.isOpenedFromReadingList)
+            // Next Page, Previous Page, and Go to Page… are available while
+            // this reader's book has pages (PG02), as above.
+            .focusedSceneValue(\.readerHasPages, viewModel.hasPages)
             .navigationTitle(windowTitle)
             .onAppear {
                 libraryViewModel.markBookOpened(bookID)

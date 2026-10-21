@@ -336,12 +336,15 @@ enum DAISYParser {
 
     /// Extract Markdown from a DAISY book. Main conversion entry point for
     /// MarkdownCacheService cache generation.
+    /// - Parameter includesPages: whether page markers are written (PG08); false writes what cache format 3.0.7 wrote:
+    ///   a DTBook `pagenum` as "[Page N]" on a line of its own, and a DAISY 2.02 page's number as text.
     /// - Parameter reportIncompleteContent: receives a diagnostic for each
     ///   DTBook content file that broke off after some of its text was read.
     ///   That text stays in the result; the diagnostic never enters it. The
     ///   default writes the diagnostic to the console and the debug log.
     static func extractMarkdown(
         from url: URL,
+        includesPages: Bool = true,
         reportIncompleteContent: (DAISYParserError) -> Void = DAISYParser.logIncompleteContent
     ) throws -> String {
         let provider = try makeFileProvider(from: url)
@@ -351,9 +354,13 @@ enum DAISYParser {
 
         switch version {
         case .daisy3:
-            return try extractDAISY3Markdown(from: provider, reportIncompleteContent: reportIncompleteContent)
+            return try extractDAISY3Markdown(
+                from: provider,
+                includesPages: includesPages,
+                reportIncompleteContent: reportIncompleteContent
+            )
         case .daisy202:
-            return try extractDAISY202Markdown(from: provider)
+            return try extractDAISY202Markdown(from: provider, includesPages: includesPages)
         }
     }
 
@@ -492,6 +499,7 @@ enum DAISYParser {
     /// Extract Markdown from a DAISY 3 book (DTBook XML content)
     private static func extractDAISY3Markdown(
         from provider: DAISYFileProvider,
+        includesPages: Bool,
         reportIncompleteContent: (DAISYParserError) -> Void
     ) throws -> String {
         // Find the OPF file
@@ -501,7 +509,12 @@ enum DAISYParser {
             guard let xmlPath = findDTBookXML(in: allFiles, provider: provider) else {
                 throw DAISYParserError.missingContent("No OPF or DTBook XML found")
             }
-            return try convertDTBook(at: xmlPath, in: provider, reportIncompleteContent: reportIncompleteContent)
+            return try convertDTBook(
+                at: xmlPath,
+                in: provider,
+                includesPages: includesPages,
+                reportIncompleteContent: reportIncompleteContent
+            )
         }
 
         // Parse OPF to find the DTBook XML file
@@ -546,7 +559,12 @@ enum DAISYParser {
         // Convert each content file and concatenate in reading order
         var allMarkdown: [String] = []
         for path in dtbookPaths {
-            let markdown = try convertDTBook(at: path, in: provider, reportIncompleteContent: reportIncompleteContent)
+            let markdown = try convertDTBook(
+                at: path,
+                in: provider,
+                includesPages: includesPages,
+                reportIncompleteContent: reportIncompleteContent
+            )
             if !markdown.isEmpty {
                 allMarkdown.append(markdown)
             }
@@ -562,9 +580,10 @@ enum DAISYParser {
     private static func convertDTBook(
         at path: String,
         in provider: DAISYFileProvider,
+        includesPages: Bool,
         reportIncompleteContent: (DAISYParserError) -> Void
     ) throws -> String {
-        let conversion = try DTBookToMarkdownConverter(path: path, in: provider).convert()
+        let conversion = try DTBookToMarkdownConverter(path: path, in: provider, includesPages: includesPages).convert()
         if let diagnostic = conversion.diagnostic {
             reportIncompleteContent(diagnostic)
         }
@@ -604,8 +623,11 @@ enum DAISYParser {
 
     // MARK: - DAISY 2.02 Extraction
 
-    /// Extract Markdown from a DAISY 2.02 book (XHTML content)
-    private static func extractDAISY202Markdown(from provider: DAISYFileProvider) throws -> String {
+    /// Extract Markdown from a DAISY 2.02 book (XHTML content). With
+    /// `includesPages`, each page the NCC lists (PG08) becomes a page marker
+    /// in place of the content fragment holding its number, which is then not
+    /// read. Internal so tests can drive it with an in-memory package.
+    static func extractDAISY202Markdown(from provider: DAISYFileProvider, includesPages: Bool = true) throws -> String {
         // Find ncc.html (case-insensitive)
         let allFiles = provider.listFiles()
         guard let nccPath = allFiles.first(where: {
@@ -623,6 +645,7 @@ enum DAISYParser {
         // while SMIL points at the precise spoken fragment.
         var textReferences: [String] = []
         var seenReferences: Set<String> = []
+        var smilFiles = DAISY202SMILCache(provider: provider)
         for heading in nccResult.headings {
             // Heading href → SMIL file → text content file
             let smilFile = ParserUtilities.resolvedPackagePath(
@@ -632,9 +655,8 @@ enum DAISYParser {
             )
 
             // A missing SMIL file is skipped as before; a damaged one throws.
-            if let smilParser = try? DAISYSMILParser(path: smilFile, in: provider) {
-                let textRefs = try smilParser.parseTextReferences()
-                for ref in textRefs {
+            if let smil = try smilFiles.references(at: smilFile) {
+                for ref in smil.textReferences {
                     let textPath = ParserUtilities.resolvedPackagePath(
                         ref,
                         relativeTo: smilFile,
@@ -647,9 +669,20 @@ enum DAISYParser {
             }
         }
 
+        // The page markers, by the text reference each stands in for.
+        var pageMarkers: [String: [DAISY202PageMarker]] = [:]
+        if includesPages {
+            pageMarkers = try pageMarkersByReference(nccResult.pages, nccPath: nccPath, smilFiles: &smilFiles)
+        }
+
         // If we found text references, extract and convert only those fragments.
         if !textReferences.isEmpty {
-            let markdown = try extractDAISY202Fragments(from: textReferences, provider: provider)
+            let markdown = try extractDAISY202Fragments(
+                from: textReferences,
+                provider: provider,
+                includesPages: includesPages,
+                pageMarkers: pageMarkers
+            )
             if !markdown.isEmpty { return markdown }
         }
 
@@ -664,6 +697,37 @@ enum DAISYParser {
         return markdown.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// The page markers of a DAISY 2.02 book's NCC page entries (PG08), each
+    /// under the resolved text reference (`file.html#id`) that holds the
+    /// page's number, in NCC order. A page is labelled by its entry's words,
+    /// or by its place in the NCC (1-based) when the entry has none.
+    ///
+    /// An entry's link names a SMIL `par` or `text` by id; that element's
+    /// `text` source is the content fragment. An entry is dropped when it
+    /// has no link with an id, its SMIL file is missing (a damaged SMIL file
+    /// throws, as it does for a heading), the id is not in that file, or the
+    /// source names a whole file: such a reference would make the marker take
+    /// the place of the file's text.
+    private static func pageMarkersByReference(
+        _ pages: [NCCPage],
+        nccPath: String,
+        smilFiles: inout DAISY202SMILCache
+    ) throws -> [String: [DAISY202PageMarker]] {
+        var markers: [String: [DAISY202PageMarker]] = [:]
+        for (index, page) in pages.enumerated() {
+            let fragment = ParserUtilities.splitFragment(page.href).fragment
+            guard !fragment.isEmpty else { continue }
+            let smilFile = ParserUtilities.resolvedPackagePath(page.href, relativeTo: nccPath, preserveFragment: false)
+            guard let smil = try smilFiles.references(at: smilFile),
+                  let source = smil.textReferencesByID[fragment] else { continue }
+            let reference = ParserUtilities.resolvedPackagePath(source, relativeTo: smilFile, preserveFragment: true)
+            guard !ParserUtilities.splitFragment(reference).fragment.isEmpty else { continue }
+            let marker = MarkdownPageMarker(label: page.label, ordinal: index + 1)
+            markers[reference, default: []].append(DAISY202PageMarker(label: page.label, markdown: marker.markdown))
+        }
+        return markers
+    }
+
     /// Extract DAISY 2.02 text references from their HTML fragments.
     /// Fragment-less references still convert the whole file, but SMIL
     /// references with #ids are narrowed to that element so content.md does not
@@ -675,9 +739,21 @@ enum DAISYParser {
     /// sentence) leaves the words read before out. Two different elements
     /// with the same words are both read: a repeated line is still a line.
     /// Internal so tests can drive it with an in-memory package.
+    ///
+    /// - Parameters:
+    ///   - includesPages: passed to the HTML converter, so with false every
+    ///     fragment converts exactly as before pages (PG08).
+    ///   - pageMarkers: the page markers (see `pageMarkersByReference`) by the
+    ///     reference each stands in for. Its markers are written as blocks
+    ///     where the reference stood. If its element holds only the page
+    ///     number it is not read and counts as read, so a fragment enclosing
+    ///     it leaves its number out too; otherwise it is read as any
+    ///     fragment is. A page whose content file cannot be read is dropped.
     static func extractDAISY202Fragments(
         from references: [String],
-        provider: DAISYFileProvider
+        provider: DAISYFileProvider,
+        includesPages: Bool = true,
+        pageMarkers: [String: [DAISY202PageMarker]] = [:]
     ) throws -> String {
         var documents: [String: SwiftSoup.Document] = [:]
         var htmlByPath: [String: String] = [:]
@@ -706,6 +782,20 @@ enum DAISYParser {
                 htmlByPath[split.path] = decodedHTML
             }
 
+            // A page's marker is written where its fragment stood. When the
+            // fragment holds no more than the page number, the marker stands
+            // in its place and the number is not read. A fragment holding
+            // more is real text a faulty NCC entry points at: the marker
+            // goes before it and the text is read as ever, never lost.
+            if let markers = pageMarkers[reference] {
+                fragments.append(contentsOf: markers.map(\.markdown))
+                if let element = try doc.getElementById(split.fragment),
+                   markers.contains(where: { $0.isNumber(in: (try? element.text()) ?? "") }) {
+                    ledger.markRead(element)
+                    continue
+                }
+            }
+
             // The element a reference names, or the body for a whole file.
             // Words already read, inside an earlier fragment, are not repeated.
             let target: SwiftSoup.Element
@@ -721,9 +811,18 @@ enum DAISYParser {
 
             let fragmentMarkdown: String
             if split.fragment.isEmpty {
-                fragmentMarkdown = convertDAISY202WholeFile(html, body: target, ledger: ledger)
+                fragmentMarkdown = convertDAISY202WholeFile(
+                    html,
+                    body: target,
+                    ledger: ledger,
+                    includesPages: includesPages
+                )
             } else {
-                fragmentMarkdown = try convertDAISY202FragmentElement(target, ledger: ledger)
+                fragmentMarkdown = try convertDAISY202FragmentElement(
+                    target,
+                    ledger: ledger,
+                    includesPages: includesPages
+                )
             }
             ledger.markRead(target)
 
@@ -745,7 +844,8 @@ enum DAISYParser {
     /// it that an earlier fragment already read.
     private static func convertDAISY202FragmentElement(
         _ element: SwiftSoup.Element,
-        ledger: DAISY202ReadingLedger
+        ledger: DAISY202ReadingLedger,
+        includesPages: Bool
     ) throws -> String {
         if daisy202InlineFragmentTags.contains(element.tagName().lowercased()) {
             return inlineWords(of: element, ledger: ledger)
@@ -755,7 +855,7 @@ enum DAISYParser {
         // paragraphs, lists. A block enclosing earlier fragments is
         // converted from a copy without them.
         let source = try ledger.containsRead(element) ? ledger.unreadCopy(of: element) : element
-        return try HTMLToMarkdownConverter.convert(source.outerHtml())
+        return try HTMLToMarkdownConverter.convert(source.outerHtml(), includesPages: includesPages)
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
@@ -765,12 +865,16 @@ enum DAISYParser {
     private static func convertDAISY202WholeFile(
         _ html: String,
         body: SwiftSoup.Element,
-        ledger: DAISY202ReadingLedger
+        ledger: DAISY202ReadingLedger,
+        includesPages: Bool
     ) -> String {
         guard ledger.containsRead(body) else {
-            return (try? HTMLToMarkdownConverter.convert(html)) ?? ""
+            return (try? HTMLToMarkdownConverter.convert(html, includesPages: includesPages)) ?? ""
         }
-        return (try? HTMLToMarkdownConverter.convert(ledger.unreadCopy(of: body).outerHtml())) ?? ""
+        return (try? HTMLToMarkdownConverter.convert(
+            ledger.unreadCopy(of: body).outerHtml(),
+            includesPages: includesPages
+        )) ?? ""
     }
 
     /// The words of an inline fragment, each once and in source order, as
@@ -834,6 +938,57 @@ enum DAISYParser {
         }
         let result = try DAISY202NCCParser(path: nccPath, in: provider).parse()
         return DAISYMetadata(title: result.title, author: result.author)
+    }
+}
+
+// MARK: - DAISY 2.02 Page Marker
+
+/// A page marker of a DAISY 2.02 book (PG08), with the label its NCC entry
+/// gave, which tells whether the content fragment it points at holds a page
+/// number or real text.
+struct DAISY202PageMarker: Equatable {
+    /// The NCC entry's words, whitespace collapsed; empty when it had none.
+    let label: String
+    /// The marker as written in content.md.
+    let markdown: String
+
+    /// Whether `fragmentText` is no more than this page's number: empty, or
+    /// short enough to be a number and its caption ("12", "Page 12",
+    /// "p. xii") and, when the NCC named the page, containing that name. A
+    /// page entry that points at a paragraph is a faulty link, and the
+    /// paragraph is words a listener must hear.
+    func isNumber(in fragmentText: String) -> Bool {
+        let text = fragmentText.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+        if text.isEmpty { return true }
+        guard text.count <= MarkdownPageMarker.maximumLabelLength else { return false }
+        return label.isEmpty || text.localizedCaseInsensitiveContains(label)
+    }
+}
+
+// MARK: - DAISY 2.02 SMIL Cache
+
+/// Reads each SMIL file of a DAISY 2.02 book once, however many headings and
+/// pages point into it (PG08). Headings and page entries are read from the
+/// same files, so without this each page would parse its file again.
+private struct DAISY202SMILCache {
+    /// The package the files are read from.
+    let provider: DAISYFileProvider
+    /// What each file read held, by path; nil for a file that is missing.
+    private var filesByPath: [String: DAISYSMILReferences?] = [:]
+
+    init(provider: DAISYFileProvider) {
+        self.provider = provider
+    }
+
+    /// What the SMIL file at `path` points at; nil when it cannot be read
+    /// (the book then goes on without it, as it always has).
+    /// - Throws: `DAISYParserError.malformedXML` naming the file when it is
+    ///   damaged; a file is never half-read.
+    mutating func references(at path: String) throws -> DAISYSMILReferences? {
+        if let known = filesByPath[path] { return known }
+        let references = try (try? DAISYSMILParser(path: path, in: provider))?.parseReferences()
+        filesByPath[path] = .some(references)
+        return references
     }
 }
 

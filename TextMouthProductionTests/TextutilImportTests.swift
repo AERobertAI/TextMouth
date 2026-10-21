@@ -412,7 +412,10 @@ final class TextutilImportTests: XCTestCase {
             let book = try TextutilConverter.$tool.withValue(recorder.countingTool()) {
                 try importedForTest(copy).book
             }
-            XCTAssertEqual(recorder.outputs.count, 1, expected.sample)
+            // One HTML conversion makes the text and the names; a second run
+            // of textutil writes the plain text that holds the page breaks (PG11).
+            let htmlRuns = recorder.outputs.filter { $0.lastPathComponent.hasSuffix(TextutilConverter.temporarySuffix) }
+            XCTAssertEqual(htmlRuns.count, 1, expected.sample)
             XCTAssertEqual(book.title, expected.title, expected.sample)
             XCTAssertEqual(book.author, expected.author, expected.sample)
 

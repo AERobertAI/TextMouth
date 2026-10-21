@@ -72,18 +72,71 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// leaves text worth keeping; damage before it leaves none.
     private var producedText = false
 
+    // MARK: Page state (PG07)
+
+    /// Follows the document's pages and sections. Nil when pages are not
+    /// included, and then no page logic runs at all: the Markdown is exactly
+    /// what it was before pages.
+    private var pageTracker: DOCXPageTracker?
+
+    /// What the paragraph's own properties say about `w:pageBreakBefore`;
+    /// nil when they say nothing, so its style decides.
+    private var paragraphPageBreakBefore: Bool?
+
+    /// Whether the paragraph's properties hold a `w:sectPr`, which makes it
+    /// the last paragraph of its section.
+    private var paragraphEndsSection = false
+
+    /// The markers of pages that begin at the paragraph being read, written as
+    /// blocks before it when it ends, whatever the paragraph is.
+    private var paragraphLeadingMarkers: [String] = []
+
+    /// The marker of the last page that began inside the table being read,
+    /// written as a block after the outermost table. Pages that begin in a
+    /// table cannot be told apart in its Markdown, so they merge into one.
+    private var tableTrailingMarker: String?
+
+    /// The pieces the run being read has been cut into at its page starts, in
+    /// order. Empty for a run without one, which is formatted whole as ever.
+    private var runPieces: [RunPiece] = []
+
+    /// Whether the whitespace that begins the next words is dropped: set by a
+    /// page `w:br`, cleared by the first words after it (or the paragraph's end).
+    private var dropsLeadingWhitespace = false
+
+    /// How many deletions (`w:del`, `w:moveFrom`) enclose the element being
+    /// read. A page break inside deleted text starts no page.
+    private var deletionDepth = 0
+
+    /// The text of a run before a page start inside it.
+    private struct RunPiece {
+        /// The run's text before the page start.
+        let text: String
+        /// Whether the page start is a `w:br`, which stood between two words.
+        let joinsWords: Bool
+    }
+
     /// Prepare to convert the text part `data`, read from `file`, with the
     /// package's paragraph styles, list numbering, and hyperlink targets.
+    ///
+    /// With `includesPages` the converter also writes a page marker where each
+    /// page begins (PG07); without it the Markdown is what it was before
+    /// pages. The sections, which tell where pages begin and how they are
+    /// numbered, are read from `data` in a first pass.
     init(
         data: Data,
         file: String = DOCXParser.Part.document,
         styles: DOCXStyles,
         numbering: DOCXNumbering,
-        relationships: [String: String]
+        relationships: [String: String],
+        includesPages: Bool = false
     ) {
         self.styles = styles
         self.listCounter = DOCXListCounter(numbering: numbering)
         self.relationships = relationships
+        self.pageTracker = includesPages
+            ? DOCXPageTracker(sections: DOCXSections.read(from: data, file: file))
+            : nil
         super.init(data: data, file: file)
     }
 
@@ -130,6 +183,14 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         case "pPr":
             // Paragraph properties container -- handled via child elements
             break
+        case "pageBreakBefore" where isInParagraph:
+            // The paragraph begins a page (PG07), unless it says val "off"
+            paragraphPageBreakBefore = DOCXOnOff.isOn(attributes["w:val"])
+        case "sectPr" where isInParagraph:
+            // A section's properties inside a paragraph's: the paragraph ends the section
+            paragraphEndsSection = true
+        case "del", "moveFrom":
+            deletionDepth += 1
         case "pStyle":
             // Paragraph style reference (e.g. "Heading1", "ListParagraph")
             currentParagraphStyle = attributes["w:val"] ?? ""
@@ -180,15 +241,31 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         case "br" where isInRun:
             // Keep breaks in their run; the paragraph has not received the
             // preceding run text yet, so appending there reverses their order.
-            runText += "\n"
+            if pageTracker != nil && deletionDepth == 0 && attributes["w:type"] == "page" {
+                // A page break starts a page where it stands (PG07). The
+                // words around it are kept apart by the marker, not a newline.
+                cutRun(joinsWords: true)
+            } else {
+                runText += "\n"
+            }
+        case "lastRenderedPageBreak" where isInRun && pageTracker != nil && deletionDepth == 0:
+            // Where Word's last layout put a page (PG07); no text of its own
+            cutRun(joinsWords: false)
         case "tab" where isInRun:
             runText += "\t"
         case "hyperlink":
+            // A page that began before the link begins before its words, not
+            // inside the label (PG07)
+            placePendingPage()
             // Start of a hyperlink -- capture the relationship ID for the URL
             isInHyperlink = true
             hyperlinkRelId = attributes["r:id"] ?? ""
             hyperlinkText = ""
         case "tbl":
+            // A table may begin a section, and a page pending when an
+            // outermost one begins is written before it (PG07)
+            pageTracker?.beginBlock()
+            writePendingPageBeforeTable()
             // Start of a table, at the top level or inside a cell
             tables.append(TableInProgress())
         case "tr":
@@ -258,9 +335,16 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         case "r":
             // End of a text run -- apply formatting and append to paragraph text
             endRun()
+        case "pPr":
+            // The paragraph's properties are complete: its style and its own
+            // page break are known (PG07)
+            startPageIfParagraphBreaksBefore()
+        case "del", "moveFrom":
+            deletionDepth = max(0, deletionDepth - 1)
         case "p":
             // End of a paragraph -- emit the accumulated text with proper formatting
             endParagraph()
+            endSectionIfParagraphEndedIt()
         case "hyperlink":
             // End of hyperlink -- emit Markdown link
             endHyperlink()
@@ -297,6 +381,12 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         listNumId = nil
         listLevel = 0
         paragraphOutlineLevel = nil
+        paragraphPageBreakBefore = nil
+        paragraphEndsSection = false
+        paragraphLeadingMarkers = []
+        dropsLeadingWhitespace = false
+        // The first paragraph of a section may begin a page (PG07)
+        pageTracker?.beginBlock()
     }
 
     /// The heading level of the paragraph being read: its own outline
@@ -322,6 +412,9 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             isInParagraph = false
             return
         }
+
+        // Pages that began at this paragraph are blocks before it (PG07)
+        writeLeadingPageMarkers()
 
         // Handle empty paragraphs (just add a blank line)
         guard !text.isEmpty else {
@@ -374,17 +467,28 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// line, and after a blank line four spaces there begin a code block,
     /// which is read verbatim, the backslashes that keep its characters
     /// literal read aloud with them. Indentation is never heard, so leaving
-    /// it out loses nothing.
+    /// it out loses nothing. A page marker (PG07) that follows a line break
+    /// is written at the end of the line before (`MarkdownMarkerWriter`), so
+    /// no line begins with one.
     private static func removingLineIndentation(_ text: String) -> String {
         var result = String.UnicodeScalarView()
         var atLineStart = false
-        for scalar in text.unicodeScalars {
+        var index = text.unicodeScalars.startIndex
+        let scalars = text.unicodeScalars
+        while index < scalars.endIndex {
+            let scalar = scalars[index]
             if atLineStart && (scalar == " " || scalar == "\t") {
+                // The whole indentation of this line is dropped.
+                while index < scalars.endIndex, scalars[index] == " " || scalars[index] == "\t" {
+                    index = scalars.index(after: index)
+                }
+                atLineStart = false
                 continue
             }
             // CommonMark ends a line at a carriage return as well.
             atLineStart = scalar == "\n" || scalar == "\r"
             result.append(scalar)
+            index = scalars.index(after: index)
         }
         return String(result)
     }
@@ -478,8 +582,81 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         guard isInRun else { return }
         isInRun = false
 
-        let text = runText
+        // A run with a page start inside it is written piece by piece, a
+        // page beginning after each piece (PG07). Any other run is one piece.
+        let pieces = runPieces
+        runPieces = []
+        for piece in pieces {
+            appendRunText(piece.text, isPartOfCutRun: true)
+            pageTracker?.startPage(joinsWords: piece.joinsWords)
+            if piece.joinsWords {
+                dropsLeadingWhitespace = true
+                separateWordsAroundPageBreak()
+            }
+        }
+        appendRunText(runText, isPartOfCutRun: !pieces.isEmpty)
+    }
+
+    /// Format `text`, a run or a piece of one, with the run's formatting and
+    /// append it to the paragraph (or to the hyperlink label being read).
+    /// A page that has begun is written first when `text` holds a word.
+    /// - Parameter isPartOfCutRun: whether `text` is one piece of a run cut at
+    ///   a page start. Its leading and trailing whitespace is then written
+    ///   outside the emphasis delimiters, which an emphasis that ends or
+    ///   begins in whitespace would not close.
+    private func appendRunText(_ piece: String, isPartOfCutRun: Bool) {
+        // After a page `w:br` the whitespace that begins the next words is
+        // dropped: one space separates the words on either side of the break,
+        // written with the marker (or in the link label), as the newline the
+        // break used to be read as a single space.
+        var text = piece
+        if dropsLeadingWhitespace {
+            text = String(text.drop(while: \.isWhitespace))
+            if !text.isEmpty {
+                dropsLeadingWhitespace = false
+            }
+        }
         guard !text.isEmpty else { return }
+
+        // A page that has begun is marked before the first word that follows
+        // it (PG07). Inside a hyperlink's label no marker is written: the
+        // page waits for the text after the link. A marker that joins words
+        // (a page `w:br`) brings the space between them, so the whitespace
+        // that begins this text is dropped.
+        if !isInHyperlink && pageTracker?.isPending == true && text.contains(where: { !$0.isWhitespace }),
+           placePendingPage() {
+            text = String(text.drop(while: \.isWhitespace))
+        }
+
+        let formatted = formattedRunText(text, keepingWhitespaceOutside: isPartOfCutRun)
+
+        // Hyperlink runs belong to the link label until </w:hyperlink> emits
+        // it once. Appending here and at link end duplicates the spoken text.
+        if isInHyperlink {
+            hyperlinkText += formatted
+        } else {
+            currentParagraphText += formatted
+        }
+        paragraphHasContent = true
+    }
+
+    /// `text`, a run's text or a piece of it, as Markdown: its characters
+    /// escaped, then wrapped in the run's emphasis and strikethrough.
+    /// - Parameter keepingWhitespaceOutside: write the whitespace at either
+    ///   end of `text` outside the delimiters (for the pieces of a run cut at
+    ///   a page start); text with only whitespace has no delimiters at all.
+    private func formattedRunText(_ text: String, keepingWhitespaceOutside: Bool) -> String {
+        var core = Substring(text)
+        var leading = Substring()
+        var trailing = Substring()
+        if keepingWhitespaceOutside {
+            leading = core.prefix(while: \.isWhitespace)
+            core = core.dropFirst(leading.count)
+            let trailingCount = core.reversed().prefix(while: \.isWhitespace).count
+            trailing = core.suffix(trailingCount)
+            core = core.dropLast(trailingCount)
+            guard !core.isEmpty else { return "\(leading)\(trailing)" }
+        }
 
         // The run's characters are written as Markdown literals, so each is
         // read exactly as written, as plain text and HTML are (TODO T02,
@@ -487,7 +664,7 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         // taken for emphasis, a heading, a list, or a link, and quotes,
         // dashes, and ellipses are not turned typographic. Line breaks and
         // tabs are not punctuation, so they pass through as they are.
-        var formatted = MarkdownLiteral.escaped(text)
+        var formatted = MarkdownLiteral.escaped(String(core))
 
         // Apply inline formatting markers.
         // Order matters: strikethrough wraps emphasis wraps bold.
@@ -502,15 +679,7 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         if runIsStrikethrough {
             formatted = "~~\(formatted)~~"
         }
-
-        // Hyperlink runs belong to the link label until </w:hyperlink> emits
-        // it once. Appending here and at link end duplicates the spoken text.
-        if isInHyperlink {
-            hyperlinkText += formatted
-        } else {
-            currentParagraphText += formatted
-        }
-        paragraphHasContent = true
+        return "\(leading)\(formatted)\(trailing)"
     }
 
     // MARK: - Hyperlink Processing
@@ -607,6 +776,7 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         let finished = tables.removeLast().table
         if tables.isEmpty {
             writeTable(finished)
+            writeTrailingTableMarker()
         } else {
             appendToTable(.table(finished))
         }
@@ -724,5 +894,130 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// trim trailing whitespace from lines
     private func normalizeWhitespace(_ text: String) -> String {
         ParserUtilities.normalizeMarkdownWhitespace(text)
+    }
+}
+
+// MARK: - Pages (PG07)
+
+/// Where each page begins, and the marker written there (`<!-- page: 12 -->`).
+/// A page start only sets a page pending (`DOCXPageTracker`); the marker is
+/// written before the next text that is not whitespace, so a page break with
+/// nothing after it, or merged with another, writes one marker or none. A
+/// marker adds no reading text and never begins a line (`MarkdownMarkerWriter`).
+extension DOCXToMarkdownConverter {
+
+    /// Cut the run being read at a page start inside it: the text read so far
+    /// becomes a piece of the run, and the rest begins a new one. The pieces
+    /// are written in order when the run ends (`endRun`), the page beginning
+    /// between them.
+    /// - Parameter joinsWords: whether the page start is a `w:br`, which stood
+    ///   between two words that must stay apart.
+    fileprivate func cutRun(joinsWords: Bool) {
+        runPieces.append(RunPiece(text: runText, joinsWords: joinsWords))
+        runText = ""
+    }
+
+    /// Separate the words around a page `w:br` just read, where no marker will
+    /// stand between them:
+    /// - in a heading, the break stays the line break it always was, which ends
+    ///   the heading line, so the reading text is unchanged (the marker for a
+    ///   page that begins in a heading is a block before the heading, and a
+    ///   heading line never holds a marker);
+    /// - inside a hyperlink's label, a space, since no marker is written there.
+    ///
+    /// Anywhere else the marker keeps the words apart (`placePendingPage`).
+    fileprivate func separateWordsAroundPageBreak() {
+        if paragraphHeadingLevel != nil {
+            if isInHyperlink {
+                hyperlinkText += "\n"
+            } else {
+                currentParagraphText += "\n"
+            }
+        } else if isInHyperlink, let last = hyperlinkText.last, !last.isWhitespace {
+            hyperlinkText += " "
+        }
+    }
+
+    /// The paragraph's properties are complete: it begins a page when its own
+    /// properties say `w:pageBreakBefore` (a `w:val` of "0", "false", or "off"
+    /// says not), or else when its style or one it is based on does.
+    fileprivate func startPageIfParagraphBreaksBefore() {
+        guard pageTracker != nil, isInParagraph else { return }
+        let breaksBefore = paragraphPageBreakBefore ?? styles.pageBreakBeforeStyles.contains(currentParagraphStyle)
+        if breaksBefore {
+            pageTracker?.startPage()
+        }
+    }
+
+    /// The paragraph that was just written ended its section when its
+    /// properties held the section's `w:sectPr`: the next block begins the
+    /// next section.
+    fileprivate func endSectionIfParagraphEndedIt() {
+        guard paragraphEndsSection else { return }
+        paragraphEndsSection = false
+        pageTracker?.endSection()
+    }
+
+    /// Write the marker of the page that has begun, if one has, in the place
+    /// the words about to be added belong to:
+    /// - in a table: kept for after the outermost table, whose Markdown cannot
+    ///   hold a comment between its rows;
+    /// - at the start of a paragraph, or anywhere in a heading: a block before
+    ///   the paragraph, written when it ends, since a heading line must hold
+    ///   only its words;
+    /// - in the middle of a paragraph: inline, right before the words.
+    ///
+    /// A page that began at a `w:br` also keeps its two neighbouring words apart.
+    /// - Returns: whether the page began at a `w:br`, so that the one space
+    ///   between its two words has been written (false when no page was pending).
+    @discardableResult
+    fileprivate func placePendingPage() -> Bool {
+        guard let page = pageTracker?.takePendingMarker() else { return false }
+        let marker = page.marker.markdown
+        if !tables.isEmpty {
+            tableTrailingMarker = marker
+        } else if paragraphHeadingLevel != nil || currentParagraphText.allSatisfy(\.isWhitespace) {
+            paragraphLeadingMarkers.append(marker)
+        } else {
+            MarkdownMarkerWriter.write(
+                marker, inline: true, keepingWordsApart: page.joinsWords, into: &currentParagraphText
+            )
+            return page.joinsWords
+        }
+        // The marker is not between the words, so the space that keeps them
+        // apart is written here. (A paragraph with no words yet needs none.)
+        if page.joinsWords, let last = currentParagraphText.last, !last.isWhitespace {
+            currentParagraphText += " "
+        }
+        return page.joinsWords
+    }
+
+    /// A page pending when an outermost table begins is a block before it. The
+    /// table ends any list, so the list is closed first.
+    fileprivate func writePendingPageBeforeTable() {
+        guard tables.isEmpty, let page = pageTracker?.takePendingMarker() else { return }
+        openListItems.removeAll()
+        MarkdownMarkerWriter.write(page.marker.markdown, inline: false, into: &markdown)
+    }
+
+    /// Write, as a block after the outermost table that has just been written,
+    /// the marker of the pages that began inside it.
+    fileprivate func writeTrailingTableMarker() {
+        guard let marker = tableTrailingMarker else { return }
+        tableTrailingMarker = nil
+        MarkdownMarkerWriter.write(marker, inline: false, into: &markdown)
+    }
+
+    /// Write, as blocks before the paragraph that has just ended, the markers
+    /// of the pages that began at it. A block cannot stand between the items
+    /// of a Markdown list, so any open list is closed first; that changes no
+    /// reading text.
+    fileprivate func writeLeadingPageMarkers() {
+        guard !paragraphLeadingMarkers.isEmpty else { return }
+        openListItems.removeAll()
+        for marker in paragraphLeadingMarkers {
+            MarkdownMarkerWriter.write(marker, inline: false, into: &markdown)
+        }
+        paragraphLeadingMarkers = []
     }
 }

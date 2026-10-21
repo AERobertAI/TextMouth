@@ -683,6 +683,9 @@ extension LibraryViewModel {
                 // Needs cache if missing or if the stored version is outdated
                 if !MarkdownCacheService.cacheExists(for: book) { return true }
                 if MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion) { return true }
+                // Its format gained pages since content.md was written, and
+                // the launch re-read is switched on (PG09).
+                if PageReaderVersions.isDueForPages(book) { return true }
                 return hasResizedTextCacheFile(book, isDataless: access.isDataless)
                     || hasRedatedTextCache(book, isDataless: access.isDataless)
             }
@@ -908,6 +911,10 @@ extension LibraryViewModel {
         } catch is BookTextEditPending {
             held.record(book.id)
             return nil
+        } catch is EditedTextKept {
+            // The user's edit stands (B12); its TEXT_EDIT_KEPT line was
+            // logged where it was met, and this is no failure.
+            return nil
         } catch {
             MarkdownCacheService.logGenerationFailure(error, for: book)
             return nil
@@ -941,6 +948,10 @@ extension LibraryViewModel {
                 // The package records this index with the current version.
                 var recovered = book
                 recovered.applyContentAnalysis(saved.index, cacheFormatVersion: currentVersion)
+                // The record owns the note of an edit taken (B12), as it
+                // owns the rest of the analysis the row takes from it.
+                recovered.editedText = saved.record.state.editedText
+                recovered.pageReaderVersion = saved.record.state.pageReaderVersion
                 // The record also holds the places that run moved, which
                 // the row may have missed if TextMouth stopped before its
                 // summary reached library.json; the row takes them where
@@ -959,9 +970,27 @@ extension LibraryViewModel {
             if let taken = try editSavedWhileClosed(of: book, access: access) {
                 return taken
             }
+            // content.md holds an edit the user made and TextMouth took
+            // (B12): the book's file is not read over it. The text is
+            // indexed as it is and committed with the current format once,
+            // so the batch does not visit the book again at the next launch.
+            if BookTextEditSessions.holdsTakenEdit(book, access: access) {
+                BookTextEditSessions.logEditedTextKept(of: book)
+                return keptText(of: book, access: access)
+            }
+            // A book behind only in its pages is read again without them
+            // first: text that differs from what its file gives was changed
+            // by hand, and is kept as it is (PG09).
+            if isBehindOnlyInPages(book), try textChangedSinceExtraction(of: book, access: access) {
+                return keptText(of: book, access: access)
+            }
         }
         var updatedBook = book
-        guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &updatedBook) else {
+        // Redo Text Extraction reads the book's file over an edit too (B12);
+        // no automatic pass does.
+        guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(
+            for: &updatedBook, replacingEditedText: force
+        ) else {
             return nil
         }
         // A file that went to the cloud while the cache was written may have
@@ -976,7 +1005,9 @@ extension LibraryViewModel {
                 for: updatedBook,
                 index: generated.content.contentIndex,
                 cacheFormatVersion: currentVersion,
-                movedPlaces: generated.movedPlaces
+                movedPlaces: generated.movedPlaces,
+                // The content.md just written has its format's pages (PG09).
+                pageReaderVersion: .some(generated.pageReaderVersion)
             ) else { return nil }
             return ContentAnalysisSummary(committed: committed, movedPlaces: generated.movedPlaces)
         } catch {
@@ -984,6 +1015,62 @@ extension LibraryViewModel {
             // a book whose new index could not be committed.
             return nil
         }
+    }
+
+    /// Whether `book`'s text cache is current but for its pages: written by
+    /// this build's cache format, and by an older page reader than its
+    /// format has, while the launch re-read is switched on (PG09,
+    /// `PageReaderVersions.isDueForPages`). Such a book is read again to
+    /// gain its pages; one behind in its cache format too is rebuilt as
+    /// every version bump rebuilds it.
+    nonisolated private static func isBehindOnlyInPages(_ book: Book) -> Bool {
+        PageReaderVersions.isDueForPages(book)
+            && !MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion)
+    }
+
+    /// Whether `book`'s content.md holds other reading text than its file
+    /// gives when read without pages (PG09): text changed by hand, or by an
+    /// older TextMouth on another Mac. A book whose file changed since
+    /// content.md was written, or whose content.md did, is not compared: it
+    /// is read again as any stale cache is.
+    /// - Throws: why content.md or the file could not be read.
+    nonisolated private static func textChangedSinceExtraction(of book: Book, access: MaintenanceFileAccess) throws -> Bool {
+        let cacheURL = MarkdownCacheService.cacheURL(for: book)
+        let sourceURL = book.bookFileURL
+        if let recorded = BookTextEditSessions.recordedTextCacheFingerprint(of: book, access: access) {
+            let hasher = access.hasher
+            let verification = try recorded.verify(
+                sourceURL: sourceURL,
+                sourceStamp: FileStamp(of: sourceURL),
+                cacheStamp: FileStamp(of: cacheURL),
+                cacheDigest: { try hasher.digestOfFile(cacheURL) },
+                hasher: hasher,
+                sourceIsDataless: access.isDataless(sourceURL),
+                cacheIsDataless: access.isDataless(cacheURL)
+            )
+            guard case .current = verification else { return false }
+        }
+        let kept = try access.read(cacheURL) {
+            try MarkdownCacheService.loadFromCache(for: book).chapters.map(\.text)
+        }
+        return try MarkdownCacheService.readingTextsWithoutPages(for: book) != kept
+    }
+
+    /// Settles a book whose content.md is kept as it is: its summary, once
+    /// the text is indexed and committed with the page reader its format
+    /// has now when the book was behind in it while the launch re-read is
+    /// switched on (`PAGES_SKIPPED_CHANGED_TEXT: <title>` is logged then),
+    /// or nil when nothing was committed. While the re-read is off, the
+    /// record keeps its own page reader, so a later re-read still checks it.
+    nonisolated private static func keptText(of book: Book, access: MaintenanceFileAccess) -> ContentAnalysisSummary? {
+        let behindInPages = PageReaderVersions.isDueForPages(book)
+        if behindInPages {
+            DiagnosticLog.event(.storage, "PAGES_SKIPPED_CHANGED_TEXT: \(book.title)")
+        }
+        // Nil leaves the record's own page reader, for a book not behind.
+        let stamp: String?? = behindInPages ? .some(PageReaderVersions.current(for: book.format)) : nil
+        return BookTextEditSessions.shared.settleKeptText(of: book, pageReaderVersion: stamp, access: access)
+            .map { ContentAnalysisSummary(committed: $0) }
     }
 
     /// Deletes the copies of an edit's old text that no session of this run

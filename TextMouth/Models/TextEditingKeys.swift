@@ -35,7 +35,8 @@ import Foundation
 /// The default shortcuts this leaves to a field. In the app's windows: Skip
 /// Forward and Skip Backward (Command-Right and Command-Left Arrow), Up One
 /// Level (Command-Up Arrow), Next Heading and Previous Heading
-/// (Option-Command-Down and Option-Command-Up Arrow), Move Book Down and
+/// (Option-Command-Down and Option-Command-Up Arrow), Next Page and Previous
+/// Page (Option-Command-Right and Option-Command-Left Arrow), Move Book Down and
 /// Move Book Up (Shift-Command-Down and Shift-Command-Up Arrow), Remove from
 /// Library (Command-Delete), and Select All (Command-A). In an audio
 /// editor's, whose window holds no text field: Go to Start and Go to End

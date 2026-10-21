@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dtbook PUBLIC "-//NISO//DTD dtbook 2005-3//EN" "http://www.daisy.org/z3986/2005/dtbook-2005-3.dtd">
+<dtbook xmlns="http://www.daisy.org/z3986/2005/dtbook/" version="2005-3" xml:lang="en">
+<head>
+ <meta name="dc:Title" content="Quay Pages"/>
+ <meta name="dc:Creator" content="A. Sample"/>
+ <meta name="dc:Identifier" content="textmouth-sample-dtbook-pages"/>
+ <meta name="dc:Language" content="en"/>
+ <meta name="dtb:uid" content="textmouth-sample-dtbook-pages"/>
+</head>
+<book>
+ <frontmatter>
+  <pagenum id="pii" page="front">ii</pagenum>
+  <doctitle>Quay Pages</doctitle>
+  <docauthor>A. Sample</docauthor>
+ </frontmatter>
+ <bodymatter>
+  <level1 id="ch1">
+   <pagenum id="p1" page="normal">1</pagenum>
+   <h1>The Seawall</h1>
+   <p>At low tide the harbour wall<pagenum id="p2" page="normal">2</pagenum>stood dry above the slipway.</p>
+   <p>Nets hang over the rail to dry before the tide turns.</p>
+   <pagenum id="p4" page="normal"/>
+   <p>The last boat is in by dusk.</p>
+  </level1>
+  <level1 id="ch2">
+   <h1>The Lamp Room</h1>
+   <p>A single lamp burns above the door all night.</p>
+   <pagenum id="p5" page="normal">5</pagenum>
+  </level1>
+ </bodymatter>
+</book>
+</dtbook>

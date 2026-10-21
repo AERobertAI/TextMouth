@@ -1,4 +1,4 @@
-# TextMouth document golden, format 1
+# TextMouth document golden, format 2
 file: docm__libreoffice-hello.docm
 format: docx
 title: libreoffice-hello
@@ -9,3 +9,4 @@ text length: 4
 text checksum: 91c9c3ff310a53f8
 first 300: adsf
 last 300: adsf
+page: 1 | 0:0 | adsf

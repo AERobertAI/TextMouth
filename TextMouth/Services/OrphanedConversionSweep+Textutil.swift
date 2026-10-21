@@ -9,7 +9,8 @@ import Foundation
 /// (`WatchedProcess` normally reaps it, but not when the app itself is
 /// killed), the `TextMouth-textutil-<UUID>` working folder that
 /// `TextutilDocumentReader` makes in the temporary directory, and the hidden
-/// `.<UUID>.textutil.html` file textutil writes in it. Killing the process
+/// `.<UUID>.textutil.html` file (or, for a page-break run, the
+/// `.<UUID>.textutil.txt` file) textutil writes in it. Killing the process
 /// and removing the folder (which holds the file) deals with all three.
 ///
 /// These are new functions beside the afconvert sweep's, in a file of their
@@ -45,14 +46,16 @@ extension OrphanedConversionSweep {
     }
 
     /// Whether `argument` names one of TextMouth's hidden textutil outputs: a
-    /// path whose last component starts with "." and ends with
-    /// `TextutilConverter.temporarySuffix`, with something before the suffix.
+    /// path whose last component starts with "." and ends with one of
+    /// `TextutilConverter.temporarySuffixes` (the HTML run's or the plain
+    /// text run's), with something before the suffix.
     static func isTextutilTemporaryOutputName(_ argument: String) -> Bool {
         let name = (argument as NSString).lastPathComponent
-        let suffix = TextutilConverter.temporarySuffix
-        // The suffix itself starts with ".", so a name equal to it would
-        // pass the first two tests with nothing in front.
-        return name.hasPrefix(".") && name.hasSuffix(suffix) && name.count > suffix.count
+        return TextutilConverter.temporarySuffixes.contains { suffix in
+            // The suffix itself starts with ".", so a name equal to it would
+            // pass the first two tests with nothing in front.
+            name.hasPrefix(".") && name.hasSuffix(suffix) && name.count > suffix.count
+        }
     }
 
     /// Whether the sweep must kill `process` as an orphaned textutil: it is

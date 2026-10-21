@@ -1,4 +1,4 @@
-# TextMouth document golden, format 1
+# TextMouth document golden, format 2
 file: dotm__libreoffice-autotext-dotm.dotm
 format: docx
 title: libreoffice-autotext-dotm
@@ -9,3 +9,4 @@ text length: 91
 text checksum: 1f40b8e869865d81
 first 300: This file contains AutoText entries which don’t have additional empty paragraph at the end.
 last 300: This file contains AutoText entries which don’t have additional empty paragraph at the end.
+page: 1 | 0:0 | This file contains AutoT

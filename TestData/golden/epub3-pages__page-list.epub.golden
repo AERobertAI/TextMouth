@@ -1,0 +1,21 @@
+# TextMouth document golden, format 2
+file: epub3-pages__page-list.epub
+format: epub
+title: Crates and Pages
+author: Odalys Brekke
+chapters: 2
+words: 61
+text length: 329
+text checksum: 21514d47bd21946a
+first 300: First Delivery\n\nThe crate came in on a Tuesday and sat by the door until somebody signed for it.\n\nOpening the Crate\n\nInside lay a brass telephone and a coil of cable.\n\nThe coil was wound tight and its label was smudged.\n\nSomeone had pencilled a note in the margin.\nSecond Delivery\n\nThe second crate h
+last 300: e in on a Tuesday and sat by the door until somebody signed for it.\n\nOpening the Crate\n\nInside lay a brass telephone and a coil of cable.\n\nThe coil was wound tight and its label was smudged.\n\nSomeone had pencilled a note in the margin.\nSecond Delivery\n\nThe second crate held only straw and a receipt.
+heading: 1 | First Delivery
+heading: 2 | Opening the Crate
+heading: 1 | Second Delivery
+page: i | 0:0 | First Delivery\n\nThe crat
+page: ii | 0:16 | The crate came in on a T
+page: 1 | 0:67 | until somebody signed fo
+page: 2 | 0:98 | Opening the Crate\n\nInsid
+page: 3 | 0:136 | telephone and a coil of 
+page: 3 | 0:168 | The coil was wound tight
+page: 4 | 1:17 | The second crate held on

@@ -1,0 +1,22 @@
+# TextMouth document golden, format 2
+file: docx__page-breaks.docx
+format: docx
+title: page-breaks
+author: Unknown
+chapters: 1
+words: 118
+text length: 623
+text checksum: 3b13c3d350b53edb
+first 300: Pages in a Word Document\n\nThe first page runs on and continues here on the second page.\n\nThe third page begins with a paragraph in a style that starts a page.\n\nThis paragraph ends with a hard page break.\n\nThe fourth page begins here, once, although two breaks mark it.\n\nThe first section ends on the 
+last 300: d section is numbered in lowercase Roman numerals, and this is page i.\n\nThis page ends here and page ii begins in the middle of a paragraph.\n\nThe third section restarts at page 1 in decimal numbers.\n\nRow one, cell A. Row one, cell B.\n\nRow two, cell A. Row two, cell B.\n\nA heading that\n\ncrosses a page
+heading: 1 | Pages in a Word Document
+heading: 1 | A heading that
+page: 1 | 0:0 | Pages in a Word Document
+page: 2 | 0:53 | continues here on the se
+page: 3 | 0:89 | The third page begins wi
+page: 4 | 0:205 | The fourth page begins h
+page: i | 0:314 | The second section is nu
+page: ii | 0:419 | page ii begins in the mi
+page: 1 | 0:465 | The third section restar
+page: 2 | 0:593 | A heading that\n\ncrosses 
+page: 3 | 0:593 | A heading that\n\ncrosses 

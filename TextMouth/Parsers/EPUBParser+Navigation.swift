@@ -46,6 +46,45 @@ extension EPUBParser {
         }
     }
 
+    /// One entry of the book's page list (PG05): the page's marker and the
+    /// place it names, an archive-relative document and the id of an element
+    /// in it (empty for the document's start).
+    private struct PageTarget {
+        var path: String
+        var fragment: String
+        var marker: MarkdownPageMarker
+    }
+
+    /// The page list's entries grouped by the document each names (PG05), and
+    /// whether the book has a page list at all, which decides if its
+    /// page-break elements are pages.
+    private struct PageTargets {
+        private var targetsByPath: [String: [PageTarget]]
+        let hasPageList: Bool
+
+        /// The page list `targets`, in the publisher's order.
+        init(_ targets: [PageTarget]) {
+            targetsByPath = Dictionary(grouping: targets, by: \.path)
+            hasPageList = !targets.isEmpty
+        }
+
+        /// What the converter needs to know of the document at `path`: the
+        /// pages named at its elements (the first entry for an id takes it),
+        /// and whether its page-break elements are pages.
+        func htmlTargets(in path: String) -> HTMLPageTargets {
+            var markers: [String: MarkdownPageMarker] = [:]
+            for target in targetsByPath[path] ?? [] where !target.fragment.isEmpty {
+                if markers[target.fragment] == nil { markers[target.fragment] = target.marker }
+            }
+            return HTMLPageTargets(markers: markers, pageBreaksArePages: !hasPageList)
+        }
+
+        /// The pages that begin the document at `path` itself, in list order.
+        func documentMarkers(in path: String) -> [MarkdownPageMarker] {
+            (targetsByPath[path] ?? []).filter { $0.fragment.isEmpty }.map(\.marker)
+        }
+    }
+
     /// One spine document as it was read, in spine order. Its DOM is gone:
     /// the document was converted to Markdown from the DOM its contents scan
     /// read, so it was parsed once (PERF19). DOMs stay short lived, so no
@@ -91,15 +130,25 @@ extension EPUBParser {
     /// text at all, such as a cover page whose image comes from its
     /// stylesheet, is counted as blank and is not a problem. Resources in
     /// the spine, such as images, are not chapters.
+    ///
+    /// With `includesPages` the book's pages are written as page markers
+    /// (PG05): those its page list names, or else its page-break elements,
+    /// whose own text is then not read. Without it the chapters are exactly
+    /// what cache format 3.0.7 made.
     /// - Throws: `EPUBParserError.noReadableChapters` with the report when
     ///   no chapter holds text, since an empty book is not a reading.
     static func preparedChapters(
         archive: IndexedArchive,
         opfPath: String,
-        opfData: OPFData
+        opfData: OPFData,
+        includesPages: Bool
     ) throws -> (chapters: [PreparedChapter], report: ExtractionReport) {
         // Prefer EPUB 3 navigation, then the declared NCX, then visible contents.
         var navigation = NavigationTargets(readNavigation(archive: archive, opfPath: opfPath, opfData: opfData))
+        // The page list is read only when pages are wanted.
+        let pageTargets = PageTargets(
+            includesPages ? readPageList(archive: archive, opfPath: opfPath, opfData: opfData) : []
+        )
         var documents: [SpineDocument] = []
         var report = ExtractionReport(container: bookNameInMessages)
 
@@ -124,7 +173,10 @@ extension EPUBParser {
                 )
                 continue
             }
-            switch readSpineDocument(archive: archive, path: path, number: number, navigation: &navigation) {
+            switch readSpineDocument(
+                archive: archive, path: path, number: number, navigation: &navigation,
+                pages: pageTargets.htmlTargets(in: path), includesPages: includesPages
+            ) {
             case .document(let document):
                 documents.append(document)
             case .omitted(let reason):
@@ -136,9 +188,13 @@ extension EPUBParser {
         for document in documents {
             do {
                 let targets = navigation.targets(in: document.path)
-                let markdown = try finishedMarkdown(of: document, targets: targets, archive: archive)
+                let markdown = try finishedMarkdown(
+                    of: document, targets: targets, archive: archive,
+                    pages: pageTargets.htmlTargets(in: document.path), includesPages: includesPages
+                )
                 guard let chapter = try preparedChapter(
-                    from: document, markdown: markdown, targets: targets, bookTitle: opfData.title
+                    from: document, markdown: markdown, targets: targets, bookTitle: opfData.title,
+                    startPages: pageTargets.documentMarkers(in: document.path)
                 ) else {
                     report.blankChapterCount += 1
                     continue
@@ -185,7 +241,7 @@ extension EPUBParser {
     /// `navigation`, and convert it with every destination `navigation`
     /// then names in it; or say why it cannot be read: it is missing from
     /// the archive, its data cannot be decoded, or its markup cannot be
-    /// parsed.
+    /// parsed. `pages` names the pages that begin at its elements.
     ///
     /// The conversion reads the DOM the contents scan read, so each document
     /// is parsed once (PERF19); only a contents section later in the reading
@@ -195,7 +251,9 @@ extension EPUBParser {
         archive: IndexedArchive,
         path: String,
         number: Int,
-        navigation: inout NavigationTargets
+        navigation: inout NavigationTargets,
+        pages: HTMLPageTargets,
+        includesPages: Bool
     ) -> SpineRead {
         guard let entry = archive[path] else { return .omitted(.missingMember) }
         guard let html = try? text(of: entry, in: archive.archive) else { return .omitted(.unreadableMember) }
@@ -225,7 +283,8 @@ extension EPUBParser {
         let conversion = Result {
             try HTMLToMarkdownConverter.convert(
                 document: doc, readingFlow: readingFlow,
-                stripDuplicateNavigation: true, headingTargets: headingTargets(among: targets)
+                stripDuplicateNavigation: true, headingTargets: headingTargets(among: targets),
+                pages: pages, includesPages: includesPages
             )
         }
         return .document(SpineDocument(
@@ -244,7 +303,9 @@ extension EPUBParser {
     private static func finishedMarkdown(
         of document: SpineDocument,
         targets: [NavigationTarget],
-        archive: IndexedArchive
+        archive: IndexedArchive,
+        pages: HTMLPageTargets,
+        includesPages: Bool
     ) throws -> String {
         guard fragmentCount(of: targets) > document.convertedFragmentCount,
               let entry = archive[document.path],
@@ -252,7 +313,8 @@ extension EPUBParser {
             return try document.conversion.get()
         }
         return try HTMLToMarkdownConverter.convert(
-            html, stripDuplicateNavigation: true, headingTargets: headingTargets(among: targets)
+            html, stripDuplicateNavigation: true, headingTargets: headingTargets(among: targets),
+            pages: pages, includesPages: includesPages
         )
     }
 
@@ -270,15 +332,25 @@ extension EPUBParser {
     /// Make one converted spine document a chapter whose headings keep their
     /// navigation labels and targets, or nil when it holds no text at all.
     /// `markdown` is the document converted with `targets`; `bookTitle` is
-    /// the package title, which never names a chapter.
+    /// the package title, which never names a chapter. `startPages` are the
+    /// pages the book's page list begins at the document itself (PG05),
+    /// written first in its Markdown; a document that holds no text is blank
+    /// whatever page markers it holds, and its pages go with it.
     private static func preparedChapter(
         from document: SpineDocument,
         markdown converted: String,
         targets: [NavigationTarget],
-        bookTitle: String
+        bookTitle: String,
+        startPages: [MarkdownPageMarker]
     ) throws -> PreparedChapter? {
-        var markdown = converted
-        guard !markdown.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        guard !withoutPageMarkers(converted).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        // Each start page is a block of its own at the very start, which names
+        // the same place as the block after it (MarkdownMarkerWriter).
+        var markdown = ""
+        for marker in startPages {
+            MarkdownMarkerWriter.write(marker.markdown, inline: false, into: &markdown)
+        }
+        markdown += converted
 
         let documentTitle = normalizedLabel(document.title)
         let fallbackTitle = targets.first(where: { $0.fragment.isEmpty })?.heading.text
@@ -324,16 +396,10 @@ extension EPUBParser {
             }
         }
 
-        let ncx = opfData.spineTOCID.flatMap { opfData.manifest[$0] }
-            ?? manifest.first(where: { $0.value.mediaType.contains("ncx") })?.value
-        if let ncx {
-            let path = ParserUtilities.resolvedPackagePath(ncx.href, relativeTo: opfPath, preserveFragment: false)
-            if let xml = try? extractString(archive: archive, path: path),
-               let doc = try? XMLDocument(xmlString: xml),
-               let maps = try? doc.nodes(forXPath: "//*[local-name()='navMap']") {
-                for map in maps {
-                    result += ncxTargets(in: map, relativeTo: path, level: 1)
-                }
+        if let (path, doc) = readNCX(archive: archive, opfPath: opfPath, opfData: opfData),
+           let maps = try? doc.nodes(forXPath: "//*[local-name()='navMap']") {
+            for map in maps {
+                result += ncxTargets(in: map, relativeTo: path, level: 1)
             }
         }
 
@@ -353,6 +419,107 @@ extension EPUBParser {
         }
         return result
     }
+
+    /// The EPUB 2 NCX the package declares through the spine's `toc` attribute,
+    /// or else its first manifest item of an NCX media type, with its path
+    /// inside the archive; nil when there is none or it cannot be read.
+    private static func readNCX(
+        archive: IndexedArchive,
+        opfPath: String,
+        opfData: OPFData
+    ) -> (path: String, document: XMLDocument)? {
+        let ncx = opfData.spineTOCID.flatMap { opfData.manifest[$0] }
+            ?? opfData.manifest.sorted { $0.key < $1.key }.first(where: { $0.value.mediaType.contains("ncx") })?.value
+        guard let ncx else { return nil }
+        let path = ParserUtilities.resolvedPackagePath(ncx.href, relativeTo: opfPath, preserveFragment: false)
+        guard let xml = try? extractString(archive: archive, path: path),
+              let doc = try? XMLDocument(xmlString: xml) else { return nil }
+        return (path, doc)
+    }
+
+    // MARK: - Page Lists
+
+    /// The book's page list (PG05), in the publisher's order: the EPUB 3
+    /// navigation document's `page-list` navigation, else the EPUB 2 NCX's
+    /// `pageList`. Empty when the book has none, or when none of its entries
+    /// names a place (a web link, or an entry with no `href`).
+    private static func readPageList(archive: IndexedArchive, opfPath: String, opfData: OPFData) -> [PageTarget] {
+        var targets: [PageTarget] = []
+        // The entries read so far, which numbers an entry that has no label.
+        var entryCount = 0
+        let manifest = opfData.manifest.sorted { $0.key < $1.key }
+        for (_, item) in manifest where item.properties.split(whereSeparator: \.isWhitespace).contains("nav") {
+            let path = ParserUtilities.resolvedPackagePath(item.href, relativeTo: opfPath, preserveFragment: false)
+            guard let html = try? extractString(archive: archive, path: path),
+                  let doc = try? SwiftSoup.parse(html) else { continue }
+            for list in pageListContainers(in: doc) {
+                for link in elements(in: list, pruning: { _ in false }) where link.tagName() == "a" {
+                    guard link.hasAttr("href") else { continue }
+                    entryCount += 1
+                    let href = (try? link.attr("href")) ?? ""
+                    let label = (try? link.text()) ?? ""
+                    if let target = pageTarget(href: href, label: label, ordinal: entryCount, relativeTo: path) {
+                        targets.append(target)
+                    }
+                }
+            }
+        }
+        if !targets.isEmpty { return targets }
+
+        // No EPUB 3 page list: the NCX's pageList, each pageTarget labelled by
+        // its navLabel, else its value.
+        entryCount = 0
+        guard let (path, doc) = readNCX(archive: archive, opfPath: opfPath, opfData: opfData),
+              let entries = try? doc.nodes(
+                forXPath: "//*[local-name()='pageList']/*[local-name()='pageTarget']"
+              ) else { return [] }
+        for entry in entries.compactMap({ $0 as? XMLElement }) {
+            entryCount += 1
+            let text = (try? entry.nodes(forXPath: "*[local-name()='navLabel']/*[local-name()='text']"))?.first?.stringValue ?? ""
+            let label = text.contains(where: { !$0.isWhitespace }) ? text : (entry.attribute(forName: "value")?.stringValue ?? "")
+            let content = (try? entry.nodes(forXPath: "*[local-name()='content']"))?.first as? XMLElement
+            if let href = content?.attribute(forName: "src")?.stringValue,
+               let target = pageTarget(href: href, label: label, ordinal: entryCount, relativeTo: path) {
+                targets.append(target)
+            }
+        }
+        return targets
+    }
+
+    /// The page lists inside `node`, outermost only: a navigation typed
+    /// `page-list` is collected whole, so a list nested inside another is
+    /// not read twice.
+    private static func pageListContainers(in node: Node) -> [Element] {
+        var lists: [Element] = []
+        for element in node.getChildNodes().compactMap({ $0 as? Element }) {
+            if PublicationSemantics.isPageList(element) {
+                lists.append(element)
+            } else {
+                lists += pageListContainers(in: element)
+            }
+        }
+        return lists
+    }
+
+    /// One page list entry: the place `href` names (resolved as a TOC entry's
+    /// is) and a marker labelled `label`, or the entry's `ordinal`, its
+    /// 1-based position in the list, when the label is empty.
+    private static func pageTarget(href: String, label: String, ordinal: Int, relativeTo path: String) -> PageTarget? {
+        guard let destination = resolvedDestination(href: href, relativeTo: path) else { return nil }
+        return PageTarget(
+            path: destination.path,
+            fragment: destination.fragment,
+            marker: MarkdownPageMarker(label: label, ordinal: ordinal)
+        )
+    }
+
+    /// `markdown` without its page markers, for judging whether a document
+    /// holds any text.
+    private static func withoutPageMarkers(_ markdown: String) -> String {
+        markdown.replacingOccurrences(of: "<!-- page: [^<>]+ -->", with: "", options: .regularExpression)
+    }
+
+    // MARK: - Tables of Contents
 
     /// EPUB 3 TOCs are `nav` elements typed `toc` (or given the `doc-toc` role).
     /// They remain navigation data even when hidden from the rendered page
@@ -449,16 +616,26 @@ extension EPUBParser {
     /// filename delimiters distinct from the URL's query and fragment syntax.
     private static func navigationTarget(href: String, label: String, level: Int, relativeTo path: String) -> NavigationTarget? {
         let label = normalizedLabel(label)
+        guard !label.isEmpty, let destination = resolvedDestination(href: href, relativeTo: path) else { return nil }
+        return NavigationTarget(
+            path: destination.path,
+            fragment: destination.fragment,
+            heading: MarkdownHeadingAnnotation(level: min(6, max(1, level)), text: label)
+        )
+    }
+
+    /// The archive path and fragment (percent-decoded) a local `href` names,
+    /// relative to the document at `path`; nil for an empty `href` or a web or
+    /// mail link. Shared by TOC entries and page list entries (PG05).
+    private static func resolvedDestination(href: String, relativeTo path: String) -> (path: String, fragment: String)? {
         let href = href.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !label.isEmpty, !href.isEmpty, !href.hasPrefix("//"),
-              URLComponents(string: href)?.scheme == nil else { return nil }
+        guard !href.isEmpty, !href.hasPrefix("//"), URLComponents(string: href)?.scheme == nil else { return nil }
         let parts = href.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false)
         let file = String(parts[0]).components(separatedBy: "?")[0]
         let fragment = parts.count > 1 ? String(parts[1]) : ""
-        return NavigationTarget(
-            path: file.isEmpty ? path : ParserUtilities.resolvedPackagePath(file, relativeTo: path, preserveFragment: false),
-            fragment: fragment.removingPercentEncoding ?? fragment,
-            heading: MarkdownHeadingAnnotation(level: min(6, max(1, level)), text: label)
+        return (
+            file.isEmpty ? path : ParserUtilities.resolvedPackagePath(file, relativeTo: path, preserveFragment: false),
+            fragment.removingPercentEncoding ?? fragment
         )
     }
 

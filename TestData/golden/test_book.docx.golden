@@ -1,4 +1,4 @@
-# TextMouth document golden, format 1
+# TextMouth document golden, format 2
 file: test_book.docx
 format: docx
 title: The Lighthouse Operator's Handbook
@@ -19,3 +19,4 @@ heading: 2 | Reading the Barometer
 heading: 3 | Barometer Readings Reference
 heading: 1 | Chapter 3: Communication
 heading: 2 | Signal Flag Meanings
+page: 1 | 0:0 | The Lighthouse Operator'

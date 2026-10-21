@@ -15,6 +15,23 @@ struct DOCXStyles {
 
     /// Style IDs that represent numbered list paragraphs
     var numberedListStyles: Set<String> = []
+
+    /// Style IDs whose paragraphs begin a new page (PG07): the style's own
+    /// properties hold `w:pageBreakBefore`, or the style it is based on
+    /// (`w:basedOn`) does and it does not turn that off with a `w:val` of
+    /// "0", "false", or "off".
+    var pageBreakBeforeStyles: Set<String> = []
+}
+
+/// Whether the `w:val` of an on/off property (`w:pageBreakBefore`) turns it
+/// on. A property with no `w:val` is on; "0", "false", and "off" turn it off
+/// (ISO/IEC 29500-1, ST_OnOff), and every other value leaves it on.
+enum DOCXOnOff {
+    /// The state `value`, the property's `w:val` attribute (nil when absent), gives.
+    static func isOn(_ value: String?) -> Bool {
+        guard let value else { return true }
+        return !["0", "false", "off"].contains(value)
+    }
 }
 
 /// What an explicit outline level (`w:outlineLvl`) says about a paragraph.
@@ -64,6 +81,10 @@ class DOCXStylesParser: DOCXSAXParser {
         var ownHeading: OwnHeading?
         /// The style it is based on (`w:basedOn`), if any.
         var basedOn: String?
+        /// What the style's own properties say about starting a page
+        /// (`w:pageBreakBefore`); nil when they say nothing, so the style it
+        /// is based on decides.
+        var ownPageBreakBefore: Bool?
     }
 
     /// Every style declared in the part, by style ID.
@@ -75,6 +96,12 @@ class DOCXStylesParser: DOCXSAXParser {
     private var currentBasedOn: String?
     private var inStyle = false
     private var currentOutlineLevel: DOCXOutlineLevel?
+    private var currentPageBreakBefore: Bool?
+
+    /// How many records of tracked formatting changes (`w:pPrChange` and the
+    /// like) enclose the element being read. Their properties are those from
+    /// before the change, not the style's own.
+    private var trackedChangeDepth = 0
 
     /// Read every style definition in the part.
     /// - Throws: `DOCXParserError.malformedXML` naming the part when it is
@@ -83,6 +110,7 @@ class DOCXStylesParser: DOCXSAXParser {
     func parse() throws -> DOCXStyles {
         try parseDocument()
         styles.headingLevels = Self.headingLevels(of: declarations)
+        styles.pageBreakBeforeStyles = Self.pageBreakBeforeStyles(of: declarations)
         return styles
     }
 
@@ -90,6 +118,9 @@ class DOCXStylesParser: DOCXSAXParser {
                 namespaceURI: String?, qualifiedName: String?,
                 attributes: [String: String] = [:]) {
         let localName = ParserUtilities.stripNamespacePrefix(elementName)
+        if localName.hasSuffix("Change") {
+            trackedChangeDepth += 1
+        }
 
         switch localName {
         case "style":
@@ -98,7 +129,11 @@ class DOCXStylesParser: DOCXSAXParser {
             currentStyleName = ""
             currentBasedOn = nil
             currentOutlineLevel = nil
+            currentPageBreakBefore = nil
             inStyle = true
+        case "pageBreakBefore" where inStyle && trackedChangeDepth == 0:
+            // The style's paragraphs begin a page (PG07), unless turned off
+            currentPageBreakBefore = DOCXOnOff.isOn(attributes["w:val"])
         case "name" where inStyle:
             // The human-readable style name (e.g. "heading 1", "Heading 2")
             currentStyleName = attributes["w:val"] ?? ""
@@ -118,12 +153,19 @@ class DOCXStylesParser: DOCXSAXParser {
     func parser(_ parser: XMLParser, didEndElement elementName: String,
                 namespaceURI: String?, qualifiedName: String?) {
         let localName = ParserUtilities.stripNamespacePrefix(elementName)
+        if localName.hasSuffix("Change") {
+            trackedChangeDepth = max(0, trackedChangeDepth - 1)
+        }
 
         // A style without an ID cannot be named by any paragraph. Recorded
         // under the empty ID, it would give its role to every paragraph
         // that names no style.
         if localName == "style" && inStyle && !currentStyleId.isEmpty {
-            declarations[currentStyleId] = Declaration(ownHeading: ownHeading(), basedOn: currentBasedOn)
+            declarations[currentStyleId] = Declaration(
+                ownHeading: ownHeading(),
+                basedOn: currentBasedOn,
+                ownPageBreakBefore: currentPageBreakBefore
+            )
 
             // Detect list styles by name pattern (e.g. "ListBullet", "List Number")
             let nameLower = currentStyleName.lowercased()
@@ -184,38 +226,63 @@ class DOCXStylesParser: DOCXSAXParser {
     /// followed up the `w:basedOn` chain to the first style that says
     /// whether it is a heading. A chain that loops back on itself, or
     /// reaches a style the part does not define, gives no level.
+    private static func headingLevels(of declarations: [String: Declaration]) -> [String: Int] {
+        inherited(through: declarations, own: \.ownHeading).compactMapValues { heading in
+            if case .level(let level) = heading {
+                return level
+            }
+            return nil
+        }
+    }
+
+    /// The styles that begin a page (PG07): those whose own properties
+    /// hold `w:pageBreakBefore`, or, when they say nothing, whose
+    /// `w:basedOn` chain does at its first style that says anything. A style
+    /// that turns the property off (`w:val` "0", "false", or "off") ends the
+    /// search with no page break, whatever the styles behind it say.
+    private static func pageBreakBeforeStyles(of declarations: [String: Declaration]) -> Set<String> {
+        Set(inherited(through: declarations, own: \.ownPageBreakBefore).filter(\.value).keys)
+    }
+
+    /// What every declared style answers for a property that a style may
+    /// state itself (`own` gives that statement, or nil for a style that
+    /// says nothing) and otherwise takes from the style it is based on,
+    /// followed up the `w:basedOn` chain to the first style that states it.
+    /// A style whose chain states nothing, loops back on itself, or reaches
+    /// a style the part does not define is left out of the result.
     ///
     /// Each chain is walked once, in a loop rather than by recursion, and
     /// every style it passes is resolved with it, so a chain thousands of
     /// styles long neither exhausts the stack nor costs more than linear
     /// time over all the styles.
-    private static func headingLevels(of declarations: [String: Declaration]) -> [String: Int] {
-        // Each style's level once known; nil for a style known to be no heading.
-        var resolved: [String: Int?] = [:]
+    private static func inherited<Answer>(
+        through declarations: [String: Declaration],
+        own: (Declaration) -> Answer?
+    ) -> [String: Answer] {
+        // Each style's answer once known; nil for a style known to have none.
+        var resolved: [String: Answer?] = [:]
         for styleId in declarations.keys {
             var chain: [String] = []
             var visited: Set<String> = []
-            var level: Int?
+            var answer: Answer?
             var next: String? = styleId
             while let current = next {
                 if let known = resolved[current] {
-                    level = known
+                    answer = known
                     break
                 }
-                // A style met twice closes a loop: nothing on it says it is
-                // a heading. An undefined style says nothing either.
+                // A style met twice closes a loop: nothing on it states the
+                // property. An undefined style says nothing either.
                 guard visited.insert(current).inserted, let declaration = declarations[current] else { break }
                 chain.append(current)
-                if let own = declaration.ownHeading {
-                    if case .level(let ownLevel) = own {
-                        level = ownLevel
-                    }
+                if let stated = own(declaration) {
+                    answer = stated
                     break
                 }
                 next = declaration.basedOn
             }
             for passed in chain {
-                resolved[passed] = level
+                resolved[passed] = answer
             }
         }
         return resolved.compactMapValues { $0 }

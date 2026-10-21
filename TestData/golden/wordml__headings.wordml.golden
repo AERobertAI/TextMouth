@@ -1,4 +1,4 @@
-# TextMouth document golden, format 1
+# TextMouth document golden, format 2
 file: wordml__headings.wordml
 macOS: 26.3
 format: wordml
@@ -15,3 +15,4 @@ heading: 2 | Morning Tides
 heading: 2 | Timetable
 heading: 3 | Boat
 heading: 3 | Departs
+page: 1 | 0:0 | Harbour Notes\n\nThe ferry

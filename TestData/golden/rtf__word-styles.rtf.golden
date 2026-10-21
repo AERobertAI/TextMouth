@@ -1,4 +1,4 @@
-# TextMouth document golden, format 1
+# TextMouth document golden, format 2
 file: rtf__word-styles.rtf
 macOS: 26.3
 format: rtf
@@ -14,3 +14,4 @@ heading: 1 | Chapter One: The Quay
 heading: 2 | Morning Tides
 heading: 3 | A paragraph with outline level 3 but no heading style
 heading: 3 | A third-level heading
+page: 1 | 0:0 | Chapter One: The Quay\n\nT

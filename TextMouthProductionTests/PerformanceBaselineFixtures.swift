@@ -77,6 +77,9 @@ enum PerformanceFixtures {
             }
             book.filePath = source.path
             book.cacheFormatVersion = MarkdownCacheService.currentCacheVersion
+            // Written by this build's page reader too (PG09), so launch
+            // finds nothing to read again for pages.
+            book.pageReaderVersion = PageReaderVersions.current(for: book.format)
             book.contentIndexVersion = BookContentIndex.currentVersion
             book.textCacheFingerprint = TextCacheFingerprint(source: sourcePrint, cache: cachePrint)
             try book.saveBookInfoThrowing()

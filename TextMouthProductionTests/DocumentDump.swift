@@ -15,17 +15,21 @@ import Foundation
 ///
 /// The golden format is line oriented, LF, UTF-8, with a final newline:
 ///
-///     # TextMouth document golden, format 1
+///     # TextMouth document golden, format 2
 ///     file: alice.epub
 ///     format: epub
 ///     title: Alice's Adventures in Wonderland
 ///     ...
 ///     heading: 1 | Down the Rabbit-Hole
+///     page: 12 | 3:1540 | The Queen turned crimson
 ///     track: Chapter 1 | audio/ch1.mp3 | 0.00-61.50
 ///
 /// Every value is on one line: backslash, newline, carriage return, and tab
 /// are written as `\\`, `\n`, `\r`, and `\t`. Heading character offsets are
 /// not recorded: the text checksum covers the text and where everything lies.
+/// Page offsets are recorded (chapter, then UTF-16 offset, with the words the
+/// page opens with), because pages add no text for the checksum to cover
+/// (PG01). The page lines are what this format added to the first.
 struct DocumentDump: Equatable {
 
     // MARK: - Parts
@@ -34,6 +38,16 @@ struct DocumentDump: Equatable {
     struct HeadingLine: Equatable {
         var level: Int
         var text: String
+    }
+
+    /// One page of the book (PG01): its label, where it begins (chapter and
+    /// UTF-16 offset into that chapter's reading text), and the words it
+    /// opens with, so a moved page is named by what is there now.
+    struct PageLine: Equatable {
+        var label: String
+        var chapterIndex: Int
+        var characterOffset: Int
+        var opening: String
     }
 
     /// One stretch of one audio file, with the title of the section that
@@ -48,10 +62,14 @@ struct DocumentDump: Equatable {
     // MARK: - Fields
 
     /// The first line of every golden; changes only when the format does.
-    static let header = "# TextMouth document golden, format 1"
+    static let header = "# TextMouth document golden, format 2"
 
     /// How many characters (Unicode scalars) each sample holds.
     static let sampleLength = 300
+
+    /// How many characters (Unicode scalars) of the reading text a page's
+    /// line shows from the page's offset.
+    static let openingLength = 24
 
     var fileName: String
     var format: String
@@ -75,6 +93,8 @@ struct DocumentDump: Equatable {
     /// The audio length in seconds, nil for a book with no audio.
     var audioDuration: Double?
     var tracks: [Track]
+    /// The book's pages in book order (PG01); empty for a book without them.
+    var pages: [PageLine]
     /// "major.minor" of the macOS that made the dump; recorded for PDFs only,
     /// whose text PDFKit and Vision produce and change with macOS.
     var macOSVersion: String?
@@ -87,7 +107,7 @@ struct DocumentDump: Equatable {
         chapterCount: Int, wordCount: Int, textLength: Int, textChecksum: String,
         firstSample: String, lastSample: String, reportMessage: String? = nil,
         headings: [HeadingLine] = [], audioDuration: Double? = nil, tracks: [Track] = [],
-        macOSVersion: String? = nil
+        macOSVersion: String? = nil, pages: [PageLine] = []
     ) {
         self.fileName = fileName
         self.format = format
@@ -104,6 +124,7 @@ struct DocumentDump: Equatable {
         self.audioDuration = audioDuration
         self.tracks = tracks
         self.macOSVersion = macOSVersion
+        self.pages = pages
     }
 
     /// The dump of an imported book, as a reader would open it.
@@ -136,8 +157,24 @@ struct DocumentDump: Equatable {
             tracks: segments.flatMap { segment in
                 segment.clips.map { Track(title: segment.title, file: $0.file, start: $0.startTime, end: $0.endTime) }
             },
-            macOSVersion: macOSVersion
+            macOSVersion: macOSVersion,
+            pages: opened.content.pages.breaks.map { page in
+                PageLine(
+                    label: page.label, chapterIndex: page.chapterIndex, characterOffset: page.characterOffset,
+                    opening: Self.opening(of: page, in: chapters)
+                )
+            }
         )
+    }
+
+    /// The first `openingLength` Unicode scalars of the chapter's reading text
+    /// from the page's offset (found through UTF-16, which clamps it); empty
+    /// when the page names a chapter the book does not have.
+    private static func opening(of page: PageBreak, in chapters: [Chapter]) -> String {
+        guard chapters.indices.contains(page.chapterIndex) else { return "" }
+        let text = chapters[page.chapterIndex].text
+        let start = text.index(atUTF16Offset: page.characterOffset)
+        return String(String.UnicodeScalarView(text.unicodeScalars[start...].prefix(openingLength)))
     }
 
     /// "major.minor" of the macOS this process runs on.
@@ -175,7 +212,7 @@ struct DocumentDump: Equatable {
     }
 
     /// The golden format: the header, `key: value` lines in a fixed order,
-    /// then the headings and the tracks.
+    /// then the headings, the pages, and the tracks.
     func rendered() -> String {
         var lines = [Self.header]
         lines.append(Self.line("file", Self.escaped(fileName)))
@@ -194,6 +231,11 @@ struct DocumentDump: Equatable {
         for heading in headings {
             lines.append(Self.line("heading", "\(heading.level) | \(Self.escaped(heading.text))"))
         }
+        for page in pages {
+            lines.append(Self.line(
+                "page", "\(Self.escaped(page.label)) | \(page.chapterIndex):\(page.characterOffset) | \(Self.escaped(page.opening))"
+            ))
+        }
         for track in tracks {
             lines.append(Self.line(
                 "track", "\(Self.escaped(track.title)) | \(Self.escaped(track.file)) | \(Self.seconds(track.start))-\(Self.seconds(track.end))"
@@ -205,11 +247,13 @@ struct DocumentDump: Equatable {
     // MARK: - Reading a Golden
 
     /// A golden's lines, split into the scalar `key: value` pairs in file
-    /// order, the repeated `heading` values, and the repeated `track` values.
+    /// order, the repeated `heading` values, the repeated `page` values, and
+    /// the repeated `track` values.
     private struct Parsed {
         var header: String?
         var scalars: [(key: String, value: String)] = []
         var headings: [String] = []
+        var pages: [String] = []
         var tracks: [String] = []
 
         func value(of key: String) -> String? {
@@ -234,6 +278,7 @@ struct DocumentDump: Equatable {
             if value.hasPrefix(" ") { value.removeFirst() }
             switch key {
             case "heading": parsed.headings.append(value)
+            case "page": parsed.pages.append(value)
             case "track": parsed.tracks.append(value)
             default: parsed.scalars.append((key, value))
             }
@@ -271,7 +316,7 @@ struct DocumentDump: Equatable {
 
     /// Every way `actual` differs from `golden`, one sentence each, in an
     /// order a reader can follow: the scalar lines by key, then the headings,
-    /// then the tracks. Lines are compared by key, not by position, so a
+    /// the pages, and the tracks. Lines are compared by key, not by position, so a
     /// line that appears or disappears does not shift the rest. Empty when
     /// the two say the same.
     static func differences(golden: String, actual: String) -> [String] {
@@ -296,6 +341,7 @@ struct DocumentDump: Equatable {
         }
 
         result += listDifferences(noun: "heading", golden: old.headings, actual: new.headings)
+        result += listDifferences(noun: "page", golden: old.pages, actual: new.pages)
         result += listDifferences(noun: "track", golden: old.tracks, actual: new.tracks)
         return result
     }
@@ -323,7 +369,7 @@ struct DocumentDump: Equatable {
         }
     }
 
-    /// The sentences for a repeated line (`heading` or `track`): how many
+    /// The sentences for a repeated line (`heading`, `page`, or `track`): how many
     /// the golden and the actual have, then each position that differs,
     /// at most `listDifferenceLimit`, then how many more there are.
     private static func listDifferences(noun: String, golden: [String], actual: [String]) -> [String] {

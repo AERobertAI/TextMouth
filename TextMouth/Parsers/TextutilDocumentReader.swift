@@ -66,8 +66,13 @@ enum TextutilDocumentReader {
     /// The Markdown of the book at `url`, read as `bookFormat`
     /// (`extractMarkdown(from:bookFormat:)`), with the title and author its
     /// HTML names. The document is converted once.
-    static func extract(from url: URL, bookFormat: BookFormat) throws -> Extraction {
-        let source = try htmlText(of: url, bookFormat: bookFormat)
+    /// - Parameter includesPages: whether page markers are written (PG11).
+    ///   True runs textutil a second time for the page breaks its HTML loses
+    ///   (`TextutilPageBreaks`), which also keeps the words either side of a
+    ///   break apart (B13); false writes what cache format 3.0.7 wrote, from
+    ///   one conversion.
+    static func extract(from url: URL, bookFormat: BookFormat, includesPages: Bool = true) throws -> Extraction {
+        let source = try htmlText(of: url, bookFormat: bookFormat, includesPages: includesPages)
         guard !source.isWebPage else {
             // A web page is converted as an .html file is, and names its
             // own title and author in its head.
@@ -79,10 +84,13 @@ enum TextutilDocumentReader {
         }
         let html = source.html
         let document = try SwiftSoup.parse(html)
-        // The names are read before `markdown(from:html:)`, which restores
+        // The names are read before `markdown(from:source:fileName:includesPages:)`, which restores
         // the structure in the document and so changes it.
         let named = metadata(in: document)
-        return Extraction(markdown: try markdown(from: document, html: html), named: named)
+        return Extraction(
+            markdown: try markdown(from: document, source: source, fileName: url.lastPathComponent, includesPages: includesPages),
+            named: named
+        )
     }
 
     /// The book at `url`, read as `bookFormat`, for the direct reader. The
@@ -91,7 +99,7 @@ enum TextutilDocumentReader {
     /// titled by its file's name, and one that names no author has an
     /// unknown author.
     static func parse(url: URL, bookFormat: BookFormat) throws -> DocumentContent {
-        let source = try htmlText(of: url, bookFormat: bookFormat)
+        let source = try htmlText(of: url, bookFormat: bookFormat, includesPages: true)
         let fileName = url.deletingPathExtension().lastPathComponent
         if source.isWebPage {
             // A web page is read as an .html file is.
@@ -100,12 +108,13 @@ enum TextutilDocumentReader {
         let html = source.html
         let document = try SwiftSoup.parse(html)
         let named = metadata(in: document)
-        // The metadata is read before `markdown(from:html:)`, which restores
+        // The metadata is read before `markdown(from:source:fileName:includesPages:)`, which restores
         // the structure in the document and so changes it.
         let title = named.title.isEmpty ? fileName : named.title
         let author = named.author.isEmpty ? Book.unknownAuthor : named.author
 
-        let content = try MarkdownDocParser.parse(markdown: try markdown(from: document, html: html), title: title)
+        let text = try markdown(from: document, source: source, fileName: url.lastPathComponent, includesPages: true)
+        let content = try MarkdownDocParser.parse(markdown: text, title: title)
         return DocumentContent(title: title, author: author, chapters: content.chapters)
     }
 
@@ -114,7 +123,8 @@ enum TextutilDocumentReader {
     /// text before `</head>` is parsed, so a large document's body is never
     /// parsed for its title.
     static func readMetadata(from url: URL, bookFormat: BookFormat) throws -> (title: String, author: String) {
-        let html = try htmlText(of: url, bookFormat: bookFormat).html
+        // The names are in the HTML alone: no plain-text run for pages.
+        let html = try htmlText(of: url, bookFormat: bookFormat, includesPages: false).html
         return metadata(in: try SwiftSoup.parse(headOf(html)))
     }
 
@@ -128,6 +138,10 @@ enum TextutilDocumentReader {
         /// HTML reader reads as it reads an .html file; false for textutil's
         /// HTML, whose structure `TextutilHTMLStructure` restores.
         var isWebPage = false
+        /// textutil's plain text of the same document, which keeps each page
+        /// break as a form feed (PG11); nil when pages were not asked for or
+        /// the plain-text run failed, and for a web page.
+        var plainText: String?
     }
 
     /// How a document is read, decided from its first bytes
@@ -166,8 +180,9 @@ enum TextutilDocumentReader {
     /// The HTML for the book at `url`: textutil's, or the page's own. The
     /// steps, in order: decide how the document is read, refuse a document
     /// protected by a password, and either read the page or choose where
-    /// textutil writes and convert.
-    private static func htmlText(of url: URL, bookFormat: BookFormat) throws -> Source {
+    /// textutil writes and convert (twice, with `includesPages`: the second
+    /// run is the plain text that holds the page breaks).
+    private static func htmlText(of url: URL, bookFormat: BookFormat, includesPages: Bool) throws -> Source {
         let format: TextutilInputFormat
         switch try reading(of: url, bookFormat: bookFormat) {
         case .webPage:
@@ -189,10 +204,32 @@ enum TextutilDocumentReader {
             break
         }
 
-        let html = try withWorkingFolder(for: url) { folder in
-            try TextutilConverter.html(of: url, as: format, workingIn: folder)
+        return try withWorkingFolder(for: url) { folder in
+            let html = try TextutilConverter.html(of: url, as: format, workingIn: folder)
+            let plainText = includesPages ? try pageText(of: url, as: format, workingIn: folder) : nil
+            return Source(html: html, plainText: plainText)
         }
-        return Source(html: html)
+    }
+
+    /// textutil's plain text of the document at `url`, for its page breaks
+    /// (PG11), or nil when that run fails or is stopped: the document is then
+    /// read without pages, never refused for it. One line is logged. An
+    /// import's cancellation still ends the import.
+    private static func pageText(of url: URL, as format: TextutilInputFormat, workingIn folder: URL) throws -> String? {
+        do {
+            return try TextutilConverter.plainText(of: url, as: format, workingIn: folder)
+        } catch let cancelled as ImportCancelled {
+            // Not a failure of the run: the reader cancelled the import.
+            throw cancelled
+        } catch let cancelled as CancellationError {
+            throw cancelled
+        } catch {
+            DiagnosticLog.event(
+                .import,
+                TextutilPageBreaks.failedLogLine(fileName: url.lastPathComponent, why: error.localizedDescription)
+            )
+            return nil
+        }
     }
 
     /// The folder the working folders of conversions outside a staged
@@ -237,14 +274,36 @@ enum TextutilDocumentReader {
 
     // MARK: Markdown
 
-    /// The Markdown of `document`, parsed from `html`. The document is
-    /// changed: its structure is restored first. textutil writes no
-    /// navigation, so none is stripped.
-    private static func markdown(from document: Document, html: String) throws -> String {
+    /// The Markdown of `document`, parsed from `source`'s HTML. The document
+    /// is changed: its structure is restored first. textutil writes no
+    /// navigation, so none is stripped. With `source`'s plain text, each page
+    /// break in it is written into the document as a page-break element
+    /// (`TextutilPageBreaks`) before the shared converter reads it, and one
+    /// line is logged for each break that could not be lined up.
+    private static func markdown(
+        from document: Document,
+        source: Source,
+        fileName: String,
+        includesPages: Bool
+    ) throws -> String {
         try TextutilHTMLStructure.restore(in: document)
+        var readingFlow = PublicationSemantics.ReadingFlow(source: source.html)
+        if let plainText = source.plainText {
+            let outcome = try TextutilPageBreaks.insertPageBreaks(fromPlainText: plainText, into: document)
+            for page in outcome.unaligned {
+                DiagnosticLog.event(.import, TextutilPageBreaks.unalignedLogLine(fileName: fileName, page: page))
+            }
+            if !outcome.placed.isEmpty {
+                // The reading flow learns from the markup whether to look for
+                // page-break elements at all, and the spans are not in the
+                // markup it was told of, so it is told of the word they hold.
+                readingFlow = PublicationSemantics.ReadingFlow(source: source.html + TextutilPageBreaks.pageBreakRole)
+            }
+        }
         return try HTMLToMarkdownConverter.convert(
             document: document,
-            readingFlow: PublicationSemantics.ReadingFlow(source: html)
+            readingFlow: readingFlow,
+            includesPages: includesPages
         )
     }
 

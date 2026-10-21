@@ -1,26 +1,53 @@
 import Foundation
 import SwiftSoup
 
+/// Which elements of one HTML document begin the book's pages (PG05).
+struct HTMLPageTargets {
+    /// The pages a book's page list names in this document, by the id of the
+    /// element each begins at (or the name of a legacy `a` element), looked up
+    /// as heading targets are. The page list is the publisher's own, so its
+    /// labels are used and the document's page-break elements are not.
+    var markers: [String: MarkdownPageMarker]
+
+    /// Whether each page-break element is itself a page: true for standalone
+    /// HTML and for a book without a page list, false once a page list names
+    /// the book's pages (its page-break elements the list does not name are
+    /// then not pages). A page-break element's own text is never read either way.
+    var pageBreaksArePages: Bool
+
+    /// Targets naming no page, with every page-break element a page.
+    init(markers: [String: MarkdownPageMarker] = [:], pageBreaksArePages: Bool = true) {
+        self.markers = markers
+        self.pageBreaksArePages = pageBreaksArePages
+    }
+}
+
 /// Converts HTML content to Markdown format.
 /// Used during import to create cached Markdown representations of EPUB chapters and HTML files.
 enum HTMLToMarkdownConverter {
 
     /// Convert an HTML string to Markdown, preserving headings, emphasis, links, and lists.
+    /// `pages` says which elements begin the book's pages (see `HTMLPageTargets`);
+    /// it is used only while `includesPages` is true.
     static func convert(
         _ html: String,
         stripDuplicateNavigation: Bool = false,
-        headingTargets: [String: MarkdownHeadingAnnotation] = [:]
+        headingTargets: [String: MarkdownHeadingAnnotation] = [:],
+        pages: HTMLPageTargets = HTMLPageTargets(),
+        includesPages: Bool = true
     ) throws -> String {
         try convert(
             document: SwiftSoup.parse(html),
             readingFlow: PublicationSemantics.ReadingFlow(source: html),
             stripDuplicateNavigation: stripDuplicateNavigation,
-            headingTargets: headingTargets
+            headingTargets: headingTargets,
+            pages: pages,
+            includesPages: includesPages
         )
     }
 
     /// Convert `document`, already parsed from markup whose reading-flow
-    /// rules are `readingFlow`, exactly as `convert(_:stripDuplicateNavigation:headingTargets:)`
+    /// rules are `readingFlow`, exactly as `convert(_:stripDuplicateNavigation:headingTargets:pages:includesPages:)`
     /// converts that markup, so a reader that has parsed a document for
     /// other reasons need not parse it again. Removing duplicate navigation
     /// changes `document`.
@@ -28,7 +55,9 @@ enum HTMLToMarkdownConverter {
         document: Document,
         readingFlow: PublicationSemantics.ReadingFlow,
         stripDuplicateNavigation: Bool = false,
-        headingTargets: [String: MarkdownHeadingAnnotation] = [:]
+        headingTargets: [String: MarkdownHeadingAnnotation] = [:],
+        pages: HTMLPageTargets = HTMLPageTargets(),
+        includesPages: Bool = true
     ) throws -> String {
         let body = document.body() ?? document
         if stripDuplicateNavigation {
@@ -36,7 +65,10 @@ enum HTMLToMarkdownConverter {
         }
 
         var result = ""
-        convertNode(body, into: &result, context: Context(headingTargets: headingTargets, readingFlow: readingFlow))
+        convertNode(
+            body, into: &result,
+            context: Context(headingTargets: headingTargets, readingFlow: readingFlow, pages: pages, includesPages: includesPages)
+        )
         return result.trimmingCharacters(in: writtenWhitespace)
     }
 
@@ -110,17 +142,37 @@ enum HTMLToMarkdownConverter {
 
     // MARK: - Node Conversion
 
+    /// The page ids a conversion has written a marker for, shared by every
+    /// copy of the `Context` of one conversion (PG05): an id that two
+    /// elements carry names a page once, at the first.
+    private final class WrittenPageIDs {
+        var ids: Set<String> = []
+    }
+
     /// What conversion knows about the position of the node it converts.
     private struct Context {
         /// TOC destinations, keyed by the id (or legacy anchor name) marking them.
         var headingTargets: [String: MarkdownHeadingAnnotation]
         /// Which elements of the document are outside its reading flow.
         var readingFlow: PublicationSemantics.ReadingFlow
+        /// Which elements of the document begin pages (PG05).
+        var pages: HTMLPageTargets
+        /// Whether page markers are written (PG05); false converts as cache
+        /// format 3.0.7 did: no marker, and a page-break element's text is read.
+        var includesPages: Bool
+        /// The ids whose pages are written already (PG05).
+        let writtenPageIDs = WrittenPageIDs()
         /// Inside a link. Markdown cannot nest links, so a link here keeps
         /// only its words.
         var insideLink = false
         /// Inside emphasis, whose words are marked once, by the outermost.
         var insideEmphasis = false
+
+        /// Whether any page marker may be written: pages are included and the
+        /// document names a page or can hold a page-break element (PG05).
+        var mayHoldPages: Bool {
+            includesPages && (!pages.markers.isEmpty || readingFlow.mayHoldPageBreaks)
+        }
     }
 
     /// Recursively walk the DOM tree and emit Markdown for each element.
@@ -142,7 +194,6 @@ enum HTMLToMarkdownConverter {
 
     /// Convert a single HTML element to its Markdown equivalent.
     private static func convertElement(_ element: Element, into result: inout String, context: Context) {
-        let headingTargets = context.headingTargets
         let tag = element.tagName().lowercased()
         // Non-content elements are ignored without running selector queries.
         // Content outside the rendered reading flow (the hidden attribute, page
@@ -157,11 +208,19 @@ enum HTMLToMarkdownConverter {
         let boundary: HTMLReadingBoundary = tag == "br" ? .none : .of(element, tag: tag)
         separate(at: boundary, in: &result)
 
-        // Preserve a TOC target in the Markdown stream at its actual DOM
-        // position. Inline targets stay inline; block targets precede their
-        // block. The annotation never contributes words to speech.
-        if let annotation = headingAnnotation(for: element, tag: tag, headingTargets: headingTargets) {
-            emit(annotation, inline: boundary != .paragraph, into: &result)
+        // Preserve a TOC target, and the page an element begins (PG05), in the
+        // Markdown stream at its actual DOM position. Inline targets stay
+        // inline; block targets precede their block. A marker never
+        // contributes words to speech.
+        let isBreak = isPageBreakElement(element, context: context)
+        for marker in destinationMarkers(for: element, tag: tag, isPageBreak: isBreak, context: context) {
+            emit(marker, inline: boundary != .paragraph, into: &result)
+        }
+        // A page-break element's own text (usually the page's number) is never
+        // read, whether or not it names a page, so its children are not converted.
+        if isBreak {
+            separate(at: boundary, in: &result)
+            return
         }
 
         switch tag {
@@ -173,8 +232,9 @@ enum HTMLToMarkdownConverter {
             // before the heading line, never inside the label: the Markdown
             // parser gives both the same offset and keeps the visible heading,
             // and a heading without visible text still keeps its destination.
-            for annotation in headingAnnotations(inside: element, context: context) {
-                emit(annotation, inline: false, into: &result)
+            // A page that begins inside the heading is written there too.
+            for marker in destinationMarkers(inside: element, context: context) {
+                emit(marker, inline: false, into: &result)
             }
             // The heading line holds the label the direct reader gives it,
             // as literal text: one line even when the heading contains a line
@@ -185,6 +245,7 @@ enum HTMLToMarkdownConverter {
 
         // Line breaks
         case "br":
+            dropSpaceBeforeTrailingPageMarkers(in: &result)
             result += "  \n"
 
         // Emphasis and strong emphasis. Only the outermost is marked: emphasis
@@ -248,8 +309,8 @@ enum HTMLToMarkdownConverter {
         // and it always stands on a line of its own. Destinations inside the
         // block precede it rather than becoming words of the code.
         case "pre":
-            for annotation in headingAnnotations(inside: element, context: context) {
-                emit(annotation, inline: false, into: &result)
+            for marker in destinationMarkers(inside: element, context: context) {
+                emit(marker, inline: false, into: &result)
             }
             let code = HTMLReadingText.preformattedText(of: element)
             // Whitespace alone holds nothing to read.
@@ -261,8 +322,8 @@ enum HTMLToMarkdownConverter {
         // Inline code. A code span is read verbatim, so destinations inside
         // it precede it rather than becoming words of the code.
         case "code":
-            for annotation in headingAnnotations(inside: element, context: context) {
-                emit(annotation, inline: true, into: &result)
+            for marker in destinationMarkers(inside: element, context: context) {
+                emit(marker, inline: true, into: &result)
             }
             appendSpaced(HTMLReadingText.inlineText(of: element), to: &result, codeSpan(_:after:))
 
@@ -283,51 +344,15 @@ enum HTMLToMarkdownConverter {
 
     // MARK: - Navigation Annotations
 
-    /// Where the next output lands in the Markdown being built.
-    private enum LinePosition {
-        /// After visible content on the current line.
-        case withinLine
-        /// At the start of a line that continues a paragraph (after a hard break).
-        case continuationLine
-        /// At the start of a new block: the beginning, or after a blank line.
-        case blockStart
-    }
-
-    /// Classify the end of `result` from its last two lines only, so the cost
-    /// does not grow with the chapter. Spaces and tabs are indentation, not
-    /// content, as in CommonMark. Scalars keep "\r\n" from hiding a newline.
-    private static func linePosition(of result: String) -> LinePosition {
-        let scalars = result.unicodeScalars
-        let isIndentation: (Unicode.Scalar) -> Bool = { $0 == " " || $0 == "\t" }
-        guard let lineBreak = scalars.lastIndex(of: "\n") else {
-            return scalars.allSatisfy(isIndentation) ? .blockStart : .withinLine
-        }
-        guard scalars[scalars.index(after: lineBreak)...].allSatisfy(isIndentation) else { return .withinLine }
-        let earlierLines = scalars[..<lineBreak]
-        let previousLineStart = earlierLines.lastIndex(of: "\n").map { earlierLines.index(after: $0) }
-            ?? earlierLines.startIndex
-        return earlierLines[previousLineStart...].allSatisfy(isIndentation) ? .blockStart : .continuationLine
-    }
-
-    /// Write a destination without changing the words around it. CommonMark
-    /// opens an HTML block at any line that begins with "<!--", and that block
-    /// swallows the rest of the line: an anchor at the start of a paragraph
-    /// used to delete the paragraph's words from speech. An annotation therefore
-    /// never begins a line. At a block boundary it becomes a block of its own,
-    /// which names the same position as the block that follows. After a hard
-    /// line break, four spaces keep it inside the paragraph, because an HTML
-    /// block may be indented by at most three and a continuation line's
-    /// indentation is not part of its text.
-    private static func emit(_ annotation: MarkdownHeadingAnnotation, inline: Bool, into result: inout String) {
-        switch inline ? linePosition(of: result) : .blockStart {
-        case .withinLine:
-            result += annotation.markdown
-        case .continuationLine:
-            result += "    " + annotation.markdown
-        case .blockStart:
-            ensureBlankLine(&result)
-            result += annotation.markdown + "\n\n"
-        }
+    /// Write a destination (a heading annotation or a page marker, as
+    /// Markdown) without changing the words around it; see
+    /// `MarkdownMarkerWriter.write`, which places every marker alike. The
+    /// conversion writes a list item's or quote's content apart from its
+    /// opening and indents each of its lines itself, so a marker is placed by
+    /// indentation alone (`continuationAtMargin`), which keeps the heading
+    /// annotations exactly where cache format 3.0.7 wrote them.
+    private static func emit(_ marker: String, inline: Bool, into result: inout String) {
+        MarkdownMarkerWriter.write(marker, inline: inline, continuationAtMargin: true, into: &result)
     }
 
     /// The TOC destination an element carries through its id, or through the
@@ -345,21 +370,103 @@ enum HTMLToMarkdownConverter {
         return headingTargets[id] ?? headingTargets[legacyName]
     }
 
-    /// Destinations carried by a heading's descendants, in document order.
-    /// Content outside the reading flow is skipped exactly as conversion skips it.
-    private static func headingAnnotations(inside heading: Element, context: Context) -> [MarkdownHeadingAnnotation] {
-        guard !context.headingTargets.isEmpty else { return [] }
-        var annotations: [MarkdownHeadingAnnotation] = []
-        for child in heading.getChildNodes() {
+    /// The Markdown of the destinations `element` itself carries (PG05): the
+    /// page it begins, then its TOC annotation, so an element that is both
+    /// gets the page marker first. `isPageBreak` is whether `element` is a
+    /// page-break element (see `isPageBreakElement`).
+    private static func destinationMarkers(
+        for element: Element,
+        tag: String,
+        isPageBreak: Bool,
+        context: Context
+    ) -> [String] {
+        var markers: [String] = []
+        if let page = pageMarker(for: element, tag: tag, isPageBreak: isPageBreak, context: context) {
+            markers.append(page.markdown)
+        }
+        if let annotation = headingAnnotation(for: element, tag: tag, headingTargets: context.headingTargets) {
+            markers.append(annotation.markdown)
+        }
+        return markers
+    }
+
+    /// Destinations carried by the descendants of a heading, `pre`, or `code`,
+    /// in document order, where they are written before that element instead
+    /// of inside it. Content outside the reading flow is skipped exactly as
+    /// conversion skips it, and so are the children of a page-break element,
+    /// which conversion never reads.
+    private static func destinationMarkers(inside container: Element, context: Context) -> [String] {
+        guard !context.headingTargets.isEmpty || context.mayHoldPages else { return [] }
+        var markers: [String] = []
+        for child in container.getChildNodes() {
             guard let element = child as? Element,
                   !context.readingFlow.excludes(element) else { continue }
             let tag = element.tagName().lowercased()
-            if let annotation = headingAnnotation(for: element, tag: tag, headingTargets: context.headingTargets) {
-                annotations.append(annotation)
+            guard tag != "script", tag != "style" else { continue }
+            let isBreak = isPageBreakElement(element, context: context)
+            markers += destinationMarkers(for: element, tag: tag, isPageBreak: isBreak, context: context)
+            if !isBreak {
+                markers += destinationMarkers(inside: element, context: context)
             }
-            annotations += headingAnnotations(inside: element, context: context)
         }
-        return annotations
+        return markers
+    }
+
+    // MARK: - Pages
+
+    /// Whether `element` is a page-break element whose text is not read
+    /// (PG05): only while pages are included, and only in a document whose
+    /// markup can hold one (an attribute scan costs every element, so a
+    /// document that never spells "pagebreak" skips it).
+    private static func isPageBreakElement(_ element: Element, context: Context) -> Bool {
+        context.includesPages && context.readingFlow.mayHoldPageBreaks && PublicationSemantics.isPageBreak(element)
+    }
+
+    /// The page `element` begins, or nil (PG05). A page the book's page list
+    /// names at this element's id is that page, written once however many
+    /// elements share the id. Otherwise a page-break element is a page of its
+    /// own when the book has no page list, labelled by its `aria-label`, its
+    /// `title`, or its text, and is no page when it has no label at all.
+    private static func pageMarker(
+        for element: Element,
+        tag: String,
+        isPageBreak: Bool,
+        context: Context
+    ) -> MarkdownPageMarker? {
+        guard context.includesPages else { return nil }
+        if let named = namedPageMarker(for: element, tag: tag, context: context) {
+            return named
+        }
+        guard isPageBreak, context.pages.pageBreaksArePages else { return nil }
+        // The first of these the element has, not blank.
+        let labels: [() -> String] = [
+            { (try? element.attr("aria-label")) ?? "" },
+            { (try? element.attr("title")) ?? "" },
+            { HTMLReadingText.inlineText(of: element) },
+        ]
+        for makeLabel in labels {
+            let label = makeLabel()
+            if label.contains(where: { !$0.isWhitespace }) {
+                // The ordinal is never used: the label is not blank.
+                return MarkdownPageMarker(label: label, ordinal: 0)
+            }
+        }
+        return nil
+    }
+
+    /// The marker the page list gives `element` through its id, or through the
+    /// name of a legacy anchor, when no earlier element took that id.
+    private static func namedPageMarker(for element: Element, tag: String, context: Context) -> MarkdownPageMarker? {
+        // Most documents name no page. Avoid attribute lookups at every node.
+        guard !context.pages.markers.isEmpty else { return nil }
+        let id = (try? element.attr("id")) ?? ""
+        let legacyName = tag == "a" ? ((try? element.attr("name")) ?? "") : ""
+        for key in [id, legacyName] {
+            if let marker = context.pages.markers[key], context.writtenPageIDs.ids.insert(key).inserted {
+                return marker
+            }
+        }
+        return nil
     }
 
     // MARK: - List Conversion
@@ -415,9 +522,9 @@ enum HTMLToMarkdownConverter {
     private static func appendBlock(_ markdown: String, to result: inout String) {
         let trimmed = markdown.trimmingCharacters(in: writtenWhitespace)
         guard !trimmed.isEmpty else { return }
-        ensureBlankLine(&result)
+        MarkdownMarkerWriter.ensureBlankLine(&result)
         result += trimmed
-        ensureBlankLine(&result)
+        MarkdownMarkerWriter.ensureBlankLine(&result)
     }
 
     // MARK: - Whitespace Helpers
@@ -435,19 +542,8 @@ enum HTMLToMarkdownConverter {
                 result += " "
             }
         case .paragraph:
-            ensureBlankLine(&result)
-        }
-    }
-
-    /// Ensure the result ends with a blank line (two newlines).
-    private static func ensureBlankLine(_ result: inout String) {
-        if result.isEmpty { return }
-        if !result.hasSuffix("\n\n") {
-            if result.hasSuffix("\n") {
-                result += "\n"
-            } else {
-                result += "\n\n"
-            }
+            dropSpaceBeforeTrailingPageMarkers(in: &result)
+            MarkdownMarkerWriter.ensureBlankLine(&result)
         }
     }
 
@@ -458,10 +554,58 @@ enum HTMLToMarkdownConverter {
     private static let writtenWhitespace = CharacterSet(charactersIn: " \n")
 
     /// Whether the next text begins a word: at the start of the Markdown, of
-    /// a line, or after a space.
+    /// a line, or after a space, with any page markers that end the Markdown
+    /// passed over. Were a marker taken for a word's end, the space after an
+    /// empty page anchor between two words would be kept beside the one
+    /// before it, and "One <span id="p2"/> two" would read "One  two".
     private static func isAtWordStart(_ result: String) -> Bool {
-        guard let last = result.unicodeScalars.last else { return true }
+        guard let last = beforeTrailingPageMarkers(of: result).unicodeScalars.last else { return true }
         return last == " " || last == "\n"
+    }
+
+    // MARK: - Page Markers Between Words
+
+    /// `result` without the page markers that end it, if any. A page marker
+    /// is never read, so the words before it decide where the next words
+    /// begin (`isAtWordStart(_:)`) and whether a line ends with a space
+    /// (`dropSpaceBeforeTrailingPageMarkers(in:)`), and the book reads the
+    /// same with pages as without. A heading annotation is not passed over:
+    /// the Markdown without pages, which holds annotations, stays as cache
+    /// format 3.0.7 wrote it.
+    private static func beforeTrailingPageMarkers(of result: String) -> Substring {
+        var text = Substring(result)
+        while text.hasSuffix("-->"), let open = lastCommentOpening(in: text),
+              MarkdownPageMarker.decode(String(text[open...])) != nil {
+            text = text[..<open]
+        }
+        return text
+    }
+
+    /// Where the last "<!--" in `text` begins, searched for from the end, so
+    /// finding the opening of a marker that ends the Markdown reads only the
+    /// marker. A marker's label never holds "<!--" (`MarkdownPageMarker`).
+    private static func lastCommentOpening(in text: Substring) -> String.Index? {
+        let bytes = text.utf8
+        var index = bytes.endIndex
+        while index > bytes.startIndex {
+            index = bytes.index(before: index)
+            if bytes[index...].starts(with: "<!--".utf8) { return index }
+        }
+        return nil
+    }
+
+    /// Where a line ends, at a paragraph boundary or a line break, drop the
+    /// space before page markers that end `result`. Without the markers the
+    /// parser trims that space from the end of the line; before them it was
+    /// kept, and "Words <!-- page: 6 -->" read "Words " where the book
+    /// without pages reads "Words". The page still begins at the next word
+    /// (`PageBreak.firstWordStart`). An inline wrapper still open, whose
+    /// start this may move, holds the line's end, so it is never written
+    /// (`wrapSpan`, `emphasisSpan`).
+    private static func dropSpaceBeforeTrailingPageMarkers(in result: inout String) {
+        let words = beforeTrailingPageMarkers(of: result)
+        guard words.endIndex < result.endIndex, words.unicodeScalars.last == " " else { return }
+        result.unicodeScalars.remove(at: result.unicodeScalars.index(before: words.endIndex))
     }
 
     // MARK: - Literal Text

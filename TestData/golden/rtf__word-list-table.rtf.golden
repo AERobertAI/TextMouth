@@ -1,4 +1,4 @@
-# TextMouth document golden, format 1
+# TextMouth document golden, format 2
 file: rtf__word-list-table.rtf
 macOS: 26.3
 format: rtf
@@ -13,3 +13,4 @@ last 300: Shopping and Timetable\n\nShopping\n\nThree things:\n\nBread from the 
 heading: 1 | Shopping and Timetable
 heading: 2 | Shopping
 heading: 2 | Timetable
+page: 1 | 0:0 | Shopping and Timetable\n\n

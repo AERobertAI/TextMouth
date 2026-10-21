@@ -1,0 +1,19 @@
+# TextMouth document golden, format 2
+file: dtbook__pages-front-and-inline.xml
+format: daisy
+title: Quay Pages
+author: A. Sample
+chapters: 1
+words: 47
+text length: 240
+text checksum: ea6b2fb81f3709ad
+first 300: Quay Pages\n\nA. Sample\n\nThe Seawall\n\nAt low tide the harbour wall stood dry above the slipway.\n\nNets hang over the rail to dry before the tide turns.\n\nThe last boat is in by dusk.\n\nThe Lamp Room\n\nA single lamp burns above the door all night.
+last 300: Quay Pages\n\nA. Sample\n\nThe Seawall\n\nAt low tide the harbour wall stood dry above the slipway.\n\nNets hang over the rail to dry before the tide turns.\n\nThe last boat is in by dusk.\n\nThe Lamp Room\n\nA single lamp burns above the door all night.
+heading: 1 | Quay Pages
+heading: 1 | The Seawall
+heading: 1 | The Lamp Room
+page: ii | 0:0 | Quay Pages\n\nA. Sample\n\nT
+page: 1 | 0:23 | The Seawall\n\nAt low tide
+page: 2 | 0:65 | stood dry above the slip
+page: 4 | 0:150 | The last boat is in by d
+page: 5 | 0:240 | 

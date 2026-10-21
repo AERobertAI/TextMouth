@@ -100,15 +100,23 @@ extension ReaderViewModel {
         speakWhereAmI(detail == .full ? buildFullWhereAmI(content: content) : buildBriefWhereAmI())
     }
 
-    /// Brief summary: book title, current heading, heading number,
-    /// percentage, and time remaining, then, for a transcribed audiobook,
-    /// the sentence being heard.
+    /// The page Where Am I? says (PG04): the reading position's "Page 112 of
+    /// 300" (or "Before page 1") while the setting that adds the page is on,
+    /// and nothing otherwise. A book without pages has no label to say.
+    var whereAmIPageLabel: String {
+        settingsViewModel.saysPageInWhereAmI ? currentPagePosition.label : ""
+    }
+
+    /// Brief summary: book title, current heading, heading number, the page
+    /// (for a book with pages), percentage, and time remaining, then, for a
+    /// transcribed audiobook, the sentence being heard.
     func buildBriefWhereAmI() -> String {
         let position = currentHeadingPosition
         return Self.briefWhereAmISummary(
             bookTitle: book.title,
             locationTitle: locationTitle(for: position, chapterIndex: currentChapterIndex),
             headingPosition: position,
+            pageLabel: whereAmIPageLabel,
             percentComplete: percentComplete,
             timeRemaining: timeRemaining,
             isFinished: cursorRestsAtEnd,
@@ -118,7 +126,10 @@ extension ReaderViewModel {
     }
 
     /// Pure formatter for the brief announcement, shared with regression tests.
-    /// Example: "My Book. The Battle. Heading 26 of 412. 30 percent. 3 hours remaining."
+    /// Example: "Dune. The Battle. Heading 26 of 412. Page 112 of 300. 30 percent. 3 hours remaining."
+    /// The page (`pageLabel`, PG04) follows the heading number; a book
+    /// without pages, or the setting off, gives none, and the summary is as
+    /// it was.
     /// A book resting at its end, finished (`isFinished`), says "Finished" in
     /// place of its percent and time left (TODO P07): "Dune. Appendix.
     /// Heading 40 of 40. Finished."
@@ -131,6 +142,7 @@ extension ReaderViewModel {
         bookTitle: String,
         locationTitle: String?,
         headingPosition: HeadingPosition,
+        pageLabel: String = "",
         percentComplete: Double,
         timeRemaining: TimeInterval,
         isFinished: Bool = false,
@@ -146,7 +158,8 @@ extension ReaderViewModel {
         let parts = whereAmILocationParts(
             bookTitle: bookTitle,
             locationTitle: locationTitle,
-            headingPosition: headingPosition
+            headingPosition: headingPosition,
+            pageLabel: pageLabel
         ) + progress
         return whereAmISummary(parts: parts, quoting: heardSentence)
     }
@@ -161,6 +174,7 @@ extension ReaderViewModel {
             bookTitle: book.title,
             locationTitle: locationTitle(for: position, chapterIndex: currentChapterIndex),
             headingPosition: position,
+            pageLabel: whereAmIPageLabel,
             percentComplete: percentComplete,
             timeRemaining: timeRemaining,
             timeRemainingInHeading: position.heading.flatMap { remainingTime(inHeading: $0, content: content) },
@@ -174,7 +188,10 @@ extension ReaderViewModel {
 
     /// Pure formatter for the full announcement, shared with regression tests.
     /// The heading is named exactly once, followed by its number, so the
-    /// listener never hears two different names for the same place. A book
+    /// listener never hears two different names for the same place. The page
+    /// (`pageLabel`, PG04), for a book with pages while the setting is on,
+    /// follows the heading number: "Dune. The Battle. Heading 26 of 412.
+    /// Page 112 of 300. 30 percent through the book. …". A book
     /// read from the reading list says its place there after the times
     /// ("Reading list, book 3 of 12", FR09), the broader setting, which only
     /// this second announcement gives: the brief one is the quick check of
@@ -191,6 +208,7 @@ extension ReaderViewModel {
         bookTitle: String,
         locationTitle: String?,
         headingPosition: HeadingPosition,
+        pageLabel: String = "",
         percentComplete: Double,
         timeRemaining: TimeInterval,
         timeRemainingInHeading: TimeInterval?,
@@ -203,7 +221,8 @@ extension ReaderViewModel {
         var parts = whereAmILocationParts(
             bookTitle: bookTitle,
             locationTitle: locationTitle,
-            headingPosition: headingPosition
+            headingPosition: headingPosition,
+            pageLabel: pageLabel
         )
         let namedSpeed = ReaderTimeWording.spokenSpeed(speed)
         if isFinished {
@@ -223,13 +242,16 @@ extension ReaderViewModel {
     }
 
     /// Opening shared by both announcements: the book, the heading being read
-    /// (empty when there is none to name), and the heading number.
+    /// (empty when there is none to name), the heading number, and the page
+    /// (empty when the book has none or the setting is off; empty parts are
+    /// dropped when the summary is joined).
     private nonisolated static func whereAmILocationParts(
         bookTitle: String,
         locationTitle: String?,
-        headingPosition: HeadingPosition
+        headingPosition: HeadingPosition,
+        pageLabel: String
     ) -> [String] {
-        [bookTitle, locationTitle ?? "", headingPosition.label]
+        [bookTitle, locationTitle ?? "", headingPosition.label, pageLabel]
     }
 
     /// Joins announcement fields into spoken sentences, dropping empty fields

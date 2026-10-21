@@ -42,6 +42,8 @@ extension ConfigService.AppConfig {
         config.showSpeedInPlaybackControls = false
         config.showExportInReaderToolbar = true
         config.includeSpeedWithTimes = true
+        config.showsPageInReader = false
+        config.saysPageInWhereAmI = false
         config.soundEffectsEnabled = false
         config.soundEffectsVolume = 0.35
         // Every event, as TextMouth writes them, each with another sound.

@@ -402,6 +402,53 @@ extension XCTestCase {
     }
 }
 
+// MARK: - Hosted jump panels
+
+extension XCTestCase {
+    /// Hosts `panel` offscreen in a frame of its own fixed size, so the
+    /// window never follows its content, waits until its text field holds
+    /// `text` (the panel fills it as it opens), and passes that field's
+    /// accessibility attributes and every control's to `body`. Skipped where
+    /// hosted windows expose no accessibility elements.
+    @MainActor
+    func withHostedField<Panel: View>(
+        _ panel: Panel,
+        holding text: String,
+        _ body: (HostedField, [AccessibleControl]) throws -> Void
+    ) throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
+        let size = NSSize(width: 640, height: 120)
+        try withHostedView(
+            panel.frame(width: size.width, height: size.height),
+            size: size,
+            until: { hostingView in
+                self.accessibleControls(in: hostingView).contains {
+                    $0.role == .textField && ($0.element.accessibilityValue() as? String) == text
+                }
+            }
+        ) { hostingView in
+            let controls = accessibleControls(in: hostingView)
+            let control = try XCTUnwrap(
+                controls.first { $0.role == .textField },
+                "no text field among \(controls.map { "\($0.role.rawValue) \($0.label)" })"
+            )
+            try body(HostedField(control: control, hostingView: hostingView), controls)
+        }
+    }
+
+    /// A hosted panel's text field as VoiceOver reads it, with the view
+    /// hosting it.
+    struct HostedField {
+        let control: AccessibleControl
+        let hostingView: NSView
+
+        var element: NSAccessibilityProtocol { control.element }
+        var role: NSAccessibility.Role { control.role }
+        var label: String { control.label }
+        var hint: String { control.hint }
+    }
+}
+
 // MARK: - Announcements
 
 /// One VoiceOver announcement captured during a test, with the window its

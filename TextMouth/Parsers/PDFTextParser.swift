@@ -53,9 +53,10 @@ enum PDFTextParser {
     }
 
     /// Extract Markdown from a PDF file, reading pictures with the default
-    /// recognizer (Vision's in the app).
+    /// recognizer (Vision's in the app). Its one caller, `parse(url:)`, reads
+    /// no page markers, so none are written (PG06).
     static func extractMarkdown(from url: URL) throws -> String {
-        try extract(from: url).markdown
+        try extract(from: url, includesPages: false).markdown
     }
 
     /// The recognizer `extract(from:)` reads pictures with when its caller
@@ -88,12 +89,18 @@ enum PDFTextParser {
     /// - Parameter recognizer: reads text in pictures (by default,
     ///   `defaultRecognizer`); nil when OCR is not available, so pictures go
     ///   unread and the report says why.
+    /// - Parameter includesPages: whether a page marker (PG06) is written
+    ///   before every page's text: with the page's label from the PDF's
+    ///   `/PageLabels` ("i", "ii", "1", "A-1"), or its number when it has
+    ///   none. A page without text keeps its marker. False writes exactly
+    ///   what cache format 3.0.7 wrote.
     /// - Throws: `PDFParserError.ocrFailed` when no page has embedded text
     ///   and OCR could not run, `.noTextContent` when there is no text at
     ///   all, or why the file could not be opened.
     static func extract(
         from url: URL,
-        recognizer: (any PDFPageTextRecognizer)? = defaultRecognizer
+        recognizer: (any PDFPageTextRecognizer)? = defaultRecognizer,
+        includesPages: Bool = true
     ) throws -> Extraction {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw PDFParserError.fileNotFound(url.path)
@@ -114,9 +121,17 @@ enum PDFTextParser {
         var pageTexts: [PageText] = []
         var diagnoses: [PDFPageDiagnosis] = []
         var ocr = OCRSession(recognizer: recognizer)
+        // Every page's label as PDFKit gives it, in page order, one entry
+        // per page whether or not it has text (PG06). It stays empty, and
+        // so marks nothing, when pages are not included: `pageTexts` holds
+        // only the pages with text, as it always did, so the output without
+        // pages is untouched. An empty label means "use the page's number".
+        var pageLabels: [String] = []
 
         for i in 0..<document.pageCount {
-            guard let page = document.page(at: i) else { continue }
+            let page = document.page(at: i)
+            if includesPages { pageLabels.append(page?.label ?? "") }
+            guard let page else { continue }
             // Each page's text, attributes, and pictures are temporary;
             // draining them page by page keeps a long PDF's memory flat.
             let reading = autoreleasepool {
@@ -141,7 +156,15 @@ enum PDFTextParser {
         let markdown: String
         if hasOutline {
             // If we have an outline, use it to insert chapter markers
-            markdown = buildMarkdownWithOutline(pageTexts: pageTexts, outline: outline, document: document)
+            markdown = buildMarkdownWithOutline(
+                pageTexts: pageTexts,
+                outline: outline,
+                document: document,
+                pageLabels: includesPages ? pageLabels : nil
+            )
+        } else if includesPages {
+            // No outline, with a marker before every page (PG06).
+            markdown = buildMarkdownWithPageMarkers(pageTexts: pageTexts, pageLabels: pageLabels)
         } else {
             // No outline — just concatenate page text (with font-based headings)
             markdown = pageTexts.map(\.markdown)
@@ -729,12 +752,88 @@ enum PDFTextParser {
 
     // MARK: - Outline-Based Markdown Assembly
 
+    /// Write the marker of the page at `pageIndex` (PG06) as a block of its
+    /// own, so it adds no reading text: the page's label from `pageLabels`,
+    /// or its number when the label is empty. An index outside `pageLabels`
+    /// gets its number too, so no index can trap.
+    private static func writePageMarker(pageIndex: Int, pageLabels: [String], into markdown: inout String) {
+        let label = pageLabels.indices.contains(pageIndex) ? plainNumberLabel(pageLabels[pageIndex]) : ""
+        let marker = MarkdownPageMarker(label: label, ordinal: pageIndex + 1)
+        MarkdownMarkerWriter.write(marker.markdown, inline: false, into: &markdown)
+    }
+
+    /// The characters a locale may put between the thousands of a number:
+    /// comma, period, apostrophe, right single quotation mark, space,
+    /// no-break space, and narrow no-break space.
+    private static let groupingSeparators: Set<Unicode.Scalar> = [
+        ",", ".", "'", "\u{2019}", " ", "\u{00A0}", "\u{202F}",
+    ]
+
+    /// A page label PDFKit wrote by formatting a whole number for a locale
+    /// ("1,000", "1.000", "1 000": the thousandth page of a PDF that names no
+    /// labels), as plain ASCII digits ("1000"). Page 1,000 of 2,000 would not
+    /// count as a whole number among the book's pages, so "Page 1,000 of 999"
+    /// would be spoken. Only a label of one to three ASCII digits followed
+    /// by one or more groups of a grouping separator and exactly three
+    /// ASCII digits is changed, whatever the locale; any other label (roman
+    /// numerals, "A-1", "12", "1,5", "1,00") is returned as PDFKit gave it.
+    static func plainNumberLabel(_ label: String) -> String {
+        var digits = ""
+        var leadingDigits = 0         // digits before the first separator
+        var digitsSinceSeparator = 0  // digits since the last separator
+        var separators = 0
+        for scalar in label.unicodeScalars {
+            if (Unicode.Scalar("0")...Unicode.Scalar("9")).contains(scalar) {
+                digits.unicodeScalars.append(scalar)
+                digitsSinceSeparator += 1
+                if separators == 0 { leadingDigits += 1 }
+            } else if groupingSeparators.contains(scalar), digitsSinceSeparator > 0,
+                      separators > 0 ? digitsSinceSeparator == 3 : leadingDigits <= 3 {
+                // A separator ends a group: the first of one to three digits,
+                // then only groups of exactly three.
+                separators += 1
+                digitsSinceSeparator = 0
+            } else {
+                return label
+            }
+        }
+        // The label must end on a complete group of three digits.
+        return separators > 0 && digitsSinceSeparator == 3 ? digits : label
+    }
+
+    /// Join the pages of a PDF without an outline (PG06): each page's marker,
+    /// then its text when it has any, with the paragraph break between
+    /// pages that the plain join writes. Taking the markers (and the blank
+    /// lines after them) back out leaves exactly that plain join.
+    /// - Parameters:
+    ///   - pageTexts: The pages that have text, in page order.
+    ///   - pageLabels: The label of every page, with or without text.
+    private static func buildMarkdownWithPageMarkers(pageTexts: [PageText], pageLabels: [String]) -> String {
+        let textByPage = Dictionary(
+            pageTexts.map { ($0.pageIndex, $0.markdown) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        var markdown = ""
+        for pageIndex in pageLabels.indices {
+            writePageMarker(pageIndex: pageIndex, pageLabels: pageLabels, into: &markdown)
+            if let text = textByPage[pageIndex] {
+                markdown += text + "\n\n"
+            }
+        }
+        return markdown.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     /// Build Markdown with chapter markers derived from the PDF outline.
     /// Inserts heading markers at the appropriate page boundaries.
+    /// - Parameter pageLabels: The label of every page (PG06): when not nil,
+    ///   each page's marker is written before that page's headings and text,
+    ///   and a page without text gets its marker alone (its outline headings
+    ///   are still left out). Nil writes no markers.
     private static func buildMarkdownWithOutline(
         pageTexts: [PageText],
         outline: [OutlineEntry],
-        document: PDFDocument
+        document: PDFDocument,
+        pageLabels: [String]?
     ) -> String {
         // Build a map from page index → outline entries that start on that page
         var pageOutlineMap: [Int: [OutlineEntry]] = [:]
@@ -744,8 +843,19 @@ enum PDFTextParser {
 
         var markdown = ""
 
-        for pageText in pageTexts {
-            let pageIndex = pageText.pageIndex
+        // With pages, every page is visited so a page without text keeps its
+        // marker; without, only the pages with text, as before.
+        let textByPage = Dictionary(
+            pageTexts.map { ($0.pageIndex, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let pageIndexes = pageLabels.map { Array($0.indices) } ?? pageTexts.map(\.pageIndex)
+
+        for pageIndex in pageIndexes {
+            if let pageLabels {
+                writePageMarker(pageIndex: pageIndex, pageLabels: pageLabels, into: &markdown)
+            }
+            guard let pageText = textByPage[pageIndex] else { continue }
             var cleanedPageMarkdown = pageText.markdown
 
             // Insert outline headings for this page

@@ -1,4 +1,4 @@
-# TextMouth document golden, format 1
+# TextMouth document golden, format 2
 file: dotx__libreoffice-sample.dotx
 format: docx
 title: libreoffice-sample
@@ -9,3 +9,4 @@ text length: 36
 text checksum: ef6eb02bbb57033d
 first 300: Sample file which will be a template
 last 300: Sample file which will be a template
+page: 1 | 0:0 | Sample file which will b

@@ -192,6 +192,9 @@ final class ReaderViewModel: ObservableObject {
     /// Every heading in the book, in reading order: the headings panel's rows
     /// and the list that heading numbers count. Kept in step with `content`.
     @Published var headings: [Heading] = []
+    /// How many times Go to Page… was asked for in this reader; the status
+    /// row opens its page field at each (PG03).
+    @Published var goToPageRequests = 0
     @Published var bookmarks: [Bookmark] = []
     /// An EPUB's package metadata with the book's own edits, which the
     /// metadata editor starts from; nil until it is known, and for every
@@ -1077,6 +1080,28 @@ final class ReaderViewModel: ObservableObject {
             .sink { [weak self] notification in
                 guard let self = self, self.isTargetedNotification(notification) else { return }
                 self.previousHeading()
+            }
+            .store(in: &cancellables)
+
+        // Next Page, Previous Page, and Go to Page… (PG02, PG03).
+        nc.publisher(for: .nextPage)
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.nextPage()
+            }
+            .store(in: &cancellables)
+
+        nc.publisher(for: .previousPage)
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.previousPage()
+            }
+            .store(in: &cancellables)
+
+        nc.publisher(for: .goToPage)
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.requestGoToPage()
             }
             .store(in: &cancellables)
 

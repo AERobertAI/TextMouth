@@ -216,27 +216,45 @@ extension ReaderViewModel {
 /// preparation applies it to each chapter with the chapter's own headings
 /// (`ChapterSpeechInputs.prepare()`).
 enum SkippedSectionFilter {
-    static func apply(
-        text: String,
+    /// The ranges, in UTF-16 offsets of a chapter's text, that skipped
+    /// headings take out: each skipped heading's section, from the heading to
+    /// the next heading (or the chapter's end). Empty when nothing is skipped.
+    /// `apply` removes them from the speech, and the page commands (PG02) use
+    /// them to pass over a page that begins inside one.
+    static func excludedRanges(
+        textLength: Int,
         headings: [Heading],
         skippedIDs: Set<String>
-    ) -> (text: String, offsetMap: OffsetMap) {
-        guard !skippedIDs.isEmpty, !headings.isEmpty else { return (text, .identity) }
+    ) -> [Range<Int>] {
+        guard !skippedIDs.isEmpty, !headings.isEmpty else { return [] }
 
         // Build ranges to exclude
         var excludeRanges: [Range<Int>] = []
         let sortedHeadings = headings.sorted { $0.characterOffset < $1.characterOffset }
         for (i, heading) in sortedHeadings.enumerated() {
             guard skippedIDs.contains(heading.id) else { continue }
-            let start = min(max(0, heading.characterOffset), text.utf16Length)
+            let start = min(max(0, heading.characterOffset), textLength)
             let end: Int
             if i + 1 < sortedHeadings.count {
-                end = min(max(start, sortedHeadings[i + 1].characterOffset), text.utf16Length)
+                end = min(max(start, sortedHeadings[i + 1].characterOffset), textLength)
             } else {
-                end = text.utf16Length
+                end = textLength
             }
             if start < end { excludeRanges.append(start..<end) }
         }
+        return excludeRanges
+    }
+
+    static func apply(
+        text: String,
+        headings: [Heading],
+        skippedIDs: Set<String>
+    ) -> (text: String, offsetMap: OffsetMap) {
+        let excludeRanges = excludedRanges(
+            textLength: text.utf16Length,
+            headings: headings,
+            skippedIDs: skippedIDs
+        )
 
         guard !excludeRanges.isEmpty else { return (text, .identity) }
 

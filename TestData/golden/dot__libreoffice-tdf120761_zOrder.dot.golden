@@ -1,4 +1,4 @@
-# TextMouth document golden, format 1
+# TextMouth document golden, format 2
 file: dot__libreoffice-tdf120761_zOrder.dot
 macOS: 26.3
 format: doc
@@ -10,3 +10,4 @@ text length: 14
 text checksum: 32662273cff99078
 first 300: Blah blah blah
 last 300: Blah blah blah
+page: 1 | 0:0 | Blah blah blah
