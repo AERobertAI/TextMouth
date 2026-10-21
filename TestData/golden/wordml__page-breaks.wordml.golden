@@ -1,0 +1,14 @@
+# TextMouth document golden, format 2
+file: wordml__page-breaks.wordml
+macOS: 26.3
+format: wordml
+title: page-breaks
+author: Unknown
+chapters: 1
+words: 30
+text length: 196
+text checksum: 08009a2cbbef12ca
+first 300: First page paragraph one.\n\nFirst page paragraph two runs on and continues here.\n\nThird paragraph begins with a page break before.\n\nFourth paragraph before a section break.Fifth paragraph after it.
+last 300: First page paragraph one.\n\nFirst page paragraph two runs on and continues here.\n\nThird paragraph begins with a page break before.\n\nFourth paragraph before a section break.Fifth paragraph after it.
+page: 1 | 0:0 | First page paragraph one
+page: 2 | 0:64 | continues here.\n\nThird p
