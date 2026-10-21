@@ -137,22 +137,45 @@ final class BrailleImportTests: XCTestCase {
 
     // MARK: - Emphasis (October 21, 2026)
 
-    /// The Markdown TextMouth wrote for the braille book at `url` before it
-    /// kept emphasis: each block's words alone, trimmed, as literals, the
-    /// way `BrailleBookReader.markdown(of:table:)` assembled them.
-    private func markdownWithoutEmphasis(of url: URL, table: String) throws -> String {
-        let pages = try BrailleFileReader.read(url, as: BrailleBookReader.kind(of: url))
-        let blocks = BraillePageAnalyzer.structure(of: pages).blocks
-        let work = try makeSandboxDirectory("BrailleWordsAlone")
-        let printed = try BrailleTranslator.translate(blocks.map(\.text), table: table, direction: .brailleToPrint, workingIn: work)
-        return zip(blocks, printed).compactMap { block, text in
-            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { return nil }
-            let literal = MarkdownLiteral.escaped(trimmed)
-            if case let .heading(level, _) = block { return String(repeating: "#", count: level) + " " + literal }
-            return literal
-        }.joined(separator: "\n\n")
-    }
+    /// The content.md TextMouth wrote for the Grade 1 samples, BRF and PEF
+    /// alike, before it kept emphasis: taken from main's output (protocol 1,
+    /// at 3917aa40, October 21, 2026), its helper reading the sample's 14
+    /// paragraphs, and pinned as it was. The PEF holds the BRF's pages row
+    /// for row, so main wrote the same content.md for both.
+    private let grade1MarkdownBeforeEmphasis = #"""
+        # Pride and Prejudice
+
+        # Chapter I
+
+        It is a truth universally acknowledged\, that a single man in possession of a good fortune must be in want of a wife\.
+
+        However little known the feelings or views of such a man may be on his first entering a neighbourhood\, this truth is so well fixed in the minds of the surrounding families\, that he is considered as the rightful property of some one or other of their daughters\.
+
+        \"My dear Mr\. Bennet\,\" said his lady to him one day\, \"have you heard that Netherfield Park is let at last\?\"
+
+        Mr\. Bennet replied that he had not\.
+
+        \"But it is\,\" returned she\; \"for Mrs\. Long has just been here\, and she told me all about it\.\"
+
+        Mr\. Bennet made no answer\.
+
+        \"Do not you want to know who has taken it\?\" cried his wife\, impatiently\.
+
+        \"You want to tell me\, and I have no objection to hearing it\.\"
+
+        This was invitation enough\.
+
+        \"Why\, my dear\, you must know\, Mrs\. Long says that Netherfield is taken by a young man of large fortune from the north of England\; that he came down on Monday in a chaise and four to see the place\, and was so much delighted with it that he agreed with Mr\. Morris immediately\; that he is to take possession before Michaelmas\, and some of his servants are to be in the house by the end of next week\.\"
+
+        \"What is his name\?\"
+
+        \"Bingley\.\"
+        """#
+
+    /// The content.md TextMouth wrote for the Grade 2 sample before it kept
+    /// emphasis, taken from main's output as `grade1MarkdownBeforeEmphasis`
+    /// is: its three rows read as one paragraph.
+    private let grade2MarkdownBeforeEmphasis = #"The boy and girl can go with you\. The church shop is open\. We like singing\."#
 
     /// The Grade 1 BRF's italic word, UEB's italic word indicator before
     /// "You", is kept in the book's content.md as Markdown emphasis, beside
@@ -170,32 +193,34 @@ final class BrailleImportTests: XCTestCase {
     }
 
     /// Keeping emphasis changes no word the reader reads (decision 5 of the
-    /// brief): each sample's Markdown, read by the reader's own parser,
-    /// gives exactly the text, heading labels, heading offsets, and heading
-    /// ids the Markdown of the words alone gives, which is what TextMouth
-    /// wrote before. So a braille book imported before, read again, meets
-    /// every saved place's words where they were, and no place or bookmark
-    /// moves.
+    /// brief). Each sample's content.md is the one main wrote before
+    /// emphasis was kept (pinned above), but for the delimiters of the
+    /// Grade 1 samples' one italic word, "You". Read by the reader's own
+    /// parser, the two give exactly the same text, heading labels, heading
+    /// offsets, and heading ids. So a braille book imported before, read
+    /// again, meets every saved place's words where they were, and no place
+    /// or bookmark moves.
     func testKeepingEmphasisChangesNoWordTheReaderReads() throws {
         let samples = [
-            ("brf/pride-and-prejudice-ch1-grade1.brf", grade1),
-            ("pef/pride-and-prejudice-ch1-grade1.pef", grade1),
-            ("brf/grade2-short.brf", grade2),
+            ("brf/pride-and-prejudice-ch1-grade1.brf", grade1, grade1MarkdownBeforeEmphasis),
+            ("pef/pride-and-prejudice-ch1-grade1.pef", grade1, grade1MarkdownBeforeEmphasis),
+            ("brf/grade2-short.brf", grade2, grade2MarkdownBeforeEmphasis),
         ]
-        for (path, table) in samples {
-            let copy = try copyOfFormatSample(path)
-            let withEmphasis = try MarkdownDocParser.parseChapter(markdown: BrailleBookReader.markdown(of: copy, table: table))
-            let wordsAlone = try MarkdownDocParser.parseChapter(markdown: markdownWithoutEmphasis(of: copy, table: table))
-            XCTAssertEqual(withEmphasis.text, wordsAlone.text, path)
-            XCTAssertEqual(withEmphasis.headings.map(\.text), wordsAlone.headings.map(\.text), path)
-            XCTAssertEqual(withEmphasis.headings.map(\.characterOffset), wordsAlone.headings.map(\.characterOffset), path)
-            XCTAssertEqual(withEmphasis.headings.map(\.id), wordsAlone.headings.map(\.id), path)
+        for (path, table, before) in samples {
+            let now = try BrailleBookReader.markdown(of: copyOfFormatSample(path), table: table)
+            XCTAssertEqual(now.replacingOccurrences(of: "*You*", with: "You"), before, path)
+            let withEmphasis = try MarkdownDocParser.parseChapter(markdown: now)
+            let beforeEmphasis = try MarkdownDocParser.parseChapter(markdown: before)
+            XCTAssertEqual(withEmphasis.text, beforeEmphasis.text, path)
+            XCTAssertEqual(withEmphasis.headings.map(\.text), beforeEmphasis.headings.map(\.text), path)
+            XCTAssertEqual(withEmphasis.headings.map(\.characterOffset), beforeEmphasis.headings.map(\.characterOffset), path)
+            XCTAssertEqual(withEmphasis.headings.map(\.id), beforeEmphasis.headings.map(\.id), path)
             XCTAssertFalse(withEmphasis.text.isEmpty, path)
         }
-        // The samples hold emphasis to keep: the Grade 1 ones' italic word.
-        let grade1Copy = try copyOfFormatSample("brf/pride-and-prejudice-ch1-grade1.brf")
-        XCTAssertNotEqual(
-            try BrailleBookReader.markdown(of: grade1Copy, table: grade1), try markdownWithoutEmphasis(of: grade1Copy, table: grade1)
+        // The Grade 1 samples hold emphasis to keep, their italic word.
+        XCTAssertTrue(
+            try BrailleBookReader.markdown(of: copyOfFormatSample("brf/pride-and-prejudice-ch1-grade1.brf"), table: grade1)
+                .contains("*You*")
         )
     }
 

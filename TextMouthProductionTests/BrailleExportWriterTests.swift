@@ -117,15 +117,20 @@ final class BrailleExportWriterTests: XCTestCase {
     func testTheBRFWriterWritesWhatTheDocumentWriterWrites() throws {
         let document = try prideDocument()
         let printBlocks = BrailleExportBlocks.printBlocks(of: document)
-        let blocks = BrailleExportBlocks.blocks(of: document)
         // The title, the chapter heading, and 12 paragraphs, with the
         // sample's text but for Markdown's reading of _You_ as emphasis.
-        XCTAssertEqual(blocks.count, 14)
-        XCTAssertEqual(printBlocks.map(\.block), blocks)
         let texts = try prideTexts().map { $0.replacingOccurrences(of: "_You_", with: "You") }
-        XCTAssertEqual(blocks.map(\.text), texts)
-        XCTAssertEqual(blocks.first, .heading(level: 1, text: "Pride and Prejudice"))
-        XCTAssertEqual(printBlocks.filter { !$0.emphasis.isEmpty }.count, 1)
+        XCTAssertEqual(printBlocks.map(\.block.text), texts)
+        XCTAssertEqual(printBlocks.first?.block, .heading(level: 1, text: "Pride and Prejudice"))
+        XCTAssertEqual(printBlocks.dropFirst().first?.block, .heading(level: 2, text: "Chapter I"))
+        // One block has emphasis, on exactly the three letters of "You".
+        let emphasized = printBlocks.filter { !$0.emphasis.isEmpty }
+        XCTAssertEqual(emphasized.count, 1)
+        let italicLetters = emphasized.first.map { block in
+            String(String.UnicodeScalarView(zip(block.block.text.unicodeScalars, block.emphasis).filter { $0.1 == .italic }.map(\.0)))
+        }
+        XCTAssertEqual(italicLetters, "You")
+        XCTAssertEqual(emphasized.first?.emphasis.filter { !$0.isEmpty && $0 != .italic }, [])
 
         let options = BrailleExportOptions(table: "en-ueb-g1.ctb")
         let folder = try makeSandboxDirectory("BrailleExportBRF")
@@ -137,7 +142,7 @@ final class BrailleExportWriterTests: XCTestCase {
         XCTAssertFalse(written.isEmpty)
         XCTAssertEqual(written, expected)
         XCTAssertTrue(String(decoding: written, as: UTF8.self).contains("8.1,YOU"))
-        let plain = try BrailleDocumentWriter.brf(of: blocks, options: options, workingIn: folder)
+        let plain = try BrailleDocumentWriter.brf(of: printBlocks.map(\.block), options: options, workingIn: folder)
         XCTAssertFalse(String(decoding: plain, as: UTF8.self).contains(".1,YOU"))
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), ["book.brf"])
     }
@@ -146,7 +151,8 @@ final class BrailleExportWriterTests: XCTestCase {
     /// strong as bold, both as both, in a heading, a paragraph, and a list
     /// item alike; code keeps the emphasis it stands in and no more; an
     /// ordered item's number, a code block, a table's cells, and the title
-    /// are plain. Their blocks are `blocks(of:)`'s, exactly.
+    /// are plain. Each block is the kind, level or depth, and text the walk
+    /// makes of its part of the document.
     func testPrintBlocksCarryTheirRunsEmphasis() {
         let list = ExportList(
             isOrdered: true, start: 1, depth: 0,
@@ -168,9 +174,13 @@ final class BrailleExportWriterTests: XCTestCase {
             ]
         )
         let printBlocks = BrailleExportBlocks.printBlocks(of: document)
-        XCTAssertEqual(printBlocks.map(\.block), BrailleExportBlocks.blocks(of: document))
-        XCTAssertEqual(printBlocks.map(\.block.text), [
-            "Harbour Notes", "The Pier", "A sharp and bold both code call.", "1. Item one", "x = 1", "Name; Depth",
+        XCTAssertEqual(printBlocks.map(\.block), [
+            .heading(level: 1, text: "Harbour Notes"),
+            .heading(level: 2, text: "The Pier"),
+            .paragraph(text: "A sharp and bold both code call."),
+            .listItem(depth: 1, text: "1. Item one"),
+            .paragraph(text: "x = 1"),
+            .paragraph(text: "Name; Depth"),
         ])
         // One letter for each scalar's emphasis: "." none, "i" italic, "b" bold, "x" both.
         let marks = printBlocks.map { block in
@@ -211,7 +221,7 @@ final class BrailleExportWriterTests: XCTestCase {
         let identifierPattern = #"<dc:identifier>urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}</dc:identifier>"#
         XCTAssertNotNil(text.range(of: identifierPattern, options: .regularExpression))
         let pages = try BrailleDocumentWriter.pef(
-            of: BrailleExportBlocks.blocks(of: document),
+            of: BrailleExportBlocks.printBlocks(of: document),
             metadata: PEFExportWriter.metadata(of: document.book), options: options, workingIn: folder
         )
         // The same pages, whatever the identifier and date.

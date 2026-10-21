@@ -386,17 +386,19 @@ final class BrailleHelperProtocolTests: XCTestCase {
     }
 
     /// Text with no emphasis translates exactly as it did in protocol 1: the
-    /// helper gives liblouis no typeform array for it, so the Grade 2
-    /// sample's lines still give its rows (as `BrailleTranslatorTests`
-    /// pins with the words-only form), and the emphasized form agrees.
+    /// helper gives liblouis no typeform array for it. The braille is pinned
+    /// as main's protocol 1 helper wrote it (at 3917aa40, October 21, 2026),
+    /// in braille ASCII, never made by this branch's helper; both forms of
+    /// `translate` give it, and the emphasized form carries no emphasis.
     func testTextWithNoEmphasisTranslatesAsBefore() throws {
         let lines = ["The quick brown fox jumps over the lazy dog.", "Knowledge and understanding."]
+        let protocol1 = [#",! QK BR[N FOX JUMPS OV] ! LAZY DOG4"#, #",K & "U/&+4"#].map { brailleCells($0) }
         let words = try BrailleTranslator.translate(lines, table: "en-ueb-g2.ctb", direction: .printToBraille, workingIn: work)
         let emphasized = try BrailleTranslator.translate(
             lines.map { EmphasizedText($0) }, table: "en-ueb-g2.ctb", direction: .printToBraille, workingIn: work
         )
-        XCTAssertEqual(emphasized.map(\.text), words)
-        XCTAssertFalse(emphasized.contains { $0.hasEmphasis })
+        XCTAssertEqual(words, protocol1)
+        XCTAssertEqual(emphasized, protocol1.map { EmphasizedText($0) })
         assertWorkFolderEmpty()
     }
 
