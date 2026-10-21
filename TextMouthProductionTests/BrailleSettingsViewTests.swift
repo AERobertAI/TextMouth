@@ -170,9 +170,7 @@ final class BrailleSettingsViewTests: XCTestCase {
         try withBrailleTab(settings: settings, codes: codesWithAFixtureMacLanguage()) { hosting, _ in
             let (language, _, _) = try popUps(in: hosting)
             let frenchItem = try XCTUnwrap(language.itemTitles.firstIndex(of: french))
-            MacBrailleTableCheck.$verdicts.withValue(MacBrailleTableCheck.Verdicts()) {
-                language.menu?.performActionForItem(at: frenchItem)
-            }
+            language.menu?.performActionForItem(at: frenchItem)
             XCTAssertTrue(waitUntil(timeout: 5) { heard.contains(expected) }, "VoiceOver heard \(heard)")
             XCTAssertEqual(settings.brailleTable, "en-ueb-g2.ctb")
             XCTAssertEqual(BraillePreferences.table.read(from: defaults), "en-ueb-g2.ctb")
@@ -197,13 +195,12 @@ final class BrailleSettingsViewTests: XCTestCase {
         let settings = SettingsViewModel(
             notificationCenter: NotificationCenter(), initializeServices: false, userDefaults: defaults, configService: service
         )
-        try withBrailleTab(settings: settings, codes: BrailleTableCatalog.offeredCodes) { hosting, _ in
+        let checkRoot = try makeSandboxDirectory("BrailleTabFrenchCheck")
+        try withBrailleTab(settings: settings, codes: BrailleTableCatalog.offeredCodes, checkRoot: checkRoot) { hosting, _ in
             let (language, _, _) = try popUps(in: hosting)
             XCTAssertEqual(language.itemTitles.first, english)
             let frenchItem = try XCTUnwrap(language.itemTitles.firstIndex(of: french))
-            MacBrailleTableCheck.$verdicts.withValue(MacBrailleTableCheck.Verdicts()) {
-                language.menu?.performActionForItem(at: frenchItem)
-            }
+            language.menu?.performActionForItem(at: frenchItem)
             XCTAssertTrue(waitUntil(timeout: 10) { settings.brailleTable == "mac:fr-bfu-g2.ctb" }, "the table is \(settings.brailleTable)")
             XCTAssertTrue(waitUntil {
                 hosting.layoutSubtreeIfNeeded()
@@ -213,6 +210,8 @@ final class BrailleSettingsViewTests: XCTestCase {
             }, "the pop-ups did not show French")
         }
         service.flushScheduledSave()
+        // The check worked in the sandbox's folder, and left nothing there.
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: checkRoot.path), [])
         XCTAssertEqual(BraillePreferences.table.read(from: defaults), "mac:fr-bfu-g2.ctb")
         let saved = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any]
         XCTAssertEqual(saved?["brailleTable"] as? String, "mac:fr-bfu-g2.ctb")
@@ -355,13 +354,22 @@ final class BrailleSettingsViewTests: XCTestCase {
 
     /// Hosts the tab, showing `codes`, at the Settings window's size, waits
     /// until its three pop-ups are drawn, and passes the hosting view to
-    /// `body`.
+    /// `body`. A Mac table chosen there is checked with verdicts of the
+    /// test's own, in a working folder made in `checkRoot` (a sandbox folder
+    /// of its own when nil), given through the environment, so neither
+    /// depends on when SwiftUI calls the pop-ups' bindings (review R8).
     private func withBrailleTab(
         settings: SettingsViewModel,
         codes: [BrailleCode] = BrailleTableCatalog.bundledCodes,
+        checkRoot: URL? = nil,
         _ body: (NSView, SettingsViewModel) throws -> Void
     ) throws {
+        let context = BrailleTableCheckContext(
+            verdicts: MacBrailleTableCheck.Verdicts(),
+            temporaryRoot: try checkRoot ?? makeSandboxDirectory("BrailleTabCheck")
+        )
         let view = BrailleSettingsView(codes: codes)
+            .environment(\.brailleTableCheck, context)
             .environmentObject(settings)
             .frame(width: SettingsView.windowSize.width, height: SettingsView.windowSize.height)
         try withHostedView(

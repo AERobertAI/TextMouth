@@ -106,6 +106,10 @@ struct BrailleTablePickers: View {
     /// show until its check ends; nil when none is.
     @State private var pending: String?
 
+    /// What a chosen Mac table is checked with: the app's verdicts and
+    /// temporary directory, unless a hosted test gives its own (review R8).
+    @Environment(\.brailleTableCheck) private var checkContext
+
     /// Pop-ups for `table` among `codes`, with each pop-up's hint.
     init(
         table: Binding<String>,
@@ -246,8 +250,10 @@ struct BrailleTablePickers: View {
             return
         }
         pending = chosen.id
+        // Read now, as the choice is made, not once the task has begun.
+        let context = checkContext
         BrailleTableChoiceChecks.shared.run {
-            let verdict = await MacBrailleTableCheck.verdictOffTheMainThread(for: chosen.id)
+            let verdict = await context.verdict(for: chosen.id)
             guard pending == chosen.id else { return }
             pending = nil
             switch verdict {
@@ -258,6 +264,46 @@ struct BrailleTablePickers: View {
                 VoiceOverAnnouncer.afterSheetCloses { VoiceOverAnnouncer.announce(sentence) }
             }
         }
+    }
+}
+
+// MARK: - Where a Chosen Table Is Checked
+
+/// What the pop-ups check a chosen Mac table with: the verdicts to keep it
+/// in and the folder to make the check's working folder in, each the app's
+/// own unless a hosted test gives its own through the environment
+/// (`.environment(\.brailleTableCheck, ...)`, review R8). An environment
+/// value reaches the pop-ups however late SwiftUI calls their bindings,
+/// where a task-local bound around a click may not.
+struct BrailleTableCheckContext: Sendable {
+    /// The verdicts to keep the check in; nil for the session's.
+    var verdicts: MacBrailleTableCheck.Verdicts?
+    /// The folder the check's working folder is made in; nil for the
+    /// temporary directory.
+    var temporaryRoot: URL?
+
+    /// The verdict for `tableID`, checked off the main thread as
+    /// `MacBrailleTableCheck.verdictOffTheMainThread(for:)` does, with this
+    /// context's verdicts and folder.
+    func verdict(for tableID: String) async -> MacBrailleTableCheck.Verdict {
+        await MacBrailleTableCheck.$verdicts.withValue(verdicts ?? MacBrailleTableCheck.verdicts) {
+            await TextutilDocumentReader.$temporaryRoot.withValue(temporaryRoot ?? TextutilDocumentReader.temporaryRoot) {
+                await MacBrailleTableCheck.verdictOffTheMainThread(for: tableID)
+            }
+        }
+    }
+}
+
+/// The environment's key for `BrailleTableCheckContext`.
+private struct BrailleTableCheckKey: EnvironmentKey {
+    static let defaultValue = BrailleTableCheckContext()
+}
+
+extension EnvironmentValues {
+    /// What the braille table pop-ups check a chosen Mac table with.
+    var brailleTableCheck: BrailleTableCheckContext {
+        get { self[BrailleTableCheckKey.self] }
+        set { self[BrailleTableCheckKey.self] = newValue }
     }
 }
 
