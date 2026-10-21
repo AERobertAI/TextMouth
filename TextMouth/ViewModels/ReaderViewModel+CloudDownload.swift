@@ -293,14 +293,29 @@ extension ReaderViewModel {
 
     /// Goes on opening the book once `loadContent()` has found, off the main
     /// thread, that the library is in the cloud location `location` and the
-    /// book's state is `state` (FR02). A book on this Mac loads; a book only
-    /// partly here downloads first, even one the library list is already
-    /// downloading (asking the sync service again is harmless, and the
-    /// reader then waits for it too); a book that has not arrived says so.
-    func continueOpening(in location: StorageLocation, found state: BookCloudState) {
+    /// book's state, checked where the book was at `filePath`, is `state`
+    /// (FR02). A book on this Mac loads; a book only partly here downloads
+    /// first, even one the library list is already downloading (asking the
+    /// sync service again is harmless, and the reader then waits for it
+    /// too); a book that has not arrived says so.
+    ///
+    /// A book the check did not find on this Mac, or found not wholly here,
+    /// may only be one whose package the library was moving as the check
+    /// looked for it, or has moved since: the check finds no package where
+    /// the book was (`.waitingForSync`), or cannot list one in the middle of
+    /// its move (`.inCloud`). Its state then goes through the same check as
+    /// a failed read (`loadAgainAfterMove(ofFilesReadAt:)`): the book loads
+    /// again from where it is, once any move is over, and what this check
+    /// found is neither recorded for the library list nor acted on. Before,
+    /// the reader said the book had not arrived, or downloaded it, and only
+    /// Try Again opened it (TODO P10).
+    func continueOpening(in location: StorageLocation, found state: BookCloudState, at filePath: String) {
         guard !hasClosed else { return }
         cloudSession.location = location
         cloudServices.states.setLibraryLocation(location)
+        if !Self.isWhollyOnThisMac(state), loadAgainAfterMove(ofFilesReadAt: filePath) {
+            return
+        }
         switch state {
         case .downloading:
             // That download records its own progress.
@@ -318,6 +333,17 @@ extension ReaderViewModel {
                 at: .waitingForSync,
                 announcing: ReaderCloudWording.waitingForSync(title: book.title, provider: location.provider)
             )
+        }
+    }
+
+    /// Whether `state`, a book's cloud state as a check found it, says that
+    /// every file of the book is on this Mac, so the book can be read now.
+    private static func isWhollyOnThisMac(_ state: BookCloudState) -> Bool {
+        switch state {
+        case .local, .downloaded:
+            return true
+        case .inCloud, .downloading, .downloadFailed, .waitingForSync:
+            return false
         }
     }
 

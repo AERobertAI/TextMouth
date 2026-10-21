@@ -1321,7 +1321,7 @@ final class ReaderViewModel: ObservableObject {
             if location.isCloud {
                 let state = storage.state(of: package)
                 DispatchQueue.main.async { [weak self] in
-                    self?.continueOpening(in: location, found: state)
+                    self?.continueOpening(in: location, found: state, at: bookCopy.filePath)
                 }
                 return
             }

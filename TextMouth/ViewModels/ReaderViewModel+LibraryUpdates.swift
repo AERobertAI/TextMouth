@@ -265,17 +265,19 @@ extension ReaderViewModel {
     }
 
     /// Loads the book again, rather than show why a load could not read its
-    /// files at `filePath`, when the library may have taken those files
-    /// away: once the move of the book's package under way is over, or at
-    /// once when a move began while the book loaded, even one put back, or
-    /// the library has given the book another path since the load began.
-    /// The library moves a package before it says where the package went,
-    /// and a move made off the main thread lets a read's failure reach the
-    /// reader in between, so the read of a moving package fails for the
-    /// move, not for the book. Loaded again, a book that really is damaged
-    /// or missing says so as it would have without a move. Before, the
-    /// failure showed in place of the book, an audiobook naming its moved
-    /// folder of tracks as a damaged file (TODO P10).
+    /// files at `filePath`, or say that they have not arrived on this Mac or
+    /// must be downloaded (`continueOpening(in:found:at:)`), when the library
+    /// may have taken those files away: once the move of the book's package
+    /// under way is over, or at once when a move began while the book
+    /// loaded, even one put back, or the library has given the book another
+    /// path since the load began. The library moves a package before it
+    /// says where the package went, and a move made off the main thread
+    /// lets a read's failure reach the reader in between, so the read of a
+    /// moving package fails for the move, not for the book. Loaded again, a
+    /// book that really is damaged or missing says so as it would have
+    /// without a move. Before, the failure showed in place of the book, an
+    /// audiobook naming its moved folder of tracks as a damaged file
+    /// (TODO P10).
     ///
     /// - Returns: Whether the book loads again, so the failure is not shown.
     func loadAgainAfterMove(ofFilesReadAt filePath: String) -> Bool {
@@ -283,8 +285,8 @@ extension ReaderViewModel {
             loadWaitsForPackageMove = true
             DiagnosticLog.event(
                 .storage,
-                "READER_LOAD_AFTER_MOVE: \(book.title): its files could not be read as its package moved; "
-                    + "it loads again once the move is over"
+                "READER_LOAD_AFTER_MOVE: \(book.title): its files were not where the load looked, "
+                    + "as its package moved; it loads again once the move is over"
             )
             return true
         }

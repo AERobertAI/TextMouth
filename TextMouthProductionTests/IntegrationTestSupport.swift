@@ -562,6 +562,60 @@ private final class PackageMoveCount {
     var count = 0
 }
 
+// MARK: - Book Storage Observed by the Test
+
+/// Book storage that answers as `storage` does, except that, once a test
+/// asks, a package missing from disk is waiting for sync, as the app's
+/// storage finds such a package (`BookCloudStorageService.state(of:in:)`)
+/// whatever state `storage` would give: so a reader whose load checks its
+/// book where the package has just moved away from finds it as it would
+/// in the app (TODO P10). Safe to call from any thread, as readers' loads
+/// call in from their own queues.
+final class ObservedBookStorage: BookCloudStorage, @unchecked Sendable {
+    /// Where every answer comes from but the one above.
+    private let storage: any BookCloudStorage
+    /// Guards every stored property below.
+    private let lock = NSLock()
+    /// Whether a package missing from disk is waiting for sync.
+    private var missingPackagesWaitForSync = false
+
+    /// Storage answering as `storage` does: a local library's unless a test
+    /// gives its own.
+    init(_ storage: any BookCloudStorage = LocalBookStorage()) {
+        self.storage = storage
+    }
+
+    /// From now on, a package missing from disk is waiting for sync.
+    func answerWaitingForSyncForMissingPackages() {
+        lock.withLock { missingPackagesWaitForSync = true }
+    }
+
+    /// Where `storage` says the library is.
+    func libraryLocation() -> StorageLocation {
+        storage.libraryLocation()
+    }
+
+    /// Waiting for sync for a package missing from disk, once a test asked;
+    /// otherwise what `storage` says.
+    func state(of package: BookPackage) -> BookCloudState {
+        let followsTheDisk = lock.withLock { missingPackagesWaitForSync }
+        if followsTheDisk, !FileManager.default.fileExists(atPath: package.url.path) {
+            return .waitingForSync
+        }
+        return storage.state(of: package)
+    }
+
+    /// `storage`'s download.
+    func download(_ package: BookPackage) -> AsyncThrowingStream<BookDownloadProgress, Error> {
+        storage.download(package)
+    }
+
+    /// `storage`'s removal of a download.
+    func removeDownload(of package: BookPackage) throws {
+        try storage.removeDownload(of: package)
+    }
+}
+
 // MARK: - Where Am I's End Sound, Passed by the Test
 
 /// The work a reader's Where Am I announcement leaves for once its end

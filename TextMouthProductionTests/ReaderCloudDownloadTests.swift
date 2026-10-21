@@ -1348,7 +1348,101 @@ final class ReaderCloudDownloadTests: XCTestCase {
         reader.stop()
     }
 
+    // MARK: - A Book Checked as Its Package Moves (TODO P10)
+
+    /// The library moves a book's package in the moment its reader's load
+    /// checks the book's cloud state, and the state found reaches the reader
+    /// before the library says where the book is now. Checked where the book
+    /// was, the package is gone, so the app's storage calls the book not
+    /// arrived; or, in the middle of its move, the package cannot be listed,
+    /// so the storage calls it not downloaded. The reader takes either for
+    /// the move's doing: once the move is over it checks the book again where
+    /// it is now and opens it, recording nothing of the first check, saying
+    /// nothing of a sync, and downloading nothing. Before, it said the book
+    /// had not arrived on this Mac, or downloaded it, and only Try Again
+    /// opened it.
+    func testABookCheckedAsItsPackageMovesOpensFromWhereItIsNow() throws {
+        for foundDuringTheMove in [BookCloudState.waitingForSync, .inCloud] {
+            let context = "\(foundDuringTheMove) found as the package moved"
+            let cloud = try makeCloudReaders("Cloud Checked During Move \(foundDuringTheMove)")
+            let book = try makeTextBook("Quay Notes", in: cloud)
+            if foundDuringTheMove == .waitingForSync {
+                cloud.observed.answerWaitingForSyncForMissingPackages()
+            }
+            let loads = holdLoads()
+            let reader = cloud.open(book, loadQueue: loads.queue)
+            let mark = announcementMark()
+            let storage = cloud.storage
+
+            try cloud.world.library.commitLibraryTransition(
+                Self.library(cloud.world.library.library, moving: book.id, to: "\(cloud.world.folder.path)/Shelf"),
+                affectedBookIDs: [book.id],
+                disk: .movingPackages {
+                    // A package in the middle of its move cannot be listed.
+                    if foundDuringTheMove == .inCloud {
+                        storage.setState(.inCloud, of: book.id)
+                    }
+                    loads.letReadAndHandOver()
+                    storage.setState(.downloaded, of: book.id)
+                }
+            )
+
+            assertOpensWithNothingSaid(reader, book, in: cloud, since: mark, context)
+        }
+    }
+
+    /// The library's whole move of a book's package is over after the
+    /// reader's load began but before it checks the book's cloud state. The
+    /// check, made where the book was, finds no package there, so the app's
+    /// storage calls the book not arrived; the reader, told where the book
+    /// is now, checks it again there and opens it, saying nothing of a sync.
+    func testABookCheckedAfterItsPackageMovedOpensFromWhereItIsNow() throws {
+        let cloud = try makeCloudReaders("Cloud Checked After Move")
+        let book = try makeTextBook("Quay Notes", in: cloud)
+        cloud.observed.answerWaitingForSyncForMissingPackages()
+        let loads = holdLoads()
+        let reader = cloud.open(book, loadQueue: loads.queue)
+        let mark = announcementMark()
+
+        let move = outcome { await cloud.world.library.moveBooksReturningOutcome([book], toFolder: "\(cloud.world.folder.path)/Shelf") }
+        XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
+        loads.letRead()
+
+        assertOpensWithNothingSaid(reader, book, in: cloud, since: mark, "checked after the move")
+    }
+
     // MARK: - Fixtures
+
+    /// Waits for `reader` to open `book` or stop, and checks that it opened
+    /// from where the book is now, with no error, no cloud phase, and no
+    /// download, the library list holding the book as downloaded, and
+    /// nothing announced since `mark`; `context` begins each failure.
+    private func assertOpensWithNothingSaid(
+        _ reader: ReaderViewModel,
+        _ book: Book,
+        in cloud: CloudReaders,
+        since mark: Int,
+        _ context: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        waitFor("\(context): the book to open, or the reader to stop", file: file, line: line) {
+            !reader.isLoading || reader.cloudPhase != nil
+        }
+        XCTAssertNil(reader.cloudPhase, "\(context): the reader stopped", file: file, line: line)
+        XCTAssertNotNil(reader.content, "\(context): the book did not open", file: file, line: line)
+        XCTAssertNil(reader.errorMessage, "\(context): the book did not open", file: file, line: line)
+        XCTAssertEqual(
+            reader.book.filePath,
+            cloud.world.library.bookByID(book.id)?.filePath,
+            "\(context): the reader does not name the book where it is now",
+            file: file,
+            line: line
+        )
+        XCTAssertEqual(cloud.storage.downloadsStarted, [], "\(context): the book was downloaded", file: file, line: line)
+        XCTAssertEqual(cloud.states.state(of: book.id), .downloaded, "\(context): the library list", file: file, line: line)
+        XCTAssertEqual(announcements(since: mark), [], "\(context): what was said", file: file, line: line)
+    }
 
     /// Progress of `files` of `totalFiles` files, `bytes` of `totalBytes`.
     private static func progress(_ files: Int, of totalFiles: Int, bytes: Int64, of totalBytes: Int64) -> BookDownloadProgress {
@@ -1627,6 +1721,10 @@ private final class CloudReaders {
     let world: IntegrationWorld
     /// Where the library is, each book's state, and its downloads.
     let storage: FakeBookCloudStorage
+    /// The storage the readers ask: `storage`'s answers, except that a test
+    /// can have it find a package missing from disk waiting for sync, as the
+    /// app's storage does (TODO P10).
+    let observed: ObservedBookStorage
     /// What the readers record for the library list.
     let states = BookCloudStates()
     /// The Working Copies folder.
@@ -1647,6 +1745,7 @@ private final class CloudReaders {
     init(world: IntegrationWorld, location: StorageLocation, copiesFolder: URL, clone: ReaderWorkingCopies.Cloner?) {
         self.world = world
         storage = FakeBookCloudStorage(location: location)
+        observed = ObservedBookStorage(storage)
         self.copiesFolder = copiesFolder
         copies = clone.map { ReaderWorkingCopies(folder: copiesFolder, clone: $0) }
             ?? ReaderWorkingCopies(folder: copiesFolder)
@@ -1659,8 +1758,13 @@ private final class CloudReaders {
 
     /// Opens a reader for `book`, which starts getting it ready at once,
     /// claiming its autoplay requests from `autoplayRequests`, or from the
-    /// world's when nil.
-    func open(_ book: Book, autoplayRequests: ReaderAutoplayRequests? = nil) -> ReaderViewModel {
+    /// world's when nil, and reading the book on `loadQueue`, which a test
+    /// can hold (a global queue when nil, as in the app).
+    func open(
+        _ book: Book,
+        autoplayRequests: ReaderAutoplayRequests? = nil,
+        loadQueue: DispatchQueue? = nil
+    ) -> ReaderViewModel {
         let reader = ReaderViewModel(
             book: book,
             libraryViewModel: world.library,
@@ -1669,13 +1773,14 @@ private final class CloudReaders {
             autoplayRequests: autoplayRequests ?? world.autoplayRequests,
             notificationCenter: world.notifications,
             cloud: ReaderCloudServices(
-                storage: storage,
+                storage: observed,
                 states: states,
                 isDataless: cloudOnly.check,
                 workingCopies: copies,
                 quietAnnouncementInterval: quietAnnouncementInterval
             ),
-            nowPlaying: nowPlaying
+            nowPlaying: nowPlaying,
+            loadQueue: loadQueue
         )
         readers.append(reader)
         return reader
