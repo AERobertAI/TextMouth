@@ -359,6 +359,32 @@ final class PagesUpgradeTests: XCTestCase {
         )
     }
 
+    /// The batch ends with one line in the debug log that sums up its
+    /// re-read for pages (PG16), which no listener hears: here one book
+    /// given its pages, one kept as changed, and one skipped with its file
+    /// missing. A batch that chooses no book for its pages says nothing of
+    /// them.
+    func testTheBatchSumsUpItsReReadForPagesInOneLine() async throws {
+        let world = try makeIntegrationWorld("Pages Upgrade Summary")
+        let plain = try makeBookBeforePages(sample: Self.epubSample, in: world)
+        let changed = try makeBookBeforePages(
+            sample: Self.epubSample, changingText: { $0.replacingOccurrences(of: "crate", with: "carton") }, in: world
+        )
+        let missing = try makeBookBeforePages(sample: "pdf/labelled-pages.pdf", places: Self.pdfPlaces, in: world)
+        try FileManager.default.removeItem(at: missing.book.bookFileURL)
+        world.library.library.books = [plain.book, changed.book, missing.book]
+        let summary = "PAGES_UPGRADE_SUMMARY: 1 given pages, 1 kept as changed, 1 skipped (0 in the cloud, 1 missing), 0 failed"
+        let summariesBefore = debugLogLines(containing: summary).count
+
+        await runBatch(in: world)
+
+        XCTAssertEqual(debugLogLines(containing: summary).count, summariesBefore + 1)
+        let anySummary = "PAGES_UPGRADE_SUMMARY:"
+        let afterFirst = debugLogLines(containing: anySummary).count
+        await runBatch(in: world)
+        XCTAssertEqual(debugLogLines(containing: anySummary).count, afterFirst, "a batch that chose no book summed up pages")
+    }
+
     /// textutil's run for a document's pages can fail or time out (PG16,
     /// finding 7). The document is then read without pages, and its page
     /// reader is not recorded as done: the next launch reads it once more.
