@@ -146,6 +146,17 @@ extension ReaderViewModel {
         if let page { go(to: page) }
     }
 
+    /// Ask for the page field (Go to Page…, PG03): the status row opens it at
+    /// each request, and puts the keyboard in it. A book without pages says
+    /// so and opens nothing.
+    func requestGoToPage() {
+        guard hasPages else {
+            announceToVoiceOver(ReaderPageWording.noPages)
+            return
+        }
+        goToPageRequests += 1
+    }
+
     /// Navigate to the start of `page`, so that Go Back returns to where the
     /// move began, and say the label of the page holding the place reached:
     /// the last of the pages that share it.
