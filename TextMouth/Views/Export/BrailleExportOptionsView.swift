@@ -59,9 +59,12 @@ enum BrailleExportWording {
 
     /// What the options say when the Braille setting's table, `table`, is one
     /// of this Mac's that this Mac cannot use, and the export starts from
-    /// the default table instead (review R4).
+    /// the default table instead (review R4). The table is named as the
+    /// refusal names it, by its display name, or by its file name when this
+    /// Mac no longer offers it (review F6).
     static func startsFromDefault(replacing table: String) -> String {
-        "TextMouth can't use the braille table chosen in Settings, \u{201C}\(table)\u{201D}, so this export starts from "
+        let name = BrailleTableCatalog.table(withID: table)?.displayName ?? BrailleTableSource.parse(table).fileName
+        return "TextMouth can't use the braille table chosen in Settings, \u{201C}\(name)\u{201D}, so this export starts from "
             + "\(BrailleTableCatalog.description(ofTableID: BrailleTableCatalog.defaultTableID))."
     }
 }

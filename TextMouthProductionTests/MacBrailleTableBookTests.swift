@@ -236,11 +236,19 @@ final class MacBrailleTableBookTests: XCTestCase {
         var options = BrailleExportOptions(table: BrailleTableCatalog.defaultTableID, replacedTable: gone)
         options.table = "en-us-g1.ctb"
         XCTAssertNil(options.replacedTable)
+        // The table is named by its file name when no Mac offers it, and by
+        // its display name when this one does (review F6).
         XCTAssertEqual(
             BrailleExportWording.startsFromDefault(replacing: gone),
-            "TextMouth can't use the braille table chosen in Settings, \u{201C}\(gone)\u{201D}, so this export starts from "
-                + "Unified English Braille, contracted (Grade 2)."
+            "TextMouth can't use the braille table chosen in Settings, \u{201C}no-such-table-on-any-mac.ctb\u{201D}, "
+                + "so this export starts from Unified English Braille, contracted (Grade 2)."
         )
+        if let offered = BrailleTableCatalog.offeredTables.first(where: { $0.source == .mac }) {
+            XCTAssertTrue(
+                BrailleExportWording.startsFromDefault(replacing: offered.id).contains("\u{201C}\(offered.displayName)\u{201D}"),
+                offered.id
+            )
+        }
     }
 
     // MARK: - An Export During a Check (review R5, F3)
