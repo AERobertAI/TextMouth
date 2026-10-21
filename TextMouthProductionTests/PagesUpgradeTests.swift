@@ -13,8 +13,24 @@ import XCTest
 /// Every book here is imported from a copy of a sample, then put back into
 /// the state before pages: content.md as the book's file gives it without
 /// page markers, committed to a record that names no page reader.
+///
+/// The app ships with the re-read switched off until the review's safety
+/// findings are fixed (`PageReaderVersions.launchRereadIsOn`), so every test
+/// switches it on to keep its code working, and puts it back after; one
+/// test switches it off, as the app has it, and finds no book read again.
 @MainActor
 final class PagesUpgradeTests: XCTestCase {
+    /// The launch re-read's switch as each test found it.
+    private var launchRereadBefore = PageReaderVersions.launchRereadIsOn
+
+    override func setUp() async throws {
+        launchRereadBefore = PageReaderVersions._setLaunchRereadForTesting(true)
+    }
+
+    override func tearDown() async throws {
+        PageReaderVersions._setLaunchRereadForTesting(launchRereadBefore)
+    }
+
     // MARK: - The Versions
 
     /// Only the formats that gained pages have a page reader; every other
@@ -230,6 +246,51 @@ final class PagesUpgradeTests: XCTestCase {
             _ = try MarkdownCacheService.readingTextsWithoutPages(for: book)
             print("PAGES_COMPARISON_SECONDS: \(name): \(Date().timeIntervalSince(started))")
         }
+    }
+
+    // MARK: - The Switch
+
+    /// With the launch re-read switched off, as the app ships it, the batch
+    /// reads no book again for its pages. An EPUB from before pages is not
+    /// chosen at all; a PDF from before pages whose row lags its record (as
+    /// a crash leaves it) is chosen for its cache format and recovered from
+    /// its record, as before PG09. Both keep content.md byte for byte, with
+    /// no pages, no page reader, and their places, and the log names
+    /// neither. A book read from its file now still gains its pages and
+    /// records its page reader.
+    func testWithTheSwitchOffTheBatchReadsNoBookAgainForPages() async throws {
+        PageReaderVersions._setLaunchRereadForTesting(false)
+        let world = try makeIntegrationWorld("Pages Upgrade Switched Off")
+        let untouched = try makeBookBeforePages(sample: Self.epubSample, in: world)
+        let behind = try makeBookBeforePages(sample: "pdf/labelled-pages.pdf", places: Self.pdfPlaces, in: world)
+        var behindRow = behind.book
+        behindRow.cacheFormatVersion = "3.0.3"
+        XCTAssertTrue(MarkdownCacheService.isCacheOutdated(stored: behindRow.cacheFormatVersion))
+        world.library.library.books = [untouched.book, behindRow]
+        XCTAssertEqual(
+            LibraryViewModel.booksNeedingCacheUpdate([untouched.book, behindRow], access: .live).map(\.id),
+            [behindRow.id],
+            "only the row behind its record is chosen"
+        )
+
+        await runBatch(in: world)
+
+        for fixture in [untouched, behind] {
+            let row = try XCTUnwrap(world.library.bookByID(fixture.book.id))
+            let cacheURL = MarkdownCacheService.cacheURL(for: row)
+            XCTAssertEqual(try Data(contentsOf: cacheURL), fixture.bytes, "\(row.format) was read again for pages")
+            XCTAssertTrue(try MarkdownCacheService.loadFromCache(for: row).pages.isEmpty, "\(row.format)")
+            XCTAssertNil(row.pageReaderVersion, "\(row.format)")
+            XCTAssertNil(try BookInfo.load(from: row.tmbDirectory).state.pageReaderVersion, "\(row.format)")
+            XCTAssertEqual(row.cacheFormatVersion, MarkdownCacheService.currentCacheVersion, "\(row.format)")
+            XCTAssertEqual(row.readingPosition?.characterOffset, fixture.book.readingPosition?.characterOffset, "\(row.format)")
+            XCTAssertEqual(debugLogLines(containing: "PAGES_SKIPPED_CHANGED_TEXT: \(row.title)").count, 0)
+            XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([row], access: .live), [], "\(row.format)")
+        }
+
+        let readNow = try world.importBook(from: copyOfFormatSample(Self.epubSample, named: "Read Now.epub"))
+        XCTAssertEqual(readNow.pageReaderVersion, PageReaderVersions.current(for: .epub))
+        XCTAssertFalse(try MarkdownCacheService.loadFromCache(for: readNow).pages.isEmpty, "a book read now gained no pages")
     }
 
     /// A book of a format without pages is never chosen for them.

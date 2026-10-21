@@ -683,8 +683,9 @@ extension LibraryViewModel {
                 // Needs cache if missing or if the stored version is outdated
                 if !MarkdownCacheService.cacheExists(for: book) { return true }
                 if MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion) { return true }
-                // Its format gained pages since content.md was written (PG09).
-                if PageReaderVersions.isOutdated(book) { return true }
+                // Its format gained pages since content.md was written, and
+                // the launch re-read is switched on (PG09).
+                if PageReaderVersions.isDueForPages(book) { return true }
                 return hasResizedTextCacheFile(book, isDataless: access.isDataless)
                     || hasRedatedTextCache(book, isDataless: access.isDataless)
             }
@@ -1018,11 +1019,12 @@ extension LibraryViewModel {
 
     /// Whether `book`'s text cache is current but for its pages: written by
     /// this build's cache format, and by an older page reader than its
-    /// format has (PG09). Such a book is read again to gain its pages; one
-    /// behind in its cache format too is rebuilt as every version bump
-    /// rebuilds it.
+    /// format has, while the launch re-read is switched on (PG09,
+    /// `PageReaderVersions.isDueForPages`). Such a book is read again to
+    /// gain its pages; one behind in its cache format too is rebuilt as
+    /// every version bump rebuilds it.
     nonisolated private static func isBehindOnlyInPages(_ book: Book) -> Bool {
-        PageReaderVersions.isOutdated(book)
+        PageReaderVersions.isDueForPages(book)
             && !MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion)
     }
 
@@ -1056,10 +1058,12 @@ extension LibraryViewModel {
 
     /// Settles a book whose content.md is kept as it is: its summary, once
     /// the text is indexed and committed with the page reader its format
-    /// has now when the book was behind in it (`PAGES_SKIPPED_CHANGED_TEXT:
-    /// <title>` is logged then), or nil when nothing was committed.
+    /// has now when the book was behind in it while the launch re-read is
+    /// switched on (`PAGES_SKIPPED_CHANGED_TEXT: <title>` is logged then),
+    /// or nil when nothing was committed. While the re-read is off, the
+    /// record keeps its own page reader, so a later re-read still checks it.
     nonisolated private static func keptText(of book: Book, access: MaintenanceFileAccess) -> ContentAnalysisSummary? {
-        let behindInPages = PageReaderVersions.isOutdated(book)
+        let behindInPages = PageReaderVersions.isDueForPages(book)
         if behindInPages {
             DiagnosticLog.event(.storage, "PAGES_SKIPPED_CHANGED_TEXT: \(book.title)")
         }
