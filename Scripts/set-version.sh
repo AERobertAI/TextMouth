@@ -302,7 +302,8 @@ set_version() {
 # and how it called xcodegen. The copy finds its repository from its own
 # location, so it can change only the sandbox's project.yml, and the stand-in
 # is the only xcodegen it can reach: no case can touch the real project.yml
-# or regenerate the real project.
+# or regenerate the real project. The last cases check the Makefile's wiring
+# of the script, with make -n, which runs nothing.
 #
 # Output: one "ok" or "not ok" line per case, with the reasons and the
 # script's report under each failure, then the totals.
@@ -315,7 +316,7 @@ case_problems="" # reasons the case in progress fails, one per line
 sandbox=""       # the case's stand-in for the repository ("" for a case with none)
 fixture=""       # the project.yml the case started from
 stub_log=""      # where the stand-in xcodegen records its calls
-output=""        # the script's report: standard output and error together
+output=""        # the report of the script or of make: standard output and error together
 status=0         # its exit status
 WORK=""          # the selftest's temporary folder
 STUBS=""         # the folder holding the stand-in xcodegen
@@ -703,6 +704,35 @@ xcodegen_cases() {
   end_case
 }
 
+# makefile_cases: the Makefile runs this script for make set-version, and
+# lists set-version in its help. make -n prints what a target would run and
+# runs none of it.
+makefile_cases() {
+  local real_make
+  real_make=$(command -v make) || {
+    begin_check "the Makefile cases need make"
+    problem "make was not found"
+    end_case
+    return
+  }
+  mkdir -p "$WORK/make"
+  cp "$ROOT/Makefile" "$WORK/make/Makefile"
+
+  begin_check "make -n set-version VERSION=0.2.0 runs the script with that version"
+  output=$(cd "$WORK/make" && "$real_make" -n set-version VERSION=0.2.0 2>&1)
+  status=$?
+  expect_status 0
+  expect_report 'Scripts/set-version.sh "0.2.0"'
+  end_case
+
+  begin_check "make help lists set-version"
+  output=$(cd "$WORK/make" && "$real_make" help 2>&1)
+  status=$?
+  expect_status 0
+  expect_report "make set-version VERSION=0.2.0"
+  end_case
+}
+
 # selftest: runs every case and prints the totals; succeeds only when all
 # pass.
 selftest() {
@@ -722,6 +752,7 @@ selftest() {
   rewrite_cases
   unreadable_cases
   xcodegen_cases
+  makefile_cases
   printf '%d passed, %d failed\n' "$passed" "$failed"
   (( failed == 0 ))
 }

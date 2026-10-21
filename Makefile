@@ -85,7 +85,7 @@ RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
 	-scheme $(SCHEME) \
 	-derivedDataPath "$(DERIVED_BUILD_DIR)"
 
-.PHONY: all clean build debug run install uninstall generate resolve-packages update-packages test check check-selftest test-area lint-tests lint-a11y lint-ogg perf-baselines open xcode help signing-identity
+.PHONY: all clean build debug run install uninstall generate set-version resolve-packages update-packages test check check-selftest test-area lint-tests lint-a11y lint-ogg perf-baselines open xcode help signing-identity
 
 ## Default: build the app
 all: build
@@ -111,6 +111,7 @@ help:
 	@echo "  make perf-baselines - Record new performance baselines after a deliberate change"
 	@echo "  make signing-identity - Once per Mac: make the identity builds are signed with, so macOS remembers the microphone permission"
 	@echo "  make generate   - Regenerate the Xcode project (requires xcodegen)"
+	@echo "  make set-version VERSION=0.2.0 - Set the app's version (MARKETING_VERSION in project.yml) and regenerate the Xcode project; commits nothing"
 	@echo "  make resolve-packages - Resolve Swift packages exactly as Package.resolved pins them"
 	@echo "  make update-packages  - Re-resolve after changing a package version in project.yml"
 	@echo "  make clean      - Remove build artifacts"
@@ -122,6 +123,15 @@ generate:
 	@echo "==> Generating Xcode project..."
 	xcodegen generate
 	@echo "==> Done."
+
+## Set the app's version number, MARKETING_VERSION in project.yml, and
+## regenerate the Xcode project, committing nothing: make set-version
+## VERSION=0.2.0. The script refuses a version that is not MAJOR.MINOR.PATCH or
+## not later than the current one. While TextMouth is in beta its version is
+## 0.MINOR.PATCH (Versions in docs/developer/building.md). The build number is
+## not set here: make build stamps each build with BUILD_NUMBER, the UTC time.
+set-version:
+	@Scripts/set-version.sh "$(VERSION)"
 
 ## Resolve Swift packages exactly as the committed Package.resolved pins them.
 ## xcodebuild then refuses to move any pin, so a project.yml version that no
