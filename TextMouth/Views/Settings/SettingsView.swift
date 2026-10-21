@@ -542,6 +542,18 @@ struct PlaybackSettingsView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .accessibilityHidden(true)
+
+                // Whether Where Am I?'s summaries say the page (PG04).
+                Toggle(ReaderPageWording.sayInWhereAmITitle, isOn: Binding(
+                    get: { settingsViewModel.saysPageInWhereAmI },
+                    set: { settingsViewModel.saysPageInWhereAmI = $0 }
+                ))
+                    .accessibilityHint(ReaderPageWording.sayInWhereAmIHint)
+
+                Text(ReaderPageWording.sayInWhereAmIHint)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
             } header: {
                 Text(ReaderPageWording.settingSection)
             }

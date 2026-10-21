@@ -304,6 +304,9 @@ final class ConfigService: ObservableObject {
         /// Whether the reader screen shows the page being read (PG03), such
         /// as "Page 12 of 300", for a book with pages.
         var showsPageInReader: Bool?
+        /// Whether Where Am I?'s summaries say the page being read (PG04),
+        /// such as "Page 112 of 300", for a book with pages.
+        var saysPageInWhereAmI: Bool?
         /// Whether sound effects play.
         var soundEffectsEnabled: Bool?
         /// How loud sound effects play, from 0 to 1, written to the
@@ -499,6 +502,7 @@ final class ConfigService: ObservableObject {
             showExportInReaderToolbar = fields.optionalFlag(.showExportInReaderToolbar)
             includeSpeedWithTimes = fields.optionalFlag(.includeSpeedWithTimes)
             showsPageInReader = fields.optionalFlag(.showsPageInReader)
+            saysPageInWhereAmI = fields.optionalFlag(.saysPageInWhereAmI)
             soundEffectsEnabled = fields.optionalFlag(.soundEffectsEnabled)
             soundEffectsVolume = fields.optionalNumber(.soundEffectsVolume, rule: SettingsPolicy.soundEffectsVolume)
             soundEffectAssignments = fields.entries(
@@ -600,7 +604,7 @@ final class ConfigService: ObservableObject {
                     "autoPlayOnNavigate", "endOfBookBehavior", "sleepFadeOutDuration", "sleepTimerAutoClose",
                     "playbackNavigationUnitControlMode", "showBookmarkInPlaybackControls",
                     "showSpeedInPlaybackControls", "showExportInReaderToolbar", "includeSpeedWithTimes",
-                    "showsPageInReader",
+                    "showsPageInReader", "saysPageInWhereAmI",
                 ])
                 // Shortcuts: the record of the ones the user edited (FR12),
                 // which the file lists with every other action's defaults,

@@ -318,4 +318,166 @@ final class GoToPageTests: XCTestCase {
             )
         }
     }
+
+    // MARK: - The Page in Where Am I? (PG04)
+
+    /// The 26th of 412 headings, as the headings panel would number it.
+    private var twentySixthOf412Headings: HeadingPosition {
+        let headings = (0..<412).map { Heading(level: 2, text: "Part \($0 + 1)", characterOffset: $0 * 10) }
+        return HeadingPosition(in: headings, chapterIndex: 0, characterOffset: 25 * 10 + 5)
+    }
+
+    /// "Page 112 of 300", as the reading position describes a place on the
+    /// book's page 112 when its last page is 300.
+    private var page112Of300: String {
+        let pages = BookPages(breaks: [
+            PageBreak(label: "112", chapterIndex: 0, characterOffset: 0),
+            PageBreak(label: "300", chapterIndex: 0, characterOffset: 500),
+        ])
+        return pages.position(atChapter: 0, offset: 10).label
+    }
+
+    /// The brief summary for the shared fixture, with `pageLabel`.
+    private func briefSummary(pageLabel: String, isFinished: Bool = false) -> String {
+        ReaderViewModel.briefWhereAmISummary(
+            bookTitle: "Dune",
+            locationTitle: "The Battle",
+            headingPosition: twentySixthOf412Headings,
+            pageLabel: pageLabel,
+            percentComplete: 30,
+            timeRemaining: 10_800,
+            isFinished: isFinished
+        )
+    }
+
+    /// The full summary for the shared fixture, with `pageLabel`.
+    private func fullSummary(pageLabel: String) -> String {
+        ReaderViewModel.fullWhereAmISummary(
+            bookTitle: "Dune",
+            locationTitle: "The Battle",
+            headingPosition: twentySixthOf412Headings,
+            pageLabel: pageLabel,
+            percentComplete: 30,
+            timeRemaining: 10_800,
+            timeRemainingInHeading: 900,
+            totalTime: 36_000
+        )
+    }
+
+    /// The brief summary says the page right after the heading number.
+    func testTheBriefSummarySaysThePageAfterTheHeading() {
+        XCTAssertEqual(page112Of300, "Page 112 of 300")
+        XCTAssertEqual(
+            briefSummary(pageLabel: page112Of300),
+            "Dune. The Battle. Heading 26 of 412. Page 112 of 300. 30 percent. 3 hours remaining."
+        )
+    }
+
+    /// The full summary says "Page 112 of 300." right after "Heading 26 of 412."
+    func testTheFullSummarySaysThePageAfterTheHeading() {
+        let summary = fullSummary(pageLabel: page112Of300)
+        XCTAssertTrue(
+            summary.hasPrefix("Dune. The Battle. Heading 26 of 412. Page 112 of 300. 30 percent through the book."),
+            summary
+        )
+    }
+
+    /// Before the first page the summaries say so.
+    func testBeforeTheFirstPageTheSummariesSaySo() {
+        let pages = BookPages(breaks: [PageBreak(label: "1", chapterIndex: 0, characterOffset: 100)])
+        let label = pages.position(atChapter: 0, offset: 5).label
+        XCTAssertEqual(label, "Before page 1")
+        XCTAssertTrue(briefSummary(pageLabel: label).contains("Heading 26 of 412. Before page 1. 30 percent."))
+        XCTAssertTrue(fullSummary(pageLabel: label).contains("Heading 26 of 412. Before page 1. 30 percent through the book."))
+    }
+
+    /// With no page to say, both summaries are exactly what they were, with
+    /// the page label left out or given empty.
+    func testWithoutAPageTheSummariesAreAsTheyWere() {
+        XCTAssertEqual(
+            briefSummary(pageLabel: ""),
+            "Dune. The Battle. Heading 26 of 412. 30 percent. 3 hours remaining."
+        )
+        XCTAssertEqual(
+            ReaderViewModel.briefWhereAmISummary(
+                bookTitle: "Dune",
+                locationTitle: "The Battle",
+                headingPosition: twentySixthOf412Headings,
+                percentComplete: 30,
+                timeRemaining: 10_800
+            ),
+            briefSummary(pageLabel: "")
+        )
+        XCTAssertEqual(
+            ReaderViewModel.fullWhereAmISummary(
+                bookTitle: "Dune",
+                locationTitle: "The Battle",
+                headingPosition: twentySixthOf412Headings,
+                percentComplete: 30,
+                timeRemaining: 10_800,
+                timeRemainingInHeading: 900,
+                totalTime: 36_000
+            ),
+            fullSummary(pageLabel: "")
+        )
+    }
+
+    /// A finished book says the page before "Finished".
+    func testAFinishedBookSaysThePageBeforeFinished() {
+        XCTAssertEqual(
+            briefSummary(pageLabel: page112Of300, isFinished: true),
+            "Dune. The Battle. Heading 26 of 412. Page 112 of 300. Finished."
+        )
+    }
+
+    /// The reader's own summaries follow the setting and the book: the page
+    /// is said while the setting is on and the book has pages, and neither
+    /// summary changes otherwise.
+    func testTheReadersSummariesFollowTheSettingAndTheBook() throws {
+        let settings = try makeIsolatedSettings("page-where-am-i")
+        let reader = makePagedReader(pages: Self.pagesAroundTwelve, settings: settings)
+        defer { reader.close() }
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 60
+        let content = try XCTUnwrap(reader.content)
+
+        XCTAssertTrue(settings.saysPageInWhereAmI)
+        XCTAssertEqual(reader.whereAmIPageLabel, "Page 12 of 300")
+        XCTAssertTrue(reader.buildBriefWhereAmI().contains("Page 12 of 300."), reader.buildBriefWhereAmI())
+        XCTAssertTrue(reader.buildFullWhereAmI(content: content).contains("Page 12 of 300."))
+
+        settings.saysPageInWhereAmI = false
+        XCTAssertEqual(reader.whereAmIPageLabel, "")
+        XCTAssertFalse(reader.buildBriefWhereAmI().contains("of 300"))
+        XCTAssertFalse(reader.buildFullWhereAmI(content: content).contains("of 300"))
+
+        let plain = makePagedReader(pages: [], settings: try makeIsolatedSettings("page-where-am-i-none"))
+        defer { plain.close() }
+        XCTAssertEqual(plain.whereAmIPageLabel, "")
+        XCTAssertFalse(plain.buildBriefWhereAmI().contains(" of "))
+    }
+
+    /// The setting is on until it is turned off, config.json names it, and
+    /// its change is written to the file.
+    func testTheWhereAmISettingIsOnByDefaultAndConfigCarriesIt() throws {
+        let file = try makeConfigFileURL()
+        let settings = try makeIsolatedSettings("page-where-am-i-setting", configFile: file)
+        XCTAssertTrue(settings.saysPageInWhereAmI)
+
+        let named = try JSONDecoder().decode(ConfigService.AppConfig.self, from: Data(#"{"saysPageInWhereAmI": false}"#.utf8))
+        XCTAssertEqual(named.saysPageInWhereAmI, false)
+        XCTAssertTrue(ConfigService.AppConfig.Portability.mirrored.contains {
+            $0.storeKey == "saysPageInWhereAmI" && $0.field == "saysPageInWhereAmI"
+        })
+
+        settings.saysPageInWhereAmI = false
+        XCTAssertTrue(
+            waitUntil(timeout: 5) {
+                guard let data = try? Data(contentsOf: file),
+                      let config = try? ConfigService.decode(data) else { return false }
+                return config.saysPageInWhereAmI == false
+            },
+            "config.json never held saysPageInWhereAmI = false"
+        )
+    }
 }

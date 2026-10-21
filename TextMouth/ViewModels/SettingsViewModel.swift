@@ -266,6 +266,12 @@ final class SettingsViewModel: ObservableObject {
     @AppStorage var showsPageInReader: Bool {
         didSet { objectWillChange.send(); syncToConfig() }
     }
+    /// Whether Where Am I?'s summaries, brief and full, say the page being
+    /// read, such as "Page 112 of 300", for a book with pages (PG04), in
+    /// Playback settings. On by default.
+    @AppStorage var saysPageInWhereAmI: Bool {
+        didSet { syncToConfig() }
+    }
     @AppStorage var playbackNavigationUnitControlModeRaw: String {
         didSet { publishPlaybackControlsChange(); syncToConfig() }
     }
@@ -522,6 +528,7 @@ final class SettingsViewModel: ObservableObject {
         )
         _includeSpeedWithTimes = AppStorage(wrappedValue: false, "includeSpeedWithTimes", store: userDefaults)
         _showsPageInReader = AppStorage(wrappedValue: true, "showsPageInReader", store: userDefaults)
+        _saysPageInWhereAmI = AppStorage(wrappedValue: true, "saysPageInWhereAmI", store: userDefaults)
         _playbackNavigationUnitControlModeRaw =
             SettingsPolicy.playbackNavigationUnitControlMode.appStorage(in: userDefaults)
         _bluetoothMonitoringEnabled = AppStorage(
@@ -675,6 +682,7 @@ final class SettingsViewModel: ObservableObject {
         config.showSpeedInPlaybackControls = showSpeedInPlaybackControls
         config.includeSpeedWithTimes = includeSpeedWithTimes
         config.showsPageInReader = showsPageInReader
+        config.saysPageInWhereAmI = saysPageInWhereAmI
         writeServicePreferences(into: &config)
         // Preserve dataDirectoryPath — it's managed by the Storage settings tab
         config.dataDirectoryPath = ConfigService.AppConfig.currentDataDirectoryPath
@@ -774,6 +782,7 @@ final class SettingsViewModel: ObservableObject {
             adopt(config.showSpeedInPlaybackControls, into: \.showSpeedInPlaybackControls)
             adopt(config.includeSpeedWithTimes, into: \.includeSpeedWithTimes)
             adopt(config.showsPageInReader, into: \.showsPageInReader)
+            adopt(config.saysPageInWhereAmI, into: \.saysPageInWhereAmI)
             shortcutsWereRepaired = adoptServicePreferences(from: config)
             requestDataDirectoryMove(to: config.dataDirectoryPath)
         }
