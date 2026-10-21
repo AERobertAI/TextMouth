@@ -10,7 +10,10 @@ import XCTest
 ///
 /// - **UEB** writes its indicators, and every word of the sample comes back
 ///   with the Markdown emphasis it went out with, uncontracted and
-///   contracted alike.
+///   contracted alike. Contracted UEB, though, misreads a contraction just
+///   before an emphasis terminator, which is liblouis's own reading, pinned
+///   by name with the review's six cases (E1); uncontracted UEB reads them
+///   exactly.
 /// - **EBAE**, and a table of this Mac's that liblouis cannot read back
 ///   either (Norwegian), write no emphasis at all (review E2): liblouis
 ///   3.39.0 misreads their signs, which changed words of TextMouth's own
@@ -148,6 +151,96 @@ final class BrailleEmphasisRoundTripTests: XCTestCase {
             XCTAssertEqual(try words(back), try words(source), table)
             XCTAssertEqual(back, expected, table)
         }
+    }
+
+    // MARK: - Contracted UEB: liblouis's Own Misreadings
+
+    /// The review's six sentences of contracted UEB (E1, October 21, 2026),
+    /// under a plain heading of their own, so the export adds no title
+    /// heading. Each ends its emphasis just after a word UEB contracts, so
+    /// liblouis writes the contraction with the emphasis terminator after
+    /// it, which is valid UEB.
+    private let contractionCases = """
+    # The Sea Chapter
+
+    for the *people*'s sake
+
+    the *Knowledge*'s keeper
+
+    a *can*'t
+
+    gave them *all of his* things
+
+    *that they were* here
+
+    *It was enough*
+    """
+
+    /// Uncontracted UEB brings the six sentences back exactly. Contracted
+    /// UEB, the default table, brings them back with liblouis 3.39.0's own
+    /// misreadings, pinned here by name: reading back, liblouis takes a
+    /// whole-word contraction followed by the terminator for the letter or
+    /// part-word sign its cell also is, since the terminator is no space:
+    /// - "people" (⠏) as "p", "Knowledge" (⠠⠅) as "K", and "can" (⠉) as "c",
+    ///   before the apostrophe the terminator stands before;
+    /// - "his" (⠦) as a double quote, "were" (⠶) as a prime (U+2032), and
+    ///   "enough" (⠢) as "en", at the end of a passage.
+    ///
+    /// Without emphasis the same sentences read back exactly, so the
+    /// terminator alone causes them. The export cannot avoid them cheaply:
+    /// it would have to write such a word uncontracted, or move the
+    /// terminator onto letters that were not emphasized, both wrong braille
+    /// for the file's reader. Their cure is a reading pass that tells
+    /// liblouis where the terminators were (a follow-up). Random emphasized
+    /// sentences change in 1 or 2 of 400 (the review), and in 2 of 120 of a
+    /// sample dense with contractions.
+    func testContractedUEBMisreadsAContractionBeforeAnEmphasisEnd() throws {
+        XCTAssertEqual(try roundTrip(contractionCases, "en-ueb-g1.ctb").readBack, #"""
+        # The Sea Chapter
+
+        for the *people*\'s sake
+
+        the *Knowledge*\'s keeper
+
+        a *can*\'t
+
+        gave them *all of his* things
+
+        *that they were* here
+
+        *It was enough*
+        """#)
+        XCTAssertEqual(try roundTrip(contractionCases, "en-ueb-g2.ctb").readBack, #"""
+        # The Sea Chapter
+
+        for the *p*\'s sake
+
+        the *K*\'s keeper
+
+        a *c*\'t
+
+        gave them *all of* \" things
+
+        *that they* \#u{2032} here
+
+        *It was en*
+        """#)
+        // Without emphasis, contracted UEB reads the same sentences exactly.
+        XCTAssertEqual(try roundTrip(contractionCases.replacingOccurrences(of: "*", with: ""), "en-ueb-g2.ctb").readBack, #"""
+        # The Sea Chapter
+
+        for the people\'s sake
+
+        the Knowledge\'s keeper
+
+        a can\'t
+
+        gave them all of his things
+
+        that they were here
+
+        It was enough
+        """#)
     }
 
     // MARK: - Tables liblouis Cannot Read Back
