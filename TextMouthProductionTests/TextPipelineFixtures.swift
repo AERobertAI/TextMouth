@@ -93,6 +93,7 @@ enum TextPipelineFixtures {
         "format-samples/doc/libreoffice-tdf81705_outlineLevel.doc",
         "format-samples/docm/headings-synthetic.docm",
         "format-samples/docm/libreoffice-hello.docm",
+        "format-samples/docx/page-breaks.docx",
         "format-samples/dot/headings-synthetic.dot",
         "format-samples/dot/libreoffice-tdf120761_zOrder.dot",
         "format-samples/dotm/headings-synthetic.dotm",

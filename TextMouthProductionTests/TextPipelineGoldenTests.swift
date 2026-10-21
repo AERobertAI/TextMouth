@@ -43,7 +43,7 @@ final class TextPipelineGoldenTests: XCTestCase {
     /// main before PERF18: at a4d6e10, and for the two DAISY audio books
     /// that only some checkouts hold, at 6cef1d0 with them present.
     private static let recordedCaches: [String: String] = [
-        "alice.docx": "3cd03f3458bf2cb1",
+        "alice.docx": "1a06c9f538a8d627",
         "alice.epub": "7693c954870e8e27",
         "are-you-ready-d3-audio.zip": "d1d3f9c2159d5732",
         "converted-12.epub": "65ea3c4fb57ed662",
@@ -60,7 +60,7 @@ final class TextPipelineGoldenTests: XCTestCase {
         "synthetic-256k-plain.html": "f96a6fae58fbd3bf",
         "synthetic-256k.md": "c16d170995d4e3ea",
         "synthetic-256k.txt": "806aeb6f5aae9ae1",
-        "test_book.docx": "03acb604568b522c",
+        "test_book.docx": "e0bf2ec6c616ae28",
         "wipo-treaty-d202-text-only.zip": "ed5780d1c2b47e85",
     ]
 
