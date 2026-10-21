@@ -670,7 +670,7 @@ enum DAISYParser {
         }
 
         // The page markers, by the text reference each stands in for.
-        var pageMarkers: [String: [String]] = [:]
+        var pageMarkers: [String: [DAISY202PageMarker]] = [:]
         if includesPages {
             pageMarkers = try pageMarkersByReference(nccResult.pages, nccPath: nccPath, smilFiles: &smilFiles)
         }
@@ -712,8 +712,8 @@ enum DAISYParser {
         _ pages: [NCCPage],
         nccPath: String,
         smilFiles: inout DAISY202SMILCache
-    ) throws -> [String: [String]] {
-        var markers: [String: [String]] = [:]
+    ) throws -> [String: [DAISY202PageMarker]] {
+        var markers: [String: [DAISY202PageMarker]] = [:]
         for (index, page) in pages.enumerated() {
             let fragment = ParserUtilities.splitFragment(page.href).fragment
             guard !fragment.isEmpty else { continue }
@@ -723,7 +723,7 @@ enum DAISYParser {
             let reference = ParserUtilities.resolvedPackagePath(source, relativeTo: smilFile, preserveFragment: true)
             guard !ParserUtilities.splitFragment(reference).fragment.isEmpty else { continue }
             let marker = MarkdownPageMarker(label: page.label, ordinal: index + 1)
-            markers[reference, default: []].append(marker.markdown)
+            markers[reference, default: []].append(DAISY202PageMarker(label: page.label, markdown: marker.markdown))
         }
         return markers
     }
@@ -744,15 +744,16 @@ enum DAISYParser {
     ///   - includesPages: passed to the HTML converter, so with false every
     ///     fragment converts exactly as before pages (PG08).
     ///   - pageMarkers: the page markers (see `pageMarkersByReference`) by the
-    ///     reference each stands in for. A reference in this map is not read:
-    ///     its markers are written in its place, as blocks, and its element
-    ///     counts as read, so a fragment enclosing it leaves its number out
-    ///     too. A page whose content file cannot be read is dropped.
+    ///     reference each stands in for. Its markers are written as blocks
+    ///     where the reference stood. If its element holds only the page
+    ///     number it is not read and counts as read, so a fragment enclosing
+    ///     it leaves its number out too; otherwise it is read as any
+    ///     fragment is. A page whose content file cannot be read is dropped.
     static func extractDAISY202Fragments(
         from references: [String],
         provider: DAISYFileProvider,
         includesPages: Bool = true,
-        pageMarkers: [String: [String]] = [:]
+        pageMarkers: [String: [DAISY202PageMarker]] = [:]
     ) throws -> String {
         var documents: [String: SwiftSoup.Document] = [:]
         var htmlByPath: [String: String] = [:]
@@ -781,13 +782,18 @@ enum DAISYParser {
                 htmlByPath[split.path] = decodedHTML
             }
 
-            // A page's number is not read: its marker stands in its place.
+            // A page's marker is written where its fragment stood. When the
+            // fragment holds no more than the page number, the marker stands
+            // in its place and the number is not read. A fragment holding
+            // more is real text a faulty NCC entry points at: the marker
+            // goes before it and the text is read as ever, never lost.
             if let markers = pageMarkers[reference] {
-                if let element = try doc.getElementById(split.fragment) {
+                fragments.append(contentsOf: markers.map(\.markdown))
+                if let element = try doc.getElementById(split.fragment),
+                   markers.contains(where: { $0.isNumber(in: (try? element.text()) ?? "") }) {
                     ledger.markRead(element)
+                    continue
                 }
-                fragments.append(contentsOf: markers)
-                continue
             }
 
             // The element a reference names, or the body for a whole file.
@@ -932,6 +938,30 @@ enum DAISYParser {
         }
         let result = try DAISY202NCCParser(path: nccPath, in: provider).parse()
         return DAISYMetadata(title: result.title, author: result.author)
+    }
+}
+
+// MARK: - DAISY 2.02 Page Marker
+
+/// A page marker of a DAISY 2.02 book (PG08), with the label its NCC entry
+/// gave, which tells whether the content fragment it points at holds a page
+/// number or real text.
+struct DAISY202PageMarker: Equatable {
+    /// The NCC entry's words, whitespace collapsed; empty when it had none.
+    let label: String
+    /// The marker as written in content.md.
+    let markdown: String
+
+    /// Whether `fragmentText` is no more than this page's number: empty, or
+    /// short enough to be a number and its caption ("12", "Page 12",
+    /// "p. xii") and, when the NCC named the page, containing that name. A
+    /// page entry that points at a paragraph is a faulty link, and the
+    /// paragraph is words a listener must hear.
+    func isNumber(in fragmentText: String) -> Bool {
+        let text = fragmentText.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+        if text.isEmpty { return true }
+        guard text.count <= MarkdownPageMarker.maximumLabelLength else { return false }
+        return label.isEmpty || text.localizedCaseInsensitiveContains(label)
     }
 }
 

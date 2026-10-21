@@ -238,6 +238,41 @@ final class DAISYPageTests: XCTestCase {
         )
     }
 
+    /// A page entry that points at real text (a faulty link) never costs the
+    /// book its words: the marker goes before the paragraph, which is read
+    /// as ever. One that points at a short caption holding its number, such
+    /// as "Page 12" for the entry "12", is replaced, as a bare number is.
+    func testDAISY202PageThatPointsAtTextKeepsTheText() throws {
+        let ncc = """
+        <html><body>
+        <h1><a href="s1.smil#t_h">Chapter</a></h1>
+        <span class="page-normal"><a href="s1.smil#par_a">7</a></span>
+        <span class="page-normal"><a href="s1.smil#par_pg">12</a></span>
+        <span class="page-normal"><a href="s1.smil#par_long">9</a></span>
+        </body></html>
+        """
+        let smil = """
+        <smil><body><seq>
+        <par id="par_h"><text id="t_h" src="c.html#h"/></par>
+        <par id="par_a"><text id="txt_a" src="c.html#a"/></par>
+        <par id="par_pg"><text id="txt_pg" src="c.html#pg"/></par>
+        <par id="par_long"><text id="txt_long" src="c.html#long"/></par>
+        </seq></body></smil>
+        """
+        let sentence = "Beta words continue for a very long sentence that is far beyond thirty-two characters"
+        let page = """
+        <html><body><h1 id="h">Chapter</h1><p id="a">Alpha words</p><p id="pg">Page 12</p>
+        <p id="long">\(sentence)</p></body></html>
+        """
+        let markdown = try DAISYParser.extractDAISY202Markdown(
+            from: InMemoryDAISYPackage(["ncc.html": ncc, "s1.smil": smil, "c.html": page])
+        )
+        let content = parsed(markdown)
+
+        XCTAssertEqual(spokenText(of: content), "Chapter\n\nAlpha words\n\n\(sentence)")
+        XCTAssertEqual(pageLines(of: content, opening: 5), ["7: Alpha", "12: Beta ", "9: Beta "])
+    }
+
     /// A page entry whose SMIL file is missing is dropped, as a heading
     /// whose SMIL file is missing is skipped; the rest of the book reads on.
     func testDAISY202PageWithMissingSMILIsDropped() throws {
