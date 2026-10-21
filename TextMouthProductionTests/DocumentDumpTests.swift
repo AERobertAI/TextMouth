@@ -44,7 +44,7 @@ final class DocumentDumpTests: XCTestCase {
     /// the facts in a fixed order, one per line.
     func testRenderingHasAHeaderAFixedOrderAndAFinalNewline() {
         let lines = sampleDump().rendered().components(separatedBy: "\n")
-        XCTAssertEqual(lines.first, "# TextMouth document golden, format 1")
+        XCTAssertEqual(lines.first, "# TextMouth document golden, format 2")
         XCTAssertEqual(lines.last, "", "the text ends with a newline")
         XCTAssertEqual(Array(lines.dropFirst().prefix(9)), [
             "file: alice.epub", "format: epub", "title: Alice", "author: Lewis Carroll", "chapters: 12",
@@ -203,11 +203,51 @@ final class DocumentDumpTests: XCTestCase {
 
     /// A golden written by another format is named before anything else.
     func testAnotherGoldenFormatIsNamed() {
-        let golden = sampleDump().rendered().replacingOccurrences(of: "format 1", with: "format 2")
+        let golden = sampleDump().rendered().replacingOccurrences(of: "format 2", with: "format 1")
         XCTAssertEqual(
             DocumentDump.differences(golden: golden, actual: sampleDump().rendered()).first,
-            "golden header is \"# TextMouth document golden, format 2\", now \"# TextMouth document golden, format 1\""
+            "golden header is \"# TextMouth document golden, format 1\", now \"# TextMouth document golden, format 2\""
         )
+    }
+
+    // MARK: - Pages (PG01)
+
+    /// Pages are written after the headings and before the tracks, each as
+    /// "page: LABEL | CHAPTER:OFFSET | OPENING" with label and opening escaped.
+    func testPagesAreRenderedAfterTheHeadings() {
+        var dump = audioDump()
+        dump.pages = [
+            .init(label: "1", chapterIndex: 0, characterOffset: 0, opening: "Alice was beginning"),
+            .init(label: "A\t2", chapterIndex: 1, characterOffset: 42, opening: "line one\nline two"),
+        ]
+        let lines = dump.rendered().components(separatedBy: "\n")
+        guard let first = lines.firstIndex(of: "heading: 2 | The Pool of Tears") else {
+            return XCTFail("the last heading is missing")
+        }
+        XCTAssertEqual(Array(lines[first...]), [
+            "heading: 2 | The Pool of Tears",
+            "page: 1 | 0:0 | Alice was beginning",
+            "page: A\\t2 | 1:42 | line one\\nline two",
+            "track: One | audio/one.mp3 | 0.00-61.50",
+            "track: Two | audio/two.mp3 | 61.50-125.46",
+            "",
+        ])
+    }
+
+    /// A moved page and a page only one side has are named as headings are.
+    func testChangedPagesAreNamed() {
+        var original = sampleDump()
+        original.pages = [.init(label: "1", chapterIndex: 0, characterOffset: 0, opening: "Alice was beginning")]
+        var changed = original
+        changed.pages = [
+            .init(label: "1", chapterIndex: 0, characterOffset: 6, opening: "was beginning"),
+            .init(label: "2", chapterIndex: 0, characterOffset: 20, opening: "to get very tired"),
+        ]
+        XCTAssertEqual(differences(from: original, to: changed), [
+            "pages: golden has 1, now 2",
+            "page 1: golden \"1 | 0:0 | Alice was beginning\", now \"1 | 0:6 | was beginning\"",
+            "page 2 only now: \"2 | 0:20 | to get very tired\"",
+        ])
     }
 
     // MARK: - Headings and Tracks

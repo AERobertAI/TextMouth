@@ -366,6 +366,25 @@ final class ExportDocumentWalkerTests: XCTestCase {
         }
     }
 
+    /// Page markers (PG01) reach nothing: a block before the first paragraph,
+    /// one between paragraphs, one inside a paragraph, one inside a word, and
+    /// one after a hard break walk to the document the same Markdown gives
+    /// without them. Export carries no pages until PG15.
+    func testPageMarkersNeverReachExport() throws {
+        // `marker(n)` is the page marker for page n, or nothing.
+        func markdown(_ marker: (Int) -> String) -> String {
+            [
+                marker(1) + "\n\nFirst paragraph here.",
+                marker(2) + "\n\nSecond has a mid " + marker(3) + "paragraph break and a wo" + marker(4) + "rd split.",
+                "Line one  \n    " + marker(5) + "line two.",
+            ].joined(separator: "\n\n")
+        }
+        let withPages = try walk(markdown { MarkdownPageMarker(label: String($0), ordinal: $0).markdown })
+        let withoutPages = try walk(markdown { _ in "" })
+        XCTAssertEqual(withPages, withoutPages)
+        XCTAssertFalse(withPages.blocks.map(\.plainText).joined(separator: " ").contains("page"))
+    }
+
     // MARK: - The Nesting Cap
 
     /// 20 nested quotes around a paragraph, and a list nested 12 deep: no
