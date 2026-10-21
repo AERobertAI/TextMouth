@@ -502,6 +502,15 @@ final class ReaderViewModel: ObservableObject {
     /// from wherever it is then (`loadAfterPackageMove()`, TODO P10).
     /// Accessed from the LibraryUpdates extension.
     var loadWaitsForPackageMove = false
+    /// Whether a move of the book's package began while the book loaded, so
+    /// that a failure of the read under way may be the move's doing, its
+    /// files gone from where the read began even when the move was put
+    /// back: the book is then loaded again rather than said to be
+    /// unreadable (`loadAgainAfterMove(ofFilesReadAt:)`, TODO P10). Set as
+    /// the library says the package will move, and cleared as each read of
+    /// the book's files begins (`beginReadingForLoad()`). Accessed from the
+    /// LibraryUpdates extension.
+    var loadMetPackageMove = false
     /// The book's edited text, with the moves of its places the edit took,
     /// when the user's edit was taken while this reader was still loading
     /// the text it had (FR05): shown once loading ends

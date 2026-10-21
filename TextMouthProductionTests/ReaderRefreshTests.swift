@@ -895,6 +895,39 @@ final class ReaderRefreshTests: XCTestCase {
         }
     }
 
+    /// A move of a book's package fails once the package has moved, so the
+    /// library puts it back where it was. The reader's load read the book in
+    /// the moment its package was away, and the read's failure reaches the
+    /// reader while the move is under way, or only once the move has been
+    /// put back. Either way the reader loads the book again from where it
+    /// still is, and opens it with no error. Before, it said the book was
+    /// damaged.
+    func testALoadThatReadsAsAMoveIsPutBackOpensTheBookWhereItStillIs() throws {
+        for failureArrivesDuringTheMove in [true, false] {
+            let context = failureArrivesDuringTheMove
+                ? "the read's failure taken during the move"
+                : "the read's failure taken after the move was put back"
+            let world = try makeIntegrationWorld("Reader Refresh Read During Failed Move \(failureArrivesDuringTheMove)")
+            let book = try makeBook(.tracks, readyFor: .moveToFolder, in: world)
+            let loads = holdLoads()
+            let reader = world.openReader(for: book, loadQueue: loads.queue)
+
+            XCTAssertThrowsError(
+                try commit(.moveToFolder, of: book, in: world, failing: true, whileMoving: {
+                    if failureArrivesDuringTheMove {
+                        loads.letReadAndHandOver()
+                    } else {
+                        loads.letReadBeforeHandingOver()
+                    }
+                }),
+                context
+            )
+
+            XCTAssertEqual(try row(of: book, in: world.library).folderPath, world.folder.path, "\(context): the move was kept")
+            try assertOpensFromWhereItIsNow(reader, .tracks, in: world, context)
+        }
+    }
+
     /// An audiobook whose second track is damaged, and which keeps no index,
     /// so that every load checks its tracks, moves while its reader's load
     /// reads it. The reader loads it again once the move is over, and that
@@ -1374,17 +1407,21 @@ final class ReaderRefreshTests: XCTestCase {
     }
 
     /// Makes `change` to `book`'s folder through the library's transition,
-    /// as its command proposes it, running `whileMoving` after the book's
-    /// package has moved on disk and before the library holds its new row,
-    /// as anything can run on the main thread then while a move made off it
-    /// is under way.
+    /// as its command proposes it, running `whileMoving` once, after the
+    /// book's package has moved on disk and before the library holds its
+    /// new row, as anything can run on the main thread then while a move
+    /// made off it is under way. With `failing`, the book's record cannot be
+    /// written after its package has moved, so the transition is put back,
+    /// the package moving back where it was, and the error is thrown.
     private func commit(
         _ change: FolderChange,
         of book: Book,
         in world: IntegrationWorld,
+        failing: Bool = false,
         whileMoving: @escaping @MainActor @Sendable () -> Void
     ) throws {
         let proposed = try proposedLibrary(change, of: book, in: world)
+        let moves = MoveCount()
         try world.library.commitLibraryTransition(
             proposed,
             affectedBookIDs: world.library.bookIDsChangingFolder(in: proposed),
@@ -1392,12 +1429,19 @@ final class ReaderRefreshTests: XCTestCase {
                 moveItem: { source, destination in
                     try FileManager.default.moveItem(at: source, to: destination)
                     // `commitLibraryTransition` moves packages on the main
-                    // actor.
+                    // actor. Only the first move runs `whileMoving`: a
+                    // transition put back moves the package back too.
                     MainActor.assumeIsolated {
-                        whileMoving()
+                        moves.count += 1
+                        if moves.count == 1 {
+                            whileMoving()
+                        }
                     }
                 },
                 writeRecord: { book in
+                    if failing {
+                        throw CocoaError(.fileWriteNoPermission)
+                    }
                     try book.saveBookInfoThrowing()
                 }
             )
@@ -1488,12 +1532,32 @@ final class ReaderRefreshTests: XCTestCase {
             XCTAssertTrue(handedOver.isDone, "The loads did not read and hand over in time", file: file, line: line)
         }
 
+        /// Lets the loads read, and waits, the main thread blocked, until
+        /// each load queued so far has read: what each read then waits on the
+        /// main queue, for its reader to take once the main run loop turns.
+        /// Fails the test when the reads take too long.
+        func letReadBeforeHandingOver(file: StaticString = #filePath, line: UInt = #line) {
+            letRead()
+            let read = DispatchSemaphore(value: 0)
+            // Queued after every load so far, so it runs once each has read.
+            queue.async {
+                read.signal()
+            }
+            XCTAssertEqual(read.wait(timeout: .now() + 30), .success, "The loads did not read in time", file: file, line: line)
+        }
     }
 
     /// Whether the loads a test let read have handed over what they read.
     @MainActor
     private final class HandOver {
         var isDone = false
+    }
+
+    /// How many packages a test's transition has moved, the moves back of a
+    /// transition put back included.
+    @MainActor
+    private final class MoveCount {
+        var count = 0
     }
 
     /// The reader a test opens while a package moves, kept for the test.

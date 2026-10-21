@@ -34,6 +34,7 @@ extension ReaderViewModel {
         guard !hasClosed else { return }
         switch event {
         case .packageWillMove:
+            noteLoadMeetingPackageMove()
             pauseAudioForPackageMove()
         case .updated(let update):
             applyLibraryUpdate(update)
@@ -248,20 +249,33 @@ extension ReaderViewModel {
             DiagnosticLog.trace(.storage, "a load waits for the book's package to finish moving")
             return false
         }
+        // The read beginning now has met no move yet.
+        loadMetPackageMove = false
         return true
+    }
+
+    /// Notes, as the library says the book's package will move, that the
+    /// load under way, if any, meets the move: its read may find the
+    /// package gone, even when its failure reaches the reader only once the
+    /// move is over, or has been put back.
+    private func noteLoadMeetingPackageMove() {
+        if isLoading {
+            loadMetPackageMove = true
+        }
     }
 
     /// Loads the book again, rather than show why a load could not read its
     /// files at `filePath`, when the library may have taken those files
     /// away: once the move of the book's package under way is over, or at
-    /// once when the library has given the book another path since the
-    /// load began. The library moves a package before it says where the
-    /// package went, and a move made off the main thread lets a read's
-    /// failure reach the reader in between, so the read of a moving package
-    /// fails for the move, not for the book. Loaded again, a book that
-    /// really is damaged or missing says so as it would have without a
-    /// move. Before, the failure showed in place of the book, an audiobook
-    /// naming its moved folder of tracks as a damaged file (TODO P10).
+    /// once when a move began while the book loaded, even one put back, or
+    /// the library has given the book another path since the load began.
+    /// The library moves a package before it says where the package went,
+    /// and a move made off the main thread lets a read's failure reach the
+    /// reader in between, so the read of a moving package fails for the
+    /// move, not for the book. Loaded again, a book that really is damaged
+    /// or missing says so as it would have without a move. Before, the
+    /// failure showed in place of the book, an audiobook naming its moved
+    /// folder of tracks as a damaged file (TODO P10).
     ///
     /// - Returns: Whether the book loads again, so the failure is not shown.
     func loadAgainAfterMove(ofFilesReadAt filePath: String) -> Bool {
@@ -274,7 +288,7 @@ extension ReaderViewModel {
             )
             return true
         }
-        guard book.filePath != filePath else { return false }
+        guard loadMetPackageMove || book.filePath != filePath else { return false }
         DiagnosticLog.event(
             .storage,
             "READER_LOAD_AFTER_MOVE: \(book.title): its files moved after the load began; "
