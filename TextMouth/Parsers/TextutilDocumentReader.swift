@@ -66,7 +66,8 @@ enum TextutilDocumentReader {
     /// The Markdown of the book at `url`, read as `bookFormat`
     /// (`extractMarkdown(from:bookFormat:)`), with the title and author its
     /// HTML names. The document is converted once.
-    static func extract(from url: URL, bookFormat: BookFormat) throws -> Extraction {
+    /// - Parameter includesPages: whether page markers are written (PG11); false writes what cache format 3.0.7 wrote. Not used yet.
+    static func extract(from url: URL, bookFormat: BookFormat, includesPages: Bool = true) throws -> Extraction {
         let source = try htmlText(of: url, bookFormat: bookFormat)
         guard !source.isWebPage else {
             // A web page is converted as an .html file is, and names its

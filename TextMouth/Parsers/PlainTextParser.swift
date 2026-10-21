@@ -65,7 +65,8 @@ enum PlainTextParser {
     /// Markdown or HTML is read exactly as written. Headings become ATX
     /// headings of their heuristic level; each paragraph line stays its own
     /// Markdown line, whose line break the reader speaks as a space.
-    static func markdown(text: String) -> String {
+    /// - Parameter includesPages: whether page markers are written (PG13); false writes what cache format 3.0.7 wrote. Not used yet.
+    static func markdown(text: String, includesPages: Bool = true) -> String {
         blocks(in: text).map { block -> String in
             switch block {
             case let .heading(level, label):

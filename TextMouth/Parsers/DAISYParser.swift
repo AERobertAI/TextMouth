@@ -336,12 +336,14 @@ enum DAISYParser {
 
     /// Extract Markdown from a DAISY book. Main conversion entry point for
     /// MarkdownCacheService cache generation.
+    /// - Parameter includesPages: whether page markers are written (PG08); false writes what cache format 3.0.7 wrote. Not used yet.
     /// - Parameter reportIncompleteContent: receives a diagnostic for each
     ///   DTBook content file that broke off after some of its text was read.
     ///   That text stays in the result; the diagnostic never enters it. The
     ///   default writes the diagnostic to the console and the debug log.
     static func extractMarkdown(
         from url: URL,
+        includesPages: Bool = true,
         reportIncompleteContent: (DAISYParserError) -> Void = DAISYParser.logIncompleteContent
     ) throws -> String {
         let provider = try makeFileProvider(from: url)

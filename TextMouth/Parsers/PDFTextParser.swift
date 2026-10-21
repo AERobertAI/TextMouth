@@ -88,12 +88,14 @@ enum PDFTextParser {
     /// - Parameter recognizer: reads text in pictures (by default,
     ///   `defaultRecognizer`); nil when OCR is not available, so pictures go
     ///   unread and the report says why.
+    /// - Parameter includesPages: whether page markers are written (PG06); false writes what cache format 3.0.7 wrote. Not used yet.
     /// - Throws: `PDFParserError.ocrFailed` when no page has embedded text
     ///   and OCR could not run, `.noTextContent` when there is no text at
     ///   all, or why the file could not be opened.
     static func extract(
         from url: URL,
-        recognizer: (any PDFPageTextRecognizer)? = defaultRecognizer
+        recognizer: (any PDFPageTextRecognizer)? = defaultRecognizer,
+        includesPages: Bool = true
     ) throws -> Extraction {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw PDFParserError.fileNotFound(url.path)

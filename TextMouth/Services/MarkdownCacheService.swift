@@ -161,7 +161,8 @@ enum MarkdownCacheService {
         let extracted: ExtractedCache
         do {
             extracted = try extractCache(
-                from: fileURL, format: book.format, brailleTable: book.brailleTable, brailleTableVersion: book.brailleTableVersion
+                from: fileURL, format: book.format, brailleTable: book.brailleTable,
+                brailleTableVersion: book.brailleTableVersion, includesPages: true
             )
         } catch EPUBParserError.noReadableChapters(let report) {
             // Nothing can be cached, but which chapters could not be read is
@@ -452,16 +453,21 @@ enum MarkdownCacheService {
     /// one of this Mac's tables must still have the liblouis version the
     /// book was read with (`brailleTableVersion`, review R2), or the
     /// rebuild fails by name and the old content.md stays.
+    /// - Parameter includesPages: Whether page markers are written: true for
+    ///   every cache the app writes; false reads as cache format 3.0.7 did,
+    ///   which PG09 compares against to find text changed by hand.
     private static func extractCache(
-        from url: URL, format: BookFormat, brailleTable: String?, brailleTableVersion: String?
+        from url: URL, format: BookFormat, brailleTable: String?, brailleTableVersion: String?,
+        includesPages: Bool
     ) throws -> ExtractedCache {
         let markdown: String
         switch format {
         case .epub:
-            return try extractFromEPUB(url: url)
+            return try extractFromEPUB(url: url, includesPages: includesPages)
         case .html:
             let html = try TextFileDecoder.readText(at: url, format: format)
-            markdown = try HTMLToMarkdownConverter.convert(html, stripDuplicateNavigation: true)
+            markdown = try HTMLToMarkdownConverter.convert(
+                html, stripDuplicateNavigation: true, includesPages: includesPages)
         case .webarchive:
             markdown = try WebArchiveReader.mainPage(of: url).markdown()
         case .ssml:
@@ -475,25 +481,25 @@ enum MarkdownCacheService {
             // Markdown, so a cached book reads exactly as
             // PlainTextParser.parse(text:) reads it.
             let text = try TextFileDecoder.readText(at: url, format: format)
-            markdown = PlainTextParser.markdown(text: text)
+            markdown = PlainTextParser.markdown(text: text, includesPages: includesPages)
         case .docx:
-            markdown = try DOCXParser.extractMarkdown(from: url)
+            markdown = try DOCXParser.extractMarkdown(from: url, includesPages: includesPages)
         case .rtf, .rtfd, .doc, .odt, .wordml:
             // One conversion gives the Markdown and the names the head of
             // textutil's HTML holds.
-            let extraction = try TextutilDocumentReader.extract(from: url, bookFormat: format)
+            let extraction = try TextutilDocumentReader.extract(from: url, bookFormat: format, includesPages: includesPages)
             return ExtractedCache(markdown: extraction.markdown, title: extraction.title, author: extraction.author)
         case .braille:
             markdown = try BrailleBookReader.markdown(
                 of: url, table: brailleTable ?? BrailleTableCatalog.defaultTableID, recordedVersion: brailleTableVersion
             )
         case .daisy:
-            markdown = try DAISYParser.extractMarkdown(from: url)
+            markdown = try DAISYParser.extractMarkdown(from: url, includesPages: includesPages)
         case .pdf:
             // The report says how each page was read and names any page
             // whose pictures OCR could not read, so an import warns and
             // keeps the original, and every generation logs those pages.
-            let pdf = try PDFTextParser.extract(from: url)
+            let pdf = try PDFTextParser.extract(from: url, includesPages: includesPages)
             return ExtractedCache(markdown: pdf.markdown, report: pdf.report)
         case .audio:
             // Audio books don't get text caching
@@ -505,8 +511,8 @@ enum MarkdownCacheService {
     /// Use the direct EPUB parser's navigation recovery as the cache source.
     /// Chapter markers preserve boundaries; heading annotations preserve TOC
     /// labels and offsets without inserting any extra text into the book.
-    private static func extractFromEPUB(url: URL) throws -> ExtractedCache {
-        let book = try EPUBParser.prepareBook(url: url)
+    private static func extractFromEPUB(url: URL, includesPages: Bool) throws -> ExtractedCache {
+        let book = try EPUBParser.prepareBook(url: url, includesPages: includesPages)
         let markdown = book.chapters.map { prepared in
             "\(chapterMarker(title: prepared.chapter.title))\n\(prepared.markdown)"
         }.joined(separator: "\n\n")

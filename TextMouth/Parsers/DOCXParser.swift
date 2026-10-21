@@ -70,6 +70,7 @@ enum DOCXParser {
 
     /// Extract Markdown text from a DOCX file. This is the main conversion entry point
     /// used by MarkdownCacheService for generating the content.md cache.
+    /// - Parameter includesPages: whether page markers are written (PG07); false writes what cache format 3.0.7 wrote. Not used yet.
     /// - Parameter reportIncompleteContent: receives a diagnostic when the
     ///   document's text part broke off after some of its text was read.
     ///   That text stays in the result; the diagnostic never enters it. The
@@ -81,6 +82,7 @@ enum DOCXParser {
     ///   text part is damaged before any of its text.
     static func extractMarkdown(
         from url: URL,
+        includesPages: Bool = true,
         reportIncompleteContent: (DOCXParserError) -> Void = DOCXParser.logIncompleteContent
     ) throws -> String {
         let archive = IndexedArchive(try openArchive(at: url))
