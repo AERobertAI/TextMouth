@@ -94,12 +94,14 @@ final class MacBrailleTableCheckTests: XCTestCase {
         XCTAssertFalse(MacBrailleTableCheck.writesSixDotsOnly("\u{2801}\u{2843}"), "dot 7")
         XCTAssertFalse(MacBrailleTableCheck.writesSixDotsOnly("\u{2881}"), "dot 8")
         XCTAssertFalse(MacBrailleTableCheck.writesSixDotsOnly("\u{2801} "), "a space is no braille cell")
-        XCTAssertEqual(
-            MacBrailleTableCheck.sample,
-            "Braille 2026, ABC abc: it\u{2019}s \u{2018}one\u{2019}, \u{201C}two\u{201D}, \u{201E}three\u{201C} and "
-                + "\u{00AB}four\u{00BB} \u{2013} five \u{2014} six\u{2026} \u{2019} \u{2018} \u{201C} \u{201D} \u{201E} "
-                + "\u{00AB} \u{00BB} \u{2013} \u{2014} \u{2026} 0123456789."
-        )
+        let sample = MacBrailleTableCheck.sample
+        XCTAssertTrue(sample.hasPrefix("Braille 2026, ABC abc: it\u{2019}s \u{2018}one\u{2019}, \u{201C}two\u{201D}"), sample)
+        for scalar in "\u{2019}\u{2018}\u{201C}\u{201D}\u{201E}\u{00AB}\u{00BB}\u{2013}\u{2014}\u{2026}\u{2011}".unicodeScalars {
+            XCTAssertTrue(sample.unicodeScalars.contains(scalar), "the sample lacks U+\(String(scalar.value, radix: 16))")
+        }
+        // Every printable ASCII character, from the space to the tilde (review F5).
+        XCTAssertEqual(MacBrailleTableCheck.printableASCII.unicodeScalars.count, 95)
+        XCTAssertTrue(sample.contains(MacBrailleTableCheck.printableASCII))
     }
 
     /// The escape backslash is what liblouis really writes for a character
@@ -467,7 +469,9 @@ final class MacBrailleTableCheckTests: XCTestCase {
         var checked = 0
         // Nil stands for a usable table.
         for (id, expected) in [("mac:hu.tbl", MacBrailleTableCheck.Refusal?.some(.writesEightDots)),
-                               ("mac:hu-hu-g2.ctb", .writesEightDots), ("mac:sv-g1.ctb", nil)]
+                               ("mac:hu-hu-g2.ctb", .writesEightDots), ("mac:sv-g1.ctb", nil),
+                               // Review F5: @ [ ] ^, and the non-breaking hyphen.
+                               ("mac:gez.tbl", .writesEightDots), ("mac:en_GB.tbl", .writesEightDots)]
         where BrailleTableCatalog.table(withID: id) != nil {
             checked += 1
             try isolated {

@@ -204,10 +204,18 @@ enum MacBrailleTableCheck {
     /// such as the apostrophe in "it’s": the Mac's Hungarian tables write
     /// ’ and ‘ with eight dots (⡈ and ⡶) alone or inside a word, but not
     /// around one, and its Chinese tables for Hong Kong and Taiwan write
-    /// eight-dot cells too.
+    /// eight-dot cells too. Review F5 added every printable ASCII character
+    /// (`printableASCII`) and the non-breaking hyphen (U+2011), as in an
+    /// e-mail address or a hyphenated name: the Mac's Mainland Chinese table
+    /// writes @ and ^ with eight dots, its Ethiopic table @ [ ] and ^, and its
+    /// British English, Kurdish, and Slovenian tables the non-breaking hyphen.
     static let sample = "Braille 2026, ABC abc: it\u{2019}s \u{2018}one\u{2019}, \u{201C}two\u{201D}, "
         + "\u{201E}three\u{201C} and \u{00AB}four\u{00BB} \u{2013} five \u{2014} six\u{2026} "
-        + "\u{2019} \u{2018} \u{201C} \u{201D} \u{201E} \u{00AB} \u{00BB} \u{2013} \u{2014} \u{2026} 0123456789."
+        + "\u{2019} \u{2018} \u{201C} \u{201D} \u{201E} \u{00AB} \u{00BB} \u{2013} \u{2014} \u{2026} 0123456789. "
+        + printableASCII + " non\u{2011}breaking."
+
+    /// Every printable ASCII character, U+0020 to U+007E, in order.
+    static let printableASCII = String(String.UnicodeScalarView((0x20...0x7E).compactMap(Unicode.Scalar.init)))
 
     /// Whether every scalar of `cells` is a six-dot braille cell, U+2800 to
     /// U+283F, liblouis's escape backslash aside (`BrailleCells
