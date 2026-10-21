@@ -64,16 +64,31 @@ enum MarkdownMarkerWriter {
     ///   - indentation: Written before a marker that is a block of its own, so
     ///     that it stays in the list item holding the list being written (a
     ///     DAISY list's items keep theirs); none for any other converter.
+    ///   - continuationAtMargin: Whether the caller writes each line of a
+    ///     block at that block's own margin and indents it there itself, as
+    ///     the HTML converter does, converting a list item's or quote's
+    ///     content apart from its opening. The marker is then placed by
+    ///     indentation alone, as every marker was before list items, quotes,
+    ///     and headings were read, and one after a line break begins its line
+    ///     with four spaces, which keep it in the paragraph there. So the HTML
+    ///     converter's heading annotations stay byte for byte where cache
+    ///     format 3.0.7 wrote them, since their places are exact, never moved
+    ///     to a word as a page's is. False for a caller whose Markdown may end
+    ///     in a container's opening, or become a list item's after the marker
+    ///     is placed (DAISY writes the source's openings and whitespace, DOCX a
+    ///     paragraph's text before its list marker): the marker is placed as
+    ///     described above.
     ///   - markdown: The Markdown being built.
     static func write(
         _ marker: String,
         inline: Bool,
         keepingWordsApart: Bool = false,
         indentation: String = "",
+        continuationAtMargin: Bool = false,
         into markdown: inout String
     ) {
         let place = inline
-            ? placement(atEndOf: markdown)
+            ? placement(atEndOf: markdown, continuationAtMargin: continuationAtMargin)
             : Placement(position: .blockStart, index: markdown.endIndex)
         switch place.position {
         case .withinLine:
@@ -85,6 +100,8 @@ enum MarkdownMarkerWriter {
             if space == .before { markdown += " " }
             markdown += marker
             if space == .after { markdown += " " }
+        case .continuationLine where continuationAtMargin:
+            markdown += "    " + marker
         case .continuationLine:
             markdown.unicodeScalars.insert(contentsOf: marker.unicodeScalars, at: place.index)
         case .containerStart(let continuation):
@@ -119,7 +136,8 @@ enum MarkdownMarkerWriter {
     /// Where a marker goes at the end of the Markdown: its position, and the
     /// index `write` works at, in the Markdown's Unicode scalars. For
     /// `withinLine` the index is where the last line's words begin; for
-    /// `continuationLine` where the words of the line before it end; for
+    /// `continuationLine` where the words of the line before it end, or the
+    /// end when the marker begins its own line (`continuationAtMargin`); for
     /// `containerStart` and `headingStart` the end of the opening, after
     /// which everything (whitespace only) is replaced; for `blockStart` the
     /// end.
@@ -129,12 +147,15 @@ enum MarkdownMarkerWriter {
     }
 
     /// The place of a marker written inline at the end of `markdown`, from its
-    /// last two lines.
-    private static func placement(atEndOf markdown: String) -> Placement {
+    /// last two lines. With `continuationAtMargin`, by indentation alone:
+    /// within a line that holds anything but indentation, at the start of a
+    /// line after one that does, and at a block's start after a blank line
+    /// or at the beginning.
+    private static func placement(atEndOf markdown: String, continuationAtMargin: Bool = false) -> Placement {
         let scalars = markdown.unicodeScalars
         let lastStart = scalars.lastIndex(of: "\n").map { scalars.index(after: $0) } ?? scalars.startIndex
         let last = Line(scalars[lastStart...])
-        if !last.words.isEmpty {
+        if !last.words.isEmpty || (continuationAtMargin && last.opensContainer) {
             return Placement(position: .withinLine, index: last.wordsStart)
         }
         if last.opensContainer {
@@ -149,12 +170,17 @@ enum MarkdownMarkerWriter {
         let previousStart = scalars[..<previousEnd].lastIndex(of: "\n").map { scalars.index(after: $0) }
             ?? scalars.startIndex
         let previous = Line(scalars[previousStart..<previousEnd])
+        if previous.words.isEmpty && !previous.opensContainer {
+            // After a blank line a new block begins.
+            return Placement(position: .blockStart, index: scalars.endIndex)
+        }
+        if continuationAtMargin {
+            return Placement(position: .continuationLine, index: scalars.endIndex)
+        }
         if previous.words.isEmpty {
             // An opening followed by a line of whitespace has no words yet
-            // either; after a blank line a new block begins.
-            return previous.opensContainer
-                ? previous.containerStart
-                : Placement(position: .blockStart, index: scalars.endIndex)
+            // either.
+            return previous.containerStart
         }
         if let headingEnd = previous.headingOpeningEnd {
             return Placement(position: .headingStart, index: headingEnd)

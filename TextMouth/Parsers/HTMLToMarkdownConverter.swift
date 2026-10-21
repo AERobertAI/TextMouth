@@ -346,9 +346,13 @@ enum HTMLToMarkdownConverter {
 
     /// Write a destination (a heading annotation or a page marker, as
     /// Markdown) without changing the words around it; see
-    /// `MarkdownMarkerWriter.write`, which places every marker alike.
+    /// `MarkdownMarkerWriter.write`, which places every marker alike. The
+    /// conversion writes a list item's or quote's content apart from its
+    /// opening and indents each of its lines itself, so a marker is placed by
+    /// indentation alone (`continuationAtMargin`), which keeps the heading
+    /// annotations exactly where cache format 3.0.7 wrote them.
     private static func emit(_ marker: String, inline: Bool, into result: inout String) {
-        MarkdownMarkerWriter.write(marker, inline: inline, into: &result)
+        MarkdownMarkerWriter.write(marker, inline: inline, continuationAtMargin: true, into: &result)
     }
 
     /// The TOC destination an element carries through its id, or through the

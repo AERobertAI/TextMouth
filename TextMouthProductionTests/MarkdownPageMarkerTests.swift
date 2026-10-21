@@ -15,11 +15,12 @@ final class MarkdownPageMarkerTests: XCTestCase {
 
     /// `markdown` after writing page marker `<!-- page: 2 -->` into `start`.
     private func written(
-        into start: String, inline: Bool, keepingWordsApart: Bool = false
+        into start: String, inline: Bool, keepingWordsApart: Bool = false, continuationAtMargin: Bool = false
     ) -> String {
         var markdown = start
         MarkdownMarkerWriter.write(
-            "<!-- page: 2 -->", inline: inline, keepingWordsApart: keepingWordsApart, into: &markdown)
+            "<!-- page: 2 -->", inline: inline, keepingWordsApart: keepingWordsApart,
+            continuationAtMargin: continuationAtMargin, into: &markdown)
         return markdown
     }
 
@@ -178,6 +179,20 @@ final class MarkdownPageMarkerTests: XCTestCase {
         // The space a page that joined words brings never completes a list
         // item's marker: it goes after the marker instead.
         XCTAssertEqual(written(into: "*Roses\n*", inline: true, keepingWordsApart: true), "*Roses\n*" + marker + " ")
+    }
+
+    /// A caller that writes each line at its block's own margin, as the HTML
+    /// converter does, has its markers placed by indentation alone, as before
+    /// list items, quotes, and headings were read: after a hard break, four
+    /// spaces begin the marker's line. Its heading annotations, whose places
+    /// are exact, so stay where cache format 3.0.7 wrote them.
+    func testAMarginCallersMarkersArePlacedByIndentationAlone() {
+        let marker = "<!-- page: 2 -->"
+        XCTAssertEqual(written(into: "text  \n", inline: true, continuationAtMargin: true), "text  \n    " + marker)
+        XCTAssertEqual(written(into: "text\n   ", inline: true, continuationAtMargin: true), "text\n   " + "    " + marker)
+        XCTAssertEqual(written(into: "text", inline: true, continuationAtMargin: true), "text" + marker)
+        XCTAssertEqual(written(into: "text\n\n", inline: true, continuationAtMargin: true), "text\n\n" + marker + "\n\n")
+        XCTAssertEqual(written(into: "", inline: true, continuationAtMargin: true), marker + "\n\n")
     }
 
     /// A marker written at the end of `before`, with `after` then written as
