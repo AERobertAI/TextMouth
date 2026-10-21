@@ -235,20 +235,23 @@ final class PDFPageLabelTests: XCTestCase {
 
     // MARK: - Number labels
 
-    /// PDFKit writes the thousandth page of a PDF without labels as "1,000":
-    /// the marker says "1000", so it counts as a whole number in "of N".
-    /// Roman numerals, prefixed labels, and numbers that are not exactly a
-    /// formatted whole number stay as they are.
+    /// PDFKit writes the thousandth page of a PDF without labels as "1,000"
+    /// (or "1.000", "1 000" in other locales): the marker says "1000", so it
+    /// counts as a whole number in "of N". Roman numerals, prefixed labels,
+    /// and numbers that are not one to three digits and groups of exactly
+    /// three stay as PDFKit gave them.
     func testPlainNumberLabelRemovesOnlyANumbersGroupingSeparators() {
-        XCTAssertEqual(PDFTextParser.plainNumberLabel("1,000"), "1000")
-        XCTAssertEqual(PDFTextParser.plainNumberLabel("12,345"), "12345")
-        XCTAssertEqual(PDFTextParser.plainNumberLabel("7"), "7")
-        XCTAssertEqual(PDFTextParser.plainNumberLabel(""), "")
-        XCTAssertEqual(PDFTextParser.plainNumberLabel("xiv"), "xiv")
-        XCTAssertEqual(PDFTextParser.plainNumberLabel("A-1"), "A-1")
-        XCTAssertEqual(PDFTextParser.plainNumberLabel("1,5"), "1,5")
-        XCTAssertEqual(PDFTextParser.plainNumberLabel("1,00"), "1,00")
-        XCTAssertEqual(PDFTextParser.plainNumberLabel("-1,000"), "-1,000")
+        for (given, expected) in [
+            ("1,000", "1000"), ("12.345", "12345"), ("1 000", "1000"), ("123,456", "123456"),
+            ("1\u{00A0}000", "1000"), ("1\u{202F}000", "1000"), ("1'000", "1000"), ("1\u{2019}000", "1000"),
+            ("1,000,000", "1000000"), ("1.234,567", "1234567"),
+            ("7", "7"), ("2000", "2000"), ("", ""), ("xiv", "xiv"), ("A-1", "A-1"),
+            ("1,5", "1,5"), ("1,00", "1,00"), ("1,0000", "1,0000"), ("1234,567", "1234,567"),
+            ("-1,000", "-1,000"), (",000", ",000"), ("1,", "1,"), ("1,,000", "1,,000"), ("A,000", "A,000"),
+            ("1,000a", "1,000a"), ("\u{0661},000", "\u{0661},000"),
+        ] {
+            XCTAssertEqual(PDFTextParser.plainNumberLabel(given), expected, "label \(given)")
+        }
     }
 
     // MARK: - A long PDF

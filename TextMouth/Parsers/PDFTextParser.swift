@@ -53,9 +53,10 @@ enum PDFTextParser {
     }
 
     /// Extract Markdown from a PDF file, reading pictures with the default
-    /// recognizer (Vision's in the app).
+    /// recognizer (Vision's in the app). Its one caller, `parse(url:)`, reads
+    /// no page markers, so none are written (PG06).
     static func extractMarkdown(from url: URL) throws -> String {
-        try extract(from: url).markdown
+        try extract(from: url, includesPages: false).markdown
     }
 
     /// The recognizer `extract(from:)` reads pictures with when its caller
@@ -761,34 +762,43 @@ enum PDFTextParser {
         MarkdownMarkerWriter.write(marker.markdown, inline: false, into: &markdown)
     }
 
-    /// The locales whose number formatting PDFKit may have used to write a
-    /// page's number as its label: the user's, and the US's.
-    private static let labelLocales = [Locale.current, Locale(identifier: "en_US")]
+    /// The characters a locale may put between the thousands of a number:
+    /// comma, period, apostrophe, right single quotation mark, space,
+    /// no-break space, and narrow no-break space.
+    private static let groupingSeparators: Set<Unicode.Scalar> = [
+        ",", ".", "'", "\u{2019}", " ", "\u{00A0}", "\u{202F}",
+    ]
 
     /// A page label PDFKit wrote by formatting a whole number for a locale
-    /// ("1,000", with a grouping separator, for the thousandth page of a PDF
-    /// that names no labels), as plain ASCII digits ("1000"). Page 1,000 of
-    /// 2,000 would not count as a whole number among the book's pages, so
-    /// "Page 1,000 of 999" would be spoken. Any other label (roman numerals,
-    /// "A-1", "12") is returned as it is: only a label that is exactly a
-    /// whole number as the locale writes it is changed.
+    /// ("1,000", "1.000", "1 000": the thousandth page of a PDF that names no
+    /// labels), as plain ASCII digits ("1000"). Page 1,000 of 2,000 would not
+    /// count as a whole number among the book's pages, so "Page 1,000 of 999"
+    /// would be spoken. Only a label of one to three ASCII digits followed
+    /// by one or more groups of a grouping separator and exactly three
+    /// ASCII digits is changed, whatever the locale; any other label (roman
+    /// numerals, "A-1", "12", "1,5", "1,00") is returned as PDFKit gave it.
     static func plainNumberLabel(_ label: String) -> String {
-        // Plain ASCII digits (the commonest label) and the empty label are
-        // already as they should be: skip the number formatters.
-        if label.utf8.allSatisfy({ (UInt8(ascii: "0")...UInt8(ascii: "9")).contains($0) }) { return label }
-        for locale in labelLocales {
-            let formatter = NumberFormatter()
-            formatter.locale = locale
-            formatter.numberStyle = .decimal
-            // The label counts only if it reads as a whole number that the
-            // locale would write back exactly as it is.
-            if let number = formatter.number(from: label), number.int64Value >= 0,
-               Double(number.int64Value) == number.doubleValue,
-               formatter.string(from: number) == label {
-                return String(number.int64Value)
+        var digits = ""
+        var leadingDigits = 0         // digits before the first separator
+        var digitsSinceSeparator = 0  // digits since the last separator
+        var separators = 0
+        for scalar in label.unicodeScalars {
+            if (Unicode.Scalar("0")...Unicode.Scalar("9")).contains(scalar) {
+                digits.unicodeScalars.append(scalar)
+                digitsSinceSeparator += 1
+                if separators == 0 { leadingDigits += 1 }
+            } else if groupingSeparators.contains(scalar), digitsSinceSeparator > 0,
+                      separators > 0 ? digitsSinceSeparator == 3 : leadingDigits <= 3 {
+                // A separator ends a group: the first of one to three digits,
+                // then only groups of exactly three.
+                separators += 1
+                digitsSinceSeparator = 0
+            } else {
+                return label
             }
         }
-        return label
+        // The label must end on a complete group of three digits.
+        return separators > 0 && digitsSinceSeparator == 3 ? digits : label
     }
 
     /// Join the pages of a PDF without an outline (PG06): each page's marker,
