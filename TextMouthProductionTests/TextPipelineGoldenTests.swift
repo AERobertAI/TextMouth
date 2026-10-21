@@ -91,10 +91,46 @@ final class TextPipelineGoldenTests: XCTestCase {
         "wipo-treaty-d202-text-only.zip": "274542e5146da72a",
     ]
 
+    /// content.md as the import wrote it before pages, for the golden books
+    /// whose content.md gained page markers, as `recordedCaches` held it
+    /// until those commits recorded them again with pages: navigation.epub
+    /// (9636b41d, PG05), alice.docx and test_book.docx (94e38ad9, PG07), the
+    /// two DAISY books (122509a0, PG08), and the two DAISY audio books only
+    /// some checkouts hold (79f74958).
+    private static let recordedCachesBeforePages: [String: String] = [
+        "alice.docx": "3cd03f3458bf2cb1",
+        "are-you-ready-d3-audio.zip": "d1d3f9c2159d5732",
+        "fire-safety-d202-audio.zip": "38d5759450e06358",
+        "lathe_of_heaven_daisy.zip": "c64cfa237817b844",
+        "navigation.epub": "7fb5af1466eab9ab",
+        "test_book.docx": "03acb604568b522c",
+        "wipo-treaty-d202-text-only.zip": "8dda044877b014a8",
+    ]
+
     /// Every golden book imports to the content.md recorded for it, and
     /// opens to the recorded chapters, headings, and word counts.
     func testEveryBookKeepsItsRecordedCacheAndReading() throws {
         try compareWithRecordedOutput(try goldenBooks())
+    }
+
+    /// Each golden book that gained pages, read again without them
+    /// (`includesPages: false`), gives exactly the content.md recorded
+    /// before pages: the launch's re-read for pages takes a content.md equal
+    /// to that read for TextMouth's own text, and reads it again (PG16).
+    func testReadingWithoutPagesGivesTheContentRecordedBeforePages() throws {
+        let books = try goldenBooks().filter { Self.recordedCachesBeforePages[$0.name] != nil }
+        let everyCheckoutHolds: Set = [
+            "alice.docx", "lathe_of_heaven_daisy.zip", "navigation.epub", "test_book.docx", "wipo-treaty-d202-text-only.zip",
+        ]
+        XCTAssertTrue(everyCheckoutHolds.isSubset(of: Set(books.map(\.name))), "a book that gained pages is missing")
+        for (name, url) in books {
+            let book = try TextPipelineFixtures.imported(url, for: self)
+            let markdown = try XCTUnwrap(MarkdownCacheService.extractedMarkdown(for: book, includesPages: false), name)
+            XCTAssertEqual(
+                TextPipelineFixtures.digest(Data(markdown.utf8)), Self.recordedCachesBeforePages[name],
+                "content.md of \(name) read without pages"
+            )
+        }
     }
 
     /// A book that cannot be imported fails by name, and so does one whose

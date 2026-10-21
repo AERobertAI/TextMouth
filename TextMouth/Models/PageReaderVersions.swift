@@ -4,10 +4,11 @@ import os
 /// Which formats write page markers into a book's content.md, and the
 /// version of each one's page reader (PG09). A book records the version that
 /// wrote its content.md (`Book.pageReaderVersion`); at launch, while the
-/// launch re-read is switched on (`launchRereadIsOn`, off for now), a book
+/// launch re-read is switched on (`launchRereadIsOn`, on since PG16), a book
 /// whose format has a newer page reader than the one recorded, or none, is
 /// read again from its file so that it gains its pages
-/// (`LibraryViewModel.booksNeedingCacheUpdate`).
+/// (`LibraryViewModel.booksNeedingCacheUpdate`), unless its text was
+/// changed, which is kept as it is.
 ///
 /// A format that gains pages later (PG12's braille) adds its line here,
 /// which reads again only its own books, without another pass over the rest
@@ -36,9 +37,80 @@ enum PageReaderVersions {
     /// Whether a book of `format` that recorded `stored` as its page reader
     /// (nil when it recorded none) is behind the format's current one. False
     /// for a format without pages: such a book is never read again for them.
+    ///
+    /// A stamp's failure note is not part of its version (`stamp(for:pageRunFailed:previous:)`):
+    /// "1.0.0+failed" is page reader 1.0.0, which tried and is not tried
+    /// again, while "1.0.0+failed-once" is behind, so that the book is read
+    /// once more, unless a newer TextMouth on another Mac wrote it (FR02).
     static func isOutdated(format: BookFormat, stored: String?) -> Bool {
         guard let current = current(for: format) else { return false }
-        return SemanticVersion.isOutdated(stored: stored, current: current)
+        guard let stored else { return true }
+        let version = String(stored.prefix { $0 != noteSeparator })
+        if stored.hasSuffix(failedOnceNote) {
+            // Tried once more by this reader or a newer one, never an older.
+            return !SemanticVersion.isOutdated(stored: current, current: version)
+        }
+        return SemanticVersion.isOutdated(stored: version, current: current)
+    }
+
+    // MARK: - A Page Run That Failed (PG16)
+
+    /// What begins a stamp's note, after its version.
+    private static let noteSeparator: Character = "+"
+
+    /// The note of a page run that failed once: the book is read again for
+    /// its pages at the next launch.
+    private static let failedOnceNote = "+failed-once"
+
+    /// The note of a page run that failed again, or of a book whose file
+    /// could not be read for its pages at all: it is not read again for
+    /// them until its format's page reader changes, or Redo Text Extraction
+    /// reads it.
+    private static let failedNote = "+failed"
+
+    /// The page reader a generation records for a book of `format` whose
+    /// stamp was `previous` (PG16): the format's current one when its pages
+    /// were read, nil for a format without pages. When the run that reads
+    /// them failed or was stopped (`pageRunFailed`, textutil's second run),
+    /// the book was read without pages, and the stamp notes it rather than
+    /// record its pages as done: "1.0.0+failed-once" the first time, which
+    /// the next launch reads again, and "1.0.0+failed" when that try fails
+    /// too, so a document that always fails is not read at every launch.
+    static func stamp(for format: BookFormat, pageRunFailed: Bool, previous: String?) -> String? {
+        guard pageRunFailed else { return current(for: format) }
+        return failureStamp(for: format, previous: previous)
+    }
+
+    /// The stamp of a book of `format`, stamped `previous`, that could not be
+    /// read for its pages this time, by a run that may fail only for a
+    /// moment (PG16): "1.0.0+failed-once" the first time, which the next
+    /// launch reads again, and "1.0.0+failed" when that try failed too,
+    /// which no launch reads again; nil for a format without pages.
+    static func failureStamp(for format: BookFormat, previous: String?) -> String? {
+        guard let current = current(for: format) else { return nil }
+        return previous == current + failedOnceNote ? current + failedNote : current + failedOnceNote
+    }
+
+    /// The stamp of a book of `format` whose file could not be read for its
+    /// pages at all, being missing or no longer readable (PG16): the
+    /// current version, noting a failure that is not tried again; nil for a
+    /// format without pages.
+    static func failedStamp(for format: BookFormat) -> String? {
+        current(for: format).map { $0 + failedNote }
+    }
+
+    /// Whether `stamp` notes a failure (`stamp(for:pageRunFailed:previous:)`).
+    static func notesFailure(_ stamp: String?) -> Bool {
+        stamp?.contains(noteSeparator) ?? false
+    }
+
+    /// The line logged for `title`'s book when its run for pages failed and
+    /// `stamp` notes it, saying whether the next launch reads it again.
+    static func failedRunLogLine(title: String, stamp: String?) -> String {
+        let next = stamp?.hasSuffix(failedOnceNote) == true
+            ? "it is read again for them at the next launch"
+            : "it keeps its text without them until Redo Text Extraction"
+        return "PAGES_RUN_FAILED: \(title): its pages could not be read; \(next)"
     }
 
     /// Whether `book`'s content.md predates its format's page reader.
@@ -49,31 +121,41 @@ enum PageReaderVersions {
     // MARK: - The Launch Re-read's Switch
 
     /// Whether the startup batch reads the books already in the library
-    /// again to give them their pages (PG09): **off** in this release.
+    /// again to give them their pages (PG09): **on** since PG16.
     ///
-    /// A review of PG09 (October 21, 2026) found the re-read not yet safe to
-    /// run on a library the user has worked on:
-    /// 1. It compares only the chapters' reading text, so an Edit Text change
-    ///    made before B12 that only turned a paragraph into a heading,
-    ///    changed a heading's level, or renamed a chapter looks unchanged,
-    ///    and would be read over without a copy.
-    /// 2. A book it keeps as changed by hand records no edit (`editedText`),
-    ///    so the next cache-format bump replaces that text without a copy.
-    /// 3. content.md is written before its record is committed, and a quit
-    ///    does not wait for the batch, so an interrupted batch leaves
-    ///    TextMouth's own text looking like the user's edit, which the book
-    ///    then keeps from every later re-read.
-    /// 7. The page reader is recorded even when textutil's second run failed
-    ///    or timed out, so such a book never gains its pages and is never
-    ///    tried again.
+    /// A review of PG09 (October 21, 2026) found the re-read unsafe to run
+    /// on a library the user has worked on, and kept it off until PG16 made
+    /// it safe (`LibraryViewModel.pageUpgradeCheck(of:access:)`):
+    /// 1. The whole content.md is compared, byte for byte, with the book's
+    ///    file read again without pages, where only the chapters' reading
+    ///    text was, so an Edit Text change made before B12 that only turned
+    ///    a paragraph into a heading, changed a heading's level, or renamed a
+    ///    chapter is found as surely as one that changed words. Nothing tells
+    ///    such an edit from an extraction that changed since, so text the
+    ///    compare cannot match, which no edit record names, is copied beside
+    ///    content.md (`content.md.edited-<UTC time>`, `PAGES_REPLACED_TEXT`)
+    ///    before the book is read again with pages.
+    /// 2. A book whose differing text could not be copied is kept as it is
+    ///    and recorded as edited (`editedText`, B12), so no later automatic
+    ///    re-read, such as a cache-format bump, replaces its text either; a
+    ///    book with an edit record is kept the same way.
+    /// 3. A content.md that is exactly the file read with its pages is taken
+    ///    for TextMouth's own, written by a batch that stopped before it
+    ///    committed the record (a quit does not wait for the batch): only the
+    ///    record is stamped, and the text is never taken for the user's edit.
+    /// 7. When textutil's run for the pages fails or times out, the page
+    ///    reader is not recorded as done: the next launch tries once more,
+    ///    and a second failure is noted in the stamp
+    ///    (`stamp(for:pageRunFailed:previous:)`).
     ///
-    /// Books imported or read again from their files gain their pages all
-    /// the same: every generation writes them and records its format's page
-    /// reader (`MarkdownCacheService.GeneratedCache`). Once those findings
-    /// are fixed, setting this to true turns the re-read on. Its code stays
-    /// as it is, and its tests run it switched on
-    /// (`_setLaunchRereadForTesting(_:)`).
-    static let launchRereadIsOn = false
+    /// A book whose file is missing, or no longer extracts, is stamped and
+    /// logged once, and the batch ends with one summary line in the debug
+    /// log (`PAGES_UPGRADE_SUMMARY`). Setting this to false turns the
+    /// re-read off again: no book is then chosen, compared, or stamped for
+    /// its pages, while books imported or read again from their files still
+    /// gain theirs, since every generation writes them. Tests switch it with
+    /// `_setLaunchRereadForTesting(_:)`.
+    static let launchRereadIsOn = true
 
     /// Whether the startup batch is to read `book` again for its pages
     /// (PG09): its content.md predates its format's page reader, and the

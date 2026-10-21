@@ -49,13 +49,16 @@ enum MarkdownCacheService {
     /// do not report omissions leave it empty. A document that names its own
     /// title and author, as a textutil format does in the head of its HTML,
     /// gives them in `title` and `author`, read from the one conversion that
-    /// made the Markdown; every other format leaves them nil.
+    /// made the Markdown; every other format leaves them nil. A textutil
+    /// format whose run for the pages failed says so in `pageRunFailed`
+    /// (PG16); every other format, and a run that succeeded, leaves it false.
     private struct ExtractedCache {
         var markdown: String
         var chapters: [Chapter]? = nil
         var report = ExtractionReport()
         var title: String? = nil
         var author: String? = nil
+        var pageRunFailed = false
     }
 
     /// What one successful cache generation produced: the book's reading
@@ -77,7 +80,9 @@ enum MarkdownCacheService {
         var author: String? = nil
         /// The version of the page reader that wrote this content.md
         /// (`PageReaderVersions`, PG09): the format's current one, since a
-        /// generation always writes pages; nil for a format without pages.
+        /// generation always writes pages, noting a failure when the run for
+        /// them failed (`PageReaderVersions.stamp(for:pageRunFailed:previous:)`,
+        /// PG16); nil for a format without pages.
         var pageReaderVersion: String? = nil
     }
 
@@ -251,44 +256,63 @@ enum MarkdownCacheService {
         logIncompleteContent(extracted.report, of: book)
         // The places move from the copied old text to the text just written.
         let movedPlaces = snapshot.flatMap { $0.movePlaces(to: content, at: Date()) }
+        // A run for the pages that failed records no pages as read (PG16).
+        let pageReaderVersion = PageReaderVersions.stamp(
+            for: book.format, pageRunFailed: extracted.pageRunFailed, previous: book.pageReaderVersion
+        )
+        if extracted.pageRunFailed {
+            DiagnosticLog.event(.storage, PageReaderVersions.failedRunLogLine(title: book.title, stamp: pageReaderVersion))
+        }
         return GeneratedCache(
             content: content, report: extracted.report, movedPlaces: movedPlaces,
             title: extracted.title, author: extracted.author,
-            pageReaderVersion: PageReaderVersions.current(for: book.format)
+            pageReaderVersion: pageReaderVersion
         )
     }
 
-    /// The content.md that reading `book`'s file again without page markers
-    /// (`includesPages: false`) would write: the text as it was written
-    /// before pages (PG09). It extracts exactly as a generation does, and
-    /// writes nothing: no content.md, no snapshot, no record.
-    /// - Returns: The Markdown; nil for a book with no text cache (an audio
+    /// What reading a book's file again gives (`extractedText(for:includesPages:)`):
+    /// the Markdown a generation would write, and whether the run that reads
+    /// its pages failed.
+    struct ExtractedText: Equatable {
+        /// The Markdown.
+        var markdown: String
+        /// Whether pages were asked for and textutil's run for them failed or
+        /// was stopped, so the Markdown has none (PG16); false for every
+        /// other format, and without pages.
+        var pageRunFailed: Bool
+
+        /// The bytes a generation writes for `markdown`: its UTF-8.
+        var bytes: Data { Data(markdown.utf8) }
+    }
+
+    /// What reading `book`'s file again would write to content.md, exactly:
+    /// with page markers, as every generation writes it, or without them
+    /// (`includesPages: false`), as it was written before pages (PG09). The
+    /// launch's re-read for pages compares each, byte for byte, with the
+    /// content.md the book has, to tell a text TextMouth wrote from one
+    /// changed by hand, and needs to know when the run for the pages failed
+    /// (PG16). It extracts exactly as a generation does, and writes nothing:
+    /// no content.md, no snapshot, no record.
+    /// - Returns: The text; nil for a book with no text cache (an audio
     ///   book, or one without a package).
     /// - Throws: why the file could not be read, as a generation does.
-    static func markdownWithoutPages(for book: Book) throws -> String? {
+    static func extractedText(for book: Book, includesPages: Bool) throws -> ExtractedText? {
         guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return nil }
         let boundary = StorageBoundary.shared
         return try boundary.perform(.textExtraction) { _ in
             let current = boundary.rebasedToCurrent(book)
-            return try extractCache(
+            let extracted = try extractCache(
                 from: URL(fileURLWithPath: current.filePath), format: current.format,
                 brailleTable: current.brailleTable, brailleTableVersion: current.brailleTableVersion,
-                includesPages: false
-            ).markdown
+                includesPages: includesPages
+            )
+            return ExtractedText(markdown: extracted.markdown, pageRunFailed: extracted.pageRunFailed)
         }
     }
 
-    /// The reading text of each chapter that content.md would have if
-    /// `book`'s file were read again without page markers, parsed as the
-    /// reader parses content.md (`markdownWithoutPages(for:)`). The upgrade
-    /// to pages compares it with the chapters of the content.md the book
-    /// has, to tell a text TextMouth wrote from one changed by hand.
-    /// - Returns: The chapters' reading texts; empty for a book with no text
-    ///   cache (an audio book, or one without a package).
-    /// - Throws: why the file could not be read, as a generation does.
-    static func readingTextsWithoutPages(for book: Book) throws -> [String] {
-        guard let markdown = try markdownWithoutPages(for: book) else { return [] }
-        return parseMultiChapterMarkdown(markdown, bookTitle: book.title, bookAuthor: book.author).chapters.map(\.text)
+    /// The Markdown of `extractedText(for:includesPages:)`.
+    static func extractedMarkdown(for book: Book, includesPages: Bool) throws -> String? {
+        try extractedText(for: book, includesPages: includesPages)?.markdown
     }
 
     /// Copies the book's old content.md aside with its saved places, before
@@ -553,7 +577,10 @@ enum MarkdownCacheService {
             // One conversion gives the Markdown and the names the head of
             // textutil's HTML holds.
             let extraction = try TextutilDocumentReader.extract(from: url, bookFormat: format, includesPages: includesPages)
-            return ExtractedCache(markdown: extraction.markdown, title: extraction.title, author: extraction.author)
+            return ExtractedCache(
+                markdown: extraction.markdown, title: extraction.title, author: extraction.author,
+                pageRunFailed: extraction.pageRunFailed
+            )
         case .braille:
             markdown = try BrailleBookReader.markdown(
                 of: url, table: brailleTable ?? BrailleTableCatalog.defaultTableID, recordedVersion: brailleTableVersion

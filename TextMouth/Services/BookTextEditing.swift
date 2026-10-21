@@ -610,7 +610,7 @@ final class BookTextEditSessions: Sendable {
     /// (nil when it could not be fingerprinted). One place builds the index
     /// of text taken as the book's own, whether an edit just saved
     /// (`check(_:against:access:readingTexts:keepingTextAside:placesFrom:)`)
-    /// or one kept through a version bump (`settleKeptText(of:pageReaderVersion:access:)`).
+    /// or one kept through a version bump (`settleKeptText(of:pageReaderVersion:recordingEdit:access:)`).
     private static func takenIndex(
         of parsed: DocumentContent,
         for book: Book,
@@ -634,7 +634,10 @@ final class BookTextEditSessions: Sendable {
     /// batch does not visit the book again. `pageReaderVersion` is the page
     /// reader to record (`LibraryPersistenceService.saveContentAnalysis`):
     /// the current one when the book was outdated by it, so the check runs
-    /// once, and nil to leave the record's own. Nothing is written to
+    /// once, and nil to leave the record's own. With `recordingEdit`, the
+    /// text is recorded as an edit taken now (`Book.editedText`), as text
+    /// the read for pages found changed by hand is (PG16), so that no later
+    /// automatic re-read replaces it either. Nothing is written to
     /// content.md, and nothing is logged: the caller says why the text was
     /// kept.
     ///
@@ -644,7 +647,12 @@ final class BookTextEditSessions: Sendable {
     ///   could not take the analysis now (it is only in the cloud, or the
     ///   book moved). The book then keeps what it had, and a later launch
     ///   tries again.
-    func settleKeptText(of book: Book, pageReaderVersion: String??, access: MaintenanceFileAccess) -> Book? {
+    func settleKeptText(
+        of book: Book,
+        pageReaderVersion: String??,
+        recordingEdit: Bool = false,
+        access: MaintenanceFileAccess
+    ) -> Book? {
         boundary.perform(.contentAnalysis) { _ in
             let current = boundary.rebasedToCurrent(book)
             let cacheURL = MarkdownCacheService.cacheURL(for: current)
@@ -661,14 +669,21 @@ final class BookTextEditSessions: Sendable {
             let source = access.isInCloud(sourceURL) ? nil : FileFingerprint(of: sourceURL, hasher: access.hasher)
             let cache = FileFingerprint(stamp: cacheStamp, digest: access.hasher.digestOfData(bytes))
             let index = Self.takenIndex(of: parsed, for: current, source: source, cache: cache)
-            // The row's record of the edit travels with the analysis, in case
-            // the package's record lacks it; content.md is unchanged, so the
-            // reading text kept for it stays good.
+            // The record of the edit this text is travels with the analysis:
+            // a new one, of these very bytes, when the text is recorded as
+            // edited now; otherwise the newer of the row's and the package
+            // record's (`recordedEdit(of:access:)`), in case the record
+            // lacks it, so a lagging row never writes an older edit over a
+            // newer one, and only while it is these bytes. content.md is
+            // unchanged, so the reading text kept for it stays good.
+            let edit = recordingEdit
+                ? EditedText(cacheDigest: cache.digest, takenAt: Date())
+                : Self.recordedEdit(of: current, access: access).flatMap { $0.cacheDigest == cache.digest ? $0 : nil }
             return try? LibraryPersistenceService.saveContentAnalysis(
                 for: current,
                 index: index,
                 cacheFormatVersion: MarkdownCacheService.currentCacheVersion,
-                editedText: current.editedText,
+                editedText: edit,
                 pageReaderVersion: pageReaderVersion
             )
         }
@@ -692,18 +707,28 @@ final class BookTextEditSessions: Sendable {
 
     // MARK: The Record of an Edit Taken (B12)
 
-    /// The digest of the content.md bytes the last edit taken left, as the
-    /// book's row records it, or else as its package record does (a row can
-    /// lag behind a record, or be made without one); nil when neither
-    /// records an edit. Read with dataless files left in the cloud.
-    static func recordedEditDigest(of book: Book, access: MaintenanceFileAccess) -> String? {
-        if let digest = book.editedText?.cacheDigest { return digest }
-        guard !book.tmbDirectoryName.isEmpty else { return nil }
+    /// The record of the last edit taken (B12) that `book` holds: the newer,
+    /// by when each was taken, of its row's and its package record's, since
+    /// either can lag the other (a row not saved when TextMouth stopped, a
+    /// row made without a record, a record written from an older row); the
+    /// one that holds an edit when the other holds none; nil when neither
+    /// does. Read with dataless files left in the cloud.
+    static func recordedEdit(of book: Book, access: MaintenanceFileAccess) -> EditedText? {
+        let row = book.editedText
+        guard !book.tmbDirectoryName.isEmpty else { return row }
         let package = book.tmbDirectory
-        let record = try? access.read(TextMouthPaths.bookInfoPath(in: package)) {
+        let stored = try? access.read(TextMouthPaths.bookInfoPath(in: package)) {
             try StoredBookRecord.read(from: package)
         }
-        return record?.info.state.editedText?.cacheDigest
+        let record = stored?.info.state.editedText
+        guard let row, let record else { return row ?? record }
+        return record.takenAt > row.takenAt ? record : row
+    }
+
+    /// The digest of the content.md bytes the last edit taken left
+    /// (`recordedEdit(of:access:)`); nil when no edit is recorded.
+    static func recordedEditDigest(of book: Book, access: MaintenanceFileAccess) -> String? {
+        recordedEdit(of: book, access: access)?.cacheDigest
     }
 
     /// Whether `book`'s content.md holds exactly the text of an edit taken

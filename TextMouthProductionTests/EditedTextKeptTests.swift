@@ -221,6 +221,49 @@ final class EditedTextKeptTests: CloudMaintenanceTestCase {
         XCTAssertNil(replaced.contentAnalysisFields.editedText)
     }
 
+    // MARK: - The Newer Record Wins
+
+    /// A row and its package record can each lag the other. The edit kept
+    /// is the newer of the two (PG16): a row still holding an older edit
+    /// neither hides the newer one content.md holds from an automatic
+    /// re-read, nor writes itself over it when the kept text is settled.
+    func testARowWithAnOlderEditDoesNotHideTheRecordsNewerOne() throws {
+        let fixture = try makeEditedBook(title: "Older Row \(UUID().uuidString)")
+        let taken = try XCTUnwrap(fixture.book.editedText)
+        var lagging = fixture.book
+        lagging.editedText = EditedText(cacheDigest: "an older edit", takenAt: taken.takenAt.addingTimeInterval(-3600))
+
+        XCTAssertTrue(BookTextEditSessions.holdsTakenEdit(lagging, access: .live), "the row's older edit hid the record's")
+        let settled = BookTextEditSessions.shared.settleKeptText(of: lagging, pageReaderVersion: nil, access: .live)
+        LibraryPersistenceService.flushPendingSave()
+
+        assertSameEdit(settled?.editedText, taken)
+        assertSameEdit(try BookInfo.load(from: fixture.book.tmbDirectory).state.editedText, taken)
+    }
+
+    /// A row whose edit is newer than its record's wins the same way: the
+    /// record takes the row's edit when the kept text is settled.
+    func testARowWithANewerEditWinsOverItsRecord() throws {
+        let fixture = try makeEditedBook(title: "Newer Row \(UUID().uuidString)")
+        let taken = try XCTUnwrap(fixture.book.editedText)
+        // A later edit, which only the row records so far.
+        let later = Data((String(decoding: fixture.edited, as: UTF8.self) + "\nA later line.\n").utf8)
+        try later.write(to: MarkdownCacheService.cacheURL(for: fixture.book), options: .atomic)
+        let newer = EditedText(
+            cacheDigest: MaintenanceFileAccess.live.hasher.digestOfData(later),
+            takenAt: taken.takenAt.addingTimeInterval(3600)
+        )
+        var ahead = fixture.book
+        ahead.editedText = newer
+
+        XCTAssertTrue(BookTextEditSessions.holdsTakenEdit(ahead, access: .live))
+        let settled = BookTextEditSessions.shared.settleKeptText(of: ahead, pageReaderVersion: nil, access: .live)
+        LibraryPersistenceService.flushPendingSave()
+
+        assertSameEdit(settled?.editedText, newer)
+        assertSameEdit(try BookInfo.load(from: fixture.book.tmbDirectory).state.editedText, newer)
+    }
+
     // MARK: - Reading and Writing the Record
 
     /// Rows and records written before the field decode with none; a row,
