@@ -296,6 +296,15 @@ struct Book: Identifiable, Codable, Hashable {
     /// edit is taken, and again once content.md is no longer that edit. It
     /// is an analysis field, so it follows the fingerprints it describes.
     var editedText: EditedText?
+    /// The version of the page reader (`PageReaderVersions`, PG09) that read
+    /// the book's file into content.md: the version of its format when
+    /// content.md was last written from the file with page markers, nil for
+    /// every book written before pages and for a format without pages. A
+    /// book whose format has a newer page reader is read again at launch
+    /// (`LibraryViewModel.booksNeedingCacheUpdate`), unless the user changed
+    /// its text, which is kept as it is. An analysis field, like the
+    /// cache's own version.
+    var pageReaderVersion: String?
     /// The version of the metadata reader (`ImportedFileMetadata.readerVersion`)
     /// that last read this book's file for its title and author: the
     /// import's, or the launch refresh's. A row stamped by an older reader,
@@ -414,6 +423,7 @@ struct Book: Identifiable, Codable, Hashable {
         contentIndexVersion: String? = nil,
         textCacheFingerprint: TextCacheFingerprint? = nil,
         editedText: EditedText? = nil,
+        pageReaderVersion: String? = nil,
         metadataReaderVersion: String? = nil,
         handEdits: HandEdits? = nil,
         feedLink: FeedBookLink? = nil,
@@ -461,6 +471,7 @@ struct Book: Identifiable, Codable, Hashable {
         self.contentIndexVersion = contentIndexVersion
         self.textCacheFingerprint = textCacheFingerprint
         self.editedText = editedText
+        self.pageReaderVersion = pageReaderVersion
         self.metadataReaderVersion = metadataReaderVersion
         self.handEdits = handEdits
         self.feedLink = feedLink
@@ -535,6 +546,10 @@ struct Book: Identifiable, Codable, Hashable {
         // A record of an edit that cannot be read counts as none, as a
         // fingerprint does; older rows have none (B12).
         editedText = fields.optionalValue(.editedText) { $0 }
+        // A version that cannot be read counts as none: the book is then
+        // read again for its pages, which only keeps its text if it is
+        // unchanged (PG09).
+        pageReaderVersion = fields.optionalValue(.pageReaderVersion) { $0 }
         metadataReaderVersion = try container.decodeIfPresent(String.self, forKey: .metadataReaderVersion)
         // A record of hand edits that cannot be read counts as none, as a
         // fingerprint does: the row is then one nothing was recorded for,
@@ -614,6 +629,7 @@ struct Book: Identifiable, Codable, Hashable {
         var cacheFormatVersion: String?
         var textCacheFingerprint: TextCacheFingerprint? = nil
         var editedText: EditedText? = nil
+        var pageReaderVersion: String? = nil
     }
 
     /// This book's analysis-owned fields. Setting them changes exactly those
@@ -628,7 +644,8 @@ struct Book: Identifiable, Codable, Hashable {
                 contentIndexVersion: contentIndexVersion,
                 cacheFormatVersion: cacheFormatVersion,
                 textCacheFingerprint: textCacheFingerprint,
-                editedText: editedText
+                editedText: editedText,
+                pageReaderVersion: pageReaderVersion
             )
         }
         set {
@@ -639,6 +656,7 @@ struct Book: Identifiable, Codable, Hashable {
             cacheFormatVersion = newValue.cacheFormatVersion
             textCacheFingerprint = newValue.textCacheFingerprint
             editedText = newValue.editedText
+            pageReaderVersion = newValue.pageReaderVersion
         }
     }
 
@@ -667,7 +685,10 @@ struct Book: Identifiable, Codable, Hashable {
             editedText: editedText.flatMap { edit in
                 guard let digest = index.textCacheFingerprint?.cache.digest else { return edit }
                 return digest == edit.cacheDigest ? edit : nil
-            }
+            },
+            // An analysis says nothing about which page reader wrote
+            // content.md: only a generation stamps it (PG09).
+            pageReaderVersion: pageReaderVersion
         )
     }
 
@@ -1091,7 +1112,8 @@ struct Book: Identifiable, Codable, Hashable {
                 cacheFormatVersion: cacheFormatVersion,
                 contentIndexVersion: contentIndexVersion,
                 textCacheFingerprint: textCacheFingerprint,
-                editedText: editedText
+                editedText: editedText,
+                pageReaderVersion: pageReaderVersion
             ),
             bookmarks: bookmarks
         )
@@ -1153,6 +1175,7 @@ struct Book: Identifiable, Codable, Hashable {
             contentIndexVersion: state.contentIndexVersion,
             textCacheFingerprint: state.textCacheFingerprint,
             editedText: state.editedText,
+            pageReaderVersion: state.pageReaderVersion,
             metadataReaderVersion: metadata.metadataReaderVersion,
             handEdits: metadata.handEdits,
             feedLink: metadata.feedLink,

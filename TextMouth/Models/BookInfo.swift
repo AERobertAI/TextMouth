@@ -237,6 +237,11 @@ struct BookState: Codable {
     /// library rebuilt from its records still refuses to read the book's
     /// file over the user's text.
     var editedText: EditedText?
+    /// The page reader that wrote content.md (`Book.pageReaderVersion`,
+    /// PG09). Kept in the record so a library rebuilt from its records
+    /// re-reads only the books whose content.md predates their format's
+    /// pages.
+    var pageReaderVersion: String?
     /// What the package's transcript is, for a transcribed audiobook
     /// (FR05): its layout version, language, and date, so knowing whether a
     /// book has a transcript never means reading transcript.json or the
@@ -277,6 +282,7 @@ struct BookState: Codable {
         contentIndexVersion: String? = nil,
         textCacheFingerprint: TextCacheFingerprint? = nil,
         editedText: EditedText? = nil,
+        pageReaderVersion: String? = nil,
         transcript: TranscriptNote? = nil,
         revision: Int? = nil
     ) {
@@ -302,6 +308,7 @@ struct BookState: Codable {
         self.contentIndexVersion = contentIndexVersion
         self.textCacheFingerprint = textCacheFingerprint
         self.editedText = editedText
+        self.pageReaderVersion = pageReaderVersion
         self.transcript = transcript
         self.revision = revision
     }
@@ -345,6 +352,8 @@ struct BookState: Codable {
         // A record of an edit that cannot be read counts as none, as a
         // fingerprint does; a record written before B12 has none.
         editedText = fields.optionalValue(.editedText) { $0 }
+        // A version that cannot be read counts as none, as an edit does.
+        pageReaderVersion = fields.optionalValue(.pageReaderVersion) { $0 }
         // A note that cannot be read counts as none, as a fingerprint does:
         // the book's transcript is still read from transcript.json itself.
         transcript = fields.optionalValue(.transcript) { $0 }
@@ -366,7 +375,8 @@ extension BookState {
             contentIndexVersion: contentIndexVersion,
             cacheFormatVersion: cacheFormatVersion,
             textCacheFingerprint: textCacheFingerprint,
-            editedText: editedText
+            editedText: editedText,
+            pageReaderVersion: pageReaderVersion
         )
     }
 
