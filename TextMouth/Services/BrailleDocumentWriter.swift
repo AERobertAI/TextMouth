@@ -70,24 +70,46 @@ enum BrailleDocumentWriter {
         options: BrailleExportOptions,
         workingIn folder: URL
     ) throws -> [[String]] {
+        let texts = blocks.map { printForBraille($0.text) }
         let braille = try BrailleTranslator.translate(
-            blocks.map(\.text), table: options.table, direction: .printToBraille, workingIn: folder
+            texts, table: options.table, direction: .printToBraille, workingIn: folder
         )
         // One translation per block, in order; a mismatch would pair a block
         // with another's text, so it is refused rather than guessed at.
         guard braille.count == blocks.count else {
             throw BrailleTranslator.Failure.failed
         }
-        // An eight-dot cell is never written as its six-dot part: the book
-        // fails, naming the character (review R1). Some tables write one for
-        // a character they define so, such as the Mac's Swedish tables for «.
-        for (block, cells) in zip(blocks, braille) {
+        // An eight-dot cell a table makes from an ordinary character is never
+        // written as its six-dot part: the book fails, naming the character
+        // (review R1). Some tables write one for a character they define so,
+        // such as the Mac's Swedish tables for «.
+        for (text, cells) in zip(texts, braille) {
             guard let cell = BrailleCells.firstEightDotCell(in: cells) else { continue }
-            let character = try character(writtenWithEightDotsIn: block.text, table: options.table, workingIn: folder)
+            let character = try character(writtenWithEightDotsIn: text, table: options.table, workingIn: folder)
             throw BrailleFileWriter.EightDotCell(cell: cell, character: character)
         }
         let translated = zip(blocks, braille).map { block, cells in block.withText(cells) }
         return BrailleLayout.pages(of: translated, format: options.page)
+    }
+
+    /// `text` as an export gives it to the translator (review F1). Every
+    /// bundled table writes a braille pattern in the print as itself
+    /// (`braille-patterns.cti`), so an eight-dot pattern there, as in braille
+    /// art or a text about eight-dot braille ("⣏⣀⣹"), is written as its
+    /// six-dot part, its dots 7 and 8 dropped, as every export wrote such a
+    /// cell before review R1; an eight-dot cell a table makes from an
+    /// ordinary character is still refused. Unicode's noncharacters
+    /// (U+FDD0 to U+FDEF, and the last two code points of every plane, such
+    /// as U+FFFF), which hold no text and which liblouis writes as an
+    /// eight-dot cell, are removed.
+    static func printForBraille(_ text: String) -> String {
+        var scalars = String.UnicodeScalarView()
+        for scalar in text.unicodeScalars {
+            let value = scalar.value
+            if (0xFDD0...0xFDEF).contains(value) || value & 0xFFFE == 0xFFFE { continue }
+            scalars.append(BrailleCells.usesEightDots(scalar) ? BrailleCells.sixDotPart(of: scalar) : scalar)
+        }
+        return String(scalars)
     }
 
     /// The character of `text` that `table` writes with an eight-dot cell:

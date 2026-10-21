@@ -77,6 +77,12 @@ enum BrailleCells {
         (lastSixDotPattern + 1...lastPattern).contains(scalar.value)
     }
 
+    /// The six-dot part of the braille pattern `cell`: the same cell with
+    /// dots 7 and 8 cleared, the low six bits of a pattern being dots 1 to 6.
+    static func sixDotPart(of cell: Unicode.Scalar) -> Unicode.Scalar {
+        Unicode.Scalar(firstPattern + (cell.value & 0x3F)) ?? blank
+    }
+
     /// liblouis's escape backslash: the cell it writes the backslash of its
     /// escape notation with (`'\x0041'` for a character a table lacks) when
     /// the table has no backslash of its own, braille ASCII's ⠳ with dot 7

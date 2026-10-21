@@ -310,6 +310,31 @@ final class BrailleDocumentWriterTests: XCTestCase {
         XCTAssertEqual(fromPEF, expected)
     }
 
+    /// An eight-dot braille pattern in the print, as in liblouis's own NEWS
+    /// line "☐ (⣏⣀⣹)", is written as its six-dot part with every bundled
+    /// table, which pass braille in the print through as itself, and a
+    /// noncharacter is removed: such a book exports (review F1).
+    func testEightDotBrailleInThePrintExportsAsItsSixDotPart() throws {
+        // liblouis's own NEWS line: a ballot box, then three eight-dot cells.
+        let news = "\u{2610} (\u{28CF}\u{28C0}\u{28F9})"
+        // Swift takes no noncharacter in a literal, so these are made here.
+        let nonCharacters = String(String.UnicodeScalarView([0xFFFF, 0xFDD0, 0x1FFFE].compactMap(Unicode.Scalar.init)))
+        XCTAssertEqual(nonCharacters.unicodeScalars.count, 3)
+        XCTAssertEqual(
+            BrailleDocumentWriter.printForBraille(news + nonCharacters),
+            "\u{2610} (\u{280F}\u{2800}\u{2839})"
+        )
+        let folder = try makeSandboxDirectory("BrailleEightDotPrint")
+        let blocks: [BrailleBlock] = [.paragraph(text: news), .paragraph(text: "a" + nonCharacters + "b")]
+        for table in BrailleTableCatalog.bundled.map(\.id) {
+            let options = BrailleExportOptions(table: table)
+            let cells = try BrailleDocumentWriter.pages(of: blocks, options: options, workingIn: folder).flatMap { $0 }.joined()
+            XCTAssertNil(BrailleCells.firstEightDotCell(in: cells), table)
+            XCTAssertTrue(cells.contains("\u{280F}") && cells.contains("\u{2839}"), "\(table): \(cells)")
+            XCTAssertNoThrow(try BrailleDocumentWriter.brf(of: blocks, options: options, workingIn: folder), table)
+        }
+    }
+
     /// No blocks give an empty BRF and a PEF with no page.
     func testNoBlocksGiveAnEmptyBRFAndAPEFWithoutPages() throws {
         let options = options("en-ueb-g1.ctb")
