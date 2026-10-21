@@ -72,25 +72,51 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - A test host that joins the system's media session takes the user's AirPods; it never does now, but a branch older than that fix still can until it rebases.
 - A tool call that waits on a permission prompt stops its agent until the user answers, and the user may be away. Claude Code asks before an `rm` through a shell variable: on October 18, 2026 a team lead's `rm -f "$D/$out"` in a throwaway test loop waited five hours while its team stood still. Every `rm`, in a brief or the orchestrator's own commands, takes literal paths. While agents work, the orchestrator runs `python3 -I Scripts/agents/stall-watch.py --subagents ~/.claude/projects/<project folder>/<session id>/subagents` as a background task; it exits naming any agent whose tool call has waited fifteen minutes for its result.
 
-## Where things stood on October 18, 2026
+## Where things stood on October 20, 2026
 
-On October 18 the user asked to "go ahead and send some teams to work on implementing the easy sets of formats, maybe choose 5-10 to start with or to do and pollish today if possible". Nine items of the TODO's formats section went to two teams, each an Opus lead with Sonnet workers, on the pattern in `Scripts/agents/briefs/2026-10-18/teams-common.md`. Two fresh Opus reviewers read each team's whole branch before its merge, and a second round of workers fixed what they found:
-- `team/textfmt` (fcb30520): FMT13 (RTF, RTFD, Word 97-2003, OpenDocument, and Word 2003 XML, read by textutil in a watched child process), FMT01, FMT03, FMT07, and FMT04, with 17 review findings fixed.
-- `team/audiofmt` (81d6bae4): FMT09 (more audio formats, converted by the watched afconvert), FMT14 (lossless audio kept lossless, and a setting that keeps the converted original), FMT05 (Nero chapter lists), and FMT10 (M3U and M3U8 playlists), with 15 review findings fixed.
-- Two documentation passes: `docs/oct18` (2f88d97e) and `docs/oct18b` (4660dcb7).
+On October 19 the user asked: "Go ahead and try working on the braille reading features tonight. and the export feature, for the braille I want it possible to have multiple braille tables and contracted and uncontracted settings and use the library. (see how much it increases app size)". Two teams worked on it, each an Opus lead with Sonnet workers (`Scripts/agents/briefs/2026-10-19/`), and fresh Opus reviewers read every branch before its merge. Merged into main:
+- `team/export` (0db62a38): FMT18 and FMT19. The Export dialog's Convert to picker offers Markdown, HTML, RTF, and Word 97-2003. One swift-markdown walker of content.md feeds every writer. Every exported file is made in a scratch folder and moved in with an exclusive rename. 12 review findings were dealt with.
+- `team/braille` (3996434d): FMT20, FMT21, and FMT22.
+  - liblouis 3.39.0 runs in the TextMouthBraille helper, with four English tables and a Braille tab.
+  - TextMouth reads BRF, BRL, and PEF, and writes BRF and PEF from Export.
+  - 26 review findings over two rounds were fixed. The app grew about 0.6 MB, to about 19.75 MB.
+- `team/mactables` (b5fffa42, then e7461fe1). A Language pop-up offers this Mac's VoiceOver liblouis tables (3.34.0, read in place), each measured and checked before first use, beside the built-in English ones. 16 findings over two reviews were dealt with.
+- Documentation passes: `docs/oct19` (c77c9cf4), `docs/oct19b` (bc5ef365), and `docs/oct20` (077b4e1e).
 
-Main's suite after the audiofmt merge: **7479 tests, 72 skipped, 0 failures**, about 17 minutes of test time. A library that holds a book of one of the new text formats cannot be opened by a TextMouth built before the textfmt merge (it keeps the library and writes nothing). The day's questions are in `humanQuestions/2026-10-18.md` (ten, each built with its recommended answer); `2026-10-16.md`, `2026-10-12.md`, and `2026-10-10-evening.md` still wait. The user's push and install are pending, and so is the user's answer on a hook for an `rm` through a shell variable (refuse it, or move what it deletes to the Trash). The next candidates in the formats section are braille (FMT20 to FMT22, which need liblouis, FMT21) and export (FMT18, FMT19, FMT43).
+**State at the end:**
+- **Main's suite:** **7940 tests, 73 skipped, 0 failures**, about 18 minutes of test time.
+- **Older builds:** a TextMouth built before the braille merge cannot open a library that holds a braille book.
+- **Questions:** in `humanQuestions/2026-10-19.md`. Question 1 is answered (English stays built in and the default), and question 4 is built. Questions 2 (emphasis in exported braille) and 3 (moving by page in a braille book) wait, as do the older question files.
+- **Pending with the user:** the push and install, the October 18 questions, and the rm-hook offer.
+- **The next candidates:** FMT43 (speech to audio in Export), questions 2 and 3, and the braille follow-ups in the TODO (lists, running heads, long words, and Mac refusals remembered across launches).
+
+**Lessons of October 19 and 20:**
+- **A login expiry** stops every agent and watcher silently; the usage monitor exits with "AUTH PROBLEM". After the user logs in, a SendMessage to each agent id resumes it, and workers came back with their uncommitted work intact.
+- **A restart of the user's Claude Code session** makes the old session's agents unresumable ("No transcript found"), and the session's scratchpad goes with it. Agents should therefore commit small and often. The orchestrator keeps its working files in the repository's gitignored `build/orchestrator/`, and a fresh agent finishes from the branches.
+- **Review fix rounds earned their own reviews:**
+  - the braille round's heading fix split multi-line titles on real books (98 of 233 Pride and Prejudice titles);
+  - one mactables fix failed English exports of text holding braille characters;
+  - another dropped five languages.
+
+  Have fix rounds measure on real samples, and review them before or right after the merge.
+- **Libraries' success codes are not proof.** liblouis reports success when its output fills on an escape, so check the room left. A check run shorter than the watchdog's poll proves nothing about a table's memory.
+- **Strictness has a cost.** A strict up-front check can cost more than it saves: refusing every table that writes @ in eight dots would have cost 19 languages, while refusing each book by name loses nothing silently.
+- **A pre-merge full suite** in the lead's worktree, run while the review runs, finds full-suite-only failures early. Run in a worktree, it skips three TranscriptionFixtureTests, whose TestData zips are untracked.
+- **XcodeGen 2.45.3** orders copy-files phases differently on each run. merge-chain then regenerates and commits the project, which is harmless.
+- **Pacing.** On October 20 the user, seeing their usage page on track, approved of the pacing and raised the day's line to 55% used.
 
 **Lessons of October 18:**
-- The Opus review of a whole team branch paid for itself: in each branch it found serious bugs that the team's own tests had passed (in textfmt, an RTFD book's package that could not be imported again; in audiofmt, most real 5.1 AC-3 files refused, and a playlist entry that could reach outside its folder).
-- Where a fix changes what a listener hears, have it measured on real samples: a check of the centre channel showed that afconvert's `-c 2` without `--mix` drops it from 5.1 PCM.
-- The disk filled at 09:50 with two teams building (1 GB free). Each team then builds one worker at a time, a worker deletes its build folder after its last build, and a merge suite starts only with 3 GB free.
-- A lead's question on the board went unseen for 28 minutes; a message sent with SendMessage reaches an agent at its next tool call.
-- A lead lost five hours to a permission prompt; see "Lessons that cost time".
+- **The Opus review of a whole team branch paid for itself:** in each branch it found serious bugs that the team's own tests had passed.
+- **Measure on real samples** where a fix changes what a listener hears.
+- **Disk:** each team builds one worker at a time, a worker deletes its build folder after its last build, and a merge suite starts only with 3 GB free.
+- **Messages:** a message sent with SendMessage reaches an agent at its next tool call; a question on the board can go unseen.
 
 **Lessons of the October 16 and 17 Sonnet teams:**
-- Sonnet leads did as well as Opus ones at these brief sizes: all 58 workers were accepted (6 oggsafe, 21 fixes, 3 importsafe, 10 feedopts, 18 testkit), a handful after one round.
-- A brief that adds an `@unchecked Sendable` type, a `nonisolated(unsafe)` variable, or a log tag names `UncheckedConcurrencyPolicyTests` and `LogContentPolicyTests`; one that adds a shortcut action names the legacy scenarios in `TextMouthTests/Sources/Tests` and `KeyboardReachabilityTests`; one that adds a fixture placing books in a folder runs the next class that opens a library. Workers' targeted runs missed each of these, and only the lead's full suite found them.
-- Workers build with `python3 Scripts/test/run-area.py <areas or classes>`; Python tools write no bytecode (`sys.dont_write_bytecode`); a rebase conflict in `project.pbxproj` is settled by `xcodegen generate`; after each merge, `run-area.py --unassigned` lists the new classes to place in `Scripts/test/areas.conf`.
-- Two team branches that conflict are merged by the orchestrator in a scratch worktree (`git worktree add <scratch> main -b integrate/<team>`, merge, resolve, full suite there), and main is fast-forwarded to it once green, so the main checkout never holds a half-merged tree.
-- The build slots were the night's bottleneck: waits of 25 to 60 minutes with five teams building. Three teams that build, plus agents that do not, is the ceiling.
+- Sonnet leads did as well as Opus ones at these brief sizes.
+- **Name the policy tests in a brief:**
+  - a brief that adds an `@unchecked Sendable` type, a `nonisolated(unsafe)` variable, or a log tag names `UncheckedConcurrencyPolicyTests` and `LogContentPolicyTests`;
+  - one that adds a shortcut action names the legacy scenarios and `KeyboardReachabilityTests`;
+  - one that adds a field to `Book` names `ContentAnalysisMergeTests`.
+- Workers build with `python3 Scripts/test/run-area.py`. A rebase conflict in `project.pbxproj` is settled by `xcodegen generate`, and new classes are placed in `Scripts/test/areas.conf` (`--unassigned`).
+- Two conflicting team branches are merged in a scratch worktree, and main is fast-forwarded once green.
+- Three teams that build, plus agents that do not, is the ceiling for the build slots.
