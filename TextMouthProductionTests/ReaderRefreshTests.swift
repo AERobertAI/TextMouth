@@ -823,6 +823,85 @@ final class ReaderRefreshTests: XCTestCase {
         reader.stop()
     }
 
+    // MARK: - Loading During a Package Move
+    //
+    // A reader loads its book off the main thread, reading the book's files
+    // where the book was when the load began, and hands what it read back to
+    // the main thread. A move made off the main thread
+    // (`performLibraryTransition`) can take those files away while they are
+    // read, and the read's failure can reach the reader before the library
+    // says where the book is now: a full suite on October 20, 2026 saw an
+    // audiobook moved as it loaded say "The file “Tracks” in this audiobook
+    // is damaged or incomplete" (`testABookMovedWhileItLoadsOpensFromWhereItIsNow`).
+    // These tests hold each load on a queue of their own (`HeldLoads`) and
+    // let it read at the moment they choose, such as inside the disk's move
+    // of `commitLibraryTransition`, which runs on the main thread between the
+    // move's two events: once the package has moved, the main run loop
+    // turning while the load hands over what it read, as the main thread
+    // turns while a move made off it is under way.
+
+    /// A book's folder changes, by Move to Folder… or Rename Folder…, in
+    /// the moment its reader's load reads the book's files: the package has
+    /// left the place the load reads, and the read's failure reaches the
+    /// reader before the library says where the book is now. The reader
+    /// takes the failure for the move's doing, not the book's: once the move
+    /// is over, it loads the book again from where it is now, and opens it
+    /// with no error, naming its files there; an audiobook plays from there.
+    /// So for an audiobook of tracks, a text book, and a DAISY audiobook.
+    /// Before, the reader said the book could not be read, an audiobook
+    /// naming its moved folder as a damaged file ("The file “Tracks” in this
+    /// audiobook is damaged or incomplete").
+    func testALoadThatReadsAsItsBookMovesOpensTheBookFromWhereItIsNow() throws {
+        for kind in LoadedBookKind.allCases {
+            for change in FolderChange.allCases {
+                let context = "\(kind.name), read as \(change.name) moved it"
+                let world = try makeIntegrationWorld("Reader Refresh Read During \(change) \(kind)")
+                let book = try makeBook(kind, readyFor: change, in: world)
+                let loads = holdLoads()
+                let reader = world.openReader(for: book, loadQueue: loads.queue)
+                XCTAssertTrue(reader.isLoading, context)
+
+                try commit(change, of: book, in: world) {
+                    loads.letReadAndHandOver()
+                }
+
+                try assertOpensFromWhereItIsNow(reader, kind, in: world, context)
+            }
+        }
+    }
+
+    /// An audiobook whose second track is damaged, and which keeps no index,
+    /// so that every load checks its tracks, moves while its reader's load
+    /// reads it. The reader loads it again once the move is over, and that
+    /// load, from where the book is now, finds the damage: the reader says
+    /// the book is damaged, naming the track, exactly as it says when
+    /// nothing moves. Before, it named the book's moved folder of tracks as
+    /// the damaged file.
+    func testADamagedBookMovedAsItLoadsStillSaysWhichFileIsDamaged() throws {
+        let world = try makeIntegrationWorld("Reader Refresh Damaged During Move")
+        let book = try world.makeSilentAudioBook(title: "Breakwater Soundings", trackDurations: [1, 1])
+        // Damaged once indexed, and the index removed, so loads check the tracks.
+        try Data("Not a recording at all.".utf8).write(to: URL(fileURLWithPath: book.filePath).appendingPathComponent("02.wav"))
+        try FileManager.default.removeItem(at: TextMouthPaths.contentIndexPath(in: book.tmbDirectory))
+
+        // Where nothing moves, the reader names the damaged track.
+        let unmoved = world.openReader(for: book)
+        waitForReaderToLoad(unmoved)
+        let damage = try XCTUnwrap(unmoved.errorMessage, "The damaged book opened")
+        XCTAssertTrue(damage.contains("“02.wav”"), "The reader did not name the damaged track: \(damage)")
+        unmoved.close()
+
+        let loads = holdLoads()
+        let reader = world.openReader(for: book, loadQueue: loads.queue)
+        try commit(.moveToFolder, of: book, in: world) {
+            loads.letReadAndHandOver()
+        }
+        waitForReaderToLoad(reader)
+
+        XCTAssertEqual(reader.errorMessage, damage, "The moved book is not said to be damaged as it is")
+        XCTAssertNil(reader.content, "The damaged book opened")
+    }
+
     // MARK: - Stale Fields
 
     /// Every field of `reader` that no longer matches `library`'s row for
@@ -1160,6 +1239,236 @@ final class ReaderRefreshTests: XCTestCase {
                 try book.saveBookInfoThrowing()
             }
         )
+    }
+
+    // MARK: Loading During a Package Move
+
+    /// The kinds of book a reader loads each in its own way: an audiobook of
+    /// tracks (its saved index, then its tracks' tags), a text book (its
+    /// text cache), and a DAISY audiobook, whose headings play clips of
+    /// several files.
+    private enum LoadedBookKind: CaseIterable {
+        case tracks
+        case text
+        case daisy
+
+        /// What a failure message calls it.
+        var name: String {
+            switch self {
+            case .tracks: return "an audiobook of tracks"
+            case .text: return "a text book"
+            case .daisy: return "a DAISY audiobook"
+            }
+        }
+
+        /// Whether it is an audiobook, which the reader plays from its files.
+        var isAudio: Bool {
+            self != .text
+        }
+
+        /// How many chapters it opens with (`makeBook(_:readyFor:in:)`).
+        var chapterCount: Int {
+            switch self {
+            case .tracks: return 2
+            case .text: return 3
+            case .daisy: return 2
+            }
+        }
+    }
+
+    /// The changes of a book's folder that move the book's package, each as
+    /// its Library window command makes it.
+    private enum FolderChange: CaseIterable {
+        /// Move to Folder… moves the book into the folder Shelf.
+        case moveToFolder
+        /// Rename Folder… renames Shelf, the folder holding the book, to
+        /// Stacks.
+        case renameFolder
+
+        /// What a failure message calls it.
+        var name: String {
+            switch self {
+            case .moveToFolder: return "Move to Folder…"
+            case .renameFolder: return "Rename Folder…"
+            }
+        }
+    }
+
+    /// The folder Shelf in `world`'s folder, as books and folders name it.
+    private static func shelfPath(in world: IntegrationWorld) -> String {
+        "\(world.folder.path)/Shelf"
+    }
+
+    /// A book of `kind` in `world`'s folder, listed in the library, with as
+    /// many chapters as `kind` says; for Rename Folder…, moved first into
+    /// the folder Shelf, which the rename renames. Returns the book's row as
+    /// the library then holds it.
+    private func makeBook(_ kind: LoadedBookKind, readyFor change: FolderChange, in world: IntegrationWorld) throws -> Book {
+        let book: Book
+        switch kind {
+        case .tracks:
+            book = try world.makeSilentAudioBook(title: "Breakwater Soundings", trackDurations: [1, 1])
+        case .text:
+            book = try world.importBook(from: writeTideTablesEPUB())
+        case .daisy:
+            book = try world.makeSegmentedAudioBook(
+                title: "Harbour Soundings",
+                files: ["intro.wav": 1, "a.wav": 1, "b.wav": 1],
+                sections: [
+                    AudioSegment(title: "Opening", file: "intro.wav", startTime: 0, endTime: 1),
+                    try XCTUnwrap(AudioSegment(title: "Harbour Survey", clips: [
+                        AudioClip(file: "a.wav", startTime: 0, endTime: 1),
+                        AudioClip(file: "b.wav", startTime: 0, endTime: 1)
+                    ]))
+                ]
+            )
+        }
+        guard change == .renameFolder else { return book }
+        world.library.library.folders = [
+            BookFolder(name: world.folder.path),
+            BookFolder(name: "Shelf", parentPath: world.folder.path)
+        ]
+        let move = outcome { await world.library.moveBooksReturningOutcome([book], toFolder: Self.shelfPath(in: world)) }
+        XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
+        return try row(of: book, in: world.library)
+    }
+
+    /// The library `change` proposes for `book`, in `world`, as its command
+    /// proposes it to the library's transition.
+    private func proposedLibrary(_ change: FolderChange, of book: Book, in world: IntegrationWorld) throws -> Library {
+        switch change {
+        case .moveToFolder:
+            return Self.library(world.library.library, moving: book.id, to: Self.shelfPath(in: world))
+        case .renameFolder:
+            var proposed = world.library.library
+            let shelfPath = Self.shelfPath(in: world)
+            let shelf = try XCTUnwrap(proposed.folders.first { $0.fullPath == shelfPath }, "There is no folder Shelf")
+            try proposed.renameFolderThrowing(id: shelf.id, to: "Stacks")
+            return proposed
+        }
+    }
+
+    /// Makes `change` to `book`'s folder through the library's transition,
+    /// as its command proposes it, running `whileMoving` after the book's
+    /// package has moved on disk and before the library holds its new row,
+    /// as anything can run on the main thread then while a move made off it
+    /// is under way.
+    private func commit(
+        _ change: FolderChange,
+        of book: Book,
+        in world: IntegrationWorld,
+        whileMoving: @escaping @MainActor @Sendable () -> Void
+    ) throws {
+        let proposed = try proposedLibrary(change, of: book, in: world)
+        try world.library.commitLibraryTransition(
+            proposed,
+            affectedBookIDs: world.library.bookIDsChangingFolder(in: proposed),
+            disk: LibraryTransitionDisk(
+                moveItem: { source, destination in
+                    try FileManager.default.moveItem(at: source, to: destination)
+                    // `commitLibraryTransition` moves packages on the main
+                    // actor.
+                    MainActor.assumeIsolated {
+                        whileMoving()
+                    }
+                },
+                writeRecord: { book in
+                    try book.saveBookInfoThrowing()
+                }
+            )
+        )
+    }
+
+    /// Waits for `reader` to load its book, of `kind`, and checks that it
+    /// opened with no error, with all its chapters, naming its files where
+    /// `world`'s library has the book now, and that an audiobook plays from
+    /// there; `context` begins each failure.
+    private func assertOpensFromWhereItIsNow(
+        _ reader: ReaderViewModel,
+        _ kind: LoadedBookKind,
+        in world: IntegrationWorld,
+        _ context: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        waitForReaderToLoad(reader, file: file, line: line)
+        XCTAssertNil(reader.errorMessage, "\(context): the book did not open", file: file, line: line)
+        XCTAssertEqual(reader.content?.chapters.count, kind.chapterCount, "\(context): the chapters", file: file, line: line)
+        let stale = staleFields(of: reader, in: world.library, after: context)
+        XCTAssertTrue(stale.isEmpty, Self.report(stale), file: file, line: line)
+        guard kind.isAudio else { return }
+        reader.play()
+        XCTAssertEqual(
+            Self.folderPath(of: reader.audioPlaybackService.loadedURL),
+            Self.standardizedPath(try row(of: reader.book, in: world.library).filePath),
+            "\(context): the audio does not play from where the book is now",
+            file: file,
+            line: line
+        )
+        reader.stop()
+    }
+
+    /// A queue of this test's own for a reader's loads, holding their reads
+    /// until the test lets them read, and at the latest when the test ends.
+    private func holdLoads() -> HeldLoads {
+        let loads = HeldLoads()
+        addTeardownBlock { loads.letRead() }
+        return loads
+    }
+
+    /// A queue for a reader's loads (`ReaderViewModel.loadQueue`) that holds
+    /// every read until the test lets them read, so the test chooses the
+    /// moment a load reads its book's files. It is a serial queue whose
+    /// first work waits at a gate, so each load queued behind it waits too.
+    @MainActor
+    private final class HeldLoads {
+        /// The queue the reader's loads read on.
+        let queue = DispatchQueue(label: "ReaderRefreshTests.HeldLoads", qos: .userInitiated)
+        /// The gate the queue's first work waits at, opened by `letRead()`.
+        private let gate = DispatchSemaphore(value: 0)
+        /// Whether the gate is open.
+        private var isOpen = false
+
+        init() {
+            queue.async { [gate] in
+                // Held for longer than any test takes, but never for ever.
+                _ = gate.wait(timeout: .now() + 120)
+            }
+        }
+
+        /// Lets the loads read: those held, and every later one at once.
+        func letRead() {
+            guard !isOpen else { return }
+            isOpen = true
+            gate.signal()
+        }
+
+        /// Lets the loads read, and waits, the main run loop turning, until
+        /// each load queued so far has read and its reader has taken what it
+        /// read on the main queue. Fails the test when that takes too long.
+        func letReadAndHandOver(file: StaticString = #filePath, line: UInt = #line) {
+            letRead()
+            let handedOver = HandOver()
+            // Queued after every load so far, so it runs once each has read,
+            // and its block reaches the main queue after each of theirs.
+            queue.async {
+                DispatchQueue.main.async {
+                    handedOver.isDone = true
+                }
+            }
+            let deadline = Date().addingTimeInterval(30)
+            while !handedOver.isDone, Date() < deadline {
+                RunLoop.main.run(until: Date().addingTimeInterval(0.02))
+            }
+            XCTAssertTrue(handedOver.isDone, "The loads did not read and hand over in time", file: file, line: line)
+        }
+
+    }
+
+    /// Whether the loads a test let read have handed over what they read.
+    @MainActor
+    private final class HandOver {
+        var isDone = false
     }
 
     /// A three-chapter EPUB about tides, each chapter listed in its table

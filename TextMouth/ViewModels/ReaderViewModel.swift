@@ -494,6 +494,13 @@ final class ReaderViewModel: ObservableObject {
     /// lets the audio go (`letGoOfAudioSetAsideForMove(because:)`), so that
     /// the move's end leaves the book as the listener left it.
     var audioPausedForMove: AudioPausedForMove?
+    /// Whether the book loads once the move of its package under way is
+    /// over (`isPackageMoving`): a load's read of the book's files failed
+    /// while the package moved, its files perhaps gone from under it. The
+    /// move's end loads the book from the start, from wherever it is then
+    /// (`loadAfterPackageMove()`, TODO P10). Accessed from the
+    /// LibraryUpdates extension.
+    var loadWaitsForPackageMove = false
     /// The book's edited text, with the moves of its places the edit took,
     /// when the user's edit was taken while this reader was still loading
     /// the text it had (FR05): shown once loading ends
@@ -1586,13 +1593,14 @@ final class ReaderViewModel: ObservableObject {
     }
 
     /// Shows why the book at `filePath` could not be read, in place of the
-    /// reader.
+    /// reader, unless the library moved the book's files from under the
+    /// load: then the book loads again, from where it is now.
     func showLoadFailure(_ error: Error, readFrom filePath: String) {
-        // The library moved the book while it loaded, so the
-        // files the load read may have gone from under it: load
-        // it again from where the book is now (TODO P10).
-        if book.filePath != filePath {
-            loadContent()
+        // The library moved the book while it loaded, or is moving it,
+        // so the files the load read may have gone from under it: load
+        // it again from where the book is, once any move is over
+        // (TODO P10).
+        if loadAgainAfterMove(ofFilesReadAt: filePath) {
             return
         }
         errorMessage = error.localizedDescription

@@ -348,6 +348,9 @@ final class LogContentPolicyTests: XCTestCase {
         "TEXT_EDIT_HELD", "TEXT_EDIT_KEPT",
         // The Move to Folder… and Move to Library… sheet appearing, with the places and items it lists.
         "MOVE_SHEET_SHOWN",
+        // A reader's load that could not read its book's files because the library moved them
+        // (TODO P10), loading the book again from where it is.
+        "READER_LOAD_AFTER_MOVE",
         // Every other tag the debug log's events begin with.
         "ARCHIVE_EXTRACTION_LEFT", "ARCHIVE_EXTRACTION_REMOVED",
         "AUDIO_PLAYBACK_FAILED", "BOOK_FINISHED", "BUILD_IDENTITY", "CACHE_STALE", "CONFIG_FILE", "DAISY_INCOMPLETE_CONTENT",
