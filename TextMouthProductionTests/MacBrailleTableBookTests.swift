@@ -391,6 +391,39 @@ final class MacBrailleTableBookTests: XCTestCase {
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), ["plain.brf"])
     }
 
+    /// A table that writes a rare symbol in eight-dot computer braille stays
+    /// offered, and a book holding the symbol fails its export by name (the
+    /// coordinator's decision on review F5): the Mac's Ethiopic and Mainland
+    /// Chinese tables pass their check, yet write "@" with eight dots, so a
+    /// book holding an e-mail address fails, naming "@", in a BRF and a PEF
+    /// alike, and leaves no file.
+    func testABookHoldingAnAtSignFailsItsExportByName() throws {
+        guard let table = ["mac:gez.tbl", "mac:zh_CHN.tbl"].first(where: { BrailleTableCatalog.table(withID: $0) != nil }) else {
+            throw XCTSkip("This Mac offers neither its Ethiopic nor its Mainland Chinese table (\(BrailleTableCatalog.macTablesFolder.path))")
+        }
+        let folder = try makeSandboxDirectory("MacBrailleAtSign")
+        let note = try ExportDocumentWalker.document(
+            fromMarkdown: "write to info@example.org\n", book: ExportBookDetails(title: "Note", author: nil, language: nil)
+        )
+        let options = BrailleExportOptions(table: table)
+        let sentence = "The braille table writes \u{201C}@\u{201D} as an eight-dot cell, "
+            + "and TextMouth writes BRF and PEF files in six-dot braille only."
+        try MacBrailleTableCheck.$verdicts.withValue(MacBrailleTableCheck.Verdicts()) {
+            XCTAssertTrue(try MacBrailleTableCheck.check(table, workingIn: folder).isUsable, "\(table) is not offered")
+            XCTAssertThrowsError(try BRFExportWriter().write(
+                note, options: options, to: folder.appendingPathComponent("note.brf"), cancellation: BookExportCancellation()
+            )) {
+                XCTAssertEqual($0 as? TextExportError, TextExportError(sentence), table)
+            }
+            XCTAssertThrowsError(try PEFExportWriter().write(
+                note, options: options, to: folder.appendingPathComponent("note.pef"), cancellation: BookExportCancellation()
+            )) {
+                XCTAssertEqual($0 as? TextExportError, TextExportError(sentence), table)
+            }
+        }
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), [])
+    }
+
     /// An export with a Mac table that is gone is refused by name.
     func testAnExportWithAGoneMacTableIsRefusedByName() throws {
         let folder = try makeSandboxDirectory("MacBrailleExport")

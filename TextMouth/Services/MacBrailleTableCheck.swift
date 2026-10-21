@@ -217,18 +217,21 @@ enum MacBrailleTableCheck {
     /// such as the apostrophe in "it’s": the Mac's Hungarian tables write
     /// ’ and ‘ with eight dots (⡈ and ⡶) alone or inside a word, but not
     /// around one, and its Chinese tables for Hong Kong and Taiwan write
-    /// eight-dot cells too. Review F5 added every printable ASCII character
-    /// (`printableASCII`) and the non-breaking hyphen (U+2011), as in an
-    /// e-mail address or a hyphenated name: the Mac's Mainland Chinese table
-    /// writes @ and ^ with eight dots, its Ethiopic table @ [ ] and ^, and its
-    /// British English, Kurdish, and Slovenian tables the non-breaking hyphen.
+    /// eight-dot cells too.
+    ///
+    /// The sample decides only whether a table is offered. Each book is
+    /// decided at its export: an eight-dot cell a table makes from an
+    /// ordinary character fails that book's export, naming the character
+    /// (`BrailleDocumentWriter`, review R1c), so nothing is ever written
+    /// wrong silently. The sample therefore holds the letters, digits, and
+    /// punctuation of ordinary text, and no rarer symbol such as @, [, ], ^,
+    /// or the non-breaking hyphen: a table that writes one of those in
+    /// eight-dot computer braille stays offered, for reading braille files
+    /// too, where eight dots never arise, and a book holding one fails its
+    /// export by name (the coordinator's decision on review F5).
     static let sample = "Braille 2026, ABC abc: it\u{2019}s \u{2018}one\u{2019}, \u{201C}two\u{201D}, "
         + "\u{201E}three\u{201C} and \u{00AB}four\u{00BB} \u{2013} five \u{2014} six\u{2026} "
-        + "\u{2019} \u{2018} \u{201C} \u{201D} \u{201E} \u{00AB} \u{00BB} \u{2013} \u{2014} \u{2026} 0123456789. "
-        + printableASCII + " non\u{2011}breaking."
-
-    /// Every printable ASCII character, U+0020 to U+007E, in order.
-    static let printableASCII = String(String.UnicodeScalarView((0x20...0x7E).compactMap(Unicode.Scalar.init)))
+        + "\u{2019} \u{2018} \u{201C} \u{201D} \u{201E} \u{00AB} \u{00BB} \u{2013} \u{2014} \u{2026} 0123456789."
 
     /// Whether every scalar of `cells` is a six-dot braille cell, U+2800 to
     /// U+283F, liblouis's escape backslash aside (`BrailleCells
