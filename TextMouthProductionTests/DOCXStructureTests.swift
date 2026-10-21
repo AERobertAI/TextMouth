@@ -964,7 +964,7 @@ final class DOCXStructureTests: XCTestCase {
         addTeardownBlock { try? FileManager.default.removeItem(at: docx) }
 
         var diagnostics: [DOCXParserError] = []
-        let markdown = try DOCXParser.extractMarkdown(from: docx) { diagnostics.append($0) }
+        let markdown = try DOCXParser.extractMarkdown(from: docx, includesPages: false) { diagnostics.append($0) }
 
         XCTAssertEqual(markdown, "Joint chart\\:\n\nJoint Notes\n\nDovetail\n\nPins Tails\n\nRatio One to")
         XCTAssertEqual(diagnostics.count, 1, "\(diagnostics)")
@@ -1174,7 +1174,7 @@ final class DOCXStructureTests: XCTestCase {
         let docx = try makeTemporaryZip(prefix: "TextMouthDOCXStructure", entries: parts.mapValues { Data($0.utf8) })
         addTeardownBlock { try? FileManager.default.removeItem(at: docx) }
 
-        let markdown = try DOCXParser.extractMarkdown(from: docx) { damage in
+        let markdown = try DOCXParser.extractMarkdown(from: docx, includesPages: false) { damage in
             XCTFail("Unexpected damage report: \(damage)", file: file, line: line)
         }
         let chapter = try MarkdownDocParser.parse(markdown: markdown).chapters[0]

@@ -164,7 +164,7 @@ final class DOCXMalformedXMLTests: XCTestCase {
         line: UInt = #line
     ) throws -> (markdown: String, part: String, reason: String) {
         var diagnostics: [DOCXParserError] = []
-        let markdown = try DOCXParser.extractMarkdown(from: docx) { diagnostics.append($0) }
+        let markdown = try DOCXParser.extractMarkdown(from: docx, includesPages: false) { diagnostics.append($0) }
         guard diagnostics.count == 1, case let .malformedXML(part, reason)? = diagnostics.first else {
             XCTFail("Expected one malformed-XML diagnostic, got \(diagnostics)", file: file, line: line)
             return (markdown, "", "")
@@ -213,7 +213,7 @@ final class DOCXMalformedXMLTests: XCTestCase {
     /// heading levels, list numbers, and link target. The damage tests below
     /// each break one of these parts.
     func testIntactPackageUsesEveryStructurePart() throws {
-        let markdown = try DOCXParser.extractMarkdown(from: try makeDOCX())
+        let markdown = try DOCXParser.extractMarkdown(from: try makeDOCX(), includesPages: false)
 
         XCTAssertEqual(try Self.spokenText(of: markdown), Self.spokenDocument)
         XCTAssertTrue(markdown.hasPrefix("# Mending Cloth Spines\n"), markdown)
@@ -299,7 +299,7 @@ final class DOCXMalformedXMLTests: XCTestCase {
             DOCXParser.Part.styles, DOCXParser.Part.numbering, DOCXParser.Part.documentRelationships
         ])
 
-        let markdown = try DOCXParser.extractMarkdown(from: docx)
+        let markdown = try DOCXParser.extractMarkdown(from: docx, includesPages: false)
 
         XCTAssertEqual(try Self.spokenText(of: markdown), Self.spokenDocument)
         XCTAssertFalse(markdown.contains("#"), "Without styles no paragraph is a heading: \(markdown)")
@@ -407,7 +407,7 @@ final class DOCXMalformedXMLTests: XCTestCase {
     /// so every word is kept, exactly as from the intact part, and the damage
     /// is still reported.
     func testContentAfterTheDocumentRootKeepsAllTextAndReportsTheDamage() throws {
-        let intact = try DOCXParser.extractMarkdown(from: try makeDOCX()) {
+        let intact = try DOCXParser.extractMarkdown(from: try makeDOCX(), includesPages: false) {
             XCTFail("Unexpected partial-content report: \($0)")
         }
         let docx = try makeDOCX(replacing: [
