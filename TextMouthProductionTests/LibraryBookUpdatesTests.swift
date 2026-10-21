@@ -201,6 +201,37 @@ final class LibraryBookUpdatesTests: XCTestCase {
         XCTAssertEqual(recorder.descriptions, ["will move", "move ended"])
     }
 
+    /// A book's package is moving, to anyone who asks, from the opening of
+    /// its first bracket to the closing of its last, whether a reader had
+    /// the book open as the move began or not. A reader that opens it during
+    /// the move, having heard nothing of the start, hears the end; a book no
+    /// reader has open still hears nothing.
+    func testABookOpenedWhileItsPackageMovesIsToldWhenTheMoveEnds() throws {
+        let (model, books) = makeLibrary(count: 2)
+        let opened = try XCTUnwrap(books.first, "The library model holds no book")
+        let unopened = try XCTUnwrap(books.last, "The library model holds no book")
+        let recorder = record(opened, in: model)
+        let unopenedRecorder = record(unopened, in: model)
+        let updates = model.bookUpdates
+        XCTAssertFalse(updates.isPackageMoving(opened.id), "A package is moving before any move began")
+
+        updates.packagesWillMove([opened.id, unopened.id])
+        updates.packagesWillMove([opened.id])
+        XCTAssertTrue(updates.isPackageMoving(opened.id), "A book no reader had open is not moving")
+        XCTAssertTrue(updates.isPackageMoving(unopened.id), "A book no reader had open is not moving")
+        // A reader opens the book during the move.
+        updates.watch(opened)
+        updates.packagesDidMove([opened.id])
+        XCTAssertTrue(updates.isPackageMoving(opened.id), "A nested bracket ended the move early")
+        XCTAssertEqual(recorder.descriptions, [], "The reader heard of the move before its end")
+
+        updates.packagesDidMove([opened.id, unopened.id])
+        XCTAssertFalse(updates.isPackageMoving(opened.id), "The move did not end")
+        XCTAssertFalse(updates.isPackageMoving(unopened.id), "The move did not end")
+        XCTAssertEqual(recorder.descriptions, ["move ended"])
+        XCTAssertEqual(unopenedRecorder.events.count, 0, "A book no reader has open heard of the move")
+    }
+
     // MARK: - Fixtures
 
     /// Every event the library sends about the books it listens to, in order.
