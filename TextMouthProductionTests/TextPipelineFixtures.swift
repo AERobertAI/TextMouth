@@ -91,6 +91,7 @@ enum TextPipelineFixtures {
         "format-samples/doc/headings.doc",
         "format-samples/doc/libreoffice-tdf104239_chapterNumbering.doc",
         "format-samples/doc/libreoffice-tdf81705_outlineLevel.doc",
+        "format-samples/doc/page-breaks.doc",
         "format-samples/docm/headings-synthetic.docm",
         "format-samples/docm/libreoffice-hello.docm",
         "format-samples/docx/page-breaks.docx",
@@ -111,6 +112,7 @@ enum TextPipelineFixtures {
         "format-samples/ott/handwritten.ott",
         "format-samples/pdf/labelled-pages.pdf",
         "format-samples/rtf/headings.rtf",
+        "format-samples/rtf/page-breaks.rtf",
         "format-samples/rtf/word-list-table.rtf",
         "format-samples/rtf/word-styles.rtf",
         "format-samples/rtfd/headings.rtfd",
@@ -118,6 +120,7 @@ enum TextPipelineFixtures {
         "format-samples/ssml/passage.ssml",
         "format-samples/webarchive/headings.webarchive",
         "format-samples/wordml/headings.wordml",
+        "format-samples/wordml/page-breaks.wordml",
     ]
 
     /// The samples of `formatSampleNames` that import only under another
@@ -125,6 +128,7 @@ enum TextPipelineFixtures {
     /// an .xml file.
     static let formatSampleImportNames = [
         "format-samples/wordml/headings.wordml": "headings.xml",
+        "format-samples/wordml/page-breaks.wordml": "page-breaks.xml",
     ]
 
     /// Samples whose recorded golden showed a reader bug, by sample, with the
