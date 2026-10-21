@@ -100,6 +100,7 @@ enum TextPipelineFixtures {
         "format-samples/dotx/libreoffice-sample.dotx",
         "format-samples/dtbook/harbour-standalone.xml",
         "format-samples/dtbook/nimas-style-package",
+        "format-samples/dtbook/pages-front-and-inline.xml",
         "format-samples/odt/handwritten.odt",
         "format-samples/odt/headings.odt",
         "format-samples/ott/handwritten.ott",

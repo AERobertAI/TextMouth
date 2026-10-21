@@ -45,6 +45,42 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
     /// this point leaves text worth keeping; damage before it leaves none.
     private var producedText = false
 
+    // MARK: Pages (PG08)
+
+    /// Whether a `pagenum` becomes a page marker (`<!-- page: N -->`, never
+    /// read) instead of the "[Page N]" line that cache format 3.0.7 wrote.
+    private let includesPages: Bool
+
+    /// How deep inside a `pagenum` the reading is: 0 outside one, 1 inside
+    /// it, more inside elements it holds. Everything inside goes to the label.
+    private var pageLabelDepth = 0
+
+    /// The text of the `pagenum` being read: the page's label. It is never
+    /// written to the Markdown while pages are included.
+    private var pageLabel = ""
+
+    /// How many `pagenum` elements this converter has finished reading; the
+    /// next one's ordinal, the label of one that holds no words, is this plus one.
+    private var pagesRead = 0
+
+    /// Whether the next text loses the whitespace it begins with: set after a
+    /// marker written inside running text, which has already kept the words
+    /// on either side apart (see `writePageMarker()`).
+    private var dropsLeadingSpace = false
+
+    /// Prepare to convert `data`, reporting problems under the name `file`.
+    /// With `includesPages` false the Markdown is what it was before pages.
+    init(data: Data, file: String, includesPages: Bool = true) {
+        self.includesPages = includesPages
+        super.init(data: data, file: file)
+    }
+
+    /// Read `path` from `provider` and prepare to convert it under that name.
+    /// - Throws: the provider's error when the file cannot be read.
+    convenience init(path: String, in provider: DAISYFileProvider, includesPages: Bool = true) throws {
+        self.init(data: try provider.readFile(at: path), file: path, includesPages: includesPages)
+    }
+
     /// Convert the file to Markdown.
     ///
     /// When the file breaks off or becomes malformed after some of its text
@@ -72,6 +108,10 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
 
         // If we're inside a skipped element, just count depth
         if skipDepth > 0 { skipDepth += 1; return }
+
+        // Inside a page number only its words matter: they name the page.
+        if pageLabelDepth > 0 { pageLabelDepth += 1; return }
+        dropsLeadingSpace = false
 
         switch localName {
         // Skip the head element and its children
@@ -160,10 +200,16 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
             markdown += "---\n"
             lastOutputWasBlock = true
 
-        // Page numbers — emit as inline marker for navigation reference
+        // Page numbers: a page marker named by the element's words (its end
+        // tag writes it), or, without pages, "[Page N]" on a line of its own.
         case "pagenum":
-            ensureNewline()
-            markdown += "[Page "
+            if includesPages {
+                pageLabelDepth = 1
+                pageLabel = ""
+            } else {
+                ensureNewline()
+                markdown += "[Page "
+            }
 
         // Tables read as HTML tables are read (TODO T03), with no Markdown
         // table syntax: each row is a paragraph of its own, and each cell
@@ -203,7 +249,20 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
 
     func parser(_ parser: XMLParser, foundCharacters string: String) {
         guard skipDepth == 0 else { return }
-        markdown += tableDepth > 0 ? tableText(string) : string
+        if pageLabelDepth > 0 {
+            pageLabel += string
+            return
+        }
+        var text = string
+        if dropsLeadingSpace {
+            // A marker written inline already keeps the words around it apart,
+            // so the whitespace the source put after the page number would
+            // double the space. Whitespace alone leaves the flag set.
+            text = String(text.drop(while: { $0.isWhitespace }))
+            guard !text.isEmpty else { return }
+            dropsLeadingSpace = false
+        }
+        markdown += tableDepth > 0 ? tableText(text) : text
         if !string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             lastOutputWasBlock = false
             producedText = true
@@ -230,6 +289,13 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
         // Handle skip depth tracking
         if skipDepth > 0 {
             skipDepth -= 1
+            if !elementStack.isEmpty { elementStack.removeLast() }
+            return
+        }
+
+        // An element inside a page number ends without writing anything.
+        if pageLabelDepth > 1 {
+            pageLabelDepth -= 1
             if !elementStack.isEmpty { elementStack.removeLast() }
             return
         }
@@ -269,7 +335,11 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
             ensureNewline()
 
         case "pagenum":
-            markdown += "]\n"
+            if includesPages {
+                writePageMarker()
+            } else {
+                markdown += "]\n"
+            }
 
         case "blockquote":
             markdown += "\n\n"
@@ -308,6 +378,49 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
         }
 
         if !elementStack.isEmpty { elementStack.removeLast() }
+    }
+
+    // MARK: - Pages (PG08)
+
+    /// A list marker or quote marker with nothing after it, as the last line
+    /// of the Markdown being built: the opening of a list item or quote.
+    private static let openingPrefixPattern = "^ *(?:(?:> ?)|(?:(?:[-*+]|[0-9]+[.)]) ))+$"
+
+    /// Write the page marker for the `pagenum` that just ended, labelled by
+    /// the words it held (or its ordinal when it held none), and leave the
+    /// page number itself unwritten.
+    ///
+    /// At a block boundary (nothing yet, or the Markdown ends with a line
+    /// break) the marker is a block of its own, which names the same place as
+    /// the block after it. Inside running text it is written inline, with a
+    /// space first when none is there, so "before<pagenum>12</pagenum>after"
+    /// reads "before after". At the opening of a list item or quote
+    /// (`- `, `3. `, `> `) a marker written after the prefix would make an
+    /// HTML block of the item's whole first line, so it goes before the prefix.
+    private func writePageMarker() {
+        pagesRead += 1
+        let marker = MarkdownPageMarker(label: pageLabel, ordinal: pagesRead).markdown
+        pageLabel = ""
+        pageLabelDepth = 0
+
+        if let prefix = openingLinePrefix {
+            // Take the prefix off, write the marker as a block, put the prefix back.
+            markdown.removeLast(prefix.count)
+            MarkdownMarkerWriter.write(marker, inline: false, into: &markdown)
+            markdown += prefix
+        } else {
+            let atBlockBoundary = markdown.unicodeScalars.last.map { $0 == "\n" } ?? true
+            MarkdownMarkerWriter.write(marker, inline: !atBlockBoundary, keepingWordsApart: true, into: &markdown)
+            dropsLeadingSpace = !atBlockBoundary
+        }
+    }
+
+    /// The last line of the Markdown, when it holds only the opening of a
+    /// list item or quote (see `openingPrefixPattern`), otherwise nil.
+    private var openingLinePrefix: String? {
+        let lineStart = markdown.lastIndex(of: "\n").map { markdown.index(after: $0) } ?? markdown.startIndex
+        let line = String(markdown[lineStart...])
+        return line.range(of: Self.openingPrefixPattern, options: .regularExpression) != nil ? line : nil
     }
 
     // MARK: - Helpers
