@@ -2785,3 +2785,40 @@ The samples were made on this Mac. A hosted test of Book Information's sheet ski
 - Stop during a translation;
 - XcodeGen's phase order;
 - the checks by hand.
+
+## From mactables (team/mactables, this Mac's braille tables), Oct 20
+
+**The work.** One Opus agent, `mactables`, built the brief `Scripts/agents/briefs/2026-10-20/mactables.md`. Two Opus reviews followed, with fixes after each: 8 findings, then 8 more. The branch merged twice, at b5fffa42 and then e7461fe1, in 25 commits.
+
+**Test runs:**
+- the agent's last run, of the braille area and its touched classes: 336 tests, 1 skipped, 0 failures;
+- the merge suites: 7934 tests, then 7940 tests, 73 skipped, 0 failures. The second merge's first run had one failure, in ReaderRefreshTests, which is listed in the TODO's follow-ups.
+
+**Decisions beyond the brief:**
+- **The catalog.** Codes are grouped by display name, since one system can have two standards. A missing `language` falls back to `locale`, and a language macOS cannot name takes the table's own name. A table with no contraction line takes its contraction from its grade, or else "As the table defines". Only a true twin is left out: its only rule is one include of a table offered in the same language.
+- **The check** (`MacBrailleTableCheck`). Three measured runs (load, about 20 KB forward, and back), with memory read every millisecond in the check only. Each table then gets at least twice its peak memory and four times its time, never below the defaults, with ceilings of 64 MB and 20 seconds per MB.
+  - The sample is letters, digits, and typographic punctuation. A sample of every ASCII character would have refused 29 tables, so each book is decided at export instead, by name.
+  - A check that could not run, or a "too slow" verdict, is not kept.
+- **Eight-dot braille at export:**
+  - an eight-dot braille character already in the print is written as its six-dot part;
+  - an eight-dot cell that a table makes from an ordinary character fails the book's export, naming the character;
+  - liblouis's escape backslash stays mapped to ⠳.
+- **Stored values.** Values are `mac:<file>`. A book records the Mac's liblouis version (from `LiblouisBrailleTables.plist`), so a changed table refuses a rebuild by name and keeps content.md.
+- **Loading.** Headers are read 4 KB at a time and loaded once at launch, off the main thread. config.json and the setting accept a `mac:` value by its form.
+- **Log tag:** `BRAILLE_MAC_TABLE_REFUSED`.
+
+**Measured on macOS 26.3** (VoiceOver's liblouis 3.34.0, 485 files):
+- 131 tables are listed in 84 languages, and about 121 are usable in 79.
+- **Refused for not loading in 3.39.0:** el.ctb and el.tbl (uppercase virtual dots), is.tbl, pt.tbl (its include is missing from Apple's folder), and sr.tbl.
+- **Refused for eight dots:** hu.tbl, hu-hu-g2.ctb, zh-hk.ctb, zh_HK.tbl, and zh_TW.tbl.
+
+**Not verified:**
+- VoiceOver's timing of the refusal announcement, spoken 0.6 seconds after a menu closes;
+- Export's pop-ups with 79 languages, by eye;
+- a Mac without the tables folder, which was tested with fixtures only;
+- the background load's effect on launch time, by hand.
+
+**Follow-ups:** in the TODO's open follow-ups paragraph:
+- one-way tables offered for export only;
+- refusals remembered across launches, so that languages always refused leave the pop-up;
+- the reader-load race.
