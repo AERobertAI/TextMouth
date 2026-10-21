@@ -403,6 +403,60 @@ final class MacBrailleTableCatalogTests: XCTestCase {
         XCTAssertNil(BrailleTableCatalog.includeOnlyTargets(ofTableAt: folder.appendingPathComponent("long.tbl")))
     }
 
+    /// Only a true twin is left out (review F2): one whose only rule is a
+    /// single include of a table offered in the same language, followed
+    /// through a chain of such twins. A table of another language that
+    /// includes one stays (isiXhosa including UEB grade 1, and Zulu including
+    /// isiXhosa); so do one including two tables (Ukrainian with capitals),
+    /// one including a table not offered, and a loop of twins.
+    func testOnlyATrueTwinIsLeftOut() throws {
+        let folder = try makeSandboxDirectory("MacBrailleTwins")
+        func write(_ name: String, _ language: String, includes: [String]) throws {
+            let header = "#+type:literary\n#+language:\(language)\n#+contraction:no\n#+display-name:\(name) braille\n"
+            let body = includes.map { "include \($0)\n" }.joined()
+            try (header + body).write(to: folder.appendingPathComponent(name), atomically: true, encoding: .utf8)
+        }
+        // Tables with rules of their own (one include and one rule each).
+        for (name, language) in [("en-ueb-g1.ctb", "en"), ("lt-6dot.utb", "lt"), ("uk.utb", "uk"), ("ru-detailed.utb", "ru")] {
+            let header = "#+type:literary\n#+language:\(language)\n#+contraction:no\n#+display-name:\(name) braille\n"
+            try (header + "include chars.uti\nsign \\x0040 4\n").write(to: folder.appendingPathComponent(name), atomically: true, encoding: .utf8)
+        }
+        try write("xh-za-g1.utb", "xh", includes: ["en-ueb-g1.ctb"])
+        try write("zu-za-g1.utb", "zu", includes: ["xh-za-g1.utb"])
+        try write("uk-detailed.utb", "uk", includes: ["uk.utb", "ru-detailed.utb"])
+        try write("a.tbl", "lt", includes: ["b.tbl"])
+        try write("b.tbl", "lt", includes: ["lt-6dot.utb"])
+        try write("nl.tbl", "nl", includes: ["nl-g0.utb"])
+        try write("p.tbl", "pl", includes: ["q.tbl"])
+        try write("q.tbl", "pl", includes: ["p.tbl"])
+
+        XCTAssertEqual(Set(BrailleTableCatalog.tables(in: folder, source: .mac).map(\.fileName)), [
+            "en-ueb-g1.ctb", "lt-6dot.utb", "uk.utb", "ru-detailed.utb", "xh-za-g1.utb", "zu-za-g1.utb",
+            "uk-detailed.utb", "nl.tbl", "p.tbl", "q.tbl",
+        ])
+    }
+
+    /// This Mac's tables that the first twin rule lost are offered: Zulu,
+    /// Northern Sotho, and Tswana among the languages, and the uncontracted
+    /// isiXhosa and Afrikaans tables, Ukrainian with capitals, and
+    /// Belarusian with capitals (review F2). Tables this Mac lacks are
+    /// passed over.
+    func testThisMacKeepsTablesThatIncludeAnotherLanguageOrMore() throws {
+        _ = try requireThisMacsTables()
+        func has(_ name: String) -> Bool {
+            FileManager.default.fileExists(atPath: BrailleTableCatalog.macTablesFolder.appendingPathComponent(name).path)
+        }
+        let offered = Set(BrailleTableCatalog.offeredTables.map(\.id))
+        for name in ["zu-za-g1.utb", "nso-za-g1.utb", "tsn-za-g1.ctb", "xh-za-g1.utb", "afr-za-g1.ctb",
+                     "uk-detailed.utb", "bel-detailed.utb"] where has(name) {
+            XCTAssertTrue(offered.contains("mac:\(name)"), name)
+        }
+        let languages = Set(BrailleTableCatalog.languages(of: BrailleTableCatalog.offeredCodes).map(\.id))
+        for (language, name) in [("zu", "zu-za-g1.utb"), ("nso", "nso-za-g1.utb"), ("tn", "tsn-za-g1.ctb")] where has(name) {
+            XCTAssertTrue(languages.contains(language), language)
+        }
+    }
+
     /// This Mac's Italian, Latvian, and Georgian tables, which state no
     /// contraction, are offered; its lt-6dot.tbl, which only includes
     /// lt-6dot.utb, is not, and lt-6dot.utb is. Tables this Mac lacks are

@@ -369,6 +369,35 @@ enum BrailleTableCatalog {
         )
     }
 
+    /// The table each candidate twin among `found` includes, by file name: a
+    /// table whose only rule is one include of a table found here in the
+    /// same language (review F2).
+    private static func twinTargets(of found: [(file: URL, table: BrailleTable)]) -> [String: String] {
+        let languages = Dictionary(found.map { ($0.table.fileName, $0.table.language) }) { first, _ in first }
+        var targets: [String: String] = [:]
+        for entry in found {
+            guard let includes = includeOnlyTargets(ofTableAt: entry.file), includes.count == 1,
+                  let target = includes.first, target != entry.table.fileName,
+                  languages[target] == entry.table.language
+            else { continue }
+            targets[entry.table.fileName] = target
+        }
+        return targets
+    }
+
+    /// Whether the table `name` is a true twin: following its include
+    /// through `twins` ends at a table that is no twin, which is offered and
+    /// holds the same rules. A loop of twins ends nowhere, and keeps them.
+    private static func isTrueTwin(_ name: String, twins: [String: String]) -> Bool {
+        var seen: Set<String> = [name]
+        var current = name
+        while let next = twins[current] {
+            guard seen.insert(next).inserted else { return false }
+            current = next
+        }
+        return current != name
+    }
+
     /// The most bytes a table that only includes others is thought to hold:
     /// such a table is a few lines (the Mac's `lt-6dot.tbl` is 260 bytes),
     /// so a longer file is read no further and taken to have rules of its own.
@@ -409,10 +438,15 @@ enum BrailleTableCatalog {
     /// language, then system, then contraction (no, partial, full, then
     /// unstated), then file name, each with `source`'s stored value.
     /// Included files, other files, and tables that cannot be read both ways
-    /// are left out, and so is a table that only includes a table offered
-    /// here (review R6), such as the Mac's `lt-6dot.tbl`, which holds only
-    /// "include lt-6dot.utb": the table it includes is listed instead, in
-    /// whatever code.
+    /// are left out, and so is a true twin (review R6, F2): a table whose
+    /// only rule is one include of a table offered here in the same
+    /// language, such as the Mac's `lt-6dot.tbl`, which holds only "include
+    /// lt-6dot.utb". The table it includes is listed instead, whatever its
+    /// code. A table of another language that includes one stays, under its
+    /// own language, as the Mac's isiXhosa table includes UEB grade 1; so
+    /// does a table that adds rules or includes more than one table, as the
+    /// Mac's Ukrainian table with capitals includes its plain Ukrainian
+    /// table and the Russian one with capitals.
     static func tables(in folder: URL, source: BrailleTableSource = .bundled) -> [BrailleTable] {
         let files = (try? FileManager.default.contentsOfDirectory(
             at: folder,
@@ -422,11 +456,9 @@ enum BrailleTableCatalog {
         let found = files
             .filter { (try? $0.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true }
             .compactMap { file in table(at: file, source: source).map { (file: file, table: $0) } }
-        let offeredFiles = Set(found.map(\.table.fileName))
+        let twins = twinTargets(of: found)
         return found
-            .filter { found in
-                !(includeOnlyTargets(ofTableAt: found.file)?.contains(where: offeredFiles.contains) ?? false)
-            }
+            .filter { !isTrueTwin($0.table.fileName, twins: twins) }
             .map(\.table)
             .sorted { lhs, rhs in
                 // A tuple of the sort keys, compared in order.
