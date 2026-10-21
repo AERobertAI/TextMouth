@@ -997,6 +997,61 @@ final class ReaderRefreshTests: XCTestCase {
         XCTAssertNil(reader.content, "The damaged book opened")
     }
 
+    /// A case-only rename of the folder holding a text book, as Rename
+    /// Folder… makes it, first waits for an import under way to finish, as
+    /// every folder edit waits for the storage work under way, saying so. A
+    /// reader that opens the book meanwhile loads it at once: the rename
+    /// tells the book's readers that its package will move only once it has
+    /// stopped waiting, and the folder keeps its spelling until then. Once
+    /// the import finishes, the rename does too, and the reader names the
+    /// folder's new spelling. Before, the rename told the readers before it
+    /// waited, and a reader stayed on Loading, unannounced, for as long as
+    /// the import ran, longer than a finished book's request to play the
+    /// next one lasts. (A text book is read without storage work; the load
+    /// of an audiobook of tracks looks at its manifest as storage work,
+    /// which waits for the rename's own hold on the storage work.)
+    func testABookInAFolderBeingRespelledLoadsWhileTheRenameWaitsForAnImport() throws {
+        let world = try makeIntegrationWorld("Reader Refresh Respelling Waits")
+        let shelf = BookFolder(name: "shelf", parentPath: world.folder.path)
+        world.library.library.folders = [BookFolder(name: world.folder.path), shelf]
+        let created = try world.importBook(from: writeTideTablesEPUB())
+        let move = outcome { await world.library.moveBooksReturningOutcome([created], toFolder: shelf.fullPath) }
+        XCTAssertTrue(move.succeeded, move.failureMessage ?? "")
+        let book = try row(of: created, in: world.library)
+        // An import holds the storage work, paused as it copies its file.
+        let importing = holdFirstImport(of: world.library)
+        world.library.importSingleFileAsync(from: try writeImportSource(), toFolder: world.folder.path)
+        wait(for: [importing.reached], timeout: 10)
+        let announced = VoiceOverAnnouncer.recordedAnnouncements.count
+
+        try FolderPathEquivalence.withLibraryRule(.caseInsensitive) {
+            let rename = RenameOutcome()
+            Task { @MainActor in
+                rename.outcome = await world.library.renameFolderReturningOutcome(shelf, to: "Shelf")
+            }
+            XCTAssertTrue(
+                waitUntil(timeout: 10) {
+                    VoiceOverAnnouncer.recordedAnnouncements.dropFirst(announced).map(\.message)
+                        .contains(StorageWork.importing.waitingMessage)
+                },
+                "The rename did not wait for the import"
+            )
+
+            let reader = world.openReader(for: book)
+            waitForReaderToLoad(reader)
+            XCTAssertNil(reader.errorMessage, "The book did not open")
+            XCTAssertNotNil(reader.content, "The book did not open")
+            XCTAssertNil(rename.outcome, "The rename did not wait for the import")
+
+            importing.gate.signal()
+            XCTAssertTrue(waitUntil(timeout: 10) { rename.outcome != nil }, "The rename never finished")
+            let renamed = try XCTUnwrap(rename.outcome)
+            XCTAssertTrue(renamed.succeeded, renamed.failureMessage ?? "")
+            XCTAssertEqual(reader.book.folderPath, "\(world.folder.path)/Shelf", "The reader does not name the new spelling")
+            XCTAssertNil(reader.errorMessage)
+        }
+    }
+
     // MARK: - Stale Fields
 
     /// Every field of `reader` that no longer matches `library`'s row for
@@ -1515,6 +1570,68 @@ final class ReaderRefreshTests: XCTestCase {
     private final class OpenedReader {
         var reader: ReaderViewModel?
         var readsDuringTheMove: Int?
+    }
+
+    /// An import a test holds as it copies its file (`holdFirstImport(of:)`).
+    private struct HeldImport {
+        /// Fulfilled once the import is held.
+        let reached: XCTestExpectation
+        /// Signalled to let the import go on.
+        let gate: DispatchSemaphore
+    }
+
+    /// The first import `library` runs, held as it copies its file, and so
+    /// holding the storage work, until the test signals the returned gate;
+    /// later imports pass. The import is let go, and the seam removed, when
+    /// the test ends at the latest.
+    private func holdFirstImport(of library: LibraryViewModel) -> HeldImport {
+        let reached = expectation(description: "the import began to copy its file")
+        // Fulfilled once only, which `FirstClaim` sees to as well: a second
+        // fulfilment would abort the test host.
+        reached.assertForOverFulfill = false
+        let held = HeldImport(reached: reached, gate: DispatchSemaphore(value: 0))
+        let first = FirstClaim()
+        let queue = library.importOperationQueue
+        queue.stepObserver = { step, _ in
+            guard step == .copying, first.claim() else { return }
+            held.reached.fulfill()
+            _ = held.gate.wait(timeout: .now() + 60)
+        }
+        addTeardownBlock {
+            queue.stepObserver = nil
+            held.gate.signal()
+        }
+        return held
+    }
+
+    /// A short text file to import, in a folder of this test's own.
+    private func writeImportSource() throws -> URL {
+        let file = try makeSandboxDirectory("ReaderRefreshImport").appendingPathComponent("Slipway Notes.txt")
+        try Data("Slipway Notes\n\nThe pilot boards at the fairway buoy.\n".utf8).write(to: file)
+        return file
+    }
+
+    /// What a folder edit a test started returned, once it has.
+    @MainActor
+    private final class RenameOutcome {
+        var outcome: OperationOutcome?
+    }
+
+    /// Whether something has been claimed yet, as an import's step observer
+    /// asks from its own thread. `@unchecked Sendable`: its one property is
+    /// read and written with `lock` held.
+    private final class FirstClaim: @unchecked Sendable {
+        private let lock = NSLock()
+        private var claimed = false
+
+        /// Whether this is the first claim.
+        func claim() -> Bool {
+            lock.withLock {
+                guard !claimed else { return false }
+                claimed = true
+                return true
+            }
+        }
     }
 
     /// A three-chapter EPUB about tides, each chapter listed in its table
