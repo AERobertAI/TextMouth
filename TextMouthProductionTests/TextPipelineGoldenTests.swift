@@ -51,7 +51,7 @@ final class TextPipelineGoldenTests: XCTestCase {
         "fire-safety-d202-audio.zip": "38d5759450e06358",
         "frankenstein.html": "ca20689835e6a4af",
         "hyperion_daisy.zip": "538946f073739b22",
-        "lathe_of_heaven_daisy.zip": "c64cfa237817b844",
+        "lathe_of_heaven_daisy.zip": "01eb5d0b116fe9b4",
         "navigation.epub": "7fb5af1466eab9ab",
         "ncx.epub": "f7ee1d34be3f7637",
         "pride.txt": "b66f077f6e38e5db",
@@ -61,7 +61,7 @@ final class TextPipelineGoldenTests: XCTestCase {
         "synthetic-256k.md": "c16d170995d4e3ea",
         "synthetic-256k.txt": "806aeb6f5aae9ae1",
         "test_book.docx": "03acb604568b522c",
-        "wipo-treaty-d202-text-only.zip": "8dda044877b014a8",
+        "wipo-treaty-d202-text-only.zip": "ed5780d1c2b47e85",
     ]
 
     /// What each golden book opens to (`TextPipelineFixtures.digest(of:index:)`
@@ -76,7 +76,7 @@ final class TextPipelineGoldenTests: XCTestCase {
         "fire-safety-d202-audio.zip": "f473b2fbaff21ccb",
         "frankenstein.html": "33e7c31909a348d3",
         "hyperion_daisy.zip": "eaa1858c33d55019",
-        "lathe_of_heaven_daisy.zip": "24cdd2a8c98160f0",
+        "lathe_of_heaven_daisy.zip": "4a55f5aedf83c3b3",
         "navigation.epub": "1f70d1864a1fcac1",
         "ncx.epub": "e30260221f303883",
         "pride.txt": "13cc79a1071a228a",
@@ -86,7 +86,7 @@ final class TextPipelineGoldenTests: XCTestCase {
         "synthetic-256k.md": "aebbd93e18ff88df",
         "synthetic-256k.txt": "9279d920ee2030b6",
         "test_book.docx": "073d8be3776366b6",
-        "wipo-treaty-d202-text-only.zip": "604aaf38d809f5ad",
+        "wipo-treaty-d202-text-only.zip": "274542e5146da72a",
     ]
 
     /// Every golden book imports to the content.md recorded for it, and
