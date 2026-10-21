@@ -83,7 +83,8 @@ enum TextPipelineFixtures {
     /// The format samples the document goldens record and the import fuzz
     /// sweeps, as paths inside TestData, one per line: every file and folder
     /// sample of the RTF, RTFD, Word, OpenDocument, WordML, web archive,
-    /// SSML, and DTBook folders. `rtf/headings-source.html` is left out: it
+    /// SSML, and DTBook folders, and the EPUB page samples (`epub2-pages`
+    /// and `epub3-pages`, PG05). `rtf/headings-source.html` is left out: it
     /// is only the HTML the other RTF samples were made from. A folder
     /// sample (an RTFD, a NIMAS package) is named as the folder.
     static let formatSampleNames = [
@@ -101,6 +102,9 @@ enum TextPipelineFixtures {
         "format-samples/dtbook/harbour-standalone.xml",
         "format-samples/dtbook/nimas-style-package",
         "format-samples/dtbook/pages-front-and-inline.xml",
+        "format-samples/epub2-pages/pagelist.epub",
+        "format-samples/epub3-pages/page-list.epub",
+        "format-samples/epub3-pages/pagebreaks-only.epub",
         "format-samples/odt/handwritten.odt",
         "format-samples/odt/headings.odt",
         "format-samples/ott/handwritten.ott",
