@@ -24,7 +24,7 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
         }
         let recognizer = Self.misreadingEverything()
 
-        let extraction = try PDFTextParser.extract(from: url, recognizer: recognizer)
+        let extraction = try PDFTextParser.extract(from: url, recognizer: recognizer, includesPages: false)
 
         XCTAssertEqual(extraction.markdown, "Ballast")
         XCTAssertEqual(recognizer.requests, [])
@@ -41,7 +41,7 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
             PDFFixtures.drawText(lines[index], size: index == 2 ? 9 : 36, at: CGPoint(x: 230, y: 500), in: context)
         }
 
-        let extraction = try PDFTextParser.extract(from: url, recognizer: nil)
+        let extraction = try PDFTextParser.extract(from: url, recognizer: nil, includesPages: false)
 
         XCTAssertEqual(extraction.markdown, "Ὀδύσσεια\n\nבראשית\n\niv")
         XCTAssertTrue(extraction.report.isComplete)
@@ -58,7 +58,7 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
         let url = try PDFFixtures.captionedPicture(for: self)
         let recognizer = ScriptedTextRecognizer { _ in Self.signLines }
 
-        let extraction = try PDFTextParser.extract(from: url, recognizer: recognizer)
+        let extraction = try PDFTextParser.extract(from: url, recognizer: recognizer, includesPages: false)
 
         XCTAssertEqual(extraction.markdown, "PIER 2\nNO MOORING\n\n\(PDFFixtures.caption)")
         XCTAssertEqual(
@@ -86,7 +86,7 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
             [Self.signLines[0], PDFFixtures.line("Plate 4. The north pier at low watcr.", at: captionBounds)]
         }
 
-        let extraction = try PDFTextParser.extract(from: url, recognizer: recognizer)
+        let extraction = try PDFTextParser.extract(from: url, recognizer: recognizer, includesPages: false)
 
         XCTAssertEqual(extraction.markdown, "PIER 2\n\n\(PDFFixtures.caption)")
         XCTAssertEqual(extraction.report.pdf?.pages, [page(1, .both, .recognizedText)])
@@ -98,7 +98,7 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
         let url = try Self.paragraphAbovePicture(for: self)
         let recognizer = ScriptedTextRecognizer { _ in Self.timetableLines }
 
-        let extraction = try PDFTextParser.extract(from: url, recognizer: recognizer)
+        let extraction = try PDFTextParser.extract(from: url, recognizer: recognizer, includesPages: false)
 
         XCTAssertEqual(
             extraction.markdown,
@@ -112,7 +112,9 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
     func testPictureWithoutWordsIsReportedAsOCRFindingNothing() throws {
         let url = try PDFFixtures.captionedPicture(for: self)
 
-        let extraction = try PDFTextParser.extract(from: url, recognizer: ScriptedTextRecognizer.findingNothing())
+        let extraction = try PDFTextParser.extract(
+            from: url, recognizer: ScriptedTextRecognizer.findingNothing(), includesPages: false
+        )
 
         XCTAssertEqual(extraction.markdown, PDFFixtures.caption)
         XCTAssertTrue(extraction.report.isComplete)
@@ -138,7 +140,7 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
             ]
         }
 
-        let extraction = try PDFTextParser.extract(from: url, recognizer: recognizer)
+        let extraction = try PDFTextParser.extract(from: url, recognizer: recognizer, includesPages: false)
 
         XCTAssertEqual(extraction.markdown, "The ferry leaves the north pier at seven.\n\n\(stamp)")
         XCTAssertEqual(recognizer.requests.map(\.region), [PDFFixtures.letter])
@@ -157,10 +159,13 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
         }
         let recognizer = Self.misreadingEverything()
 
-        let extraction = try PDFTextParser.extract(from: url, recognizer: recognizer)
+        let extraction = try PDFTextParser.extract(from: url, recognizer: recognizer, includesPages: false)
 
         XCTAssertEqual(recognizer.requests, [])
-        XCTAssertEqual(extraction.markdown, try PDFTextParser.extract(from: url, recognizer: nil).markdown)
+        XCTAssertEqual(
+            extraction.markdown,
+            try PDFTextParser.extract(from: url, recognizer: nil, includesPages: false).markdown
+        )
         XCTAssertTrue(lines.allSatisfy(extraction.markdown.contains))
         XCTAssertEqual(extraction.report.pdf?.pages, [page(1, .embedded, .notNeeded)])
     }
@@ -182,7 +187,9 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
             ]
         }
 
-        let extraction = try PDFTextParser.extract(from: PDFFixtures.write(pdf, for: self), recognizer: recognizer)
+        let extraction = try PDFTextParser.extract(
+            from: PDFFixtures.write(pdf, for: self), recognizer: recognizer, includesPages: false
+        )
 
         XCTAssertEqual(extraction.markdown, "The ferry leaves at seven.\nIt returns by noon.")
         XCTAssertEqual(recognizer.requests.map(\.region), [CGRect(x: 50, y: 50, width: 512, height: 692)])
@@ -199,7 +206,7 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
         let second = try PDFFixtures.captionedPicture(for: self)
         let url = try Self.joined([first, second], for: self)
 
-        let extraction = try PDFTextParser.extract(from: url, recognizer: nil)
+        let extraction = try PDFTextParser.extract(from: url, recognizer: nil, includesPages: false)
 
         XCTAssertEqual(extraction.markdown, "\(Self.paragraph.joined(separator: " "))\n\n\(PDFFixtures.caption)")
         let reason = "text recognition is not available"
@@ -221,7 +228,7 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
         let url = try Self.joined((0..<3).map { _ in try PDFFixtures.captionedPicture(for: self) }, for: self)
         let recognizer = ScriptedTextRecognizer { _ in throw PDFTextRecognitionError.unavailable(reason) }
 
-        let extraction = try PDFTextParser.extract(from: url, recognizer: recognizer)
+        let extraction = try PDFTextParser.extract(from: url, recognizer: recognizer, includesPages: false)
 
         XCTAssertEqual(recognizer.requests.count, 1)
         XCTAssertEqual(extraction.report.pdf?.pagesWhereOCRCouldNotRun, [1, 2, 3])
@@ -241,7 +248,7 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
             }
         }
 
-        let extraction = try PDFTextParser.extract(from: url, recognizer: recognizer)
+        let extraction = try PDFTextParser.extract(from: url, recognizer: recognizer, includesPages: false)
 
         XCTAssertEqual(recognizer.requests.map(\.pageNumber), [1, 2, 3])
         XCTAssertEqual(extraction.report.pdf?.pages, [
@@ -400,7 +407,7 @@ final class PDFShortEmbeddedTextTests: XCTestCase {
     /// The PDF at `url` read with Vision, or a skip naming why Vision
     /// cannot run in this test host.
     private func extractWithVision(_ url: URL) throws -> PDFTextParser.Extraction {
-        let extraction = try PDFTextParser.extract(from: url)
+        let extraction = try PDFTextParser.extract(from: url, includesPages: false)
         if let reason = extraction.report.pdf?.ocrUnavailableReason {
             throw XCTSkip("Vision text recognition is unavailable in this test host: \(reason)")
         }

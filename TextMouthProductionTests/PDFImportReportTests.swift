@@ -30,7 +30,7 @@ final class PDFImportReportTests: XCTestCase {
         XCTAssertEqual(imported.warning, Self.unreadPictureWarning)
         XCTAssertEqual(
             try String(contentsOf: MarkdownCacheService.cacheURL(for: imported.book), encoding: .utf8),
-            PDFFixtures.caption
+            "<!-- page: 1 -->\n\n\(PDFFixtures.caption)"
         )
     }
 
