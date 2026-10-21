@@ -30,7 +30,7 @@ final class ContentAnalysisMergeTests: XCTestCase {
 
     // MARK: - The Fields an Analysis Owns
 
-    /// Setting a book's analysis fields changes exactly the six fields an
+    /// Setting a book's analysis fields changes exactly the seven fields an
     /// analysis owns. Every other field (reading state, bookmarks, settings,
     /// metadata, and where the package is) keeps its value, so neither a
     /// package record nor a library row can lose user state to an analysis.
@@ -66,8 +66,11 @@ final class ContentAnalysisMergeTests: XCTestCase {
             totalCharacterCount: index.totalCharacterCount,
             audioDuration: index.totalAudioDuration,
             contentIndexVersion: index.version,
-            cacheFormatVersion: "9.9.9"
+            cacheFormatVersion: "9.9.9",
+            // An index with no fingerprint keeps the record of the edit (B12).
+            editedText: vouched.editedText
         ))
+        XCTAssertNotNil(vouched.editedText, "the fixture should record an edit")
 
         var silent = Self.bookWithEveryFieldSet(seed: 3)
         silent.applyContentAnalysis(index, cacheFormatVersion: nil)
@@ -98,6 +101,10 @@ final class ContentAnalysisMergeTests: XCTestCase {
         fingerprinted.applyContentAnalysis(index, cacheFormatVersion: nil)
         XCTAssertEqual(fingerprinted.textCacheFingerprint, Self.fingerprint(seed: 5))
         XCTAssertEqual(fingerprinted.makeBookInfo().state.textCacheFingerprint, Self.fingerprint(seed: 5))
+        // The fixture's edit (seed 4) is not the content.md of seed 5's
+        // fingerprint, so the record of it goes with the old fingerprint (B12).
+        XCTAssertNotNil(unfingerprinted.editedText)
+        XCTAssertNil(fingerprinted.editedText)
     }
 
     /// A fingerprint that cannot be read, in a package record or in a
@@ -829,6 +836,7 @@ final class ContentAnalysisMergeTests: XCTestCase {
             cacheFormatVersion: "cache-\(seed)",
             contentIndexVersion: "index-\(seed)",
             textCacheFingerprint: fingerprint(seed: seed),
+            editedText: EditedText(cacheDigest: "cache-\(seed)", takenAt: date.addingTimeInterval(4)),
             metadataReaderVersion: "reader-\(seed)",
             handEdits: Book.HandEdits(
                 fields: [Book.MetadataField.allCases[seed % Book.MetadataField.allCases.count]],
@@ -868,7 +876,7 @@ final class ContentAnalysisMergeTests: XCTestCase {
     /// The names of the `Book` properties an analysis owns.
     private static let analysisFieldNames: Set<String> = [
         "totalWordCount", "totalCharacterCount", "audioDuration", "contentIndexVersion", "cacheFormatVersion",
-        "textCacheFingerprint"
+        "textCacheFingerprint", "editedText"
     ]
 
     /// Blocks the main thread, without running its queue, until `book`'s

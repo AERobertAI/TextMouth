@@ -180,6 +180,23 @@ enum BookFormat: String, Codable, CaseIterable {
     }
 }
 
+/// The record that a book's content.md holds text the user changed with
+/// Edit Text (B12): the digest of the content.md bytes the edit left, and
+/// when the edit was taken. An automatic re-read of the book's file (a
+/// cache-format bump, the reader's rebuild of an outdated cache, a page
+/// re-read) never replaces a content.md whose digest is this one; only
+/// Redo Text Extraction does, and the record then goes
+/// (`Book.applyContentAnalysis(_:cacheFormatVersion:)`). The record is kept
+/// with the book's analysis fields (`Book.ContentAnalysisFields`), in its
+/// library row and its package record, so a rebuilt library keeps it.
+struct EditedText: Codable, Hashable, Sendable {
+    /// The digest of the content.md bytes the edit left, as
+    /// `BookTextEditSessions.check` computes it (`FingerprintHasher.digestOfData`).
+    var cacheDigest: String
+    /// When TextMouth took the edit as the book's text.
+    var takenAt: Date
+}
+
 struct Book: Identifiable, Codable, Hashable {
     let id: UUID
     var title: String
@@ -274,6 +291,11 @@ struct Book: Identifiable, Codable, Hashable {
     /// that measured them; nil for audio and for a cache written before
     /// fingerprints. Startup maintenance compares them with the files.
     var textCacheFingerprint: TextCacheFingerprint?
+    /// The edit of the book's text that content.md holds, if the user made
+    /// one with Edit Text (`EditedText`, B12): nil for every book until an
+    /// edit is taken, and again once content.md is no longer that edit. It
+    /// is an analysis field, so it follows the fingerprints it describes.
+    var editedText: EditedText?
     /// The version of the metadata reader (`ImportedFileMetadata.readerVersion`)
     /// that last read this book's file for its title and author: the
     /// import's, or the launch refresh's. A row stamped by an older reader,
@@ -391,6 +413,7 @@ struct Book: Identifiable, Codable, Hashable {
         cacheFormatVersion: String? = nil,
         contentIndexVersion: String? = nil,
         textCacheFingerprint: TextCacheFingerprint? = nil,
+        editedText: EditedText? = nil,
         metadataReaderVersion: String? = nil,
         handEdits: HandEdits? = nil,
         feedLink: FeedBookLink? = nil,
@@ -437,6 +460,7 @@ struct Book: Identifiable, Codable, Hashable {
         self.cacheFormatVersion = cacheFormatVersion
         self.contentIndexVersion = contentIndexVersion
         self.textCacheFingerprint = textCacheFingerprint
+        self.editedText = editedText
         self.metadataReaderVersion = metadataReaderVersion
         self.handEdits = handEdits
         self.feedLink = feedLink
@@ -508,6 +532,9 @@ struct Book: Identifiable, Codable, Hashable {
         // checked as one written before fingerprints, instead of the whole
         // library failing over one damaged field.
         textCacheFingerprint = fields.optionalValue(.textCacheFingerprint) { $0 }
+        // A record of an edit that cannot be read counts as none, as a
+        // fingerprint does; older rows have none (B12).
+        editedText = fields.optionalValue(.editedText) { $0 }
         metadataReaderVersion = try container.decodeIfPresent(String.self, forKey: .metadataReaderVersion)
         // A record of hand edits that cannot be read counts as none, as a
         // fingerprint does: the row is then one nothing was recorded for,
@@ -574,7 +601,8 @@ struct Book: Identifiable, Codable, Hashable {
     /// The fields of a book that content analysis owns: the word and
     /// character counts, the audio duration, the versions of the content
     /// index and text cache they were measured from, and the fingerprints of
-    /// the files that text cache was written from. An analysis result
+    /// the files that text cache was written from, and the edit of the text
+    /// that content.md holds (`EditedText`), if any. An analysis result
     /// changes these and nothing else, whether it lands in the package
     /// record or on the library row. Every other field of a book is user
     /// state or metadata, which only the user's own actions change.
@@ -585,6 +613,7 @@ struct Book: Identifiable, Codable, Hashable {
         var contentIndexVersion: String?
         var cacheFormatVersion: String?
         var textCacheFingerprint: TextCacheFingerprint? = nil
+        var editedText: EditedText? = nil
     }
 
     /// This book's analysis-owned fields. Setting them changes exactly those
@@ -598,7 +627,8 @@ struct Book: Identifiable, Codable, Hashable {
                 audioDuration: audioDuration,
                 contentIndexVersion: contentIndexVersion,
                 cacheFormatVersion: cacheFormatVersion,
-                textCacheFingerprint: textCacheFingerprint
+                textCacheFingerprint: textCacheFingerprint,
+                editedText: editedText
             )
         }
         set {
@@ -608,6 +638,7 @@ struct Book: Identifiable, Codable, Hashable {
             contentIndexVersion = newValue.contentIndexVersion
             cacheFormatVersion = newValue.cacheFormatVersion
             textCacheFingerprint = newValue.textCacheFingerprint
+            editedText = newValue.editedText
         }
     }
 
@@ -618,6 +649,13 @@ struct Book: Identifiable, Codable, Hashable {
     /// cache's fingerprints always come from `index`, which carries those of
     /// the files it was made from, so a book never keeps fingerprints that
     /// describe another index than the one recorded with them.
+    ///
+    /// The record of an edit (`editedText`, B12) holds only while content.md
+    /// is that edit: when `index` carries a text-cache fingerprint whose
+    /// content.md digest is another than the edit's, the book's text is not
+    /// the edit any more (Redo Text Extraction wrote the source's text, or
+    /// another edit was taken), and the record goes. An index with no
+    /// fingerprint says nothing about content.md, so the record stays.
     mutating func applyContentAnalysis(_ index: BookContentIndex, cacheFormatVersion: String?) {
         contentAnalysisFields = ContentAnalysisFields(
             totalWordCount: index.totalWordCount,
@@ -625,7 +663,11 @@ struct Book: Identifiable, Codable, Hashable {
             audioDuration: index.totalAudioDuration,
             contentIndexVersion: index.version,
             cacheFormatVersion: cacheFormatVersion ?? self.cacheFormatVersion,
-            textCacheFingerprint: index.textCacheFingerprint
+            textCacheFingerprint: index.textCacheFingerprint,
+            editedText: editedText.flatMap { edit in
+                guard let digest = index.textCacheFingerprint?.cache.digest else { return edit }
+                return digest == edit.cacheDigest ? edit : nil
+            }
         )
     }
 
@@ -1048,7 +1090,8 @@ struct Book: Identifiable, Codable, Hashable {
                 audioDuration: audioDuration,
                 cacheFormatVersion: cacheFormatVersion,
                 contentIndexVersion: contentIndexVersion,
-                textCacheFingerprint: textCacheFingerprint
+                textCacheFingerprint: textCacheFingerprint,
+                editedText: editedText
             ),
             bookmarks: bookmarks
         )
@@ -1109,6 +1152,7 @@ struct Book: Identifiable, Codable, Hashable {
             cacheFormatVersion: state.cacheFormatVersion,
             contentIndexVersion: state.contentIndexVersion,
             textCacheFingerprint: state.textCacheFingerprint,
+            editedText: state.editedText,
             metadataReaderVersion: metadata.metadataReaderVersion,
             handEdits: metadata.handEdits,
             feedLink: metadata.feedLink,
