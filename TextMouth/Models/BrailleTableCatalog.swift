@@ -747,8 +747,9 @@ enum BrailleTableCatalog {
         }
         let languages = order.compactMap { id -> BrailleLanguage? in
             guard let members = groups[id] else { return nil }
-            let indexName = members.lazy.flatMap(\.tables).compactMap(\.indexName).first
-            return BrailleLanguage(id: id, name: languageName(id, indexName: indexName), codes: members)
+            let tables = members.lazy.flatMap(\.tables)
+            let name = languageName(id, indexName: tables.compactMap(\.indexName).first, displayName: tables.first?.displayName)
+            return BrailleLanguage(id: id, name: name, codes: members)
         }
         return languages.sorted { lhs, rhs in
             let (lhsEnglish, rhsEnglish) = (isEnglish(lhs.id), isEnglish(rhs.id))
@@ -768,12 +769,16 @@ enum BrailleTableCatalog {
     /// for "en" and "German (Switzerland)" for "de-CH". A language the
     /// system cannot name, such as Classical Hebrew ("hbo"), is named by the
     /// first part of a table's `indexName` (liblouis's index names begin
-    /// with the language, as "Hebrew, classical, IHBC" does), else by its
-    /// code itself.
-    static func languageName(_ language: String, indexName: String? = nil) -> String {
+    /// with the language, as "Hebrew, classical, IHBC" does), else by the
+    /// words of its `displayName` before "braille", as Munda ("mun") is by
+    /// "Munda braille" (review F4), else by its code itself.
+    static func languageName(_ language: String, indexName: String? = nil, displayName: String? = nil) -> String {
         if let name = Locale.current.localizedString(forIdentifier: language) { return name }
         let fromIndex = indexName?.split(separator: ",").first?.trimmingCharacters(in: .whitespaces)
-        return fromIndex.flatMap { $0.isEmpty ? nil : $0 } ?? language
+        let fromDisplay = displayName
+            .flatMap { name in name.range(of: " braille", options: .caseInsensitive).map { String(name[..<$0.lowerBound]) } }?
+            .trimmingCharacters(in: .whitespaces)
+        return [fromIndex, fromDisplay].lazy.compactMap { $0 }.first { !$0.isEmpty } ?? language
     }
 
     // MARK: Words
@@ -788,7 +793,7 @@ enum BrailleTableCatalog {
     static func description(ofTableID id: String) -> String {
         guard let table = table(withID: id) else { return id }
         let language = table.source == .mac
-            ? code(of: table).map { languageName($0.language, indexName: table.indexName) }
+            ? code(of: table).map { languageName($0.language, indexName: table.indexName, displayName: table.displayName) }
             : nil
         return description(of: table, language: language)
     }

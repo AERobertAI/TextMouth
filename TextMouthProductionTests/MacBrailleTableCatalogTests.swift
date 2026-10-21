@@ -318,6 +318,13 @@ final class MacBrailleTableCatalogTests: XCTestCase {
         let expected = Locale.current.localizedString(forIdentifier: "hbo") ?? "Hebrew"
         XCTAssertEqual(languages.map(\.name), [expected])
         XCTAssertEqual(BrailleTableCatalog.languageName("zz-not-a-language"), "zz-not-a-language")
+        // Munda ("mun") has no name in the system's data and its tables no
+        // index name: the display name's words before "braille" name it.
+        let munda = table("mun.tbl", "Munda braille", language: "mun", contraction: .unstated)
+        let mundaName = Locale.current.localizedString(forIdentifier: "mun") ?? "Munda"
+        XCTAssertEqual(BrailleTableCatalog.languages(of: BrailleTableCatalog.codes(of: [munda])).map(\.name), [mundaName])
+        XCTAssertEqual(BrailleTableCatalog.languageName("zz", displayName: "Zed Braille, contracted"), "Zed")
+        XCTAssertEqual(BrailleTableCatalog.languageName("zz", displayName: "Braille of zed"), "zz", "no words before braille")
         XCTAssertEqual(BrailleTableCatalog.languageName("zz", indexName: " , "), "zz")
     }
 
