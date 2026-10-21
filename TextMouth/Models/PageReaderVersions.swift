@@ -4,10 +4,11 @@ import os
 /// Which formats write page markers into a book's content.md, and the
 /// version of each one's page reader (PG09). A book records the version that
 /// wrote its content.md (`Book.pageReaderVersion`); at launch, while the
-/// launch re-read is switched on (`launchRereadIsOn`, off for now), a book
+/// launch re-read is switched on (`launchRereadIsOn`, on since PG16), a book
 /// whose format has a newer page reader than the one recorded, or none, is
 /// read again from its file so that it gains its pages
-/// (`LibraryViewModel.booksNeedingCacheUpdate`).
+/// (`LibraryViewModel.booksNeedingCacheUpdate`), unless its text was
+/// changed, which is kept as it is.
 ///
 /// A format that gains pages later (PG12's braille) adds its line here,
 /// which reads again only its own books, without another pass over the rest
@@ -111,31 +112,37 @@ enum PageReaderVersions {
     // MARK: - The Launch Re-read's Switch
 
     /// Whether the startup batch reads the books already in the library
-    /// again to give them their pages (PG09): **off** in this release.
+    /// again to give them their pages (PG09): **on** since PG16.
     ///
-    /// A review of PG09 (October 21, 2026) found the re-read not yet safe to
-    /// run on a library the user has worked on:
-    /// 1. It compares only the chapters' reading text, so an Edit Text change
-    ///    made before B12 that only turned a paragraph into a heading,
-    ///    changed a heading's level, or renamed a chapter looks unchanged,
-    ///    and would be read over without a copy.
-    /// 2. A book it keeps as changed by hand records no edit (`editedText`),
-    ///    so the next cache-format bump replaces that text without a copy.
-    /// 3. content.md is written before its record is committed, and a quit
-    ///    does not wait for the batch, so an interrupted batch leaves
-    ///    TextMouth's own text looking like the user's edit, which the book
-    ///    then keeps from every later re-read.
-    /// 7. The page reader is recorded even when textutil's second run failed
-    ///    or timed out, so such a book never gains its pages and is never
-    ///    tried again.
+    /// A review of PG09 (October 21, 2026) found the re-read unsafe to run
+    /// on a library the user has worked on, and kept it off until PG16 made
+    /// it safe (`LibraryViewModel.pageUpgradeCheck(of:access:)`):
+    /// 1. The whole content.md is compared, byte for byte, with the book's
+    ///    file read again without pages, where only the chapters' reading
+    ///    text was, so an Edit Text change made before B12 that only turned
+    ///    a paragraph into a heading, changed a heading's level, or renamed a
+    ///    chapter is kept as surely as one that changed words. Text the
+    ///    compare cannot match exactly is kept too.
+    /// 2. A book kept as changed by hand is recorded as edited (`editedText`,
+    ///    B12), so no later automatic re-read, such as a cache-format bump,
+    ///    replaces its text either.
+    /// 3. A content.md that is exactly the file read with its pages is taken
+    ///    for TextMouth's own, written by a batch that stopped before it
+    ///    committed the record (a quit does not wait for the batch): only the
+    ///    record is stamped, and the text is never taken for the user's edit.
+    /// 7. When textutil's run for the pages fails or times out, the page
+    ///    reader is not recorded as done: the next launch tries once more,
+    ///    and a second failure is noted in the stamp
+    ///    (`stamp(for:pageRunFailed:previous:)`).
     ///
-    /// Books imported or read again from their files gain their pages all
-    /// the same: every generation writes them and records its format's page
-    /// reader (`MarkdownCacheService.GeneratedCache`). Once those findings
-    /// are fixed, setting this to true turns the re-read on. Its code stays
-    /// as it is, and its tests run it switched on
-    /// (`_setLaunchRereadForTesting(_:)`).
-    static let launchRereadIsOn = false
+    /// A book whose file is missing, or no longer extracts, is stamped and
+    /// logged once, and the batch ends with one summary line in the debug
+    /// log (`PAGES_UPGRADE_SUMMARY`). Setting this to false turns the
+    /// re-read off again: no book is then chosen, compared, or stamped for
+    /// its pages, while books imported or read again from their files still
+    /// gain theirs, since every generation writes them. Tests switch it with
+    /// `_setLaunchRereadForTesting(_:)`.
+    static let launchRereadIsOn = true
 
     /// Whether the startup batch is to read `book` again for its pages
     /// (PG09): its content.md predates its format's page reader, and the

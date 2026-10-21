@@ -14,21 +14,14 @@ import XCTest
 /// the state before pages: content.md as the book's file gives it without
 /// page markers, committed to a record that names no page reader.
 ///
-/// The app ships with the re-read switched off until the review's safety
-/// findings are fixed (`PageReaderVersions.launchRereadIsOn`), so every test
-/// switches it on to keep its code working, and puts it back after; one
-/// test switches it off, as the app has it, and finds no book read again.
+/// The app ships with the re-read switched on since PG16 made it safe
+/// (`PageReaderVersions.launchRereadIsOn`), and every test runs it so, as
+/// the app does; one test switches it off and finds no book read again,
+/// and each test leaves the switch as the app has it.
 @MainActor
 final class PagesUpgradeTests: XCTestCase {
-    /// The launch re-read's switch as each test found it.
-    private var launchRereadBefore = PageReaderVersions.launchRereadIsOn
-
-    override func setUp() async throws {
-        launchRereadBefore = PageReaderVersions._setLaunchRereadForTesting(true)
-    }
-
     override func tearDown() async throws {
-        PageReaderVersions._setLaunchRereadForTesting(launchRereadBefore)
+        PageReaderVersions._setLaunchRereadForTesting(PageReaderVersions.launchRereadIsOn)
     }
 
     // MARK: - The Versions
@@ -482,7 +475,16 @@ final class PagesUpgradeTests: XCTestCase {
 
     // MARK: - The Switch
 
-    /// With the launch re-read switched off, as the app ships it, the batch
+    /// The app ships with the launch re-read switched on (PG16): a book of a
+    /// format with pages, from before pages, is due for them without the
+    /// test seam.
+    func testTheReReadIsSwitchedOnAsTheAppShipsIt() {
+        XCTAssertTrue(PageReaderVersions.launchRereadIsOn)
+        let epub = Book(title: "Before Pages", format: .epub, filePath: "/tmp/before-pages.epub", md5Hash: "m", folderPath: "")
+        XCTAssertTrue(PageReaderVersions.isDueForPages(epub), "a book from before pages is not due for them")
+    }
+
+    /// With the launch re-read switched off, as a build may set it, the batch
     /// reads no book again for its pages. An EPUB from before pages is not
     /// chosen at all; a PDF from before pages whose row lags its record (as
     /// a crash leaves it) is chosen for its cache format and recovered from

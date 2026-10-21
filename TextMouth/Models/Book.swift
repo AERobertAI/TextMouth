@@ -302,7 +302,7 @@ struct Book: Identifiable, Codable, Hashable {
     /// every book written before pages and for a format without pages. A
     /// book whose format has a newer page reader is read again at launch
     /// (`LibraryViewModel.booksNeedingCacheUpdate`) while that re-read is
-    /// switched on (`PageReaderVersions.launchRereadIsOn`, off for now),
+    /// switched on (`PageReaderVersions.launchRereadIsOn`, on since PG16),
     /// unless the user changed its text, which is kept as it is. A note
     /// after the version, as in "1.0.0+failed-once", says that reader could
     /// not read the book's pages (`PageReaderVersions.stamp(for:pageRunFailed:previous:)`).
