@@ -1014,7 +1014,7 @@ extension LibraryViewModel {
                     return nil
                 case let .unreadable(why, missingFile):
                     pages?.record(missingFile ? .skippedMissing : .failed)
-                    return unreadableText(of: book, why: why, access: access)
+                    return unreadableText(of: book, why: why, missingFile: missingFile, access: access)
                 }
             }
             // The record no longer describes content.md: it may hold an
@@ -1207,23 +1207,30 @@ extension LibraryViewModel {
         settledText(of: book, pageReaderVersion: .some(PageReaderVersions.current(for: book.format)), access: access)
     }
 
-    /// Settles a book whose file is missing, or no longer extracts, so it
-    /// could be neither compared nor read for its pages (PG16): content.md
-    /// is kept as it is, without pages, and the row and record are stamped
-    /// with a failure note (`PageReaderVersions.failedStamp(for:)`), so the
-    /// book is not chosen again at every launch. It is not recorded as
-    /// edited, since nothing says it was. One line is logged:
+    /// Settles a book whose file is missing (`missingFile`), or could not be
+    /// read, so it could be neither compared nor read for its pages (PG16):
+    /// content.md is kept as it is, without pages, and the row and record
+    /// are stamped with a failure note, so the book is not chosen at every
+    /// launch. A missing file is not looked for again
+    /// (`PageReaderVersions.failedStamp(for:)`); a read may fail only for a
+    /// moment, so it is tried at one more launch first
+    /// (`PageReaderVersions.failureStamp(for:previous:)`). It is not recorded
+    /// as edited, since nothing says it was. One line is logged:
     /// `PAGES_SKIPPED_UNREADABLE: <title>: <why>`. Nil when nothing was
     /// committed; a later launch tries again.
     nonisolated private static func unreadableText(
         of book: Book,
         why: String,
+        missingFile: Bool,
         access: MaintenanceFileAccess
     ) -> ContentAnalysisSummary? {
         // The reason on one line, as every log entry is.
         let reason = why.components(separatedBy: .newlines).joined(separator: " ")
         DiagnosticLog.event(.storage, "PAGES_SKIPPED_UNREADABLE: \(book.title): \(reason)")
-        return settledText(of: book, pageReaderVersion: .some(PageReaderVersions.failedStamp(for: book.format)), access: access)
+        let stamp = missingFile
+            ? PageReaderVersions.failedStamp(for: book.format)
+            : PageReaderVersions.failureStamp(for: book.format, previous: book.pageReaderVersion)
+        return settledText(of: book, pageReaderVersion: .some(stamp), access: access)
     }
 
     /// Settles a book whose content.md is kept as it is: its summary, once

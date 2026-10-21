@@ -77,8 +77,17 @@ enum PageReaderVersions {
     /// the next launch reads again, and "1.0.0+failed" when that try fails
     /// too, so a document that always fails is not read at every launch.
     static func stamp(for format: BookFormat, pageRunFailed: Bool, previous: String?) -> String? {
+        guard pageRunFailed else { return current(for: format) }
+        return failureStamp(for: format, previous: previous)
+    }
+
+    /// The stamp of a book of `format`, stamped `previous`, that could not be
+    /// read for its pages this time, by a run that may fail only for a
+    /// moment (PG16): "1.0.0+failed-once" the first time, which the next
+    /// launch reads again, and "1.0.0+failed" when that try failed too,
+    /// which no launch reads again; nil for a format without pages.
+    static func failureStamp(for format: BookFormat, previous: String?) -> String? {
         guard let current = current(for: format) else { return nil }
-        guard pageRunFailed else { return current }
         return previous == current + failedOnceNote ? current + failedNote : current + failedOnceNote
     }
 

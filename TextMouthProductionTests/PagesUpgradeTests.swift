@@ -347,9 +347,11 @@ final class PagesUpgradeTests: XCTestCase {
     /// A book whose file is missing, or no longer extracts, gives nothing to
     /// compare its text with, nor pages to read (PG16). It keeps content.md
     /// byte for byte, is stamped with a failure note, not recorded as
-    /// edited, and logged once; the next launch chooses neither book, where
-    /// before each failed at every launch.
-    func testABookWhoseFileIsMissingOrUnreadableIsStampedAndLoggedOnce() async throws {
+    /// edited, and logged: a missing file once, and a file that could not be
+    /// read, which may have failed only for a moment, at one more launch
+    /// too (PG16 review, finding 5). After that, no launch chooses either
+    /// book, where before each failed at every launch.
+    func testABookWhoseFileIsMissingOrUnreadableIsStampedAndThenLeftAlone() async throws {
         let world = try makeIntegrationWorld("Pages Upgrade Unreadable")
         let missing = try makeBookBeforePages(sample: Self.epubSample, in: world)
         try FileManager.default.removeItem(at: missing.book.bookFileURL)
@@ -359,16 +361,20 @@ final class PagesUpgradeTests: XCTestCase {
         world.library.library.books = [missing.book, damaged.book]
 
         await runBatch(in: world)
-        // The next launch: nothing more is chosen, nor logged.
+        let damagedOnce = try XCTUnwrap(world.library.bookByID(damaged.book.id))
+        XCTAssertEqual(damagedOnce.pageReaderVersion, "1.0.0+failed-once", "a failed read is not tried once more")
+        // The next launch reads the damaged file once more; the one after
+        // chooses neither book.
+        await runBatch(in: world)
         await runBatch(in: world)
 
-        for fixture in [missing, damaged] {
+        for (fixture, launchesLogged) in [(missing, 1), (damaged, 2)] {
             let row = try XCTUnwrap(world.library.bookByID(fixture.book.id))
             XCTAssertEqual(try Data(contentsOf: MarkdownCacheService.cacheURL(for: row)), fixture.bytes)
             XCTAssertEqual(row.pageReaderVersion, "1.0.0+failed")
             XCTAssertEqual(try BookInfo.load(from: row.tmbDirectory).state.pageReaderVersion, "1.0.0+failed")
             XCTAssertNil(row.editedText, "a book that could not be compared was recorded as edited")
-            XCTAssertEqual(debugLogLines(containing: "PAGES_SKIPPED_UNREADABLE: \(row.title):").count, 1)
+            XCTAssertEqual(debugLogLines(containing: "PAGES_SKIPPED_UNREADABLE: \(row.title):").count, launchesLogged)
             XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([row], access: .live), [])
         }
         XCTAssertEqual(
