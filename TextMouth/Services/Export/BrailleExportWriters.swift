@@ -11,13 +11,27 @@ import SwiftUI
 /// feeds: a list is walked item by item through `ExportListItem.blocks`
 /// (never `plainText`, which joins an item with the lists inside it), so a
 /// nested list keeps its depth. Text is print, as the walker made it.
+///
+/// Each block's print keeps its runs' emphasis (October 21, 2026: the user
+/// asked that exported braille mark italics), which liblouis writes as the
+/// table's indicators: emphasis (`*…*`) as italic and strong (`**…**`) as
+/// bold, both as both (`EmphasizedText(runs:)`). Text with no runs of its
+/// own, a code block's lines, a table's cells, an ordered item's number, and
+/// the book's title, is plain.
 enum BrailleExportBlocks {
-    /// The blocks of `document` in reading order: its title heading first,
-    /// when it has one, then each block of `document.blocks`.
+    /// The blocks of `document` in reading order, their print without its
+    /// emphasis: the blocks of `printBlocks(of:)`.
     static func blocks(of document: ExportDocument) -> [BrailleBlock] {
-        var result: [BrailleBlock] = []
+        printBlocks(of: document).map(\.block)
+    }
+
+    /// The blocks of `document` in reading order, each with the emphasis of
+    /// its print: its title heading first, when it has one, then each block
+    /// of `document.blocks`.
+    static func printBlocks(of document: ExportDocument) -> [BraillePrintBlock] {
+        var result: [BraillePrintBlock] = []
         if let title = document.titleHeading {
-            result.append(.heading(level: 1, text: title.plainText))
+            result.append(BraillePrintBlock(.heading(level: 1, text: title.plainText)))
         }
         append(document.blocks, itemDepth: nil, to: &result)
         return result
@@ -28,13 +42,13 @@ enum BrailleExportBlocks {
     ///   (1 for an item of a top-level list), or nil outside every list. Text
     ///   the blocks hold is a list item of that depth inside an item, and a
     ///   paragraph elsewhere; a heading is a heading wherever it is.
-    private static func append(_ blocks: [ExportBlock], itemDepth: Int?, to result: inout [BrailleBlock]) {
+    private static func append(_ blocks: [ExportBlock], itemDepth: Int?, to result: inout [BraillePrintBlock]) {
         for block in blocks {
             switch block {
             case let .heading(heading):
-                result.append(.heading(level: heading.level, text: heading.plainText))
+                result.append(.heading(level: heading.level, EmphasizedText(runs: heading.runs)))
             case let .paragraph(runs):
-                result.append(textBlock(runs.plainText, itemDepth: itemDepth))
+                result.append(textBlock(EmphasizedText(runs: runs), itemDepth: itemDepth))
             case let .list(list):
                 append(list, to: &result)
             case let .blockQuote(quoted):
@@ -45,12 +59,12 @@ enum BrailleExportBlocks {
                 // One block for each line that has text: braille wraps and
                 // indents by words, so an empty line holds nothing.
                 for line in code.components(separatedBy: "\n") where !line.isEmpty {
-                    result.append(textBlock(line, itemDepth: itemDepth))
+                    result.append(textBlock(EmphasizedText(line), itemDepth: itemDepth))
                 }
             case let .table(table):
                 // One block for each row, its cells apart by a semicolon.
                 for row in table.rows {
-                    result.append(textBlock(row.joined(separator: "; "), itemDepth: itemDepth))
+                    result.append(textBlock(EmphasizedText(row.joined(separator: "; ")), itemDepth: itemDepth))
                 }
             case .thematicBreak:
                 // A break holds no text, so braille has nothing to write.
@@ -63,7 +77,7 @@ enum BrailleExportBlocks {
     /// deeper than the list, and a list inside an item recurses. An ordered
     /// list's item begins with its number and a period (BANA lays an
     /// unordered list out by its margins, so those items have no mark).
-    private static func append(_ list: ExportList, to result: inout [BrailleBlock]) {
+    private static func append(_ list: ExportList, to result: inout [BraillePrintBlock]) {
         let depth = list.depth + 1
         for (index, item) in list.items.enumerated() {
             let before = result.count
@@ -73,21 +87,43 @@ enum BrailleExportBlocks {
             // of this item's own lines of text; any other first block (a
             // heading or a list inside it) leaves the number a line alone.
             let mark = "\(list.start + index)."
-            if result.count > before, result[before].isListItem(atDepth: depth) {
-                result[before] = .listItem(depth: depth, text: "\(mark) \(result[before].text)")
+            if result.count > before, result[before].block.isListItem(atDepth: depth) {
+                result[before] = result[before].prefixed(with: "\(mark) ")
             } else {
-                result.insert(.listItem(depth: depth, text: mark), at: before)
+                result.insert(BraillePrintBlock(.listItem(depth: depth, text: mark)), at: before)
             }
         }
     }
 
     /// A block of `text`: a list item at `itemDepth` inside a list item, a
     /// paragraph elsewhere.
-    private static func textBlock(_ text: String, itemDepth: Int?) -> BrailleBlock {
+    private static func textBlock(_ text: EmphasizedText, itemDepth: Int?) -> BraillePrintBlock {
         if let itemDepth {
-            return .listItem(depth: itemDepth, text: text)
+            return .listItem(depth: itemDepth, text)
         }
-        return .paragraph(text: text)
+        return .paragraph(text)
+    }
+}
+
+extension EmphasizedText {
+    /// The text of `runs`, joined, each run's scalars with its emphasis:
+    /// emphasis (`*…*`) as italic, strong (`**…**`) as bold.
+    ///
+    /// Code (`isCode`) keeps the emphasis it stands in and nothing more.
+    /// liblouis has a typeform for computer braille, but liblouis 3.39.0
+    /// only declares it (`liblouis.h`) and never reads it: all four bundled
+    /// tables write a code span with it exactly as without it, in six dots
+    /// (measured October 21, 2026). EBAE writes Computer Braille Code only
+    /// where its own `compbrl` rules match the text, such as "www." or "()",
+    /// with the typeform or without. So code is sent as the text it is.
+    init(runs: [ExportRun]) {
+        self.init()
+        for run in runs {
+            var flags: BrailleEmphasis = []
+            if run.isEmphasis { flags.insert(.italic) }
+            if run.isStrong { flags.insert(.bold) }
+            append(contentsOf: run.text, flags)
+        }
     }
 }
 
@@ -106,8 +142,9 @@ private extension BrailleBlock {
 /// dialog's words, and the file's single write. Only the bytes differ.
 private enum BrailleExportWriting {
     /// Writes `document` as a new file at `url`: the bytes `makeData` makes
-    /// of its blocks, given the folder the translator may make its hidden
-    /// files in (the export's scratch folder, which holds `url`).
+    /// of its print blocks, with their emphasis, given the folder the
+    /// translator may make its hidden files in (the export's scratch folder,
+    /// which holds `url`).
     /// - Throws: `CancellationError` when stopped before or after the
     ///   translation; a `TextExportError` saying why the translator failed;
     ///   and whatever writing the file throws (a file already at `url` is an
@@ -116,13 +153,13 @@ private enum BrailleExportWriting {
         _ document: ExportDocument,
         to url: URL,
         cancellation: BookExportCancellation,
-        makeData: ([BrailleBlock], _ folder: URL) throws -> Data
+        makeData: ([BraillePrintBlock], _ folder: URL) throws -> Data
     ) throws {
         // A book already stopped writes nothing, even one with no blocks.
         try cancellation.checkCancelled()
         let data: Data
         do {
-            data = try makeData(BrailleExportBlocks.blocks(of: document), url.deletingLastPathComponent())
+            data = try makeData(BrailleExportBlocks.printBlocks(of: document), url.deletingLastPathComponent())
         } catch let failure as BrailleTranslator.Failure {
             // The dialog names the file before this sentence.
             throw TextExportError(failure.localizedDescription)
@@ -139,8 +176,8 @@ private enum BrailleExportWriting {
 
 /// Writes a text book as a BRF file (FMT22): pages of braille ASCII, for
 /// braille displays and embossers. The text is translated with the options'
-/// table and laid out as BANA's Braille Formats says
-/// (`BrailleDocumentWriter`).
+/// table, its emphasis written as the table's indicators, and laid out as
+/// BANA's Braille Formats says (`BrailleDocumentWriter`).
 struct BRFExportWriter: TextExportWriter {
     let id = "brf"
     let name = "BRF"

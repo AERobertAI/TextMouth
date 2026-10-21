@@ -335,12 +335,25 @@ final class BrailleDocumentWriterTests: XCTestCase {
         }
     }
 
+    /// Print with emphasis keeps each scalar's emphasis through
+    /// `printForBraille`: a noncharacter it removes takes its emphasis with
+    /// it, and an eight-dot pattern made six-dot keeps its own.
+    func testPrintForBrailleKeepsEachScalarsEmphasisInStep() throws {
+        let nonCharacter = String(try XCTUnwrap(Unicode.Scalar(0xFFFF)))
+        let print = try XCTUnwrap(EmphasizedText("a" + nonCharacter + "\u{28CF}b", emphasis: [.italic, .bold, .bold, []]))
+        let prepared = BrailleDocumentWriter.printForBraille(print)
+        XCTAssertEqual(prepared.text, "a\u{280F}b")
+        XCTAssertEqual(prepared.emphasis, [.italic, .bold, []])
+        XCTAssertEqual(BrailleDocumentWriter.printForBraille(EmphasizedText("plain" + nonCharacter)), EmphasizedText("plain"))
+    }
+
     /// No blocks give an empty BRF and a PEF with no page.
     func testNoBlocksGiveAnEmptyBRFAndAPEFWithoutPages() throws {
         let options = options("en-ueb-g1.ctb")
         XCTAssertEqual(try pages([], options), [])
-        XCTAssertEqual(try BrailleDocumentWriter.brf(of: [], options: options, workingIn: work), Data())
-        let pef = try BrailleDocumentWriter.pef(of: [], metadata: sampleMetadata, options: options, workingIn: work)
+        XCTAssertEqual(try BrailleDocumentWriter.brf(of: [] as [BrailleBlock], options: options, workingIn: work), Data())
+        XCTAssertEqual(try BrailleDocumentWriter.brf(of: [] as [BraillePrintBlock], options: options, workingIn: work), Data())
+        let pef = try BrailleDocumentWriter.pef(of: [] as [BraillePrintBlock], metadata: sampleMetadata, options: options, workingIn: work)
         assertWorkFolderEmpty()
         let text = String(decoding: pef, as: UTF8.self)
         XCTAssertTrue(text.contains("<pef "))

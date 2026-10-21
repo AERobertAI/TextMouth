@@ -44,6 +44,62 @@ struct BrailleExportOptions: TextExportOptions {
     }
 }
 
+// MARK: - Print Blocks
+
+/// A block of print for a braille export, with the emphasis of its text
+/// (FMT22; emphasis since October 21, 2026): what `BrailleDocumentWriter`
+/// translates. The export model's emphasis and strong emphasis reach
+/// liblouis this way (`BrailleExportBlocks.printBlocks(of:)`), and liblouis
+/// writes the table's indicators for them: UEB's word, passage, and
+/// terminator indicators, EBAE's own signs, and nothing at all from a table
+/// with no rules for them.
+struct BraillePrintBlock: Equatable, Sendable {
+    /// The block: its kind, its level or depth, and its print.
+    private(set) var block: BrailleBlock
+    /// The emphasis of each Unicode scalar of the block's print, in order;
+    /// empty when none has any.
+    private(set) var emphasis: [BrailleEmphasis]
+
+    /// `block`, its print with no emphasis.
+    init(_ block: BrailleBlock) {
+        self.init(block: block, emphasis: [])
+    }
+
+    /// The block itself, with `emphasis` for its print's scalars.
+    private init(block: BrailleBlock, emphasis: [BrailleEmphasis]) {
+        self.block = block
+        self.emphasis = emphasis
+    }
+
+    /// A heading of `level` holding `print`.
+    static func heading(level: Int, _ print: EmphasizedText) -> BraillePrintBlock {
+        BraillePrintBlock(block: .heading(level: level, text: print.text), emphasis: print.emphasis)
+    }
+
+    /// A paragraph holding `print`.
+    static func paragraph(_ print: EmphasizedText) -> BraillePrintBlock {
+        BraillePrintBlock(block: .paragraph(text: print.text), emphasis: print.emphasis)
+    }
+
+    /// A list item at `depth` holding `print`.
+    static func listItem(depth: Int, _ print: EmphasizedText) -> BraillePrintBlock {
+        BraillePrintBlock(block: .listItem(depth: depth, text: print.text), emphasis: print.emphasis)
+    }
+
+    /// The block's print with its emphasis, as the translator takes it.
+    var print: EmphasizedText {
+        EmphasizedText(block.text, emphasis: emphasis) ?? EmphasizedText(block.text)
+    }
+
+    /// The same block with `prefix`, unemphasized, before its print: an
+    /// ordered list's number before its item's words.
+    func prefixed(with prefix: String) -> BraillePrintBlock {
+        var prefixed = EmphasizedText(prefix)
+        prefixed.append(print)
+        return BraillePrintBlock(block: block.withText(prefixed.text), emphasis: prefixed.emphasis)
+    }
+}
+
 // MARK: - Writer
 
 /// Turns a document's print blocks into a BRF or PEF file (FMT22, Phase A):
@@ -55,10 +111,21 @@ struct BrailleExportOptions: TextExportOptions {
 /// in by Phase B) produces it. The layout and the file writers are pure, so
 /// only the translation runs a process, the watched helper, in `folder`.
 enum BrailleDocumentWriter {
+    /// The pages `blocks` make as braille, their print with no emphasis:
+    /// `pages(of:options:workingIn:)` of print blocks, which this is.
+    static func pages(
+        of blocks: [BrailleBlock],
+        options: BrailleExportOptions,
+        workingIn folder: URL
+    ) throws -> [[String]] {
+        try pages(of: blocks.map { BraillePrintBlock($0) }, options: options, workingIn: folder)
+    }
+
     /// The pages `blocks` make as braille: each block's print translated
-    /// with `options.table` (keeping its kind and its level or depth), then
-    /// laid out at `options.page`. No blocks give no pages (the translator runs no helper
-    /// for them, but still refuses an unknown table).
+    /// with `options.table`, with its emphasis, which liblouis writes as the
+    /// table's indicators (keeping its kind and its level or depth), then
+    /// laid out at `options.page`. No blocks give no pages (the translator
+    /// runs no helper for them, but still refuses an unknown table).
     /// - Parameter folder: Where the translator makes its hidden files; it is
     ///   left empty again.
     /// - Throws: whatever `BrailleTranslator.translate` throws, unchanged;
@@ -66,11 +133,11 @@ enum BrailleDocumentWriter {
     ///   the table writes a block with an eight-dot cell that TextMouth's
     ///   six-dot files cannot hold (review R1).
     static func pages(
-        of blocks: [BrailleBlock],
+        of blocks: [BraillePrintBlock],
         options: BrailleExportOptions,
         workingIn folder: URL
     ) throws -> [[String]] {
-        let texts = blocks.map { printForBraille($0.text) }
+        let texts = blocks.map { printForBraille($0.print) }
         let braille = try BrailleTranslator.translate(
             texts, table: options.table, direction: .printToBraille, workingIn: folder
         )
@@ -82,13 +149,16 @@ enum BrailleDocumentWriter {
         // An eight-dot cell a table makes from an ordinary character is never
         // written as its six-dot part: the book fails, naming the character
         // (review R1). Some tables write one for a character they define so,
-        // such as the Mac's Swedish tables for «.
+        // such as the Mac's Swedish tables for «. No table, bundled or on
+        // this Mac, writes an emphasis indicator in eight dots (all 328 of
+        // macOS 26's were measured on October 21, 2026), so emphasis adds no
+        // such failure.
         for (text, cells) in zip(texts, braille) {
-            guard let cell = BrailleCells.firstEightDotCell(in: cells) else { continue }
-            let character = try character(writtenWithEightDotsIn: text, table: options.table, workingIn: folder)
+            guard let cell = BrailleCells.firstEightDotCell(in: cells.text) else { continue }
+            let character = try character(writtenWithEightDotsIn: text.text, table: options.table, workingIn: folder)
             throw BrailleFileWriter.EightDotCell(cell: cell, character: character)
         }
-        let translated = zip(blocks, braille).map { block, cells in block.withText(cells) }
+        let translated = zip(blocks, braille).map { block, cells in block.block.withText(cells.text) }
         return BrailleLayout.pages(of: translated, format: options.page)
     }
 
@@ -103,13 +173,28 @@ enum BrailleDocumentWriter {
     /// as U+FFFF), which hold no text and which liblouis writes as an
     /// eight-dot cell, are removed.
     static func printForBraille(_ text: String) -> String {
-        var scalars = String.UnicodeScalarView()
-        for scalar in text.unicodeScalars {
-            let value = scalar.value
-            if (0xFDD0...0xFDEF).contains(value) || value & 0xFFFE == 0xFFFE { continue }
-            scalars.append(BrailleCells.usesEightDots(scalar) ? BrailleCells.sixDotPart(of: scalar) : scalar)
+        String(String.UnicodeScalarView(text.unicodeScalars.compactMap(printScalar)))
+    }
+
+    /// `printForBraille(_:)` of a text with its emphasis: each scalar kept
+    /// keeps its emphasis, and a scalar removed takes its emphasis with it.
+    static func printForBraille(_ text: EmphasizedText) -> EmphasizedText {
+        guard text.hasEmphasis else { return EmphasizedText(printForBraille(text.text)) }
+        var result = EmphasizedText()
+        for (scalar, flags) in zip(text.text.unicodeScalars, text.emphasis) {
+            guard let kept = printScalar(scalar) else { continue }
+            result.append(kept, flags)
         }
-        return String(scalars)
+        return result
+    }
+
+    /// The scalar `printForBraille(_:)` gives the translator for `scalar`:
+    /// an eight-dot braille pattern's six-dot part, nothing for a
+    /// noncharacter, and any other scalar as it is.
+    private static func printScalar(_ scalar: Unicode.Scalar) -> Unicode.Scalar? {
+        let value = scalar.value
+        if (0xFDD0...0xFDEF).contains(value) || value & 0xFFFE == 0xFFFE { return nil }
+        return BrailleCells.usesEightDots(scalar) ? BrailleCells.sixDotPart(of: scalar) : scalar
     }
 
     /// The character of `text` that `table` writes with an eight-dot cell:
@@ -135,10 +220,15 @@ enum BrailleDocumentWriter {
     /// as braille ASCII with `options.lineEnd`. No blocks give an empty file.
     /// - Throws: the translator's errors, unchanged, and
     ///   `BrailleFileWriter.EightDotCell` (review R1).
-    static func brf(of blocks: [BrailleBlock], options: BrailleExportOptions, workingIn folder: URL) throws -> Data {
+    static func brf(of blocks: [BraillePrintBlock], options: BrailleExportOptions, workingIn folder: URL) throws -> Data {
         try BrailleFileWriter.brf(
             pages: try pages(of: blocks, options: options, workingIn: folder), lineEnd: options.lineEnd
         )
+    }
+
+    /// `brf(of:options:workingIn:)` of blocks whose print has no emphasis.
+    static func brf(of blocks: [BrailleBlock], options: BrailleExportOptions, workingIn folder: URL) throws -> Data {
+        try brf(of: blocks.map { BraillePrintBlock($0) }, options: options, workingIn: folder)
     }
 
     /// `blocks` (print) as the bytes of a PEF file: the pages of `pages(of:…)`
@@ -147,7 +237,7 @@ enum BrailleDocumentWriter {
     /// - Throws: the translator's errors, unchanged, and
     ///   `BrailleFileWriter.EightDotCell` (review R1).
     static func pef(
-        of blocks: [BrailleBlock],
+        of blocks: [BraillePrintBlock],
         metadata: PEFMetadata,
         options: BrailleExportOptions,
         workingIn folder: URL
@@ -155,5 +245,16 @@ enum BrailleDocumentWriter {
         try BrailleFileWriter.pef(
             pages: try pages(of: blocks, options: options, workingIn: folder), metadata: metadata, format: options.page
         )
+    }
+
+    /// `pef(of:metadata:options:workingIn:)` of blocks whose print has no
+    /// emphasis.
+    static func pef(
+        of blocks: [BrailleBlock],
+        metadata: PEFMetadata,
+        options: BrailleExportOptions,
+        workingIn folder: URL
+    ) throws -> Data {
+        try pef(of: blocks.map { BraillePrintBlock($0) }, metadata: metadata, options: options, workingIn: folder)
     }
 }
