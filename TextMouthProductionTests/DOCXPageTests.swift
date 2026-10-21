@@ -300,6 +300,46 @@ final class DOCXPageTests: XCTestCase {
         try assertSameReading(reading, body: body)
     }
 
+    /// An italic line whose line break is inside its run, then a page break:
+    /// the emphasis ends "*Roses\n*", and the space the break brings goes
+    /// after the marker. Before it, the space made "* " a list item whose
+    /// first line, the words after the break included, was raw HTML. The
+    /// line keeps its words, and reads the same without pages.
+    func testAnItalicLineBreakBeforeAPageBreakKeepsTheLineAfterIt() throws {
+        let body = [Self.paragraph(
+            Self.run("<w:rPr><w:i/></w:rPr>", Self.text("Roses"), "<w:br/>"),
+            Self.run(Self.pageBreak),
+            Self.run(Self.text("are red."))
+        )]
+        let reading = try read(body: body)
+
+        XCTAssertEqual(reading.labels, ["1", "2"])
+        XCTAssertTrue(reading.spoken.hasSuffix(" are red."), reading.spoken)
+        XCTAssertEqual(reading.openings(words: 2).last, "are red.")
+        XCTAssertFalse(reading.markdown.contains("* <!--"), reading.markdown)
+        try assertSameReading(reading, body: body)
+    }
+
+    /// A line break and then a page break in a list item: the marker is
+    /// written at the end of the line before, so the item's next line keeps
+    /// its words. On a line of its own, four spaces before it counted from
+    /// the line's start, not from the item's words, and opened an HTML block
+    /// that held the rest of the line.
+    func testALineBreakThenAPageBreakInAListItemKeepsTheLineAfterIt() throws {
+        let body = [
+            Self.listItem("Alpha", level: 0),
+            Self.paragraph(
+                Self.run(Self.text("Beta"), "<w:br/>", Self.pageBreak, Self.text("more words")),
+                properties: Self.numberingProperties(level: 0)
+            ),
+        ]
+        let reading = try read(body: body, numbering: Self.nestedListNumbering)
+
+        XCTAssertEqual(reading.labels, ["1", "2"])
+        XCTAssertEqual(reading.spoken, "Alpha Beta more words")
+        XCTAssertEqual(reading.openings(words: 2).last, "more words")
+    }
+
     // MARK: Page 1
 
     /// The first page begins at the document's start; a `w:pageBreakBefore`
@@ -690,7 +730,12 @@ final class DOCXPageTests: XCTestCase {
 
     /// A list item reading `value` at `level` of list 1.
     static func listItem(_ value: String, level: Int, properties: String = "") -> String {
-        plain(value, properties: properties + "<w:numPr><w:ilvl w:val=\"\(level)\"/><w:numId w:val=\"1\"/></w:numPr>")
+        plain(value, properties: properties + numberingProperties(level: level))
+    }
+
+    /// The paragraph properties that make a paragraph an item at `level` of list 1.
+    static func numberingProperties(level: Int) -> String {
+        "<w:numPr><w:ilvl w:val=\"\(level)\"/><w:numId w:val=\"1\"/></w:numPr>"
     }
 
     /// Definitions for list 1: bullets at level 0 and numbers at level 1.

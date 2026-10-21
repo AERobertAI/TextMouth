@@ -152,6 +152,18 @@ final class MarkdownPageMarkerTests: XCTestCase {
         XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "text  \n"), .continuationLine)
         XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "text\n   "), .continuationLine)
         XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "text\n\n"), .blockStart)
+        // The opening of a list item, quote, or heading, before its words.
+        XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "- "), .containerStart(continuation: "  "))
+        XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "a\n- \n  "), .containerStart(continuation: "  "))
+        XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "    12. "), .containerStart(continuation: "        "))
+        XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "> - "), .containerStart(continuation: ">   "))
+        XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "## \n  "), .headingStart)
+        // Lines no paragraph continues are followed by a block.
+        for ended in ["## Heading\n  ", "Title\n---\n", "***\n", "```\n", "a\n*\n"] {
+            XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: ended), .blockStart, ended)
+        }
+        // A list marker without the whitespace after it opens nothing.
+        XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "*Roses\n*"), .withinLine)
     }
 
     func testAnInlineMarkerStaysInTheLineItStandsIn() {
@@ -160,8 +172,78 @@ final class MarkdownPageMarkerTests: XCTestCase {
         XCTAssertEqual(written(into: "text", inline: true, keepingWordsApart: true), "text " + marker)
         // No second space where one already ends the text.
         XCTAssertEqual(written(into: "text ", inline: true, keepingWordsApart: true), "text " + marker)
-        // After a hard break, four spaces keep the marker inside the paragraph.
-        XCTAssertEqual(written(into: "text  \n", inline: true), "text  \n    " + marker)
+        // After a line break, at the end of the line before, where the hard
+        // break's two spaces stay last.
+        XCTAssertEqual(written(into: "text  \n", inline: true), "text" + marker + "  \n")
+        // The space a page that joined words brings never completes a list
+        // item's marker: it goes after the marker instead.
+        XCTAssertEqual(written(into: "*Roses\n*", inline: true, keepingWordsApart: true), "*Roses\n*" + marker + " ")
+    }
+
+    /// A marker written at the end of `before`, with `after` then written as
+    /// the next words, in every block context a converter writes: the
+    /// reader's parse keeps every word (`spoken`, whitespace runs made one
+    /// space) and reads no marker aloud, and the page begins at `opening`.
+    /// Before the writer knew list items, quotes, and headings, every case
+    /// but the first two and the hard break in a list item lost words or read
+    /// the marker as code.
+    func testAMarkerKeepsEveryWordInEveryBlockContext() {
+        let cases: [(before: String, after: String, joinsWords: Bool, spoken: String, opening: String)] = [
+            ("one two", " three", false, "one two three", "three"),
+            ("Para one\n", "after break", false, "Para one after break", "after"),
+            // A list item's opening, also with the source's whitespace after it.
+            ("- First item words.\n- ", "Second item words.", false, "First item words. Second item words.", "Second"),
+            ("- First item words.\n- \n  ", "Second item words.", false, "First item words. Second item words.", "Second"),
+            ("- a\n    - b\n    - ", "c words", false, "a b c words", "c words"),
+            ("10. Ten\n11. ", "Eleven words.", false, "Ten Eleven words.", "Eleven"),
+            // A block quote's opening, alone or around a list item.
+            ("> ", "Quoted words.", false, "Quoted words.", "Quoted"),
+            ("> Quoted\n> \n      ", "Quoted words.", false, "Quoted Quoted words.", "Quoted words."),
+            ("> - ", "Quoted item words.", false, "Quoted item words.", "Quoted"),
+            // A heading's opening, and the line after a heading.
+            ("## \n  ", "Chapter Two", false, "Chapter Two", "Chapter"),
+            ("## Heading\n    ", "After.", false, "Heading After.", "After."),
+            ("Title\n---\n", "more", false, "Title more", "more"),
+            // After a line break in a list item, and after a hard break.
+            ("- Item\n", "more words", false, "Item more words", "more"),
+            ("1. Item\n", "more words", false, "Item more words", "more"),
+            ("- First item\n ", "more words", false, "First item more words", "more"),
+            ("- Item  \n  ", "more words", false, "Item more words", "more"),
+            // An italic line whose line break is inside the emphasis, then a
+            // page that joined two words.
+            ("*Roses\n*", "are red.", true, "*Roses * are red.", "are red."),
+        ]
+        for testCase in cases {
+            let content = parsedAfterWritingAMarker(
+                into: testCase.before, then: testCase.after, keepingWordsApart: testCase.joinsWords
+            )
+            let markdown = content.markdown
+            let text = content.document.chapters.map(\.text).joined(separator: "\n\n")
+            XCTAssertEqual(text.split(whereSeparator: \.isWhitespace).joined(separator: " "), testCase.spoken, markdown)
+            XCTAssertFalse(text.contains("<!--"), markdown)
+            XCTAssertEqual(content.document.pages.breaks.map(\.label), ["2"], markdown)
+            if let page = content.document.pages.breaks.first,
+               content.document.chapters.indices.contains(page.chapterIndex) {
+                let chapter = content.document.chapters[page.chapterIndex].text as NSString
+                let opening = chapter.substring(from: min(page.characterOffset, chapter.length))
+                XCTAssertTrue(opening.hasPrefix(testCase.opening), "\(markdown): the page opens at \"\(opening)\"")
+            }
+        }
+
+        // A hard break stays one: the marker is written before its spaces.
+        let hardBreak = parsedAfterWritingAMarker(into: "- Item  \n  ", then: "more words")
+        XCTAssertEqual(hardBreak.document.chapters.first?.text, "Item\nmore words", hardBreak.markdown)
+    }
+
+    /// The Markdown made by writing page marker `<!-- page: 2 -->` inline at
+    /// the end of `before` and then `after`, and the reader's parse of it.
+    private func parsedAfterWritingAMarker(
+        into before: String, then after: String, keepingWordsApart: Bool = false
+    ) -> (markdown: String, document: DocumentContent) {
+        var markdown = before
+        MarkdownMarkerWriter.write("<!-- page: 2 -->", inline: true, keepingWordsApart: keepingWordsApart, into: &markdown)
+        markdown += after
+        return (markdown, MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: "Pages", bookAuthor: "Test"))
     }
 
     func testAMarkerNeverBeginsALine() {

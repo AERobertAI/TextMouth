@@ -159,7 +159,7 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
             ensureNewline()
 
         case "li":
-            let indent = String(repeating: "    ", count: max(0, listDepth - 1))
+            let indent = listItemIndentation
             if let currentType = listTypeStack.last {
                 if currentType == "ol" {
                     let count = (listCounterStack.last ?? 0) + 1
@@ -382,48 +382,42 @@ class DTBookToMarkdownConverter: DAISYSAXParser {
 
     // MARK: - Pages (PG08)
 
-    /// A list marker or quote marker with nothing after it, as the last line
-    /// of the Markdown being built: the opening of a list item or quote.
-    private static let openingPrefixPattern = "^ *(?:(?:> ?)|(?:(?:[-*+]|[0-9]+[.)]) ))+$"
-
     /// Write the page marker for the `pagenum` that just ended, labelled by
     /// the words it held (or its ordinal when it held none), and leave the
     /// page number itself unwritten.
     ///
     /// At a block boundary (nothing yet, or the Markdown ends with a line
     /// break) the marker is a block of its own, which names the same place as
-    /// the block after it. Inside running text it is written inline, with a
-    /// space first when none is there, so "before<pagenum>12</pagenum>after"
-    /// reads "before after". At the opening of a list item or quote
-    /// (`- `, `3. `, `> `) a marker written after the prefix would make an
-    /// HTML block of the item's whole first line, so it goes before the prefix.
+    /// the block after it; in a list it is indented as the list's items are,
+    /// so it stays in the item holding a nested list, and the items after it,
+    /// indented as they are, do not become code. Anywhere else the shared
+    /// writer places it (`MarkdownMarkerWriter.write`): inline in running
+    /// text, with a space first when none is there, so
+    /// "before<pagenum>12</pagenum>after" reads "before after"; at the opening
+    /// of a list item, quote, or heading (`- `, `3. `, `> `, `## `), even with
+    /// the source's whitespace after it, inside it before its words; after a
+    /// line break, at the end of the line before. A marker written after an
+    /// opening would make an HTML block of the item's whole first line.
     private func writePageMarker() {
         pagesRead += 1
         let marker = MarkdownPageMarker(label: pageLabel, ordinal: pagesRead).markdown
         pageLabel = ""
         pageLabelDepth = 0
 
-        if let prefix = openingLinePrefix {
-            // Take the prefix off, write the marker as a block, put the prefix back.
-            markdown.removeLast(prefix.count)
-            MarkdownMarkerWriter.write(marker, inline: false, into: &markdown)
-            markdown += prefix
-        } else {
-            let atBlockBoundary = markdown.unicodeScalars.last.map { $0 == "\n" } ?? true
-            MarkdownMarkerWriter.write(marker, inline: !atBlockBoundary, keepingWordsApart: true, into: &markdown)
-            dropsLeadingSpace = !atBlockBoundary
-        }
-    }
-
-    /// The last line of the Markdown, when it holds only the opening of a
-    /// list item or quote (see `openingPrefixPattern`), otherwise nil.
-    private var openingLinePrefix: String? {
-        let lineStart = markdown.lastIndex(of: "\n").map { markdown.index(after: $0) } ?? markdown.startIndex
-        let line = String(markdown[lineStart...])
-        return line.range(of: Self.openingPrefixPattern, options: .regularExpression) != nil ? line : nil
+        let atBlockBoundary = markdown.unicodeScalars.last.map { $0 == "\n" } ?? true
+        MarkdownMarkerWriter.write(
+            marker, inline: !atBlockBoundary, keepingWordsApart: true, indentation: listItemIndentation, into: &markdown
+        )
+        dropsLeadingSpace = !atBlockBoundary
     }
 
     // MARK: - Helpers
+
+    /// The spaces before a list item's marker at the current list depth:
+    /// four for each list the current one is nested in, none outside a list.
+    private var listItemIndentation: String {
+        String(repeating: "    ", count: max(0, listDepth - 1))
+    }
 
     /// Ensure the output ends with at least one blank line (two newlines)
     private func ensureBlankLine() {

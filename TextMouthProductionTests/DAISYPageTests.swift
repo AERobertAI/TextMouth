@@ -406,15 +406,68 @@ final class DAISYPageTests: XCTestCase {
         XCTAssertEqual(parsed(markdown).pages.breaks.map(\.label), ["7", "8"])
     }
 
-    /// A page number opening a list item goes before the item's marker: a
-    /// marker after it would turn the item's whole first line into raw HTML
-    /// and take its words from speech.
+    /// A page number opening a list item is a block inside the item, before
+    /// its words: a marker after the item's marker would turn the item's
+    /// whole first line into raw HTML and take its words from speech.
     func testPageNumberOpeningAListItemKeepsTheItemsWords() throws {
         let markdown = try convertDTBook("<list type=\"ol\"><li>First</li><li><pagenum>9</pagenum>Second</li></list>")
         let content = parsed(markdown)
 
         XCTAssertEqual(spokenText(of: content), "First\n\nSecond")
         XCTAssertEqual(pageLines(of: content), ["9: Second"])
+    }
+
+    /// The same with the source's whitespace after `<li>` and around the page
+    /// number, where the marker began an indented line, read aloud as code
+    /// with the item's words.
+    func testPageNumberOpeningAListItemAfterWhitespaceKeepsTheItemsWords() throws {
+        let markdown = try convertDTBook(
+            "<list type=\"ul\"><li>First item words.</li><li>\n  <pagenum>7</pagenum>\n  Second item words.</li></list>"
+        )
+        let content = parsed(markdown)
+
+        XCTAssertEqual(spokenText(of: content), "First item words.\n\nSecond item words.")
+        XCTAssertEqual(pageLines(of: content), ["7: Second item wo"])
+    }
+
+    /// A page number opening a block quote or a heading, with the source's
+    /// whitespace around it, is written inside it before its words, so the
+    /// quote keeps its words and the heading its label, and nothing is read
+    /// as code.
+    func testPageNumberOpeningAQuoteOrAHeadingKeepsTheirWords() throws {
+        let quote = parsed(try convertDTBook("<blockquote>\n  <pagenum>3</pagenum>\n  Quoted words.</blockquote>"))
+        XCTAssertEqual(spokenText(of: quote), "Quoted words.")
+        XCTAssertEqual(pageLines(of: quote), ["3: Quoted words."])
+
+        let heading = parsed(try convertDTBook("<h2>\n  <pagenum>9</pagenum>\n  Chapter Two</h2><p>Body text.</p>"))
+        XCTAssertEqual(spokenText(of: heading), "Chapter Two\n\nBody text.")
+        XCTAssertEqual(heading.allHeadings.map(\.text), ["Chapter Two"])
+        XCTAssertEqual(pageLines(of: heading), ["9: Chapter Two\n\nB"])
+    }
+
+    /// Page numbers in nested lists keep every item's words. One between two
+    /// items of a nested list is a block indented as those items are, so it
+    /// stays in the item holding the list and the next item is not read as
+    /// code; one opening a nested item is a block inside that item; one
+    /// between two items with only spaces around it is written at the end of
+    /// the item before, not on a line the next item would run into.
+    func testPageNumbersInNestedListsKeepEveryItemsWords() throws {
+        let between = parsed(try convertDTBook(
+            "<list type=\"ul\"><li>Alpha<list type=\"ul\"><li>Beta</li><pagenum>8</pagenum><li>Gamma</li></list></li>"
+                + "<li>Delta</li></list>"
+        ))
+        XCTAssertEqual(spokenText(of: between), "Alpha\n\nBeta\n\nGamma\n\nDelta")
+        XCTAssertEqual(pageLines(of: between, opening: 5), ["8: Gamma"])
+
+        let opening = parsed(try convertDTBook(
+            "<list type=\"ul\"><li>Alpha<list type=\"ol\"><li>Beta</li><li><pagenum>8</pagenum>Gamma words</li></list></li></list>"
+        ))
+        XCTAssertEqual(spokenText(of: opening), "Alpha\n\nBeta\n\nGamma words")
+        XCTAssertEqual(pageLines(of: opening, opening: 5), ["8: Gamma"])
+
+        let spaced = parsed(try convertDTBook("<list type=\"ul\"><li>First</li> <pagenum>8</pagenum> <li>Second</li></list>"))
+        XCTAssertEqual(spokenText(of: spaced), "First\n\nSecond")
+        XCTAssertEqual(pageLines(of: spaced, opening: 6), ["8: Second"])
     }
 
     /// Markup inside a page number is not written; only its words name the page.

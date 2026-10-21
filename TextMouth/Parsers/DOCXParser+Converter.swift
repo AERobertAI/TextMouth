@@ -467,12 +467,9 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// line, and after a blank line four spaces there begin a code block,
     /// which is read verbatim, the backslashes that keep its characters
     /// literal read aloud with them. Indentation is never heard, so leaving
-    /// it out loses nothing.
-    ///
-    /// The one indentation kept is the four spaces before a page marker
-    /// (PG07) that follows a line break: they keep the marker inside the
-    /// paragraph, because a line that begins with `<!--` opens an HTML block
-    /// that swallows the rest of its line, words included.
+    /// it out loses nothing. A page marker (PG07) that follows a line break
+    /// is written at the end of the line before (`MarkdownMarkerWriter`), so
+    /// no line begins with one.
     private static func removingLineIndentation(_ text: String) -> String {
         var result = String.UnicodeScalarView()
         var atLineStart = false
@@ -481,17 +478,11 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         while index < scalars.endIndex {
             let scalar = scalars[index]
             if atLineStart && (scalar == " " || scalar == "\t") {
-                // The whole indentation of this line: dropped, unless a
-                // comment (a page marker) follows it.
-                var contentStart = index
-                while contentStart < scalars.endIndex, scalars[contentStart] == " " || scalars[contentStart] == "\t" {
-                    contentStart = scalars.index(after: contentStart)
-                }
-                if scalars[contentStart...].starts(with: "<!--".unicodeScalars) {
-                    result.append(contentsOf: scalars[index..<contentStart])
+                // The whole indentation of this line is dropped.
+                while index < scalars.endIndex, scalars[index] == " " || scalars[index] == "\t" {
+                    index = scalars.index(after: index)
                 }
                 atLineStart = false
-                index = contentStart
                 continue
             }
             // CommonMark ends a line at a carriage return as well.
