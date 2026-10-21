@@ -899,8 +899,11 @@ final class ReaderRefreshTests: XCTestCase {
     /// A reader opens a book while the library moves its package, as a
     /// book can be opened from the library list in the moment a Move to
     /// Folder… of many books takes. The reader reads nothing of the book
-    /// until the move is over, and then opens it from where it is now, with
-    /// no error. So for an audiobook of tracks, a text book, and a DAISY
+    /// until the move is over, not even where the book was: its storage,
+    /// which every load asks first where the library is, hears nothing from
+    /// it while the package moves, though its loads are let read. Then it
+    /// reads the book once, from where it is now, and opens it with no
+    /// error. So for an audiobook of tracks, a text book, and a DAISY
     /// audiobook. Before, its load read the package as it moved and said the
     /// book could not be read.
     func testABookOpenedWhileItsPackageMovesOpensOnceTheMoveIsOver() throws {
@@ -909,15 +912,23 @@ final class ReaderRefreshTests: XCTestCase {
             let world = try makeIntegrationWorld("Reader Refresh Opened During Move \(kind)")
             let book = try makeBook(kind, readyFor: .moveToFolder, in: world)
             let loads = holdLoads()
+            let storage = ObservedBookStorage()
             let opened = OpenedReader()
 
             try commit(.moveToFolder, of: book, in: world) {
-                opened.reader = world.openReader(for: book, loadQueue: loads.queue)
+                opened.reader = world.openReader(
+                    for: book,
+                    loadQueue: loads.queue,
+                    cloud: ReaderCloudServices(storage: storage, states: BookCloudStates())
+                )
                 loads.letReadAndHandOver()
+                opened.readsDuringTheMove = storage.readsBegun
             }
 
+            XCTAssertEqual(opened.readsDuringTheMove, 0, "\(context): the reader read its book as its package moved")
             let reader = try XCTUnwrap(opened.reader, "\(context): no reader opened")
             try assertOpensFromWhereItIsNow(reader, kind, in: world, context)
+            XCTAssertEqual(storage.readsBegun, 1, "\(context): the book was not read once the move was over")
         }
     }
 
@@ -1498,10 +1509,12 @@ final class ReaderRefreshTests: XCTestCase {
         reader.stop()
     }
 
-    /// The reader a test opens while a package moves, kept for the test.
+    /// The reader a test opens while a package moves, kept for the test,
+    /// with how many reads of its book had begun when the package had moved.
     @MainActor
     private final class OpenedReader {
         var reader: ReaderViewModel?
+        var readsDuringTheMove: Int?
     }
 
     /// A three-chapter EPUB about tides, each chapter listed in its table

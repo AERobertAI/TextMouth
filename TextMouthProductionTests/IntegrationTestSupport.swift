@@ -111,11 +111,14 @@ final class IntegrationWorld {
     ///   - loadQueue: The queue the reader's loads read its book's files
     ///     on, which a test can hold; nil uses a global queue, as the app
     ///     does.
+    ///   - cloud: The cloud services the reader gets its book ready with,
+    ///     whose storage a test can observe; nil uses the app's.
     func openReader(
         for book: Book,
         renderScheduler: (any SpeechRenderScheduling)? = nil,
         nowPlaying: NowPlayingService? = nil,
-        loadQueue: DispatchQueue? = nil
+        loadQueue: DispatchQueue? = nil,
+        cloud: ReaderCloudServices? = nil
     ) -> ReaderViewModel {
         let reader = ReaderViewModel(
             book: book,
@@ -125,6 +128,7 @@ final class IntegrationWorld {
             autoplayRequests: autoplayRequests,
             notificationCenter: notifications,
             renderScheduler: renderScheduler,
+            cloud: cloud,
             nowPlaying: nowPlaying,
             loadQueue: loadQueue
         )
@@ -569,7 +573,10 @@ private final class PackageMoveCount {
 /// storage finds such a package (`BookCloudStorageService.state(of:in:)`)
 /// whatever state `storage` would give: so a reader whose load checks its
 /// book where the package has just moved away from finds it as it would
-/// in the app (TODO P10). Safe to call from any thread, as readers' loads
+/// in the app (TODO P10). It also counts the reads of their books its
+/// readers begin, as each load asks first where the library is
+/// (`ReaderViewModel.loadContent()`), so a test can tell that nothing was
+/// read at a given moment. Safe to call from any thread, as readers' loads
 /// call in from their own queues.
 final class ObservedBookStorage: BookCloudStorage, @unchecked Sendable {
     /// Where every answer comes from but the one above.
@@ -578,6 +585,8 @@ final class ObservedBookStorage: BookCloudStorage, @unchecked Sendable {
     private let lock = NSLock()
     /// Whether a package missing from disk is waiting for sync.
     private var missingPackagesWaitForSync = false
+    /// How many times a reader asked where the library is.
+    private var locationsAsked = 0
 
     /// Storage answering as `storage` does: a local library's unless a test
     /// gives its own.
@@ -590,9 +599,16 @@ final class ObservedBookStorage: BookCloudStorage, @unchecked Sendable {
         lock.withLock { missingPackagesWaitForSync = true }
     }
 
-    /// Where `storage` says the library is.
+    /// How many reads of their books the readers asking this storage have
+    /// begun so far.
+    var readsBegun: Int {
+        lock.withLock { locationsAsked }
+    }
+
+    /// Where `storage` says the library is, counted as a read begun.
     func libraryLocation() -> StorageLocation {
-        storage.libraryLocation()
+        lock.withLock { locationsAsked += 1 }
+        return storage.libraryLocation()
     }
 
     /// Waiting for sync for a package missing from disk, once a test asked;

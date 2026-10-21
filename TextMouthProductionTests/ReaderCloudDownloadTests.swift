@@ -1411,7 +1411,50 @@ final class ReaderCloudDownloadTests: XCTestCase {
         assertOpensWithNothingSaid(reader, book, in: cloud, since: mark, "checked after the move")
     }
 
+    /// A book is found downloaded just before the library moves its
+    /// package, and what was found reaches the reader once the package has
+    /// moved, so the reader goes on to read it while the move is under way.
+    /// It reads nothing of the book until the move is over, not even where
+    /// the book was: no file is checked, as every read of a book in a cloud
+    /// library checks first that its files are on this Mac, though the
+    /// reader's loads are let read. Then it checks the book again where it
+    /// is now and opens it, saying nothing.
+    func testABookFoundDownloadedAsItsPackageMovesIsReadOnceTheMoveIsOver() throws {
+        let cloud = try makeCloudReaders("Cloud Read After Move")
+        let book = try makeTextBook("Quay Notes", in: cloud)
+        let loads = holdLoads()
+        let reader = cloud.open(book, loadQueue: loads.queue)
+        let mark = announcementMark()
+        // The check finds the book downloaded before the move begins; what
+        // it found waits on the main queue until the package has moved.
+        loads.letReadBeforeHandingOver()
+        let cloudOnly = cloud.cloudOnly
+        let checksBefore = cloudOnly.checksMade
+        let duringMove = ChecksDuringMove()
+
+        try cloud.world.library.commitLibraryTransition(
+            Self.library(cloud.world.library.library, moving: book.id, to: "\(cloud.world.folder.path)/Shelf"),
+            affectedBookIDs: [book.id],
+            disk: .movingPackages {
+                // The first turn hands the reader what its check found; the
+                // second lets any read that began then run and hand over.
+                loads.letReadAndHandOver()
+                loads.letReadAndHandOver()
+                duringMove.checks = cloudOnly.checksMade - checksBefore
+            }
+        )
+
+        XCTAssertEqual(duringMove.checks, 0, "The reader read the book as its package moved")
+        assertOpensWithNothingSaid(reader, book, in: cloud, since: mark, "found downloaded as the package moved")
+    }
+
     // MARK: - Fixtures
+
+    /// How many of a book's files were checked while its package moved.
+    @MainActor
+    private final class ChecksDuringMove {
+        var checks: Int?
+    }
 
     /// Waits for `reader` to open `book` or stop, and checks that it opened
     /// from where the book is now, with no error, no cloud phase, and no
@@ -1830,6 +1873,15 @@ private final class CloudOnlyFiles: @unchecked Sendable {
     private var forChecks: [String: Int] = [:]
     /// Whether every file is only in the cloud.
     private var everything = false
+    /// How many checks were made.
+    private var checks = 0
+
+    /// How many checks were made so far: each read of a book in a cloud
+    /// library begins with one (`LocalBookFiles.requireOnThisMac`), as
+    /// does each check of a chapter's files.
+    var checksMade: Int {
+        lock.withLock { checks }
+    }
 
     /// Says the file at `path` is only in the cloud: for its next `times`
     /// checks, or for every check when `times` is nil.
@@ -1867,6 +1919,7 @@ private final class CloudOnlyFiles: @unchecked Sendable {
     private func isDataless(_ url: URL) -> Bool {
         let key = Self.key(url)
         return lock.withLock {
+            checks += 1
             if everything || always.contains(key) {
                 return true
             }
