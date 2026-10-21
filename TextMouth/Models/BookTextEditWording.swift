@@ -22,6 +22,7 @@ enum BookTextEditWording {
     /// What the explanation says will happen.
     static let explanation = "TextMouth opens the book's text in your text editor, as a Markdown file. "
         + "Each line beginning with <!-- chapter: starts a chapter; keep those lines. "
+        + "Each <!-- page: … --> marks where a page begins. "
         + "When you save, TextMouth reads your changes and updates the book, keeping your place as near as it can. "
         + "This explanation appears only once."
 
@@ -131,6 +132,14 @@ enum BookTextEditWording {
     static func replaced(bookTitle: String, keptCopy: URL) -> String {
         "The text of \(bookTitle) was read again from its own file. "
             + "The text content.md held before was kept as \(keptCopy.lastPathComponent), in the book's package."
+    }
+
+    /// What a rebuild says when it left a book's text alone because the
+    /// user changed it with Edit Text and the rebuild was automatic (B12):
+    /// "TextMouth kept the text you changed in Harbour Pilots. Choose Redo
+    /// Text Extraction to read the book's file again."
+    static func keptOnReRead(bookTitle: String) -> String {
+        "TextMouth kept the text you changed in \(bookTitle). Choose Redo Text Extraction to read the book's file again."
     }
 
     /// Why an edit could not be committed while the book's record could

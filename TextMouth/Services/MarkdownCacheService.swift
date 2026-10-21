@@ -121,6 +121,12 @@ enum MarkdownCacheService {
     /// what the user saved in content.md is kept beside it before anything
     /// replaces it, and an edit not taken is never replaced at all
     /// (`BookTextEditSessions.permitTextRebuild(of:writing:)`).
+    /// A finished edit is protected too (B12): when the book records an edit
+    /// taken (`Book.editedText`) and content.md still holds exactly that
+    /// text, no generation replaces it unless `replacingEditedText` is set,
+    /// which only Redo Text Extraction does. Otherwise it throws
+    /// `EditedTextKept` before reading the source, and logs one
+    /// `TEXT_EDIT_KEPT` line.
     /// Each one also copies the old content.md aside with the book's places
     /// and moves them to the new text (T06's branch D, `PlaceSnapshot`),
     /// returned in `movedPlaces` for the caller to commit with the book's
@@ -140,19 +146,33 @@ enum MarkdownCacheService {
     /// (a file name at that point). A regeneration never sets it: the
     /// book's title and author may have been edited by hand.
     static func generateReportedCacheContent(
-        for book: Book, adoptingDocumentNames: Bool = false
+        for book: Book, adoptingDocumentNames: Bool = false, replacingEditedText: Bool = false
     ) throws -> GeneratedCache? {
         guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return nil }
         let boundary = StorageBoundary.shared
         return try boundary.perform(.textExtraction) { _ in
-            try writeCache(for: boundary.rebasedToCurrent(book), adoptingDocumentNames: adoptingDocumentNames)
+            try writeCache(
+                for: boundary.rebasedToCurrent(book),
+                adoptingDocumentNames: adoptingDocumentNames,
+                replacingEditedText: replacingEditedText
+            )
         }
     }
 
     /// The work of `generateReportedCacheContent(for:)` for a book with a
     /// package, whose paths are in the current data directory: extracts the
     /// source, writes content.md, and indexes and fingerprints the result.
-    private static func writeCache(for book: Book, adoptingDocumentNames: Bool) throws -> GeneratedCache {
+    /// - Throws: `EditedTextKept` when `replacingEditedText` is false and
+    ///   content.md holds the text of an edit the user made (B12); nothing
+    ///   is read or written then.
+    private static func writeCache(
+        for book: Book, adoptingDocumentNames: Bool, replacingEditedText: Bool
+    ) throws -> GeneratedCache {
+        // An automatic re-read never replaces the user's finished edit.
+        if !replacingEditedText, BookTextEditSessions.holdsTakenEdit(book, access: BookTextEditSessions.shared.access) {
+            BookTextEditSessions.logEditedTextKept(of: book)
+            throw EditedTextKept(bookTitle: book.title)
+        }
         let cachePath = cacheURL(for: book)
         extractionObserver?(book)
         let fileURL = URL(fileURLWithPath: book.filePath)
@@ -307,13 +327,18 @@ enum MarkdownCacheService {
     /// With `adoptingDocumentNames`, `book` also takes the title and author
     /// the document names (`generateReportedCacheContent(for:adoptingDocumentNames:)`),
     /// keeping its own for any the document leaves out.
+    /// With `replacingEditedText`, as Redo Text Extraction sets it, the book's
+    /// file is read over the text of an edit the user made (B12), and `book`
+    /// loses its record of that edit, since content.md is no longer it.
     /// - Returns: nil for a book with no text cache.
     /// - Throws: why no cache could be written; `book` is then unchanged.
+    ///   `EditedTextKept` when content.md holds the user's edit and
+    ///   `replacingEditedText` is false.
     static func generateReportedCacheAnalyzeAndStamp(
-        for book: inout Book, adoptingDocumentNames: Bool = false
+        for book: inout Book, adoptingDocumentNames: Bool = false, replacingEditedText: Bool = false
     ) throws -> GeneratedCache? {
         guard let generated = try generateReportedCacheContent(
-            for: book, adoptingDocumentNames: adoptingDocumentNames
+            for: book, adoptingDocumentNames: adoptingDocumentNames, replacingEditedText: replacingEditedText
         ) else { return nil }
         book.cacheFormatVersion = currentCacheVersion
         book.applyContentIndexSummary(generated.content.contentIndex)

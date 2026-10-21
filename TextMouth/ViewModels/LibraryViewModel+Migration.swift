@@ -908,6 +908,10 @@ extension LibraryViewModel {
         } catch is BookTextEditPending {
             held.record(book.id)
             return nil
+        } catch is EditedTextKept {
+            // The user's edit stands (B12); its TEXT_EDIT_KEPT line was
+            // logged where it was met, and this is no failure.
+            return nil
         } catch {
             MarkdownCacheService.logGenerationFailure(error, for: book)
             return nil
@@ -941,6 +945,9 @@ extension LibraryViewModel {
                 // The package records this index with the current version.
                 var recovered = book
                 recovered.applyContentAnalysis(saved.index, cacheFormatVersion: currentVersion)
+                // The record owns the note of an edit taken (B12), as it
+                // owns the rest of the analysis the row takes from it.
+                recovered.editedText = saved.record.state.editedText
                 // The record also holds the places that run moved, which
                 // the row may have missed if TextMouth stopped before its
                 // summary reached library.json; the row takes them where
@@ -959,9 +966,21 @@ extension LibraryViewModel {
             if let taken = try editSavedWhileClosed(of: book, access: access) {
                 return taken
             }
+            // content.md holds an edit the user made and TextMouth took
+            // (B12): the book's file is not read over it. The text is
+            // indexed as it is and committed with the current format once,
+            // so the batch does not visit the book again at the next launch.
+            if BookTextEditSessions.holdsTakenEdit(book, access: access) {
+                return BookTextEditSessions.shared.settleKeptEdit(of: book, access: access)
+                    .map { ContentAnalysisSummary(committed: $0) }
+            }
         }
         var updatedBook = book
-        guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &updatedBook) else {
+        // Redo Text Extraction reads the book's file over an edit too (B12);
+        // no automatic pass does.
+        guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(
+            for: &updatedBook, replacingEditedText: force
+        ) else {
             return nil
         }
         // A file that went to the cloud while the cache was written may have

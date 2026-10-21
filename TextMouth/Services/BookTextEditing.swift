@@ -134,6 +134,20 @@ struct BookTextEditPending: LocalizedError, Sendable {
     }
 }
 
+/// Why an automatic re-read of a book's file left its text alone: content.md
+/// holds text the user changed with Edit Text and TextMouth took (B12,
+/// `Book.editedText`). Only Redo Text Extraction reads the book's file over
+/// such text. A reader that meets it falls back to content.md as it is, and
+/// a batch counts the book as done.
+struct EditedTextKept: LocalizedError, Sendable {
+    /// The book's title.
+    let bookTitle: String
+
+    var errorDescription: String? {
+        BookTextEditWording.keptOnReRead(bookTitle: bookTitle)
+    }
+}
+
 /// The books a text-cache batch left as they were because a rebuild was
 /// refused over an edit not taken (`BookTextEditPending`), counted from
 /// the batch's workers, each book once. Redo Text Extraction says how many.
@@ -590,6 +604,70 @@ final class BookTextEditSessions: Sendable {
         }
     }
 
+    /// The content index of `parsed`, content.md as an edit left it, for
+    /// `book`: indexed for the book's format and fingerprinted with `cache`,
+    /// what content.md holds, and `source`, what the book's own file held
+    /// (nil when it could not be fingerprinted). One place builds the index
+    /// of text taken as the book's own, whether an edit just saved
+    /// (`check(_:against:access:readingTexts:keepingTextAside:placesFrom:)`)
+    /// or one kept through a version bump (`settleKeptEdit(of:access:)`).
+    private static func takenIndex(
+        of parsed: DocumentContent,
+        for book: Book,
+        source: FileFingerprint?,
+        cache: FileFingerprint
+    ) -> BookContentIndex {
+        var index = parsed.contentIndex.replacingFormat(book.format)
+        index.textCacheFingerprint = source.map { TextCacheFingerprint(source: $0, cache: cache) }
+        return index
+    }
+
+    /// Settles, once, a book whose content.md holds the text of an edit
+    /// taken (`holdsTakenEdit(_:access:)`, B12), when its record is
+    /// outdated: a cache-format bump, or a changed or re-dated source or
+    /// content.md. The text is not read from the book's own file again
+    /// (only Redo Text Extraction does that). It is parsed and indexed as
+    /// the edit was, fingerprinted with the files as they are now, and
+    /// committed with the current cache format, keeping the record of the
+    /// edit, so the launch's batch does not visit the book again. One
+    /// `TEXT_EDIT_KEPT` line is logged. Nothing is written to content.md.
+    ///
+    /// Checked as storage work, with `access` reaching the files (FR02).
+    /// - Returns: The book as its record now holds it; nil when nothing was
+    ///   committed: content.md could not be read or parsed, or the record
+    ///   could not take the analysis now (it is only in the cloud, or the
+    ///   book moved). The book then keeps what it had, and a later launch
+    ///   tries again.
+    func settleKeptEdit(of book: Book, access: MaintenanceFileAccess) -> Book? {
+        boundary.perform(.contentAnalysis) { _ in
+            let current = boundary.rebasedToCurrent(book)
+            let cacheURL = MarkdownCacheService.cacheURL(for: current)
+            // content.md is stamped before it is read, so a save while it is
+            // read differs from this stamp next time.
+            guard let cacheStamp = FileStamp(of: cacheURL),
+                  let bytes = try? access.read(cacheURL, { try Data(contentsOf: cacheURL) }),
+                  let text = try? MarkdownCacheService.cacheText(from: bytes, at: cacheURL)
+            else { return nil }
+            Self.logEditedTextKept(of: current)
+            let parsed = MarkdownCacheService.parseMultiChapterMarkdown(
+                text, bookTitle: current.title, bookAuthor: current.author
+            )
+            let sourceURL = Self.sourceURL(of: current)
+            let source = access.isInCloud(sourceURL) ? nil : FileFingerprint(of: sourceURL, hasher: access.hasher)
+            let cache = FileFingerprint(stamp: cacheStamp, digest: access.hasher.digestOfData(bytes))
+            let index = Self.takenIndex(of: parsed, for: current, source: source, cache: cache)
+            // The row's record of the edit travels with the analysis, in case
+            // the package's record lacks it; content.md is unchanged, so the
+            // reading text kept for it stays good.
+            return try? LibraryPersistenceService.saveContentAnalysis(
+                for: current,
+                index: index,
+                cacheFormatVersion: MarkdownCacheService.currentCacheVersion,
+                editedText: current.editedText
+            )
+        }
+    }
+
     /// The fingerprints of `book`'s text cache as its record (bookInfo.json)
     /// keeps them, read with dataless files left in the cloud: what
     /// content.md and the book's own file held when TextMouth last wrote or
@@ -606,6 +684,50 @@ final class BookTextEditSessions: Sendable {
         return record.info.state.textCacheFingerprint
     }
 
+    // MARK: The Record of an Edit Taken (B12)
+
+    /// The digest of the content.md bytes the last edit taken left, as the
+    /// book's row records it, or else as its package record does (a row can
+    /// lag behind a record, or be made without one); nil when neither
+    /// records an edit. Read with dataless files left in the cloud.
+    static func recordedEditDigest(of book: Book, access: MaintenanceFileAccess) -> String? {
+        if let digest = book.editedText?.cacheDigest { return digest }
+        guard !book.tmbDirectoryName.isEmpty else { return nil }
+        let package = book.tmbDirectory
+        let record = try? access.read(TextMouthPaths.bookInfoPath(in: package)) {
+            try StoredBookRecord.read(from: package)
+        }
+        return record?.info.state.editedText?.cacheDigest
+    }
+
+    /// Whether `book`'s content.md holds exactly the text of an edit taken
+    /// (B12): the book records an edit (`recordedEditDigest(of:access:)`),
+    /// and content.md has that edit's digest now. This is the one question
+    /// every automatic re-read asks before it replaces the text
+    /// (`MarkdownCacheService.writeCache`, the launch batch's
+    /// `committedTextCache`). A content.md only in the cloud, missing, or
+    /// unreadable counts as not matching, and nothing is downloaded; a book
+    /// recording no edit reads nothing of content.md.
+    static func holdsTakenEdit(_ book: Book, access: MaintenanceFileAccess) -> Bool {
+        guard !book.format.isAudio, let recorded = recordedEditDigest(of: book, access: access) else { return false }
+        let cacheURL = MarkdownCacheService.cacheURL(for: book)
+        guard FileStamp(of: cacheURL) != nil, !access.isInCloud(cacheURL),
+              let bytes = try? access.read(cacheURL, { try Data(contentsOf: cacheURL) })
+        else { return false }
+        return access.hasher.digestOfData(bytes) == recorded
+    }
+
+    /// Records, in the debug log, that an automatic re-read of `book`
+    /// kept the text the user changed with Edit Text (B12): one
+    /// `TEXT_EDIT_KEPT` line naming the title only, never text.
+    static func logEditedTextKept(of book: Book) {
+        logLine(
+            "TEXT_EDIT_KEPT",
+            about: book,
+            "an automatic re-read kept the text changed with Edit Text; Redo Text Extraction reads the book's file again"
+        )
+    }
+
     /// Keeps the text `book`'s content.md holds beside it before a rebuild
     /// replaces it with `newBytes`, when no session watches the book and
     /// content.md holds other bytes than its record says TextMouth last
@@ -617,11 +739,15 @@ final class BookTextEditSessions: Sendable {
     /// too, logged as `TEXT_EDIT_KEPT`, and the rebuild goes on, as it
     /// always did for a book not being edited.
     ///
+    /// An edit already taken (`Book.editedText`) is kept too, though its
+    /// record describes it: only Redo Text Extraction reads over one
+    /// (B12), and it must not lose the user's text without a copy.
+    ///
     /// Nothing is kept for a content.md that is gone, only in the cloud,
-    /// holding the bytes about to be written or those its record describes,
-    /// or whose record keeps no fingerprints. content.md is read and
-    /// digested even when stamped as its record says, since an edit can keep
-    /// both its size and its date.
+    /// holding the bytes about to be written or (an edit taken apart) those
+    /// its record describes, or whose record keeps no fingerprints.
+    /// content.md is read and digested even when stamped as its record says,
+    /// since an edit can keep both its size and its date.
     /// - Throws: `BookTextEditPending` when no copy could be kept, so the
     ///   text is left as it is rather than lost.
     private func keepTextSavedWithoutSession(of book: Book, replacedBy newBytes: Data) throws {
@@ -629,15 +755,20 @@ final class BookTextEditSessions: Sendable {
         guard FileStamp(of: cacheURL) != nil, !access.isInCloud(cacheURL),
               let recorded = Self.recordedTextCacheFingerprint(of: book, access: access),
               let bytes = try? access.read(cacheURL, { try Data(contentsOf: cacheURL) }),
-              bytes != newBytes,
-              access.hasher.digestOfData(bytes) != recorded.cache.digest else { return }
+              bytes != newBytes else { return }
+        let digest = access.hasher.digestOfData(bytes)
+        guard digest != recorded.cache.digest || digest == Self.recordedEditDigest(of: book, access: access) else { return }
         guard let kept = Self.keepCopy(of: cacheURL, bytes: bytes) else {
             throw holding(book, .failed(BookTextEditWording.noCopyKept), keptCopy: nil)
         }
+        // An edit already taken is what Redo Text Extraction replaces here;
+        // anything else is text saved while no session watched.
+        let what = digest == recorded.cache.digest
+            ? "the text taken from Edit Text" : "text saved while no edit was open"
         Self.logLine(
             "TEXT_EDIT_KEPT",
             about: book,
-            "content.md held text saved while no edit was open; kept as \(kept.lastPathComponent) "
+            "content.md held \(what); kept as \(kept.lastPathComponent) "
                 + "before its text was read again from the book's own file"
         )
     }
@@ -809,8 +940,7 @@ final class BookTextEditSessions: Sendable {
             return takeTranscriptEdit(of: book, parsed: parsed, markdown: text, cache: cache, readingTexts: readingTexts, access: access, refuse: refuse)
         }
 
-        var index = parsed.contentIndex.replacingFormat(book.format)
-        index.textCacheFingerprint = source.map { TextCacheFingerprint(source: $0, cache: cache) }
+        let index = takenIndex(of: parsed, for: book, source: source, cache: cache)
         let content = DocumentContent(title: parsed.title, author: parsed.author, chapters: parsed.chapters, contentIndex: index)
         // The places follow their words into the edited text; they are
         // committed with the analysis, or not at all.
@@ -821,7 +951,10 @@ final class BookTextEditSessions: Sendable {
                 for: book,
                 index: index,
                 cacheFormatVersion: MarkdownCacheService.currentCacheVersion,
-                movedPlaces: moved
+                movedPlaces: moved,
+                // The record that content.md holds this edit, so no
+                // automatic re-read replaces it (B12).
+                editedText: EditedText(cacheDigest: digest, takenAt: Date())
             )
         } catch {
             return refuse(.failed(error.localizedDescription), tag: "TEXT_EDIT_FAILED", error.localizedDescription)
