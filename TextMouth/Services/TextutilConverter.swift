@@ -80,14 +80,51 @@ enum TextutilConverter {
         }
     }
 
+    // MARK: What textutil Writes
+
+    /// What a run of textutil writes (PG11): the HTML a document is read
+    /// from, or the plain text that keeps each page break as a form feed
+    /// (U+000C) at exactly its place, which the HTML does not.
+    enum Output: Equatable, Sendable {
+        /// `-convert html`, in a hidden file ending `temporarySuffix`.
+        case html
+        /// `-convert txt`, in a hidden file ending `plainTextTemporarySuffix`.
+        case plainText
+
+        /// The name textutil's `-convert` option takes.
+        var conversionName: String {
+            switch self {
+            case .html: return "html"
+            case .plainText: return "txt"
+            }
+        }
+
+        /// The end of the hidden file's name.
+        var temporarySuffix: String {
+            switch self {
+            case .html: return TextutilConverter.temporarySuffix
+            case .plainText: return TextutilConverter.plainTextTemporarySuffix
+            }
+        }
+
+        /// What the hidden file named `outputName` holds: plain text when it
+        /// ends in `plainTextTemporarySuffix`, HTML otherwise. A `Tool`'s
+        /// command is handed the output's URL alone, so the URL's name
+        /// carries the kind (a stand-in tool reads it the same way).
+        init(outputName: String) {
+            self = outputName.hasSuffix(TextutilConverter.plainTextTemporarySuffix) ? .plainText : .html
+        }
+    }
+
     // MARK: The Tool
 
     /// What runs a conversion, and what watches it: textutil under the
     /// watchdog's rules in the app, replaced in tests by a stand-in child
     /// (a `sleep`, or a script) and tight limits.
     struct Tool: Sendable {
-        /// The executable and arguments that write the HTML of `input`,
-        /// read as `format`, to `output`.
+        /// The executable and arguments that write `input`, read as
+        /// `format`, to `output`: HTML, or plain text when `output`'s name
+        /// ends in `plainTextTemporarySuffix` (`Output(outputName:)`).
         var command: @Sendable (_ input: URL, _ format: TextutilInputFormat, _ output: URL)
             -> (executable: URL, arguments: [String])
         /// What the watchdog allows a conversion of a document of the given
@@ -114,22 +151,36 @@ enum TextutilConverter {
     /// `DocumentByteLimit.current` is: a detached task does not inherit it.
     @TaskLocal static var tool: Tool = .textutil
 
-    /// The suffix of the hidden file textutil writes: ".<UUID>.textutil.html".
-    /// Named once, so a leftover can be found by it.
+    /// The suffix of the hidden file textutil writes its HTML to:
+    /// ".<UUID>.textutil.html". Named once, so a leftover can be found by it.
     static let temporarySuffix = ".textutil.html"
 
-    /// textutil's arguments for reading `input` as `format` and writing HTML
-    /// to `output`.
+    /// The suffix of the hidden file textutil writes its plain text to
+    /// (PG11): ".<UUID>.textutil.txt".
+    static let plainTextTemporarySuffix = ".textutil.txt"
+
+    /// Every suffix a hidden textutil output ends in, for finding leftovers.
+    static let temporarySuffixes = [temporarySuffix, plainTextTemporarySuffix]
+
+    /// textutil's arguments for reading `input` as `format` and writing
+    /// `output`, which is HTML unless its name says plain text
+    /// (`Output(outputName:)`).
     static func arguments(input: URL, format: TextutilInputFormat, output: URL) -> [String] {
+        arguments(input: input, format: format, output: output, kind: Output(outputName: output.lastPathComponent))
+    }
+
+    /// textutil's arguments for reading `input` as `format` and writing
+    /// `output` as `kind`.
+    static func arguments(input: URL, format: TextutilInputFormat, output: URL, kind: Output) -> [String] {
         [
-            "-convert", "html",
+            "-convert", kind.conversionName,
             // Load no subsidiary resources and nothing from the network.
             "-noload",
             // Write no attachments beside the output (an RTFD's pictures).
             "-nostore",
             // Never guess the format: a wrong guess reads garbage as text.
             "-format", format.rawValue,
-            // The HTML is UTF-8, which `html(of:as:workingIn:using:)` decodes.
+            // The output is UTF-8, which `run(of:as:kind:workingIn:using:)` decodes.
             "-encoding", "UTF-8",
             "-output", output.path,
             // The end of the options, so a file name that starts with "-" is
@@ -200,6 +251,32 @@ enum TextutilConverter {
         workingIn folder: URL,
         using tool: Tool = TextutilConverter.tool
     ) throws -> String {
+        try run(of: source, as: format, kind: .html, workingIn: folder, using: tool)
+    }
+
+    /// The plain text textutil writes from the document at `source`, read
+    /// as `format` (PG11): every page break kept as a form feed (U+000C),
+    /// which the HTML loses. The same run as `html(of:as:workingIn:using:)`
+    /// in every other way: the same options, watchdog, limits, cancellation,
+    /// working folder, and throws.
+    static func plainText(
+        of source: URL,
+        as format: TextutilInputFormat,
+        workingIn folder: URL,
+        using tool: Tool = TextutilConverter.tool
+    ) throws -> String {
+        try run(of: source, as: format, kind: .plainText, workingIn: folder, using: tool)
+    }
+
+    /// One watched run of textutil writing `kind`, shared by `html` and
+    /// `plainText`.
+    private static func run(
+        of source: URL,
+        as format: TextutilInputFormat,
+        kind: Output,
+        workingIn folder: URL,
+        using tool: Tool
+    ) throws -> String {
         // Size the source before anything runs. The limit is read here, on
         // the caller's thread: the detached task below does not inherit a
         // task-local, and the output is held to the same limit.
@@ -209,7 +286,7 @@ enum TextutilConverter {
         try DocumentByteLimit.check(byteCount: size)
 
         let name = source.lastPathComponent
-        let output = folder.appendingPathComponent(".\(UUID().uuidString)\(temporarySuffix)")
+        let output = folder.appendingPathComponent(".\(UUID().uuidString)\(kind.temporarySuffix)")
         defer { try? FileManager.default.removeItem(at: output) }
 
         let command = tool.command(source, format, output)
