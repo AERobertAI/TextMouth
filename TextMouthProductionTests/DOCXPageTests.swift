@@ -452,8 +452,10 @@ final class DOCXPageTests: XCTestCase {
         XCTAssertEqual(reading.openings(words: 1), ["One", "Two", "Four", "Seven"])
     }
 
-    /// A page that begins at a heading is a block before it, and a page that
-    /// begins inside a heading is too: the heading line holds only its words.
+    /// A page that begins inside a heading is a block before the heading: a
+    /// heading line holds only its words. The break stays the line break it
+    /// always was, which ends the heading line, so the reading text, and with
+    /// it every saved place, is exactly what it was without pages.
     func testAHeadingLineHoldsOnlyItsWords() throws {
         let body = [
             Self.plain("Intro"),
@@ -463,9 +465,10 @@ final class DOCXPageTests: XCTestCase {
         let reading = try read(body: body)
 
         XCTAssertEqual(reading.labels, ["1", "2"])
-        XCTAssertEqual(reading.chapter.headings.map(\.text), ["A heading that crosses a page"])
+        XCTAssertEqual(reading.chapter.headings.map(\.text), ["A heading that"])
         XCTAssertEqual(reading.openings(), ["Intro A heading", "A heading that"])
-        XCTAssertTrue(reading.markdown.contains("# A heading that crosses a page"), reading.markdown)
+        XCTAssertTrue(reading.markdown.contains("# A heading that\ncrosses a page"), reading.markdown)
+        XCTAssertFalse(reading.markdown.contains("# A heading that <!--"), reading.markdown)
         try assertSameReading(reading, body: body)
     }
 
@@ -584,12 +587,11 @@ final class DOCXPageTests: XCTestCase {
         let tableEnd = try XCTUnwrap(reading.markdown.range(of: "cell B\\. |", options: .backwards)).upperBound
         let tablePage = try XCTUnwrap(reading.markdown.range(of: "<!-- page: 2 -->\n", range: tableEnd..<reading.markdown.endIndex))
         let headingPage = try XCTUnwrap(reading.markdown.range(of: "<!-- page: 3 -->\n", range: tableEnd..<reading.markdown.endIndex))
-        let heading = try XCTUnwrap(reading.markdown.range(of: "# A heading that crosses a page"))
+        let heading = try XCTUnwrap(reading.markdown.range(of: "# A heading that\ncrosses a page"))
         XCTAssertLessThan(tablePage.upperBound, headingPage.lowerBound)
         XCTAssertLessThan(headingPage.upperBound, heading.lowerBound)
-        XCTAssertEqual(
-            reading.chapter.headings.map(\.text), ["Pages in a Word Document", "A heading that crosses a page"]
-        )
+        // The page break ends the heading line, as it did before pages.
+        XCTAssertEqual(reading.chapter.headings.map(\.text), ["Pages in a Word Document", "A heading that"])
     }
 
     /// Every DOCX in the repository reads the same with pages as without

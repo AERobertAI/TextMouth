@@ -600,7 +600,7 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             pageTracker?.startPage(joinsWords: piece.joinsWords)
             if piece.joinsWords {
                 dropsLeadingWhitespace = true
-                keepWordsApartInHyperlink()
+                separateWordsAroundPageBreak()
             }
         }
         appendRunText(runText, isPartOfCutRun: !pieces.isEmpty)
@@ -926,11 +926,25 @@ extension DOCXToMarkdownConverter {
         runText = ""
     }
 
-    /// Keep the words around a page `w:br` inside a hyperlink's label apart
-    /// with a space, since no marker is written inside a label.
-    fileprivate func keepWordsApartInHyperlink() {
-        guard isInHyperlink, let last = hyperlinkText.last, !last.isWhitespace else { return }
-        hyperlinkText += " "
+    /// Separate the words around a page `w:br` just read, where no marker will
+    /// stand between them:
+    /// - in a heading, the break stays the line break it always was, which ends
+    ///   the heading line, so the reading text is unchanged (the marker for a
+    ///   page that begins in a heading is a block before the heading, and a
+    ///   heading line never holds a marker);
+    /// - inside a hyperlink's label, a space, since no marker is written there.
+    ///
+    /// Anywhere else the marker keeps the words apart (`placePendingPage`).
+    fileprivate func separateWordsAroundPageBreak() {
+        if paragraphHeadingLevel != nil {
+            if isInHyperlink {
+                hyperlinkText += "\n"
+            } else {
+                currentParagraphText += "\n"
+            }
+        } else if isInHyperlink, let last = hyperlinkText.last, !last.isWhitespace {
+            hyperlinkText += " "
+        }
     }
 
     /// The paragraph's properties are complete: it begins a page when its own
