@@ -327,6 +327,38 @@ final class PagesUpgradeTests: XCTestCase {
         }
     }
 
+    /// A book whose file is missing, or no longer extracts, gives nothing to
+    /// compare its text with, nor pages to read (PG16). It keeps content.md
+    /// byte for byte, is stamped with a failure note, not recorded as
+    /// edited, and logged once; the next launch chooses neither book, where
+    /// before each failed at every launch.
+    func testABookWhoseFileIsMissingOrUnreadableIsStampedAndLoggedOnce() async throws {
+        let world = try makeIntegrationWorld("Pages Upgrade Unreadable")
+        let missing = try makeBookBeforePages(sample: Self.epubSample, in: world)
+        try FileManager.default.removeItem(at: missing.book.bookFileURL)
+        let damaged = try makeBookBeforePages(
+            sample: "pdf/labelled-pages.pdf", places: Self.pdfPlaces, damagingSource: true, in: world
+        )
+        world.library.library.books = [missing.book, damaged.book]
+
+        await runBatch(in: world)
+        // The next launch: nothing more is chosen, nor logged.
+        await runBatch(in: world)
+
+        for fixture in [missing, damaged] {
+            let row = try XCTUnwrap(world.library.bookByID(fixture.book.id))
+            XCTAssertEqual(try Data(contentsOf: MarkdownCacheService.cacheURL(for: row)), fixture.bytes)
+            XCTAssertEqual(row.pageReaderVersion, "1.0.0+failed")
+            XCTAssertEqual(try BookInfo.load(from: row.tmbDirectory).state.pageReaderVersion, "1.0.0+failed")
+            XCTAssertNil(row.editedText, "a book that could not be compared was recorded as edited")
+            XCTAssertEqual(debugLogLines(containing: "PAGES_SKIPPED_UNREADABLE: \(row.title):").count, 1)
+            XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([row], access: .live), [])
+        }
+        XCTAssertEqual(
+            debugLogLines(containing: "PAGES_SKIPPED_UNREADABLE: \(missing.book.title): its file is missing").count, 1
+        )
+    }
+
     /// textutil's run for a document's pages can fail or time out (PG16,
     /// finding 7). The document is then read without pages, and its page
     /// reader is not recorded as done: the next launch reads it once more.
@@ -517,13 +549,17 @@ final class PagesUpgradeTests: XCTestCase {
     /// (with `changingText` applied, for a text changed by hand), committed
     /// to a record that names no page reader (and, with `recordingEdit`,
     /// names the content.md as an edit Edit Text took), with a position, a
-    /// bookmark, and a skipped heading saved at `places` in that text. The
-    /// book's title is made unique so that its log lines can be counted.
+    /// bookmark, and a skipped heading saved at `places` in that text. With
+    /// `damagingSource`, the book's file is then replaced by bytes no reader
+    /// can read, which the record's fingerprint describes, as a file this
+    /// build no longer extracts. The book's title is made unique so that
+    /// its log lines can be counted.
     private func makeBookBeforePages(
         sample: String,
         places: FixturePlaces? = nil,
         changingText: ((String) -> String)? = nil,
         recordingEdit: Bool = false,
+        damagingSource: Bool = false,
         in world: IntegrationWorld
     ) throws -> BookBeforePages {
         let places = places ?? Self.epubPlaces
@@ -561,6 +597,10 @@ final class PagesUpgradeTests: XCTestCase {
             let heading = try XCTUnwrap(oldText.allHeadings.first { $0.text == label }, "no heading \"\(label)\"")
             let start = TextPlace(chapter: heading.chapterIndex, offset: heading.characterOffset)
             book.setSkippedHeadings([SkippedHeading(heading, anchor: oldText.anchor(at: start, measuredIn: measure))])
+        }
+
+        if damagingSource {
+            try Data("These bytes are no book at all.".utf8).write(to: book.bookFileURL, options: .atomic)
         }
 
         // The record describes that content.md as current, written by no

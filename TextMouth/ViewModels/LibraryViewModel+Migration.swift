@@ -978,6 +978,8 @@ extension LibraryViewModel {
                     return stampedText(of: book, access: access)
                 case .changed:
                     return keptChangedText(of: book, access: access)
+                case .unreadable(let why):
+                    return unreadableText(of: book, why: why, access: access)
                 }
             }
             // The record no longer describes content.md: it may hold an
@@ -1061,11 +1063,19 @@ extension LibraryViewModel {
     ///   compared (`stale`): it is read again as any stale cache is. Nor is
     ///   a content.md changed since then, unless it is the text with pages:
     ///   the check for an edit saved while TextMouth was closed decides.
-    /// - Throws: why content.md or the file could not be read.
+    /// - A book whose file is missing, or no longer extracts, has nothing to
+    ///   compare its text with, nor pages to read (`unreadable`). A file
+    ///   that extracts without pages but not with them matches nothing, and
+    ///   the text is kept as changed.
+    /// - Throws: why content.md could not be read, and the refusal of a read
+    ///   that met a file only in the cloud.
     nonisolated private static func pageUpgradeCheck(of book: Book, access: MaintenanceFileAccess) throws -> PageUpgradeCheck {
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
         let sourceURL = book.bookFileURL
         guard FileStamp(of: cacheURL) != nil else { return .readAgain }
+        guard FileManager.default.fileExists(atPath: sourceURL.path) else {
+            return .unreadable(why: "its file is missing")
+        }
         // Whether content.md holds other bytes than its record describes.
         var contentChanged = false
         if let recorded = BookTextEditSessions.recordedTextCacheFingerprint(of: book, access: access) {
@@ -1089,10 +1099,24 @@ extension LibraryViewModel {
             }
         }
         let kept = try access.read(cacheURL) { try Data(contentsOf: cacheURL) }
-        if !contentChanged, try reread(book, includesPages: false) == kept {
-            return .readAgain
+        if !contentChanged {
+            let withoutPages: Data?
+            do {
+                withoutPages = try reread(book, includesPages: false)
+            } catch where !DatalessFiles.isDownloadRefusal(error) {
+                return .unreadable(why: error.localizedDescription)
+            }
+            if withoutPages == kept {
+                return .readAgain
+            }
         }
-        if try reread(book, includesPages: true) == kept {
+        let withPages: Data?
+        do {
+            withPages = try reread(book, includesPages: true)
+        } catch where !DatalessFiles.isDownloadRefusal(error) {
+            withPages = nil
+        }
+        if withPages == kept {
             return .writtenWithPages
         }
         return contentChanged ? .stale : .changed
@@ -1117,6 +1141,25 @@ extension LibraryViewModel {
     /// was committed; a later launch tries again.
     nonisolated private static func stampedText(of book: Book, access: MaintenanceFileAccess) -> ContentAnalysisSummary? {
         settledText(of: book, pageReaderVersion: .some(PageReaderVersions.current(for: book.format)), access: access)
+    }
+
+    /// Settles a book whose file is missing, or no longer extracts, so it
+    /// could be neither compared nor read for its pages (PG16): content.md
+    /// is kept as it is, without pages, and the row and record are stamped
+    /// with a failure note (`PageReaderVersions.failedStamp(for:)`), so the
+    /// book is not chosen again at every launch. It is not recorded as
+    /// edited, since nothing says it was. One line is logged:
+    /// `PAGES_SKIPPED_UNREADABLE: <title>: <why>`. Nil when nothing was
+    /// committed; a later launch tries again.
+    nonisolated private static func unreadableText(
+        of book: Book,
+        why: String,
+        access: MaintenanceFileAccess
+    ) -> ContentAnalysisSummary? {
+        // The reason on one line, as every log entry is.
+        let reason = why.components(separatedBy: .newlines).joined(separator: " ")
+        DiagnosticLog.event(.storage, "PAGES_SKIPPED_UNREADABLE: \(book.title): \(reason)")
+        return settledText(of: book, pageReaderVersion: .some(PageReaderVersions.failedStamp(for: book.format)), access: access)
     }
 
     /// Settles a book whose content.md is kept as it is: its summary, once
@@ -2061,6 +2104,9 @@ private enum PageUpgradeCheck: Equatable {
     case stale
     /// content.md is not exactly what the file gives: it is kept as it is.
     case changed
+    /// The file is missing, or no longer extracts, for `why`: content.md is
+    /// kept as it is, and the check runs once.
+    case unreadable(why: String)
 }
 
 // MARK: - Opening TextMouth Again (FR02)

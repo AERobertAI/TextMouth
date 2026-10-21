@@ -81,6 +81,14 @@ enum PageReaderVersions {
         return previous == current + failedOnceNote ? current + failedNote : current + failedOnceNote
     }
 
+    /// The stamp of a book of `format` whose file could not be read for its
+    /// pages at all, being missing or no longer readable (PG16): the
+    /// current version, noting a failure that is not tried again; nil for a
+    /// format without pages.
+    static func failedStamp(for format: BookFormat) -> String? {
+        current(for: format).map { $0 + failedNote }
+    }
+
     /// Whether `stamp` notes a failure (`stamp(for:pageRunFailed:previous:)`).
     static func notesFailure(_ stamp: String?) -> Bool {
         stamp?.contains(noteSeparator) ?? false
