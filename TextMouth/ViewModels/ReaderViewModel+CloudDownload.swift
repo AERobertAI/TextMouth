@@ -336,7 +336,7 @@ extension ReaderViewModel {
         // Text books are read into memory when they open, so only an
         // audiobook goes on reading its files and needs a copy.
         let workingCopies = bookCopy.format.isAudio ? cloudServices.workingCopies : nil
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+        loadQueue.async { [weak self] in
             let read = ReaderViewModel.readDownloadedBook(
                 bookCopy,
                 package: package,

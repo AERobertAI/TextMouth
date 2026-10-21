@@ -274,6 +274,12 @@ final class ReaderViewModel: ObservableObject {
     /// library is in a cloud location (FR02): the app's, unless the reader
     /// was created with its own, as tests do.
     let cloudServices: ReaderCloudServices
+    /// The queue each load reads the book's files on, off the main thread
+    /// (`loadContent()`, `loadDownloadedBook()`): a global queue, unless the
+    /// reader was created with its own, as tests do to hold a load's read
+    /// until the moment they choose, such as the middle of a move of the
+    /// book's package.
+    let loadQueue: DispatchQueue
     /// The reader's cloud work: its download, its working copy, and where
     /// the library was found to be (FR02).
     var cloudSession = ReaderCloudSession()
@@ -625,6 +631,9 @@ final class ReaderViewModel: ObservableObject {
     ///   - nowPlaying: The Now Playing coordinator the reader's media session
     ///     joins. Nil uses the app's shared one; tests pass their own, made
     ///     without system integrations, to send it the system's commands.
+    ///   - loadQueue: The queue each load reads the book's files on. Nil uses
+    ///     a global queue; tests pass a queue of their own that holds the
+    ///     reads until they let them begin.
     init(
         book: Book,
         libraryViewModel: LibraryViewModel,
@@ -635,7 +644,8 @@ final class ReaderViewModel: ObservableObject {
         notificationCenter: NotificationCenter = .default,
         renderScheduler: (any SpeechRenderScheduling)? = nil,
         cloud: ReaderCloudServices? = nil,
-        nowPlaying: NowPlayingService? = nil
+        nowPlaying: NowPlayingService? = nil,
+        loadQueue: DispatchQueue? = nil
     ) {
         self.book = book
         self.libraryViewModel = libraryViewModel
@@ -649,6 +659,7 @@ final class ReaderViewModel: ObservableObject {
         self.renderScheduler = renderScheduler ?? SpeechRenderCoordinator.shared
         self.cloudServices = cloud ?? .app
         self.nowPlayingCoordinator = nowPlaying ?? .shared
+        self.loadQueue = loadQueue ?? .global(qos: .userInitiated)
         self.bookmarks = book.bookmarks
 
         libraryViewModel.registerOpenBook(book.id)
@@ -1286,7 +1297,7 @@ final class ReaderViewModel: ObservableObject {
         let bookCopy = book
         let storage = cloudServices.storage
         let package = BookPackage(bookCopy)
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+        loadQueue.async { [weak self] in
             let location = storage.libraryLocation()
             if location.isCloud {
                 let state = storage.state(of: package)

@@ -108,10 +108,14 @@ final class IntegrationWorld {
     ///   - nowPlaying: The Now Playing coordinator the reader joins, which a
     ///     test sends the system's media commands through; nil uses the
     ///     app's shared one.
+    ///   - loadQueue: The queue the reader's loads read its book's files
+    ///     on, which a test can hold; nil uses a global queue, as the app
+    ///     does.
     func openReader(
         for book: Book,
         renderScheduler: (any SpeechRenderScheduling)? = nil,
-        nowPlaying: NowPlayingService? = nil
+        nowPlaying: NowPlayingService? = nil,
+        loadQueue: DispatchQueue? = nil
     ) -> ReaderViewModel {
         let reader = ReaderViewModel(
             book: book,
@@ -121,7 +125,8 @@ final class IntegrationWorld {
             autoplayRequests: autoplayRequests,
             notificationCenter: notifications,
             renderScheduler: renderScheduler,
-            nowPlaying: nowPlaying
+            nowPlaying: nowPlaying,
+            loadQueue: loadQueue
         )
         readers.append(reader)
         return reader
