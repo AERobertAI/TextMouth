@@ -83,7 +83,9 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
   - Page as a navigation unit, with Next Page, Previous Page, and Go to Page…, and the page on the reader screen and in Where Am I?.
   - Pages for EPUB, PDF, DOCX, DAISY text, and textutil's formats.
   - B12 (a finished Edit Text change is kept by automatic re-reads) and B13 (textutil's joined words).
-  - **PG09's launch re-read of existing books is merged switched off:** its Opus review found it unsafe for the live library. PG16 holds those findings.
+  - **PG09's launch re-read of existing books** was merged switched off, since its Opus review found it unsafe for the live library.
+- **`pages/pg16` (5f38016b).** It is now safe and on: a byte-for-byte compare, a stopped batch recognised, and a differing book with no edit on record copied (`content.md.edited-<UTC>`) before it gains pages. Two Opus reviews.
+- **`release/version` (0587b7c4).** Version 0.2.0, `Scripts/set-version.sh` and `make set-version`, the beta procedure ("Versions" in building.md), and the user's `docs/user/whats-new.md`.
 - **Research and documentation:** `research/pages` (3c7d43b1), and the documentation pass `docs/oct21` (5c8a2a07).
 
 **October 19 and 20.** On October 19 the user asked: "Go ahead and try working on the braille reading features tonight. and the export feature, for the braille I want it possible to have multiple braille tables and contracted and uncontracted settings and use the library. (see how much it increases app size)". Two teams worked on it, each an Opus lead with Sonnet workers (`Scripts/agents/briefs/2026-10-19/`), and fresh Opus reviewers read every branch before its merge. Merged into main:
@@ -96,14 +98,14 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - Documentation passes: `docs/oct19` (c77c9cf4), `docs/oct19b` (bc5ef365), and `docs/oct20` (077b4e1e).
 
 **State at the end:**
-- **Main's suite:** **8216 tests, 75 skipped, 0 failures**, about 18 minutes of test time.
+- **Main's suite:** **8230 tests, 75 skipped, 0 failures**, about 18 minutes of test time. The app's version is 0.2.0.
 - **Older builds:** a TextMouth built before the braille merge cannot open a library that holds a braille book.
 - **Questions:**
   - `humanQuestions/2026-10-21.md`, about pages, all built with their recommended answers;
   - `2026-10-19.md`, whose questions 1 to 4 are answered or built.
 - **Pending with the user:** the push and install, the October 18 questions, and the rm-hook offer.
 - **The next candidates:**
-  - PG16, so existing books gain pages, then PG12 (braille pages);
+  - at the user's first launch of 0.2.0, read the debug log's `PAGES_UPGRADE_SUMMARY`; then PG12 (braille pages);
   - the EBAE and UEB emphasis reading passes;
   - FMT43 (speech to audio in Export);
   - the TODO's pages and race follow-ups.

@@ -2855,3 +2855,17 @@ The samples were made on this Mac. A hosted test of Book Information's sheet ski
 - **Briefs.** They should list a parser's exact-output tests, and pre-authorize `includesPages: false` for them.
 
 **Follow-ups:** PG16, and the TODO's open follow-ups paragraph.
+
+## From pg16 and version (pages/pg16, release/version), Oct 21
+
+**pg16**
+- **What it is.** An Opus agent, with two Opus reviews, made PG09's launch re-read safe and switched it on.
+- **No evidence of old edits.** The second review found nothing to tell an edit made before B12 from extraction drift: an extraction and a pre-B12 take write the same fingerprint, session copies are deleted, and dates overlap.
+- **The rule.** A differing book with no edit on record is copied (`content.md.edited-<UTC>`, through `BookTextEditSessions.keepCopy`, since `FileImportService.isPackageContentName` would mistake any other name for the book's document), then read again with pages.
+- **The pins.** The pre-page golden digests (navigation.epub, alice.docx, test_book.docx, lathe_of_heaven, wipo) are pinned, and all matched, so there is no drift for those books.
+- **Not verified:** the batch on a real library of hundreds of books, and its launch-time cost (each book read twice, scanned PDFs OCRed twice).
+- **Watch at the user's first launch of 0.2.0:** the debug log's `PAGES_UPGRADE_SUMMARY` line. Since the user made no edits, a non-zero "replaced keeping a copy" count means drift.
+
+**version**
+- **What it is.** A Sonnet agent: `Scripts/set-version.sh` with a 33-case selftest, `make set-version`, the user's `docs/user/whats-new.md`, and the "Versions" procedure in building.md and AGENTS.md. 0.1.1 is now 0.2.0.
+- **Decisions.** Leading zeros are refused. Each bump adds a What's new section.
