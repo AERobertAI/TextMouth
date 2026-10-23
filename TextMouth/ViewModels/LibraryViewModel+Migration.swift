@@ -1122,6 +1122,11 @@ extension LibraryViewModel {
     /// - Throws: why content.md could not be read, and the refusal of a read
     ///   that met a file only in the cloud.
     nonisolated static func pageUpgradeCheck(of book: Book, access: MaintenanceFileAccess) throws -> PageUpgradeCheck {
+        // The batch's queue hands each update a rebased book already;
+        // rebasing here keeps the check right for any caller (ST01), whose
+        // book may have been captured before a data directory move, and
+        // costs one lock.
+        let book = StorageBoundary.shared.rebasedToCurrent(book)
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
         let sourceURL = book.bookFileURL
         guard FileStamp(of: cacheURL) != nil else { return .readAgain }

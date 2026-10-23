@@ -128,6 +128,29 @@ final class StorageGenerationStaleWriterTests: XCTestCase {
         await fulfillment(of: [updated], timeout: 10)
     }
 
+    /// The page check of a book captured before the move reads the moved
+    /// files: it rebases the book itself, so the old data directory, which
+    /// the move left and was removed since, is neither read nor recreated.
+    /// Before the check rebased the book (ST01) it answered
+    /// `.unreadable(why: "its file is missing", missingFile: true)`.
+    func testThePageCheckOfABookCapturedBeforeAMoveReadsTheMovedFiles() throws {
+        let old = try makeCurrentDataDirectory("StalePageCheckOld")
+        let book = try makeTextBook(in: old)
+        // content.md as a generation writes it, so the check has a cache to judge.
+        _ = try MarkdownCacheService.generateReportedCacheContent(for: book)
+        let new = try moveDataDirectory(from: old, label: "StalePageCheckNew")
+        try FileManager.default.removeItem(at: old)
+
+        let check = try LibraryViewModel.pageUpgradeCheck(of: book, access: .live)
+
+        // `if case`: the answer must be to read the book again, not that its file is missing.
+        if case .readAgain = check {} else {
+            XCTFail("The page check of the captured book answered \(check), not readAgain")
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: Self.package(of: book, under: new).path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: old.path), "The old data directory was recreated")
+    }
+
     /// The statistics pass for a book the library listed before the move
     /// analyzes the moved book and commits the result to its moved package,
     /// without recreating the old data directory.
