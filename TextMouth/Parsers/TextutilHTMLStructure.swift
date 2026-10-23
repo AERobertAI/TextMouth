@@ -34,13 +34,22 @@ enum TextutilHTMLStructure {
     /// fields has a body size only if they count (the sample
     /// `libreoffice-tdf81705_outlineLevel.doc` is a "Contents" line above
     /// one field line).
-    static func restore(in document: Document) throws {
+    ///
+    /// `beforeFieldRemoval` runs once, on the document, after the pictures
+    /// are gone and before the field instructions are: the page breaks of
+    /// textutil's plain text are put in there (ST10). textutil writes a
+    /// field's instruction as bare text into both its HTML and its plain
+    /// text, so the two still hold the same letters until the instructions
+    /// are removed from the HTML; lined up afterwards, every page after the
+    /// first field would be dropped as unaligned.
+    static func restore(in document: Document, beforeFieldRemoval: (Document) throws -> Void = { _ in }) throws {
         try removePictures(from: document)
         let rules = try classRules(in: document)
         let bodyCensus = Census(
             measuring: textNodes(under: document.body() ?? document),
             with: StyleResolver(rules: rules)
         )
+        try beforeFieldRemoval(document)
         try TextutilFieldCodes.removeInstructions(from: document)
         try convertBulletParagraphs(in: document)
         try convertHeadingParagraphs(in: document, rules: rules, bodyCensus: bodyCensus)

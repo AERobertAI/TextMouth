@@ -107,10 +107,13 @@ enum LibraryIndexRecoveryOutcome: Equatable {
 }
 
 /// The reading list and the sort settings that an index which cannot be read
-/// as a whole still holds, read from its bytes on their own (FR09). A
-/// damaged book entry, or a format a later version wrote, makes the whole
-/// index unreadable but leaves these readable; an index cut short, or not
-/// JSON at all, gives neither.
+/// as a whole still holds, read from its bytes on their own (FR09). A part
+/// of the index in a layout this version cannot read (its folders, or its
+/// list of books when it is not a list) makes the whole index unreadable but
+/// leaves these readable; an index cut short, or not JSON at all, gives
+/// neither. A single book entry this version cannot read, damaged or in a
+/// format a later version wrote, no longer makes the index unreadable: its
+/// row is kept as it is, unshown (V03, `Library.unreadableRows`).
 struct SalvagedLibraryArrangement: Equatable {
     /// The reading list read; the empty list for an index that holds none,
     /// as one written before the list existed; nil when the index holds one
@@ -265,7 +268,10 @@ extension LibraryViewModel {
         library = Library(
             folderSortSettings: arrangement.sortSettings,
             readingList: arrangement.readingList,
-            feedShelf: heldNone ? LibraryPersistenceService.loadFeedShelf(fromPackages: true) : feedItems.feedShelf
+            feedShelf: heldNone ? LibraryPersistenceService.loadFeedShelf(fromPackages: true) : feedItems.feedShelf,
+            // Rows a newer TextMouth wrote, read before the index failed, are
+            // still the user's: Rebuild Library Index writes them back (V03).
+            unreadableRows: library.unreadableRows
         )
         indexRecovery = LibraryIndexRecovery(failure: failure, arrangementNotKept: arrangement.notKept)
         showIndexRecoveryOptions = true
@@ -488,6 +494,8 @@ extension LibraryViewModel {
     /// alone (only in the cloud when it was read again) is left alone when
     /// its rows come from `loaded`, which then stand in for it, and not when
     /// the session's own rows of that feed, read before, are the ones kept.
+    /// The rows of a feed's index this version cannot read (V03) are the
+    /// session's, and, of a feed it holds none of, those `loaded` read.
     nonisolated static func feedItems(of session: Library, over loaded: Library) -> FeedShelf {
         var items = session
         items.shelveFeedItems()
@@ -499,6 +507,13 @@ extension LibraryViewModel {
         }
         for feedID in loaded.feedShelf.indexedFeedIDs {
             shelf.keepIndex(of: feedID)
+        }
+        // The rows of a feed's index that this version cannot read (V03)
+        // stay with their feed: the session's own, when it read some, and
+        // else those `loaded` read, as a session that read its rows from
+        // the packages could not have known them.
+        for (feedID, rows) in loaded.feedShelf.unreadableRows where shelf.unreadableRows[feedID] == nil {
+            shelf.keepUnreadableRows(rows, of: feedID)
         }
         for feedID in loaded.feedShelf.indexesLeftAlone where !sessionFeeds.contains(feedID) {
             shelf.leaveIndexAlone(of: feedID)

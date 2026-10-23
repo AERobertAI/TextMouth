@@ -497,13 +497,13 @@ enum EPUBParser {
     /// - Throws: `EPUBParserError.missingContainer` or `.invalidOPF` when no
     ///   member is at `path`, and `.damagedFile` when it cannot be decoded.
     static func extractString(archive: Archive, path: String) throws -> String {
-        try extractString(entry: archive[path], at: path, in: archive)
+        try extractString(entry: archive.file(at: path), at: path, in: archive)
     }
 
     /// The text of the member at `path` of an archive whose entries are
     /// indexed, found in its index (see `extractString(archive:path:)`).
     static func extractString(archive: IndexedArchive, path: String) throws -> String {
-        try extractString(entry: archive[path], at: path, in: archive.archive)
+        try extractString(entry: archive.file(at: path), at: path, in: archive.archive)
     }
 
     /// The text of `entry`, the member at `path` of `archive`, or nil when

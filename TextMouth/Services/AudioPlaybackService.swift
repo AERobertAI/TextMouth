@@ -843,11 +843,32 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
         return true
     }
 
+    /// The options the player opens the asset of the file at `url` with
+    /// (ST06): precise duration and timing, for every file.
+    ///
+    /// Without it, a variable-bit-rate MP3 without a Xing header has a
+    /// duration estimated from its size and its first frames' bit rate, and
+    /// seeks that land seconds from where they were asked. `seekPlayer`
+    /// clamps a seek to the duration learned, so a short estimate also
+    /// moved a saved place back. Measured on October 23, 2026 on a 3-hour
+    /// (54 MB) pink-noise VBR MP3 made without a Xing header, the worst
+    /// case: the estimate was 10721.9 seconds against 10800.0 true (78
+    /// seconds short) and loaded in 1 to 18 ms, while precise timing loaded
+    /// in a median 0.13 seconds (0.125 to 0.133 over nine loads, in three
+    /// processes). With a Xing header the two agree (10800.0) and both load
+    /// in a few milliseconds. The precise load is far under the 2 seconds
+    /// that would call for a size limit, so no file is left out; `url` is
+    /// kept as a parameter so that a limit could return, decided in this one
+    /// place.
+    static func playerAssetOptions(for url: URL) -> [String: Any] {
+        [AVURLAssetPreferPreciseDurationAndTimingKey: true]
+    }
+
     /// An item playing the file at `url`, stretched in time for speech, and
     /// the asset it plays, kept to learn the file's length from (an item's
     /// own `asset` may be read only on the main actor).
     private static func makeItem(playing url: URL) -> (item: AVPlayerItem, asset: AVURLAsset) {
-        let asset = AVURLAsset(url: url)
+        let asset = AVURLAsset(url: url, options: playerAssetOptions(for: url))
         let item = AVPlayerItem(asset: asset)
         item.audioTimePitchAlgorithm = .timeDomain // Best for speech
         return (item, asset)

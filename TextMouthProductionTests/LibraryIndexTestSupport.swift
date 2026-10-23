@@ -5,9 +5,11 @@ import XCTest
 enum LibraryIndexDamage {
     /// Cut off halfway, as a crash or a full disk can leave a file.
     case truncated
-    /// Well-formed JSON naming a book format this version does not know, as a
-    /// newer TextMouth could write.
-    case unknownFormat
+    /// Well-formed JSON in a layout this version cannot read, as a newer
+    /// TextMouth could write: its books is an object, not an array. (A book
+    /// in a format this version does not know no longer makes an index
+    /// unreadable: its row is kept unshown, V03.)
+    case unreadableLayout
     /// Intact JSON that cannot be read: its permissions are mode 000.
     case unreadable
 }
@@ -170,12 +172,10 @@ struct LibraryIndexSandbox {
         switch damage {
         case .truncated:
             return intact.prefix(intact.count / 2)
-        case .unknownFormat:
+        case .unreadableLayout:
             var index = try XCTUnwrap(JSONSerialization.jsonObject(with: intact) as? [String: Any])
-            var books = try XCTUnwrap(index["books"] as? [[String: Any]])
-            _ = try XCTUnwrap(books.first, "an unknown-format fixture needs a book")
-            books[0]["format"] = "mobi"
-            index["books"] = books
+            // An object where the array of books was.
+            index["books"] = ["format": "mobi"]
             return try JSONSerialization.data(withJSONObject: index, options: [.prettyPrinted])
         case .unreadable:
             return intact

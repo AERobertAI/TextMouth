@@ -44,14 +44,46 @@ struct FeedShelf: Equatable {
     ///   feed's folder goes with the index, so a crash in between finds every
     ///   row in one file or the other.
     private(set) var indexesLeftAlone: Set<UUID> = []
+    /// The rows of each feed's index this TextMouth could not read (V03):
+    /// a feed item a later TextMouth wrote, in a format or with fields this
+    /// one does not know. Each is kept as it was read and written back after
+    /// its feed's rows at every save of that feed's index, and is never
+    /// shown or counted as a feed item. A feed with such rows keeps its
+    /// index (`indexedFeedIDs`).
+    private(set) var unreadableRows: [UUID: [UnreadableLibraryRow]] = [:]
 
     /// A shelf holding `rows`, keeping the indexes of `indexedFeedIDs` and
-    /// of every feed `rows` belong to, and leaving alone the index files of
-    /// `indexesLeftAlone`.
-    init(rows: [Book] = [], indexedFeedIDs: Set<UUID> = [], indexesLeftAlone: Set<UUID> = []) {
+    /// of every feed `rows` or `unreadableRows` belong to, and leaving alone
+    /// the index files of `indexesLeftAlone`.
+    init(
+        rows: [Book] = [],
+        indexedFeedIDs: Set<UUID> = [],
+        indexesLeftAlone: Set<UUID> = [],
+        unreadableRows: [UUID: [UnreadableLibraryRow]] = [:]
+    ) {
         self.rows = rows
-        self.indexedFeedIDs = indexedFeedIDs.union(rows.compactMap { $0.feedLink?.feedID })
+        self.indexedFeedIDs = indexedFeedIDs
+            .union(rows.compactMap { $0.feedLink?.feedID })
+            .union(unreadableRows.filter { !$0.value.isEmpty }.keys)
         self.indexesLeftAlone = indexesLeftAlone
+        self.unreadableRows = unreadableRows.filter { !$0.value.isEmpty }
+    }
+
+    /// How many rows of feed indexes are kept unshown, all feeds together.
+    var unreadableRowCount: Int {
+        unreadableRows.values.reduce(0) { $0 + $1.count }
+    }
+
+    /// Keeps `rows` as the rows of the feed `feedID`'s index this TextMouth
+    /// cannot read, in place of any it held, and keeps the feed's index. No
+    /// rows leaves the feed with none.
+    mutating func keepUnreadableRows(_ rows: [UnreadableLibraryRow], of feedID: UUID) {
+        guard !rows.isEmpty else {
+            unreadableRows.removeValue(forKey: feedID)
+            return
+        }
+        unreadableRows[feedID] = rows
+        indexedFeedIDs.insert(feedID)
     }
 
     /// Whether no row waits here.
@@ -91,6 +123,7 @@ struct FeedShelf: Equatable {
     mutating func forgetIndex(of feedID: UUID) {
         indexedFeedIDs.remove(feedID)
         indexesLeftAlone.remove(feedID)
+        unreadableRows.removeValue(forKey: feedID)
     }
 
     /// Takes out and returns the rows `shouldTake` chooses, in their order,

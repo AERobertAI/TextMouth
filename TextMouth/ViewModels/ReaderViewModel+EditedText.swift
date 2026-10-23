@@ -16,6 +16,10 @@ struct EditedTextWaitingForLoad {
 /// How an open reader shows its book's text once the user has edited it in
 /// their own editor and TextMouth has taken the edit (`BookTextEditor`).
 ///
+/// The text may also be the book's own text read again by the text cache
+/// batch while the reader has the book open (ST01), such as the launch's
+/// re-read for pages: the reader treats it the same way.
+///
 /// The library sends the edited text, parsed and indexed, through the
 /// readers' usual updates (`LibraryBookEvent.textReplaced`), after the
 /// book's row has taken the edit's counts, together with the moves of the

@@ -372,6 +372,8 @@ final class LogContentPolicyTests: XCTestCase {
         "TRANSCRIPTION_STARTED", "TRANSCRIPTION_FINISHED", "TRANSCRIPTION_CANCELLED", "TRANSCRIPTION_FAILED",
         // Braille (October 20, 2026): one of this Mac's tables refused by its check, and why.
         "BRAILLE_MAC_TABLE_REFUSED",
+        // Library index (V03): rows of library.json a newer TextMouth wrote, kept as they are, counted.
+        "LIBRARY_ROWS_KEPT",
     ]
 
     /// Each tag still begins a string literal in the app's code, so none was

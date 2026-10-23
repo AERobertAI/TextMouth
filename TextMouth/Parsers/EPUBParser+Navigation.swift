@@ -255,7 +255,7 @@ extension EPUBParser {
         pages: HTMLPageTargets,
         includesPages: Bool
     ) -> SpineRead {
-        guard let entry = archive[path] else { return .omitted(.missingMember) }
+        guard let entry = archive.file(at: path) else { return .omitted(.missingMember) }
         guard let html = try? text(of: entry, in: archive.archive) else { return .omitted(.unreadableMember) }
         let readingFlow = PublicationSemantics.ReadingFlow(source: html)
         let doc: Document
@@ -308,7 +308,7 @@ extension EPUBParser {
         includesPages: Bool
     ) throws -> String {
         guard fragmentCount(of: targets) > document.convertedFragmentCount,
-              let entry = archive[document.path],
+              let entry = archive.file(at: document.path),
               let html = try? text(of: entry, in: archive.archive) else {
             return try document.conversion.get()
         }

@@ -76,6 +76,17 @@ struct StorageStatus: Equatable {
 /// The words of Storage settings' location controls (FR02), each defined
 /// once for the screen, VoiceOver, and the tests.
 enum StorageLocationWording {
+    /// The sentence that says how many books of this library need a newer
+    /// TextMouth (V03): kept in library.json as they are, not shown. Nil
+    /// when none does, so nothing is shown.
+    static func booksNeedingNewerTextMouth(_ count: Int) -> String? {
+        guard count > 0 else { return nil }
+        if count == 1 {
+            return "1 book in this library needs a newer version of TextMouth. It is kept as it is, but not shown."
+        }
+        return "\(count) books in this library need a newer version of TextMouth. They are kept as they are, but not shown."
+    }
+
     /// The button that opens the folder chooser: Change Location while the
     /// library is available, Choose Another Library while it isn't.
     static func chooserTitle(isLibraryAvailable: Bool) -> String {
@@ -228,6 +239,18 @@ struct StorageSettingsView: View {
                         unavailability != nil || isRecoveringIndex || hasUnsavedChanges
                             || !directoryExists ? .red : .green
                     )
+                }
+
+                // Books a newer TextMouth added, which this one keeps but
+                // cannot show (V03): plain text, read in order with the
+                // Status row above it.
+                if let newerBooks = StorageLocationWording.booksNeedingNewerTextMouth(
+                    libraryViewModel.booksNeedingNewerTextMouth
+                ) {
+                    Text(newerBooks)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 if let unavailability {

@@ -183,7 +183,7 @@ class ArchiveFileProvider: DAISYFileProvider {
     /// else the first file whose path matches it without regard to case.
     /// - Throws: `DAISYParserError.missingContent` when no entry matches.
     private func entry(at path: String) throws -> Entry {
-        guard let entry = index[path] ?? index.file(matchingCaseInsensitively: path) else {
+        guard let entry = index.file(at: path) else {
             throw DAISYParserError.missingContent("File not found in archive: \(path)")
         }
         return entry
@@ -954,14 +954,13 @@ struct DAISY202PageMarker: Equatable {
 
     /// Whether `fragmentText` is no more than this page's number: empty, or
     /// short enough to be a number and its caption ("12", "Page 12",
-    /// "p. xii") and, when the NCC named the page, containing that name. A
-    /// page entry that points at a paragraph is a faulty link, and the
-    /// paragraph is words a listener must hear.
+    /// "p. xii") and, when the NCC named the page, containing that name or
+    /// contained in it (the label may hold the text: "12" under "Page 12").
+    /// A page entry that points at a paragraph is a faulty link, and the
+    /// paragraph is words a listener must hear. The rule is shared with EPUB's
+    /// page-break elements: `MarkdownPageMarker.isNoMoreThanLabel`.
     func isNumber(in fragmentText: String) -> Bool {
-        let text = fragmentText.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
-        if text.isEmpty { return true }
-        guard text.count <= MarkdownPageMarker.maximumLabelLength else { return false }
-        return label.isEmpty || text.localizedCaseInsensitiveContains(label)
+        MarkdownPageMarker.isNoMoreThanLabel(fragmentText, label: label)
     }
 }
 

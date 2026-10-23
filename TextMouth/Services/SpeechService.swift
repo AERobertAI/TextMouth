@@ -1929,6 +1929,28 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         stopPositionTracking()
     }
 
+    /// The character offset a resume starts from (ST03).
+    ///
+    /// - A reported word is the speech the listener last heard, so its
+    ///   location wins.
+    /// - With no word reported yet (Pause came within about 0.3 seconds of
+    ///   Play) in direct mode, the engine's offset is not the speech being
+    ///   heard (it is 0, or stale), so the offset is where the direct
+    ///   utterance began. That is where the listener pressed Play, snapped to
+    ///   its word, so a quick Play and Pause keeps the place instead of
+    ///   restarting the chapter.
+    /// - Otherwise the engine's own offset, or the start when it knows none.
+    nonisolated static func resumeOffset(
+        reportedWord: NSRange?,
+        usingDirectMode: Bool,
+        directModeBaseOffset: Int,
+        engineOffset: Int?
+    ) -> Int {
+        if let reportedWord { return reportedWord.location }
+        if usingDirectMode { return directModeBaseOffset }
+        return engineOffset ?? 0
+    }
+
     /// Resumes a paused backend and reports whether an audible path was
     /// accepted. Callers can cold-start the chapter when false is returned
     /// instead of publishing a false "playing" state.
@@ -1936,7 +1958,12 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     func resume() -> Bool {
         guard isPaused else { return false }
 
-        let offset = currentWordRange?.location ?? madeAudioEngine?.currentCharOffset() ?? 0
+        let offset = Self.resumeOffset(
+            reportedWord: currentWordRange,
+            usingDirectMode: usingDirectMode,
+            directModeBaseOffset: directModeBaseOffset,
+            engineOffset: madeAudioEngine?.currentCharOffset()
+        )
         let action = SpeechResumePolicy.action(
             usingDirectMode: usingDirectMode,
             pendingDirectSeekOffset: pendingDirectSeekOffset,

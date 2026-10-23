@@ -109,7 +109,7 @@ final class LibraryIndexRecoveryTests: XCTestCase {
     /// why, and makes no second copy of the same file.
     @MainActor
     func testTryAgainWhileStillUnreadableStaysInRecovery() throws {
-        try sandbox.stage(.unknownFormat, at: sandbox.indexURL)
+        try sandbox.stage(.unreadableLayout, at: sandbox.indexURL)
         let model = LibraryViewModel(initializeServices: false)
         model.loadLibraryIndex()
 
@@ -118,7 +118,7 @@ final class LibraryIndexRecoveryTests: XCTestCase {
         guard case .stillUnreadable(let reason) = outcome else {
             return XCTFail("Expected the index to stay unreadable, got \(outcome)")
         }
-        XCTAssertTrue(reason.contains("does not recognize"), reason)
+        XCTAssertTrue(reason.contains("unexpected form"), reason)
         XCTAssertEqual(model.indexRecovery?.lastAttempt, outcome)
         XCTAssertTrue(LibraryPersistenceService.areIndexWritesSuspended)
         XCTAssertEqual(LibraryIndexQuarantine.existingCopies(of: sandbox.indexURL).count, 1)
@@ -188,7 +188,7 @@ final class LibraryIndexRecoveryTests: XCTestCase {
     func testRebuildSavesTheProvisionalLibraryAndKeepsTheCopy() throws {
         let shelf = uniqueFolderName("Recovery Shelf")
         let book = try makePackage(title: "Rebuilt Fixture", inFolder: shelf)
-        let damagedBytes = try sandbox.stage(.unknownFormat, of: indexHolding(book), at: sandbox.indexURL)
+        let damagedBytes = try sandbox.stage(.unreadableLayout, of: indexHolding(book), at: sandbox.indexURL)
         let model = LibraryViewModel(initializeServices: false)
         model.loadLibraryIndex()
         let copy = try XCTUnwrap(model.indexRecovery?.failure.quarantineURL)
@@ -349,7 +349,7 @@ final class LibraryIndexRecoveryTests: XCTestCase {
         var index = indexHolding(first)
         index.books.append(second)
         index.readingList = ReadingList(bookIDs: [second.id, first.id], continuation: .playBookAbove, skipsFinished: false)
-        try sandbox.stage(.unknownFormat, of: index, at: sandbox.indexURL)
+        try sandbox.stage(.unreadableLayout, of: index, at: sandbox.indexURL)
         let model = LibraryViewModel(initializeServices: false)
         model.loadLibraryIndex()
 

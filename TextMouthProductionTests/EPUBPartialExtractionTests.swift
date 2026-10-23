@@ -83,6 +83,56 @@ final class EPUBPartialExtractionTests: XCTestCase {
         )
     }
 
+    // MARK: - Members Named in Another Case (ST09)
+
+    /// A manifest that names "Text/Chapter1.xhtml" for the member
+    /// "text/chapter1.xhtml" still has its chapter, and reports nothing missing.
+    func testASpineMemberNamedInAnotherCaseIsRead() throws {
+        let chapter = FixtureChapter(
+            id: "ch1", href: "Text/Chapter1.xhtml",
+            markup: Self.page("<h1>One</h1><p>Words of the first chapter.</p>"),
+            storedAs: "OEBPS/text/chapter1.xhtml"
+        )
+        let epub = try makeEPUB(chapters: [chapter])
+
+        let book = try EPUBParser.prepareBook(url: epub)
+
+        XCTAssertEqual(book.chapters.count, 1)
+        XCTAssertTrue(book.chapters.first?.chapter.text.contains("Words of the first chapter.") ?? false)
+        XCTAssertEqual(book.report.omissions, [], "no missing-member warning")
+        XCTAssertEqual(
+            try EPUBParser.parse(url: epub).chapters.first?.text.contains("Words of the first chapter."), true
+        )
+    }
+
+    /// With members "ch01.xhtml" and "CH01.xhtml", the manifest's exact spelling wins.
+    func testAnExactMatchWinsOverACaseInsensitiveOne() throws {
+        let wanted = Self.chapter(1, "Exact", "Words of the exact member.")
+        // The package lists the other member too, under its own item, but
+        // only the exact spelling is in the spine.
+        let other = FixtureChapter(
+            id: "other", href: "CH01.xhtml",
+            markup: Self.page("<h1>Other</h1><p>Words of the other member.</p>")
+        )
+        let epub = try makeEPUB(chapters: [wanted, other], spine: ["ch01"])
+
+        let book = try EPUBParser.prepareBook(url: epub)
+        let text = book.chapters.map(\.chapter.text).joined(separator: "\n")
+
+        XCTAssertTrue(text.contains("Words of the exact member."), text)
+        XCTAssertFalse(text.contains("Words of the other member."), text)
+    }
+
+    /// container.xml naming "OEBPS/Content.opf" for the member
+    /// "OEBPS/content.opf" still opens the book.
+    func testThePackageDocumentNamedInAnotherCaseIsFound() throws {
+        let epub = try makeEPUB(chapters: Self.threeChapters, rootfilePath: "OEBPS/Content.opf")
+
+        let book = try EPUBParser.prepareBook(url: epub)
+
+        XCTAssertEqual(book.chapters.map(\.chapter.title), ["Patching a Tube", "Truing a Wheel", "Adjusting the Brakes"])
+    }
+
     /// A chapter whose compressed data cannot be decoded is reported as
     /// damaged, and the rest of the book is still read.
     func testUndecodableChapterIsReportedAsDamaged() throws {
@@ -654,9 +704,12 @@ final class EPUBPartialExtractionTests: XCTestCase {
         var href: String
         var markup: String
         var mediaType = "application/xhtml+xml"
+        /// The path the archive stores the document at when that is not
+        /// "OEBPS/" + `href`: a badly made book names a member in another case.
+        var storedAs: String?
 
         /// The document's path inside the archive.
-        var member: String { "OEBPS/\(href)" }
+        var member: String { storedAs ?? "OEBPS/\(href)" }
     }
 
     /// A short repair manual, one chapter per file, each with its own words
@@ -703,13 +756,16 @@ final class EPUBPartialExtractionTests: XCTestCase {
     /// `chapters` in its manifest and reads `spine` (manifest ids, by default
     /// every chapter in order), to `fileName` in a new temporary directory
     /// that is removed when the test ends. `compression` says how the archive
-    /// stores its files.
+    /// stores its files. `rootfilePath` is the package document's path as
+    /// container.xml names it; the document itself is stored at
+    /// "OEBPS/content.opf".
     private func makeEPUB(
         title: String? = nil,
         chapters: [FixtureChapter],
         spine: [String]? = nil,
         compression: CompressionMethod = .none,
-        fileName: String = "book.epub"
+        fileName: String = "book.epub",
+        rootfilePath: String = "OEBPS/content.opf"
     ) throws -> URL {
         let title = title ?? Self.uniqueTitle()
         let manifest = chapters.map {
@@ -721,7 +777,7 @@ final class EPUBPartialExtractionTests: XCTestCase {
             "META-INF/container.xml": Data("""
             <?xml version="1.0"?>
             <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
-            <rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles>
+            <rootfiles><rootfile full-path="\(rootfilePath)" media-type="application/oebps-package+xml"/></rootfiles>
             </container>
             """.utf8),
             "OEBPS/content.opf": Data("""

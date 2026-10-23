@@ -265,6 +265,11 @@ enum TextutilFieldCodes {
     /// Whether `block` still holds text (pictures are gone before this runs).
     private static func hasContent(_ block: Element) -> Bool {
         guard let text = try? block.text() else { return true }
+        // A page break placed before the instruction (ST10) stays: the page
+        // begins there, and the block goes only when it holds nothing else.
+        if let breaks = try? block.select("[role=\(TextutilPageBreaks.pageBreakRole)]"), !breaks.isEmpty() {
+            return true
+        }
         return !text.allSatisfy(\.isWhitespace)
     }
 

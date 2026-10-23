@@ -227,7 +227,8 @@ enum TextutilPageBreaks {
     }
 
     /// Writes the page breaks of the plain text `plainText` into `document`
-    /// (textutil's HTML, after `TextutilHTMLStructure.restore`) as empty
+    /// (textutil's HTML, after its pictures are removed and before its field
+    /// instructions are: both texts hold those as bare text, ST10) as empty
     /// `<span role="doc-pagebreak" aria-label="N">` elements: page 1 at the
     /// start of the body, and each later page right before its first letter
     /// or digit. Where textutil joined the words on either side of a break,

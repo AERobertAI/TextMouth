@@ -719,12 +719,54 @@ enum MarkdownCacheService {
             if line.hasPrefix(chapterMarkerPrefix) && line.hasSuffix(chapterMarkerSuffix) {
                 closeSection(at: lineStart)
                 current = (title: visibleChapterTitle(markerTitle(of: line)), contentStart: nextLineStart)
+            } else if let marker = chapterMarkerFollowedByWords(in: line) {
+                // A chapter line with words after it (ST05b): the marker
+                // begins the chapter as a chapter line alone does, and the
+                // words after it are the chapter's first line.
+                closeSection(at: lineStart)
+                current = (title: visibleChapterTitle(marker.title), contentStart: marker.restStart)
             }
             guard lineEnd < markdown.endIndex else { break }
             lineStart = nextLineStart
         }
         closeSection(at: markdown.endIndex)
         return sections
+    }
+
+    /// The chapter marker a line begins with when more than whitespace follows
+    /// it (ST05b), as the title it names and where the words after it start;
+    /// nil for any other line (a line that is a marker alone is handled by
+    /// `splitChapters` itself, and so is one that ends with the marker's
+    /// suffix). The marker ends at the first ` -->` outside a comment inside
+    /// its title (caches written before format 3.0.5 could hold a navigation
+    /// annotation there). The writers put a chapter marker on a line of its
+    /// own (`chapterMarker(title:)`), so nothing TextMouth wrote splits
+    /// differently; an Edit Text change can leave words after one. The marker
+    /// is found by Characters, as the line is tested for its suffix, so a
+    /// combining mark after the `>` keeps the line as it was.
+    private static func chapterMarkerFollowedByWords(in line: Substring) -> (title: String, restStart: Substring.Index)? {
+        guard line.hasPrefix(chapterMarkerPrefix) else { return nil }
+        let titleStart = line.index(line.startIndex, offsetBy: chapterMarkerPrefix.count)
+        // The suffix's space may be the prefix's last one (`<!-- chapter: -->`).
+        var index = line.index(before: titleStart)
+        var depth = 0
+        while index < line.endIndex {
+            let remainder = line[index...]
+            if depth == 0, remainder.hasPrefix(chapterMarkerSuffix) {
+                let restStart = line.index(index, offsetBy: chapterMarkerSuffix.count)
+                guard line[restStart...].contains(where: { !$0.isWhitespace }) else { return nil }
+                return (title: index > titleStart ? String(line[titleStart..<index]) : "", restStart: restStart)
+            } else if remainder.hasPrefix("<!--") {
+                depth += 1
+                index = line.index(index, offsetBy: 4)
+            } else if depth > 0, remainder.hasPrefix("-->") {
+                depth -= 1
+                index = line.index(index, offsetBy: 3)
+            } else {
+                index = line.index(after: index)
+            }
+        }
+        return nil
     }
 
     /// The title a chapter marker line names: what stands between the

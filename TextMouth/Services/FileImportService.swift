@@ -250,7 +250,7 @@ struct ImportedFileMetadata {
     /// import runs off the main thread. Reading tags never throws, so the
     /// empty tags are only the type checker's fallback.
     private static func audioTags(of url: URL) -> AudioMetadata {
-        (try? AsyncBridge.waitForResult { await AudioPlaybackService.extractFullMetadata(from: url) }) ?? AudioMetadata()
+        (try? AsyncBridge.waitForResult(timeLimit: AsyncBridge.audioTagsTimeLimit) { await AudioPlaybackService.extractFullMetadata(from: url) }) ?? AudioMetadata()
     }
 }
 
@@ -2895,6 +2895,11 @@ enum FileImportService {
     /// left a readable bookInfo.json in it. Such a package is left untouched
     /// on disk for a deliberate re-import.
     ///
+    /// A package a kept row of library.json owns (`Library.keptRowPackages`,
+    /// V03), a book a later TextMouth wrote that this one does not show, is
+    /// no orphan either: it is passed over before its record is read, so it
+    /// is never adopted as a second book of the same package.
+    ///
     /// The walk and every check run with dataless files left in the cloud
     /// (FR02). A folder that cannot be listed without downloading is passed
     /// over, and a package whose folder, record, removal marker, or book file
@@ -2913,6 +2918,8 @@ enum FileImportService {
 
         // Collect all .tmb directory names currently tracked in the library
         let knownTMBNames = Set(library.books.map { $0.tmbDirectoryName })
+        // The packages of the rows kept unshown (V03), owned by those rows.
+        let keptPackages = library.keptRowPackages
 
         return DatalessFiles.withoutDownloading { () -> Int in
             // Walk the library directory tree to find all .tmb packages on disk
@@ -2934,6 +2941,13 @@ enum FileImportService {
 
                 // Skip if already tracked in the library
                 if knownTMBNames.contains(url.lastPathComponent) { continue }
+
+                // Skip if a kept row owns it: adopting it would show the
+                // book twice once a newer TextMouth reads that row.
+                if !keptPackages.isEmpty, keptPackages.owns(
+                    folderPath: libraryFolderPath(ofPackageAt: url, libraryDirectory: libraryDir),
+                    tmbDirectoryName: url.lastPathComponent
+                ) { continue }
 
                 let orphan: (book: Book, recordedFolderPath: String)
                 do {
@@ -2966,6 +2980,18 @@ enum FileImportService {
             }
             return adopted
         }
+    }
+
+    /// The library folder the package at `url` is in, relative to
+    /// `libraryDir`: "" at the top of the library, "Science Fiction/Author"
+    /// for Library/Science Fiction/Author/Book.tmb. Symbolic links are
+    /// resolved so /tmp and /private/tmp paths match consistently.
+    private static func libraryFolderPath(ofPackageAt url: URL, libraryDirectory libraryDir: URL) -> String {
+        let resolvedLibrary = libraryDir.resolvingSymlinksInPath().path
+        let resolvedParent = url.deletingLastPathComponent().resolvingSymlinksInPath().path
+        return resolvedParent
+            .replacingOccurrences(of: resolvedLibrary, with: "")
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
     }
 
     /// The book the orphaned package at `url` holds, as its bookInfo.json
@@ -3029,15 +3055,7 @@ enum FileImportService {
             break
         }
 
-        // Determine the folder path relative to the library directory.
-        // e.g. Library/Science Fiction/Author/Book.tmb → "Science Fiction/Author"
-        // Resolve symlinks so /tmp vs /private/tmp paths match consistently.
-        let resolvedLibrary = libraryDir.resolvingSymlinksInPath().path
-        let resolvedParent = url.deletingLastPathComponent().resolvingSymlinksInPath().path
-        let relativePath = resolvedParent
-            .replacingOccurrences(of: resolvedLibrary, with: "")
-        let folderPath = relativePath
-            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let folderPath = libraryFolderPath(ofPackageAt: url, libraryDirectory: libraryDir)
 
         // Build the Book from bookInfo.json metadata and state, every field
         // the record holds included, its text cache's fingerprints too. A

@@ -187,6 +187,24 @@ struct IndexedArchive {
     func file(matchingCaseInsensitively path: String) -> Entry? {
         filesByLowercasedPath[path.lowercased()]
     }
+
+    /// The entry at exactly `path`, or else the first file entry whose path
+    /// matches it without regard to case (ST09): a badly made book may name a
+    /// member in another case than its ZIP spells it, and a reader that
+    /// looked only for the exact spelling would lose that member.
+    func file(at path: String) -> Entry? {
+        self[path] ?? file(matchingCaseInsensitively: path)
+    }
+}
+
+extension Archive {
+    /// The entry at exactly `path`, or else the first file entry whose path
+    /// matches it without regard to case (ST09); the rule of
+    /// `IndexedArchive.file(at:)` for an archive that is not indexed. An exact
+    /// match always wins, and the case-insensitive scan runs only without one.
+    func file(at path: String) -> Entry? {
+        self[path] ?? first { $0.type == .file && $0.path.lowercased() == path.lowercased() }
+    }
 }
 
 // MARK: - Reading
