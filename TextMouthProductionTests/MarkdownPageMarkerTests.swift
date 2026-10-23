@@ -262,6 +262,21 @@ final class MarkdownPageMarkerTests: XCTestCase {
         XCTAssertEqual(many.pages.count, 10_000)
     }
 
+    /// A crafted line whose rest is a block quote holding another marker-led
+    /// block, 5,000 levels deep, once re-parsed the rest of the line at every
+    /// level. The re-parsing now goes one level deep: the first marker and
+    /// the first level are read, and an HTML block inside the first level's
+    /// rest reads as it did before ST05 (so the markers and words from the
+    /// second level on are not read). The test asserts only that the parse
+    /// returns and finds the first page.
+    func testNestedMarkerLedBlocksAreReadOneLevelDeep() throws {
+        let line = String(repeating: "<!-- page: 1 -->> ", count: 5_000) + "Deep words.\n"
+        let result = try chapter(line)
+
+        XCTAssertEqual(result.pages.first?.label, "1")
+        XCTAssertFalse(result.pages.isEmpty)
+    }
+
     // MARK: - Placement
 
     func testLinePositionIsClassifiedFromTheEndOfTheMarkdown() {

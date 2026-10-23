@@ -92,6 +92,14 @@ private struct PlainTextExtractor: MarkupWalker {
     /// Its first words are kept apart from the words before them in its row
     /// (`append(_:)`), so an empty cell writes nothing, not even a space.
     private var cellBoundaryIsPending = false
+    /// Whether the rest of a marker-led HTML block (ST05) is being visited.
+    /// A container in that rest (a block quote or a list item) can hold
+    /// another marker-led block, and a crafted line such as
+    /// `<!-- page: 1 -->> <!-- page: 2 -->> ...` would then re-parse the rest
+    /// of the line once per level. While this is set an HTML block reads
+    /// exactly as before ST05 (one marker alone is taken, anything else is
+    /// nothing), which bounds the re-parsing to one level.
+    private var isReadingRestOfMarkerLine = false
 
     /// Only generated cache/EPUB Markdown opts into navigation annotations
     /// and page markers (PG01).
@@ -259,15 +267,18 @@ private struct PlainTextExtractor: MarkupWalker {
     /// emphasis, and offsets are read in place. Those words are read whether
     /// or not the markers are (`includeNavigationHeadings`). A block that is
     /// exactly one marker, or that begins with any other comment, reads as it
-    /// always has.
+    /// always has. So does any HTML block inside such a rest
+    /// (`isReadingRestOfMarkerLine`): the re-parsing goes one level deep.
     mutating func visitHTMLBlock(_ html: HTMLBlock) {
-        if let (markers, rest) = Self.leadingMarkers(of: html.rawHTML) {
+        if !isReadingRestOfMarkerLine, let (markers, rest) = Self.leadingMarkers(of: html.rawHTML) {
             if includeNavigationHeadings {
                 for marker in markers { record(marker) }
             }
             // The rest is ordinary Markdown on its own: visit each block as
             // any block is, so a paragraph, a list, or emphasis reads in place.
+            isReadingRestOfMarkerLine = true
             descendInto(Document(parsing: String(rest)))
+            isReadingRestOfMarkerLine = false
         } else if includeNavigationHeadings, let marker = Self.marker(in: html.rawHTML) {
             record(marker)
         }
