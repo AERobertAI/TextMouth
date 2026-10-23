@@ -94,7 +94,9 @@ final class AudioEditActivity: Sendable {
         state.withLock { $0.uses[bookID] != nil }
     }
 
-    /// Whether `bookID` is open in a reader.
+    /// Whether `bookID` is open in a reader. Also read by the text cache
+    /// batch (ST01), which runs off the main actor, to keep the new text of
+    /// a book a reader has open.
     func isOpenInReader(_ bookID: UUID) -> Bool {
         state.withLock { $0.openInReaders.contains(bookID) }
     }

@@ -839,13 +839,23 @@ extension LibraryViewModel {
 
         textExtraction.begin(force ? "Re-extracting text" : "Updating text cache", total: books.count)
 
-        let updateProgress: @MainActor @Sendable (ContentAnalysisSummary?) -> Void = { [weak self] summary in
+        let updateProgress: @MainActor @Sendable (TextCacheUpdate) -> Void = { [weak self] update in
             guard let self else { return }
-            if let summary {
-                // The package record already holds the analysis, so a crash
-                // before the summary reaches the row loses nothing: the next
-                // launch's batch recovers it from the record.
-                self.analysisSummaries.add(summary)
+            if let summary = update.summary {
+                if let text = update.textForOpenReader, self.openBookIDs.contains(summary.bookID) {
+                    // A reader has the book open and shows its old text (ST01):
+                    // the row takes the analysis now, as after an edit
+                    // (`commitTextEdit`), so the reader's copy of the book
+                    // agrees with the text it is given, which it shows in
+                    // place of the old one, its cursor following its words.
+                    self.applyAnalysisSummaries([summary])
+                    self.bookUpdates.textReplaced(bookID: summary.bookID, with: text.content, movedPlaces: text.movedPlaces)
+                } else {
+                    // The package record already holds the analysis, so a crash
+                    // before the summary reaches the row loses nothing: the next
+                    // launch's batch recovers it from the record.
+                    self.analysisSummaries.add(summary)
+                }
             }
             self.textExtraction.advance()
         }
@@ -859,14 +869,20 @@ extension LibraryViewModel {
         // text cache without reading the one it replaces.
         let files: MaintainedFiles = force ? [.content, .record] : .all
 
-        TextCacheUpdateQueue.run(books: books, update: { book in
-            let summary = autoreleasepool {
+        // Whether a book is open in a reader, asked from the batch's worker
+        // threads (the activity, not `self`, which is main-actor state).
+        let activity = audioEditActivity
+        let isOpenInReader: @Sendable (UUID) -> Bool = { activity.isOpenInReader($0) }
+
+        TextCacheUpdateQueue.run(books: Self.openBooksFirst(books, open: openBookIDs), update: { book in
+            let update = autoreleasepool {
                 Self.updateTextCache(
-                    of: book, force: force, reading: files, access: access, skips: skips, held: held, pages: pages
+                    of: book, force: force, reading: files, access: access, skips: skips, held: held, pages: pages,
+                    isOpenInReader: isOpenInReader
                 )
             }
             releaseBatchParserMemory()
-            DispatchQueue.main.async { updateProgress(summary) }
+            DispatchQueue.main.async { updateProgress(update) }
         }, completion: { [weak self] in
             // Every worker has returned, so the tallies are complete.
             skips.log()
@@ -884,9 +900,18 @@ extension LibraryViewModel {
         })
     }
 
+    /// `books` with those whose IDs are in `open` first, every open book and
+    /// every other keeping its order (a stable partition). A reader restored
+    /// at launch gets its book's new text in the batch's first moments (ST01),
+    /// most likely before the listener plays.
+    nonisolated static func openBooksFirst(_ books: [Book], open: Set<UUID>) -> [Book] {
+        books.filter { open.contains($0.id) } + books.filter { !open.contains($0.id) }
+    }
+
     /// Brings `book`'s text cache up to date on a batch's worker thread, and
-    /// returns what its package now records, or nil when nothing new was
-    /// committed. `force` rebuilds the cache from the source even when an
+    /// returns what its package now records (`TextCacheUpdate.summary`, nil
+    /// when nothing new was committed), with the new text when a reader has
+    /// the book open (`isOpenInReader`, ST01). `force` rebuilds the cache from the source even when an
     /// earlier run committed it, as Redo Text Extraction does.
     ///
     /// A book is left as it is, and counted in `skips`, when any of the
@@ -908,32 +933,35 @@ extension LibraryViewModel {
         access: MaintenanceFileAccess,
         skips: CloudSkips,
         held: HeldTextEditTally,
-        pages: PageUpgradeTally?
-    ) -> ContentAnalysisSummary? {
+        pages: PageUpgradeTally?,
+        isOpenInReader: @Sendable (UUID) -> Bool
+    ) -> TextCacheUpdate {
         // Only a book chosen for its pages counts toward their summary.
         let pages = PageReaderVersions.isDueForPages(book) ? pages : nil
         do {
             try access.requireOnThisMac(book, reading: files)
             return try access.read(book.bookFileURL) {
-                try committedTextCache(of: book, force: force, reading: files, access: access, pages: pages)
+                try committedTextCache(
+                    of: book, force: force, reading: files, access: access, pages: pages, isOpenInReader: isOpenInReader
+                )
             }
         } catch where DatalessFiles.isDownloadRefusal(error) {
             skips.record(book)
             pages?.record(.skippedInCloud)
-            return nil
+            return .summaryOnly(nil)
         } catch is BookTextEditPending {
             held.record(book.id)
             pages?.record(.keptChanged)
-            return nil
+            return .summaryOnly(nil)
         } catch is EditedTextKept {
             // The user's edit stands (B12); its TEXT_EDIT_KEPT line was
             // logged where it was met, and this is no failure.
             pages?.record(.keptChanged)
-            return nil
+            return .summaryOnly(nil)
         } catch {
             MarkdownCacheService.logGenerationFailure(error, for: book)
             pages?.record(.failed)
-            return nil
+            return .summaryOnly(nil)
         }
     }
 
@@ -952,8 +980,9 @@ extension LibraryViewModel {
         force: Bool,
         reading files: MaintainedFiles,
         access: MaintenanceFileAccess,
-        pages: PageUpgradeTally?
-    ) throws -> ContentAnalysisSummary? {
+        pages: PageUpgradeTally?,
+        isOpenInReader: @Sendable (UUID) -> Bool
+    ) throws -> TextCacheUpdate {
         let currentVersion = MarkdownCacheService.currentCacheVersion
         // The copy kept of text the re-read for pages replaces, when it does.
         var replacedTextCopy: URL?
@@ -982,7 +1011,7 @@ extension LibraryViewModel {
                     folderPath: book.folderPath,
                     tmbDirectoryName: book.tmbDirectoryName
                 )
-                return ContentAnalysisSummary(recovered: recovered, record: record)
+                return .summaryOnly(ContentAnalysisSummary(recovered: recovered, record: record))
             }
             // A book behind only in its pages is compared with its file
             // first (PG09, PG16), before an edit saved while TextMouth was
@@ -996,7 +1025,7 @@ extension LibraryViewModel {
                     break
                 case .writtenWithPages:
                     pages?.record(.gainedPages)
-                    return stampedText(of: book, access: access)
+                    return .summaryOnly(stampedText(of: book, access: access))
                 case .changed(let bytes):
                     // Nothing records an edit of this text, and nothing can
                     // tell one made before B12 from an extraction that
@@ -1005,16 +1034,16 @@ extension LibraryViewModel {
                     // no copy, the text is kept as it is.
                     guard let copy = PageUpgradeCopies.keep(MarkdownCacheService.cacheURL(for: book), bytes: bytes) else {
                         pages?.record(.keptChanged)
-                        return keptChangedText(of: book, access: access)
+                        return .summaryOnly(keptChangedText(of: book, access: access))
                     }
                     replacedTextCopy = copy
                 case .tryAgainNextLaunch:
                     pages?.record(.failed)
                     logCheckDeferred(of: book)
-                    return nil
+                    return .summaryOnly(nil)
                 case let .unreadable(why, missingFile):
                     pages?.record(missingFile ? .skippedMissing : .failed)
-                    return unreadableText(of: book, why: why, missingFile: missingFile, access: access)
+                    return .summaryOnly(unreadableText(of: book, why: why, missingFile: missingFile, access: access))
                 }
             }
             // The record no longer describes content.md: it may hold an
@@ -1022,7 +1051,7 @@ extension LibraryViewModel {
             // parses, and otherwise kept beside it before the rebuild below.
             if let taken = try editSavedWhileClosed(of: book, access: access) {
                 pages?.record(.keptChanged)
-                return taken
+                return .summaryOnly(taken)
             }
             // content.md holds an edit the user made and TextMouth took
             // (B12): the book's file is not read over it. The text is
@@ -1031,7 +1060,7 @@ extension LibraryViewModel {
             if BookTextEditSessions.holdsTakenEdit(book, access: access) {
                 BookTextEditSessions.logEditedTextKept(of: book)
                 pages?.record(.keptChanged)
-                return keptText(of: book, access: access)
+                return .summaryOnly(keptText(of: book, access: access))
             }
         }
         var updatedBook = book
@@ -1040,7 +1069,7 @@ extension LibraryViewModel {
         guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(
             for: &updatedBook, replacingEditedText: force
         ) else {
-            return nil
+            return .summaryOnly(nil)
         }
         // A file that went to the cloud while the cache was written may have
         // been read only in part, so nothing is committed from it.
@@ -1057,7 +1086,7 @@ extension LibraryViewModel {
                 movedPlaces: generated.movedPlaces,
                 // The content.md just written has its format's pages (PG09).
                 pageReaderVersion: .some(generated.pageReaderVersion)
-            ) else { return nil }
+            ) else { return .summaryOnly(nil) }
             if let replacedTextCopy {
                 // The text read over is beside the new one, under this name.
                 DiagnosticLog.event(.storage, "PAGES_REPLACED_TEXT: \(book.title); kept as \(replacedTextCopy.lastPathComponent)")
@@ -1066,11 +1095,21 @@ extension LibraryViewModel {
                 // A run for the pages that failed gave none (PG16).
                 pages?.record(PageReaderVersions.notesFailure(generated.pageReaderVersion) ? .failed : .gainedPages)
             }
-            return ContentAnalysisSummary(committed: committed, movedPlaces: generated.movedPlaces)
+            // A reader that has this book open shows the text it loaded, which
+            // this rewrite has replaced (ST01): the new text, already parsed
+            // and indexed, goes to the main actor with the summary, kept only
+            // for a book open in a reader at this moment.
+            let textForOpenReader = isOpenInReader(book.id)
+                ? TextForOpenReader(content: generated.content, movedPlaces: generated.movedPlaces)
+                : nil
+            return TextCacheUpdate(
+                summary: ContentAnalysisSummary(committed: committed, movedPlaces: generated.movedPlaces),
+                textForOpenReader: textForOpenReader
+            )
         } catch {
             // Leave the library version unchanged so startup retries
             // a book whose new index could not be committed.
-            return nil
+            return .summaryOnly(nil)
         }
     }
 
@@ -2158,6 +2197,37 @@ extension LibraryViewModel {
             }
         }
         return (total, known, unknown)
+    }
+}
+
+// MARK: - A Text Cache Batch's Update (ST01)
+
+/// The text a text cache batch has just written for a book that a reader has
+/// open: the book's new text, parsed and indexed as the batch wrote it, and
+/// the moves of the book's saved places the rewrite took (nil for none). The
+/// batch gives it to the book's reader, which shows it in place of the text
+/// it loaded, its cursor following its words (`ReaderViewModel.showEditedText`).
+struct TextForOpenReader: Sendable {
+    /// The book's new text.
+    let content: DocumentContent
+    /// The moves of the book's saved places that the rewrite took.
+    let movedPlaces: MovedPlaces?
+}
+
+/// What the text cache batch made of one book (`updateTextCache`), handed from
+/// the batch's worker thread to the main actor.
+struct TextCacheUpdate: Sendable {
+    /// What the book's package now records, nil when nothing new was
+    /// committed.
+    let summary: ContentAnalysisSummary?
+    /// The book's new text, when a reader had the book open as the batch
+    /// committed it; nil for every other book, so the batch keeps no text.
+    let textForOpenReader: TextForOpenReader?
+
+    /// An update with `summary` and no text for a reader: what every outcome
+    /// but a rewrite of an open book's text gives.
+    static func summaryOnly(_ summary: ContentAnalysisSummary?) -> TextCacheUpdate {
+        TextCacheUpdate(summary: summary, textForOpenReader: nil)
     }
 }
 

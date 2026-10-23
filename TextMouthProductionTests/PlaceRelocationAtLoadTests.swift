@@ -163,11 +163,14 @@ final class PlaceRelocationAtLoadTests: CloudMaintenanceTestCase {
 
     // MARK: A Reader That Saved at the Old Numbers
 
-    /// A reader that stays open while a rebuild moves its book's places, and
-    /// then saves its position at the old text's numbers, is caught at the
-    /// next load: the saved position keeps its words, which the new text
-    /// holds elsewhere, so the next reader opens at them and the row's
-    /// position follows.
+    /// A reader the library does not know is open, as in the moment between
+    /// a rebuild's commit and the replaced text reaching it, and which then
+    /// saves its position at the old text's numbers, is caught at the next
+    /// load: the saved position keeps its words, which the new text holds
+    /// elsewhere, so the next reader opens at them and the row's position
+    /// follows. A reader the library does know is open is now given the new
+    /// text (ST01), so the test takes its book out of `openBookIDs` while
+    /// the rebuild runs, as the moment between commit and delivery does.
     @MainActor
     func testAReaderThatSavedAtTheOldNumbersDuringARebuildIsCaughtAtTheNextLoad() async throws {
         // The older text, described as current so the first reader does not
@@ -186,11 +189,16 @@ final class PlaceRelocationAtLoadTests: CloudMaintenanceTestCase {
         XCTAssertEqual(open.currentChapterIndex, oldPosition.chapterIndex)
         XCTAssertEqual(open.currentCharacterOffset, oldPosition.characterOffset)
 
+        // The library does not know the reader is open (ST01: a reader it
+        // knows is given the new text), so the rebuild does not tell it.
+        model.openBookIDs.remove(current.id)
+
         // The text is rebuilt under a changed extraction: the places move in
         // the row and the record, and the open reader is not told.
         let rebuilt = expectation(description: "Redo Text Extraction finished")
         XCTAssertTrue(model.redoAllTextExtraction(access: .live) { _ in rebuilt.fulfill() })
         await fulfillment(of: [rebuilt], timeout: 20)
+        model.openBookIDs.insert(current.id)
         assertPlaces(of: try XCTUnwrap(model.bookByID(current.id)), areThoseOf: fixture)
         XCTAssertEqual(open.currentChapterIndex, oldPosition.chapterIndex)
         XCTAssertEqual(open.currentCharacterOffset, oldPosition.characterOffset)

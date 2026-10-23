@@ -504,6 +504,78 @@ final class PagesUpgradeTests: XCTestCase {
         XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([row], access: .live), [], "the next launch would look again")
     }
 
+    // MARK: - Books open in a reader (ST01)
+
+    /// A book a reader has open, which the batch reads again for its pages,
+    /// shows its pages once the batch has: the reader takes the new text in
+    /// place of the one it loaded, silently, with its cursor on the same
+    /// words and the book's page reader recorded.
+    func testABookOpenInAReaderShowsItsPagesOnceTheBatchReadsIt() async throws {
+        let world = try makeIntegrationWorld("Pages Upgrade Open Reader")
+        let fixture = try makeBookBeforePages(sample: Self.epubSample, in: world)
+        let reader = world.openReader(for: fixture.book)
+        // This test is async, so the load, which ends on the main queue, is
+        // waited for by yielding the main actor.
+        await waitForReaderToLoadYielding(reader)
+        // The reader registers its book as open as it loads.
+        XCTAssertTrue(world.library.openBookIDs.contains(fixture.book.id))
+        let noted = TextPlace(chapter: reader.currentChapterIndex, offset: reader.currentCharacterOffset)
+        XCTAssertTrue(try XCTUnwrap(reader.content).pages.isEmpty, "the reader should start without pages")
+
+        await runBatch(in: world)
+
+        // The new text reaches the reader through the main queue, a moment
+        // after the batch reports.
+        let deadline = Date().addingTimeInterval(10)
+        while reader.content?.chapters.contains(where: { !$0.pages.isEmpty }) != true && Date() < deadline {
+            try? await Task.sleep(nanoseconds: 20_000_000)
+        }
+        XCTAssertTrue(
+            reader.content?.chapters.contains { !$0.pages.isEmpty } == true,
+            "the reader never showed the book's pages"
+        )
+        let content = try XCTUnwrap(reader.content)
+        XCTAssertEqual(reader.book.pageReaderVersion, "1.0.0")
+        // The cursor follows its words, in the same chapter. Its offset is
+        // judged by the words there, not by the number: the second reading
+        // removes the page number after a page break from the text.
+        assertText(
+            in: content, chapter: reader.currentChapterIndex, offset: reader.currentCharacterOffset,
+            begins: Self.epubPlaces.position, "cursor", file: #filePath, line: #line
+        )
+        XCTAssertEqual(reader.currentChapterIndex, noted.chapter, "the cursor changed chapter")
+    }
+
+    /// A book no reader has open keeps no text for a reader: the batch reads
+    /// it again as before, and its row and record gain the pages.
+    func testABookNotOpenKeepsNoTextForAReader() async throws {
+        let world = try makeIntegrationWorld("Pages Upgrade No Reader")
+        let fixture = try makeBookBeforePages(sample: Self.epubSample, in: world)
+        XCTAssertFalse(world.library.openBookIDs.contains(fixture.book.id))
+        XCTAssertFalse(world.library.audioEditActivity.isOpenInReader(fixture.book.id))
+
+        await runBatch(in: world)
+
+        let row = try XCTUnwrap(world.library.bookByID(fixture.book.id))
+        let content = try MarkdownCacheService.loadFromCache(for: row)
+        XCTAssertFalse(content.pages.isEmpty, "the book gained no pages")
+        XCTAssertEqual(row.pageReaderVersion, "1.0.0")
+        assertPlaces(of: row, areAt: Self.epubPlaces, in: content)
+    }
+
+    /// The batch reaches the books open in readers first, and keeps every
+    /// other order as it was.
+    func testOpenBooksComeFirstInTheBatch() {
+        // One book per name, made apart so no subscript is needed.
+        func book(_ name: String) -> Book { Book(title: name, format: .txt, filePath: "/\(name).txt", md5Hash: name) }
+        let (a, b, c, d) = (book("a"), book("b"), book("c"), book("d"))
+        let books = [a, b, c, d]
+
+        XCTAssertEqual(LibraryViewModel.openBooksFirst(books, open: [c.id, a.id]).map(\.id), [a.id, c.id, b.id, d.id])
+        XCTAssertEqual(LibraryViewModel.openBooksFirst(books, open: []).map(\.id), books.map(\.id))
+        XCTAssertEqual(LibraryViewModel.openBooksFirst(books, open: [d.id]).map(\.id), [d.id, a.id, b.id, c.id])
+    }
+
     // MARK: - The Switch
 
     /// The app ships with the launch re-read switched on (PG16): a book of a

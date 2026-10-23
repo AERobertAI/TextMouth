@@ -189,8 +189,10 @@ final class LibraryBookUpdates {
     // MARK: - Edited Text
 
     /// Tells the readers of the book `bookID`, when it is watched, that its
-    /// text is now `content`, an edit the user made in their own editor
-    /// (FR05). Call it after the library holds the book's new analysis, so
+    /// text is now `content`: an edit the user made in their own editor
+    /// (FR05), or the book's text read again by the text cache batch, which
+    /// a reader restored at launch shows in place of the text it loaded
+    /// (ST01). Call it after the library holds the book's new analysis, so
     /// the readers' copies of the book agree with the text they show.
     /// `movedPlaces` is what the edit moved of the book's saved places (nil
     /// for none), which the readers' own copies take too.
