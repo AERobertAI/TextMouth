@@ -181,6 +181,64 @@ struct UnreadableLibraryRow: Equatable, Sendable {
     }
 }
 
+/// The packages that the kept rows of a library (`Library.unreadableRows`)
+/// own (V03), and the one place that decides whether a package on disk is
+/// one of them. Every walk of the packages (orphan adoption, with the startup
+/// repair, Rebuild Directory, and Rebuild Library Index behind it) asks
+/// `owns(folderPath:tmbDirectoryName:)` and leaves an owned package alone:
+/// it is never adopted as a second book, made a row of, repaired, moved, or
+/// deleted.
+///
+/// A kept row names its package by its `folderPath` and `tmbDirectoryName`
+/// when both read, and by `tmbDirectoryName` alone, in any folder, when only
+/// that reads (the folder may be the very field the row is unreadable for).
+/// A row naming no package owns none. Names and folders are compared the way
+/// the library compares folders on a volume that ignores case
+/// (`FolderPathEquivalence.caseInsensitive`), and in precomposed form, as a
+/// directory listing may spell them differently from the row. That can only
+/// own more, never less, which is the safe way to be wrong.
+struct KeptRowPackages: Equatable, Sendable {
+    /// How names and folders are compared.
+    private static let equivalence = FolderPathEquivalence.caseInsensitive
+
+    /// Package names owned in one folder, by the folder's comparison key.
+    private let namesByFolder: [String: Set<String>]
+    /// Package names owned in any folder, by comparison key: those of rows
+    /// that name no folder this TextMouth can read.
+    private let namesInAnyFolder: Set<String>
+
+    /// The packages `rows` own.
+    init(_ rows: [UnreadableLibraryRow]) {
+        var byFolder: [String: Set<String>] = [:]
+        var inAnyFolder = Set<String>()
+        for row in rows {
+            // A row without a package name (a legacy row) owns no package.
+            guard let name = row.tmbDirectoryName, !name.isEmpty else { continue }
+            let nameKey = Self.equivalence.comparisonKey(for: name)
+            if let folder = row.folderPath {
+                byFolder[Self.equivalence.comparisonKey(for: folder), default: []].insert(nameKey)
+            } else {
+                inAnyFolder.insert(nameKey)
+            }
+        }
+        namesByFolder = byFolder
+        namesInAnyFolder = inAnyFolder
+    }
+
+    /// Whether no row owns a package.
+    var isEmpty: Bool {
+        namesByFolder.isEmpty && namesInAnyFolder.isEmpty
+    }
+
+    /// Whether the package named `tmbDirectoryName` in the library folder
+    /// `folderPath` ("" for the top of the library) belongs to a kept row.
+    func owns(folderPath: String, tmbDirectoryName: String) -> Bool {
+        let nameKey = Self.equivalence.comparisonKey(for: tmbDirectoryName)
+        if namesInAnyFolder.contains(nameKey) { return true }
+        return namesByFolder[Self.equivalence.comparisonKey(for: folderPath)]?.contains(nameKey) ?? false
+    }
+}
+
 struct Library: Codable {
     /// The rows of the library model's books: every book of the library's
     /// own, and, while TextMouth runs, the rows of feed items whose files
@@ -203,6 +261,12 @@ struct Library: Codable {
     /// every save, and are never shown or counted. A library that replaces
     /// the one loaded carries these over.
     var unreadableRows: [UnreadableLibraryRow]
+
+    /// The packages the kept rows own, which every walk of the packages
+    /// leaves alone (`KeptRowPackages`).
+    var keptRowPackages: KeptRowPackages {
+        KeptRowPackages(unreadableRows)
+    }
 
     /// A library of `books` and the rest. The shelf keeps the index of every
     /// feed whose rows are among `books` too, so a feed whose last row later

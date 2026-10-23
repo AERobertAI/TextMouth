@@ -332,6 +332,302 @@ final class NewerLibraryRowsTests: XCTestCase {
         XCTAssertEqual(library.books.count, 2)
     }
 
+    // MARK: - Walks of the packages
+
+    /// A scratch folder for one test, removed after it with everything in it.
+    private func makeScratchFolder() throws -> URL {
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("NewerLibraryRows-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
+        return folder
+    }
+
+    /// Captures the hosted test root's library index and puts it back after
+    /// the test, for a test that saves or recovers the index there.
+    private func captureLibraryIndex() throws -> LibraryIndexSandbox {
+        let sandbox = try LibraryIndexSandbox.capture()
+        addTeardownBlock { sandbox.restore() }
+        return sandbox
+    }
+
+    /// Where the package of `book` is in the library folder
+    /// `libraryDirectory`.
+    private func packageURL(of book: Book, in libraryDirectory: URL) -> URL {
+        let folder = book.folderPath.isEmpty
+            ? libraryDirectory
+            : libraryDirectory.appendingPathComponent(book.folderPath, isDirectory: true)
+        return folder.appendingPathComponent(book.tmbDirectoryName, isDirectory: true)
+    }
+
+    /// Writes a real package, as an import leaves one, into the library
+    /// folder `folder` ("" for the top) of `libraryDirectory`: a book file, a
+    /// content.md, and a readable bookInfo.json. Returns the book it holds.
+    /// The package is removed after the test, which matters for one in the
+    /// hosted test root's library.
+    private func writePackage(title: String, folder: String = "", in libraryDirectory: URL) throws -> Book {
+        let name = "NewerRows-\(UUID().uuidString).tmb"
+        let folderURL = folder.isEmpty
+            ? libraryDirectory
+            : libraryDirectory.appendingPathComponent(folder, isDirectory: true)
+        let package = folderURL.appendingPathComponent(name, isDirectory: true)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: package) }
+        let content = package.appendingPathComponent("book.txt")
+        try Data("Words of \(title), \(UUID().uuidString).".utf8).write(to: content)
+        try Data("# \(title)\n".utf8).write(to: package.appendingPathComponent("content.md"))
+        let book = Book(
+            title: title,
+            author: "Test Fixture",
+            format: .txt,
+            filePath: content.path,
+            md5Hash: "hash-\(UUID().uuidString)",
+            folderPath: folder,
+            tmbDirectoryName: name
+        )
+        try book.makeBookInfo().save(to: package)
+        return book
+    }
+
+    /// Every file and folder in `package` by its path inside it, each file
+    /// with its bytes. Equal snapshots show nothing was added, removed, or
+    /// changed.
+    private func snapshot(of package: URL) throws -> [String: Data] {
+        var entries: [String: Data] = [:]
+        let walk = FileManager.default.enumerator(atPath: package.path)
+        while let path = walk?.nextObject() as? String {
+            if (walk?.fileAttributes?[.type] as? FileAttributeType) == .typeDirectory {
+                entries[path + "/"] = Data()
+            } else {
+                entries[path] = try Data(contentsOf: package.appendingPathComponent(path))
+            }
+        }
+        return entries
+    }
+
+    /// A package on disk whose row library.json keeps unshown.
+    private struct KeptPackage {
+        /// The book that wrote the package, as this version reads it.
+        let book: Book
+        /// The package's folder.
+        let package: URL
+        /// The row library.json holds for it: that book's, in a format this
+        /// version does not know (`fb2`), so it is kept, not read.
+        let row: UnreadableLibraryRow
+        /// The package's files before any walk.
+        let before: [String: Data]
+    }
+
+    /// Writes a package into the library folder `folder` of `libraryDirectory`
+    /// and the row that keeps it: the book's own row with its format changed,
+    /// read back through the library so it really is a kept row.
+    private func makeKeptPackage(folder: String = "", in libraryDirectory: URL) throws -> KeptPackage {
+        let book = try writePackage(title: "Kept Book", folder: folder, in: libraryDirectory)
+        var root = try jsonObject(LibraryPersistenceService.encodedIndex(Library(books: [book])))
+        var rows = try XCTUnwrap(root["books"] as? [[String: Any]])
+        // No subscript: another number of rows fails here, not by trapping.
+        XCTAssertEqual(rows.count, 1)
+        guard rows.count == 1 else { throw CocoaError(.fileReadCorruptFile) }
+        rows[0]["format"] = "fb2"
+        root["books"] = rows
+        let read = try decodeLibrary(JSONSerialization.data(withJSONObject: root))
+        XCTAssertEqual(read.unreadableRows.count, 1)
+        XCTAssertTrue(read.books.isEmpty)
+        let kept = try XCTUnwrap(read.unreadableRows.first)
+        let package = packageURL(of: book, in: libraryDirectory)
+        return KeptPackage(book: book, package: package, row: kept, before: try snapshot(of: package))
+    }
+
+    /// A kept row made of `members`.
+    private func keptRow(_ members: [String: JSONValue]) -> UnreadableLibraryRow {
+        UnreadableLibraryRow(json: .object(members))
+    }
+
+    /// `KeptRowPackages` owns the package a row names by its folder and
+    /// name, by its name in any folder when it names no readable folder, and
+    /// nothing for a row naming no package.
+    func testKeptRowPackagesOwnWhatTheRowsNameAndNothingElse() {
+        let both = keptRow(["tmbDirectoryName": .string("A.tmb"), "folderPath": .string("Shelf")])
+        let top = keptRow(["tmbDirectoryName": .string("T.tmb"), "folderPath": .string("")])
+        let nameOnly = keptRow(["tmbDirectoryName": .string("N.tmb")])
+        let folderNotText = keptRow(["tmbDirectoryName": .string("F.tmb"), "folderPath": .integer(3)])
+        let nameless = keptRow(["folderPath": .string("Shelf")])
+        let emptyName = keptRow(["tmbDirectoryName": .string(""), "folderPath": .string("Shelf")])
+        let nameNotText = keptRow(["tmbDirectoryName": .integer(7)])
+
+        let packages = KeptRowPackages([both, top, nameOnly, folderNotText, nameless, emptyName, nameNotText])
+
+        XCTAssertTrue(packages.owns(folderPath: "Shelf", tmbDirectoryName: "A.tmb"))
+        XCTAssertFalse(packages.owns(folderPath: "Other", tmbDirectoryName: "A.tmb"), "a readable folder decides")
+        XCTAssertFalse(packages.owns(folderPath: "", tmbDirectoryName: "A.tmb"))
+        XCTAssertTrue(packages.owns(folderPath: "", tmbDirectoryName: "T.tmb"))
+        XCTAssertFalse(packages.owns(folderPath: "Shelf", tmbDirectoryName: "T.tmb"), "the top of the library is a folder too")
+        XCTAssertTrue(packages.owns(folderPath: "", tmbDirectoryName: "N.tmb"))
+        XCTAssertTrue(packages.owns(folderPath: "Any/Where", tmbDirectoryName: "N.tmb"))
+        XCTAssertTrue(packages.owns(folderPath: "Any/Where", tmbDirectoryName: "F.tmb"), "a folder that is not text names none")
+        XCTAssertFalse(packages.owns(folderPath: "Shelf", tmbDirectoryName: ""))
+        XCTAssertFalse(packages.owns(folderPath: "Shelf", tmbDirectoryName: "7"))
+        XCTAssertFalse(packages.owns(folderPath: "Shelf", tmbDirectoryName: "Unrelated.tmb"))
+        XCTAssertFalse(packages.isEmpty)
+        XCTAssertTrue(KeptRowPackages([nameless, emptyName, nameNotText]).isEmpty)
+        XCTAssertTrue(KeptRowPackages([]).isEmpty)
+    }
+
+    /// Names and folders match without regard to case, and in precomposed
+    /// form, as the library compares folders: a directory listing may spell
+    /// them as the volume does, not as the row does.
+    func testKeptRowPackagesCompareLikeTheLibraryComparesFolders() {
+        let row = keptRow(["tmbDirectoryName": .string("Caf\u{E9}.tmb"), "folderPath": .string("Shelf/Caf\u{E9}")])
+
+        let packages = KeptRowPackages([row])
+
+        XCTAssertTrue(packages.owns(folderPath: "shelf/cafe\u{301}", tmbDirectoryName: "CAFE\u{301}.TMB"))
+    }
+
+    /// Orphan adoption adds no book for a package a kept row owns, at the top
+    /// of the library and in a folder, and leaves the package as it was,
+    /// byte for byte; the package it adopts is another, which no row keeps.
+    func testOrphanAdoptionLeavesAKeptRowsPackage() throws {
+        for folder in ["", "Shelf"] {
+            let libraryDirectory = try makeScratchFolder()
+            let kept = try makeKeptPackage(folder: folder, in: libraryDirectory)
+            let loose = try writePackage(title: "Loose Book", folder: folder, in: libraryDirectory)
+            var library = Library(unreadableRows: [kept.row])
+
+            let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, libraryDirectory: libraryDirectory)
+
+            XCTAssertEqual(adopted, 1, "folder '\(folder)'")
+            XCTAssertEqual(library.books.map(\.id), [loose.id], "folder '\(folder)'")
+            XCTAssertEqual(library.unreadableRows, [kept.row])
+            XCTAssertEqual(try snapshot(of: kept.package), kept.before, "folder '\(folder)'")
+        }
+    }
+
+    /// The package of the test above is a book orphan adoption would take
+    /// but for the row that keeps it, which proves the guard is what holds
+    /// it back.
+    func testTheSamePackageIsAdoptedWhenNoRowKeepsIt() throws {
+        let libraryDirectory = try makeScratchFolder()
+        let kept = try makeKeptPackage(in: libraryDirectory)
+        var library = Library()
+
+        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, libraryDirectory: libraryDirectory)
+
+        XCTAssertEqual(adopted, 1)
+        XCTAssertEqual(library.books.map(\.id), [kept.book.id])
+    }
+
+    /// The startup repair leaves a kept row's package alone and the row in
+    /// library.json: the shown book stays, no book is made of the package,
+    /// and what is saved afterward holds the row as it was.
+    @MainActor
+    func testTheStartupRepairLeavesAKeptRowsPackage() throws {
+        _ = try captureLibraryIndex()
+        let kept = try makeKeptPackage(in: TextMouthPaths.libraryDir)
+        let shown = try writePackage(title: "Shown Book", in: TextMouthPaths.libraryDir)
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [shown], unreadableRows: [kept.row])
+
+        model.migrateOldBooksIfNeeded()
+        model.save()
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertTrue(model.library.books.contains { $0.id == shown.id })
+        XCTAssertFalse(model.library.books.contains { $0.tmbDirectoryName == kept.book.tmbDirectoryName })
+        XCTAssertEqual(model.library.unreadableRows, [kept.row])
+        XCTAssertEqual(try snapshot(of: kept.package), kept.before)
+        let written = try XCTUnwrap(LibraryPersistenceService.load().library)
+        XCTAssertEqual(written.unreadableRows, [kept.row])
+        XCTAssertFalse(written.books.contains { $0.tmbDirectoryName == kept.book.tmbDirectoryName })
+        XCTAssertTrue(written.books.contains { $0.id == shown.id })
+    }
+
+    /// Rebuild Directory (and Reset to Default, which runs the same
+    /// rebuild) makes no book of a kept row's package, leaves its files as
+    /// they were, and keeps the row.
+    func testRebuildDirectoryLeavesAKeptRowsPackage() throws {
+        let kept = try makeKeptPackage(in: TextMouthPaths.libraryDir)
+        let shown = try writePackage(title: "Shown Book", in: TextMouthPaths.libraryDir)
+        var library = Library(books: [shown], unreadableRows: [kept.row])
+
+        try FileImportService.rebuildDirectoryStructure(library: &library)
+
+        XCTAssertTrue(library.books.contains { $0.id == shown.id })
+        XCTAssertFalse(library.books.contains { $0.tmbDirectoryName == kept.book.tmbDirectoryName })
+        XCTAssertEqual(library.unreadableRows, [kept.row])
+        XCTAssertEqual(try snapshot(of: kept.package), kept.before)
+    }
+
+    /// Rebuild Library Index, after the index became unreadable while
+    /// TextMouth ran: the provisional library holds the books read from their
+    /// packages and none made of a kept row's, and the index it writes holds
+    /// the kept row once, as it was.
+    @MainActor
+    func testRebuildLibraryIndexKeepsTheKeptRowOnceAndMakesNoRowOfItsPackage() throws {
+        let sandbox = try captureLibraryIndex()
+        let kept = try makeKeptPackage(in: TextMouthPaths.libraryDir)
+        let shown = try writePackage(title: "Shown Book", in: TextMouthPaths.libraryDir)
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [shown], unreadableRows: [kept.row])
+        try sandbox.stage(.truncated, of: Library(books: [shown]), at: sandbox.indexURL)
+
+        model.reloadLibraryAfterDataDirectoryReturned()
+
+        XCTAssertNotNil(model.indexRecovery)
+        XCTAssertTrue(model.library.books.contains { $0.id == shown.id }, "read from its package")
+        XCTAssertFalse(model.library.books.contains { $0.tmbDirectoryName == kept.book.tmbDirectoryName })
+        let outcome = model.rebuildLibraryIndex()
+        guard case .rebuilt = outcome else { return XCTFail("\(outcome)") }
+        let written = try XCTUnwrap(LibraryPersistenceService.load().library)
+        XCTAssertEqual(written.unreadableRows, [kept.row], "the kept row, once")
+        XCTAssertTrue(written.books.contains { $0.id == shown.id })
+        XCTAssertFalse(written.books.contains { $0.tmbDirectoryName == kept.book.tmbDirectoryName })
+        XCTAssertEqual(try snapshot(of: kept.package), kept.before)
+    }
+
+    /// The sweep of empty folders leaves the folder of a kept row's package
+    /// (which no folder row of the library names) and the package, and takes
+    /// the empty folder beside it, as it always did.
+    func testTheEmptyFolderSweepLeavesAKeptRowsPackage() throws {
+        let libraryDirectory = try makeScratchFolder()
+        let kept = try makeKeptPackage(folder: "Shelf", in: libraryDirectory)
+        let empty = libraryDirectory.appendingPathComponent("Empty", isDirectory: true)
+        try FileManager.default.createDirectory(at: empty, withIntermediateDirectories: true)
+
+        FileImportService.removeEmptyLibrarySubdirectories(
+            library: Library(unreadableRows: [kept.row]),
+            libraryDirectory: libraryDirectory
+        )
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: empty.path), "the sweep still sweeps")
+        XCTAssertEqual(try snapshot(of: kept.package), kept.before)
+    }
+
+    /// The data-directory move copies a kept row's package with the rest,
+    /// byte for byte, and writes the row, as it was, into the new
+    /// library.json.
+    func testTheDataDirectoryMoveCopiesAKeptRowsPackage() throws {
+        let base = try makeScratchFolder()
+        let source = base.appendingPathComponent("Source", isDirectory: true)
+        let destination = base.appendingPathComponent("Destination", isDirectory: true)
+        let libraryDirectory = source.appendingPathComponent(TextMouthPaths.libraryFolderName, isDirectory: true)
+        let kept = try makeKeptPackage(folder: "Shelf", in: libraryDirectory)
+        let shown = try writePackage(title: "Shown Book", in: libraryDirectory)
+        let library = Library(books: [shown], unreadableRows: [kept.row])
+
+        let migrated = try DataDirectoryMigrator.prepareMigration(from: source, to: destination, library: library)
+
+        let copy = destination
+            .appendingPathComponent(TextMouthPaths.libraryFolderName, isDirectory: true)
+            .appendingPathComponent("Shelf", isDirectory: true)
+            .appendingPathComponent(kept.book.tmbDirectoryName, isDirectory: true)
+        XCTAssertEqual(try snapshot(of: copy), kept.before)
+        XCTAssertEqual(migrated.unreadableRows, [kept.row])
+        let written = try decodeLibrary(Data(contentsOf: destination.appendingPathComponent("library.json")))
+        XCTAssertEqual(written.unreadableRows, [kept.row])
+        XCTAssertEqual(written.books.map(\.id), [shown.id])
+    }
+
     // MARK: - What the user is told
 
     /// The sentence Storage settings show: nothing for none, the singular
