@@ -1604,10 +1604,14 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// any case; CAF too, since an import runs this on a source before
     /// converting it, so `isConvertedAtImport` and not `isNeverDecodedInApp`):
     /// since October 14, 2026 such audio never reaches Apple's decoders or
-    /// AVFoundation's probing in the app's process (a spinning Ogg demuxer
-    /// hung the Mac, and `AsyncBridge.waitForResult` has no timeout). Only
-    /// `afconvert`, in a child process under a watchdog, reads it; an Ogg
-    /// file's tags and length come from `OggHeaderReader` instead.
+    /// AVFoundation's probing in the app's process, where a spinning Ogg
+    /// demuxer hung the Mac. A time limit does not make that safe:
+    /// `AsyncBridge.waitForResult` stops waiting at its limit (ST07), but it
+    /// cannot stop AVFoundation work that ignores cancellation, which keeps
+    /// running, abandoned, with its thread and memory, and each time such a
+    /// file is opened again another can pile up beside it. Only `afconvert`,
+    /// in a child process under a watchdog, reads such audio; an Ogg file's
+    /// tags and length come from `OggHeaderReader` instead.
     static func metadataAsset(for url: URL) -> AVURLAsset? {
         metadataAssetOptions(for: url).map { AVURLAsset(url: url, options: $0) } // lint-ok: refuses every converted format by extension
     }
