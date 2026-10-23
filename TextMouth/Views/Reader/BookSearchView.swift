@@ -110,11 +110,54 @@ struct BookSearchResult: Identifiable, Equatable, Sendable {
     let globalOffset: Int
     /// Heading containing the match, or nil when there is none to name.
     var locationTitle: String?
+    /// Seconds from the start of the book at which the match is heard, for a
+    /// match in a transcript; nil for a text book's.
+    var time: TimeInterval?
 
     /// The matching context, then where it is: the rotor entry, and the
     /// start of the row's spoken label.
     var contextAndLocation: String {
         [contextSnippet, locationTitle].compactMap { $0 }.joined(separator: ", ")
+    }
+
+    /// For a timed result, `contextAndLocation` and the time it is heard,
+    /// spoken: the row's label and the rotor entry. Nil for an untimed one.
+    var timedLabel: String? {
+        time.map { "\(contextAndLocation), at \(TimeFormatting.spoken($0))" }
+    }
+}
+
+/// What a search of a transcribed audiobook needs to give each match the
+/// time it is heard: the transcript the chapters' texts come from, and where
+/// each audio chapter begins.
+struct BookSearchTiming: Sendable {
+    /// The transcript whose chapter texts are searched, and whose index
+    /// gives a place in a chapter's text its time.
+    let transcript: TranscriptText
+    /// Where each chapter begins, in seconds from the start of the book.
+    let chapterStarts: [TimeInterval]
+
+    /// Seconds from the start of the book at which the match at
+    /// `characterOffset` of chapter `chapterIndex` is heard: the chapter's
+    /// start (0 for a chapter outside `chapterStarts`) and the start of the
+    /// sentence holding the match, which is also where a jump to it lands.
+    func time(chapterIndex: Int, characterOffset: Int) -> TimeInterval {
+        let start = chapterStarts.indices.contains(chapterIndex) ? chapterStarts[chapterIndex] : 0
+        return start + transcript.chapterTime(atTextOffset: characterOffset, inChapter: chapterIndex)
+    }
+
+    /// The timing of `transcript` over an audiobook whose chapters are
+    /// `audioChapters`. An audiobook's chapter text is spacing that counts
+    /// time (`ReaderViewModel.audioCharsPerSecond` characters a second), so a
+    /// chapter begins where the lengths of those before it add up.
+    static func forTranscript(_ transcript: TranscriptText, audioChapters: [Chapter]) -> BookSearchTiming {
+        var starts: [TimeInterval] = []
+        var elapsed: TimeInterval = 0
+        for chapter in audioChapters {
+            starts.append(elapsed)
+            elapsed += AudioBookParser.time(forCharacterOffset: chapter.text.utf16Length)
+        }
+        return BookSearchTiming(transcript: transcript, chapterStarts: starts)
     }
 }
 
@@ -131,6 +174,9 @@ struct BookSearchCorpus: Sendable {
     /// The book's title, so a content title that merely repeats it is not
     /// offered as a match's location.
     let bookTitle: String
+    /// What gives each match the time it is heard, when the book is a
+    /// transcribed audiobook; nil for a text book.
+    var timing: BookSearchTiming? = nil
 }
 
 /// What one completed search found.
@@ -192,6 +238,11 @@ enum BookSearchEngine {
         )
         for index in results.indices {
             results[index].locationTitle = locationTitles[index]
+            // A transcript's matches also say when they are heard.
+            results[index].time = corpus.timing?.time(
+                chapterIndex: results[index].chapterIndex,
+                characterOffset: results[index].characterOffset
+            )
         }
         return .matches(results, isTruncated: collected.isTruncated)
     }
@@ -439,7 +490,7 @@ struct BookSearchView: View {
                 .accessibilityLabel("Search results")
                 .accessibilityRotor("Search Results") {
                     ForEach(model.results) { result in
-                        AccessibilityRotorEntry(result.contextAndLocation, id: result.id)
+                        AccessibilityRotorEntry(result.timedLabel ?? result.contextAndLocation, id: result.id)
                     }
                 }
             }
