@@ -23,7 +23,8 @@ Run these from the repository root:
 - `make check` runs the reproducibility gate, which also reports the Release app's size, and `make check-selftest` tests the gate, the baseline-recording script, `make install`'s dSYM keeping, and the signing script, all described below, and also the storage drill script, the version script (see Versions, below), and the Python tools in `Scripts/test` (see Reusable test tools in [Testing TextMouth](testing.md)).
 - `make perf-baselines` records new performance baselines after a deliberate change, as The performance baselines describes below.
 - `make generate` regenerates TextMouth.xcodeproj from project.yml. Run it after adding or removing a source or test file, and commit the changed project file with that file. XcodeGen 2.45.3 writes the app target's three copy-files phases (liblouis's tables and the two folders of licence files) in a different order on each run, so regenerating can change TextMouth.xcodeproj in that order alone; the order changes nothing in the build.
-- `make set-version VERSION=0.2.0` sets the app's version in project.yml and regenerates the project, committing nothing (see Versions, below).
+- `make bump-patch` raises the app's PATCH version by one (0.2.0 to 0.2.1), and `make bump-minor` raises its MINOR version by one and sets PATCH to 0 (0.2.3 to 0.3.0); each changes the version in project.yml, regenerates the project, and commits nothing (see Versions, below).
+- `make set-version VERSION=0.2.0` sets a version you name, in the same way (see Versions, below).
 - `make resolve-packages` resolves the Swift packages exactly as Package.resolved pins them, and `make update-packages` resolves them again after a deliberate version change.
 - `make xcode` regenerates the project and opens it in Xcode.
 - `make clean` removes the build products.
@@ -31,11 +32,28 @@ Run these from the repository root:
 
 ## Versions
 
-TextMouth is in beta, so its version is 0.MINOR.PATCH until a 1.0. MINOR goes up when a merged feature set the user asked for reaches main, and PATCH goes up for an install that holds fixes only. The orchestrator bumps the version before the user's next install whenever main holds user-visible changes since the last bump, adds a section for the new version at the top of [What's new](../user/whats-new.md), and records the bump.
+TextMouth is in beta, which will last a long time, so its version is `0.MINOR.PATCH`. MAJOR stays 0 until the user calls TextMouth released (1.0). The rules for raising the version are the user's, from October 23, 2026:
 
-- The version is `MARKETING_VERSION` in project.yml, which Info.plist reads as `CFBundleShortVersionString`. Change it with `make set-version VERSION=0.2.0`, or `Scripts/set-version.sh 0.2.0`, never by hand. The script accepts only MAJOR.MINOR.PATCH, three whole numbers without leading zeros, and refuses a version that is not later than the current one, comparing each number as a number, so 0.10.0 is later than 0.9.0. It changes nothing in project.yml but the value of that one setting, runs `xcodegen generate` so that TextMouth.xcodeproj follows, and prints the old and new versions. If xcodegen fails, it puts project.yml back as it was. It commits nothing: commit project.yml with the regenerated project, in a commit that does nothing else.
+- **PATCH** goes up by 1 for each day on which main gains bug fixes or small backward-compatible features. That is one bump per day, made after the day's last merge, before the user's next install.
+- **MINOR** goes up by 1, with PATCH back to 0, for any change that is not backward compatible:
+  - a TextMouth one version older cannot open the library;
+  - every book is read again (a cache-format change);
+  - a stored format changes;
+  - a setting, shortcut, or file is removed or renamed.
+
+  A day that has such a change bumps MINOR instead of PATCH.
+- **Each bump** adds a dated section to the top of the [Changelog](../user/changelog.md), with one plain sentence per change. A MINOR section says first what an older TextMouth can no longer do with the library.
+- **The orchestrator** makes the bump, with the script below: `make bump-patch` or `make bump-minor`, committed on its own and recorded in the TODO.
+- **Two cases the rules leave open.** A day with neither bug fixes nor small features gets no bump. A change that merges after its day's bump, on the same day, joins that day's section and leaves the version as it is, unless it is not backward compatible: then bump MINOR from the day's version (0.2.1 to 0.3.0), in a section of its own.
+
+The script, Scripts/set-version.sh:
+
+- The version is `MARKETING_VERSION` in project.yml, which Info.plist reads as `CFBundleShortVersionString`. Change it with the script, never by hand.
+- `make bump-patch` (`Scripts/set-version.sh --patch`) raises PATCH by one, 0.2.0 to 0.2.1. `make bump-minor` (`Scripts/set-version.sh --minor`) raises MINOR by one and sets PATCH to 0, 0.2.3 to 0.3.0. Each works the new version out of project.yml, adding one to a number digit by digit so that none can overflow, and neither changes MAJOR.
+- `make set-version VERSION=0.2.0` (`Scripts/set-version.sh 0.2.0`) sets a version you give, for a deliberate jump such as 1.0.0 when the user calls TextMouth released. The script accepts only MAJOR.MINOR.PATCH, three whole numbers without leading zeros, and refuses a version that is not later than the current one, comparing each number as a number, so 0.10.0 is later than 0.9.0. A bump goes the same way once its version is worked out, so it meets the same checks.
+- It changes nothing in project.yml but the value of that one setting, runs `xcodegen generate` so that TextMouth.xcodeproj follows, and prints the old and new versions. If xcodegen fails, it puts project.yml back as it was. It commits nothing: commit project.yml with the regenerated project, in a commit that does nothing else. It ends by reminding you to add the dated section to the changelog, which it does not write.
 - The build number, `CFBundleVersion`, is not set by hand or by that script. `make build` stamps each build with the UTC time as YYYYMMDDHHMMSS, which is unique and increasing, and `make install` names the dSYM it keeps for the build by it (see Make targets, above). The `CURRENT_PROJECT_VERSION` of 1 in project.yml is only what a build gets when it does not come from the Makefile, such as the hosted tests' build.
-- `Scripts/set-version.sh --selftest` tests the script in seconds, on a copy of project.yml in a temporary folder and with a stand-in for xcodegen, without building; `make check-selftest` runs it.
+- `Scripts/set-version.sh --selftest` tests the script in seconds, on a copy of project.yml in a temporary folder and with a stand-in for xcodegen, without building; `make check-selftest` runs it. Its cases cover both bumps (carries such as 0.2.9 to 0.2.10, numbers beyond 64 bits, and a project.yml whose version cannot be read) and the Makefile's version targets.
 
 ## The make check gate
 

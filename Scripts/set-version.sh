@@ -1,20 +1,31 @@
 #!/bin/bash
 #
 # set-version.sh: sets TextMouth's version number and regenerates the Xcode
-# project, so that the next build carries it. `make set-version
-# VERSION=0.2.0` runs it.
+# project, so that the next build carries it. `make bump-patch`, `make
+# bump-minor`, and `make set-version VERSION=0.2.0` run it.
 #
 # The version is MARKETING_VERSION in project.yml, which Info.plist reads as
 # CFBundleShortVersionString. While TextMouth is in beta its version is
-# 0.MINOR.PATCH, until a 1.0: MINOR goes up when a merged feature set the
-# user asked for reaches main, and PATCH goes up for an install that holds
-# fixes only (see Versions in docs/developer/building.md). The build number,
-# CFBundleVersion, is not set here: `make build` stamps each build with the
-# UTC time as YYYYMMDDHHMMSS, which is unique and increasing, and `make
-# install` names the dSYM it keeps for the build by it.
+# 0.MINOR.PATCH, and MAJOR stays 0 until the user calls TextMouth released
+# (1.0). PATCH goes up by one for each day on which main gains bug fixes or
+# small backward-compatible features; MINOR goes up by one, with PATCH back to
+# 0, for a change that is not backward compatible (see Versions in
+# docs/developer/building.md). The build number, CFBundleVersion, is not set
+# here: `make build` stamps each build with the UTC time as YYYYMMDDHHMMSS,
+# which is unique and increasing, and `make install` names the dSYM it keeps
+# for the build by it.
 #
-# Usage: Scripts/set-version.sh <version>
+# Usage: Scripts/set-version.sh --patch
+#        Scripts/set-version.sh --minor
+#        Scripts/set-version.sh <version>
 #        Scripts/set-version.sh --selftest
+#
+# --patch raises PATCH by one (0.2.0 to 0.2.1), and --minor raises MINOR by
+# one and sets PATCH to 0 (0.2.3 to 0.3.0). Neither changes MAJOR: release 1.0
+# by giving 1.0.0 as <version>. Each works out the new version from the one in
+# project.yml, adding one digit by digit so that no number can overflow, and
+# then goes on exactly as for a <version> typed by hand, so that a bump meets
+# every check below.
 #
 # <version> is MAJOR.MINOR.PATCH: three whole numbers joined by dots, none
 # with a leading zero, such as 0.2.0. The script refuses a version that is
@@ -24,7 +35,9 @@
 # was, then runs `xcodegen generate` so that TextMouth.xcodeproj follows, and
 # prints the old and the new version. If xcodegen fails, it puts project.yml
 # back as it was. It commits nothing: commit project.yml together with the
-# regenerated project.
+# regenerated project. It ends by reminding you that the new version needs a
+# dated section at the top of the changelog, docs/user/changelog.md, which it
+# does not write.
 #
 # --selftest tests the script in a second, on a copy of project.yml in a
 # temporary folder and with a stand-in for xcodegen, so that it changes
@@ -50,6 +63,12 @@ readonly SELF="$SELF_DIR/$(basename "${BASH_SOURCE[0]}")"
 ROOT=$(dirname "$SELF_DIR")
 readonly ROOT
 readonly PROJECT_YML="$ROOT/project.yml"
+
+# The user's changelog page, relative to the repository root. Every change of
+# version needs a dated section at the top of it (see Versions in
+# docs/developer/building.md), which the last line of the script's report
+# reminds the person running it of.
+readonly CHANGELOG_PAGE="docs/user/changelog.md"
 
 # Any line of project.yml that sets the version, whatever it sets it to.
 readonly VERSION_KEY_RE='^[[:space:]]*MARKETING_VERSION:'
@@ -93,6 +112,8 @@ die() {
 # usage: prints how to run the script.
 usage() {
   echo "usage: Scripts/set-version.sh <version>   (for example 0.2.0, or: make set-version VERSION=0.2.0)"
+  echo "       Scripts/set-version.sh --patch     (0.2.0 to 0.2.1, or: make bump-patch)"
+  echo "       Scripts/set-version.sh --minor     (0.2.3 to 0.3.0, or: make bump-minor)"
   echo "       Scripts/set-version.sh --selftest"
 }
 
@@ -135,6 +156,31 @@ compare_numbers() {
   fi
 }
 
+# increment_number <digits>: prints the whole number <digits> plus one, without
+# leading zeros. Like compare_numbers it works on the digits, not on a number,
+# so that no number can overflow the shell's arithmetic: 18446744073709551615
+# plus one is 18446744073709551616, where the shell's own 64-bit sum would
+# wrap around.
+increment_number() {
+  local digits result="" digit i
+  digits=$(strip_zeros "$1")
+  # Walk from the last digit to the first, as when adding on paper. A 9 plus
+  # the one being carried is a 0 with the one carried on. The first digit that
+  # is not a 9 takes the one, and ends the sum: the digits before it stay as
+  # they are.
+  for (( i = ${#digits} - 1; i >= 0; i-- )); do
+    digit=${digits:i:1}
+    if [[ $digit == 9 ]]; then
+      result="0$result"
+    else
+      printf '%s%s%s\n' "${digits:0:i}" "$(( digit + 1 ))" "$result"
+      return
+    fi
+  done
+  # Every digit was a 9 (99 plus one), so the one is carried out in front.
+  printf '1%s\n' "$result"
+}
+
 # version_is_later <new> <old>: succeeds when version <new> comes after
 # version <old>. Both are three numbers joined by dots. The numbers are
 # compared left to right, each as a number, so 0.10.0 is later than 0.9.0.
@@ -151,6 +197,27 @@ version_is_later() {
     fi
   done
   return 1 # the same version is not a later one
+}
+
+# next_patch_version <version>: prints <version> with its PATCH raised by one,
+# so 0.2.0 becomes 0.2.1. MAJOR and MINOR are kept. <version> is three numbers
+# joined by dots, as read_current_version prints it. Every number is printed
+# without leading zeros, as a number typed with them by hand in project.yml
+# is no part of its value (0.02.0 is 0.2.0), so the new version is always of
+# the form set_version accepts.
+next_patch_version() {
+  local major minor patch
+  IFS=. read -r major minor patch <<<"$1"
+  printf '%s.%s.%s\n' "$(strip_zeros "$major")" "$(strip_zeros "$minor")" "$(increment_number "$patch")"
+}
+
+# next_minor_version <version>: prints <version> with its MINOR raised by one
+# and its PATCH set to 0, so 0.2.3 becomes 0.3.0. MAJOR is kept. <version> is
+# as for next_patch_version, and so is the form of what is printed.
+next_minor_version() {
+  local major minor
+  IFS=. read -r major minor _ <<<"$1"
+  printf '%s.%s.0\n' "$(strip_zeros "$major")" "$(increment_number "$minor")"
 }
 
 # is_version_line <line>: succeeds when <line> sets MARKETING_VERSION in the
@@ -195,6 +262,17 @@ read_current_version() {
   printf '%s\n' "${BASH_REMATCH[3]}"
 }
 
+# project_version: prints the version that this repository's project.yml sets.
+# It fails, saying why on standard error, when there is no project.yml or its
+# version cannot be read (see read_current_version).
+project_version() {
+  if [[ ! -f $PROJECT_YML ]]; then
+    complain "there is no project.yml at $PROJECT_YML"
+    return 1
+  fi
+  read_current_version "$PROJECT_YML"
+}
+
 # version_line_with <line> <version>: prints <line> with its version replaced
 # by <version> when it is the MARKETING_VERSION line, and as it was
 # otherwise. It prints no newline.
@@ -228,7 +306,8 @@ write_version() {
 }
 
 # set_version <version>: the script's work. It checks <version> against the
-# one in project.yml, rewrites that one setting, and regenerates the project.
+# one in project.yml, rewrites that one setting, regenerates the project, and
+# says what is left to do by hand (commit it, and add the changelog section).
 set_version() {
   local version=$1 current written
 
@@ -241,8 +320,7 @@ set_version() {
   fi
 
   # It must be later than the current one.
-  [[ -f $PROJECT_YML ]] || die 1 "there is no project.yml at $PROJECT_YML"
-  current=$(read_current_version "$PROJECT_YML") || exit 1
+  current=$(project_version) || exit 1
   if [[ $version == "$current" ]]; then
     die 1 "$version is already the current version"
   fi
@@ -290,6 +368,20 @@ set_version() {
     exit 1
   fi
   say "Done. Nothing is committed: commit project.yml with the regenerated TextMouth.xcodeproj."
+  say "Also add a dated section for $version to the top of $CHANGELOG_PAGE, one plain sentence per change."
+}
+
+# bump_version <function>: raises the version in project.yml by one step. The
+# step is <function>, next_patch_version or next_minor_version, which works out
+# the new version from the current one. The new version is then set by
+# set_version, as a version typed by hand is, so that a bump is checked,
+# written, and regenerated in exactly the same way, and cannot write a version
+# that set_version would refuse.
+bump_version() {
+  local step=$1 current next
+  current=$(project_version) || exit 1
+  next=$("$step" "$current")
+  set_version "$next"
 }
 
 # ---------------------------------------------------------------------------
@@ -303,7 +395,8 @@ set_version() {
 # location, so it can change only the sandbox's project.yml, and the stand-in
 # is the only xcodegen it can reach: no case can touch the real project.yml
 # or regenerate the real project. The last cases check that the Makefile runs
-# the script and this selftest, with make -n, which runs nothing.
+# the script, for each of its version targets, and this selftest, with make -n,
+# which runs nothing.
 #
 # Output: one "ok" or "not ok" line per case, with the reasons and the
 # script's report under each failure, then the totals.
@@ -321,6 +414,7 @@ status=0         # its exit status
 WORK=""          # the selftest's temporary folder
 STUBS=""         # the folder holding the stand-in xcodegen
 FIXTURES=""      # the made-up project.yml files and the files the cases expect
+REAL_MAKE=""     # the make program that the Makefile cases run
 
 # write_stub: creates the stand-in xcodegen. It records the folder it ran in
 # and its arguments, prints a line, and exits with STUB_STATUS (default 0).
@@ -487,9 +581,10 @@ end_case() {
   fi
 }
 
-# refusal_case <description> <fixture> <version> <status> <report text>: a case
-# in which running the script with <version> must be refused with <status>,
-# saying <report text>, changing nothing and never calling xcodegen.
+# refusal_case <description> <fixture> <argument> <status> <report text>: a case
+# in which running the script with <argument> (a version, or --patch or
+# --minor) must be refused with <status>, saying <report text>, changing
+# nothing and never calling xcodegen.
 refusal_case() {
   begin_case "$1" "$2"
   run_script -- "$3"
@@ -500,12 +595,15 @@ refusal_case() {
   end_case
 }
 
-# raise_case <description> <fixture> <version> <expected file>: a case in which
-# running the script with <version> must succeed, leave exactly <expected
-# file> as project.yml, and run xcodegen once, in the sandbox, to generate.
+# raise_case <description> <fixture> <version> <expected file> [argument]: a
+# case in which running the script with <argument> must succeed, report
+# <version> as the new version, leave exactly <expected file> as project.yml,
+# and run xcodegen once, in the sandbox, to generate. The argument is <version>
+# itself unless one is given: --patch or --minor, for a bump that must make
+# <version>.
 raise_case() {
   begin_case "$1" "$2"
-  run_script -- "$3"
+  run_script -- "${5:-$3}"
   expect_status 0
   expect_report "New version: $3"
   expect_project "$4"
@@ -519,11 +617,44 @@ version_line() {
   printf '        MARKETING_VERSION: "%s"\n' "$1"
 }
 
+# write_real_project_expecting <from> <to> <file>: writes to <file> what the
+# real project.yml must become when the script takes it from version <from>,
+# the one it now sets, to <to>: the same file, with the version on its one
+# setting replaced. It records a problem, in a case of its own, if the
+# replacement changed nothing, as then the cases built on <file> would prove
+# nothing.
+write_real_project_expecting() {
+  local from=$1 to=$2 file=$3
+  sed -E "s/^([[:space:]]*MARKETING_VERSION:[[:space:]]*\"?)$from(\"?[[:space:]]*(#.*)?)\$/\\1$to\\2/" \
+    "$ROOT/project.yml" > "$file"
+  if cmp -s "$file" "$ROOT/project.yml"; then
+    begin_check "the selftest can build the file it expects"
+    problem "replacing $from by $to in the real project.yml changed nothing"
+    end_case
+  fi
+}
+
+# real_bump_case <flag> <from> <to> <expected file>: a case in which <flag>
+# (--patch or --minor) takes a copy of the real project.yml from version <from>
+# to <to>, saying both, leaving <expected file>, and running xcodegen once.
+real_bump_case() {
+  begin_case "$1 raises $2 to $3 in a copy of the real project.yml, changing that one line" "$ROOT/project.yml"
+  run_script -- "$1"
+  expect_status 0
+  expect_report "Old version: $2"
+  expect_report "New version: $3"
+  expect_report "Also add a dated section for $3 to the top of docs/user/changelog.md"
+  expect_project "$4"
+  expect_calls 1
+  expect_call "cwd=$sandbox args=generate"
+  end_case
+}
+
 # real_project_cases: the script on a copy of the real project.yml, whose
 # current version the cases read and build theirs from, so that they hold
 # whatever the version is.
 real_project_cases() {
-  local current major minor patch next lower expected
+  local current major minor patch next patch_next lower expected patch_expected
 
   begin_check "the real project.yml sets MARKETING_VERSION once, in the form the script reads"
   if ! current=$(read_current_version "$ROOT/project.yml" 2>&1); then
@@ -536,8 +667,19 @@ real_project_cases() {
   end_case
   IFS=. read -r major minor patch <<<"$current"
 
-  # The next minor version (0.1.1 to 0.2.0), and a lower one when there is one.
+  # The page that the script's last line names must exist, so that renaming
+  # the page cannot leave the reminder pointing at nothing.
+  begin_check "the changelog page that the script's report names exists in the repository"
+  [[ -f $ROOT/$CHANGELOG_PAGE ]] || problem "there is no $CHANGELOG_PAGE under $ROOT"
+  output=""
+  end_case
+
+  # The next minor version (0.1.1 to 0.2.0), the next patch version (0.2.0 to
+  # 0.2.1), and a lower version when there is one. They are worked out here
+  # with the shell's own arithmetic, a different way from the script's, so
+  # that a mistake in the script's cannot hide itself.
   next="$major.$(( 10#$minor + 1 )).0"
+  patch_next="$major.$minor.$(( 10#$patch + 1 ))"
   if (( 10#$patch > 0 )); then
     lower="$major.$minor.$(( 10#$patch - 1 ))"
   elif (( 10#$minor > 0 )); then
@@ -548,16 +690,11 @@ real_project_cases() {
     lower=""
   fi
 
-  # What the real project.yml must become: the same file, with the version on
-  # its one setting replaced.
+  # What the real project.yml must become in each case.
   expected="$FIXTURES/real-expected.yml"
-  sed -E "s/^([[:space:]]*MARKETING_VERSION:[[:space:]]*\"?)$current(\"?[[:space:]]*(#.*)?)\$/\\1$next\\2/" \
-    "$ROOT/project.yml" > "$expected"
-  cmp -s "$expected" "$ROOT/project.yml" && {
-    begin_check "the selftest can build the file it expects"
-    problem "replacing $current by $next in the real project.yml changed nothing"
-    end_case
-  }
+  write_real_project_expecting "$current" "$next" "$expected"
+  patch_expected="$FIXTURES/real-patch-expected.yml"
+  write_real_project_expecting "$current" "$patch_next" "$patch_expected"
 
   begin_case "raises $current to $next in a copy of the real project.yml, changing that one line and keeping the file's mode" "$ROOT/project.yml"
   chmod 640 "$sandbox/project.yml"
@@ -566,17 +703,30 @@ real_project_cases() {
   expect_report "Old version: $current"
   expect_report "New version: $next"
   expect_report "Nothing is committed"
+  expect_report "Also add a dated section for $next to the top of docs/user/changelog.md"
   expect_project "$expected"
   [[ $(stat -f %Lp "$sandbox/project.yml") == 640 ]] || problem "project.yml's mode is not 640"
   expect_calls 1
   expect_call "cwd=$sandbox args=generate"
   end_case
 
+  # The bumps make the same two versions from the real one, by themselves.
+  real_bump_case --patch "$current" "$patch_next" "$patch_expected"
+  real_bump_case --minor "$current" "$next" "$expected"
+
   # make runs the script from the repository root by its relative path.
   begin_case "runs from the repository root by its relative path, as make runs it" "$ROOT/project.yml"
   run_script RUN_DIR="$sandbox" RUN_CMD=Scripts/set-version.sh -- "$next"
   expect_status 0
   expect_project "$expected"
+  expect_calls 1
+  expect_call "cwd=$sandbox args=generate"
+  end_case
+
+  begin_case "--patch runs from the repository root by its relative path, as make bump-patch runs it" "$ROOT/project.yml"
+  run_script RUN_DIR="$sandbox" RUN_CMD=Scripts/set-version.sh -- --patch
+  expect_status 0
+  expect_project "$patch_expected"
   expect_calls 1
   expect_call "cwd=$sandbox args=generate"
   end_case
@@ -616,7 +766,10 @@ comparison_cases() {
 form_cases() {
   local bad
   begin_case "refuses a version that is not MAJOR.MINOR.PATCH, changing nothing and not running xcodegen" "$(fixture_path form "$(version_line 0.1.1)")"
-  for bad in 1.0 0.2 v0.2.0 0.2.0-beta 0.2.0.1 0.2.x 1..0 .1.0 0.2.0. ' 0.2.0' '0.2.0 ' 02.0.0 0.2.00 -1.0.0 1,2,3 $'0.2.0\n' 0.2.0+5 '0.2.0 0.3.0'; do
+  # The list ends with two flags that do not exist: --major, since a bump
+  # never changes MAJOR (1.0 is given as a version), and --Patch, since the
+  # flags are in lower case.
+  for bad in 1.0 0.2 v0.2.0 0.2.0-beta 0.2.0.1 0.2.x 1..0 .1.0 0.2.0. ' 0.2.0' '0.2.0 ' 02.0.0 0.2.00 -1.0.0 1,2,3 $'0.2.0\n' 0.2.0+5 '0.2.0 0.3.0' --major --Patch; do
     run_script -- "$bad"
     [[ $status -eq 2 ]] || problem "'$bad' was not refused with status 2 (status $status)"
     grep -F -q "is not a version of the form MAJOR.MINOR.PATCH" <<<"$output" || problem "'$bad' was refused without saying why"
@@ -641,6 +794,24 @@ form_cases() {
   begin_case "prints its usage for --help, and succeeds" "$(fixture_path help "$(version_line 0.1.1)")"
   run_script -- --help
   expect_status 0
+  expect_report "usage: Scripts/set-version.sh <version>"
+  expect_report "Scripts/set-version.sh --patch"
+  expect_report "Scripts/set-version.sh --minor"
+  expect_unchanged
+  expect_calls 0
+  end_case
+
+  # A bump flag stands alone: with another flag or a version it is a usage
+  # error, as two arguments always were.
+  begin_case "prints its usage for --patch or --minor with another argument, changing nothing" "$(fixture_path flags "$(version_line 0.2.0)")"
+  run_script -- --patch --minor
+  expect_status 2
+  expect_report "usage: Scripts/set-version.sh <version>"
+  run_script -- --minor 0.3.0
+  expect_status 2
+  expect_report "usage: Scripts/set-version.sh <version>"
+  run_script -- 0.3.0 --patch
+  expect_status 2
   expect_report "usage: Scripts/set-version.sh <version>"
   expect_unchanged
   expect_calls 0
@@ -704,12 +875,157 @@ xcodegen_cases() {
   end_case
 }
 
-# makefile_cases: the Makefile runs this script for make set-version, runs
-# this selftest in make check-selftest, and lists set-version in its help.
-# make -n prints what a target would run and runs none of it.
+# bump_case <flag> <from> <to>: a case in which <flag> (--patch or --minor)
+# takes the fixtures' usual version line from <from> to <to>, and changes
+# nothing else. Both versions are written out by hand in the cases below,
+# never worked out with the script's own arithmetic, so that a mistake in that
+# arithmetic cannot hide itself.
+bump_case() {
+  raise_case "$1 raises $2 to $3" \
+    "$(fixture_path "bump-from-$2" "$(version_line "$2")")" "$3" \
+    "$(fixture_path "bump-to-$3" "$(version_line "$3")")" "$1"
+}
+
+# bump_refusal_cases <description> <fixture> <report text>: --patch and --minor
+# each refuse <fixture> as project.yml, with status 1, saying <report text>,
+# changing nothing and never calling xcodegen: with a version that cannot be
+# read there is nothing to raise.
+bump_refusal_cases() {
+  local flag
+  for flag in --patch --minor; do
+    refusal_case "$flag refuses $1" "$2" "$flag" 1 "$3"
+  done
+}
+
+# bump_cases: --patch (0.2.0 to 0.2.1) and --minor (0.2.3 to 0.3.0) work out
+# the new version from the one in project.yml, and then go the way a version
+# typed by hand goes.
+bump_cases() {
+  # The policy's own examples. A patch bump keeps MINOR; a minor bump sets
+  # PATCH back to 0, whether it was above 0 or not.
+  bump_case --patch 0.2.0 0.2.1
+  bump_case --patch 0.2.7 0.2.8
+  bump_case --minor 0.2.3 0.3.0
+  bump_case --minor 0.2.0 0.3.0
+  bump_case --minor 0.2.12 0.3.0
+
+  # A number that reaches 10 or 100 grows by a digit, and a 9 carries into
+  # the digit before it, not into the next number: PATCH 9 becomes 10 and
+  # leaves MINOR alone.
+  bump_case --patch 0.2.9 0.2.10
+  bump_case --patch 0.2.19 0.2.20
+  bump_case --patch 0.2.99 0.2.100
+  bump_case --minor 0.9.5 0.10.0
+  bump_case --minor 0.99.7 0.100.0
+
+  # MAJOR is never changed by a bump, whatever it is.
+  bump_case --patch 1.4.2 1.4.3
+  bump_case --minor 1.4.2 1.5.0
+  bump_case --minor 1.9.9 1.10.0
+
+  # Numbers beyond 64 bits: 18446744073709551615 plus one would wrap around to
+  # 0 in the shell's arithmetic, and the bump would be refused as no later.
+  bump_case --patch 0.0.18446744073709551615 0.0.18446744073709551616
+  bump_case --minor 0.18446744073709551615.4 0.18446744073709551616.0
+
+  # A leading zero typed by hand into project.yml is no part of the number
+  # (0.02.009 is 0.2.9), and the new version is written without any.
+  bump_case --patch 0.02.009 0.2.10
+  bump_case --minor 0.09.009 0.10.0
+  bump_case --patch 0.00.000 0.0.1
+  bump_case --minor 0.0.0 0.1.0
+
+  # Only the version changes: the quotes, the comment after the value, the line
+  # ends, and the lack of a newline at the end of the file stay as they were,
+  # because a bump is written the way a version typed by hand is.
+  raise_case "--patch keeps a value without quotes, and the comment after it" \
+    "$(fixture_path bump-bare '        MARKETING_VERSION: 0.9.0   # the beta version')" 0.9.1 \
+    "$(fixture_path bump-bare-expected '        MARKETING_VERSION: 0.9.1   # the beta version')" --patch
+  raise_case "--patch keeps CR LF line ends" \
+    "$(fixture_path bump-crlf "$(version_line 0.9.4)" crlf)" 0.9.5 \
+    "$(fixture_path bump-crlf-expected "$(version_line 0.9.5)" crlf)" --patch
+  raise_case "--minor keeps a last line that has no newline" \
+    "$(fixture_path bump-nofinal "$(version_line 0.9.4)" nofinal)" 0.10.0 \
+    "$(fixture_path bump-nofinal-expected "$(version_line 0.10.0)" nofinal)" --minor
+
+  # A project.yml whose version cannot be read is refused untouched, however
+  # nearly it is a version.
+  bump_refusal_cases "a version of two numbers in project.yml" \
+    "$(fixture_path bump-short "$(version_line 1.0)")" "is not a version of three numbers"
+  bump_refusal_cases "a version with letters in project.yml" \
+    "$(fixture_path bump-letters "$(version_line 0.2.x)")" "is not a version of three numbers"
+  bump_refusal_cases "a version with a suffix in project.yml" \
+    "$(fixture_path bump-suffix "$(version_line 0.2.0-beta)")" "is not a version of three numbers"
+  bump_refusal_cases "a version with a fourth number in project.yml" \
+    "$(fixture_path bump-fourth "$(version_line 0.2.0.1)")" "is not a version of three numbers"
+  bump_refusal_cases "a single-quoted version in project.yml" \
+    "$(fixture_path bump-single "        MARKETING_VERSION: '0.9.0'")" "is not a version of three numbers"
+  bump_refusal_cases "a version with only one quote in project.yml" \
+    "$(fixture_path bump-onequote '        MARKETING_VERSION: "0.9.0')" "is not a version of three numbers"
+  bump_refusal_cases "an empty version in project.yml" \
+    "$(fixture_path bump-empty '        MARKETING_VERSION:')" "is not a version of three numbers"
+  bump_refusal_cases "a project.yml with no MARKETING_VERSION setting" \
+    "$(fixture_path bump-none '        # MARKETING_VERSION: "0.9.0"')" "does not set MARKETING_VERSION"
+  bump_refusal_cases "a project.yml that sets MARKETING_VERSION twice" \
+    "$(fixture_path bump-twice "$(version_line 0.9.0)"$'\n'"$(version_line 0.8.0)")" "sets MARKETING_VERSION on 2 lines (8, 9)"
+
+  # The rest of the way is the explicit version's, and the bump meets it.
+  begin_case "--patch puts project.yml back when xcodegen fails" "$(fixture_path bump-xfail "$(version_line 0.9.0)")"
+  run_script STUB_STATUS=1 -- --patch
+  expect_status 1
+  expect_report "xcodegen failed, so project.yml is back at version 0.9.0"
+  expect_unchanged
+  expect_calls 1
+  end_case
+
+  begin_case "--minor stops before changing anything when xcodegen is not installed" "$(fixture_path bump-xmissing "$(version_line 0.9.0)")"
+  run_script PATH="$WORK/no-tools:/usr/bin:/bin:/usr/sbin:/sbin" -- --minor
+  expect_status 1
+  expect_report "xcodegen is not installed"
+  expect_unchanged
+  expect_calls 0
+  end_case
+}
+
+# absent_project_cases: with no project.yml to read, a version typed by hand
+# and each bump are refused, saying so, with nothing run and nothing left
+# behind.
+absent_project_cases() {
+  local argument
+  for argument in 0.3.0 --patch --minor; do
+    begin_case "$argument is refused when there is no project.yml" "$(fixture_path absent "$(version_line 0.2.0)")"
+    rm -f "$sandbox/project.yml"
+    run_script -- "$argument"
+    expect_status 1
+    expect_report "there is no project.yml at $sandbox/project.yml"
+    expect_calls 0
+    # The file goes back, so that the check made at the end of every case,
+    # that the sandbox holds only what it began with, can pass.
+    cp "$fixture" "$sandbox/project.yml"
+    end_case
+  done
+}
+
+# make_case <description> <text> <make argument>...: a case in which make, run
+# on the copy of the Makefile with those arguments, succeeds and prints <text>.
+# To see what a target runs, pass -n first: make then prints the target's
+# commands and runs none of them.
+make_case() {
+  local description=$1 text=$2
+  shift 2
+  begin_check "$description"
+  output=$(cd "$WORK/make" && "$REAL_MAKE" "$@" 2>&1)
+  status=$?
+  expect_status 0
+  expect_report "$text"
+  end_case
+}
+
+# makefile_cases: the Makefile runs this script for make set-version, make
+# bump-patch, and make bump-minor, runs this selftest in make check-selftest,
+# and lists the three version targets in its help.
 makefile_cases() {
-  local real_make
-  real_make=$(command -v make) || {
+  REAL_MAKE=$(command -v make) || {
     begin_check "the Makefile cases need make"
     problem "make was not found"
     end_case
@@ -718,26 +1034,17 @@ makefile_cases() {
   mkdir -p "$WORK/make"
   cp "$ROOT/Makefile" "$WORK/make/Makefile"
 
-  begin_check "make -n set-version VERSION=0.2.0 runs the script with that version"
-  output=$(cd "$WORK/make" && "$real_make" -n set-version VERSION=0.2.0 2>&1)
-  status=$?
-  expect_status 0
-  expect_report 'Scripts/set-version.sh "0.2.0"'
-  end_case
-
-  begin_check "make -n check-selftest runs this selftest"
-  output=$(cd "$WORK/make" && "$real_make" -n check-selftest 2>&1)
-  status=$?
-  expect_status 0
-  expect_report "Scripts/set-version.sh --selftest"
-  end_case
-
-  begin_check "make help lists set-version"
-  output=$(cd "$WORK/make" && "$real_make" help 2>&1)
-  status=$?
-  expect_status 0
-  expect_report "make set-version VERSION=0.2.0"
-  end_case
+  make_case "make -n set-version VERSION=0.2.0 runs the script with that version" \
+    'Scripts/set-version.sh "0.2.0"' -n set-version VERSION=0.2.0
+  make_case "make -n bump-patch runs the script with --patch" \
+    "Scripts/set-version.sh --patch" -n bump-patch
+  make_case "make -n bump-minor runs the script with --minor" \
+    "Scripts/set-version.sh --minor" -n bump-minor
+  make_case "make -n check-selftest runs this selftest" \
+    "Scripts/set-version.sh --selftest" -n check-selftest
+  make_case "make help lists set-version" "make set-version VERSION=0.2.0" help
+  make_case "make help lists bump-patch" "make bump-patch" help
+  make_case "make help lists bump-minor" "make bump-minor" help
 }
 
 # selftest: runs every case and prints the totals; succeeds only when all
@@ -759,12 +1066,15 @@ selftest() {
   rewrite_cases
   unreadable_cases
   xcodegen_cases
+  bump_cases
+  absent_project_cases
   makefile_cases
   printf '%d passed, %d failed\n' "$passed" "$failed"
   (( failed == 0 ))
 }
 
-# main <arguments>: runs the self-test, prints the usage, or sets the version.
+# main <arguments>: runs the self-test, prints the usage, raises the version by
+# one step (--patch or --minor), or sets the version it is given.
 main() {
   if [[ $# -eq 1 && $1 == --selftest ]]; then
     selftest
@@ -773,6 +1083,14 @@ main() {
   if [[ $# -eq 1 && ( $1 == -h || $1 == --help ) ]]; then
     usage
     return 0
+  fi
+  if [[ $# -eq 1 && $1 == --patch ]]; then
+    bump_version next_patch_version
+    return
+  fi
+  if [[ $# -eq 1 && $1 == --minor ]]; then
+    bump_version next_minor_version
+    return
   fi
   if [[ $# -ne 1 ]]; then
     usage >&2
