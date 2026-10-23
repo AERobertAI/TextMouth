@@ -208,6 +208,80 @@ final class TranscriptSearchTests: XCTestCase {
         XCTAssertEqual(reader.lastAnnouncement, spoken)
     }
 
+    // MARK: - The Sheet's Rows
+
+    /// A row of a transcript's result shows the exact time where the
+    /// position goes and speaks its timed label, whatever display mode the
+    /// untimed rows would use.
+    func testATimedRowShowsAndSpeaksItsTime() async throws {
+        let reader = try await transcribedReader("Search Row Timed")
+        let corpus = try XCTUnwrap(reader.searchCorpus)
+        let pier = try XCTUnwrap(matches("pier", in: corpus).first)
+
+        for mode in BookSearchView.DisplayMode.allCases {
+            let row = SearchResultRow(
+                result: pier,
+                displayMode: mode,
+                totalCharacterCount: 500,
+                totalWordCount: 80,
+                currentWPM: 200
+            )
+            XCTAssertEqual(row.positionText, "0:01")
+            XCTAssertEqual(row.accessibilityDescription, try XCTUnwrap(pier.timedLabel))
+        }
+        XCTAssertTrue(try XCTUnwrap(pier.timedLabel).hasSuffix(", at 1 second"))
+    }
+
+    /// A row of a text book's result is as it was: the estimate in the
+    /// display mode chosen.
+    func testAnUntimedRowStillGivesItsEstimate() throws {
+        let corpus = BookSearchCorpus(
+            chapterTexts: ["The ferry leaves at dawn."],
+            chapterTitles: ["Crossing"],
+            headings: [],
+            bookTitle: "Slip Notes"
+        )
+        let result = try XCTUnwrap(matches("ferry", in: corpus).first)
+
+        let percentage = SearchResultRow(
+            result: result,
+            displayMode: .percentage,
+            totalCharacterCount: 100,
+            totalWordCount: 20,
+            currentWPM: 200
+        )
+        XCTAssertEqual(percentage.positionText, "4.0%")
+        XCTAssertEqual(percentage.accessibilityDescription, "\(result.contextAndLocation), at 4.0 percent of book")
+    }
+
+    /// The Display picker, which chooses how an estimate is shown, is in
+    /// the sheet of a text book and not in a transcript's, whose times are
+    /// exact.
+    func testOnlyAnUntimedSearchOffersTheDisplayPicker() async throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
+        let reader = try await transcribedReader("Search Picker")
+        let timed = try XCTUnwrap(reader.searchCorpus)
+        let untimed = BookSearchCorpus(chapterTexts: ["Text."], chapterTitles: [""], headings: [], bookTitle: "Slip Notes")
+
+        for (corpus, expectedPickers) in [(timed, 0), (untimed, 1)] {
+            let sheet = BookSearchView(
+                corpus: corpus,
+                totalCharacterCount: 100,
+                totalWordCount: 20,
+                currentWPM: 200,
+                announce: { _ in },
+                onNavigate: { _, _ in }
+            )
+            let hosted = hostOffscreen(sheet, size: NSSize(width: 500, height: 450))
+            defer { takeDown(hosted.window) }
+            XCTAssertEqual(
+                descendants(of: hosted.hostingView, as: NSSegmentedControl.self).count,
+                expectedPickers,
+                corpus.timing == nil ? "a text book's search has the picker" : "a transcript's search has none"
+            )
+        }
+    }
+
     // MARK: - Wording
 
     /// Each sentence the search speaks, word for word.

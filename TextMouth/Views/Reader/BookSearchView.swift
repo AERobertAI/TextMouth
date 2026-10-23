@@ -344,6 +344,9 @@ struct BookSearchView: View {
     let totalWordCount: Int
     let currentWPM: Double
     let onNavigate: (Int, Int) -> Void  // chapterIndex, characterOffset
+    /// Whether the book searched is a transcript, whose results are timed
+    /// exactly: it shows no Display picker, and its rows give the time.
+    private let isTimed: Bool
     @Environment(\.dismiss) private var dismiss
 
     /// Runs the searches: waits for typing to pause, works off the main
@@ -408,6 +411,7 @@ struct BookSearchView: View {
         self.totalWordCount = totalWordCount
         self.currentWPM = currentWPM
         self.onNavigate = onNavigate
+        isTimed = corpus.timing != nil
         // StateObject builds the model once each time the sheet opens; the
         // copies of the book passed in by later reader refreshes go unused.
         _model = StateObject(wrappedValue: BookSearchModel(corpus: corpus, announce: announce))
@@ -440,6 +444,13 @@ struct BookSearchView: View {
         }
     }
 
+    /// Open `result`, and close the sheet: what a click, Space, Return, and
+    /// VoiceOver's activation of a result's row all do.
+    private func choose(_ result: BookSearchResult) {
+        onNavigate(result.chapterIndex, result.characterOffset)
+        dismiss()
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // Header
@@ -460,7 +471,7 @@ struct BookSearchView: View {
                     .textFieldStyle(.roundedBorder)
                     .focused($isSearchFieldFocused)
                     .accessibilityLabel("Search text")
-                    .accessibilityHint("Type to search within the book")
+                    .accessibilityHint(isTimed ? BookSearchWording.transcriptFieldHint : "Type to search within the book")
                     .accessibilityIdentifier(voiceOverFocusID)
                     .background(VoiceOverFocus(delay: 1.2))
 
@@ -480,14 +491,18 @@ struct BookSearchView: View {
 
                     Spacer()
 
-                    Picker("Display", selection: $displayMode) {
-                        ForEach(DisplayMode.allCases, id: \.self) { mode in
-                            Text(mode.rawValue).tag(mode)
+                    // A transcript's results have their exact time, so there
+                    // is no estimate to choose how to show.
+                    if !isTimed {
+                        Picker("Display", selection: $displayMode) {
+                            ForEach(DisplayMode.allCases, id: \.self) { mode in
+                                Text(mode.rawValue).tag(mode)
+                            }
                         }
+                        .pickerStyle(.segmented)
+                        .frame(width: 200)
+                        .accessibilityLabel("Position display mode")
                     }
-                    .pickerStyle(.segmented)
-                    .frame(width: 200)
-                    .accessibilityLabel("Position display mode")
                 }
             }
             .padding(.horizontal)
@@ -511,8 +526,7 @@ struct BookSearchView: View {
                             // A native button exposes the same activation to
                             // keyboard, VoiceOver, braille, and pointer users.
                             Button {
-                                onNavigate(result.chapterIndex, result.characterOffset)
-                                dismiss()
+                                choose(result)
                             } label: {
                                 SearchResultRow(
                                     result: result,
@@ -527,6 +541,14 @@ struct BookSearchView: View {
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
+                            // A focused button presses on Space by itself.
+                            // Return, which would otherwise look for a
+                            // default button, chooses the result too, as it
+                            // does a bookmark; a held key does not repeat.
+                            .onKeyPress(keys: [.return], phases: .down) { _ in
+                                choose(result)
+                                return .handled
+                            }
                             Divider()
                         }
                     }
@@ -555,7 +577,9 @@ struct BookSearchView: View {
     }
 }
 
-private struct SearchResultRow: View {
+/// One result's row: its context, where it is, and its position, shown and
+/// spoken. Internal so a test can read what it says.
+struct SearchResultRow: View {
     let result: BookSearchResult
     let displayMode: BookSearchView.DisplayMode
     let totalCharacterCount: Int
@@ -603,7 +627,10 @@ private struct SearchResultRow: View {
         return fraction * totalSeconds
     }
 
-    private var positionText: String {
+    /// Where the row shows the match: a transcript's exact time, or the
+    /// estimate in the display mode chosen.
+    var positionText: String {
+        if let time = result.time { return TimeFormatting.format(time) }
         switch displayMode {
         case .percentage:
             return String(format: "%.1f%%", percentage)
@@ -612,9 +639,11 @@ private struct SearchResultRow: View {
         }
     }
 
-    /// Spoken row label: the context and location, then the position in the
+    /// Spoken row label: the context and location, then the position: the
+    /// exact time for a transcript's result, else the estimate in the
     /// selected display mode.
-    private var accessibilityDescription: String {
+    var accessibilityDescription: String {
+        if let timedLabel = result.timedLabel { return timedLabel }
         switch displayMode {
         case .percentage:
             return "\(result.contextAndLocation), at \(String(format: "%.1f percent", percentage)) of book"
