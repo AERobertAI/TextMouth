@@ -453,6 +453,30 @@ final class AudioPlaybackFailureTests: XCTestCase {
         }
     }
 
+    // MARK: - Asset options (ST06)
+
+    /// The player opens an MP3's asset with precise duration and timing, so
+    /// a variable-bit-rate file's seeks and duration are exact. Nothing is
+    /// opened or played: only the options are read.
+    func testPlayerAssetOptionsAskForPreciseTimingForAnMP3() {
+        let url = URL(fileURLWithPath: "/Library/Book.tmb/Tracks/03.mp3")
+        let options = AudioPlaybackService.playerAssetOptions(for: url)
+        XCTAssertEqual(options[AVURLAssetPreferPreciseDurationAndTimingKey] as? Bool, true)
+    }
+
+    /// Every other format the player opens asks the same, since the key is
+    /// harmless to files whose timing is exact.
+    func testPlayerAssetOptionsAskForPreciseTimingForEveryFormat() {
+        for name in ["a.m4a", "b.m4b", "c.wav", "d.aiff", "e.flac", "f.mp3"] {
+            let url = URL(fileURLWithPath: "/Library/Book.tmb/Tracks/\(name)")
+            XCTAssertEqual(
+                AudioPlaybackService.playerAssetOptions(for: url)[AVURLAssetPreferPreciseDurationAndTimingKey] as? Bool,
+                true,
+                name
+            )
+        }
+    }
+
     // MARK: - Helpers
 
     /// Run `body` with a new, empty folder that is removed afterwards.
