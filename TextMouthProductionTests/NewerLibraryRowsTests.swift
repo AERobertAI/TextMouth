@@ -331,4 +331,33 @@ final class NewerLibraryRowsTests: XCTestCase {
         XCTAssertEqual(library.libraryBookCount, 2)
         XCTAssertEqual(library.books.count, 2)
     }
+
+    // MARK: - What the user is told
+
+    /// The sentence Storage settings show: nothing for none, the singular
+    /// for one, and the plural with the number for any other count. Each is
+    /// pinned exactly, since a VoiceOver user hears it.
+    func testTheSentenceForTheBooksNeedingANewerTextMouth() {
+        XCTAssertNil(StorageLocationWording.booksNeedingNewerTextMouth(0))
+        XCTAssertEqual(
+            StorageLocationWording.booksNeedingNewerTextMouth(1),
+            "1 book in this library needs a newer version of TextMouth. It is kept as it is, but not shown."
+        )
+        XCTAssertEqual(
+            StorageLocationWording.booksNeedingNewerTextMouth(3),
+            "3 books in this library need a newer version of TextMouth. They are kept as they are, but not shown."
+        )
+    }
+
+    /// The model counts the rows its library keeps, and none when it keeps none.
+    @MainActor
+    func testTheModelCountsTheRowsItKeeps() throws {
+        let model = LibraryViewModel()
+        model.library = Library()
+        XCTAssertEqual(model.booksNeedingNewerTextMouth, 0)
+
+        model.library = try decodeLibrary(makeRowsFixture().data)
+
+        XCTAssertEqual(model.booksNeedingNewerTextMouth, 2)
+    }
 }

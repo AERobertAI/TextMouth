@@ -121,6 +121,12 @@ final class LibraryViewModel: ObservableObject {
     var readingList: ReadingList {
         library.readingList
     }
+    /// How many rows of library.json this TextMouth cannot read and keeps as
+    /// they are (V03): books a newer TextMouth added. Storage settings say
+    /// so. Feed indexes' unreadable rows are not counted here.
+    var booksNeedingNewerTextMouth: Int {
+        library.unreadableRows.count
+    }
     /// The books the reading list's Skip Finished Books passes over (FR09):
     /// those Books Finished counts (`ReadingStats.finishedBookIDs`), which a
     /// book joins when it is played or read to its end and stops there or

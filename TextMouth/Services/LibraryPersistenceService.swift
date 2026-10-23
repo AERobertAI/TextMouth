@@ -1357,11 +1357,22 @@ enum LibraryPersistenceService {
         libraryIndexOnDisk.remember(data, for: libraryIndexMemoryKey)
     }
 
-    /// Decode an index the way every index read does.
+    /// Decode an index the way every index read does. An index that holds
+    /// rows this version cannot read (V03) logs once how many it keeps; the
+    /// log never names them.
     private static func decodeLibrary(from data: Data) throws -> Library {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode(Library.self, from: data)
+        let library = try decoder.decode(Library.self, from: data)
+        let kept = library.unreadableRows.count
+        if kept > 0 {
+            DiagnosticLog.event(
+                .storage,
+                "LIBRARY_ROWS_KEPT: \(CountWording.phrase(kept, singular: "row", plural: "rows")) of library.json "
+                    + "need a newer TextMouth; kept as they are and not shown"
+            )
+        }
+        return library
     }
 
     // MARK: - Unreadable Index Protection
