@@ -2044,6 +2044,10 @@ extension ReaderViewModel {
     /// Each call begins a new play of the chapter, whose end alone the
     /// audio service's next report can be: an end of an earlier play still
     /// on its way is stale.
+    ///
+    /// While the library moves the book's package, nothing is read: the
+    /// chapter waits as audio set aside for the move does, and the move's
+    /// end plays it from the cursor (ST08).
     func playAudioChapter() {
         // Whatever starts the chapter now, a chapter held for a Where Am I
         // announcement's end waits no more (`isChapterHeldByWhereAmI`), and
@@ -2053,6 +2057,19 @@ extension ReaderViewModel {
         stopWaitingOutChapterPause(because: "a chapter starts now")
         guard isAudioBook, let content = content,
               content.chapters.indices.contains(currentChapterIndex) else { return }
+        // The book's package is moving (ST08), so its files are read only
+        // once the move is over: the play waits, as playing audio set aside
+        // for the move does. The reader shows Playing, and the move's end
+        // plays the chapter from the cursor, from the package's new place;
+        // a Pause or Stop meanwhile lets it go
+        // (`letGoOfAudioSetAsideForMove(because:)`).
+        if isPackageMoving, !playsFromWorkingCopy {
+            if audioPausedForMove == nil {
+                audioPausedForMove = AudioPausedForMove(volume: audioPlaybackService.intendedVolume)
+            }
+            DiagnosticLog.trace(.playback, "the chapter waits for the book's package to finish moving")
+            return
+        }
         listenForAudioEnd(of: beginChapterPlay())
         // A chapter whose file is only in the cloud is downloaded first,
         // and plays once it is here: the player is never handed a file it

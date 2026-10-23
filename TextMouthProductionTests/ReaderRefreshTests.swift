@@ -1052,6 +1052,52 @@ final class ReaderRefreshTests: XCTestCase {
         }
     }
 
+    /// Play pressed on an audiobook that was not playing, while the library
+    /// moves its package, reads no moving files: the chapter waits, the
+    /// reader showing Playing, and the move's end plays it from the
+    /// package's new place. Before, the play read the moving files and
+    /// failed as a damaged book (ST08).
+    func testPlayDuringAMoveWaitsForItsEndAndThenPlays() throws {
+        let world = try makeIntegrationWorld("Reader Refresh Play During Move")
+        let book = try world.makeSilentAudioBook(title: "Tidewrack Chronicle", trackDurations: [2, 2])
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        XCTAssertNil(reader.errorMessage, "The book did not open")
+
+        world.library.bookUpdates.packagesWillMove([book.id])
+        reader.play()
+        XCTAssertNil(reader.audioPlaybackService.loadedURL, "The play loaded the chapter from the moving package")
+        XCTAssertTrue(reader.isPlaybackUnderWay, "The waiting play does not show Playing")
+
+        world.library.bookUpdates.packagesDidMove([book.id])
+        XCTAssertEqual(
+            Self.folderPath(of: reader.audioPlaybackService.loadedURL),
+            Self.standardizedPath(try row(of: book, in: world.library).filePath),
+            "The move's end did not play the chapter from the package"
+        )
+        reader.stop()
+    }
+
+    /// A Pause pressed while a play waits for a move's end lets the play
+    /// go: the move's end loads nothing and the reader shows no playback.
+    func testAPauseDuringAMoveLetsAWaitingPlayGo() throws {
+        let world = try makeIntegrationWorld("Reader Refresh Pause During Move")
+        let book = try world.makeSilentAudioBook(title: "Saltmarsh Almanac", trackDurations: [2, 2])
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        XCTAssertNil(reader.errorMessage, "The book did not open")
+
+        world.library.bookUpdates.packagesWillMove([book.id])
+        reader.play()
+        XCTAssertTrue(reader.isPlaybackUnderWay, "The waiting play does not show Playing")
+        reader.pause()
+
+        world.library.bookUpdates.packagesDidMove([book.id])
+        XCTAssertNil(reader.audioPlaybackService.loadedURL, "The move's end played a play the listener paused")
+        XCTAssertFalse(reader.isPlaybackUnderWay, "The paused reader still shows Playing")
+        reader.stop()
+    }
+
     // MARK: - Stale Fields
 
     /// Every field of `reader` that no longer matches `library`'s row for
