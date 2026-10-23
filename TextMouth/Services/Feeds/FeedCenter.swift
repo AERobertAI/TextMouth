@@ -119,11 +119,16 @@ protocol FeedLibraryHost: AnyObject {
     /// each for the rule's next pass (REV11 F1): those open in readers,
     /// which covers one playing; the book being transcribed, whose
     /// transcript is saved into its package only once its audio has been
-    /// heard; and those an export is reading.
+    /// heard; those an export is reading; and those whose text is being
+    /// edited with Edit Text, whose edit would otherwise be left behind by
+    /// the download going (the listener's own deletions do not wait for
+    /// these, since an editing session ends only when TextMouth quits).
     var feedBooksInUse: Set<UUID> { get }
-    /// How the book `bookID` is in use now, as `feedBooksInUse` counts it,
-    /// or nil when it is not: what the listener's own deletions refuse,
-    /// saying why (`FeedDownloadInUseError`), where the rules wait.
+    /// How the book `bookID` is in use now in a way the listener's own
+    /// deletions refuse, saying why (`FeedDownloadInUseError`), or nil when
+    /// it is not: every book with a use is in `feedBooksInUse`, which the
+    /// rules wait for, but not the reverse (a book whose text is being
+    /// edited has none, so those deletions go ahead).
     func feedBookUse(of bookID: UUID) -> FeedBookUse?
     /// Whether the book `bookID` is on the reading list, whose downloads the
     /// newest-N rule never removes (FR11).

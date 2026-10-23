@@ -36,7 +36,11 @@ final class BookExportServiceTests: XCTestCase {
         XCTAssertEqual(offer.item(.originalFile)?.byteCount, try byteCount(of: book.bookFileURL))
         XCTAssertEqual(offer.item(.markdown)?.byteCount, try byteCount(of: cache))
         XCTAssertEqual(offer.item(.plainText)?.byteCount, try byteCount(of: cache), "the Markdown's size stands for the text's")
-        XCTAssertEqual(offer.item(.markdown)?.files.map(\.source), [.copy(cache)])
+        XCTAssertEqual(
+            offer.item(.markdown)?.files.map(\.source),
+            [.converted(from: cache, book: ExportBookDetails(book), by: .markdown)],
+            "the Markdown is written from content.md, not copied"
+        )
         XCTAssertEqual(offer.item(.plainText)?.files.map(\.source), [.readingText(fromMarkdown: cache)])
         XCTAssertTrue(offer.items.allSatisfy { !$0.isInCloud && $0.folderName == nil })
     }
@@ -270,9 +274,9 @@ final class BookExportServiceTests: XCTestCase {
 
     // MARK: - Exporting
 
-    /// Exporting a text book's three kinds copies its own file and its
-    /// Markdown byte for byte and writes its reading text, all straight
-    /// into the folder chosen, and says so.
+    /// Exporting a text book's three kinds copies its own file byte for
+    /// byte and writes its Markdown and its reading text, all straight into
+    /// the folder chosen, and says so.
     func testExportingATextBookWritesEachKindIntoTheFolder() throws {
         let world = try makeIntegrationWorld("Export Text Copy")
         let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md", Self.twoChapters))
@@ -301,8 +305,9 @@ final class BookExportServiceTests: XCTestCase {
             try Data(contentsOf: book.bookFileURL)
         )
         XCTAssertEqual(
-            try Data(contentsOf: destination.appendingPathComponent("\(stem) - Text.md")),
-            try Data(contentsOf: MarkdownCacheService.cacheURL(for: book))
+            try String(contentsOf: destination.appendingPathComponent("\(stem) - Text.md"), encoding: .utf8),
+            "# First\n\nOne two three.\n\n# Second\n\nFour five.\n\n## Later\n\nSix seven eight.\n",
+            "the Markdown is written from content.md, without its chapter markers"
         )
         let text = try String(contentsOf: destination.appendingPathComponent("\(stem) - Text.txt"), encoding: .utf8)
         XCTAssertFalse(text.contains("<!--"), "the reading text holds no chapter markers")
@@ -311,6 +316,82 @@ final class BookExportServiceTests: XCTestCase {
             XCTAssertTrue(text.contains(words), "the reading text lacks \(words)")
         }
         XCTAssertEqual(BookExportWording.finished(outcome, folderName: "Exports"), "Exported 3 items to Exports.")
+    }
+
+    /// "Text as Markdown" writes "Title - Text.md" with no backslash before a
+    /// comma, a period, or any other character Markdown reads literally
+    /// (October 23: every one was escaped), and its exact text is pinned.
+    func testTheMarkdownExportEscapesOnlyWhatMarkdownNeeds() throws {
+        let world = try makeIntegrationWorld("Export Minimal Escapes")
+        let source = [
+            "<!-- chapter: First -->", "# First", "",
+            "Wait, then go. Ask: who is there? Nobody; see 3.5 and 1,000 (or 2_000).", "",
+            "* a starred line and a_b and Issue #", "",
+        ].joined(separator: "\n")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md", source))
+        let stem = BookExportService.fileNameStem(for: book.title)
+        let destination = try makeSandboxDirectory("Export Minimal Escapes Destination")
+
+        let outcome = BookExportService.export([BookExportService.offer(for: book)], kinds: [.markdown], to: destination)
+
+        XCTAssertEqual(outcome.failures, [])
+        let markdown = try String(contentsOf: destination.appendingPathComponent("\(stem) - Text.md"), encoding: .utf8)
+        XCTAssertFalse(markdown.contains("\\,"), markdown)
+        XCTAssertFalse(markdown.contains("\\."), markdown)
+        XCTAssertEqual(
+            markdown,
+            "# First\n\nWait, then go. Ask: who is there? Nobody; see 3.5 and 1,000 (or 2_000).\n\n"
+                + "- a starred line and a_b and Issue \\#\n"
+        )
+    }
+
+    /// A transcribed audiobook's "Transcript" writes its text as Markdown
+    /// the same way, unescaped, and its transcript.json byte for byte.
+    func testATranscribedAudiobookExportsItsTranscriptTextUnescaped() throws {
+        let world = try makeIntegrationWorld("Export Transcript Markdown")
+        let book = try world.makeSilentAudioBook(title: "Night Shift Notes", trackDurations: [3, 2])
+        try TranscriptStore.install(try TranscriptFixtures.transcript(of: book, sentences: TranscriptionUIScripts.twoTracks), for: book)
+        let stem = BookExportService.fileNameStem(for: book.title)
+        let destination = try makeSandboxDirectory("Export Transcript Markdown Destination")
+
+        let outcome = BookExportService.export([BookExportService.offer(for: book)], kinds: [.transcript], to: destination)
+
+        XCTAssertEqual(outcome.failures, [])
+        XCTAssertEqual(
+            try Set(FileManager.default.contentsOfDirectory(atPath: destination.path)),
+            ["\(stem) - Transcript.json", "\(stem) - Transcript.md"]
+        )
+        let markdown = try String(contentsOf: destination.appendingPathComponent("\(stem) - Transcript.md"), encoding: .utf8)
+        XCTAssertTrue(
+            markdown.contains("Gannet wings fold over the breakwater. Rope coils dry on the pier."),
+            "the transcript's text is still escaped: \(markdown)"
+        )
+        XCTAssertFalse(markdown.contains("\\"), markdown)
+        XCTAssertEqual(
+            try Data(contentsOf: destination.appendingPathComponent("\(stem) - Transcript.json")),
+            try Data(contentsOf: TextMouthPaths.transcriptPath(in: book.tmbDirectory)),
+            "transcript.json is copied byte for byte"
+        )
+    }
+
+    /// Choosing HTML for "Text as Markdown" replaces the Markdown the offer
+    /// lists: "Title - Text.html" is written, and no Markdown.
+    func testChoosingHTMLReplacesTheMarkdownTheOfferLists() throws {
+        let world = try makeIntegrationWorld("Export Markdown To HTML")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md", Self.twoChapters))
+        let stem = BookExportService.fileNameStem(for: book.title)
+        let destination = try makeSandboxDirectory("Export Markdown To HTML Destination")
+        let html = BookExportConversion.text(TextExportConversion(HTMLExportWriter(), options: NoTextExportOptions()))
+
+        let outcome = BookExportService.export(
+            [BookExportService.offer(for: book)],
+            kinds: [.markdown],
+            conversions: [.markdown: html],
+            to: destination
+        )
+
+        XCTAssertEqual(outcome.failures, [])
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: destination.path), ["\(stem) - Text.html"])
     }
 
     /// An export never writes over anything: a name already taken in the

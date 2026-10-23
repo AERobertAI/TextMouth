@@ -63,6 +63,13 @@ final class BookTextEditor {
     /// The copies of each book's edited text VoiceOver has been told of, so
     /// a copy a rebuild kept is not announced again.
     private var announcedCopies: [UUID: Set<URL>] = [:]
+    /// The feed episodes whose transcript's note (`updatedInFeed`) has been
+    /// announced in the session now running, so only the first edit says it.
+    private var announcedFeedNotes: Set<UUID> = []
+    /// The title of the book of each session, kept when the session begins,
+    /// so a session that ends because its book left the library can still
+    /// name the book (`endBecauseBookIsGone(_:)`).
+    private var sessionTitles: [UUID: String] = [:]
 
     /// An editor whose sessions are `sessions`, remembering its explanation
     /// in `preferences` and hearing TextMouth become active on
@@ -133,6 +140,42 @@ final class BookTextEditor {
         }
     }
 
+    /// Pauses `book`'s session before a change rewrites its transcript
+    /// (Clean Up, Undo Cleanup, a new transcription, Delete Transcript):
+    /// a check of the book already running finishes, and an edit saved but
+    /// not yet checked is taken, committed, and announced as any taken edit
+    /// is (`BookTextEditSessions.settlePendingEdit(of:)`), all off the main
+    /// thread, so no check races the change. Then the session ends, as the
+    /// change rewrites the text it watched.
+    /// - Returns: Whether the book was being edited; false at once if not.
+    ///   A change that fails afterwards calls `resumeEditing(of:)` when this
+    ///   returned true, so the user's later saves are still taken.
+    func pauseEditing(of book: Book) async -> Bool {
+        guard sessions.isEditing(book.id) else { return false }
+        let sessions = self.sessions
+        // What the settlement says to read is of no use here: the change that
+        // follows rewrites the text itself.
+        _ = await OffMainWork.run { sessions.settlePendingEdit(of: book) }
+        end(book.id)
+        return true
+    }
+
+    /// Begins `book`'s session again after a change that `pauseEditing(of:)`
+    /// paused has failed, from a fresh baseline of the text the book has
+    /// now, so the user's next save is taken. It says nothing and opens no
+    /// editor: the user's editor is open already. When the baseline cannot
+    /// be read, it announces why, as `edit(_:choosingApp:in:from:)` does.
+    func resumeEditing(of book: Book) async {
+        let access = sessions.access
+        let found = await OffMainWork.run { BookTextEditSessions.baseline(of: book, access: access) }
+        switch found {
+        case .failure(let failure):
+            files.announce(BookTextEditWording.cannotBegin(failure, bookTitle: book.title))
+        case .success(let baseline):
+            begin(book.id, baseline: baseline)
+        }
+    }
+
     /// Whether `book`'s text can be edited here, as the app knows which
     /// audiobooks are transcribed (`TranscribedBooks`): a text book's, or a
     /// transcribed audiobook's transcript text (FR05).
@@ -141,15 +184,18 @@ final class BookTextEditor {
     }
 
     /// Whether `book`'s text can be edited here, given whether it is
-    /// `isTranscribed`: a text book's, or a transcribed audiobook's, whose
-    /// content.md is its transcript's text and whose transcript takes the
-    /// edit (`TranscriptStore.takeEdit`). Never a feed item's, an episode or
-    /// an article in its feed's folder: the user decided feed items are not
-    /// editable (FR11, question 4), and removing the download would take the
-    /// edit with it. Edit Text… and Edit Text With… are then not offered,
-    /// in the library's rows or the reader's Book menu.
+    /// `isTranscribed`: a text book's text, and any transcribed audiobook's
+    /// transcript text, an episode's in its feed included (the user's request
+    /// of October 23, 2026). Its content.md is its transcript's text, and its
+    /// transcript takes the edit (`TranscriptStore.takeEdit`). Never a feed
+    /// article's text, which belongs to its feed (FR11, question 4). An
+    /// episode's edit is kept in its transcript, which stays in the
+    /// episode's package when its download is deleted (`FeedItemPackage`),
+    /// and goes only with Delete Episode, Delete Feed, or Delete Transcript.
+    /// Edit Text… and Edit Text With… are not offered otherwise, in the
+    /// library's rows or the reader's Book menu.
     static func canEditText(of book: Book, isTranscribed: Bool) -> Bool {
-        !book.isFeedItem && !book.tmbDirectoryName.isEmpty && (!book.format.isAudio || isTranscribed)
+        !book.tmbDirectoryName.isEmpty && (book.format.isAudio ? isTranscribed : !book.isFeedItem)
     }
 
     /// Whether `book` has text to edit now: a text book always, an
@@ -184,21 +230,37 @@ final class BookTextEditor {
             file: { [weak library] in library?.bookByID(bookID).map(MarkdownCacheService.cacheURL(for:)) },
             changed: { [weak self] in self?.check(bookID) }
         )
-        // The session's copy of the text its edits replace.
+        // The session's copy of the text its edits replace, and the title
+        // to name the book by if it leaves the library.
         if let book = library?.bookByID(bookID) {
             sessions.keepOldText(of: book)
+            sessionTitles[bookID] = book.title
         }
         return true
     }
 
     /// Checks the book `bookID` for an edit, as the library holds the book
-    /// now; a book that has left the library ends its session instead.
+    /// now; a book that has left the library ends its session instead,
+    /// saying so.
     func check(_ bookID: UUID) {
         guard let book = library?.bookByID(bookID) else {
-            end(bookID)
+            endBecauseBookIsGone(bookID)
             return
         }
         sessions.scheduleCheck(of: book)
+    }
+
+    /// Ends the session of the book `bookID` because the library no longer
+    /// lists the book (it was removed, or a feed episode's download was
+    /// deleted and its row moved to its feed's shelf), after announcing that
+    /// Edit Text has stopped for it, so the user is not left saving into an
+    /// editor nothing listens to. Said once: the session, and its title, go
+    /// with the first call.
+    private func endBecauseBookIsGone(_ bookID: UUID) {
+        if let title = sessionTitles[bookID] {
+            files.announce(BookTextEditWording.stoppedBookGone(bookTitle: title))
+        }
+        end(bookID)
     }
 
     /// Ends the session of the book `bookID`: its watcher stops, and no
@@ -208,6 +270,8 @@ final class BookTextEditor {
         files.stopWatching(bookID)
         announcedRefusals[bookID] = nil
         announcedCopies[bookID] = nil
+        announcedFeedNotes.remove(bookID)
+        sessionTitles[bookID] = nil
     }
 
     /// Ends every session, as a test does when it ends.
@@ -245,12 +309,17 @@ final class BookTextEditor {
             return
         case .missing:
             if library?.bookByID(bookID) == nil {
-                end(bookID)
+                endBecauseBookIsGone(bookID)
             }
         case .adopted(let edit):
             announcedRefusals[bookID] = nil
+            // Read before the commit, which refreshes the row: a feed
+            // episode's first edit in a session also says where its
+            // transcript stays; later edits say only that the text updated.
+            let isFeedItem = library?.bookByID(bookID)?.isFeedItem == true
             library?.commitTextEdit(edit)
-            files.announce(BookTextEditWording.updated)
+            let firstInFeed = isFeedItem && announcedFeedNotes.insert(bookID).inserted
+            files.announce(firstInFeed ? BookTextEditWording.updatedInFeed : BookTextEditWording.updated)
         case .refused(let refusal, let digest, let keptCopy):
             let refused = BookTextEditSessions.RefusedEdit(digest: digest, refusal: refusal)
             guard announcedRefusals[bookID] != refused else { return }

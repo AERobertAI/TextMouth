@@ -108,7 +108,16 @@ struct TranscriptCleanup: Sendable {
             current = rewritten
         }
         guard current != text else { return (text, corrections, examples) }
-        return (TranscriptCleanupRule.singleSpaced(current), corrections, examples)
+        let spaced = TranscriptCleanupRule.singleSpaced(current)
+        // A sentence with no text is not a usable transcript (a rule turning
+        // "um" into nothing would leave one of "Um"), and the install would
+        // refuse it after Apply was offered. Such a sentence keeps its text,
+        // and its changes are neither listed nor counted, so the preview
+        // offers nothing for it. `singleSpaced` is empty for white space alone.
+        guard !spaced.isEmpty else {
+            return (text, [Int](repeating: 0, count: rules.count), [[Example]](repeating: [], count: rules.count))
+        }
+        return (spaced, corrections, examples)
     }
 
     // MARK: - Whole Words

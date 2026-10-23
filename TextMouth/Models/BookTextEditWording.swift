@@ -45,6 +45,18 @@ enum BookTextEditWording {
     /// An edit was taken as the book's text.
     static let updated = "Text updated"
 
+    /// The first edit taken in a session of a feed episode's transcript:
+    /// "Text updated. This episode's transcript, with your changes, stays
+    /// with the episode in its feed, …" (`TranscriptionWording`).
+    static let updatedInFeed = updated + ". " + TranscriptionWording.feedEpisodeTranscriptNote
+
+    /// A session ended because its book left the library: it was removed, or
+    /// it is a feed episode whose download was deleted. The user's later
+    /// saves are not taken, so they are told.
+    static func stoppedBookGone(bookTitle: String) -> String {
+        "Text not updated: \(bookTitle) was removed, or its download deleted, so Edit Text has stopped for it."
+    }
+
     /// Why an edit was not taken, as VoiceOver hears it once a check found
     /// it, then where the edited text was kept (`kept(_:)`), as in "Text not
     /// updated: the edited text of Harbour Pilots isn't UTF-8 text. Save it
@@ -75,6 +87,12 @@ enum BookTextEditWording {
             return "Text not updated: the edited transcript of \(bookTitle) has \(chapters(found)), "
                 + "but the audiobook has \(chapters(expected)). Keep every line beginning with <!-- chapter: "
                 + "and save again; until then, the book keeps the text it had."
+        case .headingChanged:
+            return "Text not updated: the edited transcript of \(bookTitle) changes a chapter's heading, which comes from its audio. "
+                + "Put the heading back as it was and save again; until then, the book keeps the text it had."
+        case .wordsWithoutSentences:
+            return "Text not updated: the edited transcript of \(bookTitle) adds words to a chapter the transcript heard no speech in, "
+                + "where they can't be kept. Remove them and save again; until then, the book keeps the text it had."
         case .failed(let reason):
             return "Text not updated: \(reason)"
         }
@@ -103,24 +121,38 @@ enum BookTextEditWording {
     /// opens. Your edited text was also kept as content.md.edited-…, in the
     /// book's package." The reader opens the book once an edit is taken.
     static func held(_ refusal: BookTextEditRefusal, bookTitle: String, keptCopy: URL?) -> String {
-        let why: String
+        "\(bookTitle) can't open while its edited text can't be used: \(heldReason(refusal)) \(kept(keptCopy))"
+    }
+
+    /// Why an edit cannot be used while it stands, and what the user can do
+    /// about it, as the end of a sentence about the book: "it isn't UTF-8
+    /// text. Save it as UTF-8 in your editor, and the book opens." For an
+    /// audiobook (`forAudiobook`), whose book does open, with its audio and
+    /// without its text, what follows saving is that the text shows.
+    static func heldReason(_ refusal: BookTextEditRefusal, forAudiobook: Bool = false) -> String {
+        let outcome = forAudiobook ? "the text shows" : "the book opens"
         switch refusal {
         case .notText:
-            why = "it isn't UTF-8 text. Save it as UTF-8 in your editor, and the book opens."
+            return "it isn't UTF-8 text. Save it as UTF-8 in your editor, and \(outcome)."
         case .noChapters:
-            why = "it has no chapter left with anything in it. Undo the change in your editor and save again, "
-                + "and the book opens."
+            return "it has no chapter left with anything in it. Undo the change in your editor and save again, "
+                + "and \(outcome)."
         case .sourceChanged:
-            why = "the book's own file changed too. Open the book again to read its text from that file."
+            return "the book's own file changed too. Open the book again to read its text from that file."
         case .transcriptChanged:
-            why = "the book's transcript changed too. Open the book again to read its text from that transcript."
+            return "the book's transcript changed too. Open the book again to read its text from that transcript."
         case .chaptersChanged(let found, let expected):
-            why = "it has \(chapters(found)), where the audiobook has \(chapters(expected)). "
+            return "it has \(chapters(found)), where the audiobook has \(chapters(expected)). "
                 + "Keep every line beginning with <!-- chapter: and save again, and the text shows."
+        case .headingChanged:
+            return "it changes a chapter's heading, which comes from the audio. Put the heading back as it was and save again, "
+                + "and the text shows."
+        case .wordsWithoutSentences:
+            return "it adds words to a chapter the transcript heard no speech in, where they can't be kept. "
+                + "Remove them and save again, and the text shows."
         case .failed(let reason):
-            why = reason
+            return reason
         }
-        return "\(bookTitle) can't open while its edited text can't be used: \(why) \(kept(keptCopy))"
     }
 
     /// A rebuild read the book's text from its own file again, over other
@@ -176,10 +208,14 @@ enum BookTextEditWording {
             + "Transcribe it first, with Transcribe Audio."
     }
 
+    /// Why a transcript no longer fits its audiobook, as the end of a
+    /// sentence (FR05).
+    static let transcriptStaleReason = "the audiobook's audio changed since it was transcribed, "
+        + "so its transcript no longer fits it."
+
     /// Why a transcribed audiobook's edit was not taken while its audio is
     /// not the audio transcribed any more (FR05).
-    static let transcriptStale = "the audiobook's audio changed since it was transcribed, "
-        + "so its transcript no longer fits it. Transcribe it again, then edit the new transcript."
+    static let transcriptStale = transcriptStaleReason + " Transcribe it again, then edit the new transcript."
 
     /// Why a transcribed audiobook's edit was not taken while its
     /// transcript cannot be read (FR05).

@@ -227,26 +227,30 @@ extension LibraryViewModel: FeedLibraryHost {
     }
 
     /// The books in use now, which the feed engine's rules leave for their
-    /// next pass (REV11 F1) and the listener's own deletions refuse
-    /// (`feedBookUse(of:)`): those open in readers; the book being
-    /// transcribed, as `TranscribedBooks` records it from the moment the
-    /// transcription starts until its transcript is saved
-    /// (`TranscriptionJobCenter`); and those an export is reading
-    /// (`BookExportModel.booksBeingExported`).
+    /// next pass (REV11 F1): the books `feedBookUses` lists, which the
+    /// listener's own deletions refuse (`feedBookUse(of:)`), and the books
+    /// being edited with Edit Text (`textEditSessions`), which they do not:
+    /// an editing session ends only when TextMouth quits, so a deletion
+    /// refused for it would stay refused until then. A rule that waits
+    /// leaves the text the listener is editing in its download until the
+    /// next pass; a download that goes anyway keeps its transcript in its
+    /// package, and a save made after it went is kept when the episode is
+    /// downloaded again (`FeedEpisodeImporter`).
     var feedBooksInUse: Set<UUID> {
-        feedBookUses.reduce(into: Set<UUID>()) { inUse, use in inUse.formUnion(use.bookIDs) }
+        feedBookUses.reduce(into: textEditSessions.bookIDs) { inUse, use in inUse.formUnion(use.bookIDs) }
     }
 
     /// How the book `bookID` is in use now, the first that holds of open in
     /// a reader, being transcribed, and being exported, or nil when none
-    /// does.
+    /// does. A book being edited with Edit Text is not in use here: it
+    /// waits only for the rules (`feedBooksInUse`).
     func feedBookUse(of bookID: UUID) -> FeedBookUse? {
         feedBookUses.first { $0.bookIDs.contains(bookID) }?.use
     }
 
-    /// Each way a book can be in use, with the books in use that way now:
-    /// the one list `feedBooksInUse` and `feedBookUse(of:)` both read, so
-    /// they never disagree.
+    /// Each way a book can be in use that the listener's own deletions
+    /// refuse, with the books in use that way now: the list
+    /// `feedBookUse(of:)` reads, and `feedBooksInUse` adds to.
     private var feedBookUses: [(use: FeedBookUse, bookIDs: Set<UUID>)] {
         [
             (.openInReader, openBookIDs),

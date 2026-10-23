@@ -56,22 +56,31 @@ enum MarkdownEmphasis {
     /// style for each scalar; any other count is taken as no style at all,
     /// and the text is written plain. The caller gives one line, trimmed of
     /// white space at its ends, as `MarkdownLiteral.escaped` asks.
-    static func markdown(_ text: String, styles: [Style]) -> String {
+    ///
+    /// `literal` writes each stretch of unstyled or styled text as Markdown
+    /// literal text, `MarkdownLiteral.escaped` unless the caller gives its own
+    /// (the export writes `MarkdownLiteral.minimallyEscaped`). It is called
+    /// on the pieces between the delimiters, never across one.
+    static func markdown(
+        _ text: String,
+        styles: [Style],
+        literal: (String) -> String = MarkdownLiteral.escaped
+    ) -> String {
         let scalars = Array(text.unicodeScalars)
         guard styles.count == scalars.count, styles.contains(where: { !$0.isEmpty }) else {
-            return MarkdownLiteral.escaped(text)
+            return literal(text)
         }
         // Everything between the spans is written as plain literal text.
         var result = ""
         var position = 0
         for span in spans(of: scalars, styles: styles) {
-            result += literal(scalars[position..<span.range.lowerBound])
+            result += piece(scalars[position..<span.range.lowerBound], with: literal)
             // A span of touching stretches that share no emphasis has none.
             let delimiter = span.style.delimiter
-            result += delimiter + literal(scalars[span.range]) + delimiter
+            result += delimiter + piece(scalars[span.range], with: literal) + delimiter
             position = span.range.upperBound
         }
-        return result + literal(scalars[position...])
+        return result + piece(scalars[position...], with: literal)
     }
 
     /// The spans `markdown(_:styles:)` wraps in delimiters, in order: each
@@ -103,8 +112,8 @@ enum MarkdownEmphasis {
         return spans
     }
 
-    /// `scalars` as Markdown literal text.
-    private static func literal(_ scalars: ArraySlice<Unicode.Scalar>) -> String {
-        scalars.isEmpty ? "" : MarkdownLiteral.escaped(String(String.UnicodeScalarView(scalars)))
+    /// `scalars` as Markdown literal text, written by `writer`; none is none.
+    private static func piece(_ scalars: ArraySlice<Unicode.Scalar>, with writer: (String) -> String) -> String {
+        scalars.isEmpty ? "" : writer(String(String.UnicodeScalarView(scalars)))
     }
 }

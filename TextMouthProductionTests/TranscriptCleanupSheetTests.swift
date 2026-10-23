@@ -30,7 +30,7 @@ final class TranscriptCleanupSheetTests: XCTestCase {
 
         XCTAssertEqual(
             LibraryAudioCommand.commands(for: [book], isTranscribed: transcribed),
-            [.editAudio(book), .transcribe([book]), .cleanUpTranscript(book), .deleteTranscript(book)]
+            [.editAudio(book), .retranscribe(book), .cleanUpTranscript(book), .deleteTranscript(book)]
         )
         XCTAssertEqual(
             LibraryAudioCommand.commands(for: [other], isTranscribed: transcribed),
@@ -48,7 +48,7 @@ final class TranscriptCleanupSheetTests: XCTestCase {
         )
         XCTAssertEqual(
             row.accessibilityActionNames,
-            ["Edit Audio…", "Transcribe Audio…", "Clean Up Transcript (Experimental)…", "Delete Transcript…"]
+            ["Edit Audio…", "Retranscribe Audio…", "Clean Up Transcript (Experimental)…", "Delete Transcript…"]
         )
     }
 
@@ -69,20 +69,31 @@ final class TranscriptCleanupSheetTests: XCTestCase {
         XCTAssertNil(presenter.cleanup)
     }
 
-    /// A feed's episode is not editable (FR11): neither the reader's command
-    /// (`cleanUp`) nor a row's, from its context menu or its VoiceOver
-    /// actions (`perform`), opens a sheet for it.
-    func testTheCommandOpensNoSheetForAFeedsEpisode() throws {
+    /// A feed's episode transcript is the listener's own work: both the
+    /// reader's command (`cleanUp`) and a row's, from its context menu or its
+    /// VoiceOver actions (`perform`), open the sheet for it, and the sheet's
+    /// model carries the note that the transcript stays with the episode.
+    func testTheCommandOpensTheSheetForAFeedsEpisode() throws {
         let world = try makeIntegrationWorld("Transcript Cleanup Feed Episode")
         var book = try transcribedBook(in: world)
         book.feedLink = FeedBookLink(feedID: UUID(), itemID: "guid:harbour-log")
-        XCTAssertFalse(LibraryAudioCommand.isTranscriptCleanable(book), "the rule this test relies on")
         let presenter = TranscriptionPresenter(services: { self.makeSheetServices() }, cleanupServices: { self.makeCleanupServices() })
 
         presenter.cleanUp(book, library: world.library, window: nil)
-        XCTAssertNil(presenter.cleanup, "cleanUp opened a sheet for a feed's episode")
+        let fromReader = try XCTUnwrap(presenter.cleanup, "cleanUp opened no sheet for a feed's episode")
+        XCTAssertEqual(fromReader.feedNoteLine, TranscriptionWording.feedEpisodeTranscriptNote)
+        XCTAssertTrue(fromReader.readyLines.contains(TranscriptionWording.feedEpisodeTranscriptNote), "VoiceOver does not hear the note")
+        fromReader.close()
+        XCTAssertNil(presenter.cleanup)
         presenter.perform(.cleanUpTranscript(book), library: world.library, window: nil)
-        XCTAssertNil(presenter.cleanup, "the command opened a sheet for a feed's episode")
+        let fromRow = try XCTUnwrap(presenter.cleanup, "the command opened no sheet for a feed's episode")
+        XCTAssertEqual(fromRow.feedNoteLine, TranscriptionWording.feedEpisodeTranscriptNote)
+        fromRow.close()
+
+        // A book of the library's own hears no note.
+        var own = book
+        own.feedLink = nil
+        XCTAssertNil(TranscriptCleanupSheetModel(book: own, library: world.library, services: makeCleanupServices()).feedNoteLine)
     }
 
     // MARK: - What the Sheet Shows
@@ -211,6 +222,33 @@ final class TranscriptCleanupSheetTests: XCTestCase {
         XCTAssertTrue(closed)
     }
 
+    /// A sheet left open while its book moved to another folder (as Move to
+    /// Library... of a feed episode moves it) examines the transcript where
+    /// the library holds the book now, as Apply and Undo do: coming back to
+    /// TextMouth, it is ready, not unavailable for want of a transcript.
+    func testASheetOpenedBeforeItsBookMovedStillFindsTheTranscript() async throws {
+        let world = try makeIntegrationWorld("Transcript Cleanup Moved")
+        let book = try transcribedBook(in: world)
+        let model = TranscriptCleanupSheetModel(book: book, library: world.library, services: makeCleanupServices())
+        await model.load()
+        XCTAssertEqual(model.phase, .ready)
+
+        // The package, with its transcript, moves to another folder, and
+        // the library's row says so; the sheet still holds the old book.
+        let destination = makeIntegrationLibraryFolder("Transcript Cleanup Moved To")
+        let newPlace = TextMouthPaths.tmbPath(folderPath: destination.path, tmbName: book.tmbDirectoryName)
+        try FileManager.default.createDirectory(at: newPlace.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try FileManager.default.moveItem(at: book.tmbDirectory, to: newPlace)
+        world.library.updateBook(id: book.id) { $0.folderPath = destination.path }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: book.tmbDirectory.path), "the package did not leave its old place")
+
+        await model.refresh()
+
+        XCTAssertEqual(model.phase, .ready)
+        XCTAssertEqual(model.summaryLine, "2 corrections in 2 sentences.")
+        XCTAssertTrue(model.canApply)
+    }
+
     /// The lines about the user's copy of the rules: waiting in the cloud,
     /// which asks the sync service for it; unusable; older than TextMouth's
     /// own; and why Edit Rules… could not open it.
@@ -255,8 +293,8 @@ final class TranscriptCleanupSheetTests: XCTestCase {
 
     // MARK: - Applying and Undoing
 
-    /// Apply cleans up the transcript, ends its Edit Text session first,
-    /// shows the cleaned text in an open reader, tells VoiceOver how many
+    /// Apply cleans up the transcript, pauses its Edit Text session first
+    /// (and never begins it again), shows the cleaned text in an open reader, tells VoiceOver how many
     /// corrections were made, and closes the sheet.
     func testApplyCleansUpTheTranscriptAndTellsTheReader() async throws {
         let world = try makeIntegrationWorld("Transcript Cleanup Applied")
@@ -265,9 +303,11 @@ final class TranscriptCleanupSheetTests: XCTestCase {
         let loaded = await eventuallyHolds { !reader.isLoading }
         XCTAssertTrue(loaded, "the reader never loaded")
         let announcements = SheetAnnouncements()
-        let ended = CallLog<UUID>()
+        let paused = CallLog<UUID>()
+        let resumed = CallLog<UUID>()
         let model = TranscriptCleanupSheetModel(book: book, library: world.library, services: makeCleanupServices(
-            endedEdits: ended,
+            pausedEdits: paused,
+            resumedEdits: resumed,
             announcements: announcements
         ))
         var closed = false
@@ -277,7 +317,8 @@ final class TranscriptCleanupSheetTests: XCTestCase {
         await model.apply()
 
         XCTAssertTrue(closed, "the sheet stayed open")
-        XCTAssertEqual(ended.calls, [book.id])
+        XCTAssertEqual(paused.calls, [book.id])
+        XCTAssertEqual(resumed.calls, [], "a cleanup that worked began the session again")
         XCTAssertEqual(announcements.messages, ["Cleaned up the transcript of Breakwater Notes: 2 corrections."])
         guard case .found(let saved) = TranscriptStore.read(from: book.tmbDirectory) else {
             return XCTFail("the cleaned transcript could not be read")
@@ -370,6 +411,101 @@ final class TranscriptCleanupSheetTests: XCTestCase {
         ))
         XCTAssertEqual(model.focusTarget, .close)
         XCTAssertEqual(TranscriptStore.read(from: book.tmbDirectory), .found(changed))
+    }
+
+    // MARK: - The Edit Text Session
+
+    /// An edit saved in content.md but not yet checked is taken before
+    /// Apply rewrites the transcript, so it is not lost to the cleanup or
+    /// racing it: the cleanup is then refused, since the transcript changed,
+    /// and the session begins again, so the user's next save is still taken.
+    func testApplyTakesAPendingEditFirstAndResumesTheSessionWhenTheCleanupFails() async throws {
+        let world = try makeIntegrationWorld("Transcript Cleanup Pending Edit")
+        let book = try transcribedBook(in: world)
+        let editing = makeEditor()
+        defer { editing.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        await editing.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        XCTAssertTrue(editing.sessions.isEditing(book.id))
+        let model = TranscriptCleanupSheetModel(book: book, library: world.library, services: makeCleanupServices(editor: editing.editor))
+        await model.load()
+        // Saved in the user's editor, and no check has run since.
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let saved = try String(contentsOf: cache, encoding: .utf8).replacingOccurrences(
+            of: MarkdownLiteral.minimallyEscaped("on the pier.", smartPunctuation: true),
+            with: MarkdownLiteral.minimallyEscaped("on the quay.", smartPunctuation: true)
+        )
+        try saved.write(to: cache, atomically: true, encoding: .utf8)
+
+        await model.apply()
+
+        guard case .failed = model.phase else {
+            return XCTFail("the cleanup went ahead over the edit: \(model.phase)")
+        }
+        guard case .found(let transcript) = TranscriptStore.read(from: book.tmbDirectory) else {
+            return XCTFail("the transcript could not be read")
+        }
+        XCTAssertEqual(transcript.files.first?.sentences.last?.text, "Rope coils dry on the quay.", "the edit was not taken first")
+        XCTAssertNil(transcript.cleanedUp)
+        XCTAssertTrue(editing.sessions.isEditing(book.id), "the user's later saves are no longer taken")
+        // The taken edit is announced from the main actor, soon after.
+        let heard = await eventuallyHolds(timeout: 2) { announcements.messages == [BookTextEditWording.updated] }
+        XCTAssertTrue(heard, "VoiceOver heard \(announcements.messages)")
+    }
+
+    /// Apply of a book being edited, with nothing saved since, cleans up the
+    /// transcript, and the session ends: the cleanup rewrote the text it
+    /// watched.
+    func testApplyEndsTheSessionWhenTheCleanupWorks() async throws {
+        let world = try makeIntegrationWorld("Transcript Cleanup Session Ends")
+        let book = try transcribedBook(in: world)
+        let editing = makeEditor()
+        defer { editing.editor.endAll() }
+        await editing.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        let model = TranscriptCleanupSheetModel(book: book, library: world.library, services: makeCleanupServices(editor: editing.editor))
+        await model.load()
+
+        await model.apply()
+
+        guard case .found(let saved) = TranscriptStore.read(from: book.tmbDirectory) else {
+            return XCTFail("the cleaned transcript could not be read")
+        }
+        XCTAssertEqual(saved.cleanedUp?.corrections, 2)
+        XCTAssertFalse(editing.sessions.isEditing(book.id), "the session outlived the text it watched")
+    }
+
+    /// Undo Cleanup that fails begins the session again too.
+    func testAFailedUndoResumesTheSession() async throws {
+        let world = try makeIntegrationWorld("Transcript Cleanup Undo Resumes")
+        let book = try transcribedBook(in: world)
+        guard case .found(let original) = TranscriptStore.read(from: book.tmbDirectory) else {
+            return XCTFail("the transcript could not be read")
+        }
+        try TranscriptStore.cleanUp(book, expecting: original, with: Self.rules, from: .builtIn, now: TranscriptFixtures.date)
+        let editing = makeEditor()
+        defer { editing.editor.endAll() }
+        await editing.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        let paused = CallLog<UUID>()
+        let resumed = CallLog<UUID>()
+        let model = TranscriptCleanupSheetModel(book: book, library: world.library, services: makeCleanupServices(
+            editor: editing.editor,
+            pausedEdits: paused,
+            resumedEdits: resumed
+        ))
+        await model.load()
+        XCTAssertTrue(model.canUndo)
+        // The transcript from before the cleanup is gone, so there is nothing to put back.
+        try FileManager.default.removeItem(at: TextMouthPaths.transcriptBeforeCleanupPath(in: book.tmbDirectory))
+
+        await model.undo()
+
+        guard case .failed = model.phase else {
+            return XCTFail("the undo did not fail: \(model.phase)")
+        }
+        XCTAssertEqual(paused.calls, [book.id])
+        XCTAssertEqual(resumed.calls, [book.id])
+        XCTAssertTrue(editing.sessions.isEditing(book.id), "the user's later saves are no longer taken")
     }
 
     // MARK: - As Drawn
@@ -481,14 +617,18 @@ final class TranscriptCleanupSheetTests: XCTestCase {
     /// rules `rules` gives, or `supply` when given, a transcription under
     /// way while `transcribing` is on, Edit Rules… failing with
     /// `editRulesFailure` or opening nothing, and downloads asked for, Edit
-    /// Text sessions ended, and announcements kept in the logs given.
+    /// Text sessions paused and begun again (through `editor` when given,
+    /// else as a book being edited with nothing waiting), and announcements
+    /// kept in the logs given.
     private func makeCleanupServices(
         rules: TranscriptCleanupRuleFile.Lookup? = nil,
         supply: RulesSupply? = nil,
         transcribing: FailureSwitch = FailureSwitch(isOn: false),
         editRulesFailure: String? = nil,
         downloads: CallLog<Void> = CallLog(),
-        endedEdits: CallLog<UUID> = CallLog(),
+        editor: BookTextEditor? = nil,
+        pausedEdits: CallLog<UUID> = CallLog(),
+        resumedEdits: CallLog<UUID> = CallLog(),
         announcements: SheetAnnouncements = SheetAnnouncements()
     ) -> TranscriptCleanupServices {
         let supply = supply ?? RulesSupply(rules ?? lookup())
@@ -497,9 +637,44 @@ final class TranscriptCleanupSheetTests: XCTestCase {
             requestRulesDownload: { downloads.record(()) },
             editRules: { _ in editRulesFailure },
             isTranscribing: { _ in transcribing.isOn },
-            endTextEdit: { endedEdits.record($0) },
+            pauseTextEdit: { book in
+                pausedEdits.record(book.id)
+                guard let editor else { return true }
+                return await editor.pauseEditing(of: book)
+            },
+            resumeTextEdit: { book in
+                resumedEdits.record(book.id)
+                await editor?.resumeEditing(of: book)
+            },
             announce: { message, window in announcements.record(message, window) }
         )
+    }
+
+    /// An editor of the test's own and the sessions it keeps.
+    private struct TestEditor {
+        let editor: BookTextEditor
+        let sessions: BookTextEditSessions
+    }
+
+    /// An editor that opens no app and shows no dialog, takes TextMouth to
+    /// be active, and drops reading texts into a sandbox folder, as
+    /// `TranscriptEditTests.makeEditor` makes one.
+    private func makeEditor() -> TestEditor {
+        let recorder = EditorRecorder()
+        let readingTexts = ReadingTextCache(
+            folder: HostedTestSandbox.home.appendingPathComponent("Transcript Cleanup Reading Texts \(UUID().uuidString)")
+        )
+        let sessions = BookTextEditSessions(readingTexts: readingTexts)
+        let editor = BookTextEditor(
+            sessions: sessions,
+            preferences: makeSandboxedPreferences("Transcript Cleanup"),
+            notificationCenter: NotificationCenter(),
+            explain: { title, _ in recorder.explain(title) },
+            chooseApp: { title, _ in recorder.chooseApp(title) },
+            open: { file, app in try recorder.open(file, app) },
+            isAppActive: { true }
+        )
+        return TestEditor(editor: editor, sessions: sessions)
     }
 
     /// A silent audiobook titled `title`, of two tracks in `world`,

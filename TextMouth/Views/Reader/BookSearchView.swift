@@ -1,6 +1,77 @@
 import SwiftUI
 import Foundation
 
+/// The words Search in Book speaks about a transcribed audiobook: what it says
+/// when there is no transcript to search, where a chosen result took the
+/// reader, and what Go Back says with nowhere to go back to. Kept in one
+/// place so each sentence is pinned by a test.
+enum BookSearchWording {
+    /// Said instead of opening Search in Book for an audiobook whose
+    /// transcript does not exist yet.
+    static func noTranscript(bookTitle: String) -> String {
+        "\(bookTitle) has no transcript to search. Transcribe it first, with Transcribe Audio."
+    }
+
+    /// Said instead of opening Search in Book for a loaded audiobook with no
+    /// transcript text to search, and why, never naming a command the book
+    /// does not offer:
+    /// - Without a transcript, `noTranscript(bookTitle:)` names Transcribe
+    ///   Audio, which a book in a package of its own (`canTranscribe`) offers;
+    ///   a book that is not in one offers no command, and none is named.
+    /// - With a transcript whose text is not shown, the reason is said in the
+    ///   words that say it elsewhere: the cloud's (`TranscriptionWording`),
+    ///   the stale transcript's and the held edit's (`BookTextEditWording`).
+    ///   No command is named: the book's is then Retranscribe Audio…, which
+    ///   replaces the transcript and is the cure only for a stale one, so
+    ///   that reason says to transcribe it again and the others say what
+    ///   to do instead. A reason the reader does not know is not guessed.
+    /// - Parameters:
+    ///   - bookTitle: The book's title.
+    ///   - canTranscribe: Whether the book is in a package of its own, so
+    ///     that it offers to transcribe its audio
+    ///     (`LibraryAudioCommand.isTranscribable`).
+    ///   - hasTranscript: Whether the book has a transcript, as the library's
+    ///     rows and the Book menu know it (`TranscribedBooks`).
+    ///   - withheld: Why its text is not shown, when the reader knows.
+    static func noTextToSearch(
+        bookTitle: String,
+        canTranscribe: Bool,
+        hasTranscript: Bool,
+        withheld: TranscriptTextWithheld?
+    ) -> String {
+        guard hasTranscript else {
+            return canTranscribe ? noTranscript(bookTitle: bookTitle) : "\(bookTitle) has no transcript to search."
+        }
+        let lead = "\(bookTitle) has no transcript text to search now"
+        switch withheld {
+        case nil:
+            return lead + "."
+        case .transcriptInCloud?:
+            return "\(lead). \(TranscriptionWording.transcriptInCloud)"
+        case .textInCloud?:
+            return "\(lead). \(TranscriptionWording.textInCloud)"
+        case .audioChanged?:
+            return "\(lead), because \(BookTextEditWording.transcriptStaleReason) Transcribe it again, then search the new transcript."
+        case .editHeld(let refusal, let keptCopy)?:
+            let why = BookTextEditWording.heldReason(refusal, forAudiobook: true)
+            return "\(lead), because its edited text can't be used: \(why) \(BookTextEditWording.kept(keptCopy))"
+        }
+    }
+
+    /// Said once the search sheet has closed after a result was chosen: the
+    /// time the reader moved to and, when it names one, where that is.
+    static func movedTo(time: TimeInterval, location: String?) -> String {
+        guard let location else { return "Moved to \(TimeFormatting.spoken(time))." }
+        return "Moved to \(TimeFormatting.spoken(time)), \(location)."
+    }
+
+    /// Said by Go Back in a reader that has no saved position to return to.
+    static let nothingToGoBackTo = "No previous position to return to."
+
+    /// The search field's hint when the book searched is a transcript.
+    static let transcriptFieldHint = "Type to search the book's transcript"
+}
+
 /// Case-insensitive matching shared by book search: literal text, or a
 /// regular expression. Ranges are UTF-16 `NSRange`s, TextMouth's text
 /// coordinate system (see `OffsetMap.swift`).
@@ -110,11 +181,54 @@ struct BookSearchResult: Identifiable, Equatable, Sendable {
     let globalOffset: Int
     /// Heading containing the match, or nil when there is none to name.
     var locationTitle: String?
+    /// Seconds from the start of the book at which the match is heard, for a
+    /// match in a transcript; nil for a text book's.
+    var time: TimeInterval?
 
     /// The matching context, then where it is: the rotor entry, and the
     /// start of the row's spoken label.
     var contextAndLocation: String {
         [contextSnippet, locationTitle].compactMap { $0 }.joined(separator: ", ")
+    }
+
+    /// For a timed result, `contextAndLocation` and the time it is heard,
+    /// spoken: the row's label and the rotor entry. Nil for an untimed one.
+    var timedLabel: String? {
+        time.map { "\(contextAndLocation), at \(TimeFormatting.spoken($0))" }
+    }
+}
+
+/// What a search of a transcribed audiobook needs to give each match the
+/// time it is heard: the transcript the chapters' texts come from, and where
+/// each audio chapter begins.
+struct BookSearchTiming: Sendable {
+    /// The transcript whose chapter texts are searched, and whose index
+    /// gives a place in a chapter's text its time.
+    let transcript: TranscriptText
+    /// Where each chapter begins, in seconds from the start of the book.
+    let chapterStarts: [TimeInterval]
+
+    /// Seconds from the start of the book at which the match at
+    /// `characterOffset` of chapter `chapterIndex` is heard: the chapter's
+    /// start (0 for a chapter outside `chapterStarts`) and the start of the
+    /// sentence holding the match, which is also where a jump to it lands.
+    func time(chapterIndex: Int, characterOffset: Int) -> TimeInterval {
+        let start = chapterStarts.indices.contains(chapterIndex) ? chapterStarts[chapterIndex] : 0
+        return start + transcript.chapterTime(atTextOffset: characterOffset, inChapter: chapterIndex)
+    }
+
+    /// The timing of `transcript` over an audiobook whose chapters are
+    /// `audioChapters`. An audiobook's chapter text is spacing that counts
+    /// time (`ReaderViewModel.audioCharsPerSecond` characters a second), so a
+    /// chapter begins where the lengths of those before it add up.
+    static func forTranscript(_ transcript: TranscriptText, audioChapters: [Chapter]) -> BookSearchTiming {
+        var starts: [TimeInterval] = []
+        var elapsed: TimeInterval = 0
+        for chapter in audioChapters {
+            starts.append(elapsed)
+            elapsed += AudioBookParser.time(forCharacterOffset: chapter.text.utf16Length)
+        }
+        return BookSearchTiming(transcript: transcript, chapterStarts: starts)
     }
 }
 
@@ -131,6 +245,9 @@ struct BookSearchCorpus: Sendable {
     /// The book's title, so a content title that merely repeats it is not
     /// offered as a match's location.
     let bookTitle: String
+    /// What gives each match the time it is heard, when the book is a
+    /// transcribed audiobook; nil for a text book.
+    var timing: BookSearchTiming? = nil
 }
 
 /// What one completed search found.
@@ -192,6 +309,11 @@ enum BookSearchEngine {
         )
         for index in results.indices {
             results[index].locationTitle = locationTitles[index]
+            // A transcript's matches also say when they are heard.
+            results[index].time = corpus.timing?.time(
+                chapterIndex: results[index].chapterIndex,
+                characterOffset: results[index].characterOffset
+            )
         }
         return .matches(results, isTruncated: collected.isTruncated)
     }
@@ -268,6 +390,9 @@ struct BookSearchView: View {
     let totalWordCount: Int
     let currentWPM: Double
     let onNavigate: (Int, Int) -> Void  // chapterIndex, characterOffset
+    /// Whether the book searched is a transcript, whose results are timed
+    /// exactly: it shows no Display picker, and its rows give the time.
+    private let isTimed: Bool
     @Environment(\.dismiss) private var dismiss
 
     /// Runs the searches: waits for typing to pause, works off the main
@@ -298,21 +423,44 @@ struct BookSearchView: View {
         announce: @escaping @MainActor (String) -> Void,
         onNavigate: @escaping (Int, Int) -> Void
     ) {
-        self.totalCharacterCount = totalCharacterCount
-        self.totalWordCount = totalWordCount
-        self.currentWPM = currentWPM
-        self.onNavigate = onNavigate
-        // StateObject builds the model once each time the sheet opens; the
-        // copies of the book passed in by later reader refreshes go unused.
-        _model = StateObject(wrappedValue: BookSearchModel(
+        self.init(
             corpus: BookSearchCorpus(
                 chapterTexts: chapterTexts,
                 chapterTitles: chapterTitles,
                 headings: headings,
                 bookTitle: bookTitle
             ),
-            announce: announce
-        ))
+            totalCharacterCount: totalCharacterCount,
+            totalWordCount: totalWordCount,
+            currentWPM: currentWPM,
+            announce: announce,
+            onNavigate: onNavigate
+        )
+    }
+
+    /// - Parameters:
+    ///   - corpus: The book's text, titles, and headings to search, with the
+    ///     timing of a transcribed audiobook's, whose results say when they
+    ///     are heard.
+    ///   - announce: Speaks each completed search's status through VoiceOver.
+    ///   - onNavigate: Opens a result, given its chapter index and UTF-16
+    ///     character offset.
+    init(
+        corpus: BookSearchCorpus,
+        totalCharacterCount: Int,
+        totalWordCount: Int,
+        currentWPM: Double,
+        announce: @escaping @MainActor (String) -> Void,
+        onNavigate: @escaping (Int, Int) -> Void
+    ) {
+        self.totalCharacterCount = totalCharacterCount
+        self.totalWordCount = totalWordCount
+        self.currentWPM = currentWPM
+        self.onNavigate = onNavigate
+        isTimed = corpus.timing != nil
+        // StateObject builds the model once each time the sheet opens; the
+        // copies of the book passed in by later reader refreshes go unused.
+        _model = StateObject(wrappedValue: BookSearchModel(corpus: corpus, announce: announce))
     }
 
     /// Where each result's row says its match is, as the display picker's
@@ -342,6 +490,13 @@ struct BookSearchView: View {
         }
     }
 
+    /// Open `result`, and close the sheet: what a click, Space, Return, and
+    /// VoiceOver's activation of a result's row all do.
+    private func choose(_ result: BookSearchResult) {
+        onNavigate(result.chapterIndex, result.characterOffset)
+        dismiss()
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // Header
@@ -362,7 +517,7 @@ struct BookSearchView: View {
                     .textFieldStyle(.roundedBorder)
                     .focused($isSearchFieldFocused)
                     .accessibilityLabel("Search text")
-                    .accessibilityHint("Type to search within the book")
+                    .accessibilityHint(isTimed ? BookSearchWording.transcriptFieldHint : "Type to search within the book")
                     .accessibilityIdentifier(voiceOverFocusID)
                     .background(VoiceOverFocus(delay: 1.2))
 
@@ -382,14 +537,18 @@ struct BookSearchView: View {
 
                     Spacer()
 
-                    Picker("Display", selection: $displayMode) {
-                        ForEach(DisplayMode.allCases, id: \.self) { mode in
-                            Text(mode.rawValue).tag(mode)
+                    // A transcript's results have their exact time, so there
+                    // is no estimate to choose how to show.
+                    if !isTimed {
+                        Picker("Display", selection: $displayMode) {
+                            ForEach(DisplayMode.allCases, id: \.self) { mode in
+                                Text(mode.rawValue).tag(mode)
+                            }
                         }
+                        .pickerStyle(.segmented)
+                        .frame(width: 200)
+                        .accessibilityLabel("Position display mode")
                     }
-                    .pickerStyle(.segmented)
-                    .frame(width: 200)
-                    .accessibilityLabel("Position display mode")
                 }
             }
             .padding(.horizontal)
@@ -413,8 +572,7 @@ struct BookSearchView: View {
                             // A native button exposes the same activation to
                             // keyboard, VoiceOver, braille, and pointer users.
                             Button {
-                                onNavigate(result.chapterIndex, result.characterOffset)
-                                dismiss()
+                                choose(result)
                             } label: {
                                 SearchResultRow(
                                     result: result,
@@ -429,6 +587,14 @@ struct BookSearchView: View {
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
+                            // A focused button presses on Space by itself.
+                            // Return, which would otherwise look for a
+                            // default button, chooses the result too, as it
+                            // does a bookmark; a held key does not repeat.
+                            .onKeyPress(keys: [.return], phases: .down) { _ in
+                                choose(result)
+                                return .handled
+                            }
                             Divider()
                         }
                     }
@@ -439,7 +605,7 @@ struct BookSearchView: View {
                 .accessibilityLabel("Search results")
                 .accessibilityRotor("Search Results") {
                     ForEach(model.results) { result in
-                        AccessibilityRotorEntry(result.contextAndLocation, id: result.id)
+                        AccessibilityRotorEntry(result.timedLabel ?? result.contextAndLocation, id: result.id)
                     }
                 }
             }
@@ -457,7 +623,9 @@ struct BookSearchView: View {
     }
 }
 
-private struct SearchResultRow: View {
+/// One result's row: its context, where it is, and its position, shown and
+/// spoken. Internal so a test can read what it says.
+struct SearchResultRow: View {
     let result: BookSearchResult
     let displayMode: BookSearchView.DisplayMode
     let totalCharacterCount: Int
@@ -505,7 +673,10 @@ private struct SearchResultRow: View {
         return fraction * totalSeconds
     }
 
-    private var positionText: String {
+    /// Where the row shows the match: a transcript's exact time, or the
+    /// estimate in the display mode chosen.
+    var positionText: String {
+        if let time = result.time { return TimeFormatting.format(time) }
         switch displayMode {
         case .percentage:
             return String(format: "%.1f%%", percentage)
@@ -514,9 +685,11 @@ private struct SearchResultRow: View {
         }
     }
 
-    /// Spoken row label: the context and location, then the position in the
+    /// Spoken row label: the context and location, then the position: the
+    /// exact time for a transcript's result, else the estimate in the
     /// selected display mode.
-    private var accessibilityDescription: String {
+    var accessibilityDescription: String {
+        if let timedLabel = result.timedLabel { return timedLabel }
         switch displayMode {
         case .percentage:
             return "\(result.contextAndLocation), at \(String(format: "%.1f percent", percentage)) of book"

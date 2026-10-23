@@ -15,6 +15,14 @@ import Foundation
 /// is asked for now, by someone who hears what it did, and a deletion that
 /// went on minutes later, unannounced, could take a download the listener
 /// had since decided to keep. A refusal says what to do instead.
+///
+/// A download whose text is being edited with Edit Text is not one of these
+/// uses: the rules also leave it for their next pass
+/// (`LibraryViewModel.feedBooksInUse`), but the listener's deletions go
+/// ahead, since an editing session ends only when TextMouth quits and a
+/// refusal would stand until then. Its transcript stays in the package when
+/// the download goes, and a save made after it went is kept when the episode
+/// is downloaded again.
 enum FeedBookUse: Equatable, Sendable {
     /// The download is open in a reader, which covers one playing.
     case openInReader

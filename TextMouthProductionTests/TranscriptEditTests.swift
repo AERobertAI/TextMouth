@@ -8,7 +8,7 @@ import XCTest
 /// one whose text changed drops its words' timings, one deleted is gone,
 /// and the transcript is marked edited. An edit that changes the number of
 /// chapters is refused and kept; a hand edit the loader writes over is
-/// kept first; Transcribe Again and Delete Transcript say the edits go.
+/// kept first; Retranscribe and Delete Transcript say the edits go.
 ///
 /// Every editor here is the test's own: it opens no app, shows no dialog,
 /// and takes TextMouth to be active. Books live in a library folder of the
@@ -126,7 +126,11 @@ final class TranscriptEditTests: XCTestCase {
         let transcript = try TranscriptFixtures.transcript(of: book, sentences: TranscriptionUIScripts.twoTracks)
         try TranscriptStore.install(transcript, for: book)
         let original = try String(contentsOf: MarkdownCacheService.cacheURL(for: book), encoding: .utf8)
-        let deleted = replacing(" " + MarkdownLiteral.escaped("Rope coils dry on the pier."), with: "", in: original)
+        let deleted = replacing(
+            " " + MarkdownLiteral.minimallyEscaped("Rope coils dry on the pier.", smartPunctuation: true),
+            with: "",
+            in: original
+        )
         let edited = replacing("The ferry bell", with: "The old ferry bell", in: deleted)
         let chapters = MarkdownCacheService.parseMultiChapterMarkdown(edited, bookTitle: book.title, bookAuthor: book.author).chapters
         var audioIndex = try BookContentAnalysisService.load(book: book).index
@@ -189,8 +193,8 @@ final class TranscriptEditTests: XCTestCase {
         defer { announcements.stop() }
         let cache = MarkdownCacheService.cacheURL(for: book)
         let edited = replacing(
-            MarkdownLiteral.escaped("on the pier."),
-            with: MarkdownLiteral.escaped("on the jetty."),
+            MarkdownLiteral.minimallyEscaped("on the pier.", smartPunctuation: true),
+            with: MarkdownLiteral.minimallyEscaped("on the jetty.", smartPunctuation: true),
             in: try String(contentsOf: cache, encoding: .utf8)
         )
 
@@ -259,6 +263,12 @@ final class TranscriptEditTests: XCTestCase {
         XCTAssertNil(loaded.content.transcript, "the text was shown over an edit not taken")
         XCTAssertEqual(loaded.content.chapters.count, 2, "the audio did not load")
         XCTAssertEqual(try String(contentsOf: cache, encoding: .utf8), merged, "the text was written again over the edit")
+        // The reader is told why no text is shown, for Search in Book to say.
+        guard case .editHeld(let refusal, let heldCopy)? = loaded.transcriptWithheld else {
+            return XCTFail("the load did not say the edit is held: \(String(describing: loaded.transcriptWithheld))")
+        }
+        XCTAssertEqual(refusal, .chaptersChanged(found: 1, expected: 2))
+        XCTAssertEqual(heldCopy?.lastPathComponent, kept.lastPathComponent)
     }
 
     /// A content.md the user changed without the edit being taken is kept
@@ -285,11 +295,130 @@ final class TranscriptEditTests: XCTestCase {
         XCTAssertEqual(keptCopies(of: book), [kept])
     }
 
+    // MARK: - Edits the Transcript Cannot Hold
+
+    /// A transcript for the two silent tracks in which the second was heard
+    /// saying nothing: its chapter holds a heading and no sentence.
+    private static let firstTrackOnly: [String: [TranscriptSentence]] = [
+        "01.wav": TranscriptionUIScripts.twoTracks["01.wav"] ?? [],
+        "02.wav": [],
+    ]
+
+    /// Renaming a chapter's heading is refused before any sentence is
+    /// aligned: the heading comes from the audio's chapter title, which the
+    /// transcript cannot keep another of. A heading removed, or another
+    /// added, is refused too; an edit of the sentences alone is taken, and
+    /// the text as written is not an edit.
+    func testAnEditChangingAHeadingIsRefusedAndAnEditOfSentencesIsTaken() throws {
+        let world = try makeIntegrationWorld("Transcript Edit Heading Unit")
+        let book = try world.makeSilentAudioBook(title: "Breakwater Notes", trackDurations: [3, 2])
+        let transcript = try TranscriptFixtures.transcript(of: book, sentences: TranscriptionUIScripts.twoTracks)
+        try TranscriptStore.install(transcript, for: book)
+        let original = try String(contentsOf: MarkdownCacheService.cacheURL(for: book), encoding: .utf8)
+        let marker = MarkdownCacheService.chapterMarker(title: "02")
+
+        XCTAssertNoThrow(try apply(original, to: transcript, of: book), "the text as written is not an edit")
+        XCTAssertNoThrow(
+            try apply(replacing("The ferry bell", with: "The old ferry bell", in: original), to: transcript, of: book),
+            "an edit of sentences was refused"
+        )
+        // Renamed, with the same marker.
+        XCTAssertThrowsError(try apply(replacing(marker + "\n# 02", with: marker + "\n# Ferry", in: original), to: transcript, of: book)) {
+            XCTAssertEqual($0 as? TranscriptEditError, .headingChanged)
+        }
+        // Removed: the chapter is left with its marker and its sentence.
+        XCTAssertThrowsError(try apply(replacing(marker + "\n# 02\n\n", with: marker + "\n\n", in: original), to: transcript, of: book)) {
+            XCTAssertEqual($0 as? TranscriptEditError, .headingChanged)
+        }
+        // Added: a second heading in the chapter.
+        XCTAssertThrowsError(try apply(replacing(marker + "\n# 02\n\n", with: marker + "\n# 02\n\n## Bells\n\n", in: original), to: transcript, of: book)) {
+            XCTAssertEqual($0 as? TranscriptEditError, .headingChanged)
+        }
+    }
+
+    /// Words typed into a chapter the transcript heard no speech in have no
+    /// sentence to join and are refused; white space there is not words, and
+    /// an edit of the other chapter's sentences is taken.
+    func testWordsTypedIntoAChapterWithoutSentencesAreRefused() throws {
+        let world = try makeIntegrationWorld("Transcript Edit Silent Unit")
+        let book = try world.makeSilentAudioBook(title: "Breakwater Notes", trackDurations: [3, 2])
+        let transcript = try TranscriptFixtures.transcript(of: book, sentences: Self.firstTrackOnly)
+        try TranscriptStore.install(transcript, for: book)
+        let original = try String(contentsOf: MarkdownCacheService.cacheURL(for: book), encoding: .utf8)
+
+        XCTAssertNoThrow(try apply(original + "\n\n   \n", to: transcript, of: book), "white space was refused")
+        XCTAssertNoThrow(
+            try apply(replacing("fold over", with: "folded over", in: original), to: transcript, of: book),
+            "an edit of sentences was refused"
+        )
+        XCTAssertThrowsError(try apply(original + "\n\nA spoken afterthought.", to: transcript, of: book)) {
+            XCTAssertEqual($0 as? TranscriptEditError, .wordsWithoutSentences)
+        }
+    }
+
+    /// A renamed heading is refused and kept beside content.md, saying why
+    /// and where; the transcript is as it was, and the text on disk is the
+    /// user's, not written over.
+    func testAnEditRenamingAHeadingIsRefusedAndKept() async throws {
+        let world = try makeIntegrationWorld("Transcript Edit Heading")
+        let book = try world.makeSilentAudioBook(title: "Breakwater Notes", trackDurations: [3, 2])
+        let transcript = try TranscriptFixtures.transcript(of: book, sentences: TranscriptionUIScripts.twoTracks)
+        try TranscriptStore.install(transcript, for: book)
+        let original = try String(contentsOf: MarkdownCacheService.cacheURL(for: book), encoding: .utf8)
+        let marker = MarkdownCacheService.chapterMarker(title: "02")
+
+        let heard = try await saveAndCheck(
+            replacing(marker + "\n# 02", with: marker + "\n# Ferry", in: original),
+            refusal: .headingChanged,
+            of: book,
+            in: world
+        )
+
+        XCTAssertTrue(heard.first?.contains("changes a chapter's heading, which comes from its audio") == true, "\(heard)")
+        XCTAssertEqual(TranscriptStore.read(from: book.tmbDirectory), .found(transcript))
+    }
+
+    /// Words added to a chapter the transcript heard no speech in are
+    /// refused and kept beside content.md the same way.
+    func testAnEditAddingWordsToAChapterWithoutSentencesIsRefusedAndKept() async throws {
+        let world = try makeIntegrationWorld("Transcript Edit Silent")
+        let book = try world.makeSilentAudioBook(title: "Breakwater Notes", trackDurations: [3, 2])
+        let transcript = try TranscriptFixtures.transcript(of: book, sentences: Self.firstTrackOnly)
+        try TranscriptStore.install(transcript, for: book)
+        let original = try String(contentsOf: MarkdownCacheService.cacheURL(for: book), encoding: .utf8)
+
+        let heard = try await saveAndCheck(
+            original + "\n\nA spoken afterthought.",
+            refusal: .wordsWithoutSentences,
+            of: book,
+            in: world
+        )
+
+        XCTAssertTrue(heard.first?.contains("adds words to a chapter the transcript heard no speech in") == true, "\(heard)")
+        XCTAssertEqual(TranscriptStore.read(from: book.tmbDirectory), .found(transcript))
+    }
+
+    /// The two new refusals are worded exactly so.
+    func testTheNewRefusalsAreWordedExactly() {
+        XCTAssertEqual(
+            BookTextEditWording.refused(.headingChanged, bookTitle: "Harbour Pilots"),
+            "Text not updated: the edited transcript of Harbour Pilots changes a chapter's heading, which comes from its audio. "
+                + "Put the heading back as it was and save again; until then, the book keeps the text it had."
+        )
+        XCTAssertEqual(
+            BookTextEditWording.refused(.wordsWithoutSentences, bookTitle: "Harbour Pilots"),
+            "Text not updated: the edited transcript of Harbour Pilots adds words to a chapter the transcript heard no speech in, "
+                + "where they can't be kept. Remove them and save again; until then, the book keeps the text it had."
+        )
+        XCTAssertTrue(BookTextEditRefusal.headingChanged.keepsEarlierText)
+        XCTAssertTrue(BookTextEditRefusal.wordsWithoutSentences.keepsEarlierText)
+    }
+
     // MARK: - What Goes with an Edited Transcript
 
     /// The Transcribe Audio sheet of a book whose transcript the user
     /// edited says that transcribing again replaces the edits, beside
-    /// Transcribe Again.
+    /// Retranscribe.
     func testTranscribeAgainSaysItReplacesTheUsersEdits() async {
         var transcript = TranscriptFixtures.transcript([(path: "01.mp3", duration: 1_000, sentences: [])])
         let when = TranscriptFixtures.date.addingTimeInterval(86_400)
@@ -306,7 +435,7 @@ final class TranscriptEditTests: XCTestCase {
         XCTAssertEqual(model.editedLine, warning)
         XCTAssertTrue(model.noticeLines.contains(warning))
         XCTAssertTrue(model.readyLines.contains(warning), "VoiceOver does not hear the warning")
-        XCTAssertEqual(model.transcribeTitle, "Transcribe Again")
+        XCTAssertEqual(model.transcribeTitle, "Retranscribe")
     }
 
     /// Deleting an edited transcript says the edits go too.
@@ -343,6 +472,207 @@ final class TranscriptEditTests: XCTestCase {
         )
     }
 
+    // MARK: - Changes That Rewrite the Transcript
+
+    /// Delete Transcript with an edit saved but not yet checked takes the
+    /// edit first (VoiceOver hears "Text updated"), then deletes the
+    /// transcript and ends the session, rather than racing a running check
+    /// that could bring the transcript back.
+    func testDeleteTranscriptTakesAPendingEditThenEndsTheSession() async throws {
+        let world = try makeIntegrationWorld("Transcript Edit Then Delete")
+        let book = try world.makeSilentAudioBook(title: "Breakwater Notes", trackDurations: [3, 2])
+        try TranscriptStore.install(try TranscriptFixtures.transcript(of: book, sentences: TranscriptionUIScripts.twoTracks), for: book)
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let edited = replacing(
+            MarkdownLiteral.minimallyEscaped("on the pier.", smartPunctuation: true),
+            with: MarkdownLiteral.minimallyEscaped("on the jetty.", smartPunctuation: true),
+            in: try String(contentsOf: cache, encoding: .utf8)
+        )
+        try edited.write(to: cache, atomically: true, encoding: .utf8)
+        let sheetAnnouncements = SheetAnnouncements()
+        let store = TranscribedBooks()
+        store.record(book.id, isTranscribed: true)
+        let presenter = TranscriptionPresenter(services: {
+            self.makeSheetServices(
+                transcribedBooks: store,
+                pauseTextEdit: { await editor.editor.pauseEditing(of: $0) },
+                resumeTextEdit: { await editor.editor.resumeEditing(of: $0) },
+                announcements: sheetAnnouncements
+            )
+        })
+        await presenter.confirmDeletion(of: book, library: world.library, window: nil)
+        let request = try XCTUnwrap(presenter.deletion)
+
+        await presenter.deleteConfirmed(request)
+
+        let heard = await eventuallyHolds(timeout: 2) { announcements.messages == [BookTextEditWording.updated] }
+        XCTAssertTrue(heard, "the pending edit was not taken first: \(announcements.messages)")
+        XCTAssertNil(presenter.notice)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: TextMouthPaths.transcriptPath(in: book.tmbDirectory).path))
+        XCTAssertFalse(editor.sessions.isEditing(book.id), "the session outlived the transcript")
+        XCTAssertEqual(sheetAnnouncements.messages, ["Deleted the transcript of Breakwater Notes."])
+    }
+
+    /// A session editing a transcribed book hears when the loader writes the
+    /// book's text again, as it does once for each book whose text was
+    /// written before the text escaped only what the reader needs (layer
+    /// 1.0.0): the text the session starts from is the one just written, so
+    /// the rewrite is not taken as the user's edit. Nothing is spoken, the
+    /// transcript is not marked edited, and an edit saved afterwards is still
+    /// taken.
+    func testTheLoadersRewriteOfAnOlderTextIsNotTakenAsAnEdit() async throws {
+        let world = try makeIntegrationWorld("Transcript Edit Rewrite")
+        let book = try world.makeSilentAudioBook(title: "Breakwater Notes \(UUID().uuidString.prefix(8))", trackDurations: [9, 6])
+        let transcript = try TranscriptFixtures.transcript(of: book, sentences: TranscriptTextTests.sentences)
+        let installation = try TranscriptStore.install(transcript, for: book)
+        // As version 1.0.0 left the book: every punctuation character
+        // escaped, and a layer of that version fingerprinting that file.
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let oldBytes = Data(TranscriptTextTests.fullyEscapedMarkdown.utf8)
+        try oldBytes.write(to: cache)
+        var oldLayer = try XCTUnwrap(installation.index.transcript)
+        oldLayer.version = "1.0.0"
+        oldLayer.textCacheFingerprint.cache = FileFingerprint(
+            stamp: try XCTUnwrap(FileStamp(of: cache)),
+            digest: FingerprintHasher.md5.digestOfData(oldBytes)
+        )
+        var oldIndex = installation.index
+        oldIndex.transcript = oldLayer
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        XCTAssertEqual(editor.sessions.baseline(of: book.id)?.cache.digest, FingerprintHasher.md5.digestOfData(oldBytes))
+
+        // The book opens, and the loader writes its text again.
+        let load = TranscriptTextLoader.load(for: book, audioIndex: oldIndex, sessions: editor.sessions)
+
+        let written = try String(contentsOf: cache, encoding: .utf8)
+        XCTAssertEqual(written, TranscriptTextTests.expectedMarkdown, "the loader did not write the text again")
+        XCTAssertNotNil(load.text)
+        XCTAssertEqual(
+            editor.sessions.baseline(of: book.id)?.cache,
+            load.index.transcript?.textCacheFingerprint.cache,
+            "the session still starts from the text the rewrite replaced"
+        )
+        let heard = await check(book, with: editor, in: announcements)
+        XCTAssertEqual(heard, [], "TextMouth's own rewrite was announced as the user's edit")
+        guard case .found(let after) = TranscriptStore.read(from: book.tmbDirectory) else {
+            return XCTFail("the transcript cannot be read")
+        }
+        XCTAssertNil(after.editedAt, "the rewrite marked the transcript edited")
+
+        // The session goes on: a save afterwards is taken as any is.
+        let edited = replacing("Carts wait at the toll.", with: "Carts wait at the quay.", in: written)
+        try edited.write(to: cache, atomically: true, encoding: .utf8)
+        let heardEdit = await check(book, with: editor, in: announcements)
+        XCTAssertEqual(heardEdit, [BookTextEditWording.updated])
+        guard case .found(let taken) = TranscriptStore.read(from: book.tmbDirectory) else {
+            return XCTFail("the transcript cannot be read after the edit")
+        }
+        XCTAssertNotNil(taken.editedAt)
+    }
+
+    // MARK: - A Session Whose Book Is Gone
+
+    /// A session whose book left the library (removed, or an episode whose
+    /// download was deleted and whose row moved to its feed's shelf) says
+    /// so the next time it is checked, naming the book, and ends; a second
+    /// check says nothing.
+    func testASessionWhoseBookLeftTheLibrarySaysSoOnceAndEnds() async throws {
+        let world = try makeIntegrationWorld("Transcript Edit Book Gone")
+        let book = try world.makeSilentAudioBook(title: "Ep. 378", trackDurations: [3, 2])
+        try TranscriptStore.install(try TranscriptFixtures.transcript(of: book, sentences: TranscriptionUIScripts.twoTracks), for: book)
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        XCTAssertTrue(editor.sessions.isEditing(book.id))
+        world.library.library.books.removeAll { $0.id == book.id }
+
+        let first = await check(book, with: editor, in: announcements)
+        let second = await check(book, with: editor, in: announcements)
+
+        XCTAssertEqual(first, [BookTextEditWording.stoppedBookGone(bookTitle: "Ep. 378")])
+        XCTAssertEqual(second, [], "the session said it had stopped twice")
+        XCTAssertFalse(editor.sessions.isEditing(book.id), "the session outlived its book")
+    }
+
+    /// The sentence a session that ended because its book is gone speaks.
+    func testTheBookGoneWordingIsPinned() {
+        XCTAssertEqual(
+            BookTextEditWording.stoppedBookGone(bookTitle: "Ep. 378"),
+            "Text not updated: Ep. 378 was removed, or its download deleted, so Edit Text has stopped for it."
+        )
+    }
+
+    // MARK: - A Feed Episode's Transcript
+
+    /// A feed episode's transcript can be edited (October 23, 2026): two
+    /// saves in one session are both taken into the transcript in the
+    /// episode's package in its feed's folder, and VoiceOver hears where the
+    /// transcript stays after the first save only.
+    func testAnEditOfAFeedEpisodesTranscriptIsTakenAndSaysWhereItStays() async throws {
+        let world = try makeIntegrationWorld("Transcript Edit Feed Episode")
+        let episode = try makeFeedEpisode(in: world, title: "Breakwater Notes \(UUID().uuidString.prefix(8))")
+        try TranscriptStore.install(try TranscriptFixtures.transcript(of: episode, sentences: TranscriptionUIScripts.twoTracks), for: episode)
+        let reader = world.openReader(for: episode)
+        let loaded = await eventuallyHolds { !reader.isLoading }
+        XCTAssertTrue(loaded, "the reader never loaded")
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        let cache = MarkdownCacheService.cacheURL(for: episode)
+        XCTAssertTrue(episode.isFeedItem)
+        XCTAssertTrue(BookTextEditor.canEditText(of: episode, isTranscribed: true))
+
+        // The first save: the jetty replaces the pier, and the note is heard.
+        await editor.editor.edit(episode, choosingApp: false, in: world.library, from: nil)
+        let first = replacing(
+            MarkdownLiteral.minimallyEscaped("on the pier.", smartPunctuation: true),
+            with: MarkdownLiteral.minimallyEscaped("on the jetty.", smartPunctuation: true),
+            in: try String(contentsOf: cache, encoding: .utf8)
+        )
+        try first.write(to: cache, atomically: true, encoding: .utf8)
+        let heardFirst = await check(episode, with: editor, in: announcements)
+
+        // The second save, in the same session: only "Text updated".
+        let second = replacing(
+            MarkdownLiteral.minimallyEscaped("on the jetty.", smartPunctuation: true),
+            with: MarkdownLiteral.minimallyEscaped("on the quay.", smartPunctuation: true),
+            in: first
+        )
+        try second.write(to: cache, atomically: true, encoding: .utf8)
+        let heardSecond = await check(episode, with: editor, in: announcements)
+
+        XCTAssertEqual(heardFirst + heardSecond, [BookTextEditWording.updatedInFeed, BookTextEditWording.updated])
+        guard case .found(let transcript) = TranscriptStore.read(from: episode.tmbDirectory) else {
+            return XCTFail("the transcript cannot be read")
+        }
+        XCTAssertEqual(transcript.files.first?.sentences.last?.text, "Rope coils dry on the quay.")
+        XCTAssertNotNil(transcript.editedAt)
+        XCTAssertTrue(episode.tmbDirectory.path.contains(FeedPaths.itemsFolder(of: try XCTUnwrap(episode.feedLink).feedID, in: TextMouthPaths.root).path))
+    }
+
+    /// The new sentences are exactly these: the note a feed episode's
+    /// transcript carries, and the announcement of the first edit taken.
+    func testTheFeedEpisodeTranscriptWordingIsPinned() {
+        let note = "This episode's transcript, with your changes, stays with the episode in its feed, "
+            + "even after its download is deleted. Deleting the episode or the feed deletes it; "
+            + "Move to Library keeps it with the episode as a book."
+        XCTAssertEqual(TranscriptionWording.feedEpisodeTranscriptNote, note)
+        XCTAssertEqual(BookTextEditWording.updatedInFeed, "Text updated. " + note)
+        XCTAssertEqual(BookTextEditWording.updated, "Text updated")
+    }
+
     // MARK: - Fixtures
 
     /// An editor of the test's own and what it was asked to do.
@@ -350,6 +680,27 @@ final class TranscriptEditTests: XCTestCase {
         let editor: BookTextEditor
         let recorder: EditorRecorder
         let sessions: BookTextEditSessions
+    }
+
+    /// A silent two-track audiobook of the world's library turned into an
+    /// episode in a feed of its own: its package moved into the feed's
+    /// folder in the (sandboxed) data directory, and its row given a feed
+    /// link, as a downloaded episode's is. The feed's folder is removed when
+    /// the test ends.
+    private func makeFeedEpisode(in world: IntegrationWorld, title: String) throws -> Book {
+        var book = try world.makeSilentAudioBook(title: title, trackDurations: [3, 2])
+        let link = FeedBookLink(feedID: UUID(), itemID: "guid:\(UUID().uuidString)")
+        let itemsFolder = FeedPaths.itemsFolder(of: link.feedID, in: TextMouthPaths.root)
+        addTeardownBlock { try? FileManager.default.removeItem(at: itemsFolder) }
+        let oldPackage = book.tmbDirectory
+        book.feedLink = link
+        try FileManager.default.createDirectory(at: itemsFolder, withIntermediateDirectories: true)
+        try FileManager.default.moveItem(at: oldPackage, to: book.tmbDirectory)
+        // The audiobook's tracks moved with its package.
+        book.filePath = book.tmbDirectory.appendingPathComponent("Tracks", isDirectory: true).path
+        let index = try XCTUnwrap(world.library.library.books.firstIndex { $0.id == book.id })
+        world.library.library.books[index] = book
+        return book
     }
 
     /// An editor whose explanation, app chooser, and opener are a
@@ -389,9 +740,11 @@ final class TranscriptEditTests: XCTestCase {
     }
 
     /// `text` with `target` replaced by `replacement`, failing the test
-    /// when `target` is not in it: content.md writes every sentence with
-    /// its punctuation escaped, so an edit written against the plain text
-    /// would otherwise change nothing and test nothing.
+    /// when `target` is not in it: content.md escapes what TextMouth's
+    /// reader needs escaped (quotes, runs of dashes or dots, and Markdown's
+    /// own characters: `MarkdownLiteral.minimallyEscaped` with
+    /// `smartPunctuation`), so an edit written against the plain text of such
+    /// a sentence would otherwise change nothing and test nothing.
     private func replacing(
         _ target: String,
         with replacement: String,
@@ -401,6 +754,48 @@ final class TranscriptEditTests: XCTestCase {
     ) -> String {
         XCTAssertTrue(text.contains(target), "content.md does not hold \"\(target)\"", file: file, line: line)
         return text.replacingOccurrences(of: target, with: replacement)
+    }
+
+    /// Lays `markdown`, content.md as the user saved it, over `transcript`
+    /// as an edit of `book`'s text is, without touching any file.
+    private func apply(_ markdown: String, to transcript: Transcript, of book: Book) throws {
+        let chapters = MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: book.title, bookAuthor: book.author).chapters
+        var audioIndex = try BookContentAnalysisService.load(book: book).index
+        audioIndex.transcript = nil
+        _ = try TranscriptEditing.apply(
+            chapters,
+            to: transcript,
+            over: audioIndex,
+            bookFileName: book.bookFileURL.lastPathComponent,
+            editedAt: TranscriptFixtures.date.addingTimeInterval(86_400)
+        )
+    }
+
+    /// Opens `book`'s text for editing, saves `markdown` as the edit, and
+    /// checks that it is refused as `refusal` and kept beside content.md,
+    /// what VoiceOver hears being the refusal with where it was kept, and
+    /// content.md being as saved. Returns what VoiceOver heard.
+    private func saveAndCheck(
+        _ markdown: String,
+        refusal: BookTextEditRefusal,
+        of book: Book,
+        in world: IntegrationWorld
+    ) async throws -> [String] {
+        let editor = makeEditor(sessions: .shared)
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        let cache = MarkdownCacheService.cacheURL(for: book)
+
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        try markdown.write(to: cache, atomically: true, encoding: .utf8)
+        let heard = await check(book, with: editor, in: announcements)
+
+        let kept = try XCTUnwrap(keptCopies(of: book).first, "the refused edit was not kept")
+        XCTAssertEqual(try String(contentsOf: kept, encoding: .utf8), markdown)
+        XCTAssertEqual(heard, [BookTextEditWording.notTaken(refusal, bookTitle: book.title, keptCopy: kept)])
+        XCTAssertEqual(try String(contentsOf: cache, encoding: .utf8), markdown, "the text was written again over the edit")
+        return heard
     }
 
     /// The copies of the user's text kept beside `book`'s content.md,

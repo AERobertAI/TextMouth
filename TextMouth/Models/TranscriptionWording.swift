@@ -10,9 +10,24 @@ enum TranscriptionWording {
     /// in the library's context menu and VoiceOver actions and the reader's
     /// Book menu.
     static let transcribeCommandTitle = "Transcribe Audio…"
+    /// The same command once the book has a transcript: it transcribes the
+    /// audio again, replacing the transcript, so it is named for that.
+    static let retranscribeCommandTitle = "Retranscribe Audio…"
+    /// The title of the command that opens the Transcribe Audio sheet for a
+    /// book that has a transcript when `hasTranscript`, and for one that has
+    /// none otherwise: Retranscribe Audio… or Transcribe Audio….
+    static func transcribeCommandTitle(hasTranscript: Bool) -> String {
+        hasTranscript ? retranscribeCommandTitle : transcribeCommandTitle
+    }
     /// The command that deletes a transcribed audiobook's transcript, in the
     /// same places, after a confirmation naming the book.
     static let deleteCommandTitle = "Delete Transcript…"
+
+    /// What a feed episode's transcript's listener is told as they edit or
+    /// clean it up: it stays with the episode, not with its download.
+    static let feedEpisodeTranscriptNote = "This episode's transcript, with your changes, stays with the episode "
+        + "in its feed, even after its download is deleted. Deleting the episode or the feed deletes it; "
+        + "Move to Library keeps it with the episode as a book."
 
     // MARK: Refusals
 
@@ -31,6 +46,12 @@ enum TranscriptionWording {
     /// The sheet's heading before a transcription: "Transcribe Moby-Dick".
     static func sheetTitle(bookTitle: String) -> String {
         "Transcribe \(bookTitle)"
+    }
+
+    /// The sheet's heading before a book that has a transcript is transcribed
+    /// again: "Retranscribe Moby-Dick".
+    static func retranscribeSheetTitle(bookTitle: String) -> String {
+        "Retranscribe \(bookTitle)"
     }
 
     /// The sheet's heading while it explains why it cannot transcribe, as
@@ -138,6 +159,35 @@ enum TranscriptionWording {
         "You edited this transcript on \(day(date)). Transcribing again replaces your edits."
     }
 
+    /// The line warning that transcribing again replaces the user's cleanup
+    /// of the transcript: "You cleaned up this transcript on October 5,
+    /// 2026. Transcribing again replaces the cleanup."
+    static func cleanedUpTranscript(on date: Date) -> String {
+        "You cleaned up this transcript on \(day(date)). Transcribing again replaces the cleanup."
+    }
+
+    /// The line for a book whose transcript, transcript.json, is only in
+    /// iCloud, which this Mac did not read: it cannot be seen, or its edits
+    /// and cleanup told of, so the sheet offers no Retranscribe until the
+    /// book is downloaded. In the words of `textInCloud`, which says the same
+    /// of the transcript's text.
+    static let transcriptInCloud = "The book's transcript is only in iCloud, so TextMouth leaves it as it is. "
+        + "Download the book, then try again."
+
+    /// The line for a book whose text, content.md, is only in iCloud: a
+    /// transcription is saved over that text, which TextMouth never does
+    /// while the file is not on this Mac, so the sheet offers no Retranscribe
+    /// until the book is downloaded, rather than refuse the finished
+    /// transcript after the audio was transcribed. Also what a refused
+    /// install says (`TranscriptTextError.textOnlyInCloud`).
+    static let textInCloud = "The book's text is only in iCloud, so TextMouth leaves it as it is. "
+        + "Download the book, then try again."
+
+    /// The line for a transcript written in a layout this TextMouth does
+    /// not read.
+    static let transcriptFromLaterVersion = "This book has a transcript made by a later version of TextMouth. "
+        + "Transcribing again replaces it."
+
     /// The line saying another book is being transcribed, which keeps
     /// Transcribe unavailable until it finishes.
     static func busy(bookTitle: String) -> String {
@@ -146,7 +196,8 @@ enum TranscriptionWording {
 
     /// The sheet's buttons.
     static let transcribeTitle = "Transcribe"
-    static let transcribeAgainTitle = "Transcribe Again"
+    /// The button of a book that has a transcript already: "Retranscribe".
+    static let transcribeAgainTitle = "Retranscribe"
     static let cancelTitle = "Cancel"
     static let closeTitle = "Close"
     static let okTitle = "OK"
@@ -154,7 +205,7 @@ enum TranscriptionWording {
     /// What Transcribe does.
     static let transcribeHint = "Transcribes the book's audio on this Mac, so VoiceOver and the braille display "
         + "can read the narration as text."
-    /// What Transcribe Again does.
+    /// What Retranscribe does.
     static let transcribeAgainHint = "Transcribes the book's audio again, replacing its transcript."
     /// What Cancel does before a transcription.
     static let cancelHint = "Closes this without transcribing."

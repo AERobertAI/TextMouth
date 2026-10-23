@@ -21,7 +21,10 @@ struct BookContentTranscriptIndex: Codable, Hashable, Sendable {
     /// How the text is written from a transcript and aligned with the audio.
     /// A change to either changes this version, and each transcribed book's
     /// text is then written again from its transcript.json as it opens.
-    static let currentVersion = "1.0.0"
+    /// 1.1.0 (October 23, 2026) escapes only what the reader needs, so a
+    /// transcript's text reads in an editor as it was heard; every
+    /// transcribed book's text is written again once as it opens.
+    static let currentVersion = "1.1.0"
 
     /// The version of the writing and alignment this index was made by.
     var version: String
@@ -133,10 +136,14 @@ struct BookContentTranscriptChapterIndex: Codable, Hashable, Sendable {
         var previousStart = 0
         for (number, sentence) in sentences.enumerated() {
             let field = "\(field).sentences[\(number)]"
+            // The length is compared before the subtraction, which it keeps
+            // from overflowing; the two numbers came from a file, so the
+            // message words them and never adds them.
             if sentence.characterCount <= 0 || sentence.characterOffset < previousEnd
+                || sentence.characterCount > text.characterCount
                 || sentence.characterOffset > text.characterCount - sentence.characterCount {
-                return "\(field) spans characters \(sentence.characterOffset) to "
-                    + "\(sentence.characterOffset + sentence.characterCount), outside \(previousEnd) through \(text.characterCount)"
+                return "\(field) starts at character \(sentence.characterOffset) and is \(sentence.characterCount) long, "
+                    + "outside \(previousEnd) through \(text.characterCount)"
             }
             if sentence.startMilliseconds < previousStart || sentence.endMilliseconds < sentence.startMilliseconds {
                 return "\(field) runs from \(sentence.startMilliseconds) to \(sentence.endMilliseconds) ms, "

@@ -102,6 +102,24 @@ final class TranscriptCleanupTests: XCTestCase {
         XCTAssertEqual(cleanup.cleaned("Quillwort  grows.").text, "Quill-wort grows.")
     }
 
+    /// A rule that writes nothing (or white space) for a word never leaves a
+    /// sentence without text: a sentence holding only that word keeps its
+    /// text and counts no correction, while one with other words is cleaned
+    /// as ever.
+    func testASentenceIsNeverLeftWithoutText() {
+        for replacement in ["", " "] {
+            let cleanup = TranscriptCleanup(rules: [rule("um", replacement)])
+
+            let alone = cleanup.cleaned("Um")
+            XCTAssertEqual(alone.text, "Um", "a rule for “\(replacement)” emptied a sentence")
+            XCTAssertEqual(alone.corrections, [0])
+            XCTAssertEqual(alone.examples.map(\.count), [0])
+            XCTAssertEqual(cleanup.cleaned(" um ").text, " um ")
+            XCTAssertEqual(cleanup.cleaned("Well um yes").text, "Well yes")
+            XCTAssertEqual(cleanup.cleaned("Well um yes").corrections, [1])
+        }
+    }
+
     /// An example shows a few words around the change, with "…" where
     /// words were left out.
     func testAnExampleShowsTheWordsAroundTheChange() throws {
@@ -161,6 +179,38 @@ final class TranscriptCleanupTests: XCTestCase {
         XCTAssertEqual(preview.corrections, 0)
         XCTAssertEqual(preview.changedSentences, 0)
         XCTAssertTrue(preview.changes.isEmpty)
+    }
+
+    /// A transcript whose only changes would empty sentences previews no
+    /// change, so Apply is not offered; beside a real change, the emptied
+    /// sentence keeps its text, is not counted, and the cleaned transcript
+    /// is valid.
+    func testAPreviewOfSentencesTheRulesWouldEmptyChangesNothingForThem() {
+        let only = TranscriptFixtures.transcript([
+            (path: "01.wav", duration: 9_000, sentences: [
+                TranscriptFixtures.sentence("Um", from: 0, to: 1_000),
+                TranscriptFixtures.sentence("UM", from: 1_000, to: 2_000),
+            ]),
+        ])
+        let mixed = TranscriptFixtures.transcript([
+            (path: "01.wav", duration: 9_000, sentences: [
+                TranscriptFixtures.sentence("Um", from: 0, to: 1_000),
+                TranscriptFixtures.sentence("Well um yes", from: 1_000, to: 2_000),
+            ]),
+        ])
+        let cleanup = TranscriptCleanup(rules: [rule("um", " ")])
+
+        let none = cleanup.preview(of: only)
+        let some = cleanup.preview(of: mixed)
+
+        XCTAssertEqual(none.cleaned, only)
+        XCTAssertEqual(none.corrections, 0)
+        XCTAssertEqual(none.changedSentences, 0)
+        XCTAssertTrue(none.changes.isEmpty)
+        XCTAssertEqual(some.corrections, 1)
+        XCTAssertEqual(some.changedSentences, 1)
+        XCTAssertEqual(some.cleaned.files.first?.sentences.map(\.text), ["Um", "Well yes"])
+        XCTAssertNil(some.cleaned.validationFailure())
     }
 
     /// A sentence rewritten keeps its time and drops its words' timings; the

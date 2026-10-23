@@ -26,7 +26,7 @@ final class BookExportConvertToTests: XCTestCase {
         XCTAssertEqual(BookExportWording.markdownChoiceName, "Markdown")
         XCTAssertEqual(
             BookExportWording.markdownChoiceHint,
-            "The book's text as Markdown, the file TextMouth reads it from, as it is."
+            "The book's text as Markdown, with its headings, lists, and emphasis."
         )
     }
 
@@ -119,7 +119,7 @@ final class BookExportConvertToTests: XCTestCase {
                 BookExportConversionChoice(
                     id: "markdown",
                     name: "Markdown",
-                    hint: "The book's text as Markdown, the file TextMouth reads it from, as it is."
+                    hint: "The book's text as Markdown, with its headings, lists, and emphasis."
                 ),
                 BookExportConversionChoice(
                     id: "html",
@@ -277,9 +277,10 @@ final class BookExportConvertToTests: XCTestCase {
         )
     }
 
-    /// With Markdown chosen, the export is the file it always was, byte for
-    /// byte the book's content.md.
-    func testExportingWithMarkdownChosenCopiesTheBooksMarkdown() async throws {
+    /// With Markdown chosen, the export is the book's text written as
+    /// Markdown (`MarkdownExportWriter`), without content.md's chapter
+    /// markers or its escapes.
+    func testExportingWithMarkdownChosenWritesTheBooksMarkdown() async throws {
         let dialog = try await makeDialog("Export Convert Markdown")
         let model = dialog.model
         model.setChecked(false, for: .originalFile)
@@ -299,8 +300,8 @@ final class BookExportConvertToTests: XCTestCase {
             ["\(stem) - Text.md"]
         )
         XCTAssertEqual(
-            try Data(contentsOf: dialog.folder.appendingPathComponent("\(stem) - Text.md")),
-            try Data(contentsOf: MarkdownCacheService.cacheURL(for: dialog.book))
+            try String(contentsOf: dialog.folder.appendingPathComponent("\(stem) - Text.md"), encoding: .utf8),
+            "# First\n\nOne two three.\n\n# Second\n\nFour five.\n"
         )
     }
 

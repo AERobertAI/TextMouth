@@ -25,6 +25,12 @@ struct Transcript: Codable, Equatable, Sendable {
     /// not read (`TranscriptStore.Lookup.unsupportedVersion`).
     static let currentVersion = 1
 
+    /// The latest moment a sentence or word may be placed at in its file, in
+    /// milliseconds: 100 hours, longer than any audio file. A time beyond it
+    /// in a transcript.json can only be damage, and is refused so that no sum
+    /// of times can overflow.
+    static let maximumMilliseconds = 360_000_000
+
     /// The layout this transcript was written in (`currentVersion`).
     var version: Int
     /// The language the recognizer transcribed in, as a BCP 47 identifier
@@ -333,6 +339,16 @@ extension Transcript {
                 return "\(field).endMilliseconds is \(sentence.endMilliseconds), "
                     + "before its startMilliseconds \(sentence.startMilliseconds)"
             }
+            // The order is checked, so no time is below 0; each also lies
+            // no later than the maximum. The words, which lie inside their
+            // sentence's time, are held to it by `wordsFailure`.
+            let maximum = Self.maximumMilliseconds
+            if !(0...maximum).contains(sentence.startMilliseconds) {
+                return "\(field).startMilliseconds is \(sentence.startMilliseconds), outside 0 through \(maximum)"
+            }
+            if !(0...maximum).contains(sentence.endMilliseconds) {
+                return "\(field).endMilliseconds is \(sentence.endMilliseconds), outside 0 through \(maximum)"
+            }
             if let failure = wordsFailure(sentence.words, of: sentence, field: field) {
                 return failure
             }
@@ -359,8 +375,9 @@ extension Transcript {
             }
             // Ranges are formed only from offsets known to be in bounds.
             if word.characterOffset < previousEnd || word.characterOffset > textLength - word.characterCount {
-                return "\(field) spans characters \(word.characterOffset) to "
-                    + "\(word.characterOffset + word.characterCount), outside \(previousEnd) through \(textLength)"
+                // The two numbers came from a file: they are worded, never added.
+                return "\(field) starts at character \(word.characterOffset) and is \(word.characterCount) long, "
+                    + "outside \(previousEnd) through \(textLength)"
             }
             if word.startMilliseconds < previousStart || word.endMilliseconds < word.startMilliseconds
                 || word.endMilliseconds > sentence.endMilliseconds {

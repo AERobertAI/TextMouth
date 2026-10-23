@@ -100,6 +100,9 @@ final class TranscriptionPresenter: ObservableObject {
             AudioEditorLauncher.edit(book, in: library, from: window)
         case .transcribe(let books):
             transcribe(books, library: library, window: window)
+        case .retranscribe(let book):
+            // The same sheet as Transcribe Audio… for one book.
+            transcribe([book], library: library, window: window)
         case .cleanUpTranscript(let book):
             cleanUp(book, library: library, window: window)
         case .deleteTranscript(let book):
@@ -115,13 +118,12 @@ final class TranscriptionPresenter: ObservableObject {
     /// experimental), cleaning up through `library` and announcing from
     /// `window`, unless a Clean Up sheet is open already. It opens nothing
     /// for a book the command is never offered for
-    /// (`LibraryAudioCommand.isTranscriptCleanable(_:)`), such as a feed's
-    /// episode, whose transcript the user decided is not editable (FR11),
-    /// and says nothing aloud: nothing offers the command for such a book,
-    /// so no listener can ask.
+    /// (`LibraryAudioCommand.isTranscribable(_:)`), such as a book without a
+    /// package of its own, and says nothing aloud: nothing offers the command
+    /// for such a book, so no listener can ask.
     func cleanUp(_ book: Book, library: LibraryViewModel, window: NSWindow?) {
         // The menus' own rule, so every path through here agrees with them.
-        guard cleanup == nil, LibraryAudioCommand.isTranscriptCleanable(book) else { return }
+        guard cleanup == nil, LibraryAudioCommand.isTranscribable(book) else { return }
         let model = TranscriptCleanupSheetModel(book: book, library: library, services: cleanupServices())
         model.window = window
         model.onClose = { [weak self, weak model] in
@@ -175,11 +177,14 @@ final class TranscriptionPresenter: ObservableObject {
         }
         let book = library.bookByID(request.book.id) ?? request.book
         // The transcript's text goes with it: an edit of it is no longer
-        // taken.
-        services.endTextEdit(book.id)
+        // taken. An edit saved but not yet checked is taken first, and the
+        // session ends; if the deletion fails, the session begins again, so
+        // the user's later saves are still taken.
+        let wasEditing = await services.pauseTextEdit(book)
         do {
             _ = try await OffMainWork.runThrowing { try TranscriptStore.delete(for: book) }
         } catch {
+            if wasEditing { await services.resumeTextEdit(book) }
             notice = TranscriptionNotice(
                 title: TranscriptionWording.deleteNoticeTitle,
                 message: TranscriptionWording.deleteFailed(bookTitle: book.title, reason: error.localizedDescription)

@@ -162,6 +162,10 @@ final class LibraryViewModel: ObservableObject {
     /// open in a reader (mirrored from `openBookIDs`), or being edited or
     /// rendered (FR04, `AudioOriginalSweep`).
     let audioEditActivity = AudioEditActivity()
+    /// The books being edited with Edit Text, whose feed downloads the
+    /// feeds' rules leave for their next pass (`feedBooksInUse`): the app's
+    /// sessions, unless a test gives the model sessions of its own.
+    var textEditSessions: BookTextEditSessions = .shared
     /// Which engine runs the filters of audio edits: the installed ffmpeg or
     /// TextMouth's own, as the setting and this Mac say (FR04); a test can
     /// choose one, so its results never depend on what this Mac has.

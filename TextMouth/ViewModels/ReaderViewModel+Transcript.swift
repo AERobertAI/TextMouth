@@ -30,6 +30,10 @@ extension ReaderViewModel {
             return
         }
         content?.transcript = text
+        // Text now shown has nothing withheld, and a transcript deleted has
+        // no text to withhold: either way the reason it was not shown, from
+        // the load, no longer applies.
+        transcriptWithheld = nil
         refreshPlaybackUI(forceVisibleTextRefresh: true)
     }
 

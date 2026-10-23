@@ -48,14 +48,35 @@ struct TranscriptionSheetServices {
     /// The book's transcript as transcript.json holds it, read off the main
     /// thread without downloading anything.
     var readTranscript: @Sendable (Book) async -> TranscriptStore.Lookup
+    /// Whether the book's text, content.md, is only in iCloud, looked at off
+    /// the main thread without reading or downloading anything. A
+    /// transcription saves its transcript over that text, which TextMouth
+    /// never does while the file is not on this Mac
+    /// (`TranscriptStore.install`), so the sheet asks before the audio is
+    /// transcribed rather than lose the finished transcription after.
+    var isTextInCloud: @Sendable (Book) async -> Bool
     /// The transcriptions under way.
     var center: TranscriptionJobCenter
     /// Which books the library rows call transcribed.
     var transcribedBooks: TranscribedBooks
-    /// Ends the Edit Text session of a book whose transcript goes.
-    var endTextEdit: @MainActor (UUID) -> Void
+    /// Settles and ends the Edit Text session of a book whose transcript
+    /// goes (an edit saved but not yet checked is taken first); whether the
+    /// book was being edited.
+    var pauseTextEdit: @MainActor (Book) async -> Bool
+    /// Begins the book's Edit Text session again when the deletion failed.
+    var resumeTextEdit: @MainActor (Book) async -> Void
     /// Asks VoiceOver to speak a message from a window.
     var announce: @MainActor (String, NSWindow?) -> Void
+
+    /// Whether `book`'s text, content.md, is only in iCloud, as `isDataless`
+    /// says of the file (one lstat, which reads no content). The app asks it
+    /// of the real file.
+    static func textIsOnlyInCloud(
+        _ book: Book,
+        isDataless: (URL) -> Bool = DatalessFiles.isDataless
+    ) -> Bool {
+        isDataless(TextMouthPaths.contentMarkdownPath(in: book.tmbDirectory))
+    }
 
     /// The app's own: this Mac's system and speech models, the settings in
     /// the app's preferences store, and the app's transcription center.
@@ -69,9 +90,13 @@ struct TranscriptionSheetServices {
             readTranscript: { book in
                 await OffMainWork.run { TranscriptStore.read(from: book.tmbDirectory) }
             },
+            isTextInCloud: { book in
+                await OffMainWork.run { TranscriptionSheetServices.textIsOnlyInCloud(book) }
+            },
             center: .shared,
             transcribedBooks: .shared,
-            endTextEdit: { BookTextEditor.shared.end($0) },
+            pauseTextEdit: { await BookTextEditor.shared.pauseEditing(of: $0) },
+            resumeTextEdit: { await BookTextEditor.shared.resumeEditing(of: $0) },
             announce: { message, window in VoiceOverAnnouncer.announce(message, from: window) }
         )
     }
@@ -124,7 +149,7 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         case download
         /// Stop the model's download.
         case cancelDownload
-        /// Transcribe, or Transcribe Again.
+        /// Transcribe, or Retranscribe.
         case transcribe
         /// Cancel, closing the sheet without transcribing.
         case cancel
@@ -146,6 +171,20 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         let locale: String
         /// When the user last edited it, or nil when they never have.
         var editedAt: Date? = nil
+        /// When the user last cleaned it up by rule (Clean Up Transcript), or
+        /// nil when they never have.
+        var cleanedUpAt: Date? = nil
+    }
+
+    /// A transcript the book has that this TextMouth could not read. A
+    /// later TextMouth's would be replaced by transcribing again; one only in
+    /// iCloud keeps the book from being transcribed again until it is
+    /// downloaded (`isBookInCloud`).
+    enum UnreadableTranscript: Equatable {
+        /// It is only in iCloud, so it was not read.
+        case inCloud
+        /// A later TextMouth wrote it in a layout this one does not read.
+        case laterVersion
     }
 
     /// Tells sheets presenting different requests apart.
@@ -167,6 +206,31 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
     @Published private(set) var downloadNotice: String?
     /// The book's transcript, when it has one.
     @Published private(set) var existing: ExistingTranscript?
+    /// The book's transcript when this TextMouth could not read it (it is
+    /// only in iCloud, or a later TextMouth wrote it), so `existing` is nil
+    /// though a transcription would replace something.
+    @Published private(set) var unreadableExisting: UnreadableTranscript?
+    /// Whether the book's text, content.md, is only in iCloud, whatever the
+    /// state of its transcript: a transcription saves its transcript over
+    /// that text, which is never done while the file is not on this Mac.
+    @Published private(set) var isTextInCloud = false
+
+    /// Whether the book's transcript or its text is only in iCloud, so the
+    /// book must be downloaded before it is transcribed again: Transcribe is
+    /// unavailable and `bookInCloudLine` says why. Looked at as the sheet
+    /// loads, before any audio is transcribed, so the finished transcription
+    /// of an hour's audio is not refused afterwards by an install that finds
+    /// a file in the cloud. A file that goes there after the sheet loaded is
+    /// still caught by the install itself (`TranscriptStore.install`).
+    var isBookInCloud: Bool {
+        unreadableExisting == .inCloud || isTextInCloud
+    }
+
+    /// Whether the book has a transcript, readable or not: what decides
+    /// whether Transcribe is a first transcription or a retranscription.
+    var hasTranscript: Bool {
+        existing != nil || unreadableExisting != nil
+    }
     /// The title of another book being transcribed, which keeps Transcribe
     /// unavailable until it finishes.
     @Published private(set) var busyTitle: String?
@@ -249,9 +313,26 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         let (identifier, status) = await resolvedLanguage()
         language = identifier
         modelState = Self.modelState(for: status)
-        if case .found(let transcript) = await services.readTranscript(book) {
-            existing = ExistingTranscript(createdAt: transcript.createdAt, locale: transcript.locale, editedAt: transcript.editedAt)
+        switch await services.readTranscript(book) {
+        case .found(let transcript):
+            existing = ExistingTranscript(
+                createdAt: transcript.createdAt,
+                locale: transcript.locale,
+                editedAt: transcript.editedAt,
+                cleanedUpAt: transcript.cleanedUp?.cleanedAt
+            )
+        case .inCloud:
+            unreadableExisting = .inCloud
+        case .unsupportedVersion:
+            unreadableExisting = .laterVersion
+        case .missing, .unusable:
+            // An unusable transcript was set aside beside itself already,
+            // so transcribing replaces nothing the user could still read.
+            break
         }
+        // Whatever the transcript is: a text left in the cloud by itself
+        // keeps the install from saving over it all the same.
+        isTextInCloud = await services.isTextInCloud(book)
         if let job = services.center.current {
             if job.bookID == book.id {
                 watch(job)
@@ -302,7 +383,11 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         if phase == .transcribing {
             return TranscriptionWording.progressTitle(bookTitle: book.title)
         }
-        return TranscriptionWording.sheetTitle(bookTitle: book.title)
+        // A book with a transcript is transcribed again, as Transcribe's
+        // title decides (`transcribeTitle`).
+        return hasTranscript
+            ? TranscriptionWording.retranscribeSheetTitle(bookTitle: book.title)
+            : TranscriptionWording.sheetTitle(bookTitle: book.title)
     }
 
     /// The audio line: "Audio: 6 hours, 12 minutes."
@@ -338,11 +423,28 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         return TranscriptionWording.languageLine(name: languageName, status: status)
     }
 
-    /// The line naming the book's transcript, when it has one.
+    /// The line naming the book's transcript, when it has one: as it was
+    /// made, or, for one a later TextMouth wrote, who wrote it. One only in
+    /// iCloud is named by `bookInCloudLine` instead, which says what to do.
     var existingLine: String? {
-        existing.map {
-            TranscriptionWording.alreadyTranscribed(on: $0.createdAt, languageName: TranscriptionLanguage.name(of: $0.locale))
+        if let existing {
+            return TranscriptionWording.alreadyTranscribed(
+                on: existing.createdAt,
+                languageName: TranscriptionLanguage.name(of: existing.locale)
+            )
         }
+        switch unreadableExisting {
+        case .laterVersion: return TranscriptionWording.transcriptFromLaterVersion
+        case .inCloud, nil: return nil
+        }
+    }
+
+    /// The line saying the book must be downloaded before it is transcribed
+    /// again, while its transcript or its text is only in iCloud (the
+    /// transcript's first, as the lines are kept to one): nil otherwise.
+    var bookInCloudLine: String? {
+        if unreadableExisting == .inCloud { return TranscriptionWording.transcriptInCloud }
+        return isTextInCloud ? TranscriptionWording.textInCloud : nil
     }
 
     /// The line warning that transcribing again replaces the user's own
@@ -350,6 +452,13 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
     /// Again never replaces an edit unannounced (FR05).
     var editedLine: String? {
         existing?.editedAt.map(TranscriptionWording.editedTranscript(on:))
+    }
+
+    /// The line warning that transcribing again replaces the user's cleanup
+    /// of the transcript, whenever it was cleaned up, so Retranscribe never
+    /// replaces a cleanup unannounced.
+    var cleanedLine: String? {
+        existing?.cleanedUpAt.map(TranscriptionWording.cleanedUpTranscript(on:))
     }
 
     /// The line saying another book is being transcribed, while one is.
@@ -384,27 +493,27 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
     }
 
     /// Whether Transcribe can be pressed now: the sheet is ready, the
-    /// language's model is on this Mac, and no other book is being
-    /// transcribed.
+    /// language's model is on this Mac, no other book is being transcribed,
+    /// and the book is not waiting in iCloud to be downloaded.
     var canTranscribe: Bool {
-        phase == .ready && modelState == .installed && busyTitle == nil
+        phase == .ready && modelState == .installed && busyTitle == nil && !isBookInCloud
     }
 
-    /// Transcribe's title: Transcribe Again for a book transcribed already.
+    /// Transcribe's title: Retranscribe for a book transcribed already.
     var transcribeTitle: String {
-        existing == nil ? TranscriptionWording.transcribeTitle : TranscriptionWording.transcribeAgainTitle
+        hasTranscript ? TranscriptionWording.transcribeAgainTitle : TranscriptionWording.transcribeTitle
     }
 
     /// What Transcribe does.
     var transcribeHint: String {
-        existing == nil ? TranscriptionWording.transcribeHint : TranscriptionWording.transcribeAgainHint
+        hasTranscript ? TranscriptionWording.transcribeAgainHint : TranscriptionWording.transcribeHint
     }
 
     /// The lines under the language that only some sheets show: the book's
-    /// transcript, another transcription under way, and how the last
-    /// download ended.
+    /// transcript, that the book must be downloaded first, another
+    /// transcription under way, and how the last download ended.
     var noticeLines: [String] {
-        [existingLine, editedLine, busyLine, downloadNotice].compactMap { $0 }
+        [existingLine, editedLine, cleanedLine, bookInCloudLine, busyLine, downloadNotice].compactMap { $0 }
     }
 
     /// Every line the ready sheet shows, in order, as VoiceOver hears them

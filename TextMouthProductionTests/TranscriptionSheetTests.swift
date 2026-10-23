@@ -37,6 +37,274 @@ final class TranscriptionSheetTests: XCTestCase {
         XCTAssertEqual(row.accessibilityActionNames, ["Edit Audio…", "Transcribe Audio…"])
     }
 
+    /// Once a book has a transcript, the command to transcribe it is named
+    /// Retranscribe Audio…; before that, and for several books, Transcribe
+    /// Audio…. The menu's title follows whether the book has a transcript.
+    func testTheCommandIsRetranscribeAudioOnceTheBookHasATranscript() {
+        let book = Self.audiobook("Harbour Bells")
+        let other = Self.audiobook("Tide Clock")
+        let transcribed: (UUID) -> Bool = { $0 == book.id }
+
+        XCTAssertEqual(LibraryAudioCommand.retranscribe(book).title, "Retranscribe Audio…")
+        XCTAssertEqual(LibraryAudioCommand.transcribe([book]).title, "Transcribe Audio…")
+        XCTAssertEqual(TranscriptionWording.transcribeCommandTitle(hasTranscript: true), "Retranscribe Audio…")
+        XCTAssertEqual(TranscriptionWording.transcribeCommandTitle(hasTranscript: false), "Transcribe Audio…")
+        XCTAssertEqual(
+            LibraryAudioCommand.commands(for: [other], isTranscribed: transcribed),
+            [.editAudio(other), .transcribe([other])]
+        )
+        XCTAssertEqual(
+            LibraryAudioCommand.commands(for: [book], isTranscribed: transcribed),
+            [.editAudio(book), .retranscribe(book), .cleanUpTranscript(book), .deleteTranscript(book)]
+        )
+        XCTAssertEqual(
+            LibraryAudioCommand.commands(for: [book, other], isTranscribed: transcribed),
+            [.transcribe([book, other])],
+            "several books, one of them transcribed, are still refused by Transcribe Audio…"
+        )
+    }
+
+    /// Retranscribe Audio… opens the Transcribe Audio sheet for its book, as
+    /// Transcribe Audio… does for one book, once however often it is chosen.
+    func testRetranscribeAudioOpensTheTranscribeSheet() throws {
+        let world = try makeIntegrationWorld("Retranscribe Command")
+        let book = try world.makeSilentAudioBook(title: "Harbour Bells", trackDurations: [3])
+        let presenter = TranscriptionPresenter(services: { self.makeSheetServices() })
+
+        presenter.perform(.retranscribe(book), library: world.library, window: nil)
+        let first = presenter.sheet
+        presenter.perform(.retranscribe(book), library: world.library, window: nil)
+
+        XCTAssertEqual(first?.book?.id, book.id)
+        XCTAssertTrue(presenter.sheet === first, "a second sheet replaced the first")
+        first?.close()
+        presenter.perform(.transcribe([book]), library: world.library, window: nil)
+        XCTAssertEqual(presenter.sheet?.book?.id, book.id, "Transcribe Audio… opened no sheet for one book")
+        presenter.sheet?.close()
+    }
+
+    /// The ready sheet's heading reads "Retranscribe <title>" for a book
+    /// with a transcript and "Transcribe <title>" for one without.
+    func testTheSheetHeadingFollowsWhetherTheBookHasATranscript() async {
+        let transcript = TranscriptFixtures.transcript([(path: "01.mp3", duration: 1_000, sentences: [])])
+        let transcribed = TranscriptionSheetModel(
+            request: .book(Self.audiobook("Harbour Bells")),
+            library: nil,
+            services: makeSheetServices(transcript: .found(transcript))
+        )
+        let fresh = TranscriptionSheetModel(
+            request: .book(Self.audiobook("Harbour Bells")),
+            library: nil,
+            services: makeSheetServices()
+        )
+
+        await transcribed.load()
+        await fresh.load()
+
+        XCTAssertEqual(transcribed.heading, "Retranscribe Harbour Bells")
+        XCTAssertEqual(fresh.heading, "Transcribe Harbour Bells")
+        XCTAssertEqual(TranscriptionWording.retranscribeSheetTitle(bookTitle: "Moby-Dick"), "Retranscribe Moby-Dick")
+    }
+
+    /// The Transcribe Audio sheet of a book whose transcript was cleaned up
+    /// says that transcribing again replaces the cleanup, right after the
+    /// line about edits, shown and spoken with the other notices.
+    func testTranscribeAgainSaysItReplacesTheUsersCleanup() async {
+        var transcript = TranscriptFixtures.transcript([(path: "01.mp3", duration: 1_000, sentences: [])])
+        let when = TranscriptFixtures.date.addingTimeInterval(86_400)
+        transcript.cleanedUp = TranscriptCleanupNote(
+            cleanedAt: when, rulesVersion: 4, rulesDate: "2026-10-04", rules: "user", corrections: 2
+        )
+        transcript.editedAt = when
+        let model = await loadedSheet(transcript: .found(transcript))
+        let plain = await loadedSheet(
+            transcript: .found(TranscriptFixtures.transcript([(path: "01.mp3", duration: 1_000, sentences: [])]))
+        )
+
+        let warning = "You cleaned up this transcript on \(TranscriptionWording.day(when)). Transcribing again replaces the cleanup."
+        XCTAssertEqual(model.cleanedLine, warning)
+        // The cleanup's line follows the edits' line.
+        let edited = model.editedLine ?? ""
+        XCTAssertEqual(model.noticeLines.firstIndex(of: warning), model.noticeLines.firstIndex(of: edited).map { $0 + 1 })
+        XCTAssertTrue(model.readyLines.contains(warning), "VoiceOver does not hear the warning")
+        XCTAssertNil(plain.cleanedLine, "a transcript never cleaned up warns of a cleanup")
+        XCTAssertFalse(plain.readyLines.contains { $0.contains("cleaned up") })
+    }
+
+    /// A transcript only in iCloud, or written by a later TextMouth, is a
+    /// transcript the book has: the sheet says Retranscribe. One from a later
+    /// TextMouth is named, with the warning that it is replaced; one only in
+    /// iCloud says to download the book first (`bookInCloudLine`), since the
+    /// sheet cannot say what it holds or what transcribing again would
+    /// replace. A transcript that was unusable, and set aside already, stays
+    /// a book without one.
+    func testATranscriptThisMacCannotReadIsStillOneTheBookHas() async {
+        let inCloud = await loadedSheet(transcript: .inCloud)
+        let later = await loadedSheet(transcript: .unsupportedVersion(99))
+        let unusable = await loadedSheet(transcript: .unusable("it holds no files"))
+        let missing = await loadedSheet(transcript: .missing)
+
+        XCTAssertEqual(inCloud.heading, "Retranscribe Harbour Bells")
+        XCTAssertEqual(inCloud.transcribeTitle, "Retranscribe")
+        XCTAssertTrue(inCloud.hasTranscript)
+        XCTAssertNil(inCloud.existingLine, "the cloud has a line of its own")
+        XCTAssertEqual(inCloud.bookInCloudLine, TranscriptionWording.transcriptInCloud)
+        XCTAssertTrue(inCloud.readyLines.contains(TranscriptionWording.transcriptInCloud))
+        XCTAssertEqual(later.heading, "Retranscribe Harbour Bells")
+        XCTAssertEqual(later.transcribeTitle, "Retranscribe")
+        XCTAssertEqual(later.existingLine, "This book has a transcript made by a later version of TextMouth. Transcribing again replaces it.")
+        XCTAssertTrue(later.hasTranscript)
+        for stays in [unusable, missing] {
+            XCTAssertEqual(stays.heading, "Transcribe Harbour Bells")
+            XCTAssertEqual(stays.transcribeTitle, "Transcribe")
+            XCTAssertNil(stays.existingLine)
+            XCTAssertFalse(stays.hasTranscript)
+        }
+    }
+
+    /// A loaded sheet for a book titled "Harbour Bells" whose transcript
+    /// reads as `transcript`, and whose text is only in iCloud when
+    /// `textInCloud`.
+    private func loadedSheet(transcript: TranscriptStore.Lookup, textInCloud: Bool = false) async -> TranscriptionSheetModel {
+        let model = TranscriptionSheetModel(
+            request: .book(Self.audiobook("Harbour Bells")),
+            library: nil,
+            services: makeSheetServices(transcript: transcript, textInCloud: textInCloud)
+        )
+        await model.load()
+        return model
+    }
+
+    // MARK: - A Book in the Cloud Is Downloaded First
+
+    /// A transcribed book whose text, content.md, is only in iCloud is not
+    /// transcribed again: the install would refuse the finished transcript
+    /// once the audio was transcribed (`TranscriptTextError.textOnlyInCloud`),
+    /// so the sheet says to download the book first, spoken with its other
+    /// lines, offers no Retranscribe, starts nothing when asked to start at
+    /// once, and still names the transcript it has.
+    func testABookWhoseTextIsOnlyInICloudIsDownloadedBeforeItIsTranscribedAgain() async throws {
+        let world = try makeIntegrationWorld("Transcription Sheet Text In Cloud")
+        let book = try world.makeSilentAudioBook(title: "Breakwater Notes", trackDurations: [3, 2])
+        let transcript = try TranscriptFixtures.transcript(of: book, sentences: TranscriptionUIScripts.twoTracks)
+        let center = makeScriptedCenter(script: TranscriptionUIScripts.twoTracks)
+        let announcements = SheetAnnouncements()
+        let model = TranscriptionSheetModel(
+            request: .book(book),
+            library: world.library,
+            startsAtOnce: true,
+            services: makeSheetServices(
+                transcript: .found(transcript), textInCloud: true, center: center, announcements: announcements
+            )
+        )
+
+        await model.load()
+
+        let sentence = "The book's text is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again."
+        XCTAssertEqual(model.phase, .ready, "the sheet started a transcription it would have to throw away")
+        XCTAssertNil(center.current)
+        XCTAssertTrue(model.isBookInCloud)
+        XCTAssertEqual(model.bookInCloudLine, sentence)
+        XCTAssertEqual(model.noticeLines.filter { $0 == sentence }.count, 1)
+        XCTAssertTrue(model.readyLines.contains(sentence), "VoiceOver does not hear it")
+        XCTAssertFalse(model.canTranscribe)
+        XCTAssertEqual(model.focusTarget, .cancel)
+        XCTAssertEqual(model.heading, "Retranscribe Breakwater Notes")
+        XCTAssertNotNil(model.existingLine, "the transcript the book has is still named")
+        model.announceSheet()
+        XCTAssertEqual(announcements.messages.count, 1)
+        XCTAssertTrue(announcements.messages.first?.hasSuffix(sentence) == true, "\(announcements.messages)")
+
+        // Pressing Transcribe, were it pressed, starts nothing.
+        model.transcribe()
+        XCTAssertNil(center.current)
+        XCTAssertEqual(model.phase, .ready)
+    }
+
+    /// A transcript only in iCloud is not transcribed again either, whether
+    /// or not the text is: the sheet cannot say what it holds, or what would
+    /// be replaced, so it says to download the book first, in a sentence of
+    /// the transcript's own, once.
+    func testABookWhoseTranscriptIsOnlyInICloudIsDownloadedBeforeItIsTranscribedAgain() async {
+        let sentence = "The book's transcript is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again."
+        let transcriptOnly = await loadedSheet(transcript: .inCloud)
+        let both = await loadedSheet(transcript: .inCloud, textInCloud: true)
+
+        for model in [transcriptOnly, both] {
+            XCTAssertEqual(model.phase, .ready)
+            XCTAssertEqual(model.bookInCloudLine, sentence)
+            XCTAssertEqual(model.noticeLines.filter { $0.contains("only in iCloud") }, [sentence], "said once")
+            XCTAssertTrue(model.readyLines.contains(sentence))
+            XCTAssertFalse(model.canTranscribe)
+            XCTAssertEqual(model.focusTarget, .cancel)
+            XCTAssertEqual(model.heading, "Retranscribe Harbour Bells")
+        }
+    }
+
+    /// A text in the cloud with no transcript.json beside it (what is left
+    /// when a deletion stopped halfway) keeps even a first transcription
+    /// from being thrown away: the sheet says to download the book, and its
+    /// heading stays Transcribe.
+    func testATextAloneInICloudKeepsAFirstTranscriptionFromStarting() async {
+        let model = await loadedSheet(transcript: .missing, textInCloud: true)
+
+        XCTAssertEqual(model.heading, "Transcribe Harbour Bells")
+        XCTAssertEqual(model.bookInCloudLine, TranscriptionWording.textInCloud)
+        XCTAssertFalse(model.canTranscribe)
+    }
+
+    /// A book with both files on this Mac is transcribed as it always was,
+    /// and says nothing of the cloud.
+    func testABookWithBothFilesOnThisMacSaysNothingOfTheCloud() async {
+        let transcript = TranscriptFixtures.transcript([(path: "01.mp3", duration: 1_000, sentences: [])])
+        let model = await loadedSheet(transcript: .found(transcript))
+
+        XCTAssertFalse(model.isBookInCloud)
+        XCTAssertNil(model.bookInCloudLine)
+        XCTAssertFalse(model.noticeLines.contains { $0.contains("iCloud") })
+        XCTAssertTrue(model.canTranscribe)
+        XCTAssertEqual(model.focusTarget, .transcribe)
+    }
+
+    /// The sheet looks at the book's content.md, in its own package, and
+    /// nothing else, asking whether it is only in the cloud as the file's
+    /// flags say; a book whose file is here, or has none, is not in the cloud.
+    func testTheSheetLooksAtTheBooksContentMarkdown() throws {
+        let world = try makeIntegrationWorld("Transcription Sheet Cloud Look")
+        let book = try world.makeSilentAudioBook(title: "Breakwater Notes", trackDurations: [3, 2])
+        var looked: [URL] = []
+
+        let inCloud = TranscriptionSheetServices.textIsOnlyInCloud(book) { url in
+            looked.append(url)
+            return url.lastPathComponent == "content.md"
+        }
+        let elsewhere = TranscriptionSheetServices.textIsOnlyInCloud(book) { $0.lastPathComponent == "transcript.json" }
+
+        XCTAssertTrue(inCloud)
+        XCTAssertFalse(elsewhere)
+        XCTAssertEqual(looked, [TextMouthPaths.contentMarkdownPath(in: book.tmbDirectory)])
+        // The real files of a book on this Mac: not in the cloud, with or
+        // without a text.
+        XCTAssertFalse(TranscriptionSheetServices.textIsOnlyInCloud(book))
+        try TranscriptStore.install(try TranscriptFixtures.transcript(of: book, sentences: TranscriptionUIScripts.twoTracks), for: book)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: TextMouthPaths.contentMarkdownPath(in: book.tmbDirectory).path))
+        XCTAssertFalse(TranscriptionSheetServices.textIsOnlyInCloud(book))
+    }
+
+    /// The two sentences the sheet says of the cloud, word for word; the
+    /// text's is the very sentence a refused install says.
+    func testTheCloudSentencesArePinned() {
+        XCTAssertEqual(
+            TranscriptionWording.textInCloud,
+            "The book's text is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again."
+        )
+        XCTAssertEqual(
+            TranscriptionWording.transcriptInCloud,
+            "The book's transcript is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again."
+        )
+        XCTAssertEqual(TranscriptTextError.textOnlyInCloud.errorDescription, TranscriptionWording.textInCloud)
+    }
+
     /// One audiobook opens its sheet; several books, or a book that is not
     /// an audiobook, open a sheet that only says why, with OK, which takes
     /// VoiceOver's focus and hears the sentence.
@@ -288,7 +556,7 @@ final class TranscriptionSheetTests: XCTestCase {
     }
 
     /// A book transcribed already says when, and in which language, and
-    /// offers Transcribe Again.
+    /// offers Retranscribe.
     func testABookTranscribedAlreadyOffersTranscribeAgain() async {
         let transcript = TranscriptFixtures.transcript([(path: "01.mp3", duration: 1_000, sentences: [])], locale: "en-GB")
         let model = TranscriptionSheetModel(
@@ -303,7 +571,7 @@ final class TranscriptionSheetTests: XCTestCase {
             + "\(TranscriptionLanguage.name(of: "en-GB")). Transcribing again replaces this transcript."
         XCTAssertEqual(model.existingLine, line)
         XCTAssertEqual(model.noticeLines, [line])
-        XCTAssertEqual(model.transcribeTitle, "Transcribe Again")
+        XCTAssertEqual(model.transcribeTitle, "Retranscribe")
         XCTAssertEqual(model.transcribeHint, TranscriptionWording.transcribeAgainHint)
     }
 

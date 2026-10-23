@@ -904,7 +904,10 @@ final class BookTextEditTests: XCTestCase {
         defer { editor.endAll() }
         let cache = MarkdownCacheService.cacheURL(for: book)
         let edited = try String(contentsOf: cache, encoding: .utf8)
-            .replacingOccurrences(of: MarkdownLiteral.escaped("on the pier."), with: MarkdownLiteral.escaped("on the jetty."))
+            .replacingOccurrences(
+                of: MarkdownLiteral.minimallyEscaped("on the pier.", smartPunctuation: true),
+                with: MarkdownLiteral.minimallyEscaped("on the jetty.", smartPunctuation: true)
+            )
 
         await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
         XCTAssertTrue(editor.sessions.isEditing(book.id), "the session did not begin")

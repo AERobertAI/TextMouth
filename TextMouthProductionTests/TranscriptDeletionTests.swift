@@ -14,7 +14,7 @@ final class TranscriptDeletionTests: XCTestCase {
     // MARK: - The Command
 
     /// Delete Transcript… is offered for one transcribed audiobook alone,
-    /// after Edit Audio… (FR04), Transcribe Audio…, and Clean Up Transcript
+    /// after Edit Audio… (FR04), Retranscribe Audio…, and Clean Up Transcript
     /// (Experimental)…, under the same name in the menu and among
     /// VoiceOver's actions; never for several books, or a book without a
     /// transcript.
@@ -25,7 +25,7 @@ final class TranscriptDeletionTests: XCTestCase {
 
         XCTAssertEqual(
             LibraryAudioCommand.commands(for: [book], isTranscribed: transcribed),
-            [.editAudio(book), .transcribe([book]), .cleanUpTranscript(book), .deleteTranscript(book)]
+            [.editAudio(book), .retranscribe(book), .cleanUpTranscript(book), .deleteTranscript(book)]
         )
         XCTAssertEqual(
             LibraryAudioCommand.commands(for: [other], isTranscribed: transcribed),
@@ -43,7 +43,7 @@ final class TranscriptDeletionTests: XCTestCase {
         )
         XCTAssertEqual(
             row.accessibilityActionNames,
-            ["Edit Audio…", "Transcribe Audio…", "Clean Up Transcript (Experimental)…", "Delete Transcript…"]
+            ["Edit Audio…", "Retranscribe Audio…", "Clean Up Transcript (Experimental)…", "Delete Transcript…"]
         )
     }
 

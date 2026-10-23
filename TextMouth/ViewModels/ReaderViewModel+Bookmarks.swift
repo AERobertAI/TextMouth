@@ -220,6 +220,104 @@ extension ReaderViewModel {
         autoPlayIfEnabled()
     }
 
+    /// Whether Search in Book has a text to search: a text book that has
+    /// loaded, or an audiobook with a transcript, whose text it searches.
+    /// An audiobook without one has only spacing that counts time.
+    var canSearchText: Bool {
+        isAudioBook ? content?.transcript != nil : content != nil
+    }
+
+    /// Says why Search in Book has nothing to search in this loaded
+    /// audiobook, in place of opening (`BookSearchWording.noTextToSearch`):
+    /// that it has no transcript, or, for one whose text is not shown, why
+    /// not. `hasTranscript` is whether the book has a transcript as the
+    /// library's rows and the Book menu know it (`TranscribedBooks`), so the
+    /// command it names, if any, is the one the menu offers. A reason the
+    /// load found for the text not being shown means the book has a
+    /// transcript whatever the rows have noted of it yet.
+    func announceNoTextToSearch(hasTranscript: Bool) {
+        announceToVoiceOver(BookSearchWording.noTextToSearch(
+            bookTitle: book.title,
+            canTranscribe: LibraryAudioCommand.isTranscribable(book),
+            hasTranscript: hasTranscript || transcriptWithheld != nil,
+            withheld: transcriptWithheld
+        ))
+    }
+
+    /// The timing of the loaded audiobook's transcript over its audio
+    /// chapters; nil for a text book and for an audiobook without a transcript.
+    private var transcriptSearchTiming: BookSearchTiming? {
+        guard isAudioBook, let content, let transcript = content.transcript else { return nil }
+        return .forTranscript(transcript, audioChapters: content.chapters)
+    }
+
+    /// What Search in Book searches, copied so the search can run off the
+    /// main actor: a text book's chapters, with its headings to name where
+    /// each match is; or a transcribed audiobook's transcript, by audio
+    /// chapter, timed, and named by chapter title alone, since the reader's
+    /// audiobook headings count audio time, not transcript text. Nil when
+    /// `canSearchText` is false.
+    var searchCorpus: BookSearchCorpus? {
+        guard canSearchText, let content else { return nil }
+        if let timing = transcriptSearchTiming {
+            return BookSearchCorpus(
+                chapterTexts: timing.transcript.chapters.map(\.text),
+                chapterTitles: content.chapters.map(\.title),
+                headings: [],
+                bookTitle: book.title,
+                timing: timing
+            )
+        }
+        return BookSearchCorpus(
+            chapterTexts: content.chapters.map(\.text),
+            chapterTitles: content.chapters.map(\.title),
+            headings: headings,
+            bookTitle: book.title
+        )
+    }
+
+    /// Navigate to a result of a transcript search: the audio moves to the
+    /// start of the sentence holding the match, saving the current position
+    /// for Return and Go Back. The move is announced once the sheet has
+    /// closed (`announcePendingJump()`). Does nothing for a book without a
+    /// transcript.
+    func navigateToTranscriptSearchResult(chapterIndex: Int, textOffset: Int) {
+        guard let timing = transcriptSearchTiming else { return }
+        let audioOffset = timing.transcript.audioOffset(atTextOffset: textOffset, inChapter: chapterIndex)
+        guard navigatePreservingReturnPosition(chapterIndex: chapterIndex, characterOffset: audioOffset) else { return }
+        autoPlayIfEnabled()
+        // The place is named as a search result names it: by its chapter's
+        // title, unless that is empty or only repeats the book's title.
+        let location = BookSearchView.locationTitles(
+            of: [(chapterIndex: chapterIndex, characterOffset: textOffset)],
+            headings: [],
+            chapterTitles: content?.chapters.map(\.title) ?? [],
+            bookTitle: book.title
+        ).first ?? nil
+        pendingJumpAnnouncement = BookSearchWording.movedTo(
+            time: timing.time(chapterIndex: chapterIndex, characterOffset: textOffset),
+            location: location
+        )
+    }
+
+    /// Say where a transcript search result took the reader, if one did, and
+    /// forget it. Called when the search sheet has gone.
+    func announcePendingJump() {
+        guard let announcement = pendingJumpAnnouncement else { return }
+        pendingJumpAnnouncement = nil
+        announceToVoiceOver(announcement)
+    }
+
+    /// Go Back (the Navigate menu's): return to the position saved before the
+    /// last jump, or say there is none.
+    func goBack() {
+        if hasSavedPosition {
+            returnToSavedPosition()
+        } else {
+            announceToVoiceOver(BookSearchWording.nothingToGoBackTo)
+        }
+    }
+
     /// With Auto-play on navigate, plays the book after a jump from a panel
     /// as Play does, unless it plays or waits to play already
     /// (`playUnlessUnderWay()`). The play once went through Play/Pause,

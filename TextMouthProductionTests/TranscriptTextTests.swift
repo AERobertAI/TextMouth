@@ -132,19 +132,64 @@ final class TranscriptTextTests: XCTestCase {
         <!-- chapter: The Ferry -->
         # The Ferry
 
-        One\\. Two\\. Three\\. Four\\.
+        One. Two. Three. Four.
 
-        Five\\.
+        Five.
 
-        Six\\.
+        Six.
 
         <!-- chapter: Heading 2 -->
         # Heading 2
 
-        \(first.dropLast())\\. \(second.dropLast())\\.
+        \(first) \(second)
 
-        \(third.dropLast())\\.
+        \(third)
         """)
+    }
+
+    /// content.md escapes only what TextMouth's reader needs, so the text
+    /// reads in an editor as it was heard: commas, single periods, a colon, a
+    /// question mark, and a `#` that closes nothing stay as they are; quotes,
+    /// apostrophes, runs of `-` or `.`, and `*` get a backslash; so does the
+    /// `.` of a paragraph that begins "1." (else a list). The text still
+    /// places every sentence where it lies.
+    func testContentMarkdownEscapesOnlyWhatTheReaderNeeds() throws {
+        let sentences = [
+            "Well, he said: why not?",
+            "It's the sailors' \"best\" -- really... truly.",
+            "Issue #5 and *bold* here.",
+            "1. First stop is the quay.",
+        ]
+        // The fourth sentence follows a three-second silence, so it begins a
+        // paragraph of its own.
+        let chapters = [TranscriptTextBuilder.ChapterTranscript(title: "Dock Road", sentences: [
+            sentence(sentences[0], 0, 1_000), sentence(sentences[1], 1_000, 2_000),
+            sentence(sentences[2], 2_000, 3_000), sentence(sentences[3], 6_000, 7_000),
+        ])]
+
+        XCTAssertEqual(TranscriptTextBuilder.markdown(of: chapters), """
+        <!-- chapter: Dock Road -->
+        # Dock Road
+
+        Well, he said: why not? It\\'s the sailors\\' \\"best\\" \\-\\- really\\.\\.\\. truly. Issue #5 and \\*bold\\* here.
+
+        1\\. First stop is the quay.
+        """)
+
+        let text = try XCTUnwrap(TranscriptTextBuilder.text(of: chapters, bookTitle: "Toll Road", bookAuthor: "Unknown"))
+        let chapterText = Array(try XCTUnwrap(text.chapters[safe: 0], "the text has no chapter").text.utf16)
+        let placed = try XCTUnwrap(text.sentences[safe: 0], "the text has no sentences for its chapter")
+        XCTAssertEqual(placed.count, sentences.count, "a sentence was left out")
+        for (position, expected) in zip(placed, sentences) {
+            // A sentence placed outside its chapter's text would trap the
+            // slice below, so it stops the test instead.
+            guard position.characterOffset >= 0, position.characterOffset <= position.characterEnd,
+                  position.characterEnd <= chapterText.count else {
+                XCTFail("the sentence \"\(expected)\" is placed outside its chapter's text")
+                return
+            }
+            XCTAssertEqual(String(decoding: chapterText[position.characterOffset..<position.characterEnd], as: UTF16.self), expected)
+        }
     }
 
     /// The text reads back exactly as the transcript wrote it, Markdown's
@@ -188,6 +233,61 @@ final class TranscriptTextTests: XCTestCase {
         XCTAssertEqual(firstSentences.map(\.startMilliseconds), Array(stride(from: 0, to: 8_000, by: 1_000)))
         XCTAssertNil(text.readingIndex.validationFailure(for: .markdown, audioBaseURL: nil))
         XCTAssertNil(text.readingIndex.alignmentFailure(with: text.chapters))
+    }
+
+    // MARK: - Numbers Read from the Files Cannot Trap
+
+    /// A layer whose sentence is `[1, Int.max, 0, 0]` (a damaged or
+    /// hand-edited contentIndex.json) fails validation with a reason that
+    /// words the two numbers without adding them, which would overflow and
+    /// trap; the layer is then set aside as any unusable one is.
+    func testASentenceWhoseEndOverflowsFailsValidationWithoutTrapping() {
+        var index = Self.timedText.index
+        guard index.chapters.count >= 1 else {
+            XCTFail("the timed text no longer has a chapter")
+            return
+        }
+        let chapterLength = index.chapters[0].text.characterCount
+        index.chapters[0].sentences = [
+            BookContentSentenceIndex(characterOffset: 1, characterCount: Int.max, startMilliseconds: 0, endMilliseconds: 0),
+        ]
+
+        XCTAssertEqual(
+            index.validationFailure(against: index.readingIndex),
+            "transcript.chapters[0].sentences[0] starts at character 1 and is \(Int.max) long, "
+                + "outside 0 through \(chapterLength)"
+        )
+    }
+
+    /// A valid transcript laid over an audio index whose chapters hold
+    /// `Int.max` characters each, so the start of the chapter after them is
+    /// beyond what a sum can hold, is laid without a trap: the sentences
+    /// still go to the first chapter, which plays them.
+    func testATranscriptLaidOverChaptersOfHugeLengthsDoesNotTrap() {
+        func chapter(_ number: Int, characters: Int) -> BookContentChapterIndex {
+            BookContentChapterIndex(
+                chapterIndex: number, title: "Part \(number + 1)", startCharacterOffset: 0,
+                characterCount: characters, wordCount: 1, headings: [], audio: nil
+            )
+        }
+        let audio = BookContentIndex(
+            version: BookContentIndex.currentVersion, kind: .audio, format: .audio,
+            generatedAt: TranscriptFixtures.date, totalWordCount: 3, totalCharacterCount: Int.max,
+            totalAudioDuration: nil, audioLayout: .singleFile,
+            chapters: [chapter(0, characters: Int.max), chapter(1, characters: Int.max), chapter(2, characters: 10)],
+            textCacheFingerprint: nil
+        )
+        let transcript = TranscriptFixtures.transcript([
+            (path: "book.m4b", duration: 9_000, sentences: [
+                TranscriptFixtures.sentence("Quillwort grows by the ferry slip.", from: 0, to: 2_400),
+                TranscriptFixtures.sentence("Tide tables hang in the harbor office.", from: 2_400, to: 5_100),
+            ]),
+        ])
+        XCTAssertNil(transcript.validationFailure())
+
+        let chapters = TranscriptTextBuilder.chapters(of: transcript, over: audio, bookFileName: "book.m4b")
+
+        XCTAssertEqual(chapters.map { $0.sentences.count }, [2, 0, 0])
     }
 
     // MARK: - Time and Place
@@ -367,6 +467,7 @@ final class TranscriptTextTests: XCTestCase {
         XCTAssertFalse(load.indexChanged)
         XCTAssertEqual(load.index, installation.index)
         XCTAssertEqual(load.text?.chapters.map(\.text), installation.text.chapters.map(\.text))
+        XCTAssertNil(load.withheld, "text is shown, so none is withheld")
         XCTAssertEqual(FileStamp(of: cache), stamp)
         XCTAssertEqual(debugLogLines(containing: "TRANSCRIPT_TEXT_REBUILT: \(title):"), [])
     }
@@ -381,6 +482,7 @@ final class TranscriptTextTests: XCTestCase {
         let load = TranscriptTextLoader.load(for: book, audioIndex: index)
 
         XCTAssertNil(load.text)
+        XCTAssertNil(load.withheld, "a book without a transcript withholds none")
         XCTAssertFalse(load.indexChanged)
         XCTAssertEqual(load.index, index)
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: book.tmbDirectory.path).sorted(),
@@ -408,6 +510,57 @@ final class TranscriptTextTests: XCTestCase {
         XCTAssertEqual(FileStamp(of: cache), stamp, "content.md already held the text")
         XCTAssertEqual(debugLogLines(containing: "TRANSCRIPT_TEXT_REBUILT: \(title): content.md and its index were written "
             + "again from transcript.json: the book's index holds no transcript text").count, 1)
+    }
+
+    /// A book whose text was written before the text escaped only what the
+    /// reader needs (index version 1.0.0, every punctuation character
+    /// escaped) has its content.md written again, once, without the needless
+    /// backslashes: the layer's version is now 1.1.0, the rebuild is logged
+    /// once, no copy is kept (TextMouth wrote the old text itself),
+    /// transcript.json is untouched, and a second load writes nothing.
+    func testATextOfAnOlderVersionIsWrittenAgainWithoutNeedlessBackslashes() throws {
+        let world = try makeIntegrationWorld("Transcript Older Version")
+        let title = uniqueTitle("Harbor Notes")
+        let book = try world.makeSilentAudioBook(title: title, trackDurations: [9, 6])
+        let installation = try TranscriptStore.install(try TranscriptFixtures.transcript(of: book, sentences: Self.sentences), for: book)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let transcriptFile = TextMouthPaths.transcriptPath(in: book.tmbDirectory)
+        let transcriptBytes = try Data(contentsOf: transcriptFile)
+        // As 1.0.0 left the book: the fully escaped content.md, and a layer
+        // that is version 1.0.0 and fingerprints that file.
+        let oldBytes = Data(Self.fullyEscapedMarkdown.utf8)
+        try oldBytes.write(to: cache)
+        var oldLayer = try XCTUnwrap(installation.index.transcript)
+        oldLayer.version = "1.0.0"
+        oldLayer.textCacheFingerprint.cache = FileFingerprint(
+            stamp: try XCTUnwrap(FileStamp(of: cache)),
+            digest: FingerprintHasher.md5.digestOfData(oldBytes)
+        )
+        var oldIndex = installation.index
+        oldIndex.transcript = oldLayer
+
+        let load = TranscriptTextLoader.load(for: book, audioIndex: oldIndex)
+
+        XCTAssertEqual(try String(contentsOf: cache, encoding: .utf8), Self.expectedMarkdown)
+        XCTAssertTrue(load.indexChanged)
+        XCTAssertEqual(load.index.transcript?.version, "1.1.0")
+        XCTAssertNotNil(load.text)
+        XCTAssertEqual(try Data(contentsOf: transcriptFile), transcriptBytes, "transcript.json is untouched")
+        XCTAssertEqual(
+            LibraryIndexQuarantine.existingCopies(of: cache, marker: TextMouthPaths.keptTextCopyMarker), [],
+            "TextMouth wrote the old text itself, so no copy of it is kept"
+        )
+        let reason = "its index was set aside: transcript.version \"1.0.0\" is not the current \"1.1.0\""
+        let rebuilt = "TRANSCRIPT_TEXT_REBUILT: \(title): content.md and its index were written again from transcript.json: \(reason)"
+        XCTAssertEqual(debugLogLines(containing: rebuilt).count, 1)
+
+        // A second load finds the text current and writes nothing.
+        let stamp = FileStamp(of: cache)
+        let again = TranscriptTextLoader.load(for: book, audioIndex: load.index)
+        XCTAssertEqual(FileStamp(of: cache), stamp)
+        XCTAssertFalse(again.indexChanged)
+        XCTAssertNotNil(again.text)
+        XCTAssertEqual(debugLogLines(containing: rebuilt).count, 1, "the second load logged another rebuild")
     }
 
     /// A content.md edited by hand no longer matches what the transcript
@@ -448,6 +601,7 @@ final class TranscriptTextTests: XCTestCase {
         let load = TranscriptTextLoader.load(for: book, audioIndex: index)
 
         XCTAssertNil(load.text)
+        XCTAssertEqual(load.withheld, .audioChanged)
         XCTAssertFalse(load.indexChanged)
         XCTAssertEqual(debugLogLines(containing: "TRANSCRIPT_STALE: \(title): 02.wav changed since it was transcribed").count, 1)
         XCTAssertThrowsError(try TranscriptStore.install(transcript, for: book)) { error in
@@ -508,6 +662,7 @@ final class TranscriptTextTests: XCTestCase {
         let load = TranscriptTextLoader.load(for: book, audioIndex: try savedIndex(of: book))
 
         XCTAssertNil(load.text)
+        XCTAssertNil(load.withheld, "a transcript set aside is no reason Search names")
         XCTAssertTrue(load.indexChanged)
         XCTAssertNil(load.index.transcript)
     }
@@ -523,8 +678,195 @@ final class TranscriptTextTests: XCTestCase {
         let load = TranscriptTextLoader.load(for: book, audioIndex: index, isDataless: { $0.lastPathComponent == "content.md" })
 
         XCTAssertNil(load.text)
+        XCTAssertEqual(load.withheld, .textInCloud)
         XCTAssertFalse(load.indexChanged)
         XCTAssertEqual(load.index, index)
+    }
+
+    /// A transcript.json only in the cloud is never read either, and the load
+    /// says it is the transcript that is there, even when content.md is too.
+    func testATranscriptOnlyInTheCloudIsNotReadAndSaysWhichFile() throws {
+        let world = try makeIntegrationWorld("Transcript Json Cloud")
+        let book = try world.makeSilentAudioBook(title: "Harbor Notes", trackDurations: [9, 6])
+        try TranscriptStore.install(try TranscriptFixtures.transcript(of: book, sentences: Self.sentences), for: book)
+        let index = try savedIndex(of: book)
+
+        let transcriptOnly = TranscriptTextLoader.load(
+            for: book, audioIndex: index, isDataless: { $0.lastPathComponent == "transcript.json" }
+        )
+        let both = TranscriptTextLoader.load(for: book, audioIndex: index, isDataless: { _ in true })
+
+        for load in [transcriptOnly, both] {
+            XCTAssertNil(load.text)
+            XCTAssertEqual(load.withheld, .transcriptInCloud)
+            XCTAssertFalse(load.indexChanged)
+            XCTAssertEqual(load.index, index)
+        }
+    }
+
+    // MARK: - Writing the Text Again without Losing or Downloading Anything
+
+    /// The text of an edited transcript is written again over a content.md
+    /// whose heading the user renamed (an edit taken before such edits were
+    /// refused, whose digest the layer names): the old content.md is kept
+    /// beside it first, once, and holds the renamed heading.
+    func testAnEditedTranscriptsRenamedHeadingIsKeptBeforeTheTextIsWrittenAgain() throws {
+        let world = try makeIntegrationWorld("Transcript Heading Kept")
+        let (book, transcript) = try makeEditedTranscribedBook(in: world)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let renamed = Self.expectedMarkdown.replacingOccurrences(of: "# 02", with: "# Ferry")
+        XCTAssertNotEqual(renamed, Self.expectedMarkdown)
+        try Data(renamed.utf8).write(to: cache)
+        try nameContentAsWritten(by: book)
+
+        try TranscriptStore.install(transcript, for: book)
+
+        XCTAssertEqual(try String(contentsOf: cache, encoding: .utf8), Self.expectedMarkdown)
+        let copies = keptCopies(of: book)
+        XCTAssertEqual(copies.count, 1, "\(copies)")
+        XCTAssertEqual(try copies.first.map { try String(contentsOf: $0, encoding: .utf8) }, renamed)
+        XCTAssertTrue(copies.first?.lastPathComponent.hasPrefix("content.md.edited-") == true, "\(copies)")
+    }
+
+    /// A content.md of an edited transcript that differs only in its
+    /// escaping (a period written with or without a backslash) reads
+    /// the same, so writing the text again keeps no copy of it.
+    func testAnEditedTranscriptsDifferentEscapingKeepsNoCopy() throws {
+        let world = try makeIntegrationWorld("Transcript Escaping")
+        let (book, transcript) = try makeEditedTranscribedBook(in: world)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        // The same text escaped the other way, whichever way the builder
+        // writes it: every period plain, or every period escaped.
+        let plain = Self.expectedMarkdown.replacingOccurrences(of: "\\.", with: ".")
+        let otherwise = plain == Self.expectedMarkdown ? plain.replacingOccurrences(of: ".", with: "\\.") : plain
+        XCTAssertNotEqual(otherwise, Self.expectedMarkdown)
+        try Data(otherwise.utf8).write(to: cache)
+        try nameContentAsWritten(by: book)
+
+        try TranscriptStore.install(transcript, for: book)
+
+        XCTAssertEqual(try String(contentsOf: cache, encoding: .utf8), Self.expectedMarkdown)
+        XCTAssertEqual(keptCopies(of: book), [])
+    }
+
+    /// Clean Up replaces an edited transcript with a cleaned-up copy of it:
+    /// a content.md that is exactly what the edited transcript wrote is
+    /// replaced without a copy, since the cleanup itself changes the text.
+    func testCleaningUpAnEditedTranscriptKeepsNoCopyOfTheTextItWrote() throws {
+        let world = try makeIntegrationWorld("Transcript Cleanup Plain")
+        let (book, transcript) = try makeEditedTranscribedBook(in: world)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let before = try String(contentsOf: cache, encoding: .utf8)
+
+        try TranscriptStore.install(cleanedUp(transcript), for: book)
+
+        XCTAssertNotEqual(try String(contentsOf: cache, encoding: .utf8), before, "the cleanup did not change the text")
+        XCTAssertEqual(keptCopies(of: book), [])
+    }
+
+    /// The same cleanup over a content.md whose heading was renamed (under
+    /// the digest the layer names) keeps that content.md first.
+    func testCleaningUpAnEditedTranscriptKeepsTextWithARenamedHeading() throws {
+        let world = try makeIntegrationWorld("Transcript Cleanup Renamed")
+        let (book, transcript) = try makeEditedTranscribedBook(in: world)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let renamed = Self.expectedMarkdown.replacingOccurrences(of: "# 02", with: "# Ferry")
+        try Data(renamed.utf8).write(to: cache)
+        try nameContentAsWritten(by: book)
+
+        try TranscriptStore.install(cleanedUp(transcript), for: book)
+
+        let copies = keptCopies(of: book)
+        XCTAssertEqual(copies.count, 1, "\(copies)")
+        XCTAssertEqual(try copies.first.map { try String(contentsOf: $0, encoding: .utf8) }, renamed)
+    }
+
+    /// A new transcript that was never edited, installed over an edited one
+    /// whose content.md holds a renamed heading, keeps that content.md: the
+    /// edit that content.md carries is the one being replaced.
+    func testANewTranscriptOverAnEditedOneKeepsItsRenamedHeading() throws {
+        let world = try makeIntegrationWorld("Transcript Again Renamed")
+        let (book, _) = try makeEditedTranscribedBook(in: world)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let renamed = Self.expectedMarkdown.replacingOccurrences(of: "# 02", with: "# Ferry")
+        try Data(renamed.utf8).write(to: cache)
+        try nameContentAsWritten(by: book)
+        let fresh = try TranscriptFixtures.transcript(of: book, sentences: Self.sentences)
+        XCTAssertNil(fresh.editedAt)
+
+        try TranscriptStore.install(fresh, for: book)
+
+        XCTAssertEqual(try String(contentsOf: cache, encoding: .utf8), Self.expectedMarkdown)
+        let copies = keptCopies(of: book)
+        XCTAssertEqual(copies.count, 1, "\(copies)")
+        XCTAssertEqual(try copies.first.map { try String(contentsOf: $0, encoding: .utf8) }, renamed)
+    }
+
+    /// A content.md only in the cloud is not read, downloaded, or written
+    /// over by writing the text (nothing about it changes), nor by saving a
+    /// transcript, which leaves transcript.json as it was too.
+    func testAContentFileOnlyInTheCloudIsLeftAsItIs() throws {
+        let world = try makeIntegrationWorld("Transcript Text In Cloud")
+        let (book, transcript) = try makeEditedTranscribedBook(in: world)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let before = try Data(contentsOf: cache)
+        let inCloud: (URL) -> Bool = { $0.lastPathComponent == "content.md" }
+        var audio = try audioIndex(of: book)
+        audio.transcript = nil
+
+        XCTAssertThrowsError(try TranscriptTextLoader.writeText(
+            of: transcript, for: book, over: audio, hasher: .md5, isDataless: inCloud
+        )) { XCTAssertEqual($0 as? TranscriptTextError, .textOnlyInCloud) }
+        let another = try TranscriptFixtures.transcript(of: book, sentences: [
+            "01.wav": [TranscriptFixtures.sentence("Quillwort grows by the ferry slipway.", from: 0, to: 2_400)],
+        ])
+        XCTAssertThrowsError(try TranscriptStore.install(another, for: book, isDataless: inCloud)) {
+            XCTAssertEqual($0 as? TranscriptTextError, .textOnlyInCloud)
+        }
+
+        XCTAssertEqual(try Data(contentsOf: cache), before)
+        XCTAssertEqual(TranscriptStore.read(from: book.tmbDirectory), .found(transcript), "transcript.json was written")
+        XCTAssertEqual(keptCopies(of: book), [])
+    }
+
+    /// A copy that cannot be kept stops the text being written: content.md
+    /// is exactly as it was, and the copy was asked for with its bytes.
+    func testTextThatCannotBeKeptIsNotWrittenOver() throws {
+        let world = try makeIntegrationWorld("Transcript Text Not Kept")
+        let (book, transcript) = try makeEditedTranscribedBook(in: world)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let handEdit = Data((Self.expectedMarkdown + "\n\nA line added by hand.").utf8)
+        try handEdit.write(to: cache)
+        var audio = try audioIndex(of: book)
+        audio.transcript = nil
+        var asked: [Data?] = []
+
+        XCTAssertThrowsError(try TranscriptTextLoader.writeText(
+            of: transcript, for: book, over: audio, hasher: .md5,
+            keepCopy: { _, bytes in
+                asked.append(bytes)
+                return nil
+            }
+        )) { XCTAssertEqual($0 as? TranscriptTextError, .textNotKept) }
+
+        XCTAssertEqual(try Data(contentsOf: cache), handEdit)
+        XCTAssertEqual(asked, [handEdit])
+        XCTAssertEqual(keptCopies(of: book), [])
+    }
+
+    /// The two new errors say exactly this, and leave the text as it is.
+    func testTheTextErrorsAreWordedExactly() {
+        XCTAssertEqual(
+            TranscriptTextError.textOnlyInCloud.errorDescription,
+            "The book's text is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again."
+        )
+        XCTAssertEqual(
+            TranscriptTextError.textNotKept.errorDescription,
+            "The book's text holds changes TextMouth couldn't keep a copy of, so it leaves the text as it is."
+        )
+        XCTAssertTrue(TranscriptTextError.textOnlyInCloud.leavesTextAsItIs)
+        XCTAssertTrue(TranscriptTextError.textNotKept.leavesTextAsItIs)
+        XCTAssertFalse(TranscriptTextError.notFingerprinted.leavesTextAsItIs)
     }
 
     // MARK: - The Reader
@@ -625,6 +967,21 @@ final class TranscriptTextTests: XCTestCase {
     <!-- chapter: 01 -->
     # 01
 
+    Quillwort grows by the ferry slip. Tide tables hang in the harbor office. Nobody reads them twice.
+
+    <!-- chapter: 02 -->
+    # 02
+
+    The salt road bends east. Carts wait at the toll.
+    """
+
+    /// The content.md those sentences made before the text escaped only what
+    /// the reader needs (index version 1.0.0): every punctuation character
+    /// of every sentence had a backslash.
+    static let fullyEscapedMarkdown = """
+    <!-- chapter: 01 -->
+    # 01
+
     Quillwort grows by the ferry slip\\. Tide tables hang in the harbor office\\. Nobody reads them twice\\.
 
     <!-- chapter: 02 -->
@@ -662,6 +1019,45 @@ final class TranscriptTextTests: XCTestCase {
             ]
         )
         return TranscriptText(chapters: chapters, index: index)
+    }
+
+    /// A silent two-track book of `world` whose transcript, marked edited by
+    /// the user, is installed: its content.md is the text written from it.
+    private func makeEditedTranscribedBook(in world: IntegrationWorld) throws -> (book: Book, transcript: Transcript) {
+        let book = try world.makeSilentAudioBook(title: uniqueTitle("Harbor Notes"), trackDurations: [9, 6])
+        var transcript = try TranscriptFixtures.transcript(of: book, sentences: Self.sentences)
+        transcript.editedAt = TranscriptFixtures.date
+        try TranscriptStore.install(transcript, for: book)
+        return (book, transcript)
+    }
+
+    /// Makes the layer in `book`'s record name the content.md on disk as the
+    /// text TextMouth last wrote or took, as a taken edit leaves it.
+    private func nameContentAsWritten(by book: Book) throws {
+        var index = try savedIndex(of: book)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let stamp = try XCTUnwrap(FileStamp(of: cache))
+        index.transcript?.textCacheFingerprint.cache = FileFingerprint(stamp: stamp, digest: try FileImportService.md5Hash(of: cache))
+        try book.saveBookInfoThrowing(contentIndex: index)
+    }
+
+    /// `transcript` as Clean Up leaves it: its first sentence reworded, and
+    /// still marked edited.
+    private func cleanedUp(_ transcript: Transcript) -> Transcript {
+        var cleaned = transcript
+        // The fixture's first file holds sentences; guarded all the same.
+        if let file = cleaned.files.indices.first, !cleaned.files[file].sentences.isEmpty {
+            cleaned.files[file].sentences[0].rewrite(as: "Quillwort grows by the ferry slipway.")
+        }
+        return cleaned
+    }
+
+    /// The copies of the user's text kept beside `book`'s content.md.
+    private func keptCopies(of book: Book) -> [URL] {
+        LibraryIndexQuarantine.existingCopies(
+            of: MarkdownCacheService.cacheURL(for: book),
+            marker: TextMouthPaths.keptTextCopyMarker
+        )
     }
 
     /// `base` followed by a few characters no other test's book has, so a
