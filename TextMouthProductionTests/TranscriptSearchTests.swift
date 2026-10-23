@@ -157,12 +157,16 @@ final class TranscriptSearchTests: XCTestCase {
         reader.announceNoTextToSearch(hasTranscript: true)
 
         let said = try XCTUnwrap(reader.lastAnnouncement)
-        XCTAssertEqual(
-            said,
-            "\(reader.book.title) has no transcript text to search now, because the audiobook's audio changed since it was "
-                + "transcribed, so its transcript no longer fits it. Transcribe it again, then search the new transcript."
-        )
+        let expected = "\(reader.book.title) has no transcript text to search now, because the audiobook's audio changed since it was "
+            + "transcribed, so its transcript no longer fits it. Transcribe it again, then search the new transcript."
+        XCTAssertEqual(said, expected)
         XCTAssertFalse(said.contains("Transcribe Audio"), said)
+
+        // The library's rows may not have noted the transcript yet; the load
+        // that found why its text is not shown has seen it all the same.
+        reader.lastAnnouncement = nil
+        reader.announceNoTextToSearch(hasTranscript: false)
+        XCTAssertEqual(reader.lastAnnouncement, expected)
     }
 
     /// A book without a transcript is told to make one, with the command it

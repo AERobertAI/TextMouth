@@ -232,12 +232,14 @@ extension ReaderViewModel {
     /// that it has no transcript, or, for one whose text is not shown, why
     /// not. `hasTranscript` is whether the book has a transcript as the
     /// library's rows and the Book menu know it (`TranscribedBooks`), so the
-    /// command it names, if any, is the one the menu offers.
+    /// command it names, if any, is the one the menu offers. A reason the
+    /// load found for the text not being shown means the book has a
+    /// transcript whatever the rows have noted of it yet.
     func announceNoTextToSearch(hasTranscript: Bool) {
         announceToVoiceOver(BookSearchWording.noTextToSearch(
             bookTitle: book.title,
             canTranscribe: LibraryAudioCommand.isTranscribable(book),
-            hasTranscript: hasTranscript,
+            hasTranscript: hasTranscript || transcriptWithheld != nil,
             withheld: transcriptWithheld
         ))
     }
