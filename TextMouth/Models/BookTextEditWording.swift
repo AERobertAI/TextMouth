@@ -121,30 +121,38 @@ enum BookTextEditWording {
     /// opens. Your edited text was also kept as content.md.edited-…, in the
     /// book's package." The reader opens the book once an edit is taken.
     static func held(_ refusal: BookTextEditRefusal, bookTitle: String, keptCopy: URL?) -> String {
-        let why: String
+        "\(bookTitle) can't open while its edited text can't be used: \(heldReason(refusal)) \(kept(keptCopy))"
+    }
+
+    /// Why an edit cannot be used while it stands, and what the user can do
+    /// about it, as the end of a sentence about the book: "it isn't UTF-8
+    /// text. Save it as UTF-8 in your editor, and the book opens." For an
+    /// audiobook (`forAudiobook`), whose book does open, with its audio and
+    /// without its text, what follows saving is that the text shows.
+    static func heldReason(_ refusal: BookTextEditRefusal, forAudiobook: Bool = false) -> String {
+        let outcome = forAudiobook ? "the text shows" : "the book opens"
         switch refusal {
         case .notText:
-            why = "it isn't UTF-8 text. Save it as UTF-8 in your editor, and the book opens."
+            return "it isn't UTF-8 text. Save it as UTF-8 in your editor, and \(outcome)."
         case .noChapters:
-            why = "it has no chapter left with anything in it. Undo the change in your editor and save again, "
-                + "and the book opens."
+            return "it has no chapter left with anything in it. Undo the change in your editor and save again, "
+                + "and \(outcome)."
         case .sourceChanged:
-            why = "the book's own file changed too. Open the book again to read its text from that file."
+            return "the book's own file changed too. Open the book again to read its text from that file."
         case .transcriptChanged:
-            why = "the book's transcript changed too. Open the book again to read its text from that transcript."
+            return "the book's transcript changed too. Open the book again to read its text from that transcript."
         case .chaptersChanged(let found, let expected):
-            why = "it has \(chapters(found)), where the audiobook has \(chapters(expected)). "
+            return "it has \(chapters(found)), where the audiobook has \(chapters(expected)). "
                 + "Keep every line beginning with <!-- chapter: and save again, and the text shows."
         case .headingChanged:
-            why = "it changes a chapter's heading, which comes from the audio. Put the heading back as it was and save again, "
+            return "it changes a chapter's heading, which comes from the audio. Put the heading back as it was and save again, "
                 + "and the text shows."
         case .wordsWithoutSentences:
-            why = "it adds words to a chapter the transcript heard no speech in, where they can't be kept. "
+            return "it adds words to a chapter the transcript heard no speech in, where they can't be kept. "
                 + "Remove them and save again, and the text shows."
         case .failed(let reason):
-            why = reason
+            return reason
         }
-        return "\(bookTitle) can't open while its edited text can't be used: \(why) \(kept(keptCopy))"
     }
 
     /// A rebuild read the book's text from its own file again, over other
@@ -200,10 +208,14 @@ enum BookTextEditWording {
             + "Transcribe it first, with Transcribe Audio."
     }
 
+    /// Why a transcript no longer fits its audiobook, as the end of a
+    /// sentence (FR05).
+    static let transcriptStaleReason = "the audiobook's audio changed since it was transcribed, "
+        + "so its transcript no longer fits it."
+
     /// Why a transcribed audiobook's edit was not taken while its audio is
     /// not the audio transcribed any more (FR05).
-    static let transcriptStale = "the audiobook's audio changed since it was transcribed, "
-        + "so its transcript no longer fits it. Transcribe it again, then edit the new transcript."
+    static let transcriptStale = transcriptStaleReason + " Transcribe it again, then edit the new transcript."
 
     /// Why a transcribed audiobook's edit was not taken while its
     /// transcript cannot be read (FR05).

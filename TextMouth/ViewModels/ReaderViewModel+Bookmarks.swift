@@ -227,6 +227,21 @@ extension ReaderViewModel {
         isAudioBook ? content?.transcript != nil : content != nil
     }
 
+    /// Says why Search in Book has nothing to search in this loaded
+    /// audiobook, in place of opening (`BookSearchWording.noTextToSearch`):
+    /// that it has no transcript, or, for one whose text is not shown, why
+    /// not. `hasTranscript` is whether the book has a transcript as the
+    /// library's rows and the Book menu know it (`TranscribedBooks`), so the
+    /// command it names, if any, is the one the menu offers.
+    func announceNoTextToSearch(hasTranscript: Bool) {
+        announceToVoiceOver(BookSearchWording.noTextToSearch(
+            bookTitle: book.title,
+            canTranscribe: LibraryAudioCommand.isTranscribable(book),
+            hasTranscript: hasTranscript,
+            withheld: transcriptWithheld
+        ))
+    }
+
     /// The timing of the loaded audiobook's transcript over its audio
     /// chapters; nil for a text book and for an audiobook without a transcript.
     private var transcriptSearchTiming: BookSearchTiming? {

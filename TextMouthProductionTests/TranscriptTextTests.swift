@@ -467,6 +467,7 @@ final class TranscriptTextTests: XCTestCase {
         XCTAssertFalse(load.indexChanged)
         XCTAssertEqual(load.index, installation.index)
         XCTAssertEqual(load.text?.chapters.map(\.text), installation.text.chapters.map(\.text))
+        XCTAssertNil(load.withheld, "text is shown, so none is withheld")
         XCTAssertEqual(FileStamp(of: cache), stamp)
         XCTAssertEqual(debugLogLines(containing: "TRANSCRIPT_TEXT_REBUILT: \(title):"), [])
     }
@@ -481,6 +482,7 @@ final class TranscriptTextTests: XCTestCase {
         let load = TranscriptTextLoader.load(for: book, audioIndex: index)
 
         XCTAssertNil(load.text)
+        XCTAssertNil(load.withheld, "a book without a transcript withholds none")
         XCTAssertFalse(load.indexChanged)
         XCTAssertEqual(load.index, index)
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: book.tmbDirectory.path).sorted(),
@@ -599,6 +601,7 @@ final class TranscriptTextTests: XCTestCase {
         let load = TranscriptTextLoader.load(for: book, audioIndex: index)
 
         XCTAssertNil(load.text)
+        XCTAssertEqual(load.withheld, .audioChanged)
         XCTAssertFalse(load.indexChanged)
         XCTAssertEqual(debugLogLines(containing: "TRANSCRIPT_STALE: \(title): 02.wav changed since it was transcribed").count, 1)
         XCTAssertThrowsError(try TranscriptStore.install(transcript, for: book)) { error in
@@ -659,6 +662,7 @@ final class TranscriptTextTests: XCTestCase {
         let load = TranscriptTextLoader.load(for: book, audioIndex: try savedIndex(of: book))
 
         XCTAssertNil(load.text)
+        XCTAssertNil(load.withheld, "a transcript set aside is no reason Search names")
         XCTAssertTrue(load.indexChanged)
         XCTAssertNil(load.index.transcript)
     }
@@ -674,8 +678,30 @@ final class TranscriptTextTests: XCTestCase {
         let load = TranscriptTextLoader.load(for: book, audioIndex: index, isDataless: { $0.lastPathComponent == "content.md" })
 
         XCTAssertNil(load.text)
+        XCTAssertEqual(load.withheld, .textInCloud)
         XCTAssertFalse(load.indexChanged)
         XCTAssertEqual(load.index, index)
+    }
+
+    /// A transcript.json only in the cloud is never read either, and the load
+    /// says it is the transcript that is there, even when content.md is too.
+    func testATranscriptOnlyInTheCloudIsNotReadAndSaysWhichFile() throws {
+        let world = try makeIntegrationWorld("Transcript Json Cloud")
+        let book = try world.makeSilentAudioBook(title: "Harbor Notes", trackDurations: [9, 6])
+        try TranscriptStore.install(try TranscriptFixtures.transcript(of: book, sentences: Self.sentences), for: book)
+        let index = try savedIndex(of: book)
+
+        let transcriptOnly = TranscriptTextLoader.load(
+            for: book, audioIndex: index, isDataless: { $0.lastPathComponent == "transcript.json" }
+        )
+        let both = TranscriptTextLoader.load(for: book, audioIndex: index, isDataless: { _ in true })
+
+        for load in [transcriptOnly, both] {
+            XCTAssertNil(load.text)
+            XCTAssertEqual(load.withheld, .transcriptInCloud)
+            XCTAssertFalse(load.indexChanged)
+            XCTAssertEqual(load.index, index)
+        }
     }
 
     // MARK: - Writing the Text Again without Losing or Downloading Anything

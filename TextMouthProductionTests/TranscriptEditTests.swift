@@ -263,6 +263,12 @@ final class TranscriptEditTests: XCTestCase {
         XCTAssertNil(loaded.content.transcript, "the text was shown over an edit not taken")
         XCTAssertEqual(loaded.content.chapters.count, 2, "the audio did not load")
         XCTAssertEqual(try String(contentsOf: cache, encoding: .utf8), merged, "the text was written again over the edit")
+        // The reader is told why no text is shown, for Search in Book to say.
+        guard case .editHeld(let refusal, let heldCopy)? = loaded.transcriptWithheld else {
+            return XCTFail("the load did not say the edit is held: \(String(describing: loaded.transcriptWithheld))")
+        }
+        XCTAssertEqual(refusal, .chaptersChanged(found: 1, expected: 2))
+        XCTAssertEqual(heldCopy?.lastPathComponent, kept.lastPathComponent)
     }
 
     /// A content.md the user changed without the edit being taken is kept

@@ -621,11 +621,15 @@ struct ReaderPanelCommands: ViewModifier {
                 if viewModel.canSearchText {
                     panels.search.toggle()
                 } else if viewModel.isAudioBook, viewModel.content != nil {
-                    // A loaded audiobook with no transcript has only spacing
-                    // that counts time, which the toolbar offers no Search
-                    // for; the menu command says why, and how to get one,
-                    // rather than staying silent.
-                    viewModel.announceToVoiceOver(BookSearchWording.noTranscript(bookTitle: viewModel.book.title))
+                    // A loaded audiobook with no transcript text has only
+                    // spacing that counts time, which the toolbar offers no
+                    // Search for; the menu command says why rather than
+                    // staying silent: that it has no transcript, and the
+                    // command that makes one, or, for a transcript whose text
+                    // is not shown, why not.
+                    viewModel.announceNoTextToSearch(
+                        hasTranscript: TranscribedBooks.shared.contains(viewModel.book.id)
+                    )
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .goBack)) { notification in

@@ -12,6 +12,52 @@ enum BookSearchWording {
         "\(bookTitle) has no transcript to search. Transcribe it first, with Transcribe Audio."
     }
 
+    /// Said instead of opening Search in Book for a loaded audiobook with no
+    /// transcript text to search, and why, never naming a command the book
+    /// does not offer:
+    /// - Without a transcript, `noTranscript(bookTitle:)` names Transcribe
+    ///   Audio, which a book in a package of its own (`canTranscribe`) offers;
+    ///   a book that is not in one offers no command, and none is named.
+    /// - With a transcript whose text is not shown, the reason is said in the
+    ///   words that say it elsewhere: the cloud's (`TranscriptionWording`),
+    ///   the stale transcript's and the held edit's (`BookTextEditWording`).
+    ///   No command is named: the book's is then Retranscribe Audio…, which
+    ///   replaces the transcript and is the cure only for a stale one, so
+    ///   that reason says to transcribe it again and the others say what
+    ///   to do instead. A reason the reader does not know is not guessed.
+    /// - Parameters:
+    ///   - bookTitle: The book's title.
+    ///   - canTranscribe: Whether the book is in a package of its own, so
+    ///     that it offers to transcribe its audio
+    ///     (`LibraryAudioCommand.isTranscribable`).
+    ///   - hasTranscript: Whether the book has a transcript, as the library's
+    ///     rows and the Book menu know it (`TranscribedBooks`).
+    ///   - withheld: Why its text is not shown, when the reader knows.
+    static func noTextToSearch(
+        bookTitle: String,
+        canTranscribe: Bool,
+        hasTranscript: Bool,
+        withheld: TranscriptTextWithheld?
+    ) -> String {
+        guard hasTranscript else {
+            return canTranscribe ? noTranscript(bookTitle: bookTitle) : "\(bookTitle) has no transcript to search."
+        }
+        let lead = "\(bookTitle) has no transcript text to search now"
+        switch withheld {
+        case nil:
+            return lead + "."
+        case .transcriptInCloud?:
+            return "\(lead). \(TranscriptionWording.transcriptInCloud)"
+        case .textInCloud?:
+            return "\(lead). \(TranscriptionWording.textInCloud)"
+        case .audioChanged?:
+            return "\(lead), because \(BookTextEditWording.transcriptStaleReason) Transcribe it again, then search the new transcript."
+        case .editHeld(let refusal, let keptCopy)?:
+            let why = BookTextEditWording.heldReason(refusal, forAudiobook: true)
+            return "\(lead), because its edited text can't be used: \(why) \(BookTextEditWording.kept(keptCopy))"
+        }
+    }
+
     /// Said once the search sheet has closed after a result was chosen: the
     /// time the reader moved to and, when it names one, where that is.
     static func movedTo(time: TimeInterval, location: String?) -> String {

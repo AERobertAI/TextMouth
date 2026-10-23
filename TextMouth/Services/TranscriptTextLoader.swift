@@ -32,6 +32,17 @@ enum TranscriptTextLoader {
         /// Whether `index` differs from the index the load was given, so
         /// the caller saves it.
         var indexChanged: Bool
+        /// Why a book that has a transcript shows none of its text, when it
+        /// is one of the reasons Search in Book names; nil when text is
+        /// shown, when the book has no transcript, and for any other reason.
+        var withheld: TranscriptTextWithheld? = nil
+
+        /// This load, saying `reason` why it shows no text.
+        func withholding(_ reason: TranscriptTextWithheld) -> Load {
+            var copy = self
+            copy.withheld = reason
+            return copy
+        }
     }
 
     /// The tag of the debug log's line about a transcript that no longer
@@ -66,8 +77,12 @@ enum TranscriptTextLoader {
         guard audioIndex.transcript != nil || FileManager.default.fileExists(atPath: transcriptURL.path) else {
             return unchanged
         }
-        // Reading either file only in the cloud would download it.
-        guard !isDataless(transcriptURL), !isDataless(cacheURL) else { return unchanged }
+        // Reading either file only in the cloud would download it. The
+        // transcript's is named first, as the lines about the cloud are.
+        let transcriptInCloud = isDataless(transcriptURL)
+        guard !transcriptInCloud, !isDataless(cacheURL) else {
+            return unchanged.withholding(transcriptInCloud ? .transcriptInCloud : .textInCloud)
+        }
 
         var rebuildReason = "the book's index holds no transcript text"
         if let layer = audioIndex.transcript {
@@ -220,13 +235,15 @@ enum TranscriptTextLoader {
         switch TranscriptStore.read(from: book.tmbDirectory) {
         case .missing, .unusable:
             return dropped
-        case .inCloud, .unsupportedVersion:
+        case .inCloud:
+            return unchanged.withholding(.transcriptInCloud)
+        case .unsupportedVersion:
             return unchanged
         case .found(let transcript):
             switch audioCheck(of: transcript.audioFiles, for: book, audioIndex: audioIndex, isDataless: isDataless, hasher: hasher) {
             case .changed(let staleness):
                 reportStale(book, staleness)
-                return unchanged
+                return unchanged.withholding(.audioChanged)
             case .current:
                 break
             }
@@ -249,7 +266,7 @@ enum TranscriptTextLoader {
                 // no copy could be made of. The book's index is left as it
                 // is, and the next open tries again.
                 logLine(rebuiltTag, about: book, "content.md was left as it is (\(reason)): \(error.logDescription)")
-                return unchanged
+                return error == .textOnlyInCloud ? unchanged.withholding(.textInCloud) : unchanged
             } catch {
                 // The error is named by its domain and code: its own words
                 // can name the package's folder by its absolute path.
@@ -514,6 +531,24 @@ enum TranscriptTextLoader {
     private static func logLine(_ tag: String, about book: Book, _ detail: String) {
         DiagnosticLog.event(.storage, "\(tag): \(book.title): \(detail)")
     }
+}
+
+/// Why a book that has a transcript shows none of its text (FR05), for the
+/// reasons Search in Book names in place of opening: the load gives the first
+/// three (`TranscriptTextLoader.Load.withheld`), and the reader the last when
+/// it meets an edit it cannot take. The words are `BookSearchWording`'s.
+enum TranscriptTextWithheld: Equatable, Sendable {
+    /// transcript.json is only in iCloud, so it was not read.
+    case transcriptInCloud
+    /// content.md is only in iCloud, so it was not read or written.
+    case textInCloud
+    /// The book's audio is no longer the audio transcribed, so the
+    /// transcript no longer fits it.
+    case audioChanged
+    /// content.md holds an edit TextMouth cannot take, so the book keeps no
+    /// text shown until the user settles it in their editor: why it cannot
+    /// be taken, and the copy of it kept beside content.md, if any.
+    case editHeld(BookTextEditRefusal, keptCopy: URL?)
 }
 
 /// Why a transcript's text could not be written.

@@ -55,6 +55,27 @@ final class TranscriptSearchTests: XCTestCase {
         return reader
     }
 
+    /// The reader of a silent two-track audiobook (3 and 2 seconds) that was
+    /// transcribed and whose second track was then replaced by a longer one,
+    /// so its transcript no longer fits its audio: loaded, and showing no
+    /// text. Also the text the transcript had, for a test to show again.
+    private func staleTranscriptReader(_ label: String) async throws -> (reader: ReaderViewModel, text: TranscriptText) {
+        let world = try makeIntegrationWorld(label)
+        let book = try world.makeSilentAudioBook(
+            title: "Breakwater Notes \(UUID().uuidString.prefix(8))",
+            trackDurations: [3, 2]
+        )
+        let installation = try TranscriptStore.install(
+            try TranscriptFixtures.transcript(of: book, sentences: TranscriptionUIScripts.twoTracks),
+            for: book
+        )
+        try AudioTestFixtures.writeSilence(to: URL(fileURLWithPath: book.filePath).appendingPathComponent("02.wav"), duration: 4)
+        let reader = world.openReader(for: book)
+        let loaded = await eventuallyHolds { !reader.isLoading }
+        XCTAssertTrue(loaded, "the reader never loaded")
+        return (reader, installation.text)
+    }
+
     // MARK: - Timing
 
     /// Chapters begin where the lengths of those before them add up: a
@@ -115,6 +136,60 @@ final class TranscriptSearchTests: XCTestCase {
         XCTAssertNil(reader.content?.transcript)
         XCTAssertFalse(reader.canSearchText)
         XCTAssertNil(reader.searchCorpus)
+    }
+
+    // MARK: - When a Transcribed Book Shows No Text
+
+    /// A transcribed audiobook whose audio changed since it was transcribed
+    /// shows no text, and Search in Book says why in place of opening, in the
+    /// stale transcript's own words, naming no command: Transcribe Audio is
+    /// not offered for a book that has a transcript (its command is
+    /// Retranscribe Audio…).
+    func testSearchSaysWhyAStaleTranscriptShowsNoText() async throws {
+        let (reader, _) = try await staleTranscriptReader("Search Stale Transcript")
+
+        XCTAssertNil(reader.content?.transcript)
+        XCTAssertFalse(reader.canSearchText)
+        XCTAssertEqual(reader.transcriptWithheld, .audioChanged)
+
+        reader.announceNoTextToSearch(hasTranscript: true)
+
+        let said = try XCTUnwrap(reader.lastAnnouncement)
+        XCTAssertEqual(
+            said,
+            "\(reader.book.title) has no transcript text to search now, because the audiobook's audio changed since it was "
+                + "transcribed, so its transcript no longer fits it. Transcribe it again, then search the new transcript."
+        )
+        XCTAssertFalse(said.contains("Transcribe Audio"), said)
+    }
+
+    /// A book without a transcript is told to make one, with the command it
+    /// offers, as before.
+    func testSearchStillSaysToTranscribeABookWithoutATranscript() async throws {
+        let reader = try await untranscribedReader("Search Untranscribed Says")
+
+        XCTAssertNil(reader.transcriptWithheld)
+
+        reader.announceNoTextToSearch(hasTranscript: false)
+
+        XCTAssertEqual(reader.lastAnnouncement, BookSearchWording.noTranscript(bookTitle: reader.book.title))
+    }
+
+    /// Once text is shown, or the transcript is deleted, the reason the text
+    /// was not shown no longer applies.
+    func testTextThatArrivesOrGoesClearsWhyItWasNotShown() async throws {
+        let (reader, text) = try await staleTranscriptReader("Search Stale Cleared")
+        XCTAssertEqual(reader.transcriptWithheld, .audioChanged)
+
+        reader.showTranscript(text)
+
+        XCTAssertNil(reader.transcriptWithheld)
+        XCTAssertTrue(reader.canSearchText)
+
+        reader.showTranscript(nil)
+
+        XCTAssertNil(reader.transcriptWithheld)
+        XCTAssertFalse(reader.canSearchText)
     }
 
     /// A text book is searched as it always was: its chapters' text, no
@@ -297,6 +372,73 @@ final class TranscriptSearchTests: XCTestCase {
         XCTAssertEqual(BookSearchWording.movedTo(time: 54, location: nil), "Moved to 54 seconds.")
         XCTAssertEqual(BookSearchWording.nothingToGoBackTo, "No previous position to return to.")
         XCTAssertEqual(BookSearchWording.transcriptFieldHint, "Type to search the book's transcript")
+    }
+
+    /// What Search says in place of opening for a transcribed audiobook that
+    /// shows no text, word for word: no command is named but for a book
+    /// without a transcript that offers to transcribe its audio.
+    func testWhatSearchSaysWhenATranscribedBookShowsNoTextIsPinned() {
+        let copy = URL(fileURLWithPath: "content.md.edited-20261023T093000Z")
+        func said(_ withheld: TranscriptTextWithheld?, hasTranscript: Bool = true, canTranscribe: Bool = true) -> String {
+            BookSearchWording.noTextToSearch(
+                bookTitle: "Breakwater Notes", canTranscribe: canTranscribe, hasTranscript: hasTranscript, withheld: withheld
+            )
+        }
+        let lead = "Breakwater Notes has no transcript text to search now"
+
+        // No transcript: the command that makes one, when the book offers it.
+        XCTAssertEqual(
+            said(nil, hasTranscript: false),
+            "Breakwater Notes has no transcript to search. Transcribe it first, with Transcribe Audio."
+        )
+        XCTAssertEqual(said(nil, hasTranscript: false, canTranscribe: false), "Breakwater Notes has no transcript to search.")
+        // A transcript whose text is not shown: why, in the words that say it elsewhere.
+        XCTAssertEqual(said(nil), lead + ".")
+        XCTAssertEqual(
+            said(.textInCloud),
+            lead + ". The book's text is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again."
+        )
+        XCTAssertEqual(
+            said(.transcriptInCloud),
+            lead + ". The book's transcript is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again."
+        )
+        XCTAssertEqual(
+            said(.audioChanged),
+            lead + ", because the audiobook's audio changed since it was transcribed, so its transcript no longer fits it. "
+                + "Transcribe it again, then search the new transcript."
+        )
+        XCTAssertEqual(
+            said(.editHeld(.headingChanged, keptCopy: copy)),
+            lead + ", because its edited text can't be used: it changes a chapter's heading, which comes from the audio. "
+                + "Put the heading back as it was and save again, and the text shows. "
+                + "Your edited text was also kept as content.md.edited-20261023T093000Z, in the book's package."
+        )
+        XCTAssertEqual(
+            said(.editHeld(.notText, keptCopy: nil)),
+            lead + ", because its edited text can't be used: it isn't UTF-8 text. Save it as UTF-8 in your editor, "
+                + "and the text shows. No copy of your edited text could be kept, so TextMouth leaves content.md as it is."
+        )
+        // None of them names a command: a book with a transcript offers
+        // Retranscribe Audio…, which replaces it.
+        let reasons: [TranscriptTextWithheld?] = [nil, .textInCloud, .transcriptInCloud, .audioChanged, .editHeld(.noChapters, keptCopy: copy)]
+        for reason in reasons {
+            XCTAssertFalse(said(reason).contains("Transcribe Audio"), said(reason))
+            XCTAssertFalse(said(reason).contains("Retranscribe"), said(reason))
+        }
+
+        // The words the held edit and the stale transcript share with their
+        // other sentences are those sentences' own.
+        XCTAssertEqual(
+            BookTextEditWording.held(.noChapters, bookTitle: "Breakwater Notes", keptCopy: nil),
+            "Breakwater Notes can't open while its edited text can't be used: it has no chapter left with anything in it. "
+                + "Undo the change in your editor and save again, and the book opens. "
+                + "No copy of your edited text could be kept, so TextMouth leaves content.md as it is."
+        )
+        XCTAssertEqual(
+            BookTextEditWording.transcriptStale,
+            "the audiobook's audio changed since it was transcribed, so its transcript no longer fits it. "
+                + "Transcribe it again, then edit the new transcript."
+        )
     }
 
     // MARK: - Timed Results

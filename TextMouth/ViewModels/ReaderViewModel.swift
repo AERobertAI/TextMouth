@@ -536,6 +536,15 @@ final class ReaderViewModel: ObservableObject {
     /// so the reader opens the book with the edit taken next
     /// (`showEditedText(_:)`).
     var loadHeldByTextEdit = false
+    /// Why this audiobook, though it has a transcript, shows none of its
+    /// text now (FR05): its transcript or text is only in iCloud, its audio
+    /// changed since it was transcribed, or its edited text is held until the
+    /// user settles it in their editor. Search in Book says it in place of
+    /// opening (`announceNoTextToSearch(hasTranscript:)`). Set as the book
+    /// loads; cleared once text arrives or the transcript is deleted
+    /// (`showTranscript(_:)`). Nil while text is shown, for a book without a
+    /// transcript, and when the reason is none of these.
+    var transcriptWithheld: TranscriptTextWithheld?
     /// True after the user explicitly releases Now Playing / headphone media
     /// controls for this open reader. Starting playback in TextMouth clears it.
     @Published var mediaControlsReleased = false
@@ -1324,6 +1333,9 @@ final class ReaderViewModel: ObservableObject {
         /// manifest, read afresh at every load, from the index or not
         /// (`ChapterPauses.betweenTracks(of:inAudioFolder:)`).
         var chapterPauses = ChapterPauses.none
+        /// Why an audiobook with a transcript shows none of its text, when
+        /// the load knows (`TranscriptTextWithheld`); nil otherwise.
+        var transcriptWithheld: TranscriptTextWithheld? = nil
         /// What the look at an audiobook of tracks' manifest found before
         /// the book was read (FR18): an edit made outside Edit Manifest,
         /// taken or refused, for the manifest editor once the book shows;
@@ -1395,6 +1407,9 @@ final class ReaderViewModel: ObservableObject {
         // audiobook's transcript text is edited the same way, but its audio
         // still plays while such an edit stands: only its text is left out.
         var holdsTranscriptText = false
+        // Why an audiobook with a transcript shows none of its text, for
+        // Search in Book to say (`announceNoTextToSearch(hasTranscript:)`).
+        var transcriptWithheld: TranscriptTextWithheld?
         // The moves of the book's places for the reader to take, in order:
         // an edit's, a rebuild's, then the check at load's.
         var movedPlaces: [MovedPlaces] = []
@@ -1412,6 +1427,7 @@ final class ReaderViewModel: ObservableObject {
         case .hold(let pending):
             guard format.isAudio else { throw pending }
             holdsTranscriptText = true
+            transcriptWithheld = .editHeld(pending.refusal, keptCopy: pending.keptCopy)
         case .readAsUsual:
             break
         }
@@ -1493,6 +1509,7 @@ final class ReaderViewModel: ObservableObject {
             content.transcript = transcript.text
             index = transcript.index
             transcriptIndexChanged = transcript.indexChanged
+            transcriptWithheld = transcript.withheld
         }
 
         var audioTags: AudioMetadata?
@@ -1517,6 +1534,7 @@ final class ReaderViewModel: ObservableObject {
             // The manifest is read afresh, so a load from the saved index
             // keeps the pauses a fresh analysis would find.
             chapterPauses: format.isAudio ? ChapterPauses.betweenTracks(of: analysis.index, inAudioFolder: url) : .none,
+            transcriptWithheld: transcriptWithheld,
             manifestLook: manifestLook
         )
     }
@@ -1555,6 +1573,7 @@ final class ReaderViewModel: ObservableObject {
         chapterPauses = loaded.chapterPauses
         // Assigning content also publishes its headings.
         content = parsed
+        transcriptWithheld = loaded.transcriptWithheld
         showEPUBMetadata()
         audioMetadata = loaded.audioTags.map { book.mergingEditableAudioMetadata($0) }
 
