@@ -520,7 +520,9 @@ enum TranscriptTextError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .textOnlyInCloud:
-            return "The book's text is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again."
+            // The same sentence the Transcribe Audio sheet says before a
+            // transcription begins.
+            return TranscriptionWording.textInCloud
         case .textNotKept:
             return "The book's text holds changes TextMouth couldn't keep a copy of, so it leaves the text as it is."
         case .chaptersNotReadBack:

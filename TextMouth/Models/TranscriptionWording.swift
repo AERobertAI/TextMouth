@@ -166,9 +166,22 @@ enum TranscriptionWording {
         "You cleaned up this transcript on \(day(date)). Transcribing again replaces the cleanup."
     }
 
-    /// The line for a transcript that is only in iCloud, which this Mac did
-    /// not read.
-    static let transcriptInCloud = "This book has a transcript that is only in iCloud. Transcribing again replaces it."
+    /// The line for a book whose transcript, transcript.json, is only in
+    /// iCloud, which this Mac did not read: it cannot be seen, or its edits
+    /// and cleanup told of, so the sheet offers no Retranscribe until the
+    /// book is downloaded. In the words of `textInCloud`, which says the same
+    /// of the transcript's text.
+    static let transcriptInCloud = "The book's transcript is only in iCloud, so TextMouth leaves it as it is. "
+        + "Download the book, then try again."
+
+    /// The line for a book whose text, content.md, is only in iCloud: a
+    /// transcription is saved over that text, which TextMouth never does
+    /// while the file is not on this Mac, so the sheet offers no Retranscribe
+    /// until the book is downloaded, rather than refuse the finished
+    /// transcript after the audio was transcribed. Also what a refused
+    /// install says (`TranscriptTextError.textOnlyInCloud`).
+    static let textInCloud = "The book's text is only in iCloud, so TextMouth leaves it as it is. "
+        + "Download the book, then try again."
 
     /// The line for a transcript written in a layout this TextMouth does
     /// not read.

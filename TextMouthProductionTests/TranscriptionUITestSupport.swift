@@ -108,9 +108,10 @@ extension XCTestCase {
     /// a system that can transcribe unless `support` says otherwise, US
     /// English to try, the models `statuses` gives, a download that never
     /// leaves the test, the transcript `transcript` gives for every book
-    /// (none unless given), the transcriptions of `center` (a center whose
-    /// engine hears nothing unless given), and announcements kept in
-    /// `announcements`.
+    /// (none unless given), whether every book's text is only in iCloud as
+    /// `textInCloud` says (it is not unless given), the transcriptions of
+    /// `center` (a center whose engine hears nothing unless given), and
+    /// announcements kept in `announcements`.
     @MainActor
     func makeSheetServices(
         support: TranscriptionAvailability.SystemSupport = .available,
@@ -118,6 +119,7 @@ extension XCTestCase {
         statuses: ScriptedModelStatuses = ScriptedModelStatuses(["en-US": .installed(Locale(identifier: "en-US"))]),
         installer: (any TranscriptionModelInstalling)? = nil,
         transcript: TranscriptStore.Lookup = .missing,
+        textInCloud: Bool = false,
         center: TranscriptionJobCenter? = nil,
         transcribedBooks: TranscribedBooks = TranscribedBooks(),
         pauseTextEdit: @escaping @MainActor (Book) async -> Bool = { _ in false },
@@ -130,6 +132,7 @@ extension XCTestCase {
             modelStatus: { statuses.status(for: $0) },
             installer: installer ?? ScriptedModelInstaller(statuses: statuses),
             readTranscript: { _ in transcript },
+            isTextInCloud: { _ in textInCloud },
             center: center ?? makeScriptedCenter(script: [:]),
             transcribedBooks: transcribedBooks,
             pauseTextEdit: pauseTextEdit,

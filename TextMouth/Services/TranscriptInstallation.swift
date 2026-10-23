@@ -36,6 +36,12 @@ extension TranscriptStore {
     /// is thrown; transcript.json is then already written, and the next
     /// open of the book writes the text from it again.
     ///
+    /// The Transcribe Audio sheet looks at content.md and transcript.json
+    /// before a transcription begins (`TranscriptionSheetModel.isBookInCloud`)
+    /// and offers none while either is only in the cloud; the check here is
+    /// the last guard, for a file that went to the cloud while the audio was
+    /// transcribed.
+    ///
     /// Runs as storage work (`StorageBoundary`), which a data-directory move
     /// waits for, and blocks while it reads and writes; call it off the main
     /// thread. Pass the book as the library holds it now: a transcription
