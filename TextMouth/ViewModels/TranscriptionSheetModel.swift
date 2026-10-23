@@ -151,6 +151,18 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         let locale: String
         /// When the user last edited it, or nil when they never have.
         var editedAt: Date? = nil
+        /// When the user last cleaned it up by rule (Clean Up Transcript), or
+        /// nil when they never have.
+        var cleanedUpAt: Date? = nil
+    }
+
+    /// A transcript the book has that this TextMouth could not read, which
+    /// transcribing again would replace all the same.
+    enum UnreadableTranscript: Equatable {
+        /// It is only in iCloud, so it was not read.
+        case inCloud
+        /// A later TextMouth wrote it in a layout this one does not read.
+        case laterVersion
     }
 
     /// Tells sheets presenting different requests apart.
@@ -172,6 +184,16 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
     @Published private(set) var downloadNotice: String?
     /// The book's transcript, when it has one.
     @Published private(set) var existing: ExistingTranscript?
+    /// The book's transcript when this TextMouth could not read it (it is
+    /// only in iCloud, or a later TextMouth wrote it), so `existing` is nil
+    /// though a transcription would replace something.
+    @Published private(set) var unreadableExisting: UnreadableTranscript?
+
+    /// Whether the book has a transcript, readable or not: what decides
+    /// whether Transcribe is a first transcription or a retranscription.
+    var hasTranscript: Bool {
+        existing != nil || unreadableExisting != nil
+    }
     /// The title of another book being transcribed, which keeps Transcribe
     /// unavailable until it finishes.
     @Published private(set) var busyTitle: String?
@@ -254,8 +276,22 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         let (identifier, status) = await resolvedLanguage()
         language = identifier
         modelState = Self.modelState(for: status)
-        if case .found(let transcript) = await services.readTranscript(book) {
-            existing = ExistingTranscript(createdAt: transcript.createdAt, locale: transcript.locale, editedAt: transcript.editedAt)
+        switch await services.readTranscript(book) {
+        case .found(let transcript):
+            existing = ExistingTranscript(
+                createdAt: transcript.createdAt,
+                locale: transcript.locale,
+                editedAt: transcript.editedAt,
+                cleanedUpAt: transcript.cleanedUp?.cleanedAt
+            )
+        case .inCloud:
+            unreadableExisting = .inCloud
+        case .unsupportedVersion:
+            unreadableExisting = .laterVersion
+        case .missing, .unusable:
+            // An unusable transcript was set aside beside itself already,
+            // so transcribing replaces nothing the user could still read.
+            break
         }
         if let job = services.center.current {
             if job.bookID == book.id {
@@ -309,9 +345,9 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         }
         // A book with a transcript is transcribed again, as Transcribe's
         // title decides (`transcribeTitle`).
-        return existing == nil
-            ? TranscriptionWording.sheetTitle(bookTitle: book.title)
-            : TranscriptionWording.retranscribeSheetTitle(bookTitle: book.title)
+        return hasTranscript
+            ? TranscriptionWording.retranscribeSheetTitle(bookTitle: book.title)
+            : TranscriptionWording.sheetTitle(bookTitle: book.title)
     }
 
     /// The audio line: "Audio: 6 hours, 12 minutes."
@@ -347,10 +383,20 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         return TranscriptionWording.languageLine(name: languageName, status: status)
     }
 
-    /// The line naming the book's transcript, when it has one.
+    /// The line naming the book's transcript, when it has one: as it was
+    /// made, or, for one this TextMouth could not read, where it is or who
+    /// wrote it.
     var existingLine: String? {
-        existing.map {
-            TranscriptionWording.alreadyTranscribed(on: $0.createdAt, languageName: TranscriptionLanguage.name(of: $0.locale))
+        if let existing {
+            return TranscriptionWording.alreadyTranscribed(
+                on: existing.createdAt,
+                languageName: TranscriptionLanguage.name(of: existing.locale)
+            )
+        }
+        switch unreadableExisting {
+        case .inCloud: return TranscriptionWording.transcriptInCloud
+        case .laterVersion: return TranscriptionWording.transcriptFromLaterVersion
+        case nil: return nil
         }
     }
 
@@ -359,6 +405,13 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
     /// Again never replaces an edit unannounced (FR05).
     var editedLine: String? {
         existing?.editedAt.map(TranscriptionWording.editedTranscript(on:))
+    }
+
+    /// The line warning that transcribing again replaces the user's cleanup
+    /// of the transcript, whenever it was cleaned up, so Retranscribe never
+    /// replaces a cleanup unannounced.
+    var cleanedLine: String? {
+        existing?.cleanedUpAt.map(TranscriptionWording.cleanedUpTranscript(on:))
     }
 
     /// The line saying another book is being transcribed, while one is.
@@ -401,19 +454,19 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
 
     /// Transcribe's title: Retranscribe for a book transcribed already.
     var transcribeTitle: String {
-        existing == nil ? TranscriptionWording.transcribeTitle : TranscriptionWording.transcribeAgainTitle
+        hasTranscript ? TranscriptionWording.transcribeAgainTitle : TranscriptionWording.transcribeTitle
     }
 
     /// What Transcribe does.
     var transcribeHint: String {
-        existing == nil ? TranscriptionWording.transcribeHint : TranscriptionWording.transcribeAgainHint
+        hasTranscript ? TranscriptionWording.transcribeAgainHint : TranscriptionWording.transcribeHint
     }
 
     /// The lines under the language that only some sheets show: the book's
     /// transcript, another transcription under way, and how the last
     /// download ended.
     var noticeLines: [String] {
-        [existingLine, editedLine, busyLine, downloadNotice].compactMap { $0 }
+        [existingLine, editedLine, cleanedLine, busyLine, downloadNotice].compactMap { $0 }
     }
 
     /// Every line the ready sheet shows, in order, as VoiceOver hears them

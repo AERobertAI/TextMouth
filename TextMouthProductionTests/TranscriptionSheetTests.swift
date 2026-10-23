@@ -106,6 +106,69 @@ final class TranscriptionSheetTests: XCTestCase {
         XCTAssertEqual(TranscriptionWording.retranscribeSheetTitle(bookTitle: "Moby-Dick"), "Retranscribe Moby-Dick")
     }
 
+    /// The Transcribe Audio sheet of a book whose transcript was cleaned up
+    /// says that transcribing again replaces the cleanup, right after the
+    /// line about edits, shown and spoken with the other notices.
+    func testTranscribeAgainSaysItReplacesTheUsersCleanup() async {
+        var transcript = TranscriptFixtures.transcript([(path: "01.mp3", duration: 1_000, sentences: [])])
+        let when = TranscriptFixtures.date.addingTimeInterval(86_400)
+        transcript.cleanedUp = TranscriptCleanupNote(
+            cleanedAt: when, rulesVersion: 4, rulesDate: "2026-10-04", rules: "user", corrections: 2
+        )
+        transcript.editedAt = when
+        let model = await loadedSheet(transcript: .found(transcript))
+        let plain = await loadedSheet(
+            transcript: .found(TranscriptFixtures.transcript([(path: "01.mp3", duration: 1_000, sentences: [])]))
+        )
+
+        let warning = "You cleaned up this transcript on \(TranscriptionWording.day(when)). Transcribing again replaces the cleanup."
+        XCTAssertEqual(model.cleanedLine, warning)
+        // The cleanup's line follows the edits' line.
+        let edited = model.editedLine ?? ""
+        XCTAssertEqual(model.noticeLines.firstIndex(of: warning), model.noticeLines.firstIndex(of: edited).map { $0 + 1 })
+        XCTAssertTrue(model.readyLines.contains(warning), "VoiceOver does not hear the warning")
+        XCTAssertNil(plain.cleanedLine, "a transcript never cleaned up warns of a cleanup")
+        XCTAssertFalse(plain.readyLines.contains { $0.contains("cleaned up") })
+    }
+
+    /// A transcript only in iCloud, or written by a later TextMouth, is a
+    /// transcript the book has: the sheet says Retranscribe, names it, and
+    /// warns that it is replaced. A transcript that was unusable, and set
+    /// aside already, stays a book without one.
+    func testATranscriptThisMacCannotReadIsStillOneTheBookHas() async {
+        let inCloud = await loadedSheet(transcript: .inCloud)
+        let later = await loadedSheet(transcript: .unsupportedVersion(99))
+        let unusable = await loadedSheet(transcript: .unusable("it holds no files"))
+        let missing = await loadedSheet(transcript: .missing)
+
+        XCTAssertEqual(inCloud.heading, "Retranscribe Harbour Bells")
+        XCTAssertEqual(inCloud.transcribeTitle, "Retranscribe")
+        XCTAssertEqual(inCloud.existingLine, "This book has a transcript that is only in iCloud. Transcribing again replaces it.")
+        XCTAssertTrue(inCloud.readyLines.contains("This book has a transcript that is only in iCloud. Transcribing again replaces it."))
+        XCTAssertEqual(later.heading, "Retranscribe Harbour Bells")
+        XCTAssertEqual(later.transcribeTitle, "Retranscribe")
+        XCTAssertEqual(later.existingLine, "This book has a transcript made by a later version of TextMouth. Transcribing again replaces it.")
+        XCTAssertTrue(later.hasTranscript)
+        for stays in [unusable, missing] {
+            XCTAssertEqual(stays.heading, "Transcribe Harbour Bells")
+            XCTAssertEqual(stays.transcribeTitle, "Transcribe")
+            XCTAssertNil(stays.existingLine)
+            XCTAssertFalse(stays.hasTranscript)
+        }
+    }
+
+    /// A loaded sheet for a book titled "Harbour Bells" whose transcript
+    /// reads as `transcript`.
+    private func loadedSheet(transcript: TranscriptStore.Lookup) async -> TranscriptionSheetModel {
+        let model = TranscriptionSheetModel(
+            request: .book(Self.audiobook("Harbour Bells")),
+            library: nil,
+            services: makeSheetServices(transcript: transcript)
+        )
+        await model.load()
+        return model
+    }
+
     /// One audiobook opens its sheet; several books, or a book that is not
     /// an audiobook, open a sheet that only says why, with OK, which takes
     /// VoiceOver's focus and hears the sentence.

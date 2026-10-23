@@ -159,6 +159,22 @@ enum TranscriptionWording {
         "You edited this transcript on \(day(date)). Transcribing again replaces your edits."
     }
 
+    /// The line warning that transcribing again replaces the user's cleanup
+    /// of the transcript: "You cleaned up this transcript on October 5,
+    /// 2026. Transcribing again replaces the cleanup."
+    static func cleanedUpTranscript(on date: Date) -> String {
+        "You cleaned up this transcript on \(day(date)). Transcribing again replaces the cleanup."
+    }
+
+    /// The line for a transcript that is only in iCloud, which this Mac did
+    /// not read.
+    static let transcriptInCloud = "This book has a transcript that is only in iCloud. Transcribing again replaces it."
+
+    /// The line for a transcript written in a layout this TextMouth does
+    /// not read.
+    static let transcriptFromLaterVersion = "This book has a transcript made by a later version of TextMouth. "
+        + "Transcribing again replaces it."
+
     /// The line saying another book is being transcribed, which keeps
     /// Transcribe unavailable until it finishes.
     static func busy(bookTitle: String) -> String {
