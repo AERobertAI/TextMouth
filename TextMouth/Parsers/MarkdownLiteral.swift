@@ -66,14 +66,15 @@ enum MarkdownLiteral {
     /// each line it writes.
     ///
     /// Backslash-escaped, by these rules:
-    /// - always: `` ` ``, `*`, `[`, `]`, `|`, and `~`;
+    /// - always: `` ` ``, `*`, `[`, `]`, `|`, `~`, and `<` (raw HTML, comments,
+    ///   and autolinks: an email address's autolink can begin with a digit or
+    ///   with most of the ASCII punctuation, as in `<12345@example.com>` and
+    ///   `<+44@x.co>`, so no character after the `<` makes it safe to leave);
     /// - `_`, unless the characters on both sides of it in the piece are
     ///   letters, digits, or marks (`isFlankingSafe`): an underscore inside a
     ///   word never makes emphasis;
     /// - `\`, when the next character in the piece is ASCII punctuation, or
     ///   it ends the piece;
-    /// - `<`, when the next character is an ASCII letter, `/`, `!`, or `?`,
-    ///   or it ends the piece (raw HTML, comments, and autolinks);
     /// - `&`, when what follows it is a character reference's body: `#` and
     ///   one to seven digits and `;`, `#x` or `#X` and one to six hex digits
     ///   and `;`, or an ASCII letter, then ASCII letters or digits, and `;`
@@ -123,7 +124,7 @@ enum MarkdownLiteral {
         let previous = index > 0 ? scalars[index - 1] : nil
         let next = index + 1 < scalars.count ? scalars[index + 1] : nil
         switch scalar {
-        case "`", "*", "[", "]", "|", "~":
+        case "`", "*", "[", "]", "|", "~", "<":
             return true
         case "_":
             // Inside a word (a letter, digit, or mark on both sides) it
@@ -133,9 +134,6 @@ enum MarkdownLiteral {
         case "\\":
             guard let next else { return true }
             return isASCIIPunctuation(next)
-        case "<":
-            guard let next else { return true }
-            return isASCIILetter(next) || next == "/" || next == "!" || next == "?"
         case "&":
             return startsCharacterReferenceBody(scalars, after: index)
         case "#":

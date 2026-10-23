@@ -84,17 +84,35 @@ final class MarkdownMinimalEscapingTests: XCTestCase {
 
     // MARK: - Examples: less-than
 
-    /// A less-than sign is escaped before a letter, slash, exclamation mark,
-    /// or question mark, and at the end; elsewhere it is plain.
-    func testLessThanIsEscapedWhereHTMLCouldBegin() {
-        XCTAssertEqual(escaped("a < b"), "a < b")
-        XCTAssertEqual(escaped("1<2"), "1<2")
-        XCTAssertEqual(escaped("<3"), "<3")
+    /// A less-than sign is always escaped, whatever follows it: raw HTML, a
+    /// comment, and an autolink all begin with one, and an email address's
+    /// autolink can begin with a digit or with most of the punctuation.
+    func testLessThanIsAlwaysEscaped() {
+        XCTAssertEqual(escaped("a < b"), #"a \< b"#)
+        XCTAssertEqual(escaped("1<2"), #"1\<2"#)
+        XCTAssertEqual(escaped("<3"), #"\<3"#)
         XCTAssertEqual(escaped("<b>"), #"\<b>"#)
         XCTAssertEqual(escaped("</p>"), #"\</p>"#)
         XCTAssertEqual(escaped("<!--"), #"\<!--"#)
         XCTAssertEqual(escaped("<?x"), #"\<?x"#)
         XCTAssertEqual(escaped("a<"), #"a\<"#)
+        XCTAssertEqual(escaped("<12345@example.com>"), #"\<12345@example.com>"#)
+        XCTAssertEqual(escaped("<+44@x.co>"), #"\<+44@x.co>"#)
+        XCTAssertEqual(escaped("<<"), #"\<\<"#)
+    }
+
+    /// An email address between angle brackets is an autolink to swift-markdown
+    /// whatever its first character is: a letter or digit, or any of
+    /// `. ! # $ % & ' * + / = ? ^ _ { | } ~ - ` and a backtick. Each reads back
+    /// as exactly its characters, brackets included, where it became a link
+    /// and lost them when the less-than sign was left alone before a digit or
+    /// a mark.
+    func testEmailAutolinksReadBackAsTheirCharacters() {
+        let first = Array("aZ09.!#$%&'*+/=?^_`{|}~-").map { String($0) }
+        let lines = first.map { "<\($0)x@example.com>" }
+            + ["<1@a>", "<12345@example.com>", "<.x@y.z>", "<+44@x.co>", "mail <1@b.co> or <a@b.co>."]
+        assertRoundTrip(lines, smart: false)
+        assertRoundTrip(lines, smart: true)
     }
 
     // MARK: - Examples: ampersand
