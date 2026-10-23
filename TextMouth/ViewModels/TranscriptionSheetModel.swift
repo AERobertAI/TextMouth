@@ -218,8 +218,10 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
     /// Whether the book's transcript or its text is only in iCloud, so the
     /// book must be downloaded before it is transcribed again: Transcribe is
     /// unavailable and `bookInCloudLine` says why. Looked at as the sheet
-    /// loads, so the finished transcription of an hour's audio is never
-    /// refused afterwards, when the install finds the file in the cloud.
+    /// loads, before any audio is transcribed, so the finished transcription
+    /// of an hour's audio is not refused afterwards by an install that finds
+    /// a file in the cloud. A file that goes there after the sheet loaded is
+    /// still caught by the install itself (`TranscriptStore.install`).
     var isBookInCloud: Bool {
         unreadableExisting == .inCloud || isTextInCloud
     }
