@@ -5,7 +5,12 @@ import Foundation
 /// shows it through `LibrarySortState`, which applies the rule for manual
 /// order (TODO A06).
 struct FolderSortSetting: Codable, Equatable {
-    var sortField: LibrarySortField
+    /// The field the books are sorted by. Choosing one clears
+    /// `unknownSortField`: a field the user picks replaces any a newer
+    /// TextMouth saved.
+    var sortField: LibrarySortField {
+        didSet { unknownSortField = nil }
+    }
     /// The direction of `sortField`. Manual order has no direction, so a
     /// setting whose field is manual ignores this value.
     var sortAscending: Bool
@@ -14,6 +19,12 @@ struct FolderSortSetting: Codable, Equatable {
     /// Settings saved before TODO A06 have none, and an empty one is not
     /// written, so they read and write exactly as before.
     var rememberedDirections: [LibrarySortField: Bool]
+    /// The name of the sort field a newer TextMouth saved that this one does
+    /// not know (V03), kept exactly as read so the next save writes it back.
+    /// The setting reads as `FolderSortSetting.defaultSort`'s field until a
+    /// field is chosen (`sortField`'s `didSet` clears this). Only a decoded
+    /// setting holds one; every initializer leaves it nil.
+    private var unknownSortField: String?
 
     /// A setting that shows `sortField` in the given direction, remembering
     /// `rememberedDirections` for the other fields.
@@ -63,10 +74,22 @@ struct FolderSortSetting: Codable, Equatable {
 
     /// Reads a saved setting. Remembered directions are only a convenience,
     /// so a field this version does not know, or a value it cannot read, is
-    /// skipped instead of failing the whole library index.
+    /// skipped instead of failing the whole library index. The setting's own
+    /// field, if this version does not know it, is read as the default field
+    /// and kept to be written back (`unknownSortField`).
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        sortField = try container.decode(LibrarySortField.self, forKey: .sortField)
+        // A field this TextMouth does not know is not an error (V03): the
+        // setting reads as the default field and keeps the name to write back.
+        // (Assigning inside an initializer does not run `sortField`'s didSet.)
+        let savedField = try container.decode(String.self, forKey: .sortField)
+        if let known = LibrarySortField(rawValue: savedField) {
+            sortField = known
+            unknownSortField = nil
+        } else {
+            sortField = Self.defaultSort.sortField
+            unknownSortField = savedField
+        }
         sortAscending = try container.decode(Bool.self, forKey: .sortAscending)
         let saved = (try? container.decodeIfPresent([String: Bool].self, forKey: .rememberedDirections)) ?? [:]
         rememberedDirections = Dictionary(
@@ -81,7 +104,7 @@ struct FolderSortSetting: Codable, Equatable {
     /// and leaves them out when there are none.
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(sortField, forKey: .sortField)
+        try container.encode(unknownSortField ?? sortField.rawValue, forKey: .sortField)
         try container.encode(sortAscending, forKey: .sortAscending)
         if !rememberedDirections.isEmpty {
             let byName = Dictionary(
@@ -109,6 +132,55 @@ struct EquivalentFolderRepair: Equatable {
     var changedLibrary = false
 }
 
+/// A row of library.json this TextMouth could not read (V03): a book a later
+/// TextMouth wrote, in a format or with fields this one does not know, or a
+/// row damaged by hand. It is kept exactly as read, written back at every
+/// save, and never shown, counted as a book, opened, or searched. Its
+/// package is its own, which the walks of the packages respect.
+struct UnreadableLibraryRow: Equatable, Sendable {
+    /// The row as the file held it.
+    let json: JSONValue
+
+    /// The row's `id`, when it holds one that is a UUID.
+    var id: UUID? {
+        json["id"]?.stringValue.flatMap(UUID.init(uuidString:))
+    }
+
+    /// The name of the row's package folder, when the row names one.
+    var tmbDirectoryName: String? {
+        json["tmbDirectoryName"]?.stringValue
+    }
+
+    /// The library folder the row was filed in, when the row names one.
+    var folderPath: String? {
+        json["folderPath"]?.stringValue
+    }
+
+    /// Reads every remaining element of a `books` array from `container`: an
+    /// element that decodes as a `Book` is a book, in order, and any other is
+    /// kept as it was in `unreadable`, also in order. A failed decode does not
+    /// move an unkeyed container on, so the same element is then read again
+    /// as a `JSONValue`.
+    ///
+    /// Throws when an element cannot be read even as a `JSONValue` (one
+    /// nested deeper than `JSONValue.maximumDepth`), as a library that cannot
+    /// be read throws. A feed's index may read its rows this way later.
+    static func decodeRows(
+        from container: inout UnkeyedDecodingContainer
+    ) throws -> (books: [Book], unreadable: [UnreadableLibraryRow]) {
+        var books: [Book] = []
+        var unreadable: [UnreadableLibraryRow] = []
+        while !container.isAtEnd {
+            if let book = try? container.decode(Book.self) {
+                books.append(book)
+            } else {
+                unreadable.append(UnreadableLibraryRow(json: try container.decode(JSONValue.self)))
+            }
+        }
+        return (books, unreadable)
+    }
+}
+
 struct Library: Codable {
     /// The rows of the library model's books: every book of the library's
     /// own, and, while TextMouth runs, the rows of feed items whose files
@@ -126,6 +198,11 @@ struct Library: Codable {
     /// indexes the library keeps (FR11). Never written to library.json: each
     /// feed's index holds its rows (`feedIndexRows`).
     var feedShelf: FeedShelf
+    /// The rows of library.json this TextMouth could not read, in the order
+    /// the file held them (V03). They are written back after the books at
+    /// every save, and are never shown or counted. A library that replaces
+    /// the one loaded carries these over.
+    var unreadableRows: [UnreadableLibraryRow]
 
     /// A library of `books` and the rest. The shelf keeps the index of every
     /// feed whose rows are among `books` too, so a feed whose last row later
@@ -135,13 +212,15 @@ struct Library: Codable {
         folders: [BookFolder] = [],
         folderSortSettings: [String: FolderSortSetting] = [:],
         readingList: ReadingList = ReadingList(),
-        feedShelf: FeedShelf = FeedShelf()
+        feedShelf: FeedShelf = FeedShelf(),
+        unreadableRows: [UnreadableLibraryRow] = []
     ) {
         self.books = books
         self.folders = folders
         self.folderSortSettings = folderSortSettings
         self.readingList = readingList
         self.feedShelf = feedShelf
+        self.unreadableRows = unreadableRows
         for feedID in Set(books.compactMap { $0.feedLink?.feedID }) {
             self.feedShelf.keepIndex(of: feedID)
         }
@@ -166,7 +245,12 @@ struct Library: Codable {
     /// file says (FR11): only a feed's own index makes a row a feed item's.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        books = try container.decode([Book].self, forKey: .books).map { $0.placedInLibraryFolder() }
+        // One row at a time, so a row this version cannot read (a format a
+        // later TextMouth added) is kept, not fatal (V03).
+        var rows = try container.nestedUnkeyedContainer(forKey: .books)
+        let decoded = try UnreadableLibraryRow.decodeRows(from: &rows)
+        books = decoded.books.map { $0.placedInLibraryFolder() }
+        unreadableRows = decoded.unreadable
         folders = try container.decode([BookFolder].self, forKey: .folders)
         folderSortSettings = try container.decodeIfPresent([String: FolderSortSetting].self, forKey: .folderSortSettings) ?? [:]
         readingList = (try? container.decodeIfPresent(ReadingList.self, forKey: .readingList)) ?? ReadingList()
@@ -182,7 +266,15 @@ struct Library: Codable {
     /// this way, so none can.
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(libraryBooks, forKey: .books)
+        // The books, then the rows kept as they were read (V03). Without any
+        // kept row this writes exactly what encoding the array wrote.
+        var rows = container.nestedUnkeyedContainer(forKey: .books)
+        for book in libraryBooks {
+            try rows.encode(book)
+        }
+        for row in unreadableRows {
+            try rows.encode(row.json)
+        }
         try container.encode(folders, forKey: .folders)
         try container.encode(folderSortSettings, forKey: .folderSortSettings)
         try container.encode(readingList, forKey: .readingList)

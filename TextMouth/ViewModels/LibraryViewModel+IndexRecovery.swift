@@ -265,7 +265,10 @@ extension LibraryViewModel {
         library = Library(
             folderSortSettings: arrangement.sortSettings,
             readingList: arrangement.readingList,
-            feedShelf: heldNone ? LibraryPersistenceService.loadFeedShelf(fromPackages: true) : feedItems.feedShelf
+            feedShelf: heldNone ? LibraryPersistenceService.loadFeedShelf(fromPackages: true) : feedItems.feedShelf,
+            // Rows a newer TextMouth wrote, read before the index failed, are
+            // still the user's: Rebuild Library Index writes them back (V03).
+            unreadableRows: library.unreadableRows
         )
         indexRecovery = LibraryIndexRecovery(failure: failure, arrangementNotKept: arrangement.notKept)
         showIndexRecoveryOptions = true
