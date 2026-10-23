@@ -30,7 +30,7 @@ final class TranscriptCleanupSheetTests: XCTestCase {
 
         XCTAssertEqual(
             LibraryAudioCommand.commands(for: [book], isTranscribed: transcribed),
-            [.editAudio(book), .transcribe([book]), .cleanUpTranscript(book), .deleteTranscript(book)]
+            [.editAudio(book), .retranscribe(book), .cleanUpTranscript(book), .deleteTranscript(book)]
         )
         XCTAssertEqual(
             LibraryAudioCommand.commands(for: [other], isTranscribed: transcribed),
@@ -48,7 +48,7 @@ final class TranscriptCleanupSheetTests: XCTestCase {
         )
         XCTAssertEqual(
             row.accessibilityActionNames,
-            ["Edit Audio…", "Transcribe Audio…", "Clean Up Transcript (Experimental)…", "Delete Transcript…"]
+            ["Edit Audio…", "Retranscribe Audio…", "Clean Up Transcript (Experimental)…", "Delete Transcript…"]
         )
     }
 

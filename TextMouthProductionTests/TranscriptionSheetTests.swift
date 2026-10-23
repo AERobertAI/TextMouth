@@ -37,6 +37,75 @@ final class TranscriptionSheetTests: XCTestCase {
         XCTAssertEqual(row.accessibilityActionNames, ["Edit Audio…", "Transcribe Audio…"])
     }
 
+    /// Once a book has a transcript, the command to transcribe it is named
+    /// Retranscribe Audio…; before that, and for several books, Transcribe
+    /// Audio…. The menu's title follows whether the book has a transcript.
+    func testTheCommandIsRetranscribeAudioOnceTheBookHasATranscript() {
+        let book = Self.audiobook("Harbour Bells")
+        let other = Self.audiobook("Tide Clock")
+        let transcribed: (UUID) -> Bool = { $0 == book.id }
+
+        XCTAssertEqual(LibraryAudioCommand.retranscribe(book).title, "Retranscribe Audio…")
+        XCTAssertEqual(LibraryAudioCommand.transcribe([book]).title, "Transcribe Audio…")
+        XCTAssertEqual(TranscriptionWording.transcribeCommandTitle(hasTranscript: true), "Retranscribe Audio…")
+        XCTAssertEqual(TranscriptionWording.transcribeCommandTitle(hasTranscript: false), "Transcribe Audio…")
+        XCTAssertEqual(
+            LibraryAudioCommand.commands(for: [other], isTranscribed: transcribed),
+            [.editAudio(other), .transcribe([other])]
+        )
+        XCTAssertEqual(
+            LibraryAudioCommand.commands(for: [book], isTranscribed: transcribed),
+            [.editAudio(book), .retranscribe(book), .cleanUpTranscript(book), .deleteTranscript(book)]
+        )
+        XCTAssertEqual(
+            LibraryAudioCommand.commands(for: [book, other], isTranscribed: transcribed),
+            [.transcribe([book, other])],
+            "several books, one of them transcribed, are still refused by Transcribe Audio…"
+        )
+    }
+
+    /// Retranscribe Audio… opens the Transcribe Audio sheet for its book, as
+    /// Transcribe Audio… does for one book, once however often it is chosen.
+    func testRetranscribeAudioOpensTheTranscribeSheet() throws {
+        let world = try makeIntegrationWorld("Retranscribe Command")
+        let book = try world.makeSilentAudioBook(title: "Harbour Bells", trackDurations: [3])
+        let presenter = TranscriptionPresenter(services: { self.makeSheetServices() })
+
+        presenter.perform(.retranscribe(book), library: world.library, window: nil)
+        let first = presenter.sheet
+        presenter.perform(.retranscribe(book), library: world.library, window: nil)
+
+        XCTAssertEqual(first?.book?.id, book.id)
+        XCTAssertTrue(presenter.sheet === first, "a second sheet replaced the first")
+        first?.close()
+        presenter.perform(.transcribe([book]), library: world.library, window: nil)
+        XCTAssertEqual(presenter.sheet?.book?.id, book.id, "Transcribe Audio… opened no sheet for one book")
+        presenter.sheet?.close()
+    }
+
+    /// The ready sheet's heading reads "Retranscribe <title>" for a book
+    /// with a transcript and "Transcribe <title>" for one without.
+    func testTheSheetHeadingFollowsWhetherTheBookHasATranscript() async {
+        let transcript = TranscriptFixtures.transcript([(path: "01.mp3", duration: 1_000, sentences: [])])
+        let transcribed = TranscriptionSheetModel(
+            request: .book(Self.audiobook("Harbour Bells")),
+            library: nil,
+            services: makeSheetServices(transcript: .found(transcript))
+        )
+        let fresh = TranscriptionSheetModel(
+            request: .book(Self.audiobook("Harbour Bells")),
+            library: nil,
+            services: makeSheetServices()
+        )
+
+        await transcribed.load()
+        await fresh.load()
+
+        XCTAssertEqual(transcribed.heading, "Retranscribe Harbour Bells")
+        XCTAssertEqual(fresh.heading, "Transcribe Harbour Bells")
+        XCTAssertEqual(TranscriptionWording.retranscribeSheetTitle(bookTitle: "Moby-Dick"), "Retranscribe Moby-Dick")
+    }
+
     /// One audiobook opens its sheet; several books, or a book that is not
     /// an audiobook, open a sheet that only says why, with OK, which takes
     /// VoiceOver's focus and hears the sentence.
@@ -288,7 +357,7 @@ final class TranscriptionSheetTests: XCTestCase {
     }
 
     /// A book transcribed already says when, and in which language, and
-    /// offers Transcribe Again.
+    /// offers Retranscribe.
     func testABookTranscribedAlreadyOffersTranscribeAgain() async {
         let transcript = TranscriptFixtures.transcript([(path: "01.mp3", duration: 1_000, sentences: [])], locale: "en-GB")
         let model = TranscriptionSheetModel(
@@ -303,7 +372,7 @@ final class TranscriptionSheetTests: XCTestCase {
             + "\(TranscriptionLanguage.name(of: "en-GB")). Transcribing again replaces this transcript."
         XCTAssertEqual(model.existingLine, line)
         XCTAssertEqual(model.noticeLines, [line])
-        XCTAssertEqual(model.transcribeTitle, "Transcribe Again")
+        XCTAssertEqual(model.transcribeTitle, "Retranscribe")
         XCTAssertEqual(model.transcribeHint, TranscriptionWording.transcribeAgainHint)
     }
 

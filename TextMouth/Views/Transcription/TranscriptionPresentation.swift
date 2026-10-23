@@ -100,6 +100,9 @@ final class TranscriptionPresenter: ObservableObject {
             AudioEditorLauncher.edit(book, in: library, from: window)
         case .transcribe(let books):
             transcribe(books, library: library, window: window)
+        case .retranscribe(let book):
+            // The same sheet as Transcribe Audio… for one book.
+            transcribe([book], library: library, window: window)
         case .cleanUpTranscript(let book):
             cleanUp(book, library: library, window: window)
         case .deleteTranscript(let book):

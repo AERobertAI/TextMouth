@@ -197,7 +197,7 @@ struct TranscriptionSheet: View {
         .focusing(.cancel, first: model.focusTarget, $focused)
     }
 
-    /// Transcribe, or Transcribe Again for a book transcribed already.
+    /// Transcribe, or Retranscribe for a book transcribed already.
     private var transcribeButton: some View {
         Button(model.transcribeTitle) {
             model.transcribe()

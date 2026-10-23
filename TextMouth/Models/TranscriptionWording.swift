@@ -10,6 +10,15 @@ enum TranscriptionWording {
     /// in the library's context menu and VoiceOver actions and the reader's
     /// Book menu.
     static let transcribeCommandTitle = "Transcribe Audio…"
+    /// The same command once the book has a transcript: it transcribes the
+    /// audio again, replacing the transcript, so it is named for that.
+    static let retranscribeCommandTitle = "Retranscribe Audio…"
+    /// The title of the command that opens the Transcribe Audio sheet for a
+    /// book that has a transcript when `hasTranscript`, and for one that has
+    /// none otherwise: Retranscribe Audio… or Transcribe Audio….
+    static func transcribeCommandTitle(hasTranscript: Bool) -> String {
+        hasTranscript ? retranscribeCommandTitle : transcribeCommandTitle
+    }
     /// The command that deletes a transcribed audiobook's transcript, in the
     /// same places, after a confirmation naming the book.
     static let deleteCommandTitle = "Delete Transcript…"
@@ -37,6 +46,12 @@ enum TranscriptionWording {
     /// The sheet's heading before a transcription: "Transcribe Moby-Dick".
     static func sheetTitle(bookTitle: String) -> String {
         "Transcribe \(bookTitle)"
+    }
+
+    /// The sheet's heading before a book that has a transcript is transcribed
+    /// again: "Retranscribe Moby-Dick".
+    static func retranscribeSheetTitle(bookTitle: String) -> String {
+        "Retranscribe \(bookTitle)"
     }
 
     /// The sheet's heading while it explains why it cannot transcribe, as
@@ -152,7 +167,8 @@ enum TranscriptionWording {
 
     /// The sheet's buttons.
     static let transcribeTitle = "Transcribe"
-    static let transcribeAgainTitle = "Transcribe Again"
+    /// The button of a book that has a transcript already: "Retranscribe".
+    static let transcribeAgainTitle = "Retranscribe"
     static let cancelTitle = "Cancel"
     static let closeTitle = "Close"
     static let okTitle = "OK"
@@ -160,7 +176,7 @@ enum TranscriptionWording {
     /// What Transcribe does.
     static let transcribeHint = "Transcribes the book's audio on this Mac, so VoiceOver and the braille display "
         + "can read the narration as text."
-    /// What Transcribe Again does.
+    /// What Retranscribe does.
     static let transcribeAgainHint = "Transcribes the book's audio again, replacing its transcript."
     /// What Cancel does before a transcription.
     static let cancelHint = "Closes this without transcribing."

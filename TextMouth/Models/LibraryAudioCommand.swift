@@ -12,6 +12,11 @@ enum LibraryAudioCommand: Hashable, Identifiable {
     /// audiobook opens the Transcribe Audio sheet, and several books are
     /// refused with a sentence, as transcription works on one at a time.
     case transcribe([Book])
+    /// Retranscribe Audio…, for one audiobook in a package of its own that
+    /// has a transcript already: opens the Transcribe Audio sheet as
+    /// `transcribe` does for one book, under a name that says the transcript
+    /// is replaced.
+    case retranscribe(Book)
     /// Clean Up Transcript (Experimental)…, for one transcribed audiobook
     /// (`isTranscribable(_:)`), an episode in its feed included, since a
     /// transcript is the listener's own work: opens the Clean Up sheet, which
@@ -32,6 +37,8 @@ enum LibraryAudioCommand: Hashable, Identifiable {
             return AudioEditorWording.editAudioCommand
         case .transcribe:
             return TranscriptionWording.transcribeCommandTitle
+        case .retranscribe:
+            return TranscriptionWording.retranscribeCommandTitle
         case .cleanUpTranscript:
             return TranscriptCleanupWording.commandTitle
         case .deleteTranscript:
@@ -43,10 +50,12 @@ enum LibraryAudioCommand: Hashable, Identifiable {
     /// on, given which books `isTranscribed` says have a transcript: Edit
     /// Audio… when the row acts on one audiobook alone whose audio can be
     /// edited (`isAudioEditable(_:)`), then Transcribe Audio… whenever one of
-    /// them is an audiobook in a package of its own, then, when the row acts
-    /// on one such audiobook alone and it is transcribed, Clean Up Transcript
-    /// (Experimental)… and Delete Transcript…, an episode in its feed
-    /// included; nothing for text books alone.
+    /// them is an audiobook in a package of its own, or Retranscribe Audio…
+    /// instead when the row acts on one such audiobook alone and it is
+    /// transcribed, followed by Clean Up Transcript (Experimental)… and
+    /// Delete Transcript…, an episode in its feed included; nothing for text
+    /// books alone. Several books, one of them transcribed, still get
+    /// Transcribe Audio…, which refuses them with a sentence.
     static func commands(for targets: [Book], isTranscribed: (UUID) -> Bool = { _ in false }) -> [LibraryAudioCommand] {
         guard targets.contains(where: isTranscribable) else { return [] }
         var commands: [LibraryAudioCommand] = []
@@ -54,10 +63,12 @@ enum LibraryAudioCommand: Hashable, Identifiable {
         if let book = single, isAudioEditable(book) {
             commands.append(.editAudio(book))
         }
-        commands.append(.transcribe(targets))
         if let book = single, isTranscribable(book), isTranscribed(book.id) {
+            commands.append(.retranscribe(book))
             commands.append(.cleanUpTranscript(book))
             commands.append(.deleteTranscript(book))
+        } else {
+            commands.append(.transcribe(targets))
         }
         return commands
     }

@@ -8,7 +8,7 @@ import XCTest
 /// one whose text changed drops its words' timings, one deleted is gone,
 /// and the transcript is marked edited. An edit that changes the number of
 /// chapters is refused and kept; a hand edit the loader writes over is
-/// kept first; Transcribe Again and Delete Transcript say the edits go.
+/// kept first; Retranscribe and Delete Transcript say the edits go.
 ///
 /// Every editor here is the test's own: it opens no app, shows no dialog,
 /// and takes TextMouth to be active. Books live in a library folder of the
@@ -289,7 +289,7 @@ final class TranscriptEditTests: XCTestCase {
 
     /// The Transcribe Audio sheet of a book whose transcript the user
     /// edited says that transcribing again replaces the edits, beside
-    /// Transcribe Again.
+    /// Retranscribe.
     func testTranscribeAgainSaysItReplacesTheUsersEdits() async {
         var transcript = TranscriptFixtures.transcript([(path: "01.mp3", duration: 1_000, sentences: [])])
         let when = TranscriptFixtures.date.addingTimeInterval(86_400)
@@ -306,7 +306,7 @@ final class TranscriptEditTests: XCTestCase {
         XCTAssertEqual(model.editedLine, warning)
         XCTAssertTrue(model.noticeLines.contains(warning))
         XCTAssertTrue(model.readyLines.contains(warning), "VoiceOver does not hear the warning")
-        XCTAssertEqual(model.transcribeTitle, "Transcribe Again")
+        XCTAssertEqual(model.transcribeTitle, "Retranscribe")
     }
 
     /// Deleting an edited transcript says the edits go too.

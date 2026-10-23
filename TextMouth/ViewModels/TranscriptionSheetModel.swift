@@ -124,7 +124,7 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         case download
         /// Stop the model's download.
         case cancelDownload
-        /// Transcribe, or Transcribe Again.
+        /// Transcribe, or Retranscribe.
         case transcribe
         /// Cancel, closing the sheet without transcribing.
         case cancel
@@ -302,7 +302,11 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         if phase == .transcribing {
             return TranscriptionWording.progressTitle(bookTitle: book.title)
         }
-        return TranscriptionWording.sheetTitle(bookTitle: book.title)
+        // A book with a transcript is transcribed again, as Transcribe's
+        // title decides (`transcribeTitle`).
+        return existing == nil
+            ? TranscriptionWording.sheetTitle(bookTitle: book.title)
+            : TranscriptionWording.retranscribeSheetTitle(bookTitle: book.title)
     }
 
     /// The audio line: "Audio: 6 hours, 12 minutes."
@@ -390,7 +394,7 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         phase == .ready && modelState == .installed && busyTitle == nil
     }
 
-    /// Transcribe's title: Transcribe Again for a book transcribed already.
+    /// Transcribe's title: Retranscribe for a book transcribed already.
     var transcribeTitle: String {
         existing == nil ? TranscriptionWording.transcribeTitle : TranscriptionWording.transcribeAgainTitle
     }

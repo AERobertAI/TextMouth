@@ -136,7 +136,7 @@ final class FeedItemUIBookInfoTests: XCTestCase {
 
     // MARK: - Transcript Cleanup
 
-    /// A transcribed episode in its feed offers Transcribe Audio…, Clean Up
+    /// A transcribed episode in its feed offers Retranscribe Audio…, Clean Up
     /// Transcript (Experimental)…, and Delete Transcript…, since a
     /// transcript is the listener's own work, but not Edit Audio…; an
     /// audiobook of the library's own offers all of them.
@@ -145,11 +145,11 @@ final class FeedItemUIBookInfoTests: XCTestCase {
         let audiobook = Self.audiobook
         XCTAssertEqual(
             LibraryAudioCommand.commands(for: [episode], isTranscribed: { _ in true }),
-            [.transcribe([episode]), .cleanUpTranscript(episode), .deleteTranscript(episode)]
+            [.retranscribe(episode), .cleanUpTranscript(episode), .deleteTranscript(episode)]
         )
         XCTAssertEqual(
             LibraryAudioCommand.commands(for: [audiobook], isTranscribed: { _ in true }),
-            [.editAudio(audiobook), .transcribe([audiobook]), .cleanUpTranscript(audiobook), .deleteTranscript(audiobook)]
+            [.editAudio(audiobook), .retranscribe(audiobook), .cleanUpTranscript(audiobook), .deleteTranscript(audiobook)]
         )
         XCTAssertTrue(LibraryAudioCommand.isTranscribable(episode))
         XCTAssertFalse(LibraryAudioCommand.isAudioEditable(episode))
