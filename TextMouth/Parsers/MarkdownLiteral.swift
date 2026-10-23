@@ -206,6 +206,11 @@ enum MarkdownLiteral {
     ///   (a bullet);
     /// - before a leading `-` or `=` when the whole line is that character
     ///   with spaces or tabs (a thematic break or a setext underline);
+    /// - before the first character of a table's delimiter row of one column
+    ///   (`delimiterRowStart(of:)`): one or more `-` with a `:` before them,
+    ///   after them, or both, as in `:-`, `-:`, and `:-:`. GitHub's tables
+    ///   need no pipe in such a row, so after a hard break it would turn the
+    ///   line before it into a table's header;
     /// - before a leading `>` (a quote);
     /// - before the `.` or `)` that follows one to nine leading digits when a
     ///   space, a tab, or the end comes after it (a numbered item): "2019.
@@ -226,6 +231,9 @@ enum MarkdownLiteral {
             copy.insert("\\", at: position)
             return String(String.UnicodeScalarView(copy))
         }
+        // A delimiter row, whatever its start (a hyphen, a colon, or a blank
+        // the table scanner counts), before the starts below are looked at.
+        if let start = delimiterRowStart(of: scalars) { return guarded(at: start) }
         switch first {
         case "#":
             let run = scalars.prefix { $0 == "#" }.count
@@ -246,6 +254,33 @@ enum MarkdownLiteral {
         default:
             return line
         }
+    }
+
+    /// The position of the first scalar of `scalars`, a line, that is not a
+    /// blank, when the line is a table's delimiter row of one column; nil
+    /// when it is not. Such a row is blanks, an optional `:`, one or more
+    /// `-`, an optional `:`, and blanks: the form GitHub's table scanner
+    /// (cmark-gfm's) reads without a pipe. Beneath a line of the same
+    /// paragraph, as a hard break puts one, it makes that line the header of a
+    /// table. A blank to the scanner is a space, a tab, a vertical tab, or a
+    /// form feed, so a row of hyphens with no colon is a delimiter row too
+    /// when one of the last two stands beside it, which the thematic break
+    /// and the setext underline that guard the same hyphens do not allow.
+    /// A row of more than one column holds a pipe, which a written line never
+    /// holds unescaped.
+    private static func delimiterRowStart(of scalars: [Unicode.Scalar]) -> Int? {
+        /// Whether `scalar` is a blank to the table scanner.
+        func isBlank(_ scalar: Unicode.Scalar) -> Bool {
+            scalar == " " || scalar == "\t" || scalar == "\u{0B}" || scalar == "\u{0C}"
+        }
+        guard let start = scalars.firstIndex(where: { !isBlank($0) }) else { return nil }
+        var position = start
+        if scalars[position] == ":" { position += 1 }
+        let hyphens = scalars[position...].prefix { $0 == "-" }.count
+        guard hyphens > 0 else { return nil }
+        position += hyphens
+        if position < scalars.count, scalars[position] == ":" { position += 1 }
+        return scalars[position...].allSatisfy(isBlank) ? start : nil
     }
 
     /// U+FEFF in UTF-8.

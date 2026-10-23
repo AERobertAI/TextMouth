@@ -224,6 +224,25 @@ final class MarkdownMinimalEscapingTests: XCTestCase {
         XCTAssertEqual(MarkdownLiteral.guardingLineStart("a. b"), "a. b")
     }
 
+    /// A table's delimiter row of one column (hyphens with a colon before,
+    /// after, or both, and only blanks besides) is guarded at its first
+    /// character; a line that only looks like one is not. A blank the table
+    /// scanner counts but a line is never trimmed of (a form feed) is stepped
+    /// over to the row's start.
+    func testGuardingATableDelimiterRow() {
+        let guarded: [(line: String, written: String)] = [
+            (":-", #"\:-"#), ("-:", #"\-:"#), (":-:", #"\:-:"#),
+            (":---", #"\:---"#), ("---:", #"\---:"#), (":-----:", #"\:-----:"#),
+            (":- ", #"\:- "#), ("-:\t", "\\-:\t"), ("\u{0C}:-", "\u{0C}\\:-"), ("-\u{0C}", "\\-\u{0C}"),
+        ]
+        for (line, written) in guarded {
+            XCTAssertEqual(MarkdownLiteral.guardingLineStart(line), written, line.debugDescription)
+        }
+        for line in [":", "::", ":-)", "-:-", ":-a", ": -", "a:-", "x-:", ":--x", "--:--", "-a:", ":a-"] {
+            XCTAssertEqual(MarkdownLiteral.guardingLineStart(line), line, line.debugDescription)
+        }
+    }
+
     /// A line that already begins with a backslash needs nothing more.
     func testGuardingLeavesAnEscapedStartAlone() {
         XCTAssertEqual(MarkdownLiteral.guardingLineStart(##"\# a"##), ##"\# a"##)
@@ -274,6 +293,48 @@ final class MarkdownMinimalEscapingTests: XCTestCase {
             text += piece.string
         }
         return text
+    }
+
+    /// What swift-markdown reads from the two lines `first` and `second`,
+    /// apart by a hard break, as one paragraph: its inline children as text,
+    /// `⏎` for the break; nil when the document is anything but one paragraph.
+    private func readTwoLines(_ first: String, _ second: String) -> [String]? {
+        let document = Markdown.Document(parsing: first + "\\\n" + second, options: [.disableSmartOpts])
+        guard document.childCount == 1, let paragraph = document.child(at: 0) as? Markdown.Paragraph else { return nil }
+        var pieces: [String] = []
+        var lastWasText = false
+        for child in paragraph.children {
+            if let text = child as? Markdown.Text {
+                // An escape can be a text of its own beside the words around it.
+                if lastWasText, let last = pieces.indices.last {
+                    pieces[last] += text.string
+                } else {
+                    pieces.append(text.string)
+                }
+                lastWasText = true
+            } else {
+                pieces.append(child is Markdown.LineBreak ? "\u{23CE}" : "<\(type(of: child))>")
+                lastWasText = false
+            }
+        }
+        return pieces
+    }
+
+    /// A line that is a table's delimiter row, after a hard break, turns the
+    /// line before it into a table's header, unless it is guarded: the guarded
+    /// line reads back as the paragraph's own words. The unguarded line is
+    /// the reason the guard exists.
+    func testATableDelimiterRowAfterAHardBreakStaysAParagraph() {
+        for row in [":-", "-:", ":-:", ":--", "--:", ":---:", ":- ", "-:\t"] {
+            let text = row.trimmingCharacters(in: .whitespaces)
+            XCTAssertEqual(
+                readTwoLines("one", MarkdownLiteral.guardingLineStart(row)),
+                ["one", "\u{23CE}", text],
+                "guarded \(row.debugDescription)"
+            )
+            let unguarded = Markdown.Document(parsing: "one\\\n" + row, options: [.disableSmartOpts])
+            XCTAssertTrue(unguarded.children.contains { $0 is Markdown.Table }, "unguarded \(row.debugDescription) is no table")
+        }
     }
 
     /// Every string of `length` characters from `alphabet`.
@@ -527,6 +588,17 @@ final class MarkdownExportWriterTests: XCTestCase {
             try markdown([.heading(ExportHeading(level: 2, runs: [run("Hi!"), link], id: "h"))]),
             #"## Hi\![here](<https://example.com/>)"# + "\n"
         )
+    }
+
+    /// A line that is a table's delimiter row, after a hard break, is guarded
+    /// so the paragraph stays one, and walks back to the words it was written
+    /// from.
+    func testALineLikeATableDelimiterRowStaysInItsParagraph() throws {
+        XCTAssertEqual(try markdown([paragraph("one\n:-")]), "one\\\n\\:-\n")
+        for text in ["one\n:-", "one\n-:", "one\n:-:", "one\ntwo\n:-\nthree"] {
+            let written = try markdown([paragraph(text)])
+            XCTAssertEqual(try walk(written).blocks, [paragraph(text)], written)
+        }
     }
 
     /// A line feed in a run is a hard break, a backslash and a line feed, and
