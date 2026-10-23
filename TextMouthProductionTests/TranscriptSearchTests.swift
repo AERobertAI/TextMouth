@@ -125,8 +125,10 @@ final class TranscriptSearchTests: XCTestCase {
         XCTAssertEqual(corpus.bookTitle, reader.book.title)
         let starts = try XCTUnwrap(corpus.timing?.chapterStarts)
         XCTAssertEqual(starts.count, 2)
-        XCTAssertEqual(starts[0], 0)
-        XCTAssertEqual(starts[1], 3, accuracy: 0.11)
+        // Read through `[safe:]` and unwrapped, so a break in the timing
+        // fails here rather than trapping the test host on the subscript.
+        XCTAssertEqual(starts[safe: 0], 0)
+        XCTAssertEqual(try XCTUnwrap(starts[safe: 1], "no second chapter start"), 3, accuracy: 0.11)
     }
 
     /// An audiobook that was never transcribed has nothing to search.
@@ -243,12 +245,15 @@ final class TranscriptSearchTests: XCTestCase {
         XCTAssertTrue(reader.hasSavedPosition)
         // The chapter's title names the place unless it only repeats the
         // book's title or is empty.
-        let expectedLocation = BookSearchView.locationTitles(
+        let expectedLocations = BookSearchView.locationTitles(
             of: [(chapterIndex: 1, characterOffset: ferry.characterOffset)],
             headings: [],
             chapterTitles: try XCTUnwrap(reader.content?.chapters.map(\.title)),
             bookTitle: reader.book.title
-        )[0]
+        )
+        // The one place's title (nil for a chapter whose title says nothing),
+        // unwrapped from the list so no title at all fails here.
+        let expectedLocation = try XCTUnwrap(expectedLocations.first, "no title was given for the place")
         let expected = BookSearchWording.movedTo(time: try XCTUnwrap(ferry.time), location: expectedLocation)
         XCTAssertEqual(reader.pendingJumpAnnouncement, expected)
         XCTAssertNotEqual(reader.lastAnnouncement, expected, "the announcement waits for the sheet to close")
@@ -476,8 +481,11 @@ final class TranscriptSearchTests: XCTestCase {
         let results = try matches("ferry", in: corpus)
 
         XCTAssertEqual(results.count, 1)
-        XCTAssertNil(results[0].time)
-        XCTAssertNil(results[0].timedLabel)
+        // Unwrapped, so a search that found nothing fails here rather than
+        // trapping the test host on the subscript.
+        let result = try XCTUnwrap(results.first, "the search found no result")
+        XCTAssertNil(result.time)
+        XCTAssertNil(result.timedLabel)
     }
 
     /// The results of a plain search for `query` in `corpus`.
