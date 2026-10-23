@@ -35,7 +35,9 @@
 # was, then runs `xcodegen generate` so that TextMouth.xcodeproj follows, and
 # prints the old and the new version. If xcodegen fails, it puts project.yml
 # back as it was. It commits nothing: commit project.yml together with the
-# regenerated project.
+# regenerated project. It ends by reminding you that the new version needs a
+# dated section at the top of the changelog, docs/user/changelog.md, which it
+# does not write.
 #
 # --selftest tests the script in a second, on a copy of project.yml in a
 # temporary folder and with a stand-in for xcodegen, so that it changes
@@ -61,6 +63,12 @@ readonly SELF="$SELF_DIR/$(basename "${BASH_SOURCE[0]}")"
 ROOT=$(dirname "$SELF_DIR")
 readonly ROOT
 readonly PROJECT_YML="$ROOT/project.yml"
+
+# The user's changelog page, relative to the repository root. Every change of
+# version needs a dated section at the top of it (see Versions in
+# docs/developer/building.md), which the last line of the script's report
+# reminds the person running it of.
+readonly CHANGELOG_PAGE="docs/user/changelog.md"
 
 # Any line of project.yml that sets the version, whatever it sets it to.
 readonly VERSION_KEY_RE='^[[:space:]]*MARKETING_VERSION:'
@@ -298,7 +306,8 @@ write_version() {
 }
 
 # set_version <version>: the script's work. It checks <version> against the
-# one in project.yml, rewrites that one setting, and regenerates the project.
+# one in project.yml, rewrites that one setting, regenerates the project, and
+# says what is left to do by hand (commit it, and add the changelog section).
 set_version() {
   local version=$1 current written
 
@@ -359,6 +368,7 @@ set_version() {
     exit 1
   fi
   say "Done. Nothing is committed: commit project.yml with the regenerated TextMouth.xcodeproj."
+  say "Also add a dated section for $version to the top of $CHANGELOG_PAGE, one plain sentence per change."
 }
 
 # bump_version <function>: raises the version in project.yml by one step. The
@@ -631,6 +641,7 @@ real_bump_case() {
   expect_status 0
   expect_report "Old version: $2"
   expect_report "New version: $3"
+  expect_report "Also add a dated section for $3 to the top of docs/user/changelog.md"
   expect_project "$4"
   expect_calls 1
   expect_call "cwd=$sandbox args=generate"
@@ -653,6 +664,13 @@ real_project_cases() {
   output=""
   end_case
   IFS=. read -r major minor patch <<<"$current"
+
+  # The page that the script's last line names must exist, so that renaming
+  # the page cannot leave the reminder pointing at nothing.
+  begin_check "the changelog page that the script's report names exists in the repository"
+  [[ -f $ROOT/$CHANGELOG_PAGE ]] || problem "there is no $CHANGELOG_PAGE under $ROOT"
+  output=""
+  end_case
 
   # The next minor version (0.1.1 to 0.2.0), the next patch version (0.2.0 to
   # 0.2.1), and a lower version when there is one. They are worked out here
@@ -683,6 +701,7 @@ real_project_cases() {
   expect_report "Old version: $current"
   expect_report "New version: $next"
   expect_report "Nothing is committed"
+  expect_report "Also add a dated section for $next to the top of docs/user/changelog.md"
   expect_project "$expected"
   [[ $(stat -f %Lp "$sandbox/project.yml") == 640 ]] || problem "project.yml's mode is not 640"
   expect_calls 1
