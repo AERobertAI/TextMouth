@@ -1014,8 +1014,10 @@ struct LibraryView: View {
     /// The words for Delete Everything on the folder awaiting confirmation,
     /// in the mode the Trash preference chooses, naming the feeds whose own
     /// folder it is and those whose folders are inside it, and what happens
-    /// to each (FR14, REV14 feeds 7). With no folder pending, no dialog
-    /// shows, and only the mode-dependent button title matters.
+    /// to each (FR14, REV14 feeds 7), and counting the books a newer
+    /// TextMouth added there, which are kept (stable020 review, finding 1).
+    /// With no folder pending, no dialog shows, and only the mode-dependent
+    /// button title matters.
     private var deleteEverythingWording: FolderRemovalWording {
         let folder = libraryViewModel.pendingDeleteFolder
         return FolderRemovalWording(
@@ -1023,7 +1025,8 @@ struct LibraryView: View {
             folderName: folder?.name ?? "",
             bookCount: folder.map { libraryViewModel.bookCount(inFolderTree: $0.fullPath) } ?? 0,
             feedTitles: folder.map { libraryViewModel.feedTitles(inside: $0) } ?? [],
-            ownFeedTitles: folder.map { libraryViewModel.feedTitles(of: $0) } ?? []
+            ownFeedTitles: folder.map { libraryViewModel.feedTitles(of: $0) } ?? [],
+            keptBookCount: folder.map { libraryViewModel.keptBookCount(inFolderTree: $0.fullPath) } ?? 0
         )
     }
 

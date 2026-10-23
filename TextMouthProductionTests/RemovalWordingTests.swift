@@ -332,6 +332,47 @@ final class RemovalWordingTests: XCTestCase {
         )
     }
 
+    /// A folder holding books a newer TextMouth added (kept rows, V03) says
+    /// so last in both dialogs (stable020 review, finding 1): the choice
+    /// that both choices keep them, and the confirmation that Delete
+    /// Everything keeps them where they are, with every folder holding one.
+    func testFolderWordingCountsTheBooksANewerTextMouthAdded() {
+        let two = FolderRemovalWording(mode: .moveToTrash, folderName: "Fiction", bookCount: 3, keptBookCount: 2)
+        XCTAssertEqual(
+            two.choiceMessage,
+            "“Fiction” contains 3 books and may have subfolders. "
+                + "With Move Contents Out, they stay in the library and only the folder is deleted. "
+                + "With Move Everything to Trash, the folder and everything in it leave the library, "
+                + "and their files go to the Trash, where you can recover them until the Trash is emptied. "
+                + "“Fiction” also holds 2 books a newer TextMouth added, which are kept."
+        )
+        XCTAssertEqual(
+            two.confirmationMessage,
+            "“Fiction”, any subfolders, and the 3 books inside will be removed from the library. "
+                + "Their files go to the Trash, where you can recover them until the Trash is emptied. "
+                + "But “Fiction” also holds 2 books a newer TextMouth added: "
+                + "they are kept where they are, and so is every folder that holds one."
+        )
+
+        let one = FolderRemovalWording(mode: .deletePermanently, folderName: "Comics", bookCount: 0, keptBookCount: 1)
+        XCTAssertTrue(
+            one.choiceMessage.hasSuffix(" “Comics” also holds 1 book a newer TextMouth added, which is kept."),
+            one.choiceMessage
+        )
+        XCTAssertEqual(
+            one.confirmationMessage,
+            "“Comics” and any subfolders will be removed from the library. "
+                + "Their files are deleted permanently and cannot be recovered. "
+                + "But “Comics” also holds 1 book a newer TextMouth added: "
+                + "it is kept where it is, and so is every folder that holds it."
+        )
+
+        // A folder holding none says nothing of them, as before.
+        let none = FolderRemovalWording(mode: .moveToTrash, folderName: "Fiction", bookCount: 3)
+        XCTAssertFalse(none.choiceMessage.contains("newer TextMouth"))
+        XCTAssertFalse(none.confirmationMessage.contains("newer TextMouth"))
+    }
+
     // MARK: - Spoken and Visible Agree
 
     /// For every mode and count, the button VoiceOver hears starts with the

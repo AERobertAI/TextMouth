@@ -552,6 +552,11 @@ struct FolderRemovalWording: Equatable {
     /// way the folder goes, each feed stays, with its downloads, but no
     /// folder lists them until Feed Info gives the feed another.
     var ownFeedTitles: [String] = []
+    /// How many books a newer TextMouth added the folder and its subfolders
+    /// hold (kept rows, V03), which no list shows. Neither choice deletes
+    /// them, and Delete Everything keeps every folder holding one
+    /// (stable020 review, finding 1).
+    var keptBookCount = 0
 
     /// The folder's name in quotes, as sentences name it.
     private var quotedName: String { "“\(folderName)”" }
@@ -579,12 +584,46 @@ struct FolderRemovalWording: Equatable {
     /// stays, with its downloads, but no folder lists them until Feed Info
     /// gives the feed another folder; Delete Feed… on the feed's row deletes
     /// a feed."
+    ///
+    /// A folder holding books a newer TextMouth added says last that they
+    /// are kept: "“Fiction” also holds 2 books a newer TextMouth added,
+    /// which are kept."
     var choiceMessage: String {
         let books = CountWording.books(bookCount)
         return "\(quotedName) contains \(books) and may have subfolders. "
             + "With Move Contents Out, they stay in the library and only the folder is deleted. "
             + "With \(buttonTitle), the folder and everything in it leave the library, "
             + "and \(mode.filesClause(plural: true))." + ownFeedsChoiceSentence + feedsChoiceSentences
+            + keptBooksChoiceSentence
+    }
+
+    /// The choice message's sentence about the books a newer TextMouth
+    /// added, with a space before it; empty when there are none. True of
+    /// both choices: "“Fiction” also holds 1 book a newer TextMouth added,
+    /// which is kept."
+    private var keptBooksChoiceSentence: String {
+        guard keptBookCount > 0 else { return "" }
+        return " \(quotedName) also holds \(keptBooksAdded), "
+            + (keptBookCount == 1 ? "which is kept." : "which are kept.")
+    }
+
+    /// The confirmation message's sentence about the books a newer TextMouth
+    /// added, with a space before it; empty when there are none. It says
+    /// what Delete Everything keeps beside what it removes: "But “Fiction”
+    /// also holds 2 books a newer TextMouth added: they are kept where they
+    /// are, and so is every folder that holds one."
+    private var keptBooksConfirmationSentence: String {
+        guard keptBookCount > 0 else { return "" }
+        return " But \(quotedName) also holds \(keptBooksAdded): "
+            + (keptBookCount == 1
+                ? "it is kept where it is, and so is every folder that holds it."
+                : "they are kept where they are, and so is every folder that holds one.")
+    }
+
+    /// The books a newer TextMouth added, counted: "2 books a newer
+    /// TextMouth added".
+    private var keptBooksAdded: String {
+        "\(CountWording.books(keptBookCount)) a newer TextMouth added"
     }
 
     /// The choice message's sentence about the feeds whose own folder this
@@ -639,7 +678,9 @@ struct FolderRemovalWording: Equatable {
     /// to the Trash, where you can recover them until the Trash is emptied."
     /// The feeds whose own folder it is, then those inside, named, stay
     /// (FR14, REV14 feeds 7): "The feed “Finish It!” stays, with its
-    /// downloads, without a folder until Feed Info gives it another."
+    /// downloads, without a folder until Feed Info gives it another." Books
+    /// a newer TextMouth added are named last, as kept with every folder
+    /// holding one (`keptBookCount`).
     var confirmationMessage: String {
         let contents: String
         switch bookCount {
@@ -654,7 +695,7 @@ struct FolderRemovalWording: Equatable {
                 ? " The feed \(feeds) stays, with its downloads, without a folder until Feed Info gives it another."
                 : " The feeds \(feeds) stay, with their downloads, without folders until Feed Info gives each another."
         }
-        return message
+        return message + keptBooksConfirmationSentence
     }
 
     /// What could not be deleted, each item staying in the library: "These
