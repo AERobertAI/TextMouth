@@ -547,6 +547,12 @@ final class ReaderViewModel: ObservableObject {
     /// window can post it, so regression tests can verify spoken wording.
     /// Written only by `announceToVoiceOver(_:)`.
     var lastAnnouncement: String?
+    /// What to say once the Search in Book sheet has closed after a result of
+    /// a transcript was chosen: where the reader moved to. Held back so it is
+    /// heard when VoiceOver has settled on the reader, not over the sheet's
+    /// closing. Set by `navigateToTranscriptSearchResult`, spoken and cleared
+    /// by `announcePendingJump()`.
+    var pendingJumpAnnouncement: String?
 
     /// Base offset for word-spoken callback tracking
     var utteranceBaseOffset: Int = 0

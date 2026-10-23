@@ -1,6 +1,31 @@
 import SwiftUI
 import Foundation
 
+/// The words Search in Book speaks about a transcribed audiobook: what it says
+/// when there is no transcript to search, where a chosen result took the
+/// reader, and what Go Back says with nowhere to go back to. Kept in one
+/// place so each sentence is pinned by a test.
+enum BookSearchWording {
+    /// Said instead of opening Search in Book for an audiobook whose
+    /// transcript does not exist yet.
+    static func noTranscript(bookTitle: String) -> String {
+        "\(bookTitle) has no transcript to search. Transcribe it first, with Transcribe Audio."
+    }
+
+    /// Said once the search sheet has closed after a result was chosen: the
+    /// time the reader moved to and, when it names one, where that is.
+    static func movedTo(time: TimeInterval, location: String?) -> String {
+        guard let location else { return "Moved to \(TimeFormatting.spoken(time))." }
+        return "Moved to \(TimeFormatting.spoken(time)), \(location)."
+    }
+
+    /// Said by Go Back in a reader that has no saved position to return to.
+    static let nothingToGoBackTo = "No previous position to return to."
+
+    /// The search field's hint when the book searched is a transcript.
+    static let transcriptFieldHint = "Type to search the book's transcript"
+}
+
 /// Case-insensitive matching shared by book search: literal text, or a
 /// regular expression. Ranges are UTF-16 `NSRange`s, TextMouth's text
 /// coordinate system (see `OffsetMap.swift`).
@@ -349,21 +374,43 @@ struct BookSearchView: View {
         announce: @escaping @MainActor (String) -> Void,
         onNavigate: @escaping (Int, Int) -> Void
     ) {
-        self.totalCharacterCount = totalCharacterCount
-        self.totalWordCount = totalWordCount
-        self.currentWPM = currentWPM
-        self.onNavigate = onNavigate
-        // StateObject builds the model once each time the sheet opens; the
-        // copies of the book passed in by later reader refreshes go unused.
-        _model = StateObject(wrappedValue: BookSearchModel(
+        self.init(
             corpus: BookSearchCorpus(
                 chapterTexts: chapterTexts,
                 chapterTitles: chapterTitles,
                 headings: headings,
                 bookTitle: bookTitle
             ),
-            announce: announce
-        ))
+            totalCharacterCount: totalCharacterCount,
+            totalWordCount: totalWordCount,
+            currentWPM: currentWPM,
+            announce: announce,
+            onNavigate: onNavigate
+        )
+    }
+
+    /// - Parameters:
+    ///   - corpus: The book's text, titles, and headings to search, with the
+    ///     timing of a transcribed audiobook's, whose results say when they
+    ///     are heard.
+    ///   - announce: Speaks each completed search's status through VoiceOver.
+    ///   - onNavigate: Opens a result, given its chapter index and UTF-16
+    ///     character offset.
+    init(
+        corpus: BookSearchCorpus,
+        totalCharacterCount: Int,
+        totalWordCount: Int,
+        currentWPM: Double,
+        announce: @escaping @MainActor (String) -> Void,
+        onNavigate: @escaping (Int, Int) -> Void
+    ) {
+        self.totalCharacterCount = totalCharacterCount
+        self.totalWordCount = totalWordCount
+        self.currentWPM = currentWPM
+        self.onNavigate = onNavigate
+        // StateObject builds the model once each time the sheet opens; the
+        // copies of the book passed in by later reader refreshes go unused.
+        _model = StateObject(wrappedValue: BookSearchModel(corpus: corpus, announce: announce))
     }
 
     /// Where each result's row says its match is, as the display picker's

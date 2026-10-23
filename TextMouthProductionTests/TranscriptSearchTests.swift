@@ -12,6 +12,31 @@ final class TranscriptSearchTests: XCTestCase {
 
     // MARK: - Fixtures
 
+    /// The reader of a silent two-track audiobook, not transcribed, loaded.
+    private func untranscribedReader(_ label: String) async throws -> ReaderViewModel {
+        let world = try makeIntegrationWorld(label)
+        let book = try world.makeSilentAudioBook(
+            title: "Plain Tracks \(UUID().uuidString.prefix(8))",
+            trackDurations: [3, 2]
+        )
+        let reader = world.openReader(for: book)
+        let loaded = await eventuallyHolds { !reader.isLoading }
+        XCTAssertTrue(loaded, "the reader never loaded")
+        return reader
+    }
+
+    /// The reader of a plain-text book, loaded.
+    private func textBookReader(_ label: String) async throws -> ReaderViewModel {
+        let world = try makeIntegrationWorld(label)
+        let source = try makeSandboxDirectory("SearchSource").appendingPathComponent("Slip Notes.txt")
+        try Data("Slip Notes\n\nThe ferry leaves the slip at first light.\n\nGulls follow it past the pier.\n".utf8)
+            .write(to: source)
+        let reader = world.openReader(for: try world.importBook(from: source))
+        let loaded = await eventuallyHolds { !reader.isLoading }
+        XCTAssertTrue(loaded, "the reader never loaded")
+        return reader
+    }
+
     /// The reader of a silent two-track audiobook (3 and 2 seconds) whose
     /// transcript is `TranscriptionUIScripts.twoTracks`, loaded.
     private func transcribedReader(_ label: String) async throws -> ReaderViewModel {
@@ -62,13 +87,151 @@ final class TranscriptSearchTests: XCTestCase {
         XCTAssertEqual(timing.time(chapterIndex: 7, characterOffset: 0), 0)
     }
 
+    // MARK: - What the Reader Searches
+
+    /// A transcribed audiobook can be searched, and its corpus is the
+    /// transcript's text by audio chapter, timed from where the audio
+    /// chapters begin, named by chapter title with no headings.
+    func testATranscribedAudiobookSearchesItsTranscript() async throws {
+        let reader = try await transcribedReader("Search Corpus Transcript")
+        let transcript = try XCTUnwrap(reader.content?.transcript)
+
+        XCTAssertTrue(reader.canSearchText)
+        let corpus = try XCTUnwrap(reader.searchCorpus)
+        XCTAssertEqual(corpus.chapterTexts, transcript.chapters.map(\.text))
+        XCTAssertEqual(corpus.chapterTitles, reader.content?.chapters.map(\.title))
+        XCTAssertTrue(corpus.headings.isEmpty)
+        XCTAssertEqual(corpus.bookTitle, reader.book.title)
+        let starts = try XCTUnwrap(corpus.timing?.chapterStarts)
+        XCTAssertEqual(starts.count, 2)
+        XCTAssertEqual(starts[0], 0)
+        XCTAssertEqual(starts[1], 3, accuracy: 0.11)
+    }
+
+    /// An audiobook that was never transcribed has nothing to search.
+    func testAnUntranscribedAudiobookHasNothingToSearch() async throws {
+        let reader = try await untranscribedReader("Search Corpus Untranscribed")
+
+        XCTAssertNil(reader.content?.transcript)
+        XCTAssertFalse(reader.canSearchText)
+        XCTAssertNil(reader.searchCorpus)
+    }
+
+    /// A text book is searched as it always was: its chapters' text, no
+    /// timing.
+    func testATextBookSearchesItsChaptersUntimed() async throws {
+        let reader = try await textBookReader("Search Corpus Text")
+        let content = try XCTUnwrap(reader.content)
+
+        XCTAssertTrue(reader.canSearchText)
+        let corpus = try XCTUnwrap(reader.searchCorpus)
+        XCTAssertEqual(corpus.chapterTexts, content.chapters.map(\.text))
+        XCTAssertEqual(corpus.chapterTitles, content.chapters.map(\.title))
+        XCTAssertEqual(corpus.headings, reader.headings)
+        XCTAssertNil(corpus.timing)
+    }
+
+    /// A reader with no content yet has nothing to search.
+    func testAReaderThatHasNotLoadedHasNothingToSearch() throws {
+        let world = try makeIntegrationWorld("Search Corpus Unloaded")
+        let source = try makeSandboxDirectory("SearchSource").appendingPathComponent("Unloaded.txt")
+        try Data("Unloaded\n\nWords.".utf8).write(to: source)
+        let reader = world.openReader(for: try world.importBook(from: source))
+
+        XCTAssertFalse(reader.canSearchText)
+        XCTAssertNil(reader.searchCorpus)
+    }
+
+    // MARK: - Going to a Result
+
+    /// Choosing a result of the transcript moves the audio to its sentence,
+    /// keeps where the reader was for Return and Go Back, and holds the
+    /// announcement back until the sheet has closed; Go Back returns, and
+    /// with nowhere left says so.
+    func testChoosingAResultMovesTheAudioAndGoBackReturns() async throws {
+        let reader = try await transcribedReader("Search Navigate")
+        let transcript = try XCTUnwrap(reader.content?.transcript)
+        let corpus = try XCTUnwrap(reader.searchCorpus)
+        let ferry = try XCTUnwrap(matches("ferry", in: corpus).first)
+        // Start somewhere other than the book's beginning, to tell a return
+        // from a reset.
+        reader.navigateTo(chapterIndex: 0, characterOffset: 12)
+        XCTAssertFalse(reader.hasSavedPosition)
+
+        reader.navigateToTranscriptSearchResult(chapterIndex: ferry.chapterIndex, textOffset: ferry.characterOffset)
+
+        XCTAssertEqual(reader.currentChapterIndex, 1)
+        XCTAssertEqual(
+            reader.currentCharacterOffset,
+            transcript.audioOffset(atTextOffset: ferry.characterOffset, inChapter: 1)
+        )
+        XCTAssertTrue(reader.hasSavedPosition)
+        // The chapter's title names the place unless it only repeats the
+        // book's title or is empty.
+        let expectedLocation = BookSearchView.locationTitles(
+            of: [(chapterIndex: 1, characterOffset: ferry.characterOffset)],
+            headings: [],
+            chapterTitles: try XCTUnwrap(reader.content?.chapters.map(\.title)),
+            bookTitle: reader.book.title
+        )[0]
+        let expected = BookSearchWording.movedTo(time: try XCTUnwrap(ferry.time), location: expectedLocation)
+        XCTAssertEqual(reader.pendingJumpAnnouncement, expected)
+        XCTAssertNotEqual(reader.lastAnnouncement, expected, "the announcement waits for the sheet to close")
+
+        reader.announcePendingJump()
+        XCTAssertEqual(reader.lastAnnouncement, expected)
+        XCTAssertNil(reader.pendingJumpAnnouncement)
+
+        reader.goBack()
+        XCTAssertEqual(reader.currentChapterIndex, 0)
+        XCTAssertEqual(reader.currentCharacterOffset, 12)
+        XCTAssertFalse(reader.hasSavedPosition)
+        XCTAssertEqual(reader.lastAnnouncement, "Returned to previous position")
+
+        reader.goBack()
+        XCTAssertEqual(reader.lastAnnouncement, BookSearchWording.nothingToGoBackTo)
+        XCTAssertEqual(reader.currentChapterIndex, 0)
+    }
+
+    /// Without a transcript, a transcript result moves nothing and says
+    /// nothing; announcing with none pending says nothing either.
+    func testWithoutATranscriptNothingMoves() async throws {
+        let reader = try await untranscribedReader("Search Navigate None")
+        let spoken = reader.lastAnnouncement
+
+        reader.navigateToTranscriptSearchResult(chapterIndex: 1, textOffset: 0)
+        reader.announcePendingJump()
+
+        XCTAssertEqual(reader.currentChapterIndex, 0)
+        XCTAssertFalse(reader.hasSavedPosition)
+        XCTAssertNil(reader.pendingJumpAnnouncement)
+        XCTAssertEqual(reader.lastAnnouncement, spoken)
+    }
+
+    // MARK: - Wording
+
+    /// Each sentence the search speaks, word for word.
+    func testTheSearchWordingIsPinned() {
+        XCTAssertEqual(
+            BookSearchWording.noTranscript(bookTitle: "Breakwater Notes"),
+            "Breakwater Notes has no transcript to search. Transcribe it first, with Transcribe Audio."
+        )
+        XCTAssertEqual(
+            BookSearchWording.movedTo(time: 3725, location: "Crossing"),
+            "Moved to 1 hour, 2 minutes, 5 seconds, Crossing."
+        )
+        XCTAssertEqual(BookSearchWording.movedTo(time: 54, location: nil), "Moved to 54 seconds.")
+        XCTAssertEqual(BookSearchWording.nothingToGoBackTo, "No previous position to return to.")
+        XCTAssertEqual(BookSearchWording.transcriptFieldHint, "Type to search the book's transcript")
+    }
+
     // MARK: - Timed Results
 
     /// A search with timing gives each result its time and a spoken label
     /// that ends with it; one without timing is as it always was.
     func testResultsOfATimedSearchSayWhenTheyAreHeard() async throws {
         let reader = try await transcribedReader("Search Timed Results")
-        let corpus = try timedCorpus(of: reader)
+        let corpus = try XCTUnwrap(reader.searchCorpus)
 
         let pier = try matches("pier", in: corpus)
         let ferry = try matches("ferry", in: corpus)
@@ -99,19 +262,6 @@ final class TranscriptSearchTests: XCTestCase {
         XCTAssertEqual(results.count, 1)
         XCTAssertNil(results[0].time)
         XCTAssertNil(results[0].timedLabel)
-    }
-
-    /// The corpus of `reader`'s transcript, timed from chapters of 3 and 2
-    /// seconds.
-    private func timedCorpus(of reader: ReaderViewModel) throws -> BookSearchCorpus {
-        let transcript = try XCTUnwrap(reader.content?.transcript)
-        return BookSearchCorpus(
-            chapterTexts: transcript.chapters.map(\.text),
-            chapterTitles: transcript.chapters.map(\.title),
-            headings: [],
-            bookTitle: reader.book.title,
-            timing: BookSearchTiming(transcript: transcript, chapterStarts: [0, 3])
-        )
     }
 
     /// The results of a plain search for `query` in `corpus`.

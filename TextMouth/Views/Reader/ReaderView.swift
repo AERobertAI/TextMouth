@@ -100,7 +100,8 @@ struct ReaderView: View {
 
     /// The reader's toolbar, in order: Return, while there is a reading
     /// position to return to; Where Am I?; the buttons that open the
-    /// Headings, Bookmarks, Sleep Timer, Search (a text book's only), Voice
+    /// Headings, Bookmarks, Sleep Timer, Search (a text book's, or a transcribed
+    /// audiobook's), Voice
     /// or Audio Settings, and Book Info panels; and the speed in force.
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
@@ -132,7 +133,7 @@ struct ReaderView: View {
                 panels.sleepTimer.toggle()
             }
 
-            if !viewModel.isAudioBook {
+            if viewModel.canSearchText {
                 toolbarButton("Search", systemImage: "magnifyingglass", spokenLabel: "Search in book") {
                     panels.search.toggle()
                 }
@@ -480,7 +481,10 @@ struct ReaderPanelSheets: ViewModifier {
             .sheet(isPresented: $panels.voice) {
                 BookVoicePickerView(viewModel: viewModel)
             }
-            .sheet(isPresented: $panels.search) {
+            // A result of a transcript moves the audio while the sheet closes;
+            // where it moved to is said once the sheet has gone and VoiceOver
+            // has settled on the reader.
+            .sheet(isPresented: $panels.search, onDismiss: { viewModel.announcePendingJump() }) {
                 searchSheet
             }
     }
@@ -504,22 +508,27 @@ struct ReaderPanelSheets: ViewModifier {
         )
     }
 
-    /// Search in the loaded book. Choosing a result moves the reader there
-    /// and closes the sheet.
+    /// Search in the loaded book: a text book's text, or a transcribed
+    /// audiobook's transcript, whose results say when they are heard.
+    /// Choosing a result moves the reader there and closes the sheet.
     @ViewBuilder
     private var searchSheet: some View {
-        if let content = viewModel.content {
+        if let content = viewModel.content, let corpus = viewModel.searchCorpus {
+            // A timed corpus is a transcript, whose results are places in
+            // its text, not in the audio's spacing.
+            let isTranscript = corpus.timing != nil
             BookSearchView(
-                chapterTexts: content.chapters.map { $0.text },
-                chapterTitles: content.chapters.map { $0.title },
-                headings: viewModel.headings,
-                bookTitle: viewModel.book.title,
+                corpus: corpus,
                 totalCharacterCount: content.totalCharacterCount,
                 totalWordCount: content.totalWordCount,
                 currentWPM: viewModel.speechService.wordsPerMinute,
                 announce: viewModel.announceToVoiceOver,
                 onNavigate: { chapterIndex, charOffset in
-                    viewModel.navigateToSearchResult(chapterIndex: chapterIndex, characterOffset: charOffset)
+                    if isTranscript {
+                        viewModel.navigateToTranscriptSearchResult(chapterIndex: chapterIndex, textOffset: charOffset)
+                    } else {
+                        viewModel.navigateToSearchResult(chapterIndex: chapterIndex, characterOffset: charOffset)
+                    }
                     panels.search = false
                 }
             )
@@ -608,11 +617,24 @@ struct ReaderPanelCommands: ViewModifier {
                 panels.sleepTimer.toggle()
             }
             .onReceive(NotificationCenter.default.publisher(for: .searchInBook)) { notification in
-                // An audio book's text is only placeholder spacing for position
-                // tracking, so the toolbar offers no Search for it; the menu
-                // command must not open it either.
-                guard !viewModel.isAudioBook, shouldAcceptPanelCommand(notification) else { return }
-                panels.search.toggle()
+                guard shouldAcceptPanelCommand(notification) else { return }
+                if viewModel.canSearchText {
+                    panels.search.toggle()
+                } else if viewModel.isAudioBook, viewModel.content != nil {
+                    // A loaded audiobook with no transcript has only spacing
+                    // that counts time, which the toolbar offers no Search
+                    // for; the menu command says why, and how to get one,
+                    // rather than staying silent.
+                    viewModel.announceToVoiceOver(BookSearchWording.noTranscript(bookTitle: viewModel.book.title))
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .goBack)) { notification in
+                // Go Back returns a reader to where it was before a jump from
+                // a panel (a search result, a heading, a bookmark). Only the
+                // reader that takes the command acts, as for the panels; a
+                // Library window takes the same command for its folders.
+                guard shouldAcceptPanelCommand(notification) else { return }
+                viewModel.goBack()
             }
             .onReceive(NotificationCenter.default.publisher(for: .showBookInfo)) { notification in
                 // Only open in the focused reader window
