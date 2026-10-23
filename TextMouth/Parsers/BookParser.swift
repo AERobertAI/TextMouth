@@ -63,7 +63,7 @@ enum BookParser {
             return try PDFTextParser.parse(url: url)
         case .audio:
             // Audio parsing is async, so wait for it through the shared bridge.
-            return try AsyncBridge.waitForResult {
+            return try AsyncBridge.waitForResult(timeLimit: AsyncBridge.audioAnalysisTimeLimit) {
                 try await AudioBookParser.parse(url: url)
             }
         }

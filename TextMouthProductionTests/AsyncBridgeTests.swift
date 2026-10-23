@@ -1,4 +1,5 @@
 import XCTest
+import os
 @testable import TextMouth
 
 /// The bridge that lets synchronous parsing and analysis wait for async work
@@ -98,6 +99,92 @@ final class AsyncBridgeTests: XCTestCase {
         }
 
         XCTAssertEqual(squares.recorded, Dictionary(uniqueKeysWithValues: (0..<8).map { ($0, $0 * $0) }))
+    }
+
+    // MARK: - The Time Limit (ST07)
+
+    /// Work that sleeps for a minute, given a limit of a fifth of a second,
+    /// ends the wait with `TimeLimitExceeded` within two seconds, and its
+    /// task is cancelled: the sleep sees the cancellation.
+    func testWorkThatPassesItsLimitIsAbandonedAndCancelled() throws {
+        let sawCancellation = OSAllocatedUnfairLock(initialState: false)
+        let started = Date()
+
+        XCTAssertThrowsError(
+            try AsyncBridge.waitForResult(timeLimit: .milliseconds(200)) { () async throws -> Int in
+                do {
+                    try await Task.sleep(for: .seconds(60))
+                } catch {
+                    sawCancellation.withLock { $0 = true }
+                    throw error
+                }
+                return 1
+            }
+        ) { error in
+            XCTAssertEqual(error as? AsyncBridge.TimeLimitExceeded, AsyncBridge.TimeLimitExceeded(limit: .milliseconds(200)))
+        }
+
+        XCTAssertLessThan(Date().timeIntervalSince(started), 2, "the wait did not end at its limit")
+        // The task sees the cancellation a moment after the wait ends.
+        let deadline = Date().addingTimeInterval(2)
+        while !sawCancellation.withLock({ $0 }) && Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.01)
+        }
+        XCTAssertTrue(sawCancellation.withLock { $0 }, "the abandoned task was not cancelled")
+    }
+
+    /// Work that returns at once gives its value under a limit, and its own
+    /// error comes back unchanged.
+    func testWorkInsideItsLimitGivesItsValueOrItsOwnError() {
+        XCTAssertEqual(try AsyncBridge.waitForResult(timeLimit: .seconds(30)) { "Slack water" }, "Slack water")
+        XCTAssertThrowsError(
+            try AsyncBridge.waitForResult(timeLimit: .seconds(30)) { () async throws -> Int in
+                throw Refusal(reason: "the ferry has left")
+            }
+        ) { error in
+            XCTAssertEqual(error as? Refusal, Refusal(reason: "the ferry has left"))
+        }
+    }
+
+    /// A limit and a cancellation together: the work's value comes back when
+    /// neither passes, and cancelling ends the work before the limit.
+    func testALimitAndACancellationTogether() throws {
+        let cancellation = ImportCancellation()
+        XCTAssertEqual(
+            try AsyncBridge.waitForResult(timeLimit: .seconds(30), cancelledBy: cancellation) { 7 },
+            7
+        )
+
+        cancellation.cancel()
+        XCTAssertThrowsError(
+            try AsyncBridge.waitForResult(timeLimit: .seconds(30), cancelledBy: cancellation) { () async throws -> Int in
+                try await Task.sleep(for: .seconds(60))
+                return 1
+            }
+        ) { error in
+            XCTAssertTrue(error is CancellationError, "cancelling should end the work, not the limit: \(error)")
+        }
+    }
+
+    /// The sentence a passed limit gives, word for word: whole minutes when
+    /// the limit is a whole number of them, else seconds, and "1 minute"
+    /// in the singular.
+    func testTheSentenceNamesTheLimitInWords() {
+        func sentence(_ limit: Duration) -> String? {
+            AsyncBridge.TimeLimitExceeded(limit: limit).errorDescription
+        }
+
+        XCTAssertEqual(sentence(.seconds(30)), "Reading the audio took longer than 30 seconds, so TextMouth stopped waiting for it.")
+        XCTAssertEqual(sentence(.seconds(300)), "Reading the audio took longer than 5 minutes, so TextMouth stopped waiting for it.")
+        XCTAssertEqual(sentence(.seconds(60)), "Reading the audio took longer than 1 minute, so TextMouth stopped waiting for it.")
+        XCTAssertEqual(sentence(.seconds(90)), "Reading the audio took longer than 90 seconds, so TextMouth stopped waiting for it.")
+        XCTAssertEqual(sentence(.seconds(1)), "Reading the audio took longer than 1 second, so TextMouth stopped waiting for it.")
+    }
+
+    /// The limits the callers use.
+    func testTheCallersLimits() {
+        XCTAssertEqual(AsyncBridge.audioTagsTimeLimit, .seconds(30))
+        XCTAssertEqual(AsyncBridge.audioAnalysisTimeLimit, .seconds(300))
     }
 
     // MARK: - Its Callers
