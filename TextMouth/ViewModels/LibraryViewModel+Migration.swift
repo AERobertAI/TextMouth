@@ -1019,6 +1019,8 @@ extension LibraryViewModel {
             // content.md and committing its record leaves TextMouth's own
             // text there, which would otherwise be taken for the user's. An
             // edit Edit Text took is kept below, as every re-read keeps one.
+            // Text an earlier page reader wrote, as its record describes it,
+            // is read again without the compare (V05).
             if isBehindOnlyInPages(book), !BookTextEditSessions.holdsTakenEdit(book, access: access) {
                 switch try pageUpgradeCheck(of: book, access: access) {
                 case .readAgain, .stale:
@@ -1134,6 +1136,11 @@ extension LibraryViewModel {
     /// - A content.md that is exactly the file's text without pages is
     ///   TextMouth's own, and is read again with pages (`readAgain`), as is
     ///   a book with no content.md, which has nothing to keep.
+    /// - So, without the compare, is a content.md an earlier page reader
+    ///   wrote, which read its pages (`PageReaderVersions.notesSuccess(_:)`),
+    ///   when its record still describes it and the book's file (V05): a
+    ///   build that records every edit wrote it. One changed since its
+    ///   record is looked at as below.
     /// - A content.md that is exactly the file's text with its pages is
     ///   TextMouth's own too (`writtenWithPages`): a batch wrote it, then
     ///   stopped before it committed the book's record, since a quit does
@@ -1174,6 +1181,9 @@ extension LibraryViewModel {
         }
         // Whether content.md holds other bytes than its record describes.
         var contentChanged = false
+        // Whether the record's fingerprints say content.md and the book's
+        // file are both as TextMouth last wrote or took them.
+        var contentAsRecorded = false
         if let recorded = BookTextEditSessions.recordedTextCacheFingerprint(of: book, access: access) {
             let hasher = access.hasher
             let verification = try recorded.verify(
@@ -1187,12 +1197,21 @@ extension LibraryViewModel {
             )
             switch verification {
             case .current:
-                break
+                contentAsRecorded = true
             case .stale(.sourceChanged):
                 return .stale
             case .stale(.cacheChanged):
                 contentChanged = true
             }
+        }
+        // Text an earlier page reader wrote, which read its pages, as its
+        // record describes it, is read again without the compare (V05): a
+        // build that records every edit wrote it (B12), and an edit taken is
+        // kept before this check is asked. Compared, it would differ from
+        // what the newer reader writes, and the first bump of a format's page
+        // reader would keep a copy of every one of its books.
+        if contentAsRecorded, PageReaderVersions.notesSuccess(book.pageReaderVersion) {
+            return .readAgain
         }
         let kept = try access.read(cacheURL) { try Data(contentsOf: cacheURL) }
         if !contentChanged {
@@ -2237,7 +2256,8 @@ struct TextCacheUpdate: Sendable {
 /// re-read for pages (`LibraryViewModel.pageUpgradeCheck(of:access:)`).
 enum PageUpgradeCheck: Equatable {
     /// content.md is exactly the file's text without pages, TextMouth's own
-    /// from before pages, or there is none: the file is read again, with its
+    /// from before pages, or there is none, or an earlier page reader wrote
+    /// it, as its record describes (V05): the file is read again, with its
     /// pages.
     case readAgain
     /// content.md is exactly the file's text with its pages, TextMouth's own
