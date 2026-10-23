@@ -246,16 +246,82 @@ private struct PlainTextExtractor: MarkupWalker {
 
     /// Block annotations precede a chapter or block target; establish the same
     /// paragraph boundary as the following block without adding label text.
+    ///
+    /// CommonMark makes a line that begins with `<!--` an HTML block, the whole
+    /// line included, so words that follow a marker on that line (ST05) belong
+    /// to the block and would be lost, with the page or heading they begin. The
+    /// writers never write such a line (`MarkdownMarkerWriter` keeps a marker
+    /// off the start of a line that holds words), so nothing they wrote parses
+    /// differently; an Edit Text change can make one, by deleting the text
+    /// before an inline marker or by joining lines. A block that begins with
+    /// one or more of our complete markers and then holds words is therefore
+    /// read as its markers followed by the Markdown of the rest, whose words,
+    /// emphasis, and offsets are read in place. Those words are read whether
+    /// or not the markers are (`includeNavigationHeadings`). A block that is
+    /// exactly one marker, or that begins with any other comment, reads as it
+    /// always has.
     mutating func visitHTMLBlock(_ html: HTMLBlock) {
-        guard includeNavigationHeadings else { return }
-        if let annotation = MarkdownHeadingAnnotation.decode(html.rawHTML) {
-            separateBlock()
-            navigationHeadings.append((annotation.level, annotation.text, utf16Length))
-        } else if let marker = MarkdownPageMarker.decode(html.rawHTML) {
-            // A page marker names the same place as the block after it (PG01).
-            separateBlock()
-            pages.append((marker.label, utf16Length))
+        if let (markers, rest) = Self.leadingMarkers(of: html.rawHTML) {
+            if includeNavigationHeadings {
+                for marker in markers { record(marker) }
+            }
+            // The rest is ordinary Markdown on its own: visit each block as
+            // any block is, so a paragraph, a list, or emphasis reads in place.
+            descendInto(Document(parsing: String(rest)))
+        } else if includeNavigationHeadings, let marker = Self.marker(in: html.rawHTML) {
+            record(marker)
         }
+    }
+
+    /// A navigation marker of ours: a heading annotation or a page marker.
+    private enum Marker {
+        case heading(MarkdownHeadingAnnotation)
+        case page(MarkdownPageMarker)
+    }
+
+    /// The marker a complete comment holds, or nil for any other text.
+    private static func marker(in comment: String) -> Marker? {
+        if let annotation = MarkdownHeadingAnnotation.decode(comment) {
+            return .heading(annotation)
+        }
+        return MarkdownPageMarker.decode(comment).map(Marker.page)
+    }
+
+    /// Note `marker` at the current place in the reading. It names the same
+    /// place as the block after it (PG01), so the block boundary comes first.
+    private mutating func record(_ marker: Marker) {
+        separateBlock()
+        switch marker {
+        case .heading(let annotation):
+            navigationHeadings.append((annotation.level, annotation.text, utf16Length))
+        case .page(let page):
+            pages.append((page.label, utf16Length))
+        }
+    }
+
+    /// The markers of ours that an HTML block begins with, in order, and the
+    /// Markdown after them (ST05); nil unless at least one marker is followed
+    /// by something other than whitespace. A marker is a comment from `<!--`
+    /// to its first `-->`; markers are separated only by spaces or tabs, and
+    /// the block may be indented up to three spaces, as CommonMark allows.
+    /// The markers are peeled in a loop, never by recursion, so a line of ten
+    /// thousand of them cannot deepen the stack.
+    private static func leadingMarkers(of rawHTML: String) -> (markers: [Marker], rest: Substring)? {
+        var rest = Substring(rawHTML)
+        // At most three leading spaces precede an HTML block's first character.
+        var indent = 0
+        while indent < 3, rest.first == " " {
+            rest = rest.dropFirst()
+            indent += 1
+        }
+        var markers: [Marker] = []
+        while rest.hasPrefix("<!--"), let close = rest.firstRange(of: "-->"),
+              let found = marker(in: String(rest[..<close.upperBound])) {
+            markers.append(found)
+            rest = rest[close.upperBound...].drop(while: { $0 == " " || $0 == "\t" })
+        }
+        guard !markers.isEmpty, rest.contains(where: { !$0.isWhitespace }) else { return nil }
+        return (markers, rest)
     }
 
     /// Inline anchors and page markers keep their precise location within the

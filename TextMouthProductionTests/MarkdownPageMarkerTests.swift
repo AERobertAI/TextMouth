@@ -144,6 +144,93 @@ final class MarkdownPageMarkerTests: XCTestCase {
         XCTAssertNil(MarkdownHeadingAnnotation.decode(marker("12").markdown))
     }
 
+    // MARK: - A marker at a line's start (ST05)
+
+    /// The chapter `markdown` parses to, with markers read when `navigation`.
+    private func chapter(_ markdown: String, navigation: Bool = true) throws -> Chapter {
+        try MarkdownDocParser.parseChapter(markdown: markdown, title: "", includeNavigationHeadings: navigation)
+    }
+
+    /// The UTF-16 offset at which `words` first stands in `chapter`'s text, or -1.
+    private func offset(of words: String, in chapter: Chapter) -> Int {
+        let range = (chapter.text as NSString).range(of: words)
+        return range.location == NSNotFound ? -1 : range.location
+    }
+
+    /// CommonMark makes the whole line an HTML block when it begins with a
+    /// comment, so the words after the marker were once lost.
+    func testWordsAfterAPageMarkerAtALineStartAreRead() throws {
+        let result = try chapter("First line.\n<!-- page: 12 -->Second line words.\n")
+
+        XCTAssertTrue(result.text.contains("First line."), result.text)
+        XCTAssertTrue(result.text.contains("Second line words."), result.text)
+        XCTAssertEqual(result.pages.map(\.label), ["12"])
+        XCTAssertEqual(result.pages.first?.characterOffset, offset(of: "Second", in: result))
+    }
+
+    func testWordsAfterAHeadingAnnotationAtALineStartAreRead() throws {
+        let annotation = MarkdownHeadingAnnotation(level: 2, text: "Part Two").markdown
+        let result = try chapter("Before.\n" + annotation + "Words after.\n")
+
+        XCTAssertTrue(result.text.contains("Words after."), result.text)
+        let heading = result.headings.first { $0.text == "Part Two" }
+        XCTAssertNotNil(heading, "\(result.headings)")
+        XCTAssertEqual(heading?.characterOffset, offset(of: "Words", in: result))
+    }
+
+    func testWordsAfterTwoMarkersAreRead() throws {
+        let result = try chapter("<!-- page: 3 --> <!-- page: 4 -->Both pages here.\n")
+
+        XCTAssertTrue(result.text.contains("Both pages here."), result.text)
+        XCTAssertEqual(result.pages.map(\.label), ["3", "4"])
+        XCTAssertEqual(result.pages.map(\.characterOffset), [0, 0])
+    }
+
+    /// The words are the book's, so they are read where the markers are not.
+    func testWordsAfterAMarkerAreReadWithoutNavigation() throws {
+        let result = try chapter("First line.\n<!-- page: 12 -->Second line words.\n", navigation: false)
+
+        XCTAssertTrue(result.text.contains("Second line words."), result.text)
+        XCTAssertTrue(result.pages.isEmpty)
+    }
+
+    func testWordsAfterAMarkerInAListItemAreRead() throws {
+        let result = try chapter("- <!-- page: 3 -->Item words\n")
+
+        XCTAssertTrue(result.text.contains("Item words"), result.text)
+        XCTAssertEqual(result.pages.map(\.label), ["3"])
+        XCTAssertEqual(result.pages.first?.characterOffset, offset(of: "Item", in: result))
+    }
+
+    func testEmphasisAfterAMarkerIsRead() throws {
+        let result = try chapter("<!-- page: 4 -->Some *emphasised* words\n")
+
+        XCTAssertTrue(result.text.contains("Some emphasised words"), result.text)
+        XCTAssertEqual(result.pages.map(\.label), ["4"])
+    }
+
+    /// A marker on a line of its own reads as it did before this change:
+    /// the text and the page are fixed.
+    func testAMarkerAloneOnItsLineReadsAsBefore() throws {
+        let result = try chapter("Alpha.\n\n<!-- page: 5 -->\n\nBeta.\n")
+
+        XCTAssertEqual(result.text, "Alpha.\n\nBeta.")
+        XCTAssertEqual(result.pages.map(\.label), ["5"])
+        XCTAssertEqual(result.pages.map(\.characterOffset), [8])
+    }
+
+    /// A comment of the source's own keeps its words hidden, as ever, and a
+    /// very long line of markers is peeled without deepening the stack.
+    func testOtherCommentsStayHiddenAndManyMarkersAreSafe() throws {
+        let other = try chapter("<!-- note --> hidden words\n")
+        XCTAssertFalse(other.text.contains("hidden"), other.text)
+
+        let markers = String(repeating: "<!-- page: 1 -->", count: 10_000)
+        let many = try chapter(markers + "Words.\n")
+        XCTAssertTrue(many.text.contains("Words."), many.text)
+        XCTAssertEqual(many.pages.count, 10_000)
+    }
+
     // MARK: - Placement
 
     func testLinePositionIsClassifiedFromTheEndOfTheMarkdown() {
