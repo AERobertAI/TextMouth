@@ -222,7 +222,11 @@ final class TranscriptCleanupSheetModel: ObservableObject, Identifiable {
         if rules.userCopy == .inCloud {
             services.requestRulesDownload()
         }
-        let book = self.book
+        // The book as the library holds it now, as apply() and undo() read it:
+        // a sheet left open while the book moved (Move to Library..., a move
+        // between folders) would otherwise look for the transcript where the
+        // book used to be and wrongly find none.
+        let book = library?.bookByID(self.book.id) ?? self.book
         let found = await OffMainWork.run {
             (lookup: TranscriptStore.read(from: book.tmbDirectory), hasCopy: TranscriptStore.hasTranscriptBeforeCleanup(of: book))
         }

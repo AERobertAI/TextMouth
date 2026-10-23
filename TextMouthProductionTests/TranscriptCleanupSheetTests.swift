@@ -222,6 +222,33 @@ final class TranscriptCleanupSheetTests: XCTestCase {
         XCTAssertTrue(closed)
     }
 
+    /// A sheet left open while its book moved to another folder (as Move to
+    /// Library... of a feed episode moves it) examines the transcript where
+    /// the library holds the book now, as Apply and Undo do: coming back to
+    /// TextMouth, it is ready, not unavailable for want of a transcript.
+    func testASheetOpenedBeforeItsBookMovedStillFindsTheTranscript() async throws {
+        let world = try makeIntegrationWorld("Transcript Cleanup Moved")
+        let book = try transcribedBook(in: world)
+        let model = TranscriptCleanupSheetModel(book: book, library: world.library, services: makeCleanupServices())
+        await model.load()
+        XCTAssertEqual(model.phase, .ready)
+
+        // The package, with its transcript, moves to another folder, and
+        // the library's row says so; the sheet still holds the old book.
+        let destination = makeIntegrationLibraryFolder("Transcript Cleanup Moved To")
+        let newPlace = TextMouthPaths.tmbPath(folderPath: destination.path, tmbName: book.tmbDirectoryName)
+        try FileManager.default.createDirectory(at: newPlace.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try FileManager.default.moveItem(at: book.tmbDirectory, to: newPlace)
+        world.library.updateBook(id: book.id) { $0.folderPath = destination.path }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: book.tmbDirectory.path), "the package did not leave its old place")
+
+        await model.refresh()
+
+        XCTAssertEqual(model.phase, .ready)
+        XCTAssertEqual(model.summaryLine, "2 corrections in 2 sentences.")
+        XCTAssertTrue(model.canApply)
+    }
+
     /// The lines about the user's copy of the rules: waiting in the cloud,
     /// which asks the sync service for it; unusable; older than TextMouth's
     /// own; and why Edit Rules… could not open it.
