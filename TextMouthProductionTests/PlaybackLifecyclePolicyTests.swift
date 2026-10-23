@@ -217,6 +217,73 @@ final class PlaybackLifecyclePolicyTests: XCTestCase {
         )
     }
 
+    // MARK: - The offset a resume starts from (ST03)
+
+    /// A reported word is what the listener heard last: it wins over everything.
+    func testResumeOffsetIsTheReportedWord() {
+        XCTAssertEqual(
+            SpeechService.resumeOffset(
+                reportedWord: NSRange(location: 120, length: 5),
+                usingDirectMode: true,
+                directModeBaseOffset: 40,
+                engineOffset: 900
+            ),
+            120
+        )
+    }
+
+    /// A Pause before any word was reported resumes where the direct utterance began.
+    func testResumeOffsetBeforeAnyWordInDirectModeIsWhereTheUtteranceBegan() {
+        XCTAssertEqual(
+            SpeechService.resumeOffset(
+                reportedWord: nil,
+                usingDirectMode: true,
+                directModeBaseOffset: 500,
+                engineOffset: 0
+            ),
+            500
+        )
+    }
+
+    /// The engine's offset is not the speech being heard in direct mode, even when it is not 0.
+    func testResumeOffsetBeforeAnyWordIgnoresAStaleEngineInDirectMode() {
+        XCTAssertEqual(
+            SpeechService.resumeOffset(
+                reportedWord: nil,
+                usingDirectMode: true,
+                directModeBaseOffset: 500,
+                engineOffset: 77
+            ),
+            500
+        )
+    }
+
+    /// Outside direct mode the engine's own offset is the place.
+    func testResumeOffsetBeforeAnyWordInEngineModeIsTheEnginesOffset() {
+        XCTAssertEqual(
+            SpeechService.resumeOffset(
+                reportedWord: nil,
+                usingDirectMode: false,
+                directModeBaseOffset: 0,
+                engineOffset: 750
+            ),
+            750
+        )
+    }
+
+    /// With nothing known the resume starts at the beginning.
+    func testResumeOffsetWithNothingKnownIsTheStart() {
+        XCTAssertEqual(
+            SpeechService.resumeOffset(
+                reportedWord: nil,
+                usingDirectMode: false,
+                directModeBaseOffset: 0,
+                engineOffset: nil
+            ),
+            0
+        )
+    }
+
     func testLiveUtteranceFinishIsAccepted() {
         let utterance = AVSpeechUtterance(string: "live")
         XCTAssertTrue(SpeechService.isLiveDirectUtterance(utterance, liveUtterance: utterance))
