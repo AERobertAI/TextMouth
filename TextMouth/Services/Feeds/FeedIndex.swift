@@ -25,6 +25,13 @@ struct FeedIndex: Equatable {
     var feedID: UUID
     /// One row per package, each a feed item's (`Book.feedLink`).
     var books: [Book]
+    /// The rows this TextMouth could not read (V03): a feed item a later
+    /// TextMouth wrote, in a format or with fields this one does not know.
+    /// Each is kept exactly as read and written back after `books`, as
+    /// library.json keeps its own (`Library.unreadableRows`), never shown or
+    /// counted as a feed item. Its package, in this feed's folder, is its
+    /// own.
+    var unreadableRows: [UnreadableLibraryRow] = []
 }
 
 /// Why an index was not read: a newer TextMouth wrote it, in a layout of a
@@ -48,7 +55,8 @@ extension FeedIndex: Codable {
     /// completeness; the folder it is found in decides which feed it lists,
     /// as a record's file name does
     /// (`FeedIndexFiles.read(feedID:in:fromPackages:reader:)`). Each row
-    /// reads as a library.json row does, leniently.
+    /// reads as a library.json row does, leniently, and a row that cannot be
+    /// read is kept, not fatal (V03, `UnreadableLibraryRow.decodeRows(from:)`).
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let version = try container.decodeIfPresent(Int.self, forKey: .formatVersion) ?? 1
@@ -56,15 +64,26 @@ extension FeedIndex: Codable {
             throw FeedIndexNewerLayout(formatVersion: version)
         }
         feedID = try container.decode(UUID.self, forKey: .feedID)
-        books = try container.decode([Book].self, forKey: .books)
+        var rows = try container.nestedUnkeyedContainer(forKey: .books)
+        let decoded = try UnreadableLibraryRow.decodeRows(from: &rows)
+        books = decoded.books
+        unreadableRows = decoded.unreadable
     }
 
-    /// Writes the index with its layout's version first.
+    /// Writes the index with its layout's version first, its rows, and then
+    /// the rows it keeps as they were read (V03). An index without kept rows
+    /// is written exactly as it was before they could be kept.
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(Self.currentFormatVersion, forKey: .formatVersion)
         try container.encode(feedID, forKey: .feedID)
-        try container.encode(books, forKey: .books)
+        var rows = container.nestedUnkeyedContainer(forKey: .books)
+        for book in books {
+            try rows.encode(book)
+        }
+        for row in unreadableRows {
+            try rows.encode(row.json)
+        }
     }
 }
 
@@ -126,7 +145,12 @@ enum FeedIndexFiles {
     static func encodedIndexes(of library: Library, placedIn root: URL) throws -> [EncodedIndex] {
         try library.feedIndexRows.sorted { $0.key.uuidString < $1.key.uuidString }.map { feedID, rows in
             let placedRows = rows.map { placed($0, in: root, of: feedID) }
-            return EncodedIndex(feedID: feedID, rowCount: rows.count, data: try encoded(FeedIndex(feedID: feedID, books: placedRows)))
+            // The rows this version cannot read are written back as they
+            // were read, and count as rows: an index holding only them is
+            // not empty (V03).
+            let kept = library.feedShelf.unreadableRows[feedID] ?? []
+            let index = FeedIndex(feedID: feedID, books: placedRows, unreadableRows: kept)
+            return EncodedIndex(feedID: feedID, rowCount: rows.count + kept.count, data: try encoded(index))
         }
     }
 
@@ -155,6 +179,10 @@ enum FeedIndexFiles {
         /// (`FeedIndexNewerLayout`). The rows stand in for its own, read from
         /// the packages' records.
         var isLeftAlone = false
+        /// The rows of the index this TextMouth could not read (V03), kept
+        /// as they were read for the next save of the index to write back.
+        /// None is among `rows`, and none of their packages is.
+        var unreadableRows: [UnreadableLibraryRow] = []
     }
 
     /// Every feed's rows in the data directory at `root`: each folder of its
@@ -195,6 +223,11 @@ enum FeedIndexFiles {
     ///   read from the package's record, as a download whose save a crash cut
     ///   short leaves one.
     ///
+    /// A row of the index this TextMouth cannot read (a feed item a later
+    /// TextMouth wrote) does not make the index unusable: it is kept in
+    /// `Contents.unreadableRows`, and its package is not read again as a row
+    /// of the folder (V03).
+    ///
     /// An index that cannot be read or decoded is preserved beside itself
     /// (`SavedFile.preserveUnusable`), with one FEED_INDEX_UNREADABLE line,
     /// and the rows come from the packages, each of which names its feed and
@@ -219,6 +252,7 @@ enum FeedIndexFiles {
     ) -> Contents {
         let indexURL = FeedPaths.indexFile(of: feedID, in: root)
         var rows: [Book] = []
+        var kept: [UnreadableLibraryRow] = []
         var indexBytes: Data?
         var isLeftAlone = false
         if !fromPackages {
@@ -227,7 +261,9 @@ enum FeedIndexFiles {
                 break
             case .contents(let data):
                 do {
-                    rows = try decoded(data).books
+                    let index = try decoded(data)
+                    rows = index.books
+                    kept = index.unreadableRows
                     indexBytes = data
                 } catch let newer as FeedIndexNewerLayout {
                     isLeftAlone = true
@@ -254,7 +290,7 @@ enum FeedIndexFiles {
             }
         }
         let listed = Set(rows.map(\.tmbDirectoryName))
-        let unlisted = rowsFromPackages(of: feedID, in: root, excluding: listed)
+        let unlisted = rowsFromPackages(of: feedID, in: root, excluding: listed, keptRows: KeptRowPackages(kept))
         if indexBytes != nil, !unlisted.isEmpty {
             DiagnosticLog.event(
                 .feeds,
@@ -265,23 +301,31 @@ enum FeedIndexFiles {
         return Contents(
             rows: (rows + unlisted).map { placed($0, in: root, of: feedID) },
             indexBytes: indexBytes,
-            isLeftAlone: isLeftAlone
+            isLeftAlone: isLeftAlone,
+            unreadableRows: kept
         )
     }
 
     /// A row for every package in the feed `feedID`'s folder whose name is
-    /// not in `listed`, read from the package's record, read with dataless
-    /// files left in the cloud: every package holding a readable record and
-    /// no removal marker. A staged package, whose name is hidden, is never
-    /// one; a record only in the cloud is left for a launch that finds it
-    /// here, which takes it then.
-    private static func rowsFromPackages(of feedID: UUID, in root: URL, excluding listed: Set<String>) -> [Book] {
+    /// not in `listed` and which no row in `keptRows` owns (a row of the
+    /// index this TextMouth cannot read, V03), read from the package's
+    /// record, read with dataless files left in the cloud: every package
+    /// holding a readable record and no removal marker. A staged package,
+    /// whose name is hidden, is never one; a record only in the cloud is
+    /// left for a launch that finds it here, which takes it then.
+    private static func rowsFromPackages(
+        of feedID: UUID,
+        in root: URL,
+        excluding listed: Set<String>,
+        keptRows: KeptRowPackages
+    ) -> [Book] {
         let folder = FeedPaths.itemsFolder(of: feedID, in: root)
         let names = DatalessFiles.withoutDownloading {
             (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []
         }
         var rows: [Book] = []
-        for name in names.sorted() where name.hasSuffix(".tmb") && !name.hasPrefix(".") && !listed.contains(name) {
+        for name in names.sorted() where name.hasSuffix(".tmb") && !name.hasPrefix(".") && !listed.contains(name)
+            && !keptRows.owns(tmbDirectoryName: name) {
             let package = folder.appendingPathComponent(name, isDirectory: true)
             let marker = TextMouthPaths.removedFromLibraryMarkerPath(in: package)
             guard !FileManager.default.fileExists(atPath: marker.path),

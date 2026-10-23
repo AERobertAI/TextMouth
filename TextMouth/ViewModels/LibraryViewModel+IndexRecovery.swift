@@ -491,6 +491,8 @@ extension LibraryViewModel {
     /// alone (only in the cloud when it was read again) is left alone when
     /// its rows come from `loaded`, which then stand in for it, and not when
     /// the session's own rows of that feed, read before, are the ones kept.
+    /// The rows of a feed's index this version cannot read (V03) are the
+    /// session's, and, of a feed it holds none of, those `loaded` read.
     nonisolated static func feedItems(of session: Library, over loaded: Library) -> FeedShelf {
         var items = session
         items.shelveFeedItems()
@@ -502,6 +504,13 @@ extension LibraryViewModel {
         }
         for feedID in loaded.feedShelf.indexedFeedIDs {
             shelf.keepIndex(of: feedID)
+        }
+        // The rows of a feed's index that this version cannot read (V03)
+        // stay with their feed: the session's own, when it read some, and
+        // else those `loaded` read, as a session that read its rows from
+        // the packages could not have known them.
+        for (feedID, rows) in loaded.feedShelf.unreadableRows where shelf.unreadableRows[feedID] == nil {
+            shelf.keepUnreadableRows(rows, of: feedID)
         }
         for feedID in loaded.feedShelf.indexesLeftAlone where !sessionFeeds.contains(feedID) {
             shelf.leaveIndexAlone(of: feedID)

@@ -230,6 +230,15 @@ struct KeptRowPackages: Equatable, Sendable {
         namesByFolder.isEmpty && namesInAnyFolder.isEmpty
     }
 
+    /// Whether a kept row owns a package named `tmbDirectoryName`, wherever
+    /// it is: for a walk of a folder that is not a library folder, such as a
+    /// feed's, where a package is placed by the folder, not by a row's
+    /// `folderPath`.
+    func owns(tmbDirectoryName: String) -> Bool {
+        let nameKey = Self.equivalence.comparisonKey(for: tmbDirectoryName)
+        return namesInAnyFolder.contains(nameKey) || namesByFolder.values.contains { $0.contains(nameKey) }
+    }
+
     /// Whether the package named `tmbDirectoryName` in the library folder
     /// `folderPath` ("" for the top of the library) belongs to a kept row.
     func owns(folderPath: String, tmbDirectoryName: String) -> Bool {
@@ -262,8 +271,14 @@ struct Library: Codable {
     /// the one loaded carries these over.
     var unreadableRows: [UnreadableLibraryRow]
 
-    /// The packages the kept rows own, which every walk of the packages
-    /// leaves alone (`KeptRowPackages`).
+    /// How many rows are kept unshown in all: those of library.json and
+    /// those of the feeds' indexes (`FeedShelf.unreadableRows`).
+    var unreadableRowCount: Int {
+        unreadableRows.count + feedShelf.unreadableRowCount
+    }
+
+    /// The packages the kept rows of library.json own, which every walk of
+    /// the library's packages leaves alone (`KeptRowPackages`).
     var keptRowPackages: KeptRowPackages {
         KeptRowPackages(unreadableRows)
     }

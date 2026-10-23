@@ -628,6 +628,210 @@ final class NewerLibraryRowsTests: XCTestCase {
         XCTAssertEqual(written.books.map(\.id), [shown.id])
     }
 
+    // MARK: - A feed's index keeps the rows it cannot read
+
+    /// A data directory of a feed's index holding a readable row and a row
+    /// of an unknown format, both with packages on disk.
+    private struct FeedRowsFixture {
+        /// The data directory the feed lives in.
+        let root: URL
+        /// The feed.
+        let feedID: UUID
+        /// The row this version reads.
+        let readable: Book
+        /// The item whose row is of an unknown format in the index.
+        let unreadable: Book
+        /// That row as the index file holds it.
+        let rawUnreadable: [String: Any]
+        /// The feed's index file.
+        var indexURL: URL { FeedPaths.indexFile(of: feedID, in: root) }
+    }
+
+    /// A downloaded article of `feedID` in the data directory `root`: a
+    /// package in the feed's folder holding its HTML and its record, and the
+    /// row for it.
+    private func makeFeedItem(title: String, feedID: UUID, in root: URL) throws -> Book {
+        let bookID = UUID()
+        let dateAdded = Date(timeIntervalSince1970: 1_790_000_000)
+        let name = TextMouthPaths.tmbName(title: title, author: "Antiquarian", dateAdded: dateAdded, bookID: bookID)
+        let package = FeedPaths.packageDirectory(named: name, of: feedID, in: root)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        let file = package.appendingPathComponent("\(title).html")
+        try "<html><body><h1>\(title)</h1><p>Words.</p></body></html>".write(to: file, atomically: true, encoding: .utf8)
+        let book = Book(
+            id: bookID,
+            title: title,
+            author: "Antiquarian",
+            format: .html,
+            filePath: file.path,
+            md5Hash: UUID().uuidString,
+            folderPath: "",
+            dateAdded: dateAdded,
+            tmbDirectoryName: name,
+            feedLink: FeedBookLink(feedID: feedID, itemID: UUID().uuidString)
+        )
+        try book.makeBookInfo().save(to: package)
+        return book
+    }
+
+    /// Builds the fixture: two feed items with packages, and the feed's index
+    /// written from both, with the second item's row then changed to an
+    /// unknown format (`fb2`), as a later TextMouth could have written it.
+    private func makeFeedRowsFixture() throws -> FeedRowsFixture {
+        let root = try makeScratchFolder()
+        let feedID = UUID()
+        let readable = try makeFeedItem(title: "Readable", feedID: feedID, in: root)
+        let unreadable = try makeFeedItem(title: "Future", feedID: feedID, in: root)
+        let written = try FeedIndexFiles.encoded(FeedIndex(feedID: feedID, books: [readable, unreadable]))
+        var object = try jsonObject(written)
+        var rows = try XCTUnwrap(object["books"] as? [[String: Any]])
+        let index = rows.firstIndex { ($0["id"] as? String) == unreadable.id.uuidString }
+        let position = try XCTUnwrap(index)
+        rows[position]["format"] = "fb2"
+        object["books"] = rows
+        try FileManager.default.createDirectory(
+            at: FeedPaths.itemsFolder(of: feedID, in: root), withIntermediateDirectories: true
+        )
+        let fixture = FeedRowsFixture(
+            root: root, feedID: feedID, readable: readable, unreadable: unreadable,
+            rawUnreadable: rows[position]
+        )
+        try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys]).write(to: fixture.indexURL)
+        return fixture
+    }
+
+    /// The shelf a library holds after reading `contents` of the feed
+    /// `feedID`, as loading the feeds' indexes makes it.
+    private func shelf(reading contents: FeedIndexFiles.Contents, of feedID: UUID) -> FeedShelf {
+        FeedShelf(
+            rows: contents.rows,
+            indexedFeedIDs: [feedID],
+            unreadableRows: [feedID: contents.unreadableRows]
+        )
+    }
+
+    /// A feed's index holding a readable row and one of an unknown format
+    /// reads the one and keeps the other, is not preserved aside as unusable,
+    /// and does not read the kept row's package again as a row of the
+    /// folder.
+    func testAFeedIndexReadsTheRowItCanAndKeepsTheOther() throws {
+        let fixture = try makeFeedRowsFixture()
+
+        let contents = FeedIndexFiles.read(feedID: fixture.feedID, in: fixture.root)
+
+        XCTAssertEqual(contents.rows.map(\.id), [fixture.readable.id])
+        XCTAssertEqual(contents.unreadableRows.map(\.id), [Optional(fixture.unreadable.id)])
+        XCTAssertEqual(contents.unreadableRows.map(\.tmbDirectoryName), [Optional(fixture.unreadable.tmbDirectoryName)])
+        XCTAssertNotNil(contents.indexBytes, "the index was usable")
+        XCTAssertFalse(contents.isLeftAlone)
+        XCTAssertTrue(LibraryIndexQuarantine.existingCopies(of: fixture.indexURL).isEmpty, "not preserved aside")
+    }
+
+    /// The kept row is written back, equal to the original, at the next
+    /// save of the feed's index, after the rows it reads and counted as a
+    /// row; reading what was written again changes nothing.
+    func testAFeedIndexWritesTheKeptRowBackUnchanged() throws {
+        let fixture = try makeFeedRowsFixture()
+        let contents = FeedIndexFiles.read(feedID: fixture.feedID, in: fixture.root)
+        let library = Library(feedShelf: shelf(reading: contents, of: fixture.feedID))
+
+        let indexes = try FeedIndexFiles.encodedIndexes(of: library, placedIn: fixture.root)
+
+        XCTAssertEqual(indexes.map(\.feedID), [fixture.feedID])
+        XCTAssertEqual(indexes.map(\.rowCount), [2])
+        let written = try XCTUnwrap(indexes.first)
+        let rows = try XCTUnwrap(jsonObject(written.data)["books"] as? [NSDictionary])
+        XCTAssertEqual(rows.count, 2)
+        XCTAssertEqual(rows.last, fixture.rawUnreadable as NSDictionary)
+        XCTAssertEqual(rows.compactMap { $0["id"] as? String }.first, fixture.readable.id.uuidString)
+
+        try FeedIndexFiles.write(written, in: fixture.root)
+        let again = FeedIndexFiles.read(feedID: fixture.feedID, in: fixture.root)
+        XCTAssertEqual(again.rows.map(\.id), [fixture.readable.id])
+        XCTAssertEqual(again.unreadableRows, contents.unreadableRows)
+    }
+
+    /// A feed whose index holds only rows this version cannot read still has
+    /// an index to write: its rows are not an empty list.
+    func testAFeedOfOnlyKeptRowsIsNotEmpty() throws {
+        let feedID = UUID()
+        let row = keptRow(["id": .string(UUID().uuidString), "format": .string("fb2")])
+        let library = Library(feedShelf: FeedShelf(unreadableRows: [feedID: [row]]))
+
+        let indexes = try FeedIndexFiles.encodedIndexes(of: library, placedIn: FileManager.default.temporaryDirectory)
+
+        XCTAssertEqual(indexes.map(\.feedID), [feedID])
+        XCTAssertEqual(indexes.map(\.rowCount), [1])
+    }
+
+    /// An index without kept rows is written exactly as it was before they
+    /// could be kept.
+    func testAFeedIndexWithoutKeptRowsEncodesAsBefore() throws {
+        let fixture = try makeFeedRowsFixture()
+
+        let written = try FeedIndexFiles.encoded(FeedIndex(feedID: fixture.feedID, books: [fixture.readable]))
+
+        let object = try jsonObject(written)
+        XCTAssertEqual(Set(object.keys), ["formatVersion", "feedID", "books"])
+        let rows = try XCTUnwrap(object["books"] as? [[String: Any]])
+        XCTAssertEqual(rows.compactMap { $0["id"] as? String }, [fixture.readable.id.uuidString])
+    }
+
+    /// The shelf keeps the index of a feed it holds kept rows of, counts the
+    /// rows, and forgets them with the feed's index.
+    func testTheShelfKeepsAndForgetsAFeedsKeptRows() {
+        let feedID = UUID()
+        let row = keptRow(["tmbDirectoryName": .string("Future.tmb")])
+        var shelf = FeedShelf()
+
+        shelf.keepUnreadableRows([row], of: feedID)
+
+        XCTAssertEqual(shelf.unreadableRows[feedID], [row])
+        XCTAssertEqual(shelf.unreadableRowCount, 1)
+        XCTAssertTrue(shelf.indexedFeedIDs.contains(feedID))
+
+        shelf.keepUnreadableRows([], of: feedID)
+        XCTAssertEqual(shelf.unreadableRowCount, 0)
+
+        shelf.keepUnreadableRows([row], of: feedID)
+        shelf.forgetIndex(of: feedID)
+        XCTAssertEqual(shelf.unreadableRowCount, 0)
+        XCTAssertFalse(shelf.indexedFeedIDs.contains(feedID))
+    }
+
+    /// A library merged from a session into the index read again keeps the
+    /// kept rows: the session's own for a feed it read some of, and else
+    /// those the index read.
+    func testMergingASessionIntoALoadedLibraryKeepsAFeedsKeptRows() {
+        let sessionFeed = UUID()
+        let loadedOnlyFeed = UUID()
+        let fromSession = keptRow(["tmbDirectoryName": .string("Session.tmb")])
+        let fromLoaded = keptRow(["tmbDirectoryName": .string("Loaded.tmb")])
+        let session = Library(feedShelf: FeedShelf(unreadableRows: [sessionFeed: [fromSession]]))
+        var loadedShelf = FeedShelf(unreadableRows: [loadedOnlyFeed: [fromLoaded]])
+        loadedShelf.keepUnreadableRows([fromLoaded], of: sessionFeed)
+        let loaded = Library(feedShelf: loadedShelf)
+
+        let merged = LibraryViewModel.feedItems(of: session, over: loaded)
+
+        XCTAssertEqual(merged.unreadableRows[sessionFeed], [fromSession])
+        XCTAssertEqual(merged.unreadableRows[loadedOnlyFeed], [fromLoaded])
+    }
+
+    /// The model counts the kept rows of the feeds' indexes with those of
+    /// library.json.
+    @MainActor
+    func testTheModelCountsAFeedsKeptRowsToo() throws {
+        let model = LibraryViewModel()
+        var library = try decodeLibrary(makeRowsFixture().data)
+        XCTAssertEqual(library.unreadableRows.count, 2)
+        library.feedShelf.keepUnreadableRows([keptRow(["format": .string("fb2")])], of: UUID())
+        model.library = library
+
+        XCTAssertEqual(model.booksNeedingNewerTextMouth, 3)
+        XCTAssertEqual(library.libraryBookCount, 2, "the kept rows are not books")
+    }
+
     // MARK: - What the user is told
 
     /// The sentence Storage settings show: nothing for none, the singular

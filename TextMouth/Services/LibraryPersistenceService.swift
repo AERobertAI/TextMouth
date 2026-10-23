@@ -567,7 +567,10 @@ enum LibraryPersistenceService {
             return FeedShelf(
                 rows: rows,
                 indexedFeedIDs: Set(read.keys),
-                indexesLeftAlone: Set(read.filter(\.value.isLeftAlone).keys)
+                indexesLeftAlone: Set(read.filter(\.value.isLeftAlone).keys),
+                // The rows of an index this version cannot read stay with
+                // their feeds, to be written back (V03).
+                unreadableRows: read.mapValues(\.unreadableRows)
             )
         }
     }
