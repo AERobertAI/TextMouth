@@ -107,10 +107,13 @@ enum LibraryIndexRecoveryOutcome: Equatable {
 }
 
 /// The reading list and the sort settings that an index which cannot be read
-/// as a whole still holds, read from its bytes on their own (FR09). A
-/// damaged book entry, or a format a later version wrote, makes the whole
-/// index unreadable but leaves these readable; an index cut short, or not
-/// JSON at all, gives neither.
+/// as a whole still holds, read from its bytes on their own (FR09). A part
+/// of the index in a layout this version cannot read (its folders, or its
+/// list of books when it is not a list) makes the whole index unreadable but
+/// leaves these readable; an index cut short, or not JSON at all, gives
+/// neither. A single book entry this version cannot read, damaged or in a
+/// format a later version wrote, no longer makes the index unreadable: its
+/// row is kept as it is, unshown (V03, `Library.unreadableRows`).
 struct SalvagedLibraryArrangement: Equatable {
     /// The reading list read; the empty list for an index that holds none,
     /// as one written before the list existed; nil when the index holds one
