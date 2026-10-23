@@ -24,8 +24,8 @@ final class LibraryIndexPersistenceTests: XCTestCase {
         try assertUnreadableIndexIsPreserved(.truncated, at: sandbox.indexURL)
     }
 
-    func testIndexWithUnknownFormatIsPreservedAndNeverWritten() throws {
-        try assertUnreadableIndexIsPreserved(.unknownFormat, at: sandbox.indexURL)
+    func testIndexWithAnUnreadableLayoutIsPreservedAndNeverWritten() throws {
+        try assertUnreadableIndexIsPreserved(.unreadableLayout, at: sandbox.indexURL)
     }
 
     func testIndexWithoutReadPermissionIsPreservedAndNeverWritten() throws {
@@ -38,8 +38,8 @@ final class LibraryIndexPersistenceTests: XCTestCase {
         try assertUnreadableIndexIsPreserved(.truncated, at: sandbox.legacyURL)
     }
 
-    func testLegacyIndexWithUnknownFormatIsPreservedAndNeverDeleted() throws {
-        try assertUnreadableIndexIsPreserved(.unknownFormat, at: sandbox.legacyURL)
+    func testLegacyIndexWithAnUnreadableLayoutIsPreservedAndNeverDeleted() throws {
+        try assertUnreadableIndexIsPreserved(.unreadableLayout, at: sandbox.legacyURL)
     }
 
     func testLegacyIndexWithoutReadPermissionIsPreservedAndNeverDeleted() throws {
@@ -196,7 +196,7 @@ final class LibraryIndexPersistenceTests: XCTestCase {
     /// Rebuild Library Index writes the replacement, keeps the copy of what it
     /// replaced, and resumes ordinary saves.
     func testReplacingTheUnreadableIndexKeepsItsCopyAndResumesWrites() throws {
-        let damagedBytes = try sandbox.stage(.unknownFormat, at: sandbox.indexURL)
+        let damagedBytes = try sandbox.stage(.unreadableLayout, at: sandbox.indexURL)
         let failure = try XCTUnwrap(unreadableFailure(from: LibraryPersistenceService.load()))
         let replacement = LibraryIndexSandbox.sampleLibrary()
 
@@ -230,7 +230,7 @@ final class LibraryIndexPersistenceTests: XCTestCase {
     func testFailureReasonsAreWrittenInPlainLanguage() throws {
         let reasons: [LibraryIndexDamage: String] = [
             .truncated: "damaged or incomplete",
-            .unknownFormat: "books, item 1, format",
+            .unreadableLayout: "books",
             .unreadable: "permission"
         ]
         for (damage, expectedPhrase) in reasons {
