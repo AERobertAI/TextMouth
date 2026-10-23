@@ -1,4 +1,4 @@
-# What's new
+# Changelog
 
 Part of [TextMouth's documentation](../../README.md).
 
