@@ -132,19 +132,64 @@ final class TranscriptTextTests: XCTestCase {
         <!-- chapter: The Ferry -->
         # The Ferry
 
-        One\\. Two\\. Three\\. Four\\.
+        One. Two. Three. Four.
 
-        Five\\.
+        Five.
 
-        Six\\.
+        Six.
 
         <!-- chapter: Heading 2 -->
         # Heading 2
 
-        \(first.dropLast())\\. \(second.dropLast())\\.
+        \(first) \(second)
 
-        \(third.dropLast())\\.
+        \(third)
         """)
+    }
+
+    /// content.md escapes only what TextMouth's reader needs, so the text
+    /// reads in an editor as it was heard: commas, single periods, a colon, a
+    /// question mark, and a `#` that closes nothing stay as they are; quotes,
+    /// apostrophes, runs of `-` or `.`, and `*` get a backslash; so does the
+    /// `.` of a paragraph that begins "1." (else a list). The text still
+    /// places every sentence where it lies.
+    func testContentMarkdownEscapesOnlyWhatTheReaderNeeds() throws {
+        let sentences = [
+            "Well, he said: why not?",
+            "It's the sailors' \"best\" -- really... truly.",
+            "Issue #5 and *bold* here.",
+            "1. First stop is the quay.",
+        ]
+        // The fourth sentence follows a three-second silence, so it begins a
+        // paragraph of its own.
+        let chapters = [TranscriptTextBuilder.ChapterTranscript(title: "Dock Road", sentences: [
+            sentence(sentences[0], 0, 1_000), sentence(sentences[1], 1_000, 2_000),
+            sentence(sentences[2], 2_000, 3_000), sentence(sentences[3], 6_000, 7_000),
+        ])]
+
+        XCTAssertEqual(TranscriptTextBuilder.markdown(of: chapters), """
+        <!-- chapter: Dock Road -->
+        # Dock Road
+
+        Well, he said: why not? It\\'s the sailors\\' \\"best\\" \\-\\- really\\.\\.\\. truly. Issue #5 and \\*bold\\* here.
+
+        1\\. First stop is the quay.
+        """)
+
+        let text = try XCTUnwrap(TranscriptTextBuilder.text(of: chapters, bookTitle: "Toll Road", bookAuthor: "Unknown"))
+        let chapterText = Array(try XCTUnwrap(text.chapters[safe: 0], "the text has no chapter").text.utf16)
+        let placed = try XCTUnwrap(text.sentences[safe: 0], "the text has no sentences for its chapter")
+        XCTAssertEqual(placed.count, sentences.count, "a sentence was left out")
+        for (position, expected) in zip(placed, sentences) {
+            // A sentence placed outside its chapter's text would trap the
+            // slice below, so it stops the test instead.
+            guard position.characterOffset >= 0, position.characterOffset <= position.characterEnd,
+                  position.characterEnd <= chapterText.count else {
+                XCTFail("the sentence \"\(expected)\" is placed outside its chapter's text")
+                return
+            }
+            XCTAssertEqual(String(decoding: chapterText[position.characterOffset..<position.characterEnd], as: UTF16.self), expected)
+        }
     }
 
     /// The text reads back exactly as the transcript wrote it, Markdown's
@@ -463,6 +508,57 @@ final class TranscriptTextTests: XCTestCase {
         XCTAssertEqual(FileStamp(of: cache), stamp, "content.md already held the text")
         XCTAssertEqual(debugLogLines(containing: "TRANSCRIPT_TEXT_REBUILT: \(title): content.md and its index were written "
             + "again from transcript.json: the book's index holds no transcript text").count, 1)
+    }
+
+    /// A book whose text was written before the text escaped only what the
+    /// reader needs (index version 1.0.0, every punctuation character
+    /// escaped) has its content.md written again, once, without the needless
+    /// backslashes: the layer's version is now 1.1.0, the rebuild is logged
+    /// once, no copy is kept (TextMouth wrote the old text itself),
+    /// transcript.json is untouched, and a second load writes nothing.
+    func testATextOfAnOlderVersionIsWrittenAgainWithoutNeedlessBackslashes() throws {
+        let world = try makeIntegrationWorld("Transcript Older Version")
+        let title = uniqueTitle("Harbor Notes")
+        let book = try world.makeSilentAudioBook(title: title, trackDurations: [9, 6])
+        let installation = try TranscriptStore.install(try TranscriptFixtures.transcript(of: book, sentences: Self.sentences), for: book)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let transcriptFile = TextMouthPaths.transcriptPath(in: book.tmbDirectory)
+        let transcriptBytes = try Data(contentsOf: transcriptFile)
+        // As 1.0.0 left the book: the fully escaped content.md, and a layer
+        // that is version 1.0.0 and fingerprints that file.
+        let oldBytes = Data(Self.fullyEscapedMarkdown.utf8)
+        try oldBytes.write(to: cache)
+        var oldLayer = try XCTUnwrap(installation.index.transcript)
+        oldLayer.version = "1.0.0"
+        oldLayer.textCacheFingerprint.cache = FileFingerprint(
+            stamp: try XCTUnwrap(FileStamp(of: cache)),
+            digest: FingerprintHasher.md5.digestOfData(oldBytes)
+        )
+        var oldIndex = installation.index
+        oldIndex.transcript = oldLayer
+
+        let load = TranscriptTextLoader.load(for: book, audioIndex: oldIndex)
+
+        XCTAssertEqual(try String(contentsOf: cache, encoding: .utf8), Self.expectedMarkdown)
+        XCTAssertTrue(load.indexChanged)
+        XCTAssertEqual(load.index.transcript?.version, "1.1.0")
+        XCTAssertNotNil(load.text)
+        XCTAssertEqual(try Data(contentsOf: transcriptFile), transcriptBytes, "transcript.json is untouched")
+        XCTAssertEqual(
+            LibraryIndexQuarantine.existingCopies(of: cache, marker: TextMouthPaths.keptTextCopyMarker), [],
+            "TextMouth wrote the old text itself, so no copy of it is kept"
+        )
+        let reason = "its index was set aside: transcript.version \"1.0.0\" is not the current \"1.1.0\""
+        let rebuilt = "TRANSCRIPT_TEXT_REBUILT: \(title): content.md and its index were written again from transcript.json: \(reason)"
+        XCTAssertEqual(debugLogLines(containing: rebuilt).count, 1)
+
+        // A second load finds the text current and writes nothing.
+        let stamp = FileStamp(of: cache)
+        let again = TranscriptTextLoader.load(for: book, audioIndex: load.index)
+        XCTAssertEqual(FileStamp(of: cache), stamp)
+        XCTAssertFalse(again.indexChanged)
+        XCTAssertNotNil(again.text)
+        XCTAssertEqual(debugLogLines(containing: rebuilt).count, 1, "the second load logged another rebuild")
     }
 
     /// A content.md edited by hand no longer matches what the transcript
@@ -842,6 +938,21 @@ final class TranscriptTextTests: XCTestCase {
     /// The content.md those sentences make: a chapter for each track, named
     /// as the track is, each with its heading and one paragraph.
     static let expectedMarkdown = """
+    <!-- chapter: 01 -->
+    # 01
+
+    Quillwort grows by the ferry slip. Tide tables hang in the harbor office. Nobody reads them twice.
+
+    <!-- chapter: 02 -->
+    # 02
+
+    The salt road bends east. Carts wait at the toll.
+    """
+
+    /// The content.md those sentences made before the text escaped only what
+    /// the reader needs (index version 1.0.0): every punctuation character
+    /// of every sentence had a backslash.
+    static let fullyEscapedMarkdown = """
     <!-- chapter: 01 -->
     # 01
 

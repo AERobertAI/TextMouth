@@ -126,7 +126,11 @@ final class TranscriptEditTests: XCTestCase {
         let transcript = try TranscriptFixtures.transcript(of: book, sentences: TranscriptionUIScripts.twoTracks)
         try TranscriptStore.install(transcript, for: book)
         let original = try String(contentsOf: MarkdownCacheService.cacheURL(for: book), encoding: .utf8)
-        let deleted = replacing(" " + MarkdownLiteral.escaped("Rope coils dry on the pier."), with: "", in: original)
+        let deleted = replacing(
+            " " + MarkdownLiteral.minimallyEscaped("Rope coils dry on the pier.", smartPunctuation: true),
+            with: "",
+            in: original
+        )
         let edited = replacing("The ferry bell", with: "The old ferry bell", in: deleted)
         let chapters = MarkdownCacheService.parseMultiChapterMarkdown(edited, bookTitle: book.title, bookAuthor: book.author).chapters
         var audioIndex = try BookContentAnalysisService.load(book: book).index
@@ -189,8 +193,8 @@ final class TranscriptEditTests: XCTestCase {
         defer { announcements.stop() }
         let cache = MarkdownCacheService.cacheURL(for: book)
         let edited = replacing(
-            MarkdownLiteral.escaped("on the pier."),
-            with: MarkdownLiteral.escaped("on the jetty."),
+            MarkdownLiteral.minimallyEscaped("on the pier.", smartPunctuation: true),
+            with: MarkdownLiteral.minimallyEscaped("on the jetty.", smartPunctuation: true),
             in: try String(contentsOf: cache, encoding: .utf8)
         )
 
@@ -479,8 +483,8 @@ final class TranscriptEditTests: XCTestCase {
         await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
         let cache = MarkdownCacheService.cacheURL(for: book)
         let edited = replacing(
-            MarkdownLiteral.escaped("on the pier."),
-            with: MarkdownLiteral.escaped("on the jetty."),
+            MarkdownLiteral.minimallyEscaped("on the pier.", smartPunctuation: true),
+            with: MarkdownLiteral.minimallyEscaped("on the jetty.", smartPunctuation: true),
             in: try String(contentsOf: cache, encoding: .utf8)
         )
         try edited.write(to: cache, atomically: true, encoding: .utf8)
@@ -566,8 +570,8 @@ final class TranscriptEditTests: XCTestCase {
         // The first save: the jetty replaces the pier, and the note is heard.
         await editor.editor.edit(episode, choosingApp: false, in: world.library, from: nil)
         let first = replacing(
-            MarkdownLiteral.escaped("on the pier."),
-            with: MarkdownLiteral.escaped("on the jetty."),
+            MarkdownLiteral.minimallyEscaped("on the pier.", smartPunctuation: true),
+            with: MarkdownLiteral.minimallyEscaped("on the jetty.", smartPunctuation: true),
             in: try String(contentsOf: cache, encoding: .utf8)
         )
         try first.write(to: cache, atomically: true, encoding: .utf8)
@@ -575,8 +579,8 @@ final class TranscriptEditTests: XCTestCase {
 
         // The second save, in the same session: only "Text updated".
         let second = replacing(
-            MarkdownLiteral.escaped("on the jetty."),
-            with: MarkdownLiteral.escaped("on the quay."),
+            MarkdownLiteral.minimallyEscaped("on the jetty.", smartPunctuation: true),
+            with: MarkdownLiteral.minimallyEscaped("on the quay.", smartPunctuation: true),
             in: first
         )
         try second.write(to: cache, atomically: true, encoding: .utf8)
@@ -669,9 +673,11 @@ final class TranscriptEditTests: XCTestCase {
     }
 
     /// `text` with `target` replaced by `replacement`, failing the test
-    /// when `target` is not in it: content.md writes every sentence with
-    /// its punctuation escaped, so an edit written against the plain text
-    /// would otherwise change nothing and test nothing.
+    /// when `target` is not in it: content.md escapes what TextMouth's
+    /// reader needs escaped (quotes, runs of dashes or dots, and Markdown's
+    /// own characters: `MarkdownLiteral.minimallyEscaped` with
+    /// `smartPunctuation`), so an edit written against the plain text of such
+    /// a sentence would otherwise change nothing and test nothing.
     private func replacing(
         _ target: String,
         with replacement: String,

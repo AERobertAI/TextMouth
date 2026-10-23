@@ -433,8 +433,8 @@ final class TranscriptCleanupSheetTests: XCTestCase {
         // Saved in the user's editor, and no check has run since.
         let cache = MarkdownCacheService.cacheURL(for: book)
         let saved = try String(contentsOf: cache, encoding: .utf8).replacingOccurrences(
-            of: MarkdownLiteral.escaped("on the pier."),
-            with: MarkdownLiteral.escaped("on the quay.")
+            of: MarkdownLiteral.minimallyEscaped("on the pier.", smartPunctuation: true),
+            with: MarkdownLiteral.minimallyEscaped("on the quay.", smartPunctuation: true)
         )
         try saved.write(to: cache, atomically: true, encoding: .utf8)
 

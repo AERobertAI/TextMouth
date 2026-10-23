@@ -239,15 +239,29 @@ enum TranscriptTextBuilder {
 
     /// content.md for `chapters`: each chapter begins with its chapter
     /// marker and a level-1 heading of its title, then its paragraphs, each
-    /// one line of its sentences with a space between them. Every sentence
-    /// and title is written as literal Markdown (`MarkdownLiteral`), so the
-    /// text read back is exactly the transcript's.
+    /// one line of its sentences with a space between them.
+    ///
+    /// A transcript's text counts time, not characters, and it is read in an
+    /// editor and on a braille display, so it is written with only the
+    /// backslashes TextMouth's own reader needs
+    /// (`MarkdownLiteral.minimallyEscaped` with `smartPunctuation`, and
+    /// `guardingLineStart` for a line's start): Markdown's own characters,
+    /// quotes, and runs of dashes or dots, which the reader would turn into
+    /// curly quotes, dashes, and ellipses. Commas, a single period, a colon,
+    /// and a question mark stay as they were heard. The reader then reads the
+    /// text back as exactly the transcript's characters, so each sentence is
+    /// found where it lies
+    /// (`locate`).
     static func markdown(of chapters: [ChapterTranscript]) -> String {
         chapters.enumerated().map { number, chapter in
             let title = headingTitle(of: chapter, number: number)
-            let opening = MarkdownCacheService.chapterMarker(title: title) + "\n# " + MarkdownLiteral.escaped(title)
+            let opening = MarkdownCacheService.chapterMarker(title: title)
+                + "\n# " + MarkdownLiteral.minimallyEscaped(title, smartPunctuation: true)
             let paragraphs = paragraphs(of: chapter.sentences).map { paragraph in
-                paragraph.map { MarkdownLiteral.escaped($0.text) }.joined(separator: " ")
+                // Joined first, so a run of dashes or dots across a join is
+                // seen as the one piece the reader sees.
+                let joined = paragraph.map(\.text).joined(separator: " ")
+                return MarkdownLiteral.guardingLineStart(MarkdownLiteral.minimallyEscaped(joined, smartPunctuation: true))
             }
             return ([opening] + paragraphs).joined(separator: "\n\n")
         }.joined(separator: "\n\n")
@@ -286,7 +300,7 @@ enum TranscriptTextBuilder {
 
     /// Where each of `sentences` lies in `text`, the chapter's reading
     /// text, in order: each found as written, starting where the one before
-    /// it ended. Written as literal Markdown, a sentence reads back as
+    /// it ended. Written as `markdown(of:)` writes it, a sentence reads back as
     /// itself, a separator away from the one before, so each is found at
     /// once; one not found, which would mean the text was not read back as
     /// written, is left out rather than placed wrongly.
