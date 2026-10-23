@@ -56,7 +56,9 @@ enum AsyncBridge {
     /// private to this call). A read of a file that never returns, through
     /// AVFoundation, would otherwise leave the waiting thread, and a reader
     /// on Loading or an import with no way to cancel, stuck for good. With a
-    /// nil `timeLimit` the wait has no limit.
+    /// nil `timeLimit` the wait has no limit. A read of an audio file waits
+    /// through `waitForResult(reading:timeLimit:abandoned:of:)` instead,
+    /// which never starts a read of a file whose read was abandoned before.
     /// - Throws: `TimeLimitExceeded` after the limit, otherwise what the
     ///   operation throws.
     static func waitForResult<Value>(
@@ -144,6 +146,103 @@ enum AsyncBridge {
                 return CountWording.phrase(Int(seconds), singular: "second", plural: "seconds")
             }
             return "\(seconds) seconds"
+        }
+    }
+
+    // MARK: - Reads Abandoned at Their Limit
+
+    /// As `waitForResult(timeLimit:of:)`, for `operation`, a read through
+    /// AVFoundation of the audio file or folder at `file`, which is
+    /// remembered in `abandoned` once a read of it passes its limit: every
+    /// later read of it is refused at once with `AbandonedEarlier`, and its
+    /// operation never starts (stable020 review, finding 4). The limit
+    /// cannot stop AVFoundation work that ignores cancellation, so without
+    /// this a file that hangs AVFoundation would leave another stuck read
+    /// running beside the first, with its thread and memory, each time its
+    /// book was opened again or a launch check met it, the kind of pile-up
+    /// that grew TextMouth to 34 GB on October 14, 2026.
+    ///
+    /// Only a read known to be stuck is remembered: reads of one file that
+    /// start together, before either passes its limit, both run, and a read
+    /// that fails with its own error is tried again next time.
+    /// - Throws: `AbandonedEarlier` at once for a remembered file; otherwise
+    ///   `TimeLimitExceeded` after the limit, or what the operation throws.
+    static func waitForResult<Value>(
+        reading file: URL,
+        timeLimit: Duration,
+        abandoned: AbandonedReads = .session,
+        of operation: @escaping @Sendable () async throws -> Value
+    ) throws -> Value {
+        // The file as it is when the read starts: what is remembered should
+        // the read pass its limit.
+        let read = AbandonedReads.Read(of: file)
+        if abandoned.contains(read) {
+            // The line names no file or title, as the limit's own does.
+            DiagnosticLog.event(
+                .playback,
+                "ASYNC_TIME_LIMIT: an audio read was refused at once, as an earlier read of the same file passed its limit"
+            )
+            throw AbandonedEarlier()
+        }
+        do {
+            return try waitForResult(timeLimit: timeLimit, of: operation)
+        } catch let exceeded as TimeLimitExceeded {
+            abandoned.remember(read)
+            throw exceeded
+        }
+    }
+
+    /// A read refused at once, because an earlier read of the same file
+    /// passed its limit while TextMouth was open
+    /// (`waitForResult(reading:timeLimit:abandoned:of:)`). Its sentence
+    /// reaches the reader's or the import's failure message as the limit's
+    /// own does.
+    struct AbandonedEarlier: LocalizedError, Equatable {
+        var errorDescription: String? {
+            "TextMouth stopped reading this audio earlier because it took too long, and won't try again until TextMouth is opened again."
+        }
+    }
+
+    /// The files whose read passed its limit, kept until TextMouth quits.
+    /// Reads wait on any background queue, so a lock guards the set.
+    final class AbandonedReads: @unchecked Sendable {
+        /// The app's: every reading wait remembers into it unless given
+        /// another, as tests are.
+        static let session = AbandonedReads()
+
+        /// A file as a read found it: its path, size, and modification date,
+        /// so the same file changed since, such as one written again, is
+        /// read again. A folder of tracks has no size and date of its own
+        /// here (`FileStamp`), so it is known by its path alone.
+        struct Read: Hashable, Sendable {
+            /// The file's path, standardized.
+            let path: String
+            /// Its size and modification time, or nil for a folder, or for
+            /// a file that cannot be examined.
+            let stamp: FileStamp?
+
+            init(of file: URL) {
+                path = file.standardizedFileURL.path
+                stamp = FileStamp(of: file)
+            }
+        }
+
+        private let lock = NSLock()
+        private var reads: Set<Read> = []
+
+        /// Whether a read of the file as `read` found it passed its limit.
+        func contains(_ read: Read) -> Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            return reads.contains(read)
+        }
+
+        /// Remembers that a read of the file as `read` found it passed its
+        /// limit.
+        func remember(_ read: Read) {
+            lock.lock()
+            reads.insert(read)
+            lock.unlock()
         }
     }
 

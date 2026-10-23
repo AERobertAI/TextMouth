@@ -250,7 +250,7 @@ struct ImportedFileMetadata {
     /// import runs off the main thread. Reading tags never throws, so the
     /// empty tags are only the type checker's fallback.
     private static func audioTags(of url: URL) -> AudioMetadata {
-        (try? AsyncBridge.waitForResult(timeLimit: AsyncBridge.audioTagsTimeLimit) { await AudioPlaybackService.extractFullMetadata(from: url) }) ?? AudioMetadata()
+        (try? AsyncBridge.waitForResult(reading: url, timeLimit: AsyncBridge.audioTagsTimeLimit) { await AudioPlaybackService.extractFullMetadata(from: url) }) ?? AudioMetadata()
     }
 }
 
