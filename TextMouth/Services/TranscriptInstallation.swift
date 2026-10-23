@@ -24,18 +24,29 @@ extension TranscriptStore {
     /// left as they are: they count time, which a transcript does not
     /// change.
     ///
+    /// content.md must be on this Mac: when it is only in the cloud,
+    /// nothing is read, downloaded, or written, transcript.json stays as it
+    /// was, and `TranscriptTextError.textOnlyInCloud` is thrown. When content.md
+    /// holds text that must be kept first and no copy can be made
+    /// (`TranscriptTextLoader.writeText`), `TranscriptTextError.textNotKept`
+    /// is thrown; transcript.json is then already written, and the next
+    /// open of the book writes the text from it again.
+    ///
     /// Runs as storage work (`StorageBoundary`), which a data-directory move
     /// waits for, and blocks while it reads and writes; call it off the main
     /// thread. Pass the book as the library holds it now: a transcription
     /// takes minutes, and the book may have moved meanwhile.
     /// - Throws: `TranscriptionError.notAnAudiobook`, `.audioChanged` when a
-    ///   file of the book is no longer the one transcribed, and the error
-    ///   that kept a file from being written.
+    ///   file of the book is no longer the one transcribed,
+    ///   `TranscriptTextError.textOnlyInCloud` or `.textNotKept`, and the
+    ///   error that kept a file from being written.
     @discardableResult
     static func install(
         _ transcript: Transcript,
         for book: Book,
-        hasher: FingerprintHasher = .md5
+        hasher: FingerprintHasher = .md5,
+        isDataless: @escaping (URL) -> Bool = DatalessFiles.isDataless,
+        keepCopy: @escaping (URL, Data?) -> URL? = BookTextEditSessions.keepCopy(of:bytes:)
     ) throws -> TranscriptInstallation {
         guard book.format.isAudio else { throw TranscriptionError.notAnAudiobook }
         if let reason = transcript.validationFailure() {
@@ -56,7 +67,7 @@ extension TranscriptStore {
                 of: transcript.audioFiles,
                 for: book,
                 audioIndex: audioIndex,
-                isDataless: DatalessFiles.isDataless,
+                isDataless: isDataless,
                 hasher: hasher
             ) {
             case .changed(let reason):
@@ -64,13 +75,21 @@ extension TranscriptStore {
             case .current:
                 break
             }
+            // Before transcript.json is written: a content.md only in the
+            // cloud is neither read nor replaced, and nothing changes.
+            try TranscriptTextLoader.requireTextOnThisMac(
+                at: TextMouthPaths.contentMarkdownPath(in: book.tmbDirectory),
+                isDataless: isDataless
+            )
             try write(transcript, into: book.tmbDirectory)
             let written = try TranscriptTextLoader.writeText(
                 of: transcript,
                 for: book,
                 over: audioIndex,
                 replacing: writtenDigest,
-                hasher: hasher
+                hasher: hasher,
+                isDataless: isDataless,
+                keepCopy: keepCopy
             )
             // A transcription again replaces the text whatever its bytes,
             // so the reading text kept for the old one goes too.

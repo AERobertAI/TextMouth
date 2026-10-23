@@ -527,6 +527,118 @@ final class TranscriptTextTests: XCTestCase {
         XCTAssertEqual(load.index, index)
     }
 
+    // MARK: - Writing the Text Again without Losing or Downloading Anything
+
+    /// The text of an edited transcript is written again over a content.md
+    /// whose heading the user renamed (an edit taken before such edits were
+    /// refused, whose digest the layer names): the old content.md is kept
+    /// beside it first, once, and holds the renamed heading.
+    func testAnEditedTranscriptsRenamedHeadingIsKeptBeforeTheTextIsWrittenAgain() throws {
+        let world = try makeIntegrationWorld("Transcript Heading Kept")
+        let (book, transcript) = try makeEditedTranscribedBook(in: world)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let renamed = Self.expectedMarkdown.replacingOccurrences(of: "# 02", with: "# Ferry")
+        XCTAssertNotEqual(renamed, Self.expectedMarkdown)
+        try Data(renamed.utf8).write(to: cache)
+        try nameContentAsWritten(by: book)
+
+        try TranscriptStore.install(transcript, for: book)
+
+        XCTAssertEqual(try String(contentsOf: cache, encoding: .utf8), Self.expectedMarkdown)
+        let copies = keptCopies(of: book)
+        XCTAssertEqual(copies.count, 1, "\(copies)")
+        XCTAssertEqual(try copies.first.map { try String(contentsOf: $0, encoding: .utf8) }, renamed)
+        XCTAssertTrue(copies.first?.lastPathComponent.hasPrefix("content.md.edited-") == true, "\(copies)")
+    }
+
+    /// A content.md of an edited transcript that differs only in its
+    /// escaping (a period written with or without a backslash) reads
+    /// the same, so writing the text again keeps no copy of it.
+    func testAnEditedTranscriptsDifferentEscapingKeepsNoCopy() throws {
+        let world = try makeIntegrationWorld("Transcript Escaping")
+        let (book, transcript) = try makeEditedTranscribedBook(in: world)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        // The same text escaped the other way, whichever way the builder
+        // writes it: every period plain, or every period escaped.
+        let plain = Self.expectedMarkdown.replacingOccurrences(of: "\\.", with: ".")
+        let otherwise = plain == Self.expectedMarkdown ? plain.replacingOccurrences(of: ".", with: "\\.") : plain
+        XCTAssertNotEqual(otherwise, Self.expectedMarkdown)
+        try Data(otherwise.utf8).write(to: cache)
+        try nameContentAsWritten(by: book)
+
+        try TranscriptStore.install(transcript, for: book)
+
+        XCTAssertEqual(try String(contentsOf: cache, encoding: .utf8), Self.expectedMarkdown)
+        XCTAssertEqual(keptCopies(of: book), [])
+    }
+
+    /// A content.md only in the cloud is not read, downloaded, or written
+    /// over by writing the text (nothing about it changes), nor by saving a
+    /// transcript, which leaves transcript.json as it was too.
+    func testAContentFileOnlyInTheCloudIsLeftAsItIs() throws {
+        let world = try makeIntegrationWorld("Transcript Text In Cloud")
+        let (book, transcript) = try makeEditedTranscribedBook(in: world)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let before = try Data(contentsOf: cache)
+        let inCloud: (URL) -> Bool = { $0.lastPathComponent == "content.md" }
+        var audio = try audioIndex(of: book)
+        audio.transcript = nil
+
+        XCTAssertThrowsError(try TranscriptTextLoader.writeText(
+            of: transcript, for: book, over: audio, hasher: .md5, isDataless: inCloud
+        )) { XCTAssertEqual($0 as? TranscriptTextError, .textOnlyInCloud) }
+        let another = try TranscriptFixtures.transcript(of: book, sentences: [
+            "01.wav": [TranscriptFixtures.sentence("Quillwort grows by the ferry slipway.", from: 0, to: 2_400)],
+        ])
+        XCTAssertThrowsError(try TranscriptStore.install(another, for: book, isDataless: inCloud)) {
+            XCTAssertEqual($0 as? TranscriptTextError, .textOnlyInCloud)
+        }
+
+        XCTAssertEqual(try Data(contentsOf: cache), before)
+        XCTAssertEqual(TranscriptStore.read(from: book.tmbDirectory), .found(transcript), "transcript.json was written")
+        XCTAssertEqual(keptCopies(of: book), [])
+    }
+
+    /// A copy that cannot be kept stops the text being written: content.md
+    /// is exactly as it was, and the copy was asked for with its bytes.
+    func testTextThatCannotBeKeptIsNotWrittenOver() throws {
+        let world = try makeIntegrationWorld("Transcript Text Not Kept")
+        let (book, transcript) = try makeEditedTranscribedBook(in: world)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let handEdit = Data((Self.expectedMarkdown + "\n\nA line added by hand.").utf8)
+        try handEdit.write(to: cache)
+        var audio = try audioIndex(of: book)
+        audio.transcript = nil
+        var asked: [Data?] = []
+
+        XCTAssertThrowsError(try TranscriptTextLoader.writeText(
+            of: transcript, for: book, over: audio, hasher: .md5,
+            keepCopy: { _, bytes in
+                asked.append(bytes)
+                return nil
+            }
+        )) { XCTAssertEqual($0 as? TranscriptTextError, .textNotKept) }
+
+        XCTAssertEqual(try Data(contentsOf: cache), handEdit)
+        XCTAssertEqual(asked, [handEdit])
+        XCTAssertEqual(keptCopies(of: book), [])
+    }
+
+    /// The two new errors say exactly this, and leave the text as it is.
+    func testTheTextErrorsAreWordedExactly() {
+        XCTAssertEqual(
+            TranscriptTextError.textOnlyInCloud.errorDescription,
+            "The book's text is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again."
+        )
+        XCTAssertEqual(
+            TranscriptTextError.textNotKept.errorDescription,
+            "The book's text holds changes TextMouth couldn't keep a copy of, so it leaves the text as it is."
+        )
+        XCTAssertTrue(TranscriptTextError.textOnlyInCloud.leavesTextAsItIs)
+        XCTAssertTrue(TranscriptTextError.textNotKept.leavesTextAsItIs)
+        XCTAssertFalse(TranscriptTextError.notFingerprinted.leavesTextAsItIs)
+    }
+
     // MARK: - The Reader
 
     /// A transcribed audiobook opens showing its transcript around the
@@ -662,6 +774,34 @@ final class TranscriptTextTests: XCTestCase {
             ]
         )
         return TranscriptText(chapters: chapters, index: index)
+    }
+
+    /// A silent two-track book of `world` whose transcript, marked edited by
+    /// the user, is installed: its content.md is the text written from it.
+    private func makeEditedTranscribedBook(in world: IntegrationWorld) throws -> (book: Book, transcript: Transcript) {
+        let book = try world.makeSilentAudioBook(title: uniqueTitle("Harbor Notes"), trackDurations: [9, 6])
+        var transcript = try TranscriptFixtures.transcript(of: book, sentences: Self.sentences)
+        transcript.editedAt = TranscriptFixtures.date
+        try TranscriptStore.install(transcript, for: book)
+        return (book, transcript)
+    }
+
+    /// Makes the layer in `book`'s record name the content.md on disk as the
+    /// text TextMouth last wrote or took, as a taken edit leaves it.
+    private func nameContentAsWritten(by book: Book) throws {
+        var index = try savedIndex(of: book)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let stamp = try XCTUnwrap(FileStamp(of: cache))
+        index.transcript?.textCacheFingerprint.cache = FileFingerprint(stamp: stamp, digest: try FileImportService.md5Hash(of: cache))
+        try book.saveBookInfoThrowing(contentIndex: index)
+    }
+
+    /// The copies of the user's text kept beside `book`'s content.md.
+    private func keptCopies(of book: Book) -> [URL] {
+        LibraryIndexQuarantine.existingCopies(
+            of: MarkdownCacheService.cacheURL(for: book),
+            marker: TextMouthPaths.keptTextCopyMarker
+        )
     }
 
     /// `base` followed by a few characters no other test's book has, so a

@@ -222,12 +222,19 @@ enum TranscriptTextLoader {
                     for: book,
                     over: withoutText,
                     replacing: audioIndex.transcript?.textCacheFingerprint.cache.digest,
-                    hasher: hasher
+                    hasher: hasher,
+                    isDataless: isDataless
                 )
                 logLine(rebuiltTag, about: book, "content.md and its index were written again from transcript.json: \(reason)")
                 var index = withoutText
                 index.transcript = written.layer
                 return Load(text: written.text, index: index, indexChanged: index != audioIndex)
+            } catch let error as TranscriptTextError where error.leavesTextAsItIs {
+                // content.md is as it was: only in the cloud, or holding text
+                // no copy could be made of. The book's index is left as it
+                // is, and the next open tries again.
+                logLine(rebuiltTag, about: book, "content.md was left as it is (\(reason)): \(error.logDescription)")
+                return unchanged
             } catch {
                 // The error is named by its domain and code: its own words
                 // can name the package's folder by its absolute path.
@@ -249,19 +256,38 @@ enum TranscriptTextLoader {
     /// package's transcript.json as its source. A content.md that changes
     /// takes the reading text this Mac kept for the book with it (PERF22).
     ///
+    /// A content.md that is only in the cloud (`isDataless`) is never read,
+    /// downloaded, or written over: nothing is touched, and
+    /// `TranscriptTextError.textOnlyInCloud` is thrown.
+    ///
     /// A content.md holding text TextMouth did not write, as the user may
     /// have saved in their own editor without the edit being taken (FR05),
-    /// is kept beside it first (`BookTextEditSessions.keepCopy(of:bytes:)`),
-    /// so nothing the user saved is lost: text other than the new bytes,
-    /// and, when `writtenDigest` names the digest of the content.md
-    /// TextMouth last wrote or took, other than that too.
-    /// - Throws: why content.md or the fingerprints could not be written.
+    /// is kept beside it first (`keepCopy`, by default
+    /// `BookTextEditSessions.keepCopy(of:bytes:)`), so nothing the user saved
+    /// is lost. Its bytes must differ from the new bytes, and one of these
+    /// must hold:
+    /// - its digest is not `writtenDigest`, the digest of the content.md
+    ///   TextMouth last wrote or took (any digest, when that is nil);
+    /// - `transcript` was edited by the user (`Transcript.editedAt`) and its
+    ///   reading text is not the new text's (`readingText(of:)`): an edit
+    ///   taken before edits outside the sentences were refused may have left
+    ///   a renamed heading or words the transcript cannot hold, under the
+    ///   very digest TextMouth recorded. A content.md that only escapes or
+    ///   breaks its paragraphs differently reads the same, and is not kept.
+    ///
+    /// When a copy is needed and `keepCopy` cannot make it,
+    /// `TranscriptTextError.textNotKept` is thrown before anything is
+    /// written: content.md stays as it was.
+    /// - Throws: `TranscriptTextError.textOnlyInCloud` or `.textNotKept`, or
+    ///   why content.md or the fingerprints could not be written.
     static func writeText(
         of transcript: Transcript,
         for book: Book,
         over audioIndex: BookContentIndex,
         replacing writtenDigest: String? = nil,
-        hasher: FingerprintHasher
+        hasher: FingerprintHasher,
+        isDataless: (URL) -> Bool = DatalessFiles.isDataless,
+        keepCopy: (URL, Data?) -> URL? = BookTextEditSessions.keepCopy(of:bytes:)
     ) throws -> (layer: BookContentTranscriptIndex, text: TranscriptText) {
         let chapters = TranscriptTextBuilder.chapters(
             of: transcript,
@@ -277,10 +303,21 @@ enum TranscriptTextLoader {
             let transcriptURL = TextMouthPaths.transcriptPath(in: book.tmbDirectory)
             let cacheURL = TextMouthPaths.contentMarkdownPath(in: book.tmbDirectory)
             let bytes = Data(text.markdown.utf8)
+            // Nothing is read until content.md is known to be on this Mac.
+            try requireTextOnThisMac(at: cacheURL, isDataless: isDataless)
             let existing = try? Data(contentsOf: cacheURL)
             if existing != bytes {
-                if let existing, hasher.digestOfData(existing) != writtenDigest {
-                    keepUnwrittenText(of: book, at: cacheURL, bytes: existing)
+                if let existing,
+                   unwrittenTextNeedsKeeping(
+                       existing,
+                       writtenDigest: writtenDigest,
+                       replacedBy: text,
+                       of: transcript,
+                       book: book,
+                       hasher: hasher
+                   ),
+                   !keepUnwrittenText(of: book, at: cacheURL, bytes: existing, keepCopy: keepCopy) {
+                    throw TranscriptTextError.textNotKept
                 }
                 try bytes.write(to: cacheURL, options: .atomic)
                 ReadingTextCache.shared.remove(bookID: book.id)
@@ -346,15 +383,64 @@ enum TranscriptTextLoader {
         return .current(checked)
     }
 
+    /// Throws `TranscriptTextError.textOnlyInCloud` when the content.md at
+    /// `url` is only in the cloud (`isDataless`): TextMouth never downloads
+    /// a file by reading it, nor replaces one it has not read. One lstat; a
+    /// missing file is not in the cloud.
+    static func requireTextOnThisMac(at url: URL, isDataless: (URL) -> Bool) throws {
+        if isDataless(url) { throw TranscriptTextError.textOnlyInCloud }
+    }
+
+    /// Whether the content.md `existing`, about to be replaced by `text`
+    /// written from `transcript`, holds text that must be kept beside it
+    /// first (see `writeText`): it is not what TextMouth last wrote or took
+    /// (`writtenDigest`), or the transcript was edited and it reads
+    /// differently from `text`. The caller has found its bytes differ from
+    /// `text`'s.
+    private static func unwrittenTextNeedsKeeping(
+        _ existing: Data,
+        writtenDigest: String?,
+        replacedBy text: TranscriptTextBuilder.Text,
+        of transcript: Transcript,
+        book: Book,
+        hasher: FingerprintHasher
+    ) -> Bool {
+        if hasher.digestOfData(existing) != writtenDigest { return true }
+        guard transcript.editedAt != nil else { return false }
+        // Parsed as the builder reads its own text back. Bytes that are not
+        // UTF-8 are not text TextMouth wrote.
+        guard let markdown = try? MarkdownCacheService.cacheText(from: existing, at: TextMouthPaths.contentMarkdownPath(in: book.tmbDirectory)) else {
+            return true
+        }
+        let chapters = MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: book.title, bookAuthor: book.author).chapters
+        return readingText(of: chapters) != readingText(of: text.chapters)
+    }
+
+    /// Each of `chapters`' title and text, with every run of white space
+    /// taken as one space: what a reader shows, without how content.md
+    /// escapes it or breaks its lines and paragraphs.
+    private static func readingText(of chapters: [Chapter]) -> [[String]] {
+        chapters.map { chapter in
+            [chapter.title, chapter.text].map { $0.split(whereSeparator: \.isWhitespace).joined(separator: " ") }
+        }
+    }
+
     /// Keeps `bytes`, the content.md at `url` of `book`, beside it before
     /// its text is written again: text the user saved that no edit took,
     /// logged once as TEXT_EDIT_KEPT, as Edit Text keeps an edit it could
     /// not take (FR05).
-    private static func keepUnwrittenText(of book: Book, at url: URL, bytes: Data) {
-        let kept = BookTextEditSessions.keepCopy(of: url, bytes: bytes)
+    /// - Returns: Whether `keepCopy` made the copy.
+    private static func keepUnwrittenText(
+        of book: Book,
+        at url: URL,
+        bytes: Data,
+        keepCopy: (URL, Data?) -> URL?
+    ) -> Bool {
+        let kept = keepCopy(url, bytes)
         let detail = kept.map { "content.md kept as \($0.lastPathComponent) before its text was written again from transcript.json" }
             ?? "content.md could not be kept before its text was written again from transcript.json"
         logLine("TEXT_EDIT_KEPT", about: book, detail)
+        return kept != nil
     }
 
     // MARK: - Logging
@@ -378,9 +464,34 @@ enum TranscriptTextError: LocalizedError {
     case chaptersNotReadBack
     /// transcript.json or content.md could not be fingerprinted once written.
     case notFingerprinted
+    /// content.md is only in iCloud: TextMouth leaves it as it is, rather
+    /// than download it by reading it or replace what it has not read.
+    case textOnlyInCloud
+    /// content.md holds text that must be kept before it is replaced, and
+    /// no copy of it could be made: it is left as it is.
+    case textNotKept
+
+    /// Whether the text was left exactly as it was (nothing written, and
+    /// nothing in the package changed by the attempt).
+    var leavesTextAsItIs: Bool {
+        self == .textOnlyInCloud || self == .textNotKept
+    }
+
+    /// What the debug log says about this error: never a path or any text.
+    var logDescription: String {
+        switch self {
+        case .textOnlyInCloud: return "it is only in iCloud"
+        case .textNotKept: return "no copy of the text it holds could be kept"
+        case .chaptersNotReadBack, .notFingerprinted: return "the text could not be written"
+        }
+    }
 
     var errorDescription: String? {
         switch self {
+        case .textOnlyInCloud:
+            return "The book's text is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again."
+        case .textNotKept:
+            return "The book's text holds changes TextMouth couldn't keep a copy of, so it leaves the text as it is."
         case .chaptersNotReadBack:
             return "The transcript's text did not read back as one chapter for each of the book's chapters."
         case .notFingerprinted:
