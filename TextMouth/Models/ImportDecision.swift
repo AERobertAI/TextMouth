@@ -247,7 +247,11 @@ struct ImportDecisionWording: Equatable {
         switch decision.kind {
         case .duplicate(let duplicate):
             title = Self.counted(Self.duplicateTitle, position: position, total: total)
-            message = Self.duplicateMessage(duplicate, matchingTitle: matchingTitle ?? duplicate.existing.title)
+            message = Self.duplicateMessage(
+                duplicate,
+                matchingTitle: matchingTitle ?? duplicate.existing.title,
+                movesToTrash: movesToTrash
+            )
             originalFile = nil
         case .originalFile(let original):
             let deletion = OriginalFileDeletionWording(
@@ -285,18 +289,40 @@ struct ImportDecisionWording: Equatable {
         return "\(title)\(separator)\(position) of \(total)"
     }
 
+    /// What Replace Existing does to the library's copy when "Move to Trash
+    /// instead of deleting" is on. The question must say what the choice
+    /// throws away (ST04): Replace Existing removes the old package, and
+    /// the new copy is a new book that starts from the beginning.
+    static let replacingMovesToTrashSentence =
+        "Replacing moves the existing copy to the Trash, with its reading position, bookmarks, settings, "
+        + "and any edit of its text or transcript; the new copy starts from the beginning."
+
+    /// What Replace Existing does to the library's copy when "Move to Trash
+    /// instead of deleting" is off, and so the package is deleted for good.
+    static let replacingDeletesSentence =
+        "Replacing deletes the existing copy, with its reading position, bookmarks, settings, "
+        + "and any edit of its text or transcript; the new copy starts from the beginning."
+
     /// What a duplicate's question asks: which file matches which book, the
-    /// choice, and, for a copy missing chapters, what it lacks, so it never
-    /// replaces a complete copy unannounced. The new copy is named by the
-    /// file it came from, or by its title when it came from no file.
-    private static func duplicateMessage(_ duplicate: ImportDecision.DuplicateBook, matchingTitle: String) -> String {
+    /// choice, what Replace Existing throws away (ST04: it must say so, in
+    /// the words of where the old copy goes), and, for a copy missing
+    /// chapters, what it lacks, so it never replaces a complete copy
+    /// unannounced. The new copy is named by the file it came from, or by
+    /// its title when it came from no file.
+    private static func duplicateMessage(
+        _ duplicate: ImportDecision.DuplicateBook,
+        matchingTitle: String,
+        movesToTrash: Bool
+    ) -> String {
         let newCopy = duplicate.book.sourceFilePath
             .flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0).lastPathComponent }
             ?? duplicate.book.title
         let choice = "“\(newCopy)” matches “\(matchingTitle)”, which is already in your library. "
-            + "Replace the existing copy (updates the .tmb and timestamp) or keep both as separate entries?"
-        guard let warning = duplicate.warning else { return choice }
-        return choice + "\n\nThe copy just imported is incomplete. \(warning)"
+            + "Replace the existing copy, or keep both as separate books?"
+        let loss = movesToTrash ? replacingMovesToTrashSentence : replacingDeletesSentence
+        let question = choice + "\n\n" + loss
+        guard let warning = duplicate.warning else { return question }
+        return question + "\n\nThe copy just imported is incomplete. \(warning)"
     }
 
     /// `text` ending a sentence: as it is when it ends in a full stop,

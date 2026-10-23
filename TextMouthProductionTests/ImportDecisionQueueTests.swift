@@ -176,7 +176,9 @@ final class ImportDecisionQueueTests: XCTestCase {
         XCTAssertEqual(
             duplicateWording.message,
             "“Atlas of Tides.txt” matches “Earlier Atlas”, which is already in your library. "
-                + "Replace the existing copy (updates the .tmb and timestamp) or keep both as separate entries?"
+                + "Replace the existing copy, or keep both as separate books?"
+                + "\n\nReplacing moves the existing copy to the Trash, with its reading position, bookmarks, settings, "
+                + "and any edit of its text or transcript; the new copy starts from the beginning."
                 + "\n\nThe copy just imported is incomplete. 1 of 3 chapters could not be read."
         )
         XCTAssertEqual(duplicateWording.announcement, "Duplicate Book Found, 2 of 3. " + duplicateWording.message)
@@ -207,6 +209,63 @@ final class ImportDecisionQueueTests: XCTestCase {
         XCTAssertEqual(
             batchWording.message,
             "2 books were imported from “Chart Shelf.zip”. Would you like to create a new folder to hold them?"
+        )
+    }
+
+    /// With "Move to Trash instead of deleting" off, the duplicate question
+    /// says Replace Existing deletes the old copy, and what goes with it
+    /// (ST04). The wording is pinned exactly, as VoiceOver reads it.
+    func testTheDuplicateQuestionSaysTheExistingCopyIsDeletedWhenNothingGoesToTheTrash() {
+        let wording = ImportDecisionWording(for: Self.duplicateQuestion(), position: 1, total: 1, movesToTrash: false)
+        XCTAssertEqual(
+            wording.message,
+            "“Atlas of Tides” matches “Earlier Atlas”, which is already in your library. "
+                + "Replace the existing copy, or keep both as separate books?"
+                + "\n\nReplacing deletes the existing copy, with its reading position, bookmarks, settings, "
+                + "and any edit of its text or transcript; the new copy starts from the beginning."
+        )
+        XCTAssertEqual(
+            ImportDecisionWording.replacingDeletesSentence,
+            "Replacing deletes the existing copy, with its reading position, bookmarks, settings, "
+                + "and any edit of its text or transcript; the new copy starts from the beginning."
+        )
+    }
+
+    /// An incomplete copy's warning comes last, after the choice and the
+    /// loss, whichever way the old copy goes.
+    func testTheDuplicateQuestionPutsTheWarningAfterTheChoiceAndTheLoss() {
+        let existing = Book(title: "Earlier Atlas", format: .txt, filePath: "/library/a.txt", md5Hash: "atlas")
+        let copy = Book(title: "Atlas of Tides", format: .txt, filePath: "/library/b.txt", md5Hash: "atlas")
+        let question = ImportDecision(
+            kind: .duplicate(.init(book: copy, existing: existing, originalURL: nil, warning: "2 of 9 chapters could not be read.")),
+            request: ImportRequest()
+        )
+        XCTAssertEqual(
+            ImportDecisionWording(for: question, position: 1, total: 1, movesToTrash: false).message,
+            "“Atlas of Tides” matches “Earlier Atlas”, which is already in your library. "
+                + "Replace the existing copy, or keep both as separate books?"
+                + "\n\nReplacing deletes the existing copy, with its reading position, bookmarks, settings, "
+                + "and any edit of its text or transcript; the new copy starts from the beginning."
+                + "\n\nThe copy just imported is incomplete. 2 of 9 chapters could not be read."
+        )
+        XCTAssertEqual(
+            ImportDecisionWording(for: question, position: 1, total: 1, movesToTrash: true).message,
+            "“Atlas of Tides” matches “Earlier Atlas”, which is already in your library. "
+                + "Replace the existing copy, or keep both as separate books?"
+                + "\n\nReplacing moves the existing copy to the Trash, with its reading position, bookmarks, settings, "
+                + "and any edit of its text or transcript; the new copy starts from the beginning."
+                + "\n\nThe copy just imported is incomplete. 2 of 9 chapters could not be read."
+        )
+    }
+
+    /// The Replace Existing button's hint says what goes with the old copy
+    /// (ST04).
+    func testTheReplaceExistingHintSaysWhatIsRemovedWithTheOldCopy() {
+        XCTAssertEqual(ImportDecisionChoiceWording.replaceExisting.title, "Replace Existing")
+        XCTAssertEqual(
+            ImportDecisionChoiceWording.replaceExisting.hint,
+            "Removes the copy already in the library, with its reading position, bookmarks, and settings, "
+                + "and keeps the new one in its place."
         )
     }
 
