@@ -16,8 +16,9 @@ import Foundation
 /// a hand edit of content.md that Edit Text did not take is undone this way,
 /// after it is kept beside content.md (`writeText`). Edit Text takes an edit
 /// into transcript.json itself (`TranscriptStore.takeEdit`), so the text
-/// written from it is the edit. A file only in the cloud is never read: the
-/// text waits until it is on this Mac.
+/// written from it is the edit; a session editing the book is told of each
+/// rewrite, so TextMouth's own is never taken as an edit. A file only in the
+/// cloud is never read: the text waits until it is on this Mac.
 enum TranscriptTextLoader {
     /// What reading a book's transcript text found.
     struct Load {
@@ -43,13 +44,17 @@ enum TranscriptTextLoader {
     /// `book`'s transcript text, laid over `audioIndex`, the book's audio
     /// index as its load gave it, through `readingTexts` (the reader's cache
     /// of large books' reading text, PERF22) when given. Writes content.md
-    /// only when the text must be written again, as storage work.
+    /// only when the text must be written again, as storage work, and then
+    /// tells `sessions` of it: a session editing the book takes the text
+    /// written as the one it starts from, never as the user's edit
+    /// (`writeText`'s `sessions`).
     static func load(
         for book: Book,
         audioIndex: BookContentIndex,
         readingTexts: ReadingTextCache? = nil,
         isDataless: (URL) -> Bool = DatalessFiles.isDataless,
-        hasher: FingerprintHasher = .md5
+        hasher: FingerprintHasher = .md5,
+        sessions: BookTextEditSessions = .shared
     ) -> Load {
         let unchanged = Load(text: nil, index: audioIndex, indexChanged: false)
         guard book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return unchanged }
@@ -91,7 +96,14 @@ enum TranscriptTextLoader {
                 }
             }
         }
-        return rebuild(for: book, audioIndex: audioIndex, because: rebuildReason, isDataless: isDataless, hasher: hasher)
+        return rebuild(
+            for: book,
+            audioIndex: audioIndex,
+            because: rebuildReason,
+            isDataless: isDataless,
+            hasher: hasher,
+            sessions: sessions
+        )
     }
 
     // MARK: - The Saved Text
@@ -190,13 +202,15 @@ enum TranscriptTextLoader {
     /// of what the load found, with the audio index carrying the new layer;
     /// or no text, and no layer, when the book's transcript is gone or
     /// unusable; or no text and the index as it was when the transcript is
-    /// in the cloud, of a later layout, or stale.
+    /// in the cloud, of a later layout, or stale. A session editing the book
+    /// (`sessions`) is told when the text is written.
     private static func rebuild(
         for book: Book,
         audioIndex: BookContentIndex,
         because reason: String,
         isDataless: (URL) -> Bool,
-        hasher: FingerprintHasher
+        hasher: FingerprintHasher,
+        sessions: BookTextEditSessions
     ) -> Load {
         let unchanged = Load(text: nil, index: audioIndex, indexChanged: false)
         var withoutText = audioIndex
@@ -223,7 +237,8 @@ enum TranscriptTextLoader {
                     over: withoutText,
                     replacing: audioIndex.transcript?.textCacheFingerprint.cache.digest,
                     hasher: hasher,
-                    isDataless: isDataless
+                    isDataless: isDataless,
+                    sessions: sessions
                 )
                 logLine(rebuiltTag, about: book, "content.md and its index were written again from transcript.json: \(reason)")
                 var index = withoutText
@@ -283,6 +298,14 @@ enum TranscriptTextLoader {
     ///   `transcript` replaces it, as an install's (`TranscriptStore.install`)
     ///   reads it from the package; nil when it is `transcript` itself, as in
     ///   the loader's rebuild.
+    /// - Parameter sessions: The sessions to tell when the text is written
+    ///   (`BookTextEditSessions.textRebuilt(_:writing:fingerprint:)`), none
+    ///   by default. A session editing the book then starts from the text
+    ///   just written, with its fingerprints, so the next check of content.md
+    ///   finds nothing changed: without it, TextMouth's own rewrite (as when
+    ///   the text's layer is out of date) would be taken as the user's edit.
+    ///   The loader passes the app's; an install, which pauses the session
+    ///   first, passes none.
     ///
     /// When a copy is needed and `keepCopy` cannot make it,
     /// `TranscriptTextError.textNotKept` is thrown before anything is
@@ -297,7 +320,8 @@ enum TranscriptTextLoader {
         previous: Transcript? = nil,
         hasher: FingerprintHasher,
         isDataless: (URL) -> Bool = DatalessFiles.isDataless,
-        keepCopy: (URL, Data?) -> URL? = BookTextEditSessions.keepCopy(of:bytes:)
+        keepCopy: (URL, Data?) -> URL? = BookTextEditSessions.keepCopy(of:bytes:),
+        sessions: BookTextEditSessions? = nil
     ) throws -> (layer: BookContentTranscriptIndex, text: TranscriptText) {
         let chapters = TranscriptTextBuilder.chapters(
             of: transcript,
@@ -343,6 +367,10 @@ enum TranscriptTextLoader {
                 cache: FileFingerprint(stamp: cacheStamp, digest: hasher.digestOfData(bytes))
             )
             let layer = TranscriptTextBuilder.index(of: text, from: transcript, fingerprint: fingerprint)
+            // Told as soon as the file is written, inside the same storage
+            // work, so the window in which a check could find the new
+            // content.md under the old baseline is as short as it can be.
+            sessions?.textRebuilt(book, writing: bytes, fingerprint: fingerprint)
             return (layer, TranscriptText(chapters: text.chapters, index: layer))
         }
     }

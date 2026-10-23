@@ -512,6 +512,67 @@ final class TranscriptEditTests: XCTestCase {
         XCTAssertEqual(sheetAnnouncements.messages, ["Deleted the transcript of Breakwater Notes."])
     }
 
+    /// A session editing a transcribed book hears when the loader writes the
+    /// book's text again, as it does once for each book whose text was
+    /// written before the text escaped only what the reader needs (layer
+    /// 1.0.0): the text the session starts from is the one just written, so
+    /// the rewrite is not taken as the user's edit. Nothing is spoken, the
+    /// transcript is not marked edited, and an edit saved afterwards is still
+    /// taken.
+    func testTheLoadersRewriteOfAnOlderTextIsNotTakenAsAnEdit() async throws {
+        let world = try makeIntegrationWorld("Transcript Edit Rewrite")
+        let book = try world.makeSilentAudioBook(title: "Breakwater Notes \(UUID().uuidString.prefix(8))", trackDurations: [9, 6])
+        let transcript = try TranscriptFixtures.transcript(of: book, sentences: TranscriptTextTests.sentences)
+        let installation = try TranscriptStore.install(transcript, for: book)
+        // As version 1.0.0 left the book: every punctuation character
+        // escaped, and a layer of that version fingerprinting that file.
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let oldBytes = Data(TranscriptTextTests.fullyEscapedMarkdown.utf8)
+        try oldBytes.write(to: cache)
+        var oldLayer = try XCTUnwrap(installation.index.transcript)
+        oldLayer.version = "1.0.0"
+        oldLayer.textCacheFingerprint.cache = FileFingerprint(
+            stamp: try XCTUnwrap(FileStamp(of: cache)),
+            digest: FingerprintHasher.md5.digestOfData(oldBytes)
+        )
+        var oldIndex = installation.index
+        oldIndex.transcript = oldLayer
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        XCTAssertEqual(editor.sessions.baseline(of: book.id)?.cache.digest, FingerprintHasher.md5.digestOfData(oldBytes))
+
+        // The book opens, and the loader writes its text again.
+        let load = TranscriptTextLoader.load(for: book, audioIndex: oldIndex, sessions: editor.sessions)
+
+        let written = try String(contentsOf: cache, encoding: .utf8)
+        XCTAssertEqual(written, TranscriptTextTests.expectedMarkdown, "the loader did not write the text again")
+        XCTAssertNotNil(load.text)
+        XCTAssertEqual(
+            editor.sessions.baseline(of: book.id)?.cache,
+            load.index.transcript?.textCacheFingerprint.cache,
+            "the session still starts from the text the rewrite replaced"
+        )
+        let heard = await check(book, with: editor, in: announcements)
+        XCTAssertEqual(heard, [], "TextMouth's own rewrite was announced as the user's edit")
+        guard case .found(let after) = TranscriptStore.read(from: book.tmbDirectory) else {
+            return XCTFail("the transcript cannot be read")
+        }
+        XCTAssertNil(after.editedAt, "the rewrite marked the transcript edited")
+
+        // The session goes on: a save afterwards is taken as any is.
+        let edited = replacing("Carts wait at the toll.", with: "Carts wait at the quay.", in: written)
+        try edited.write(to: cache, atomically: true, encoding: .utf8)
+        let heardEdit = await check(book, with: editor, in: announcements)
+        XCTAssertEqual(heardEdit, [BookTextEditWording.updated])
+        guard case .found(let taken) = TranscriptStore.read(from: book.tmbDirectory) else {
+            return XCTFail("the transcript cannot be read after the edit")
+        }
+        XCTAssertNotNil(taken.editedAt)
+    }
+
     // MARK: - A Session Whose Book Is Gone
 
     /// A session whose book left the library (removed, or an episode whose
