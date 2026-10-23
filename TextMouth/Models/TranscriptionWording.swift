@@ -14,6 +14,12 @@ enum TranscriptionWording {
     /// same places, after a confirmation naming the book.
     static let deleteCommandTitle = "Delete Transcript…"
 
+    /// What a feed episode's transcript's listener is told as they edit or
+    /// clean it up: it stays with the episode, not with its download.
+    static let feedEpisodeTranscriptNote = "This episode's transcript, with your changes, stays with the episode "
+        + "in its feed, even after its download is deleted. Deleting the episode or the feed deletes it; "
+        + "Move to Library keeps it with the episode as a book."
+
     // MARK: Refusals
 
     /// Why the command was refused for several books at once: transcription

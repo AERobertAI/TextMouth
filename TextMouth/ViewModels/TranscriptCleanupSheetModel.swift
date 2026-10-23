@@ -249,6 +249,13 @@ final class TranscriptCleanupSheetModel: ObservableObject, Identifiable {
         TranscriptCleanupWording.sheetTitle(bookTitle: book.title)
     }
 
+    /// The note that a feed episode's cleaned-up transcript stays with the
+    /// episode in its feed, as the listener hears it before applying; nil for
+    /// a book that is not a feed item.
+    var feedNoteLine: String? {
+        book.isFeedItem ? TranscriptionWording.feedEpisodeTranscriptNote : nil
+    }
+
     /// The line naming the rules in use.
     var rulesLine: String? {
         rules.map { TranscriptCleanupWording.rulesLine($0.rules, source: $0.source) }
@@ -306,7 +313,7 @@ final class TranscriptCleanupSheetModel: ObservableObject, Identifiable {
     /// Every line the ready sheet shows above its list, in order, as
     /// VoiceOver hears them together once its focus lands.
     var readyLines: [String] {
-        [heading, TranscriptCleanupWording.experimentalLine, rulesLine].compactMap { $0 }
+        [heading, TranscriptCleanupWording.experimentalLine, feedNoteLine, rulesLine].compactMap { $0 }
             + rulesNoticeLines + [summaryLine].compactMap { $0 } + historyLines
     }
 

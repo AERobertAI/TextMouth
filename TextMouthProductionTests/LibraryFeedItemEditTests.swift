@@ -13,10 +13,11 @@ final class LibraryFeedItemEditTests: XCTestCase {
 
     // MARK: - Edit Text
 
-    /// Edit Text is offered for a book of the library's own, and for no
-    /// feed item: an article, or an episode even once transcribed.
+    /// Edit Text is offered for a book of the library's own, and for a feed
+    /// episode's transcript only: not for an article, whose text belongs to
+    /// its feed, nor for an episode without a transcript (October 23, 2026).
     @MainActor
-    func testEditTextIsNotOfferedForAFeedItem() {
+    func testEditTextIsOfferedForAFeedEpisodesTranscriptOnly() {
         let link = FeedBookLink(feedID: UUID(), itemID: "guid:post-1")
         let article = Book(
             title: "Corkboard 7.1.2 Released",
@@ -32,7 +33,8 @@ final class LibraryFeedItemEditTests: XCTestCase {
         book.feedLink = nil
 
         XCTAssertFalse(BookTextEditor.canEditText(of: article, isTranscribed: false))
-        XCTAssertFalse(BookTextEditor.canEditText(of: episode, isTranscribed: true))
+        XCTAssertFalse(BookTextEditor.canEditText(of: episode, isTranscribed: false))
+        XCTAssertTrue(BookTextEditor.canEditText(of: episode, isTranscribed: true))
         XCTAssertTrue(BookTextEditor.canEditText(of: book, isTranscribed: false))
     }
 

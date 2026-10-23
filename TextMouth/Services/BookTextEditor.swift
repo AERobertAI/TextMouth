@@ -63,6 +63,9 @@ final class BookTextEditor {
     /// The copies of each book's edited text VoiceOver has been told of, so
     /// a copy a rebuild kept is not announced again.
     private var announcedCopies: [UUID: Set<URL>] = [:]
+    /// The feed episodes whose transcript's note (`updatedInFeed`) has been
+    /// announced in the session now running, so only the first edit says it.
+    private var announcedFeedNotes: Set<UUID> = []
 
     /// An editor whose sessions are `sessions`, remembering its explanation
     /// in `preferences` and hearing TextMouth become active on
@@ -141,15 +144,18 @@ final class BookTextEditor {
     }
 
     /// Whether `book`'s text can be edited here, given whether it is
-    /// `isTranscribed`: a text book's, or a transcribed audiobook's, whose
-    /// content.md is its transcript's text and whose transcript takes the
-    /// edit (`TranscriptStore.takeEdit`). Never a feed item's, an episode or
-    /// an article in its feed's folder: the user decided feed items are not
-    /// editable (FR11, question 4), and removing the download would take the
-    /// edit with it. Edit Text… and Edit Text With… are then not offered,
-    /// in the library's rows or the reader's Book menu.
+    /// `isTranscribed`: a text book's text, and any transcribed audiobook's
+    /// transcript text, an episode's in its feed included (the user's request
+    /// of October 23, 2026). Its content.md is its transcript's text, and its
+    /// transcript takes the edit (`TranscriptStore.takeEdit`). Never a feed
+    /// article's text, which belongs to its feed (FR11, question 4). An
+    /// episode's edit is kept in its transcript, which stays in the
+    /// episode's package when its download is deleted (`FeedItemPackage`),
+    /// and goes only with Delete Episode, Delete Feed, or Delete Transcript.
+    /// Edit Text… and Edit Text With… are not offered otherwise, in the
+    /// library's rows or the reader's Book menu.
     static func canEditText(of book: Book, isTranscribed: Bool) -> Bool {
-        !book.isFeedItem && !book.tmbDirectoryName.isEmpty && (!book.format.isAudio || isTranscribed)
+        !book.tmbDirectoryName.isEmpty && (book.format.isAudio ? isTranscribed : !book.isFeedItem)
     }
 
     /// Whether `book` has text to edit now: a text book always, an
@@ -208,6 +214,7 @@ final class BookTextEditor {
         files.stopWatching(bookID)
         announcedRefusals[bookID] = nil
         announcedCopies[bookID] = nil
+        announcedFeedNotes.remove(bookID)
     }
 
     /// Ends every session, as a test does when it ends.
@@ -249,8 +256,13 @@ final class BookTextEditor {
             }
         case .adopted(let edit):
             announcedRefusals[bookID] = nil
+            // Read before the commit, which refreshes the row: a feed
+            // episode's first edit in a session also says where its
+            // transcript stays; later edits say only that the text updated.
+            let isFeedItem = library?.bookByID(bookID)?.isFeedItem == true
             library?.commitTextEdit(edit)
-            files.announce(BookTextEditWording.updated)
+            let firstInFeed = isFeedItem && announcedFeedNotes.insert(bookID).inserted
+            files.announce(firstInFeed ? BookTextEditWording.updatedInFeed : BookTextEditWording.updated)
         case .refused(let refusal, let digest, let keptCopy):
             let refused = BookTextEditSessions.RefusedEdit(digest: digest, refusal: refusal)
             guard announcedRefusals[bookID] != refused else { return }

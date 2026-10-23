@@ -127,9 +127,9 @@ struct ReaderBookCommandsSupport: ViewModifier {
                 BookManifestEditing.canEditManifest(of: viewModel.book, isTrackFolder: trackFolderBooks.contains(viewModel.book.id))
             )
             .focusedSceneValue(\.canTranscribeBookAudio, LibraryAudioCommand.isTranscribable(viewModel.book))
-            // An episode's or article's transcript, in its feed, is not
-            // cleaned up (FR11): only made again or deleted.
-            .focusedSceneValue(\.canCleanUpBookTranscript, hasTranscript && LibraryAudioCommand.isTranscriptCleanable(viewModel.book))
+            // A transcribed audiobook's transcript is cleaned up, an episode's
+            // in its feed included: the transcript is the listener's own work.
+            .focusedSceneValue(\.canCleanUpBookTranscript, hasTranscript)
             .focusedSceneValue(\.canDeleteBookTranscript, hasTranscript)
             .focusedSceneValue(\.canEditBookAudio, AudioEditorLauncher.canEdit(viewModel.book))
             // An episode or article in its feed moves into the library

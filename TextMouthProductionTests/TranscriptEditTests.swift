@@ -343,6 +343,66 @@ final class TranscriptEditTests: XCTestCase {
         )
     }
 
+    // MARK: - A Feed Episode's Transcript
+
+    /// A feed episode's transcript can be edited (October 23, 2026): two
+    /// saves in one session are both taken into the transcript in the
+    /// episode's package in its feed's folder, and VoiceOver hears where the
+    /// transcript stays after the first save only.
+    func testAnEditOfAFeedEpisodesTranscriptIsTakenAndSaysWhereItStays() async throws {
+        let world = try makeIntegrationWorld("Transcript Edit Feed Episode")
+        let episode = try makeFeedEpisode(in: world, title: "Breakwater Notes \(UUID().uuidString.prefix(8))")
+        try TranscriptStore.install(try TranscriptFixtures.transcript(of: episode, sentences: TranscriptionUIScripts.twoTracks), for: episode)
+        let reader = world.openReader(for: episode)
+        let loaded = await eventuallyHolds { !reader.isLoading }
+        XCTAssertTrue(loaded, "the reader never loaded")
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        let cache = MarkdownCacheService.cacheURL(for: episode)
+        XCTAssertTrue(episode.isFeedItem)
+        XCTAssertTrue(BookTextEditor.canEditText(of: episode, isTranscribed: true))
+
+        // The first save: the jetty replaces the pier, and the note is heard.
+        await editor.editor.edit(episode, choosingApp: false, in: world.library, from: nil)
+        let first = replacing(
+            MarkdownLiteral.escaped("on the pier."),
+            with: MarkdownLiteral.escaped("on the jetty."),
+            in: try String(contentsOf: cache, encoding: .utf8)
+        )
+        try first.write(to: cache, atomically: true, encoding: .utf8)
+        let heardFirst = await check(episode, with: editor, in: announcements)
+
+        // The second save, in the same session: only "Text updated".
+        let second = replacing(
+            MarkdownLiteral.escaped("on the jetty."),
+            with: MarkdownLiteral.escaped("on the quay."),
+            in: first
+        )
+        try second.write(to: cache, atomically: true, encoding: .utf8)
+        let heardSecond = await check(episode, with: editor, in: announcements)
+
+        XCTAssertEqual(heardFirst + heardSecond, [BookTextEditWording.updatedInFeed, BookTextEditWording.updated])
+        guard case .found(let transcript) = TranscriptStore.read(from: episode.tmbDirectory) else {
+            return XCTFail("the transcript cannot be read")
+        }
+        XCTAssertEqual(transcript.files.first?.sentences.last?.text, "Rope coils dry on the quay.")
+        XCTAssertNotNil(transcript.editedAt)
+        XCTAssertTrue(episode.tmbDirectory.path.contains(FeedPaths.itemsFolder(of: try XCTUnwrap(episode.feedLink).feedID, in: TextMouthPaths.root).path))
+    }
+
+    /// The new sentences are exactly these: the note a feed episode's
+    /// transcript carries, and the announcement of the first edit taken.
+    func testTheFeedEpisodeTranscriptWordingIsPinned() {
+        let note = "This episode's transcript, with your changes, stays with the episode in its feed, "
+            + "even after its download is deleted. Deleting the episode or the feed deletes it; "
+            + "Move to Library keeps it with the episode as a book."
+        XCTAssertEqual(TranscriptionWording.feedEpisodeTranscriptNote, note)
+        XCTAssertEqual(BookTextEditWording.updatedInFeed, "Text updated. " + note)
+        XCTAssertEqual(BookTextEditWording.updated, "Text updated")
+    }
+
     // MARK: - Fixtures
 
     /// An editor of the test's own and what it was asked to do.
@@ -350,6 +410,27 @@ final class TranscriptEditTests: XCTestCase {
         let editor: BookTextEditor
         let recorder: EditorRecorder
         let sessions: BookTextEditSessions
+    }
+
+    /// A silent two-track audiobook of the world's library turned into an
+    /// episode in a feed of its own: its package moved into the feed's
+    /// folder in the (sandboxed) data directory, and its row given a feed
+    /// link, as a downloaded episode's is. The feed's folder is removed when
+    /// the test ends.
+    private func makeFeedEpisode(in world: IntegrationWorld, title: String) throws -> Book {
+        var book = try world.makeSilentAudioBook(title: title, trackDurations: [3, 2])
+        let link = FeedBookLink(feedID: UUID(), itemID: "guid:\(UUID().uuidString)")
+        let itemsFolder = FeedPaths.itemsFolder(of: link.feedID, in: TextMouthPaths.root)
+        addTeardownBlock { try? FileManager.default.removeItem(at: itemsFolder) }
+        let oldPackage = book.tmbDirectory
+        book.feedLink = link
+        try FileManager.default.createDirectory(at: itemsFolder, withIntermediateDirectories: true)
+        try FileManager.default.moveItem(at: oldPackage, to: book.tmbDirectory)
+        // The audiobook's tracks moved with its package.
+        book.filePath = book.tmbDirectory.appendingPathComponent("Tracks", isDirectory: true).path
+        let index = try XCTUnwrap(world.library.library.books.firstIndex { $0.id == book.id })
+        world.library.library.books[index] = book
+        return book
     }
 
     /// An editor whose explanation, app chooser, and opener are a

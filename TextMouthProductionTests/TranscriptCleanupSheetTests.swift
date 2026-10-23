@@ -69,20 +69,31 @@ final class TranscriptCleanupSheetTests: XCTestCase {
         XCTAssertNil(presenter.cleanup)
     }
 
-    /// A feed's episode is not editable (FR11): neither the reader's command
-    /// (`cleanUp`) nor a row's, from its context menu or its VoiceOver
-    /// actions (`perform`), opens a sheet for it.
-    func testTheCommandOpensNoSheetForAFeedsEpisode() throws {
+    /// A feed's episode transcript is the listener's own work: both the
+    /// reader's command (`cleanUp`) and a row's, from its context menu or its
+    /// VoiceOver actions (`perform`), open the sheet for it, and the sheet's
+    /// model carries the note that the transcript stays with the episode.
+    func testTheCommandOpensTheSheetForAFeedsEpisode() throws {
         let world = try makeIntegrationWorld("Transcript Cleanup Feed Episode")
         var book = try transcribedBook(in: world)
         book.feedLink = FeedBookLink(feedID: UUID(), itemID: "guid:harbour-log")
-        XCTAssertFalse(LibraryAudioCommand.isTranscriptCleanable(book), "the rule this test relies on")
         let presenter = TranscriptionPresenter(services: { self.makeSheetServices() }, cleanupServices: { self.makeCleanupServices() })
 
         presenter.cleanUp(book, library: world.library, window: nil)
-        XCTAssertNil(presenter.cleanup, "cleanUp opened a sheet for a feed's episode")
+        let fromReader = try XCTUnwrap(presenter.cleanup, "cleanUp opened no sheet for a feed's episode")
+        XCTAssertEqual(fromReader.feedNoteLine, TranscriptionWording.feedEpisodeTranscriptNote)
+        XCTAssertTrue(fromReader.readyLines.contains(TranscriptionWording.feedEpisodeTranscriptNote), "VoiceOver does not hear the note")
+        fromReader.close()
+        XCTAssertNil(presenter.cleanup)
         presenter.perform(.cleanUpTranscript(book), library: world.library, window: nil)
-        XCTAssertNil(presenter.cleanup, "the command opened a sheet for a feed's episode")
+        let fromRow = try XCTUnwrap(presenter.cleanup, "the command opened no sheet for a feed's episode")
+        XCTAssertEqual(fromRow.feedNoteLine, TranscriptionWording.feedEpisodeTranscriptNote)
+        fromRow.close()
+
+        // A book of the library's own hears no note.
+        var own = book
+        own.feedLink = nil
+        XCTAssertNil(TranscriptCleanupSheetModel(book: own, library: world.library, services: makeCleanupServices()).feedNoteLine)
     }
 
     // MARK: - What the Sheet Shows

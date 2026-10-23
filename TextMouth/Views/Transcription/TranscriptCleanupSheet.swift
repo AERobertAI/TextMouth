@@ -83,13 +83,18 @@ struct TranscriptCleanupSheet: View {
         }
     }
 
-    /// The lines above the list: what the cleanup is, the rules, notices
+    /// The lines above the list: what the cleanup is, where a feed
+    /// episode's transcript stays, the rules, notices
     /// about the user's copy of them, what would change, and the
     /// transcript's last cleanup.
     private var readyLines: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(TranscriptCleanupWording.experimentalLine)
                 .fixedSize(horizontal: false, vertical: true)
+            if let feedNote = model.feedNoteLine {
+                Text(feedNote)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             if let rulesLine = model.rulesLine {
                 Text(rulesLine)
             }

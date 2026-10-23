@@ -45,6 +45,11 @@ enum BookTextEditWording {
     /// An edit was taken as the book's text.
     static let updated = "Text updated"
 
+    /// The first edit taken in a session of a feed episode's transcript:
+    /// "Text updated. This episode's transcript, with your changes, stays
+    /// with the episode in its feed, …" (`TranscriptionWording`).
+    static let updatedInFeed = updated + ". " + TranscriptionWording.feedEpisodeTranscriptNote
+
     /// Why an edit was not taken, as VoiceOver hears it once a check found
     /// it, then where the edited text was kept (`kept(_:)`), as in "Text not
     /// updated: the edited text of Harbour Pilots isn't UTF-8 text. Save it
