@@ -7,8 +7,9 @@ import SwiftSoup
 /// A book's pages are the publisher's page list when it has one (the EPUB 3
 /// navigation document's `page-list` or the EPUB 2 NCX's `pageList`), else its
 /// page-break elements. Each page is written into the chapter's Markdown as a
-/// page marker that is never spoken, and a page-break element's own text (the
-/// page number, which CSS hides from sighted readers) is never read. These
+/// page marker that is never spoken, and a page-break element's own page
+/// number (which CSS hides from sighted readers) is not read, though any other
+/// words in it are (ST02). These
 /// tests read the synthetic samples of `TestData/format-samples/epub3-pages`
 /// and `epub2-pages` (made by `make_epub_pages.py`) through
 /// `EPUBParser.prepareBook` and check where each page begins, by the words of
@@ -137,9 +138,10 @@ final class EPUBPageListTests: XCTestCase {
         XCTAssertEqual(first.pages.first?.characterOffset, 0, "page i begins the chapter")
     }
 
-    /// A page-break element's text is never read, whether the list names it
-    /// (the "1") or not (the "99"), and a page inside a word leaves the word whole.
-    func testAPageBreaksOwnTextIsNeverRead() throws {
+    /// A page-break element's own number is not read, whether the list names
+    /// it (the "1") or not (the "99"), and a page inside a word leaves the word
+    /// whole. (Words in a page-break element are read: see ST02 below.)
+    func testAPageBreaksOwnNumberIsNotRead() throws {
         let chapters = try chaptersOf("epub3-pages/page-list.epub")
         guard let first = chapters.first?.chapter else { return XCTFail("no chapter") }
 
@@ -468,6 +470,102 @@ final class EPUBPageListTests: XCTestCase {
         XCTAssertTrue(result.chapter.pages.isEmpty)
         XCTAssertEqual(result.chapter.text, "One two")
         XCTAssertFalse(result.markdown.contains("<!-- page:"))
+    }
+
+    // MARK: - Page-break elements holding words (ST02)
+
+    /// The sentence the tests below put in a page-break element.
+    private let warSentence = "The war began in the spring of that year, and nobody was ready for it."
+
+    /// A page-break element that holds a paragraph, with its page's label in
+    /// `title`: the page begins before the paragraph, and the paragraph is read.
+    func testAPageBreakHoldingAParagraphIsReadAfterItsPage() throws {
+        let result = try parsed("<p>Before.</p><div epub:type=\"pagebreak\" title=\"12\"><p>\(warSentence)</p></div><p>After.</p>")
+
+        XCTAssertTrue(result.chapter.text.contains(warSentence), result.chapter.text)
+        assertPages(of: result.chapter, [("12", "The war began")])
+    }
+
+    /// Short words that are not the page's label are words, not a number.
+    func testShortWordsUnlikeTheLabelAreRead() throws {
+        let result = try parsed("<p>One <span epub:type=\"pagebreak\" title=\"12\">Hello there</span> two</p>")
+
+        XCTAssertTrue(result.chapter.text.contains("Hello there"), result.chapter.text)
+        assertPages(of: result.chapter, [("12", "Hello")])
+    }
+
+    /// A number under a longer label ("12" under "Page 12") is still only the number.
+    func testANumberUnderALongerLabelIsNotRead() throws {
+        let result = try parsed("<p>One <span role=\"doc-pagebreak\" aria-label=\"Page 12\">12</span>two</p>")
+
+        XCTAssertEqual(result.chapter.text, "One two")
+        XCTAssertEqual(result.chapter.pages.map(\.label), ["Page 12"])
+    }
+
+    /// A number with a caption ("Page XII" under the label "xii") is not read.
+    func testACaptionedNumberIsNotRead() throws {
+        let result = try parsed("<p>One <span epub:type=\"pagebreak\" title=\"xii\">Page XII</span> two</p>")
+
+        XCTAssertFalse(result.chapter.text.contains("XII"), result.chapter.text)
+        XCTAssertTrue(result.chapter.text.contains("One"), result.chapter.text)
+        XCTAssertTrue(result.chapter.text.contains("two"), result.chapter.text)
+        XCTAssertEqual(result.chapter.pages.map(\.label), ["xii"])
+    }
+
+    /// A page-break element with no label that holds a paragraph begins no
+    /// page (the paragraph's first words would be a page label that Go to Page
+    /// reads out), and its words are read.
+    func testAnUnlabelledPageBreakHoldingAParagraphIsReadAndIsNoPage() throws {
+        let result = try parsed("<div epub:type=\"pagebreak\"><p>\(warSentence)</p></div>")
+
+        XCTAssertTrue(result.chapter.text.contains(warSentence), result.chapter.text)
+        XCTAssertTrue(result.chapter.pages.isEmpty)
+        XCTAssertFalse(result.markdown.contains("<!-- page:"), result.markdown)
+    }
+
+    /// Without any attribute the element's short text still names its page
+    /// and is not read.
+    func testAnUnlabelledShortNumberIsStillAPageAndNotRead() throws {
+        let result = try parsed("<p>One <span epub:type=\"pagebreak\">xii</span>two</p>")
+
+        XCTAssertEqual(result.chapter.text, "One two")
+        XCTAssertEqual(result.chapter.pages.map(\.label), ["xii"])
+    }
+
+    /// A page the book's page list names at an element that holds a paragraph:
+    /// the page is the list's, and the paragraph is read.
+    func testAListedPageBreakHoldingAParagraphIsRead() throws {
+        let nav = xhtml("""
+            <nav epub:type="toc"><ol><li><a href="ch1.xhtml">Title</a></li></ol></nav>
+            <nav epub:type="page-list"><ol><li><a href="ch1.xhtml#p7">7</a></li></ol></nav>
+            """)
+        let chapter = xhtml("""
+            <h1>Title</h1><p>Alpha.</p><p id="p7" epub:type="pagebreak">\(warSentence)</p>
+            """)
+        let epub = try makeEPUB(
+            manifest: """
+                <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+                <item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>
+                """,
+            spine: "<itemref idref=\"ch1\"/>",
+            members: ["nav.xhtml": nav, "ch1.xhtml": chapter]
+        )
+
+        let chapters = try EPUBParser.prepareBook(url: epub).chapters
+        guard let first = chapters.first?.chapter else { return XCTFail("no chapter") }
+        assertPages(of: first, [("7", "The war began")])
+        XCTAssertTrue(first.text.contains(warSentence), first.text)
+    }
+
+    /// The reading without pages reads a page-break element's words, and with
+    /// pages they read the same, so the two readings differ by no word.
+    func testWithoutPagesAPageBreakHoldingWordsReadsAsBefore() throws {
+        let html = "<p>Before.</p><div epub:type=\"pagebreak\" title=\"12\"><p>\(warSentence)</p></div><p>After.</p>"
+        let with = try parsed(html)
+        let without = try parsed(html, includesPages: false)
+
+        XCTAssertEqual(without.chapter.text, with.chapter.text)
+        XCTAssertFalse(without.markdown.contains("<!-- page:"), without.markdown)
     }
 
     // MARK: - Publication semantics

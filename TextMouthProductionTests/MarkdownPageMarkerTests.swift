@@ -144,6 +144,37 @@ final class MarkdownPageMarkerTests: XCTestCase {
         XCTAssertNil(MarkdownHeadingAnnotation.decode(marker("12").markdown))
     }
 
+    // MARK: - Page numbers and real words (ST02)
+
+    /// The one rule EPUB and DAISY share for text found where a page begins.
+    func testNoMoreThanLabel() {
+        let rows: [(text: String, label: String, expected: Bool)] = [
+            ("", "12", true),
+            ("  ", "12", true),
+            ("12", "12", true),
+            ("Page 12", "12", true),
+            ("12", "Page 12", true),
+            ("p. XII", "xii", true),
+            ("Hello there", "12", false),
+            ("Chapter One", "", true),
+            (String(repeating: "a", count: 33), "", false),
+            ("12\n  ", "12", true),
+            ("Page\n12", "Page 12", true),
+            // A number in another numbering than its label's is still a number.
+            ("V", "5", true),
+            ("xiv", "14", true),
+            ("[12]", "twelve", true),
+            ("Hello", "5", false),
+            ("A-3", "4", false),
+        ]
+        for row in rows {
+            XCTAssertEqual(
+                MarkdownPageMarker.isNoMoreThanLabel(row.text, label: row.label), row.expected,
+                "row (text: \(String(reflecting: row.text)), label: \(String(reflecting: row.label)))"
+            )
+        }
+    }
+
     // MARK: - A marker at a line's start (ST05)
 
     /// The chapter `markdown` parses to, with markers read when `navigation`.

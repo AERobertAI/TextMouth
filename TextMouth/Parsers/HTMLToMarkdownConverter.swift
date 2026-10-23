@@ -12,7 +12,9 @@ struct HTMLPageTargets {
     /// Whether each page-break element is itself a page: true for standalone
     /// HTML and for a book without a page list, false once a page list names
     /// the book's pages (its page-break elements the list does not name are
-    /// then not pages). A page-break element's own text is never read either way.
+    /// then not pages). A page-break element's own text is skipped, either way,
+    /// only when it is no more than its page's label (its number and perhaps a
+    /// caption); longer or other text is real words and is read (ST02).
     var pageBreaksArePages: Bool
 
     /// Targets naming no page, with every page-break element a page.
@@ -159,6 +161,8 @@ enum HTMLToMarkdownConverter {
         var pages: HTMLPageTargets
         /// Whether page markers are written (PG05); false converts as cache
         /// format 3.0.7 did: no marker, and a page-break element's text is read.
+        /// True skips a page-break element's text only when it is no more than
+        /// its page's label (ST02).
         var includesPages: Bool
         /// The ids whose pages are written already (PG05).
         let writtenPageIDs = WrittenPageIDs()
@@ -213,12 +217,17 @@ enum HTMLToMarkdownConverter {
         // inline; block targets precede their block. A marker never
         // contributes words to speech.
         let isBreak = isPageBreakElement(element, context: context)
-        for marker in destinationMarkers(for: element, tag: tag, isPageBreak: isBreak, context: context) {
+        // The page is computed once: a page the page list names is recorded as
+        // written by the lookup, so a second lookup would lose it.
+        let page = pageMarker(for: element, tag: tag, isPageBreak: isBreak, context: context)
+        for marker in destinationMarkers(for: element, tag: tag, page: page, context: context) {
             emit(marker, inline: boundary != .paragraph, into: &result)
         }
-        // A page-break element's own text (usually the page's number) is never
-        // read, whether or not it names a page, so its children are not converted.
-        if isBreak {
+        // A page-break element's own text that is no more than its page's
+        // label (the page's number, perhaps with a caption), named or not, is
+        // not read, so its children are not converted. Any longer or other
+        // text is real words and is converted like any element's (ST02).
+        if isBreak && !readsOwnText(ofPageBreak: element, page: page) {
             separate(at: boundary, in: &result)
             return
         }
@@ -372,16 +381,17 @@ enum HTMLToMarkdownConverter {
 
     /// The Markdown of the destinations `element` itself carries (PG05): the
     /// page it begins, then its TOC annotation, so an element that is both
-    /// gets the page marker first. `isPageBreak` is whether `element` is a
-    /// page-break element (see `isPageBreakElement`).
+    /// gets the page marker first. `page` is the page `element` begins, from
+    /// `pageMarker`, which the caller computes once because looking up a page
+    /// the page list names records it as written.
     private static func destinationMarkers(
         for element: Element,
         tag: String,
-        isPageBreak: Bool,
+        page: MarkdownPageMarker?,
         context: Context
     ) -> [String] {
         var markers: [String] = []
-        if let page = pageMarker(for: element, tag: tag, isPageBreak: isPageBreak, context: context) {
+        if let page {
             markers.append(page.markdown)
         }
         if let annotation = headingAnnotation(for: element, tag: tag, headingTargets: context.headingTargets) {
@@ -393,8 +403,8 @@ enum HTMLToMarkdownConverter {
     /// Destinations carried by the descendants of a heading, `pre`, or `code`,
     /// in document order, where they are written before that element instead
     /// of inside it. Content outside the reading flow is skipped exactly as
-    /// conversion skips it, and so are the children of a page-break element,
-    /// which conversion never reads.
+    /// conversion skips it, and so are the children of a page-break element
+    /// whose text conversion does not read (`readsOwnText`).
     private static func destinationMarkers(inside container: Element, context: Context) -> [String] {
         guard !context.headingTargets.isEmpty || context.mayHoldPages else { return [] }
         var markers: [String] = []
@@ -404,8 +414,9 @@ enum HTMLToMarkdownConverter {
             let tag = element.tagName().lowercased()
             guard tag != "script", tag != "style" else { continue }
             let isBreak = isPageBreakElement(element, context: context)
-            markers += destinationMarkers(for: element, tag: tag, isPageBreak: isBreak, context: context)
-            if !isBreak {
+            let page = pageMarker(for: element, tag: tag, isPageBreak: isBreak, context: context)
+            markers += destinationMarkers(for: element, tag: tag, page: page, context: context)
+            if !isBreak || readsOwnText(ofPageBreak: element, page: page) {
                 markers += destinationMarkers(inside: element, context: context)
             }
         }
@@ -414,19 +425,44 @@ enum HTMLToMarkdownConverter {
 
     // MARK: - Pages
 
-    /// Whether `element` is a page-break element whose text is not read
+    /// Whether `element` is a page-break element whose number is not read
     /// (PG05): only while pages are included, and only in a document whose
     /// markup can hold one (an attribute scan costs every element, so a
-    /// document that never spells "pagebreak" skips it).
+    /// document that never spells "pagebreak" skips it). Its text is still read
+    /// when it is more than the page's label (`readsOwnText`).
     private static func isPageBreakElement(_ element: Element, context: Context) -> Bool {
         context.includesPages && context.readingFlow.mayHoldPageBreaks && PublicationSemantics.isPageBreak(element)
+    }
+
+    /// Whether the text of the page-break element `element` is real words, to
+    /// be read like any element's (ST02): true when it is more than its page's
+    /// label. The label is that of `page` (the page the element begins), else
+    /// the element's `aria-label` or `title`, else empty, which any text up to
+    /// `maximumLabelLength` Characters is no more than. Conversion and
+    /// `destinationMarkers(inside:context:)` both ask this, so they agree.
+    private static func readsOwnText(ofPageBreak element: Element, page: MarkdownPageMarker?) -> Bool {
+        let label = page?.label ?? attributeLabel(of: element) ?? ""
+        return !MarkdownPageMarker.isNoMoreThanLabel(HTMLReadingText.inlineText(of: element), label: label)
+    }
+
+    /// The first of an element's `aria-label` and `title` that is not blank,
+    /// or nil when it has neither.
+    private static func attributeLabel(of element: Element) -> String? {
+        for name in ["aria-label", "title"] {
+            let value = (try? element.attr(name)) ?? ""
+            if value.contains(where: { !$0.isWhitespace }) { return value }
+        }
+        return nil
     }
 
     /// The page `element` begins, or nil (PG05). A page the book's page list
     /// names at this element's id is that page, written once however many
     /// elements share the id. Otherwise a page-break element is a page of its
     /// own when the book has no page list, labelled by its `aria-label`, its
-    /// `title`, or its text, and is no page when it has no label at all.
+    /// `title`, or its text, and is no page when it has no label at all. Its
+    /// text is a label only when it could be one (not longer than
+    /// `maximumLabelLength`): a page-break element holding a paragraph begins
+    /// no page, so the paragraph's first words are not read out by Go to Page.
     private static func pageMarker(
         for element: Element,
         tag: String,
@@ -438,18 +474,16 @@ enum HTMLToMarkdownConverter {
             return named
         }
         guard isPageBreak, context.pages.pageBreaksArePages else { return nil }
-        // The first of these the element has, not blank.
-        let labels: [() -> String] = [
-            { (try? element.attr("aria-label")) ?? "" },
-            { (try? element.attr("title")) ?? "" },
-            { HTMLReadingText.inlineText(of: element) },
-        ]
-        for makeLabel in labels {
-            let label = makeLabel()
-            if label.contains(where: { !$0.isWhitespace }) {
-                // The ordinal is never used: the label is not blank.
-                return MarkdownPageMarker(label: label, ordinal: 0)
-            }
+        // The ordinal is never used: every label here is not blank.
+        if let label = attributeLabel(of: element) {
+            return MarkdownPageMarker(label: label, ordinal: 0)
+        }
+        // Without an attribute label the element's text names the page, when
+        // it is not blank and short enough to be a label.
+        let text = HTMLReadingText.inlineText(of: element)
+        if text.contains(where: { !$0.isWhitespace }),
+           MarkdownPageMarker.isNoMoreThanLabel(text, label: "") {
+            return MarkdownPageMarker(label: text, ordinal: 0)
         }
         return nil
     }

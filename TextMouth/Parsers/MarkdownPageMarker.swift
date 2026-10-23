@@ -71,6 +71,65 @@ struct MarkdownPageMarker: Equatable, Sendable {
         return label.isEmpty ? nil : MarkdownPageMarker(normalizedLabel: label)
     }
 
+    // MARK: - Page numbers and real words
+
+    /// Whether `text`, found where a page begins, is no more than that page's
+    /// `label`: the page's number and perhaps a caption, which the marker
+    /// stands in for, and not words a listener must hear (ST02, PG08). Both
+    /// formats that carry page numbers as text (EPUB's page-break elements and
+    /// DAISY 2.02's page fragments) use this one rule.
+    ///
+    /// Whitespace runs in both strings are collapsed to one space and trimmed
+    /// first. Then:
+    /// - empty text is no more than any label (true);
+    /// - text longer than `maximumLabelLength` Characters is words (false);
+    /// - an empty label cannot tell a number from words, so short text counts
+    ///   as a number (true);
+    /// - otherwise the text must contain the label or the label the text,
+    ///   ignoring case: "12" or "Page 12" under the label "12" (true), and
+    ///   "12" under the label "Page 12" (true), but "Hello there" under "12"
+    ///   (false);
+    /// - failing that, text that is only a number in another numbering than
+    ///   the label's still counts ("V" under "5"; see `looksLikeAPageNumber`).
+    ///
+    /// Longer or other text is real words, never dropped.
+    static func isNoMoreThanLabel(_ text: String, label: String) -> Bool {
+        let collapsedText = collapsingWhitespace(text)
+        if collapsedText.isEmpty { return true }
+        guard collapsedText.count <= maximumLabelLength else { return false }
+        let collapsedLabel = collapsingWhitespace(label)
+        if collapsedLabel.isEmpty { return true }
+        return collapsedText.localizedCaseInsensitiveContains(collapsedLabel)
+            || collapsedLabel.localizedCaseInsensitiveContains(collapsedText)
+            || looksLikeAPageNumber(collapsedText)
+    }
+
+    /// Whether `text` is made of nothing but a page number: every Character is
+    /// a number, a Roman numeral letter (I V X L C D M, either case),
+    /// whitespace, or punctuation, and at least one is a number or a Roman
+    /// numeral letter ("V", "xiv", "[12]", "(iii)"). It lets a number stand in
+    /// another numbering than its label's (ST02): "V" under the label "5", as
+    /// in the sample pagebreaks-only.epub. Words ("Hello") and codes such as
+    /// "A-3" are not page numbers, so they are read.
+    private static func looksLikeAPageNumber(_ text: String) -> Bool {
+        let romanLetters = Set("IVXLCDMivxlcdm")
+        var hasNumeral = false
+        for character in text {
+            if character.isNumber || romanLetters.contains(character) {
+                hasNumeral = true
+            } else if !character.isWhitespace && !character.isPunctuation {
+                return false
+            }
+        }
+        return hasNumeral
+    }
+
+    /// `text` with each run of whitespace and line breaks as one space and
+    /// no whitespace at its ends.
+    private static func collapsingWhitespace(_ text: String) -> String {
+        text.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+    }
+
     // MARK: - Normalizing
 
     /// The label's normal form: trimmed, each inner run of whitespace one space,
