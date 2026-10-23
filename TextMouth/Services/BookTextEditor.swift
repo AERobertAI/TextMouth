@@ -66,6 +66,10 @@ final class BookTextEditor {
     /// The feed episodes whose transcript's note (`updatedInFeed`) has been
     /// announced in the session now running, so only the first edit says it.
     private var announcedFeedNotes: Set<UUID> = []
+    /// The title of the book of each session, kept when the session begins,
+    /// so a session that ends because its book left the library can still
+    /// name the book (`endBecauseBookIsGone(_:)`).
+    private var sessionTitles: [UUID: String] = [:]
 
     /// An editor whose sessions are `sessions`, remembering its explanation
     /// in `preferences` and hearing TextMouth become active on
@@ -226,21 +230,37 @@ final class BookTextEditor {
             file: { [weak library] in library?.bookByID(bookID).map(MarkdownCacheService.cacheURL(for:)) },
             changed: { [weak self] in self?.check(bookID) }
         )
-        // The session's copy of the text its edits replace.
+        // The session's copy of the text its edits replace, and the title
+        // to name the book by if it leaves the library.
         if let book = library?.bookByID(bookID) {
             sessions.keepOldText(of: book)
+            sessionTitles[bookID] = book.title
         }
         return true
     }
 
     /// Checks the book `bookID` for an edit, as the library holds the book
-    /// now; a book that has left the library ends its session instead.
+    /// now; a book that has left the library ends its session instead,
+    /// saying so.
     func check(_ bookID: UUID) {
         guard let book = library?.bookByID(bookID) else {
-            end(bookID)
+            endBecauseBookIsGone(bookID)
             return
         }
         sessions.scheduleCheck(of: book)
+    }
+
+    /// Ends the session of the book `bookID` because the library no longer
+    /// lists the book (it was removed, or a feed episode's download was
+    /// deleted and its row moved to its feed's shelf), after announcing that
+    /// Edit Text has stopped for it, so the user is not left saving into an
+    /// editor nothing listens to. Said once: the session, and its title, go
+    /// with the first call.
+    private func endBecauseBookIsGone(_ bookID: UUID) {
+        if let title = sessionTitles[bookID] {
+            files.announce(BookTextEditWording.stoppedBookGone(bookTitle: title))
+        }
+        end(bookID)
     }
 
     /// Ends the session of the book `bookID`: its watcher stops, and no
@@ -251,6 +271,7 @@ final class BookTextEditor {
         announcedRefusals[bookID] = nil
         announcedCopies[bookID] = nil
         announcedFeedNotes.remove(bookID)
+        sessionTitles[bookID] = nil
     }
 
     /// Ends every session, as a test does when it ends.
@@ -288,7 +309,7 @@ final class BookTextEditor {
             return
         case .missing:
             if library?.bookByID(bookID) == nil {
-                end(bookID)
+                endBecauseBookIsGone(bookID)
             }
         case .adopted(let edit):
             announcedRefusals[bookID] = nil

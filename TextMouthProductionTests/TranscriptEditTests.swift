@@ -389,6 +389,40 @@ final class TranscriptEditTests: XCTestCase {
         XCTAssertEqual(sheetAnnouncements.messages, ["Deleted the transcript of Breakwater Notes."])
     }
 
+    // MARK: - A Session Whose Book Is Gone
+
+    /// A session whose book left the library (removed, or an episode whose
+    /// download was deleted and whose row moved to its feed's shelf) says
+    /// so the next time it is checked, naming the book, and ends; a second
+    /// check says nothing.
+    func testASessionWhoseBookLeftTheLibrarySaysSoOnceAndEnds() async throws {
+        let world = try makeIntegrationWorld("Transcript Edit Book Gone")
+        let book = try world.makeSilentAudioBook(title: "Ep. 378", trackDurations: [3, 2])
+        try TranscriptStore.install(try TranscriptFixtures.transcript(of: book, sentences: TranscriptionUIScripts.twoTracks), for: book)
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        XCTAssertTrue(editor.sessions.isEditing(book.id))
+        world.library.library.books.removeAll { $0.id == book.id }
+
+        let first = await check(book, with: editor, in: announcements)
+        let second = await check(book, with: editor, in: announcements)
+
+        XCTAssertEqual(first, [BookTextEditWording.stoppedBookGone(bookTitle: "Ep. 378")])
+        XCTAssertEqual(second, [], "the session said it had stopped twice")
+        XCTAssertFalse(editor.sessions.isEditing(book.id), "the session outlived its book")
+    }
+
+    /// The sentence a session that ended because its book is gone speaks.
+    func testTheBookGoneWordingIsPinned() {
+        XCTAssertEqual(
+            BookTextEditWording.stoppedBookGone(bookTitle: "Ep. 378"),
+            "Text not updated: Ep. 378 was removed, or its download deleted, so Edit Text has stopped for it."
+        )
+    }
+
     // MARK: - A Feed Episode's Transcript
 
     /// A feed episode's transcript can be edited (October 23, 2026): two

@@ -50,6 +50,13 @@ enum BookTextEditWording {
     /// with the episode in its feed, …" (`TranscriptionWording`).
     static let updatedInFeed = updated + ". " + TranscriptionWording.feedEpisodeTranscriptNote
 
+    /// A session ended because its book left the library: it was removed, or
+    /// it is a feed episode whose download was deleted. The user's later
+    /// saves are not taken, so they are told.
+    static func stoppedBookGone(bookTitle: String) -> String {
+        "Text not updated: \(bookTitle) was removed, or its download deleted, so Edit Text has stopped for it."
+    }
+
     /// Why an edit was not taken, as VoiceOver hears it once a check found
     /// it, then where the edited text was kept (`kept(_:)`), as in "Text not
     /// updated: the edited text of Harbour Pilots isn't UTF-8 text. Save it
