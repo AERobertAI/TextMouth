@@ -2,6 +2,8 @@
 
 Part of [TextMouth's documentation](../../README.md).
 
+Every version of TextMouth, newest first, and what changed for you in each.
+
 ## 0.2.0 (October 21, 2026)
 ### Reading
 - Next Page, Previous Page, and Go to Page… move by page in EPUB, PDF, Word, DAISY, and other books that have pages, and Where Am I? says the page; books already in your library gain their pages the first time this version opens. If a book's text differs from what TextMouth reads from its file, as after an edit made with Edit Text before this version, its old text is first kept in a copy beside it; an edit you make from now on is kept as it is.
@@ -24,3 +26,6 @@ Part of [TextMouth's documentation](../../README.md).
 - Podcasts and article feeds can be subscribed to by address or by searching Apple's podcast directory, each feed lists its episodes and articles in a folder of its own, and the newest are downloaded as you choose.
 - A Reading List holds books from any folder in an order you choose and carries on from one to the next, and the Unopened and Recently Opened categories take the place of No Folder and Recent.
 - A library can live in iCloud Drive, Dropbox, or Google Drive, and each book can be downloaded when you need it, removed from this Mac to free space, or kept on it.
+
+## 0.1.1
+- The first beta version of TextMouth. Its changes are not listed here.
