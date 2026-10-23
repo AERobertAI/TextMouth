@@ -37,9 +37,11 @@ enum BookFormat: String, Codable, CaseIterable {
     // Braille books (FMT20): a BRF, a BRL, and a PEF, read through liblouis
     // in the braille helper (FMT21). Like every raw value here, written into
     // the library index and never changed: a TextMouth built before this case
-    // refuses a library that holds a braille book (it keeps the library's
-    // file and writes nothing), so the documentation warns the user before
-    // they go back to an older build.
+    // refuses a library that holds a braille book. It keeps library.json and
+    // a copy of it as they are, but still writes each book's package record,
+    // which loses the fields it does not know (the records of edits and
+    // pages, PLAN-0.2.0-2026-10-23.md, 1.1 and 1.2). The documentation
+    // warns the user before they go back to an older build.
     case braille
     case daisy
     case pdf
