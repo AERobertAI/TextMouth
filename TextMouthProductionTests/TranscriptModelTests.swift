@@ -148,11 +148,11 @@ final class TranscriptModelTests: XCTestCase {
             ),
             (
                 { $0.files[0].sentences[0].words[5].characterCount = 40 },
-                "files[0].sentences[0].words[5] spans characters 29 to 69, outside 28 through 34"
+                "files[0].sentences[0].words[5] starts at character 29 and is 40 long, outside 28 through 34"
             ),
             (
                 { $0.files[0].sentences[0].words[2].characterOffset = 1 },
-                "files[0].sentences[0].words[2] spans characters 1 to 3, outside 15 through 34"
+                "files[0].sentences[0].words[2] starts at character 1 and is 2 long, outside 15 through 34"
             ),
             (
                 { $0.files[0].sentences[1].words[0].startMilliseconds = 2_340 },
@@ -275,6 +275,58 @@ final class TranscriptModelTests: XCTestCase {
                 .filter { $0.hasPrefix("transcript.json.unreadable-") }.count,
             1
         )
+    }
+
+    /// A transcript.json holding a word such as `[1, 9223372036854775807, 0, 0]`
+    /// (a damaged or hand-edited file) is set aside as unusable, its reason
+    /// worded without adding the offset and the length, which would overflow
+    /// and trap before the file could be set aside.
+    func testAWordWhoseEndOverflowsIsUnusableWithoutTrapping() throws {
+        let package = try makeSandboxDirectory("transcript-overflowing-word")
+        var transcript = TranscriptFixtures.twoFiles
+        guard transcript.files[0].sentences[0].words.count >= 1 else {
+            XCTFail("TranscriptFixtures.twoFiles no longer has a word in its first sentence")
+            return
+        }
+        transcript.files[0].sentences[0].words[0] = TranscriptWord(
+            characterOffset: 1, characterCount: Int.max, startMilliseconds: 0, endMilliseconds: 0, confidence: nil
+        )
+        // Written as the JSON a damaged file would hold, not through the
+        // store's write, which is free to refuse it.
+        try TranscriptStore.encoded(transcript).write(to: package.appendingPathComponent(TextMouthPaths.transcriptFileName))
+
+        XCTAssertEqual(
+            TranscriptStore.read(from: package),
+            .unusable("files[0].sentences[0].words[0] starts at character 1 and is \(Int.max) long, outside 0 through 34")
+        )
+    }
+
+    /// A transcript.json is a stranger's file: a time beyond
+    /// `Transcript.maximumMilliseconds` (100 hours) or below 0 is refused, by
+    /// the field's name, so no sum of times can overflow; the maximum itself
+    /// is allowed.
+    func testASentenceTimeOutsideZeroThroughTheMaximumIsRefused() {
+        let maximum = Transcript.maximumMilliseconds
+        XCTAssertEqual(maximum, 360_000_000)
+        let cases: [(change: (inout Transcript) -> Void, reason: String?)] = [
+            ({ $0.files[1].sentences[1].endMilliseconds = Int.max },
+             "files[1].sentences[1].endMilliseconds is \(Int.max), outside 0 through \(maximum)"),
+            ({ $0.files[1].sentences[1].endMilliseconds = maximum + 1 },
+             "files[1].sentences[1].endMilliseconds is \(maximum + 1), outside 0 through \(maximum)"),
+            // Both times are huge, so the order checks pass and the range fails.
+            ({ $0.files[1].sentences[1].startMilliseconds = Int.max; $0.files[1].sentences[1].endMilliseconds = Int.max },
+             "files[1].sentences[1].startMilliseconds is \(Int.max), outside 0 through \(maximum)"),
+            // A time below 0 is found by the order checks.
+            ({ $0.files[1].sentences[0].startMilliseconds = Int.min },
+             "files[1].sentences[0].startMilliseconds is \(Int.min), before the previous sentence's 0"),
+            // The latest allowed time passes (the words end well before it).
+            ({ $0.files[1].sentences[1].endMilliseconds = maximum }, nil),
+        ]
+        for (number, testCase) in cases.enumerated() {
+            var transcript = TranscriptFixtures.twoFiles
+            testCase.change(&transcript)
+            XCTAssertEqual(transcript.validationFailure(), testCase.reason, "case \(number)")
+        }
     }
 
     /// A transcript a later TextMouth wrote, in a layout this one does not

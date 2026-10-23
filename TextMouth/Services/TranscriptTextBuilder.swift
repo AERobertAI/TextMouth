@@ -60,7 +60,7 @@ enum TranscriptTextBuilder {
         /// How much of the file's stretch from `start` to `end` this
         /// stretch plays, in milliseconds.
         func overlap(from start: Int, to end: Int) -> Int {
-            max(0, min(end, fileEnd ?? Int.max) - max(start, fileStart))
+            max(0, min(end, fileEnd ?? Int.max).clampedMinus(max(start, fileStart)))
         }
 
         /// Whether this stretch plays the file's moment `time`.
@@ -71,8 +71,8 @@ enum TranscriptTextBuilder {
         /// `time`, a moment of the file, as a moment of the chapter, held
         /// inside this stretch.
         func chapterTime(of time: Int) -> Int {
-            let elapsed = max(0, time - fileStart)
-            return chapterStart + min(elapsed, fileEnd.map { $0 - fileStart } ?? elapsed)
+            let elapsed = max(0, time.clampedMinus(fileStart))
+            return chapterStart.clampedPlus(min(elapsed, fileEnd.map { $0.clampedMinus(fileStart) } ?? elapsed))
         }
     }
 
@@ -146,7 +146,8 @@ enum TranscriptTextBuilder {
         guard end > start else { return stretches.first { $0.plays(start) } }
         var chapterOverlaps: [Int: Int] = [:]
         for stretch in stretches {
-            chapterOverlaps[stretch.chapter, default: 0] += stretch.overlap(from: start, to: end)
+            chapterOverlaps[stretch.chapter] = (chapterOverlaps[stretch.chapter] ?? 0)
+                .clampedPlus(stretch.overlap(from: start, to: end))
         }
         // The chapter playing the most, the earlier of two that play as much.
         guard let chapter = chapterOverlaps
@@ -191,7 +192,7 @@ enum TranscriptTextBuilder {
         var charactersBefore = 0
         for (chapter, entry) in audio.chapters.enumerated() {
             let start = Transcript.milliseconds(AudioBookParser.time(forCharacterOffset: charactersBefore))
-            charactersBefore += entry.characterCount
+            charactersBefore = charactersBefore.clampedPlus(entry.characterCount)
             let end = chapter + 1 < audio.chapters.count
                 ? Transcript.milliseconds(AudioBookParser.time(forCharacterOffset: charactersBefore))
                 : nil
@@ -222,7 +223,7 @@ enum TranscriptTextBuilder {
             if let previous = current.last,
                current.count >= sentencesPerParagraph
                 || length + 1 + sentenceLength > paragraphLength
-                || sentence.startMilliseconds - previous.endMilliseconds >= paragraphPause {
+                || sentence.startMilliseconds.clampedMinus(previous.endMilliseconds) >= paragraphPause {
                 paragraphs.append(current)
                 current = []
                 length = 0
@@ -334,5 +335,26 @@ enum TranscriptTextBuilder {
                 BookContentTranscriptChapterIndex(text: $0, sentences: $1)
             }
         )
+    }
+}
+
+// MARK: - Arithmetic That Cannot Trap
+
+private extension Int {
+    /// This number plus `other`, held at `Int.max` or `Int.min` rather than
+    /// trapping: the times and lengths read from a book's files are untrusted,
+    /// and a damaged one must not crash TextMouth.
+    func clampedPlus(_ other: Int) -> Int {
+        let (sum, overflowed) = addingReportingOverflow(other)
+        // An overflow runs in the direction the added number points.
+        return overflowed ? (other < 0 ? Int.min : Int.max) : sum
+    }
+
+    /// This number minus `other`, held at `Int.max` or `Int.min` rather than
+    /// trapping.
+    func clampedMinus(_ other: Int) -> Int {
+        let (difference, overflowed) = subtractingReportingOverflow(other)
+        // An overflow runs the opposite way to the subtracted number.
+        return overflowed ? (other < 0 ? Int.max : Int.min) : difference
     }
 }

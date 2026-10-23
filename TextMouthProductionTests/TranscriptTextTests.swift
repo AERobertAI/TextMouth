@@ -190,6 +190,61 @@ final class TranscriptTextTests: XCTestCase {
         XCTAssertNil(text.readingIndex.alignmentFailure(with: text.chapters))
     }
 
+    // MARK: - Numbers Read from the Files Cannot Trap
+
+    /// A layer whose sentence is `[1, Int.max, 0, 0]` (a damaged or
+    /// hand-edited contentIndex.json) fails validation with a reason that
+    /// words the two numbers without adding them, which would overflow and
+    /// trap; the layer is then set aside as any unusable one is.
+    func testASentenceWhoseEndOverflowsFailsValidationWithoutTrapping() {
+        var index = Self.timedText.index
+        guard index.chapters.count >= 1 else {
+            XCTFail("the timed text no longer has a chapter")
+            return
+        }
+        let chapterLength = index.chapters[0].text.characterCount
+        index.chapters[0].sentences = [
+            BookContentSentenceIndex(characterOffset: 1, characterCount: Int.max, startMilliseconds: 0, endMilliseconds: 0),
+        ]
+
+        XCTAssertEqual(
+            index.validationFailure(against: index.readingIndex),
+            "transcript.chapters[0].sentences[0] starts at character 1 and is \(Int.max) long, "
+                + "outside 0 through \(chapterLength)"
+        )
+    }
+
+    /// A valid transcript laid over an audio index whose chapters hold
+    /// `Int.max` characters each, so the start of the chapter after them is
+    /// beyond what a sum can hold, is laid without a trap: the sentences
+    /// still go to the first chapter, which plays them.
+    func testATranscriptLaidOverChaptersOfHugeLengthsDoesNotTrap() {
+        func chapter(_ number: Int, characters: Int) -> BookContentChapterIndex {
+            BookContentChapterIndex(
+                chapterIndex: number, title: "Part \(number + 1)", startCharacterOffset: 0,
+                characterCount: characters, wordCount: 1, headings: [], audio: nil
+            )
+        }
+        let audio = BookContentIndex(
+            version: BookContentIndex.currentVersion, kind: .audio, format: .audio,
+            generatedAt: TranscriptFixtures.date, totalWordCount: 3, totalCharacterCount: Int.max,
+            totalAudioDuration: nil, audioLayout: .singleFile,
+            chapters: [chapter(0, characters: Int.max), chapter(1, characters: Int.max), chapter(2, characters: 10)],
+            textCacheFingerprint: nil
+        )
+        let transcript = TranscriptFixtures.transcript([
+            (path: "book.m4b", duration: 9_000, sentences: [
+                TranscriptFixtures.sentence("Quillwort grows by the ferry slip.", from: 0, to: 2_400),
+                TranscriptFixtures.sentence("Tide tables hang in the harbor office.", from: 2_400, to: 5_100),
+            ]),
+        ])
+        XCTAssertNil(transcript.validationFailure())
+
+        let chapters = TranscriptTextBuilder.chapters(of: transcript, over: audio, bookFileName: "book.m4b")
+
+        XCTAssertEqual(chapters.map { $0.sentences.count }, [2, 0, 0])
+    }
+
     // MARK: - Time and Place
 
     /// A time places the cursor at the start of the sentence heard then:
