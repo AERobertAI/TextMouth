@@ -74,10 +74,10 @@ struct MarkdownPageMarker: Equatable, Sendable {
     // MARK: - Page numbers and real words
 
     /// Whether `text`, found where a page begins, is no more than that page's
-    /// `label`: the page's number and perhaps a caption, which the marker
-    /// stands in for, and not words a listener must hear (ST02, PG08). Both
-    /// formats that carry page numbers as text (EPUB's page-break elements and
-    /// DAISY 2.02's page fragments) use this one rule.
+    /// own `label`, which the marker stands in for, and not words a listener
+    /// must hear (ST02, PG08). Both formats that carry page numbers as text
+    /// (EPUB's page-break elements and DAISY 2.02's page fragments) use this
+    /// one rule.
     ///
     /// Whitespace runs in both strings are collapsed to one space and trimmed
     /// first. Then:
@@ -85,43 +85,111 @@ struct MarkdownPageMarker: Equatable, Sendable {
     /// - text longer than `maximumLabelLength` Characters is words (false);
     /// - an empty label cannot tell a number from words, so short text counts
     ///   as a number (true);
-    /// - otherwise the text must contain the label or the label the text,
-    ///   ignoring case: "12" or "Page 12" under the label "12" (true), and
-    ///   "12" under the label "Page 12" (true), but "Hello there" under "12"
-    ///   (false);
-    /// - failing that, text that is only a number in another numbering than
-    ///   the label's still counts ("V" under "5"; see `looksLikeAPageNumber`).
+    /// - otherwise the text must be the page's own label: the same text once
+    ///   case, spaces, and a trailing period are ignored ("12" or "12." under
+    ///   the label "12", "XII" under "xii"), or the label's twin in the other
+    ///   numbering, Roman for Arabic and Arabic for Roman ("V" under "5", "5"
+    ///   under "V"; see `areNumberingTwins`).
     ///
-    /// Longer or other text is real words, never dropped.
+    /// Any other text is real words, never dropped, however much it looks
+    /// like a number (stable020 review, finding 2): a heading "IV", "XII.",
+    /// "I", "1984", or "1, 2, 3." under the label "5", a caption "Page 12"
+    /// under "12", or a word made of Roman numeral letters ("Mix", "Civil").
+    /// Hearing a page's caption costs a listener a moment; losing a heading
+    /// would cost them its words.
     static func isNoMoreThanLabel(_ text: String, label: String) -> Bool {
         let collapsedText = collapsingWhitespace(text)
         if collapsedText.isEmpty { return true }
         guard collapsedText.count <= maximumLabelLength else { return false }
-        let collapsedLabel = collapsingWhitespace(label)
-        if collapsedLabel.isEmpty { return true }
-        return collapsedText.localizedCaseInsensitiveContains(collapsedLabel)
-            || collapsedLabel.localizedCaseInsensitiveContains(collapsedText)
-            || looksLikeAPageNumber(collapsedText)
+        if collapsingWhitespace(label).isEmpty { return true }
+        let textKey = comparisonKey(collapsedText)
+        let labelKey = comparisonKey(label)
+        return textKey == labelKey || areNumberingTwins(textKey, labelKey)
     }
 
-    /// Whether `text` is made of nothing but a page number: every Character is
-    /// a number, a Roman numeral letter (I V X L C D M, either case),
-    /// whitespace, or punctuation, and at least one is a number or a Roman
-    /// numeral letter ("V", "xiv", "[12]", "(iii)"). It lets a number stand in
-    /// another numbering than its label's (ST02): "V" under the label "5", as
-    /// in the sample pagebreaks-only.epub. Words ("Hello") and codes such as
-    /// "A-3" are not page numbers, so they are read.
-    private static func looksLikeAPageNumber(_ text: String) -> Bool {
-        let romanLetters = Set("IVXLCDMivxlcdm")
-        var hasNumeral = false
-        for character in text {
-            if character.isNumber || romanLetters.contains(character) {
-                hasNumeral = true
-            } else if !character.isWhitespace && !character.isPunctuation {
-                return false
+    /// The form of a label, or of text found where a page begins, that
+    /// `isNoMoreThanLabel` compares: with no whitespace, without one trailing
+    /// period, and in capitals, so "xii." and "XII", or "Page 12" and
+    /// "page12", share a key.
+    private static func comparisonKey(_ text: String) -> String {
+        var key = String(text.filter { !$0.isWhitespace })
+        if key.hasSuffix(".") {
+            key.removeLast()
+        }
+        return key.uppercased()
+    }
+
+    /// Whether two comparison keys (`comparisonKey`) write one number in the
+    /// two numberings a page can be numbered in: an Arabic number and the
+    /// Roman numeral of the same value ("5" and "V", "1984" and "MCMLXXXIV").
+    /// Two Arabic numbers, or two Roman numerals, are never twins; equal ones
+    /// are the same text.
+    private static func areNumberingTwins(_ first: String, _ second: String) -> Bool {
+        guard let firstNumber = pageNumber(first), let secondNumber = pageNumber(second) else { return false }
+        return firstNumber.isRoman != secondNumber.isRoman && firstNumber.value == secondNumber.value
+    }
+
+    /// The value a comparison key writes as a page number, and whether it is
+    /// written in Roman numerals: ASCII digits alone ("12"), or a Roman
+    /// numeral in its canonical form ("XII"); nil for anything else. Only the
+    /// canonical form counts ("IV", never "IIII"), so a word that happens to
+    /// be made of Roman numeral letters is at most the twin of one number
+    /// ("MIX" is 1009), and most such words are none ("CIVIL").
+    private static func pageNumber(_ key: String) -> (value: Int, isRoman: Bool)? {
+        if !key.isEmpty, key.allSatisfy({ $0.isASCII && $0.isNumber }) {
+            // A number too long for an Int is no page's.
+            return Int(key).map { (value: $0, isRoman: false) }
+        }
+        return romanNumeralValue(key).map { (value: $0, isRoman: true) }
+    }
+
+    /// The symbols of canonical Roman numerals and their values, largest
+    /// first, the subtractive pairs among them.
+    private static let romanNumeralSymbols: [(symbol: String, value: Int)] = [
+        ("M", 1000), ("CM", 900), ("D", 500), ("CD", 400), ("C", 100), ("XC", 90),
+        ("L", 50), ("XL", 40), ("X", 10), ("IX", 9), ("V", 5), ("IV", 4), ("I", 1),
+    ]
+
+    /// The values of the Roman numeral letters.
+    private static let romanLetterValues: [Character: Int] = [
+        "I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000,
+    ]
+
+    /// The canonical Roman numeral of `value` ("XIV" for 14), in capitals;
+    /// nil outside 1 to 3999, which Roman numerals do not write.
+    private static func romanNumeral(_ value: Int) -> String? {
+        guard (1...3999).contains(value) else { return nil }
+        var remaining = value
+        var numeral = ""
+        for (symbol, symbolValue) in romanNumeralSymbols {
+            while remaining >= symbolValue {
+                numeral += symbol
+                remaining -= symbolValue
             }
         }
-        return hasNumeral
+        return numeral
+    }
+
+    /// The value of `key` when it is a Roman numeral in capitals, written in
+    /// its canonical form ("XIV" is 14); nil for anything else ("IIII",
+    /// "IL", "CIVIL", "XIV" with a lowercase letter).
+    private static func romanNumeralValue(_ key: String) -> Int? {
+        guard !key.isEmpty else { return nil }
+        // Read from the right: a letter smaller than the largest one after it
+        // is subtracted ("IV"), any other is added. Any string of letters
+        // gives some total; only the canonical spelling of that total counts.
+        var total = 0
+        var largestAfter = 0
+        for letter in key.reversed() {
+            guard let value = romanLetterValues[letter] else { return nil }
+            if value < largestAfter {
+                total -= value
+            } else {
+                total += value
+                largestAfter = value
+            }
+        }
+        return romanNumeral(total) == key ? total : nil
     }
 
     /// `text` with each run of whitespace and line breaks as one space and

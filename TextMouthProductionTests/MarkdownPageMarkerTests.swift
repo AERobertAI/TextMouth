@@ -146,33 +146,104 @@ final class MarkdownPageMarkerTests: XCTestCase {
 
     // MARK: - Page numbers and real words (ST02)
 
-    /// The one rule EPUB and DAISY share for text found where a page begins.
+    /// A row of the rule's table: the text found where a page begins, the
+    /// page's label, and whether the text is no more than that label.
+    private typealias LabelRow = (text: String, label: String, expected: Bool)
+
+    /// Asserts `MarkdownPageMarker.isNoMoreThanLabel` gives each row's answer,
+    /// naming the row that does not.
+    private func assertNoMoreThanLabel(_ rows: [LabelRow], file: StaticString = #filePath, line: UInt = #line) {
+        for row in rows {
+            XCTAssertEqual(
+                MarkdownPageMarker.isNoMoreThanLabel(row.text, label: row.label), row.expected,
+                "row (text: \(String(reflecting: row.text)), label: \(String(reflecting: row.label)))",
+                file: file, line: line
+            )
+        }
+    }
+
+    /// The one rule EPUB and DAISY share for text found where a page begins:
+    /// only the page's own label is dropped, ignoring case, spaces, and a
+    /// trailing period, or its twin in the other numbering.
     func testNoMoreThanLabel() {
-        let rows: [(text: String, label: String, expected: Bool)] = [
+        assertNoMoreThanLabel([
             ("", "12", true),
             ("  ", "12", true),
             ("12", "12", true),
-            ("Page 12", "12", true),
-            ("12", "Page 12", true),
-            ("p. XII", "xii", true),
+            ("12.", "12", true),
+            ("12", "12.", true),
+            ("XII", "xii", true),
+            ("Page 12", "page12", true),
             ("Hello there", "12", false),
             ("Chapter One", "", true),
             (String(repeating: "a", count: 33), "", false),
             ("12\n  ", "12", true),
             ("Page\n12", "Page 12", true),
-            // A number in another numbering than its label's is still a number.
+            // A caption, or a longer label, is not the page's own label: its
+            // words are read (stable020 review, finding 2).
+            ("Page 12", "12", false),
+            ("12", "Page 12", false),
+            ("p. XII", "xii", false),
+            ("[12]", "12", false),
+            ("[12]", "twelve", false),
+            // A number in the other numbering is the label's twin, either way.
             ("V", "5", true),
+            ("5", "V", true),
+            ("v.", "5", true),
             ("xiv", "14", true),
-            ("[12]", "twelve", true),
+            ("14", "XIV", true),
+            ("MCMLXXXIV", "1984", true),
+            // Only a canonical Roman numeral is a twin, and only of its value.
+            ("IIII", "4", false),
+            ("4", "IIII", false),
+            ("VI", "5", false),
             ("Hello", "5", false),
             ("A-3", "4", false),
-        ]
-        for row in rows {
-            XCTAssertEqual(
-                MarkdownPageMarker.isNoMoreThanLabel(row.text, label: row.label), row.expected,
-                "row (text: \(String(reflecting: row.text)), label: \(String(reflecting: row.label)))"
-            )
-        }
+        ])
+    }
+
+    /// The headings ST02 dropped under a page's label (stable020 review,
+    /// finding 2), each tested both ways: read under any label it is not
+    /// ("5", one it holds, one that holds it, and with the two swapped), and
+    /// dropped only under its own label, however spelled, or that label's
+    /// twin.
+    func testAHeadingThatLooksLikeANumberIsReadUnlessItIsThePagesLabel() {
+        assertNoMoreThanLabel([
+            ("IV", "5", false), ("5", "IV", false),
+            ("IV", "V", false), ("IV", "XIV", false),
+            ("IV", "iv", true), ("IV", "4", true),
+
+            ("XII.", "5", false), ("5", "XII.", false),
+            ("XII.", "XI", false), ("XII.", "XIII", false),
+            ("XII.", "xii", true), ("XII.", "12", true),
+
+            ("I", "5", false), ("5", "I", false),
+            ("I", "II", false), ("I", "XI", false),
+            ("I", "i", true), ("I", "1", true),
+
+            ("1984", "5", false), ("5", "1984", false),
+            ("1984", "9", false), ("1984", "19845", false),
+            ("1984", "1984.", true), ("1984", "MCMLXXXIV", true),
+
+            ("1, 2, 3.", "5", false), ("5", "1, 2, 3.", false),
+            ("1, 2, 3.", "1", false), ("1, 2, 3.", "1, 2, 3, 4", false),
+            ("1, 2, 3.", "1,2,3", true),
+        ])
+    }
+
+    /// Words made only of Roman numeral letters are words under another
+    /// page's label (finding 2, as EPUB's page-break elements met them), and
+    /// are dropped only as their own label or as the twin of the one number
+    /// a canonical numeral writes ("MIX" is 1009).
+    func testWordsOfRomanNumeralLettersAreReadUnderAnotherLabel() {
+        assertNoMoreThanLabel([
+            ("Mix", "5", false),
+            ("Civil", "5", false),
+            ("Mix", "XV", false),
+            ("Civil", "civil", true),
+            ("Mix", "1009", true),
+            ("Civil", "100", false),
+        ])
     }
 
     // MARK: - A marker at a line's start (ST05)

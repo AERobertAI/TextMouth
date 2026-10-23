@@ -13,8 +13,9 @@ struct HTMLPageTargets {
     /// HTML and for a book without a page list, false once a page list names
     /// the book's pages (its page-break elements the list does not name are
     /// then not pages). A page-break element's own text is skipped, either way,
-    /// only when it is no more than its page's label (its number and perhaps a
-    /// caption); longer or other text is real words and is read (ST02).
+    /// only when it is no more than its page's own label (its number, or that
+    /// number's twin in the other numbering); any other text is real words and
+    /// is read (ST02, `MarkdownPageMarker.isNoMoreThanLabel`).
     var pageBreaksArePages: Bool
 
     /// Targets naming no page, with every page-break element a page.
@@ -224,9 +225,9 @@ enum HTMLToMarkdownConverter {
             emit(marker, inline: boundary != .paragraph, into: &result)
         }
         // A page-break element's own text that is no more than its page's
-        // label (the page's number, perhaps with a caption), named or not, is
-        // not read, so its children are not converted. Any longer or other
-        // text is real words and is converted like any element's (ST02).
+        // own label (the page's number, or its twin in the other numbering),
+        // named or not, is not read, so its children are not converted. Any
+        // other text is real words and is converted like any element's (ST02).
         if isBreak && !readsOwnText(ofPageBreak: element, page: page) {
             separate(at: boundary, in: &result)
             return
@@ -429,14 +430,16 @@ enum HTMLToMarkdownConverter {
     /// (PG05): only while pages are included, and only in a document whose
     /// markup can hold one (an attribute scan costs every element, so a
     /// document that never spells "pagebreak" skips it). Its text is still read
-    /// when it is more than the page's label (`readsOwnText`).
+    /// when it is anything but the page's own label (`readsOwnText`).
     private static func isPageBreakElement(_ element: Element, context: Context) -> Bool {
         context.includesPages && context.readingFlow.mayHoldPageBreaks && PublicationSemantics.isPageBreak(element)
     }
 
     /// Whether the text of the page-break element `element` is real words, to
-    /// be read like any element's (ST02): true when it is more than its page's
-    /// label. The label is that of `page` (the page the element begins), else
+    /// be read like any element's (ST02): true when it is anything but its
+    /// page's own label (`MarkdownPageMarker.isNoMoreThanLabel`), such as a
+    /// heading "IV" or a word "Mix" under the page "5". The label is that of
+    /// `page` (the page the element begins), else
     /// the element's `aria-label` or `title`, else empty, which any text up to
     /// `maximumLabelLength` Characters is no more than. Conversion and
     /// `destinationMarkers(inside:context:)` both ask this, so they agree.
