@@ -533,6 +533,89 @@ final class FeedLifecycleTests: XCTestCase {
         XCTAssertEqual(library.feedBooksInUse.intersection([open, transcribed, exported, idle]), [open, transcribed, exported])
     }
 
+    /// An Edit Text session for the book `bookID` in `sessions`, begun as
+    /// `BookTextEditTests` begins one (a baseline of nothing, a report that
+    /// ignores what each check finds), ended when the test does. The test
+    /// gives the library these sessions (`LibraryViewModel.textEditSessions`),
+    /// never the app's, so it shares no state with another test.
+    private func beginEditing(_ bookID: UUID, in sessions: BookTextEditSessions) {
+        let baseline = BookTextBaseline(
+            source: nil,
+            cache: FileFingerprint(stamp: FileStamp(byteCount: 0, modificationTimeNanoseconds: 0), digest: "")
+        )
+        sessions.begin(bookID, BookTextEditSessions.Session(baseline: baseline, report: { _, _ in }))
+        addTeardownBlock { sessions.end(bookID) }
+    }
+
+    /// A book whose text is being edited with Edit Text is in the rules' set
+    /// of books in use, which they wait for, but has no use the listener's
+    /// own deletions refuse (`feedBookUse(of:)`), since an editing session
+    /// ends only when TextMouth quits. Without the session it is in neither;
+    /// a book in use another way stays in both.
+    func testABookBeingEditedIsInUseForTheRulesOnly() throws {
+        let library = LibraryViewModel(initializeServices: false)
+        let sessions = BookTextEditSessions()
+        library.textEditSessions = sessions
+        let (edited, open, idle) = (UUID(), UUID(), UUID())
+        library.openBookIDs = [open]
+
+        XCTAssertEqual(library.feedBooksInUse.intersection([edited, open, idle]), [open], "a book not being edited was in use")
+
+        beginEditing(edited, in: sessions)
+
+        XCTAssertEqual(library.feedBooksInUse.intersection([edited, open, idle]), [edited, open])
+        XCTAssertNil(library.feedBookUse(of: edited), "the listener's deletions would refuse a book being edited")
+        XCTAssertEqual(library.feedBookUse(of: open), .openInReader)
+
+        sessions.end(edited)
+
+        XCTAssertEqual(library.feedBooksInUse.intersection([edited, open, idle]), [open])
+    }
+
+    /// A due download whose text is being edited waits for a later sweep, as
+    /// one in use another way does: the sweep reports it in use and deletes
+    /// nothing, and once the session ends, deletes it.
+    func testADownloadBeingEditedWaitsForALaterSweep() async throws {
+        let world = try FeedTestWorld(self, label: "FeedDeleteBeingEdited")
+        let (feed, book) = try await downloadedEpisode(in: world)
+        FeedSettings.deleteDownloadsDaysAfterPlayedPreference.write(0, to: world.preferences)
+        world.center.markPlayed("guid:ep-1", of: feed.id)
+        let sessions = BookTextEditSessions()
+        world.library.textEditSessions = sessions
+        beginEditing(book.id, in: sessions)
+
+        var report = await world.center.sweepPlayedDownloads()
+
+        XCTAssertEqual(report.inUseBookIDs, [book.id])
+        XCTAssertEqual(report.deletedBookIDs, [])
+        XCTAssertNotNil(world.library.bookByID(book.id), "a download whose text is being edited was deleted")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: book.bookFileURL.path), "its file went")
+
+        sessions.end(book.id)
+        report = await world.center.sweepPlayedDownloads()
+
+        XCTAssertEqual(report.inUseBookIDs, [])
+        XCTAssertEqual(report.deletedBookIDs, [book.id])
+    }
+
+    /// The listener's own Delete Download is not refused for a download
+    /// whose text is being edited: it goes, with the editing session still
+    /// open, since a refusal would stand until TextMouth quits.
+    func testDeleteDownloadGoesAheadWhileTheTextIsBeingEdited() async throws {
+        let world = try FeedTestWorld(self, label: "FeedDeleteBeingEditedByHand")
+        let (feed, book) = try await downloadedEpisode(in: world)
+        let sessions = BookTextEditSessions()
+        world.library.textEditSessions = sessions
+        beginEditing(book.id, in: sessions)
+
+        try world.center.deleteDownload("guid:ep-1", of: feed.id)
+
+        XCTAssertNil(world.library.bookByID(book.id))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: book.bookFileURL.path))
+        XCTAssertEqual(world.center.listedItems(of: feed.id).map(\.state), [.notDownloaded])
+        XCTAssertTrue(sessions.isEditing(book.id), "the deletion ended the session")
+    }
+
     /// Delete Episode deletes the download and the item, which no refresh
     /// brings back.
     func testDeleteEpisodeTakesTheItemAway() async throws {
