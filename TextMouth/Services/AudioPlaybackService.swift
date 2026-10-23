@@ -844,7 +844,9 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     }
 
     /// The options the player opens the asset of the file at `url` with
-    /// (ST06): precise duration and timing, for every file.
+    /// (ST06): precise duration and timing, for every file. The metadata
+    /// readers open theirs with these too (`metadataAssetOptions(for:)`), so
+    /// a chapter's times and a file's length agree with what plays.
     ///
     /// Without it, a variable-bit-rate MP3 without a Xing header has a
     /// duration estimated from its size and its first frames' bit rate, and
@@ -1593,17 +1595,33 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
 
     // MARK: - Chapter/Marker Extraction
 
-    /// The one place the metadata readers open an asset to probe a file.
+    /// The one place the metadata readers open an asset to probe a file,
+    /// with the options `metadataAssetOptions(for:)` gives: the player's,
+    /// precise duration and timing (ST06), so a variable-bit-rate MP3's
+    /// chapter times and length, its last chapter's included, are those the
+    /// player plays (stable020 review, finding 5).
     /// Returns nil for a file of a format the import converts (by extension,
     /// any case; CAF too, since an import runs this on a source before
     /// converting it, so `isConvertedAtImport` and not `isNeverDecodedInApp`):
     /// since October 14, 2026 such audio never reaches Apple's decoders or
-    /// AVFoundation's probing in the app's process (a spinning Ogg demuxer
-    /// hung the Mac, and `AsyncBridge.waitForResult` has no timeout). Only
-    /// `afconvert`, in a child process under a watchdog, reads it; an Ogg
-    /// file's tags and length come from `OggHeaderReader` instead.
+    /// AVFoundation's probing in the app's process, where a spinning Ogg
+    /// demuxer hung the Mac. A time limit does not make that safe:
+    /// `AsyncBridge.waitForResult` stops waiting at its limit (ST07), but it
+    /// cannot stop AVFoundation work that ignores cancellation, which keeps
+    /// running, abandoned, with its thread and memory, and each time such a
+    /// file is opened again another can pile up beside it. Only `afconvert`,
+    /// in a child process under a watchdog, reads such audio; an Ogg file's
+    /// tags and length come from `OggHeaderReader` instead.
     static func metadataAsset(for url: URL) -> AVURLAsset? {
-        ImportAudioConverter.isConvertedAtImport(url) ? nil : AVURLAsset(url: url) // lint-ok: refuses every converted format by extension
+        metadataAssetOptions(for: url).map { AVURLAsset(url: url, options: $0) } // lint-ok: refuses every converted format by extension
+    }
+
+    /// The options `metadataAsset(for:)` opens the file at `url` with: the
+    /// player's (`playerAssetOptions(for:)`, ST06), so the chapter-marker
+    /// reader and the length readers read the times the player plays; nil
+    /// for a file of a format the import converts, which it never opens.
+    static func metadataAssetOptions(for url: URL) -> [String: Any]? {
+        ImportAudioConverter.isConvertedAtImport(url) ? nil : playerAssetOptions(for: url)
     }
 
     /// Extract chapter markers from an audio file (M4B, M4A with chapters).

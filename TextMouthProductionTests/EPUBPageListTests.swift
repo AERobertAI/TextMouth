@@ -494,22 +494,53 @@ final class EPUBPageListTests: XCTestCase {
         assertPages(of: result.chapter, [("12", "Hello")])
     }
 
-    /// A number under a longer label ("12" under "Page 12") is still only the number.
-    func testANumberUnderALongerLabelIsNotRead() throws {
-        let result = try parsed("<p>One <span role=\"doc-pagebreak\" aria-label=\"Page 12\">12</span>two</p>")
+    /// A number under a longer label ("12" under "Page 12") is not the page's
+    /// own label, so it is read (stable020 review, finding 2), as the reading
+    /// without pages reads it; the page begins at it.
+    func testANumberUnderALongerLabelIsRead() throws {
+        let html = "<p>One <span role=\"doc-pagebreak\" aria-label=\"Page 12\">12</span>two</p>"
+        let result = try parsed(html)
 
-        XCTAssertEqual(result.chapter.text, "One two")
-        XCTAssertEqual(result.chapter.pages.map(\.label), ["Page 12"])
+        XCTAssertEqual(result.chapter.text, "One 12two")
+        XCTAssertEqual(result.chapter.text, try parsed(html, includesPages: false).chapter.text, "the two readings differ")
+        assertPages(of: result.chapter, [("Page 12", "12two")])
     }
 
-    /// A number with a caption ("Page XII" under the label "xii") is not read.
-    func testACaptionedNumberIsNotRead() throws {
+    /// A number with a caption ("Page XII" under the label "xii") is not the
+    /// page's own label either: the caption is read, and the page begins at it.
+    func testACaptionedNumberIsRead() throws {
         let result = try parsed("<p>One <span epub:type=\"pagebreak\" title=\"xii\">Page XII</span> two</p>")
 
-        XCTAssertFalse(result.chapter.text.contains("XII"), result.chapter.text)
-        XCTAssertTrue(result.chapter.text.contains("One"), result.chapter.text)
-        XCTAssertTrue(result.chapter.text.contains("two"), result.chapter.text)
-        XCTAssertEqual(result.chapter.pages.map(\.label), ["xii"])
+        XCTAssertTrue(result.chapter.text.contains("One Page XII two"), result.chapter.text)
+        assertPages(of: result.chapter, [("xii", "Page XII")])
+    }
+
+    /// A page-break element whose text is a heading that looks like a number
+    /// ("IV", "XII.", "I", "1984", "1, 2, 3."), under the page "5", is read,
+    /// and the page begins at it (stable020 review, finding 2). Only the
+    /// page's own label, however spelled, or its twin, is not read.
+    func testOnlyThePagesOwnLabelOrItsTwinIsNotRead() throws {
+        for heading in ["IV", "XII.", "I", "1984", "1, 2, 3."] {
+            let result = try parsed("<p>One <span epub:type=\"pagebreak\" title=\"5\">\(heading)</span> two</p>")
+            XCTAssertTrue(result.chapter.text.contains("One \(heading) two"), "\(heading): \(result.chapter.text)")
+            assertPages(of: result.chapter, [("5", heading)])
+        }
+        for own in ["5", "5.", "V", "v"] {
+            let result = try parsed("<p>One <span epub:type=\"pagebreak\" title=\"5\">\(own)</span>two</p>")
+            XCTAssertEqual(result.chapter.text, "One two", own)
+            assertPages(of: result.chapter, [("5", "two")])
+        }
+    }
+
+    /// Words made only of Roman numeral letters ("Mix", "Civil") in a
+    /// page-break element under the page "5" are words, not the page's
+    /// number, and are read (stable020 review, finding 2).
+    func testWordsOfRomanNumeralLettersAreRead() throws {
+        for word in ["Mix", "Civil"] {
+            let result = try parsed("<p>One <span epub:type=\"pagebreak\" title=\"5\">\(word)</span> two</p>")
+            XCTAssertTrue(result.chapter.text.contains("One \(word) two"), "\(word): \(result.chapter.text)")
+            assertPages(of: result.chapter, [("5", word)])
+        }
     }
 
     /// A page-break element with no label that holds a paragraph begins no

@@ -13,7 +13,11 @@ import os
 /// A format that gains pages later (PG12's braille) adds its line here,
 /// which reads again only its own books, without another pass over the rest
 /// of the library. A format whose page reader changes
-/// raises its own version in the same way.
+/// raises its own version in the same way. Its books stamped by the reader
+/// before, which read their pages (`notesSuccess(_:)`), are then read again
+/// without PG16's compare (V05), so the bump keeps no copy of their text;
+/// books from before pages, and books whose stamp notes a failure, are
+/// compared as ever.
 enum PageReaderVersions {
     /// The version of `format`'s page reader; nil for a format that writes
     /// no page markers. Every format listed was given pages in the same
@@ -104,6 +108,23 @@ enum PageReaderVersions {
         stamp?.contains(noteSeparator) ?? false
     }
 
+    /// Whether `stamp` names a page reader that read the book's pages (V05):
+    /// it is set, and notes no failure. That reader wrote the book's
+    /// content.md, so a build that records every edit Edit Text takes did
+    /// (B12), and the launch re-read reads the book again without comparing
+    /// its text with its file's, unless content.md changed since its record
+    /// (`LibraryViewModel.pageUpgradeCheck(of:access:)`).
+    ///
+    /// Not so for a book with no stamp, whose text is from before pages, nor
+    /// for one whose stamp notes a failure: "+failed" is also written for a
+    /// book whose file was missing or no longer extracted, whose content.md
+    /// is still its old text. Both are compared. A stamp lost in a round trip
+    /// through an older TextMouth sends its book through the compare too,
+    /// which is safe.
+    static func notesSuccess(_ stamp: String?) -> Bool {
+        stamp != nil && !notesFailure(stamp)
+    }
+
     /// The line logged for `title`'s book when its run for pages failed and
     /// `stamp` notes it, saying whether the next launch reads it again.
     static func failedRunLogLine(title: String, stamp: String?) -> String {
@@ -147,6 +168,12 @@ enum PageReaderVersions {
     ///    reader is not recorded as done: the next launch tries once more,
     ///    and a second failure is noted in the stamp
     ///    (`stamp(for:pageRunFailed:previous:)`).
+    ///
+    /// The compare in 1 is for text from before pages. A book an earlier
+    /// page reader wrote, whose stamp notes no failure (`notesSuccess(_:)`)
+    /// and whose content.md is as its record describes it, is read again
+    /// without it (V05): its text would differ from what a newer reader
+    /// writes, and every book of the format would keep a copy.
     ///
     /// A book whose file is missing, or no longer extracts, is stamped and
     /// logged once, and the batch ends with one summary line in the debug

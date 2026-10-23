@@ -2797,6 +2797,117 @@ enum FileImportService {
         return relocated
     }
 
+    // MARK: - Delete Everything and Kept Rows (stable020 review, finding 1)
+
+    /// Deletes the library folder at `folderPath`, whose directory is
+    /// `folderURL`, and everything in it, as Delete Folder's Delete
+    /// Everything does, except what the kept rows of library.json own (V03),
+    /// books a newer TextMouth added: a package `kept` owns stays where it
+    /// is, and so does every folder holding one at any depth, or named by
+    /// `keptFolders` (the kept rows' folders in this tree,
+    /// `Library.keptRowFolders(inFolderTree:)`), the folder itself included.
+    ///
+    /// A folder holding nothing kept goes as one item, as the whole folder
+    /// always went. When something stays, each other item beside it goes on
+    /// its own: a subfolder holding nothing kept, a package no kept row
+    /// owns, or a file. Every item goes through `removeItem`, by default to
+    /// the Trash or permanently as the preference chooses
+    /// (`removeItemRespectingTrashSetting(at:trashItem:removeItem:)`); a test
+    /// passes its own. A hidden item, such as Finder's .DS_Store, stays in a
+    /// folder that stays, and a symbolic link is removed as a link, never
+    /// followed.
+    ///
+    /// - Returns: The paths, relative to the library, of the folders that
+    ///   stay, the folder itself first; empty when the whole folder went.
+    ///   Each is spelled as on disk, or as its kept row spells it when no
+    ///   directory of it is on disk, its package missing.
+    /// - Throws: the first error `removeItem` throws; what went before it
+    ///   stays gone.
+    @MainActor
+    static func removeLibraryFolder(
+        at folderURL: URL,
+        folderPath: String,
+        keepingPackagesOf kept: KeptRowPackages,
+        keptFolders: [String],
+        removeItem: ((URL) throws -> Void)? = nil
+    ) throws -> [String] {
+        let removeItem = removeItem ?? { item in
+            try removeItemRespectingTrashSetting(at: item)
+        }
+        // Folders are compared as `KeptRowPackages` compares them.
+        let equivalence = FolderPathEquivalence.caseInsensitive
+        let keptFolderKeys = keptFolders.map { equivalence.comparisonKey(for: $0) }
+
+        /// The items in `directory`, hidden ones included, each with whether
+        /// it is a directory itself (a symbolic link to one is not).
+        func items(in directory: URL) -> [(url: URL, isDirectory: Bool)] {
+            let keys: Set<URLResourceKey> = [.isDirectoryKey, .isSymbolicLinkKey]
+            let contents = (try? FileManager.default.contentsOfDirectory(
+                at: directory, includingPropertiesForKeys: Array(keys)
+            )) ?? []
+            return contents.map { item in
+                let values = try? item.resourceValues(forKeys: keys)
+                return (url: item, isDirectory: values?.isDirectory == true && values?.isSymbolicLink != true)
+            }
+        }
+
+        /// Whether anything in the folder `directory`, at `path`, stays: it
+        /// is a kept row's folder or holds one, or a package in it, at any
+        /// depth, is one a kept row owns.
+        func holdsSomethingKept(_ directory: URL, at path: String) -> Bool {
+            let key = equivalence.comparisonKey(for: path)
+            if keptFolderKeys.contains(where: { $0 == key || $0.hasPrefix(key + "/") }) { return true }
+            return items(in: directory).contains { item in
+                guard item.isDirectory else { return false }
+                let name = item.url.lastPathComponent
+                return isManagedPackageName(name)
+                    ? kept.owns(folderPath: path, tmbDirectoryName: name)
+                    : holdsSomethingKept(item.url, at: path + "/" + name)
+            }
+        }
+
+        // A library without kept rows, the usual one, is never walked.
+        guard !(kept.isEmpty && keptFolders.isEmpty), holdsSomethingKept(folderURL, at: folderPath) else {
+            try removeItem(folderURL)
+            return []
+        }
+        // Each folder that stays, from this one down, loses every item that
+        // does not: a kept package and a folder holding something kept stay,
+        // and the latter is pruned in turn.
+        var stayed: [String] = []
+        var foldersToPrune: [(url: URL, path: String)] = [(url: folderURL, path: folderPath)]
+        while let folder = foldersToPrune.popLast() {
+            stayed.append(folder.path)
+            for item in items(in: folder.url) where !item.url.lastPathComponent.hasPrefix(".") {
+                let name = item.url.lastPathComponent
+                let path = folder.path + "/" + name
+                if item.isDirectory {
+                    if isManagedPackageName(name) {
+                        if kept.owns(folderPath: folder.path, tmbDirectoryName: name) { continue }
+                    } else if holdsSomethingKept(item.url, at: path) {
+                        foldersToPrune.append((url: item.url, path: path))
+                        continue
+                    }
+                }
+                try removeItem(item.url)
+            }
+        }
+        // A kept row's folder stays even with no directory on disk (its
+        // package is missing), as do the folders between it and this one:
+        // its row still names it.
+        for keptFolder in keptFolders {
+            var path = keptFolder
+            while equivalence.isPath(path, inSubtreeOf: folderPath) {
+                if !stayed.contains(where: { equivalence.areEquivalent($0, path) }) {
+                    stayed.append(path)
+                }
+                guard let slash = path.lastIndex(of: "/") else { break }
+                path = String(path[..<slash])
+            }
+        }
+        return stayed
+    }
+
     /// Remove empty subdirectories from the library that aren't tracked as folders.
     /// These are left behind when folders are removed from the library model but
     /// the disk directory isn't cleaned up. Directory names are matched to

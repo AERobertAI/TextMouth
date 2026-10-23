@@ -283,6 +283,18 @@ struct Library: Codable {
         KeptRowPackages(unreadableRows)
     }
 
+    /// The folder of each kept row of library.json (V03) filed in the folder
+    /// at `path` or below it, one entry per row, as the row spells it:
+    /// the books a newer TextMouth added there, which Delete Folder counts
+    /// and keeps (stable020 review, finding 1). Folders are compared as
+    /// `KeptRowPackages` compares them, without regard to case. A row whose
+    /// folder does not read is in none.
+    func keptRowFolders(inFolderTree path: String) -> [String] {
+        unreadableRows.compactMap(\.folderPath).filter {
+            FolderPathEquivalence.caseInsensitive.isPath($0, inSubtreeOf: path)
+        }
+    }
+
     /// A library of `books` and the rest. The shelf keeps the index of every
     /// feed whose rows are among `books` too, so a feed whose last row later
     /// leaves the library has its index written without it (FR11).
@@ -455,7 +467,7 @@ struct Library: Codable {
 
     /// Takes the book `id` out of the library, and off the reading list
     /// (FR09): every removal of a book from the library, whether its package
-    /// is deleted or kept, ends here or in `removeFolderAndContents(id:)`. A
+    /// is deleted or kept, ends here or in `removeFolderAndContents(id:keepingFolders:)`. A
     /// feed item's row leaving keeps its feed's index, which the next save
     /// writes without it (FR11).
     mutating func removeBook(id: UUID) {
@@ -619,8 +631,13 @@ struct Library: Codable {
     /// Remove a folder and ALL its contents (books and subfolders) from the library model.
     /// The books are those of `booksInFolderTree(_:)`: a feed's items are
     /// never taken, being in no folder (FR11).
+    /// The folders `keptFolders` names stay, with their sort settings: those
+    /// that still hold a book a newer TextMouth added (V03, stable020
+    /// review, finding 1), compared without regard to case, as the walk that
+    /// found them on disk compares them
+    /// (`FileImportService.removeLibraryFolder(at:folderPath:keepingPackagesOf:keptFolders:removeItem:)`).
     /// Does not touch disk — caller is responsible for deleting .tmb packages.
-    mutating func removeFolderAndContents(id: UUID) -> [Book] {
+    mutating func removeFolderAndContents(id: UUID, keepingFolders keptFolders: [String] = []) -> [Book] {
         guard let folder = folders.first(where: { $0.id == id }) else { return [] }
         let folderPath = folder.fullPath
 
@@ -633,11 +650,18 @@ struct Library: Codable {
         books.removeAll { removedIDs.contains($0.id) }
         readingList.remove(removedIDs)
 
-        // Remove the folder and all subfolders
-        folders.removeAll { Self.isPath($0.fullPath, inTreeAt: folderPath) }
+        // A path in the tree goes unless a folder kept for its kept rows is it.
+        let equivalence = FolderPathEquivalence.caseInsensitive
+        let keptKeys = Set(keptFolders.map { equivalence.comparisonKey(for: $0) })
+        let goes: (String) -> Bool = { path in
+            Self.isPath(path, inTreeAt: folderPath) && !keptKeys.contains(equivalence.comparisonKey(for: path))
+        }
 
-        // Clean up sort settings for deleted folder tree
-        for key in folderSortSettings.keys where Self.isPath(key, inTreeAt: folderPath) {
+        // Remove the folder and all subfolders, but those kept
+        folders.removeAll { goes($0.fullPath) }
+
+        // Clean up sort settings for the folders removed
+        for key in folderSortSettings.keys where goes(key) {
             folderSortSettings.removeValue(forKey: key)
         }
 

@@ -477,6 +477,27 @@ final class AudioPlaybackFailureTests: XCTestCase {
         }
     }
 
+    /// The metadata readers' asset, which the chapter-marker reader and the
+    /// length readers open, asks for the player's precise timing too
+    /// (stable020 review, finding 5), so a variable-bit-rate MP3's last
+    /// chapter lasts as long as the player plays it; a format the import
+    /// converts is still never opened. Nothing is opened or played: only the
+    /// options are read.
+    func testMetadataAssetOptionsAskForThePlayersPreciseTiming() {
+        for name in ["a.m4a", "b.m4b", "c.wav", "d.aiff", "e.flac", "f.mp3"] {
+            let url = URL(fileURLWithPath: "/Library/Book.tmb/Tracks/\(name)")
+            XCTAssertEqual(
+                AudioPlaybackService.metadataAssetOptions(for: url)?[AVURLAssetPreferPreciseDurationAndTimingKey] as? Bool,
+                true,
+                name
+            )
+        }
+        for name in ["g.ogg", "h.opus", "i.caf", "j.AC3"] {
+            let url = URL(fileURLWithPath: "/Library/Book.tmb/Tracks/\(name)")
+            XCTAssertNil(AudioPlaybackService.metadataAssetOptions(for: url), "\(name) must not be opened")
+        }
+    }
+
     // MARK: - Helpers
 
     /// Run `body` with a new, empty folder that is removed afterwards.

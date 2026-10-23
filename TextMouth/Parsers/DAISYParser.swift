@@ -783,10 +783,10 @@ enum DAISYParser {
             }
 
             // A page's marker is written where its fragment stood. When the
-            // fragment holds no more than the page number, the marker stands
-            // in its place and the number is not read. A fragment holding
-            // more is real text a faulty NCC entry points at: the marker
-            // goes before it and the text is read as ever, never lost.
+            // fragment holds only the page's own number, the marker stands
+            // in its place and the number is not read. Any other fragment is
+            // real text an NCC entry points at, such as a heading: the
+            // marker goes before it and the text is read as ever, never lost.
             if let markers = pageMarkers[reference] {
                 fragments.append(contentsOf: markers.map(\.markdown))
                 if let element = try doc.getElementById(split.fragment),
@@ -953,11 +953,13 @@ struct DAISY202PageMarker: Equatable {
     let markdown: String
 
     /// Whether `fragmentText` is no more than this page's number: empty, or
-    /// short enough to be a number and its caption ("12", "Page 12",
-    /// "p. xii") and, when the NCC named the page, containing that name or
-    /// contained in it (the label may hold the text: "12" under "Page 12").
-    /// A page entry that points at a paragraph is a faulty link, and the
-    /// paragraph is words a listener must hear. The rule is shared with EPUB's
+    /// the page's own label, the NCC entry's words, once case, spaces, and a
+    /// trailing period are ignored ("12" or "12." for the entry "12"), or
+    /// that label's twin in the other numbering ("V" for "5", "5" for "V");
+    /// for an entry without words, any text short enough to be a label. Any
+    /// other fragment is words a listener must hear: a heading such as "IV"
+    /// or "1984" that a page entry points at, a caption such as "Page 12", or
+    /// a paragraph a faulty link names. The rule is shared with EPUB's
     /// page-break elements: `MarkdownPageMarker.isNoMoreThanLabel`.
     func isNumber(in fragmentText: String) -> Bool {
         MarkdownPageMarker.isNoMoreThanLabel(fragmentText, label: label)

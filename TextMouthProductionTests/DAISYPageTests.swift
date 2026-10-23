@@ -240,8 +240,10 @@ final class DAISYPageTests: XCTestCase {
 
     /// A page entry that points at real text (a faulty link) never costs the
     /// book its words: the marker goes before the paragraph, which is read
-    /// as ever. One that points at a short caption holding its number, such
-    /// as "Page 12" for the entry "12", is replaced, as a bare number is.
+    /// as ever. So does one that points at a short caption holding its
+    /// number, such as "Page 12" for the entry "12": only the page's own
+    /// label is replaced (stable020 review, finding 2), and a caption is
+    /// heard, as it was before pages.
     func testDAISY202PageThatPointsAtTextKeepsTheText() throws {
         let ncc = """
         <html><body>
@@ -269,8 +271,53 @@ final class DAISYPageTests: XCTestCase {
         )
         let content = parsed(markdown)
 
-        XCTAssertEqual(spokenText(of: content), "Chapter\n\nAlpha words\n\n\(sentence)")
-        XCTAssertEqual(pageLines(of: content, opening: 5), ["7: Alpha", "12: Beta ", "9: Beta "])
+        XCTAssertEqual(spokenText(of: content), "Chapter\n\nAlpha words\n\nPage 12\n\n\(sentence)")
+        XCTAssertEqual(pageLines(of: content, opening: 5), ["7: Alpha", "12: Page ", "9: Beta "])
+    }
+
+    /// A page entry that points at a heading which looks like a number
+    /// ("IV", "XII.", "I", "1984", "1, 2, 3.") under another page's label
+    /// keeps the heading, which is read, with the page beginning at it
+    /// (stable020 review, finding 2: these were dropped and marked read, so
+    /// never spoken). Fragments holding the page's own number ("10" for the
+    /// entry "10") or its twin ("XI" for "11") are still replaced.
+    func testDAISY202PageThatPointsAtANumberLikeHeadingKeepsIt() throws {
+        // Each page entry, by its label, and the id of the fragment it names:
+        // a heading for "5" to "9", the page's own number for "10", and the
+        // twin of the page's number for "11".
+        let entries = [("5", "g5"), ("6", "g6"), ("7", "g7"), ("8", "g8"), ("9", "g9"), ("10", "own"), ("11", "twin")]
+        let nccEntries = entries.map { label, id in
+            "<span class=\"page-normal\"><a href=\"s1.smil#par_\(id)\">\(label)</a></span>"
+        }
+        let ncc = "<html><body><h1><a href=\"s1.smil#txt_h\">Chapter</a></h1>\n"
+            + nccEntries.joined(separator: "\n") + "\n</body></html>"
+        // The SMIL reads the fragments in document order: the chapter's
+        // heading, the five headings, then the page's own number before Echo
+        // and the twin before Foxtrot.
+        let smilOrder = ["h", "g5", "g6", "g7", "g8", "g9", "own", "e", "twin", "f"]
+        let smilPars = smilOrder.map { id in
+            "<par id=\"par_\(id)\"><text id=\"txt_\(id)\" src=\"c.html#\(id)\"/></par>"
+        }
+        let smil = "<smil><body><seq>\n" + smilPars.joined(separator: "\n") + "\n</seq></body></smil>"
+        let page = """
+        <html><body><h1 id="h">Chapter</h1>
+        <h2 id="g5">IV</h2><h2 id="g6">XII.</h2><h2 id="g7">I</h2><h2 id="g8">1984</h2><h2 id="g9">1, 2, 3.</h2>
+        <p id="own">10</p><p id="e">Echo words</p><p id="twin">XI</p><p id="f">Foxtrot words</p>
+        </body></html>
+        """
+        let markdown = try DAISYParser.extractDAISY202Markdown(
+            from: InMemoryDAISYPackage(["ncc.html": ncc, "s1.smil": smil, "c.html": page])
+        )
+        let content = parsed(markdown)
+
+        XCTAssertEqual(
+            spokenText(of: content),
+            "Chapter\n\nIV\n\nXII.\n\nI\n\n1984\n\n1, 2, 3.\n\nEcho words\n\nFoxtrot words"
+        )
+        XCTAssertEqual(
+            pageLines(of: content, opening: 4),
+            ["5: IV\n\n", "6: XII.", "7: I\n\n1", "8: 1984", "9: 1, 2", "10: Echo", "11: Foxt"]
+        )
     }
 
     /// A page entry whose SMIL file is missing is dropped, as a heading
