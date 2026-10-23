@@ -450,6 +450,90 @@ final class TranscriptTextTests: XCTestCase {
                        )))
     }
 
+    // MARK: - An Install That Fails Midway
+
+    /// An install whose text cannot be written, here a cleanup's of a
+    /// content.md holding a hand edit no copy can be kept of, puts back the
+    /// transcript.json it wrote: the transcript and its text are as they
+    /// were, byte for byte and to the nanosecond, and so is the baseline a
+    /// paused Edit Text session takes again (transcripts review, item 3).
+    func testAnInstallWhoseTextCannotBeWrittenLeavesTheTranscriptAsItWas() throws {
+        let world = try makeIntegrationWorld("Transcript Install Text Fails")
+        let (book, transcript) = try makeEditedTranscribedBook(in: world)
+        try Data((Self.expectedMarkdown + "\n\nA line added by hand.").utf8).write(to: MarkdownCacheService.cacheURL(for: book))
+        let before = PackageFiles(of: book)
+        XCTAssertNotNil(before.baseline)
+
+        XCTAssertThrowsError(try TranscriptStore.install(cleanedUp(transcript), for: book, keepCopy: { _, _ in nil })) {
+            XCTAssertEqual($0 as? TranscriptTextError, .textNotKept)
+        }
+
+        XCTAssertEqual(PackageFiles(of: book), before)
+        XCTAssertEqual(TranscriptStore.read(from: book.tmbDirectory), .found(transcript))
+    }
+
+    /// An install whose index cannot be saved, once it has written both
+    /// transcript.json and content.md, puts both back as they were, so the
+    /// record, which it never changed, still describes them: the book opens
+    /// with its saved text as it was, and its index needs no saving.
+    func testAnInstallWhoseIndexCannotBeSavedLeavesTheTranscriptAndItsTextAsTheyWere() throws {
+        let world = try makeIntegrationWorld("Transcript Install Index Fails")
+        let (book, transcript) = try makeEditedTranscribedBook(in: world)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let before = PackageFiles(of: book)
+        XCTAssertNotNil(before.baseline)
+        var textWhenSaved: String?
+
+        XCTAssertThrowsError(try TranscriptStore.install(cleanedUp(transcript), for: book, saveIndex: { _, _ in
+            textWhenSaved = try? String(contentsOf: cache, encoding: .utf8)
+            throw CocoaError(.fileWriteOutOfSpace)
+        })) { XCTAssertEqual(($0 as? CocoaError)?.code, .fileWriteOutOfSpace) }
+
+        XCTAssertEqual(textWhenSaved?.contains("slipway"), true, "the install had not written the cleaned text")
+        XCTAssertEqual(PackageFiles(of: book), before)
+        XCTAssertEqual(TranscriptStore.read(from: book.tmbDirectory), .found(transcript))
+        let load = TranscriptTextLoader.load(for: book, audioIndex: try savedIndex(of: book))
+        XCTAssertFalse(load.indexChanged, "the record no longer describes the files put back")
+        XCTAssertEqual(load.text?.chapterText(0), "01\n\nQuillwort grows by the ferry slip. Tide tables hang in the harbor office. "
+            + "Nobody reads them twice.")
+    }
+
+    /// A first transcription whose index cannot be saved leaves the book
+    /// with no transcript and no text, as it was.
+    func testAFirstInstallThatFailsLeavesTheBookWithoutATranscript() throws {
+        let world = try makeIntegrationWorld("Transcript First Install Fails")
+        let book = try world.makeSilentAudioBook(title: uniqueTitle("Harbor Notes"), trackDurations: [9, 6])
+        let before = PackageFiles(of: book)
+        XCTAssertNil(before.transcript)
+
+        XCTAssertThrowsError(try TranscriptStore.install(
+            try TranscriptFixtures.transcript(of: book, sentences: Self.sentences),
+            for: book,
+            saveIndex: { _, _ in throw CocoaError(.fileWriteOutOfSpace) }
+        ))
+
+        XCTAssertEqual(PackageFiles(of: book), before)
+        XCTAssertEqual(TranscriptStore.read(from: book.tmbDirectory), .missing)
+    }
+
+    /// A content.md saved by someone else while the install ran, as the
+    /// user's editor can, is never written over by putting files back: only
+    /// transcript.json, which still holds the install's write, goes back.
+    func testAFailedInstallLeavesATextSavedMeanwhileAsItIs() throws {
+        let world = try makeIntegrationWorld("Transcript Install Text Saved Meanwhile")
+        let (book, transcript) = try makeEditedTranscribedBook(in: world)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let saved = Data((Self.expectedMarkdown + "\n\nSaved in the editor meanwhile.").utf8)
+
+        XCTAssertThrowsError(try TranscriptStore.install(cleanedUp(transcript), for: book, saveIndex: { _, _ in
+            try saved.write(to: cache, options: .atomic)
+            throw CocoaError(.fileWriteOutOfSpace)
+        }))
+
+        XCTAssertEqual(try Data(contentsOf: cache), saved)
+        XCTAssertEqual(TranscriptStore.read(from: book.tmbDirectory), .found(transcript))
+    }
+
     // MARK: - Reading the Text as the Book Opens
 
     /// A saved text is read as the book opens, from content.md, without
@@ -1050,6 +1134,28 @@ final class TranscriptTextTests: XCTestCase {
             cleaned.files[file].sentences[0].rewrite(as: "Quillwort grows by the ferry slipway.")
         }
         return cleaned
+    }
+
+    /// What an install that fails must leave as it was: `book`'s
+    /// transcript.json and content.md, each by its bytes and its stamp (nil
+    /// when missing), and the baseline an Edit Text session takes of the
+    /// book, which fingerprints both (nil when it can take none).
+    private struct PackageFiles: Equatable {
+        let transcript: Data?
+        let transcriptStamp: FileStamp?
+        let text: Data?
+        let textStamp: FileStamp?
+        let baseline: BookTextBaseline?
+
+        init(of book: Book) {
+            let transcriptURL = TextMouthPaths.transcriptPath(in: book.tmbDirectory)
+            let textURL = MarkdownCacheService.cacheURL(for: book)
+            transcript = try? Data(contentsOf: transcriptURL)
+            transcriptStamp = FileStamp(of: transcriptURL)
+            text = try? Data(contentsOf: textURL)
+            textStamp = FileStamp(of: textURL)
+            baseline = try? BookTextEditSessions.baseline(of: book, access: .live).get()
+        }
     }
 
     /// The copies of the user's text kept beside `book`'s content.md.

@@ -187,6 +187,79 @@ final class AsyncBridgeTests: XCTestCase {
         XCTAssertEqual(AsyncBridge.audioAnalysisTimeLimit, .seconds(300))
     }
 
+    // MARK: - Reads Abandoned at Their Limit
+
+    /// A read that never returns, and ignores its cancellation as
+    /// AVFoundation's can, passes its limit, and its file is remembered: the
+    /// next read of the same file is refused at once, with a sentence a
+    /// listener understands, and never starts, so no second stuck read runs
+    /// beside the first. Its limit is ten seconds, so only a refusal ends
+    /// its wait in time.
+    func testASecondReadOfAFileWhoseReadPassedItsLimitIsRefusedAtOnce() throws {
+        let file = folder.appendingPathComponent("Fog Signals.m4b")
+        try Data("never decoded".utf8).write(to: file)
+        let abandoned = AsyncBridge.AbandonedReads()
+        let stuck = StuckRead()
+        defer { stuck.release() }
+
+        XCTAssertThrowsError(
+            try AsyncBridge.waitForResult(reading: file, timeLimit: .milliseconds(200), abandoned: abandoned) { await stuck.run() }
+        ) { error in
+            XCTAssertEqual(error as? AsyncBridge.TimeLimitExceeded, AsyncBridge.TimeLimitExceeded(limit: .milliseconds(200)))
+        }
+        XCTAssertEqual(stuck.starts, 1)
+
+        let started = Date()
+        XCTAssertThrowsError(
+            try AsyncBridge.waitForResult(reading: file, timeLimit: .seconds(10), abandoned: abandoned) { await stuck.run() }
+        ) { error in
+            XCTAssertEqual(error as? AsyncBridge.AbandonedEarlier, AsyncBridge.AbandonedEarlier())
+            XCTAssertEqual(
+                error.localizedDescription,
+                "TextMouth stopped reading this audio earlier because it took too long, and won't try again until TextMouth is opened again."
+            )
+        }
+        XCTAssertLessThan(Date().timeIntervalSince(started), 5, "the second read was not refused at once")
+        XCTAssertEqual(stuck.starts, 1, "a second read of the file started")
+    }
+
+    /// Only the file as the stuck read found it is refused: another file is
+    /// read, a read that fails with its own error is tried again, and the
+    /// same file written again since is read. A folder of tracks has no
+    /// size or date of its own here, so it is known by its path alone.
+    func testOnlyTheFileAsTheStuckReadFoundItIsRefused() throws {
+        let file = folder.appendingPathComponent("Fog Signals.m4b")
+        let other = folder.appendingPathComponent("Harbour Notices.m4b")
+        try Data("never decoded".utf8).write(to: file)
+        try Data("read at once".utf8).write(to: other)
+        let abandoned = AsyncBridge.AbandonedReads()
+        let stuck = StuckRead()
+        defer { stuck.release() }
+        XCTAssertThrowsError(
+            try AsyncBridge.waitForResult(reading: file, timeLimit: .milliseconds(200), abandoned: abandoned) { await stuck.run() }
+        )
+
+        XCTAssertEqual(try AsyncBridge.waitForResult(reading: other, timeLimit: .seconds(10), abandoned: abandoned) { 7 }, 7)
+        XCTAssertThrowsError(
+            try AsyncBridge.waitForResult(reading: other, timeLimit: .seconds(10), abandoned: abandoned) { () async throws -> Int in
+                throw Refusal(reason: "the ferry has left")
+            }
+        ) { error in
+            XCTAssertEqual(error as? Refusal, Refusal(reason: "the ferry has left"))
+        }
+        XCTAssertEqual(try AsyncBridge.waitForResult(reading: other, timeLimit: .seconds(10), abandoned: abandoned) { 8 }, 8)
+        try Data("never decoded, now written again".utf8).write(to: file)
+        XCTAssertEqual(try AsyncBridge.waitForResult(reading: file, timeLimit: .seconds(10), abandoned: abandoned) { 9 }, 9)
+        XCTAssertEqual(stuck.starts, 1)
+
+        let tracks = folder.appendingPathComponent("Breakwater", isDirectory: true)
+        try FileManager.default.createDirectory(at: tracks, withIntermediateDirectories: true)
+        XCTAssertNil(AsyncBridge.AbandonedReads.Read(of: tracks).stamp)
+        abandoned.remember(AsyncBridge.AbandonedReads.Read(of: tracks))
+        try Data("a track added".utf8).write(to: tracks.appendingPathComponent("01.m4a"))
+        XCTAssertTrue(abandoned.contains(AsyncBridge.AbandonedReads.Read(of: tracks)))
+    }
+
     // MARK: - Its Callers
 
     /// `BookParser` reads an audio file through the bridge, giving what the
@@ -234,6 +307,85 @@ final class AsyncBridgeTests: XCTestCase {
         XCTAssertEqual(result.content.chapters.map(\.title), ["Harbour Notices"])
         XCTAssertNil(result.audioFilePaths)
         XCTAssertFalse(result.usedPersistedIndex)
+    }
+
+    /// The audio parser and analysis, of a file and of a folder of tracks,
+    /// wait through the app's memory of abandoned reads: a file remembered
+    /// there is refused at once, and not read. The files are this test's
+    /// own, removed when it ends, so nothing else is ever refused for them.
+    func testTheParserAndAnalysisRefuseAFileWhoseReadWasAbandoned() throws {
+        let file = folder.appendingPathComponent("Harbour Notices.wav")
+        try AudioTestFixtures.writeSilence(to: file, duration: 2)
+        let tracks = folder.appendingPathComponent("Breakwater", isDirectory: true)
+        try FileManager.default.createDirectory(at: tracks, withIntermediateDirectories: true)
+        try AudioTestFixtures.writeSilence(to: tracks.appendingPathComponent("01.wav"), duration: 2)
+        AsyncBridge.AbandonedReads.session.remember(AsyncBridge.AbandonedReads.Read(of: file))
+        AsyncBridge.AbandonedReads.session.remember(AsyncBridge.AbandonedReads.Read(of: tracks))
+
+        XCTAssertThrowsError(try BookParser.parse(url: file, format: .audio)) { error in
+            XCTAssertEqual(error as? AsyncBridge.AbandonedEarlier, AsyncBridge.AbandonedEarlier())
+        }
+        // The packages are never created, so analysis finds no saved index.
+        for (title, location) in [("Harbour Notices", file), ("Breakwater", tracks)] {
+            let book = Book(
+                title: title,
+                format: .audio,
+                filePath: location.path,
+                md5Hash: UUID().uuidString,
+                tmbDirectoryName: "AsyncBridgeTests-\(UUID().uuidString).tmb"
+            )
+            XCTAssertThrowsError(try BookContentAnalysisService.load(book: book), title) { error in
+                XCTAssertEqual(error as? AsyncBridge.AbandonedEarlier, AsyncBridge.AbandonedEarlier(), title)
+            }
+        }
+    }
+}
+
+/// A stand-in for an AVFoundation read that never returns and ignores its
+/// task's cancellation: each run waits on a continuation that only
+/// `release()` resumes, which the test calls as it ends, so no task
+/// outlives it.
+private final class StuckRead: Sendable {
+    /// The runs started, whether they are released, and those waiting.
+    private struct State: Sendable {
+        var starts = 0
+        var released = false
+        var waiting: [CheckedContinuation<Void, Never>] = []
+    }
+
+    private let state = OSAllocatedUnfairLock(initialState: State())
+
+    /// How many runs have started.
+    var starts: Int {
+        state.withLock { $0.starts }
+    }
+
+    /// Counts the run as started, then waits until `release()`, whatever
+    /// its task's cancellation says.
+    func run() async -> Int {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            let waits = state.withLock { current -> Bool in
+                current.starts += 1
+                guard !current.released else { return false }
+                current.waiting.append(continuation)
+                return true
+            }
+            if !waits {
+                continuation.resume()
+            }
+        }
+        return 0
+    }
+
+    /// Ends every run waiting, and lets any later run end at once.
+    func release() {
+        let waiting = state.withLock { current -> [CheckedContinuation<Void, Never>] in
+            current.released = true
+            let waiting = current.waiting
+            current.waiting = []
+            return waiting
+        }
+        waiting.forEach { $0.resume() }
     }
 }
 

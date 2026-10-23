@@ -1608,10 +1608,12 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// demuxer hung the Mac. A time limit does not make that safe:
     /// `AsyncBridge.waitForResult` stops waiting at its limit (ST07), but it
     /// cannot stop AVFoundation work that ignores cancellation, which keeps
-    /// running, abandoned, with its thread and memory, and each time such a
-    /// file is opened again another can pile up beside it. Only `afconvert`,
-    /// in a child process under a watchdog, reads such audio; an Ogg file's
-    /// tags and length come from `OggHeaderReader` instead.
+    /// running, abandoned, with its thread and memory, until TextMouth
+    /// quits; the bridge only refuses that file's later reads
+    /// (`AsyncBridge.waitForResult(reading:timeLimit:abandoned:of:)`), so
+    /// no more pile up beside it. Only `afconvert`, in a child process under
+    /// a watchdog, reads such audio; an Ogg file's tags and length come from
+    /// `OggHeaderReader` instead.
     static func metadataAsset(for url: URL) -> AVURLAsset? {
         metadataAssetOptions(for: url).map { AVURLAsset(url: url, options: $0) } // lint-ok: refuses every converted format by extension
     }

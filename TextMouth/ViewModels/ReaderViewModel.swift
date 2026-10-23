@@ -1515,7 +1515,7 @@ final class ReaderViewModel: ObservableObject {
         var audioTags: AudioMetadata?
         if format.isAudio {
             let tagged = tagsURL ?? url
-            audioTags = (try? AsyncBridge.waitForResult(timeLimit: AsyncBridge.audioTagsTimeLimit) { await AudioPlaybackService.extractFullMetadata(from: tagged) }) ?? AudioMetadata()
+            audioTags = (try? AsyncBridge.waitForResult(reading: tagged, timeLimit: AsyncBridge.audioTagsTimeLimit) { await AudioPlaybackService.extractFullMetadata(from: tagged) }) ?? AudioMetadata()
         }
 
         return LoadedContent(

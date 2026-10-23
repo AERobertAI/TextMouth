@@ -75,9 +75,10 @@ extension TranscriptStore {
     /// (`install(_:for:hasher:)`): transcript.json, content.md written from
     /// it, with any text there that TextMouth did not write kept beside it,
     /// and the transcript's layer of the book's audio index, saved through
-    /// the book's record. A cleanup that fails before transcript.json is
-    /// written leaves the copy beside it as it was. Positions and bookmarks
-    /// stay as they are: they count time, which a cleanup does not change.
+    /// the book's record. A cleanup that fails leaves transcript.json and its
+    /// text as they were, since an install that fails puts back what it
+    /// wrote, and so the copy beside it too. Positions and bookmarks stay as
+    /// they are: they count time, which a cleanup does not change.
     ///
     /// Runs as storage work, which a data-directory move waits for, and
     /// blocks while it reads and writes; call it off the main thread.

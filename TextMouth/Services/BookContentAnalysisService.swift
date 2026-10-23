@@ -556,12 +556,12 @@ enum BookContentAnalysisService {
 
         if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
            isDirectory.boolValue {
-            let directoryResult = try AsyncBridge.waitForResult(timeLimit: AsyncBridge.audioAnalysisTimeLimit) {
+            let directoryResult = try AsyncBridge.waitForResult(reading: url, timeLimit: AsyncBridge.audioAnalysisTimeLimit) {
                 try await AudioBookParser.parseDirectory(url: url, prober: prober)
             }
             parsed = (directoryResult.content, directoryResult.filePaths, directoryResult.segments)
         } else {
-            let content = try AsyncBridge.waitForResult(timeLimit: AsyncBridge.audioAnalysisTimeLimit) {
+            let content = try AsyncBridge.waitForResult(reading: url, timeLimit: AsyncBridge.audioAnalysisTimeLimit) {
                 try await AudioBookParser.parse(url: url, prober: prober)
             }
             parsed = (content, nil, nil)
