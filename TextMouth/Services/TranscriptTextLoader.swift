@@ -268,12 +268,21 @@ enum TranscriptTextLoader {
     /// must hold:
     /// - its digest is not `writtenDigest`, the digest of the content.md
     ///   TextMouth last wrote or took (any digest, when that is nil);
-    /// - `transcript` was edited by the user (`Transcript.editedAt`) and its
-    ///   reading text is not the new text's (`readingText(of:)`): an edit
-    ///   taken before edits outside the sentences were refused may have left
-    ///   a renamed heading or words the transcript cannot hold, under the
-    ///   very digest TextMouth recorded. A content.md that only escapes or
-    ///   breaks its paragraphs differently reads the same, and is not kept.
+    /// - the transcript content.md was written from was edited by the user
+    ///   (`Transcript.editedAt`; `previous`, or `transcript` itself when
+    ///   `previous` is nil), and content.md's reading text is not the reading
+    ///   text of the text written from that transcript (`readingText(of:)`):
+    ///   an edit taken before edits outside the sentences were refused may
+    ///   have left a renamed heading or words the transcript cannot hold,
+    ///   under the very digest TextMouth recorded. A content.md that only
+    ///   escapes or breaks its paragraphs differently reads the same, and is
+    ///   not kept; nor is one that is exactly what an edited transcript
+    ///   wrote, which a cleaned-up copy of it replaces.
+    ///
+    /// - Parameter previous: The transcript content.md was written from before
+    ///   `transcript` replaces it, as an install's (`TranscriptStore.install`)
+    ///   reads it from the package; nil when it is `transcript` itself, as in
+    ///   the loader's rebuild.
     ///
     /// When a copy is needed and `keepCopy` cannot make it,
     /// `TranscriptTextError.textNotKept` is thrown before anything is
@@ -285,6 +294,7 @@ enum TranscriptTextLoader {
         for book: Book,
         over audioIndex: BookContentIndex,
         replacing writtenDigest: String? = nil,
+        previous: Transcript? = nil,
         hasher: FingerprintHasher,
         isDataless: (URL) -> Bool = DatalessFiles.isDataless,
         keepCopy: (URL, Data?) -> URL? = BookTextEditSessions.keepCopy(of:bytes:)
@@ -313,6 +323,8 @@ enum TranscriptTextLoader {
                        writtenDigest: writtenDigest,
                        replacedBy: text,
                        of: transcript,
+                       previous: previous,
+                       over: audioIndex,
                        book: book,
                        hasher: hasher
                    ),
@@ -391,29 +403,48 @@ enum TranscriptTextLoader {
         if isDataless(url) { throw TranscriptTextError.textOnlyInCloud }
     }
 
-    /// Whether the content.md `existing`, about to be replaced by `text`
-    /// written from `transcript`, holds text that must be kept beside it
-    /// first (see `writeText`): it is not what TextMouth last wrote or took
-    /// (`writtenDigest`), or the transcript was edited and it reads
-    /// differently from `text`. The caller has found its bytes differ from
-    /// `text`'s.
+    /// Whether the content.md `existing`, about to be replaced by `text`,
+    /// holds text that must be kept beside it first (see `writeText`): it is
+    /// not what TextMouth last wrote or took (`writtenDigest`), or the
+    /// transcript it was written from was edited and it reads differently
+    /// from the text written from that transcript. That transcript is
+    /// `previous`, or, when nil, `transcript`, whose text is `text` itself.
+    /// The caller has found `existing`'s bytes differ from `text`'s.
     private static func unwrittenTextNeedsKeeping(
         _ existing: Data,
         writtenDigest: String?,
         replacedBy text: TranscriptTextBuilder.Text,
         of transcript: Transcript,
+        previous: Transcript?,
+        over audioIndex: BookContentIndex,
         book: Book,
         hasher: FingerprintHasher
     ) -> Bool {
         if hasher.digestOfData(existing) != writtenDigest { return true }
-        guard transcript.editedAt != nil else { return false }
+        // Only a transcript the user edited can have a content.md that
+        // TextMouth did not write under the digest it recorded.
+        let source = previous ?? transcript
+        guard source.editedAt != nil else { return false }
+        let expected: TranscriptTextBuilder.Text?
+        if let previous {
+            expected = TranscriptTextBuilder.text(
+                of: TranscriptTextBuilder.chapters(of: previous, over: audioIndex, bookFileName: book.bookFileURL.lastPathComponent),
+                bookTitle: book.title,
+                bookAuthor: book.author
+            )
+        } else {
+            expected = text
+        }
+        // The text content.md holds when nothing but TextMouth wrote it; one
+        // that cannot be built counts as differing.
+        guard let expected else { return true }
         // Parsed as the builder reads its own text back. Bytes that are not
         // UTF-8 are not text TextMouth wrote.
         guard let markdown = try? MarkdownCacheService.cacheText(from: existing, at: TextMouthPaths.contentMarkdownPath(in: book.tmbDirectory)) else {
             return true
         }
         let chapters = MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: book.title, bookAuthor: book.author).chapters
-        return readingText(of: chapters) != readingText(of: text.chapters)
+        return readingText(of: chapters) != readingText(of: expected.chapters)
     }
 
     /// Each of `chapters`' title and text, with every run of white space

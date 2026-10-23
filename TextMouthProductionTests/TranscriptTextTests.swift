@@ -572,6 +572,59 @@ final class TranscriptTextTests: XCTestCase {
         XCTAssertEqual(keptCopies(of: book), [])
     }
 
+    /// Clean Up replaces an edited transcript with a cleaned-up copy of it:
+    /// a content.md that is exactly what the edited transcript wrote is
+    /// replaced without a copy, since the cleanup itself changes the text.
+    func testCleaningUpAnEditedTranscriptKeepsNoCopyOfTheTextItWrote() throws {
+        let world = try makeIntegrationWorld("Transcript Cleanup Plain")
+        let (book, transcript) = try makeEditedTranscribedBook(in: world)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let before = try String(contentsOf: cache, encoding: .utf8)
+
+        try TranscriptStore.install(cleanedUp(transcript), for: book)
+
+        XCTAssertNotEqual(try String(contentsOf: cache, encoding: .utf8), before, "the cleanup did not change the text")
+        XCTAssertEqual(keptCopies(of: book), [])
+    }
+
+    /// The same cleanup over a content.md whose heading was renamed (under
+    /// the digest the layer names) keeps that content.md first.
+    func testCleaningUpAnEditedTranscriptKeepsTextWithARenamedHeading() throws {
+        let world = try makeIntegrationWorld("Transcript Cleanup Renamed")
+        let (book, transcript) = try makeEditedTranscribedBook(in: world)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let renamed = Self.expectedMarkdown.replacingOccurrences(of: "# 02", with: "# Ferry")
+        try Data(renamed.utf8).write(to: cache)
+        try nameContentAsWritten(by: book)
+
+        try TranscriptStore.install(cleanedUp(transcript), for: book)
+
+        let copies = keptCopies(of: book)
+        XCTAssertEqual(copies.count, 1, "\(copies)")
+        XCTAssertEqual(try copies.first.map { try String(contentsOf: $0, encoding: .utf8) }, renamed)
+    }
+
+    /// A new transcript that was never edited, installed over an edited one
+    /// whose content.md holds a renamed heading, keeps that content.md: the
+    /// edit that content.md carries is the one being replaced.
+    func testANewTranscriptOverAnEditedOneKeepsItsRenamedHeading() throws {
+        let world = try makeIntegrationWorld("Transcript Again Renamed")
+        let (book, _) = try makeEditedTranscribedBook(in: world)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let renamed = Self.expectedMarkdown.replacingOccurrences(of: "# 02", with: "# Ferry")
+        try Data(renamed.utf8).write(to: cache)
+        try nameContentAsWritten(by: book)
+        let fresh = try TranscriptFixtures.transcript(of: book, sentences: Self.sentences)
+        XCTAssertNil(fresh.editedAt)
+
+        try TranscriptStore.install(fresh, for: book)
+
+        XCTAssertEqual(try String(contentsOf: cache, encoding: .utf8), Self.expectedMarkdown)
+        let copies = keptCopies(of: book)
+        XCTAssertEqual(copies.count, 1, "\(copies)")
+        XCTAssertEqual(try copies.first.map { try String(contentsOf: $0, encoding: .utf8) }, renamed)
+    }
+
     /// A content.md only in the cloud is not read, downloaded, or written
     /// over by writing the text (nothing about it changes), nor by saving a
     /// transcript, which leaves transcript.json as it was too.
@@ -794,6 +847,17 @@ final class TranscriptTextTests: XCTestCase {
         let stamp = try XCTUnwrap(FileStamp(of: cache))
         index.transcript?.textCacheFingerprint.cache = FileFingerprint(stamp: stamp, digest: try FileImportService.md5Hash(of: cache))
         try book.saveBookInfoThrowing(contentIndex: index)
+    }
+
+    /// `transcript` as Clean Up leaves it: its first sentence reworded, and
+    /// still marked edited.
+    private func cleanedUp(_ transcript: Transcript) -> Transcript {
+        var cleaned = transcript
+        // The fixture's first file holds sentences; guarded all the same.
+        if let file = cleaned.files.indices.first, !cleaned.files[file].sentences.isEmpty {
+            cleaned.files[file].sentences[0].rewrite(as: "Quillwort grows by the ferry slipway.")
+        }
+        return cleaned
     }
 
     /// The copies of the user's text kept beside `book`'s content.md.

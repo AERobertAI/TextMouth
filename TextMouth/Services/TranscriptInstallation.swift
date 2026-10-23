@@ -24,6 +24,10 @@ extension TranscriptStore {
     /// left as they are: they count time, which a transcript does not
     /// change.
     ///
+    /// The text content.md holds is kept beside it before it goes when it is
+    /// not what the transcript the package held wrote (`writeText`'s
+    /// `previous`).
+    ///
     /// content.md must be on this Mac: when it is only in the cloud,
     /// nothing is read, downloaded, or written, transcript.json stays as it
     /// was, and `TranscriptTextError.textOnlyInCloud` is thrown. When content.md
@@ -81,12 +85,19 @@ extension TranscriptStore {
                 at: TextMouthPaths.contentMarkdownPath(in: book.tmbDirectory),
                 isDataless: isDataless
             )
+            // The transcript the package's content.md was written from, read
+            // before it is replaced (nothing is downloaded: only a transcript
+            // on this Mac is found), so a content.md that is exactly what an
+            // edited transcript wrote is replaced without a copy.
+            var previous: Transcript?
+            if case .found(let found) = read(from: book.tmbDirectory) { previous = found }
             try write(transcript, into: book.tmbDirectory)
             let written = try TranscriptTextLoader.writeText(
                 of: transcript,
                 for: book,
                 over: audioIndex,
                 replacing: writtenDigest,
+                previous: previous,
                 hasher: hasher,
                 isDataless: isDataless,
                 keepCopy: keepCopy
