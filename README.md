@@ -18,7 +18,7 @@ TextMouth no longer plays Ogg audio (.ogg, .oga, or .opus) itself. On October 14
 - [Reader windows](docs/user/reader-windows.md): playing, navigating, bookmarks, Where Am I?, and the sleep timer.
 - [Exporting books](docs/user/exporting-books.md): what Export copies out of the library, and the Convert to menu that makes a text book's text HTML, RTF, a Word 97-2003 document, or a braille file (BRF or PEF).
 - [Editing a book's text](docs/user/editing-book-text.md): Edit Text in your own editor.
-- [Transcribing an audiobook](docs/user/transcribing.md): Transcribe Audio and Clean Up Transcript, on macOS 26 and later.
+- [Transcribing an audiobook](docs/user/transcribing.md): Transcribe Audio, Retranscribe Audio, and Clean Up Transcript, on macOS 26 and later.
 - [Settings](docs/user/settings.md): every tab of the Settings window.
 - [Recording from a microphone](docs/user/recording.md): the New Recording window.
 - [Editing audio](docs/user/editing-audio.md): the audio editor.

@@ -4,7 +4,32 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.2.1 (October 23, 2026)
+### Reading
+- Search in Book also searches an audiobook's transcript, telling you when each match is heard and moving the audio there when you choose one, and Go Back (Command-[) returns to where you were.
+- EPUBs that name a file in another letter case than their ZIP spells it now show the chapters they were missing.
+- Word 97-2003 files with a table of contents or links now get every page, not only the first.
+
+### Listening
+- Retranscribe Audio… takes the place of Transcribe Audio… once a book has a transcript, and its sheet says what it replaces and asks you to download a book that is only in iCloud first.
+- A feed episode's transcript can now be edited and cleaned up, and it stays with the episode in its feed, even after its download is deleted, until you delete the episode or the feed.
+- Six faults found in a review of transcription are fixed, among them edits to a transcript that were announced as taken and then lost, a damaged transcript file that could crash TextMouth, and a Clean Up that offered Apply and then refused it.
+- Resume after a very quick Pause keeps your place instead of restarting the chapter.
+- Seeking in a variable-bit-rate MP3 without a Xing header, whose length was only guessed, now lands where you ask and no longer moves a saved place back.
+- Play pressed while a book's files are being moved now waits for the move to end, then plays from your place.
+
+### Export
+- Exported Markdown, for a book's text and for a transcript, has a backslash only where Markdown needs one, and no chapter-marker lines.
+
+### Library
+- The duplicate question now says what Replace Existing throws away: the old copy's reading position, bookmarks, settings, and any edit of its text or transcript.
+- TextMouth now keeps the books that a later version added in a form it cannot read, as they are but not shown, instead of refusing the whole library, and Storage settings say how many there are.
+
 ## 0.2.0 (October 21, 2026)
+### Going back to 0.1.1
+- 0.1.1 cannot read the index of a library that holds a book in any of eight kinds that 0.2.0 added: braille, rich text, rich text with attachments, Word 97-2003, OpenDocument, Word 2003 XML, Safari web archives, and SSML. It leaves library.json as it is, keeps a copy of it beside it, and offers Try Again and Rebuild Library Index under Recovery Options…, but it still writes each book's record, and those records lose what 0.2.0 added to them: the record of an edit of the book's text and of the page reader that wrote it. Back in 0.2.0, a book whose text you edited is read from its file again, and your edit is kept beside it as a copy.
+- Never choose Rebuild Library Index in 0.1.1. It makes an index without the books in those eight kinds, and without the folders and the manual order that only the index held, which the copy of library.json that it keeps still has.
+
 ### Reading
 - Next Page, Previous Page, and Go to Page… move by page in EPUB, PDF, Word, DAISY, and other books that have pages, and Where Am I? says the page; books already in your library gain their pages the first time this version opens. If a book's text differs from what TextMouth reads from its file, as after an edit made with Edit Text before this version, its old text is first kept in a copy beside it; an edit you make from now on is kept as it is.
 - Rich text, Word 97-2003, OpenDocument, Safari web archive, SSML, and DTBook files can now be added as books.
@@ -17,7 +42,6 @@ Every version of TextMouth, newest first, and what changed for you in each.
 ### Braille
 - TextMouth reads BRF, BRL, and PEF braille files and writes BRF and PEF from Export, in Unified English Braille or English Braille, American Edition, contracted or not, chosen in a new Braille tab, and it keeps italic and bold where the code can carry them.
 - A Language pop-up adds the braille tables of this Mac's VoiceOver, for many languages beyond English.
-- A TextMouth older than 0.2.0 cannot open a library that holds a braille book. It leaves the library as it is and writes nothing, so nothing is lost, but such a library needs 0.2.0 or later.
 
 ### Export
 - Export copies a book's audio, original file, text, or transcript out of the library, and its Convert to menu makes a text book's text HTML, RTF, Word 97-2003, BRF, or PEF as well as Markdown.
