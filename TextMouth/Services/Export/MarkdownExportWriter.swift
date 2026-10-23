@@ -263,18 +263,33 @@ struct MarkdownExportWriter: TextExportWriter {
 
     /// One line of runs as Markdown: the runs of one link written as one link
     /// (`[`, their Markdown, `](<`, the address, `>)`), and every other run
-    /// by itself (`inlineMarkdown`).
+    /// by itself (`inlineMarkdown`). An exclamation mark that ends what comes
+    /// before a link is escaped: `![` begins an image, which keeps the link's
+    /// words but drops the mark and the link.
     private static func lineMarkdown(_ runs: [ExportRun]) -> String {
-        runs.linkGroups.map { group in
+        var line = ""
+        for group in runs.linkGroups {
             let inner = inlineMarkdown(group.runs)
-            guard let address = group.link, !inner.isEmpty else { return inner }
+            guard let address = group.link, !inner.isEmpty else {
+                line += inner
+                continue
+            }
+            // Nothing written ends in an escaped `!` (`minimallyEscaped` never
+            // escapes one), so a `!` that ends the line so far stands bare
+            // against the `[`, whether it ended plain text or was a run of
+            // its own between two links.
+            if line.hasSuffix("!") {
+                line.removeLast()
+                line += "\\!"
+            }
             // Inside `<…>` only a backslash and the angle brackets need escapes.
             let escapedAddress = address.reduce(into: "") { result, character in
                 if character == "\\" || character == "<" || character == ">" { result.append("\\") }
                 result.append(character)
             }
-            return "[\(inner)](<\(escapedAddress)>)"
-        }.joined()
+            line += "[\(inner)](<\(escapedAddress)>)"
+        }
+        return line
     }
 
     /// `runs`, none of them in a link, as Markdown: neighbouring plain and

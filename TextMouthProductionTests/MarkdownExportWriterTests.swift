@@ -492,6 +492,43 @@ final class MarkdownExportWriterTests: XCTestCase {
         XCTAssertEqual(try markdown([.paragraph([ExportRun("words", link: "javascript:1")])]), "words\n")
     }
 
+    /// An exclamation mark that ends the words before a link is escaped, since
+    /// `![` begins an image, which keeps the link's words and loses the mark
+    /// and the link; one that is not directly before the link is left alone.
+    /// Each is walked back to the runs it was written from.
+    func testAnExclamationMarkBeforeALinkIsEscaped() throws {
+        let address = "https://example.com/"
+        let link = ExportRun("here", link: address)
+        let cases: [(runs: [ExportRun], written: String)] = [
+            // The bare case: an image, were the mark not escaped.
+            ([run("Wow!"), link], #"Wow\![here](<https://example.com/>)"#),
+            // Not directly before the link: a space or a break between.
+            ([run("Wow! "), link], "Wow! [here](<https://example.com/>)"),
+            ([run("Wow!\n"), link], #"Wow!\"# + "\n" + "[here](<https://example.com/>)"),
+            // Emphasis keeps punctuation outside its delimiters, so the mark is bare.
+            ([ExportRun("Wow", isEmphasis: true), run("!"), link], #"*Wow*\![here](<https://example.com/>)"#),
+            // A mark that follows a backslash the text had: the backslash is escaped, then the mark.
+            ([run(#"a\!"#), link], #"a\\\![here](<https://example.com/>)"#),
+            // A mark of its own between two links, and one after a link's own words.
+            ([link, run("!"), ExportRun("there", link: "https://example.org/")],
+             #"[here](<https://example.com/>)\![there](<https://example.org/>)"#),
+            ([ExportRun("Wow!", link: address)], "[Wow!](<https://example.com/>)"),
+            // After a code span, it is still bare.
+            ([run("x"), ExportRun("code", isCode: true), run("!"), link], #"x`code`\![here](<https://example.com/>)"#),
+        ]
+        for (runs, written) in cases {
+            let markdown = try self.markdown([.paragraph(runs)])
+            XCTAssertEqual(markdown, written + "\n")
+            let walked = try walk(markdown)
+            XCTAssertEqual(walked.blocks, [.paragraph(runs)], "\(written) did not walk back to the runs it was written from")
+        }
+        // A heading takes the same care.
+        XCTAssertEqual(
+            try markdown([.heading(ExportHeading(level: 2, runs: [run("Hi!"), link], id: "h"))]),
+            #"## Hi\![here](<https://example.com/>)"# + "\n"
+        )
+    }
+
     /// A line feed in a run is a hard break, a backslash and a line feed, and
     /// every line is guarded at its start.
     func testHardBreaksAndGuardedLines() throws {
