@@ -177,11 +177,14 @@ final class TranscriptionPresenter: ObservableObject {
         }
         let book = library.bookByID(request.book.id) ?? request.book
         // The transcript's text goes with it: an edit of it is no longer
-        // taken.
-        services.endTextEdit(book.id)
+        // taken. An edit saved but not yet checked is taken first, and the
+        // session ends; if the deletion fails, the session begins again, so
+        // the user's later saves are still taken.
+        let wasEditing = await services.pauseTextEdit(book)
         do {
             _ = try await OffMainWork.runThrowing { try TranscriptStore.delete(for: book) }
         } catch {
+            if wasEditing { await services.resumeTextEdit(book) }
             notice = TranscriptionNotice(
                 title: TranscriptionWording.deleteNoticeTitle,
                 message: TranscriptionWording.deleteFailed(bookTitle: book.title, reason: error.localizedDescription)

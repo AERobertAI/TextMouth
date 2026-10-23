@@ -52,8 +52,12 @@ struct TranscriptionSheetServices {
     var center: TranscriptionJobCenter
     /// Which books the library rows call transcribed.
     var transcribedBooks: TranscribedBooks
-    /// Ends the Edit Text session of a book whose transcript goes.
-    var endTextEdit: @MainActor (UUID) -> Void
+    /// Settles and ends the Edit Text session of a book whose transcript
+    /// goes (an edit saved but not yet checked is taken first); whether the
+    /// book was being edited.
+    var pauseTextEdit: @MainActor (Book) async -> Bool
+    /// Begins the book's Edit Text session again when the deletion failed.
+    var resumeTextEdit: @MainActor (Book) async -> Void
     /// Asks VoiceOver to speak a message from a window.
     var announce: @MainActor (String, NSWindow?) -> Void
 
@@ -71,7 +75,8 @@ struct TranscriptionSheetServices {
             },
             center: .shared,
             transcribedBooks: .shared,
-            endTextEdit: { BookTextEditor.shared.end($0) },
+            pauseTextEdit: { await BookTextEditor.shared.pauseEditing(of: $0) },
+            resumeTextEdit: { await BookTextEditor.shared.resumeEditing(of: $0) },
             announce: { message, window in VoiceOverAnnouncer.announce(message, from: window) }
         )
     }

@@ -120,6 +120,8 @@ extension XCTestCase {
         transcript: TranscriptStore.Lookup = .missing,
         center: TranscriptionJobCenter? = nil,
         transcribedBooks: TranscribedBooks = TranscribedBooks(),
+        pauseTextEdit: @escaping @MainActor (Book) async -> Bool = { _ in false },
+        resumeTextEdit: @escaping @MainActor (Book) async -> Void = { _ in },
         announcements: SheetAnnouncements = SheetAnnouncements()
     ) -> TranscriptionSheetServices {
         TranscriptionSheetServices(
@@ -130,7 +132,8 @@ extension XCTestCase {
             readTranscript: { _ in transcript },
             center: center ?? makeScriptedCenter(script: [:]),
             transcribedBooks: transcribedBooks,
-            endTextEdit: { _ in },
+            pauseTextEdit: pauseTextEdit,
+            resumeTextEdit: resumeTextEdit,
             announce: { message, window in announcements.record(message, window) }
         )
     }
@@ -140,22 +143,28 @@ extension XCTestCase {
     /// with `refusal`: it never reaches the system's recognizer. It records
     /// transcribed books in `transcribedBooks`, a store of the test's own
     /// unless given, never the app's, and ends a replaced transcript's Edit
-    /// Text session with `endTextEdit`, which ends none unless given.
+    /// Text session with `pauseTextEdit` (which pauses none unless given)
+    /// and begins it again with `resumeTextEdit` if the install fails
+    /// (`install` replaces the center's, which saves into the book).
     @MainActor
     func makeScriptedCenter(
         script: [String: [TranscriptSentence]],
         pause: Duration = .zero,
         refusal: TranscriptionError? = nil,
         transcribedBooks: TranscribedBooks = TranscribedBooks(),
-        endTextEdit: @escaping @MainActor (UUID) -> Void = { _ in }
+        install: (@Sendable (Transcript, Book) throws -> TranscriptInstallation)? = nil,
+        pauseTextEdit: @escaping @MainActor (Book) async -> Bool = { _ in false },
+        resumeTextEdit: @escaping @MainActor (Book) async -> Void = { _ in }
     ) -> TranscriptionJobCenter {
         TranscriptionJobCenter(
             service: TranscriptionService(
                 engine: ScriptedTranscriptionEngine(sentences: script, pause: pause, refusal: refusal),
                 languagesToTry: { ["en-US"] }
             ),
+            install: install ?? { try TranscriptStore.install($0, for: $1) },
             transcribedBooks: transcribedBooks,
-            endTextEdit: endTextEdit
+            pauseTextEdit: pauseTextEdit,
+            resumeTextEdit: resumeTextEdit
         )
     }
 

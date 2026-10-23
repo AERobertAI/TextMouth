@@ -136,6 +136,42 @@ final class BookTextEditor {
         }
     }
 
+    /// Pauses `book`'s session before a change rewrites its transcript
+    /// (Clean Up, Undo Cleanup, a new transcription, Delete Transcript):
+    /// a check of the book already running finishes, and an edit saved but
+    /// not yet checked is taken, committed, and announced as any taken edit
+    /// is (`BookTextEditSessions.settlePendingEdit(of:)`), all off the main
+    /// thread, so no check races the change. Then the session ends, as the
+    /// change rewrites the text it watched.
+    /// - Returns: Whether the book was being edited; false at once if not.
+    ///   A change that fails afterwards calls `resumeEditing(of:)` when this
+    ///   returned true, so the user's later saves are still taken.
+    func pauseEditing(of book: Book) async -> Bool {
+        guard sessions.isEditing(book.id) else { return false }
+        let sessions = self.sessions
+        // What the settlement says to read is of no use here: the change that
+        // follows rewrites the text itself.
+        _ = await OffMainWork.run { sessions.settlePendingEdit(of: book) }
+        end(book.id)
+        return true
+    }
+
+    /// Begins `book`'s session again after a change that `pauseEditing(of:)`
+    /// paused has failed, from a fresh baseline of the text the book has
+    /// now, so the user's next save is taken. It says nothing and opens no
+    /// editor: the user's editor is open already. When the baseline cannot
+    /// be read, it announces why, as `edit(_:choosingApp:in:from:)` does.
+    func resumeEditing(of book: Book) async {
+        let access = sessions.access
+        let found = await OffMainWork.run { BookTextEditSessions.baseline(of: book, access: access) }
+        switch found {
+        case .failure(let failure):
+            files.announce(BookTextEditWording.cannotBegin(failure, bookTitle: book.title))
+        case .success(let baseline):
+            begin(book.id, baseline: baseline)
+        }
+    }
+
     /// Whether `book`'s text can be edited here, as the app knows which
     /// audiobooks are transcribed (`TranscribedBooks`): a text book's, or a
     /// transcribed audiobook's transcript text (FR05).

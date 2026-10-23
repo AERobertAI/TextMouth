@@ -138,9 +138,13 @@ final class TranscriptionJobCenter: ObservableObject {
     private let install: @Sendable (Transcript, Book) throws -> TranscriptInstallation
     /// Which books the library rows call transcribed.
     private let transcribedBooks: TranscribedBooks
-    /// Ends the Edit Text session of a book, whose edits of the transcript
-    /// being replaced are no longer taken (`BookTextEditor.end(_:)`).
-    private let endTextEdit: @MainActor (UUID) -> Void
+    /// Settles and ends the Edit Text session of a book, whose edits of the
+    /// transcript being replaced are no longer taken
+    /// (`BookTextEditor.pauseEditing(of:)`); whether it was being edited.
+    private let pauseTextEdit: @MainActor (Book) async -> Bool
+    /// Begins the book's Edit Text session again when the install failed
+    /// (`BookTextEditor.resumeEditing(of:)`).
+    private let resumeTextEdit: @MainActor (Book) async -> Void
     /// The task running the transcription under way.
     private var task: Task<Void, Never>?
     /// The window that started the transcription under way, where what
@@ -153,7 +157,8 @@ final class TranscriptionJobCenter: ObservableObject {
 
     /// A center transcribing with `service`, saving with `install`,
     /// recording transcribed books in `transcribedBooks`, and ending a
-    /// replaced transcript's Edit Text session with `endTextEdit`: the
+    /// replaced transcript's Edit Text session with `pauseTextEdit`, and
+    /// beginning it again with `resumeTextEdit` if the install fails: the
     /// app's own unless a test passes others.
     init(
         service: TranscriptionService = .shared,
@@ -161,12 +166,14 @@ final class TranscriptionJobCenter: ObservableObject {
             try TranscriptStore.install($0, for: $1)
         },
         transcribedBooks: TranscribedBooks = .shared,
-        endTextEdit: @escaping @MainActor (UUID) -> Void = { BookTextEditor.shared.end($0) }
+        pauseTextEdit: @escaping @MainActor (Book) async -> Bool = { await BookTextEditor.shared.pauseEditing(of: $0) },
+        resumeTextEdit: @escaping @MainActor (Book) async -> Void = { await BookTextEditor.shared.resumeEditing(of: $0) }
     ) {
         self.service = service
         self.install = install
         self.transcribedBooks = transcribedBooks
-        self.endTextEdit = endTextEdit
+        self.pauseTextEdit = pauseTextEdit
+        self.resumeTextEdit = resumeTextEdit
     }
 
     /// Starts transcribing `book` in `language`, a locale identifier the
@@ -208,11 +215,20 @@ final class TranscriptionJobCenter: ObservableObject {
                 guard let current = library?.bookByID(book.id) else { throw TranscriptionError.bookRemoved }
                 guard !Task.isCancelled else { throw TranscriptionError.cancelled }
                 // The new transcript replaces the one the user may be
-                // editing, as the sheet said it would: that edit is no
-                // longer taken, and a text it held but no check took is
-                // kept beside content.md as it is replaced.
-                self?.endTextEdit(book.id)
-                let installation = try await OffMainWork.runThrowing { try install(transcript, current) }
+                // editing, as the sheet said it would: an edit saved but not
+                // yet checked is taken first, then the session ends, and the
+                // install replaces the text (one it could not take is kept
+                // beside content.md as it is replaced). If the install fails,
+                // the session begins again, so the user's later saves are
+                // still taken.
+                let wasEditing = await self?.pauseTextEdit(current) ?? false
+                let installation: TranscriptInstallation
+                do {
+                    installation = try await OffMainWork.runThrowing { try install(transcript, current) }
+                } catch {
+                    if wasEditing { await self?.resumeTextEdit(current) }
+                    throw error
+                }
                 self?.saved(installation, of: book.id, in: library)
                 ending = .finished(wordCount: transcript.wordCount, seconds: Self.seconds(clock.now - started))
             } catch {

@@ -21,8 +21,12 @@ struct TranscriptCleanupServices {
     var editRules: @MainActor (NSWindow?) async -> String?
     /// Whether the book is being transcribed now.
     var isTranscribing: @MainActor (UUID) -> Bool
-    /// Ends the Edit Text session of a book whose transcript is rewritten.
-    var endTextEdit: @MainActor (UUID) -> Void
+    /// Settles and ends the Edit Text session of a book whose transcript is
+    /// about to be rewritten (an edit saved but not yet checked is taken
+    /// first); whether the book was being edited.
+    var pauseTextEdit: @MainActor (Book) async -> Bool
+    /// Begins the book's Edit Text session again when the rewrite failed.
+    var resumeTextEdit: @MainActor (Book) async -> Void
     /// Asks VoiceOver to speak a message from a window.
     var announce: @MainActor (String, NSWindow?) -> Void
 
@@ -36,7 +40,8 @@ struct TranscriptCleanupServices {
             requestRulesDownload: { SavedFile.requestDownload(of: TextMouthPaths.transcriptCleanupRulesFile) },
             editRules: { _ in await openRulesInTextEditor() },
             isTranscribing: { TranscriptionJobCenter.shared.current?.bookID == $0 },
-            endTextEdit: { BookTextEditor.shared.end($0) },
+            pauseTextEdit: { await BookTextEditor.shared.pauseEditing(of: $0) },
+            resumeTextEdit: { await BookTextEditor.shared.resumeEditing(of: $0) },
             announce: { message, window in VoiceOverAnnouncer.announce(message, from: window) }
         )
     }
@@ -386,10 +391,13 @@ final class TranscriptCleanupSheetModel: ObservableObject, Identifiable {
         guard canApply, let preview, let rules, let library else { return }
         guard !isRefusedWhileTranscribing(TranscriptCleanupWording.applyFailed) else { return }
         phase = .working(TranscriptCleanupWording.applyingLine)
-        // The transcript's text is rewritten: an Edit Text session of it
-        // would take the new text for the user's edit.
-        services.endTextEdit(book.id)
         let book = library.bookByID(self.book.id) ?? self.book
+        // The transcript's text is rewritten: an Edit Text session of it
+        // would take the new text for the user's edit. An edit saved but not
+        // yet checked is taken first, and the session ends; if the cleanup
+        // fails, the session begins again, so the user's later saves are
+        // still taken.
+        let wasEditing = await services.pauseTextEdit(book)
         let expected = preview.original
         let ruleSet = rules.rules
         let source = rules.source
@@ -401,6 +409,7 @@ final class TranscriptCleanupSheetModel: ObservableObject, Identifiable {
             services.announce(TranscriptCleanupWording.applied(bookTitle: book.title, corrections: result.corrections), window)
             close()
         } catch {
+            if wasEditing { await services.resumeTextEdit(book) }
             phase = .failed(TranscriptCleanupWording.applyFailed(bookTitle: book.title, reason: error.localizedDescription))
         }
     }
@@ -411,14 +420,16 @@ final class TranscriptCleanupSheetModel: ObservableObject, Identifiable {
         guard canPressUndo, let library else { return }
         guard !isRefusedWhileTranscribing(TranscriptCleanupWording.undoFailed) else { return }
         phase = .working(TranscriptCleanupWording.undoingLine)
-        services.endTextEdit(book.id)
         let book = library.bookByID(self.book.id) ?? self.book
+        // The session is paused, and begins again on failure, as in `apply()`.
+        let wasEditing = await services.pauseTextEdit(book)
         do {
             let installation = try await OffMainWork.runThrowing { try TranscriptStore.undoCleanup(of: book) }
             library.bookUpdates.transcriptReplaced(bookID: book.id, with: installation.text)
             services.announce(TranscriptCleanupWording.undone(bookTitle: book.title), window)
             close()
         } catch {
+            if wasEditing { await services.resumeTextEdit(book) }
             phase = .failed(TranscriptCleanupWording.undoFailed(bookTitle: book.title, reason: error.localizedDescription))
         }
     }

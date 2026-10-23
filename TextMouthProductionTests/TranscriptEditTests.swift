@@ -343,6 +343,52 @@ final class TranscriptEditTests: XCTestCase {
         )
     }
 
+    // MARK: - Changes That Rewrite the Transcript
+
+    /// Delete Transcript with an edit saved but not yet checked takes the
+    /// edit first (VoiceOver hears "Text updated"), then deletes the
+    /// transcript and ends the session, rather than racing a running check
+    /// that could bring the transcript back.
+    func testDeleteTranscriptTakesAPendingEditThenEndsTheSession() async throws {
+        let world = try makeIntegrationWorld("Transcript Edit Then Delete")
+        let book = try world.makeSilentAudioBook(title: "Breakwater Notes", trackDurations: [3, 2])
+        try TranscriptStore.install(try TranscriptFixtures.transcript(of: book, sentences: TranscriptionUIScripts.twoTracks), for: book)
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let edited = replacing(
+            MarkdownLiteral.escaped("on the pier."),
+            with: MarkdownLiteral.escaped("on the jetty."),
+            in: try String(contentsOf: cache, encoding: .utf8)
+        )
+        try edited.write(to: cache, atomically: true, encoding: .utf8)
+        let sheetAnnouncements = SheetAnnouncements()
+        let store = TranscribedBooks()
+        store.record(book.id, isTranscribed: true)
+        let presenter = TranscriptionPresenter(services: {
+            self.makeSheetServices(
+                transcribedBooks: store,
+                pauseTextEdit: { await editor.editor.pauseEditing(of: $0) },
+                resumeTextEdit: { await editor.editor.resumeEditing(of: $0) },
+                announcements: sheetAnnouncements
+            )
+        })
+        await presenter.confirmDeletion(of: book, library: world.library, window: nil)
+        let request = try XCTUnwrap(presenter.deletion)
+
+        await presenter.deleteConfirmed(request)
+
+        let heard = await eventuallyHolds(timeout: 2) { announcements.messages == [BookTextEditWording.updated] }
+        XCTAssertTrue(heard, "the pending edit was not taken first: \(announcements.messages)")
+        XCTAssertNil(presenter.notice)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: TextMouthPaths.transcriptPath(in: book.tmbDirectory).path))
+        XCTAssertFalse(editor.sessions.isEditing(book.id), "the session outlived the transcript")
+        XCTAssertEqual(sheetAnnouncements.messages, ["Deleted the transcript of Breakwater Notes."])
+    }
+
     // MARK: - A Feed Episode's Transcript
 
     /// A feed episode's transcript can be edited (October 23, 2026): two

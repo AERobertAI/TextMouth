@@ -325,4 +325,70 @@ final class TranscriptionProgressTests: XCTestCase {
         XCTAssertEqual(store.note(for: book.id), .transcribed)
         XCTAssertNil(store.transcribingBookID)
     }
+
+    // MARK: - The Edit Text Session
+
+    /// An install that fails after the book's Edit Text session was paused
+    /// begins the session again, once, for the book, so the user's later
+    /// saves are still taken.
+    func testAFailedInstallResumesTheEditTextSession() async throws {
+        let world = try makeIntegrationWorld("Transcription Install Fails")
+        let book = try world.makeSilentAudioBook(title: "Breakwater Notes", trackDurations: [3, 2])
+        let paused = CallLog<UUID>()
+        let resumed = CallLog<UUID>()
+        let center = makeScriptedCenter(
+            script: TranscriptionUIScripts.twoTracks,
+            install: { _, _ in throw InstallFailure() },
+            pauseTextEdit: { paused.record($0.id); return true },
+            resumeTextEdit: { resumed.record($0.id) }
+        )
+
+        XCTAssertTrue(center.start(book, language: "en-US", library: world.library, window: nil))
+        let ended = await eventuallyHolds { center.current == nil }
+
+        XCTAssertTrue(ended, "the transcription never ended")
+        XCTAssertEqual(paused.calls, [book.id])
+        XCTAssertEqual(resumed.calls, [book.id])
+        guard case .failed(_)? = center.lastEnding?.ending else {
+            return XCTFail("the transcription did not end as failed: \(String(describing: center.lastEnding))")
+        }
+    }
+
+    /// An install that works leaves the session ended: the new transcript
+    /// replaced the text it watched, and nothing begins it again. A book not
+    /// being edited is never resumed either, even when the install fails.
+    func testASavedTranscriptDoesNotResumeTheEditTextSession() async throws {
+        let world = try makeIntegrationWorld("Transcription Install Works")
+        let book = try world.makeSilentAudioBook(title: "Breakwater Notes", trackDurations: [3, 2])
+        let paused = CallLog<UUID>()
+        let resumed = CallLog<UUID>()
+        let center = makeScriptedCenter(
+            script: TranscriptionUIScripts.twoTracks,
+            pauseTextEdit: { paused.record($0.id); return true },
+            resumeTextEdit: { resumed.record($0.id) }
+        )
+
+        XCTAssertTrue(center.start(book, language: "en-US", library: world.library, window: nil))
+        let ended = await eventuallyHolds { center.current == nil }
+
+        XCTAssertTrue(ended, "the transcription never ended")
+        XCTAssertEqual(paused.calls, [book.id])
+        XCTAssertEqual(resumed.calls, [])
+
+        // A book that was not being edited: the pause says so, and a failed install resumes nothing.
+        let other = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [3, 2])
+        let notEditing = makeScriptedCenter(
+            script: TranscriptionUIScripts.twoTracks,
+            install: { _, _ in throw InstallFailure() },
+            pauseTextEdit: { _ in false },
+            resumeTextEdit: { resumed.record($0.id) }
+        )
+        XCTAssertTrue(notEditing.start(other, language: "en-US", library: world.library, window: nil))
+        let endedAgain = await eventuallyHolds { notEditing.current == nil }
+        XCTAssertTrue(endedAgain, "the second transcription never ended")
+        XCTAssertEqual(resumed.calls, [])
+    }
+
+    /// The error a test's install fails with.
+    private struct InstallFailure: Error {}
 }
