@@ -183,7 +183,7 @@ class ArchiveFileProvider: DAISYFileProvider {
     /// else the first file whose path matches it without regard to case.
     /// - Throws: `DAISYParserError.missingContent` when no entry matches.
     private func entry(at path: String) throws -> Entry {
-        guard let entry = index[path] ?? index.file(matchingCaseInsensitively: path) else {
+        guard let entry = index.file(at: path) else {
             throw DAISYParserError.missingContent("File not found in archive: \(path)")
         }
         return entry
