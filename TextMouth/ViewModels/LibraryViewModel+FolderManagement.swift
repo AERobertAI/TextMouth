@@ -131,7 +131,10 @@ extension LibraryViewModel {
     /// Remove a folder and delete all its contents (books, subfolders, .tmb
     /// files), to the Trash or permanently as the preference chooses. Items
     /// that cannot be deleted stay in the library, and the error alert names
-    /// them in the words of that mode.
+    /// them in the words of that mode. The books a newer TextMouth added
+    /// there (kept rows, V03) stay: each package where it is, and every
+    /// folder holding one, this one included, with its row (stable020
+    /// review, finding 1).
     func removeFolderAndEverything(_ folder: BookFolder) {
         let path = folder.fullPath
         // Validate again at the destructive boundary: legacy/edited indexes
@@ -161,8 +164,16 @@ extension LibraryViewModel {
             .appendingPathComponent(path, isDirectory: true)
         if failures.isEmpty {
             do {
-                try FileImportService.removeItemRespectingTrashSetting(at: folderDiskURL)
-                _ = library.removeFolderAndContents(id: folder.id)
+                // The folder goes as one item unless it holds a kept row's
+                // package or folder; then what is kept stays, and so do the
+                // folders holding it, on disk and in the library.
+                let stayed = try FileImportService.removeLibraryFolder(
+                    at: folderDiskURL,
+                    folderPath: path,
+                    keepingPackagesOf: library.keptRowPackages,
+                    keptFolders: library.keptRowFolders(inFolderTree: path)
+                )
+                _ = library.removeFolderAndContents(id: folder.id, keepingFolders: stayed)
             } catch {
                 failures.append("\(folder.name): \(error.localizedDescription)")
             }
@@ -404,6 +415,13 @@ extension LibraryViewModel {
     /// every folder until a book is added, removed, or moved (TODO PERF10).
     func bookCount(inFolderTree path: String) -> Int {
         listCache.bookCount(inFolderTree: path, in: library)
+    }
+
+    /// How many books a newer TextMouth added (kept rows, V03) the folder at
+    /// `path` and its subfolders hold, which no list shows: what Delete
+    /// Folder's questions say it keeps (stable020 review, finding 1).
+    func keptBookCount(inFolderTree path: String) -> Int {
+        library.keptRowFolders(inFolderTree: path).count
     }
 
     /// Sort books as `sort` orders them (TODO A06): the comparator the

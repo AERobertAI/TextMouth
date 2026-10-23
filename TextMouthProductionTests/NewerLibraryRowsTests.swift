@@ -628,6 +628,189 @@ final class NewerLibraryRowsTests: XCTestCase {
         XCTAssertEqual(written.books.map(\.id), [shown.id])
     }
 
+    // MARK: - Delete Folder keeps them (stable020 review, finding 1)
+
+    /// A remover for `FileImportService.removeLibraryFolder` that deletes for
+    /// good, never to the Trash, and notes each item it is handed in
+    /// `removed`, in order.
+    private func recordingRemover(into removed: Box<[URL]>) -> (URL) throws -> Void {
+        { item in
+            removed.value.append(item)
+            try FileManager.default.removeItem(at: item)
+        }
+    }
+
+    /// A value a closure can add to and a test can read afterward.
+    private final class Box<Value> {
+        var value: Value
+        init(_ value: Value) { self.value = value }
+    }
+
+    /// Delete Everything, with the Trash preference off so nothing reaches
+    /// the real Trash, on a folder holding a shown book and a kept row's
+    /// package: the shown book goes, package and row; the kept package stays
+    /// byte for byte, and so does the folder, its directory and its row, with
+    /// the kept row, and no failure is reported.
+    @MainActor
+    func testDeleteEverythingLeavesAKeptRowsPackageAndItsFolder() throws {
+        _ = try captureLibraryIndex()
+        let config = ConfigService.shared
+        let movedToTrash = config.config.moveToTrashInsteadOfDeleting
+        config.config.moveToTrashInsteadOfDeleting = false
+        defer { config.config.moveToTrashInsteadOfDeleting = movedToTrash }
+        let folder = BookFolder(name: "Kept Shelf \(UUID().uuidString)")
+        let folderURL = TextMouthPaths.libraryDir.appendingPathComponent(folder.fullPath, isDirectory: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: folderURL) }
+        let kept = try makeKeptPackage(folder: folder.fullPath, in: TextMouthPaths.libraryDir)
+        let shown = try writePackage(title: "Shown Book", folder: folder.fullPath, in: TextMouthPaths.libraryDir)
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [shown], folders: [folder], unreadableRows: [kept.row])
+        XCTAssertEqual(model.keptBookCount(inFolderTree: folder.fullPath), 1)
+
+        model.removeFolderAndEverything(folder)
+
+        XCTAssertFalse(model.showError, model.errorMessage ?? "")
+        XCTAssertFalse(model.library.books.contains { $0.id == shown.id })
+        XCTAssertFalse(FileManager.default.fileExists(atPath: packageURL(of: shown, in: TextMouthPaths.libraryDir).path))
+        XCTAssertEqual(try snapshot(of: kept.package), kept.before)
+        XCTAssertEqual(model.library.folders.map(\.id), [folder.id], "the folder holding the kept package went")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: folderURL.path))
+        XCTAssertEqual(model.library.unreadableRows, [kept.row])
+    }
+
+    /// When something is kept, the folder loses everything else, each item
+    /// on its own: a subfolder holding nothing kept, a package no row keeps,
+    /// and a file. A subfolder holding a kept package stays, as does a hidden
+    /// item in a folder that stays.
+    @MainActor
+    func testDeleteEverythingRemovesAllButWhatIsKept() throws {
+        let libraryDirectory = try makeScratchFolder()
+        let kept = try makeKeptPackage(folder: "Shelf/Inner", in: libraryDirectory)
+        let orphan = try writePackage(title: "Orphan", folder: "Shelf/Inner", in: libraryDirectory)
+        let shelf = libraryDirectory.appendingPathComponent("Shelf", isDirectory: true)
+        let empty = shelf.appendingPathComponent("Empty", isDirectory: true)
+        try FileManager.default.createDirectory(at: empty, withIntermediateDirectories: true)
+        try Data("Notes".utf8).write(to: shelf.appendingPathComponent("notes.txt"))
+        let hidden = shelf.appendingPathComponent(".DS_Store")
+        try Data().write(to: hidden)
+        let removed = Box<[URL]>([])
+
+        let stayed = try FileImportService.removeLibraryFolder(
+            at: shelf,
+            folderPath: "Shelf",
+            keepingPackagesOf: KeptRowPackages([kept.row]),
+            keptFolders: ["Shelf/Inner"],
+            removeItem: recordingRemover(into: removed)
+        )
+
+        XCTAssertEqual(stayed, ["Shelf", "Shelf/Inner"])
+        XCTAssertEqual(Set(removed.value.map(\.lastPathComponent)), ["Empty", "notes.txt", orphan.tmbDirectoryName])
+        XCTAssertEqual(try snapshot(of: kept.package), kept.before)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: hidden.path), "a hidden item left its folder")
+    }
+
+    /// A folder holding nothing kept goes as one item, as Delete Everything
+    /// always took it, whatever a kept row elsewhere owns.
+    @MainActor
+    func testDeleteEverythingRemovesAFolderHoldingNothingKeptAsOneItem() throws {
+        let libraryDirectory = try makeScratchFolder()
+        let kept = try makeKeptPackage(folder: "Other", in: libraryDirectory)
+        _ = try writePackage(title: "Loose Book", folder: "Shelf/Inner", in: libraryDirectory)
+        let shelf = libraryDirectory.appendingPathComponent("Shelf", isDirectory: true)
+        let removed = Box<[URL]>([])
+
+        let stayed = try FileImportService.removeLibraryFolder(
+            at: shelf,
+            folderPath: "Shelf",
+            keepingPackagesOf: KeptRowPackages([kept.row]),
+            keptFolders: [],
+            removeItem: recordingRemover(into: removed)
+        )
+
+        XCTAssertEqual(stayed, [])
+        XCTAssertEqual(removed.value, [shelf])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: shelf.path))
+        XCTAssertEqual(try snapshot(of: kept.package), kept.before)
+    }
+
+    /// A kept row that names its package but no folder that reads owns that
+    /// package in any folder (`KeptRowPackages`), so Delete Everything keeps
+    /// it, and the folder holding it, though no count can place the row.
+    @MainActor
+    func testDeleteEverythingKeepsAPackageAKeptRowNamesWithoutAFolder() throws {
+        let libraryDirectory = try makeScratchFolder()
+        let kept = try makeKeptPackage(folder: "Shelf", in: libraryDirectory)
+        let nameOnly = keptRow([
+            "tmbDirectoryName": .string(kept.book.tmbDirectoryName),
+            "folderPath": .integer(3),
+        ])
+        let shelf = libraryDirectory.appendingPathComponent("Shelf", isDirectory: true)
+        XCTAssertEqual(Library(unreadableRows: [nameOnly]).keptRowFolders(inFolderTree: "Shelf"), [])
+
+        let stayed = try FileImportService.removeLibraryFolder(
+            at: shelf,
+            folderPath: "Shelf",
+            keepingPackagesOf: KeptRowPackages([nameOnly]),
+            keptFolders: [],
+            removeItem: recordingRemover(into: Box<[URL]>([]))
+        )
+
+        XCTAssertEqual(stayed, ["Shelf"])
+        XCTAssertEqual(try snapshot(of: kept.package), kept.before)
+    }
+
+    /// A kept row's folder with no directory on disk (its package is
+    /// missing) stays in the library too, with the folders between it and
+    /// the one deleted: its row still names it.
+    @MainActor
+    func testDeleteEverythingKeepsAKeptRowsFolderMissingFromDisk() throws {
+        let libraryDirectory = try makeScratchFolder()
+        let shelf = libraryDirectory.appendingPathComponent("Shelf", isDirectory: true)
+        try FileManager.default.createDirectory(at: shelf, withIntermediateDirectories: true)
+
+        let stayed = try FileImportService.removeLibraryFolder(
+            at: shelf,
+            folderPath: "Shelf",
+            keepingPackagesOf: KeptRowPackages([]),
+            keptFolders: ["Shelf/Gone/Deeper"],
+            removeItem: recordingRemover(into: Box<[URL]>([]))
+        )
+
+        XCTAssertEqual(stayed, ["Shelf", "Shelf/Gone/Deeper", "Shelf/Gone"])
+    }
+
+    /// The library's side: the kept rows' folders in a tree are found
+    /// without regard to case, one per row, and removing the folder keeps the
+    /// folders named, with their sort settings, while the rest of the tree
+    /// goes and the folders outside it stay.
+    func testTheLibraryKeepsTheFoldersThatHoldKeptRows() throws {
+        var library = Library(
+            folders: [
+                BookFolder(name: "Shelf"),
+                BookFolder(name: "Inner", parentPath: "Shelf"),
+                BookFolder(name: "Empty", parentPath: "Shelf"),
+                BookFolder(name: "Shelfish"),
+            ],
+            folderSortSettings: [
+                "Shelf/Inner": FolderSortSetting.defaultSort,
+                "Shelf/Empty": FolderSortSetting.defaultSort,
+            ],
+            unreadableRows: [
+                keptRow(["folderPath": .string("Shelf")]),
+                keptRow(["folderPath": .string("shelf/inner")]),
+                keptRow(["folderPath": .string("Shelfish")]),
+                keptRow(["folderPath": .integer(3)]),
+            ]
+        )
+        XCTAssertEqual(library.keptRowFolders(inFolderTree: "Shelf"), ["Shelf", "shelf/inner"])
+        let shelf = try XCTUnwrap(library.folders.first { $0.fullPath == "Shelf" })
+
+        _ = library.removeFolderAndContents(id: shelf.id, keepingFolders: ["Shelf", "SHELF/INNER"])
+
+        XCTAssertEqual(library.folders.map(\.fullPath), ["Shelf", "Shelf/Inner", "Shelfish"])
+        XCTAssertEqual(Set(library.folderSortSettings.keys), ["Shelf/Inner"])
+    }
+
     // MARK: - A feed's index keeps the rows it cannot read
 
     /// A data directory of a feed's index holding a readable row and a row
