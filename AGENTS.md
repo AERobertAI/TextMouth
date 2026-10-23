@@ -73,7 +73,21 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - A test host that joins the system's media session takes the user's AirPods; it never does now, but a branch older than that fix still can until it rebases.
 - A tool call that waits on a permission prompt stops its agent until the user answers, and the user may be away. Claude Code asks before an `rm` through a shell variable: on October 18, 2026 a team lead's `rm -f "$D/$out"` in a throwaway test loop waited five hours while its team stood still. Every `rm`, in a brief or the orchestrator's own commands, takes literal paths. While agents work, the orchestrator runs `python3 -I Scripts/agents/stall-watch.py --subagents ~/.claude/projects/<project folder>/<session id>/subagents` as a background task; it exits naming any agent whose tool call has waited fifteen minutes for its result.
 
-## Where things stood on October 21, 2026
+## Where things stood on October 23, 2026
+
+**October 23.** The user asked for four things before installing: transcript work, a review of transcription for bugs, a plan of the breaking changes to make before the official install, and a changelog with a daily version policy ("I want to install the new version with it as stable as you can make it"). Friday's line was 95% of the week used, before Saturday's 08:00 reset. Merged into main:
+- **`team/transcripts` (fec4de73).**
+  - A feed episode's transcript can be edited and cleaned up.
+  - Search in Book (Command-F) searches a transcript by time, with Go Back (Command-[).
+  - Markdown exports escape only what Markdown needs, and a transcript's content.md is at layer 1.1.0.
+  - Retranscribe Audio… names the command once a book has a transcript.
+  - Two reviews' fifteen findings were fixed.
+- **`release/changelog` (447a8c01).** `docs/user/changelog.md`, and the daily version policy ("Versions" in building.md; `make bump-patch` and `make bump-minor`).
+- **`research/plan020` (737e641f).** `PLAN-0.2.0-2026-10-23.md`, and the TODO's section "Before the official 0.2.0 install" (ST01 to ST10, V01 to V07).
+- **`team/stable020` (8aa0c690).** ST01 to ST10, V02 (`OnDiskContractTests`), and V03 (a library a later version wrote opens).
+- **`fix/polish020` (cf7862f6).** Narrower page-label rule, Delete Folder keeping a newer version's books, precise chapter timing, and V05.
+- **`docs/oct23` (712f5507), with V01.**
+- **The version is 0.2.1** (5485d559): the daily bump.
 
 **October 21.** The user asked for three things: fix the failing test ("send a team to see if its a real problem"), carry text formatting through braille, and pages across formats as a navigation unit, "the feature set implemented first today". Today's line was 30% of the week left. Merged into main:
 - **`fix/reader-load-race` (825a3f23).** The race was real: a book moved while a reader opened it was called damaged. A moving package is now noted, and the reader waits and reloads, in cloud libraries too.
@@ -98,17 +112,28 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - Documentation passes: `docs/oct19` (c77c9cf4), `docs/oct19b` (bc5ef365), and `docs/oct20` (077b4e1e).
 
 **State at the end:**
-- **Main's suite:** **8230 tests, 75 skipped, 0 failures**, about 18 minutes of test time. The app's version is 0.2.0.
-- **Older builds:** a TextMouth built before the braille merge cannot open a library that holds a braille book.
-- **Questions:**
-  - `humanQuestions/2026-10-21.md`, about pages, all built with their recommended answers;
-  - `2026-10-19.md`, whose questions 1 to 4 are answered or built.
-- **Pending with the user:** the push and install, the October 18 questions, and the rm-hook offer.
+- **Main's suite:** **8460 tests, 75 skipped, 0 failures**, the release check of 0.2.1.
+- **Not installed yet:** the user's installed build is 0.1.1 (fb46ea6e). 0.2.1's first launch re-reads every text book for pages, safely (PG16).
+- **Questions:** `humanQuestions/2026-10-23.md` holds four.
+  - The escaping (V06) comes after the install.
+  - V03 is built; V04 is not.
+  - The rehearsal on a copy of the library needs the user's yes.
+  - The install's version follows the policy.
+- **Pending with the user:** the install and push, and the rm-hook offer.
 - **The next candidates:**
-  - at the user's first launch of 0.2.0, read the debug log's `PAGES_UPGRADE_SUMMARY`; then PG12 (braille pages);
-  - the EBAE and UEB emphasis reading passes;
-  - FMT43 (speech to audio in Export);
-  - the TODO's pages and race follow-ups.
+  - read the first launch's `PAGES_UPGRADE_SUMMARY` once the user installs;
+  - V06 in the first update after the install;
+  - PG12 (braille pages);
+  - ST04's carry-over of a replaced copy's state;
+  - the emphasis reading passes;
+  - FMT43;
+  - the TODO's follow-ups.
+
+**Lessons of October 23:**
+- **Two teams in parallel.** Two teams, each with an in-team Opus reviewer and then an outside Opus review of its branch, found real bugs both times. The outside reviews' fixes were small enough for one Sonnet or Opus agent each.
+- **Trial merges.** `git merge-tree --write-tree --name-only main <branch>` shows whether two teams' overlapping branches conflict, before merge-chain commits anything.
+- **Disk.** Two teams building at once on about 11 GB free fell to 3 GB. A shared disk budget across teams, at most two builds in all, would have been better than two builds per team.
+- **The version policy:** bump once at the day's end with `make bump-patch`, and complete the changelog's section yourself. XcodeGen may need several runs before only the version lines change.
 
 **Lessons of October 21:**
 - **A review of the whole branch is worth its cost for anything that rewrites the live library.** The pages review found the launch re-read unsafe (heading-only edits invisible to its check, kept books unprotected afterwards, an interrupted batch turned into false edits), and switching it off let the rest ship.
