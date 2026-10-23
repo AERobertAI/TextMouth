@@ -77,8 +77,8 @@ struct BookExportChoice: Equatable, Identifiable {
 
 // MARK: - One Choice of the Convert To Picker
 
-/// One choice of the Convert to picker (FMT18): Markdown, today's export, or
-/// a text writer.
+/// One choice of the Convert to picker (FMT18): Markdown, the export without
+/// a conversion, or a text writer.
 struct BookExportConversionChoice: Identifiable, Equatable {
     /// The writer's `id`, or `TextExportWriters.markdownID` for Markdown.
     let id: String
@@ -343,8 +343,8 @@ final class BookExportModel: ObservableObject, Identifiable {
 
     /// The conversions an export makes now: for each checked kind on a
     /// writer, that writer with its options as they are. Markdown has no
-    /// options state, so a kind on Markdown has no conversion and is copied
-    /// as it always was.
+    /// options state, so a kind on Markdown has no conversion here: its
+    /// files stay as the offer lists them, the Markdown the offer writes.
     var conversions: [BookExportKind: BookExportConversion] {
         var made: [BookExportKind: BookExportConversion] = [:]
         for kind in checked {

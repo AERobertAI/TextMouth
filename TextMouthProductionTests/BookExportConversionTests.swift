@@ -52,9 +52,9 @@ final class BookExportConversionTests: XCTestCase {
         }
     }
 
-    /// With no conversion, the Markdown written is the book's content.md
-    /// byte for byte: today's export, unchanged.
-    func testWithoutAConversionTheMarkdownIsCopiedByteForByte() throws {
+    /// With no conversion, the Markdown written is the book's text written
+    /// by `MarkdownExportWriter`, not content.md copied.
+    func testWithoutAConversionTheMarkdownIsWrittenByTheMarkdownWriter() throws {
         let world = try makeIntegrationWorld("Export No Conversion")
         let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md", Self.threeNotes))
         let stem = BookExportService.fileNameStem(for: book.title)
@@ -64,8 +64,9 @@ final class BookExportConversionTests: XCTestCase {
 
         XCTAssertEqual(outcome.failures, [])
         XCTAssertEqual(
-            try Data(contentsOf: destination.appendingPathComponent("\(stem) - Text.md")),
-            try Data(contentsOf: MarkdownCacheService.cacheURL(for: book))
+            try String(contentsOf: destination.appendingPathComponent("\(stem) - Text.md"), encoding: .utf8),
+            "# First\n\n## Notes\n\nAlpha notes.\n\n# Second\n\n## Notes\n\nBeta notes.\n\n"
+                + "# Third\n\n## Notes\n\nGamma notes.\n"
         )
     }
 

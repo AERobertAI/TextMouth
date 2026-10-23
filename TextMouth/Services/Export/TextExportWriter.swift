@@ -224,9 +224,9 @@ enum TextExportWriters {
         PEFExportWriter(),
     ]
 
-    /// The picker's tag for Markdown, the book's content.md copied as it is
-    /// (today's export, and the picker's default), which no writer's `id`
-    /// may be.
+    /// The picker's tag for Markdown, the book's text written by
+    /// `MarkdownExportWriter` (the picker's default and the export without a
+    /// conversion), which no writer's `id` in `all` may be.
     static let markdownID = "markdown"
 
     /// The writer whose `id` is `id`, if there is one.

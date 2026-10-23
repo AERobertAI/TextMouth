@@ -29,7 +29,7 @@ enum BookExportWording {
             return "The book's own file, as it was imported; for an audiobook, its audio files as they were before "
                 + "TextMouth converted them."
         case .markdown:
-            return "The book's text as Markdown, the file TextMouth reads it from, with a line marking each chapter."
+            return markdownChoiceHint
         case .plainText:
             return "The words TextMouth reads aloud, as plain text, each chapter under its title."
         case .originalRecording:
@@ -48,12 +48,13 @@ enum BookExportWording {
     /// checkbox.
     static let convertToLabel = "Convert to"
 
-    /// What the picker calls its first choice, today's export: the book's
-    /// content.md copied as it is.
+    /// What the picker calls its first choice, the picker's default: the
+    /// book's text as Markdown (`MarkdownExportWriter`).
     static let markdownChoiceName = "Markdown"
 
-    /// What the picker's hint says while Markdown is chosen.
-    static let markdownChoiceHint = "The book's text as Markdown, the file TextMouth reads it from, as it is."
+    /// What the picker's hint says while Markdown is chosen, and what the
+    /// checkbox of "Text as Markdown" says it exports.
+    static let markdownChoiceHint = "The book's text as Markdown, with its headings, lists, and emphasis."
 
     /// What `kind` is called while its text is converted to `conversionName`:
     /// "Text as HTML". A kind whose text is not converted, or no conversion

@@ -22,8 +22,9 @@ enum BookExportKind: String, CaseIterable, Sendable {
     /// PDF, HTML, Markdown, or text file, a DAISY book's ZIP, or every file
     /// of a DAISY book kept as loose files.
     case originalFile
-    /// A text book's text cache, content.md, as it is: the book's text as
-    /// Markdown, with a marker line before each chapter.
+    /// A text book's text as Markdown, written from its text cache,
+    /// content.md, with only the escapes Markdown needs
+    /// (`MarkdownExportWriter`); it holds no chapter marker line.
     case markdown
     /// A text book's reading text, chapter by chapter, each under its
     /// title: the words TextMouth reads aloud, as plain text.
@@ -50,7 +51,7 @@ enum BookExportKind: String, CaseIterable, Sendable {
 struct BookExportFile: Equatable, Sendable {
     /// Where an exported file's bytes come from.
     enum Source: Equatable, Sendable {
-        /// A file in the book's package, copied as it is.
+        /// A file in the book's package, copied byte for byte.
         case copy(URL)
         /// The book's reading text, made from the text cache (content.md)
         /// at the URL (`BookExportService.plainText(of:)`).
@@ -203,7 +204,8 @@ final class BookExportCancellation: Sendable {
 extension BookExportKind {
     /// Whether the kind's file is a text book's content.md, which a text
     /// writer can convert: "Text as Markdown" alone, whose Convert to choice
-    /// is Markdown, copying it as it is, unless another is chosen.
+    /// is Markdown, written by `MarkdownExportWriter`, unless another is
+    /// chosen.
     var convertsText: Bool {
         self == .markdown
     }
@@ -323,7 +325,11 @@ enum BookExportService {
         // An audiobook's content.md, when it has one, is its transcript's
         // text, exported with the transcript above.
         if hasMarkdown && !book.format.isAudio {
-            items.append(standaloneItem(.markdown, files: [copy(markdown, as: "\(stem) - Text.md")], access: access))
+            items.append(standaloneItem(
+                .markdown,
+                files: [markdownFile(of: book, from: markdown, as: "\(stem) - Text.md")],
+                access: access
+            ))
             let readingText = BookExportFile(
                 source: .readingText(fromMarkdown: markdown),
                 path: "\(stem) - Text.txt",
@@ -367,7 +373,7 @@ enum BookExportService {
             files.append(copy(transcript, as: "\(stem) - Transcript.json"))
         }
         if book.format.isAudio, let markdown {
-            files.append(copy(markdown, as: "\(stem) - Transcript.md"))
+            files.append(markdownFile(of: book, from: markdown, as: "\(stem) - Transcript.md"))
         }
         guard !files.isEmpty else { return nil }
         return standaloneItem(.transcript, files: files, access: access)
@@ -388,7 +394,20 @@ enum BookExportService {
         )
     }
 
-    /// The file at `url`, copied as it is under the name `name`.
+    /// The Markdown of `book`'s text, written under the name `name` from the
+    /// walk of its content.md at `markdown` (`BookExportConversion.markdown`),
+    /// where content.md itself would be copied with a backslash before every
+    /// punctuation character. Its size is content.md's, which it comes close
+    /// to.
+    private static func markdownFile(of book: Book, from markdown: URL, as name: String) -> BookExportFile {
+        BookExportFile(
+            source: .converted(from: markdown, book: ExportBookDetails(book), by: .markdown),
+            path: name,
+            byteCount: byteCount(of: markdown)
+        )
+    }
+
+    /// The file at `url`, copied byte for byte under the name `name`.
     private static func copy(_ url: URL, as name: String) -> BookExportFile {
         BookExportFile(source: .copy(url), path: name, byteCount: byteCount(of: url))
     }
@@ -735,8 +754,10 @@ enum BookExportService {
 
     /// The files of `item` of `book` to write: as they are, unless the item's
     /// kind has a conversion in `conversions` that applies to it, when each
-    /// copied file becomes one converted by it, named with the conversion's
-    /// extension (FMT18). Files that are not plain copies are left as they are.
+    /// copied or already converted file (the Markdown the offer lists, made
+    /// from content.md) becomes one converted by it instead, named with the
+    /// conversion's extension (FMT18). Files made any other way are left as
+    /// they are.
     private static func files(
         of item: BookExportItem,
         for book: Book,
@@ -747,7 +768,13 @@ enum BookExportService {
         }
         let details = ExportBookDetails(book)
         return item.files.map { file in
-            guard case .copy(let url) = file.source else { return file }
+            let url: URL
+            switch file.source {
+            case .copy(let source), .converted(let source, _, _):
+                url = source
+            case .readingText:
+                return file
+            }
             // The name keeps any folders and swaps only the last extension.
             let path = (file.path as NSString).deletingPathExtension + "." + conversion.fileExtension
             return BookExportFile(
