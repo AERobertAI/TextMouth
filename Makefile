@@ -85,7 +85,7 @@ RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
 	-scheme $(SCHEME) \
 	-derivedDataPath "$(DERIVED_BUILD_DIR)"
 
-.PHONY: all clean build debug run install uninstall generate set-version resolve-packages update-packages test check check-selftest test-area lint-tests lint-a11y lint-ogg perf-baselines open xcode help signing-identity
+.PHONY: all clean build debug run install uninstall generate set-version bump-patch bump-minor resolve-packages update-packages test check check-selftest test-area lint-tests lint-a11y lint-ogg perf-baselines open xcode help signing-identity
 
 ## Default: build the app
 all: build
@@ -112,6 +112,8 @@ help:
 	@echo "  make signing-identity - Once per Mac: make the identity builds are signed with, so macOS remembers the microphone permission"
 	@echo "  make generate   - Regenerate the Xcode project (requires xcodegen)"
 	@echo "  make set-version VERSION=0.2.0 - Set the app's version (MARKETING_VERSION in project.yml) and regenerate the Xcode project; commits nothing"
+	@echo "  make bump-patch - Raise the version's PATCH by one (0.2.0 to 0.2.1), for a day of fixes and small changes an older TextMouth can follow; regenerates the Xcode project, commits nothing"
+	@echo "  make bump-minor - Raise the version's MINOR by one and set PATCH to 0 (0.2.3 to 0.3.0), for a change an older TextMouth cannot follow; regenerates the Xcode project, commits nothing"
 	@echo "  make resolve-packages - Resolve Swift packages exactly as Package.resolved pins them"
 	@echo "  make update-packages  - Re-resolve after changing a package version in project.yml"
 	@echo "  make clean      - Remove build artifacts"
@@ -130,8 +132,26 @@ generate:
 ## not later than the current one. While TextMouth is in beta its version is
 ## 0.MINOR.PATCH (Versions in docs/developer/building.md). The build number is
 ## not set here: make build stamps each build with BUILD_NUMBER, the UTC time.
+## For the usual change of version use bump-patch or bump-minor, below.
 set-version:
 	@Scripts/set-version.sh "$(VERSION)"
+
+## Raise the version's PATCH by one, 0.2.0 to 0.2.1: the bump for a day on
+## which main gained bug fixes or small backward-compatible features. It works
+## the new version out of project.yml, then goes the way set-version goes:
+## it regenerates the Xcode project and commits nothing. The new version needs
+## a dated section at the top of docs/user/changelog.md (Versions in
+## docs/developer/building.md).
+bump-patch:
+	@Scripts/set-version.sh --patch
+
+## Raise the version's MINOR by one and set PATCH to 0, 0.2.3 to 0.3.0: the
+## bump for a day on which main gained a change that is not backward
+## compatible: an older TextMouth can no longer open the library, every book is
+## read again (a cache-format change), a stored format changes, or a setting,
+## shortcut, or file is removed or renamed. A day without one is bump-patch.
+bump-minor:
+	@Scripts/set-version.sh --minor
 
 ## Resolve Swift packages exactly as the committed Package.resolved pins them.
 ## xcodebuild then refuses to move any pin, so a project.yml version that no

@@ -395,7 +395,8 @@ bump_version() {
 # location, so it can change only the sandbox's project.yml, and the stand-in
 # is the only xcodegen it can reach: no case can touch the real project.yml
 # or regenerate the real project. The last cases check that the Makefile runs
-# the script and this selftest, with make -n, which runs nothing.
+# the script, for each of its version targets, and this selftest, with make -n,
+# which runs nothing.
 #
 # Output: one "ok" or "not ok" line per case, with the reasons and the
 # script's report under each failure, then the totals.
@@ -413,6 +414,7 @@ status=0         # its exit status
 WORK=""          # the selftest's temporary folder
 STUBS=""         # the folder holding the stand-in xcodegen
 FIXTURES=""      # the made-up project.yml files and the files the cases expect
+REAL_MAKE=""     # the make program that the Makefile cases run
 
 # write_stub: creates the stand-in xcodegen. It records the folder it ran in
 # and its arguments, prints a line, and exits with STUB_STATUS (default 0).
@@ -1004,12 +1006,26 @@ absent_project_cases() {
   done
 }
 
-# makefile_cases: the Makefile runs this script for make set-version, runs
-# this selftest in make check-selftest, and lists set-version in its help.
-# make -n prints what a target would run and runs none of it.
+# make_case <description> <text> <make argument>...: a case in which make, run
+# on the copy of the Makefile with those arguments, succeeds and prints <text>.
+# To see what a target runs, pass -n first: make then prints the target's
+# commands and runs none of them.
+make_case() {
+  local description=$1 text=$2
+  shift 2
+  begin_check "$description"
+  output=$(cd "$WORK/make" && "$REAL_MAKE" "$@" 2>&1)
+  status=$?
+  expect_status 0
+  expect_report "$text"
+  end_case
+}
+
+# makefile_cases: the Makefile runs this script for make set-version, make
+# bump-patch, and make bump-minor, runs this selftest in make check-selftest,
+# and lists the three version targets in its help.
 makefile_cases() {
-  local real_make
-  real_make=$(command -v make) || {
+  REAL_MAKE=$(command -v make) || {
     begin_check "the Makefile cases need make"
     problem "make was not found"
     end_case
@@ -1018,26 +1034,17 @@ makefile_cases() {
   mkdir -p "$WORK/make"
   cp "$ROOT/Makefile" "$WORK/make/Makefile"
 
-  begin_check "make -n set-version VERSION=0.2.0 runs the script with that version"
-  output=$(cd "$WORK/make" && "$real_make" -n set-version VERSION=0.2.0 2>&1)
-  status=$?
-  expect_status 0
-  expect_report 'Scripts/set-version.sh "0.2.0"'
-  end_case
-
-  begin_check "make -n check-selftest runs this selftest"
-  output=$(cd "$WORK/make" && "$real_make" -n check-selftest 2>&1)
-  status=$?
-  expect_status 0
-  expect_report "Scripts/set-version.sh --selftest"
-  end_case
-
-  begin_check "make help lists set-version"
-  output=$(cd "$WORK/make" && "$real_make" help 2>&1)
-  status=$?
-  expect_status 0
-  expect_report "make set-version VERSION=0.2.0"
-  end_case
+  make_case "make -n set-version VERSION=0.2.0 runs the script with that version" \
+    'Scripts/set-version.sh "0.2.0"' -n set-version VERSION=0.2.0
+  make_case "make -n bump-patch runs the script with --patch" \
+    "Scripts/set-version.sh --patch" -n bump-patch
+  make_case "make -n bump-minor runs the script with --minor" \
+    "Scripts/set-version.sh --minor" -n bump-minor
+  make_case "make -n check-selftest runs this selftest" \
+    "Scripts/set-version.sh --selftest" -n check-selftest
+  make_case "make help lists set-version" "make set-version VERSION=0.2.0" help
+  make_case "make help lists bump-patch" "make bump-patch" help
+  make_case "make help lists bump-minor" "make bump-minor" help
 }
 
 # selftest: runs every case and prints the totals; succeeds only when all
