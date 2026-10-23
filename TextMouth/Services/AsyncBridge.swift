@@ -138,17 +138,12 @@ enum AsyncBridge {
         static func spelling(of limit: Duration) -> String {
             let seconds = limit.seconds
             if seconds >= 60, seconds.truncatingRemainder(dividingBy: 60) == 0 {
-                return count(Int(seconds / 60), "minute")
+                return CountWording.phrase(Int(seconds / 60), singular: "minute", plural: "minutes")
             }
             if seconds.truncatingRemainder(dividingBy: 1) == 0 {
-                return count(Int(seconds), "second")
+                return CountWording.phrase(Int(seconds), singular: "second", plural: "seconds")
             }
             return "\(seconds) seconds"
-        }
-
-        /// `n` of `unit`, plural unless `n` is 1.
-        private static func count(_ n: Int, _ unit: String) -> String {
-            "\(n) \(unit)\(n == 1 ? "" : "s")"
         }
     }
 
