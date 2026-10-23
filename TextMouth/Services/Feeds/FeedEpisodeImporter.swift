@@ -258,7 +258,10 @@ enum FeedEpisodeImporter {
     /// the new one is. A transcript whose audio differs from the new file's,
     /// as when a host inserts other advertisements into each download, is
     /// kept: the episode finds it stale (TRANSCRIPT_STALE) and shows no text
-    /// until it is transcribed again (`TranscriptTextLoader`).
+    /// until it is transcribed again (`TranscriptTextLoader`). An
+    /// audiobook's content.md, which the new package does not carry, is kept
+    /// as an `.edited-` copy when it holds a save its record's transcript
+    /// layer does not account for (`FeedItemPackage.unrecordedTranscriptText(of:)`).
     private static func restoreBook(
         _ kept: Book,
         named fileName: String,
@@ -281,7 +284,12 @@ enum FeedEpisodeImporter {
             // An article's text, which the rules keep and may hold an edit,
             // is written anew from the new file: the earlier one is read
             // now, to stay beside the new one should they differ (REV11).
-            let earlierText = format.isAudio ? nil : try FeedItemPackage.keptText(of: keptPackage)
+            // An audiobook's is written from its transcript when it opens,
+            // and is kept only when it holds a save no session took, which
+            // its record's transcript layer does not account for.
+            let earlierText = format.isAudio
+                ? try FeedItemPackage.unrecordedTranscriptText(of: keptPackage)
+                : try FeedItemPackage.keptText(of: keptPackage)
             let keptState = (try? StoredBookRecord.read(from: keptPackage))?.info.state
 
             let file = try stageFile(named: fileName, in: staging, run: &run, placeFile: placeFile)
@@ -311,9 +319,14 @@ enum FeedEpisodeImporter {
                 "FEED_DOWNLOAD_RESTORED: \(restored.book.title): downloaded again into its kept package, with its place and bookmarks"
             )
             if let keptCopy {
+                // An audiobook's copy is a save no session took; an article's is
+                // an earlier text unlike the one the new file gives.
+                let what = format.isAudio
+                    ? "its text, which holds a save its transcript's record does not account for,"
+                    : "its earlier text, unlike the new download's,"
                 DiagnosticLog.event(
                     .feeds,
-                    "FEED_ARTICLE_TEXT_KEPT: \(restored.book.title): its earlier text, unlike the new download's, kept as \(keptCopy.lastPathComponent)"
+                    "FEED_ARTICLE_TEXT_KEPT: \(restored.book.title): \(what) kept as \(keptCopy.lastPathComponent)"
                 )
             }
             return restored

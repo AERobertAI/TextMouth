@@ -417,6 +417,73 @@ final class FeedItemRecordTests: XCTestCase {
         XCTAssertEqual(reopened.contentIndex?.transcript?.transcript, note)
     }
 
+    /// An audiobook's content.md holding a save no session took, as when a
+    /// rule removed the episode's download while Edit Text's session was
+    /// open and the listener saved afterwards, differs from the digest its
+    /// record's transcript layer recorded: downloading the episode again
+    /// keeps those bytes in the restored package as an `.edited-` copy, and
+    /// logs it. A content.md that still matches the layer leaves no copy.
+    func testDownloadingAnEpisodeAgainKeepsATextSaveNoSessionTook() async throws {
+        let world = try FeedTestWorld(self, label: "FeedRecordRestoreSavedText")
+        let (feed, books) = try await downloadedEpisodes(2, in: world)
+        // Episode 1's text is saved to after its layer was recorded;
+        // episode 2's is left as the layer recorded it.
+        let saved = try await keptTranscribedText(of: try XCTUnwrap(books.first), item: "guid:ep-1", in: world, feed: feed)
+        let untouched = try await keptTranscribedText(of: try XCTUnwrap(books.last), item: "guid:ep-2", in: world, feed: feed)
+        let savedText = Data("# Saved after the rule ran".utf8)
+        try savedText.write(to: TextMouthPaths.contentMarkdownPath(in: saved.tmbDirectory))
+        let keptLines = debugLogLines(containing: "FEED_ARTICLE_TEXT_KEPT: Episode 1").count
+
+        for number in 1...2 {
+            world.center.download("guid:ep-\(number)", of: feed.id)
+            _ = try await downloadedBook(world, feed: feed, item: "guid:ep-\(number)")
+        }
+
+        XCTAssertEqual(try keptCopies(in: saved.tmbDirectory).map { try Data(contentsOf: $0) }, [savedText], "the save was not kept")
+        XCTAssertEqual(try keptCopies(in: untouched.tmbDirectory), [], "a copy of a text the record accounts for was kept")
+        XCTAssertEqual(debugLogLines(containing: "FEED_ARTICLE_TEXT_KEPT: Episode 1").count, keptLines + 1)
+    }
+
+    /// A kept audiobook package with no record, so no transcript layer,
+    /// holds no save to keep (`unrecordedTranscriptText(of:)`), whether it
+    /// has a content.md or not.
+    func testAPackageWithNoLayerOrNoTextHoldsNoUnrecordedText() throws {
+        let package = FileManager.default.temporaryDirectory.appendingPathComponent("FeedRecordUnrecordedText-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: package) }
+
+        XCTAssertNil(try FeedItemPackage.unrecordedTranscriptText(of: package), "an empty package held a text")
+
+        try Data("# A text".utf8).write(to: TextMouthPaths.contentMarkdownPath(in: package))
+
+        XCTAssertNil(try FeedItemPackage.unrecordedTranscriptText(of: package), "a text with no record was taken for a save")
+    }
+
+    /// The `.edited-` copies of a text that the package at `package` holds.
+    private func keptCopies(in package: URL) throws -> [URL] {
+        try FileManager.default.contentsOfDirectory(atPath: package.path)
+            .filter(TextMouthPaths.isKeptTextCopy)
+            .sorted()
+            .map { package.appendingPathComponent($0) }
+    }
+
+    /// Listens to `book`, transcribes it and lays its transcript over its
+    /// index, as its reader does when it opens (so its content.md is written
+    /// and its record's layer records that file's digest), then deletes its
+    /// download, which keeps its package. Returns the row as the listener
+    /// left it.
+    private func keptTranscribedText(of book: Book, item: String, in world: FeedTestWorld, feed: Feed) async throws -> Book {
+        let listened = try listen(to: book, in: world)
+        _ = try transcribe(listened)
+        try layTranscriptOverItsIndex(of: listened, in: world)
+        let layer = try XCTUnwrap(BookInfo.load(from: listened.tmbDirectory).contentIndex?.transcript, "the record holds no layer")
+        let text = try Data(contentsOf: TextMouthPaths.contentMarkdownPath(in: listened.tmbDirectory))
+        XCTAssertEqual(FingerprintHasher.md5.digestOfData(text), layer.textCacheFingerprint.cache.digest, "the layer does not match its text")
+        try world.center.deleteDownload(item, of: feed.id)
+        XCTAssertNotNil(world.library.library.feedShelf.rows.first { $0.id == listened.id }, "the package was not kept")
+        return listened
+    }
+
     /// A transcript whose audio differs from the new download's, as when a
     /// host inserts other advertisements into each download, is kept in the
     /// restored package, and the episode finds it stale: one

@@ -426,6 +426,37 @@ extension FeedItemPackage {
         }
     }
 
+    /// The text the kept audiobook package at `package` holds that its
+    /// record's transcript layer does not account for, or nil when there is
+    /// none: its content.md's bytes when they differ from the digest the
+    /// layer recorded for the content.md it wrote
+    /// (`BookContentTranscriptIndex.textCacheFingerprint`), as a save made
+    /// to the text of an episode whose download a rule had meanwhile
+    /// removed leaves it (the editing session found no row, so no check
+    /// took the save). Nil too for a package with no transcript layer, no
+    /// record, or no content.md; a record that cannot be read for another
+    /// reason than its being in the cloud counts as none. Nothing is
+    /// downloaded.
+    /// - Throws: why a content.md that is there could not be read
+    ///   (`keptText(of:)`), or that the record is only in the cloud: the
+    ///   download then fails, and the kept package stays as it was, so no
+    ///   save in it is lost.
+    static func unrecordedTranscriptText(of package: URL) throws -> Data? {
+        let layer: BookContentTranscriptIndex?
+        do {
+            layer = try DatalessFiles.withoutDownloading { try BookInfo.load(from: package) }.contentIndex?.transcript
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            throw error
+        } catch {
+            // A record that is missing or damaged says nothing about the text.
+            return nil
+        }
+        guard let recorded = layer?.textCacheFingerprint.cache.digest,
+              let text = try keptText(of: package),
+              FingerprintHasher.md5.digestOfData(text) != recorded else { return nil }
+        return text
+    }
+
     /// Keeps `earlier`, the text a kept package held, in `staged`, the
     /// package a new download of its article built, as an `.edited-` copy
     /// beside the new text, whenever the two differ (REV11): the new text is
