@@ -36,6 +36,14 @@ enum BookTextEditRefusal: Equatable, Sendable {
     /// the audiobook has `expected`: its text keeps one chapter for each of
     /// the audio's.
     case chaptersChanged(found: Int, expected: Int)
+    /// A transcribed audiobook's edited text changes a chapter's heading,
+    /// which comes from the audio and which the transcript cannot keep
+    /// another of; the book keeps its earlier text.
+    case headingChanged
+    /// A transcribed audiobook's edited text adds words to a chapter the
+    /// transcript heard no speech in, where the transcript has no sentence
+    /// to keep them; the book keeps its earlier text.
+    case wordsWithoutSentences
     /// It could not be read, or the book's record could not take it, or a
     /// rebuild found it before any check had, with why: a sentence.
     case failed(String)
@@ -1099,6 +1107,18 @@ final class BookTextEditSessions: Sendable {
                 .chaptersChanged(found: found, expected: expected),
                 "TEXT_EDIT_REFUSED",
                 "the edited transcript holds \(found) chapter(s), where the audiobook has \(expected)"
+            )
+        } catch TranscriptEditError.headingChanged {
+            return refuse(
+                .headingChanged,
+                "TEXT_EDIT_REFUSED",
+                "the edited transcript changes a chapter's heading"
+            )
+        } catch TranscriptEditError.wordsWithoutSentences {
+            return refuse(
+                .wordsWithoutSentences,
+                "TEXT_EDIT_REFUSED",
+                "the edited transcript adds words to a chapter without sentences"
             )
         } catch TranscriptEditError.audioChanged(let reason) {
             return refuse(

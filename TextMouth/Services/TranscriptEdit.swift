@@ -10,6 +10,14 @@ enum TranscriptEditError: Error, Equatable {
     /// `expected`: a transcript's text keeps one chapter for each of the
     /// audio's.
     case chaptersChanged(found: Int, expected: Int)
+    /// A chapter's heading in the edited text is not the one the transcript
+    /// gives that chapter, or a heading was removed or added: a heading comes
+    /// from the audio, so the transcript has nowhere to keep another.
+    case headingChanged
+    /// A chapter the transcript heard no speech in holds words besides its
+    /// heading in the edited text: with no sentence to take them, they
+    /// could not be kept.
+    case wordsWithoutSentences
     /// The book's audio is not the audio transcribed any more, for the
     /// reason given (`TranscriptTextLoader.audioCheck`).
     case audioChanged(String)
@@ -37,7 +45,12 @@ enum TranscriptEditing {
     /// edited chapter's text and when it is heard in the chapter's audio.
     /// The transcript is marked edited at `editedAt`.
     /// - Throws: `TranscriptEditError.chaptersChanged` when the edit does not
-    ///   keep one chapter for each of the audio's.
+    ///   keep one chapter for each of the audio's; `.headingChanged` when a
+    ///   chapter's heading is not the transcript's (renamed, removed, or
+    ///   another added); `.wordsWithoutSentences` when a chapter without
+    ///   sentences holds words besides its heading. Each is thrown before
+    ///   any sentence is aligned, as the transcript has nowhere to keep
+    ///   what these edits changed.
     static func apply(
         _ chapters: [Chapter],
         to transcript: Transcript,
@@ -49,6 +62,7 @@ enum TranscriptEditing {
         guard chapters.count == placed.count else {
             throw TranscriptEditError.chaptersChanged(found: chapters.count, expected: placed.count)
         }
+        try checkOutsideSentences(chapters, placed: placed, over: audioIndex)
         var edited = transcript
         var removed = Set<TranscriptTextBuilder.SentenceAddress>()
         var located: [[BookContentSentenceIndex]] = []
@@ -89,6 +103,54 @@ enum TranscriptEditing {
         }
         edited.editedAt = editedAt
         return (edited, located)
+    }
+
+    /// Throws when `chapters`, the edited text, changes what the transcript
+    /// cannot hold: text outside its sentences. Only the sentences are laid
+    /// over the transcript, so a chapter's heading, which is written from the
+    /// audio's chapter title, and words typed into a chapter with no
+    /// sentences would be announced as taken and then lost the next time the
+    /// text is written from transcript.json.
+    /// - Parameters:
+    ///   - chapters: The edited text's chapters, one for each of the audio's.
+    ///   - placed: The transcript's sentences in each of the audio's chapters.
+    ///   - audioIndex: The book's audio index, which names each chapter.
+    private static func checkOutsideSentences(
+        _ chapters: [Chapter],
+        placed: [[TranscriptTextBuilder.PlacedSentence]],
+        over audioIndex: BookContentIndex
+    ) throws {
+        for (number, ((chapter, sentences), audioChapter)) in zip(zip(chapters, placed), audioIndex.chapters).enumerated() {
+            let ranges = headingRanges(in: chapter)
+            // The one heading content.md gives the chapter, as the text
+            // builder writes it.
+            let expected = TranscriptTextBuilder.headingTitle(
+                of: TranscriptTextBuilder.ChapterTranscript(title: audioChapter.title, sentences: []),
+                number: number
+            )
+            // Every heading found must be that one, with white space taken as
+            // one space: a heading gone (the parser then makes one up, which
+            // headingRanges leaves out) or added differs from [expected].
+            let found = ranges.map { range in
+                (chapter.text as NSString).substring(with: range).split(whereSeparator: \.isWhitespace).joined(separator: " ")
+            }
+            guard found == [expected] else { throw TranscriptEditError.headingChanged }
+            guard sentences.isEmpty else { continue }
+            // No sentence to take words: all that is left outside the heading
+            // must be white space.
+            if hasWordsOutside(ranges, in: chapter.text) { throw TranscriptEditError.wordsWithoutSentences }
+        }
+    }
+
+    /// Whether `text` holds anything but white space outside `ranges`.
+    private static func hasWordsOutside(_ ranges: [NSRange], in text: String) -> Bool {
+        var rest = text as NSString
+        // Cut the ranges out from the last, so each earlier range still lies
+        // where it did.
+        for range in ranges.sorted(by: { $0.location > $1.location }) {
+            rest = rest.replacingCharacters(in: range, with: "") as NSString
+        }
+        return rest.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
     }
 
     /// Where the headings of `chapter` lie in its text: each heading's own

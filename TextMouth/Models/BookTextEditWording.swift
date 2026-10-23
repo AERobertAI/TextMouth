@@ -87,6 +87,12 @@ enum BookTextEditWording {
             return "Text not updated: the edited transcript of \(bookTitle) has \(chapters(found)), "
                 + "but the audiobook has \(chapters(expected)). Keep every line beginning with <!-- chapter: "
                 + "and save again; until then, the book keeps the text it had."
+        case .headingChanged:
+            return "Text not updated: the edited transcript of \(bookTitle) changes a chapter's heading, which comes from its audio. "
+                + "Put the heading back as it was and save again; until then, the book keeps the text it had."
+        case .wordsWithoutSentences:
+            return "Text not updated: the edited transcript of \(bookTitle) adds words to a chapter the transcript heard no speech in, "
+                + "where they can't be kept. Remove them and save again; until then, the book keeps the text it had."
         case .failed(let reason):
             return "Text not updated: \(reason)"
         }
@@ -129,6 +135,12 @@ enum BookTextEditWording {
         case .chaptersChanged(let found, let expected):
             why = "it has \(chapters(found)), where the audiobook has \(chapters(expected)). "
                 + "Keep every line beginning with <!-- chapter: and save again, and the text shows."
+        case .headingChanged:
+            why = "it changes a chapter's heading, which comes from the audio. Put the heading back as it was and save again, "
+                + "and the text shows."
+        case .wordsWithoutSentences:
+            why = "it adds words to a chapter the transcript heard no speech in, where they can't be kept. "
+                + "Remove them and save again, and the text shows."
         case .failed(let reason):
             why = reason
         }
