@@ -439,7 +439,9 @@ final class TextPipelineGoldenTests: XCTestCase {
         "<!-- chapter: One -->", "<!-- chapter: One -->\n", "<!-- chapter: Last -->\nEnd without a line feed",
         "<!-- chapter: One -->\r\nCR LF text.\r\n<!-- chapter: Two -->\r\nMore.\r\n",
         "<!-- chapter: One -->\nText.\r\n<!-- chapter: Two -->\nMore.",
-        " <!-- chapter: Indented -->\nText.", "<!-- chapter: Words --> after\nText.",
+        " <!-- chapter: Indented -->\nText.",
+        // "<!-- chapter: Words --> after\nText." is not here: ST05b reads a chapter line followed by words as
+        // the chapter line and its first line, so the old split no longer matches it; ST05b's own tests pin it.
         "<!-- chapter: \u{301}Mark after the prefix -->\nText.", "<!-- chapter: Mark after the suffix -->\u{301}\nText.",
         "<!-- chapter:  -->\nUntitled.", "<!-- chapter: Caf\u{E9} \u{2014} \u{65E5}\u{672C} -->\nAccented title.",
         "<!-- chapter: Title <!-- old annotation --> kept -->\nText.",
@@ -482,6 +484,48 @@ final class TextPipelineGoldenTests: XCTestCase {
         let sections = MarkdownCacheService.splitChapters("<!-- chapter: -->\nWords.\n<!-- chapter: Two -->\nMore.")
         XCTAssertEqual(sections.map(\.title), ["", "Two"])
         XCTAssertEqual(sections.map(\.content), ["Words.", "More."])
+    }
+
+    // MARK: - A Chapter Line Followed by Words (ST05b)
+
+    /// A chapter line with words after it begins its chapter, and the words
+    /// are the chapter's first line; an Edit Text change can leave them there.
+    func testWordsAfterAChapterLineStayInThatChapter() {
+        let sections = MarkdownCacheService.splitChapters(
+            "<!-- chapter: Alpha -->\nAlpha words.\n<!-- chapter: Bravo -->Bravo words.\nMore bravo.\n"
+        )
+        XCTAssertEqual(sections.map(\.title), ["Alpha", "Bravo"])
+        XCTAssertEqual(sections.map(\.content), ["Alpha words.", "Bravo words.\nMore bravo."])
+
+        // A space between the marker and the words changes nothing.
+        let spaced = MarkdownCacheService.splitChapters("<!-- chapter: Words --> after\nText.")
+        XCTAssertEqual(spaced.map(\.title), ["Words"])
+        XCTAssertEqual(spaced.map(\.content), ["after\nText."])
+    }
+
+    /// A chapter line alone, with nothing or only whitespace after it, splits
+    /// as it always has; so does an untitled one with words after it.
+    func testAChapterLineAloneSplitsAsBefore() {
+        let sections = MarkdownCacheService.splitChapters(
+            "<!-- chapter: One -->\nFirst.\n<!-- chapter: Two -->\nSecond.\n"
+        )
+        XCTAssertEqual(sections.map(\.title), ["One", "Two"])
+        XCTAssertEqual(sections.map(\.content), ["First.", "Second."])
+
+        // Trailing whitespace after a chapter line leaves it no marker, as before.
+        XCTAssertTrue(MarkdownCacheService.splitChapters("<!-- chapter: A -->  \nText.").isEmpty)
+
+        let untitled = MarkdownCacheService.splitChapters("<!-- chapter: -->Words.\n")
+        XCTAssertEqual(untitled.map(\.title), [""])
+        XCTAssertEqual(untitled.map(\.content), ["Words."])
+    }
+
+    /// An annotation inside the title (caches before format 3.0.5) does not
+    /// end the marker early, and the words after the real end are read.
+    func testAnAnnotationInTheTitleDoesNotEndAChapterLineBeforeItsWords() {
+        let sections = MarkdownCacheService.splitChapters("<!-- chapter: Title <!-- old --> kept -->Words.\n")
+        XCTAssertEqual(sections.map(\.title), ["Title  kept"])
+        XCTAssertEqual(sections.map(\.content), ["Words."])
     }
 
     // MARK: - Markdown Literals and Plain-Text Headings (PERF23)
