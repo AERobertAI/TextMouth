@@ -21,6 +21,8 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Seeking in a variable-bit-rate MP3 without a Xing header, whose length was only guessed, now lands where you ask and no longer moves a saved place back.
 - Play pressed while a book's files are being moved now waits for the move to end, then plays from your place.
 - An audio file that never finishes being read no longer leaves its book on Loading: TextMouth stops waiting after a while and says so.
+- Such a file is not read again until TextMouth is opened again, so a file that hangs cannot slow TextMouth down by being opened over and over.
+- A retranscription or Clean Up that fails partway leaves the transcript and its text as they were.
 - The last chapter's length in an MP3 with chapter markers is measured exactly, not estimated.
 
 ### Export

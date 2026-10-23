@@ -112,7 +112,7 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - Documentation passes: `docs/oct19` (c77c9cf4), `docs/oct19b` (bc5ef365), and `docs/oct20` (077b4e1e).
 
 **State at the end:**
-- **Main's suite:** **8460 tests, 75 skipped, 0 failures**, the release check of 0.2.1.
+- **Main's suite:** **8467 tests, 75 skipped, 0 failures**, the release check of 0.2.1 after `fix/polish020b` (b2e44b3c: abandoned audio reads refused, failed transcript installs put back) and its policy-pin fix (9ab48e49).
 - **Not installed yet:** the user's installed build is 0.1.1 (fb46ea6e). 0.2.1's first launch re-reads every text book for pages, safely (PG16).
 - **Questions:** `humanQuestions/2026-10-23.md` holds four.
   - The escaping (V06) comes after the install.
