@@ -300,10 +300,17 @@ enum TextutilDocumentReader {
         fileName: String,
         includesPages: Bool
     ) throws -> String {
-        try TextutilHTMLStructure.restore(in: document)
+        // The page breaks go in while the field instructions are still in the
+        // text, as the plain text holds them too (ST10); see
+        // `TextutilHTMLStructure.restore(in:beforeFieldRemoval:)`.
+        var outcome: TextutilPageBreaks.Outcome?
+        try TextutilHTMLStructure.restore(in: document) { restoring in
+            if let plainText = source.plainText {
+                outcome = try TextutilPageBreaks.insertPageBreaks(fromPlainText: plainText, into: restoring)
+            }
+        }
         var readingFlow = PublicationSemantics.ReadingFlow(source: source.html)
-        if let plainText = source.plainText {
-            let outcome = try TextutilPageBreaks.insertPageBreaks(fromPlainText: plainText, into: document)
+        if let outcome {
             for page in outcome.unaligned {
                 DiagnosticLog.event(.import, TextutilPageBreaks.unalignedLogLine(fileName: fileName, page: page))
             }
