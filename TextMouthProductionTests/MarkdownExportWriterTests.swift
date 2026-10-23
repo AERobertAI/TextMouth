@@ -20,11 +20,10 @@ final class MarkdownMinimalEscapingTests: XCTestCase {
     }
 
     /// The 32 ASCII punctuation characters, each as a one-character string.
-    private let punctuation: [String] = (0x21...0x7E).compactMap { value in
-        Unicode.Scalar(UInt8(value)).flatMap { scalar in
-            MarkdownLiteral.isASCIIPunctuation(scalar) ? String(scalar) : nil
-        }
-    }
+    private let punctuation: [String] = (0x21...0x7E as ClosedRange<UInt8>)
+        .map { Unicode.Scalar($0) }
+        .filter { MarkdownLiteral.isASCIIPunctuation($0) }
+        .map { String($0) }
 
     // MARK: - Examples: what is left alone
 
@@ -126,11 +125,11 @@ final class MarkdownMinimalEscapingTests: XCTestCase {
     /// A number sign is escaped only where it opens a heading's closing
     /// sequence.
     func testNumberSignIsEscapedOnlyAsAClosingSequence() {
-        XCTAssertEqual(escaped("Issue #"), #"Issue \#"#)
-        XCTAssertEqual(escaped("#"), #"\#"#)
-        XCTAssertEqual(escaped("a ##"), #"a \##"#)
-        XCTAssertEqual(escaped("a #  "), #"a \#  "#)
-        XCTAssertEqual(escaped("a # #"), #"a # \#"#)
+        XCTAssertEqual(escaped("Issue #"), ##"Issue \#"##)
+        XCTAssertEqual(escaped("#"), ##"\#"##)
+        XCTAssertEqual(escaped("a ##"), ###"a \##"###)
+        XCTAssertEqual(escaped("a #  "), ##"a \#  "##)
+        XCTAssertEqual(escaped("a # #"), ##"a # \#"##)
         XCTAssertEqual(escaped("C#"), "C#")
         XCTAssertEqual(escaped("C##"), "C##")
         XCTAssertEqual(escaped("#378"), "#378")
@@ -169,9 +168,9 @@ final class MarkdownMinimalEscapingTests: XCTestCase {
     /// A heading marker at a line's start is guarded; a run of seven, or a
     /// number sign with a word after it, is not a heading.
     func testGuardingAHeadingMarker() {
-        XCTAssertEqual(MarkdownLiteral.guardingLineStart("# a"), #"\# a"#)
-        XCTAssertEqual(MarkdownLiteral.guardingLineStart("#"), #"\#"#)
-        XCTAssertEqual(MarkdownLiteral.guardingLineStart("###### a"), #"\###### a"#)
+        XCTAssertEqual(MarkdownLiteral.guardingLineStart("# a"), ##"\# a"##)
+        XCTAssertEqual(MarkdownLiteral.guardingLineStart("#"), ##"\#"##)
+        XCTAssertEqual(MarkdownLiteral.guardingLineStart("###### a"), #######"\###### a"#######)
         XCTAssertEqual(MarkdownLiteral.guardingLineStart("####### a"), "####### a")
         XCTAssertEqual(MarkdownLiteral.guardingLineStart("#a"), "#a")
         XCTAssertEqual(MarkdownLiteral.guardingLineStart("#378 was"), "#378 was")
@@ -209,7 +208,7 @@ final class MarkdownMinimalEscapingTests: XCTestCase {
 
     /// A line that already begins with a backslash needs nothing more.
     func testGuardingLeavesAnEscapedStartAlone() {
-        XCTAssertEqual(MarkdownLiteral.guardingLineStart(#"\# a"#), #"\# a"#)
+        XCTAssertEqual(MarkdownLiteral.guardingLineStart(##"\# a"##), ##"\# a"##)
         XCTAssertEqual(MarkdownLiteral.guardingLineStart(#"\-\-"#), #"\-\-"#)
     }
 
@@ -233,19 +232,19 @@ final class MarkdownMinimalEscapingTests: XCTestCase {
     /// the one block's children joined, or nil when the document is not
     /// that one block, or the block holds anything but `Text`.
     private func readBack(_ markdown: String, place: Place, smart: Bool) -> String? {
-        let document = Document(parsing: markdown, options: smart ? [] : [.disableSmartOpts])
+        let document = Markdown.Document(parsing: markdown, options: smart ? [] : [.disableSmartOpts])
         guard document.childCount == 1, let block = document.child(at: 0) else { return nil }
-        let container: Markup?
+        let container: Markdown.Markup?
         switch place {
         case .paragraph:
-            container = block as? Paragraph
+            container = block as? Markdown.Paragraph
         case .heading:
-            container = block as? Heading
+            container = block as? Markdown.Heading
         case .listItem:
             // One bullet list of one item with no checkbox, holding one paragraph.
-            if let list = block as? UnorderedList, list.childCount == 1,
-               let item = list.child(at: 0) as? ListItem, item.checkbox == nil, item.childCount == 1 {
-                container = item.child(at: 0) as? Paragraph
+            if let list = block as? Markdown.UnorderedList, list.childCount == 1,
+               let item = list.child(at: 0) as? Markdown.ListItem, item.checkbox == nil, item.childCount == 1 {
+                container = item.child(at: 0) as? Markdown.Paragraph
             } else {
                 container = nil
             }
@@ -253,7 +252,7 @@ final class MarkdownMinimalEscapingTests: XCTestCase {
         guard let container else { return nil }
         var text = ""
         for child in container.children {
-            guard let piece = child as? Text else { return nil }
+            guard let piece = child as? Markdown.Text else { return nil }
             text += piece.string
         }
         return text
@@ -327,5 +326,345 @@ final class MarkdownMinimalEscapingTests: XCTestCase {
         ]
         assertRoundTrip(lines, smart: false)
         assertRoundTrip(lines, smart: true)
+    }
+}
+
+// MARK: - The Writer
+
+/// `MarkdownExportWriter` (October 23, 2026): the Markdown an export writes
+/// from the `ExportDocument` walk, one exact string for each kind of block and
+/// run, the whole thing walked back to the blocks it was written from, and
+/// Stop. Hermetic: only a scratch folder of its own.
+final class MarkdownExportWriterTests: XCTestCase {
+    // MARK: - Helpers
+
+    /// A plain run of `text`.
+    private func run(_ text: String) -> ExportRun {
+        ExportRun(text)
+    }
+
+    /// A paragraph block of one plain run.
+    private func paragraph(_ text: String) -> ExportBlock {
+        .paragraph([ExportRun(text)])
+    }
+
+    /// A heading block of `level` whose one plain run is `text`.
+    private func heading(_ level: Int, _ text: String) -> ExportBlock {
+        .heading(ExportHeading(level: level, runs: [ExportRun(text)], id: "h"))
+    }
+
+    /// A list of `items`, each of the blocks given.
+    private func list(ordered: Bool = false, start: Int = 1, depth: Int = 0, _ items: [[ExportBlock]]) -> ExportBlock {
+        .list(ExportList(isOrdered: ordered, start: start, depth: depth, items: items.map { ExportListItem(blocks: $0) }))
+    }
+
+    /// The Markdown of a document of `blocks`.
+    private func markdown(_ blocks: [ExportBlock]) throws -> String {
+        try MarkdownExportWriter.markdown(of: ExportDocument(book: ExportBookDetails(title: "T"), blocks: blocks))
+    }
+
+    /// `lines` as Markdown text: each ended by a line feed.
+    private func text(_ lines: String...) -> String {
+        lines.map { $0 + "\n" }.joined()
+    }
+
+    /// The document of `markdown` for a book with no title, so no title
+    /// heading is added.
+    private func walk(_ markdown: String) throws -> ExportDocument {
+        try ExportDocumentWalker.document(fromMarkdown: markdown, book: ExportBookDetails(title: ""))
+    }
+
+    // MARK: - The Writer's Identity
+
+    /// The writer's names, for the picker's Markdown choice.
+    func testWriterIdentity() {
+        let writer = MarkdownExportWriter()
+        XCTAssertEqual(writer.id, "md")
+        XCTAssertEqual(writer.name, "Markdown")
+        XCTAssertEqual(writer.fileExtension, "md")
+        XCTAssertEqual(writer.hint, BookExportWording.markdownChoiceHint)
+        XCTAssertNotEqual(writer.id, TextExportWriters.markdownID)
+        XCTAssertNil(TextExportWriters.writer(id: writer.id), "Markdown is the picker's first choice, not one of `all`")
+    }
+
+    // MARK: - Documents
+
+    /// An empty document is an empty file, and a document ends in one line
+    /// feed, its blocks apart by one blank line.
+    func testDocumentsEndInOneLineFeedAndBlocksAreApartByABlankLine() throws {
+        XCTAssertEqual(try markdown([]), "")
+        XCTAssertEqual(try markdown([paragraph("One."), paragraph("Two.")]), "One.\n\nTwo.\n")
+        // A block that writes nothing leaves no blank line behind.
+        XCTAssertEqual(try markdown([paragraph("One."), .paragraph([]), list([]), paragraph("Two.")]), "One.\n\nTwo.\n")
+    }
+
+    /// The title heading is never written.
+    func testTheTitleHeadingIsNotWritten() throws {
+        let document = ExportDocument(
+            book: ExportBookDetails(title: "T"),
+            titleHeading: ExportHeading(level: 1, runs: [run("The Title")], id: "the-title"),
+            blocks: [paragraph("Words.")]
+        )
+        XCTAssertEqual(try MarkdownExportWriter.markdown(of: document), "Words.\n")
+    }
+
+    // MARK: - Headings
+
+    /// A heading is `#` times its level; a line feed in it is a space; its
+    /// styles and a closing number sign are written.
+    func testHeadings() throws {
+        XCTAssertEqual(try markdown([heading(2, "Hello, world.")]), "## Hello, world.\n")
+        XCTAssertEqual(try markdown([heading(6, "Deep"), heading(1, "Top")]), "###### Deep\n\n# Top\n")
+        XCTAssertEqual(try markdown([.heading(ExportHeading(level: 1, runs: [run("a\nb")], id: "h"))]), "# a b\n")
+        XCTAssertEqual(try markdown([.heading(ExportHeading(
+            level: 3, runs: [run("Big "), ExportRun("bold", isStrong: true)], id: "h"
+        ))]), "### Big **bold**\n")
+        XCTAssertEqual(try markdown([heading(2, "Issue #")]), "## Issue \\#\n")
+        // A level beyond the six Markdown has is kept within them.
+        XCTAssertEqual(try markdown([heading(9, "Odd")]), "###### Odd\n")
+    }
+
+    // MARK: - Paragraphs and Runs
+
+    /// Sentence punctuation is written as it is.
+    func testAParagraphKeepsSentencePunctuation() throws {
+        XCTAssertEqual(try markdown([paragraph("Hello, world. It's 3:00; really? Yes!")]), "Hello, world. It's 3:00; really? Yes!\n")
+    }
+
+    /// Emphasis, strong, and both are `*`, `**`, and `***`.
+    func testEmphasisRuns() throws {
+        let runs = [
+            run("a "), ExportRun("em", isEmphasis: true), run(" and "), ExportRun("st", isStrong: true),
+            run(" and "), ExportRun("both", isEmphasis: true, isStrong: true), run("."),
+        ]
+        XCTAssertEqual(try markdown([.paragraph(runs)]), "a *em* and **st** and ***both***.\n")
+    }
+
+    /// A code run is a code span: its fence is one backtick longer than the
+    /// longest run in it, padded where Markdown would strip a space or a
+    /// backtick, its line feeds spaces, and it holds no emphasis.
+    func testCodeRuns() throws {
+        func code(_ text: String, emphasis: Bool = false) -> ExportBlock {
+            .paragraph([run("x "), ExportRun(text, isEmphasis: emphasis, isCode: true), run(" y")])
+        }
+        XCTAssertEqual(try markdown([code("a_b *c*")]), "x `a_b *c*` y\n")
+        XCTAssertEqual(try markdown([code("x`y")]), "x ``x`y`` y\n")
+        XCTAssertEqual(try markdown([code("`a")]), "x `` `a `` y\n")
+        XCTAssertEqual(try markdown([code("a`")]), "x `` a` `` y\n")
+        XCTAssertEqual(try markdown([code("a``b`c")]), "x ```a``b`c``` y\n")
+        XCTAssertEqual(try markdown([code(" a ")]), "x `  a  ` y\n")
+        XCTAssertEqual(try markdown([code("  ")]), "x `  ` y\n")
+        XCTAssertEqual(try markdown([code("a\nb")]), "x `a b` y\n")
+        XCTAssertEqual(try markdown([code("em", emphasis: true)]), "x `em` y\n")
+    }
+
+    /// Neighbouring runs of one link are one link; its address has `\`, `<`,
+    /// and `>` escaped; a link holds its emphasis.
+    func testLinkRuns() throws {
+        let address = "https://example.com/a(b)"
+        let runs = [
+            run("see "), ExportRun("the ", link: address), ExportRun("site", isEmphasis: true, link: address), run("."),
+        ]
+        XCTAssertEqual(try markdown([.paragraph(runs)]), "see [the *site*](<https://example.com/a(b)>).\n")
+        XCTAssertEqual(
+            try markdown([.paragraph([ExportRun("odd", link: #"https://x.com/a>b<c\d"#)])]),
+            #"[odd](<https://x.com/a\>b\<c\\d>)"# + "\n"
+        )
+        // An address that may not be a link is plain text.
+        XCTAssertEqual(try markdown([.paragraph([ExportRun("words", link: "javascript:1")])]), "words\n")
+    }
+
+    /// A line feed in a run is a hard break, a backslash and a line feed, and
+    /// every line is guarded at its start.
+    func testHardBreaksAndGuardedLines() throws {
+        XCTAssertEqual(try markdown([paragraph("one\ntwo")]), "one\\\ntwo\n")
+        XCTAssertEqual(try markdown([paragraph("a\n- b\n# c\n> d\n1. e")]), "a\\\n\\- b\\\n\\# c\\\n\\> d\\\n1\\. e\n")
+        XCTAssertEqual(try markdown([paragraph("2019. That was a year; 1.5 million")]), "2019\\. That was a year; 1.5 million\n")
+        // Spaces around a break and a break at either end go.
+        XCTAssertEqual(try markdown([paragraph("\none  \n  two\n")]), "one\\\ntwo\n")
+    }
+
+    /// Characters Markdown would read as syntax are escaped inside a run.
+    func testSyntaxCharactersAreEscaped() throws {
+        XCTAssertEqual(
+            try markdown([paragraph("a*b* `c` [d] | ~e~ _f_ snake_case")]),
+            "a\\*b\\* \\`c\\` \\[d\\] \\| \\~e\\~ \\_f\\_ snake_case\n"
+        )
+    }
+
+    // MARK: - Lists
+
+    /// Unordered items begin `- `; ordered ones with their numbers from the
+    /// list's start, which is kept within 0 and 999,999,999.
+    func testListMarkers() throws {
+        XCTAssertEqual(try markdown([list([[paragraph("One")], [paragraph("Two")]])]), "- One\n- Two\n")
+        XCTAssertEqual(try markdown([list(ordered: true, start: 3, [[paragraph("a")], [paragraph("b")]])]), "3. a\n4. b\n")
+        XCTAssertEqual(try markdown([list(ordered: true, start: -5, [[paragraph("a")]])]), "0. a\n")
+        XCTAssertEqual(
+            try markdown([list(ordered: true, start: 1_000_000_000, [[paragraph("a")], [paragraph("b")]])]),
+            "999999999. a\n999999999. b\n"
+        )
+    }
+
+    /// An item's blocks are apart by a blank line and indented by the
+    /// marker's width, a list inside an item too; an item with no block is
+    /// its marker alone.
+    func testItemsHoldBlocks() throws {
+        let nested = list(depth: 1, [[paragraph("Xray")], [paragraph("Yankee")]])
+        XCTAssertEqual(
+            try markdown([list([[paragraph("Alpha"), nested], [paragraph("Bravo")]])]),
+            text("- Alpha", "", "  - Xray", "  - Yankee", "- Bravo")
+        )
+        XCTAssertEqual(
+            try markdown([list(ordered: true, start: 9, [[paragraph("a"), .codeBlock("x\n\ny")], []])]),
+            text("9. a", "", "   ```", "   x", "", "   y", "   ```", "10.")
+        )
+        XCTAssertEqual(try markdown([list([[], [paragraph("b")]])]), "-\n- b\n")
+    }
+
+    // MARK: - Quotes, Code, Breaks, and Tables
+
+    /// A quote is its blocks' lines after `> `, a blank line `>`.
+    func testBlockQuotes() throws {
+        XCTAssertEqual(try markdown([.blockQuote([paragraph("Quoted"), paragraph("More")])]), text("> Quoted", ">", "> More"))
+        XCTAssertEqual(
+            try markdown([.blockQuote([paragraph("Items"), list([[paragraph("qa")], [paragraph("qb")]])])]),
+            text("> Items", ">", "> - qa", "> - qb")
+        )
+        XCTAssertEqual(try markdown([.blockQuote([])]), ">\n")
+    }
+
+    /// A code block is fenced with one more backtick than its longest run,
+    /// at least three, its lines as they are, backslashes included.
+    func testCodeBlocks() throws {
+        XCTAssertEqual(try markdown([.codeBlock("x = 1")]), text("```", "x = 1", "```"))
+        XCTAssertEqual(
+            try markdown([.codeBlock("a\\b\n```\n  c\\")]),
+            text("````", "a\\b", "```", "  c\\", "````")
+        )
+        XCTAssertEqual(try markdown([.codeBlock("")]), text("```", "```"))
+    }
+
+    /// A thematic break is `---`.
+    func testThematicBreak() throws {
+        XCTAssertEqual(try markdown([paragraph("a"), .thematicBreak, paragraph("b")]), "a\n\n---\n\nb\n")
+    }
+
+    /// A table is GitHub's form: `|` and `\` in cells escaped, rows padded to
+    /// the longest, line feeds spaces, and a table without a header row
+    /// written with an empty one.
+    func testTables() throws {
+        let withHeader = ExportTable(rows: [["A|B", #"C\"#], ["1", "2"], ["only"]], hasHeaderRow: true)
+        XCTAssertEqual(
+            try markdown([.table(withHeader)]),
+            text(#"| A\|B | C\\ |"#, "| --- | --- |", "| 1 | 2 |", "| only |  |")
+        )
+        let without = ExportTable(rows: [["x"], ["y", "z\nw"]], hasHeaderRow: false)
+        XCTAssertEqual(
+            try markdown([.table(without)]),
+            text("|  |  |", "| --- | --- |", "| x |  |", "| y | z w |")
+        )
+        XCTAssertEqual(try markdown([.table(ExportTable(rows: [[]], hasHeaderRow: false))]), "")
+    }
+
+    // MARK: - The Round Trip
+
+    /// A content.md with every kind of block and run, two chapters among
+    /// them, walked into a document, written, and walked again, holds the
+    /// same blocks (quotes, dashes, and ellipses aside: the walker's smart
+    /// punctuation curls a plain quote); and none of its commas is escaped.
+    func testARichContentWalksBackToTheSameBlocks() throws {
+        let marker = { MarkdownCacheService.chapterMarker(title: $0) }
+        // Every ASCII punctuation character but the two quotes: the walker
+        // reads with smart punctuation, as TextMouth's reader does, so a plain
+        // quote in the exported file reads as a curly one. The export leaves
+        // quotes plain on purpose, for the people and programs that read it.
+        let everyPunctuation = MarkdownLiteral.escaped("!#$%&()*+,-./:;<=>?@[\\]^_`{|}~ and words. Done, 1. 2)")
+        let source = [
+            marker("Opening"), "",
+            "# Part One", "",
+            "## Level two", "",
+            "### Level three", "",
+            "Plain *emphasis* and **strong** and ***both*** and `code` and [a link](https://example.com/a_b?x=1&y=2) end.", "",
+            "line one  ", "line two", "",
+            "- alpha", "  1. nested one", "  2. nested two", "- beta", "",
+            "4. four", "5. five", "",
+            "> Quoted words.", ">", "> - qa", "> - qb", "",
+            "````", "some `code` and \\ here", "```", "````", "",
+            "---", "",
+            "| H1 | H2 |", "| --- | --- |", "| a | b\\|c |", "",
+            everyPunctuation, "",
+            MarkdownLiteral.escaped("# not a heading"), "",
+            MarkdownLiteral.escaped("- not a bullet"), "",
+            MarkdownLiteral.escaped("1. not a list"), "",
+            MarkdownLiteral.escaped("> not a quote"), "",
+            marker("Closing"), "",
+            "Final words, with a period.", "",
+        ].joined(separator: "\n")
+
+        let first = try walk(source)
+        XCTAssertFalse(first.blocks.isEmpty)
+        let written = try MarkdownExportWriter.markdown(of: first)
+        let second = try walk(written)
+
+        XCTAssertEqual(second.blocks, first.blocks, written)
+        XCTAssertFalse(written.contains("\\,"), written)
+        XCTAssertTrue(written.contains("Final words, with a period.\n"), written)
+    }
+
+    /// The same, for paragraphs holding the user's own sentence and every
+    /// kind of run in turn.
+    func testRunsWalkBackToTheSameRuns() throws {
+        let paragraphs = [
+            "Hello, world. It's 3:00; really? Yes!",
+            "A *very* **bold** and `a``b` and [site](<https://example.com/a(b)>) *[both](https://x.org)*.",
+            "snake_case and _under_ and 2_000 and a_ b",
+            "AT&T and &amp; and &#35; and Q&A",
+            "Issue # and C# and #378",
+        ]
+        let first = try walk(paragraphs.joined(separator: "\n\n"))
+        let second = try walk(try MarkdownExportWriter.markdown(of: first))
+        XCTAssertEqual(second.blocks, first.blocks)
+    }
+
+    // MARK: - Writing a File
+
+    /// The writer writes the Markdown as UTF-8 to a new file, and refuses to
+    /// replace one that is there.
+    func testWriteMakesANewFileAndNeverReplacesOne() throws {
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("MarkdownExportWriterTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let target = folder.appendingPathComponent("Book - Text.md")
+        let document = ExportDocument(book: ExportBookDetails(title: "T"), blocks: [paragraph("Café, déjà vu.")])
+
+        try MarkdownExportWriter().write(document, options: NoTextExportOptions(), to: target, cancellation: BookExportCancellation())
+        XCTAssertEqual(try String(contentsOf: target, encoding: .utf8), "Café, déjà vu.\n")
+        XCTAssertThrowsError(
+            try MarkdownExportWriter().write(document, options: NoTextExportOptions(), to: target, cancellation: BookExportCancellation())
+        )
+        XCTAssertEqual(try String(contentsOf: target, encoding: .utf8), "Café, déjà vu.\n")
+    }
+
+    // MARK: - Stop
+
+    /// A cancelled export throws `CancellationError` and writes no file.
+    func testStopThrowsCancellationError() throws {
+        let cancellation = BookExportCancellation()
+        cancellation.cancel()
+        let document = ExportDocument(book: ExportBookDetails(title: "T"), blocks: [paragraph("One."), paragraph("Two.")])
+        XCTAssertThrowsError(try MarkdownExportWriter.markdown(of: document, cancellation: cancellation)) { error in
+            XCTAssertTrue(error is CancellationError, "\(error)")
+        }
+
+        let target = FileManager.default.temporaryDirectory.appendingPathComponent("MarkdownExportWriterTests-stop-\(UUID().uuidString).md")
+        defer { try? FileManager.default.removeItem(at: target) }
+        XCTAssertThrowsError(
+            try MarkdownExportWriter().write(document, options: NoTextExportOptions(), to: target, cancellation: cancellation)
+        ) { error in
+            XCTAssertTrue(error is CancellationError, "\(error)")
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: target.path))
     }
 }

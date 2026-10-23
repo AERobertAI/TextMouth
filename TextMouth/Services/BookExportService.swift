@@ -220,6 +220,13 @@ enum BookExportConversion: Sendable, Equatable {
     /// content.md, walked and written by a text writer with its options.
     case text(TextExportConversion)
 
+    /// The Markdown an export writes of a text book (and of an audiobook's
+    /// transcript): written afresh from the walk of its content.md with only
+    /// the escapes Markdown needs (`MarkdownExportWriter`), where content.md
+    /// itself escapes every ASCII punctuation character for TextMouth's own
+    /// reader.
+    static let markdown = BookExportConversion.text(TextExportConversion(MarkdownExportWriter(), options: NoTextExportOptions()))
+
     /// The extension, without its dot, of the files the conversion makes.
     var fileExtension: String {
         switch self {
