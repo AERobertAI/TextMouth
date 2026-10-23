@@ -9,6 +9,9 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Search in Book also searches an audiobook's transcript, telling you when each match is heard and moving the audio there when you choose one, and Go Back (Command-[) returns to where you were.
 - EPUBs that name a file in another letter case than their ZIP spells it now show the chapters they were missing.
 - Word 97-2003 files with a table of contents or links now get every page, not only the first.
+- The first time this version opens, a book open in a reader gets its new text with its pages, with the cursor on the same words, and words that an EPUB holds inside a page break are kept.
+- A heading made of a number, such as "IV" or "1984", in a DAISY or EPUB book is read even where a page begins, and only a page's own number is left unread.
+- A line in the text that begins with a page or chapter marker no longer hides the rest of its words.
 
 ### Listening
 - Retranscribe Audio… takes the place of Transcribe Audio… once a book has a transcript, and its sheet says what it replaces and asks you to download a book that is only in iCloud first.
@@ -17,6 +20,8 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Resume after a very quick Pause keeps your place instead of restarting the chapter.
 - Seeking in a variable-bit-rate MP3 without a Xing header, whose length was only guessed, now lands where you ask and no longer moves a saved place back.
 - Play pressed while a book's files are being moved now waits for the move to end, then plays from your place.
+- An audio file that never finishes being read no longer leaves its book on Loading: TextMouth stops waiting after a while and says so.
+- The last chapter's length in an MP3 with chapter markers is measured exactly, not estimated.
 
 ### Export
 - Exported Markdown, for a book's text and for a transcript, has a backslash only where Markdown needs one, and no chapter-marker lines.
@@ -24,6 +29,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 ### Library
 - The duplicate question now says what Replace Existing throws away: the old copy's reading position, bookmarks, settings, and any edit of its text or transcript.
 - TextMouth now keeps the books that a later version added in a form it cannot read, as they are but not shown, instead of refusing the whole library, and Storage settings say how many there are.
+- Delete Folder leaves such books, and the folders that hold them, where they are, and says so.
 
 ## 0.2.0 (October 21, 2026)
 ### Going back to 0.1.1
