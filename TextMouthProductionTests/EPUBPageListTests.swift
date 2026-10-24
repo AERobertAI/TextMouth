@@ -687,11 +687,10 @@ final class EPUBPageListTests: XCTestCase {
     /// Page-break and page-list vocabulary: the `epub:type` and `role` tokens,
     /// without regard to case or to other tokens beside them, and nothing else.
     func testThePageBreakAndPageListVocabulary() throws {
+        // Markup that parses to no element fails the test: a test that
+        // skipped here would pass vacuously on a parser that read nothing.
         func element(_ markup: String) throws -> Element {
-            guard let element = try SwiftSoup.parseBodyFragment(markup).body()?.children().first() else {
-                throw XCTSkip("no element in \(markup)")
-            }
-            return element
+            try XCTUnwrap(try SwiftSoup.parseBodyFragment(markup).body()?.children().first(), "no element in \(markup)")
         }
         XCTAssertTrue(PublicationSemantics.isPageBreak(try element("<span epub:type=\"pagebreak\"></span>")))
         XCTAssertTrue(PublicationSemantics.isPageBreak(try element("<span role=\"doc-pagebreak\"></span>")))
