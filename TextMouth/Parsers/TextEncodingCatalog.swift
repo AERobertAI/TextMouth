@@ -1,0 +1,122 @@
+import Foundation
+
+// MARK: - Text Encoding Catalog
+
+/// The text encodings, beyond Unicode, that TextMouth can read a text file
+/// in when nothing in the file names its encoding (FMT16): each with the
+/// identifier a book records it under (`Book.textEncoding`) and the name a
+/// listener hears in Book Information ("Windows-1251 (Cyrillic)").
+///
+/// The catalog is the one list `TextEncodingGuesser` draws on: it always
+/// tries the entries marked `isAlwaysTried`, and takes any other entry only
+/// when Foundation's own guess names it (an encoding Foundation names that
+/// is not here is left out, because a reading TextMouth cannot name well is
+/// not worth the risk of a wrong guess).
+enum TextEncodingCatalog {
+
+    /// One encoding of the catalog.
+    struct Entry: Equatable, Sendable {
+        /// The identifier a book records for the encoding: its IANA name in
+        /// lowercase, as Core Foundation spells it ("windows-1251",
+        /// "koi8-r", "macintosh", "cp932"). Looked up again on every later
+        /// reading of the book, so it never changes.
+        let identifier: String
+        /// The encoding Foundation reads and writes it with.
+        let encoding: String.Encoding
+        /// What a listener hears: the encoding's name, then the language or
+        /// script it is for, such as "Windows-1251 (Cyrillic)".
+        let name: String
+        /// Whether the guesser reads every file in this encoding to compare
+        /// the readings. The rest are read only when Foundation's guess
+        /// names them.
+        let isAlwaysTried: Bool
+    }
+
+    /// The identifier of Windows-1252, the encoding every text file is read
+    /// in when nothing says otherwise (`TextFileDecoder`'s fallback).
+    static let windows1252Identifier = "windows-1252"
+
+    // MARK: Entries
+
+    /// The catalog, in the order the guesser prefers entries that read a
+    /// file equally well: the encodings Foundation's guess cannot find on
+    /// its own first (Mac Roman, KOI8-R, and the like), then the rest.
+    static let entries: [Entry] = [
+        // Western European. Windows-1252 is the default reading, here to be
+        // named; ISO Latin 1 is read as it is, so it has no entry of its own.
+        row("windows-1252", "Windows-1252 (Western European)"),
+        row("macintosh", "Mac Roman (Western European)", tried: true),
+        row("iso-8859-15", "ISO 8859-15 (Western European)", tried: true),
+        // Central European.
+        row("windows-1250", "Windows-1250 (Central European)", tried: true),
+        row("iso-8859-2", "ISO 8859-2 (Central European)", tried: true),
+        // Cyrillic.
+        row("windows-1251", "Windows-1251 (Cyrillic)", tried: true),
+        row("koi8-r", "KOI8-R (Russian)", tried: true),
+        row("koi8-u", "KOI8-U (Ukrainian)", tried: true),
+        row("cp866", "CP866 (Russian DOS)", tried: true),
+        row("iso-8859-5", "ISO 8859-5 (Cyrillic)", tried: true),
+        row("x-mac-cyrillic", "Mac Cyrillic", tried: true),
+        // Greek, Turkish, Hebrew, Arabic, Baltic, and Thai.
+        row("windows-1253", "Windows-1253 (Greek)"),
+        row("iso-8859-7", "ISO 8859-7 (Greek)"),
+        row("windows-1254", "Windows-1254 (Turkish)"),
+        row("iso-8859-9", "ISO 8859-9 (Turkish)"),
+        row("windows-1255", "Windows-1255 (Hebrew)"),
+        row("iso-8859-8", "ISO 8859-8 (Hebrew)"),
+        row("windows-1256", "Windows-1256 (Arabic)"),
+        row("iso-8859-6", "ISO 8859-6 (Arabic)"),
+        row("windows-1257", "Windows-1257 (Baltic)"),
+        row("iso-8859-13", "ISO 8859-13 (Baltic)"),
+        row("cp874", "Windows-874 (Thai)"),
+        // Japanese, Chinese, and Korean. Windows' variants and the standards
+        // they extend are named alike: they differ in a few symbols only.
+        row("cp932", "Shift JIS (Japanese)"),
+        row("shift_jis", "Shift JIS (Japanese)"),
+        row("euc-jp", "EUC-JP (Japanese)"),
+        row("iso-2022-jp", "ISO 2022-JP (Japanese)"),
+        row("gb18030", "GB 18030 (Simplified Chinese)"),
+        row("gbk", "GBK (Simplified Chinese)"),
+        row("cp936", "GBK (Simplified Chinese)"),
+        row("gb2312", "GB 2312 (Simplified Chinese)"),
+        row("big5", "Big5 (Traditional Chinese)"),
+        row("cp950", "Big5 (Traditional Chinese)"),
+        row("euc-kr", "EUC-KR (Korean)"),
+        row("cp949", "EUC-KR (Korean)"),
+    ].compactMap { $0 }
+
+    /// The entry for `identifier`, in any letter case, or nil for an
+    /// identifier the catalog does not know (one a later TextMouth recorded,
+    /// or a damaged value).
+    static func entry(forIdentifier identifier: String) -> Entry? {
+        let key = identifier.lowercased()
+        return entries.first { $0.identifier == key }
+    }
+
+    /// The first entry that reads with `encoding`, or nil for an encoding
+    /// the catalog does not hold. Encodings that two entries share
+    /// (Windows' Shift JIS and the standard one are different encodings, but
+    /// GBK has two names in Core Foundation) give the first of them.
+    static func entry(for encoding: String.Encoding) -> Entry? {
+        entries.first { $0.encoding == encoding }
+    }
+
+    /// What a listener hears for the encoding recorded as `identifier`: the
+    /// catalog's name for it, or the identifier itself for one it does not
+    /// know, so that nothing recorded is ever left unnamed.
+    static func name(forIdentifier identifier: String) -> String {
+        entry(forIdentifier: identifier)?.name ?? identifier
+    }
+
+    // MARK: Building Entries
+
+    /// An entry for the encoding Core Foundation knows by the IANA name
+    /// `identifier`, or nil on a Mac whose Core Foundation does not know it,
+    /// which leaves the entry out instead of failing the app.
+    private static func row(_ identifier: String, _ name: String, tried: Bool = false) -> Entry? {
+        let coreFoundationEncoding = CFStringConvertIANACharSetNameToEncoding(identifier as CFString)
+        guard coreFoundationEncoding != kCFStringEncodingInvalidId else { return nil }
+        let encoding = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(coreFoundationEncoding))
+        return Entry(identifier: identifier, encoding: encoding, name: name, isAlwaysTried: tried)
+    }
+}
