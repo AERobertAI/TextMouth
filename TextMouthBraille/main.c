@@ -998,9 +998,10 @@ is_digit_cell(widechar cell) {
 /*
  * The length of liblouis's sign inside a passage's last word, at
  * `cells[i..end)`: the word's sign, again, of a class in `closing`, which
- * liblouis writes before whatever of the word is not emphasized
- * (".FIVE.1" for "*one two three four five*,", ".FI.VE" for its "fi*ve"),
- * where EBAE writes nothing or the termination sign. It ends the emphasis.
+ * liblouis writes before whatever of the word is not emphasized (".FIVE.1"
+ * for "*one two three four five*,", and ".FI.VE" when the passage ends with
+ * the "fi" of "five"), where EBAE writes nothing or the termination sign.
+ * It ends the emphasis.
  * 0 for none: ⠨ is no sign where it is a decimal point (in a number, before
  * a digit, EBAE 15.8d) or begins one of contracted EBAE's ⠨⠙ "ound", ⠨⠑
  * "ance", ⠨⠎ "less", ⠨⠝ "sion", and ⠨⠞ "ount".
@@ -1158,6 +1159,8 @@ strip_ebae_word(const table_emphasis *emphasis, const widechar *cells, int start
 static int
 strip_ebae_signs(const table_emphasis *emphasis, const widechar *cells, int n, widechar *kept, formtype *bits) {
 	formtype passage = 0;
+	formtype beside = 0;
+	int have_beside = 0;
 	int count = 0;
 	int i = 0;
 	while (i < n) {
@@ -1171,13 +1174,24 @@ strip_ebae_signs(const table_emphasis *emphasis, const widechar *cells, int n, w
 		count = strip_ebae_word(emphasis, cells, i, end, n, &passage, kept, bits, count);
 		i = end;
 	}
+	/* Each blank takes the emphasis of the last cell before it that is not
+	   blank, then keeps only what the first such cell after it shares. */
 	for (int k = 0; k < count; k++) {
-		int before = k - 1;
-		int after = k + 1;
-		if (kept[k] != CELL_BLANK) continue;
-		while (before >= 0 && kept[before] == CELL_BLANK) before--;
-		while (after < count && kept[after] == CELL_BLANK) after++;
-		bits[k] = before >= 0 && after < count ? (formtype)(bits[before] & bits[after]) : 0;
+		if (kept[k] != CELL_BLANK) {
+			beside = bits[k];
+			have_beside = 1;
+		} else {
+			bits[k] = have_beside ? beside : 0;
+		}
+	}
+	have_beside = 0;
+	for (int k = count - 1; k >= 0; k--) {
+		if (kept[k] != CELL_BLANK) {
+			beside = bits[k];
+			have_beside = 1;
+		} else {
+			bits[k] = have_beside ? (formtype)(bits[k] & beside) : 0;
+		}
 	}
 	return count;
 }
