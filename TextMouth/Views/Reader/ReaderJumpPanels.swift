@@ -39,9 +39,7 @@ enum JumpInputValidator {
         guard !pages.isEmpty else { return .error(ReaderPageWording.noPages) }
         let typed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !typed.isEmpty else { return .error(ReaderPageWording.emptyField) }
-        let matches = pages.breaks.indices.filter {
-            pages.breaks[$0].label.caseInsensitiveCompare(typed) == .orderedSame
-        }
+        let matches = pageIndices(named: typed, in: pages)
         // The first match after the current page, else the first in the book.
         if let index = matches.first(where: { $0 > (currentIndex ?? -1) }) ?? matches.first {
             return .page(index)
@@ -52,6 +50,19 @@ enum JumpInputValidator {
             last: pages.breaks.last?.label ?? "",
             count: pages.count
         ))
+    }
+
+    /// The indices in `pages.breaks`, in book order, of every page that
+    /// `raw` names: its label is `raw` once the spaces and line breaks
+    /// around `raw` are set aside and case is ignored. More than one index is
+    /// a label the book uses twice. The one rule `page(_:in:currentIndex:)`
+    /// takes its match by and `ReaderViewModel.goToPageLabelIsRepeated(_:)`
+    /// counts them by, so the two cannot disagree about what a label names.
+    static func pageIndices(named raw: String, in pages: BookPages) -> [Int] {
+        let typed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        return pages.breaks.indices.filter {
+            pages.breaks[$0].label.caseInsensitiveCompare(typed) == .orderedSame
+        }
     }
 
     /// Go to Percent's field: a number from 0 to 100, spaces around it
@@ -107,6 +118,12 @@ enum JumpInputValidator {
 /// kept a Return position, said "Jumped to…", restarted a playing text
 /// book's speech, and left a finished book short of its end (REV14). Go to
 /// Percent's moved the place by up to 0.05 percent of the book.
+///
+/// Go to Page's field starts at the label of the page being read, and a
+/// label some other page of the book shares ("2" on the plates and again in
+/// the text) is a real answer on its own: Return on it goes to that label's
+/// next page, which is the only way to reach the other pages from the panel
+/// (`submitsUnchanged`).
 enum JumpFieldOutcome: Equatable {
     /// The field holds the value it started at: nothing moves and nothing
     /// is said, and the panel closes as Cancel closes it.
@@ -119,19 +136,21 @@ enum JumpFieldOutcome: Equatable {
 
     /// What taking `text` does, its field having started at `startingText`:
     /// `unchanged`, without calling `submit`, when the two are the same once
-    /// spaces and line breaks around them are set aside; otherwise what
-    /// `submit` makes of it, a jump (nil) or why not.
+    /// spaces and line breaks around them are set aside, unless
+    /// `submitsUnchanged` says the starting value is itself an answer;
+    /// otherwise what `submit` makes of it, a jump (nil) or why not.
     @MainActor
     static func taking(
         _ text: String,
         startedAt startingText: String,
+        submitsUnchanged: Bool = false,
         submit: @MainActor (String) -> String?
     ) -> JumpFieldOutcome {
         /// The text as the field's value, without what surrounds it.
         func value(_ text: String) -> String {
             text.trimmingCharacters(in: .whitespacesAndNewlines)
         }
-        guard value(text) != value(startingText) else { return .unchanged }
+        guard value(text) != value(startingText) || submitsUnchanged else { return .unchanged }
         guard let problem = submit(text) else { return .jumped }
         return .refused(problem)
     }
@@ -196,7 +215,9 @@ struct JumpToTimePanel: View {
 /// numbers it ("12", "xii"), starting at the label of the page being read,
 /// which jumps to the start of the page typed. Go to Page… pressed again
 /// while the panel is open puts the keyboard back in the field
-/// (`focusRequests`).
+/// (`focusRequests`). Return on the starting label when another page of the
+/// book carries it goes to that label's next page, so every page of a
+/// repeated label can be reached from the panel (`submitsUnchanged`).
 struct JumpToPagePanel: View {
     @ObservedObject var viewModel: ReaderViewModel
     /// How many times Go to Page… was asked for
@@ -217,7 +238,9 @@ struct JumpToPagePanel: View {
             announce: viewModel.announceToVoiceOver,
             onJump: onJump,
             onCancel: onCancel,
-            focusRequests: focusRequests
+            focusRequests: focusRequests,
+            // A label the book uses twice is an answer as it stands.
+            submitsUnchanged: viewModel.goToPageLabelIsRepeated(_:)
         )
     }
 }
@@ -265,6 +288,12 @@ struct JumpFieldPanel: View {
     /// Go to Page… pressed again while its panel is open (PG03). The other
     /// panels leave it at 0.
     var focusRequests = 0
+    /// Whether Jump on `text`, which is the value the field started at, is
+    /// an answer to submit rather than no change: Go to Page's label that
+    /// another page carries too, whose next page Return goes to. The other
+    /// panels leave it at never, where the starting value is the place
+    /// itself and Jump on it moves nothing (`JumpFieldOutcome.unchanged`).
+    var submitsUnchanged: @MainActor (String) -> Bool = { _ in false }
 
     /// What is typed in the field.
     @State private var text: String = ""
@@ -347,10 +376,16 @@ struct JumpFieldPanel: View {
 
     /// Takes what the field holds (`JumpFieldOutcome.taking`): the value it
     /// opened with closes the panel as Cancel does, with nothing moved or
-    /// said; anything else goes to `submit`, which closes the panel once it
-    /// jumps, or shows and announces why not, keeping the panel open.
+    /// said, unless `submitsUnchanged` makes it an answer; anything else goes
+    /// to `submit`, which closes the panel once it jumps, or shows and
+    /// announces why not, keeping the panel open.
     private func take() {
-        switch JumpFieldOutcome.taking(text, startedAt: openingText, submit: submit) {
+        switch JumpFieldOutcome.taking(
+            text,
+            startedAt: openingText,
+            submitsUnchanged: submitsUnchanged(text),
+            submit: submit
+        ) {
         case .unchanged:
             errorMessage = ""
             onCancel()

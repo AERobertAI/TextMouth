@@ -159,10 +159,24 @@ extension ReaderViewModel {
 
     /// Go to Page's starting value: the label of the page holding the
     /// reading position, or nothing before the first page, so typing the
-    /// first page's label still jumps there. The panel never takes the
-    /// value it started at as an answer (`JumpFieldOutcome.unchanged`).
+    /// first page's label still jumps there. The panel does not take the
+    /// value it started at as an answer (`JumpFieldOutcome.unchanged`),
+    /// except a label that more than one page carries
+    /// (`goToPageLabelIsRepeated(_:)`).
     var goToPageStartingText: String {
         currentPagePosition.page?.label ?? ""
+    }
+
+    /// Whether the label `text` names more than one page of this book (a "2"
+    /// on the plates and another in the text). Return in the page panel on
+    /// its starting label is no change for a label of one page, which the
+    /// reader is on already, but for a repeated label it asks for that
+    /// label's next page: `goToPage(typed:)` takes the first page with the
+    /// label after the page being read, else wraps to the book's first, so
+    /// each press reaches the next of them and the last goes round to the
+    /// first. A book without pages repeats nothing.
+    func goToPageLabelIsRepeated(_ text: String) -> Bool {
+        JumpInputValidator.pageIndices(named: text, in: bookPages).count > 1
     }
 
     /// Go to Page's answer: jumps to the start of the page `text` names,

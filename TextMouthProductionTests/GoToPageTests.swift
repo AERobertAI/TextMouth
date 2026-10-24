@@ -220,8 +220,144 @@ final class GoToPageTests: XCTestCase {
         XCTAssertEqual(pagedPlace(of: reader), "0:150")
     }
 
+    // MARK: - A Label More Than One Page Carries
+
+    /// What Return does in the page panel on the text its field started at,
+    /// as the panel asks it (`JumpFieldPanel.take`).
+    private func returnOnTheStartingLabel(of reader: ReaderViewModel) -> JumpFieldOutcome {
+        let starting = reader.goToPageStartingText
+        return JumpFieldOutcome.taking(
+            starting,
+            startedAt: starting,
+            submitsUnchanged: reader.goToPageLabelIsRepeated(starting),
+            submit: reader.goToPage(typed:)
+        )
+    }
+
+    /// Every page a label names is found by the one rule, spaces and case
+    /// set aside, in book order; a label no page carries, and an empty one,
+    /// name none.
+    func testEveryPageOfALabelIsFoundByOneRule() {
+        let pages = BookPages(breaks: Self.sixPages)
+        XCTAssertEqual(JumpInputValidator.pageIndices(named: "2", in: pages), [3, 4])
+        XCTAssertEqual(JumpInputValidator.pageIndices(named: " II\n", in: pages), [1])
+        XCTAssertEqual(JumpInputValidator.pageIndices(named: "300", in: pages), [5])
+        XCTAssertEqual(JumpInputValidator.pageIndices(named: "400", in: pages), [])
+        XCTAssertEqual(JumpInputValidator.pageIndices(named: "", in: pages), [])
+        XCTAssertEqual(JumpInputValidator.pageIndices(named: "2", in: .none), [])
+    }
+
+    /// Return on the label the field started at, when another page carries
+    /// it too, goes to that label's next page, and the last goes round to
+    /// the first, so every page of a repeated label can be reached from the
+    /// panel. Before, the starting label was always no change, and the
+    /// second "2" could be reached only by typing something else first.
+    func testReturnOnARepeatedStartingLabelGoesToItsNextPage() {
+        let reader = makePagedReader(pages: Self.sixPages)
+        defer { reader.close() }
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 160
+        XCTAssertEqual(reader.goToPageStartingText, "2")
+        XCTAssertTrue(reader.goToPageLabelIsRepeated("2"))
+
+        XCTAssertEqual(returnOnTheStartingLabel(of: reader), .jumped)
+        XCTAssertEqual(pagedPlace(of: reader), "1:0")
+        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page 2.")
+
+        // The panel opens afresh at the new place, still on a "2": the next
+        // press wraps to the first, and a Return position was kept.
+        XCTAssertEqual(returnOnTheStartingLabel(of: reader), .jumped)
+        XCTAssertEqual(pagedPlace(of: reader), "0:150")
+        XCTAssertTrue(reader.hasSavedPosition)
+    }
+
+    /// Return on a starting label that only the page being read carries is
+    /// no change, as before: the panel closes as Cancel does, nothing moves
+    /// or is said, and no Return position is kept. So is Return before the
+    /// first page, where the field starts empty.
+    func testReturnOnAUniqueStartingLabelMovesNothing() {
+        let reader = makePagedReader(pages: Self.sixPages)
+        defer { reader.close() }
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 110
+        reader.lastAnnouncement = nil
+        XCTAssertEqual(reader.goToPageStartingText, "1")
+        XCTAssertFalse(reader.goToPageLabelIsRepeated("1"))
+
+        XCTAssertEqual(returnOnTheStartingLabel(of: reader), .unchanged)
+        XCTAssertEqual(pagedPlace(of: reader), "0:110")
+        XCTAssertNil(reader.lastAnnouncement)
+        XCTAssertFalse(reader.hasSavedPosition)
+
+        let later = makePagedReader(pages: [PageBreak(label: "i", chapterIndex: 0, characterOffset: 50)])
+        defer { later.close() }
+        later.currentChapterIndex = 0
+        later.currentCharacterOffset = 0
+        XCTAssertEqual(later.goToPageStartingText, "")
+        XCTAssertEqual(returnOnTheStartingLabel(of: later), .unchanged)
+        XCTAssertEqual(pagedPlace(of: later), "0:0")
+    }
+
+    /// The page panel's own Return does the same: the panel hosted offscreen,
+    /// its field given the label it started at, a "2" the book carries on
+    /// two pages, goes to the second and closes by jumping; on a label of one
+    /// page it closes as Cancel. Skipped where an offscreen window gives the
+    /// field no keyboard focus or takes no key.
+    func testTheHostedPanelsReturnOnARepeatedLabelJumpsAndOnAUniqueOneCancels() throws {
+        let repeated = makePagedReader(pages: Self.sixPages)
+        defer { repeated.close() }
+        repeated.currentChapterIndex = 0
+        repeated.currentCharacterOffset = 160
+        var jumped = false
+        var cancelled = false
+        let panel = JumpToPagePanel(viewModel: repeated, onJump: { jumped = true }, onCancel: { cancelled = true })
+
+        try withHostedField(panel, holding: "2") { field, _ in
+            let hostingView = field.hostingView
+            let textField = try XCTUnwrap(
+                editableTextFields(in: hostingView).first { $0.placeholderString == "Page" },
+                "the field was not drawn"
+            )
+            // The starting label typed back over itself, which gives the
+            // field the keyboard as the user's own typing would.
+            try typeReplacingText("2", in: textField, of: hostingView)
+
+            _ = pressReturnKey(in: hostingView)
+            settleHostedView(hostingView)
+            guard jumped || cancelled else { throw XCTSkip("This macOS hands an offscreen window's field no Return") }
+            XCTAssertTrue(jumped, "Return on a repeated starting label did not jump")
+            XCTAssertFalse(cancelled)
+            XCTAssertEqual(pagedPlace(of: repeated), "1:0")
+        }
+
+        let unique = makePagedReader(pages: Self.sixPages)
+        defer { unique.close() }
+        unique.currentChapterIndex = 0
+        unique.currentCharacterOffset = 110
+        jumped = false
+        cancelled = false
+        let uniquePanel = JumpToPagePanel(viewModel: unique, onJump: { jumped = true }, onCancel: { cancelled = true })
+
+        try withHostedField(uniquePanel, holding: "1") { field, _ in
+            let hostingView = field.hostingView
+            let textField = try XCTUnwrap(
+                editableTextFields(in: hostingView).first { $0.placeholderString == "Page" },
+                "the field was not drawn"
+            )
+            try typeReplacingText("1", in: textField, of: hostingView)
+
+            _ = pressReturnKey(in: hostingView)
+            settleHostedView(hostingView)
+            guard jumped || cancelled else { throw XCTSkip("This macOS hands an offscreen window's field no Return") }
+            XCTAssertTrue(cancelled, "Return on a unique starting label did not close the panel as Cancel does")
+            XCTAssertFalse(jumped)
+            XCTAssertEqual(pagedPlace(of: unique), "0:110")
+        }
+    }
+
     /// The field starts at the current page's label, and empty before the
-    /// first page; Jump on the starting text is no change.
+    /// first page; Jump on the starting text of a label one page carries is
+    /// no change.
     func testTheStartingTextIsTheCurrentPagesLabel() {
         let reader = makePagedReader(pages: Self.sixPages)
         defer { reader.close() }
