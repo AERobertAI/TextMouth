@@ -30,6 +30,12 @@ enum TextEncodingCatalog {
         /// the readings. The rest are read only when Foundation's guess
         /// names them.
         let isAlwaysTried: Bool
+        /// Whether the encoding writes only 7-bit bytes, switching character
+        /// sets with escape sequences (ISO-2022-JP). A file in it is valid
+        /// UTF-8 as well, so it cannot be told from UTF-8 by its bytes being
+        /// invalid, and the decoder looks for it before it takes bytes for
+        /// UTF-8 (`TextFileDecoder`), when the policy allows.
+        let isSevenBit: Bool
     }
 
     /// The identifier of Windows-1252, the encoding every text file is read
@@ -38,9 +44,9 @@ enum TextEncodingCatalog {
 
     // MARK: Entries
 
-    /// The catalog, in the order the guesser prefers entries that read a
-    /// file equally well: the encodings Foundation's guess cannot find on
-    /// its own first (Mac Roman, KOI8-R, and the like), then the rest.
+    /// The catalog. When two encodings read a file alike, the guesser names
+    /// the one that comes first here (KOI8-R before KOI8-U, Windows-1250
+    /// before ISO 8859-2, Mac Roman before Mac Cyrillic).
     static let entries: [Entry] = [
         // Western European. Windows-1252 is the default reading, here to be
         // named; ISO Latin 1 is read as it is, so it has no entry of its own.
@@ -74,7 +80,7 @@ enum TextEncodingCatalog {
         row("cp932", "Shift JIS (Japanese)"),
         row("shift_jis", "Shift JIS (Japanese)"),
         row("euc-jp", "EUC-JP (Japanese)"),
-        row("iso-2022-jp", "ISO 2022-JP (Japanese)"),
+        row("iso-2022-jp", "ISO 2022-JP (Japanese)", sevenBit: true),
         row("gb18030", "GB 18030 (Simplified Chinese)"),
         row("gbk", "GBK (Simplified Chinese)"),
         row("cp936", "GBK (Simplified Chinese)"),
@@ -93,10 +99,10 @@ enum TextEncodingCatalog {
         return entries.first { $0.identifier == key }
     }
 
-    /// The first entry that reads with `encoding`, or nil for an encoding
-    /// the catalog does not hold. Encodings that two entries share
-    /// (Windows' Shift JIS and the standard one are different encodings, but
-    /// GBK has two names in Core Foundation) give the first of them.
+    /// The entry that reads with `encoding`, or nil for an encoding the
+    /// catalog does not hold. Each entry has an encoding of its own (a test
+    /// pins it), though Windows' Shift JIS, GBK, Big5, and EUC-KR share a
+    /// name with the standard they extend.
     static func entry(for encoding: String.Encoding) -> Entry? {
         entries.first { $0.encoding == encoding }
     }
@@ -113,10 +119,10 @@ enum TextEncodingCatalog {
     /// An entry for the encoding Core Foundation knows by the IANA name
     /// `identifier`, or nil on a Mac whose Core Foundation does not know it,
     /// which leaves the entry out instead of failing the app.
-    private static func row(_ identifier: String, _ name: String, tried: Bool = false) -> Entry? {
+    private static func row(_ identifier: String, _ name: String, tried: Bool = false, sevenBit: Bool = false) -> Entry? {
         let coreFoundationEncoding = CFStringConvertIANACharSetNameToEncoding(identifier as CFString)
         guard coreFoundationEncoding != kCFStringEncodingInvalidId else { return nil }
         let encoding = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(coreFoundationEncoding))
-        return Entry(identifier: identifier, encoding: encoding, name: name, isAlwaysTried: tried)
+        return Entry(identifier: identifier, encoding: encoding, name: name, isAlwaysTried: tried, isSevenBit: sevenBit)
     }
 }

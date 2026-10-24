@@ -112,7 +112,10 @@ enum TextEncodingError: LocalizedError, Equatable {
 ///    `unmarkedUTF16Encoding(of:)`). It must be looked for before UTF-8,
 ///    because UTF-16 holding only ASCII characters is also valid UTF-8, read
 ///    as a NUL after every letter.
-/// 3. Bytes that are valid UTF-8 are UTF-8.
+/// 3. Bytes that are valid UTF-8 are UTF-8, except a file in ISO-2022-JP,
+///    which is valid UTF-8 too: the guessing policy looks for one (and a
+///    book that recorded the encoding reads in it) before it takes bytes
+///    for UTF-8 (`sevenBitText(_:policy:)`).
 /// 4. An HTML file whose bytes are not valid UTF-8 is read in the encoding
 ///    it declares in its first 1024 bytes, with a meta element or an XML
 ///    declaration (see `declaredEncodingLabel(in:)`). Valid UTF-8 is read as
@@ -267,7 +270,13 @@ enum TextFileDecoder {
             return DecodedText(text: text, encoding: encoding, basis: .unmarkedUTF16)
         }
 
-        // 3. Valid UTF-8.
+        // 3. A file in a 7-bit encoding the policy names (ISO-2022-JP), which
+        // is valid UTF-8 too and so is looked for before UTF-8 is.
+        if let sevenBit = sevenBitText(data, policy: policy) {
+            return sevenBit
+        }
+
+        // 3b. Valid UTF-8.
         if let text = String(data: data, encoding: .utf8) {
             return DecodedText(text: text, encoding: .utf8, basis: .validUTF8)
         }
@@ -287,6 +296,29 @@ enum TextFileDecoder {
         return fallbackText(data)
     }
 
+    /// `data` read in a 7-bit encoding (ISO-2022-JP) when `policy` names one:
+    /// the guessing policy, when the file is well formed ISO-2022-JP
+    /// (`TextEncodingGuesser.guessSevenBit(_:)`), and the recorded policy,
+    /// when the book recorded such an encoding and the bytes still read in
+    /// it. Nil for every other policy and file, which leaves the bytes to
+    /// the steps after: a file in one of these encodings is valid UTF-8, and
+    /// every book read before guesses were recorded reads it so.
+    private static func sevenBitText(_ data: Data, policy: EncodingPolicy) -> DecodedText? {
+        switch policy {
+        case .fallback:
+            return nil
+        case let .recorded(identifier):
+            // The file must still be well formed in the encoding: Foundation's
+            // reader would let a changed file through.
+            guard TextEncodingCatalog.entry(forIdentifier: identifier)?.isSevenBit == true,
+                  let guess = TextEncodingGuesser.guessSevenBit(data) else { return nil }
+            return DecodedText(text: guess.text, encoding: guess.encoding, basis: .recorded)
+        case .guess:
+            guard let guess = TextEncodingGuesser.guessSevenBit(data) else { return nil }
+            return DecodedText(text: guess.text, encoding: guess.encoding, basis: .guess)
+        }
+    }
+
     /// `data` read as `policy` says to read bytes that name no encoding, or
     /// nil when the policy leaves them to the fallback: it says to, the
     /// recorded encoding is one TextMouth does not know or the bytes are not
@@ -297,7 +329,10 @@ enum TextFileDecoder {
         case .fallback:
             return nil
         case let .recorded(identifier):
-            guard let entry = TextEncodingCatalog.entry(forIdentifier: identifier),
+            // A 7-bit encoding was tried before UTF-8 (`sevenBitText`); bytes
+            // that got this far are not in it, and Foundation's reader would
+            // let them through.
+            guard let entry = TextEncodingCatalog.entry(forIdentifier: identifier), !entry.isSevenBit,
                   let text = decodedText(data, in: entry.encoding) else { return nil }
             return DecodedText(text: text, encoding: entry.encoding, basis: .recorded)
         case .guess:

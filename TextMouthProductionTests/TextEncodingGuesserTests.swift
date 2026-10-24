@@ -294,6 +294,55 @@ final class TextEncodingGuesserTests: XCTestCase {
         XCTAssertNil(TextEncodingGuesser.guess(unbroken))
     }
 
+    // MARK: - ISO-2022-JP
+
+    /// A Japanese file in ISO-2022-JP is all ASCII bytes, so it is valid
+    /// UTF-8, which `guess(_:)` never examines; `guessSevenBit(_:)` finds it by
+    /// its structure, and reads it whole.
+    func testAJapaneseFileInISO2022JPIsFoundThoughItIsValidUTF8() throws {
+        let text = try paragraph(in: "Japanese") + "\nStation 9 は静かです。\n"
+        let data = try XCTUnwrap(text.data(using: .iso2022JP))
+        XCTAssertNotNil(String(data: data, encoding: .utf8), "ISO-2022-JP is valid UTF-8, which is the point")
+        XCTAssertTrue(data.allSatisfy { $0 < 0x80 })
+
+        let guess = try XCTUnwrap(TextEncodingGuesser.guessSevenBit(data))
+        XCTAssertEqual(guess.identifier, "iso-2022-jp")
+        XCTAssertEqual(guess.text, text)
+        // There is no byte above ASCII for the other guess to examine.
+        XCTAssertNil(TextEncodingGuesser.guess(data))
+    }
+
+    /// Only well formed ISO-2022-JP with a shift into JIS X 0208 is found:
+    /// plain ASCII, a terminal's color escapes, a truncated or unknown escape,
+    /// an odd byte in a pair, a file that ends in the middle of a kanji run, a
+    /// byte above ASCII, a shift-out, and a line ending inside a kanji run are
+    /// not; and the JIS Roman escape is allowed.
+    func testBytesThatAreNotWellFormedISO2022JPAreNotFound() {
+        let escape: [UInt8] = [0x1B]
+        let toKanji: [UInt8] = [0x1B, 0x24, 0x42]
+        let toASCII: [UInt8] = [0x1B, 0x28, 0x42]
+        let kanji: [UInt8] = [0x30, 0x21]
+        func guess(_ bytes: [UInt8]) -> TextEncodingGuesser.Guess? { TextEncodingGuesser.guessSevenBit(Data(bytes)) }
+
+        XCTAssertEqual(guess(toKanji + kanji + toASCII)?.text, "亜")
+        XCTAssertEqual(guess(Array("A ".utf8) + toKanji + kanji + kanji + toASCII + Array(" B\n".utf8))?.text, "A 亜亜 B\n")
+        // JIS X 0208-1978's escape, and JIS Roman's.
+        XCTAssertEqual(guess([0x1B, 0x24, 0x40] + kanji + [0x1B, 0x28, 0x4A])?.text, "亜")
+        XCTAssertEqual(guess([0x1B, 0x28, 0x4A, 0x41] + toKanji + kanji + [0x1B, 0x28, 0x4A])?.text, "A亜")
+
+        XCTAssertNil(guess(Array("Plain ASCII text\n".utf8)))
+        XCTAssertNil(guess(toASCII), "an escape for ASCII alone shifts nowhere")
+        XCTAssertNil(guess(escape + Array("[31mred".utf8) + escape + Array("[0m".utf8)), "a terminal's color escapes")
+        XCTAssertNil(guess(Array("A".utf8) + [0x1B, 0x24]), "a truncated escape")
+        XCTAssertNil(guess([0x1B, 0x25, 0x42] + toKanji + kanji + toASCII), "an escape ISO-2022-JP does not have")
+        XCTAssertNil(guess(toKanji + [0x30] + toASCII), "an odd byte in a pair")
+        XCTAssertNil(guess(toKanji + kanji), "ends inside a kanji run")
+        XCTAssertNil(guess([0xE9] + toKanji + kanji + toASCII), "a byte above ASCII")
+        XCTAssertNil(guess([0x0E] + toKanji + kanji + toASCII), "a shift-out")
+        XCTAssertNil(guess(toKanji + kanji + [0x0A] + kanji + toASCII), "a line ending inside a kanji run")
+        XCTAssertNil(guess(toKanji + [0x30, 0x21, 0x1B, 0x24, 0x42, 0x30] + toASCII), "a shift in the middle of a pair")
+    }
+
     // MARK: - Names and Repeatability
 
     /// Readings that read the same differ only in name: the catalog's first

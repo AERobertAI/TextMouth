@@ -200,6 +200,25 @@ final class TextEncodingImportTests: XCTestCase {
         XCTAssertTrue(allText(of: try openedContent(of: declaredBook)).contains(czech))
     }
 
+    /// A Japanese file in ISO-2022-JP, valid UTF-8 as every file in it is,
+    /// imports as Japanese and records its encoding, and a rebuild reads it
+    /// the same way; text with only ASCII in it records nothing.
+    func testAFileInISO2022JPIsGuessedThoughItIsValidUTF8() throws {
+        let japanese = "いろはにほへと ちりぬるを。\nフェリーは七時に出ます。\n"
+        let data = try XCTUnwrap(japanese.data(using: .iso2022JP))
+        let book = try importedBook(data, named: "Poem \(UUID().uuidString).txt")
+        XCTAssertEqual(book.textEncoding, "iso-2022-jp")
+        XCTAssertEqual(allText(of: try openedContent(of: book)), reading(of: japanese))
+
+        let imported = try cachedMarkdown(of: book)
+        MarkdownCacheService.deleteCache(for: book)
+        _ = try MarkdownCacheService.generateReportedCacheContent(for: book)
+        XCTAssertEqual(try cachedMarkdown(of: book), imported)
+
+        let ascii = try importedBook(Data("Plain ASCII text.\n".utf8), named: "Plain \(UUID().uuidString).txt")
+        XCTAssertNil(ascii.textEncoding)
+    }
+
     /// Text typed or pasted in is UTF-8 and is never guessed at, whatever
     /// accents it holds.
     func testTextTypedInIsNotGuessed() throws {

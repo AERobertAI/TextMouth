@@ -115,6 +115,66 @@ enum TextEncodingGuesser {
         return nil
     }
 
+    // MARK: ISO-2022-JP
+
+    /// The guess for a file in ISO-2022-JP, the 7-bit encoding Japanese mail
+    /// and older Japanese text files use, which `guess(_:)` cannot find:
+    /// every byte of the file is ASCII, so it is valid UTF-8, and read as
+    /// UTF-8 its kanji are escape sequences and letters. It is recognized by
+    /// its structure instead, as RFC 1468 defines it: only the escape
+    /// sequences for ASCII, JIS Roman, and JIS X 0208 (ESC ( B, ESC ( J,
+    /// ESC $ @, ESC $ B), pairs of bytes from 0x21 to 0x7E while in JIS
+    /// X 0208, a return to ASCII before the end, and at least one shift into
+    /// JIS X 0208. Foundation's reader lets a truncated escape or a byte
+    /// above ASCII through, so it is not trusted to decide that.
+    /// - Returns: nil for any other file.
+    static func guessSevenBit(_ data: Data) -> Guess? {
+        guard data.contains(0x1B),
+              let entry = TextEncodingCatalog.entry(forIdentifier: "iso-2022-jp"),
+              isWellFormedISO2022JP(data),
+              let text = TextFileDecoder.decodedText(data, in: entry.encoding),
+              !text.unicodeScalars.contains("\u{FFFD}") else { return nil }
+        return Guess(entry: entry, text: text)
+    }
+
+    /// Whether `data` is well formed ISO-2022-JP with at least one shift into
+    /// JIS X 0208 (see `guessSevenBit(_:)`).
+    private static func isWellFormedISO2022JP(_ data: Data) -> Bool {
+        data.withUnsafeBytes { (bytes: UnsafeRawBufferPointer) -> Bool in
+            var inJISX0208 = false
+            var holdsFirstByteOfPair = false
+            var shifts = 0
+            var index = 0
+            while index < bytes.count {
+                let byte = bytes[index]
+                // ISO-2022-JP writes no byte above ASCII, and no shift-out or shift-in.
+                guard byte < 0x80, byte != 0x0E, byte != 0x0F else { return false }
+                if byte == 0x1B {
+                    // An escape sequence is three bytes, and never inside a pair.
+                    guard !holdsFirstByteOfPair, index + 2 < bytes.count else { return false }
+                    switch (bytes[index + 1], bytes[index + 2]) {
+                    case (0x28, 0x42), (0x28, 0x4A):
+                        inJISX0208 = false
+                    case (0x24, 0x40), (0x24, 0x42):
+                        inJISX0208 = true
+                        shifts += 1
+                    default:
+                        return false
+                    }
+                    index += 3
+                } else if inJISX0208 {
+                    // JIS X 0208 characters are pairs of bytes from 0x21 to 0x7E.
+                    guard (0x21...0x7E).contains(byte) else { return false }
+                    holdsFirstByteOfPair.toggle()
+                    index += 1
+                } else {
+                    index += 1
+                }
+            }
+            return !inJISX0208 && !holdsFirstByteOfPair && shifts > 0
+        }
+    }
+
     /// One reading of the examined bytes in an encoding of the catalog.
     private struct Reading {
         let entry: TextEncodingCatalog.Entry

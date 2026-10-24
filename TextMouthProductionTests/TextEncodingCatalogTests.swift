@@ -94,6 +94,12 @@ final class TextEncodingCatalogTests: XCTestCase {
         XCTAssertEqual(TextEncodingCatalog.name(forIdentifier: "x-klingon"), "x-klingon")
     }
 
+    /// The only 7-bit encoding is ISO-2022-JP, which is valid UTF-8 and so is
+    /// looked for before UTF-8 is.
+    func testOnlyISO2022JPIsASevenBitEncoding() {
+        XCTAssertEqual(TextEncodingCatalog.entries.filter(\.isSevenBit).map(\.identifier), ["iso-2022-jp"])
+    }
+
     /// The guesser always tries the encodings Foundation's own guess cannot
     /// find (Mac Roman, ISO 8859-15, Central European, Cyrillic), and takes
     /// the rest only when Foundation names them.

@@ -635,6 +635,37 @@ final class TextFileDecoderTests: XCTestCase {
         XCTAssertEqual(try decode(undefined, policy: .recorded("")).basis, .fallback)
     }
 
+    /// A file in ISO-2022-JP is valid UTF-8, and so is read as ASCII with its
+    /// escape sequences by every read that does not look for it, as it always
+    /// was; the guessing policy, and the policy of a book that recorded the
+    /// encoding, look for it before taking bytes for UTF-8, and read it as
+    /// Japanese.
+    func testAnISO2022JPFileIsFoundBeforeUTF8ByTheGuessingAndRecordedPolicies() throws {
+        let japanese = "いろはにほへと ちりぬるを。\nフェリーは七時に出ます。\n"
+        let bytes = Array(try XCTUnwrap(japanese.data(using: .iso2022JP)))
+        XCTAssertNotNil(String(data: Data(bytes), encoding: .utf8))
+
+        let guessed = try decode(bytes, policy: .guess)
+        XCTAssertEqual(guessed.text, japanese)
+        XCTAssertEqual(guessed.basis, .guess)
+        XCTAssertEqual(guessed.guessedEncodingIdentifier, "iso-2022-jp")
+
+        let recorded = try decode(bytes, policy: .recorded("iso-2022-jp"))
+        XCTAssertEqual(recorded.text, japanese)
+        XCTAssertEqual(recorded.basis, .recorded)
+
+        // Every other read takes it for UTF-8 as it always did.
+        let plain = try decode(bytes, policy: .fallback)
+        XCTAssertEqual(plain.basis, .validUTF8)
+        XCTAssertTrue(plain.text.contains("\u{1B}"))
+        // So does a read under another encoding's record.
+        XCTAssertEqual(try decode(bytes, policy: .recorded("windows-1251")).basis, .validUTF8)
+
+        // A changed file that is no longer well formed ISO-2022-JP is left to the steps after,
+        // not read by Foundation's lenient reader.
+        XCTAssertEqual(try decode(bytes + [0xE9], policy: .recorded("iso-2022-jp")).basis, .fallback)
+    }
+
     /// A book's policy is the encoding it recorded, or the fallback for a
     /// book that recorded none.
     func testABooksPolicyIsItsRecordedEncodingOrTheFallback() {
