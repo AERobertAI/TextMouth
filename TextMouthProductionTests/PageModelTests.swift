@@ -174,6 +174,61 @@ final class PageModelTests: XCTestCase {
         ])
     }
 
+    // MARK: - The words a page holds
+
+    /// Pages 1 to 5 over "Alpha beta.", a blank chapter, and "Gamma.": page
+    /// 2 is blank beside page 3, page 4 holds only line breaks in chapter One
+    /// and chapter Three's words beyond the blank chapter, and page 5 begins
+    /// after the book's last word.
+    private func fivePagesOverThreeChapters() -> DocumentContent {
+        let chapters = [
+            Chapter(title: "One", text: "Alpha beta.\n\n", pages: [
+                PageBreak(label: "1", characterOffset: 0),
+                PageBreak(label: "2", characterOffset: 6),
+                PageBreak(label: "3", characterOffset: 6),
+                PageBreak(label: "4", characterOffset: 11),
+            ]),
+            Chapter(title: "Blank", text: "   "),
+            Chapter(title: "Three", text: "Gamma.", pages: [PageBreak(label: "5", characterOffset: 6)]),
+        ]
+        return DocumentContent(title: "B", author: "A", chapters: chapters)
+    }
+
+    /// Whether a page holds a word of its own is read from where it begins to
+    /// where the next page begins, or the book's end (PG03): a blank page and
+    /// one after the book's last word hold none, a page holds the words of a
+    /// later chapter that it reaches, and an index of no page holds none.
+    func testWhetherAPageHoldsAWordIsReadFromItsOwnText() {
+        let content = fivePagesOverThreeChapters()
+        XCTAssertEqual(content.pages.breaks.map(\.label), ["1", "2", "3", "4", "5"])
+        XCTAssertEqual(content.pages.breaks.last, PageBreak(label: "5", chapterIndex: 2, characterOffset: 6))
+        XCTAssertEqual((0..<5).map { content.pageHoldsWord(at: $0) }, [true, false, true, true, false])
+        XCTAssertFalse(content.pageHoldsWord(at: 5))
+        XCTAssertFalse(content.pageHoldsWord(at: -1))
+        XCTAssertFalse(DocumentContent(title: "B", author: "A", chapters: []).pageHoldsWord(at: 0))
+    }
+
+    /// The words in excluded ranges, as a skipped section's, do not count: a
+    /// page whose every word is excluded, in one range or several that come
+    /// in any order and overlap, holds none, and a word outside them all is
+    /// enough. Each chapter the page spans gives its own ranges.
+    func testWordsInExcludedRangesDoNotCount() {
+        let content = fivePagesOverThreeChapters()
+        // Page 3 is "beta." at 6..<11 of chapter One.
+        let page3 = { (ranges: [Range<Int>]) in content.pageHoldsWord(at: 2, outside: { $0 == 0 ? ranges : [] }) }
+        XCTAssertFalse(page3([6..<11]))
+        XCTAssertFalse(page3([0..<13]))
+        XCTAssertFalse(page3([8..<11, 6..<9]))
+        XCTAssertTrue(page3([6..<9]))
+        XCTAssertTrue(page3([7..<11]))
+        XCTAssertTrue(page3([2..<5, 9..<13]))
+        // Page 4 reaches chapter Three's words, which only that chapter's ranges exclude.
+        XCTAssertFalse(content.pageHoldsWord(at: 3, outside: { $0 == 2 ? [0..<6] : [] }))
+        XCTAssertTrue(content.pageHoldsWord(at: 3, outside: { $0 == 0 ? [0..<13] : [] }))
+        // Page 1 is "Alpha " at 0..<6: a word on either side of a range is enough.
+        XCTAssertTrue(content.pageHoldsWord(at: 0, outside: { _ in [2..<4] }))
+    }
+
     // MARK: - The page total
 
     func testTheTotalIsTheLargestWholeNumberLabel() {

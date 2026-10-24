@@ -69,6 +69,74 @@ struct DocumentContent {
         return (later, PageBreak.firstWordStart(in: chapters[later].text, at: 0))
     }
 
+    // MARK: - The Words a Page Holds
+
+    /// Whether the page at `index` of `pages` holds a word of its own: a
+    /// character that is not white space, which is a word here as it is to
+    /// `firstWord(after:in:)` and to speech
+    /// (`ReaderViewModel.hasSpeakableText(_:)`), from where the page begins
+    /// up to where the next page begins, or to the book's end after the last
+    /// page, and outside the ranges `excluded` gives for each chapter the
+    /// page spans, in UTF-16 offsets of that chapter's text. False for an
+    /// index of no page.
+    ///
+    /// With nothing excluded, a page without a word of its own is a blank
+    /// page, which begins where the page after it does, or a last page that
+    /// begins after the book's last word, and Go to Page says it "has no
+    /// words" (PG03). With the ranges a book's skipped sections take out, a
+    /// page without one has every word in a skipped section, which speech
+    /// passes over.
+    func pageHoldsWord(at index: Int, outside excluded: (_ chapterIndex: Int) -> [Range<Int>] = { _ in [] }) -> Bool {
+        guard pages.breaks.indices.contains(index) else { return false }
+        let page = pages.breaks[index]
+        // The page ends where the next page begins, or at the book's end.
+        let next = pages.breaks.indices.contains(index + 1) ? pages.breaks[index + 1] : nil
+        let lastChapter = min(next?.chapterIndex ?? chapters.count - 1, chapters.count - 1)
+        guard chapters.indices.contains(page.chapterIndex), page.chapterIndex <= lastChapter else { return false }
+        for chapterIndex in page.chapterIndex...lastChapter {
+            // The part of this chapter that belongs to the page.
+            let text = chapters[chapterIndex].text
+            let length = text.utf16Length
+            let start = chapterIndex == page.chapterIndex ? min(max(page.characterOffset, 0), length) : 0
+            var end = length
+            if let next, next.chapterIndex == chapterIndex {
+                end = min(max(next.characterOffset, start), length)
+            }
+            guard start < end else { continue }
+            if Self.holdsWord(text, in: start..<end, outside: excluded(chapterIndex)) { return true }
+        }
+        return false
+    }
+
+    /// Whether `text` holds a character that is not white space in the
+    /// UTF-16 range `span`, outside each of the ranges `excluded`, which may
+    /// come in any order and overlap.
+    private static func holdsWord(_ text: String, in span: Range<Int>, outside excluded: [Range<Int>]) -> Bool {
+        // Each stretch of the span before an excluded range, in order, then
+        // the stretch after the last of them.
+        var start = span.lowerBound
+        for range in excluded.sorted(by: { $0.lowerBound < $1.lowerBound }) {
+            // A range that ends before what is left of the span changes
+            // nothing; one that starts at or after the span's end, and every
+            // range after it, changes nothing either.
+            guard range.upperBound > start else { continue }
+            guard range.lowerBound < span.upperBound else { break }
+            if range.lowerBound > start, holdsWord(text, in: start..<range.lowerBound) { return true }
+            start = range.upperBound
+            guard start < span.upperBound else { return false }
+        }
+        return holdsWord(text, in: start..<span.upperBound)
+    }
+
+    /// Whether `text` holds a character that is not white space in the
+    /// UTF-16 range `span`.
+    private static func holdsWord(_ text: String, in span: Range<Int>) -> Bool {
+        guard !span.isEmpty else { return false }
+        let lower = text.index(atUTF16Offset: span.lowerBound)
+        let upper = text.index(atUTF16Offset: span.upperBound)
+        return text[lower..<upper].contains { !$0.isWhitespace }
+    }
+
     var allText: String {
         chapters.map { $0.text }.joined(separator: "\n\n")
     }

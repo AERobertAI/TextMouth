@@ -230,10 +230,12 @@ extension ReaderViewModel {
     /// The page it says is the one the status row names where the reader
     /// stands after the jump (`jumpAnnouncement(toPage:at:)`), which is not
     /// always the page typed: a blank page shares its place with the page
-    /// after it, and the row names the later one. Saying the typed label
-    /// then told the listener one page while the row, Where Am I?, and Next
-    /// Page all named another; now it names the row's page and says why the
-    /// cursor is not on the page asked for.
+    /// after it, and the row names the later one; and a jump while the book
+    /// plays restarts speech, which passes over a page whose words are all
+    /// in skipped sections to the next words it reads. Saying the typed
+    /// label then told the listener one page while the row, Where Am I?, and
+    /// Next Page all named another; now it names the row's page, and says
+    /// why the cursor is not on the page asked for when the pages say.
     func goToPage(typed text: String) -> String? {
         let pages = bookPages
         switch JumpInputValidator.page(text, in: pages, currentIndex: currentPageIndex) {
@@ -250,24 +252,43 @@ extension ReaderViewModel {
     }
 
     /// What Go to Page says once it has moved to the start of `page`, the
-    /// page at `index` of the book's pages: the page the status row names
-    /// where the reader stands (`labelShown(afterMovingTo:)`), and, when more
-    /// than one page carries its label, which of them it is
-    /// (`occurrence(ofPageAt:)`): "Jumped to page 2, the second page labelled
-    /// 2." When the cursor is on another page than the one asked for, the
-    /// page asked for has no words of its own (a blank page shares its place
-    /// with the page after it, and a last page that begins after the book's
-    /// last word is reached at that word), and the sentence says so: "Page 7
-    /// has no words, so the cursor is on page 8." A cursor on no page, which
-    /// a move to one of the book's pages rules out, is told as `page`.
+    /// page at `index` of the book's pages.
+    ///
+    /// With the cursor on that page, the page the status row names, it says
+    /// the page, and, when more than one page carries its label, which of
+    /// them it is (`occurrence(ofPageAt:)`): "Jumped to page 2, the second
+    /// page labelled 2."
+    ///
+    /// With the cursor elsewhere, it says where, as the row names it (a page,
+    /// or before the first page: `ReaderPageWording.cursorPlace(_:occurrence:)`),
+    /// and why, when the book's pages say: the page has no words of its own
+    /// (a blank page shares its place with the page after it, and a last
+    /// page that begins after the book's last word is reached at that word),
+    /// or every word of it is in a skipped section, which a jump while the
+    /// book plays passes over to the next words speech reads. The reason is
+    /// read from the pages and the skipped sections themselves, never from
+    /// the cursor's being elsewhere: that alone once made a page full of
+    /// words, skipped while the book played, "a page with no words". When
+    /// they give no reason, as when a text substitution deletes the page's
+    /// words, the sentence says only where the cursor is.
     private func jumpAnnouncement(toPage page: PageBreak, at index: Int) -> String {
-        let label = labelShown(afterMovingTo: page)
-        // Which of the pages with the reached page's label it is, if several.
-        let which = currentPageIndex.flatMap(occurrence(ofPageAt:))
-        guard let reached = currentPageIndex, reached != index else {
-            return ReaderPageWording.jumped(to: label, occurrence: which)
+        let reached = currentPageIndex
+        guard reached != index else {
+            return ReaderPageWording.jumped(to: page.label, occurrence: occurrence(ofPageAt: index))
         }
-        return ReaderPageWording.hasNoWords(page.label, cursorOn: label, occurrence: which)
+        let cursor = ReaderPageWording.cursorPlace(
+            currentPagePosition,
+            occurrence: reached.flatMap(occurrence(ofPageAt:))
+        )
+        guard let content else { return ReaderPageWording.cursorIs(cursor) }
+        if !content.pageHoldsWord(at: index) {
+            return ReaderPageWording.hasNoWords(page.label, cursor: cursor)
+        }
+        let skippedIDs = skippedHeadingIDs
+        if !content.pageHoldsWord(at: index, outside: { skippedRanges(inChapter: $0, skipping: skippedIDs) }) {
+            return ReaderPageWording.isInSkippedSection(page.label, cursor: cursor)
+        }
+        return ReaderPageWording.cursorIs(cursor)
     }
 
     /// Which of the pages that carry the label of the page at `index` it is,
@@ -306,13 +327,14 @@ extension ReaderViewModel {
     /// once it has moved to the start of `page`: the page holding the cursor,
     /// which is the last of the pages that begin at that place
     /// (`BookPages.index(ofPageAtChapter:offset:)`) and so `page` itself when
-    /// no other page shares its place. What every command that lands on a
-    /// page says is this label, so the words spoken, the row, and Where Am
-    /// I? always agree. The cursor is read after the move, not worked out
-    /// from `page`, because a move may stop short of a page's place (the
-    /// last word of the book is as far as the reader goes). `page`'s own
-    /// label is the fallback for a cursor no page holds, which a move to one
-    /// of the book's pages rules out.
+    /// no other page shares its place. What Next Page and Previous Page say
+    /// is this label, as Go to Page names the row's page too, so the words
+    /// spoken, the row, and Where Am I? always agree. The cursor is read
+    /// after the move, not worked out from `page`, because a move may stop
+    /// short of a page's place (the last word of the book is as far as the
+    /// reader goes). `page`'s own label is the fallback for a cursor no page
+    /// holds, which a move to one of the book's pages rules out while the
+    /// book is stopped.
     private func labelShown(afterMovingTo page: PageBreak) -> String {
         currentPagePosition.page?.label ?? page.label
     }

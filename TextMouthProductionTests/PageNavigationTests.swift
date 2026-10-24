@@ -472,12 +472,16 @@ extension XCTestCase {
     /// A stopped reader of a book of two chapters, 200 and 100 characters of
     /// five-character words (so every offset used here is a word start), with
     /// `pages` placed as chapters hold them, read from memory: nothing plays,
-    /// and nothing is read from disk.
+    /// and nothing is read from disk. `chapterZeroText` gives chapter One
+    /// words of its own, and `substitutions` gives the reader text
+    /// substitution rules of its own; without them it uses the app's.
     @MainActor
     func makePagedReader(
         pages: [PageBreak],
         chapterZeroHeadings: [Heading] = [],
-        settings: SettingsViewModel? = nil
+        settings: SettingsViewModel? = nil,
+        chapterZeroText: String = String(repeating: "word ", count: 40),
+        substitutions: [SubstitutionRule]? = nil
     ) -> ReaderViewModel {
         let book = Book(
             title: "Paged Book",
@@ -490,7 +494,10 @@ extension XCTestCase {
         let reader = ReaderViewModel(
             book: book,
             libraryViewModel: library,
-            settingsViewModel: settings ?? ((try? makeIsolatedSettings("page-reader")) ?? SettingsViewModel(initializeServices: false))
+            settingsViewModel: settings ?? ((try? makeIsolatedSettings("page-reader")) ?? SettingsViewModel(initializeServices: false)),
+            // A service of the test's own, which reads and writes no rule
+            // file; nil keeps the app's.
+            substitutionService: substitutions.map { TextSubstitutionService(rules: $0) }
         )
         // Pages are held by their chapter with a chapter index of 0, as the
         // parse leaves them.
@@ -502,7 +509,7 @@ extension XCTestCase {
         let chapters = [
             Chapter(
                 title: "One",
-                text: String(repeating: "word ", count: 40),
+                text: chapterZeroText,
                 headings: chapterZeroHeadings,
                 pages: held(by: 0)
             ),

@@ -8,7 +8,9 @@ import XCTest
 /// what VoiceOver hears, the field's own accessibility, the page button on
 /// the status row, and the setting that shows or hides it. Pure
 /// (`makePagedReader` readers), except the hosted checks, which draw the
-/// panel and the status row offscreen in a fixed frame.
+/// panel and the status row offscreen in a fixed frame, and the jumps made
+/// while a book plays, whose speech goes to a recorder, never to the
+/// synthesizer.
 @MainActor
 final class GoToPageTests: XCTestCase {
 
@@ -96,13 +98,14 @@ final class GoToPageTests: XCTestCase {
             "Jumped to page 2, the second page labelled 2."
         )
         XCTAssertEqual(
-            ReaderPageWording.hasNoWords("7", cursorOn: "8"),
+            ReaderPageWording.hasNoWords("7", cursor: "on page 8"),
             "Page 7 has no words, so the cursor is on page 8."
         )
         XCTAssertEqual(
-            ReaderPageWording.hasNoWords("5", cursorOn: "2", occurrence: 2),
-            "Page 5 has no words, so the cursor is on page 2, the second page labelled 2."
+            ReaderPageWording.isInSkippedSection("40", cursor: "on page 52"),
+            "Page 40 is in a skipped section, so the cursor is on page 52."
         )
+        XCTAssertEqual(ReaderPageWording.cursorIs("on page 52"), "The cursor is on page 52.")
         XCTAssertEqual(ReaderPageWording.openHint, "Opens jump to page controls")
         XCTAssertEqual(ReaderPageWording.hideHint, "Hides jump to page controls")
         XCTAssertEqual(ReaderPageWording.switchHint, "Switches to jump to page controls")
@@ -117,6 +120,20 @@ final class GoToPageTests: XCTestCase {
             ReaderPageWording.sayInWhereAmIHint,
             "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books with pages."
         )
+    }
+
+    /// Where the cursor is, as Go to Page's sentences say it: on a page, on
+    /// one of the pages that carry a label, or before the first page, in the
+    /// position's own words, as the status row says them.
+    func testTheCursorsPlaceIsSaidAsTheRowNamesIt() {
+        let pages = BookPages(breaks: Self.sixPages)
+        XCTAssertEqual(ReaderPageWording.cursorPlace(PagePosition(pages: pages, index: 5)), "on page 300")
+        XCTAssertEqual(
+            ReaderPageWording.cursorPlace(PagePosition(pages: pages, index: 4), occurrence: 2),
+            "on page 2, the second page labelled 2"
+        )
+        XCTAssertEqual(PagePosition(pages: pages, index: nil).label, "Before page i")
+        XCTAssertEqual(ReaderPageWording.cursorPlace(PagePosition(pages: pages, index: nil)), "before page i")
     }
 
     // MARK: - The Reader's Answer
@@ -242,6 +259,113 @@ final class GoToPageTests: XCTestCase {
         XCTAssertNil(reader.goToPage(typed: "2"))
         XCTAssertEqual(pagedPlace(of: reader), "0:0")
         XCTAssertEqual(reader.lastAnnouncement, "Jumped to page 2, the first page labelled 2.")
+    }
+
+    /// A cursor on no page is told as the status row tells it. A book whose
+    /// only page begins after its last word is reached at that word, before
+    /// the page, where the row reads "Before page 1"; Go to Page said
+    /// "Jumped to page 1." there, a page the cursor was not on.
+    func testGoToPageSaysWhenTheCursorIsBeforeTheFirstPage() {
+        let reader = makePagedReader(pages: [PageBreak(label: "1", chapterIndex: 1, characterOffset: 100)])
+        defer { reader.close() }
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 0
+
+        XCTAssertNil(reader.goToPage(typed: "1"))
+
+        XCTAssertEqual(pagedPlace(of: reader), "1:99")
+        XCTAssertEqual(reader.currentPagePosition.label, "Before page 1")
+        XCTAssertEqual(reader.lastAnnouncement, "Page 1 has no words, so the cursor is before page 1.")
+    }
+
+    // MARK: - Go to Page While the Book Plays
+
+    /// Plays `reader` with its speech going nowhere: the speech service
+    /// hands each utterance to a recorder in place of the synthesizer, so
+    /// nothing is heard however long the test takes. Call it inside
+    /// `withIsolatedListeningStatistics`, since Play opens a listening
+    /// session.
+    private func playSilently(_ reader: ReaderViewModel) {
+        reader.speechService._directUtteranceRecorderForTesting = { _ in }
+        reader.play()
+    }
+
+    /// Stops `reader`'s speech before the main run loop turns, and moves its
+    /// playback generation on, so that no look-ahead render queued meanwhile
+    /// starts. Record what the test checks first.
+    private func silence(_ reader: ReaderViewModel) {
+        reader.stop()
+        reader.chapterPlaybackGeneration += 1
+    }
+
+    /// Pages 39 and 40 in chapter One, 40 at offset 150, and 52 at chapter
+    /// Two's start.
+    private static let pagesAroundForty = [
+        PageBreak(label: "39", chapterIndex: 0, characterOffset: 0),
+        PageBreak(label: "40", chapterIndex: 0, characterOffset: 150),
+        PageBreak(label: "52", chapterIndex: 1, characterOffset: 0),
+    ]
+
+    /// Go to Page while a text book plays, to a page whose words are all in
+    /// a skipped section that ends its chapter (its notes, say): the jump
+    /// restarts speech, which passes over the section to the next chapter
+    /// it reads, on page 52, and the sentence gives that reason, read from
+    /// the book's pages and skipped sections. The cursor's being elsewhere
+    /// was once taken to mean the page had no words: "Page 40 has no words,
+    /// so the cursor is on page 52.", of a page full of them.
+    func testGoToPageWhilePlayingSaysThePageIsInASkippedSection() throws {
+        let headings = [
+            Heading(level: 1, text: "Story", chapterIndex: 0, characterOffset: 0),
+            Heading(level: 1, text: "Notes", chapterIndex: 0, characterOffset: 100),
+        ]
+        try withIsolatedListeningStatistics {
+            let reader = makePagedReader(pages: Self.pagesAroundForty, chapterZeroHeadings: headings)
+            defer { reader.close() }
+            reader.toggleHeadingSkip(try XCTUnwrap(reader.headings.first { $0.text == "Notes" }))
+            reader.currentChapterIndex = 0
+            reader.currentCharacterOffset = 0
+            playSilently(reader)
+            let played = reader.speechService.isSpeaking
+
+            XCTAssertNil(reader.goToPage(typed: "40"))
+            let place = pagedPlace(of: reader)
+            let said = reader.lastAnnouncement
+            silence(reader)
+
+            XCTAssertTrue(played, "the book never played")
+            XCTAssertEqual(place, "1:0", "speech goes on at the next chapter it reads")
+            XCTAssertEqual(said, "Page 40 is in a skipped section, so the cursor is on page 52.")
+        }
+    }
+
+    /// When the pages give no reason for where the cursor is, Go to Page says
+    /// only where that is, as the status row names it. Here a text
+    /// substitution deletes every word of page 40, and no skipped section
+    /// holds them, so a jump there while the book plays goes on to page 52.
+    func testGoToPageWhilePlayingSaysOnlyWhereTheCursorIsWhenThePagesGiveNoReason() {
+        // Page 40's words, from offset 150, are the ones the rule deletes.
+        let text = String(repeating: "word ", count: 30) + String(repeating: "zzzz ", count: 10)
+        withIsolatedListeningStatistics {
+            let reader = makePagedReader(
+                pages: Self.pagesAroundForty,
+                chapterZeroText: text,
+                substitutions: [SubstitutionRule(pattern: "zzzz")]
+            )
+            defer { reader.close() }
+            reader.currentChapterIndex = 0
+            reader.currentCharacterOffset = 0
+            playSilently(reader)
+            let played = reader.speechService.isSpeaking
+
+            XCTAssertNil(reader.goToPage(typed: "40"))
+            let place = pagedPlace(of: reader)
+            let said = reader.lastAnnouncement
+            silence(reader)
+
+            XCTAssertTrue(played, "the book never played")
+            XCTAssertEqual(place, "1:0", "speech goes on at the next chapter it reads")
+            XCTAssertEqual(said, "The cursor is on page 52.")
+        }
     }
 
     /// A refusal is the sentence, and nothing moves or is said.
