@@ -299,8 +299,18 @@ enum TextEncodingFixtures {
         ("Catalan", "L’àvia va dir: “Ô, quina il·lusió!” El col·legi és a prop. Ç és una lletra.\n"),
         ("Spanish questions", "¿Qué? ¿Cómo? ¿Dónde? ¡Olé! Él dijo que sí.\n"),
         ("Irish places", "Tá sé i nÉirinn, in Éirinn, agus na hÉireann; an tÉireannach agus na hÁrainn.\n"),
-        // Identifiers with an accented capital after a lowercase word read as case flips, and Mac Roman reads the
-        // capital as a quotation mark or a letter: "zeige‹bersicht". The first four were guessed to be Mac Roman.
+        ("product names", "Das neue iPhone und das MacBook kosten weniger bei eBay als bei McDonald’s in München.\n"),
+        ("headings in capitals", "ÜBERSICHT\n\nÉCOLE NORMALE SUPÉRIEURE\n\nÅRSBERETNING\n\nÓRDENES DEL DÍA\n"),
+    ]
+
+    /// Code and notes with identifiers that hold an accented capital after a
+    /// lowercase word ("zeigeÜbersicht"), in German, French, Dutch, Danish,
+    /// Swedish, Spanish, Icelandic, and Finnish. Each must stay Windows-1252
+    /// (the first four were guessed to be Mac Roman, which reads the "Ü" as
+    /// "‹"), though the capitals read as case flips, which three of two
+    /// letters are enough to look like a wrong reading. What keeps them is
+    /// that the reading that would make the flips look right is not clean.
+    static let windows1252IdentifierTexts: [(name: String, text: String)] = [
         ("German identifiers", "zeigeÜbersicht, ladeÜbersicht, speichereÄnderung\n"),
         ("German identifiers repeated", String(repeating: "zeigeÜbersicht, ladeÜbersicht, speichereÄnderung\n", count: 4)),
         ("German notes with identifiers", """
@@ -324,8 +334,6 @@ enum TextEncodingFixtures {
         ("Spanish identifiers", "mostrarÁrea(); cargarÚltimo(); guardarÍndice();\nEl niño está aquí, y la canción es fácil.\n"),
         ("Icelandic identifiers", "sýnaÞættir(); opnaÍbúðir(); vistaÁgæti();\nÞað er gott og dóttir mín er hér.\n"),
         ("Finnish identifiers", "näytäÄänet(); avaaÖljy(); tallennaÄiti();\nÄiti on kotona ja päivä on kaunis.\n"),
-        ("product names", "Das neue iPhone und das MacBook kosten weniger bei eBay als bei McDonald’s in München.\n"),
-        ("headings in capitals", "ÜBERSICHT\n\nÉCOLE NORMALE SUPÉRIEURE\n\nÅRSBERETNING\n\nÓRDENES DEL DÍA\n"),
         ("a short file of one identifier", "zeigeÜbersicht\n"),
     ]
 }

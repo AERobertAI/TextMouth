@@ -380,4 +380,21 @@ final class TextPlausibilityTests: XCTestCase {
             XCTAssertFalse(isGarbled(text), name)
         }
     }
+
+    /// Identifiers with an accented capital after a lowercase word do show
+    /// case flips, and three flips of two letters would be proof against a
+    /// clean rival. What keeps such text is that its rival is not clean: Mac
+    /// Roman, which reads these capitals as quotation marks and symbols
+    /// ("zeige‹bersicht"), holds anomalies of its own, which judged as a
+    /// rival it must not hold, while a rival that read Windows-1252's own
+    /// characters as ordinary would have looked as clean as the right reading.
+    func testIdentifiersShowCaseFlipsAndTheirMacRomanRivalIsNotClean() throws {
+        for (name, text) in Fixtures.windows1252IdentifierTexts {
+            let bytes = try XCTUnwrap(text.data(using: .windowsCP1252), name)
+            let western = plausibility(of: TextFileDecoder.windows1252Text(bytes), as: .windows1252)
+            XCTAssertGreaterThan(western.caseFlips, 0, name)
+            let macRoman = try XCTUnwrap(TextFileDecoder.decodedText(bytes, in: .macOSRoman), name)
+            XCTAssertGreaterThan(plausibility(of: macRoman).disorder, 0, "\(name): \(macRoman.prefix(40))")
+        }
+    }
 }

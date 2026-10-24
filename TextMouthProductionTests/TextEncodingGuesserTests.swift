@@ -136,7 +136,7 @@ final class TextEncodingGuesserTests: XCTestCase {
             "Það var þriðjudagur og veðrið var gott. Hann fór út með hundinn sinn, og þau gengu lengi meðfram ánni. Ég held að hann hafi verið ánægður.",
             "The conference in Zürich featured talks by Müller, a French chef who served crème brûlée, jalapeño soufflé, and smörgåsbord with piñata cake. Naïve? Perhaps. Déjà vu: fiancée, résumé, façade, coöperate.",
             "<p>Café — “quotes” and ‘single’ — © 2024 • Terms</p>\n<p>Año nuevo — ¡feliz!</p>",
-        ] + Fixtures.windows1252Texts.map(\.text)
+        ] + (Fixtures.windows1252Texts + Fixtures.windows1252IdentifierTexts).map(\.text)
         for text in texts {
             for name in ["windows-1252", "iso-8859-1"] {
                 let encoding = try XCTUnwrap(Fixtures.encoding(named: name))
