@@ -52,6 +52,8 @@ enum MarkdownCacheService {
     /// made the Markdown; every other format leaves them nil. A textutil
     /// format whose run for the pages failed says so in `pageRunFailed`
     /// (PG16); every other format, and a run that succeeded, leaves it false.
+    /// A text file read in a guessed encoding (FMT16) names it in
+    /// `guessedEncoding`, by its identifier, for the book to record.
     private struct ExtractedCache {
         var markdown: String
         var chapters: [Chapter]? = nil
@@ -59,6 +61,7 @@ enum MarkdownCacheService {
         var title: String? = nil
         var author: String? = nil
         var pageRunFailed = false
+        var guessedEncoding: String? = nil
     }
 
     /// What one successful cache generation produced: the book's reading
@@ -84,6 +87,12 @@ enum MarkdownCacheService {
         /// them failed (`PageReaderVersions.stamp(for:pageRunFailed:previous:)`,
         /// PG16); nil for a format without pages.
         var pageReaderVersion: String? = nil
+        /// The encoding a text file's bytes were guessed to be in (FMT16),
+        /// by its identifier in `TextEncodingCatalog`, for the book to
+        /// record (`Book.textEncoding`); nil for a generation that guessed
+        /// nothing: any rebuild of an existing book, any other format, and
+        /// bytes that named their encoding or that Windows-1252 reads well.
+        var guessedEncoding: String? = nil
     }
 
     // MARK: - Cache Generation
@@ -154,8 +163,17 @@ enum MarkdownCacheService {
     /// are the book's while its content is read, in place of the book's own
     /// (a file name at that point). A regeneration never sets it: the
     /// book's title and author may have been edited by hand.
+    ///
+    /// With `guessingEncoding`, as the same import sets it, a plain-text,
+    /// Markdown, or HTML file whose bytes name no encoding is read in the
+    /// encoding `TextEncodingGuesser` finds, which the result names for the
+    /// book to record (`GeneratedCache.guessedEncoding`, FMT16). Nothing
+    /// else guesses: a book with a recorded encoding (`Book.textEncoding`)
+    /// is read in it, and any other as it always was, so no rebuild, re-read,
+    /// or migration changes the text of a book already in the library.
     static func generateReportedCacheContent(
-        for book: Book, adoptingDocumentNames: Bool = false, replacingEditedText: Bool = false
+        for book: Book, adoptingDocumentNames: Bool = false, replacingEditedText: Bool = false,
+        guessingEncoding: Bool = false
     ) throws -> GeneratedCache? {
         guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return nil }
         let boundary = StorageBoundary.shared
@@ -163,9 +181,21 @@ enum MarkdownCacheService {
             try writeCache(
                 for: boundary.rebasedToCurrent(book),
                 adoptingDocumentNames: adoptingDocumentNames,
-                replacingEditedText: replacingEditedText
+                replacingEditedText: replacingEditedText,
+                guessingEncoding: guessingEncoding
             )
         }
+    }
+
+    /// How a text file in `book` is read when its bytes name no encoding:
+    /// by a guess when `guessingEncoding` says so and the book has not
+    /// recorded an encoding already, in the encoding the book recorded
+    /// otherwise, and as it always was read when it recorded none.
+    private static func encodingPolicy(of book: Book, guessingEncoding: Bool = false) -> TextFileDecoder.EncodingPolicy {
+        if guessingEncoding && book.textEncoding == nil {
+            return .guess
+        }
+        return .forBook(recording: book.textEncoding)
     }
 
     /// The work of `generateReportedCacheContent(for:)` for a book with a
@@ -175,7 +205,7 @@ enum MarkdownCacheService {
     ///   content.md holds the text of an edit the user made (B12); nothing
     ///   is read or written then.
     private static func writeCache(
-        for book: Book, adoptingDocumentNames: Bool, replacingEditedText: Bool
+        for book: Book, adoptingDocumentNames: Bool, replacingEditedText: Bool, guessingEncoding: Bool
     ) throws -> GeneratedCache {
         // An automatic re-read never replaces the user's finished edit.
         if !replacingEditedText, BookTextEditSessions.holdsTakenEdit(book, access: BookTextEditSessions.shared.access) {
@@ -191,7 +221,8 @@ enum MarkdownCacheService {
         do {
             extracted = try extractCache(
                 from: fileURL, format: book.format, brailleTable: book.brailleTable,
-                brailleTableVersion: book.brailleTableVersion, includesPages: true
+                brailleTableVersion: book.brailleTableVersion,
+                encodingPolicy: encodingPolicy(of: book, guessingEncoding: guessingEncoding), includesPages: true
             )
         } catch EPUBParserError.noReadableChapters(let report) {
             // Nothing can be cached, but which chapters could not be read is
@@ -266,7 +297,7 @@ enum MarkdownCacheService {
         return GeneratedCache(
             content: content, report: extracted.report, movedPlaces: movedPlaces,
             title: extracted.title, author: extracted.author,
-            pageReaderVersion: pageReaderVersion
+            pageReaderVersion: pageReaderVersion, guessedEncoding: extracted.guessedEncoding
         )
     }
 
@@ -304,7 +335,7 @@ enum MarkdownCacheService {
             let extracted = try extractCache(
                 from: URL(fileURLWithPath: current.filePath), format: current.format,
                 brailleTable: current.brailleTable, brailleTableVersion: current.brailleTableVersion,
-                includesPages: includesPages
+                encodingPolicy: encodingPolicy(of: current), includesPages: includesPages
             )
             return ExtractedText(markdown: extracted.markdown, pageRunFailed: extracted.pageRunFailed)
         }
@@ -392,15 +423,21 @@ enum MarkdownCacheService {
     /// With `replacingEditedText`, as Redo Text Extraction sets it, the book's
     /// file is read over the text of an edit the user made (B12), and `book`
     /// loses its record of that edit, since content.md is no longer it.
+    /// With `guessingEncoding`, as an import of a file the user chose sets
+    /// it, a text file whose bytes name no encoding is read in a guessed
+    /// one, which `book` records (`Book.textEncoding`, FMT16) so that every
+    /// later reading of it uses the same.
     /// - Returns: nil for a book with no text cache.
     /// - Throws: why no cache could be written; `book` is then unchanged.
     ///   `EditedTextKept` when content.md holds the user's edit and
     ///   `replacingEditedText` is false.
     static func generateReportedCacheAnalyzeAndStamp(
-        for book: inout Book, adoptingDocumentNames: Bool = false, replacingEditedText: Bool = false
+        for book: inout Book, adoptingDocumentNames: Bool = false, replacingEditedText: Bool = false,
+        guessingEncoding: Bool = false
     ) throws -> GeneratedCache? {
         guard let generated = try generateReportedCacheContent(
-            for: book, adoptingDocumentNames: adoptingDocumentNames, replacingEditedText: replacingEditedText
+            for: book, adoptingDocumentNames: adoptingDocumentNames, replacingEditedText: replacingEditedText,
+            guessingEncoding: guessingEncoding
         ) else { return nil }
         book.cacheFormatVersion = currentCacheVersion
         // The content.md just written has its format's pages (PG09).
@@ -409,6 +446,10 @@ enum MarkdownCacheService {
         if adoptingDocumentNames {
             if let title = generated.title { book.title = title }
             if let author = generated.author { book.author = author }
+        }
+        // The encoding the file was guessed to be in is the book's from now on.
+        if let guessed = generated.guessedEncoding {
+            book.textEncoding = guessed
         }
         return generated
     }
@@ -542,21 +583,27 @@ enum MarkdownCacheService {
     /// one of this Mac's tables must still have the liblouis version the
     /// book was read with (`brailleTableVersion`, review R2), or the
     /// rebuild fails by name and the old content.md stays.
+    /// - Parameter encodingPolicy: What a plain-text, Markdown, or HTML file
+    ///   is read as when its bytes name no encoding (FMT16): the book's
+    ///   recorded encoding, a guess for the import of a new file, or the
+    ///   Windows-1252 fallback. The result names a guessed encoding.
     /// - Parameter includesPages: Whether page markers are written: true for
     ///   every cache the app writes; false reads as cache format 3.0.7 did,
     ///   which PG09 compares against to find text changed by hand.
     private static func extractCache(
         from url: URL, format: BookFormat, brailleTable: String?, brailleTableVersion: String?,
-        includesPages: Bool
+        encodingPolicy: TextFileDecoder.EncodingPolicy, includesPages: Bool
     ) throws -> ExtractedCache {
         let markdown: String
+        var guessedEncoding: String?
         switch format {
         case .epub:
             return try extractFromEPUB(url: url, includesPages: includesPages)
         case .html:
-            let html = try TextFileDecoder.readText(at: url, format: format)
+            let decoded = try TextFileDecoder.readDecodedText(at: url, format: format, policy: encodingPolicy)
+            guessedEncoding = decoded.guessedEncodingIdentifier
             markdown = try HTMLToMarkdownConverter.convert(
-                html, stripDuplicateNavigation: true, includesPages: includesPages)
+                decoded.text, stripDuplicateNavigation: true, includesPages: includesPages)
         case .webarchive:
             markdown = try WebArchiveReader.mainPage(of: url).markdown()
         case .ssml:
@@ -564,13 +611,16 @@ enum MarkdownCacheService {
             markdown = try HTMLToMarkdownConverter.convert(SSMLReader.html(from: url))
         case .markdown:
             // Already Markdown — use the decoded text as-is
-            markdown = try TextFileDecoder.readText(at: url, format: format)
+            let decoded = try TextFileDecoder.readDecodedText(at: url, format: format, policy: encodingPolicy)
+            guessedEncoding = decoded.guessedEncodingIdentifier
+            markdown = decoded.text
         case .txt:
             // The same line analysis as the direct parser, written as literal
             // Markdown, so a cached book reads exactly as
             // PlainTextParser.parse(text:) reads it.
-            let text = try TextFileDecoder.readText(at: url, format: format)
-            markdown = PlainTextParser.markdown(text: text, includesPages: includesPages)
+            let decoded = try TextFileDecoder.readDecodedText(at: url, format: format, policy: encodingPolicy)
+            guessedEncoding = decoded.guessedEncodingIdentifier
+            markdown = PlainTextParser.markdown(text: decoded.text, includesPages: includesPages)
         case .docx:
             markdown = try DOCXParser.extractMarkdown(from: url, includesPages: includesPages)
         case .rtf, .rtfd, .doc, .odt, .wordml:
@@ -597,7 +647,7 @@ enum MarkdownCacheService {
             // Audio books don't get text caching
             markdown = ""
         }
-        return ExtractedCache(markdown: markdown)
+        return ExtractedCache(markdown: markdown, guessedEncoding: guessedEncoding)
     }
 
     /// Use the direct EPUB parser's navigation recovery as the cache source.
