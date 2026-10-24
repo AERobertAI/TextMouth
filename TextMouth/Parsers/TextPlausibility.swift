@@ -281,7 +281,7 @@ struct TextPlausibility: Equatable, Sendable {
     /// Japanese, Chinese, Korean) counts the letters of any other script.
     private static func misfit(of letterCounts: [Unicode.Scalar: Int], scripts: [Script: Int]) -> Int {
         let total = letterCounts.values.reduce(0, +)
-        guard total > 0, let dominant = scripts.max(by: { $0.value < $1.value })?.key else { return 0 }
+        guard total > 0, let dominant = dominantScript(in: scripts) else { return 0 }
         guard dominant.hasAlphabets else { return total - scripts[dominant, default: 0] }
         var fewestOutside = total
         for alphabet in alphabets {
@@ -291,6 +291,20 @@ struct TextPlausibility: Equatable, Sendable {
             fewestOutside = min(fewestOutside, total - inside)
         }
         return fewestOutside
+    }
+
+    /// The script with the most letters in `scripts`, which decides how the
+    /// letters are judged; nil when there are none. Of scripts with as many
+    /// letters, the first in the order the scripts are declared wins (Latin
+    /// first), so the same text is always judged the same: a dictionary
+    /// lists its keys in an order that differs from one launch to the next.
+    static func dominantScript(in scripts: [Script: Int]) -> Script? {
+        var dominant: (script: Script, count: Int)?
+        for script in Script.allCases {
+            guard let count = scripts[script], count > (dominant?.count ?? 0) else { continue }
+            dominant = (script, count)
+        }
+        return dominant?.script
     }
 
     /// The letters, beyond ASCII and in lowercase, that a language writes:
@@ -422,8 +436,10 @@ struct TextPlausibility: Equatable, Sendable {
 
     // MARK: Scripts
 
-    /// The writing system of a letter, as far as the judging needs it.
-    private enum Script: Hashable, Sendable {
+    /// The writing system of a letter, as far as the judging needs it. The
+    /// order of the cases is the order that settles a tie
+    /// (`dominantScript(in:)`).
+    enum Script: Hashable, Sendable, CaseIterable {
         case latin, cyrillic, greek, hebrew, arabic, thai
         /// Han, kana, Hangul, and the full-width forms CJK text uses.
         case cjk

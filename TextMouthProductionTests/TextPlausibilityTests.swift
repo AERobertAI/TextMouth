@@ -195,6 +195,28 @@ final class TextPlausibilityTests: XCTestCase {
         XCTAssertEqual(plausibility(of: "שלום עולם ж").misfitLetters, 1)
     }
 
+    /// The script with the most letters decides how the letters are judged,
+    /// and of scripts with as many the first in the fixed order does, never
+    /// the one a dictionary happens to list first: a text with one Latin and
+    /// one other letter was judged one way in some launches and the other in
+    /// the rest. Dictionaries made with many capacities list the same keys
+    /// in many orders, so every one must give the same script.
+    func testTheDominantScriptOfATieDoesNotDependOnTheOrderOfADictionary() {
+        typealias Script = TextPlausibility.Script
+        XCTAssertNil(TextPlausibility.dominantScript(in: [:]))
+        XCTAssertEqual(TextPlausibility.dominantScript(in: [.cjk: 4, .latin: 3]), .cjk)
+        XCTAssertEqual(TextPlausibility.dominantScript(in: [.latin: 1, .cyrillic: 5, .other: 2]), .cyrillic)
+        for capacity in 1...64 {
+            var allTied = Dictionary<Script, Int>(minimumCapacity: capacity)
+            for script in Script.allCases.reversed() { allTied[script] = 3 }
+            XCTAssertEqual(TextPlausibility.dominantScript(in: allTied), .latin, "all tied, capacity \(capacity)")
+
+            var someTied = Dictionary<Script, Int>(minimumCapacity: capacity)
+            for script in [Script.other, .cjk, .thai, .hebrew] { someTied[script] = 2 }
+            XCTAssertEqual(TextPlausibility.dominantScript(in: someTied), .hebrew, "some tied, capacity \(capacity)")
+        }
+    }
+
     // MARK: - Case
 
     /// Uppercase beyond a third of the cased non-ASCII letters is excess,
