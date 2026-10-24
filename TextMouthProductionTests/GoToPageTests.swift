@@ -165,8 +165,10 @@ final class GoToPageTests: XCTestCase {
     /// not worked out from the page typed: a page that begins after the
     /// book's last word (the chapter holds 100 characters, and page 9 begins
     /// at 100) is reached at the last word, where the row names the page
-    /// before it, and that is the page said. Whatever way such a page comes
-    /// to be reached, the words stay the row's.
+    /// before it, and that is the page said. The sentence is pinned as it is
+    /// spoken, and the page it names is the row's, checked on its own: the
+    /// expected words are not taken from the row, which the code under test
+    /// reads as well.
     func testGoToPageSaysThePageAtTheCursorWhereTheJumpStopsShort() {
         let pages = [
             PageBreak(label: "7", chapterIndex: 1, characterOffset: 0),
@@ -180,9 +182,9 @@ final class GoToPageTests: XCTestCase {
 
         XCTAssertNil(reader.goToPage(typed: "9"))
 
-        let row = reader.currentPagePosition.page?.label
-        XCTAssertNotNil(row, "the cursor is on a page")
-        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page \(row ?? "none").")
+        XCTAssertEqual(reader.currentChapterIndex, 1)
+        XCTAssertEqual(reader.currentPagePosition.page?.label, "8", "the reader stands on page 8, whose words end the book")
+        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page 8.")
     }
 
     /// A refusal is the sentence, and nothing moves or is said.
