@@ -487,6 +487,40 @@ final class DuplicateReplacementTests: XCTestCase {
         XCTAssertEqual(model.bookByID(existing.id)?.totalWordCount, 41)
     }
 
+    // MARK: - A Stop Partway
+
+    /// A stop after the new copy's record is written under the book's ID,
+    /// before the index that names its package is saved, leaves the book as
+    /// it was: a launch reads the saved index, which lists the old copy in
+    /// its own package, and leaves the new package, whose record names that
+    /// listed book, as it is. Its content differs, so only the ID keeps it
+    /// out (ST04 verify, finding 4).
+    func testAStopBeforeTheIndexIsSavedLeavesTheBookAsItWas() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        addTeardownBlock { sandbox.restore() }
+        let scene = try makeScene()
+        let existing = try scene.importText("Chart notes for the season.", named: "Earlier Atlas of Tides", into: scene.shelf)
+        let copy = try scene.importText("Chart notes for the season, revised.", named: "Atlas of Tides", into: scene.imports)
+        XCTAssertNotEqual(copy.md5Hash, existing.md5Hash, "the same content would keep the new package out by itself")
+        XCTAssertTrue(LibraryPersistenceService.saveAndWait(Library(books: [existing])))
+        let oldPackage = try entries(of: existing.tmbDirectory)
+        let oldRecord = try Data(contentsOf: TextMouthPaths.bookInfoPath(in: existing.tmbDirectory))
+
+        let preparation = try DuplicateReplacement.prepare(replacing: existing, with: copy)
+        try preparation.book.saveBookInfoThrowing()
+        let newRecord = try Data(contentsOf: TextMouthPaths.bookInfoPath(in: preparation.movedTo))
+        var relaunched = try XCTUnwrap(LibraryPersistenceService.load().library)
+        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &relaunched, libraryDirectory: scene.shelf.url)
+
+        XCTAssertEqual(adopted, 0)
+        XCTAssertEqual(relaunched.books.map(\.id), [existing.id])
+        XCTAssertEqual(relaunched.books.map(\.tmbDirectoryName), [existing.tmbDirectoryName])
+        XCTAssertEqual(try entries(of: existing.tmbDirectory), oldPackage)
+        XCTAssertEqual(try Data(contentsOf: TextMouthPaths.bookInfoPath(in: existing.tmbDirectory)), oldRecord)
+        XCTAssertEqual(try BookInfo.load(from: preparation.movedTo).metadata.bookID, existing.id)
+        XCTAssertEqual(try Data(contentsOf: TextMouthPaths.bookInfoPath(in: preparation.movedTo)), newRecord)
+    }
+
     // MARK: - The Old Copy Put Back
 
     /// The old copy Replace Existing sent to the Trash names its
