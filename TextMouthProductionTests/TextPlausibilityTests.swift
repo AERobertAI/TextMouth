@@ -7,6 +7,8 @@ import XCTest
 /// the letters.
 final class TextPlausibilityTests: XCTestCase {
 
+    private typealias Fixtures = TextEncodingFixtures
+
     /// The plausibility of `text`.
     private func plausibility(of text: String) -> TextPlausibility {
         TextPlausibility(reading: text)
@@ -64,12 +66,45 @@ final class TextPlausibilityTests: XCTestCase {
     }
 
     /// A symbol text rarely holds is an anomaly wherever it stands (a run of
-    /// box drawing, an accent on its own), while currency, legal marks, and
+    /// box drawing, mathematical symbols), while currency, legal marks, and
     /// the like are not.
     func testASymbolTextRarelyHoldsIsAnAnomalyWhereverItStands() {
         XCTAssertEqual(plausibility(of: "┌──────┐").anomalies, 8)
-        XCTAssertEqual(plausibility(of: "a ¨ b ¸ c").anomalies, 2)
+        XCTAssertEqual(plausibility(of: "a ∞ b ≠ c").anomalies, 2)
         XCTAssertEqual(plausibility(of: "© ® ™ £ € ¥ ¢ ° ± × ÷").anomalies, 0)
+    }
+
+    /// Every symbol Windows-1252 has is ordinary wherever it stands, since
+    /// Western text uses them as it pleases ("File ¦ Edit", "Assume ¬p",
+    /// "3,50 ¤"): the broken bar, the not sign, the currency sign, and the
+    /// accents that stand alone.
+    func testTheSymbolsWindows1252HasAreOrdinary() {
+        for text in ["File ¦ Edit ¦ View ¦ Help", "Assume ¬p and ¬q", "a ¤ b", "a ¨ b ¸ c ¯ d ˜ e",
+                     "© ® ™ £ € ¥ ¢ ° ± × ÷ ¤ ¦ ¨ ¬ ¯ ¸ ˜", "The trip is ˜5 km, ˜2 hours"] {
+            XCTAssertEqual(plausibility(of: text).anomalies, 0, text)
+        }
+    }
+
+    /// The accents that stand on their own may sit beside a letter, in text
+    /// typed without the letter or taken from a PDF: "Mu¨ller", "fac¸ade",
+    /// "cafe´", "an˜o".
+    func testAnAccentStandingBesideALetterIsOrdinary() {
+        for text in ["Mu¨ller", "fac¸ade", "cafe´", "an˜o", "a¯b", "caˆfe"] {
+            XCTAssertEqual(plausibility(of: text).anomalies, 0, text)
+        }
+    }
+
+    /// The florin sign and f-stop ("ƒ/1.8"), the micro sign ("5 µg", "100µF"),
+    /// and the ordinal indicators ("1º", "Nº 5") are letters to Unicode but
+    /// symbols to Western text: they are not judged as letters, so they
+    /// are no misfit and no lowercase letter that an uppercase one may not follow.
+    func testLettersWesternTextUsesAsSymbolsAreNotJudged() {
+        for text in ["ƒ/1.8 and ƒ 1,20", "5 µg, 10 µM, 100µF", "1º maggio, 2ª vez, Nº 5"] {
+            let result = plausibility(of: text)
+            XCTAssertEqual(result.surprise, 0, text)
+            XCTAssertEqual(result.nonASCIILetters, 0, text)
+            XCTAssertGreaterThan(result.nonASCIICharacters, 0, text)
+        }
     }
 
     /// A control character from the C1 range, a character nobody assigned, and
@@ -102,14 +137,37 @@ final class TextPlausibilityTests: XCTestCase {
         XCTAssertEqual(plausibility(of: "1\u{0301}").anomalies, 1)
     }
 
-    /// A capital no Western language writes as a word of its own is an
-    /// anomaly standing alone ("Ñ" is Mac Roman's em dash read as
-    /// Windows-1252); "À" and "É" are words, and are not.
-    func testACapitalNoLanguageWritesAloneIsAnAnomalyStandingAlone() {
-        XCTAssertEqual(plausibility(of: "word Ñ word").anomalies, 1)
-        XCTAssertEqual(plausibility(of: "word Ò").anomalies, 1)
-        XCTAssertEqual(plausibility(of: "Ñandú").anomalies, 0)
-        XCTAssertEqual(plausibility(of: "À demain, É tarde").anomalies, 0)
+    /// A capital by itself is no anomaly, whatever it is: an initial ("Ñ.
+    /// García"), a letter of the alphabet ("La letra Ñ"), an interjection
+    /// ("Ô meu Deus!"), a letter named in a sentence ("Ç és una lletra").
+    /// Mac Roman's dashes and quotation marks read as Windows-1252 look like
+    /// these ("Ñ", "Ò", "Ó"), but so do those, and only text that holds
+    /// more than one such oddity is shown to be wrong (see `isGarbled`).
+    func testACapitalByItselfIsNoAnomaly() {
+        for text in ["word Ñ word", "Ò", "Ñ. García", "La letra Ñ", "Ô meu Deus! Ç és una lletra.", "À demain, É tarde"] {
+            XCTAssertEqual(plausibility(of: text).anomalies, 0, text)
+        }
+    }
+
+    /// Irish writes an accented capital after the consonant that prefixes a
+    /// word ("na hÉireann", "i nÉirinn", "an tÓglach"): not a case flip when
+    /// the consonant begins its word, and one when it does not ("ahÉ").
+    func testAnIrishCapitalAfterAPrefixConsonantIsNoCaseFlip() {
+        for text in ["na hÉireann", "i nÉirinn", "an tÉireannach", "na hÁrainn", "tÉ", "nÓ"] {
+            XCTAssertEqual(plausibility(of: text).caseFlips, 0, text)
+            XCTAssertEqual(plausibility(of: text).anomalies, 0, text)
+        }
+        XCTAssertEqual(plausibility(of: "ahÉ").caseFlips, 1)
+        XCTAssertEqual(plausibility(of: "caféÉ").caseFlips, 1)
+    }
+
+    /// Case flips are counted among the anomalies, and so are the different
+    /// characters the anomalies are of.
+    func testCaseFlipsAndTheirCharactersAreCounted() {
+        let flips = plausibility(of: "CafŽ donÕt HomeïAbout CafŽ")
+        XCTAssertEqual(flips.caseFlips, 4)
+        XCTAssertEqual(flips.anomalies, 4)
+        XCTAssertEqual(flips.anomalyCharacters.count, 3, "Ž, Õ, and A")
     }
 
     // MARK: - Fit to a Language
@@ -153,6 +211,86 @@ final class TextPlausibilityTests: XCTestCase {
         XCTAssertEqual(plausibility(of: "ПРИВЕТ").excessUppercaseLetters, 0)
         // Uppercase in ASCII is not counted: only the letters an encoding decides.
         XCTAssertEqual(plausibility(of: "HELLO WORLD").excessUppercaseLetters, 0)
+    }
+
+    // MARK: - Proof of a Wrong Reading
+
+    /// The Windows-1252 reading of `text` as the bytes of a file in the
+    /// encoding named `name`, and the reading in that encoding: the two
+    /// readings a guesser compares.
+    private func readings(of text: String, writtenIn name: String) throws -> (western: TextPlausibility, rival: TextPlausibility) {
+        let (bytes, written) = try Fixtures.file(text, inEncodingNamed: name)
+        return (plausibility(of: TextFileDecoder.windows1252Text(bytes)), plausibility(of: written))
+    }
+
+    /// Whether the text, taken as a Windows-1252 reading, is shown wrong
+    /// against a rival reading that is perfectly plausible.
+    private func isGarbled(_ text: String) -> Bool {
+        plausibility(of: text).isGarbled(comparedTo: plausibility(of: ""))
+    }
+
+    /// Three anomalies of at least two different characters show a wrong
+    /// reading; one character repeated does not, however often, and neither
+    /// do two anomalies. (Undefined bytes read as C1 controls are anomalies.)
+    func testSeveralAnomaliesOfDifferentCharactersShowAWrongReading() {
+        XCTAssertTrue(isGarbled("a\u{81}b\u{8D}c\u{81}"))
+        XCTAssertTrue(isGarbled("a\u{81}b\u{8D}c\u{8F}"))
+        XCTAssertFalse(isGarbled("a\u{81}b\u{81}c\u{81}"))
+        XCTAssertFalse(isGarbled("a\u{81}b\u{81}c\u{81} d\u{81}e\u{81}f\u{81}"))
+        XCTAssertFalse(isGarbled("a\u{81}b\u{8D}c"))
+        XCTAssertFalse(isGarbled("test\u{9D} of the system’s files\u{9D} and they’re fine\u{9D}."))
+    }
+
+    /// Five case flips show a wrong reading, and four do not.
+    func testFiveCaseFlipsShowAWrongReading() {
+        XCTAssertTrue(isGarbled("CafŽ CafŽ CafŽ CafŽ CafŽ"))
+        XCTAssertFalse(isGarbled("CafŽ CafŽ CafŽ CafŽ"))
+        XCTAssertFalse(isGarbled("na hÉireann, i nÉirinn, an tÉireannach, na hÁrainn, an tÓglach, i nÓrdán"))
+    }
+
+    /// Text in the wrong encoding is shown wrong when the rival reads it
+    /// right: Mac Roman English and French, Windows-1250 Czech, Latin 2
+    /// Polish, the Cyrillic encodings, Greek, Hebrew, Thai, and the East
+    /// Asian ones, each by something different (case flips, symbols inside
+    /// words, letters that fit no language).
+    func testTextInTheWrongEncodingIsShownWrongWhenTheRivalReadsItRight() throws {
+        let cases: [(language: String, encoding: String)] = [
+            ("English", "macintosh"), ("French", "macintosh"), ("German", "macintosh"), ("Czech", "windows-1250"),
+            ("Polish", "iso-8859-2"), ("Russian", "windows-1251"), ("Russian", "koi8-r"), ("Russian", "cp866"),
+            ("Ukrainian", "koi8-u"), ("Greek", "windows-1253"), ("Hebrew", "windows-1255"), ("Thai", "windows-874"),
+            ("Japanese", "shift_jis"), ("Simplified Chinese", "gbk"), ("Korean", "euc-kr"),
+        ]
+        for (language, encoding) in cases {
+            let (western, rival) = try readings(of: Fixtures.paragraph(in: language), writtenIn: encoding)
+            XCTAssertTrue(western.isGarbled(comparedTo: rival), "\(language) in \(encoding)")
+        }
+    }
+
+    /// Hungarian's "ő" and "ű" read as "õ" and "û", and Latin 9 French's
+    /// "œ" and "€" read as "½" and "¤", are too little to show a wrong
+    /// reading: a few letters off in text that otherwise reads well.
+    func testAFewLettersOffAreNotEnoughToShowAWrongReading() throws {
+        for (language, encoding) in [("Hungarian", "windows-1250"), ("Hungarian", "iso-8859-2"), ("French in Latin 9", "iso-8859-15")] {
+            let (western, rival) = try readings(of: Fixtures.paragraph(in: language), writtenIn: encoding)
+            XCTAssertFalse(western.isGarbled(comparedTo: rival), "\(language) in \(encoding)")
+        }
+    }
+
+    /// Letters that fit no language show a wrong reading only when the rival
+    /// reading's letters fit one: the same Czech text against a rival that
+    /// is just as unfit is not shown wrong.
+    func testLettersThatFitNoLanguageNeedARivalThatFitsOne() throws {
+        let (western, rival) = try readings(of: Fixtures.paragraph(in: "Czech"), writtenIn: "windows-1250")
+        XCTAssertTrue(western.isGarbled(comparedTo: rival))
+        XCTAssertFalse(western.isGarbled(comparedTo: western))
+    }
+
+    /// The Windows-1252 texts built to look odd show nothing, whatever the
+    /// rival reading is.
+    func testWindows1252TextsBuiltToLookOddShowNothing() {
+        for (name, text) in Fixtures.windows1252Texts {
+            XCTAssertFalse(isGarbled(text), name)
+        }
     }
 
     // MARK: - Totals

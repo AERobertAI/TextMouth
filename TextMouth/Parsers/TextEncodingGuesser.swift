@@ -20,12 +20,20 @@ import Foundation
 ///   Turkish, Hebrew, Arabic, Baltic, Thai, and the Japanese, Chinese, and
 ///   Korean encodings, which Foundation tells apart well.
 ///
-/// A guess is made only when it can be trusted more than the default:
+/// A guess is made only when it can be trusted more than the default, and
+/// the rule is that a missed guess costs less than a wrong one: the default
+/// is today's reading, and a book that is garbled in it is as garbled as it
+/// was, while a guess that is wrong turns text that was right into text that
+/// is not, and the book keeps it.
 /// - The reading must be nearly free of anomalies and excess uppercase.
 /// - The default reading must be worse by at least three surprises, at a
-///   rate of at least three in a hundred of its non-ASCII characters. A text
-///   read well in Windows-1252, curly quotation marks and loanwords and
-///   all, is never guessed at.
+///   rate of at least three in a hundred of its non-ASCII characters.
+/// - The default reading must show that it is wrong, by more than a rival
+///   looking better: anomalies of several different characters, case flips,
+///   or dense letters that fit no language where the rival's do
+///   (`TextPlausibility.isGarbled(comparedTo:)`). A Windows-1252 text full
+///   of curly quotation marks, loanwords, and every strange character
+///   Windows-1252 has is not shown wrong by any of them.
 /// - No other reading of the bytes may be as good and read differently,
 ///   unless it is Foundation's own pick between exactly two. A few accented
 ///   letters in a short file can fit several encodings alike, and then the
@@ -33,12 +41,15 @@ import Foundation
 /// - The whole file, not only the part examined, must read in the encoding
 ///   without a byte dropped or replaced, and write back to the same bytes.
 ///
-/// The limits below were tuned on thousands of windows of real prose in 30
-/// languages, each converted to the encodings it is written in. Reading well
-/// in Windows-1252 was never lost to a guess, and the texts it garbled were
-/// read right or left as they were, all but a small share of the very short
-/// ones (one or two lines), whose few accented letters fit several
-/// encodings alike.
+/// The limits were tuned on thousands of windows of real prose in 30
+/// languages, each converted to the encodings it is written in, and on tens
+/// of thousands of Windows-1252 texts built to look odd. None of the texts
+/// that Windows-1252 reads right was guessed away from it. Whole paragraphs
+/// that it garbles were read right in nearly every case, and about four
+/// windows of a few lines in five. The rest were left as they were: texts
+/// too short for the oddities to be more than a few, and texts whose
+/// Windows-1252 reading is only a few letters off (Hungarian's "ő" and
+/// "ű", French "œ" and "€" in Latin 9).
 enum TextEncodingGuesser {
 
     /// A guess: the encoding, and the whole file read in it.
@@ -78,7 +89,7 @@ enum TextEncodingGuesser {
     /// (see the type's description).
     static func guess(_ data: Data) -> Guess? {
         guard let sample = examinedBytes(of: data) else { return nil }
-        let defaultSurprise = surprises(ofDefaultReadingOf: sample)
+        let defaultReading = TextPlausibility(reading: TextFileDecoder.windows1252Text(sample))
 
         let hint = foundationHint(for: sample)
         var entries = TextEncodingCatalog.entries.filter(\.isAlwaysTried)
@@ -102,9 +113,11 @@ enum TextEncodingGuesser {
             // The reading itself must be nearly free of anomalies.
             let disorderAllowed = max(1, Int((Double(plausibility.nonASCIICharacters) * maximumDisorderShare).rounded(.down)))
             guard plausibility.disorder <= disorderAllowed else { continue }
-            // The default must be clearly worse, or the default stays.
-            guard defaultSurprise.gain(over: plausibility.surprise) >= minimumGain,
-                  defaultSurprise.isRateAtLeast(minimumDefaultSurpriseShare) else { return nil }
+            // The default must be clearly worse, and show that it is wrong
+            // (`TextPlausibility.isGarbled(comparedTo:)`), or the default stays.
+            guard defaultReading.surprise - plausibility.surprise >= minimumGain,
+                  defaultReading.surpriseShare >= minimumDefaultSurpriseShare,
+                  defaultReading.isGarbled(comparedTo: plausibility) else { return nil }
 
             guard let chosen = settle(on: best, among: ranked, hint: hint) else { return nil }
             // The whole file must read in it, byte for byte.
@@ -205,29 +218,6 @@ enum TextEncodingGuesser {
             chosen = sameText
         }
         return chosen
-    }
-
-    // MARK: The Default Reading
-
-    /// The surprises of the default (Windows-1252) reading of the examined
-    /// bytes, with what they are measured against.
-    private struct DefaultSurprise {
-        let surprise: Int
-        let nonASCIICharacters: Int
-
-        /// How many surprises fewer than this a reading with `other` has.
-        func gain(over other: Int) -> Int { surprise - other }
-
-        /// Whether the surprises are at least `share` of the non-ASCII characters.
-        func isRateAtLeast(_ share: Double) -> Bool {
-            nonASCIICharacters > 0 && Double(surprise) / Double(nonASCIICharacters) >= share
-        }
-    }
-
-    /// The surprises of reading `sample` as Windows-1252.
-    private static func surprises(ofDefaultReadingOf sample: Data) -> DefaultSurprise {
-        let plausibility = TextPlausibility(reading: TextFileDecoder.windows1252Text(sample))
-        return DefaultSurprise(surprise: plausibility.surprise, nonASCIICharacters: plausibility.nonASCIICharacters)
     }
 
     // MARK: Foundation's Guess

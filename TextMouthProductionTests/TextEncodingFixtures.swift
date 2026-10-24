@@ -1,4 +1,5 @@
 import Foundation
+import XCTest
 @testable import TextMouth
 
 // MARK: - Text Encoding Fixtures
@@ -18,6 +19,12 @@ enum TextEncodingFixtures {
         let language: String
         let text: String
         let encodings: [String]
+        /// The encodings among those that a file of the paragraph is not
+        /// guessed to be in, because its Windows-1252 reading holds too
+        /// little to show that it is wrong (see `TextPlausibility.isGarbled`):
+        /// it differs from the right reading in a few letters, which
+        /// Windows-1252 text could hold, and they are left as they are.
+        var leftToTheDefault: [String] = []
     }
 
     /// The encodings Windows-1252 reads correctly: a file saved in either is
@@ -48,6 +55,20 @@ enum TextEncodingFixtures {
         return kept
     }
 
+    /// `text` written as a file in the encoding named `name`: the bytes, and
+    /// the text they hold, less the characters the encoding cannot write.
+    static func file(_ text: String, inEncodingNamed name: String) throws -> (bytes: Data, text: String) {
+        let encoding = try XCTUnwrap(encoding(named: name), name)
+        let written = writable(text, in: encoding)
+        let bytes = try XCTUnwrap(written.data(using: encoding, allowLossyConversion: false), name)
+        return (bytes, written)
+    }
+
+    /// The text of the first paragraph in `language`.
+    static func paragraph(in language: String) throws -> String {
+        try XCTUnwrap(paragraphs.first { $0.language == language }, language).text
+    }
+
     // MARK: Paragraphs
 
     static let paragraphs: [Paragraph] = [
@@ -65,7 +86,7 @@ enum TextEncodingFixtures {
 
         Paragraph(language: "French in Latin 9", text: """
             Le cœur de la ville bat au rythme des marchés : ce samedi, les étals débordaient de fruits, de fromages et de pains de seigle à 3,50 €. Les clients, venus de tout le quartier, discutaient de la météo, des prix et des vacances prochaines, sans jamais se presser. Une vieille dame, chargée d’œufs frais, expliquait à un jeune garçon comment reconnaître une bonne tomate ; il l’écoutait, très sérieux, en notant tout dans son carnet. Vers midi, les cloches ont sonné et la place s’est vidée comme par enchantement.
-            """, encodings: ["iso-8859-15", "windows-1252"]),
+            """, encodings: ["iso-8859-15", "windows-1252"], leftToTheDefault: ["iso-8859-15"]),
 
         Paragraph(language: "German", text: """
             Über den Dächern der Stadt zog an diesem Abend ein Gewitter auf, und die Straßen leerten sich schneller, als man es für möglich gehalten hätte. Im kleinen Café an der Ecke saßen nur noch zwei ältere Herren, die über Fußball und die Preise für Äpfel stritten. „Früher war alles günstiger“, sagte der eine. „Aber auch größer als heute?“, fragte der andere und lachte. Draußen fielen die ersten schweren Tropfen, und der Wirt schloss die Fenster, löschte das Licht über der Theke und stellte die Stühle auf die Tische.
@@ -113,7 +134,7 @@ enum TextEncodingFixtures {
 
         Paragraph(language: "Hungarian", text: """
             A kis falu főterén minden délután összegyűltek az öregek, hogy megbeszéljék a nap híreit. Az egyik szerint idén korán jön a tél; a másik azt állította, hogy a gyümölcsfák még sosem virágoztak ilyen szépen. Közben a gyerekek a kút körül játszottak, és nevetésük végigfutott a szűk utcákon. Este a lámpák egyenként kigyúltak, a templom harangja háromszor kondult, és a falu lassan elcsendesedett. Másnap mindenki ugyanúgy folytatta, ahogyan azelőtt.
-            """, encodings: ["windows-1250", "iso-8859-2"]),
+            """, encodings: ["windows-1250", "iso-8859-2"], leftToTheDefault: ["windows-1250", "iso-8859-2"]),
 
         Paragraph(language: "Russian", text: """
             В то утро над городом стоял густой туман, и трамваи медленно ползли по мокрым рельсам, позвякивая на поворотах. Старик в потёртом пальто сидел у окна и читал газету, хотя давно уже не понимал, зачем ему нужны чужие новости. «Всё это было и раньше», — подумал он и улыбнулся. На соседней скамейке две девочки спорили о том, кто первым увидит снег. Когда трамвай остановился, в вагон вошла женщина с большой корзиной яблок, и по салону разлился тонкий кисловатый запах осени.
@@ -170,5 +191,74 @@ enum TextEncodingFixtures {
         Paragraph(language: "Korean", text: """
             아침 일찍 일어난 할머니는 마루에 앉아 천천히 차를 마셨다. 마당에는 어제 내린 비가 아직 마르지 않았고, 감나무 가지 끝에는 붉은 열매가 무겁게 매달려 있었다. “올해는 감이 참 많이 열렸구나.” 할머니는 혼잣말을 하며 미소를 지었다. 멀리서 아이들의 웃음소리가 들려왔고, 부엌에서는 된장찌개 끓는 냄새가 퍼지고 있었다.
             """, encodings: ["euc-kr", "cp949"]),
+    ]
+
+    // MARK: Western Text That Looks Odd
+
+    /// Texts that Windows-1252 reads correctly, built around the characters
+    /// that made an earlier guesser take them for Windows-1250, Windows-1251,
+    /// Mac Roman, or something else (FMT16): the florin sign of f-stops and
+    /// Dutch guilders, the not sign, the broken bar, the approximate-value
+    /// tilde, the accents that stand alone, the ordinal indicators, and
+    /// capitals that stand by themselves. Each must stay Windows-1252.
+    static let windows1252Texts: [(name: String, text: String)] = [
+        ("f-stops with bullets", """
+            Lens test notes\r
+            • Wide open at ƒ/1.8 the corners are soft.\r
+            • Stopped down to ƒ/4 it’s sharp across the frame.\r
+            • At ƒ/11 diffraction starts to show.\r
+            The bokeh is “smooth,” and the lens doesn’t focus-breathe much.\r
+
+            """),
+        ("f-stops", "Shot at ƒ/2.8 and 1/250 s. Then ƒ/5.6. Finally ƒ/8 for the group photo.\n"),
+        ("lens review", """
+            I’ve been shooting with this lens for three months now, and it’s become the one I reach for first. It isn’t perfect — no lens is — but it’s close.
+
+            Wide open at ƒ/1.4 the centre is already sharp; the corners catch up by ƒ/2.8. Stopped down to ƒ/8 it’s as good as anything I’ve used, and at ƒ/16 diffraction softens things a little.
+
+            The bokeh is what people will buy it for. Out-of-focus highlights are round until about ƒ/2, and there’s very little “onion ring” texture. Backgrounds melt away.
+
+            • Build: metal barrel, weather sealing, a smooth focus ring.
+
+            • Autofocus: quick and quiet, though it hunts a bit in low light.
+
+            • Flare: well controlled, even shooting into the sun at ƒ/5.6.
+
+            Would I recommend it? Yes — if you don’t mind the weight. It’s a lens you’ll keep for years, and that’s more than I can say for most of what I’ve owned.
+
+            """),
+        ("logic notes", """
+            Exercise 3. Assume ¬p and (p or q). Then q.
+            Exercise 4. From ¬q and (p implies q), infer ¬p.
+            Exercise 5. ¬(p and q) is equivalent to (¬p or ¬q).
+
+            """),
+        ("Dutch prices", """
+            Prijslijst 1975
+            Een brood kost ƒ 1,20 en een liter melk ƒ 0,95.
+            Voor één kilo kaas betaalt u ƒ 9,50.
+            Dat is erg duur, zegt men.
+
+            """),
+        ("more Dutch prices", """
+            Prijslijst 1975
+            Een brood kost ƒ 1,20 en een liter melk ƒ 0,95; koffie ƒ 3,10.
+            Voor één kilo kaas betaalt u ƒ 9,50, en voor twee ƒ 18,00.
+            Het café op de hoek rekent ƒ 0,75 voor een kopje.
+
+            """),
+        ("a function", "Let ƒ(x) = x² + 1. Then ƒ(2) = 5 and ƒ(3) = 10; ƒ is even.\n"),
+        ("approximate values", "The trip is ˜5 km, ˜2 hours, and costs ˜10 €.\n"),
+        ("PDF umlauts", "Mu¨ller and Scho¨n wrote about the Bo¨rse in Du¨sseldorf.\n"),
+        ("PDF cedilla and acute", "The fac¸ade of the gar¸con’s cafe´ was painted.\n"),
+        ("a menu", "File ¦ Edit ¦ View ¦ Help\n"),
+        ("a menu with apostrophes", "File ¦ Edit ¦ View ¦ Help\nIt’s the editor’s menu.\n"),
+        ("Spanish names", "Lista: A. Pérez, B. López, Ñ. Ibáñez, C. Núñez, D. Muñoz.\n"),
+        ("the letter Ñ", "La letra Ñ\nÑ de ñandú. Ñ de ñu. Ñ de año.\nLa Ñ es una letra española.\n"),
+        ("Portuguese interjections", "Ô de casa! Ô meu Deus! Ô José, venha cá. Não há ninguém aqui.\n"),
+        ("Italian ordinals", "Il 1º maggio è festa. Il 2º giorno è lunedì. Il 3º è martedì. Così è.\n"),
+        ("Catalan", "L’àvia va dir: “Ô, quina il·lusió!” El col·legi és a prop. Ç és una lletra.\n"),
+        ("Spanish questions", "¿Qué? ¿Cómo? ¿Dónde? ¡Olé! Él dijo que sí.\n"),
+        ("Irish places", "Tá sé i nÉirinn, in Éirinn, agus na hÉireann; an tÉireannach agus na hÁrainn.\n"),
     ]
 }

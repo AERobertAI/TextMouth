@@ -8,37 +8,28 @@ import XCTest
 /// from its bytes is left to the default.
 final class TextEncodingGuesserTests: XCTestCase {
 
-    // MARK: - Helpers
-
-    /// `text` written as a file in the encoding named `name`: the bytes, and
-    /// the text they hold, less the characters the encoding cannot write.
-    private func file(_ text: String, inEncodingNamed name: String) throws -> (bytes: Data, text: String) {
-        let encoding = try XCTUnwrap(TextEncodingFixtures.encoding(named: name), name)
-        let written = TextEncodingFixtures.writable(text, in: encoding)
-        let bytes = try XCTUnwrap(written.data(using: encoding, allowLossyConversion: false), name)
-        return (bytes, written)
-    }
-
-    /// The first paragraph of the fixtures in `language`.
-    private func paragraph(in language: String) throws -> String {
-        try XCTUnwrap(TextEncodingFixtures.paragraphs.first { $0.language == language }, language).text
-    }
+    private typealias Fixtures = TextEncodingFixtures
 
     // MARK: - Prose in Its Own Encoding
 
     /// A paragraph of prose is read back exactly in each encoding a file in
-    /// its language is saved in, with one exception that is the point: a
+    /// its language is saved in, with two exceptions that are the point: a
     /// file Windows-1252 reads correctly (Windows-1252 itself, ISO Latin 1)
-    /// is not guessed at.
+    /// is not guessed at, and neither is a file whose Windows-1252 reading
+    /// shows too little to be called wrong (Hungarian's "ő" and "ű" read as
+    /// "õ" and "û", French "œ" and "€" in Latin 9 read as "½" and "¤"): it
+    /// stays as it was read until now.
     func testEveryFixtureParagraphIsReadRightInEachOfItsEncodings() throws {
-        for paragraph in TextEncodingFixtures.paragraphs {
+        for paragraph in Fixtures.paragraphs {
             for name in paragraph.encodings {
-                let (bytes, text) = try file(paragraph.text, inEncodingNamed: name)
+                let (bytes, text) = try Fixtures.file(paragraph.text, inEncodingNamed: name)
                 let context = "\(paragraph.language) in \(name)"
                 let guess = TextEncodingGuesser.guess(bytes)
-                if TextEncodingFixtures.defaultEncodings.contains(name) {
+                if Fixtures.defaultEncodings.contains(name) {
                     XCTAssertNil(guess, context)
                     XCTAssertEqual(TextFileDecoder.windows1252Text(bytes), text, context)
+                } else if paragraph.leftToTheDefault.contains(name) {
+                    XCTAssertNil(guess, context)
                 } else {
                     XCTAssertEqual(guess?.text, text, context)
                 }
@@ -61,7 +52,6 @@ final class TextEncodingGuesserTests: XCTestCase {
             ("Russian", "cp866", "cp866"),
             ("Russian", "iso-8859-5", "iso-8859-5"),
             ("Ukrainian", "koi8-u", "koi8-u"),
-            ("French in Latin 9", "iso-8859-15", "iso-8859-15"),
             ("Greek", "windows-1253", "windows-1253"),
             ("Turkish", "windows-1254", "windows-1254"),
             ("Hebrew", "windows-1255", "iso-8859-8"),
@@ -69,7 +59,7 @@ final class TextEncodingGuesserTests: XCTestCase {
             ("Japanese", "euc-jp", "euc-jp"),
         ]
         for (language, encoding, identifier) in cases {
-            let (bytes, _) = try file(paragraph(in: language), inEncodingNamed: encoding)
+            let (bytes, _) = try Fixtures.file(Fixtures.paragraph(in: language), inEncodingNamed: encoding)
             XCTAssertEqual(TextEncodingGuesser.guess(bytes)?.identifier, identifier, "\(language) in \(encoding)")
         }
     }
@@ -136,10 +126,10 @@ final class TextEncodingGuesserTests: XCTestCase {
             "Það var þriðjudagur og veðrið var gott. Hann fór út með hundinn sinn, og þau gengu lengi meðfram ánni. Ég held að hann hafi verið ánægður.",
             "The conference in Zürich featured talks by Müller, a French chef who served crème brûlée, jalapeño soufflé, and smörgåsbord with piñata cake. Naïve? Perhaps. Déjà vu: fiancée, résumé, façade, coöperate.",
             "<p>Café — “quotes” and ‘single’ — © 2024 • Terms</p>\n<p>Año nuevo — ¡feliz!</p>",
-        ]
+        ] + Fixtures.windows1252Texts.map(\.text)
         for text in texts {
             for name in ["windows-1252", "iso-8859-1"] {
-                let encoding = try XCTUnwrap(TextEncodingFixtures.encoding(named: name))
+                let encoding = try XCTUnwrap(Fixtures.encoding(named: name))
                 // Some of these cannot be written in Latin 1; they are only tried where they can.
                 guard let bytes = text.data(using: encoding, allowLossyConversion: false) else { continue }
                 XCTAssertNil(TextEncodingGuesser.guess(bytes), "\(name): \(text.prefix(40))")
@@ -151,7 +141,31 @@ final class TextEncodingGuesserTests: XCTestCase {
     /// is left to the default: a Mac Roman sentence of two accents reads as
     /// Central European, KOI8, or Mac Roman equally well.
     func testAFewAccentsThatFitSeveralEncodingsAreLeftAlone() throws {
-        let (bytes, _) = try file("«Qui è sempre andata così»", inEncodingNamed: "macintosh")
+        let (bytes, _) = try Fixtures.file("«Qui è sempre andata così»", inEncodingNamed: "macintosh")
+        XCTAssertNil(TextEncodingGuesser.guess(bytes))
+    }
+
+    /// Windows-1252 text full of oddities is not guessed away from, however
+    /// many of them it holds: 1,500 texts of English prose, curly punctuation,
+    /// loanwords, and every strange Windows-1252 character, in the mixtures
+    /// `SyntheticWesternText` makes from a seed. (The guesser that took
+    /// these characters for signs of another encoding changed about one text
+    /// in ten.)
+    func testSyntheticWesternTextIsNeverGuessedAwayFromWindows1252() throws {
+        for seed in 1...1_500 {
+            let text = SyntheticWesternText.text(seed: UInt64(seed))
+            let bytes = try XCTUnwrap(text.data(using: .windowsCP1252, allowLossyConversion: false), "seed \(seed)")
+            XCTAssertNil(TextEncodingGuesser.guess(bytes), "seed \(seed): \(text.prefix(60))")
+        }
+    }
+
+    /// A byte that Windows-1252 leaves undefined, stray in the text, is one
+    /// oddity of one character, not the sign of a wrong reading however often
+    /// it comes: three 0x9D bytes in an English file do not turn it into
+    /// anything else.
+    func testAStrayUndefinedByteRepeatedIsNotASignOfAWrongReading() {
+        let bytes = Data("It\u{92}s a test\u{9D} of the system\u{92}s files\u{9D} and they\u{92}re fine\u{9D}.\n".unicodeScalars.map { UInt8($0.value) })
+        XCTAssertEqual(bytes.filter { $0 == 0x9D }.count, 3)
         XCTAssertNil(TextEncodingGuesser.guess(bytes))
     }
 
@@ -179,7 +193,7 @@ final class TextEncodingGuesserTests: XCTestCase {
 
         XCTAssertNil(TextEncodingGuesser.guess(Data(repeating: 0, count: 10_000) + Data([0xE9])))
 
-        var (russian, _) = try file(paragraph(in: "Russian"), inEncodingNamed: "windows-1251")
+        var (russian, _) = try Fixtures.file(Fixtures.paragraph(in: "Russian"), inEncodingNamed: "windows-1251")
         for index in stride(from: 0, to: russian.count, by: 10) { russian[index] = 0x01 }
         XCTAssertNil(TextEncodingGuesser.guess(russian))
     }
@@ -189,7 +203,7 @@ final class TextEncodingGuesserTests: XCTestCase {
     /// other encoding is named for text that is almost all UTF-8.
     func testUTF8TextWithADefectIsNotGuessed() throws {
         for language in ["French", "Russian", "Polish", "Greek", "Japanese", "Simplified Chinese", "Korean", "Hebrew"] {
-            let utf8 = Data(try paragraph(in: language).utf8)
+            let utf8 = Data(try Fixtures.paragraph(in: language).utf8)
             var stray = utf8
             stray.insert(0xE9, at: stray.count / 2)
             XCTAssertNil(TextEncodingGuesser.guess(stray), "\(language): a stray byte")
@@ -201,7 +215,7 @@ final class TextEncodingGuesserTests: XCTestCase {
     /// with a byte that begins no character is read by no encoding, and so
     /// is not guessed.
     func testAFileNoEncodingReadsWholeIsNotGuessed() throws {
-        var (japanese, _) = try file(paragraph(in: "Japanese"), inEncodingNamed: "shift_jis")
+        var (japanese, _) = try Fixtures.file(Fixtures.paragraph(in: "Japanese"), inEncodingNamed: "shift_jis")
         japanese.insert(0xFF, at: japanese.count / 2)
         XCTAssertNil(TextEncodingGuesser.guess(japanese))
     }
@@ -214,7 +228,7 @@ final class TextEncodingGuesserTests: XCTestCase {
     /// the last byte; and a long file of ASCII with one accented byte at the
     /// end is left alone.
     func testALongFileIsGuessedFromTheLinesWithAccentedBytes() throws {
-        let (russian, text) = try file(paragraph(in: "Russian"), inEncodingNamed: "windows-1251")
+        let (russian, text) = try Fixtures.file(Fixtures.paragraph(in: "Russian"), inEncodingNamed: "windows-1251")
         let preamble = String(repeating: "A long line of plain ASCII that says nothing at all.\n", count: 80_000)
         XCTAssertGreaterThan(preamble.utf8.count, 4_000_000)
         let guess = try XCTUnwrap(TextEncodingGuesser.guess(Data(preamble.utf8) + russian))
@@ -228,7 +242,7 @@ final class TextEncodingGuesserTests: XCTestCase {
     /// from the part examined and read whole, down to the last byte, and the
     /// reading writes back to the same bytes.
     func testALargeFileIsReadWholeAndWritesBackToTheSameBytes() throws {
-        let (russian, text) = try file(paragraph(in: "Russian"), inEncodingNamed: "koi8-r")
+        let (russian, text) = try Fixtures.file(Fixtures.paragraph(in: "Russian"), inEncodingNamed: "koi8-r")
         var large = Data()
         var expected = ""
         for _ in 0..<2_500 {
@@ -245,7 +259,7 @@ final class TextEncodingGuesserTests: XCTestCase {
     /// A classic Mac OS file ends its lines with a carriage return alone, so
     /// it has no line feed to find lines by, and is examined all the same.
     func testALineEndedByACarriageReturnAloneIsExamined() throws {
-        let (russian, text) = try file(paragraph(in: "Russian"), inEncodingNamed: "windows-1251")
+        let (russian, text) = try Fixtures.file(Fixtures.paragraph(in: "Russian"), inEncodingNamed: "windows-1251")
         var classic = Data()
         var expected = ""
         for _ in 0..<40 {
@@ -265,7 +279,7 @@ final class TextEncodingGuesserTests: XCTestCase {
     /// a space now and then, is cut at a space; and one longer with no ASCII
     /// byte has nowhere to be cut, and is left out, so nothing is guessed.
     func testALineLongerThanTheSampleIsCutWithoutSplittingACharacter() throws {
-        let (japanese, text) = try file(paragraph(in: "Japanese"), inEncodingNamed: "shift_jis")
+        let (japanese, text) = try Fixtures.file(Fixtures.paragraph(in: "Japanese"), inEncodingNamed: "shift_jis")
         let limit = TextEncodingGuesser.sampleLimit
 
         var solid = Data()
@@ -300,7 +314,7 @@ final class TextEncodingGuesserTests: XCTestCase {
     /// UTF-8, which `guess(_:)` never examines; `guessSevenBit(_:)` finds it by
     /// its structure, and reads it whole.
     func testAJapaneseFileInISO2022JPIsFoundThoughItIsValidUTF8() throws {
-        let text = try paragraph(in: "Japanese") + "\nStation 9 は静かです。\n"
+        let text = try Fixtures.paragraph(in: "Japanese") + "\nStation 9 は静かです。\n"
         let data = try XCTUnwrap(text.data(using: .iso2022JP))
         XCTAssertNotNil(String(data: data, encoding: .utf8), "ISO-2022-JP is valid UTF-8, which is the point")
         XCTAssertTrue(data.allSatisfy { $0 < 0x80 })
@@ -349,16 +363,16 @@ final class TextEncodingGuesserTests: XCTestCase {
     /// is used, so Russian text KOI8-R and KOI8-U read alike is named KOI8-R,
     /// while Ukrainian text, which only KOI8-U reads, is named KOI8-U.
     func testReadingsThatReadAlikeAreNamedByTheCatalogsOrder() throws {
-        let (russian, _) = try file(paragraph(in: "Russian"), inEncodingNamed: "koi8-r")
+        let (russian, _) = try Fixtures.file(Fixtures.paragraph(in: "Russian"), inEncodingNamed: "koi8-r")
         XCTAssertEqual(TextEncodingGuesser.guess(russian)?.identifier, "koi8-r")
-        let (ukrainian, _) = try file(paragraph(in: "Ukrainian"), inEncodingNamed: "koi8-u")
+        let (ukrainian, _) = try Fixtures.file(Fixtures.paragraph(in: "Ukrainian"), inEncodingNamed: "koi8-u")
         XCTAssertEqual(TextEncodingGuesser.guess(ukrainian)?.identifier, "koi8-u")
     }
 
     /// The same bytes always give the same guess.
     func testTheSameBytesGiveTheSameGuessEveryTime() throws {
         for (language, name) in [("French", "macintosh"), ("Czech", "windows-1250"), ("Russian", "koi8-r"), ("Japanese", "shift_jis")] {
-            let (bytes, _) = try file(paragraph(in: language), inEncodingNamed: name)
+            let (bytes, _) = try Fixtures.file(Fixtures.paragraph(in: language), inEncodingNamed: name)
             let first = TextEncodingGuesser.guess(bytes)
             XCTAssertNotNil(first, name)
             for _ in 0..<3 {
