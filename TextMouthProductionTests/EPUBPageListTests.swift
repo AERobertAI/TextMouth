@@ -382,6 +382,72 @@ final class EPUBPageListTests: XCTestCase {
         XCTAssertEqual(block.chapter.pages.map(\.label), ["9"])
     }
 
+    /// Inline markup assembled at random: words, spaces, wrappers, and the
+    /// kinds of page-break element a heading could hold (empty, only its
+    /// number with or without a period, the number in the other numbering,
+    /// and words), nested up to `depth` deep.
+    private func randomInlineMarkup(depth: Int, using generator: inout SeededGenerator) -> String {
+        var html = ""
+        for _ in 0..<Int.random(in: 1...4, using: &generator) {
+            let number = Int.random(in: 1...30, using: &generator)
+            switch Int.random(in: 0..<10, using: &generator) {
+            case 0..<3:
+                html += ["alpha", "Beta ", " gamma", "delta, ", "(epsilon)", "zeta."].randomElement(using: &generator) ?? ""
+            case 3:
+                html += " "
+            case 4:
+                html += "<span epub:type=\"pagebreak\" title=\"\(number)\"></span>"
+            case 5:
+                html += "<span epub:type=\"pagebreak\" title=\"\(number)\">\(number)</span>"
+            case 6:
+                html += "<span role=\"doc-pagebreak\" aria-label=\"\(number)\"> \(number). </span>"
+            case 7:
+                html += "<span epub:type=\"pagebreak\" title=\"5\">V</span>"
+            case 8:
+                html += "<span epub:type=\"pagebreak\" title=\"\(number)\">Page words</span>"
+            default:
+                guard depth > 0 else { continue }
+                let tag = ["em", "b", "span", "a"].randomElement(using: &generator) ?? "span"
+                html += "<\(tag)>" + randomInlineMarkup(depth: depth - 1, using: &generator) + "</\(tag)>"
+            }
+        }
+        return html
+    }
+
+    /// For inline markup of every arrangement, a heading's label is the
+    /// words the same markup gives a paragraph, whitespace aside, and the
+    /// pages are the same: the label leaves out exactly the page-break
+    /// elements the body text does. The seed is fixed, so a failure names
+    /// markup that replays exactly.
+    func testHeadingLabelsAgreeWithParagraphTextOnGeneratedMarkup() throws {
+        var generator = SeededGenerator(state: 0x5041_4745)
+        var compared = 0
+        for _ in 0..<400 {
+            let markup = randomInlineMarkup(depth: 3, using: &generator)
+            let paragraph = try parsed("<p>\(markup)</p>")
+            let heading = try parsed("<h2>\(markup)</h2>")
+            // Markup with no word at all makes no heading, and no paragraph.
+            guard let label = heading.chapter.headings.first?.text else {
+                XCTAssertEqual(normalizedWords(paragraph.chapter.text), "", markup)
+                continue
+            }
+            compared += 1
+            XCTAssertEqual(normalizedWords(label), normalizedWords(paragraph.chapter.text), markup)
+            XCTAssertEqual(heading.chapter.pages.map(\.label), paragraph.chapter.pages.map(\.label), markup)
+            // One failing arrangement explains the rest; stop there.
+            if (testRun?.totalFailureCount ?? 0) > 0 { break }
+        }
+        XCTAssertGreaterThan(compared, 200, "too few arrangements were compared")
+    }
+
+    /// `text` with each run of whitespace one space and none at either end.
+    private func normalizedWords(_ text: String) -> String {
+        text.unicodeScalars
+            .split(whereSeparator: \.properties.isWhitespace)
+            .map { String(String.UnicodeScalarView($0)) }
+            .joined(separator: " ")
+    }
+
     /// Words in a page-break element are words of the heading, as they are
     /// of a paragraph (ST02): only a page's own number is left out of the
     /// label. A page the book's page list names is the same, whatever its
