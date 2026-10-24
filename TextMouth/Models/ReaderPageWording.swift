@@ -56,6 +56,19 @@ enum ReaderPageWording {
         "Jumped to \(page(label, occurrence: occurrence))."
     }
 
+    /// What Go to Page says when the page typed has no words of its own, so
+    /// the cursor cannot be on it: a blank page shares its place with the
+    /// page after it, and a last page that begins after the book's last word
+    /// is reached at that word, on the page before it. "Page 7 has no words,
+    /// so the cursor is on page 8." Without the reason the listener hears
+    /// "Jumped to page 8." for the page they asked for 7. `label` is the page
+    /// asked for as the book spells it, `reached` the page the cursor is on
+    /// (the one the status row names), and `occurrence` which of the pages
+    /// with that label it is, as `jumped(to:occurrence:)` says it.
+    static func hasNoWords(_ label: String, cursorOn reached: String, occurrence: Int? = nil) -> String {
+        "Page \(label) has no words, so the cursor is on \(page(reached, occurrence: occurrence))."
+    }
+
     /// A page as a sentence names it: "page 12", or, for one of several
     /// pages that carry its label, "page 2, the second page labelled 2".
     private static func page(_ label: String, occurrence: Int?) -> String {

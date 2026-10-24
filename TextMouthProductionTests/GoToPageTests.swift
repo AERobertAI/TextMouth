@@ -95,6 +95,14 @@ final class GoToPageTests: XCTestCase {
             ReaderPageWording.jumped(to: "2", occurrence: 2),
             "Jumped to page 2, the second page labelled 2."
         )
+        XCTAssertEqual(
+            ReaderPageWording.hasNoWords("7", cursorOn: "8"),
+            "Page 7 has no words, so the cursor is on page 8."
+        )
+        XCTAssertEqual(
+            ReaderPageWording.hasNoWords("5", cursorOn: "2", occurrence: 2),
+            "Page 5 has no words, so the cursor is on page 2, the second page labelled 2."
+        )
         XCTAssertEqual(ReaderPageWording.openHint, "Opens jump to page controls")
         XCTAssertEqual(ReaderPageWording.hideHint, "Hides jump to page controls")
         XCTAssertEqual(ReaderPageWording.switchHint, "Switches to jump to page controls")
@@ -130,11 +138,12 @@ final class GoToPageTests: XCTestCase {
     }
 
     /// Go to Page says the page the status row names at the place it reaches,
-    /// which is the last of the pages that begin there: a blank page "7"
-    /// shares its place with page "8", so asking for 7 lands where the row
-    /// reads "Page 8", and "Jumped to page 7." would have told the listener a
-    /// page the row, Where Am I?, and Next Page all deny. A page that begins
-    /// alone is said as it is, whatever case it was typed in.
+    /// which is the last of the pages that begin there, and why it is not the
+    /// page asked for: a blank page "7" shares its place with page "8", so
+    /// asking for 7 lands where the row reads "Page 8", and "Jumped to page
+    /// 7." would have told the listener a page the row, Where Am I?, and Next
+    /// Page all deny. A page that begins alone is said as it is, whatever
+    /// case it was typed in.
     func testGoToPageSaysThePageTheRowNames() {
         let pages = [
             PageBreak(label: "6", chapterIndex: 0, characterOffset: 0),
@@ -150,7 +159,7 @@ final class GoToPageTests: XCTestCase {
         XCTAssertNil(reader.goToPage(typed: "7"))
         XCTAssertEqual(pagedPlace(of: reader), "0:100")
         XCTAssertEqual(reader.currentPagePosition.page?.label, "8", "the row names the later page")
-        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page 8.")
+        XCTAssertEqual(reader.lastAnnouncement, "Page 7 has no words, so the cursor is on page 8.")
 
         // The later page itself, typed, is the same place and the same words.
         reader.lastAnnouncement = nil
@@ -169,10 +178,10 @@ final class GoToPageTests: XCTestCase {
     /// not worked out from the page typed: a page that begins after the
     /// book's last word (the chapter holds 100 characters, and page 9 begins
     /// at 100) is reached at the last word, where the row names the page
-    /// before it, and that is the page said. The sentence is pinned as it is
-    /// spoken, and the page it names is the row's, checked on its own: the
-    /// expected words are not taken from the row, which the code under test
-    /// reads as well.
+    /// before it, and that is the page said, with the reason the cursor is
+    /// not on page 9. The sentence is pinned as it is spoken, and the page it
+    /// names is the row's, checked on its own: the expected words are not
+    /// taken from the row, which the code under test reads as well.
     func testGoToPageSaysThePageAtTheCursorWhereTheJumpStopsShort() {
         let pages = [
             PageBreak(label: "7", chapterIndex: 1, characterOffset: 0),
@@ -188,7 +197,51 @@ final class GoToPageTests: XCTestCase {
 
         XCTAssertEqual(reader.currentChapterIndex, 1)
         XCTAssertEqual(reader.currentPagePosition.page?.label, "8", "the reader stands on page 8, whose words end the book")
-        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page 8.")
+        XCTAssertEqual(reader.lastAnnouncement, "Page 9 has no words, so the cursor is on page 8.")
+    }
+
+    /// The reason and the place go together: a blank page asked for, whose
+    /// place the cursor shares with one of several pages of a label, is told
+    /// as "Page 5 has no words, so the cursor is on page 2, the second page
+    /// labelled 2." A blank page that shares a label with the page it is
+    /// beside is told too, since it is another page; and a page that has
+    /// words, whatever its label, is told without a reason.
+    func testTheReasonNamesWhichPageOfASharedLabelTheCursorIsOn() {
+        let pages = [
+            PageBreak(label: "2", chapterIndex: 0, characterOffset: 0),
+            PageBreak(label: "5", chapterIndex: 0, characterOffset: 50),
+            PageBreak(label: "2", chapterIndex: 0, characterOffset: 50),
+            PageBreak(label: "3", chapterIndex: 0, characterOffset: 100),
+            PageBreak(label: "3", chapterIndex: 0, characterOffset: 100),
+        ]
+        let reader = makePagedReader(pages: pages)
+        defer { reader.close() }
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 0
+
+        // Page 5 is blank: the cursor is on the second page labelled 2.
+        XCTAssertNil(reader.goToPage(typed: "5"))
+        XCTAssertEqual(pagedPlace(of: reader), "0:50")
+        XCTAssertEqual(
+            reader.lastAnnouncement,
+            "Page 5 has no words, so the cursor is on page 2, the second page labelled 2."
+        )
+
+        // The first page labelled 3 is blank beside the second, which has
+        // the words: the reason, and the second of them.
+        reader.currentCharacterOffset = 0
+        XCTAssertNil(reader.goToPage(typed: "3"))
+        XCTAssertEqual(pagedPlace(of: reader), "0:100")
+        XCTAssertEqual(
+            reader.lastAnnouncement,
+            "Page 3 has no words, so the cursor is on page 3, the second page labelled 3."
+        )
+
+        // "2" asked for from there goes round to its first page, which has
+        // words of its own: no reason, and the place it is.
+        XCTAssertNil(reader.goToPage(typed: "2"))
+        XCTAssertEqual(pagedPlace(of: reader), "0:0")
+        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page 2, the first page labelled 2.")
     }
 
     /// A refusal is the sentence, and nothing moves or is said.
