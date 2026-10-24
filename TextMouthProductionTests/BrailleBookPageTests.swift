@@ -434,6 +434,68 @@ final class BrailleBookPageTests: XCTestCase {
         XCTAssertEqual(markdown.components(separatedBy: "<!-- page: ").count - 1, words)
     }
 
+    // MARK: - Passages Over a Page, Read by liblouis (review, October 24)
+
+    /// Each of `paragraphs`, braille with a blank cell between words, read
+    /// back by liblouis itself with `table`, with a page beginning at each
+    /// word whose index `pageWords` names: the reading with pages, and the
+    /// reading without them.
+    private func readBack(
+        _ paragraphs: [(braille: String, pageWords: [Int])], table: String
+    ) throws -> (withPages: String, withoutPages: String) {
+        var starts: [BrailleBookReader.PageStart] = []
+        for (index, paragraph) in paragraphs.enumerated() {
+            let words = paragraph.braille.components(separatedBy: String(BrailleCells.blank))
+            for word in paragraph.pageWords where words.indices.contains(word) {
+                let cell = words[..<word].reduce(0) { $0 + $1.unicodeScalars.count + 1 }
+                starts.append(start(String(starts.count + 1), block: index, cell: cell))
+            }
+        }
+        let blocks = paragraphs.map { BrailleBlock.paragraph(text: $0.braille) }
+        let translation = BrailleBookReader.PagedTranslation(blocks: blocks, starts: starts)
+        let folder = try makeSandboxDirectory("BraillePassages")
+        let printed = try BrailleTranslator.translate(translation.texts, table: table, direction: .brailleToPrint, workingIn: folder)
+        let withPages = try XCTUnwrap(translation.markdown(from: printed))
+        let withoutPages = try XCTUnwrap(BrailleBookReader.PagedTranslation(blocks: blocks, starts: []).markdown(from: printed))
+        return (withPages, withoutPages)
+    }
+
+    /// UEB's passages, read back by liblouis itself, with pages beginning
+    /// inside them: a capitals passage, a grade 1 passage, and a numeric
+    /// passage, each cut where its opening indicator is left behind. liblouis
+    /// 3.39.0 reads every one a word at a time, its indicator acting on the
+    /// first word only ("one two Three four five" for a capitals passage),
+    /// in the whole paragraph as in each piece, so each piece's print is the
+    /// whole print's stretch and every page is found at its first word; the
+    /// reading text is the whole paragraph's. A passage whose pieces read
+    /// otherwise would fall back to the place before it, which the tests of
+    /// made-up print above check.
+    func testPagesInsideUEBPassagesAreFoundAtTheirFirstWords() throws {
+        let contracted = try readBack([
+            (braille: "⠐⠕⠀⠞⠺⠕⠀⠠⠠⠠⠹⠗⠑⠑⠀⠋⠳⠗⠀⠋⠊⠧⠑⠀⠎⠊⠭⠀⠎⠑⠧⠢⠠⠄⠀⠑⠊⠣⠞⠀⠝⠔⠑", pageWords: [0, 4, 5, 7]),
+            (braille: "⠐⠕⠀⠰⠰⠰⠃⠀⠉⠀⠙⠀⠑⠀⠋⠰⠄⠀⠝⠔⠑", pageWords: [3, 5]),
+        ], table: "en-ueb-g2.ctb")
+        let uncontracted = try readBack([(braille: "⠕⠝⠑⠀⠼⠼⠁⠃⠀⠉⠙⠀⠑⠋⠼⠄⠀⠝⠊⠝⠑", pageWords: [0, 2, 3])], table: grade1)
+
+        for (reading, words) in [(contracted, ["one", "five", "six", "eight", "do", "from"]), (uncontracted, ["one", "cd", "ef"])] {
+            try assertSameReading(reading.withPages, reading.withoutPages)
+            let paged = try chapter(reading.withPages)
+            XCTAssertEqual(paged.pages.count, words.count, paged.text)
+            // Each page at its first word: the next place, after the page
+            // before, where that word begins.
+            var from = paged.text.startIndex
+            for (page, word) in zip(paged.pages, words) {
+                let found = try XCTUnwrap(paged.text.range(of: word, range: from..<paged.text.endIndex), "\(word) in \(paged.text)")
+                XCTAssertEqual(page.characterOffset, paged.text.utf16Offset(of: found.lowerBound), "\(word) in \(paged.text)")
+                from = found.upperBound
+            }
+        }
+        // What liblouis 3.39.0 reads, which the placements above rest on.
+        XCTAssertEqual(try chapter(contracted.withoutPages).text,
+                       "one two Three four five six seven eight nine\n\none b can do every from' nine")
+        XCTAssertEqual(try chapter(uncontracted.withoutPages).text, "one 12 cd ef' nine")
+    }
+
     // MARK: - Every Bundled Table
 
     /// A long book, the sample chapter's paragraphs joined three by three and
@@ -474,13 +536,15 @@ final class BrailleBookPageTests: XCTestCase {
             let paged = try chapter(withPages)
             XCTAssertEqual(paged.pages.map(\.label), (1...pages.count).map(String.init), table)
 
-            // Where the analyzer says each page begins, and the word its
-            // first row's first braille word reads as, alone.
+            // The test is worth its while only if pages begin inside paragraphs.
             let structure = BraillePageAnalyzer.structure(of: try BrailleFileReader.read(url, as: .brf))
             XCTAssertTrue(structure.pages.contains { $0.firstCellOffset > 0 }, "\(table): no page begins inside a paragraph")
-            let firstWords = structure.pages.map { page -> String in
-                guard structure.blocks.indices.contains(page.firstBlockIndex) else { return "" }
-                let cells = structure.blocks[page.firstBlockIndex].text.unicodeScalars.dropFirst(page.firstCellOffset)
+            // Where the writer began each page, never what the analyzer made
+            // of it: the first braille word of each page's first row with
+            // cells, as the layout wrote it, read alone.
+            let firstWords = pages.map { rows -> String in
+                let row = rows.first { $0.unicodeScalars.contains { $0 != BrailleCells.blank } } ?? ""
+                let cells = row.unicodeScalars.drop { $0 == BrailleCells.blank }
                 return String(String.UnicodeScalarView(cells.prefix { $0 != BrailleCells.blank }))
             }
             let printedWords = try BrailleTranslator.translate(firstWords, table: table, direction: .brailleToPrint, workingIn: folder)

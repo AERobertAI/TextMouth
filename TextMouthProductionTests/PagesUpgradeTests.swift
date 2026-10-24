@@ -348,6 +348,52 @@ final class PagesUpgradeTests: XCTestCase {
         XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([row], access: .live), [])
     }
 
+    /// A BRL, which has no pages, shares braille's page reader (V07): read
+    /// before pages, it is read again once at the next launch, keeps its
+    /// content.md byte for byte, gains no pages, keeps no copy, and is
+    /// stamped, so no later launch reads it.
+    func testABRLIsReadAgainOnceKeepingItsTextAndIsStamped() async throws {
+        let world = try makeIntegrationWorld("Pages Upgrade BRL")
+        let places = FixturePlaces(position: "taken it", bookmark: "Netherfield is taken", skippedHeading: nil)
+        let fixture = try makeBrailleBookBeforePages(sample: "brl/pride-and-prejudice-ch1-grade1.brl", places: places, in: world)
+        XCTAssertTrue(PageReaderVersions.isDueForPages(fixture.book))
+
+        await runBatch(in: world)
+
+        let row = try XCTUnwrap(world.library.bookByID(fixture.book.id))
+        XCTAssertEqual(try Data(contentsOf: MarkdownCacheService.cacheURL(for: row)), fixture.bytes)
+        XCTAssertTrue(try MarkdownCacheService.loadFromCache(for: row).pages.isEmpty)
+        XCTAssertEqual(row.pageReaderVersion, PageReaderVersions.current(for: .braille))
+        XCTAssertEqual(keptCopies(of: row), [])
+        XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([row], access: .live), [])
+    }
+
+    /// A braille book that cannot be read for its pages, because one of this
+    /// Mac's tables it was read with has changed since (review R2: reading it
+    /// again could move its text), keeps its text and is stamped
+    /// "+failed-once"; the next launch tries once more and stamps "+failed",
+    /// and no launch after that reads it.
+    func testABrailleBookThatCannotBeReadIsStampedOnceThenForGood() async throws {
+        let world = try makeIntegrationWorld("Pages Upgrade Braille Failure")
+        let fixture = try makeBrailleBookBeforePages(adjustingBook: { book in
+            book.brailleTable = "mac:fixture-changed.ctb"
+            book.brailleTableVersion = "0.0.1-not-this-mac"
+        }, in: world)
+        XCTAssertTrue(PageReaderVersions.isDueForPages(fixture.book))
+        let current = try XCTUnwrap(PageReaderVersions.current(for: .braille))
+
+        await runBatch(in: world)
+        let once = try XCTUnwrap(world.library.bookByID(fixture.book.id))
+        XCTAssertEqual(once.pageReaderVersion, current + "+failed-once")
+        XCTAssertEqual(try Data(contentsOf: MarkdownCacheService.cacheURL(for: once)), fixture.bytes)
+
+        await runBatch(in: world)
+        let twice = try XCTUnwrap(world.library.bookByID(fixture.book.id))
+        XCTAssertEqual(twice.pageReaderVersion, current + "+failed")
+        XCTAssertEqual(try Data(contentsOf: MarkdownCacheService.cacheURL(for: twice)), fixture.bytes)
+        XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([twice], access: .live), [])
+    }
+
     /// A plain text book read before pages is read again at the next launch
     /// and gains the pages its form feeds begin (PG13, V07), the sample's
     /// four, with every place where it was, since pages add only markers to
@@ -907,11 +953,18 @@ final class PagesUpgradeTests: XCTestCase {
         position: "before it crosses", bookmark: "In winter the evening", skippedHeading: "WINTER SERVICE"
     )
 
-    /// The Grade 1 braille sample as `makeBookBeforePages` leaves a book from
-    /// before pages, imported with the table its braille is written in.
-    private func makeBrailleBookBeforePages(in world: IntegrationWorld) throws -> BookBeforePages {
+    /// The braille sample `sample` (the Grade 1 BRF unless named) as
+    /// `makeBookBeforePages` leaves a book from before pages, with `places`
+    /// and `adjustingBook` as it takes them, imported with the Grade 1 table
+    /// the samples are written in.
+    private func makeBrailleBookBeforePages(
+        sample: String = "brf/pride-and-prejudice-ch1-grade1.brf",
+        places: FixturePlaces = PagesUpgradeTests.braillePlaces,
+        adjustingBook: ((inout Book) -> Void)? = nil,
+        in world: IntegrationWorld
+    ) throws -> BookBeforePages {
         try BraillePreferences.$tableForImports.withValue(Self.brailleTable) {
-            try makeBookBeforePages(sample: "brf/pride-and-prejudice-ch1-grade1.brf", places: Self.braillePlaces, in: world)
+            try makeBookBeforePages(sample: sample, places: places, adjustingBook: adjustingBook, in: world)
         }
     }
 
@@ -960,8 +1013,9 @@ final class PagesUpgradeTests: XCTestCase {
     /// build no longer extracts. With `withPages`, content.md is what the
     /// file gives with its page markers, which `changingText` can make an
     /// earlier page reader's (`asAnEarlierReaderWroteIt`), and `stamp` is
-    /// the page reader the record names (V05). The book's title is made
-    /// unique so that its log lines can be counted.
+    /// the page reader the record names (V05). With `adjustingBook`, the row
+    /// is changed as it says before its record is written. The book's title
+    /// is made unique so that its log lines can be counted.
     private func makeBookBeforePages(
         sample: String,
         places: FixturePlaces? = nil,
@@ -970,6 +1024,7 @@ final class PagesUpgradeTests: XCTestCase {
         recordingEdit: Bool = false,
         damagingSource: Bool = false,
         stamp: String? = nil,
+        adjustingBook: ((inout Book) -> Void)? = nil,
         in world: IntegrationWorld
     ) throws -> BookBeforePages {
         let places = places ?? Self.epubPlaces
@@ -1022,6 +1077,7 @@ final class PagesUpgradeTests: XCTestCase {
         )
         book.applyContentAnalysis(index, cacheFormatVersion: MarkdownCacheService.currentCacheVersion)
         book.pageReaderVersion = stamp
+        adjustingBook?(&book)
         book.editedText = recordingEdit
             ? index.textCacheFingerprint.map { EditedText(cacheDigest: $0.cache.digest, takenAt: Date()) }
             : nil
