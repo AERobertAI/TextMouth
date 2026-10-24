@@ -628,11 +628,14 @@ split_rule(const char *table, const widechar *cells, const formtype *bits, const
  * a rule that read cells of different emphasis together where the emphasis
  * changes (`split_rule`): contracted UEB reads "can't" from ⠉⠄⠞ as one
  * rule, whose "can" may be italic and "'t" not. The typeform liblouis read
- * from the indicators, if any, is replaced. Returns 0 when memory runs out.
+ * from the indicators is replaced, but for its bits in `from_liblouis`,
+ * which are kept: the classes no pass reads, such as EBAE's underline,
+ * which liblouis writes and reads back itself. Returns 0 when memory runs
+ * out.
  */
 static int
 give_cells_emphasis(const char *table, const widechar *cells, const formtype *bits, int n,
-		translation *t) {
+		formtype from_liblouis, translation *t) {
 	formtype *typeform = calloc((size_t)t->length + 1, sizeof *typeform);
 	int first = 0;
 	if (typeform == NULL) return 0;
@@ -647,6 +650,7 @@ give_cells_emphasis(const char *table, const widechar *cells, const formtype *bi
 			split_rule(table, cells, bits, t, typeform, first, last, start, next);
 		first = last;
 	}
+	for (int k = 0; t->typeform != NULL && k < t->length; k++) typeform[k] |= t->typeform[k] & from_liblouis;
 	free(t->typeform);
 	t->typeform = typeform;
 	return 1;
@@ -1259,12 +1263,16 @@ read_ebae(const char *table, const table_emphasis *emphasis, const widechar *cel
 		translation *result) {
 	widechar *kept = malloc(((size_t)n + 1) * sizeof *kept);
 	formtype *bits = malloc(((size_t)n + 1) * sizeof *bits);
+	formtype from_liblouis = 0;
 	int ok = 0;
 	memset(result, 0, sizeof *result);
+	/* liblouis's own reading of the classes the pass does not read. */
+	for (size_t k = 0; k < EMPHASIS_CLASS_COUNT; k++)
+		if (emphasis->code[k] != CODE_EBAE) from_liblouis |= emphasis->bit[k];
 	if (kept != NULL && bits != NULL) {
 		int count = strip_ebae_signs(emphasis, cells, n, kept, bits);
 		ok = translate(table, 0, kept, NULL, count, 1, result) &&
-				give_cells_emphasis(table, kept, bits, count, result);
+				give_cells_emphasis(table, kept, bits, count, from_liblouis, result);
 		if (!ok) free_translation(result);
 	}
 	free(kept);
@@ -1346,7 +1354,7 @@ read_ueb(const char *table, const table_emphasis *emphasis, const widechar *cell
 		i++;
 	}
 	ok = ok && translate(table, 0, kept, NULL, count, 1, result) &&
-			give_cells_emphasis(table, kept, bits, count, result);
+			give_cells_emphasis(table, kept, bits, count, 0, result);
 	if (!ok) free_translation(result);
 	free_translation(&first);
 	free(kept);

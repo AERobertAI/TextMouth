@@ -386,6 +386,24 @@ final class BrailleHelperProtocolTests: XCTestCase {
         assertWorkFolderEmpty()
     }
 
+    /// EBAE's underline is written and read back as liblouis has it, as on
+    /// main: liblouis reads its own EBAE underline sign back exactly, so the
+    /// readability check passes it, forward writes it (⠸⠤ between blank
+    /// cells before the word, ⠠⠄ after it), and the EBAE pass keeps the
+    /// underline liblouis reads, since the pass reads only italic and bold
+    /// (review finding 6, October 24, 2026: the pass had dropped it).
+    func testEBAEWritesAndReadsBackLiblouissUnderline() throws {
+        let text = emphasized("a cat sat on the mat", [(2..<5, .underline)])
+        for table in ebae {
+            let braille = try BrailleTranslator.translate([text], table: table, direction: .printToBraille, workingIn: work)
+            XCTAssertTrue(braille.first?.text.contains("\u{2838}\u{2824}") == true, "\(table): \(braille.map { brailleASCII($0.text) })")
+            let back = try BrailleTranslator.translate(braille, table: table, direction: .brailleToPrint, workingIn: work)
+            XCTAssertEqual(back.map(\.text), [text.text], table)
+            XCTAssertEqual(back.map { wordEmphasis($0) }, [wordEmphasis(text)], table)
+        }
+        assertWorkFolderEmpty()
+    }
+
     /// Text with no emphasis translates exactly as it did in protocol 1: the
     /// helper gives liblouis no typeform array for it. The braille is pinned
     /// as main's protocol 1 helper wrote it (at 3917aa40, October 21, 2026),
