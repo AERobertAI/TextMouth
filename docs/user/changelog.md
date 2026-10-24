@@ -4,6 +4,31 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.2.2 (October 24, 2026)
+### Reading
+- Go to Page… says the page that the status row then shows, which is the last of the pages that begin at the place it goes to, where it said the page typed.
+- Return in Go to Page's field, on a label that another page carries too, goes to that label's next page, and round to the first after the last, where it closed the panel and did nothing.
+- A page break's number inside an EPUB or HTML heading is no longer part of the heading: "Part 9Two" is now "Part Two".
+- Next Page, Previous Page, and Go to Page… do nothing while a book is still loading, where they said "This book has no pages."
+- The playback bar's navigation unit pickers leave Page out for a book without pages.
+- A PDF's own page label that looks like a number with a thousands separator, such as 1.100, stays as the PDF gives it, and a PDF already in your library keeps its old labels until Redo Text Extraction reads it again.
+- Plain text books have pages: each form feed between words begins one.
+- The first time this version opens, every braille, plain text, EPUB, and HTML book is read again once, and a braille book whose new reading differs from its text keeps a copy of its old text beside it (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+
+### Braille
+- BRF and PEF books have pages, the braille pages an embosser or a braille display counts, named by their braille page number read as print, such as 12 or p1, and Next Page, Previous Page, and Go to Page… move by them.
+- English Braille, American Edition is read with its italic and bold, and no longer reads stray signs in place of its emphasis signs, such as the period of ".cat" for an italic "cat".
+- Contracted Unified English Braille reads a whole word before an emphasis end sign as the word, so "people" is no longer "p".
+
+### Export
+- Export to BRF or PEF writes italic and bold in English Braille, American Edition, as it does in Unified English Braille.
+
+### Library
+- Replace Existing puts the new copy in the place of the old one, keeping its reading position, bookmarks, settings, folder, and place on the reading list, and an audiobook's transcript when its audio is the same, where it threw them away.
+- The duplicate question says what Replace Existing keeps and where the old copy's files go, in place of what it threw away, and for a text book that an edit of its text is kept beside the new text as a copy.
+- Replace Existing waits, and says why, while the old copy is open in a reader, being transcribed, being exported, or having its audio edited, or while some of its files are only in the cloud.
+- Edit Text says it has stopped for a book that Replace Existing replaced.
+
 ## 0.2.1 (October 23, 2026)
 ### Reading
 - Search in Book also searches an audiobook's transcript, telling you when each match is heard and moving the audio there when you choose one, and Go Back (Command-[) returns to where you were.
