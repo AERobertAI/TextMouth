@@ -251,7 +251,9 @@ final class ImportDecisionQueueTests: XCTestCase {
     /// says replacing keeps only the book's place in the library, and not
     /// its position, bookmarks with their notes, or settings, whichever copy
     /// is which; the copy matching now decides, over the one matched on
-    /// import (ST04 review, finding 1).
+    /// import (ST04 review, finding 1). Its words are true of a DAISY
+    /// talking book, which they never call "not an audiobook" (ST04 verify,
+    /// finding 2).
     func testADuplicateOfTheOtherKindSaysReplacingKeepsOnlyItsPlace() {
         let text = Book(title: "Earlier Tide", format: .daisy, filePath: "/library/a.zip", md5Hash: "text")
         let audio = Book(title: "Tide", format: .audio, filePath: "/library/b.zip", md5Hash: "audio")
@@ -263,8 +265,9 @@ final class ImportDecisionQueueTests: XCTestCase {
             kind: .duplicate(.init(book: text, existing: audio, originalURL: nil, warning: nil)),
             request: ImportRequest()
         )
-        let acrossKinds = "One copy is an audiobook and the other is not, so replacing keeps only the existing copy's folder "
-            + "and place on the reading list, not its reading position, its bookmarks and their notes, or its settings."
+        let acrossKinds = "One copy is played from its recording and the other is read aloud from its text, "
+            + "so replacing keeps only the existing copy's folder and place on the reading list, "
+            + "not its reading position, its bookmarks and their notes, or its settings."
 
         for question in [audioForText, textForAudio] {
             XCTAssertTrue(

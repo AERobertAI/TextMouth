@@ -330,10 +330,14 @@ struct ImportDecisionWording: Equatable {
     /// a text means nothing in a recording, and a recording's speed nothing
     /// to a voice, so the position, the bookmarks with the notes the user
     /// wrote in them, and the settings stay behind (`DuplicateReplacement.carriedBook`),
-    /// and the question says so plainly, so Keep Both can keep them.
+    /// and the question says so plainly, so Keep Both can keep them. It
+    /// tells the copies apart by how TextMouth reads them, never calling one
+    /// "not an audiobook": a DAISY talking book, which TextMouth reads from
+    /// its text, is an audiobook to its owner (ST04 verify, finding 2).
     static let replacingAcrossKindsSentence =
-        "One copy is an audiobook and the other is not, so replacing keeps only the existing copy's folder "
-        + "and place on the reading list, not its reading position, its bookmarks and their notes, or its settings."
+        "One copy is played from its recording and the other is read aloud from its text, so replacing keeps "
+        + "only the existing copy's folder and place on the reading list, not its reading position, "
+        + "its bookmarks and their notes, or its settings."
 
     /// What Replace Existing keeps of the library's copy, in the format
     /// `existing`, for a new copy in the format `new`: chosen from both
