@@ -618,7 +618,8 @@ split_rule(const char *table, const widechar *cells, const formtype *bits, const
  * from the indicators, if any, is replaced. Returns 0 when memory runs out.
  */
 static int
-give_cells_emphasis(const char *table, const widechar *cells, const formtype *bits, int n, translation *t) {
+give_cells_emphasis(const char *table, const widechar *cells, const formtype *bits, int n,
+		translation *t) {
 	formtype *typeform = calloc((size_t)t->length + 1, sizeof *typeform);
 	int first = 0;
 	if (typeform == NULL) return 0;
@@ -722,8 +723,8 @@ translate_marked_probe(const char *table, formtype bit, int first, int last, tra
  *   terminator (prefix and ⠄) after the last.
  */
 static int
-writes_code(const char *table, const table_emphasis *emphasis, size_t index, int code, const widechar *plain,
-		int n, const int *starts, const int *ends) {
+writes_code(const char *table, const table_emphasis *emphasis, size_t index, int code,
+		const widechar *plain, int n, const int *starts, const int *ends) {
 	int ebae = code == CODE_EBAE;
 	const widechar *prefix = ebae ? EMPHASIS_CLASSES[index].ebae : EMPHASIS_CLASSES[index].ueb;
 	int length = ebae ? EMPHASIS_CLASSES[index].ebae_length : EMPHASIS_CLASSES[index].ueb_length;
@@ -735,7 +736,8 @@ writes_code(const char *table, const table_emphasis *emphasis, size_t index, int
 	if (length == 0 || emphasis->bit[index] == 0) return 0;
 	word[0] = sign_with(starts[1], prefix, length, ebae ? 0 : CELL_2);
 	passage[0] = sign_with(starts[1], prefix, length, ebae ? CELL_46 : CELL_2356);
-	passage[1] = ebae ? sign_with(starts[last], prefix, length, 0) : sign_with(ends[last], prefix, length, CELL_3);
+	passage[1] = ebae ? sign_with(starts[last], prefix, length, 0)
+					  : sign_with(ends[last], prefix, length, CELL_3);
 	if (!translate_marked_probe(table, emphasis->bit[index], 1, 1, &marked)) return 0;
 	matches = matches_with_signs(marked.chars, marked.length, plain, n, word, 1);
 	free_translation(&marked);
@@ -865,7 +867,8 @@ print_words_in(const widechar *cells, int i, int end) {
 	}
 	for (k = i; k < end; k++) {
 		int is_joined = 0;
-		for (size_t c = 0; c < sizeof joined / sizeof joined[0]; c++) is_joined = is_joined || cells[k] == joined[c];
+		for (size_t c = 0; c < sizeof joined / sizeof joined[0]; c++)
+			is_joined = is_joined || cells[k] == joined[c];
 		if (!is_joined) break;
 	}
 	if (k + 1 == end && k > i && cells[k] == CELL(D1)) k++;
@@ -933,7 +936,8 @@ typedef struct {
  * left open would run on to the paragraph's end.
  */
 static ebae_signs
-ebae_signs_at(const table_emphasis *emphasis, const widechar *cells, int i, int end, int n, formtype open) {
+ebae_signs_at(const table_emphasis *emphasis, const widechar *cells, int i, int end, int n,
+		formtype open) {
 	const ebae_signs none = {0, 0, 0};
 	ebae_signs found = {0, 0, 0};
 	formtype italic = ebae_bit(emphasis, TMB_EMPHASIS_ITALIC);
@@ -948,7 +952,8 @@ ebae_signs_at(const table_emphasis *emphasis, const widechar *cells, int i, int 
 	if (run == 0 || i + found.length >= end) return none;
 	if (!has_bold) {
 		if (italic == 0 || run > 2) return none;
-		if (run == 1 && i + 2 == end && (cells[i + 1] == CELL_2 || (cells[i + 1] == CELL_13 && !(open & italic))))
+		if (run == 1 && i + 2 == end &&
+				(cells[i + 1] == CELL_2 || (cells[i + 1] == CELL_13 && !(open & italic))))
 			return none;
 		if (run == 2)
 			found.opens = italic;
@@ -981,7 +986,8 @@ ebae_signs_at(const table_emphasis *emphasis, const widechar *cells, int i, int 
 static int
 dash_or_slash(const widechar *cells, int i, int end) {
 	if (i + 1 >= end) return 0;
-	if ((cells[i] == CELL_36 && cells[i + 1] == CELL_36) || (cells[i] == CELL_456 && cells[i + 1] == CELL_34))
+	if ((cells[i] == CELL_36 && cells[i + 1] == CELL_36) ||
+			(cells[i] == CELL_456 && cells[i + 1] == CELL_34))
 		return 2;
 	return 0;
 }
@@ -1009,8 +1015,8 @@ is_digit_cell(widechar cell) {
  * "ance", ⠨⠎ "less", ⠨⠝ "sion", and ⠨⠞ "ount".
  */
 static int
-extra_closing_sign(const table_emphasis *emphasis, formtype closing, const widechar *cells, int i, int end,
-		int in_number) {
+extra_closing_sign(const table_emphasis *emphasis, formtype closing, const widechar *cells, int i,
+		int end, int in_number) {
 	static const unsigned contractions[] = {D1 | D4 | D5, D1 | D5, D2 | D3 | D4, D1 | D3 | D4 | D5,
 			D2 | D3 | D4 | D5};
 	for (size_t k = 0; k < EMPHASIS_CLASS_COUNT; k++) {
@@ -1175,7 +1181,8 @@ strip_ebae_word(const table_emphasis *emphasis, const widechar *cells, int start
  * in UEB.
  */
 static int
-strip_ebae_signs(const table_emphasis *emphasis, const widechar *cells, int n, widechar *kept, formtype *bits) {
+strip_ebae_signs(const table_emphasis *emphasis, const widechar *cells, int n, widechar *kept,
+		formtype *bits) {
 	formtype passage = 0;
 	formtype beside = 0;
 	int have_beside = 0;
@@ -1230,7 +1237,8 @@ strip_ebae_signs(const table_emphasis *emphasis, const widechar *cells, int n, w
  * it did before. Returns 1, or 0 when a translation fails.
  */
 static int
-read_ebae(const char *table, const table_emphasis *emphasis, const widechar *cells, int n, translation *result) {
+read_ebae(const char *table, const table_emphasis *emphasis, const widechar *cells, int n,
+		translation *result) {
 	widechar *kept = malloc(((size_t)n + 1) * sizeof *kept);
 	formtype *bits = malloc(((size_t)n + 1) * sizeof *bits);
 	int ok = 0;
@@ -1288,7 +1296,8 @@ ueb_terminator_at(const table_emphasis *emphasis, const widechar *cells, int i, 
  * first reading alone. Returns 1, or 0 when a translation fails.
  */
 static int
-read_ueb(const char *table, const table_emphasis *emphasis, const widechar *cells, int n, translation *result) {
+read_ueb(const char *table, const table_emphasis *emphasis, const widechar *cells, int n,
+		translation *result) {
 	translation first;
 	widechar *kept;
 	formtype *bits;
@@ -1336,7 +1345,8 @@ read_ueb(const char *table, const table_emphasis *emphasis, const widechar *cell
  * 0 when a translation fails.
  */
 static int
-read_braille(const char *table, const table_emphasis *emphasis, const widechar *cells, int n, translation *result) {
+read_braille(const char *table, const table_emphasis *emphasis, const widechar *cells, int n,
+		translation *result) {
 	if (uses_code(emphasis, CODE_EBAE)) return read_ebae(table, emphasis, cells, n, result);
 	if (uses_code(emphasis, CODE_UEB)) return read_ueb(table, emphasis, cells, n, result);
 	return translate(table, 0, cells, NULL, n, 1, result);
