@@ -35,6 +35,12 @@ struct BraillePageNumbers: Equatable, Sendable {
     /// joined by one blank cell, so inside a block the cell before a page's
     /// first cell is that blank, and the page begins at a word.
     var firstCellOffset: Int = 0
+    /// Whether any of the page's rows holds text: belongs to a block, rather
+    /// than being blank, a page number, or a print page change line. A page
+    /// without, such as the blank back of a two-sided page or the empty page
+    /// a form feed leaves at a file's start or end, takes the next page's
+    /// place (above), and is a page only when it has a number (PG12).
+    var hasText = false
 }
 
 // MARK: - Analyzer
@@ -128,6 +134,7 @@ enum BraillePageAnalyzer {
         // (or past the end, after the last block).
         var nextPlace = PagePlace(blockIndex: blocks.count, cellOffset: 0)
         for index in pageNumbers.indices.reversed() {
+            pageNumbers[index].hasText = firstPlaceOfPage[index] != nil
             nextPlace = firstPlaceOfPage[index] ?? nextPlace
             pageNumbers[index].firstBlockIndex = nextPlace.blockIndex
             pageNumbers[index].firstCellOffset = nextPlace.cellOffset
@@ -402,7 +409,7 @@ enum BraillePageAnalyzer {
                 text.append(row: cells[trimmedTrailingBlanks(of: file.cellRange(ofRow: rowIndex))])
                 if !text.isEmpty { blocks.append(.paragraph(text: text.string)) }
             }
-            return BrailleStructure(blocks: blocks, pages: [BraillePageNumbers(firstBlockIndex: 0)])
+            return BrailleStructure(blocks: blocks, pages: [BraillePageNumbers(firstBlockIndex: 0, hasText: !blocks.isEmpty)])
         }
 
         // MARK: Page numbers

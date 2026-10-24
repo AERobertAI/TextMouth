@@ -886,14 +886,14 @@ final class BraillePageAnalyzerTests: XCTestCase {
         let rows = [cells("  ONE   TWO  "), "", cells("THREE"), cells("   "), cells(" FOUR  FIVE")]
         let structure = BraillePageAnalyzer.structure(of: [rows], formatted: false)
         XCTAssertEqual(structure.blocks, [paragraph("ONE TWO"), paragraph("THREE"), paragraph("FOUR FIVE")])
-        XCTAssertEqual(structure.pages, [BraillePageNumbers(firstBlockIndex: 0)])
+        XCTAssertEqual(structure.pages, [BraillePageNumbers(firstBlockIndex: 0, hasText: true)])
     }
 
     func testUnformattedRowsMakeNoHeadingsOrPageNumbers() {
         let structure = BraillePageAnalyzer.structure(of: [[centered("TITLE"), rightAligned("#A")]], formatted: false)
         XCTAssertEqual(structure.blocks.count, 2)
         XCTAssertEqual(structure.blocks.first, paragraph("TITLE"))
-        XCTAssertEqual(structure.pages, [BraillePageNumbers(firstBlockIndex: 0)])
+        XCTAssertEqual(structure.pages, [BraillePageNumbers(firstBlockIndex: 0, hasText: true)])
     }
 
     func testAnUnformattedFileWithNoRowsStillHasOnePage() {
@@ -1007,6 +1007,17 @@ final class BraillePageAnalyzerTests: XCTestCase {
         XCTAssertEqual(structure.pages.map(\.firstCellOffset), [0, 0, 0, 0])
         // The block-style book's fourth paragraph begins page 2.
         XCTAssertEqual(BraillePageAnalyzer.structure(of: blockStylePages(), formatted: true).pages.map(\.firstCellOffset), [0, 0])
+    }
+
+    /// Each page says whether it holds text: a page of nothing but blank rows,
+    /// or of nothing but its number, holds none, though it begins where the
+    /// next page with text does (review of October 24).
+    func testEachPageSaysWhetherItHoldsText() {
+        let pages = [[row(2, "ONE"), rightAligned("#A")], ["", ""], [rightAligned("#C")], [row(0, "TWO"), rightAligned("#D")]]
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertEqual(structure.blocks, [paragraph("ONE TWO")])
+        XCTAssertEqual(structure.pages.map(\.hasText), [true, false, false, true])
+        XCTAssertEqual(structure.pages.map(\.braillePageNumber), ["⠼⠁", nil, "⠼⠉", "⠼⠙"])
     }
 
     // MARK: Large input

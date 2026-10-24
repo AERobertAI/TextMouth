@@ -285,6 +285,84 @@ final class BrailleBookPageTests: XCTestCase {
         XCTAssertEqual(paged.pages.map(\.characterOffset), [0, try offset(of: "island.", in: paged.text)])
     }
 
+    // MARK: - Pages a Reader Can Name (review, October 24)
+
+    /// A BRF in a folder of this test's own: `leading`, then each of `pages`'
+    /// rows of braille ASCII with CR LF after each row, a form feed between
+    /// pages, and `ending` after the last page's rows.
+    private func brfFile(_ pages: [[String]], leading: String = "", ending: String = "\r\n") throws -> URL {
+        let url = try makeSandboxDirectory("BraillePageLabels").appendingPathComponent("book.brf")
+        let body = pages.map { $0.joined(separator: "\r\n") }.joined(separator: "\r\n\u{0C}")
+        try Data((leading + body + ending).utf8).write(to: url)
+        return url
+    }
+
+    /// The labels of the pages the reader writes for the Grade 1 braille book
+    /// at `url`, and the book's "of N".
+    private func pageLabels(of url: URL) throws -> (labels: [String], total: Int) {
+        let paged = try chapter(try BrailleBookReader.markdown(of: url, table: grade1, includesPages: true))
+        return (paged.pages.map(\.label), BookPages(breaks: paged.pages).total)
+    }
+
+    /// A final form feed and line end leave an empty page in the file, with
+    /// neither text nor a number: no page a reader can name, so it gets no
+    /// marker, and a book of two pages says "of 2", never "of 3".
+    func testAnEmptyPageAFinalFormFeedLeavesIsNoPage() throws {
+        let url = try brfFile([["  ,ONE4", numberedRow("", "#A")], ["  ,TWO4", numberedRow("", "#B")]], ending: "\r\n\u{0C}\r\n")
+        XCTAssertEqual(try pageLabels(of: url).labels, ["1", "2"])
+        XCTAssertEqual(try pageLabels(of: url).total, 2)
+    }
+
+    /// A preliminary page p1 before pages 1 and 2: the labels are the three
+    /// numbers, and the empty page after them adds no "4".
+    func testAPreliminaryPageKeepsItsLabelAndTheTotalCountsTheBody() throws {
+        let url = try brfFile([
+            ["  ,TITLE4", numberedRow("", "P#A")], ["  ,ONE4", numberedRow("", "#A")], ["  ,TWO4", numberedRow("", "#B")],
+        ], ending: "\r\n\u{0C}\r\n")
+        XCTAssertEqual(try pageLabels(of: url).labels, ["p1", "1", "2"])
+        XCTAssertEqual(try pageLabels(of: url).total, 2)
+    }
+
+    /// A two-sided PEF whose backs are blank, unnumbered: only its two
+    /// numbered fronts are pages.
+    func testTheBlankBacksOfATwoSidedPEFAreNoPages() throws {
+        let numberRow = { (number: String) in self.cells(self.numberedRow("", number)) }
+        let blank = ["", ""]
+        let pef = try BrailleFileWriter.pef(
+            pages: [[cells("  ,ONE4"), numberRow("#A")], blank, [cells("  ,TWO4"), numberRow("#B")], blank],
+            metadata: PEFMetadata(title: "Two Sided", author: "", language: "en", identifier: "urn:uuid:two-sided", date: "2026-10-24"),
+            format: BraillePageFormat()
+        )
+        let url = try makeSandboxDirectory("BraillePageLabels").appendingPathComponent("two-sided.pef")
+        try pef.write(to: url)
+        XCTAssertEqual(try pageLabels(of: url).labels, ["1", "2"])
+        XCTAssertEqual(try pageLabels(of: url).total, 2)
+    }
+
+    /// A form feed before the first page leaves an empty page there, which
+    /// is no page: the pages are 1 and 2, not 1, 1, and 2.
+    func testAnEmptyPageALeadingFormFeedLeavesIsNoPage() throws {
+        let url = try brfFile([["  ,ONE4", numberedRow("", "#A")], ["  ,TWO4", numberedRow("", "#B")]], leading: "\u{0C}")
+        XCTAssertEqual(try pageLabels(of: url).labels, ["1", "2"])
+    }
+
+    /// Pages with text and no number are named by their place among the
+    /// pages that are named, so the empty pages a leading and a final form
+    /// feed leave neither take a number nor push the others' up: 1 and 2, of 2.
+    func testUnnumberedPagesCountOnlyThePagesTheBookHas() throws {
+        let url = try brfFile([["  ,ONE4"], ["  ,TWO4"]], leading: "\u{0C}", ending: "\r\n\u{0C}\r\n")
+        XCTAssertEqual(try pageLabels(of: url).labels, ["1", "2"])
+        XCTAssertEqual(try pageLabels(of: url).total, 2)
+    }
+
+    /// A page with no text that has a number is a page: a blank page an
+    /// embosser counts and the book numbers, at the place of the next page
+    /// with text.
+    func testANumberedBlankPageIsAPage() throws {
+        let url = try brfFile([["  ,ONE4", numberedRow("", "#A")], [numberedRow("", "#B")], ["  ,THREE4", numberedRow("", "#C")]])
+        XCTAssertEqual(try pageLabels(of: url).labels, ["1", "2", "3"])
+    }
+
     // MARK: - Every Bundled Table
 
     /// A long book, the sample chapter's paragraphs joined three by three and

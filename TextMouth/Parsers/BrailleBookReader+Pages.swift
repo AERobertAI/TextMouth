@@ -52,18 +52,28 @@ extension BrailleBookReader {
         var cellOffset: Int
     }
 
-    /// Every page of the book `structure` describes, in order: where it
-    /// begins, and its label, its braille page number read as print, or its
-    /// place among the file's pages (1 for the first) when it has none that
-    /// reads (`MarkdownPageMarker.init(label:ordinal:)`).
+    /// The pages of the book `structure` describes, in order: where each
+    /// begins, and its label, its braille page number read as print, or,
+    /// when it has none that reads, its place among these pages, 1 for the
+    /// first (`MarkdownPageMarker.init(label:ordinal:)`).
+    ///
+    /// A page with neither text nor a braille page number is left out (the
+    /// review of October 24): no reader can name it and no embosser numbers
+    /// it, such as the blank back of a two-sided page, or the empty page a
+    /// form feed leaves at a file's start, or, followed by a line end, at its
+    /// end. Counted, such a page made a book of two pages say "of 3", and a
+    /// form feed before the first page made it 1, 1, 2. The places count only
+    /// the pages kept, so a book without numbers reads 1 to N, "of N".
     static func pageStarts(of structure: BrailleStructure) -> [PageStart] {
-        structure.pages.enumerated().map { index, page in
-            PageStart(
-                marker: MarkdownPageMarker(label: page.braillePageLabel ?? "", ordinal: index + 1),
+        var starts: [PageStart] = []
+        for page in structure.pages where page.hasText || page.braillePageNumber != nil {
+            starts.append(PageStart(
+                marker: MarkdownPageMarker(label: page.braillePageLabel ?? "", ordinal: starts.count + 1),
                 blockIndex: page.firstBlockIndex,
                 cellOffset: page.firstCellOffset
-            )
+            ))
         }
+        return starts
     }
 
     // MARK: - Translating With Pages
