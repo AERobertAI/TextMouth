@@ -13,6 +13,7 @@
  *   TextMouthBraille check   <tables folder> <table>
  *   TextMouthBraille forward <tables folder> <table> <input file> <output file>
  *   TextMouthBraille back    <tables folder> <table> <input file> <output file>
+ *   TextMouthBraille back-liblouis <tables folder> <table> <input file> <output file>
  *
  * - `check` compiles the table, with every table it includes, and exits 0
  *   when it compiles.
@@ -31,6 +32,10 @@
  *   `back` reports those and the EBAE signs it reads itself. Braille, in and
  *   out, is Unicode braille patterns (U+2800 to U+28FF), the blank cell
  *   U+2800 included; a space is never braille.
+ * - `back-liblouis`, which only tests run, reads as `back` does, but by
+ *   liblouis alone, without the reading passes, exactly as `back` read
+ *   before them: the tests compare the passes' words with liblouis's own
+ *   reading of the same braille.
  *
  * The table is a bare file name, such as en-ueb-g2.ctb, of a table in the
  * tables folder: the app bundle's own (Contents/Resources/liblouis/tables),
@@ -1696,6 +1701,7 @@ main(int argc, char **argv) {
 	int is_check = strcmp(mode, "check") == 0;
 	int is_forward = strcmp(mode, "forward") == 0;
 	int is_back = strcmp(mode, "back") == 0;
+	int is_liblouis_back = strcmp(mode, "back-liblouis") == 0;
 	const char *table = argc > 3 ? argv[3] : "";
 	int table_loaded;
 	int status;
@@ -1706,7 +1712,7 @@ main(int argc, char **argv) {
 	for (int i = 2; i < argc; i++)
 		if (i != 3 && argv[i][0] != '/') paths_absolute = 0;
 	if (!paths_absolute ||
-			!((is_check && argc == 4) || ((is_forward || is_back) && argc == 6))) {
+			!((is_check && argc == 4) || ((is_forward || is_back || is_liblouis_back) && argc == 6))) {
 		fprintf(stderr,
 				"usage: TextMouthBraille check <tables folder> <table>\n"
 				"       TextMouthBraille forward|back <tables folder> <table> <input> "
@@ -1727,6 +1733,9 @@ main(int argc, char **argv) {
 		status = EXIT_DONE;
 	} else {
 		look_up_emphasis(table, &emphasis);
+		/* With no code known, `read_braille` reads by liblouis alone, and
+		   `back` reports only the readable classes, as before the passes. */
+		for (size_t k = 0; is_liblouis_back && k < EMPHASIS_CLASS_COUNT; k++) emphasis.code[k] = CODE_NONE;
 		status = translate_file(table, is_forward, &emphasis, argv[4], argv[5]);
 	}
 	lou_free();
