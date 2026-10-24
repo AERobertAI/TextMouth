@@ -216,11 +216,18 @@ extension BrailleBookReader {
             while index < pages.endIndex {
                 let place = pages[index].place
                 markdown += BrailleBookReader.markdownLine(of: Self.slice(of: whole, scalars: scalars, lineStart..<place))
-                // Every page that begins at this place, in order.
+                // Every page that begins at this place, in order, its markers
+                // side by side and written at once (the review of October
+                // 24): the writer reads the line it adds to, so writing them
+                // one by one read a line that grew with each, in time that
+                // grew as their number squared, and a hostile file of form
+                // feeds put a hundred thousand pages at one place.
+                var markers = ""
                 while index < pages.endIndex, pages[index].place == place {
-                    MarkdownMarkerWriter.write(pages[index].start.marker.markdown, inline: true, into: &markdown)
+                    markers += pages[index].start.marker.markdown
                     index += 1
                 }
+                MarkdownMarkerWriter.write(markers, inline: true, into: &markdown)
                 markdown += "\n"
                 lineStart = place + 1
             }
@@ -244,9 +251,13 @@ extension BrailleBookReader {
                 Array(text(at: cuts.firstPiece + piece, of: printed).trimmingWhitespace().text.unicodeScalars)
             }
             let found = BrailleBookReader.places(ofCutsIn: Array(whole.text.unicodeScalars), pieces: pieces)
+            // Each cut's index by its cell, looked up at once: a search of
+            // the cuts for each page took time that grew as their number
+            // squared, in a paragraph a hostile file cuts at every word.
+            let cutIndex = Dictionary(uniqueKeysWithValues: cuts.offsets.enumerated().map { ($0.element, $0.offset) })
             var last = 0
             return pages.map { start in
-                if let cut = cuts.offsets.firstIndex(of: start.cellOffset), let place = found[cut] {
+                if let cut = cutIndex[start.cellOffset], let place = found[cut] {
                     last = place
                 }
                 return last

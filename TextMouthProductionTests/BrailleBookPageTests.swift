@@ -400,6 +400,40 @@ final class BrailleBookPageTests: XCTestCase {
         XCTAssertFalse(try BrailleBookReader.markdown(of: url, table: grade1, includesPages: true).contains("<!--"))
     }
 
+    // MARK: - Many Pages, in Linear Time (review, October 24)
+
+    /// Thirty thousand pages that begin at one place inside a paragraph, as
+    /// a hostile file of form feeds makes them, are written in linear time:
+    /// one marker after another, never a scan of the line for each.
+    func testManyPagesAtOnePlaceAreWrittenInLinearTime() throws {
+        let count = 30_000
+        let starts = [start("1", block: 0)] + (2...count).map { start(String($0), block: 0, cell: 2) }
+        let translation = BrailleBookReader.PagedTranslation(blocks: [.paragraph(text: cells("A B"))], starts: starts)
+        let began = Date()
+        let markdown = try XCTUnwrap(translation.markdown(from: printed(["a b", "a", "b"])))
+        XCTAssertLessThan(Date().timeIntervalSince(began), 10, "writing \(count) markers took too long")
+        XCTAssertEqual(markdown.components(separatedBy: "<!-- page: ").count - 1, count)
+        let paged = try chapter(markdown)
+        XCTAssertEqual(paged.text, "a b")
+        XCTAssertEqual(paged.pages.count, count)
+        XCTAssertEqual(Set(paged.pages.dropFirst().map(\.characterOffset)), [2])
+    }
+
+    /// A paragraph that a hundred thousand pages begin inside, one page a
+    /// word, is placed in linear time too: each page finds its cut at once.
+    func testAParagraphCutAtEveryWordIsPlacedInLinearTime() throws {
+        let words = 100_000
+        let braille = Array(repeating: cells("A"), count: words).joined(separator: String(BrailleCells.blank))
+        let starts = (0..<words).map { start(String($0 + 1), block: 0, cell: 2 * $0) }
+        let translation = BrailleBookReader.PagedTranslation(blocks: [.paragraph(text: braille)], starts: starts)
+        XCTAssertEqual(translation.texts.count, 1 + words)
+        let whole = Array(repeating: "a", count: words).joined(separator: " ")
+        let began = Date()
+        let markdown = try XCTUnwrap(translation.markdown(from: printed([whole] + Array(repeating: "a", count: words))))
+        XCTAssertLessThan(Date().timeIntervalSince(began), 20, "placing \(words) pages took too long")
+        XCTAssertEqual(markdown.components(separatedBy: "<!-- page: ").count - 1, words)
+    }
+
     // MARK: - Every Bundled Table
 
     /// A long book, the sample chapter's paragraphs joined three by three and
