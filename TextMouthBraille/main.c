@@ -655,6 +655,23 @@ give_cells_emphasis(const char *table, const widechar *cells, const formtype *bi
 	return 1;
 }
 
+/*
+ * Reads the cells a reading pass kept, `kept[0..count)`, cell k in the
+ * emphasis `bits[k]`, back to print into `*result`, the end of both passes
+ * (`read_ebae`, `read_ueb`): liblouis reads them with a typeform array, and
+ * each character takes its cell's emphasis, keeping liblouis's own bits in
+ * `from_liblouis` (`give_cells_emphasis`). Returns 1, or 0 when a
+ * translation fails, leaving `*result` empty.
+ */
+static int
+read_kept_cells(const char *table, const widechar *kept, const formtype *bits, int count,
+		formtype from_liblouis, translation *result) {
+	int ok = translate(table, 0, kept, NULL, count, 1, result) &&
+			give_cells_emphasis(table, kept, bits, count, from_liblouis, result);
+	if (!ok) free_translation(result);
+	return ok;
+}
+
 /* MARK: - Which code a table writes */
 
 /* The words `detect_codes` translates: lowercase words that every bundled
@@ -943,7 +960,8 @@ typedef struct {
  */
 static int
 may_strip(const table_emphasis *emphasis, int sign, widechar next) {
-	return next >= BRAILLE_FIRST && next - BRAILLE_FIRST < 64 && emphasis->strippable[sign][next - BRAILLE_FIRST];
+	return next >= BRAILLE_FIRST && next - BRAILLE_FIRST < 64 &&
+			emphasis->strippable[sign][next - BRAILLE_FIRST];
 }
 
 /*
@@ -1270,9 +1288,7 @@ read_ebae(const char *table, const table_emphasis *emphasis, const widechar *cel
 		if (emphasis->code[k] != CODE_EBAE) from_liblouis |= emphasis->bit[k];
 	if (kept != NULL && bits != NULL) {
 		int count = strip_ebae_signs(emphasis, cells, n, kept, bits);
-		ok = translate(table, 0, kept, NULL, count, 1, result) &&
-				give_cells_emphasis(table, kept, bits, count, from_liblouis, result);
-		if (!ok) free_translation(result);
+		ok = read_kept_cells(table, kept, bits, count, from_liblouis, result);
 	}
 	free(kept);
 	free(bits);
@@ -1352,9 +1368,7 @@ read_ueb(const char *table, const table_emphasis *emphasis, const widechar *cell
 		bits[count++] = at >= 0 && at < first.length ? first.typeform[at] : 0;
 		i++;
 	}
-	ok = ok && translate(table, 0, kept, NULL, count, 1, result) &&
-			give_cells_emphasis(table, kept, bits, count, 0, result);
-	if (!ok) free_translation(result);
+	ok = ok && read_kept_cells(table, kept, bits, count, 0, result);
 	free_translation(&first);
 	free(kept);
 	free(bits);
