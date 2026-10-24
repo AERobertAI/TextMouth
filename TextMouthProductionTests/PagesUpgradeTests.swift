@@ -2,8 +2,8 @@ import XCTest
 @testable import TextMouth
 
 /// Books that were read before their format had pages gain them at the next
-/// launch (PG09, `PageReaderVersions`): every EPUB, HTML, PDF, Word, and
-/// DAISY book whose content.md was written by no page reader, or an older
+/// launch (PG09, `PageReaderVersions`): every EPUB, HTML, PDF, Word, DAISY,
+/// and braille book whose content.md was written by no page reader, or an older
 /// one, is read again, with the saved places, bookmarks, and skipped
 /// headings moved onto the same words. A book whose text an edit record
 /// names is left as it is, without pages, and its row is stamped so that the
@@ -33,7 +33,7 @@ final class PagesUpgradeTests: XCTestCase {
     /// Only the formats that gained pages have a page reader; every other
     /// format has none, so no book of it is ever read again for pages.
     func testOnlyTheFormatsWithPagesHaveAPageReader() {
-        let withPages: Set<BookFormat> = [.epub, .html, .pdf, .docx, .daisy, .rtf, .rtfd, .doc, .odt, .wordml]
+        let withPages: Set<BookFormat> = [.epub, .html, .pdf, .docx, .daisy, .rtf, .rtfd, .doc, .odt, .wordml, .braille]
         for format in BookFormat.allCases {
             XCTAssertEqual(
                 PageReaderVersions.current(for: format),
@@ -320,6 +320,32 @@ final class PagesUpgradeTests: XCTestCase {
             _ = try MarkdownCacheService.extractedMarkdown(for: book, includesPages: false)
             print("PAGES_COMPARISON_SECONDS: \(name): \(Date().timeIntervalSince(started))")
         }
+    }
+
+    /// A braille book read before pages is read again at the next launch,
+    /// with every place where it was, since its pages add only markers, and
+    /// gains its braille pages (PG12, V07): the Grade 1 sample's two, the
+    /// second inside the paragraph it goes on. Its content.md is the file's
+    /// text without pages, so no copy of it is kept, and it keeps its table.
+    func testABrailleBookKeepsItsPlacesExactlyAndGainsItsBraillePages() async throws {
+        let world = try makeIntegrationWorld("Pages Upgrade Braille")
+        let fixture = try makeBrailleBookBeforePages(in: world)
+        let before = try XCTUnwrap(fixture.book.readingPosition)
+        let bookmarkBefore = try XCTUnwrap(fixture.book.bookmarks.first)
+
+        await runBatch(in: world)
+
+        let row = try XCTUnwrap(world.library.bookByID(fixture.book.id))
+        let content = try MarkdownCacheService.loadFromCache(for: row)
+        XCTAssertEqual(content.pages.breaks.map(\.label), ["1", "2"])
+        XCTAssertEqual(row.pageReaderVersion, PageReaderVersions.current(for: .braille))
+        XCTAssertEqual(row.brailleTable, Self.brailleTable)
+        // Not a number moved.
+        XCTAssertEqual(row.readingPosition?.characterOffset, before.characterOffset)
+        XCTAssertEqual(row.bookmarks.first?.characterOffset, bookmarkBefore.characterOffset)
+        assertPlaces(of: row, areAt: Self.braillePlaces, in: content)
+        XCTAssertEqual(keptCopies(of: row), [])
+        XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([row], access: .live), [])
     }
 
     /// A batch that stopped after writing a textutil document's content.md
@@ -823,6 +849,24 @@ final class PagesUpgradeTests: XCTestCase {
 
     /// The places the PDF fixture saves.
     private static let pdfPlaces = FixturePlaces(position: "This is page four.", bookmark: "This is page five.", skippedHeading: nil)
+
+    /// The table the braille fixture is imported with: the Grade 1 UEB its
+    /// sample is written in.
+    private static let brailleTable = "en-ueb-g1.ctb"
+
+    /// The places the braille fixture saves: one on the second braille page,
+    /// at its first words, inside the paragraph that goes on there.
+    private static let braillePlaces = FixturePlaces(
+        position: "taken it", bookmark: "Netherfield is taken", skippedHeading: "Chapter I"
+    )
+
+    /// The Grade 1 braille sample as `makeBookBeforePages` leaves a book from
+    /// before pages, imported with the table its braille is written in.
+    private func makeBrailleBookBeforePages(in world: IntegrationWorld) throws -> BookBeforePages {
+        try BraillePreferences.$tableForImports.withValue(Self.brailleTable) {
+            try makeBookBeforePages(sample: "brf/pride-and-prejudice-ch1-grade1.brf", places: Self.braillePlaces, in: world)
+        }
+    }
 
     /// The stamp of a page reader earlier than any format's now, as a book
     /// carries once its format's reader has changed (V05): "0.9.0" stands
