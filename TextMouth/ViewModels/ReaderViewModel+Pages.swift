@@ -169,6 +169,13 @@ extension ReaderViewModel {
     /// keeping a Return position, says "Jumped to page 12." and returns nil;
     /// or returns why it will not do (`JumpInputValidator.page`), as a
     /// sentence the panel shows and announces, and moves nothing.
+    ///
+    /// The page it says is the one the status row names where the reader
+    /// stands after the jump (`labelShown(afterMovingTo:)`), which is not
+    /// always the page typed: a blank page shares its place with the page
+    /// after it, and the row names the later one. Saying the typed label
+    /// then told the listener one page while the row, Where Am I?, and Next
+    /// Page all named another.
     func goToPage(typed text: String) -> String? {
         let pages = bookPages
         let currentIndex = pages.index(ofPageAtChapter: currentChapterIndex, offset: currentCharacterOffset)
@@ -178,7 +185,7 @@ extension ReaderViewModel {
             guard pages.breaks.indices.contains(index) else { return ReaderPageWording.noPages }
             let page = pages.breaks[index]
             navigatePreservingReturnPosition(chapterIndex: page.chapterIndex, characterOffset: page.characterOffset)
-            announceToVoiceOver(ReaderPageWording.jumped(to: page.label))
+            announceToVoiceOver(ReaderPageWording.jumped(to: labelShown(afterMovingTo: page)))
             return nil
         case .error(let message):
             return message
@@ -204,7 +211,21 @@ extension ReaderViewModel {
             chapterIndex: page.chapterIndex,
             characterOffset: page.characterOffset
         )
-        let reached = bookPages.position(atChapter: page.chapterIndex, offset: page.characterOffset)
-        announceToVoiceOver(ReaderPageWording.arrived(at: reached.page?.label ?? page.label))
+        announceToVoiceOver(ReaderPageWording.arrived(at: labelShown(afterMovingTo: page)))
+    }
+
+    /// The label of the page the status row names where the reader stands
+    /// once it has moved to the start of `page`: the page holding the cursor,
+    /// which is the last of the pages that begin at that place
+    /// (`BookPages.index(ofPageAtChapter:offset:)`) and so `page` itself when
+    /// no other page shares its place. What every command that lands on a
+    /// page says is this label, so the words spoken, the row, and Where Am
+    /// I? always agree. The cursor is read after the move, not worked out
+    /// from `page`, because a move may stop short of a page's place (the
+    /// last word of the book is as far as the reader goes). `page`'s own
+    /// label is the fallback for a cursor no page holds, which a move to one
+    /// of the book's pages rules out.
+    private func labelShown(afterMovingTo page: PageBreak) -> String {
+        currentPagePosition.page?.label ?? page.label
     }
 }

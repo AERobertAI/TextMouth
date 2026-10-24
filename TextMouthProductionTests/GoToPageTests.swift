@@ -125,6 +125,66 @@ final class GoToPageTests: XCTestCase {
         XCTAssertEqual(pagedPlace(of: reader), "0:0")
     }
 
+    /// Go to Page says the page the status row names at the place it reaches,
+    /// which is the last of the pages that begin there: a blank page "7"
+    /// shares its place with page "8", so asking for 7 lands where the row
+    /// reads "Page 8", and "Jumped to page 7." would have told the listener a
+    /// page the row, Where Am I?, and Next Page all deny. A page that begins
+    /// alone is said as it is, whatever case it was typed in.
+    func testGoToPageSaysThePageTheRowNames() {
+        let pages = [
+            PageBreak(label: "6", chapterIndex: 0, characterOffset: 0),
+            PageBreak(label: "7", chapterIndex: 0, characterOffset: 100),
+            PageBreak(label: "8", chapterIndex: 0, characterOffset: 100),
+            PageBreak(label: "ix", chapterIndex: 1, characterOffset: 0),
+        ]
+        let reader = makePagedReader(pages: pages)
+        defer { reader.close() }
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 0
+
+        XCTAssertNil(reader.goToPage(typed: "7"))
+        XCTAssertEqual(pagedPlace(of: reader), "0:100")
+        XCTAssertEqual(reader.currentPagePosition.page?.label, "8", "the row names the later page")
+        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page 8.")
+
+        // The later page itself, typed, is the same place and the same words.
+        reader.lastAnnouncement = nil
+        reader.currentCharacterOffset = 0
+        XCTAssertNil(reader.goToPage(typed: "8"))
+        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page 8.")
+
+        // A page that begins alone is said as the book labels it.
+        XCTAssertNil(reader.goToPage(typed: "IX"))
+        XCTAssertEqual(pagedPlace(of: reader), "1:0")
+        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page ix.")
+        XCTAssertEqual(reader.currentPagePosition.page?.label, "ix")
+    }
+
+    /// The page said is read from where the reader stands after the jump,
+    /// not worked out from the page typed: a page that begins after the
+    /// book's last word (the chapter holds 100 characters, and page 9 begins
+    /// at 100) is reached at the last word, where the row names the page
+    /// before it, and that is the page said. Whatever way such a page comes
+    /// to be reached, the words stay the row's.
+    func testGoToPageSaysThePageAtTheCursorWhereTheJumpStopsShort() {
+        let pages = [
+            PageBreak(label: "7", chapterIndex: 1, characterOffset: 0),
+            PageBreak(label: "8", chapterIndex: 1, characterOffset: 50),
+            PageBreak(label: "9", chapterIndex: 1, characterOffset: 100),
+        ]
+        let reader = makePagedReader(pages: pages)
+        defer { reader.close() }
+        reader.currentChapterIndex = 1
+        reader.currentCharacterOffset = 0
+
+        XCTAssertNil(reader.goToPage(typed: "9"))
+
+        let row = reader.currentPagePosition.page?.label
+        XCTAssertNotNil(row, "the cursor is on a page")
+        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page \(row ?? "none").")
+    }
+
     /// A refusal is the sentence, and nothing moves or is said.
     func testGoToPageRefusalMovesNothing() {
         let reader = makePagedReader(pages: Self.sixPages)
