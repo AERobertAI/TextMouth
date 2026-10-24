@@ -181,6 +181,13 @@ enum PlainTextParser {
     /// feed often is; nor does one with no words after it, which ends the
     /// last page. Page 1, at the book's start, is not among the pages
     /// returned, and a text with none has no pages at all.
+    ///
+    /// A book has at most `MarkdownPageMarker.maximumPagesPerBook` pages,
+    /// page 1 among them (the review of October 24): past them a form feed
+    /// begins no page, though it still ends its line, so the text is
+    /// unchanged. Plain text has no size limit, and a text of nothing but
+    /// form feeds would otherwise write a page for each, a million pages in
+    /// a megabyte, costing half a gigabyte to read.
     static func pagedBlocks(in text: String) -> (blocks: [Block], pages: [FormFeedPage]) {
         analysis(of: text, findingPages: true)
     }
@@ -195,14 +202,19 @@ enum PlainTextParser {
             .components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespaces) }
         let underlines = Set(lines.indices.filter { isSetextUnderline(lines[$0]) })
-        // The lines a form feed ends the line before, when pages are asked for.
+        // The lines a form feed begins, in order, when pages are asked for,
+        // and the next of them to meet.
         let afterFormFeed = findingPages ? linesAfterFormFeeds(in: normalized) : []
+        var nextFormFeed = afterFormFeed.startIndex
 
         var blocks: [Block] = []
         var paragraph: [String] = []
         // The underline of the setext heading most recently emitted, if any.
         var consumedUnderline: Int?
         var pages: [FormFeedPage] = []
+        // The most pages the form feeds may begin: page 1 is one of the
+        // pages a book may have.
+        let mostPages = MarkdownPageMarker.maximumPagesPerBook - 1
         // The form feeds since the last line read, whose pages begin at the
         // next line read, and whether any line has been read yet.
         var waitingPages = 0
@@ -218,17 +230,19 @@ enum PlainTextParser {
         /// Notes that the next line read is line `line` of block `block`: the
         /// pages waiting for it begin there, unless no words came before.
         func noteLineRead(block: Int, line: Int) {
-            if readAnyLine, waitingPages > 0 {
-                pages += repeatElement(FormFeedPage(block: block, line: line), count: waitingPages)
+            if readAnyLine, waitingPages > 0, pages.count < mostPages {
+                pages += repeatElement(FormFeedPage(block: block, line: line), count: min(waitingPages, mostPages - pages.count))
             }
             waitingPages = 0
             readAnyLine = true
         }
 
         for (index, line) in lines.enumerated() {
-            // Most texts hold no form feed, and their lines are not looked up.
-            if !afterFormFeed.isEmpty, afterFormFeed.contains(index) {
+            // A line begins after one form feed at most: the line before it
+            // ended at one line ending.
+            if nextFormFeed < afterFormFeed.endIndex, afterFormFeed[nextFormFeed] == index {
                 waitingPages += 1
+                nextFormFeed += 1
             }
             if index == consumedUnderline {
                 continue
@@ -255,20 +269,20 @@ enum PlainTextParser {
     }
 
     /// The indexes of the lines of `text`, as `components(separatedBy:
-    /// .newlines)` cuts them, that a form feed begins: each line after one
-    /// that a form feed ended (PG13). Every line ending of
+    /// .newlines)` cuts them, that a form feed begins, in order: each line
+    /// after one that a form feed ended (PG13). Every line ending of
     /// `CharacterSet.newlines` is one UTF-16 unit, and a CR LF pair is one LF
     /// in `text` already, so each one counts as the end of one line, as the
     /// cut makes it. Empty for a text without a form feed, found without
     /// counting its lines.
-    private static func linesAfterFormFeeds(in text: String) -> Set<Int> {
+    private static func linesAfterFormFeeds(in text: String) -> [Int] {
         guard text.utf8.contains(0x0C) else { return [] }
-        var lines: Set<Int> = []
+        var lines: [Int] = []
         var lineIndex = 0
         for unit in text.utf16 where isLineEnding(unit) {
             lineIndex += 1
             if unit == 0x0C {
-                lines.insert(lineIndex)
+                lines.append(lineIndex)
             }
         }
         return lines

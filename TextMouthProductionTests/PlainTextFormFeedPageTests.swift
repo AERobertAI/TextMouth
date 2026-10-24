@@ -200,6 +200,32 @@ final class PlainTextFormFeedPageTests: XCTestCase {
         }
     }
 
+    // MARK: - Limits (review, October 24)
+
+    /// A hostile text of form feeds gets at most the pages a book may have
+    /// (`MarkdownPageMarker.maximumPagesPerBook`, which textutil's reader
+    /// keeps too): past them, a form feed begins no page, and the text is
+    /// unchanged. A hundred and fifty thousand form feeds between two words
+    /// give a hundred thousand pages, written and read in a bounded time.
+    func testFormFeedsPastTheMostPagesABookMayHaveBeginNoPage() throws {
+        let text = "a" + String(repeating: "\u{0C}", count: 150_000) + "b"
+        let began = Date()
+        let paged = PlainTextParser.pagedBlocks(in: text)
+        XCTAssertEqual(paged.pages.count, MarkdownPageMarker.maximumPagesPerBook - 1)
+        XCTAssertEqual(paged.blocks, PlainTextParser.blocks(in: text))
+        let chapter = try assertSameReading(text)
+        XCTAssertLessThan(Date().timeIntervalSince(began), 60, "a hundred thousand pages took too long")
+        XCTAssertEqual(chapter.text, "a\n\nb")
+        XCTAssertEqual(chapter.pages.count, MarkdownPageMarker.maximumPagesPerBook)
+        XCTAssertEqual(chapter.pages.last?.label, String(MarkdownPageMarker.maximumPagesPerBook))
+    }
+
+    /// The limit is the one textutil's reader keeps, not a copy of it.
+    func testPlainTextAndTextutilShareOneLimitOfPages() {
+        XCTAssertEqual(MarkdownPageMarker.maximumPagesPerBook, 100_000)
+        XCTAssertEqual(TextutilPageBreaks.maximumPages, MarkdownPageMarker.maximumPagesPerBook)
+    }
+
     /// Text that looks like Markdown on the line before a page, or on the
     /// page's first line, stays literal: the marker never makes a line raw
     /// HTML, a list, or a heading.
