@@ -1102,10 +1102,10 @@ extra_closing_sign(const table_emphasis *emphasis, formtype closing, const widec
  * or to the end signs: the termination sign ⠠⠄, which is kept for liblouis,
  * and liblouis's sign inside a passage's last word (`extra_closing_sign`),
  * which is left out, one for each class whose emphasis ends there. A
- * passage's emphasis goes on
- * through every dash, slash, and punctuation mark (15.1b), and past a
- * termination sign to the next word. Whatever is not a sign, such as ⠨ as a
- * decimal point or a contraction inside a word, is kept for liblouis.
+ * passage's emphasis goes on through every dash, slash, and punctuation
+ * mark (15.1b), and past a termination sign to the next word. Whatever is
+ * not a sign, such as ⠨ as a decimal point or a contraction inside a word,
+ * is kept for liblouis.
  */
 static int
 strip_ebae_word(const table_emphasis *emphasis, const widechar *cells, int start, int end,
