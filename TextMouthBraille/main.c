@@ -976,6 +976,13 @@ may_strip(const table_emphasis *emphasis, int sign, widechar next) {
  * word (review, October 24, 2026). BANA's EBAE has no sign for bold italic,
  * so liblouis's (bold's sign, then italic's) is not read: more ⠨ after
  * bold's or italic's sign than a passage's is left to liblouis.
+ *
+ * A stated limit (verifier, October 24, 2026): liblouis writes a period
+ * before a word as ⠨ wherever the word begins, and reads it back as nothing
+ * before a capital or a letter past j, as it reads a sign there. So such a
+ * period is read as a sign: ".NET" (⠨⠠⠠⠝⠑⠞) reads as "NET" in italic, and
+ * ".the" as "the". The words are still liblouis's own, which lose the
+ * period too; only the emphasis is wrong.
  */
 static ebae_signs
 ebae_signs_at(const table_emphasis *emphasis, const widechar *cells, int i, int end, formtype open) {
