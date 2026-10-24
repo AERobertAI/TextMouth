@@ -141,7 +141,7 @@ final class DuplicateReplacementTests: XCTestCase {
             of: existing,
             copy: Self.newTextCopy(),
             oldText: { old },
-            newText: new,
+            newText: { new },
             movedAt: Self.date
         )
 
@@ -159,7 +159,7 @@ final class DuplicateReplacementTests: XCTestCase {
             of: existing,
             copy: Self.newTextCopy(),
             oldText: { throw CocoaError(.fileReadNoSuchFile) },
-            newText: new,
+            newText: { new },
             movedAt: Self.date
         )
 
@@ -167,22 +167,57 @@ final class DuplicateReplacementTests: XCTestCase {
     }
 
     /// An audiobook's places count time in its recording, so they stay as
-    /// they were saved.
+    /// they were saved, and no text is read for them.
     func testAnAudiobooksPlacesStayAsTheyWere() {
         var existing = Self.existingTextBook()
         existing.format = .audio
         var copy = Self.newTextCopy()
         copy.format = .audio
+        var textsRead = 0
 
         let places = DuplicateReplacement.carriedPlaces(
             of: existing,
             copy: copy,
-            oldText: { throw CocoaError(.fileReadNoSuchFile) },
-            newText: nil,
+            oldText: {
+                textsRead += 1
+                throw CocoaError(.fileReadNoSuchFile)
+            },
+            newText: {
+                textsRead += 1
+                return nil
+            },
             movedAt: Self.date
         )
 
         XCTAssertEqual(places, existing.relocatablePlaces)
+        XCTAssertEqual(textsRead, 0)
+    }
+
+    /// Places a new text could not move, as a position at the very start of
+    /// a book with no bookmark or skip, stay, and no text is read for them.
+    func testPlacesNothingCouldMoveReadNoText() {
+        var existing = Self.existingTextBook()
+        existing.readingPosition = ReadingPosition(chapterIndex: 0, characterOffset: 0)
+        existing.bookmarks = []
+        existing.setSkippedHeadings(nil)
+        var textsRead = 0
+
+        let places = DuplicateReplacement.carriedPlaces(
+            of: existing,
+            copy: Self.newTextCopy(),
+            oldText: {
+                textsRead += 1
+                throw CocoaError(.fileReadNoSuchFile)
+            },
+            newText: {
+                textsRead += 1
+                return nil
+            },
+            movedAt: Self.date
+        )
+
+        XCTAssertEqual(places, existing.relocatablePlaces)
+        XCTAssertEqual(textsRead, 0)
     }
 
     // MARK: - Refusals

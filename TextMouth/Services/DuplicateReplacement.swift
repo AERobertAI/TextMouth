@@ -168,9 +168,10 @@ enum DuplicateReplacement {
     ///
     /// - An audiobook's places count time in its recording (P08), and stay.
     /// - Places nothing could move (none saved, or a reading position at the
-    ///   very start) stay.
-    /// - With no new text to read, the places stay, and the reader finds
-    ///   them by their words when it first loads the new copy.
+    ///   very start) stay, and neither text is read.
+    /// - With no new text to read (`newText` gives nil), the places stay,
+    ///   and the reader finds them by their words when it first loads the
+    ///   new copy.
     /// - With no old text to read (`oldText` throws: it is gone, or only in
     ///   the cloud), the places are found in the new text by their words
     ///   alone, as a reader's load finds them
@@ -180,11 +181,11 @@ enum DuplicateReplacement {
         of existing: Book,
         copy: Book,
         oldText: () throws -> DocumentContent,
-        newText: DocumentContent?,
+        newText: () -> DocumentContent?,
         movedAt date: Date
     ) -> PlaceRelocator.Places {
         let saved = existing.relocatablePlaces
-        guard areSameKind(existing, copy), !copy.format.isAudio, existing.holdsPlacesToMove, let newText else {
+        guard areSameKind(existing, copy), !copy.format.isAudio, existing.holdsPlacesToMove, let newText = newText() else {
             return saved
         }
         let outcome: PlaceRelocator.Outcome?
@@ -380,7 +381,7 @@ enum DuplicateReplacement {
                 guard let oldTextBytes else { throw CocoaError(.fileReadNoSuchFile) }
                 return try parsedText(oldTextBytes, at: oldTextURL, title: existing.title, author: existing.author)
             },
-            newText: newText(of: copy, carrying: existing),
+            newText: { newText(of: copy, carrying: existing) },
             movedAt: now
         )
         return carried
