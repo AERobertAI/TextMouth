@@ -34,18 +34,22 @@ import Foundation
 /// hand-edited metadata: a text book's places and speed mean nothing to an
 /// audiobook.
 ///
-/// The work is in two parts, so that the library changes only once the old
-/// copy's package is gone:
+/// The work is in three parts, so that the old copy's package goes only
+/// once the new copy is committed:
 /// 1. `prepare(replacing:with:access:now:)` reads what is carried over,
 ///    refusing before anything is written when part of it is only in the
 ///    cloud, then writes it into the new copy's package and moves that
 ///    package into the old copy's folder. The row it returns has the old
-///    copy's ID, while the new package's record keeps the import's own until
-///    the library saves that row, so a stop before the old package goes
-///    never leaves two records naming one book.
-/// 2. The library deletes the old copy's package, then puts the row in the
-///    old row's place (`LibraryViewModel+Duplicates`). A deletion that fails
-///    undoes the first part (`Preparation.undo()`), and the question stays.
+///    copy's ID; the new package's record keeps the import's own until the
+///    library commits that row.
+/// 2. The library commits the new copy (`LibraryViewModel+Duplicates`): its
+///    record, then the index naming it, each on disk before the next step.
+///    A commit that fails undoes the first part (`Preparation.undo()`), and
+///    the question stays.
+/// 3. The library removes the old copy's package
+///    (`removeReplacedPackage(of:movesToTrash:)`). Nothing is undone then: a
+///    package that cannot be removed stays, its record naming a listed
+///    book, which no launch adopts (`FileImportService.adoptOrphanedTMBPackages`).
 enum DuplicateReplacement {
     /// What a refusal asks the user to do once its cause is gone.
     static let retry = "choose Replace Existing again"
@@ -419,10 +423,10 @@ enum DuplicateReplacement {
         let namesBefore: Set<String>
 
         /// Puts the new package back as its import published it, as a
-        /// replacement whose old copy could not be deleted must leave it:
-        /// moved back to where it was published, without anything carried
-        /// into it. What cannot be put back is logged; the question stays
-        /// either way.
+        /// replacement that could not be committed must leave it: moved back
+        /// to where it was published, without anything carried into it.
+        /// Never called once the new copy is committed. What cannot be put
+        /// back is logged; the question stays either way.
         func undo() {
             DuplicateReplacement.undo(publishedAt: publishedAt, movedTo: movedTo, namesBefore: namesBefore)
         }
