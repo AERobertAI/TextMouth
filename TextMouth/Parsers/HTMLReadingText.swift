@@ -42,6 +42,11 @@ enum HTMLReadingBoundary: Equatable {
 /// blocks. So both readings follow the same rules:
 /// - `script` and `style`, and content outside the rendered reading flow
 ///   (`PublicationSemantics.isExcludedFromReadingFlow`), contribute nothing.
+/// - An element the caller leaves out (`leavingOut`) contributes no words
+///   either, though it keeps the words on either side apart as any element
+///   of its kind does. The converter leaves out, from a heading's label, the
+///   page-break elements whose text is no more than their page's number,
+///   which it leaves out of the body text too (PG05, ST02).
 /// - An image contributes its alt text, read like any other text.
 /// - In the flowing layout each run of ASCII whitespace in text is read as
 ///   one space (`collapsingWhitespace`), and a space never follows
@@ -69,6 +74,9 @@ struct HTMLReadingText {
     private var utf16Length = 0
     private let layout: Layout
     private let recordsHeadings: Bool
+    /// The elements whose words this reading leaves out (`leavingOut`),
+    /// compared by identity: two elements with the same markup are two.
+    private let leftOut: Set<ObjectIdentifier>
     /// How many enclosing elements preserve the whitespace of their text.
     private var preservedWhitespaceDepth = 0
     /// How many enclosing elements the Markdown converter writes as plain
@@ -80,10 +88,13 @@ struct HTMLReadingText {
     private static let flattenedTags: Set<String> = ["pre", "code"]
 
     /// A reading laid out as `layout`. The direct reader also records the
-    /// headings it passes, placing each where its label begins.
-    init(layout: Layout = .flowing, recordsHeadings: Bool = false) {
+    /// headings it passes, placing each where its label begins. A reading
+    /// that is given `leavingOut` skips those elements (and what they
+    /// hold), wherever they stand below the node it reads.
+    init(layout: Layout = .flowing, recordsHeadings: Bool = false, leavingOut: [Element] = []) {
         self.layout = layout
         self.recordsHeadings = recordsHeadings
+        leftOut = Set(leavingOut.map(ObjectIdentifier.init))
     }
 
     // MARK: - Shared Readings
@@ -121,8 +132,14 @@ struct HTMLReadingText {
     /// trimmed; `CharacterSet.whitespaces` also holds characters such as
     /// U+200B that are words of the reading. The Markdown converter writes
     /// exactly this label, so both readings list the same heading.
-    static func label(of element: Element) -> String {
-        let scalars = inlineText(of: element).unicodeScalars
+    ///
+    /// `leavingOut` names the elements below the heading whose words are not
+    /// part of its label. The converter names the page-break elements whose
+    /// text is only their page's number: a heading "Part <page 9>Two" is the
+    /// label "Part Two", the number being the page's, not the heading's, and
+    /// the page itself written before the heading.
+    static func label(of element: Element, leavingOut: [Element] = []) -> String {
+        let scalars = inlineText(of: element, leavingOut: leavingOut).unicodeScalars
         guard let first = scalars.firstIndex(where: { !$0.properties.isWhitespace }),
               let last = scalars.lastIndex(where: { !$0.properties.isWhitespace }) else { return "" }
         return String(String.UnicodeScalarView(scalars[first...last]))
@@ -131,8 +148,10 @@ struct HTMLReadingText {
     /// The words of an element read inline, with whitespace collapsed. One
     /// space remains at either end when whitespace or a boundary begins or
     /// ends the element, so a caller can keep it apart from its neighbors.
-    static func inlineText(of element: Element) -> String {
-        var reading = HTMLReadingText()
+    /// The elements in `leavingOut`, wherever they stand below `element`,
+    /// add no words.
+    static func inlineText(of element: Element, leavingOut: [Element] = []) -> String {
+        var reading = HTMLReadingText(leavingOut: leavingOut)
         reading.appendChildren(of: element)
         return collapsingWhitespace(reading.text)
     }
@@ -172,6 +191,17 @@ struct HTMLReadingText {
         let tag = element.tagName().lowercased()
         guard tag != "script", tag != "style",
               !PublicationSemantics.isExcludedFromReadingFlow(element) else { return }
+        // An element left out adds no words, nor does anything it holds, but
+        // it still keeps the words on either side apart as the converter
+        // keeps them apart around an element it does not read: a block is a
+        // paragraph boundary, a table cell a word boundary, and a line
+        // break none of its own. Most readings leave nothing out, and this
+        // runs for every element of every book, so the lookup is skipped
+        // for them.
+        if !leftOut.isEmpty, leftOut.contains(ObjectIdentifier(element)) {
+            separate(at: tag == "br" ? .none : HTMLReadingBoundary.of(element, tag: tag))
+            return
+        }
         switch tag {
         case "br":
             breakLine()
