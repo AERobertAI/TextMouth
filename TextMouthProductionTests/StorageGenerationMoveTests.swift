@@ -297,7 +297,10 @@ final class StorageGenerationMoveTests: XCTestCase {
         XCTAssertEqual(duringCopy.questionStillAsked, true, "the refused answer settled the question")
         XCTAssertTrue(answerAfterMove.succeeded, answerAfterMove.failureMessage ?? "")
         XCTAssertNil(model.importDecisions.current)
-        XCTAssertEqual(model.library.books.filter { $0.id == existing.id }.count, 1)
+        XCTAssertEqual(
+            model.library.books.filter { $0.id == existing.id }.count, 1,
+            "the book is not listed once, under its own ID"
+        )
         let replacement = try XCTUnwrap(model.library.books.first { $0.id == existing.id })
         XCTAssertEqual(
             replacement.tmbDirectoryName,

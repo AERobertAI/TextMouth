@@ -566,7 +566,7 @@ final class ImportDecisionFlowTests: XCTestCase {
         LibraryPersistenceService.flushPendingSave()
 
         let copy = try XCTUnwrap(scene.model.library.books.first { $0.title == "Atlas of Tides" })
-        XCTAssertEqual(copy.id, atlas.existing.id, "the copy has an ID of its own (ST04)")
+        XCTAssertEqual(copy.id, atlas.existing.id, "the copy kept an ID of its own instead of the replaced book's (ST04)")
         XCTAssertEqual(scene.model.library.readingList.bookIDs, listed)
         XCTAssertEqual(scene.model.readingListBooks.map(\.title), [bestiary.existing.title, "Atlas of Tides", charts.title])
         let saved = try XCTUnwrap(LibraryPersistenceService.load().library)
@@ -660,6 +660,58 @@ final class ImportDecisionFlowTests: XCTestCase {
         XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
         XCTAssertEqual(scene.model.library.books.map(\.id), [atlas.existing.id])
         XCTAssertEqual(try scene.folder.entries(), [copy.tmbDirectoryName])
+    }
+
+    /// While the library's copy is being transcribed, or its audio edited,
+    /// Replace Existing waits too, saying why, and the question stays.
+    func testReplaceWaitsWhileTheOldCopyIsTranscribedOrItsAudioEdited() throws {
+        let scene = try makeScene()
+        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        scene.model.library = Library(books: [atlas.existing])
+        useAfterImportingBehavior(.keepOriginal)
+        scene.model.importFiles(urls: [atlas.copy], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let asked = try XCTUnwrap(scene.model.importDecisions.current)
+
+        TranscribedBooks.shared.setTranscribing(atlas.existing.id)
+        let whileTranscribed = scene.model.answerCurrentImportDecision(.replaceExisting)
+        TranscribedBooks.shared.setTranscribing(nil)
+        scene.model.audioEditActivity.beginUse(of: atlas.existing.id)
+        let whileEdited = scene.model.answerCurrentImportDecision(.replaceExisting)
+        scene.model.audioEditActivity.endUse(of: atlas.existing.id)
+
+        XCTAssertEqual(
+            whileTranscribed.failureMessage,
+            "“Earlier Atlas of Tides” is being transcribed, and replacing it now would lose the transcript. "
+                + "Wait until the transcription ends, or cancel it, then choose Replace Existing again."
+        )
+        XCTAssertEqual(
+            whileEdited.failureMessage,
+            "The audio of “Earlier Atlas of Tides” is being edited. Close the audio editor, or wait until it has saved, "
+                + "then choose Replace Existing again."
+        )
+        XCTAssertEqual(scene.model.importDecisions.current?.id, asked.id)
+        XCTAssertEqual(scene.model.library.books, [atlas.existing])
+    }
+
+    /// A session editing the old copy's text with Edit Text ends with the
+    /// replacement: what it watched went with the old copy, and a check of
+    /// the new copy's files against it would take them for an edit.
+    func testReplaceEndsTheOldCopysEditTextSession() throws {
+        let scene = try makeScene()
+        let sessions = BookTextEditSessions()
+        scene.model.textEditSessions = sessions
+        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        scene.model.library = Library(books: [atlas.existing])
+        useAfterImportingBehavior(.keepOriginal)
+        let baseline = BookTextBaseline(source: nil, cache: TranscriptFixtures.fingerprint())
+        sessions.begin(atlas.existing.id, BookTextEditSessions.Session(baseline: baseline, report: { _, _ in }))
+        scene.model.importFiles(urls: [atlas.copy], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+
+        XCTAssertFalse(sessions.isEditing(atlas.existing.id), "the old copy's Edit Text session goes on")
     }
 
     /// When the library's copy cannot be deleted, here because its package's
