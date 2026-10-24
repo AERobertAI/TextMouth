@@ -193,6 +193,27 @@ final class DuplicateReplacementTests: XCTestCase {
         XCTAssertEqual(textsRead, 0)
     }
 
+    /// Places move from the old text only when it is the text they were
+    /// saved in, by the digest the record keeps, as Edit Text checks: not
+    /// from a save no edit took, nor when no digest is kept (ST04 review,
+    /// finding 8).
+    func testPlacesMoveFromTheOldTextOnlyWhenItIsTheTextTheyWereSavedIn() {
+        let written = Data("The chart notes as TextMouth wrote them.".utf8)
+        let saved = Data("The chart notes as another editor saved them.".utf8)
+        let fingerprint = FileFingerprint(
+            stamp: FileStamp(byteCount: Int64(written.count), modificationTimeNanoseconds: 0),
+            digest: FingerprintHasher.md5.digestOfData(written)
+        )
+        var book = Self.existingTextBook()
+        book.textCacheFingerprint = TextCacheFingerprint(source: fingerprint, cache: fingerprint)
+        var unrecorded = book
+        unrecorded.textCacheFingerprint = nil
+
+        XCTAssertTrue(DuplicateReplacement.holdsTextOfPlaces(written, of: book))
+        XCTAssertFalse(DuplicateReplacement.holdsTextOfPlaces(saved, of: book))
+        XCTAssertFalse(DuplicateReplacement.holdsTextOfPlaces(written, of: unrecorded))
+    }
+
     /// An audiobook read as one chapter and replaced by the same recording
     /// read with its chapter marks: each place goes through its time on the
     /// recording to the chapter that holds it, never held at the end of the

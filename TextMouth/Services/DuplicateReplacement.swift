@@ -548,14 +548,15 @@ enum DuplicateReplacement {
                 let editedTranscriptStaysBehind = transcript.carried == nil && transcript.wasEdited
                 carried.unwrittenText = unrecorded ?? (editedTranscriptStaysBehind ? oldTextBytes : nil)
             }
-        } else if holdsOldText {
+        }
+        let oldTextIsWritten = oldTextBytes.map { holdsTextOfPlaces($0, of: existing, hasher: access.hasher) } ?? false
+        if !existing.format.isAudio, holdsOldText {
             if existing.editedText != nil {
                 // An edit on record is kept whatever it takes: never left
                 // behind because it is only in the cloud.
                 try old.requireOnThisMac(oldTextURL)
                 carried.unwrittenText = oldTextBytes
-            } else if let bytes = oldTextBytes, let written = existing.textCacheFingerprint?.cache.digest,
-                      access.hasher.digestOfData(bytes) != written {
+            } else if let bytes = oldTextBytes, existing.textCacheFingerprint != nil, !oldTextIsWritten {
                 // A save no edit took: not the text TextMouth wrote.
                 carried.unwrittenText = bytes
             }
@@ -565,7 +566,11 @@ enum DuplicateReplacement {
             of: existing,
             copy: copy,
             oldText: {
-                guard let oldTextBytes else { throw CocoaError(.fileReadNoSuchFile) }
+                // The places are moved from the old text only when it is the
+                // text they were saved in, as Edit Text moves them only then
+                // (`BookTextEditSessions.movedPlaces`): from a save no edit
+                // took, they are found in the new text by their words alone.
+                guard let oldTextBytes, oldTextIsWritten else { throw CocoaError(.fileReadCorruptFile) }
                 return try parsedText(oldTextBytes, at: oldTextURL, title: existing.title, author: existing.author)
             },
             newText: { newText(of: copy, carrying: existing) },
@@ -576,6 +581,18 @@ enum DuplicateReplacement {
             movedAt: now
         )
         return carried
+    }
+
+    /// Whether `bytes`, the content.md of `book`'s old copy, are the text its
+    /// places were saved in: the content.md TextMouth last took or wrote,
+    /// whose digest the book's record keeps (an edit taken records its own
+    /// there). Edit Text moves places from an old text only when it is that
+    /// text (`BookTextEditSessions`' moves, T06's branch E), and so does a
+    /// replacement (ST04 review, finding 8). False for a save no edit took,
+    /// and when the record keeps no digest.
+    static func holdsTextOfPlaces(_ bytes: Data, of book: Book, hasher: FingerprintHasher = .md5) -> Bool {
+        guard let written = book.textCacheFingerprint?.cache.digest ?? book.editedText?.cacheDigest else { return false }
+        return hasher.digestOfData(bytes) == written
     }
 
     /// The old copy's package, as a replacement reads it: through `access`,
