@@ -464,7 +464,7 @@ final class OnDiskContractTests: XCTestCase {
     /// Each page reader's version: the formats with pages, and that no
     /// other format has one.
     func testThePageReaderVersions() {
-        let withPages = ["epub", "html", "pdf", "docx", "daisy", "rtf", "rtfd", "doc", "odt", "wordml", "braille"]
+        let withPages = ["epub", "html", "pdf", "docx", "daisy", "rtf", "rtfd", "doc", "odt", "wordml", "braille", "txt"]
         let forces = "every book of that format is read again at the next launch (V05, V07)"
         var versions: [String: String] = [:]
         var withoutPages: Set<String> = []
@@ -482,7 +482,7 @@ final class OnDiskContractTests: XCTestCase {
         )
         XCTAssertEqual(
             withoutPages,
-            ["txt", "markdown", "webarchive", "ssml", "audio"],
+            ["markdown", "webarchive", "ssml", "audio"],
             Self.because("the formats without pages", forces)
         )
     }

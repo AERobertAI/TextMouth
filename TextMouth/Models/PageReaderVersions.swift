@@ -10,9 +10,10 @@ import os
 /// (`LibraryViewModel.booksNeedingCacheUpdate`), unless its text was
 /// changed, which is kept as it is.
 ///
-/// A format that gains pages later adds its line here (braille, PG12),
-/// which reads again only its own books, without another pass over the rest
-/// of the library (V07). A format whose page reader changes
+/// A format that gains pages later adds its line here (braille, PG12; plain
+/// text's form feeds, PG13), which reads again only its own books, without
+/// another pass over the rest of the library (V07). A format whose page
+/// reader changes
 /// raises its own version in the same way. Its books stamped by the reader
 /// before, which read their pages (`notesSuccess(_:)`), are then read again
 /// without PG16's compare (V05), so the bump keeps no copy of their text;
@@ -39,6 +40,12 @@ enum PageReaderVersions {
             // (V07). A BRL, which has no pages, shares the format: it is read
             // again once, as every braille book from before pages is, and
             // then stamped.
+            return "1.0.0"
+        case .txt:
+            // Plain text's form feeds begin pages (PG13), and its own case
+            // reads again only plain text books (V07). Most hold no form
+            // feed between words: each is read again once, its content.md
+            // byte for byte as before, and then stamped.
             return "1.0.0"
         default:
             return nil
