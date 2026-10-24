@@ -549,6 +549,37 @@ final class DuplicateReplacementTests: XCTestCase {
         }
     }
 
+    /// An index rebuilt from the packages, as an index recovery builds it,
+    /// takes of two packages naming one book the one whose record was
+    /// written later, as a replacement's is after its old copy's, whichever
+    /// the folder lists first, and rewrites neither record (ST04 verify,
+    /// finding 5).
+    func testOfTwoPackagesNamingOneBookTheLaterWrittenIsTheBook() throws {
+        for (older, newer) in [("Atlas A.tmb", "Atlas B.tmb"), ("Atlas B.tmb", "Atlas A.tmb")] {
+            let libraryDirectory = try makeSandboxDirectory("ReplaceRecovery")
+            let id = UUID()
+            _ = try Self.writePackage(named: older, id: id, hash: "older", in: libraryDirectory)
+            _ = try Self.writePackage(named: newer, id: id, hash: "newer", in: libraryDirectory)
+            let olderRecord = TextMouthPaths.bookInfoPath(in: libraryDirectory.appendingPathComponent(older, isDirectory: true))
+            let newerRecord = TextMouthPaths.bookInfoPath(in: libraryDirectory.appendingPathComponent(newer, isDirectory: true))
+            try FileManager.default.setAttributes([.modificationDate: Self.date], ofItemAtPath: olderRecord.path)
+            try FileManager.default.setAttributes(
+                [.modificationDate: Self.date.addingTimeInterval(60)],
+                ofItemAtPath: newerRecord.path
+            )
+            let records = [olderRecord, newerRecord]
+            let recordsBefore = try records.map { try Data(contentsOf: $0) }
+            var library = Library(books: [])
+
+            let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, libraryDirectory: libraryDirectory)
+
+            XCTAssertEqual(adopted, 1, "the later written is \(newer)")
+            XCTAssertEqual(library.books.map(\.tmbDirectoryName), [newer], "the later written is \(newer)")
+            XCTAssertEqual(library.books.map(\.md5Hash), ["newer"], "the later written is \(newer)")
+            XCTAssertEqual(try records.map { try Data(contentsOf: $0) }, recordsBefore, "the later written is \(newer)")
+        }
+    }
+
     /// A package named `name` in `folder`, holding a plain-text book file
     /// and a record of the book `id`, whose content hash is `hash`.
     private static func writePackage(named name: String, id: UUID, hash: String, in folder: URL) throws -> Book {
