@@ -757,7 +757,9 @@ enum PDFTextParser {
     /// or its number when the label is empty. An index outside `pageLabels`
     /// gets its number too, so no index can trap.
     private static func writePageMarker(pageIndex: Int, pageLabels: [String], into markdown: inout String) {
-        let label = pageLabels.indices.contains(pageIndex) ? plainNumberLabel(pageLabels[pageIndex]) : ""
+        let label = pageLabels.indices.contains(pageIndex)
+            ? plainNumberLabel(pageLabels[pageIndex], ordinal: pageIndex + 1)
+            : ""
         let marker = MarkdownPageMarker(label: label, ordinal: pageIndex + 1)
         MarkdownMarkerWriter.write(marker.markdown, inline: false, into: &markdown)
     }
@@ -769,15 +771,28 @@ enum PDFTextParser {
         ",", ".", "'", "\u{2019}", " ", "\u{00A0}", "\u{202F}",
     ]
 
-    /// A page label PDFKit wrote by formatting a whole number for a locale
-    /// ("1,000", "1.000", "1 000": the thousandth page of a PDF that names no
-    /// labels), as plain ASCII digits ("1000"). Page 1,000 of 2,000 would not
-    /// count as a whole number among the book's pages, so "Page 1,000 of 999"
-    /// would be spoken. Only a label of one to three ASCII digits followed
-    /// by one or more groups of a grouping separator and exactly three
-    /// ASCII digits is changed, whatever the locale; any other label (roman
-    /// numerals, "A-1", "12", "1,5", "1,00") is returned as PDFKit gave it.
-    static func plainNumberLabel(_ label: String) -> String {
+    /// A page label PDFKit wrote by formatting the page's own number for a
+    /// locale ("1,000", "1.000", "1 000": the thousandth page of a PDF that
+    /// names no labels), as plain ASCII digits ("1000"). Page 1,000 of 2,000
+    /// would not count as a whole number among the book's pages, so "Page
+    /// 1,000 of 999" would be spoken.
+    ///
+    /// Only a label that is the page's own number, `ordinal` (its 1-based
+    /// place in the PDF), is changed: PDFKit writes that number with the
+    /// locale's grouping only when the PDF names no labels (checked on this
+    /// Mac: the thousandth page reads "1,000" in en_US, "1.000" in de_DE, and
+    /// "1" and a narrow no-break space and "000" in fr_FR, while a PDF's own
+    /// decimal labels, such as 1000 from `/St 1000`, come out plain in en_US
+    /// and de_DE). A label the PDF gave that looks like a grouped number is
+    /// not that number: "1.100" on page 100, from the prefix "1." and the
+    /// number 100, stays as it is, and is not the whole number 1100 that
+    /// "of N" would take the book to run to.
+    ///
+    /// The label must also be one to three ASCII digits followed by one or
+    /// more groups of a grouping separator and exactly three ASCII digits,
+    /// whatever the locale; any other label (roman numerals, "A-1", "12",
+    /// "1,5", "1,00") is returned as PDFKit gave it.
+    static func plainNumberLabel(_ label: String, ordinal: Int) -> String {
         var digits = ""
         var leadingDigits = 0         // digits before the first separator
         var digitsSinceSeparator = 0  // digits since the last separator
@@ -797,8 +812,10 @@ enum PDFTextParser {
                 return label
             }
         }
-        // The label must end on a complete group of three digits.
-        return separators > 0 && digitsSinceSeparator == 3 ? digits : label
+        // The label must end on a complete group of three digits, and say
+        // the page's own number.
+        guard separators > 0, digitsSinceSeparator == 3, Int(digits) == ordinal else { return label }
+        return digits
     }
 
     /// Join the pages of a PDF without an outline (PG06): each page's marker,
