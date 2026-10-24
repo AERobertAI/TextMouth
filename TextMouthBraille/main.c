@@ -1094,9 +1094,10 @@ extra_closing_sign(const table_emphasis *emphasis, formtype closing, const widec
  * a dash or a slash; after a joined "to", "into", or "by"; and after a hyphen,
  * where liblouis writes one when the emphasis stopped before it. The word's
  * own signs mark it to its end, or to the first dash or slash (EBAE 15.1a),
- * or to the end signs: the termination sign ⠠⠄ and liblouis's sign inside a
- * passage's last word (`extra_closing_sign`), one for each class whose
- * emphasis ends there, which are left out. A passage's emphasis goes on
+ * or to the end signs: the termination sign ⠠⠄, which is kept for liblouis,
+ * and liblouis's sign inside a passage's last word (`extra_closing_sign`),
+ * which is left out, one for each class whose emphasis ends there. A
+ * passage's emphasis goes on
  * through every dash, slash, and punctuation mark (15.1b), and past a
  * termination sign to the next word. Whatever is not a sign, such as ⠨ as a
  * decimal point or a contraction inside a word, is kept for liblouis.
@@ -1165,13 +1166,16 @@ strip_ebae_word(const table_emphasis *emphasis, const widechar *cells, int start
 		/* Double capitals may begin inside a word, as in "McDONALDs" and
 		   "X-RAYs" (verifier, October 24, 2026). */
 		if (i + 1 < end && cells[i] == CELL_6 && cells[i + 1] == CELL_6) capitals = 1;
-		/* The termination sign (EBAE 15.6). After double capitals it ends
-		   them only, and is left for liblouis: liblouis writes "*ABCs*" as
-		   ⠨⠠⠠⠁⠃⠉⠠⠄⠎, the emphasis going on (review, October 24, 2026). */
+		/* The termination sign (EBAE 15.6), kept for liblouis, which reads
+		   it as nothing and the word's parts apart, as main read them: left
+		   out, "*per*haps" joined into ⠏⠻⠓, "perhaps", and came back
+		   "perhapsaps" (verifier, October 24, 2026). After double capitals
+		   it ends them only: liblouis writes "*ABCs*" as ⠨⠠⠠⠁⠃⠉⠠⠄⠎, the
+		   emphasis going on (review, October 24, 2026). */
 		if ((!ended || i == ended_at) && (word | *passage) != 0 && i + 1 < end && cells[i] == CELL_6 &&
 				cells[i + 1] == CELL_3) {
 			ended = !capitals;
-			if (capitals) count = keep(kept, bits, count, cells + i, 2, word | *passage);
+			count = keep(kept, bits, count, cells + i, 2, capitals ? word | *passage : 0);
 			i += 2;
 			ended_at = ended ? i : -1;
 			capitals = 0;
@@ -1316,9 +1320,9 @@ keep_liblouis_words(const char *table, const widechar *cells, int n, formtype fr
  * Leaving a sign out can still change how liblouis reads the cells around
  * it, which no test of the sign and the cell after it alone shows
  * (verifier, October 24, 2026): with the sign gone, contracted EBAE reads
- * "(" ⠶ and "be" ⠆ together as "}", so "(before" came back "}from"; and
- * without the termination sign of "*per*haps", ⠏⠻⠓ joins into "perhaps",
- * which came back "perhapsaps". So a record the pass left a cell out of is
+ * "(" ⠶ and "be" ⠆ together as "}", so "(before" came back "}from", and
+ * uncontracted EBAE read "25 -- before" as "25–before" once the bold sign
+ * after its dash was gone. So a record the pass left a cell out of is
  * also read by liblouis alone (`keep_liblouis_words`), and wherever the two
  * readings differ in any character, liblouis's is the record's: the words
  * are always those liblouis reads alone, by construction. Returns 1, or 0
