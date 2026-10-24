@@ -3,18 +3,22 @@ import XCTest
 
 /// The braille helper's reading passes (October 24, 2026,
 /// `TextMouthBraille/main.c`): emphasis signs read before liblouis reads the
-/// braille back, so that its words are the words the braille holds.
+/// braille back.
 ///
 /// **EBAE.** liblouis 3.39.0 reads EBAE's emphasis sign ⠨ before a word as a
-/// period before the letters a to j (".cat"), as "=" before k, as "µ" before
-/// m, and the sign it writes again after a passage, before punctuation, as
-/// ">"; BARD's EBAE books read so too. The helper reads the signs itself, as
-/// BANA's rules write them (the Library of Congress's Instruction Manual for
-/// Braille Transcribing, fifth edition, lesson 15, whose examples most of
-/// the contracted samples are), and gives liblouis the braille without them.
-/// Each word keeps the emphasis its signs mark, which content.md holds as
-/// Markdown emphasis (`BrailleBookReader.markdownLine(of:)`, every
-/// punctuation character escaped).
+/// period before the letters a to j (".cat"), as "=" before k, and as "µ"
+/// before m, and drops it silently before the other letters, which loses
+/// the emphasis. Those readings are its own EBAE's too: it writes a period
+/// before a word, "=", ">", and "µ" with ⠨, so where ⠨ could be one of them
+/// the braille cannot tell a sign from print. The pass therefore reads a
+/// sign only where liblouis drops it anyway (review, October 24, 2026): every
+/// word reads as it read before, and the emphasis is added where the sign is
+/// sure. A stray period before an emphasized word beginning a to j stays.
+/// Most contracted samples are the examples of the Library of Congress's
+/// Instruction Manual for Braille Transcribing, fifth edition, lesson 15,
+/// as BANA writes them; content.md holds the emphasis as Markdown's
+/// (`BrailleBookReader.markdownLine(of:)`, every punctuation character
+/// escaped).
 ///
 /// **UEB.** liblouis reads UEB's indicators, but reads the contraction just
 /// before a terminator as if no space could follow it: "people" (⠏) came
@@ -75,31 +79,30 @@ final class BrailleEmphasisReadingTests: XCTestCase {
 
     // MARK: - EBAE
 
-    /// Contracted EBAE as BANA writes it reads without a stray period, "=",
-    /// or "µ", and keeps the emphasis its signs mark: a word's sign, a
-    /// passage's (⠨⠨, then ⠨ before its last word, which ends it), bold's
+    /// Contracted EBAE as BANA writes it reads with liblouis's words, and with
+    /// the emphasis of each sign the pass can tell from print: a word's sign,
+    /// a passage's (⠨⠨, then ⠨ before its last word, which ends it), bold's
     /// (⠸⠨, ⠸⠨⠨), a sign after opening punctuation, after a dash or a slash
-    /// (which end a word's emphasis), and after a joined "to", "into", or
-    /// "by" (which take a sign of their own), the termination sign ⠠⠄, and
-    /// liblouis's own signs before punctuation. Before the pass the second
-    /// sample read ".blue-eyed", and "6.me" read "µe", with no emphasis.
-    func testContractedEBAEReadsWithoutStraySignsAndKeepsItsEmphasis() throws {
+    /// (which end a word's emphasis), and after a joined "to", "into", or "by",
+    /// and the termination sign ⠠⠄. Before the letters a to j, k, and m,
+    /// liblouis reads ⠨ as a period, "=", or "µ", as it writes them, so the
+    /// sign is left and the word reads as before (".blue-eyed", ".bus", "µe");
+    /// a passage's last sign there still ends the passage.
+    func testContractedEBAEReadsItsWordsAsBeforeWithTheEmphasisItCanTell() throws {
         try assertReads([
             (".,m>*", "*March*"),
-            (".blue-ey$", #"*blue\-eyed*"#),
-            (".,hold .! .bus6", #"*Hold the bus*\!"#),
-            ("..,pl1se6 ,hold ! .bus6", #"*Please\! Hold the bus*\!"#),
+            (".blue-ey$", #"\.blue\-eyed"#),
+            (".,hold .! .bus6", #"*Hold the* \.bus\!"#),
+            ("..,pl1se6 ,hold ! .bus6", #"*Please\! Hold the \.bus*\!"#),
             (",w[6 ..,look at page .#c4", #"Wow\! *Look at page 3*\."#),
-            (#",%e ?"\3 ..,poor ,alice ,faye .re,y ne$s .t .job4"#, #"She thought\: *Poor Alice Faye really* needs *that job*\."#),
-            (",? is .8 coat4", #"This is *his* coat\."#),
-            (".,2 .c>e;l6", #"*Be careful*\!"#),
-            (".96.t[n", "*into town*"),
-            (".96!", "*into* the"),
-            (",give x 6..hm1 n 6.me6", #"Give it to *him\, not to me*\!"#),
-            (",0.default", "By *default*"),
-            (".6,george", "*to* George"),
+            (#",%e ?"\3 ..,poor ,alice ,faye .re,y ne$s .t .job4"#, #"She thought\: *Poor Alice Faye really* needs *that* \.job\."#),
+            (",? is .8 coat4", #"This is \.\" coat\."#),
+            (".,2 .c>e;l6", #"*Be* \.careful\!"#),
+            (".96.t[n", #"\.into town"#),
+            (",give x 6..hm1 n 6.me6", #"Give it to *him\, not to µe*\!"#),
+            (",0.default", #"By \.default"#),
             (".,0.,george6", #"*By George*\!"#),
-            ("..,6]r is .human4", #"*To err is human*\."#),
+            ("..,6]r is .human4", #"*To err is \.human*\."#),
             (".,hel,'lo6", #"*Hel*lo\!"#),
             ("8.,help60 ! boy yell$4", #"\"*Help*\!\" the boy yelled\."#),
             (".,/op--.,n[6", #"*Stop* \-\- *Now*\!"#),
@@ -107,85 +110,108 @@ final class BrailleEmphasisReadingTests: XCTestCase {
             (".&_/.or", #"*and*\/*or*"#),
             ("_.cat sat", "**cat** sat"),
             (#"_..one two ?ree f\r _.five4"#, #"**one two three four five**\."#),
-            // liblouis's own signs: ⠨ again before a passage's punctuation,
-            // and the termination sign before a word's.
-            (#".."o two ?ree f\r .five.1 six"#, #"*one two three four five*\, six"#),
+            (".zoo sat", "*zoo* sat"),
+            ("_.zoo sat", "**zoo** sat"),
+            (".,zoo is", "*Zoo* is"),
+            // liblouis's own signs before punctuation: the termination sign,
+            // read, and ⠨, which before a comma it reads as ">", left.
             (".s.d,'1 ;x", #"*sound*\, x"#),
-            (#".."o two ?ree f\r .s.d.1 ;x"#, #"*one two three four sound*\, x"#),
+            (#".."o two ?ree f\r .five.1 six"#, #"*one two three four \.five*\> six"#),
         ], ebaeContracted)
     }
 
-    /// Uncontracted EBAE reads without a stray period or "=" too, in BANA's
-    /// signs and in liblouis's, and keeps its emphasis, bold italic too:
-    /// liblouis writes bold's sign before italic's, so ⠸⠨⠨ is a bold word in
-    /// italic unless a later word of the paragraph, its fourth or after,
-    /// closes it as a bold passage. Before the pass ".kite" read "=ite", and
-    /// ".five.1" read ".five>".
-    func testUncontractedEBAEReadsWithoutStraySignsAndKeepsItsEmphasis() throws {
+    /// Uncontracted EBAE reads its words as before too, with the emphasis the
+    /// pass can tell: before "cat", "five", and "all" the sign stays, as the
+    /// period liblouis reads it as, and before "kite" as "="; a passage's
+    /// last sign still ends it; a bold word in an italic passage, and
+    /// "*ABCs*", whose termination sign ends only the capitals, keep theirs.
+    func testUncontractedEBAEReadsItsWordsAsBeforeWithTheEmphasisItCanTell() throws {
         try assertReads([
-            (";a .cat sat", "a *cat* sat"),
-            ("..one two three four .five1 six", #"*one two three four five*\, six"#),
-            ("..it was not at .all4", #"*it was not at all*\."#),
+            (";a .cat sat", #"a \.cat sat"#),
+            ("..one two three four .five1 six", #"*one two three four \.five*\, six"#),
+            ("..it was not at .all4", #"*it was not at \.all*\."#),
             (".one .two .three four", "*one two three* four"),
             (".,march", "*March*"),
             ("8.,help60 the boy yelled4", #"\"*Help*\!\" the boy yelled\."#),
-            (".cat,''s", #"*cat*\'s"#),
+            (".cat,''s", #"\.cat\'s"#),
             ("_..one two three four _.five4", #"**one two three four five**\."#),
-            (".cat-dog", #"*cat\-dog*"#),
-            (".cat,'-dog", #"*cat*\-dog"#),
-            (".kite flew", "*kite* flew"),
-            ("..one two three four .five.1 six", #"*one two three four five*\, six"#),
-            (".cat,'1 sat", #"*cat*\, sat"#),
-            ("_..cat sat", "***cat*** sat"),
-            ("_..one _..two three", "***one two*** three"),
-            ("..one _.two three four .five six", "*one* ***two*** *three four five* six"),
-            ("_....one two three four _..five._.1 six", #"***one two three four five***\, six"#),
+            (".kite flew", #"\=ite flew"#),
+            ("..one _.two three four .five six", #"*one* ***two*** *three four \.five* six"#),
+            ("..no more of the .zoo4", #"*no more of the zoo*\."#),
+            (".,,abc,'s", "*ABCs*"),
         ], ebaeUncontracted)
     }
 
-    /// Contracted EBAE joins words that print spaces apart, and the pass
-    /// reads them as print's words: "into" joined to "into" before "mother"
-    /// (⠔⠖⠔⠖⠐⠍) takes the sign before it alone, as a joined "to" does; a
-    /// bold passage counts "to the" (⠖⠮) and "into out" (⠔⠖⠳⠞) as two words
-    /// each, so that four words of print make a passage, as liblouis wrote
-    /// them, where three braille words had read as a bold italic word and a
-    /// bold one. ⠨⠅, which liblouis writes both for "=" and for "knowledge"
-    /// emphasized, closes an open italic passage as its last word, which had
-    /// run on to the paragraph's end, and reads "=" elsewhere.
-    func testContractedEBAEReadsJoinedWordsAndAPassageEndingInKnowledge() throws {
+    /// BANA's EBAE has no sign for bold italic, and liblouis's, bold's sign
+    /// before italic's, is not read as one: ⠸⠨⠨ is a bold passage's sign,
+    /// and more ⠨ than that are left to liblouis. Its words read as before,
+    /// whatever the emphasis.
+    func testLiblouisBoldItalicSignsKeepTheirWords() throws {
+        try assertReadsWords([
+            ("_..cat sat", "cat sat"),
+            ("_..one _..two three", "one two three"),
+            ("_....one two three four _..five._.1 six", "one two three four five, six"),
+        ], ebaeUncontracted)
+    }
+
+    /// Contracted EBAE joins words that print spaces apart. "into" joined
+    /// to "into" before "mother" (⠔⠖⠔⠖⠐⠍) reads as before, ".into", since ⠨
+    /// before "in" is liblouis's period; a bold passage of joined words
+    /// ("to the", "into out") reads as one; and ⠨⠅, which liblouis writes
+    /// both for "=" and for "knowledge" emphasized, reads "=", ending a
+    /// passage open before it.
+    func testContractedEBAEReadsJoinedWordsAndTheKnowledgeSign() throws {
         try assertReads([
-            (#".9696"m"#, "*into* into mother"),
+            (#".9696"m"#, #"\.into into mother"#),
             ("_..g 6! _./ore n[", "**go to the store** now"),
             (#"_.."n 96\ _.d "y"#, "**name into out do** young"),
-            (#".."o two ?ree .k n["#, "*one two three knowledge* now"),
+            (#".."o two ?ree .k n["#, #"*one two three* \= now"#),
             (".k n[", #"\= now"#),
         ], ebaeContracted)
     }
 
     /// A contraction that liblouis reads with what follows it, past the place
     /// its emphasis ends, has its characters split there: contracted EBAE
-    /// reads "can't" (⠉⠄⠞) as one rule, so with "can" emphasized
-    /// (⠨⠉⠠⠄⠄⠞) all of "can't" came back italic; now its "can" is, and its
-    /// "'t" is not. A rule whose cells share one emphasis is not split.
+    /// reads "can't" (⠉⠄⠞) as one rule, so with "can" in bold (⠸⠨⠉⠠⠄⠄⠞) all
+    /// of "can't" came back bold; now its "can" is, and its "'t" is not.
+    /// Italic's sign before "can" is liblouis's period, and stays.
     func testARuleReadAcrossAnEmphasisEndIsSplitWhereTheEmphasisEnds() throws {
         try assertReads([
-            ("a .c,''t", #"a *can*\'t"#),
             ("a _.c,''t", #"a **can**\'t"#),
-            ("a .c't is", #"a *can\'t* is"#),
+            ("a .c't is", #"a \.can\'t is"#),
         ], ebaeContracted)
     }
 
-    /// What is not a sign is left as liblouis reads it: ⠨ inside a number,
-    /// the decimal point, so an emphasized number reads as the same number
-    /// plain (liblouis's own reading of EBAE decimals, "3.e", is kept); ⠨
-    /// beginning a contraction inside a word ("sound", "bound"); and ⠨⠅
-    /// standing alone, which liblouis writes for "=" (and contracted EBAE for
-    /// "knowledge" emphasized too).
+    /// What is no sign reads exactly as liblouis read it before the pass
+    /// (main, e110d985): ⠨ inside a number, the decimal point ("3.e" for 3.5,
+    /// liblouis's own reading), ⠨ beginning a contraction inside a word
+    /// ("sound", ".bound"), and ⠨⠅ standing alone, liblouis's "=".
     func testEBAELeavesWhatIsNoSign() throws {
-        XCTAssertEqual(try read(".#c.e", ebaeUncontracted).text, try read("#c.e", ebaeUncontracted).text)
-        XCTAssertEqual(try read("! .#c.e cats", ebaeContracted).text, try read("! #c.e cats", ebaeContracted).text)
-        try assertReadsWords([(".s.d is", "sound is"), ("a .b.d book", "a bound book"), ("a .k ;b", "a = b")], ebaeContracted)
-        try assertReadsWords([(";a .k ;b", "a = b")], ebaeUncontracted)
+        try assertReadsWords([(".#c.e", "3.e"), ("#c.e", "3.e"), (";a .k ;b", "a = b")], ebaeUncontracted)
+        try assertReadsWords([
+            ("! .#c.e cats", "the 3.every cats"), ("! #c.e cats", "the 3.every cats"),
+            (".s.d is", "sound is"), ("a .b.d book", "a .bound book"), ("a .k ;b", "a = b"),
+        ], ebaeContracted)
+    }
+
+    /// Plain print with the signs liblouis's EBAE writes with ⠨ (a period
+    /// before a word, "=", ">", "µ") at a word's start, after "(", "[", a
+    /// quotation mark, a dash, a hyphen, or a slash, and after a joined
+    /// "to", "into", or "by", with numbers and hyphens, written and read
+    /// back, reads back as its print: 3,000 seeded sentences in each EBAE
+    /// table, every one of which main (e110d985) read back exactly too. The
+    /// pass read only 175 of them back exactly before the review's fix
+    /// (October 24, 2026), taking the signs for emphasis.
+    func testPlainEBAEWithSymbolsReadsBackAsItsPrint() throws {
+        var generator = SymbolSentenceGenerator(seed: 20_261_024)
+        let sentences = (0..<3_000).map { _ in generator.sentence() }
+        for table in [ebaeUncontracted, ebaeContracted] {
+            let braille = try BrailleTranslator.translate(sentences, table: table, direction: .printToBraille, workingIn: work)
+            let print = try BrailleTranslator.translate(braille, table: table, direction: .brailleToPrint, workingIn: work)
+            let changed = zip(sentences, print).filter { $0 != $1 }
+            XCTAssertEqual(print.count, sentences.count, table)
+            XCTAssertEqual(changed.count, 0, "\(table): \(changed.prefix(5).map { "\($0.0) → \($0.1)" })")
+        }
     }
 
     /// Computer braille, between EBAE's indicators ⠸⠬ and ⠸⠱ (liblouis's
@@ -258,5 +284,80 @@ final class BrailleEmphasisReadingTests: XCTestCase {
             (".2a ;b", "*a* b"),
             ("= ! p's sake", #"for the people\'s sake"#),
         ], uebContracted)
+    }
+}
+
+/// The seeded plain sentences of
+/// `BrailleEmphasisReadingTests.testPlainEBAEWithSymbolsReadsBackAsItsPrint`:
+/// words, numbers, hyphenated pairs, and the signs liblouis's EBAE writes
+/// with ⠨ ("=", ">", "µ", and a period before a word) where a word begins,
+/// after opening punctuation, a slash, a dash, or a joined "to", "into", or
+/// "by". The tokens are those liblouis reads back exactly on main: a period
+/// stands only before a word beginning a to j (before other letters liblouis
+/// drops it), and numbers never stand beside a dash (liblouis reads "10 --"
+/// as an en dash). A 64-bit linear congruential generator, so the sentences
+/// are the same on every run.
+private struct SymbolSentenceGenerator {
+    private var state: UInt64
+
+    private static let words = [
+        "cat", "sat", "on", "mat", "kite", "more", "mom", "zoo", "dog", "ice", "hello", "jam", "bad", "fig",
+        "good", "egg", "aunt", "city", "day", "here", "there", "under", "young", "town", "go", "said", "milk",
+    ]
+    private static let wordsFromAToJ = ["cat", "dog", "ice", "hello", "jam", "bad", "fig", "good", "egg", "aunt", "city"]
+    private static let symbols = ["=", ">", "\u{B5}"]
+    private static let openers = ["(", "[", "\""]
+    private static let closers = [")", "]", "\""]
+    private static let joined = ["to", "into", "by"]
+    private static let numbers = [3, 5, 10, 25, 100, 2024]
+
+    init(seed: UInt64) {
+        state = seed
+    }
+
+    /// The next 31 bits.
+    private mutating func next() -> UInt64 {
+        state = state &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
+        return state >> 33
+    }
+
+    /// A number from 0 to `count` less 1.
+    private mutating func pick(_ count: Int) -> Int {
+        Int(next() % UInt64(count))
+    }
+
+    /// One token; a number is a word in a sentence with dashes.
+    private mutating func token(dashes: Bool) -> String {
+        let kind = pick(10)
+        let word = Self.words[pick(Self.words.count)]
+        let symbol = Self.symbols[pick(Self.symbols.count)]
+        switch kind {
+        case 0...2:
+            return word
+        case 3:
+            let number = String(Self.numbers[pick(Self.numbers.count)])
+            return dashes ? word : number
+        case 4:
+            return word + "-" + Self.words[pick(Self.words.count)]
+        case 5:
+            return symbol + word
+        case 6:
+            let k = pick(Self.openers.count)
+            return Self.openers[k] + symbol + Self.closers[k]
+        case 7:
+            return Self.joined[pick(Self.joined.count)] + " " + symbol + word
+        case 8:
+            return "." + Self.wordsFromAToJ[pick(Self.wordsFromAToJ.count)]
+        default:
+            return word + "/" + symbol + Self.words[pick(Self.words.count)]
+        }
+    }
+
+    /// One sentence of three to seven tokens, a quarter of them joined by
+    /// dashes.
+    mutating func sentence() -> String {
+        let dashes = pick(4) == 0
+        let count = 3 + pick(5)
+        return (0..<count).map { _ in token(dashes: dashes) }.joined(separator: dashes ? " -- " : " ")
     }
 }
