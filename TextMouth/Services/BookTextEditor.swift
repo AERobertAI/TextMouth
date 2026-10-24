@@ -263,6 +263,18 @@ final class BookTextEditor {
         end(bookID)
     }
 
+    /// Ends the session of the book `bookID` because Replace Existing put a
+    /// new copy, `title` before it, in the book's place (ST04), saying that
+    /// Edit Text has stopped for it: the book keeps its ID, so no check finds
+    /// it gone, but the text being edited went with the old copy, and a save
+    /// into it would never be taken. Says nothing, and ends nothing, when the
+    /// book had no session.
+    func endBecauseBookWasReplaced(_ bookID: UUID, title: String) {
+        guard sessions.isEditing(bookID) || files.watchedBookIDs.contains(bookID) else { return }
+        files.announce(BookTextEditWording.stoppedBookReplaced(bookTitle: sessionTitles[bookID] ?? title))
+        end(bookID)
+    }
+
     /// Ends the session of the book `bookID`: its watcher stops, and no
     /// edit of it is checked for any more.
     func end(_ bookID: UUID) {

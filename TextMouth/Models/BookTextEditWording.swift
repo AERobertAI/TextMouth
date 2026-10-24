@@ -57,6 +57,15 @@ enum BookTextEditWording {
         "Text not updated: \(bookTitle) was removed, or its download deleted, so Edit Text has stopped for it."
     }
 
+    /// A session ended because Replace Existing put a new copy in its book's
+    /// place (ST04): the book keeps its ID, but the text being edited went
+    /// with the old copy, so the user's later saves would never be taken.
+    /// Said as the session ends, with what to do to edit the new text.
+    static func stoppedBookReplaced(bookTitle: String) -> String {
+        "Edit Text has stopped for \(bookTitle), since a new copy replaced it. "
+            + "Choose Edit Text again to edit the new copy's text."
+    }
+
     /// Why an edit was not taken, as VoiceOver hears it once a check found
     /// it, then where the edited text was kept (`kept(_:)`), as in "Text not
     /// updated: the edited text of Harbour Pilots isn't UTF-8 text. Save it

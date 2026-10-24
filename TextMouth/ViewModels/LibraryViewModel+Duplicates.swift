@@ -398,7 +398,7 @@ extension LibraryViewModel {
         }
         save()
         LibraryPersistenceService.saveBookInfo(for: book)
-        endEditingSessions(of: existing.id)
+        endEditingSessions(of: existing)
         if book.format.isAudio || existing.format.isAudio {
             TranscribedBooks.shared.record(book.id, isTranscribed: preparation.keptTranscript)
         }
@@ -419,17 +419,19 @@ extension LibraryViewModel {
         return line
     }
 
-    /// Ends the Edit Text and Edit Manifest sessions of the book `bookID`,
-    /// if any: what they watch is the old copy's content.md or manifest, and
-    /// a check finding the new copy's files would take them for an edit.
-    /// Only a session that exists is ended, so no editor is made for none.
-    private func endEditingSessions(of bookID: UUID) {
-        if BookTextEditSessions.shared.isEditing(bookID) {
-            BookTextEditor.shared.end(bookID)
+    /// Ends the Edit Text and Edit Manifest sessions of `existing`, the
+    /// replaced copy, if any: what they watch is its content.md or manifest,
+    /// and a check finding the new copy's files would take them for an edit.
+    /// Edit Text says it stopped, as it does for a book removed; Edit
+    /// Manifest ends quietly, as it does then. Only a session that exists is
+    /// ended, so no editor is made for none.
+    private func endEditingSessions(of existing: Book) {
+        if BookTextEditSessions.shared.isEditing(existing.id) {
+            BookTextEditor.shared.endBecauseBookWasReplaced(existing.id, title: existing.title)
         }
-        textEditSessions.end(bookID)
-        if BookManifestEditSessions.shared.isEditing(bookID) {
-            BookManifestEditor.shared.end(bookID)
+        textEditSessions.end(existing.id)
+        if BookManifestEditSessions.shared.isEditing(existing.id) {
+            BookManifestEditor.shared.end(existing.id)
         }
     }
 
