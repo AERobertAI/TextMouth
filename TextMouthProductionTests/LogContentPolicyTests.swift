@@ -267,6 +267,8 @@ final class LogContentPolicyTests: XCTestCase {
         "AUDIO_SEGMENT_CLAMPED", "BOOK_METADATA_DROPPED", "CONTENT_ANALYSIS_DROPPED",
         "CONTENT_INDEX_REJECTED", "EPUB_INCOMPLETE_CONTENT", "FOLDER_REPAIR", "IMPORT_FAILED",
         "LEGACY_MIGRATION", "READING_STATS_DAY_KEYS", "STORED_VALUE_REPAIRED", "TEXT_ENCODING_FALLBACK",
+        // A text file's encoding guessed at its import (FMT16).
+        "TEXT_ENCODING_GUESS",
         // The data directory: a move and what it waits for (TODO S04); a library found again, lost,
         // or back, a switch to another library, the library's identity and session lease, and the
         // files read once it is back (FR02).
