@@ -218,14 +218,13 @@ enum DuplicateReplacement {
     /// `existing`'s places as the new copy `copy` keeps them: for two text
     /// books, moved from the old copy's text to the new copy's by the words
     /// they were saved by (`PlaceRelocator.relocate(_:from:to:movedAt:)`),
-    /// which reads the old text only when some place does not stand in the
-    /// new one; otherwise, as they are. Nothing is said or shown; when any
-    /// place moved, the debug log gets the relocator's counts
-    /// (PLACES_RELOCATED).
+    /// which parses the old text only when some place does not stand in the
+    /// new one; for two audiobooks, moved by time; otherwise, as they are.
+    /// Nothing is said or shown; when any text place moved, the debug log
+    /// gets the relocator's counts (PLACES_RELOCATED).
     ///
-    /// - An audiobook's places count time in its recording (P08), and stay.
-    /// - Places nothing could move (none saved, or a reading position at the
-    ///   very start) stay, and neither text is read.
+    /// - A text book's places nothing could move (none saved, or a reading
+    ///   position at the very start) stay, and neither text is read.
     /// - With no new text to read (`newText` gives nil), the places stay,
     ///   and the reader finds them by their words when it first loads the
     ///   new copy.
@@ -234,15 +233,27 @@ enum DuplicateReplacement {
     ///   alone, as a reader's load finds them
     ///   (`PlaceRelocator.relocate(_:within:movedAt:)`), and a place nothing
     ///   finds stays as it was saved.
+    /// - An audiobook's places count time in its recording (P08): they move
+    ///   to the new copy's chapters when its chapter list differs from the
+    ///   old copy's (`movedAudioPlaces(_:from:to:at:)`), read from the two
+    ///   copies' indexes (`oldIndex`, `newIndex`), and stay as they were
+    ///   saved when either index cannot be read.
     static func carriedPlaces(
         of existing: Book,
         copy: Book,
         oldText: () throws -> DocumentContent,
         newText: () -> DocumentContent?,
+        oldIndex: () -> BookContentIndex? = { nil },
+        newIndex: () -> BookContentIndex? = { nil },
         movedAt date: Date
     ) -> PlaceRelocator.Places {
         let saved = existing.relocatablePlaces
-        guard areSameKind(existing, copy), !copy.format.isAudio, existing.holdsPlacesToMove, let newText = newText() else {
+        guard areSameKind(existing, copy) else { return saved }
+        if copy.format.isAudio {
+            guard let old = oldIndex(), let new = newIndex() else { return saved }
+            return movedAudioPlaces(saved, from: old, to: new, at: date)
+        }
+        guard existing.holdsPlacesToMove, let newText = newText() else {
             return saved
         }
         let outcome: PlaceRelocator.Outcome?
@@ -256,6 +267,111 @@ enum DuplicateReplacement {
             DiagnosticLog.event(.storage, outcome.counts.logLine(title: existing.title))
         }
         return outcome.places
+    }
+
+    /// An audiobook's `places`, saved on the old copy's chapters (`old`, its
+    /// index), moved to the new copy's (`new`), as of `date` (ST04 review,
+    /// finding 2). An audiobook's place is a chapter and the time into it,
+    /// and the reader holds an offset past its chapter's end at that end, so
+    /// a place kept as it was on another chapter list would land wrong: a
+    /// position three hours into a book read as one chapter, opened on the
+    /// same recording read with its chapter marks, would be the end of the
+    /// first chapter.
+    ///
+    /// - The same chapter list: the places stay.
+    /// - Books of tracks, one track to a chapter, every old track among the
+    ///   new copy's: each place follows its track, at the same time into it
+    ///   (`TrackPlaces`), whatever order either copy plays them in, as after
+    ///   an edit of the old copy's manifest (FR17), which is not carried.
+    /// - Otherwise each place goes through time on the recording: where its
+    ///   old chapter starts plus its offset's time, never held to that
+    ///   chapter's end, then the new chapter that holds that time
+    ///   (`PlaceClock.place(atTime:)`); the end of the old recording is the
+    ///   end of the new one. Skipped headings name headings by their place,
+    ///   which another chapter list does not keep, so they wait, naming no
+    ///   heading, rather than skip whatever section came to have their ID.
+    static func movedAudioPlaces(
+        _ places: PlaceRelocator.Places,
+        from old: BookContentIndex,
+        to new: BookContentIndex,
+        at date: Date
+    ) -> PlaceRelocator.Places {
+        guard chapterLayout(of: old) != chapterLayout(of: new) else { return places }
+        let oldTracks = old.chapters.compactMap(\.audioFilePath)
+        if playsOneTrackPerChapter(old), playsOneTrackPerChapter(new),
+           Set(oldTracks).isSubset(of: Set(new.chapters.compactMap(\.audioFilePath))) {
+            return TrackPlaces.moved(places, from: old, to: new, at: date)
+        }
+        let oldClock = PlaceClock.recording(of: old)
+        let newClock = PlaceClock.recording(of: new)
+        /// The place on the new chapters at the time `chapter` and `offset`
+        /// stood for on the old recording.
+        func movedPlace(chapter: Int, offset: Int) -> PlaceClock.Place {
+            newClock.place(atTime: time(on: oldClock, chapter: chapter, offset: offset))
+        }
+
+        var moved = places
+        if var position = places.position {
+            let place = movedPlace(chapter: position.chapterIndex, offset: position.characterOffset)
+            if place.chapterIndex != position.chapterIndex || place.characterOffset != position.characterOffset {
+                position.chapterIndex = place.chapterIndex
+                position.characterOffset = place.characterOffset
+                position.lastUpdated = date
+                if position.globalCharacterOffset != nil {
+                    position.globalCharacterOffset = new.chapterStartOffset(place.chapterIndex) + place.characterOffset
+                }
+            }
+            moved.position = position
+        }
+        moved.bookmarks = places.bookmarks.map { bookmark in
+            let place = movedPlace(chapter: bookmark.chapterIndex, offset: bookmark.characterOffset)
+            var copy = bookmark
+            copy.chapterIndex = place.chapterIndex
+            copy.characterOffset = place.characterOffset
+            return copy
+        }
+        moved.waitingSkippedHeadings = places.waitingSkippedHeadings + places.skippedHeadings
+        moved.skippedHeadings = []
+        return moved
+    }
+
+    /// The time on `clock` of `chapter` and `offset`: where the chapter
+    /// starts plus the time the offset stands for, not held to the chapter's
+    /// end, as `PlaceClock.time(chapterIndex:characterOffset:)` holds it. A
+    /// chapter before the first is the beginning, and one after the last the
+    /// end.
+    private static func time(on clock: PlaceClock, chapter: Int, offset: Int) -> TimeInterval {
+        guard let last = clock.chapterStarts.indices.last, chapter >= 0 else { return 0 }
+        guard chapter <= last else { return clock.length }
+        guard clock.unitsPerSecond > 0 else { return clock.chapterStarts[chapter] }
+        return clock.chapterStarts[chapter] + Double(max(0, offset)) / clock.unitsPerSecond
+    }
+
+    /// One chapter of an audiobook's index as places depend on it: its
+    /// file, where it starts in that file, how long it lasts, and its
+    /// length in the reader's units.
+    private struct ChapterLayout: Equatable {
+        let file: String?
+        let start: TimeInterval?
+        let duration: TimeInterval?
+        let length: Int
+    }
+
+    /// Each chapter of `index` as places depend on it.
+    private static func chapterLayout(of index: BookContentIndex) -> [ChapterLayout] {
+        index.chapters.map {
+            ChapterLayout(file: $0.audioFilePath, start: $0.audio?.startTime, duration: $0.audio?.duration, length: $0.characterCount)
+        }
+    }
+
+    /// Whether every chapter of `index` plays a whole file of its own, as a
+    /// book of tracks does, so a place can follow its track by the file.
+    private static func playsOneTrackPerChapter(_ index: BookContentIndex) -> Bool {
+        let tracks = index.chapters.compactMap(\.audioFilePath)
+        return !index.chapters.isEmpty
+            && tracks.count == index.chapters.count
+            && Set(tracks).count == tracks.count
+            && index.chapters.allSatisfy { $0.audio?.clips == nil && ($0.audio?.startTime ?? 0) == 0 }
     }
 
     // MARK: Preparing the New Copy's Package
@@ -439,6 +555,10 @@ enum DuplicateReplacement {
                 return try parsedText(oldTextBytes, at: oldTextURL, title: existing.title, author: existing.author)
             },
             newText: { newText(of: copy, carrying: existing) },
+            // An index only in the cloud, or unreadable, moves no place: the
+            // places then stay as they were saved.
+            oldIndex: { try? old.read(old.package) { try BookInfo.load(from: old.package) }.contentIndex },
+            newIndex: { (try? BookInfo.load(from: copy.tmbDirectory))?.contentIndex },
             movedAt: now
         )
         return carried

@@ -327,7 +327,7 @@ final class ImportDecisionQueueTests: XCTestCase {
     private static let audioKeptWords =
         "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, "
         + "and place on the reading list, and its transcript when the audio is the same. "
-        + "Edits of its audio are not kept."
+        + "Edits of its audio or of its manifest are not kept."
 
     /// Where the old copy goes with "Move to Trash instead of deleting" on.
     private static let trashWords =

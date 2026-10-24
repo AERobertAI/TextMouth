@@ -305,11 +305,13 @@ struct ImportDecisionWording: Equatable {
 
     /// What Replace Existing keeps of the library's copy of an audiobook,
     /// and what it does not (ST04): its transcript only for the same audio,
-    /// and never its audio edits, which are edits of the old copy's files.
+    /// and never its audio edits or an edit of its manifest (FR17), which
+    /// are edits of the old copy's files; its places follow their tracks, or
+    /// their times (`DuplicateReplacement.movedAudioPlaces`).
     static let replacingKeepsAudioSentence =
         "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, "
         + "and place on the reading list, and its transcript when the audio is the same. "
-        + "Edits of its audio are not kept."
+        + "Edits of its audio or of its manifest are not kept."
 
     /// What Replace Existing keeps when one copy is an audiobook and the
     /// other is not (ST04): only the book's place in the library. A place in

@@ -193,6 +193,58 @@ final class DuplicateReplacementTests: XCTestCase {
         XCTAssertEqual(textsRead, 0)
     }
 
+    /// An audiobook read as one chapter and replaced by the same recording
+    /// read with its chapter marks: each place goes through its time on the
+    /// recording to the chapter that holds it, never held at the end of the
+    /// first, the end of the book stays the end, and a skip waits, naming no
+    /// heading (ST04 review, finding 2).
+    func testAudiobookPlacesGoThroughTheirTimeToANewChapterList() {
+        let old = Self.audioIndex([(nil, 100)])
+        let new = Self.audioIndex([(nil, 40), (nil, 60)])
+        let skip = SkippedHeading(level: 1, label: "Chapter 1", chapterIndex: 0, characterOffset: 0)
+        let places = PlaceRelocator.Places(
+            position: ReadingPosition(chapterIndex: 0, characterOffset: 600, globalCharacterOffset: 600),
+            bookmarks: [
+                Bookmark(number: 1, chapterIndex: 0, characterOffset: 950, label: "Toll", dateCreated: Self.date),
+                Bookmark(number: 2, chapterIndex: 0, characterOffset: 1_000, label: "End", dateCreated: Self.date),
+            ],
+            skippedHeadings: [skip]
+        )
+
+        let moved = DuplicateReplacement.movedAudioPlaces(places, from: old, to: new, at: Self.date)
+
+        XCTAssertEqual(moved.position?.chapterIndex, 1)
+        XCTAssertEqual(moved.position?.characterOffset, 200)
+        XCTAssertEqual(moved.position?.globalCharacterOffset, 600)
+        XCTAssertEqual(moved.position?.lastUpdated, Self.date)
+        XCTAssertEqual(moved.bookmarks.map(\.chapterIndex), [1, 1])
+        XCTAssertEqual(moved.bookmarks.map(\.characterOffset), [550, 600])
+        XCTAssertEqual(moved.bookmarks.map(\.label), ["Toll", "End"])
+        XCTAssertEqual(moved.skippedHeadings, [])
+        XCTAssertEqual(moved.waitingSkippedHeadings, [skip])
+    }
+
+    /// Books of tracks whose old copy played them in another order, as an
+    /// edit of its manifest leaves it: each place follows its track, at the
+    /// same time into it. The same chapter list moves nothing.
+    func testAudiobookPlacesFollowTheirTracksAndStayOnTheSameChapters() {
+        let old = Self.audioIndex([("c.wav", 10), ("a.wav", 10), ("b.wav", 10)])
+        let new = Self.audioIndex([("a.wav", 10), ("b.wav", 10), ("c.wav", 10)])
+        let places = PlaceRelocator.Places(
+            position: ReadingPosition(chapterIndex: 0, characterOffset: 50),
+            bookmarks: [Bookmark(number: 1, chapterIndex: 2, characterOffset: 30, label: "Weir", dateCreated: Self.date)]
+        )
+
+        let moved = DuplicateReplacement.movedAudioPlaces(places, from: old, to: new, at: Self.date)
+        let unmoved = DuplicateReplacement.movedAudioPlaces(places, from: old, to: old, at: Self.date)
+
+        XCTAssertEqual(moved.position?.chapterIndex, 2)
+        XCTAssertEqual(moved.position?.characterOffset, 50)
+        XCTAssertEqual(moved.bookmarks.map(\.chapterIndex), [1])
+        XCTAssertEqual(moved.bookmarks.map(\.characterOffset), [30])
+        XCTAssertEqual(unmoved, places)
+    }
+
     /// Places a new text could not move, as a position at the very start of
     /// a book with no bookmark or skip, stay, and no text is read for them.
     func testPlacesNothingCouldMoveReadNoText() {
@@ -469,6 +521,37 @@ final class DuplicateReplacementTests: XCTestCase {
 
         The last paragraph ends the chart notes for the season.
         """
+
+    /// An audiobook's index whose chapters each play `file` (nil for a book
+    /// of one file, whose chapters name none) for `seconds`, ten of the
+    /// reader's units to the second.
+    private static func audioIndex(_ chapters: [(file: String?, seconds: TimeInterval)]) -> BookContentIndex {
+        var start = 0
+        let entries = chapters.enumerated().map { number, chapter -> BookContentChapterIndex in
+            let length = Int(chapter.seconds * ReaderViewModel.audioCharsPerSecond)
+            defer { start += length }
+            return BookContentChapterIndex(
+                chapterIndex: number,
+                title: "Chapter \(number + 1)",
+                startCharacterOffset: start,
+                characterCount: length,
+                wordCount: 0,
+                headings: [],
+                audio: BookContentAudioChapterIndex(relativeFilePath: chapter.file, startTime: 0, duration: chapter.seconds)
+            )
+        }
+        return BookContentIndex(
+            version: BookContentIndex.currentVersion,
+            kind: .audio,
+            format: .audio,
+            generatedAt: date,
+            totalWordCount: 0,
+            totalCharacterCount: start,
+            totalAudioDuration: chapters.reduce(0) { $0 + $1.seconds },
+            audioLayout: chapters.allSatisfy { $0.file != nil } ? .multiFile : .singleFile,
+            chapters: entries
+        )
+    }
 
     /// `words` as a reader reads a content.md holding them.
     private static func text(_ words: String) -> DocumentContent {
