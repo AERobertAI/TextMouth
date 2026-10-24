@@ -9,9 +9,9 @@ final class TextPlausibilityTests: XCTestCase {
 
     private typealias Fixtures = TextEncodingFixtures
 
-    /// The plausibility of `text`.
-    private func plausibility(of text: String) -> TextPlausibility {
-        TextPlausibility(reading: text)
+    /// The plausibility of `text`, as a rival reading unless it is said to be the Windows-1252 one.
+    private func plausibility(of text: String, as judging: TextPlausibility.Judging = .rival) -> TextPlausibility {
+        TextPlausibility(reading: text, judging: judging)
     }
 
     // MARK: - Writing That Is Not Surprising
@@ -74,36 +74,86 @@ final class TextPlausibilityTests: XCTestCase {
         XCTAssertEqual(plausibility(of: "© ® ™ £ € ¥ ¢ ° ± × ÷").anomalies, 0)
     }
 
-    /// Every symbol Windows-1252 has is ordinary wherever it stands, since
-    /// Western text uses them as it pleases ("File ¦ Edit", "Assume ¬p",
-    /// "3,50 ¤"): the broken bar, the not sign, the currency sign, and the
-    /// accents that stand alone.
-    func testTheSymbolsWindows1252HasAreOrdinary() {
+    /// Every symbol Windows-1252 has is ordinary wherever it stands in its
+    /// own reading, since Western text uses them as it pleases ("File ¦ Edit",
+    /// "Assume ¬p", "3,50 ¤"): the broken bar, the not sign, the currency
+    /// sign, and the accents that stand alone.
+    func testTheSymbolsWindows1252HasAreOrdinaryInItsOwnReading() {
         for text in ["File ¦ Edit ¦ View ¦ Help", "Assume ¬p and ¬q", "a ¤ b", "a ¨ b ¸ c ¯ d ˜ e",
                      "© ® ™ £ € ¥ ¢ ° ± × ÷ ¤ ¦ ¨ ¬ ¯ ¸ ˜", "The trip is ˜5 km, ˜2 hours"] {
-            XCTAssertEqual(plausibility(of: text).anomalies, 0, text)
+            XCTAssertEqual(plausibility(of: text, as: .windows1252).anomalies, 0, text)
         }
     }
 
-    /// The accents that stand on their own may sit beside a letter, in text
-    /// typed without the letter or taken from a PDF: "Mu¨ller", "fac¸ade",
-    /// "cafe´", "an˜o".
-    func testAnAccentStandingBesideALetterIsOrdinary() {
+    /// The accents that stand on their own may sit beside a letter in the
+    /// Windows-1252 reading, in text typed without the letter or taken from a
+    /// PDF: "Mu¨ller", "fac¸ade", "cafe´", "an˜o".
+    func testAnAccentStandingBesideALetterIsOrdinaryInWindows1252() {
         for text in ["Mu¨ller", "fac¸ade", "cafe´", "an˜o", "a¯b", "caˆfe"] {
-            XCTAssertEqual(plausibility(of: text).anomalies, 0, text)
+            XCTAssertEqual(plausibility(of: text, as: .windows1252).anomalies, 0, text)
         }
     }
 
     /// The florin sign and f-stop ("ƒ/1.8"), the micro sign ("5 µg", "100µF"),
     /// and the ordinal indicators ("1º", "Nº 5") are letters to Unicode but
-    /// symbols to Western text: they are not judged as letters, so they
-    /// are no misfit and no lowercase letter that an uppercase one may not follow.
-    func testLettersWesternTextUsesAsSymbolsAreNotJudged() {
+    /// symbols to Western text: the Windows-1252 reading does not judge them
+    /// as letters, so they are no misfit and no lowercase letter that an
+    /// uppercase one may not follow.
+    func testLettersWesternTextUsesAsSymbolsAreNotJudgedInWindows1252() {
         for text in ["ƒ/1.8 and ƒ 1,20", "5 µg, 10 µM, 100µF", "1º maggio, 2ª vez, Nº 5"] {
-            let result = plausibility(of: text)
+            let result = plausibility(of: text, as: .windows1252)
             XCTAssertEqual(result.surprise, 0, text)
             XCTAssertEqual(result.nonASCIILetters, 0, text)
             XCTAssertGreaterThan(result.nonASCIICharacters, 0, text)
+        }
+    }
+
+    /// None of that leniency is given to a rival reading, where these
+    /// characters are what decoding made of other bytes: Mac Roman reads the
+    /// "Ü" of "zeigeÜbersicht" as "‹", an "Ä" as "ƒ", and a "ü" as "¸", and a
+    /// rival with them looked as clean as the right reading once they were
+    /// ordinary there too. A rival holds them as anomalies (and "ƒ", "µ",
+    /// "ª", "º" as letters, which fit the alphabet of no language).
+    func testAnythingWindows1252IsLenientAboutIsStrictInARival() {
+        for text in ["Mu¨ller", "fac¸ade", "an˜o", "a¯b", "caˆfe", "zeige‹bersicht", "zeige›bersicht", "zeige«bersicht",
+                     "zeige»bersicht", "haal…ducatie", "wort“wort", "wort”wort", "wort„wort", "enregistrer‘ter", "a ¤ b", "Assume ¬p"] {
+            XCTAssertEqual(plausibility(of: text).anomalies, 1, text)
+            XCTAssertEqual(plausibility(of: text, as: .windows1252).anomalies, 0, text)
+        }
+        XCTAssertEqual(plausibility(of: "File ¦ Edit ¦ View").anomalies, 2)
+        for text in ["ƒ/1.8", "5 µg", "1º maggio"] {
+            XCTAssertEqual(plausibility(of: text).nonASCIILetters, 1, text)
+            XCTAssertEqual(plausibility(of: text, as: .windows1252).nonASCIILetters, 0, text)
+        }
+        // The florin sign fits the alphabet of no language.
+        XCTAssertEqual(plausibility(of: "ƒ/1.8").misfitLetters, 1)
+        // "µ" is lowercase in a rival too, so an uppercase letter after it is a flip.
+        XCTAssertEqual(plausibility(of: "10 µM").caseFlips, 1)
+        XCTAssertEqual(plausibility(of: "10 µM", as: .windows1252).caseFlips, 0)
+        XCTAssertEqual(plausibility(of: "na hÉireann").caseFlips, 1)
+        XCTAssertEqual(plausibility(of: "na hÉireann", as: .windows1252).caseFlips, 0)
+    }
+
+    /// German identifiers read as Mac Roman are not a clean reading: "Ü" is
+    /// "‹", "Ä" is "ƒ", "ü" is "¸", "ö" is "ˆ", "ß" is "ﬂ". Judged as a
+    /// rival, the reading holds four anomalies (the "‹" between "e" and "b",
+    /// the "¸" of "prüft" and "Grüße", and the "ˆ" of "schöne"), against the
+    /// two case flips the Windows-1252 reading holds, so it does not win.
+    func testMacRomansReadingOfGermanIdentifiersIsNotClean() throws {
+        let german = "zeigeÜbersicht prüft die Größe, speichereÄnderung, schöne Grüße"
+        let bytes = try XCTUnwrap(german.data(using: .windowsCP1252))
+        let macRoman = try XCTUnwrap(TextFileDecoder.decodedText(bytes, in: .macOSRoman))
+        XCTAssertTrue(macRoman.contains("zeige‹bersicht"), macRoman)
+        XCTAssertEqual(plausibility(of: macRoman).anomalies, 4)
+        XCTAssertEqual(plausibility(of: german, as: .windows1252).caseFlips, 2)
+    }
+
+    /// What a rival may hold between two letters is what writing holds there
+    /// in any reading: the apostrophe, hyphens and dashes, the soft hyphen,
+    /// and the Catalan middle dot.
+    func testARivalMayHoldAnApostropheADashAndAHyphenBetweenLetters() {
+        for text in ["don’t", "l’homme", "word—word", "word–word", "a‑b", "col·legi", "don´t", "soft\u{00AD}hyphen"] {
+            XCTAssertEqual(plausibility(of: text).anomalies, 0, text)
         }
     }
 
@@ -146,19 +196,20 @@ final class TextPlausibilityTests: XCTestCase {
     func testACapitalByItselfIsNoAnomaly() {
         for text in ["word Ñ word", "Ò", "Ñ. García", "La letra Ñ", "Ô meu Deus! Ç és una lletra.", "À demain, É tarde"] {
             XCTAssertEqual(plausibility(of: text).anomalies, 0, text)
+            XCTAssertEqual(plausibility(of: text, as: .windows1252).anomalies, 0, text)
         }
     }
 
     /// Irish writes an accented capital after the consonant that prefixes a
     /// word ("na hÉireann", "i nÉirinn", "an tÓglach"): not a case flip when
     /// the consonant begins its word, and one when it does not ("ahÉ").
-    func testAnIrishCapitalAfterAPrefixConsonantIsNoCaseFlip() {
+    func testAnIrishCapitalAfterAPrefixConsonantIsNoCaseFlipInWindows1252() {
         for text in ["na hÉireann", "i nÉirinn", "an tÉireannach", "na hÁrainn", "tÉ", "nÓ"] {
-            XCTAssertEqual(plausibility(of: text).caseFlips, 0, text)
-            XCTAssertEqual(plausibility(of: text).anomalies, 0, text)
+            XCTAssertEqual(plausibility(of: text, as: .windows1252).caseFlips, 0, text)
+            XCTAssertEqual(plausibility(of: text, as: .windows1252).anomalies, 0, text)
         }
-        XCTAssertEqual(plausibility(of: "ahÉ").caseFlips, 1)
-        XCTAssertEqual(plausibility(of: "caféÉ").caseFlips, 1)
+        XCTAssertEqual(plausibility(of: "ahÉ", as: .windows1252).caseFlips, 1)
+        XCTAssertEqual(plausibility(of: "caféÉ", as: .windows1252).caseFlips, 1)
     }
 
     /// Case flips are counted among the anomalies, and so are the different
@@ -235,6 +286,21 @@ final class TextPlausibilityTests: XCTestCase {
         XCTAssertEqual(plausibility(of: "HELLO WORLD").excessUppercaseLetters, 0)
     }
 
+    /// Excess uppercase is counted in the surprise of a rival only. In the
+    /// Windows-1252 reading capitals beyond the usual share are headings in
+    /// capitals, names, and identifiers such as "zeigeÜbersicht", and say
+    /// nothing about the encoding; a Cyrillic text read in the wrong
+    /// encoding has its cases swapped, which only a rival can show.
+    func testExcessUppercaseCountsAgainstARivalOnly() {
+        let capitals = "ПРИВЕТ МИР ПРИВЕТ МИР"
+        XCTAssertEqual(plausibility(of: capitals).excessUppercaseLetters, 11)
+        XCTAssertEqual(plausibility(of: capitals).surprise, 11)
+        XCTAssertEqual(plausibility(of: capitals, as: .windows1252).excessUppercaseLetters, 11)
+        XCTAssertEqual(plausibility(of: capitals, as: .windows1252).surprise, 0)
+        // The disorder a rival must be nearly free of includes it either way.
+        XCTAssertEqual(plausibility(of: capitals, as: .windows1252).disorder, 11)
+    }
+
     // MARK: - Proof of a Wrong Reading
 
     /// The Windows-1252 reading of `text` as the bytes of a file in the
@@ -242,13 +308,13 @@ final class TextPlausibilityTests: XCTestCase {
     /// readings a guesser compares.
     private func readings(of text: String, writtenIn name: String) throws -> (western: TextPlausibility, rival: TextPlausibility) {
         let (bytes, written) = try Fixtures.file(text, inEncodingNamed: name)
-        return (plausibility(of: TextFileDecoder.windows1252Text(bytes)), plausibility(of: written))
+        return (plausibility(of: TextFileDecoder.windows1252Text(bytes), as: .windows1252), plausibility(of: written))
     }
 
     /// Whether the text, taken as a Windows-1252 reading, is shown wrong
     /// against a rival reading that is perfectly plausible.
     private func isGarbled(_ text: String) -> Bool {
-        plausibility(of: text).isGarbled(comparedTo: plausibility(of: ""))
+        plausibility(of: text, as: .windows1252).isGarbled(comparedTo: plausibility(of: ""))
     }
 
     /// Three anomalies of at least two different characters show a wrong

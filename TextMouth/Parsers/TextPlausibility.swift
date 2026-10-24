@@ -16,10 +16,7 @@ import Foundation
 ///   word ("CafÈ", the classic Mac Roman read as Windows-1252), a word that
 ///   mixes Latin letters with another script, a combining mark that does not
 ///   follow a letter of its own script, and symbols that text rarely holds
-///   at all (box drawing, mathematical symbols). The characters Windows-1252
-///   itself has ("¦", "¬", "¤", accents that stand alone, "ƒ", "µ", a
-///   capital "Ñ" by itself) are not anomalies anywhere: Western text uses
-///   them as it pleases, so they say nothing about the encoding.
+///   at all (box drawing, mathematical symbols).
 /// - **Misfit letters**, the non-ASCII letters that fall outside the alphabet
 ///   of the one language they fit best. Real text is in one language, so a
 ///   reading with "õ" and "û" together ("főterén" read as Latin 1) fits no
@@ -33,8 +30,29 @@ import Foundation
 /// guesser compares. That a reading has more surprise than a rival does not
 /// make it wrong, though: Western text is full of ordinary characters that
 /// look odd one by one (see `isGarbled(comparedTo:)`, which asks for proof).
+///
+/// The two sides of a comparison are not judged alike (`Judging`). The
+/// characters Windows-1252 itself has ("¦", "¬", "¤", accents that stand
+/// alone, "ƒ", "µ", a capital "Ñ" by itself, quotation marks and ellipses
+/// glued to a letter) are not anomalies in its own reading: a writer typed
+/// them, as Western text uses them as it pleases, and they say nothing
+/// about the encoding. In a rival reading they are what decoding made of
+/// other bytes (Mac Roman reads the capitals "É", "Ü", "Ç" as "…", "‹",
+/// "«", and "zeige‹bersicht" is no word), so there they are anomalies.
 struct TextPlausibility: Equatable, Sendable {
 
+    /// Whose reading is judged.
+    enum Judging: Sendable {
+        /// The reading as Windows-1252, the one a file has now: everything
+        /// Windows-1252 has is ordinary in it.
+        case windows1252
+        /// A reading in another encoding, which a guess would put in its
+        /// place: judged strictly, as the text a decoder made of the bytes.
+        case rival
+    }
+
+    /// Whose reading this is (see `Judging`).
+    private(set) var judging: Judging
     /// The characters of the text outside ASCII.
     private(set) var nonASCIICharacters = 0
     /// The anomalies the text holds (see the type's description).
@@ -67,8 +85,12 @@ struct TextPlausibility: Equatable, Sendable {
     }
 
     /// How many surprising things the text holds: the count `TextEncodingGuesser`
-    /// compares between readings of the same bytes.
-    var surprise: Int { anomalies + misfitLetters + excessUppercaseLetters }
+    /// compares between readings of the same bytes. Excess uppercase is
+    /// counted in a rival only: in the Windows-1252 reading capitals beyond
+    /// the usual share are headings in capitals, names, and identifiers such
+    /// as "zeigeÜbersicht", which say nothing about the encoding, while a
+    /// Cyrillic text read in the wrong encoding has its cases swapped.
+    var surprise: Int { anomalies + misfitLetters + (judging == .rival ? excessUppercaseLetters : 0) }
 
     /// Anomalies and excess uppercase: what a reading must be almost free of
     /// to be taken for the true one, whatever language it is in. (A text
@@ -102,11 +124,11 @@ struct TextPlausibility: Equatable, Sendable {
     /// place, and the oddest of them ("ƒ/1.8", "File ¦ Edit", "Mu¨ller",
     /// "Ñ. García", "na hÉireann") are what the writer typed. A rival that
     /// reads such a character as a quotation mark or a letter looks cleaner
-    /// without being right, and a wrong guess turns text that was right into
-    /// text that is wrong, which the book then keeps. A missed guess only
-    /// leaves a text as garbled as it always was. So the default stays,
-    /// unless the text itself holds one of three things that Western writing
-    /// does not:
+    /// without being right, which is why a rival is judged strictly
+    /// (`Judging`). A wrong guess turns text that was right into text that
+    /// is wrong, which the book then keeps. A missed guess only leaves a
+    /// text as garbled as it always was. So the default stays, unless the
+    /// text itself holds one of three things that Western writing does not:
     /// - **Anomalies of different characters**: three or more, of at least
     ///   two different characters. Undefined bytes read as controls, symbols
     ///   inside words, and the like come from a wrong reading of many
@@ -170,10 +192,14 @@ struct TextPlausibility: Equatable, Sendable {
 
     // MARK: Assessing
 
-    /// Judge `text`.
-    init(reading text: String) {
+    /// Judge `text`, a reading of a file's bytes in the encoding `judging` names.
+    init(reading text: String, judging: Judging = .rival) {
+        self.judging = judging
+        let isWindows1252 = judging == .windows1252
+        let betweenLetters = isWindows1252 ? TextPlausibility.windows1252BetweenLetters : TextPlausibility.ordinaryBetweenLetters
+        let symbols = isWindows1252 ? TextPlausibility.windows1252Symbols : TextPlausibility.ordinarySymbols
         let scalars = Array(text.unicodeScalars)
-        let kinds = scalars.map(Kind.init)
+        let kinds = scalars.map { Kind($0, treatingSymbolLettersAsSymbols: isWindows1252) }
         // Counts of each non-ASCII letter (lowercased) and of each script.
         var letterCounts: [Unicode.Scalar: Int] = [:]
         var scriptCounts: [Script: Int] = [:]
@@ -234,9 +260,9 @@ struct TextPlausibility: Equatable, Sendable {
                     // An uppercase letter directly after a lowercase one, when
                     // either is not ASCII ("CafÈ"; plain "iPhone" is not odd),
                     // unless it is an Irish accented capital after the prefix
-                    // consonant of a word ("na hÉireann").
+                    // consonant of a word ("na hÉireann"), in Windows-1252.
                     if scalar.properties.isUppercase, previous.properties.isLowercase, !isASCII || !previous.isASCII,
-                       !startsIrishPrefixedWord(at: index) {
+                       !(isWindows1252 && startsIrishPrefixedWord(at: index)) {
                         flag(scalar)
                         caseFlips += 1
                     }
@@ -261,8 +287,8 @@ struct TextPlausibility: Equatable, Sendable {
                 if isSpacedLetter(index - 1) && isSpacedLetter(index + 1) {
                     // Between two letters only apostrophes, hyphens, dashes,
                     // quotation marks and the like are ordinary.
-                    if !TextPlausibility.ordinaryBetweenLetters.contains(scalar.value) { flag(scalar) }
-                } else if kinds[index] == .symbol && !TextPlausibility.ordinarySymbols.contains(scalar.value) {
+                    if !betweenLetters.contains(scalar.value) { flag(scalar) }
+                } else if kinds[index] == .symbol && !symbols.contains(scalar.value) {
                     // A symbol text rarely holds at all, wherever it stands.
                     flag(scalar)
                 }
@@ -326,7 +352,8 @@ struct TextPlausibility: Equatable, Sendable {
     /// The alphabets, Western and Central European languages first, then
     /// Cyrillic, then Greek.
     private static let alphabets: [Alphabet] = [
-        Alphabet("French", "àâæçéèêëîïôœùûüÿ"),
+        // French has no "ÿ" here: it is in a few names only, and it is what Mac Roman makes of "Ø".
+        Alphabet("French", "àâæçéèêëîïôœùûü"),
         Alphabet("German", "äöüß"),
         Alphabet("Spanish", "áéíóúüñ"),
         Alphabet("Portuguese", "àáâãçéêíóôõúü"),
@@ -360,35 +387,47 @@ struct TextPlausibility: Equatable, Sendable {
 
     // MARK: Ordinary Characters
 
-    /// What may stand between two letters without surprise: apostrophes (the
-    /// acute accent typed as one included), hyphens and dashes, quotation
-    /// marks, the soft hyphen, the ellipsis, the Catalan middle dot, and the
-    /// accents that stand on their own beside a letter in text that was
-    /// typed on a keyboard without the letter or taken from a PDF ("Mu¨ller",
-    /// "an˜o").
+    /// What may stand between two letters in any reading without surprise:
+    /// the apostrophe (the acute accent typed as one included), hyphens and
+    /// dashes (the soft hyphen included), and the Catalan middle dot.
     private static let ordinaryBetweenLetters: Set<UInt32> = [
-        0x00A8, 0x00AB, 0x00AD, 0x00AF, 0x00B4, 0x00B7, 0x00B8, 0x00BB, 0x02C6, 0x02DC, 0x2010, 0x2011, 0x2012, 0x2013, 0x2014,
-        0x2015, 0x2018, 0x2019, 0x201C, 0x201D, 0x201E, 0x2026, 0x2039, 0x203A,
+        0x00AD, 0x00B4, 0x00B7, 0x2010, 0x2011, 0x2012, 0x2013, 0x2014, 0x2015, 0x2019,
     ]
 
-    /// The symbols running text holds without a reason to doubt it: the
-    /// currency signs (the cent, pound, yen, euro, and the general currency
-    /// sign), the broken bar, the copyright and registered signs, the not
-    /// sign, the degree, plus-minus, the multiplication and division signs,
-    /// the trademark sign, two arrows, and the accents that stand on their
-    /// own (the diaeresis, macron, acute, cedilla, and small tilde). All of
-    /// them are Windows-1252 characters, which Western text uses as it
-    /// pleases: nothing in a reading with them is unlike the text the writer
-    /// meant.
+    /// What else may stand between two letters in the Windows-1252 reading,
+    /// where a writer may have typed it: quotation marks and ellipses glued
+    /// to a letter, and the accents that stand on their own beside a letter
+    /// in text typed on a keyboard without the letter or taken from a PDF
+    /// ("Mu¨ller", "an˜o"). A rival reading has none of them between letters:
+    /// Mac Roman reads "É", "Ü", "Ç", "Ô" there as "…", "‹", "«", "‘".
+    private static let windows1252BetweenLetters: Set<UInt32> = ordinaryBetweenLetters.union([
+        0x00A8, 0x00AB, 0x00AF, 0x00B8, 0x00BB, 0x02C6, 0x02DC, 0x2018, 0x201C, 0x201D, 0x201E, 0x2026, 0x2039, 0x203A,
+    ])
+
+    /// The symbols running text holds in any reading without a reason to
+    /// doubt it: the cent, pound, yen, and euro signs, the copyright and
+    /// registered signs, the degree, plus-minus, the acute accent, the
+    /// multiplication and division signs, the trademark sign, and two arrows.
     private static let ordinarySymbols: Set<UInt32> = [
-        0x00A2, 0x00A3, 0x00A4, 0x00A5, 0x00A6, 0x00A8, 0x00A9, 0x00AC, 0x00AE, 0x00AF, 0x00B0, 0x00B1, 0x00B4, 0x00B8, 0x00D7,
-        0x00F7, 0x02DC, 0x20AC, 0x2122, 0x2190, 0x2192,
+        0x00A2, 0x00A3, 0x00A5, 0x00A9, 0x00AE, 0x00B0, 0x00B1, 0x00B4, 0x00D7, 0x00F7, 0x20AC, 0x2122, 0x2190, 0x2192,
     ]
+
+    /// The symbols the Windows-1252 reading may hold besides: the general
+    /// currency sign, the broken bar, the not sign, and the accents that
+    /// stand on their own (the diaeresis, macron, cedilla, and small tilde).
+    /// All of them are Windows-1252 characters, which Western text uses as it
+    /// pleases ("File ¦ Edit", "Assume ¬p", "3,50 ¤"): nothing in a reading
+    /// with them is unlike the text the writer meant.
+    private static let windows1252Symbols: Set<UInt32> = ordinarySymbols.union([
+        0x00A4, 0x00A6, 0x00A8, 0x00AC, 0x00AF, 0x00B8, 0x02DC,
+    ])
 
     /// The letters Western text uses as symbols: the florin sign and f-stop
     /// ("ƒ/2.8"), the micro sign ("5 µg"), and the ordinal indicators ("1º",
     /// "2ª"). Unicode calls them letters, but nothing about them tells which
-    /// encoding a text is in, so they are not judged as letters.
+    /// encoding a text is in, so the Windows-1252 reading does not judge them
+    /// as letters. A rival reading does: Mac Roman reads "Ä" as "ƒ", and the
+    /// florin sign fits the alphabet of no language.
     private static let lettersUsedAsSymbols: Set<UInt32> = [0x00AA, 0x00B5, 0x00BA, 0x0192]
 
     /// The accented capitals Irish writes after the consonant that prefixes a
@@ -407,12 +446,13 @@ struct TextPlausibility: Equatable, Sendable {
         /// A character with no use in text: unassigned, private use, or half
         /// of a surrogate pair.
         case unusable
-        /// White space, digits, format characters, and the letters Western
-        /// text uses as symbols: judged by nothing.
+        /// White space, digits, format characters, and (in the Windows-1252
+        /// reading) the letters Western text uses as symbols: judged by
+        /// nothing.
         case other
 
-        init(_ scalar: Unicode.Scalar) {
-            if TextPlausibility.lettersUsedAsSymbols.contains(scalar.value) {
+        init(_ scalar: Unicode.Scalar, treatingSymbolLettersAsSymbols: Bool) {
+            if treatingSymbolLettersAsSymbols, TextPlausibility.lettersUsedAsSymbols.contains(scalar.value) {
                 self = .other
                 return
             }

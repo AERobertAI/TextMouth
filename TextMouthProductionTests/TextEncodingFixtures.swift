@@ -299,5 +299,33 @@ enum TextEncodingFixtures {
         ("Catalan", "L’àvia va dir: “Ô, quina il·lusió!” El col·legi és a prop. Ç és una lletra.\n"),
         ("Spanish questions", "¿Qué? ¿Cómo? ¿Dónde? ¡Olé! Él dijo que sí.\n"),
         ("Irish places", "Tá sé i nÉirinn, in Éirinn, agus na hÉireann; an tÉireannach agus na hÁrainn.\n"),
+        // Identifiers with an accented capital after a lowercase word read as case flips, and Mac Roman reads the
+        // capital as a quotation mark or a letter: "zeige‹bersicht". The first four were guessed to be Mac Roman.
+        ("German identifiers", "zeigeÜbersicht, ladeÜbersicht, speichereÄnderung\n"),
+        ("German identifiers repeated", String(repeating: "zeigeÜbersicht, ladeÜbersicht, speichereÄnderung\n", count: 4)),
+        ("German notes with identifiers", """
+            Notizen zum Code
+            Die Funktion zeigeÜbersicht prüft die Größe des Fensters.
+            Danach ladeÜbersicht die Daten und speichereÄnderung schreibt sie zurück.
+            Viele Grüße
+
+            """),
+        ("German notes with identifiers, longer", String(repeating: """
+            Notizen zum Code
+            Die Funktion zeigeÜbersicht prüft die Größe des Fensters.
+            Danach ladeÜbersicht die Daten und speichereÄnderung schreibt sie zurück.
+            Viele Grüße
+
+            """, count: 6)),
+        ("French identifiers", "afficherÉtat, chargerÉlève, enregistrerÀPropos\nLe fichier est modifié, l’écran est prêt.\n"),
+        ("Dutch identifiers", "toonÉénRegel(); haalÉchtGeld();\nHet café is open, één keer per dag.\n"),
+        ("Danish identifiers", "hentØkonomi(); visÅrstal(); gemÆndring();\nBrødet er på bordet, og æblet er rødt.\n"),
+        ("Swedish identifiers", "visÅrsstatistik(); hämtaÖversikt(); sparaÄndring();\nFönstret är öppet och kvällen är lång.\n"),
+        ("Spanish identifiers", "mostrarÁrea(); cargarÚltimo(); guardarÍndice();\nEl niño está aquí, y la canción es fácil.\n"),
+        ("Icelandic identifiers", "sýnaÞættir(); opnaÍbúðir(); vistaÁgæti();\nÞað er gott og dóttir mín er hér.\n"),
+        ("Finnish identifiers", "näytäÄänet(); avaaÖljy(); tallennaÄiti();\nÄiti on kotona ja päivä on kaunis.\n"),
+        ("product names", "Das neue iPhone und das MacBook kosten weniger bei eBay als bei McDonald’s in München.\n"),
+        ("headings in capitals", "ÜBERSICHT\n\nÉCOLE NORMALE SUPÉRIEURE\n\nÅRSBERETNING\n\nÓRDENES DEL DÍA\n"),
+        ("a short file of one identifier", "zeigeÜbersicht\n"),
     ]
 }

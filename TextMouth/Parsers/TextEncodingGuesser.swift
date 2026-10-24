@@ -25,7 +25,12 @@ import Foundation
 /// is today's reading, and a book that is garbled in it is as garbled as it
 /// was, while a guess that is wrong turns text that was right into text that
 /// is not, and the book keeps it.
-/// - The reading must be nearly free of anomalies and excess uppercase.
+/// - The reading must be nearly free of anomalies and excess uppercase. A
+///   rival is judged strictly, and the Windows-1252 reading leniently
+///   (`TextPlausibility.Judging`): everything Windows-1252 has is ordinary in
+///   its own reading, but is only what decoding made of other bytes in a
+///   rival, so a rival cannot look clean by the same characters ("zeige‹bersicht"
+///   is Mac Roman's reading of "zeigeÜbersicht").
 /// - The default reading must be worse by at least three surprises, at a
 ///   rate of at least three in a hundred of its non-ASCII characters.
 /// - The default reading must show that it is wrong, by more than a rival
@@ -89,7 +94,7 @@ enum TextEncodingGuesser {
     /// (see the type's description).
     static func guess(_ data: Data) -> Guess? {
         guard let sample = examinedBytes(of: data) else { return nil }
-        let defaultReading = TextPlausibility(reading: TextFileDecoder.windows1252Text(sample))
+        let defaultReading = TextPlausibility(reading: TextFileDecoder.windows1252Text(sample), judging: .windows1252)
 
         let hint = foundationHint(for: sample)
         var entries = TextEncodingCatalog.entries.filter(\.isAlwaysTried)
@@ -100,7 +105,7 @@ enum TextEncodingGuesser {
         for entry in entries {
             guard let text = TextFileDecoder.decodedText(sample, in: entry.encoding),
                   !text.unicodeScalars.contains("\u{FFFD}") else { continue }
-            readings.append(Reading(entry: entry, text: text, plausibility: TextPlausibility(reading: text)))
+            readings.append(Reading(entry: entry, text: text, plausibility: TextPlausibility(reading: text, judging: .rival)))
         }
         // The fewest surprises first; readings with as many keep the catalog's order.
         let ranked = readings.enumerated().sorted { first, second in

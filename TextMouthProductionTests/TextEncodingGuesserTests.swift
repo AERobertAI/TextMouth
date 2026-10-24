@@ -143,6 +143,21 @@ final class TextEncodingGuesserTests: XCTestCase {
         }
     }
 
+    /// Windows-1252 text with accented capitals in identifiers, product names,
+    /// and headings in capitals is not guessed away from Windows-1252: 1,500
+    /// texts of code, notes, and short files in German, Dutch, French, the
+    /// Nordic languages, and Spanish, each drawing on a few accented letters,
+    /// as `SyntheticAccentedText` makes them from a seed. (The guesser that
+    /// let Windows-1252's own characters count in a rival's favour read
+    /// one German text in twelve as Mac Roman, "zeige‹bersicht".)
+    func testAccentedCapitalsInIdentifiersAndHeadingsAreNeverGuessedAwayFromWindows1252() throws {
+        for seed in 1...1_500 {
+            let text = SyntheticAccentedText.text(seed: UInt64(seed))
+            let bytes = try XCTUnwrap(text.data(using: .windowsCP1252, allowLossyConversion: false), "seed \(seed)")
+            XCTAssertNil(TextEncodingGuesser.guess(bytes), "seed \(seed): \(text.prefix(60))")
+        }
+    }
+
     /// A byte that Windows-1252 leaves undefined, stray in the text, is one
     /// oddity of one character, not the sign of a wrong reading however often
     /// it comes: three 0x9D bytes in an English file do not turn it into
