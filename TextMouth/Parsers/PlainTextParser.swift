@@ -31,6 +31,11 @@ import Foundation
 /// markers of an ATX-style line and the underline of a setext heading are
 /// heading syntax rather than words. U+0000 is read as U+FFFD, the
 /// replacement the Markdown reader is required to make.
+///
+/// Form feeds begin pages (PG13), in content.md only, as every format's
+/// pages are: the direct parse reads none, as DOCX's writes none. A form
+/// feed still ends a line, so the reading text is the same with pages and
+/// without them (`pagedBlocks(in:)`).
 enum PlainTextParser {
 
     /// One unit of a plain-text book's reading structure.
@@ -39,6 +44,14 @@ enum PlainTextParser {
         case heading(level: Int, text: String)
         /// Consecutive trimmed body lines, read joined by single spaces.
         case paragraph(lines: [String])
+    }
+
+    /// Where a page that a form feed begins starts (PG13): before line
+    /// `line` of block `block`, a paragraph's line, or line 0 of a block,
+    /// which is the block's start (a heading's, or a paragraph's first line).
+    struct FormFeedPage: Equatable {
+        var block: Int
+        var line: Int
     }
 
     /// The paragraph break between blocks, in both the reading text and the
@@ -65,16 +78,76 @@ enum PlainTextParser {
     /// Markdown or HTML is read exactly as written. Headings become ATX
     /// headings of their heuristic level; each paragraph line stays its own
     /// Markdown line, whose line break the reader speaks as a space.
-    /// - Parameter includesPages: whether page markers are written (PG13); false writes what cache format 3.0.7 wrote. Not used yet.
+    ///
+    /// A text whose form feeds begin pages (PG13, `pagedBlocks(in:)`) has a
+    /// page marker where each page's first line begins, page 1 at the
+    /// book's start and the rest numbered on from it: before the block that
+    /// line begins, or at the end of the line before it, after its words,
+    /// inside the paragraph (`MarkdownMarkerWriter`). The markers add no
+    /// word, and every line and block is as without them.
+    /// - Parameter includesPages: whether page markers are written (PG13);
+    ///   false writes what cache format 3.0.7 wrote, as does a text whose
+    ///   form feeds begin no page.
     static func markdown(text: String, includesPages: Bool = true) -> String {
-        blocks(in: text).map { block -> String in
+        guard includesPages else { return markdown(of: blocks(in: text)) }
+        let paged = pagedBlocks(in: text)
+        return markdown(of: paged.blocks, pages: paged.pages)
+    }
+
+    /// The Markdown of `blocks`, each block on its lines, apart by blank lines.
+    private static func markdown(of blocks: [Block]) -> String {
+        blocks.map { block -> String in
             switch block {
             case let .heading(level, label):
-                return String(repeating: "#", count: level) + " " + MarkdownLiteral.escaped(label)
+                return headingLine(level: level, label: label)
             case let .paragraph(lines):
                 return lines.map(MarkdownLiteral.escaped).joined(separator: "\n")
             }
         }.joined(separator: blockSeparator)
+    }
+
+    /// The Markdown of `blocks` with a marker for each of `pages`, and for
+    /// page 1 at the start: the markers are labelled 1, 2, 3, and so on, in
+    /// order. No pages give exactly `markdown(of:)`.
+    private static func markdown(of blocks: [Block], pages: [FormFeedPage]) -> String {
+        guard !pages.isEmpty else { return markdown(of: blocks) }
+        // Page 1 begins the book; the form feeds' pages follow it.
+        let starts = [FormFeedPage(block: 0, line: 0)] + pages
+        var markdown = ""
+        var next = 0
+        /// Writes the marker of every page that begins at `line` of block
+        /// `block`: a block of its own at a block's start, and after the
+        /// words of the line before it inside a paragraph.
+        func writeMarkers(block: Int, line: Int) {
+            while next < starts.count, starts[next] == FormFeedPage(block: block, line: line) {
+                let marker = MarkdownPageMarker(label: String(next + 1), ordinal: next + 1)
+                MarkdownMarkerWriter.write(marker.markdown, inline: line > 0, into: &markdown)
+                next += 1
+            }
+        }
+        for (index, block) in blocks.enumerated() {
+            writeMarkers(block: index, line: 0)
+            MarkdownMarkerWriter.ensureBlankLine(&markdown)
+            switch block {
+            case let .heading(level, label):
+                markdown += headingLine(level: level, label: label)
+            case let .paragraph(lines):
+                for (lineIndex, line) in lines.enumerated() {
+                    if lineIndex > 0 {
+                        writeMarkers(block: index, line: lineIndex)
+                        markdown += "\n"
+                    }
+                    markdown += MarkdownLiteral.escaped(line)
+                }
+            }
+        }
+        return markdown
+    }
+
+    /// A heading's line in content.md: its level's `#` markers and its
+    /// label as a Markdown literal.
+    private static func headingLine(level: Int, label: String) -> String {
+        String(repeating: "#", count: level) + " " + MarkdownLiteral.escaped(label)
     }
 
     // MARK: - Shared Line Analysis
@@ -93,17 +166,47 @@ enum PlainTextParser {
     /// underline directly below a setext heading is dropped as heading syntax;
     /// any other one, like every other line, is read as written.
     static func blocks(in text: String) -> [Block] {
+        analysis(of: text, findingPages: false).blocks
+    }
+
+    /// The blocks of `text`, exactly as `blocks(in:)` finds them, and the
+    /// pages its form feeds begin (PG13).
+    ///
+    /// A form feed (U+000C) ends a line, as it always has, and begins a page
+    /// at the first line after it that is read: a heading, or a paragraph's
+    /// line, but not an empty line, nor the underline a setext heading took.
+    /// Several form feeds before the same line begin a page each there, a
+    /// blank page kept in its order. A form feed with no words before it
+    /// begins no page, being the start of page 1, as a printout's first form
+    /// feed often is; nor does one with no words after it, which ends the
+    /// last page. Page 1, at the book's start, is not among the pages
+    /// returned, and a text with none has no pages at all.
+    static func pagedBlocks(in text: String) -> (blocks: [Block], pages: [FormFeedPage]) {
+        analysis(of: text, findingPages: true)
+    }
+
+    /// The one line analysis behind `blocks(in:)` and `pagedBlocks(in:)`,
+    /// which looks for form feeds only when `findingPages` asks it to.
+    private static func analysis(of text: String, findingPages: Bool) -> (blocks: [Block], pages: [FormFeedPage]) {
         // A file's text arrives normalized already; text from anywhere else
         // is normalized the same way, so CR LF never ends two lines.
-        let lines = TextFileDecoder.normalizingLineEndings(text)
+        let normalized = TextFileDecoder.normalizingLineEndings(text)
+        let lines = normalized
             .components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespaces) }
         let underlines = Set(lines.indices.filter { isSetextUnderline(lines[$0]) })
+        // The lines a form feed ends the line before, when pages are asked for.
+        let afterFormFeed = findingPages ? linesAfterFormFeeds(in: normalized) : []
 
         var blocks: [Block] = []
         var paragraph: [String] = []
         // The underline of the setext heading most recently emitted, if any.
         var consumedUnderline: Int?
+        var pages: [FormFeedPage] = []
+        // The form feeds since the last line read, whose pages begin at the
+        // next line read, and whether any line has been read yet.
+        var waitingPages = 0
+        var readAnyLine = false
 
         /// Close the paragraph being collected, if it has any lines.
         func endParagraph() {
@@ -112,13 +215,28 @@ enum PlainTextParser {
             paragraph = []
         }
 
+        /// Notes that the next line read is line `line` of block `block`: the
+        /// pages waiting for it begin there, unless no words came before.
+        func noteLineRead(block: Int, line: Int) {
+            if readAnyLine, waitingPages > 0 {
+                pages += repeatElement(FormFeedPage(block: block, line: line), count: waitingPages)
+            }
+            waitingPages = 0
+            readAnyLine = true
+        }
+
         for (index, line) in lines.enumerated() {
+            // Most texts hold no form feed, and their lines are not looked up.
+            if !afterFormFeed.isEmpty, afterFormFeed.contains(index) {
+                waitingPages += 1
+            }
             if index == consumedUnderline {
                 continue
             }
             if !underlines.contains(index),
                let heading = heading(at: index, in: lines, underlines: underlines) {
                 endParagraph()
+                noteLineRead(block: blocks.count, line: 0)
                 blocks.append(.heading(level: heading.level, text: readable(heading.label)))
                 if heading.isUnderlined {
                     consumedUnderline = index + 1
@@ -126,11 +244,43 @@ enum PlainTextParser {
             } else if line.isEmpty {
                 endParagraph()
             } else {
+                // The paragraph being collected becomes block `blocks.count`.
+                noteLineRead(block: blocks.count, line: paragraph.count)
                 paragraph.append(readable(line))
             }
         }
         endParagraph()
-        return blocks
+        // Form feeds still waiting have no words after them: no pages.
+        return (blocks, pages)
+    }
+
+    /// The indexes of the lines of `text`, as `components(separatedBy:
+    /// .newlines)` cuts them, that a form feed begins: each line after one
+    /// that a form feed ended (PG13). Every line ending of
+    /// `CharacterSet.newlines` is one UTF-16 unit, and a CR LF pair is one LF
+    /// in `text` already, so each one counts as the end of one line, as the
+    /// cut makes it. Empty for a text without a form feed, found without
+    /// counting its lines.
+    private static func linesAfterFormFeeds(in text: String) -> Set<Int> {
+        guard text.utf8.contains(0x0C) else { return [] }
+        var lines: Set<Int> = []
+        var lineIndex = 0
+        for unit in text.utf16 where isLineEnding(unit) {
+            lineIndex += 1
+            if unit == 0x0C {
+                lines.insert(lineIndex)
+            }
+        }
+        return lines
+    }
+
+    /// Whether the UTF-16 unit `unit` is one of `CharacterSet.newlines`: LF,
+    /// VT, FF, CR, NEL, LS, or PS.
+    private static func isLineEnding(_ unit: UInt16) -> Bool {
+        switch unit {
+        case 0x0A...0x0D, 0x85, 0x2028, 0x2029: return true
+        default: return false
+        }
     }
 
     /// A line the heading heuristics recognized.
