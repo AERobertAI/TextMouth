@@ -136,6 +136,10 @@ final class BrailleImportTests: XCTestCase {
         XCTAssertEqual(pages.total, 2)
         let content = try openedContent(of: book)
         for (page, words) in zip(pages.breaks, ["Pride and Prejudice", "taken it?"]) {
+            guard content.chapters.indices.contains(page.chapterIndex) else {
+                XCTFail("page \(page.label) is in chapter \(page.chapterIndex), which the book has not got")
+                continue
+            }
             let text = content.chapters[page.chapterIndex].text
             XCTAssertTrue(text[text.index(atUTF16Offset: page.characterOffset)...].hasPrefix(words), page.label)
         }

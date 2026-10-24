@@ -947,6 +947,7 @@ final class BraillePageAnalyzerTests: XCTestCase {
         XCTAssertEqual(structure.pages.map(\.firstCellOffset), [0, lastRowOfPageOne.count + 1])
         guard structure.blocks.count > 8 else { return XCTFail("the sample has \(structure.blocks.count) blocks") }
         let text = Array(structure.blocks[8].text.unicodeScalars)
+        guard text.count > lastRowOfPageOne.count + 5 else { return XCTFail("block 8 has \(text.count) cells") }
         XCTAssertEqual(text[lastRowOfPageOne.count], BrailleCells.blank)
         XCTAssertEqual(String(String.UnicodeScalarView(text[(lastRowOfPageOne.count + 1)...].prefix(5))), cells("TAKEN"))
     }
