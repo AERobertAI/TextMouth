@@ -134,6 +134,19 @@ final class BrailleEmphasisReadingTests: XCTestCase {
         ], ebaeUncontracted)
     }
 
+    /// A contraction that liblouis reads with what follows it, past the place
+    /// its emphasis ends, has its characters split there: contracted EBAE
+    /// reads "can't" (⠉⠄⠞) as one rule, so with "can" emphasized
+    /// (⠨⠉⠠⠄⠄⠞) all of "can't" came back italic; now its "can" is, and its
+    /// "'t" is not. A rule whose cells share one emphasis is not split.
+    func testARuleReadAcrossAnEmphasisEndIsSplitWhereTheEmphasisEnds() throws {
+        try assertReads([
+            ("a .c,''t", #"a *can*\'t"#),
+            ("a _.c,''t", #"a **can**\'t"#),
+            ("a .c't is", #"a *can\'t* is"#),
+        ], ebaeContracted)
+    }
+
     /// What is not a sign is left as liblouis reads it: ⠨ inside a number,
     /// the decimal point, so an emphasized number reads as the same number
     /// plain (liblouis's own reading of EBAE decimals, "3.e", is kept); ⠨

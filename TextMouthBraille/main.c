@@ -571,19 +571,65 @@ keep(widechar *kept, formtype *bits, int count, const widechar *cells, int lengt
 }
 
 /*
- * Gives each character of `t`, the translation back of braille whose cell k
- * is in the emphasis `bits[k]` (the table's bits), the emphasis of the cell
- * where the rule that wrote it began (`t->input_pos`). The typeform liblouis
- * read from the indicators, if any, is replaced. Returns 0 when memory runs
- * out.
+ * Splits the emphasis of the characters `t->chars[first..last)`, which one
+ * rule wrote from the cells `cells[start..next)` read together, where the
+ * cells' emphasis changes (`give_cells_emphasis`). At each cell b whose
+ * emphasis differs from the cell's before it, the cells from the start of
+ * their word to b are translated alone; when what they give begins the
+ * word's characters and ends inside the rule's, the rule's characters from
+ * there on take b's emphasis. Otherwise nothing is split there, and those
+ * characters keep the emphasis before.
+ *
+ * A cell liblouis reads as an indicator, which writes nothing, begins the
+ * rule after it (liblouis's inputPos names the first cell of all those
+ * that wrote nothing before a rule), so an indicator's emphasis is never
+ * taken for a change inside the rule before it.
+ */
+static void
+split_rule(const char *table, const widechar *cells, const formtype *bits, const translation *t,
+		formtype *typeform, int first, int last, int start, int next) {
+	/* The word's first cell, and its first character. */
+	int word = start;
+	int word_first = first;
+	while (word > 0 && cells[word - 1] != CELL_BLANK) word--;
+	while (word_first > 0 && t->input_pos[word_first - 1] >= word) word_first--;
+	for (int b = start + 1; b < next; b++) {
+		translation prefix;
+		int split;
+		if (bits[b] == bits[b - 1]) continue;
+		if (!translate(table, 0, cells + word, NULL, b - word, 1, &prefix)) continue;
+		split = word_first + prefix.length;
+		if (split > first && split < last &&
+				memcmp(t->chars + word_first, prefix.chars, (size_t)prefix.length * sizeof(widechar)) == 0)
+			for (int k = split; k < last; k++) typeform[k] = bits[b];
+		free_translation(&prefix);
+	}
+}
+
+/*
+ * Gives each character of `t`, the translation back of `cells[0..n)` whose
+ * cell k is in the emphasis `bits[k]` (the table's bits), the emphasis of
+ * the cell where the rule that wrote it began (`t->input_pos`), and splits
+ * a rule that read cells of different emphasis together where the emphasis
+ * changes (`split_rule`): contracted UEB reads "can't" from ⠉⠄⠞ as one
+ * rule, whose "can" may be italic and "'t" not. The typeform liblouis read
+ * from the indicators, if any, is replaced. Returns 0 when memory runs out.
  */
 static int
-give_cells_emphasis(const formtype *bits, int n, translation *t) {
+give_cells_emphasis(const char *table, const widechar *cells, const formtype *bits, int n, translation *t) {
 	formtype *typeform = calloc((size_t)t->length + 1, sizeof *typeform);
+	int first = 0;
 	if (typeform == NULL) return 0;
-	for (int k = 0; k < t->length; k++) {
-		int cell = t->input_pos[k];
-		typeform[k] = cell >= 0 && cell < n ? bits[cell] : 0;
+	while (first < t->length) {
+		int start = t->input_pos[first];
+		int last = first;
+		int next;
+		while (last < t->length && t->input_pos[last] == start) last++;
+		next = last < t->length ? t->input_pos[last] : n;
+		for (int k = first; k < last; k++) typeform[k] = start >= 0 && start < n ? bits[start] : 0;
+		if (start >= 0 && next <= n && next - start > 1)
+			split_rule(table, cells, bits, t, typeform, first, last, start, next);
+		first = last;
 	}
 	free(t->typeform);
 	t->typeform = typeform;
@@ -1126,7 +1172,8 @@ read_ebae(const char *table, const table_emphasis *emphasis, const widechar *cel
 	memset(result, 0, sizeof *result);
 	if (kept != NULL && bits != NULL) {
 		int count = strip_ebae_signs(emphasis, cells, n, kept, bits);
-		ok = translate(table, 0, kept, NULL, count, 1, result) && give_cells_emphasis(bits, count, result);
+		ok = translate(table, 0, kept, NULL, count, 1, result) &&
+				give_cells_emphasis(table, kept, bits, count, result);
 		if (!ok) free_translation(result);
 	}
 	free(kept);
