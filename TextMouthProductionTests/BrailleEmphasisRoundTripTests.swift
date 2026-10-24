@@ -14,14 +14,15 @@ import XCTest
 ///   emphasis terminator, which the braille helper's UEB pass now cures
 ///   (October 24, 2026): the review's six cases (E1) come back exactly, in
 ///   both grades.
-/// - **EBAE** writes its signs, and every word comes back with its emphasis
-///   too (October 24, 2026): the braille helper reads EBAE's signs itself,
-///   which liblouis 3.39.0 misreads, and from review E2 (October 21) until
-///   then EBAE wrote none.
-/// - **A table of this Mac's that liblouis cannot read back** (Norwegian)
-///   writes no emphasis at all (review E2): its signs, read again, changed
-///   words of TextMouth's own exports. Its export is the export of the same
-///   book plain, byte for byte, and comes back word for word.
+/// - **EBAE**, and a table of this Mac's that liblouis cannot read back
+///   either (Norwegian), write no emphasis at all (review E2, October 21,
+///   kept by the review of October 24): liblouis 3.39.0 misreads their
+///   signs, and writes a stray sign before punctuation after an EBAE
+///   passage, which changed words of TextMouth's own exports when they were
+///   read again, by TextMouth or by other braille readers. Their export is
+///   the export of the same book plain, byte for byte, and comes back word
+///   for word. (The EBAE reading pass reads BANA's signs in books; see
+///   `BrailleEmphasisReadingTests`.)
 final class BrailleEmphasisRoundTripTests: XCTestCase {
     /// The book's content.md: a heading with an italic word, then italic,
     /// bold, and both, on single words and on passages of two to five words,
@@ -235,19 +236,13 @@ final class BrailleEmphasisRoundTripTests: XCTestCase {
 
     // MARK: - EBAE
 
-    /// EBAE, uncontracted and contracted, writes its signs (the export
-    /// differs from the plain book's), and every word of the sample comes
-    /// back with its emphasis, the bold italic words and the passages that
-    /// end at punctuation too: content.md is exactly UEB's. liblouis 3.39.0
-    /// alone read the italic sign before a word as a period (".italic"), and
-    /// the stray sign it writes before the comma after a passage as ">"
-    /// (".five> six"); the helper now reads EBAE's signs itself.
-    func testEBAEBringsEveryWordsEmphasisBack() throws {
+    /// EBAE, uncontracted and contracted, writes no emphasis: liblouis 3.39.0
+    /// read the italic sign before a word as a period (".italic"), and the
+    /// stray sign it wrote before the comma after a passage as ">"
+    /// (".five> six"), so the export holds no sign, and every word comes back.
+    func testEBAEWritesNoEmphasisAndBringsEveryWordBack() throws {
         for table in ["en-us-g1.ctb", "en_US.tbl"] {
-            let emphasized = try roundTrip(source, table)
-            XCTAssertNotEqual(emphasized.brf, try roundTrip(plainSource, table).brf, "\(table): the BRF holds no emphasis sign")
-            XCTAssertEqual(try words(emphasized.readBack), try words(source), table)
-            XCTAssertEqual(emphasized.readBack, emphasizedReadBack, table)
+            try assertWritesNoEmphasis(table)
         }
     }
 
@@ -302,14 +297,19 @@ final class BrailleEmphasisRoundTripTests: XCTestCase {
     """#
 
     /// The EBAE samples' print, exported with every bundled table and read
-    /// back, comes back as it went out, word for word and emphasis for
-    /// emphasis: the samples in the other direction, from print to braille,
-    /// through liblouis's signs (in EBAE its signs before punctuation, its
-    /// joined "to", "into", and "by", and bold italic) rather than BANA's,
-    /// and through UEB's indicators, "can't" before a terminator included.
-    func testTheEBAESamplesComeBackAsTheyWentOutInEveryTable() throws {
-        for table in ["en-us-g1.ctb", "en_US.tbl", "en-ueb-g1.ctb", "en-ueb-g2.ctb"] {
+    /// back: through UEB's indicators it comes back as it went out, word for
+    /// word and emphasis for emphasis, "can't" before a terminator included;
+    /// EBAE writes it plain, byte for byte the plain samples' braille, and it
+    /// comes back word for word without its emphasis.
+    func testTheEBAESamplesComeBackInEveryTable() throws {
+        let plainSamples = ebaeSamplesPrint.replacingOccurrences(of: "*", with: "")
+        for table in ["en-ueb-g1.ctb", "en-ueb-g2.ctb"] {
             XCTAssertEqual(try roundTrip(ebaeSamplesPrint, table).readBack, ebaeSamplesPrint, table)
+        }
+        for table in ["en-us-g1.ctb", "en_US.tbl"] {
+            let emphasized = try roundTrip(ebaeSamplesPrint, table)
+            XCTAssertEqual(emphasized.brf, try roundTrip(plainSamples, table).brf, "\(table): the BRF holds emphasis signs")
+            XCTAssertEqual(emphasized.readBack, plainSamples, table)
         }
     }
 

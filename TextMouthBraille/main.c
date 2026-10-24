@@ -1400,32 +1400,33 @@ is_probe_marked(size_t index) {
 }
 
 /*
- * Marks in `emphasis->readable` each class that `back` reads back exactly as
- * liblouis writes it with this table, so that `forward` never writes an
- * indicator `back` would misread and `back` never reports emphasis it may
- * have misread. For each class the table has, the probe is translated
- * forward with the class on its marked stretches, then read back as `back`
- * reads (`read_braille`), and the class passes when the text comes back as
- * the probe, punctuation included, and the class's bit (and no other
- * carried class's) lies on exactly the marked letters; spaces and
- * punctuation are not looked at for emphasis, since liblouis gives a word's
- * following space its emphasis.
+ * Marks in `emphasis->readable` each class that liblouis reads back exactly
+ * as it writes it with this table, so that `forward` never writes an
+ * indicator liblouis would misread. For each class the table has, the probe
+ * is translated forward with the class on its marked stretches, then back by
+ * liblouis alone, and the class passes when the text comes back as the
+ * probe, punctuation included, and the class's bit (and no other carried
+ * class's) lies on exactly the marked letters; spaces and punctuation are
+ * not looked at for emphasis, since liblouis gives a word's following space
+ * its emphasis. `back` reports the readable classes, and the classes the
+ * EBAE pass reads (`flags_for_typeform`).
  *
- * liblouis 3.39.0 reads UEB's emphasis back exactly, but not EBAE's or that
- * of most of this Mac's tables that have emphasis rules. EBAE, like ten of
- * this Mac's tables, ends a passage with an indicator BEFORE its last word
- * (`endemphphrase ... before`), as UEB never does: liblouis reads EBAE's
- * italic word indicator (dots 4-6) as a period, its bold one (dots 4-5-6,
- * 4-6) as the end of a bold passage, which drops it, lets a passage run to
- * the end of the paragraph, and writes a stray sign before punctuation that
- * follows a passage. Written or reported, that would change the words of a
- * book TextMouth exported and read again, or put emphasis it never had into
- * its Markdown (review E2, October 21, 2026). Since October 24 the helper
- * reads EBAE's italic and bold signs itself (`read_ebae`), and they pass;
- * liblouis's own underline sign for EBAE, which BANA has not got, still
- * fails. Measured on each run rather than listed by name, so that a table
- * liblouis learns to read passes without a change here, and one of this
- * Mac's tables is judged by what its own rules do.
+ * liblouis 3.39.0 reads UEB's emphasis back exactly, but not EBAE's italic
+ * and bold, or that of most of this Mac's tables that have emphasis rules.
+ * EBAE, like ten of this Mac's tables, ends a passage with an indicator
+ * BEFORE its last word (`endemphphrase ... before`), as UEB never does:
+ * liblouis reads EBAE's italic word indicator (dots 4-6) as a period, its
+ * bold one (dots 4-5-6, 4-6) as the end of a bold passage, which drops it,
+ * lets a passage run to the end of the paragraph, and writes a stray sign
+ * before punctuation that follows a passage, which other braille readers
+ * read too. Written, that would change the words of a book TextMouth
+ * exported (review E2, October 21, 2026), so export writes EBAE's italic and
+ * bold plain; the EBAE pass, which reads BANA's signs in books, does not
+ * judge them (review, October 24, 2026). liblouis's own EBAE underline
+ * passes, and is written and read as liblouis has it. Measured on each run
+ * rather than listed by name, so that a table liblouis learns to read passes
+ * without a change here, and one of this Mac's tables is judged by what its
+ * own rules do.
  */
 static void
 check_readable(const char *table, table_emphasis *emphasis) {
@@ -1441,7 +1442,7 @@ check_readable(const char *table, table_emphasis *emphasis) {
 
 	/* The probe must come back as itself when plain, or nothing can be judged. */
 	plain_reads_back = translate(table, 1, probe, NULL, (int)length, 0, &braille) &&
-			read_braille(table, emphasis, braille.chars, braille.length, &print) &&
+			translate(table, 0, braille.chars, NULL, braille.length, 1, &print) &&
 			print.length == (int)length && memcmp(print.chars, probe, length * sizeof(widechar)) == 0;
 	free_translation(&braille);
 	free_translation(&print);
@@ -1453,7 +1454,7 @@ check_readable(const char *table, table_emphasis *emphasis) {
 		if (bit == 0) continue;
 		for (size_t k = 0; k < length; k++) marked[k] = is_probe_marked(k) ? bit : 0;
 		passes = translate(table, 1, probe, marked, (int)length, 0, &braille) &&
-				read_braille(table, emphasis, braille.chars, braille.length, &print) &&
+				translate(table, 0, braille.chars, NULL, braille.length, 1, &print) &&
 				print.length == (int)length && memcmp(print.chars, probe, length * sizeof(widechar)) == 0;
 		for (size_t k = 0; passes && k < length; k++)
 			if (PROBE[k] >= 'a' && PROBE[k] <= 'z') passes = (print.typeform[k] & carried) == marked[k];
