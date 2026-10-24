@@ -1099,11 +1099,10 @@ extra_closing_sign(const table_emphasis *emphasis, formtype closing, const widec
  * emphasis ends there, which are left out. A passage's emphasis goes on
  * through every dash, slash, and punctuation mark (15.1b), and past a
  * termination sign to the next word. Whatever is not a sign, such as ⠨ as a
- * decimal point or a contraction inside a word, is kept for liblouis. `n` is
- * the paragraph's length, which `ebae_signs_at` looks ahead in.
+ * decimal point or a contraction inside a word, is kept for liblouis.
  */
 static int
-strip_ebae_word(const table_emphasis *emphasis, const widechar *cells, int start, int end, int n,
+strip_ebae_word(const table_emphasis *emphasis, const widechar *cells, int start, int end,
 		formtype *passage, widechar *kept, formtype *bits, int count) {
 	/* The classes this word's own signs mark, and of those, the classes
 	   whose passage it closes. */
@@ -1246,7 +1245,7 @@ strip_ebae_signs(const table_emphasis *emphasis, const widechar *cells, int n, w
 			continue;
 		}
 		while (end < n && cells[end] != CELL_BLANK) end++;
-		count = strip_ebae_word(emphasis, cells, i, end, n, &passage, kept, bits, count);
+		count = strip_ebae_word(emphasis, cells, i, end, &passage, kept, bits, count);
 		i = end;
 	}
 	/* Each blank takes the emphasis of the last cell before it that is not
