@@ -1260,6 +1260,34 @@ strip_ebae_signs(const table_emphasis *emphasis, const widechar *cells, int n, w
 }
 
 /*
+ * The EBAE pass's safety net (`read_ebae`): reads `cells[0..n)` by liblouis
+ * alone, exactly as `back` read them before the pass, and when that
+ * reading's text differs from `*result`'s, the pass's reading of the same
+ * cells, in any character (case included), puts liblouis's reading in
+ * `*result` in its place, without the pass's emphasis: only liblouis's own
+ * bits in `from_liblouis` are kept. Returns 1, or 0 when the translation
+ * fails, leaving `*result` empty.
+ */
+static int
+keep_liblouis_words(const char *table, const widechar *cells, int n, formtype from_liblouis,
+		translation *result) {
+	translation alone;
+	if (!translate(table, 0, cells, NULL, n, 1, &alone)) {
+		free_translation(result);
+		return 0;
+	}
+	if (alone.length == result->length &&
+			memcmp(alone.chars, result->chars, (size_t)alone.length * sizeof(widechar)) == 0) {
+		free_translation(&alone);
+		return 1;
+	}
+	for (int k = 0; k < alone.length; k++) alone.typeform[k] &= from_liblouis;
+	free_translation(result);
+	*result = alone;
+	return 1;
+}
+
+/*
  * Reads `cells[0..n)` back to print into `*result` with a table that writes
  * its emphasis in EBAE's signs (`read_braille`), whose emphasis liblouis
  * 3.39.0 reads wrongly: it takes ⠨ before a letter a to j for a decimal
@@ -1273,7 +1301,17 @@ strip_ebae_signs(const table_emphasis *emphasis, const widechar *cells, int n, w
  * the cell it was read from (`give_cells_emphasis`). liblouis is still given
  * a typeform array, as every reading is, so that a sign the pass leaves is
  * read as liblouis read it; the emphasis liblouis reports is replaced.
- * Returns 1, or 0 when a translation fails.
+ *
+ * Leaving a sign out can still change how liblouis reads the cells around
+ * it, which no test of the sign and the cell after it alone shows
+ * (verifier, October 24, 2026): with the sign gone, contracted EBAE reads
+ * "(" ⠶ and "be" ⠆ together as "}", so "(before" came back "}from"; and
+ * without the termination sign of "*per*haps", ⠏⠻⠓ joins into "perhaps",
+ * which came back "perhapsaps". So a record the pass left a cell out of is
+ * also read by liblouis alone (`keep_liblouis_words`), and wherever the two
+ * readings differ in any character, liblouis's is the record's: the words
+ * are always those liblouis reads alone, by construction. Returns 1, or 0
+ * when a translation fails.
  */
 static int
 read_ebae(const char *table, const table_emphasis *emphasis, const widechar *cells, int n,
@@ -1281,17 +1319,20 @@ read_ebae(const char *table, const table_emphasis *emphasis, const widechar *cel
 	widechar *kept = malloc(((size_t)n + 1) * sizeof *kept);
 	formtype *bits = malloc(((size_t)n + 1) * sizeof *bits);
 	formtype from_liblouis = 0;
+	int count = n;
 	int ok = 0;
 	memset(result, 0, sizeof *result);
 	/* liblouis's own reading of the classes the pass does not read. */
 	for (size_t k = 0; k < EMPHASIS_CLASS_COUNT; k++)
 		if (emphasis->code[k] != CODE_EBAE) from_liblouis |= emphasis->bit[k];
 	if (kept != NULL && bits != NULL) {
-		int count = strip_ebae_signs(emphasis, cells, n, kept, bits);
+		count = strip_ebae_signs(emphasis, cells, n, kept, bits);
 		ok = read_kept_cells(table, kept, bits, count, from_liblouis, result);
 	}
 	free(kept);
 	free(bits);
+	/* With no cell left out, liblouis read the very cells it reads alone. */
+	if (ok && count < n) ok = keep_liblouis_words(table, cells, n, from_liblouis, result);
 	return ok;
 }
 
