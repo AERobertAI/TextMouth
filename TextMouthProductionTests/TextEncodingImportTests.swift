@@ -154,6 +154,26 @@ final class TextEncodingImportTests: XCTestCase {
         XCTAssertEqual(lost.textEncoding, "koi8-r", "the row has its encoding again")
     }
 
+    /// The analysis a rebuild commits is merged into the book as its package
+    /// records it, so the committed book, which the library row takes its
+    /// analysis from, holds the record's encoding when the row lost its own:
+    /// the row gets it back with the analysis (`ContentAnalysisSummary`).
+    func testTheCommittedBookCarriesTheRecordsEncodingForARowThatLostIt() throws {
+        let book = try importedForTest(copyOfFormatSample("txt-encodings/koi8-r.txt")).book
+        var lost = book
+        lost.textEncoding = nil
+        let index = try XCTUnwrap(BookInfo.load(from: book.tmbDirectory).contentIndex)
+
+        let committed = try XCTUnwrap(LibraryPersistenceService.saveContentAnalysis(
+            for: lost, index: index, cacheFormatVersion: MarkdownCacheService.currentCacheVersion
+        ))
+
+        XCTAssertEqual(committed.textEncoding, "koi8-r")
+        var row = lost
+        ContentAnalysisSummary(committed: committed).apply(to: &row)
+        XCTAssertEqual(row.textEncoding, "koi8-r")
+    }
+
     /// A record helps a row that lost its encoding only when it names the
     /// same book and can be read: another book's record in the package, a
     /// record that is no JSON, and a book with no package give nothing, and

@@ -4,7 +4,8 @@ import Foundation
 
 /// The analysis fields a batch committed to one book's package record,
 /// and the places a rebuild moved (T06's branch D) that the record took,
-/// on their way to the book's library row.
+/// and the encoding the record keeps for a text file, on their way to the
+/// book's library row.
 ///
 /// The row takes only the moves its record took, so a move never wins over a
 /// newer write another Mac left in the record: a moved place is dated at the
@@ -22,6 +23,12 @@ struct ContentAnalysisSummary: Sendable {
     /// none. For a book recovered from its record, the moves that bring the
     /// row to the record's places (`init(recovered:record:)`).
     let movedPlaces: MovedPlaces?
+    /// The encoding the book's package record keeps for its text file
+    /// (`Book.textEncoding`, FMT16), which a row that lost its own takes
+    /// back: a damaged value in library.json reads as none, and so does a row
+    /// an older build wrote, while the record keeps it. Nil when the record
+    /// names none.
+    let textEncoding: String?
 
     /// The analysis fields of `committed`, the book as its package records
     /// it once the analysis is saved (`LibraryPersistenceService.saveContentAnalysis`),
@@ -32,6 +39,7 @@ struct ContentAnalysisSummary: Sendable {
         bookID = committed.id
         fields = committed.contentAnalysisFields
         self.movedPlaces = movedPlaces.map { $0.taken(by: committed) }
+        textEncoding = committed.textEncoding
     }
 
     /// The analysis fields of `recovered`, the library row with the analysis
@@ -46,6 +54,7 @@ struct ContentAnalysisSummary: Sendable {
         bookID = recovered.id
         fields = recovered.contentAnalysisFields
         movedPlaces = Self.placesMoved(to: record, from: recovered)
+        textEncoding = record.textEncoding
     }
 
     /// The moves that bring the places of `row`, the library row, to those
@@ -109,10 +118,15 @@ struct ContentAnalysisSummary: Sendable {
     /// did: only where it still holds the place as it was, so a place saved
     /// meanwhile wins. A move the record refused is not taken, so a moved
     /// place never wins over a newer write another Mac left in the record.
+    /// A row with no encoding takes the record's (`textEncoding`); a row
+    /// that has one keeps it.
     func apply(to book: inout Book) {
         book.contentAnalysisFields = fields
         if let movedPlaces {
             book.takeMovedPlaces(original: movedPlaces.original, moved: movedPlaces.moved)
+        }
+        if book.textEncoding == nil {
+            book.textEncoding = textEncoding
         }
     }
 }

@@ -429,8 +429,9 @@ enum MarkdownCacheService {
     /// it, a text file whose bytes name no encoding is read in a guessed
     /// one, which `book` records (`Book.textEncoding`, FMT16) so that every
     /// later reading of it uses the same. Without it, a book whose row lost
-    /// its encoding is read in the one its package record keeps, and takes
-    /// it back (`Book.recordedTextEncoding()`).
+    /// its encoding is read in the one its package record keeps, and `book`
+    /// takes it back (`Book.recordedTextEncoding()`); the library row takes
+    /// it with the analysis the caller commits (`ContentAnalysisSummary`).
     /// - Returns: nil for a book with no text cache.
     /// - Throws: why no cache could be written; `book` is then unchanged.
     ///   `EditedTextKept` when content.md holds the user's edit and
