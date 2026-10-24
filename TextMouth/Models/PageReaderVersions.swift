@@ -21,13 +21,14 @@ import os
 /// compared as ever.
 enum PageReaderVersions {
     /// The version of `format`'s page reader; nil for a format that writes
-    /// no page markers. Every format listed was given pages in the same
-    /// release, so each started at "1.0.0".
+    /// no page markers. Each format's page reader started at "1.0.0" when
+    /// the format gained its pages.
     ///
     /// The formats textutil reads (`.rtf`, `.rtfd`, `.doc`, `.odt`, and
-    /// `.wordml`, PG11) gained their pages in the same release. A format that
-    /// gains pages later (PG12's braille) adds a case of its own with its own
-    /// version, which reads again only its own books.
+    /// `.wordml`, PG11) gained their pages in the same release as EPUB, HTML,
+    /// PDF, DOCX, and DAISY. Braille (PG12) and plain text (PG13) gained
+    /// theirs later, each with a case of its own and its own version, which
+    /// reads again only its own books (V07).
     ///
     /// EPUB and HTML are at "1.0.1": the HTML converter they share no longer
     /// leaves a page-break element's number in the label of a heading that
