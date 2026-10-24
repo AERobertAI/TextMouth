@@ -382,8 +382,16 @@ extension LibraryViewModel {
     /// the same ID; being transcribed or exported, work that reads the old
     /// copy's files and would lose what it makes (`feedBookUse(of:)`, the
     /// uses a feed download's deletion refuses); or its audio is being
-    /// edited, or saved from the audio editor.
+    /// edited, or saved from the audio editor. Nor does it go ahead while
+    /// another operation holds the library's storage work, as a folder edit
+    /// does while it moves packages off the main thread: the replacement
+    /// would carry nothing from a package moved meanwhile, and its record
+    /// would be written into the old package's new place (ST04 review,
+    /// finding 5).
     func replacementRefusal(of existing: Book) -> DuplicateReplacement.Refusal? {
+        if let held = StorageBoundary.shared.heldFor {
+            return .storageBusy(held)
+        }
         if let use = feedBookUse(of: existing.id) {
             return .inUse(use, title: existing.title)
         }

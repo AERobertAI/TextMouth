@@ -384,6 +384,16 @@ final class StorageBoundary: @unchecked Sendable {
         return StorageWorkHold(boundary: self)
     }
 
+    /// What the operation holding new work back is doing, or nil while none
+    /// holds it: what an answer that would change the library's packages
+    /// waits for, as Replace Existing does during a folder edit's moves
+    /// (ST04), which it could otherwise race.
+    var heldFor: StorageHoldReason? {
+        condition.lock()
+        defer { condition.unlock() }
+        return holdReason
+    }
+
     /// Lets the held work go on, under the generation current now.
     fileprivate func releaseWork() {
         condition.lock()

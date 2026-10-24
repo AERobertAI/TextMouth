@@ -69,6 +69,10 @@ enum DuplicateReplacement {
         /// A file the replacement carries over, or the package that lists
         /// them, is only in the cloud.
         case filesInCloud(title: String)
+        /// Another operation holds the library's storage work, as a folder
+        /// edit moving its books' packages does: the replacement would move
+        /// and remove packages under it (ST04 review, finding 5).
+        case storageBusy(StorageHoldReason)
 
         /// The refusal as the question's sheet shows it and VoiceOver
         /// speaks it.
@@ -82,6 +86,16 @@ enum DuplicateReplacement {
             case .filesInCloud(let title):
                 return "Some of the files of “\(title)” are only in the cloud, and replacing it now would leave them behind. "
                     + "Download the book, then \(DuplicateReplacement.retry)."
+            case .storageBusy(.movingBooksBetweenFolders):
+                return "TextMouth is moving books between folders. Wait until that finishes, then \(DuplicateReplacement.retry)."
+            case .storageBusy(.rebuildingDirectory):
+                return "TextMouth is rebuilding its data directory. Wait until that finishes, then \(DuplicateReplacement.retry)."
+            case .storageBusy(.movingDataDirectory):
+                return DataDirectoryMoveWording.importAnswerRefusal
+            case .storageBusy(let reason):
+                // Switching libraries ends with TextMouth opening again on
+                // the other one: there is no "again" to wait for.
+                return StorageBusyError(reason: reason).errorDescription ?? ""
             }
         }
 

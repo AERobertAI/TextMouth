@@ -694,6 +694,41 @@ final class ImportDecisionFlowTests: XCTestCase {
         XCTAssertEqual(scene.model.library.books, [atlas.existing])
     }
 
+    /// While the library's copy is being exported, or a folder edit moves
+    /// books between folders, Replace Existing waits too, saying why, and
+    /// changes nothing; once both are over, the same answer replaces the
+    /// book (ST04 review, finding 5).
+    func testReplaceWaitsWhileTheOldCopyIsExportedOrBooksMoveBetweenFolders() throws {
+        let scene = try makeScene()
+        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        scene.model.library = Library(books: [atlas.existing])
+        useAfterImportingBehavior(.keepOriginal)
+        scene.model.importFiles(urls: [atlas.copy], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let asked = try XCTUnwrap(scene.model.importDecisions.current)
+
+        BookExportModel.noteExportStarted([atlas.existing.id])
+        let whileExported = scene.model.answerCurrentImportDecision(.replaceExisting)
+        BookExportModel.noteExportEnded([atlas.existing.id])
+        let hold = try StorageBoundary.shared.holdWork(for: .movingBooksBetweenFolders)
+        let whileMoving = scene.model.answerCurrentImportDecision(.replaceExisting)
+        hold.release()
+
+        XCTAssertEqual(
+            whileExported.failureMessage,
+            "“Earlier Atlas of Tides” is being exported, and replacing it now would stop the export. "
+                + "Wait until the export ends, then choose Replace Existing again."
+        )
+        XCTAssertEqual(
+            whileMoving.failureMessage,
+            "TextMouth is moving books between folders. Wait until that finishes, then choose Replace Existing again."
+        )
+        XCTAssertEqual(scene.model.importDecisions.current?.id, asked.id)
+        XCTAssertEqual(scene.model.library.books, [atlas.existing])
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+        XCTAssertEqual(scene.model.library.books.map(\.id), [atlas.existing.id])
+    }
+
     /// A session editing the old copy's text with Edit Text ends with the
     /// replacement: what it watched went with the old copy, and a check of
     /// the new copy's files against it would take them for an edit.
