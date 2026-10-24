@@ -143,6 +143,25 @@ final class BrailleEmphasisReadingTests: XCTestCase {
         ], ebaeUncontracted)
     }
 
+    /// Contracted EBAE joins words that print spaces apart, and the pass
+    /// reads them as print's words: "into" joined to "into" before "mother"
+    /// (⠔⠖⠔⠖⠐⠍) takes the sign before it alone, as a joined "to" does; a
+    /// bold passage counts "to the" (⠖⠮) and "into out" (⠔⠖⠳⠞) as two words
+    /// each, so that four words of print make a passage, as liblouis wrote
+    /// them, where three braille words had read as a bold italic word and a
+    /// bold one. ⠨⠅, which liblouis writes both for "=" and for "knowledge"
+    /// emphasized, closes an open italic passage as its last word, which had
+    /// run on to the paragraph's end, and reads "=" elsewhere.
+    func testContractedEBAEReadsJoinedWordsAndAPassageEndingInKnowledge() throws {
+        try assertReads([
+            (#".9696"m"#, "*into* into mother"),
+            ("_..g 6! _./ore n[", "**go to the store** now"),
+            (#"_.."n 96\ _.d "y"#, "**name into out do** young"),
+            (#".."o two ?ree .k n["#, "*one two three knowledge* now"),
+            (".k n[", #"\= now"#),
+        ], ebaeContracted)
+    }
+
     /// A contraction that liblouis reads with what follows it, past the place
     /// its emphasis ends, has its characters split there: contracted EBAE
     /// reads "can't" (⠉⠄⠞) as one rule, so with "can" emphasized

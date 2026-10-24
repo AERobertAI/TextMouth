@@ -818,26 +818,83 @@ ebae_bit(const table_emphasis *emphasis, unsigned flag) {
 }
 
 /*
- * Whether a bold passage that would open in the word ending at `from` is
- * closed in its paragraph, `cells[0..n)`, as EBAE closes one: by bold's sign
- * ⠸⠨ at the start of a later word, the passage's fourth word or a later one
- * (EBAE 15.1b: a passage has more than three words), before any other word
- * begins with that sign.
+ * The length of contracted EBAE's "to" ⠖, "into" ⠔⠖, or "by" ⠴ at
+ * `cells[i..end)`, with its capital sign, when it is joined to the word
+ * after it, which may have a sign of its own (EBAE 15.1c(2): ⠨⠖⠠⠛⠑⠕⠗⠛⠑ is
+ * "to" emphasized before George, and ⠖⠨⠞⠪⠝ "to" before town emphasized);
+ * 0 otherwise. At a word's start these cells are nothing else: "ff" is only
+ * inside a word, "was" (⠴) stands alone, and the punctuation they also are
+ * never begins a word (in uncontracted EBAE, where they are only
+ * punctuation, no word begins with them either). The word after it may be
+ * another joined one ("into into mother", ⠔⠖⠔⠖⠐⠍), but never a comma or an
+ * apostrophe.
  */
 static int
-closes_bold_passage(const widechar *cells, int from, int n) {
+joined_word(const widechar *cells, int i, int end) {
+	int k = i;
+	if (k < end && cells[k] == CELL_6) k++;
+	if (k + 1 < end && cells[k] == CELL_35 && cells[k + 1] == CELL_235)
+		k += 2;
+	else if (k < end && (cells[k] == CELL_235 || cells[k] == CELL_356))
+		k++;
+	else
+		return 0;
+	if (k >= end || cells[k] == CELL_2 || cells[k] == CELL_3) return 0;
+	return k - i;
+}
+
+/*
+ * How many words of print the braille word `cells[i..end)`, after its signs,
+ * holds: contracted EBAE joins "to", "into", and "by" to the word after them
+ * (`joined_word`), and "and" ⠯, "for" ⠿, "of" ⠷, "the" ⠮, and "with" ⠾ to
+ * one another and to a last "a" ⠁ ("for the" is ⠿⠮), which liblouis counts
+ * as words when it decides that emphasis makes a passage.
+ */
+static int
+print_words_in(const widechar *cells, int i, int end) {
+	static const widechar joined[] = {CELL(D1 | D2 | D3 | D4 | D6), CELL(D1 | D2 | D3 | D4 | D5 | D6),
+			CELL(D1 | D2 | D3 | D5 | D6), CELL(D2 | D3 | D4 | D6), CELL(D2 | D3 | D4 | D5 | D6)};
 	int words = 1;
-	int i = from;
+	int length;
+	int k;
+	while ((length = joined_word(cells, i, end)) > 0) {
+		words++;
+		i += length;
+	}
+	for (k = i; k < end; k++) {
+		int is_joined = 0;
+		for (size_t c = 0; c < sizeof joined / sizeof joined[0]; c++) is_joined = is_joined || cells[k] == joined[c];
+		if (!is_joined) break;
+	}
+	if (k + 1 == end && k > i && cells[k] == CELL(D1)) k++;
+	if (k == end && k - i >= 2) words += k - i - 1;
+	return words;
+}
+
+/*
+ * Whether a bold passage that would open in the braille word whose cells
+ * after its signs are `cells[start..end)` is closed in its paragraph,
+ * `cells[0..n)`, as EBAE closes one: by bold's sign ⠸⠨ at the start of a
+ * later word, the passage's fourth word or a later one (EBAE 15.1b: a
+ * passage has more than three words), before any other word begins with
+ * that sign. Words are counted as print has them (`print_words_in`).
+ */
+static int
+closes_bold_passage(const widechar *cells, int start, int end, int n) {
+	int words = print_words_in(cells, start, end);
+	int i = end;
 	while (i < n) {
-		int end;
+		int word_end;
 		int length;
 		while (i < n && cells[i] == CELL_BLANK) i++;
 		if (i >= n) break;
-		words++;
-		for (end = i; end < n && cells[end] != CELL_BLANK; end++) continue;
-		while ((length = opening_punctuation(cells, i, end)) > 0) i += length;
-		if (i + 1 < end && cells[i] == CELL_456 && cells[i + 1] == CELL_46) return words >= 4;
-		i = end;
+		for (word_end = i; word_end < n && cells[word_end] != CELL_BLANK; word_end++) continue;
+		while ((length = opening_punctuation(cells, i, word_end)) > 0) i += length;
+		if (i + 1 < word_end && cells[i] == CELL_456 && cells[i + 1] == CELL_46) return words + 1 >= 4;
+		/* An italic word's sign inside the passage. */
+		while (i < word_end && cells[i] == CELL_46) i++;
+		words += print_words_in(cells, i, word_end);
+		i = word_end;
 	}
 	return 0;
 }
@@ -867,9 +924,11 @@ typedef struct {
  * only where one can open: none is open, and a later word of the paragraph
  * closes it (`closes_bold_passage`). Signs must have a cell of their word
  * after them, and ⠨⠅ and ⠨⠂ standing alone are no signs but the "=" and ">"
- * that liblouis's EBAE tables write with those cells (en-us-g1.ctb);
- * contracted EBAE's ⠨⠅ alone, which is also "knowledge" emphasized, is left
- * to liblouis too.
+ * that liblouis's EBAE tables write with those cells (en-us-g1.ctb). In
+ * contracted EBAE, liblouis writes "knowledge" emphasized alone as ⠨⠅ too:
+ * it is read as "=" unless an italic passage is open, which it then closes
+ * as the passage's last word, since an open passage must close, and one
+ * left open would run on to the paragraph's end.
  */
 static ebae_signs
 ebae_signs_at(const table_emphasis *emphasis, const widechar *cells, int i, int end, int n, formtype open) {
@@ -887,7 +946,8 @@ ebae_signs_at(const table_emphasis *emphasis, const widechar *cells, int i, int 
 	if (run == 0 || i + found.length >= end) return none;
 	if (!has_bold) {
 		if (italic == 0 || run > 2) return none;
-		if (run == 1 && i + 2 == end && (cells[i + 1] == CELL_13 || cells[i + 1] == CELL_2)) return none;
+		if (run == 1 && i + 2 == end && (cells[i + 1] == CELL_2 || (cells[i + 1] == CELL_13 && !(open & italic))))
+			return none;
 		if (run == 2)
 			found.opens = italic;
 		else
@@ -897,7 +957,7 @@ ebae_signs_at(const table_emphasis *emphasis, const widechar *cells, int i, int 
 	if (run == 4)
 		bold_passage = 1;
 	else if (run == 2 || run == 3)
-		bold_passage = !(open & bold) && (italic == 0 || closes_bold_passage(cells, end, n));
+		bold_passage = !(open & bold) && (italic == 0 || closes_bold_passage(cells, i + found.length, end, n));
 	else if (run != 1)
 		return none;
 	italic_run = run - 1 - bold_passage;
@@ -921,33 +981,6 @@ dash_or_slash(const widechar *cells, int i, int end) {
 	if (i + 1 >= end) return 0;
 	if ((cells[i] == CELL_36 && cells[i + 1] == CELL_36) || (cells[i] == CELL_456 && cells[i + 1] == CELL_34))
 		return 2;
-	return 0;
-}
-
-/*
- * The length of contracted EBAE's "to" ⠖, "into" ⠔⠖, or "by" ⠴ at
- * `cells[i..end)`, with its capital sign, when it is joined to the word
- * after it, which may have a sign of its own (EBAE 15.1c(2): ⠨⠖⠠⠛⠑⠕⠗⠛⠑ is
- * "to" emphasized before George, and ⠖⠨⠞⠪⠝ "to" before town emphasized);
- * 0 otherwise. The word after it begins with a cell of dot 1 or 4, or a
- * capital, letter, or contraction prefix, never with lower punctuation,
- * which these signs never touch. In uncontracted EBAE these cells are
- * punctuation that no word begins with.
- */
-static int
-joined_word(const widechar *cells, int i, int end) {
-	int k = i;
-	widechar next;
-	if (k < end && cells[k] == CELL_6) k++;
-	if (k + 1 < end && cells[k] == CELL_35 && cells[k + 1] == CELL_235)
-		k += 2;
-	else if (k < end && (cells[k] == CELL_235 || cells[k] == CELL_356))
-		k++;
-	else
-		return 0;
-	if (k >= end) return 0;
-	next = cells[k];
-	if ((next & (D1 | D4)) != 0 || next == CELL_6 || next == CELL(D5) || next == CELL(D5 | D6)) return k - i;
 	return 0;
 }
 
