@@ -399,6 +399,21 @@ final class ContentAnalysisSummaryBufferTests: XCTestCase {
         XCTAssertEqual(row.textEncoding, "euc-kr")
     }
 
+    /// A book recovered from a package record that names another book, as an
+    /// old shared package's may, takes no encoding from it: every later
+    /// reading of the book would use that other book's encoding.
+    func testARecoveredBookTakesNoEncodingFromAnotherBooksRecord() throws {
+        let books = Self.books(count: 2)
+        var row = try XCTUnwrap(books.first)
+        var stranger = try XCTUnwrap(books.last)
+        XCTAssertNotEqual(row.id, stranger.id)
+        stranger.textEncoding = "euc-kr"
+        let summary = ContentAnalysisSummary(recovered: row, record: stranger)
+        XCTAssertNil(summary.textEncoding)
+        summary.apply(to: &row)
+        XCTAssertNil(row.textEncoding, "a record that names another book gives no encoding")
+    }
+
     /// Through the library: the row takes the encoding back with the
     /// analysis, in the same change and save.
     func testTheLibraryRowTakesItsEncodingBackWithTheAnalysis() throws {

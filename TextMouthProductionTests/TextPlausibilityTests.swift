@@ -385,9 +385,11 @@ final class TextPlausibilityTests: XCTestCase {
     /// case flips, and three flips of two letters would be proof against a
     /// clean rival. What keeps such text is that its rival is not clean: Mac
     /// Roman, which reads these capitals as quotation marks and symbols
-    /// ("zeige‹bersicht"), holds anomalies of its own, which judged as a
-    /// rival it must not hold, while a rival that read Windows-1252's own
-    /// characters as ordinary would have looked as clean as the right reading.
+    /// ("zeige‹bersicht"), holds anomalies of its own, while a rival that
+    /// read Windows-1252's own characters as ordinary would have looked as
+    /// clean as the right reading. This test checks only that the rival holds
+    /// some: a rival may hold one, so the guesser's test, which requires each
+    /// of these texts to stay Windows-1252, is what proves the rival loses.
     func testIdentifiersShowCaseFlipsAndTheirMacRomanRivalIsNotClean() throws {
         for (name, text) in Fixtures.windows1252IdentifierTexts {
             let bytes = try XCTUnwrap(text.data(using: .windowsCP1252), name)

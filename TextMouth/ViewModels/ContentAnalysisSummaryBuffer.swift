@@ -27,7 +27,7 @@ struct ContentAnalysisSummary: Sendable {
     /// (`Book.textEncoding`, FMT16), which a row that lost its own takes
     /// back: a damaged value in library.json reads as none, and so does a row
     /// an older build wrote, while the record keeps it. Nil when the record
-    /// names none.
+    /// names none, or names another book.
     let textEncoding: String?
 
     /// The analysis fields of `committed`, the book as its package records
@@ -50,11 +50,18 @@ struct ContentAnalysisSummary: Sendable {
     /// the earlier run stopped) takes them as moves from its own places
     /// (`placesMoved(to:from:)`). The record is the source of these moves, so
     /// they are not narrowed to what it took, as a fresh commit's are.
+    ///
+    /// The record's encoding is taken only from this book's own record, and
+    /// only for a format that reads text files, as `recordedTextEncoding()`
+    /// takes it: a package record that names another book, as an old shared
+    /// package's may, must never give this row that book's encoding, which
+    /// every later reading of this book would then use.
     init(recovered: Book, record: Book) {
         bookID = recovered.id
         fields = recovered.contentAnalysisFields
         movedPlaces = Self.placesMoved(to: record, from: recovered)
-        textEncoding = record.textEncoding
+        let ownRecord = record.id == recovered.id && recovered.format.usesTextFileDecoder
+        textEncoding = ownRecord ? record.textEncoding : nil
     }
 
     /// The moves that bring the places of `row`, the library row, to those
