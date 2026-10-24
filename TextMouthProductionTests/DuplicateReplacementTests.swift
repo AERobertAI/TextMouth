@@ -389,6 +389,40 @@ final class DuplicateReplacementTests: XCTestCase {
         XCTAssertEqual(TranscriptStore.read(from: withoutTranscript.movedTo), .missing)
     }
 
+    // MARK: - The Old Copy Put Back
+
+    /// The old copy Replace Existing sent to the Trash names its
+    /// replacement's ID. Put back by Finder into the folder it left, it is
+    /// adopted at the next launch as a book of its own, under a new ID, so
+    /// no two rows share one; the replacement keeps the ID.
+    func testAnOldCopyPutBackIsAdoptedUnderAnIDOfItsOwn() throws {
+        let libraryDirectory = try makeSandboxDirectory("ReplaceAdoption")
+        let id = UUID()
+        let replacement = try Self.writePackage(named: "New.tmb", id: id, hash: "new", in: libraryDirectory)
+        _ = try Self.writePackage(named: "Old.tmb", id: id, hash: "old", in: libraryDirectory)
+        var library = Library(books: [replacement])
+
+        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, libraryDirectory: libraryDirectory)
+
+        XCTAssertEqual(adopted, 1)
+        XCTAssertEqual(library.books.filter { $0.id == id }.map(\.tmbDirectoryName), ["New.tmb"])
+        let putBack = try XCTUnwrap(library.books.first { $0.tmbDirectoryName == "Old.tmb" })
+        XCTAssertNotEqual(putBack.id, id)
+        XCTAssertEqual(putBack.md5Hash, "old")
+    }
+
+    /// A package named `name` in `folder`, holding a plain-text book file
+    /// and a record of the book `id`, whose content hash is `hash`.
+    private static func writePackage(named name: String, id: UUID, hash: String, in folder: URL) throws -> Book {
+        let package = folder.appendingPathComponent(name, isDirectory: true)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        let file = package.appendingPathComponent("Atlas of Tides.txt")
+        try Data("Chart notes for the season.".utf8).write(to: file)
+        let book = Book(id: id, title: "Atlas of Tides", format: .txt, filePath: file.path, md5Hash: hash, tmbDirectoryName: name)
+        try book.makeBookInfo().save(to: package)
+        return book
+    }
+
     // MARK: - Assertions
 
     /// Checks that the position and the bookmark of `places` stand on the

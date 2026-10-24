@@ -3011,6 +3011,12 @@ enum FileImportService {
     /// no orphan either: it is passed over before its record is read, so it
     /// is never adopted as a second book of the same package.
     ///
+    /// An orphan whose record names a book the library already lists, under
+    /// that book's ID, is another copy of it: the old copy Replace Existing
+    /// sent to the Trash (ST04) names its replacement's ID once Finder puts
+    /// it back. It is adopted as a book of its own, under a new ID written
+    /// into its record, so no two rows ever share an ID.
+    ///
     /// The walk and every check run with dataless files left in the cloud
     /// (FR02). A folder that cannot be listed without downloading is passed
     /// over, and a package whose folder, record, removal marker, or book file
@@ -3072,16 +3078,22 @@ enum FileImportService {
                     continue
                 }
 
+                // A second copy of a book the library lists by this ID gets
+                // an ID of its own (ST04).
+                let listedID = library.books.contains { $0.id == orphan.book.id }
+                let book = listedID ? orphan.book.withID(UUID()) : orphan.book
+
                 // addBook guards against duplicate hashes — only truly new books get added
                 let countBefore = library.books.count
-                library.addBook(orphan.book)
+                library.addBook(book)
                 if library.books.count > countBefore {
                     adopted += 1
 
                     // Update the bookInfo.json folderPath if it was empty but the .tmb
-                    // lives inside a subfolder (common with orphans from zip imports)
-                    if orphan.recordedFolderPath != orphan.book.folderPath {
-                        try? orphan.book.saveBookInfoThrowing()
+                    // lives inside a subfolder (common with orphans from zip imports),
+                    // and the ID of a copy that took a new one.
+                    if listedID || orphan.recordedFolderPath != book.folderPath {
+                        try? book.saveBookInfoThrowing()
                     }
                 }
             }
