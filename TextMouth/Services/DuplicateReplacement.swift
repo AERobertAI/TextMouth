@@ -15,7 +15,9 @@ import Foundation
 /// - reading position, bookmarks with their notes, and skipped headings,
 ///   moved from the old text to the new one by the words they were saved by
 ///   (`PlaceRelocator`) where the two texts differ. An audiobook's places
-///   count time in its recording (P08), so they stay as they are;
+///   count time in its recording (P08): where the two chapter lists differ,
+///   they follow their tracks, or their times, to the new chapters
+///   (`movedAudioPlaces(_:from:to:at:)`);
 /// - own settings (`Book.hasOwnSettings`): voice, speed, pitch, what happens
 ///   at its end, and the units of its skips;
 /// - metadata the user edited by hand (`Book.HandEdits`);
