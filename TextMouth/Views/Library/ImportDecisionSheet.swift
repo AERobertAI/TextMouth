@@ -185,11 +185,12 @@ struct ImportDecisionChoiceWording: Equatable {
         title: "Keep Both",
         hint: "Adds the new copy to the library as a separate book."
     )
-    /// A duplicate: replace the library's copy. The hint says what goes with
-    /// it (ST04): the old copy's reading position, bookmarks, and settings.
+    /// A duplicate: replace the library's copy. The hint says what the new
+    /// copy keeps of it (ST04): its reading position, bookmarks, and
+    /// settings, which the question itself names in full.
     static let replaceExisting = ImportDecisionChoiceWording(
         title: "Replace Existing",
-        hint: "Removes the copy already in the library, with its reading position, bookmarks, and settings, and keeps the new one in its place."
+        hint: "Puts the new copy in place of the one already in the library, keeping its reading position, bookmarks, and settings."
     )
     /// A duplicate: discard the new copy.
     static let cancelDuplicate = ImportDecisionChoiceWording(

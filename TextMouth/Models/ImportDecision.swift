@@ -289,26 +289,37 @@ struct ImportDecisionWording: Equatable {
         return "\(title)\(separator)\(position) of \(total)"
     }
 
-    /// What Replace Existing does to the library's copy when "Move to Trash
-    /// instead of deleting" is on. The question must say what the choice
-    /// throws away (ST04): Replace Existing removes the old package, and
-    /// the new copy is a new book that starts from the beginning.
-    static let replacingMovesToTrashSentence =
-        "Replacing moves the existing copy to the Trash, with its reading position, bookmarks, settings, "
-        + "and any edit of its text or transcript; the new copy starts from the beginning."
+    /// What Replace Existing keeps of the library's copy of a text book, and
+    /// what it does not (ST04): the new copy takes the old one's place, its
+    /// places found again by their words, and an edit of the old text is
+    /// kept as a copy, never laid over the new text (`DuplicateReplacement`).
+    static let replacingKeepsTextSentence =
+        "Replacing keeps the existing copy's reading position and bookmarks, found again in the new text, "
+        + "and its settings, folder, and place on the reading list. "
+        + "An edit of its text is kept beside the new text as a copy, not applied to it."
 
-    /// What Replace Existing does to the library's copy when "Move to Trash
-    /// instead of deleting" is off, and so the package is deleted for good.
-    static let replacingDeletesSentence =
-        "Replacing deletes the existing copy, with its reading position, bookmarks, settings, "
-        + "and any edit of its text or transcript; the new copy starts from the beginning."
+    /// What Replace Existing keeps of the library's copy of an audiobook,
+    /// and what it does not (ST04): its transcript only for the same audio,
+    /// and never its audio edits, which are edits of the old copy's files.
+    static let replacingKeepsAudioSentence =
+        "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, "
+        + "and place on the reading list, and its transcript when the audio is the same. "
+        + "Edits of its audio are not kept."
+
+    /// Where the library's copy goes once replaced, in the words a removal
+    /// uses for the same Trash setting (`RemovalMode`): "The existing copy's
+    /// files go to the Trash, where you can recover them until the Trash is
+    /// emptied." or "... are deleted permanently and cannot be recovered."
+    static func replacedCopySentence(movesToTrash: Bool) -> String {
+        RemovalMode.deleting(movesToTrash: movesToTrash).filesClause(of: "The existing copy's") + "."
+    }
 
     /// What a duplicate's question asks: which file matches which book, the
-    /// choice, what Replace Existing throws away (ST04: it must say so, in
-    /// the words of where the old copy goes), and, for a copy missing
-    /// chapters, what it lacks, so it never replaces a complete copy
-    /// unannounced. The new copy is named by the file it came from, or by
-    /// its title when it came from no file.
+    /// choice, what Replace Existing keeps and does not (ST04), in the words
+    /// of the new copy's kind and of where the old copy goes, and, for a
+    /// copy missing chapters, what it lacks, so it never replaces a complete
+    /// copy unannounced. The new copy is named by the file it came from, or
+    /// by its title when it came from no file.
     private static func duplicateMessage(
         _ duplicate: ImportDecision.DuplicateBook,
         matchingTitle: String,
@@ -319,8 +330,8 @@ struct ImportDecisionWording: Equatable {
             ?? duplicate.book.title
         let choice = "“\(newCopy)” matches “\(matchingTitle)”, which is already in your library. "
             + "Replace the existing copy, or keep both as separate books?"
-        let loss = movesToTrash ? replacingMovesToTrashSentence : replacingDeletesSentence
-        let question = choice + "\n\n" + loss
+        let kept = duplicate.book.format.isAudio ? replacingKeepsAudioSentence : replacingKeepsTextSentence
+        let question = choice + "\n\n" + kept + " " + replacedCopySentence(movesToTrash: movesToTrash)
         guard let warning = duplicate.warning else { return question }
         return question + "\n\nThe copy just imported is incomplete. \(warning)"
     }
