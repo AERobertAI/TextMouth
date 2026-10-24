@@ -164,7 +164,8 @@ extension BookInfoFacts {
             isOpenInWindow: library.openBookIDs.contains(book.id),
             feedTitle: library.feedTitle(of: book),
             readingListPlace: ReadingListPlace(of: book.id, in: library.library),
-            brailleCode: book.brailleCodeDescription
+            brailleCode: book.brailleCodeDescription,
+            textEncoding: book.textEncodingDescription
         )
     }
 
