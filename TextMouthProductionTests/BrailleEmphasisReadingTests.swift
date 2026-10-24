@@ -14,6 +14,10 @@ import XCTest
 /// sign only where liblouis drops it anyway (review, October 24, 2026): every
 /// word reads as it read before, and the emphasis is added where the sign is
 /// sure. A stray period before an emphasized word beginning a to j stays.
+/// Leaving a sign out can still change how liblouis reads the cells around
+/// it, so a paragraph the pass would read with any other character reads
+/// as liblouis reads it alone, without its emphasis (the safety net,
+/// verifier, October 24, 2026).
 /// Most contracted samples are the examples of the Library of Congress's
 /// Instruction Manual for Braille Transcribing, fifth edition, lesson 15,
 /// as BANA writes them; content.md holds the emphasis as Markdown's
@@ -170,16 +174,45 @@ final class BrailleEmphasisReadingTests: XCTestCase {
         ], ebaeContracted)
     }
 
-    /// A contraction that liblouis reads with what follows it, past the place
-    /// its emphasis ends, has its characters split there: contracted EBAE
-    /// reads "can't" (⠉⠄⠞) as one rule, so with "can" in bold (⠸⠨⠉⠠⠄⠄⠞) all
-    /// of "can't" came back bold; now its "can" is, and its "'t" is not.
-    /// Italic's sign before "can" is liblouis's period, and stays.
-    func testARuleReadAcrossAnEmphasisEndIsSplitWhereTheEmphasisEnds() throws {
+    /// The verifier's cases (October 24, 2026), which the pass read with
+    /// other words than main (e110d985), read main's words. A: contracted
+    /// EBAE reads "(" ⠶ and "be" ⠆ together as "}" once a passage or bold
+    /// sign between them is gone ("}from the old one went)", "}can)"), so
+    /// the safety net reads them as liblouis does alone, without their
+    /// emphasis. B: double capitals begun inside a word end at their
+    /// termination sign, which the pass had taken for emphasis's ("X-RAYS").
+    /// C: a termination sign left out had joined a word's parts into one
+    /// contraction ("perhapsaps", "besideide"), and turned main's "c't"
+    /// into "can't"; it is kept for liblouis now. B and C keep their
+    /// emphasis.
+    func testTheVerifiersCasesReadMainsWords() throws {
         try assertReads([
-            ("a _.c,''t", #"a **can**\'t"#),
-            ("a .c't is", #"a \.can\'t is"#),
+            (#"7..2f ! old "o .w5t7"#, #"\(before the old one went\)"#),
+            ("7_.2c7", #"\(because\)"#),
+            (#"7_..2f ! old "o _.w5t7"#, #"\(before the old one went\)"#),
+            (".;,x-,,ray,'s", #"*X\-RAYs*"#),
+            (".,mc,,donald,'s", "*McDONALDs*"),
+            (".p],'haps", "*per*haps"),
+            ("_.2,'side", "**be**side"),
+            ("a _.c,''t", #"a **c**\'t"#),
         ], ebaeContracted)
+        try assertReads([
+            (".;,x-,,ray,'s", #"*X\-RAYs*"#),
+            (".,mc,,donald,'s", "*McDONALDs*"),
+            (".per,'haps", "*per*haps"),
+            ("_.be,'side", "**be**side"),
+        ], ebaeUncontracted)
+    }
+
+    /// The safety net takes only its own paragraph's emphasis: a paragraph
+    /// whose words the pass would change reads as liblouis reads it alone,
+    /// with no emphasis, while the next one, whose signs the pass leaves out
+    /// without changing a word, keeps the emphasis they mark.
+    func testTheSafetyNetTakesOnlyItsOwnParagraphsEmphasis() throws {
+        let paragraphs = [#"7..2f ! old "o .w5t7"#, ".,mc,,donald,'s is"].map { EmphasizedText(brailleCells($0)) }
+        let print = try BrailleTranslator.translate(paragraphs, table: ebaeContracted, direction: .brailleToPrint, workingIn: work)
+        XCTAssertEqual(print.map(BrailleBookReader.markdownLine(of:)), [#"\(before the old one went\)"#, "*McDONALDs* is"])
+        XCTAssertFalse(print.first?.hasEmphasis ?? true)
     }
 
     /// What is no sign reads exactly as liblouis read it before the pass
