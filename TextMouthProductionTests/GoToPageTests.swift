@@ -91,6 +91,10 @@ final class GoToPageTests: XCTestCase {
         XCTAssertEqual(ReaderPageWording.fieldHint, "Type a page as the book numbers it, such as 12 or xii.")
         XCTAssertEqual(ReaderPageWording.emptyField, "Type a page number.")
         XCTAssertEqual(ReaderPageWording.jumped(to: "12"), "Jumped to page 12.")
+        XCTAssertEqual(
+            ReaderPageWording.jumped(to: "2", occurrence: 2),
+            "Jumped to page 2, the second page labelled 2."
+        )
         XCTAssertEqual(ReaderPageWording.openHint, "Opens jump to page controls")
         XCTAssertEqual(ReaderPageWording.hideHint, "Hides jump to page controls")
         XCTAssertEqual(ReaderPageWording.switchHint, "Switches to jump to page controls")
@@ -264,13 +268,75 @@ final class GoToPageTests: XCTestCase {
 
         XCTAssertEqual(returnOnTheStartingLabel(of: reader), .jumped)
         XCTAssertEqual(pagedPlace(of: reader), "1:0")
-        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page 2.")
+        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page 2, the second page labelled 2.")
 
         // The panel opens afresh at the new place, still on a "2": the next
-        // press wraps to the first, and a Return position was kept.
+        // press wraps to the first, and says so, and a Return position was
+        // kept.
         XCTAssertEqual(returnOnTheStartingLabel(of: reader), .jumped)
         XCTAssertEqual(pagedPlace(of: reader), "0:150")
+        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page 2, the first page labelled 2.")
         XCTAssertTrue(reader.hasSavedPosition)
+    }
+
+    /// Go to Page says which of the pages that carry a label it reached,
+    /// however it came to be there (typed from elsewhere, by Return on the
+    /// starting label, or by wrapping round), counting in book order and
+    /// naming the label as the book spells it; a label of one page is said
+    /// as ever. Without this a listener hears "Jumped to page A." for each
+    /// of three pages and cannot tell where they are.
+    func testGoToPageSaysWhichPageOfASharedLabelItReached() {
+        let pages = [
+            PageBreak(label: "1", chapterIndex: 0, characterOffset: 0),
+            PageBreak(label: "A", chapterIndex: 0, characterOffset: 50),
+            PageBreak(label: "2", chapterIndex: 0, characterOffset: 100),
+            PageBreak(label: "A", chapterIndex: 0, characterOffset: 150),
+            PageBreak(label: "A", chapterIndex: 1, characterOffset: 0),
+            PageBreak(label: "3", chapterIndex: 1, characterOffset: 50),
+        ]
+        let reader = makePagedReader(pages: pages)
+        defer { reader.close() }
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 0
+
+        // Typed from page 1, in the case the field was given: the book's own.
+        XCTAssertNil(reader.goToPage(typed: "a"))
+        XCTAssertEqual(pagedPlace(of: reader), "0:50")
+        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page A, the first page labelled A.")
+
+        // Return on the starting label goes on, and round.
+        for (place, said) in [
+            ("0:150", "Jumped to page A, the second page labelled A."),
+            ("1:0", "Jumped to page A, the third page labelled A."),
+            ("0:50", "Jumped to page A, the first page labelled A."),
+        ] {
+            XCTAssertEqual(returnOnTheStartingLabel(of: reader), .jumped)
+            XCTAssertEqual(pagedPlace(of: reader), place)
+            XCTAssertEqual(reader.lastAnnouncement, said)
+        }
+
+        // A label of one page says nothing of the kind.
+        XCTAssertNil(reader.goToPage(typed: "2"))
+        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page 2.")
+    }
+
+    /// The first ten ordinals are said in words, the rest in figures with
+    /// their endings, 11th, 12th, and 13th among the "th"s.
+    func testTheOccurrenceOfALabelIsSaidAsAnOrdinal() {
+        let expected = [
+            (1, "first"), (2, "second"), (3, "third"), (4, "fourth"), (5, "fifth"), (6, "sixth"),
+            (7, "seventh"), (8, "eighth"), (9, "ninth"), (10, "tenth"), (11, "11th"), (12, "12th"),
+            (13, "13th"), (14, "14th"), (21, "21st"), (22, "22nd"), (23, "23rd"), (24, "24th"),
+            (101, "101st"), (111, "111th"), (112, "112th"), (113, "113th"), (122, "122nd"),
+        ]
+        for (occurrence, ordinal) in expected {
+            XCTAssertEqual(
+                ReaderPageWording.jumped(to: "2", occurrence: occurrence),
+                "Jumped to page 2, the \(ordinal) page labelled 2.",
+                "occurrence \(occurrence)"
+            )
+        }
+        XCTAssertEqual(ReaderPageWording.jumped(to: "2", occurrence: nil), "Jumped to page 2.")
     }
 
     /// Return on a starting label that only the page being read carries is

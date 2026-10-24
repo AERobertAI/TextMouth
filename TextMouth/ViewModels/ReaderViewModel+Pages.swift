@@ -19,9 +19,16 @@ extension ReaderViewModel {
         !bookPages.isEmpty
     }
 
+    /// The index in `bookPages.breaks` of the page holding the reading
+    /// cursor: the last page that begins at or before it, nil before the
+    /// first page and in a book without pages.
+    var currentPageIndex: Int? {
+        bookPages.index(ofPageAtChapter: currentChapterIndex, offset: currentCharacterOffset)
+    }
+
     /// The page holding the reading cursor, as "Page 12 of 300".
     var currentPagePosition: PagePosition {
-        bookPages.position(atChapter: currentChapterIndex, offset: currentCharacterOffset)
+        PagePosition(pages: bookPages, index: currentPageIndex)
     }
 
     /// The page holding the place the reader screen shows (the throttled
@@ -213,25 +220,50 @@ extension ReaderViewModel {
     /// sentence the panel shows and announces, and moves nothing.
     ///
     /// The page it says is the one the status row names where the reader
-    /// stands after the jump (`labelShown(afterMovingTo:)`), which is not
+    /// stands after the jump (`jumpAnnouncement(toPageAt:)`), which is not
     /// always the page typed: a blank page shares its place with the page
     /// after it, and the row names the later one. Saying the typed label
     /// then told the listener one page while the row, Where Am I?, and Next
     /// Page all named another.
     func goToPage(typed text: String) -> String? {
         let pages = bookPages
-        let currentIndex = pages.index(ofPageAtChapter: currentChapterIndex, offset: currentCharacterOffset)
-        switch JumpInputValidator.page(text, in: pages, currentIndex: currentIndex) {
+        switch JumpInputValidator.page(text, in: pages, currentIndex: currentPageIndex) {
         case .page(let index):
             // The index comes from the pages themselves; check it anyway.
             guard pages.breaks.indices.contains(index) else { return ReaderPageWording.noPages }
             let page = pages.breaks[index]
             navigatePreservingReturnPosition(chapterIndex: page.chapterIndex, characterOffset: page.characterOffset)
-            announceToVoiceOver(ReaderPageWording.jumped(to: labelShown(afterMovingTo: page)))
+            announceToVoiceOver(jumpAnnouncement(toPage: page))
             return nil
         case .error(let message):
             return message
         }
+    }
+
+    /// What Go to Page says once it has moved to the start of `page`: the
+    /// page the status row names where the reader stands
+    /// (`labelShown(afterMovingTo:)`), and, when more than one page carries
+    /// its label, which of them it is (`occurrence(ofPageAt:)`): "Jumped to
+    /// page 2, the second page labelled 2." A cursor on no page, which a move
+    /// to one of the book's pages rules out, is told as `page`.
+    private func jumpAnnouncement(toPage page: PageBreak) -> String {
+        ReaderPageWording.jumped(
+            to: labelShown(afterMovingTo: page),
+            occurrence: currentPageIndex.flatMap(occurrence(ofPageAt:))
+        )
+    }
+
+    /// Which of the pages that carry the label of the page at `index` it is,
+    /// counting from 1 in book order; nil when it is the only page with its
+    /// label. Labels are matched as Go to Page matches what is typed
+    /// (`JumpInputValidator.pageIndices(named:in:)`), so two pages the
+    /// field would reach by one label are two of one label here.
+    private func occurrence(ofPageAt index: Int) -> Int? {
+        let pages = bookPages
+        guard pages.breaks.indices.contains(index) else { return nil }
+        let sharing = JumpInputValidator.pageIndices(named: pages.breaks[index].label, in: pages)
+        guard sharing.count > 1, let position = sharing.firstIndex(of: index) else { return nil }
+        return position + 1
     }
 
     /// Ask for the page field (Go to Page…, PG03): the status row opens it at
