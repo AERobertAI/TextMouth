@@ -126,11 +126,11 @@ enum BrailleBookReader {
         guard !structure.blocks.isEmpty else { throw FileImportError.noTextToRead }
 
         // What to translate: every block whole, and with pages, the pieces
-        // that find where each page begins in its block's print. A BRL's
-        // one page is no page of a layout, so it is never marked.
+        // that find where each page begins in its block's print, for a file
+        // whose pages are pages (`marksItsPages(_:_:)`).
         let translation = PagedTranslation(
             blocks: structure.blocks,
-            starts: includesPages && fileKind != .brl ? pageStarts(of: structure) : []
+            starts: includesPages && marksItsPages(pages, structure) ? pageStarts(of: structure) : []
         )
 
         // One run of the helper translates every text, in a working folder
@@ -146,6 +146,27 @@ enum BrailleBookReader {
         // dropped.
         guard let text = translation.markdown(from: printed) else { throw FileImportError.noTextToRead }
         return text
+    }
+
+    /// Whether the pages of a braille file, read as `file` and laid out as
+    /// `structure`, are pages an embosser counts, so that they become the
+    /// book's pages (PG12, the review of October 24): a PEF's page elements,
+    /// a BRF's form feeds, or, in a BRF with no form feed, braille page
+    /// numbers ending more than half of the pages it was cut into.
+    ///
+    /// A BRF with no form feed is cut every 25 rows only so that its layout
+    /// can be read (`BrailleFileReader.linesPerUnmarkedPage`). Laid out at
+    /// another length, or not in pages at all, those pieces are no pages,
+    /// and naming them would invent pages: a file of 27 lines a page would
+    /// read "Page 3" where its third page has not begun. Its numbers tell:
+    /// when the cut matches its layout, nearly every piece ends in its
+    /// braille page number, and when it does not, few or none do. A BRL has
+    /// no pages.
+    static func marksItsPages(_ file: BrailleFilePages, _ structure: BrailleStructure) -> Bool {
+        guard file.kind != .brl else { return false }
+        if file.marksItsPages { return true }
+        let numbered = structure.pages.filter { $0.braillePageNumber != nil }.count
+        return numbered * 2 > structure.pages.count
     }
 
     /// One block's print, trimmed, as one line of Markdown: every character

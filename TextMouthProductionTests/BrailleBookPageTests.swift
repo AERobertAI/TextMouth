@@ -363,6 +363,43 @@ final class BrailleBookPageTests: XCTestCase {
         XCTAssertEqual(try pageLabels(of: url).labels, ["1", "2", "3"])
     }
 
+    // MARK: - A BRF That Marks No Pages (review, October 24)
+
+    /// A BRF with no form feed is cut into pages of 25 rows only so that its
+    /// layout can be read, and those are no pages an embosser counts: one
+    /// without braille page numbers gets no page markers at all.
+    func testABRFWithNoFormFeedOrPageNumbersHasNoPages() throws {
+        let rows = ["  ,A LONG PARAGRAPH"] + Array(repeating: "THAT GOES ON AND ON", count: 59)
+        let url = try makeSandboxDirectory("BraillePageLabels").appendingPathComponent("unpaged.brf")
+        try Data((rows.joined(separator: "\r\n") + "\r\n").utf8).write(to: url)
+        let withPages = try BrailleBookReader.markdown(of: url, table: grade1, includesPages: true)
+        XCTAssertEqual(withPages, try BrailleBookReader.markdown(of: url, table: grade1))
+        XCTAssertFalse(withPages.contains("<!--"))
+    }
+
+    /// A BRF with no form feed laid out in pages of 25 lines, each ending in
+    /// its braille page number, marks its pages by those numbers: the cut
+    /// every 25 rows is its own layout, and its pages are 1 and 2.
+    func testABRFWithNoFormFeedButPageNumbersEvery25LinesHasThosePages() throws {
+        let page = { (first: String, number: String) in
+            ["  ," + first] + Array(repeating: "WORDS ON THE PAGE", count: 23) + [self.numberedRow("", number)]
+        }
+        let url = try makeSandboxDirectory("BraillePageLabels").appendingPathComponent("numbered.brf")
+        try Data(((page("ONE", "#A") + page("TWO", "#B")).joined(separator: "\r\n") + "\r\n").utf8).write(to: url)
+        XCTAssertEqual(try pageLabels(of: url).labels, ["1", "2"])
+    }
+
+    /// A BRF with no form feed laid out at 27 lines: the cut every 25 rows
+    /// misses its page numbers, which mark no page, so it gets no pages.
+    func testABRFWithNoFormFeedLaidOutAt27LinesHasNoPages() throws {
+        let page = { (number: String) in
+            ["  ,A PAGE"] + Array(repeating: "WORDS ON THE PAGE", count: 25) + [self.numberedRow("", number)]
+        }
+        let url = try makeSandboxDirectory("BraillePageLabels").appendingPathComponent("27-lines.brf")
+        try Data(((page("#A") + page("#B") + page("#C")).joined(separator: "\r\n") + "\r\n").utf8).write(to: url)
+        XCTAssertFalse(try BrailleBookReader.markdown(of: url, table: grade1, includesPages: true).contains("<!--"))
+    }
+
     // MARK: - Every Bundled Table
 
     /// A long book, the sample chapter's paragraphs joined three by three and
