@@ -500,6 +500,67 @@ final class DuplicateReplacementTests: XCTestCase {
         return book
     }
 
+    /// A transcript is kept only where the new copy's audio is proven the
+    /// audio transcribed, and nothing is hashed to prove it (ST04 review,
+    /// finding 7): the same bytes downloaded again under a new date keep it,
+    /// their content hash being the digest it recorded; a file only in the
+    /// cloud proves nothing; and a file whose date moved, with no recorded
+    /// digest to match, is not proven.
+    func testATranscriptIsKeptOnlyWhereTheSameAudioIsProvenWithoutHashing() throws {
+        let scene = try makeScene()
+        let sound = scene.sources.appendingPathComponent("Earlier Tide.wav")
+        try AudioTestFixtures.writeSilence(to: sound, duration: 1)
+        let existing = try FileImportService.importFileWithReport(from: sound, toFolder: scene.shelf.path).book
+        var transcript = try TranscriptFixtures.transcript(of: existing, sentences: [
+            "Earlier Tide.wav": [TranscriptFixtures.sentence("The ferry waits at the slip.", from: 0, to: 900)],
+        ])
+        try TranscriptStore.write(transcript, into: existing.tmbDirectory)
+        let redated = try importAudioCopy(of: sound, named: "Tide.wav", into: scene)
+        try FileManager.default.setAttributes([.modificationDate: Self.date], ofItemAtPath: redated.filePath)
+        let inCloud = try importAudioCopy(of: sound, named: "Cloud Tide.wav", into: scene)
+        let cloudFile = inCloud.bookFileURL.standardizedFileURL.path
+        let cloud = MaintenanceFileAccess(isDataless: { $0.standardizedFileURL.path == cloudFile })
+
+        let keptForRedated = try DuplicateReplacement.prepare(replacing: existing, with: redated)
+        let keptForCloud = try DuplicateReplacement.prepare(replacing: existing, with: inCloud, access: cloud)
+        guard !transcript.files.isEmpty else { return XCTFail("the transcript names no file") }
+        transcript.files[0].fingerprint.digest = "0123456789abcdef0123456789abcdef"
+        try TranscriptStore.write(transcript, into: existing.tmbDirectory)
+        let unproven = try importAudioCopy(of: sound, named: "Unproven Tide.wav", into: scene)
+        try FileManager.default.setAttributes([.modificationDate: Self.date], ofItemAtPath: unproven.filePath)
+        let keptForUnproven = try DuplicateReplacement.prepare(replacing: existing, with: unproven)
+
+        XCTAssertTrue(keptForRedated.keptTranscript, "the same bytes under a new date are the same audio")
+        XCTAssertFalse(keptForCloud.keptTranscript, "a file only in the cloud proves nothing")
+        XCTAssertFalse(keptForUnproven.keptTranscript, "a file whose date moved was taken for the same audio unproven")
+    }
+
+    /// A transcript of a layout a later TextMouth writes, which this one
+    /// cannot check, goes into the new copy's package as it is, rather than
+    /// leave with the old package unannounced.
+    func testATranscriptOfALaterLayoutGoesAsItIs() throws {
+        let scene = try makeScene()
+        let sound = scene.sources.appendingPathComponent("Earlier Tide.wav")
+        try AudioTestFixtures.writeSilence(to: sound, duration: 1)
+        let existing = try FileImportService.importFileWithReport(from: sound, toFolder: scene.shelf.path).book
+        let later = Data(#"{"version": 99, "chapters": []}"#.utf8)
+        try later.write(to: TextMouthPaths.transcriptPath(in: existing.tmbDirectory))
+        let copy = try importAudioCopy(of: sound, named: "Tide.wav", into: scene)
+
+        let preparation = try DuplicateReplacement.prepare(replacing: existing, with: copy)
+
+        XCTAssertTrue(preparation.keptTranscript)
+        XCTAssertEqual(try Data(contentsOf: TextMouthPaths.transcriptPath(in: preparation.movedTo)), later)
+    }
+
+    /// Imports a copy of the audio file `sound`, named `name`, into the
+    /// scene's imports folder.
+    private func importAudioCopy(of sound: URL, named name: String, into scene: Scene) throws -> Book {
+        let copy = scene.sources.appendingPathComponent(name)
+        try FileManager.default.copyItem(at: sound, to: copy)
+        return try FileImportService.importFileWithReport(from: copy, toFolder: scene.imports.path).book
+    }
+
     // MARK: - Assertions
 
     /// Checks that the position and the bookmark of `places` stand on the

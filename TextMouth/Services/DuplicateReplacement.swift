@@ -633,7 +633,23 @@ enum DuplicateReplacement {
         let transcriptURL = TextMouthPaths.transcriptPath(in: old.package)
         guard names.contains(TextMouthPaths.transcriptFileName) else { return TranscriptCarried() }
         try old.requireOnThisMac(transcriptURL)
-        guard case .found(let transcript) = TranscriptStore.read(from: old.package) else { return TranscriptCarried() }
+        let transcript: Transcript
+        switch TranscriptStore.read(from: old.package) {
+        case .found(let found):
+            transcript = found
+        case .unsupportedVersion:
+            // A later TextMouth's layout, which this one cannot check against
+            // the new copy's audio, never vanishes with the old package: it
+            // goes as it is, for that TextMouth to check, and this one
+            // leaves it alone as it leaves any it cannot read.
+            guard copy.format.isAudio else { return TranscriptCarried() }
+            return TranscriptCarried(
+                carried: try old.bytes(at: transcriptURL),
+                beforeCleanup: try beforeCleanupBytes(in: old, names: names)
+            )
+        case .missing, .inCloud, .unusable:
+            return TranscriptCarried()
+        }
         var result = TranscriptCarried(wasEdited: transcript.editedAt != nil)
         guard copy.format.isAudio,
               let index = (try? BookInfo.load(from: copy.tmbDirectory))?.contentIndex,
@@ -651,10 +667,7 @@ enum DuplicateReplacement {
         // The transcript kept before a cleanup, for Undo Cleanup, renamed as
         // the transcript was. One that cannot be read as a transcript is
         // carried as it is.
-        let beforeCleanupURL = TextMouthPaths.transcriptBeforeCleanupPath(in: old.package)
-        if names.contains(TextMouthPaths.transcriptBeforeCleanupFileName) {
-            try old.requireOnThisMac(beforeCleanupURL)
-            let bytes = try old.bytes(at: beforeCleanupURL)
+        if let bytes = try beforeCleanupBytes(in: old, names: names) {
             if renamed, var earlier = try? TranscriptStore.decoded(bytes), earlier.files.count == 1 {
                 earlier.files[0].path = fitted.files[0].path
                 result.beforeCleanup = try TranscriptStore.encoded(earlier)
@@ -665,40 +678,78 @@ enum DuplicateReplacement {
         return result
     }
 
+    /// The bytes of the transcript kept before a cleanup in the old package
+    /// `old`, whose names are `names`; nil when it keeps none.
+    /// - Throws: the refusal when it is only in the cloud.
+    private static func beforeCleanupBytes(in old: OldPackage, names: [String]) throws -> Data? {
+        guard names.contains(TextMouthPaths.transcriptBeforeCleanupFileName) else { return nil }
+        let url = TextMouthPaths.transcriptBeforeCleanupPath(in: old.package)
+        try old.requireOnThisMac(url)
+        return try old.bytes(at: url)
+    }
+
     /// `transcript` as it describes the audio of `copy`, whose audio index
-    /// is `index`, or nil when it does not: as it is, when the new copy's
-    /// audio files are the ones transcribed, each the same size with the
-    /// same contents (`TranscriptTextLoader.audioCheck`); or, for a book of
-    /// one audio file, with that file renamed to the new copy's, when only
-    /// its name differs, as when the same file is imported from another
-    /// place under another name.
+    /// is `index`, or nil when that is not proven, so the question's "when
+    /// the audio is the same" holds whenever a transcript is kept. Nothing
+    /// is hashed: this runs on the main thread, and an audiobook's files can
+    /// take seconds to read whole (ST04 review, finding 7).
+    ///
+    /// - A new audio file only in the cloud proves nothing.
+    /// - A book of one file whose content hash (`Book.md5Hash`, the MD5 of
+    ///   the file its import read) is the digest the transcript recorded for
+    ///   its one file is that file, whatever its name or date: the
+    ///   transcript is kept, its file renamed to the new copy's when the
+    ///   names differ, as when the same file is imported from another place
+    ///   under another name.
+    /// - Otherwise each new file must be the one transcribed by its path,
+    ///   size, and date (`TranscriptTextLoader.audioCheck`), a book of one
+    ///   file by its name or the new one; a file whose date moved would need
+    ///   its contents hashed, and counts as not proven.
     static func fitted(
         _ transcript: Transcript,
         to copy: Book,
         index: BookContentIndex,
         access: MaintenanceFileAccess = .live
     ) -> Transcript? {
-        /// Whether `candidate` describes the new copy's audio.
+        let locations = TranscriptionPlan.audioFileLocations(of: copy, index: index)
+        guard !locations.isEmpty, !locations.contains(where: { access.isInCloud($0.url) }) else { return nil }
+        let isOneFile = index.audioFilesInPlayingOrder == nil
+        let newName = copy.bookFileURL.lastPathComponent
+        /// `transcript` with its one file named as the new copy's.
+        func renamed() -> Transcript {
+            var renamed = transcript
+            renamed.files[0].path = newName
+            return renamed
+        }
+        if isOneFile, transcript.files.count == 1, transcript.files[0].fingerprint.digest == copy.md5Hash {
+            return transcript.files[0].path == newName ? transcript : renamed()
+        }
+        /// Whether `candidate` describes the new copy's files by their
+        /// paths, sizes, and dates alone.
         func describesTheAudio(_ candidate: Transcript) -> Bool {
             let check = TranscriptTextLoader.audioCheck(
                 of: candidate.audioFiles,
                 for: copy,
                 audioIndex: index,
                 isDataless: access.isDataless,
-                hasher: access.hasher
+                hasher: noHashing
             )
             if case .current = check { return true }
             return false
         }
         if describesTheAudio(transcript) { return transcript }
-        let newName = copy.bookFileURL.lastPathComponent
-        guard index.audioFilesInPlayingOrder == nil, transcript.files.count == 1, transcript.files[0].path != newName else {
-            return nil
-        }
-        var renamed = transcript
-        renamed.files[0].path = newName
-        return describesTheAudio(renamed) ? renamed : nil
+        guard isOneFile, transcript.files.count == 1, transcript.files[0].path != newName else { return nil }
+        let candidate = renamed()
+        return describesTheAudio(candidate) ? candidate : nil
     }
+
+    /// A hasher that hashes no file, for checks made on the main thread: a
+    /// file it is asked to read for its digest is taken for one that
+    /// changed.
+    private static let noHashing = FingerprintHasher(
+        digestOfFile: { _ in throw CocoaError(.featureUnsupported) },
+        digestOfData: FingerprintHasher.md5.digestOfData
+    )
 
     /// The new copy's text, as a reader reads its content.md, with the title
     /// and author it will be listed under; nil for a copy without one, as an
