@@ -349,9 +349,11 @@ extension LibraryViewModel {
         if let refusal = replacementRefusal(of: match) {
             return .failure(refusal.sentence)
         }
-        // An analysis of the old copy that finished but has not reached the
-        // library yet reaches its row now, while the row is the old copy's:
-        // after the replacement, the same ID would take it to the new copy.
+        // Analyses of the old copy waiting in the buffer reach its row now,
+        // while the row is the old copy's. One still on its way (on the main
+        // queue, or running) can arrive after the replacement: it names the
+        // old package, which the new row's is not, so it never lands there
+        // (`applyAnalysisSummaries`).
         analysisSummaries.flush()
         let existing = bookByID(match.id) ?? match
         let preparation: DuplicateReplacement.Preparation

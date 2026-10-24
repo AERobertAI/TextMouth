@@ -441,6 +441,31 @@ final class DuplicateReplacementTests: XCTestCase {
         XCTAssertEqual(TranscriptStore.read(from: withoutTranscript.movedTo), .missing)
     }
 
+    // MARK: - Analyses on Their Way
+
+    /// An analysis of the old copy still on its way when the new copy took
+    /// its place under the same ID never lands on the new row, being the
+    /// old package's; one of the new package does (ST04 review, finding 6).
+    func testAnAnalysisOfTheOldPackageNeverLandsOnItsReplacement() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        addTeardownBlock { sandbox.restore() }
+        let existing = Self.existingTextBook()
+        let replacement = Self.newTextCopy().withID(existing.id)
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [replacement])
+        var oldAnalysis = existing
+        oldAnalysis.totalWordCount = 999
+        oldAnalysis.editedText = EditedText(cacheDigest: "old", takenAt: Self.date)
+        var newAnalysis = replacement
+        newAnalysis.totalWordCount = 41
+
+        model.applyAnalysisSummaries([ContentAnalysisSummary(committed: oldAnalysis)])
+        XCTAssertEqual(model.bookByID(existing.id)?.totalWordCount, replacement.totalWordCount)
+        XCTAssertNil(model.bookByID(existing.id)?.editedText)
+        model.applyAnalysisSummaries([ContentAnalysisSummary(committed: newAnalysis)])
+        XCTAssertEqual(model.bookByID(existing.id)?.totalWordCount, 41)
+    }
+
     // MARK: - The Old Copy Put Back
 
     /// The old copy Replace Existing sent to the Trash names its
