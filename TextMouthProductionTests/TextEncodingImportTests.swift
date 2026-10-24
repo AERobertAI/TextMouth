@@ -35,6 +35,18 @@ final class TextEncodingImportTests: XCTestCase {
         return try XCTUnwrap(text.data(using: encoding, allowLossyConversion: false), name)
     }
 
+    /// Takes the encoding out of the package record of `book`, as it is in
+    /// a package written before guesses were recorded.
+    private func removeRecordedEncoding(of book: Book) throws {
+        let url = TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
+        var record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        var metadata = try XCTUnwrap(record["metadata"] as? [String: Any])
+        XCTAssertNotNil(metadata["textEncoding"], "the record held the encoding")
+        metadata["textEncoding"] = nil
+        record["metadata"] = metadata
+        try JSONSerialization.data(withJSONObject: record).write(to: url)
+    }
+
     /// What content.md of `book` holds.
     private func cachedMarkdown(of book: Book) throws -> String {
         try String(contentsOf: MarkdownCacheService.cacheURL(for: book), encoding: .utf8)
@@ -116,16 +128,17 @@ final class TextEncodingImportTests: XCTestCase {
 
     // MARK: - Books Already in the Library
 
-    /// A book with no record of an encoding, which is every book imported
-    /// before guesses were recorded, is read as it always was, however well
-    /// the guesser would read it now: a rebuild gives the Windows-1252
-    /// reading it had, and the re-read for pages finds that same text, so
-    /// nothing in the library changes under its reader's places.
+    /// A book with no record of an encoding, in its row or its package, which
+    /// is every book imported before guesses were recorded, is read as it
+    /// always was, however well the guesser would read it now: a rebuild gives
+    /// the Windows-1252 reading it had, and the re-read for pages finds that
+    /// same text, so nothing in the library changes under its reader's places.
     func testABookWithNoRecordIsReadAsItAlwaysWas() throws {
         let sample = try Data(contentsOf: formatSampleURL("txt-encodings/koi8-r.txt"))
         // An old book: imported when guesses were not recorded, so read by the fallback.
         var old = try importedForTest(copyOfFormatSample("txt-encodings/koi8-r.txt")).book
         old.textEncoding = nil
+        try removeRecordedEncoding(of: old)
         let legacyText = try TextFileDecoder.decode(sample, fileName: "koi8-r.txt", format: .txt).text
         XCTAssertNotEqual(legacyText, Self.russian, "the sample must be garbled by the fallback, or this proves nothing")
 
@@ -136,6 +149,54 @@ final class TextEncodingImportTests: XCTestCase {
         XCTAssertEqual(again.markdown, try cachedMarkdown(of: old))
         let direct = try BookParser.parse(url: old.bookFileURL, format: old.format)
         XCTAssertEqual(direct.chapters.map(\.text).joined(separator: "\n\n"), reading(of: legacyText))
+    }
+
+    /// A row that lost its encoding (a value in library.json that could not be
+    /// read, or a row an older build wrote) is read in the encoding the
+    /// package's record keeps when its cache is rebuilt, so the rebuild does
+    /// not turn the book into Windows-1252 text, and the row has the encoding
+    /// again afterwards. The direct reading of the file agrees.
+    func testARowThatLostItsEncodingIsReadInTheRecordsAndTakesItBack() throws {
+        let book = try importedForTest(copyOfFormatSample("txt-encodings/koi8-r.txt")).book
+        let imported = try cachedMarkdown(of: book)
+        XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).metadata.textEncoding, "koi8-r")
+
+        var lost = book
+        lost.textEncoding = nil
+        XCTAssertEqual(lost.recordedTextEncoding(), "koi8-r")
+        let direct = try BookParser.parse(url: lost.bookFileURL, format: lost.format, textEncoding: lost.recordedTextEncoding())
+        XCTAssertEqual(direct.chapters.map(\.text).joined(separator: "\n\n"), reading(of: Self.russian))
+
+        MarkdownCacheService.deleteCache(for: lost)
+        XCTAssertNotNil(try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &lost))
+        XCTAssertEqual(try cachedMarkdown(of: lost), imported, "read in the record's encoding, not as Windows-1252")
+        XCTAssertEqual(lost.textEncoding, "koi8-r", "the row has its encoding again")
+    }
+
+    /// A record helps a row that lost its encoding only when it names the
+    /// same book and can be read: another book's record in the package, a
+    /// record that is no JSON, and a book with no package give nothing, and
+    /// the text is read as it always was.
+    func testARecordThatCannotHelpGivesNoEncoding() throws {
+        let book = try importedForTest(copyOfFormatSample("txt-encodings/koi8-r.txt")).book
+        var lost = book
+        lost.textEncoding = nil
+        XCTAssertEqual(lost.recordedTextEncoding(), "koi8-r")
+
+        let another = Book(
+            id: UUID(), title: book.title, format: book.format, filePath: book.filePath,
+            md5Hash: book.md5Hash, tmbDirectoryName: book.tmbDirectoryName
+        )
+        XCTAssertNil(another.recordedTextEncoding(), "the record names another book")
+
+        let unpackaged = Book(title: "Loose", format: .txt, filePath: "/nowhere/Loose.txt", md5Hash: "loose")
+        XCTAssertNil(unpackaged.recordedTextEncoding(), "no package, no record")
+
+        XCTAssertEqual(book.recordedTextEncoding(), "koi8-r", "a row's own encoding is used as it is")
+
+        try Data("not json".utf8).write(to: TextMouthPaths.bookInfoPath(in: book.tmbDirectory))
+        XCTAssertNil(lost.recordedTextEncoding(), "an unreadable record")
+        XCTAssertEqual(book.recordedTextEncoding(), "koi8-r", "a row's own encoding needs no record")
     }
 
     /// A book removed from the library only and added back from its package

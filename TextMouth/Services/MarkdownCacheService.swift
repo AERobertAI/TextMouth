@@ -190,12 +190,14 @@ enum MarkdownCacheService {
     /// How a text file in `book` is read when its bytes name no encoding:
     /// by a guess when `guessingEncoding` says so and the book has not
     /// recorded an encoding already, in the encoding the book recorded
-    /// otherwise, and as it always was read when it recorded none.
+    /// otherwise (its row's, or its package record's when the row lost it:
+    /// `Book.recordedTextEncoding()`), and as it always was read when it
+    /// recorded none.
     private static func encodingPolicy(of book: Book, guessingEncoding: Bool = false) -> TextFileDecoder.EncodingPolicy {
         if guessingEncoding && book.textEncoding == nil {
             return .guess
         }
-        return .forBook(recording: book.textEncoding)
+        return .forBook(recording: book.recordedTextEncoding())
     }
 
     /// The work of `generateReportedCacheContent(for:)` for a book with a
@@ -426,7 +428,9 @@ enum MarkdownCacheService {
     /// With `guessingEncoding`, as an import of a file the user chose sets
     /// it, a text file whose bytes name no encoding is read in a guessed
     /// one, which `book` records (`Book.textEncoding`, FMT16) so that every
-    /// later reading of it uses the same.
+    /// later reading of it uses the same. Without it, a book whose row lost
+    /// its encoding is read in the one its package record keeps, and takes
+    /// it back (`Book.recordedTextEncoding()`).
     /// - Returns: nil for a book with no text cache.
     /// - Throws: why no cache could be written; `book` is then unchanged.
     ///   `EditedTextKept` when content.md holds the user's edit and
@@ -447,9 +451,13 @@ enum MarkdownCacheService {
             if let title = generated.title { book.title = title }
             if let author = generated.author { book.author = author }
         }
-        // The encoding the file was guessed to be in is the book's from now on.
         if let guessed = generated.guessedEncoding {
+            // The encoding the file was guessed to be in is the book's from now on.
             book.textEncoding = guessed
+        } else if !guessingEncoding, book.textEncoding == nil {
+            // A row that lost its encoding takes it back from the record the
+            // file was just read by (nil when the record names none).
+            book.textEncoding = book.recordedTextEncoding()
         }
         return generated
     }

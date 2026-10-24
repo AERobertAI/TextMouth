@@ -1031,6 +1031,24 @@ struct Book: Identifiable, Codable, Hashable {
         try? BookInfo.load(from: tmbDirectory)
     }
 
+    /// The encoding to read a text book's file in when its bytes name none
+    /// (FMT16): the row's (`textEncoding`), or, for a row that lost it, the
+    /// one the package's record keeps (`BookMetadata.textEncoding`). A value
+    /// in library.json that cannot be read decodes as none, and so does a row
+    /// an older build wrote, while bookInfo.json keeps the encoding through
+    /// every save of the book (`bookInfo(replacing:contentIndex:revisionFloor:)`);
+    /// reading it here keeps a rebuild from reading the book as Windows-1252
+    /// for want of a row. Nil when neither names one, when the record names
+    /// another book, cannot be read, or is in the cloud (which is not
+    /// downloaded for this), and for a format that does not read text files.
+    func recordedTextEncoding() -> String? {
+        if let textEncoding { return textEncoding }
+        guard format.usesTextFileDecoder, !tmbDirectoryName.isEmpty else { return nil }
+        let stored = try? DatalessFiles.withoutDownloading { try StoredBookRecord.read(from: tmbDirectory) }
+        guard let metadata = stored?.info.metadata, metadata.bookID == id else { return nil }
+        return metadata.textEncoding
+    }
+
     /// The record this book writes over `stored`, the record now in its
     /// package (nil when there is none or it cannot be read).
     ///

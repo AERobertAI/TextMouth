@@ -101,6 +101,35 @@ final class BookTextEncodingTests: XCTestCase {
         XCTAssertNil(Book(record: info, filePath: "/nowhere/Ledger.txt", folderPath: "", tmbDirectoryName: "Ledger.tmb").textEncoding)
     }
 
+    /// A record whose encoding cannot be read (a number, a list, an object)
+    /// loads with no encoding and keeps the rest of the book, as a row does:
+    /// one damaged field does not fail the whole record, which would take
+    /// the book's place, bookmarks, and settings with it. A value that reads
+    /// is kept, and a null is none.
+    func testARecordWithAnUnreadableEncodingStillLoadsWithNone() throws {
+        let package = try makeSandboxDirectory("TextEncoding").appendingPathComponent("Ledger.tmb", isDirectory: true)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        let recordURL = TextMouthPaths.bookInfoPath(in: package)
+        func load(withEncoding value: Any) throws -> BookInfo {
+            try book(encoding: "koi8-r").makeBookInfo().save(to: package)
+            var record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: recordURL)) as? [String: Any])
+            var metadata = try XCTUnwrap(record["metadata"] as? [String: Any])
+            metadata["textEncoding"] = value
+            record["metadata"] = metadata
+            try JSONSerialization.data(withJSONObject: record).write(to: recordURL)
+            return try BookInfo.load(from: package)
+        }
+
+        XCTAssertEqual(try load(withEncoding: "windows-1251").metadata.textEncoding, "windows-1251")
+        XCTAssertNil(try load(withEncoding: NSNull()).metadata.textEncoding)
+        for damaged in [17, ["koi8-r"], ["name": "koi8-r"], true] as [Any] {
+            let info = try load(withEncoding: damaged)
+            XCTAssertNil(info.metadata.textEncoding, "\(damaged)")
+            XCTAssertEqual(info.metadata.title, "Ledger", "\(damaged)")
+            XCTAssertEqual(info.metadata.format, .txt, "\(damaged)")
+        }
+    }
+
     /// A save of a row that lost its encoding keeps the stored record's, and
     /// a row's own encoding wins.
     func testTheStoredRecordsEncodingSurvivesARowThatLostIt() {

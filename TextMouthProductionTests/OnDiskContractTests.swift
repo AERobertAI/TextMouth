@@ -532,9 +532,11 @@ final class OnDiskContractTests: XCTestCase {
         try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
     }
 
-    /// The names of `value`'s stored properties.
+    /// The names of `value`'s stored properties. A mirror shows the storage
+    /// of a property wrapper as "_name" (`BookMetadata.textEncoding`), and the
+    /// property, and its key, are "name".
     private static func propertyNames(of value: Any) -> Set<String> {
-        Set(Mirror(reflecting: value).children.compactMap(\.label))
+        Set(Mirror(reflecting: value).children.compactMap(\.label).map { $0.hasPrefix("_") ? String($0.dropFirst()) : $0 })
     }
 
     /// A config with every optional setting set, so each one is a key.
