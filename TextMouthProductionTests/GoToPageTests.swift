@@ -102,8 +102,16 @@ final class GoToPageTests: XCTestCase {
             "Page 7 has no words, so the cursor is on page 8."
         )
         XCTAssertEqual(
+            ReaderPageWording.hasNoWords("3", occurrence: 1, cursor: "on the second page labelled 3"),
+            "The first page labelled 3 has no words, so the cursor is on the second page labelled 3."
+        )
+        XCTAssertEqual(
             ReaderPageWording.isInSkippedSection("40", cursor: "on page 52"),
             "Page 40 is in a skipped section, so the cursor is on page 52."
+        )
+        XCTAssertEqual(
+            ReaderPageWording.isInSkippedSection("2", occurrence: 2, cursor: "on page 3"),
+            "The second page labelled 2 is in a skipped section, so the cursor is on page 3."
         )
         XCTAssertEqual(ReaderPageWording.cursorIs("on page 52"), "The cursor is on page 52.")
         XCTAssertEqual(ReaderPageWording.openHint, "Opens jump to page controls")
@@ -130,7 +138,7 @@ final class GoToPageTests: XCTestCase {
         XCTAssertEqual(ReaderPageWording.cursorPlace(PagePosition(pages: pages, index: 5)), "on page 300")
         XCTAssertEqual(
             ReaderPageWording.cursorPlace(PagePosition(pages: pages, index: 4), occurrence: 2),
-            "on page 2, the second page labelled 2"
+            "on the second page labelled 2"
         )
         XCTAssertEqual(PagePosition(pages: pages, index: nil).label, "Before page i")
         XCTAssertEqual(ReaderPageWording.cursorPlace(PagePosition(pages: pages, index: nil)), "before page i")
@@ -219,10 +227,12 @@ final class GoToPageTests: XCTestCase {
 
     /// The reason and the place go together: a blank page asked for, whose
     /// place the cursor shares with one of several pages of a label, is told
-    /// as "Page 5 has no words, so the cursor is on page 2, the second page
-    /// labelled 2." A blank page that shares a label with the page it is
-    /// beside is told too, since it is another page; and a page that has
-    /// words, whatever its label, is told without a reason.
+    /// as "Page 5 has no words, so the cursor is on the second page labelled
+    /// 2." A blank page that shares a label with the page it is beside is
+    /// told too, since it is another page, and named as which of them it
+    /// is: "Page 3 has no words, so the cursor is on page 3, the second page
+    /// labelled 3." denied the words of the page 3 the cursor was on. A page
+    /// that has words, whatever its label, is told without a reason.
     func testTheReasonNamesWhichPageOfASharedLabelTheCursorIsOn() {
         let pages = [
             PageBreak(label: "2", chapterIndex: 0, characterOffset: 0),
@@ -241,17 +251,17 @@ final class GoToPageTests: XCTestCase {
         XCTAssertEqual(pagedPlace(of: reader), "0:50")
         XCTAssertEqual(
             reader.lastAnnouncement,
-            "Page 5 has no words, so the cursor is on page 2, the second page labelled 2."
+            "Page 5 has no words, so the cursor is on the second page labelled 2."
         )
 
         // The first page labelled 3 is blank beside the second, which has
-        // the words: the reason, and the second of them.
+        // the words: the reason, naming the first, and the second of them.
         reader.currentCharacterOffset = 0
         XCTAssertNil(reader.goToPage(typed: "3"))
         XCTAssertEqual(pagedPlace(of: reader), "0:100")
         XCTAssertEqual(
             reader.lastAnnouncement,
-            "Page 3 has no words, so the cursor is on page 3, the second page labelled 3."
+            "The first page labelled 3 has no words, so the cursor is on the second page labelled 3."
         )
 
         // "2" asked for from there goes round to its first page, which has
@@ -259,6 +269,36 @@ final class GoToPageTests: XCTestCase {
         XCTAssertNil(reader.goToPage(typed: "2"))
         XCTAssertEqual(pagedPlace(of: reader), "0:0")
         XCTAssertEqual(reader.lastAnnouncement, "Jumped to page 2, the first page labelled 2.")
+    }
+
+    /// A label two pages carry, the second of them blank beside page 3:
+    /// typing it reaches the page with words first, then the blank one,
+    /// which the reason names as which of them it is. "Page 2 has no words"
+    /// would deny the words of the other page 2, which the cursor has just
+    /// left.
+    func testABlankPageOfARepeatedLabelIsNamedAsWhichOfThemItIs() {
+        let pages = [
+            PageBreak(label: "1", chapterIndex: 0, characterOffset: 0),
+            PageBreak(label: "2", chapterIndex: 0, characterOffset: 50),
+            PageBreak(label: "2", chapterIndex: 0, characterOffset: 100),
+            PageBreak(label: "3", chapterIndex: 0, characterOffset: 100),
+        ]
+        let reader = makePagedReader(pages: pages)
+        defer { reader.close() }
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 0
+
+        XCTAssertNil(reader.goToPage(typed: "2"))
+        XCTAssertEqual(pagedPlace(of: reader), "0:50")
+        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page 2, the first page labelled 2.")
+
+        XCTAssertNil(reader.goToPage(typed: "2"))
+        XCTAssertEqual(pagedPlace(of: reader), "0:100")
+        XCTAssertEqual(reader.currentPagePosition.page?.label, "3", "the row names the page after the blank one")
+        XCTAssertEqual(
+            reader.lastAnnouncement,
+            "The second page labelled 2 has no words, so the cursor is on page 3."
+        )
     }
 
     /// A cursor on no page is told as the status row tells it. A book whose

@@ -69,8 +69,14 @@ enum ReaderPageWording {
     /// themselves (`DocumentContent.pageHoldsWord(at:outside:)`), never from
     /// the cursor's being elsewhere, which a jump while the book plays can be
     /// for another reason.
-    static func hasNoWords(_ label: String, cursor: String) -> String {
-        because(label, "has no words", cursor: cursor)
+    ///
+    /// A page asked for whose label other pages carry too is named as which
+    /// of them it is, `occurrence` counting from 1 in book order: "The first
+    /// page labelled 3 has no words, so the cursor is on the second page
+    /// labelled 3." Named "Page 3", the blank one denied the words of the
+    /// page 3 the cursor was on.
+    static func hasNoWords(_ label: String, occurrence: Int? = nil, cursor: String) -> String {
+        because(label, occurrence: occurrence, "has no words", cursor: cursor)
     }
 
     /// What Go to Page says when every word of the page typed is in a
@@ -78,8 +84,10 @@ enum ReaderPageWording {
     /// book plays goes on with the next words speech reads, on a later page.
     /// "Page 40 is in a skipped section, so the cursor is on page 52." While
     /// the book is stopped, the cursor stays on such a page, as on any other.
-    static func isInSkippedSection(_ label: String, cursor: String) -> String {
-        because(label, "is in a skipped section", cursor: cursor)
+    /// `occurrence` names one of several pages of a label, as for
+    /// `hasNoWords(_:occurrence:cursor:)`.
+    static func isInSkippedSection(_ label: String, occurrence: Int? = nil, cursor: String) -> String {
+        because(label, occurrence: occurrence, "is in a skipped section", cursor: cursor)
     }
 
     /// What Go to Page says when the cursor is not on the page typed and the
@@ -93,28 +101,42 @@ enum ReaderPageWording {
     /// Where the cursor is, as Go to Page's sentences say it after "the
     /// cursor is": on the page `position` names, "on page 8", or, for one of
     /// several pages that carry its label (`occurrence`, counting from 1 in
-    /// book order), "on page 2, the second page labelled 2"; before the
-    /// book's first page, the position's own words, "before page 1"
-    /// (`PagePosition.label`).
+    /// book order), "on the second page labelled 2"; before the book's first
+    /// page, the position's own words, "before page 1" (`PagePosition.label`).
     static func cursorPlace(_ position: PagePosition, occurrence: Int? = nil) -> String {
         guard let reached = position.page else { return position.label.lowercasingFirstLetter }
-        return "on \(page(reached.label, occurrence: occurrence))"
+        return "on \(named(reached.label, occurrence: occurrence))"
     }
 
     /// A reason Go to Page gives for the cursor's being off the page typed,
-    /// `label`, and where it is: "Page 7 has no words, so the cursor is on
-    /// page 8."
-    private static func because(_ label: String, _ reason: String, cursor: String) -> String {
-        "Page \(label) \(reason), so the cursor is \(cursor)."
+    /// `label` (`occurrence` of its label, when other pages carry it too),
+    /// and where it is: "Page 7 has no words, so the cursor is on page 8."
+    private static func because(_ label: String, occurrence: Int?, _ reason: String, cursor: String) -> String {
+        "\(named(label, occurrence: occurrence).capitalizingFirstLetter) \(reason), so the cursor is \(cursor)."
     }
 
     // MARK: - Naming a Page
 
-    /// A page as a sentence names it: "page 12", or, for one of several
+    /// A page as "Jumped to" names it: "page 12", or, for one of several
     /// pages that carry its label, "page 2, the second page labelled 2".
     private static func page(_ label: String, occurrence: Int?) -> String {
         guard let occurrence else { return "page \(label)" }
-        return "page \(label), the \(ordinal(occurrence)) page labelled \(label)"
+        return "page \(label), \(ofLabel(label, occurrence))"
+    }
+
+    /// A page as a reason and the cursor's place name it: "page 7", or, for
+    /// one of several pages that carry its label, which of them it is, which
+    /// says the label too: "the first page labelled 3". A sentence with a
+    /// reason names two pages, which "page 3, the first page labelled 3"
+    /// would make long.
+    private static func named(_ label: String, occurrence: Int?) -> String {
+        occurrence.map { ofLabel(label, $0) } ?? "page \(label)"
+    }
+
+    /// Which of the pages that carry `label` a page is, `occurrence`
+    /// counting from 1: "the second page labelled 2".
+    private static func ofLabel(_ label: String, _ occurrence: Int) -> String {
+        "the \(ordinal(occurrence)) page labelled \(label)"
     }
 
     /// The first ten ordinals, as they are said.

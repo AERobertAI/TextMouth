@@ -270,7 +270,10 @@ extension ReaderViewModel {
     /// the cursor's being elsewhere: that alone once made a page full of
     /// words, skipped while the book played, "a page with no words". When
     /// they give no reason, as when a text substitution deletes the page's
-    /// words, the sentence says only where the cursor is.
+    /// words, the sentence says only where the cursor is. A page of a label
+    /// that other pages carry too is named as which of them it is, the page
+    /// asked for as much as the cursor's: "The first page labelled 3 has no
+    /// words, so the cursor is on the second page labelled 3."
     private func jumpAnnouncement(toPage page: PageBreak, at index: Int) -> String {
         let reached = currentPageIndex
         guard reached != index else {
@@ -280,13 +283,16 @@ extension ReaderViewModel {
             currentPagePosition,
             occurrence: reached.flatMap(occurrence(ofPageAt:))
         )
+        // Which of the pages with its label the page asked for is, if
+        // several carry it, so the reason never denies another's words.
+        let asked = occurrence(ofPageAt: index)
         guard let content else { return ReaderPageWording.cursorIs(cursor) }
         if !content.pageHoldsWord(at: index) {
-            return ReaderPageWording.hasNoWords(page.label, cursor: cursor)
+            return ReaderPageWording.hasNoWords(page.label, occurrence: asked, cursor: cursor)
         }
         let skippedIDs = skippedHeadingIDs
         if !content.pageHoldsWord(at: index, outside: { skippedRanges(inChapter: $0, skipping: skippedIDs) }) {
-            return ReaderPageWording.isInSkippedSection(page.label, cursor: cursor)
+            return ReaderPageWording.isInSkippedSection(page.label, occurrence: asked, cursor: cursor)
         }
         return ReaderPageWording.cursorIs(cursor)
     }
