@@ -122,8 +122,8 @@ enum JumpInputValidator {
 /// Go to Page's field starts at the label of the page being read, and a
 /// label some other page of the book shares ("2" on the plates and again in
 /// the text) is a real answer on its own: Return on it goes to that label's
-/// next page, which is the only way to reach the other pages from the panel
-/// (`submitsUnchanged`).
+/// next page, the only way to go on from one page of a label to the next
+/// without typing something else first (`submitsUnchanged`).
 enum JumpFieldOutcome: Equatable {
     /// The field holds the value it started at: nothing moves and nothing
     /// is said, and the panel closes as Cancel closes it.
