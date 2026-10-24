@@ -129,8 +129,10 @@ enum {
 #define CELL_36 CELL(D3 | D6)           /* ⠤ hyphen; two make EBAE's dash */
 #define CELL_45 CELL(D4 | D5)           /* ⠘ UEB's bold prefix */
 #define CELL_46 CELL(D4 | D6)           /* ⠨ EBAE's emphasis sign; UEB's italic prefix */
+#define CELL_156 CELL(D1 | D5 | D6)     /* ⠱ after ⠸, the end of EBAE's computer braille */
 #define CELL_235 CELL(D2 | D3 | D5)     /* ⠖ "to", joined to its word, in contracted EBAE */
 #define CELL_236 CELL(D2 | D3 | D6)     /* ⠦ EBAE's opening quotation mark */
+#define CELL_346 CELL(D3 | D4 | D6)     /* ⠬ after ⠸, the start of EBAE's computer braille */
 #define CELL_356 CELL(D3 | D5 | D6)     /* ⠴ "by", joined to its word, in contracted EBAE */
 #define CELL_456 CELL(D4 | D5 | D6)     /* ⠸ EBAE's bold prefix; UEB's underline prefix */
 #define CELL_2356 CELL(D2 | D3 | D5 | D6) /* ⠶ EBAE's parenthesis; UEB's passage indicator */
@@ -1066,10 +1068,26 @@ strip_ebae_word(const table_emphasis *emphasis, const widechar *cells, int start
 	int capitals = 0;
 	/* Whether `i` is in a number, after its number sign. */
 	int in_number = 0;
+	/* Whether `i` is in computer braille, between ⠸⠬ and ⠸⠱ (EBAE's
+	   computer braille code indicators, liblouis's begcomp and endcomp),
+	   where ⠨ is a period and no emphasis sign stands. */
+	int in_computer = 0;
 	int i = start;
 	while (i < end) {
 		int length;
 		ebae_signs signs;
+		/* Computer braille, with its indicators, is kept as it is. */
+		length = in_computer ? 1 : 0;
+		if (i + 1 < end && cells[i] == CELL_456 && cells[i + 1] == (in_computer ? CELL_156 : CELL_346)) {
+			in_computer = !in_computer;
+			length = 2;
+		}
+		if (length > 0) {
+			count = keep(kept, bits, count, cells + i, length, ended ? 0 : word | *passage);
+			i += length;
+			sign_may_follow = 0;
+			continue;
+		}
 		if (sign_may_follow) {
 			sign_may_follow = 0;
 			while ((length = opening_punctuation(cells, i, end)) > 0) {

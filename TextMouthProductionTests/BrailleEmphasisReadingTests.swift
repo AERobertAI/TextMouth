@@ -188,6 +188,18 @@ final class BrailleEmphasisReadingTests: XCTestCase {
         try assertReadsWords([(";a .k ;b", "a = b")], ebaeUncontracted)
     }
 
+    /// Computer braille, between EBAE's indicators ⠸⠬ and ⠸⠱ (liblouis's
+    /// around a web or mail address), holds no emphasis sign: its ⠨ is a
+    /// period, kept even where the address is a passage's last word, whose
+    /// periods had been taken for liblouis's end sign ("a*b.com").
+    func testEBAELeavesComputerBrailleAsItIs() throws {
+        try assertReads([
+            (#".."o two ?ree ._+a.b.com_: n["#, #"*one two three a\.b\.com* now"#),
+            ("see _+a.b.com_: n[", #"see a\.b\.com now"#),
+        ], ebaeContracted)
+        try assertReads([("..one two three ._+a.b.com_: now", #"*one two three a\.b\.com* now"#)], ebaeUncontracted)
+    }
+
     // MARK: - UEB
 
     /// Contracted UEB reads the contraction before a terminator as the word
