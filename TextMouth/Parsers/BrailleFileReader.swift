@@ -33,6 +33,14 @@ struct BrailleFilePages: Equatable, Sendable {
     /// PEF that declares none or a number outside the range. The analyzer
     /// takes it as the width before it measures any row (FMT20).
     var lineWidth: Int? = nil
+    /// Whether the file marks where its pages end (PG12, the review of
+    /// October 24): a PEF by its page elements, a BRF by its form feeds. A
+    /// BRF without a form feed is cut into pages of `BrailleFileReader
+    /// .linesPerUnmarkedPage` rows only so that its layout can be read
+    /// (`repage(every:)`), and those are no pages an embosser counts unless
+    /// braille page numbers mark them (`BrailleBookReader.marksItsPages(_:_:)`).
+    /// A BRL marks none.
+    var marksItsPages = false
 
     /// Every cell of the file, a byte each, page after page and row after
     /// row: the cell's dots (dot 1 is 1, dot 8 is 128), so the byte is the
@@ -65,6 +73,8 @@ struct BrailleFilePages: Equatable, Sendable {
     /// that has its pages as text; no limit is applied.
     init(kind: BrailleFileKind, pages: [[String]]) {
         self.kind = kind
+        // Pages given one by one are marked, but for a BRL's, which has none.
+        marksItsPages = kind != .brl
         for page in pages {
             for row in page {
                 for scalar in row.unicodeScalars { append(cell: Self.dots(of: scalar)) }
@@ -399,6 +409,8 @@ enum BrailleFileReader {
                 // Or no form feed at all: pages of a fixed number of lines.
                 try pages.repage(every: BrailleFileReader.linesPerUnmarkedPage)
             }
+            // Only a BRF's form feeds end pages (a BRL ignores them).
+            pages.marksItsPages = sawFormFeed
             return pages
         }
 
@@ -459,6 +471,8 @@ enum BrailleFileReader {
         if let refusal = collector.refusal { throw refusal }
         guard parsed else { throw BrailleFileError.damagedPEF }
         var result = collector.pages
+        // Every page of a PEF is a page element of its own.
+        result.marksItsPages = true
         result.title = collector.title
         result.author = collector.author
         result.language = collector.language

@@ -1,0 +1,9 @@
+# Ferry Timetable Notes
+
+The first boat leaves the north pier at six,
+and the second waits for the mail trainbefore it crosses to the island.
+
+WINTER SERVICE
+In winter the evening crossing is cancelled
+when the wind is above force seven.
+

@@ -11,8 +11,10 @@ struct BrailleStructure: Equatable, Sendable {
     var pages: [BraillePageNumbers]
 }
 
-/// The numbers a braille page carries, kept for navigation by braille
-/// or print page, which is a follow-up; each is braille cells, such as "⠼⠁".
+/// The numbers a braille page carries, each braille cells such as "⠼⠁", and
+/// where the page begins in the book's blocks. The braille page number names
+/// the page in the reader (PG12, `braillePageLabel`); the print page numbers
+/// are kept for navigation by print page, which is a follow-up.
 struct BraillePageNumbers: Equatable, Sendable {
     var braillePageNumber: String?
     var printPageNumber: String?
@@ -22,6 +24,23 @@ struct BraillePageNumbers: Equatable, Sendable {
     /// (a paragraph continued from the page before counts); for a page
     /// with no text, the index of the next block that has some.
     var firstBlockIndex: Int
+    /// Where the page begins in that block (PG12): the offset, in cells of
+    /// the block's text, of the page's first cell. It is 0 for a page that
+    /// begins its first block, and inside the block for a page whose first
+    /// row goes on a paragraph or heading from the page before. A page with
+    /// no text takes the offset of the next page that has some, and so
+    /// begins where that page does; a page after the last block has 0.
+    ///
+    /// A page always begins at the start of a row, and a block's rows are
+    /// joined by one blank cell, so inside a block the cell before a page's
+    /// first cell is that blank, and the page begins at a word.
+    var firstCellOffset: Int = 0
+    /// Whether any of the page's rows holds text: belongs to a block, rather
+    /// than being blank, a page number, or a print page change line. A page
+    /// without, such as the blank back of a two-sided page or the empty page
+    /// a form feed leaves at a file's start or end, takes the next page's
+    /// place (above), and is a page only when it has a number (PG12).
+    var hasText = false
 }
 
 // MARK: - Analyzer
@@ -107,20 +126,31 @@ enum BraillePageAnalyzer {
             pageNumbers.append(numbers)
             reader.read(kept, onPage: pageIndex)
         }
-        let (blocks, firstBlockOfPage) = reader.finish()
+        let (blocks, firstPlaceOfPage) = reader.finish()
 
-        // Say where each page's first block is. Working from the last page
-        // back, a page with no text takes the first block of the next page
-        // that has some (or the count of blocks, past the end).
-        var nextFirstBlock = blocks.count
+        // Say where each page begins: its first block, and the cell of that
+        // block its first row begins at. Working from the last page back, a
+        // page with no text begins where the next page that has some does
+        // (or past the end, after the last block).
+        var nextPlace = PagePlace(blockIndex: blocks.count, cellOffset: 0)
         for index in pageNumbers.indices.reversed() {
-            nextFirstBlock = firstBlockOfPage[index] ?? nextFirstBlock
-            pageNumbers[index].firstBlockIndex = nextFirstBlock
+            pageNumbers[index].hasText = firstPlaceOfPage[index] != nil
+            nextPlace = firstPlaceOfPage[index] ?? nextPlace
+            pageNumbers[index].firstBlockIndex = nextPlace.blockIndex
+            pageNumbers[index].firstCellOffset = nextPlace.cellOffset
         }
         return BrailleStructure(blocks: blocks, pages: pageNumbers)
     }
 
     // MARK: Spans and rows
+
+    /// Where a page's first row lands in the blocks (PG12): the index of the
+    /// block it belongs to, and the offset in that block's text of the row's
+    /// first cell.
+    private struct PagePlace {
+        var blockIndex: Int
+        var cellOffset: Int
+    }
 
     /// A run of cells in the file's buffer, by its offsets; 32 bits each,
     /// since the buffer is never longer (see `BrailleFilePages`).
@@ -379,7 +409,7 @@ enum BraillePageAnalyzer {
                 text.append(row: cells[trimmedTrailingBlanks(of: file.cellRange(ofRow: rowIndex))])
                 if !text.isEmpty { blocks.append(.paragraph(text: text.string)) }
             }
-            return BrailleStructure(blocks: blocks, pages: [BraillePageNumbers(firstBlockIndex: 0)])
+            return BrailleStructure(blocks: blocks, pages: [BraillePageNumbers(firstBlockIndex: 0, hasText: !blocks.isEmpty)])
         }
 
         // MARK: Page numbers
@@ -514,6 +544,12 @@ enum BraillePageAnalyzer {
 
         var isEmpty: Bool { cells.isEmpty }
 
+        /// The offset at which the first cell of the next row appended will
+        /// stand (PG12): after the one blank cell a row break adds, or at 0 in
+        /// an empty text. A row is appended from its first cell that is not
+        /// blank (`Row.content`), so that cell is the one that stands there.
+        var nextRowOffset: Int { cells.isEmpty ? 0 : cells.count + 1 }
+
         /// Swaps this text's buffer for `other`, so that one buffer can serve
         /// block after block (see `BlockReader`); the text starts again.
         mutating func exchangeBuffer(with other: inout [UInt8]) {
@@ -582,9 +618,10 @@ enum BraillePageAnalyzer {
         let book: Book
         let width: Int
         private(set) var blocks: [BrailleBlock] = []
-        /// For each page that holds text, the index of the first block that
-        /// has a row there (nil for a page with no text).
-        private var firstBlockOfPage: [Int?]
+        /// For each page that holds text, where its first row lands: the
+        /// first block that has a row there, and the cell that row begins at
+        /// in that block's text (nil for a page with no text).
+        private var firstPlaceOfPage: [PagePlace?]
         private var open: OpenBlock?
         /// Whether the row before this one belonged to a heading.
         private var previousWasHeading = false
@@ -601,7 +638,7 @@ enum BraillePageAnalyzer {
         init(book: Book, width: Int, pageCount: Int) {
             self.book = book
             self.width = width
-            self.firstBlockOfPage = [Int?](repeating: nil, count: pageCount)
+            self.firstPlaceOfPage = [PagePlace?](repeating: nil, count: pageCount)
             self.spareBuffer.reserveCapacity(book.cells.count)
         }
 
@@ -634,10 +671,14 @@ enum BraillePageAnalyzer {
         }
 
         /// Notes that a row of page `page` belongs to the block that will
-        /// have index `blocks.count` once it closes: the open block, or a new one.
-        private mutating func noteRow(onPage page: Int) {
-            if firstBlockOfPage.indices.contains(page), firstBlockOfPage[page] == nil {
-                firstBlockOfPage[page] = blocks.count
+        /// have index `blocks.count` once it closes, the open block or a new
+        /// one, and that its first cell stands at `cellOffset` of that block's
+        /// text: 0 in a new block, and the open block's `nextRowOffset` in a
+        /// block the row goes on. Called before the row is appended. Only a
+        /// page's first row is kept, as where the page begins (PG12).
+        private mutating func noteRow(onPage page: Int, atCell cellOffset: Int) {
+            if firstPlaceOfPage.indices.contains(page), firstPlaceOfPage[page] == nil {
+                firstPlaceOfPage[page] = PagePlace(blockIndex: blocks.count, cellOffset: cellOffset)
             }
         }
 
@@ -733,7 +774,7 @@ enum BraillePageAnalyzer {
                 }
                 // A further row of the same indent belongs to a cell-5 or cell-7 heading.
                 if let heading = open, heading.headingLevel != nil, heading.indent == row.indent {
-                    noteRow(onPage: page)
+                    noteRow(onPage: page, atCell: heading.text.nextRowOffset)
                     open?.text.append(row: book.cells[row.content.range])
                     previousWasHeading = true
                     index += 1
@@ -744,10 +785,10 @@ enum BraillePageAnalyzer {
                 // a page's top, in the cell where a heading of level 2 or 3
                 // starts, is not read as one.
                 if let paragraph = open, paragraph.headingLevel == nil, goesOn(row, paragraph, atPageTop: index == 0) {
+                    noteRow(onPage: page, atCell: paragraph.text.nextRowOffset)
                     open?.runoverIndent = paragraph.runoverIndent ?? row.indent
                     open?.text.append(row: book.cells[row.content.range])
                     noteLastRow(row)
-                    noteRow(onPage: page)
                     index += 1
                     continue
                 }
@@ -764,7 +805,7 @@ enum BraillePageAnalyzer {
                     if let end = centeredRun(from: index),
                        !(isCellFiveOrSeven(row) && rows[index..<end].allSatisfy({ $0.indent == row.indent })) {
                         closeOpenBlock()
-                        noteRow(onPage: page)
+                        noteRow(onPage: page, atCell: 0)
                         var text = newText()
                         for line in rows[index..<end] { text.append(row: book.cells[line.content.range]) }
                         blocks.append(.heading(level: 1, text: finish(&text)))
@@ -776,7 +817,7 @@ enum BraillePageAnalyzer {
                     // takes the following rows of its indent.
                     if isCellFiveOrSeven(row) {
                         closeOpenBlock()
-                        noteRow(onPage: page)
+                        noteRow(onPage: page, atCell: 0)
                         open = OpenBlock(headingLevel: row.indent == cellFiveIndent ? 2 : 3, indent: row.indent,
                                          text: newText())
                         open?.text.append(row: book.cells[row.content.range])
@@ -788,20 +829,107 @@ enum BraillePageAnalyzer {
                 // 5. Any other row starts a paragraph (one that goes on the
                 // open paragraph was taken by rule 2).
                 closeOpenBlock()
+                noteRow(onPage: page, atCell: 0)
                 open = OpenBlock(headingLevel: nil, indent: row.indent, text: newText())
                 open?.text.append(row: book.cells[row.content.range])
                 noteLastRow(row)
-                noteRow(onPage: page)
                 previousWasHeading = false
                 index += 1
             }
         }
 
-        /// Ends the last block. Returns the blocks and, for each page, the
-        /// index of the first block that has a row there (nil for a page with no text).
-        mutating func finish() -> (blocks: [BrailleBlock], firstBlockOfPage: [Int?]) {
+        /// Ends the last block. Returns the blocks and, for each page, where
+        /// its first row landed: the first block that has a row there, and
+        /// the cell of that block the row begins at (nil for a page with no text).
+        mutating func finish() -> (blocks: [BrailleBlock], firstPlaceOfPage: [PagePlace?]) {
             closeOpenBlock()
-            return (blocks, firstBlockOfPage)
+            return (blocks, firstPlaceOfPage)
         }
+    }
+}
+
+// MARK: - Page labels
+
+extension BraillePageNumbers {
+    /// The page's label in the reader (PG12): its braille page number read
+    /// as print, as "⠼⠁⠃" reads "12" and "⠏⠼⠁" reads "p1"
+    /// (`printLabel(of:)`). Nil for a page without a braille page number, or
+    /// with one that reading does not know, which the reader labels by the
+    /// page's place among the file's pages instead.
+    var braillePageLabel: String? {
+        braillePageNumber.flatMap(Self.printLabel(of:))
+    }
+
+    /// The print that the number word `number` writes, read the same way in
+    /// every English braille code, since a page number uses only the cells
+    /// UEB and EBAE share: nil for anything else.
+    ///
+    /// The word is read cell by cell, as its braille ASCII (`BrailleCells
+    /// .ascii(for:)`), in three parts:
+    /// 1. letters before the number, such as the "p" of a preliminary page
+    ///    ("⠏⠼⠁", p1) or the "t" of a transcriber's page;
+    /// 2. the number sign and at least one digit, a to j for 1 to 9 and 0;
+    /// 3. letters after it, such as the "a" of "1a": a letter sign (⠰) before
+    ///    one of a to j, which would otherwise be a digit, or any of k to z,
+    ///    which ends the number by itself.
+    ///
+    /// A capital sign (⠠) before a letter makes it a capital, and ends the
+    /// number's digits. Letters are lowercase otherwise. A word with a second
+    /// number, a cell outside these, an indicator with no letter after it, or
+    /// no digit at all is not read: a reading that guessed could name a page
+    /// wrongly, while the page's place names it rightly.
+    static func printLabel(of number: String) -> String? {
+        var label = ""
+        // While the number's digits go on: after the number sign, until a
+        // cell that is no digit.
+        var inNumber = false
+        // Whether a number sign and a digit after it were read.
+        var readNumber = false
+        // An indicator waiting for the letter it applies to.
+        var capitalizesNext = false
+        var letterSignWaits = false
+        for scalar in number.unicodeScalars {
+            guard let byte = BrailleCells.ascii(for: scalar) else { return nil }
+            switch byte {
+            case UInt8(ascii: "#"):
+                // The number sign: one number in a word, and no indicator
+                // waiting for a letter before it.
+                guard !readNumber, !inNumber, !capitalizesNext, !letterSignWaits else { return nil }
+                inNumber = true
+            case UInt8(ascii: "A")...UInt8(ascii: "J") where inNumber:
+                // A digit: "A" (⠁) is 1, up to "I" (⠊), 9; "J" (⠚) is 0.
+                let digit = byte == UInt8(ascii: "J") ? UInt8(ascii: "0") : byte - UInt8(ascii: "A") + UInt8(ascii: "1")
+                label.unicodeScalars.append(Unicode.Scalar(digit))
+                readNumber = true
+            case UInt8(ascii: ","):
+                // The capital sign, which ends the digits; never straight
+                // after the number sign, nor after another indicator.
+                guard !capitalizesNext, !letterSignWaits, !(inNumber && !readNumber) else { return nil }
+                inNumber = false
+                capitalizesNext = true
+            case UInt8(ascii: ";"):
+                // The letter sign: only after the digits, which it ends.
+                guard inNumber, readNumber else { return nil }
+                inNumber = false
+                letterSignWaits = true
+            case UInt8(ascii: "A")...UInt8(ascii: "Z"):
+                // A letter. In the number, a to j were digits (above), so
+                // this is k to z, which ends the number, and only after a digit.
+                if inNumber {
+                    guard readNumber else { return nil }
+                    inNumber = false
+                }
+                // Braille ASCII writes letters in capitals; print them in
+                // lowercase unless a capital sign came first.
+                let letter = capitalizesNext ? byte : byte + (UInt8(ascii: "a") - UInt8(ascii: "A"))
+                label.unicodeScalars.append(Unicode.Scalar(letter))
+                capitalizesNext = false
+                letterSignWaits = false
+            default:
+                return nil
+            }
+        }
+        guard readNumber, !capitalizesNext, !letterSignWaits else { return nil }
+        return label
     }
 }

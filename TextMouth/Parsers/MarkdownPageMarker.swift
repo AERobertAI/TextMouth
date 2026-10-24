@@ -11,6 +11,16 @@ struct MarkdownPageMarker: Equatable, Sendable {
     /// or damaged source cannot put a paragraph into a page's name.
     static let maximumLabelLength = 32
 
+    /// The most pages one book may have, one limit for every reader that
+    /// writes them. A real book has far fewer (a 64 MB braille book has about
+    /// 65,000 braille pages), so a source that marks more is taken as
+    /// hostile, such as a plain text that is almost all form feeds, whose
+    /// markers would otherwise cost memory and time each. Each reader says
+    /// what it does past the limit: textutil's reads such a document without
+    /// pages (`TextutilPageBreaks.maximumPages`), and plain text's begins no
+    /// further page (`PlainTextParser.pagedBlocks(in:)`).
+    static let maximumPagesPerBook = 100_000
+
     /// The page's label, normalized (see `init(label:ordinal:)`); never empty.
     let label: String
 

@@ -35,10 +35,12 @@ enum TextutilPageBreaks {
     /// agree on (fewer at a document's ends).
     static let contextLength = 16
 
-    /// The most page breaks one document may hold. A document with more is
-    /// taken as hostile (a plain text that is almost all form feeds would
-    /// otherwise cost one insertion each), and is read without pages.
-    static let maximumPages = 100_000
+    /// The most page breaks one document may hold: the limit every page
+    /// reader shares (`MarkdownPageMarker.maximumPagesPerBook`). A document
+    /// with more is taken as hostile (a plain text that is almost all form
+    /// feeds would otherwise cost one insertion each), and is read without
+    /// pages.
+    static let maximumPages = MarkdownPageMarker.maximumPagesPerBook
 
     /// The value of the `role` attribute of the element that stands for a page
     /// break; the converter's page-break test (`PublicationSemantics.isPageBreak`).

@@ -13,10 +13,6 @@ import Foundation
 /// call `markdown(of:table:)`, so they read the same text.
 enum BrailleBookReader {
 
-    /// Separates the blocks of the Markdown, a blank line, as
-    /// `PlainTextParser.markdown(text:)` separates its blocks.
-    private static let blockSeparator = "\n\n"
-
     // MARK: - The kind of file
 
     /// The kind of braille file at `url`, by its extension: `.brl` for
@@ -75,6 +71,10 @@ enum BrailleBookReader {
     /// list item as a paragraph, every one written as a Markdown literal so
     /// text that merely looks like Markdown is read as written.
     ///
+    /// With `includesPages`, each braille page of a BRF or a PEF is a page
+    /// marker where its first word is read (PG12; `PagedTranslation`), and
+    /// the reading text is the same, word for word, as without them.
+    ///
     /// Reading keeps the emphasis the braille carries (the user, October 21,
     /// 2026: "keeping all text formatting extractable from the braille
     /// converted to the intermediate format"): each block's print comes back
@@ -97,13 +97,23 @@ enum BrailleBookReader {
     ///   - recordedVersion: The liblouis version of this Mac's tables the
     ///     book was read with (`Book.brailleTableVersion`), which a rebuild
     ///     requires them to have still (review R2); nil for a first reading.
+    ///   - includesPages: Whether page markers are written (PG12): true for
+    ///     every cache the app writes, which `MarkdownCacheService` asks for
+    ///     by name; false writes what the reader wrote before pages, byte for
+    ///     byte, which PG09's launch re-read compares a book's content.md
+    ///     with to find text changed by hand. A BRL has no pages either way.
+    ///     It is false unless asked for, unlike the other readers' option:
+    ///     the cache is the one reading that wants pages, and every other
+    ///     caller, such as the direct parse, wants the text alone.
     /// - Throws: `BrailleFileError` for a file that is not braille or is
     ///   larger than `maximumFileBytes`,
     ///   `FileImportError.noTextToRead` when the book has no blocks or no
     ///   print text, `BrailleTranslator.Failure` for a table that is unknown,
     ///   has changed (`requireUnchangedTable(_:recordedVersion:)`), or a
     ///   translation that fails, and what the file's reading throws.
-    static func markdown(of url: URL, table: String, recordedVersion: String? = nil) throws -> String {
+    static func markdown(
+        of url: URL, table: String, recordedVersion: String? = nil, includesPages: Bool = false
+    ) throws -> String {
         // A book whose Mac table changed is not read again (review R2).
         try requireUnchangedTable(table, recordedVersion: recordedVersion)
         // A file past the limit is refused before a byte of it is read.
@@ -112,34 +122,51 @@ enum BrailleBookReader {
         // no layout to read, so its analysis is not "formatted").
         let fileKind = kind(of: url)
         let pages = try BrailleFileReader.read(url, as: fileKind)
-        let blocks = BraillePageAnalyzer.structure(of: pages).blocks
-        guard !blocks.isEmpty else { throw FileImportError.noTextToRead }
+        let structure = BraillePageAnalyzer.structure(of: pages)
+        guard !structure.blocks.isEmpty else { throw FileImportError.noTextToRead }
 
-        // One run of the helper translates every block, in a working folder
+        // What to translate: every block whole, and with pages, the pieces
+        // that find where each page begins in its block's print, for a file
+        // whose pages are pages (`marksItsPages(_:_:)`).
+        let translation = PagedTranslation(
+            blocks: structure.blocks,
+            starts: includesPages && marksItsPages(pages, structure) ? pageStarts(of: structure) : []
+        )
+
+        // One run of the helper translates every text, in a working folder
         // beside the staged package during an import and a temporary one
         // otherwise, with the emphasis liblouis reads.
         let printed = try TextutilDocumentReader.withWorkingFolder(for: url) { folder in
-            try BrailleTranslator.translate(
-                blocks.map { EmphasizedText($0.text) }, table: table, direction: .brailleToPrint, workingIn: folder
-            )
+            try BrailleTranslator.translate(translation.texts, table: table, direction: .brailleToPrint, workingIn: folder)
         }
 
-        // Each block's print, trimmed at both ends, as Markdown; a block with
-        // no print left is dropped. `zip` stops at the shorter list, so a
-        // translation that answered short could not be indexed past its end.
-        var pieces: [String] = []
-        for (block, text) in zip(blocks, printed) {
-            let trimmed = text.trimmingWhitespace()
-            guard !trimmed.text.isEmpty else { continue }
-            let line = markdownLine(of: trimmed)
-            if case let .heading(level, _) = block {
-                pieces.append(String(repeating: "#", count: level) + " " + line)
-            } else {
-                pieces.append(line)
-            }
-        }
-        guard !pieces.isEmpty else { throw FileImportError.noTextToRead }
-        return pieces.joined(separator: blockSeparator)
+        // Each block's print, trimmed at both ends, as Markdown, the blocks
+        // apart by a blank line, as `PlainTextParser.markdown(text:)` keeps
+        // its blocks, with each page's marker; a block with no print left is
+        // dropped.
+        guard let text = translation.markdown(from: printed) else { throw FileImportError.noTextToRead }
+        return text
+    }
+
+    /// Whether the pages of a braille file, read as `file` and laid out as
+    /// `structure`, are pages an embosser counts, so that they become the
+    /// book's pages (PG12, the review of October 24): a PEF's page elements,
+    /// a BRF's form feeds, or, in a BRF with no form feed, braille page
+    /// numbers ending more than half of the pages it was cut into.
+    ///
+    /// A BRF with no form feed is cut every 25 rows only so that its layout
+    /// can be read (`BrailleFileReader.linesPerUnmarkedPage`). Laid out at
+    /// another length, or not in pages at all, those pieces are no pages,
+    /// and naming them would invent pages: a file of 27 lines a page would
+    /// read "Page 3" where its third page has not begun. Its numbers tell:
+    /// when the cut matches its layout, nearly every piece ends in its
+    /// braille page number, and when it does not, few or none do. A BRL has
+    /// no pages.
+    static func marksItsPages(_ file: BrailleFilePages, _ structure: BrailleStructure) -> Bool {
+        guard file.kind != .brl else { return false }
+        if file.marksItsPages { return true }
+        let numbered = structure.pages.filter { $0.braillePageNumber != nil }.count
+        return numbered * 2 > structure.pages.count
     }
 
     /// One block's print, trimmed, as one line of Markdown: every character
@@ -153,11 +180,14 @@ enum BrailleBookReader {
 
     /// The parsed content of the braille book at `url`, from the Markdown
     /// `markdown(of:table:)` reads, so the direct reading and the cache's
-    /// read the same text.
+    /// read the same text. This parse reads no page markers (its Markdown
+    /// goes to the plain `MarkdownDocParser.parse`), so none are written,
+    /// as DOCX's direct parse writes none (PG07, PG12).
     /// - Parameters:
     ///   - title: The book's title.
     ///   - table: The table the book was imported with.
     static func parse(url: URL, title: String, table: String, recordedVersion: String? = nil) throws -> DocumentContent {
-        try MarkdownDocParser.parse(markdown: markdown(of: url, table: table, recordedVersion: recordedVersion), title: title)
+        let text = try markdown(of: url, table: table, recordedVersion: recordedVersion, includesPages: false)
+        return try MarkdownDocParser.parse(markdown: text, title: title)
     }
 }

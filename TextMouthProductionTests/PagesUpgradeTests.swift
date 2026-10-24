@@ -2,8 +2,8 @@ import XCTest
 @testable import TextMouth
 
 /// Books that were read before their format had pages gain them at the next
-/// launch (PG09, `PageReaderVersions`): every EPUB, HTML, PDF, Word, and
-/// DAISY book whose content.md was written by no page reader, or an older
+/// launch (PG09, `PageReaderVersions`): every EPUB, HTML, PDF, Word, DAISY,
+/// braille, and plain text book whose content.md was written by no page reader, or an older
 /// one, is read again, with the saved places, bookmarks, and skipped
 /// headings moved onto the same words. A book whose text an edit record
 /// names is left as it is, without pages, and its row is stamped so that the
@@ -35,7 +35,7 @@ final class PagesUpgradeTests: XCTestCase {
     /// and HTML, whose shared converter changed a heading's label, are at
     /// 1.0.1; the others have not changed since they gained pages.
     func testOnlyTheFormatsWithPagesHaveAPageReader() {
-        let withPages: Set<BookFormat> = [.epub, .html, .pdf, .docx, .daisy, .rtf, .rtfd, .doc, .odt, .wordml]
+        let withPages: Set<BookFormat> = [.epub, .html, .pdf, .docx, .daisy, .rtf, .rtfd, .doc, .odt, .wordml, .braille, .txt]
         for format in BookFormat.allCases {
             XCTAssertEqual(
                 PageReaderVersions.current(for: format),
@@ -64,8 +64,8 @@ final class PagesUpgradeTests: XCTestCase {
             book.pageReaderVersion = stored
             XCTAssertEqual(PageReaderVersions.isOutdated(book), outdated, "stored \"\(stored)\" of an EPUB")
         }
-        let text = Book(title: "Plain", format: .txt, filePath: "/tmp/plain.txt", md5Hash: "m", folderPath: "")
-        XCTAssertFalse(PageReaderVersions.isOutdated(text))
+        let notes = Book(title: "Notes", format: .markdown, filePath: "/tmp/notes.md", md5Hash: "m", folderPath: "")
+        XCTAssertFalse(PageReaderVersions.isOutdated(notes))
     }
 
     /// A stamp's failure note is read with its version (PG16): a first
@@ -82,7 +82,7 @@ final class PagesUpgradeTests: XCTestCase {
         XCTAssertEqual(PageReaderVersions.stamp(for: .rtf, pageRunFailed: true, previous: nil), "1.0.0+failed-once")
         XCTAssertEqual(PageReaderVersions.stamp(for: .rtf, pageRunFailed: true, previous: "1.0.0+failed-once"), "1.0.0+failed")
         XCTAssertEqual(PageReaderVersions.stamp(for: .rtf, pageRunFailed: false, previous: "1.0.0+failed-once"), "1.0.0")
-        XCTAssertNil(PageReaderVersions.stamp(for: .txt, pageRunFailed: true, previous: nil))
+        XCTAssertNil(PageReaderVersions.stamp(for: .markdown, pageRunFailed: true, previous: nil))
         XCTAssertTrue(PageReaderVersions.notesFailure("1.0.0+failed"))
         XCTAssertFalse(PageReaderVersions.notesFailure("1.0.0"))
     }
@@ -331,6 +331,117 @@ final class PagesUpgradeTests: XCTestCase {
             _ = try MarkdownCacheService.extractedMarkdown(for: book, includesPages: false)
             print("PAGES_COMPARISON_SECONDS: \(name): \(Date().timeIntervalSince(started))")
         }
+    }
+
+    /// A braille book read before pages is read again at the next launch,
+    /// with every place where it was, since its pages add only markers, and
+    /// gains its braille pages (PG12, V07): the Grade 1 sample's two, the
+    /// second inside the paragraph it goes on. Its content.md is the file's
+    /// text without pages, so no copy of it is kept, and it keeps its table.
+    func testABrailleBookKeepsItsPlacesExactlyAndGainsItsBraillePages() async throws {
+        let world = try makeIntegrationWorld("Pages Upgrade Braille")
+        let fixture = try makeBrailleBookBeforePages(in: world)
+        let before = try XCTUnwrap(fixture.book.readingPosition)
+        let bookmarkBefore = try XCTUnwrap(fixture.book.bookmarks.first)
+
+        await runBatch(in: world)
+
+        let row = try XCTUnwrap(world.library.bookByID(fixture.book.id))
+        let content = try MarkdownCacheService.loadFromCache(for: row)
+        XCTAssertEqual(content.pages.breaks.map(\.label), ["1", "2"])
+        XCTAssertEqual(row.pageReaderVersion, PageReaderVersions.current(for: .braille))
+        XCTAssertEqual(row.brailleTable, Self.brailleTable)
+        // Not a number moved.
+        XCTAssertEqual(row.readingPosition?.characterOffset, before.characterOffset)
+        XCTAssertEqual(row.bookmarks.first?.characterOffset, bookmarkBefore.characterOffset)
+        assertPlaces(of: row, areAt: Self.braillePlaces, in: content)
+        XCTAssertEqual(keptCopies(of: row), [])
+        XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([row], access: .live), [])
+    }
+
+    /// A BRL, which has no pages, shares braille's page reader (V07): read
+    /// before pages, it is read again once at the next launch, keeps its
+    /// content.md byte for byte, gains no pages, keeps no copy, and is
+    /// stamped, so no later launch reads it.
+    func testABRLIsReadAgainOnceKeepingItsTextAndIsStamped() async throws {
+        let world = try makeIntegrationWorld("Pages Upgrade BRL")
+        let places = FixturePlaces(position: "taken it", bookmark: "Netherfield is taken", skippedHeading: nil)
+        let fixture = try makeBrailleBookBeforePages(sample: "brl/pride-and-prejudice-ch1-grade1.brl", places: places, in: world)
+        XCTAssertTrue(PageReaderVersions.isDueForPages(fixture.book))
+
+        await runBatch(in: world)
+
+        let row = try XCTUnwrap(world.library.bookByID(fixture.book.id))
+        XCTAssertEqual(try Data(contentsOf: MarkdownCacheService.cacheURL(for: row)), fixture.bytes)
+        XCTAssertTrue(try MarkdownCacheService.loadFromCache(for: row).pages.isEmpty)
+        XCTAssertEqual(row.pageReaderVersion, PageReaderVersions.current(for: .braille))
+        XCTAssertEqual(keptCopies(of: row), [])
+        XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([row], access: .live), [])
+    }
+
+    /// A braille book that cannot be read for its pages, because one of this
+    /// Mac's tables it was read with has changed since (review R2: reading it
+    /// again could move its text), keeps its text and is stamped
+    /// "+failed-once"; the next launch tries once more and stamps "+failed",
+    /// and no launch after that reads it.
+    func testABrailleBookThatCannotBeReadIsStampedOnceThenForGood() async throws {
+        let world = try makeIntegrationWorld("Pages Upgrade Braille Failure")
+        let fixture = try makeBrailleBookBeforePages(adjustingBook: { book in
+            book.brailleTable = "mac:fixture-changed.ctb"
+            book.brailleTableVersion = "0.0.1-not-this-mac"
+        }, in: world)
+        XCTAssertTrue(PageReaderVersions.isDueForPages(fixture.book))
+        let current = try XCTUnwrap(PageReaderVersions.current(for: .braille))
+
+        await runBatch(in: world)
+        let once = try XCTUnwrap(world.library.bookByID(fixture.book.id))
+        XCTAssertEqual(once.pageReaderVersion, current + "+failed-once")
+        XCTAssertEqual(try Data(contentsOf: MarkdownCacheService.cacheURL(for: once)), fixture.bytes)
+
+        await runBatch(in: world)
+        let twice = try XCTUnwrap(world.library.bookByID(fixture.book.id))
+        XCTAssertEqual(twice.pageReaderVersion, current + "+failed")
+        XCTAssertEqual(try Data(contentsOf: MarkdownCacheService.cacheURL(for: twice)), fixture.bytes)
+        XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([twice], access: .live), [])
+    }
+
+    /// A plain text book read before pages is read again at the next launch
+    /// and gains the pages its form feeds begin (PG13, V07), the sample's
+    /// four, with every place where it was, since pages add only markers to
+    /// plain text, and no copy of its text kept.
+    func testAPlainTextBookGainsTheFormFeedPagesItHolds() async throws {
+        let world = try makeIntegrationWorld("Pages Upgrade Form Feeds")
+        let fixture = try makeBookBeforePages(sample: "txt-pages/form-feeds.txt", places: Self.formFeedPlaces, in: world)
+        let before = try XCTUnwrap(fixture.book.readingPosition)
+
+        await runBatch(in: world)
+
+        let row = try XCTUnwrap(world.library.bookByID(fixture.book.id))
+        let content = try MarkdownCacheService.loadFromCache(for: row)
+        XCTAssertEqual(content.pages.breaks.map(\.label), ["1", "2", "3", "4"])
+        XCTAssertEqual(row.pageReaderVersion, PageReaderVersions.current(for: .txt))
+        XCTAssertEqual(row.readingPosition?.characterOffset, before.characterOffset)
+        assertPlaces(of: row, areAt: Self.formFeedPlaces, in: content)
+        XCTAssertEqual(keptCopies(of: row), [])
+    }
+
+    /// A plain text book with no form feed between words, as most are, is
+    /// read again once at the next launch, keeps its content.md byte for
+    /// byte, gains no pages, and is stamped, so no later launch reads it.
+    func testAPlainTextBookWithoutFormFeedsIsReadOnceAndKeepsItsText() async throws {
+        let world = try makeIntegrationWorld("Pages Upgrade Plain Text")
+        let places = FixturePlaces(position: "Mr. Bennet replied", bookmark: "Bingley.", skippedHeading: nil)
+        let fixture = try makeBookBeforePages(sample: "brf/pride-and-prejudice-ch1.txt", places: places, in: world)
+        XCTAssertTrue(PageReaderVersions.isDueForPages(fixture.book))
+
+        await runBatch(in: world)
+
+        let row = try XCTUnwrap(world.library.bookByID(fixture.book.id))
+        XCTAssertEqual(try Data(contentsOf: MarkdownCacheService.cacheURL(for: row)), fixture.bytes)
+        XCTAssertTrue(try MarkdownCacheService.loadFromCache(for: row).pages.isEmpty)
+        XCTAssertEqual(row.pageReaderVersion, PageReaderVersions.current(for: .txt))
+        XCTAssertEqual(keptCopies(of: row), [])
+        XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([row], access: .live), [])
     }
 
     /// A batch that stopped after writing a textutil document's content.md
@@ -812,14 +923,16 @@ final class PagesUpgradeTests: XCTestCase {
         XCTAssertFalse(try MarkdownCacheService.loadFromCache(for: readNow).pages.isEmpty, "a book read now gained no pages")
     }
 
-    /// A book of a format without pages is never chosen for them.
+    /// A book of a format without pages is never chosen for them: a
+    /// Markdown file, which has pages only where it holds page lines (plain
+    /// text was such a format until PG13 gave its form feeds pages).
     func testABookWithoutPagesIsNeverChosen() throws {
         let world = try makeIntegrationWorld("Pages Upgrade Text")
-        let source = try makeSandboxDirectory("Pages Upgrade Text Source").appendingPathComponent("Plain Notes.txt")
+        let source = try makeSandboxDirectory("Pages Upgrade Text Source").appendingPathComponent("Plain Notes.md")
         try Data("Lamps were lit along the quay.\n".utf8).write(to: source)
         let book = try world.importBook(from: source)
 
-        XCTAssertEqual(book.format, .txt)
+        XCTAssertEqual(book.format, .markdown)
         XCTAssertNil(book.pageReaderVersion)
         XCTAssertFalse(PageReaderVersions.isOutdated(book))
         XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([book], access: .live), [])
@@ -837,6 +950,37 @@ final class PagesUpgradeTests: XCTestCase {
 
     /// The places the PDF fixture saves.
     private static let pdfPlaces = FixturePlaces(position: "This is page four.", bookmark: "This is page five.", skippedHeading: nil)
+
+    /// The table the braille fixture is imported with: the Grade 1 UEB its
+    /// sample is written in.
+    private static let brailleTable = "en-ueb-g1.ctb"
+
+    /// The places the braille fixture saves: one on the second braille page,
+    /// at its first words, inside the paragraph that goes on there.
+    private static let braillePlaces = FixturePlaces(
+        position: "taken it", bookmark: "Netherfield is taken", skippedHeading: "Chapter I"
+    )
+
+    /// The places the form feed fixture saves: one at page 2's first words,
+    /// inside a paragraph, one at page 4's, and the heading before it.
+    private static let formFeedPlaces = FixturePlaces(
+        position: "before it crosses", bookmark: "In winter the evening", skippedHeading: "WINTER SERVICE"
+    )
+
+    /// The braille sample `sample` (the Grade 1 BRF unless named) as
+    /// `makeBookBeforePages` leaves a book from before pages, with `places`
+    /// and `adjustingBook` as it takes them, imported with the Grade 1 table
+    /// the samples are written in.
+    private func makeBrailleBookBeforePages(
+        sample: String = "brf/pride-and-prejudice-ch1-grade1.brf",
+        places: FixturePlaces = PagesUpgradeTests.braillePlaces,
+        adjustingBook: ((inout Book) -> Void)? = nil,
+        in world: IntegrationWorld
+    ) throws -> BookBeforePages {
+        try BraillePreferences.$tableForImports.withValue(Self.brailleTable) {
+            try makeBookBeforePages(sample: sample, places: places, adjustingBook: adjustingBook, in: world)
+        }
+    }
 
     /// The stamp of a page reader earlier than any format's now, as a book
     /// carries once its format's reader has changed (V05): "0.9.0" stands
@@ -883,8 +1027,9 @@ final class PagesUpgradeTests: XCTestCase {
     /// build no longer extracts. With `withPages`, content.md is what the
     /// file gives with its page markers, which `changingText` can make an
     /// earlier page reader's (`asAnEarlierReaderWroteIt`), and `stamp` is
-    /// the page reader the record names (V05). The book's title is made
-    /// unique so that its log lines can be counted.
+    /// the page reader the record names (V05). With `adjustingBook`, the row
+    /// is changed as it says before its record is written. The book's title
+    /// is made unique so that its log lines can be counted.
     private func makeBookBeforePages(
         sample: String,
         places: FixturePlaces? = nil,
@@ -893,6 +1038,7 @@ final class PagesUpgradeTests: XCTestCase {
         recordingEdit: Bool = false,
         damagingSource: Bool = false,
         stamp: String? = nil,
+        adjustingBook: ((inout Book) -> Void)? = nil,
         in world: IntegrationWorld
     ) throws -> BookBeforePages {
         let places = places ?? Self.epubPlaces
@@ -945,6 +1091,7 @@ final class PagesUpgradeTests: XCTestCase {
         )
         book.applyContentAnalysis(index, cacheFormatVersion: MarkdownCacheService.currentCacheVersion)
         book.pageReaderVersion = stamp
+        adjustingBook?(&book)
         book.editedText = recordingEdit
             ? index.textCacheFingerprint.map { EditedText(cacheDigest: $0.cache.digest, takenAt: Date()) }
             : nil

@@ -82,10 +82,14 @@ extension WebArchiveReader.MainPage {
     }
 
     /// The page as the Markdown cache holds it, converted exactly as an
-    /// `.html` file (with its duplicate navigation stripped) or a `.txt` file is.
+    /// `.html` file (with its duplicate navigation stripped) or a `.txt` file
+    /// is, but that a text page writes no pages for its form feeds: a web
+    /// archive has no page reader (`PageReaderVersions`, V07), so no book of
+    /// it is read again for pages, and its text gains none by this way in
+    /// either (the review of October 24).
     func markdown() throws -> String {
         isHTML
             ? try HTMLToMarkdownConverter.convert(text, stripDuplicateNavigation: true)
-            : PlainTextParser.markdown(text: text)
+            : PlainTextParser.markdown(text: text, includesPages: false)
     }
 }

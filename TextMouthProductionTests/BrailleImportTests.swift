@@ -125,6 +125,26 @@ final class BrailleImportTests: XCTestCase {
         XCTAssertFalse(text.contains("\u{283C}"))
     }
 
+    /// The Grade 1 BRF's two braille pages are the book's pages in the reader
+    /// (PG12), labelled 1 and 2 by their braille page numbers: page 1 at the
+    /// book's start, and page 2 at "taken", inside the paragraph that goes on
+    /// at the top of the file's second page.
+    func testTheGrade1BRFsBraillePagesAreTheBooksPages() throws {
+        let book = try importedSample("brf/pride-and-prejudice-ch1-grade1.brf", table: grade1)
+        let pages = try openedContent(of: book).pages
+        XCTAssertEqual(pages.breaks.map(\.label), ["1", "2"])
+        XCTAssertEqual(pages.total, 2)
+        let content = try openedContent(of: book)
+        for (page, words) in zip(pages.breaks, ["Pride and Prejudice", "taken it?"]) {
+            guard content.chapters.indices.contains(page.chapterIndex) else {
+                XCTFail("page \(page.label) is in chapter \(page.chapterIndex), which the book has not got")
+                continue
+            }
+            let text = content.chapters[page.chapterIndex].text
+            XCTAssertTrue(text[text.index(atUTF16Offset: page.characterOffset)...].hasPrefix(words), page.label)
+        }
+    }
+
     /// The direct reading, which the reader falls back to, reads the same
     /// text as the cache does, with the book's table.
     func testTheDirectParseReadsTheCachesText() throws {
