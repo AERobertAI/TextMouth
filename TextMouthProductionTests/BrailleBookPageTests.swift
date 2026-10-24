@@ -242,6 +242,49 @@ final class BrailleBookPageTests: XCTestCase {
         )
     }
 
+    /// A row of braille ASCII `text` with `number` at the right margin of a
+    /// 40-cell line, as a BRF writes a page number.
+    private func numberedRow(_ text: String, _ number: String) -> String {
+        text + String(repeating: " ", count: max(40 - text.count - number.count, 3)) + number
+    }
+
+    /// A page is a braille page, never a print page (question 2 of the
+    /// October 21 questions): a Grade 1 BRF whose pages also carry print
+    /// page numbers at the top right, and a print page change line in the
+    /// middle of a paragraph, is labelled by its braille page numbers, 1 and
+    /// 2, with page 2 at its first row's first word, inside the paragraph
+    /// that goes on over it; no print page number is read as text.
+    func testPagesAreBraillePagesWhatEverPrintPagesTheyHold() throws {
+        let pageOne = [
+            numberedRow("  ,THE FIRST BOAT LEAVES AT SIX1", "#C"),
+            "AND THE SECOND WAITS FOR THE MAIL",
+            String(repeating: "-", count: 36) + "#D",
+            "TRAIN BEFORE IT CROSSES TO THE",
+            numberedRow("", "#A"),
+        ]
+        let pageTwo = [
+            numberedRow("ISLAND4", "#D"),
+            "",
+            "  ,IN WINTER THE EVENING CROSSING IS",
+            "CANCELLED4",
+            numberedRow("", "#B"),
+        ]
+        let url = try makeSandboxDirectory("BraillePrintPages").appendingPathComponent("print-pages.brf")
+        let file = pageOne.joined(separator: "\r\n") + "\r\n\u{0C}" + pageTwo.joined(separator: "\r\n") + "\r\n"
+        try Data(file.utf8).write(to: url)
+
+        let withPages = try BrailleBookReader.markdown(of: url, table: grade1, includesPages: true)
+        try assertSameReading(withPages, try BrailleBookReader.markdown(of: url, table: grade1))
+        let paged = try chapter(withPages)
+        XCTAssertEqual(
+            paged.text,
+            "The first boat leaves at six, and the second waits for the mail train before it crosses to the island."
+                + "\n\nIn winter the evening crossing is cancelled."
+        )
+        XCTAssertEqual(paged.pages.map(\.label), ["1", "2"])
+        XCTAssertEqual(paged.pages.map(\.characterOffset), [0, try offset(of: "island.", in: paged.text)])
+    }
+
     // MARK: - Every Bundled Table
 
     /// A long book, the sample chapter's paragraphs joined three by three and
