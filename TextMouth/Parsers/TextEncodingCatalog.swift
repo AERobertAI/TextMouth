@@ -63,12 +63,17 @@ enum TextEncodingCatalog {
         row("cp866", "CP866 (Russian DOS)", tried: true),
         row("iso-8859-5", "ISO 8859-5 (Cyrillic)", tried: true),
         row("x-mac-cyrillic", "Mac Cyrillic", tried: true),
-        // Greek, Turkish, Hebrew, Arabic, Baltic, and Thai.
+        // Greek, Turkish, Hebrew, Arabic, Baltic, and Thai. Hebrew is read
+        // always, in Windows-1255 (ISO 8859-8 reads the same letters): its
+        // letters are bytes that every Cyrillic encoding reads as clean
+        // lowercase letters, so a short Hebrew text reads as well as
+        // Windows-1251 as it does as Hebrew, and Foundation's guess names such
+        // a text Windows-1251. The guesser must see both to see the tie.
         row("windows-1253", "Windows-1253 (Greek)"),
         row("iso-8859-7", "ISO 8859-7 (Greek)"),
         row("windows-1254", "Windows-1254 (Turkish)"),
         row("iso-8859-9", "ISO 8859-9 (Turkish)"),
-        row("windows-1255", "Windows-1255 (Hebrew)"),
+        row("windows-1255", "Windows-1255 (Hebrew)", tried: true),
         row("iso-8859-8", "ISO 8859-8 (Hebrew)"),
         row("windows-1256", "Windows-1256 (Arabic)"),
         row("iso-8859-6", "ISO 8859-6 (Arabic)"),

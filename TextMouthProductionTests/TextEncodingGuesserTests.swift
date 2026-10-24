@@ -64,6 +64,32 @@ final class TextEncodingGuesserTests: XCTestCase {
         }
     }
 
+    // MARK: - Hebrew
+
+    /// Short Hebrew is never guessed to be Cyrillic. Hebrew's letters are bytes
+    /// that every Cyrillic encoding reads as clean lowercase letters, so a
+    /// sentence or two reads as well as Windows-1251 as it does as Hebrew, and
+    /// Foundation's own guess says Windows-1251 for some of them (the closing
+    /// sentences of the Hebrew paragraph do). Each such text is guessed to be
+    /// Hebrew, when Foundation says so, or left alone; never read as Cyrillic.
+    func testShortHebrewIsGuessedRightOrNotAtAll() throws {
+        let sentences = [
+            "היא זכרה את הימים שבהם הייתה בעצמה ילדה, ואת הדרך הארוכה שעברה מאז.",
+            "אחר כך קמה, פתחה את הארון והוציאה קופסה ישנה מלאה במכתבים צהובים.",
+            "בחוץ התחיל לרדת שלג דק, והרחוב כולו נעשה שקט.",
+        ]
+        for size in 1...sentences.count {
+            for start in 0...(sentences.count - size) {
+                let text = sentences[start..<(start + size)].joined(separator: " ") + "\n"
+                for name in ["windows-1255", "iso-8859-8"] {
+                    let (bytes, written) = try Fixtures.file(text, inEncodingNamed: name)
+                    guard let guess = TextEncodingGuesser.guess(bytes) else { continue }
+                    XCTAssertEqual(guess.text, written, "\(name): \(text.prefix(30))")
+                }
+            }
+        }
+    }
+
     // MARK: - The Sample Files
 
     /// The 13 short files in TestData/format-samples/txt-encodings, each

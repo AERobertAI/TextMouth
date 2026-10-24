@@ -101,13 +101,14 @@ final class TextEncodingCatalogTests: XCTestCase {
     }
 
     /// The guesser always tries the encodings Foundation's own guess cannot
-    /// find (Mac Roman, ISO 8859-15, Central European, Cyrillic), and takes
-    /// the rest only when Foundation names them.
+    /// find (Mac Roman, ISO 8859-15, Central European, Cyrillic) and the one
+    /// it confuses with them (Hebrew, which a short text reads as clean
+    /// Cyrillic), and takes the rest only when Foundation names them.
     func testTheEncodingsAlwaysTriedAreTheOnesFoundationMisses() {
         let tried = TextEncodingCatalog.entries.filter(\.isAlwaysTried).map(\.identifier)
         XCTAssertEqual(tried, [
             "macintosh", "iso-8859-15", "windows-1250", "iso-8859-2", "windows-1251", "koi8-r", "koi8-u", "cp866",
-            "iso-8859-5", "x-mac-cyrillic",
+            "iso-8859-5", "x-mac-cyrillic", "windows-1255",
         ])
         XCTAssertFalse(tried.contains(TextEncodingCatalog.windows1252Identifier))
     }

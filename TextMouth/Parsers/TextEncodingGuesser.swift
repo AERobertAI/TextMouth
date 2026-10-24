@@ -13,9 +13,10 @@ import Foundation
 /// (`TextPlausibility`), among:
 /// - Windows-1252, the default, whose reading is the one to beat;
 /// - the encodings of the catalog that are always tried (`TextEncodingCatalog`:
-///   Mac Roman, ISO 8859-15, the Central European and Cyrillic encodings),
-///   which Foundation's own guesser reads wrongly (it named a Mac Roman file
-///   Windows-1251, and a KOI8-R file ISO 8859-5);
+///   Mac Roman, ISO 8859-15, the Central European and Cyrillic encodings, and
+///   Windows-1255 for Hebrew), which Foundation's own guesser reads wrongly
+///   (it named a Mac Roman file Windows-1251, a KOI8-R file ISO 8859-5, and
+///   short Hebrew text Windows-1251);
 /// - the encoding Foundation's guess names, when the catalog has it: Greek,
 ///   Turkish, Hebrew, Arabic, Baltic, Thai, and the Japanese, Chinese, and
 ///   Korean encodings, which Foundation tells apart well.
@@ -43,6 +44,12 @@ import Foundation
 ///   unless it is Foundation's own pick between exactly two. A few accented
 ///   letters in a short file can fit several encodings alike, and then the
 ///   default stays.
+/// - A Hebrew reading is called only when Foundation names Hebrew, whether
+///   it stands alone or ties with a Cyrillic one: Hebrew has no case, so its
+///   reading is clean of many texts in other encodings (the capitals of
+///   KOI8-R are Hebrew letters), and Foundation names short Hebrew
+///   Windows-1251. Read always, Hebrew still keeps a Cyrillic reading from
+///   being called when it is as clean.
 /// - The whole file, not only the part examined, must read in the encoding
 ///   without a byte dropped or replaced, and write back to the same bytes.
 ///
@@ -200,6 +207,9 @@ enum TextEncodingGuesser {
         let plausibility: TextPlausibility
     }
 
+    /// The identifiers of the Hebrew encodings of the catalog.
+    private static let hebrewIdentifiers: Set<String> = ["windows-1255", "iso-8859-8"]
+
     /// The reading to take when `best` has the fewest surprises: `best`
     /// itself, unless other readings that read differently have as few
     /// (`ranked` holds them all). Among readings that read alike the
@@ -211,10 +221,17 @@ enum TextEncodingGuesser {
         for other in ranked where other.plausibility.surprise == best.plausibility.surprise {
             if !tied.contains(where: { $0.text == other.text }) { tied.append(other) }
         }
+        // Hebrew is called only on Foundation's word, alone or in a tie: its
+        // letters are bytes that read as clean lowercase Cyrillic, and its
+        // reading as clean text in many encodings, for it has no case.
+        let involvesHebrew = tied.contains { hebrewIdentifiers.contains($0.entry.identifier) }
+        if involvesHebrew, !(hint.map { hebrewIdentifiers.contains($0.identifier) } ?? false) { return nil }
         var chosen = best
         if tied.count > 1 {
             // Foundation's pick decides between exactly two; more are too many to call.
-            guard tied.count == 2, let hint, let hinted = tied.first(where: { $0.entry == hint }) else { return nil }
+            // The tied reading that reads as the pick does, whichever encoding stands for it.
+            guard tied.count == 2, let hint, let picked = ranked.first(where: { $0.entry == hint }),
+                  let hinted = tied.first(where: { $0.text == picked.text }) else { return nil }
             chosen = hinted
         }
         // Readings that read the same differ only in name: the hint's, if it is one of them.
