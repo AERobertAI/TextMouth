@@ -52,7 +52,7 @@ struct BookInfoFacts: Equatable {
     /// FMT21), which only the full summary says; nil for every other book.
     var brailleCode: String? = nil
     /// The encoding a text book's file was guessed to be in, in words, such
-    /// as "Windows-1251 (Cyrillic), a guess" (`Book.textEncodingDescription`,
+    /// as "Windows-1251 (Cyrillic), guessed" (`Book.textEncodingDescription`,
     /// FMT16), which only the full summary says; nil for every other book.
     var textEncoding: String? = nil
 }
@@ -94,8 +94,8 @@ enum BrailleCodeWording {
 
 extension Book {
     /// The encoding this text book's file was guessed to be in, in words: the
-    /// catalog's name for it and that it is a guess, such as "Windows-1251
-    /// (Cyrillic), a guess". A file whose bytes named no encoding is read in
+    /// catalog's name for it and that it was guessed, such as "Windows-1251
+    /// (Cyrillic), guessed". A file whose bytes named no encoding is read in
     /// one TextMouth chose, which the listener should be able to learn when
     /// a book's accents or letters read oddly. Nil for a book with no
     /// recorded encoding (its file named one, Windows-1252 read it right, or
@@ -107,37 +107,40 @@ extension Book {
         return TextEncodingWording.description(ofEncodingNamed: identifier)
     }
 
-    /// The words of Book Information's "Read As" row for this book: the label
-    /// and the encoding, which VoiceOver reads as "Read As, Windows-1251
-    /// (Cyrillic), a guess". Nil for a book with no recorded encoding, which
-    /// has no such row. The sheet draws the row from this, so a test can pin
-    /// the words without a hosted sheet.
+    /// The words of Book Information's "Text Encoding" row for this book: the
+    /// label and the encoding, which VoiceOver reads as "Text Encoding,
+    /// Windows-1251 (Cyrillic), guessed". Nil for a book with no recorded
+    /// encoding, which has no such row. The sheet draws the row from this, so
+    /// a test can pin the words without a hosted sheet.
     var bookInfoTextEncodingRow: (label: String, value: String)? {
         textEncodingDescription.map { (TextEncodingWording.bookInfoLabel, $0) }
     }
 }
 
 /// The words around a text book's guessed encoding (FMT16), kept together so
-/// a test pins them.
+/// a test pins them. The label names the thing ("Text Encoding", as Speak
+/// Info's "Braille code" names a braille book's), and the value says that it
+/// was guessed: a label such as "Read As" is heard as "reed as", the other
+/// way to say "read", and sounds like a setting the listener can change.
 enum TextEncodingWording {
     /// The label of Book Information's row that names the encoding.
-    static let bookInfoLabel = "Read As"
+    static let bookInfoLabel = "Text Encoding"
     /// What follows the encoding's name, since the file did not say it.
-    static let guessNote = "a guess"
+    static let guessNote = "guessed"
 
     /// The encoding recorded as `identifier` in words, such as "Windows-1251
-    /// (Cyrillic), a guess": the catalog's name for it (`TextEncodingCatalog`;
+    /// (Cyrillic), guessed": the catalog's name for it (`TextEncodingCatalog`;
     /// the identifier itself for one the catalog does not know), then that it
-    /// is a guess.
+    /// was guessed.
     static func description(ofEncodingNamed identifier: String) -> String {
         "\(TextEncodingCatalog.name(forIdentifier: identifier)), \(guessNote)"
     }
 
     /// Speak Info's sentence for an encoding described as `description`
-    /// ("Windows-1251 (Cyrillic), a guess"): "Read as Windows-1251 (Cyrillic),
-    /// a guess".
+    /// ("Windows-1251 (Cyrillic), guessed"): "Text encoding: Windows-1251
+    /// (Cyrillic), guessed".
     static func speakInfoPart(_ description: String) -> String {
-        "Read as \(description)"
+        "Text encoding: \(description)"
     }
 }
 
@@ -290,8 +293,8 @@ enum LibraryInfoWording {
     /// Mac. Open in a reader window." A braille book says its code right
     /// after its bookmarks: "3 bookmarks. Braille code: Unified English
     /// Braille, contracted (Grade 2). File size 1.2 MB." A text book whose
-    /// encoding was guessed says it there too: "3 bookmarks. Read as
-    /// Windows-1251 (Cyrillic), a guess. File size 1.2 MB."
+    /// encoding was guessed says it there too: "3 bookmarks. Text encoding:
+    /// Windows-1251 (Cyrillic), guessed. File size 1.2 MB."
     static func fullParts(of book: BookInfoFacts, now: Date, calendar: Calendar, locale: Locale) -> [String] {
         var parts = ["Added \(FeedWording.moment(book.dateAdded, now: now, calendar: calendar, locale: locale))"]
         if let lastOpened = book.lastOpened {

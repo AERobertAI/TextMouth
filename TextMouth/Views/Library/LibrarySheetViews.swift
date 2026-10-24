@@ -54,7 +54,7 @@ struct LibraryBookInfoSheet: View {
                 }
                 // A text book whose file named no encoding says the one it
                 // was guessed to be in (FMT16), which VoiceOver reads as
-                // "Read As, Windows-1251 (Cyrillic), a guess".
+                // "Text Encoding, Windows-1251 (Cyrillic), guessed".
                 if let row = book.bookInfoTextEncodingRow {
                     LabeledContent(row.label) {
                         Text(row.value)
