@@ -228,6 +228,10 @@ final class LibraryViewModel: ObservableObject {
     var removesReplacedPackage: @MainActor (Book, Bool) throws -> Void = { book, movesToTrash in
         try DuplicateReplacement.removeReplacedPackage(of: book, movesToTrash: movesToTrash)
     }
+    /// The Edit Text editor whose session of a replaced book ends, saying
+    /// so (ST04): the app's, made only when a session is to end; tests give
+    /// their own, with the sessions they give `textEditSessions`.
+    var bookTextEditor: @MainActor () -> BookTextEditor = { BookTextEditor.shared }
     /// The offers to transcribe that the user accepted (FR05), for the
     /// Library window that asked to open the Transcribe Audio sheet.
     let acceptedTranscriptionOffers = PassthroughSubject<TranscriptionOfferAcceptance, Never>()

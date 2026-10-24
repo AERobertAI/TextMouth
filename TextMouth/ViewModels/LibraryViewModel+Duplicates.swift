@@ -494,8 +494,8 @@ extension LibraryViewModel {
     /// Manifest ends quietly, as it does then. Only a session that exists is
     /// ended, so no editor is made for none.
     private func endEditingSessions(of existing: Book) {
-        if BookTextEditSessions.shared.isEditing(existing.id) {
-            BookTextEditor.shared.endBecauseBookWasReplaced(existing.id, title: existing.title)
+        if textEditSessions.isEditing(existing.id) {
+            bookTextEditor().endBecauseBookWasReplaced(existing.id, title: existing.title)
         }
         textEditSessions.end(existing.id)
         if BookManifestEditSessions.shared.isEditing(existing.id) {
