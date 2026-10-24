@@ -99,6 +99,25 @@ enum DuplicateReplacement {
         }
     }
 
+    /// Why a replacement could not be committed: the library's index, which
+    /// must name the new copy before the old one goes, could not be saved
+    /// now. Nothing was replaced, and the question stays.
+    struct IndexNotSaved: LocalizedError, Equatable {
+        var errorDescription: String? {
+            "TextMouth couldn't save the library's index, so it left both copies as they are."
+        }
+    }
+
+    /// What the library's alert says when the package of the copy titled
+    /// `title` could not be removed for `reason` after the new copy took its
+    /// place, which stands: moved to the Trash, or deleted, as
+    /// `movesToTrash` says, and the old files stay in their folder.
+    static func oldCopyLeftMessage(title: String, movesToTrash: Bool, reason: String) -> String {
+        let removal = movesToTrash ? "moved to the Trash" : "deleted"
+        return "The new copy took the place of “\(title)”, but the old copy's files could not be \(removal), "
+            + "so they stay in its folder: \(reason)"
+    }
+
     // MARK: The Row
 
     /// The row the new copy `copy` becomes in the library in place of

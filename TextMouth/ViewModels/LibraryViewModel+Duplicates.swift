@@ -324,10 +324,19 @@ extension LibraryViewModel {
     ///
     /// The library's copy is left as it is, and the question stays, saying
     /// why, while the copy is in use (`replacementRefusal(of:)`), while
-    /// something carried over is only in the cloud, and when its package
-    /// cannot be deleted; the new copy's package is then as its import left
-    /// it. Otherwise the old package goes (to the Trash, or for good, as
-    /// Removal Behavior says) before the library changes.
+    /// something carried over is only in the cloud, and when the new copy
+    /// cannot be committed; the new copy's package is then as its import
+    /// left it.
+    ///
+    /// The old copy's package goes only once the new copy is committed:
+    /// its record, with the carried state under the kept ID, and then the
+    /// library's index naming it, are on disk first. A stop at any moment
+    /// leaves either the old book whole, or the new copy with everything
+    /// carried over; an old package a stop leaves behind names a listed
+    /// book, so the launch never adopts it as a second row of the same ID
+    /// (`FileImportService.adoptOrphanedTMBPackages`). Once committed, the
+    /// replacement stands: an old package that cannot be removed then is
+    /// reported, and stays (`removeReplacedPackage(of:)`).
     private func replaceExisting(
         with duplicate: ImportDecision.DuplicateBook,
         of decision: ImportDecision
@@ -353,12 +362,15 @@ extension LibraryViewModel {
             return .failure(Self.replaceFailureContext, error)
         }
         do {
-            try FileImportService.deleteBookPackage(existing)
+            try commitReplacement(of: existing, by: preparation)
         } catch {
             preparation.undo()
+            // The new copy's record names the import's own ID again, should
+            // the record have been written before the index failed.
+            try? duplicate.book.saveBookInfoThrowing()
             return .failure(Self.replaceFailureContext, error)
         }
-        commitReplacement(of: existing, by: preparation)
+        removeReplacedPackage(of: existing)
         finishKeeping(preparation.book, from: duplicate, of: decision, offeringTranscription: !preparation.keptTranscript)
         return .success(nil)
     }
@@ -380,29 +392,65 @@ extension LibraryViewModel {
         return nil
     }
 
-    /// Puts `preparation.book`, the new copy, in the place of `existing`,
-    /// whose package is gone: in its row, so the library's order and the
-    /// reading list, which name the book by its ID, keep it. No write queued
-    /// for the old copy may chase its package or count as unsaved, and the
-    /// reading text this Mac kept for it goes; the new row's record is then
-    /// written into its package under the kept ID. A session editing the old
-    /// copy's text or manifest ends: what it watches went with the old copy.
-    private func commitReplacement(of existing: Book, by preparation: DuplicateReplacement.Preparation) {
+    /// Commits `preparation.book`, the new copy, in the place of `existing`,
+    /// whose package is still where it was: in its row, so the library's
+    /// order and the reading list, which name the book by its ID, keep it.
+    ///
+    /// Each step reaches the disk before the next: whatever waits to be
+    /// written of the old copy goes into its own package, so nothing queued
+    /// for the ID lands after the new record; then the new copy's record,
+    /// with the carried state under the kept ID; then the library's index
+    /// naming it (`LibraryPersistenceService.saveAndWait(_:)`). Only then
+    /// does the library hold the new row. A failed write leaves the library
+    /// as it was. The reading text this Mac kept for the old copy goes, and
+    /// a session editing its text or manifest ends: what it watches went
+    /// with the old copy.
+    /// - Throws: why the new copy's record, or the library's index, could
+    ///   not be written.
+    private func commitReplacement(of existing: Book, by preparation: DuplicateReplacement.Preparation) throws {
         let book = preparation.book
+        LibraryPersistenceService.writePendingBookInfoNow(bookID: existing.id)
+        try book.saveBookInfoThrowing()
+        var replaced = library
+        if let index = replaced.books.firstIndex(where: { $0.id == existing.id }) {
+            replaced.books[index] = book
+        } else {
+            replaced.books.append(book)
+        }
+        guard LibraryPersistenceService.saveAndWait(replaced) else {
+            // A later save of the library as it is settles the failed write,
+            // so its retry never writes the row the library does not hold.
+            save()
+            throw DuplicateReplacement.IndexNotSaved()
+        }
+        library = replaced
+        // The new record holds the book's state now: nothing of the old
+        // copy's counts as unsaved.
         LibraryPersistenceService.forgetDeletedBook(existing)
         ReadingTextCache.shared.remove(bookID: existing.id)
-        if let index = library.books.firstIndex(where: { $0.id == existing.id }) {
-            library.books[index] = book
-        } else {
-            library.books.append(book)
-        }
-        save()
-        LibraryPersistenceService.saveBookInfo(for: book)
         endEditingSessions(of: existing)
         if book.format.isAudio || existing.format.isAudio {
             TranscribedBooks.shared.record(book.id, isTranscribed: preparation.keptTranscript)
         }
         DiagnosticLog.event(.storage, Self.replacementLogLine(for: book, preparation: preparation))
+    }
+
+    /// Removes the package of `existing`, which a committed new copy has
+    /// replaced, as Removal Behavior says (`removesReplacedPackage`). The
+    /// replacement stands whatever happens: a package that cannot be removed
+    /// stays in its folder, and the library's alert says so; it names a
+    /// listed book, so no launch adopts it as a second one.
+    private func removeReplacedPackage(of existing: Book) {
+        let movesToTrash = removalPreferences.movesToTrash
+        do {
+            try removesReplacedPackage(existing, movesToTrash)
+        } catch {
+            presentFailure(of: .failure(DuplicateReplacement.oldCopyLeftMessage(
+                title: existing.title,
+                movesToTrash: movesToTrash,
+                reason: error.localizedDescription
+            )))
+        }
     }
 
     /// The debug log's line for a replacement: the book, what it kept, and

@@ -714,12 +714,50 @@ final class ImportDecisionFlowTests: XCTestCase {
         XCTAssertFalse(sessions.isEditing(atlas.existing.id), "the old copy's Edit Text session goes on")
     }
 
-    /// When the library's copy cannot be deleted, here because its package's
-    /// folder takes no changes, Replace Existing undoes what it did to the
-    /// new copy's package: it is back where it was imported, holding what
-    /// its import put there, and the question stays, saying why. Keep Both
-    /// then keeps it as it was imported.
-    func testAReplaceWhoseOldCopyStaysPutsTheNewPackageBack() throws {
+    /// The new copy is committed before the old copy's package goes: its
+    /// record carries the book's state under the book's ID, and the saved
+    /// index names it, as a crash right after the commit would find them. So
+    /// an old package that then cannot be removed changes nothing of the
+    /// replacement: it stays in its folder, and the library's alert says so.
+    func testAnOldCopyThatCannotBeRemovedStaysBehindItsCommittedReplacement() throws {
+        let scene = try makeScene()
+        let shelf = makeIntegrationLibraryFolder("Import Decisions Shelf")
+        let copySource = try writeSource("Atlas of Tides", in: scene)
+        let earlier = scene.sources.appendingPathComponent("Earlier Atlas of Tides.txt")
+        try FileManager.default.copyItem(at: copySource, to: earlier)
+        var existing = try FileImportService.importFileWithReport(from: earlier, toFolder: shelf.path).book
+        existing.bookmarks = [Bookmark(number: 1, chapterIndex: 0, characterOffset: 0, label: "Coil")]
+        scene.model.library = Library(books: [existing])
+        useAfterImportingBehavior(.keepOriginal)
+        let refusal = CocoaError(.fileWriteNoPermission)
+        scene.model.removesReplacedPackage = { _, _ in throw refusal }
+        scene.model.importFiles(urls: [copySource], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
+
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+
+        XCTAssertTrue(scene.model.importDecisions.isEmpty)
+        let replaced = try XCTUnwrap(scene.model.bookByID(existing.id))
+        XCTAssertEqual(replaced.tmbDirectoryName, copy.tmbDirectoryName)
+        XCTAssertEqual(try shelf.entries(), [existing.tmbDirectoryName, copy.tmbDirectoryName])
+        let saved = try XCTUnwrap(LibraryPersistenceService.load().library)
+        XCTAssertEqual(saved.books.first { $0.id == existing.id }?.tmbDirectoryName, copy.tmbDirectoryName)
+        let record = try BookInfo.load(from: replaced.tmbDirectory)
+        XCTAssertEqual(record.metadata.bookID, existing.id)
+        XCTAssertEqual(record.bookmarks.map(\.label), ["Coil"])
+        XCTAssertEqual(
+            scene.model.errorMessage,
+            "The new copy took the place of “Earlier Atlas of Tides”, but the old copy's files could not be deleted, "
+                + "so they stay in its folder: \(refusal.localizedDescription)"
+        )
+    }
+
+    /// A replacement whose index cannot be saved, as while an unreadable
+    /// index holds every write, changes nothing: the library and both
+    /// packages are as they were, the new copy's record names its own ID
+    /// again, and the question stays, saying why.
+    func testAReplacementWhoseIndexCannotBeSavedChangesNothing() throws {
         let scene = try makeScene()
         let shelf = makeIntegrationLibraryFolder("Import Decisions Shelf")
         let copySource = try writeSource("Atlas of Tides", in: scene)
@@ -732,20 +770,21 @@ final class ImportDecisionFlowTests: XCTestCase {
         drainImports(of: scene.model)
         let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
         let published = try FileManager.default.contentsOfDirectory(atPath: copy.tmbDirectory.path).sorted()
-        chmod(existing.tmbDirectory.path, 0o555)
-        defer { chmod(existing.tmbDirectory.path, 0o755) }
+        try scene.index.stage(.truncated, at: scene.index.indexURL)
+        _ = LibraryPersistenceService.load()
 
         let outcome = scene.model.answerCurrentImportDecision(.replaceExisting)
 
-        let message = try XCTUnwrap(outcome.failureMessage)
-        XCTAssertTrue(message.hasPrefix("Could not replace duplicate: "), message)
+        XCTAssertEqual(
+            outcome.failureMessage,
+            "Could not replace duplicate: TextMouth couldn't save the library's index, so it left both copies as they are."
+        )
         XCTAssertEqual(scene.model.importDecisions.current?.duplicate?.book.id, copy.id)
         XCTAssertEqual(scene.model.library.books, [existing])
         XCTAssertEqual(try scene.folder.entries(), [copy.tmbDirectoryName])
-        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: copy.tmbDirectory.path).sorted(), published)
         XCTAssertEqual(try shelf.entries(), [existing.tmbDirectoryName])
-        XCTAssertTrue(scene.model.answerCurrentImportDecision(.keepBoth).succeeded)
-        XCTAssertEqual(scene.model.library.books.map(\.id), [existing.id, copy.id])
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: copy.tmbDirectory.path).sorted(), published)
+        XCTAssertEqual(try BookInfo.load(from: copy.tmbDirectory).metadata.bookID, copy.id)
     }
 
     /// An audiobook whose copy has the same audio, imported under another
@@ -933,6 +972,8 @@ final class ImportDecisionFlowTests: XCTestCase {
         let model: LibraryViewModel
         /// The books the model opened, in place of reader windows.
         let opened: OpenedBooks
+        /// The library index as the test found it, put back when it ends.
+        let index: LibraryIndexSandbox
     }
 
     /// A scene of this test's own. The library index is put back, and
@@ -947,7 +988,8 @@ final class ImportDecisionFlowTests: XCTestCase {
             folder: makeIntegrationLibraryFolder("Import Decisions"),
             sources: try makeSandboxDirectory("ImportDecisionSources"),
             model: model,
-            opened: OpenedBooks(recordingFor: model)
+            opened: OpenedBooks(recordingFor: model),
+            index: sandbox
         )
     }
 
