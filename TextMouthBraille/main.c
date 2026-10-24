@@ -1181,17 +1181,99 @@ read_ebae(const char *table, const table_emphasis *emphasis, const widechar *cel
 	return ok;
 }
 
+/* MARK: - Reading UEB */
+
+/*
+ * The length of the UEB terminator at `cells[i..n)` of a class the table
+ * writes in UEB, its prefix and ⠄ (⠨⠄ for italic), when it ends the cells
+ * before it: the cell before it is not blank. 0 for none.
+ */
+static int
+ueb_terminator_at(const table_emphasis *emphasis, const widechar *cells, int i, int n) {
+	int found = 0;
+	if (i == 0 || cells[i - 1] == CELL_BLANK) return 0;
+	for (size_t k = 0; k < EMPHASIS_CLASS_COUNT; k++) {
+		int length = EMPHASIS_CLASSES[k].ueb_length;
+		if (emphasis->code[k] == CODE_UEB && has_cells(cells, i, n, EMPHASIS_CLASSES[k].ueb, length) &&
+				i + length < n && cells[i + length] == CELL_3 && length + 1 > found)
+			found = length + 1;
+	}
+	return found;
+}
+
+/*
+ * Reads `cells[0..n)` back to print into `*result` with a table that writes
+ * its emphasis in UEB's indicators (`read_braille`). liblouis reads them,
+ * and its emphasis is kept, but it reads the cells just before a terminator
+ * as if they could not end a word, the terminator being no space, so a
+ * contraction that stands for a whole word there comes back as the letter
+ * or part-word sign its cell also is: "people" (⠏) as "p", "Knowledge"
+ * (⠠⠅) as "K", "can" (⠉) as "c", "his" (⠦) as a double quote, "were" (⠶)
+ * as a prime, and "enough" (⠢) as "en" (review E1, October 21, 2026).
+ *
+ * So braille with a terminator is read twice: as it is, for the emphasis
+ * liblouis reads, which each cell takes from the first character of its
+ * rule (liblouis's outputPos); and without its terminators, for the words,
+ * which the terminators no longer part from what follows them, and which
+ * take their cells' emphasis (`give_cells_emphasis`). The indicators that
+ * begin emphasis stay for the second reading, which takes them as
+ * indicators as the first did. A terminator's place stays known through
+ * the cells' emphasis: "people's" (⠏⠄⠎), one rule, is split where its
+ * italic ends. Braille with no terminator reads exactly as before, from the
+ * first reading alone. Returns 1, or 0 when a translation fails.
+ */
+static int
+read_ueb(const char *table, const table_emphasis *emphasis, const widechar *cells, int n, translation *result) {
+	translation first;
+	widechar *kept;
+	formtype *bits;
+	int found = 0;
+	int count = 0;
+	int ok;
+	memset(result, 0, sizeof *result);
+	if (!translate(table, 0, cells, NULL, n, 1, &first)) return 0;
+	for (int i = 1; i < n && !found; i++) found = ueb_terminator_at(emphasis, cells, i, n) > 0;
+	if (!found || first.length == 0) {
+		*result = first;
+		return 1;
+	}
+	kept = malloc(((size_t)n + 1) * sizeof *kept);
+	bits = malloc(((size_t)n + 1) * sizeof *bits);
+	ok = kept != NULL && bits != NULL;
+	/* Every cell but the terminators, each with the emphasis of the first
+	   character of its rule in the first reading. */
+	for (int i = 0; ok && i < n;) {
+		int length = ueb_terminator_at(emphasis, cells, i, n);
+		int at = first.output_pos[i];
+		if (length > 0) {
+			i += length;
+			continue;
+		}
+		kept[count] = cells[i];
+		bits[count++] = at >= 0 && at < first.length ? first.typeform[at] : 0;
+		i++;
+	}
+	ok = ok && translate(table, 0, kept, NULL, count, 1, result) &&
+			give_cells_emphasis(table, kept, bits, count, result);
+	if (!ok) free_translation(result);
+	free_translation(&first);
+	free(kept);
+	free(bits);
+	return ok;
+}
+
 /*
  * Translates the braille `cells[0..n)` back to print into `*result`, as
  * `back` reads each record, reading its emphasis: through the pass of the
- * code the table writes its emphasis in (`read_ebae`), or through liblouis
- * alone. `result->typeform` holds the table's bits of every class; the
- * caller keeps those of the readable ones. Returns 1, or 0 when a
- * translation fails.
+ * code the table writes its emphasis in (`read_ebae`, `read_ueb`), or
+ * through liblouis alone. `result->typeform` holds the table's bits of
+ * every class; the caller keeps those of the readable ones. Returns 1, or
+ * 0 when a translation fails.
  */
 static int
 read_braille(const char *table, const table_emphasis *emphasis, const widechar *cells, int n, translation *result) {
 	if (uses_code(emphasis, CODE_EBAE)) return read_ebae(table, emphasis, cells, n, result);
+	if (uses_code(emphasis, CODE_UEB)) return read_ueb(table, emphasis, cells, n, result);
 	return translate(table, 0, cells, NULL, n, 1, result);
 }
 

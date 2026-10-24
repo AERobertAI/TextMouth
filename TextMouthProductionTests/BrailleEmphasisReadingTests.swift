@@ -15,6 +15,12 @@ import XCTest
 /// Each word keeps the emphasis its signs mark, which content.md holds as
 /// Markdown emphasis (`BrailleBookReader.markdownLine(of:)`, every
 /// punctuation character escaped).
+///
+/// **UEB.** liblouis reads UEB's indicators, but reads the contraction just
+/// before a terminator as if no space could follow it: "people" (⠏) came
+/// back as "p", "his" (⠦) as a double quote. The helper reads braille with a
+/// terminator again without its terminators, for the words, keeping the
+/// emphasis liblouis read.
 final class BrailleEmphasisReadingTests: XCTestCase {
     /// The folder the helper's hidden files are made in.
     private var work = URL(fileURLWithPath: "/var/empty", isDirectory: true)  // replaced in setUp
@@ -22,6 +28,9 @@ final class BrailleEmphasisReadingTests: XCTestCase {
     /// The bundled EBAE tables: uncontracted and contracted.
     private let ebaeUncontracted = "en-us-g1.ctb"
     private let ebaeContracted = "en_US.tbl"
+
+    /// The bundled contracted UEB table, the app's default.
+    private let uebContracted = "en-ueb-g2.ctb"
 
     override func setUpWithError() throws {
         work = try makeSandboxDirectory("BrailleEmphasisReading")
@@ -158,5 +167,42 @@ final class BrailleEmphasisReadingTests: XCTestCase {
         XCTAssertEqual(try read("! .#c.e cats", ebaeContracted).text, try read("! #c.e cats", ebaeContracted).text)
         try assertReadsWords([(".s.d is", "sound is"), ("a .b.d book", "a bound book"), ("a .k ;b", "a = b")], ebaeContracted)
         try assertReadsWords([(";a .k ;b", "a = b")], ebaeUncontracted)
+    }
+
+    // MARK: - UEB
+
+    /// Contracted UEB reads the contraction before a terminator as the word
+    /// it is: the review's six cases (E1), as liblouis writes them, which
+    /// read "p", "K", "c", a double quote, a prime, and "en" before; bold's
+    /// terminator ⠘⠄ as italic's ⠨⠄, and both in a row for bold italic
+    /// (which read "***p***"). "people's" and "can't", each one rule, are
+    /// split where the emphasis ends. A terminator inside a word ("*the*n",
+    /// "un*believ*able") ends the emphasis there, as it did.
+    func testContractedUEBReadsTheContractionBeforeATerminator() throws {
+        try assertReads([
+            (".1p.''s sake", #"*people*\'s sake"#),
+            ("! .1,k.''s keep]", #"the *Knowledge*\'s keeper"#),
+            ("a .1c.''t", #"a *can*\'t"#),
+            ("gave !m .7all ( 8.' ?+s", "gave them *all of his* things"),
+            (#".7t !y 7.' "h"#, "*that they were* here"),
+            (".7,x 0 5.'", "*It was enough*"),
+            ("!y .1w]e.'1 &", #"they *were*\, and"#),
+            ("^1p^''s sake", #"**people**\'s sake"#),
+            ("gave !m ^7all ( 8^' ?+s", "gave them **all of his** things"),
+            ("! ^1.1p.'^''s sake", #"the ***people***\'s sake"#),
+            (".1!.'n", "*the*n"),
+            ("un.1believ.'able", "un*believ*able"),
+        ], uebContracted)
+    }
+
+    /// UEB braille without a terminator is read once, by liblouis alone, as
+    /// before: a word indicator (⠨⠂) and a symbol indicator (⠨⠆) mark their
+    /// word and letter, and plain braille reads plain.
+    func testUEBWithoutATerminatorReadsAsBefore() throws {
+        try assertReads([
+            (".1p is", "*people* is"),
+            (".2a ;b", "*a* b"),
+            ("= ! p's sake", #"for the people\'s sake"#),
+        ], uebContracted)
     }
 }
