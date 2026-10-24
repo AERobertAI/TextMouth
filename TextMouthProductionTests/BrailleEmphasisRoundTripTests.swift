@@ -251,6 +251,68 @@ final class BrailleEmphasisRoundTripTests: XCTestCase {
         }
     }
 
+    // MARK: - The EBAE Samples Both Ways
+
+    /// The print of the EBAE reading tests' samples, most of them examples
+    /// from the Library of Congress's transcribing manual (lesson 15), as
+    /// content.md holds it, under a plain heading of its own: what each table
+    /// must bring back of its own export.
+    private let ebaeSamplesPrint = #"""
+    # The Sea Chapter
+
+    *March*
+
+    *blue\-eyed*
+
+    *Hold the bus*\!
+
+    *Please\! Hold the bus*\!
+
+    Wow\! *Look at page 3*\.
+
+    She thought\: *Poor Alice Faye really* needs *that job*\.
+
+    This is *his* coat\.
+
+    *Be careful*\!
+
+    *into town*
+
+    Give it to *him\, not to me*\!
+
+    By *default*
+
+    *to* George
+
+    *By George*\!
+
+    *To err is human*\.
+
+    *Hel*lo\!
+
+    \"*Help*\!\" the boy yelled\.
+
+    **cat** sat
+
+    **one two three four five**\.
+
+    ***cat*** sat
+
+    a *can*\'t
+    """#
+
+    /// The EBAE samples' print, exported with every bundled table and read
+    /// back, comes back as it went out, word for word and emphasis for
+    /// emphasis: the samples in the other direction, from print to braille,
+    /// through liblouis's signs (in EBAE its signs before punctuation, its
+    /// joined "to", "into", and "by", and bold italic) rather than BANA's,
+    /// and through UEB's indicators, "can't" before a terminator included.
+    func testTheEBAESamplesComeBackAsTheyWentOutInEveryTable() throws {
+        for table in ["en-us-g1.ctb", "en_US.tbl", "en-ueb-g1.ctb", "en-ueb-g2.ctb"] {
+            XCTAssertEqual(try roundTrip(ebaeSamplesPrint, table).readBack, ebaeSamplesPrint, table)
+        }
+    }
+
     // MARK: - Every Bundled Table
 
     /// Emphasis changes no word in any bundled table: each reads back the
