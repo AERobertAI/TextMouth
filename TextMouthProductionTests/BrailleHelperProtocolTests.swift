@@ -360,15 +360,16 @@ final class BrailleHelperProtocolTests: XCTestCase {
         assertWorkFolderEmpty()
     }
 
-    /// EBAE writes no emphasis (review E2, October 21, 2026). liblouis 3.39.0
-    /// cannot read EBAE's signs back: its "before" closing sign shares the
-    /// word sign's cells, it reads the italic sign alone as a period
-    /// ("a .cat sat"), and after a passage it writes a stray sign before
-    /// punctuation, which it reads as ">" ("*one two three four five*, six"
-    /// came back ".five> six"). So the helper's readability check fails
-    /// EBAE's classes, forward sends liblouis none of them, and the braille
-    /// of emphasized text is the braille of the same text plain: read back,
-    /// it gives the words exactly, with no emphasis.
+    /// EBAE writes no emphasis (review E2, October 21, 2026, kept by the
+    /// review of October 24). liblouis 3.39.0 cannot read EBAE's signs back:
+    /// it reads the italic sign alone as a period ("a .cat sat"), and after a
+    /// passage it writes a stray sign before punctuation, which it reads as
+    /// ">" ("*one two three four five*, six" came back ".five> six"), as other
+    /// braille readers would. So the readability check fails EBAE's italic
+    /// and bold, forward sends liblouis none of them, and the braille of
+    /// emphasized text is the braille of the same text plain: read back, it
+    /// gives the words exactly, with no emphasis. (The reading pass reads
+    /// BANA's signs in EBAE books; this braille holds none.)
     func testEBAEWritesNoEmphasisAndReadsTheWordsBack() throws {
         let texts = [
             emphasized("a cat sat", [(2..<5, .italic)]),
@@ -381,6 +382,24 @@ final class BrailleHelperProtocolTests: XCTestCase {
             let braille = try BrailleTranslator.translate(texts, table: table, direction: .printToBraille, workingIn: work)
             XCTAssertEqual(braille, try BrailleTranslator.translate(plain, table: table, direction: .printToBraille, workingIn: work), table)
             XCTAssertEqual(try BrailleTranslator.translate(braille, table: table, direction: .brailleToPrint, workingIn: work), plain, table)
+        }
+        assertWorkFolderEmpty()
+    }
+
+    /// EBAE's underline is written and read back as liblouis has it, as on
+    /// main: liblouis reads its own EBAE underline sign back exactly, so the
+    /// readability check passes it, forward writes it (⠸⠤ between blank
+    /// cells before the word, ⠠⠄ after it), and the EBAE pass keeps the
+    /// underline liblouis reads, since the pass reads only italic and bold
+    /// (review finding 6, October 24, 2026: the pass had dropped it).
+    func testEBAEWritesAndReadsBackLiblouissUnderline() throws {
+        let text = emphasized("a cat sat on the mat", [(2..<5, .underline)])
+        for table in ebae {
+            let braille = try BrailleTranslator.translate([text], table: table, direction: .printToBraille, workingIn: work)
+            XCTAssertTrue(braille.first?.text.contains("\u{2838}\u{2824}") == true, "\(table): \(braille.map { brailleASCII($0.text) })")
+            let back = try BrailleTranslator.translate(braille, table: table, direction: .brailleToPrint, workingIn: work)
+            XCTAssertEqual(back.map(\.text), [text.text], table)
+            XCTAssertEqual(back.map { wordEmphasis($0) }, [wordEmphasis(text)], table)
         }
         assertWorkFolderEmpty()
     }

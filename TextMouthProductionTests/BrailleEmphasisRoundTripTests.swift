@@ -10,15 +10,19 @@ import XCTest
 ///
 /// - **UEB** writes its indicators, and every word of the sample comes back
 ///   with the Markdown emphasis it went out with, uncontracted and
-///   contracted alike. Contracted UEB, though, misreads a contraction just
-///   before an emphasis terminator, which is liblouis's own reading, pinned
-///   by name with the review's six cases (E1); uncontracted UEB reads them
-///   exactly.
+///   contracted alike. liblouis misreads a contraction just before an
+///   emphasis terminator, which the braille helper's UEB pass now cures
+///   (October 24, 2026): the review's six cases (E1) come back exactly, in
+///   both grades.
 /// - **EBAE**, and a table of this Mac's that liblouis cannot read back
-///   either (Norwegian), write no emphasis at all (review E2): liblouis
-///   3.39.0 misreads their signs, which changed words of TextMouth's own
-///   exports when they were read again. Their export is the export of the
-///   same book plain, byte for byte, and comes back word for word.
+///   either (Norwegian), write no emphasis at all (review E2, October 21,
+///   kept by the review of October 24): liblouis 3.39.0 misreads their
+///   signs, and writes a stray sign before punctuation after an EBAE
+///   passage, which changed words of TextMouth's own exports when they were
+///   read again, by TextMouth or by other braille readers. Their export is
+///   the export of the same book plain, byte for byte, and comes back word
+///   for word. (The EBAE reading pass reads BANA's signs in books; see
+///   `BrailleEmphasisReadingTests`.)
 final class BrailleEmphasisRoundTripTests: XCTestCase {
     /// The book's content.md: a heading with an italic word, then italic,
     /// bold, and both, on single words and on passages of two to five words,
@@ -41,6 +45,21 @@ final class BrailleEmphasisRoundTripTests: XCTestCase {
     private var plainSource: String {
         source.replacingOccurrences(of: "*", with: "")
     }
+
+    /// The content.md of `source` as a braille book's reader writes it, every
+    /// punctuation character escaped: what a table that writes emphasis and
+    /// reads it back brings back, word for word.
+    private let emphasizedReadBack = """
+    # The *Sea* Chapter
+
+    A plain line with an *italic* word\\, a **bold** word\\, and ***both*** at once\\.
+
+    *Three italic words* and then **four bold words here** and ***two both*** done\\.
+
+    *one two three four five*\\, six
+
+    *it was not at all*\\.
+    """
 
     /// The content.md of `plainSource` as a braille book's reader writes it,
     /// every punctuation character escaped: what a table that writes no
@@ -135,25 +154,14 @@ final class BrailleEmphasisRoundTripTests: XCTestCase {
     /// at punctuation too, and content.md is exactly the source in the
     /// reader's own form, its punctuation escaped.
     func testUEBBringsEveryWordsEmphasisBack() throws {
-        let expected = """
-        # The *Sea* Chapter
-
-        A plain line with an *italic* word\\, a **bold** word\\, and ***both*** at once\\.
-
-        *Three italic words* and then **four bold words here** and ***two both*** done\\.
-
-        *one two three four five*\\, six
-
-        *it was not at all*\\.
-        """
         for table in ["en-ueb-g1.ctb", "en-ueb-g2.ctb"] {
             let back = try roundTrip(source, table).readBack
             XCTAssertEqual(try words(back), try words(source), table)
-            XCTAssertEqual(back, expected, table)
+            XCTAssertEqual(back, emphasizedReadBack, table)
         }
     }
 
-    // MARK: - Contracted UEB: liblouis's Own Misreadings
+    // MARK: - Contracted UEB: A Contraction Before a Terminator
 
     /// The review's six sentences of contracted UEB (E1, October 21, 2026),
     /// under a plain heading of their own, so the export adds no title
@@ -176,26 +184,21 @@ final class BrailleEmphasisRoundTripTests: XCTestCase {
     *It was enough*
     """
 
-    /// Uncontracted UEB brings the six sentences back exactly. Contracted
-    /// UEB, the default table, brings them back with liblouis 3.39.0's own
-    /// misreadings, pinned here by name: reading back, liblouis takes a
-    /// whole-word contraction followed by the terminator for the letter or
-    /// part-word sign its cell also is, since the terminator is no space:
-    /// - "people" (⠏) as "p", "Knowledge" (⠠⠅) as "K", and "can" (⠉) as "c",
-    ///   before the apostrophe the terminator stands before;
-    /// - "his" (⠦) as a double quote, "were" (⠶) as a prime (U+2032), and
-    ///   "enough" (⠢) as "en", at the end of a passage.
-    ///
-    /// Without emphasis the same sentences read back exactly, so the
-    /// terminator alone causes them. The export cannot avoid them cheaply:
-    /// it would have to write such a word uncontracted, or move the
-    /// terminator onto letters that were not emphasized, both wrong braille
-    /// for the file's reader. Their cure is a reading pass that tells
-    /// liblouis where the terminators were (a follow-up). Random emphasized
-    /// sentences change in 1 or 2 of 400 (the review), and in 2 of 120 of a
-    /// sample dense with contractions.
-    func testContractedUEBMisreadsAContractionBeforeAnEmphasisEnd() throws {
-        XCTAssertEqual(try roundTrip(contractionCases, "en-ueb-g1.ctb").readBack, #"""
+    /// Both grades of UEB bring the six sentences back exactly, contracted
+    /// UEB, the default table, too. liblouis 3.39.0 alone takes a whole-word
+    /// contraction followed by the terminator for the letter or part-word
+    /// sign its cell also is, since the terminator is no space: "people" (⠏)
+    /// came back "p", "Knowledge" (⠠⠅) "K", and "can" (⠉) "c", before the
+    /// apostrophe the terminator stands before, and "his" (⠦) a double
+    /// quote, "were" (⠶) a prime (U+2032), and "enough" (⠢) "en", at the end
+    /// of a passage. The helper's UEB pass reads such braille again without
+    /// its terminators for the words, keeping the emphasis liblouis read,
+    /// and splits "people's" and "can't", each one rule, where the italic
+    /// ends. Random emphasized sentences of contracted UEB had changed in 1
+    /// or 2 of 400 (the review), and in 25 of 549 dense with contractions
+    /// (October 24); none of those 549 changes now.
+    func testContractedUEBReadsAContractionBeforeAnEmphasisEnd() throws {
+        let expected = #"""
         # The Sea Chapter
 
         for the *people*\'s sake
@@ -209,22 +212,10 @@ final class BrailleEmphasisRoundTripTests: XCTestCase {
         *that they were* here
 
         *It was enough*
-        """#)
-        XCTAssertEqual(try roundTrip(contractionCases, "en-ueb-g2.ctb").readBack, #"""
-        # The Sea Chapter
-
-        for the *p*\'s sake
-
-        the *K*\'s keeper
-
-        a *c*\'t
-
-        gave them *all of* \" things
-
-        *that they* \#u{2032} here
-
-        *It was en*
-        """#)
+        """#
+        for table in ["en-ueb-g1.ctb", "en-ueb-g2.ctb"] {
+            XCTAssertEqual(try roundTrip(contractionCases, table).readBack, expected, table)
+        }
         // Without emphasis, contracted UEB reads the same sentences exactly.
         XCTAssertEqual(try roundTrip(contractionCases.replacingOccurrences(of: "*", with: ""), "en-ueb-g2.ctb").readBack, #"""
         # The Sea Chapter
@@ -243,7 +234,7 @@ final class BrailleEmphasisRoundTripTests: XCTestCase {
         """#)
     }
 
-    // MARK: - Tables liblouis Cannot Read Back
+    // MARK: - EBAE
 
     /// EBAE, uncontracted and contracted, writes no emphasis: liblouis 3.39.0
     /// read the italic sign before a word as a period (".italic"), and the
@@ -254,6 +245,147 @@ final class BrailleEmphasisRoundTripTests: XCTestCase {
             try assertWritesNoEmphasis(table)
         }
     }
+
+    // MARK: - The EBAE Samples Both Ways
+
+    /// The print of the EBAE reading tests' samples, most of them examples
+    /// from the Library of Congress's transcribing manual (lesson 15), as
+    /// content.md holds it, under a plain heading of its own: what each table
+    /// must bring back of its own export.
+    private let ebaeSamplesPrint = #"""
+    # The Sea Chapter
+
+    *March*
+
+    *blue\-eyed*
+
+    *Hold the bus*\!
+
+    *Please\! Hold the bus*\!
+
+    Wow\! *Look at page 3*\.
+
+    She thought\: *Poor Alice Faye really* needs *that job*\.
+
+    This is *his* coat\.
+
+    *Be careful*\!
+
+    *into town*
+
+    Give it to *him\, not to me*\!
+
+    By *default*
+
+    *to* George
+
+    *By George*\!
+
+    *To err is human*\.
+
+    *Hel*lo\!
+
+    \"*Help*\!\" the boy yelled\.
+
+    **cat** sat
+
+    **one two three four five**\.
+
+    ***cat*** sat
+
+    a *can*\'t
+    """#
+
+    /// The EBAE samples' print, exported with every bundled table and read
+    /// back: through UEB's indicators it comes back as it went out, word for
+    /// word and emphasis for emphasis, "can't" before a terminator included;
+    /// EBAE writes it plain, byte for byte the plain samples' braille, and it
+    /// comes back word for word without its emphasis.
+    func testTheEBAESamplesComeBackInEveryTable() throws {
+        let plainSamples = ebaeSamplesPrint.replacingOccurrences(of: "*", with: "")
+        for table in ["en-ueb-g1.ctb", "en-ueb-g2.ctb"] {
+            XCTAssertEqual(try roundTrip(ebaeSamplesPrint, table).readBack, ebaeSamplesPrint, table)
+        }
+        for table in ["en-us-g1.ctb", "en_US.tbl"] {
+            let emphasized = try roundTrip(ebaeSamplesPrint, table)
+            XCTAssertEqual(emphasized.brf, try roundTrip(plainSamples, table).brf, "\(table): the BRF holds emphasis signs")
+            XCTAssertEqual(emphasized.readBack, plainSamples, table)
+        }
+    }
+
+    /// The review's EBAE export cases (October 24, 2026), whose emphasis,
+    /// once written, came back with other words or other emphasis: EBAE
+    /// writes them plain, byte for byte the plain cases' braille, and they
+    /// come back word for word, as on main.
+    func testEBAEWritesTheReviewsExportCasesPlain() throws {
+        let cases = #"""
+        # The Sea Chapter
+
+        the \$*3* fee
+
+        a cat\-*one two three four five*\, six
+
+        re\-*read the whole long chapter*\.
+
+        un*believ*able and super*man* and book*keeper* and cat*s*
+
+        *ABCs* here
+        """#
+        let plainCases = cases.replacingOccurrences(of: "*", with: "")
+        for table in ["en-us-g1.ctb", "en_US.tbl"] {
+            let emphasized = try roundTrip(cases, table)
+            XCTAssertEqual(emphasized.brf, try roundTrip(plainCases, table).brf, "\(table): the BRF holds emphasis signs")
+            XCTAssertEqual(emphasized.readBack, plainCases, table)
+        }
+    }
+
+    // MARK: - Every Bundled Table
+
+    /// Lines with numbers, symbols, hyphens, dashes, and bold italic followed
+    /// by bold, in content.md's form, for `testNoBundledTableReadsOtherWordsForEmphasis`.
+    private let symbolsSample = #"""
+    # The Sea Chapter
+
+    the ***cat*** sat on the **mat** today
+
+    it costs *\$3* or **25** dollars
+
+    a *well\-known* fact and *re\-read* it
+
+    *Stop* \-\- **now** \-\- *please*
+
+    x *\>\=* y and *a \= b* here
+
+    5 *µg* of *salt*\, said **Dr\. Lee**\.
+
+    ***one two three four five***\, six
+
+    **bold** and ***both*** then **bold again**
+
+    *1914\-18* was **long**
+
+    see *page 3* and **4**
+    """#
+
+    /// Emphasis changes no word in any bundled table: each reads back the
+    /// emphasized export of the sample, of the six contraction sentences, and
+    /// of lines with numbers, symbols, hyphens, dashes, and bold italic
+    /// followed by bold, with the words of their plain export, liblouis's own
+    /// readings included, so its content.md is the plain one's with emphasis
+    /// added (EBAE's, which writes no emphasis, trivially). Before the
+    /// reading passes, contracted UEB read "p" where plain braille read
+    /// "people".
+    func testNoBundledTableReadsOtherWordsForEmphasis() throws {
+        for table in ["en-us-g1.ctb", "en_US.tbl", "en-ueb-g1.ctb", "en-ueb-g2.ctb"] {
+            for markdown in [source, contractionCases, symbolsSample] {
+                let emphasized = try roundTrip(markdown, table).readBack
+                let plain = try roundTrip(markdown.replacingOccurrences(of: "*", with: ""), table).readBack
+                XCTAssertEqual(emphasized.replacingOccurrences(of: "*", with: ""), plain, table)
+            }
+        }
+    }
+
+    // MARK: - Tables liblouis Cannot Read Back
 
     /// One of this Mac's tables liblouis cannot read back, uncontracted
     /// Norwegian, writes no emphasis either, and every word comes back. Skips

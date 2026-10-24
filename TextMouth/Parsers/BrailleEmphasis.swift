@@ -12,10 +12,12 @@ private import TextMouthBrailleProtocol
 /// The user, asked whether exported braille should mark italics and bold
 /// (October 21, 2026): "it should try keeping all text formatting
 /// extractable from the braille converted to the intermediate format". So
-/// reading braille keeps the emphasis liblouis reports, and writing braille
-/// passes the book's emphasis to liblouis, which writes the table's
-/// indicators: both only for the tables whose indicators liblouis reads
-/// back exactly (UEB's), checked by the helper on each run.
+/// reading braille keeps the emphasis its indicators mark, and writing
+/// braille passes the book's emphasis to liblouis, which writes the table's
+/// indicators: both for the tables whose indicators liblouis reads back
+/// exactly (UEB's), checked by the helper on each run. EBAE's signs, which
+/// liblouis misreads, are read where the helper can tell them from print,
+/// and never written (October 24, 2026).
 struct BrailleEmphasis: OptionSet, Hashable, Sendable {
     let rawValue: UInt8
 
