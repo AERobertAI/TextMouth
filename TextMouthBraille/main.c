@@ -1108,7 +1108,8 @@ strip_ebae_word(const table_emphasis *emphasis, const widechar *cells, int start
 	int ended_at = -1;
 	/* Whether a sign may stand at `i`. */
 	int sign_may_follow = 1;
-	/* Whether the word is in double capitals, which ⠠⠄ ends too. */
+	/* Whether double capitals, which ⠠⠄ ends too, have begun in the part
+	   of the word since its last sign. */
 	int capitals = 0;
 	/* Whether `i` is in a number, after its number sign. */
 	int in_number = 0;
@@ -1143,7 +1144,7 @@ strip_ebae_word(const table_emphasis *emphasis, const widechar *cells, int start
 			word |= signs.word;
 			closing |= signs.word & *passage;
 			i += signs.length;
-			capitals = i + 1 < end && cells[i] == CELL_6 && cells[i + 1] == CELL_6;
+			capitals = 0;
 			/* "to", "into", or "by" joined to the next word takes these
 			   signs alone, and the next word may have its own. */
 			if ((length = joined_word(cells, i, end)) > 0) {
@@ -1155,6 +1156,9 @@ strip_ebae_word(const table_emphasis *emphasis, const widechar *cells, int start
 			}
 			continue;
 		}
+		/* Double capitals may begin inside a word, as in "McDONALDs" and
+		   "X-RAYs" (verifier, October 24, 2026). */
+		if (i + 1 < end && cells[i] == CELL_6 && cells[i + 1] == CELL_6) capitals = 1;
 		/* The termination sign (EBAE 15.6). After double capitals it ends
 		   them only, and is left for liblouis: liblouis writes "*ABCs*" as
 		   ⠨⠠⠠⠁⠃⠉⠠⠄⠎, the emphasis going on (review, October 24, 2026). */
@@ -1163,7 +1167,8 @@ strip_ebae_word(const table_emphasis *emphasis, const widechar *cells, int start
 			ended = !capitals;
 			if (capitals) count = keep(kept, bits, count, cells + i, 2, word | *passage);
 			i += 2;
-			ended_at = ended && !capitals ? i : -1;
+			ended_at = ended ? i : -1;
+			capitals = 0;
 			continue;
 		}
 		if ((!ended || i == ended_at) && closing != 0 &&
