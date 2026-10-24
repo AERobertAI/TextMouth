@@ -389,6 +389,35 @@ final class BrailleBookPageTests: XCTestCase {
         XCTAssertEqual(try pageLabels(of: url).labels, ["1", "2"])
     }
 
+    /// A BRF whose one form feed stands at its start, or at its end, marks no
+    /// page with it: it reads exactly as the same file without it, cut every
+    /// 25 lines, and the braille page numbers that end those pieces make it
+    /// six pages, 1 to 6, none of whose numbers is read aloud. Counted, that
+    /// form feed made the six-page file one page labelled "6", with the
+    /// numbers of pages 1 to 5 left in its text.
+    func testABRFWhoseOnlyFormFeedIsAtItsStartOrEndHasItsNumberedPages() throws {
+        let page = { (first: String, number: String) in
+            ["  ," + first] + Array(repeating: "WORDS ON THE PAGE", count: 23) + [self.numberedRow("", number)]
+        }
+        let numbered = [("ONE", "#A"), ("TWO", "#B"), ("THREE", "#C"), ("FOUR", "#D"), ("FIVE", "#E"), ("SIX", "#F")]
+        let body = numbered.flatMap { page($0.0, $0.1) }.joined(separator: "\r\n") + "\r\n"
+        let folder = try makeSandboxDirectory("BraillePageLabels")
+        let unmarked = folder.appendingPathComponent("six-pages.brf")
+        try Data(body.utf8).write(to: unmarked)
+        let expected = try BrailleBookReader.markdown(of: unmarked, table: grade1, includesPages: true)
+        XCTAssertEqual(try pageLabels(of: unmarked).labels, ["1", "2", "3", "4", "5", "6"])
+
+        for (name, file) in [("start", "\u{0C}" + body), ("end", body + "\u{0C}"), ("end-then-line-end", body + "\u{0C}\r\n")] {
+            let url = folder.appendingPathComponent("six-pages-\(name).brf")
+            try Data(file.utf8).write(to: url)
+            let markdown = try BrailleBookReader.markdown(of: url, table: grade1, includesPages: true)
+            XCTAssertEqual(markdown, expected, "a form feed at the \(name)")
+            let paged = try chapter(markdown)
+            XCTAssertEqual(paged.pages.map(\.label), ["1", "2", "3", "4", "5", "6"], "a form feed at the \(name)")
+            XCTAssertFalse(paged.text.contains { $0.isNumber }, "a page number is read aloud, with a form feed at the \(name)")
+        }
+    }
+
     /// A BRF with no form feed laid out at 27 lines: the cut every 25 rows
     /// misses its page numbers, which mark no page, so it gets no pages.
     func testABRFWithNoFormFeedLaidOutAt27LinesHasNoPages() throws {

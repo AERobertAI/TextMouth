@@ -34,8 +34,9 @@ struct BrailleFilePages: Equatable, Sendable {
     /// takes it as the width before it measures any row (FMT20).
     var lineWidth: Int? = nil
     /// Whether the file marks where its pages end (PG12, the review of
-    /// October 24): a PEF by its page elements, a BRF by its form feeds. A
-    /// BRF without a form feed is cut into pages of `BrailleFileReader
+    /// October 24): a PEF by its page elements, a BRF by the form feeds
+    /// between its braille text. A BRF without one (a form feed only at its
+    /// start or end is none) is cut into pages of `BrailleFileReader
     /// .linesPerUnmarkedPage` rows only so that its layout can be read
     /// (`repage(every:)`), and those are no pages an embosser counts unless
     /// braille page numbers mark them (`BrailleBookReader.marksItsPages(_:_:)`).
@@ -260,7 +261,8 @@ enum BrailleFileError: LocalizedError, Equatable {
 /// layout, the headings and paragraphs and page numbers, is read from the
 /// pages by another type.
 enum BrailleFileReader {
-    /// The lines on a page of a BRF file that has no form feeds.
+    /// The lines on a page of a BRF file that has no form feed between its
+    /// braille text.
     static let linesPerUnmarkedPage = 25
     /// How much of a PEF file `pefMetadata(of:)` reads: its head comes first.
     static let metadataByteCount = 65_536
@@ -333,8 +335,19 @@ enum BrailleFileReader {
         let kind: BrailleFileKind
         /// The pages being built.
         private var pages: BrailleFilePages
-        /// Whether a form feed ended a page anywhere in the file.
-        private var sawFormFeed = false
+        /// Whether braille text, a cell that is not blank, has been read.
+        private var sawText = false
+        /// Whether a form feed has ended a page since braille text was read.
+        private var formFeedFollowsText = false
+        /// Whether a form feed stands between braille text, with text before
+        /// it and after it: only such a form feed marks a page (the
+        /// verification of October 24). One that stands only at the file's
+        /// start or end, with nothing but line ends and blank cells before or
+        /// after it, marks none, and the file is read as the same file
+        /// without form feeds. Counted, the one form feed at the end of a
+        /// six-page BANA file made it a single page labelled 6, and left the
+        /// numbers of pages 1 to 5 in its text, where they were read aloud.
+        private var formFeedBetweenText = false
         /// Whether the line being read has any byte.
         private var lineStarted = false
         /// The line the next byte falls on: lines are counted from 1 by
@@ -374,9 +387,19 @@ enum BrailleFileReader {
                     throw BrailleFileError.notBrailleASCII(
                         Self.found(at: index - 1, in: bytes), line: lineNumber)
                 }
-                pages.append(cell: UInt8(truncatingIfNeeded: cell.value))
+                let dots = UInt8(truncatingIfNeeded: cell.value)
+                pages.append(cell: dots)
                 lineStarted = true
+                // The blank cell, the space, is no text.
+                if dots != 0 { noteText() }
             }
+        }
+
+        /// Note braille text: a cell that is not blank. A form feed read
+        /// since the text before it now stands between two texts.
+        private mutating func noteText() {
+            if formFeedFollowsText { formFeedBetweenText = true }
+            sawText = true
         }
 
         /// End the line being read as a row, empty or not.
@@ -393,7 +416,7 @@ enum BrailleFileReader {
                 lineStarted = false
             }
             try pages.endPage()
-            sawFormFeed = true
+            if sawText { formFeedFollowsText = true }
         }
 
         /// The pages of the whole file, once all its bytes are taken. Text
@@ -404,13 +427,15 @@ enum BrailleFileReader {
             // The rows since the last form feed make a last page, if any.
             let rowsOnLastPage = pages.rowCount - (pages.pageEnds.last.map(Int.init) ?? 0)
             if rowsOnLastPage > 0 { try pages.endPage() }
-            if pages.rowCount == 0 || (kind == .brf && !sawFormFeed) {
+            if pages.rowCount == 0 || (kind == .brf && !formFeedBetweenText) {
                 // Nothing but form feeds: no page, and the caller refuses it.
-                // Or no form feed at all: pages of a fixed number of lines.
+                // Or no form feed between braille text: pages of a fixed
+                // number of lines, as in a file with no form feed at all.
                 try pages.repage(every: BrailleFileReader.linesPerUnmarkedPage)
             }
-            // Only a BRF's form feeds end pages (a BRL ignores them).
-            pages.marksItsPages = sawFormFeed
+            // Only a BRF's form feeds between its text mark pages; a BRL's
+            // end no page.
+            pages.marksItsPages = formFeedBetweenText
             return pages
         }
 

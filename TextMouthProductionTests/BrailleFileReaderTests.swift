@@ -143,18 +143,46 @@ final class BrailleFileReaderTests: XCTestCase {
         XCTAssertEqual(try pages(sixty).map(\.count), [25, 25, 10])
     }
 
-    /// A form feed ends a page after a line end, in the middle of a line,
-    /// and at the very end (adding no empty page), and two in a row make
-    /// an empty page; with a form feed the pages are not cut at 25.
+    /// A form feed between braille text ends a page: after a line end, in
+    /// the middle of a line, and, once the last text is read, at the very
+    /// end too (adding no empty page); two in a row make an empty page; and
+    /// pages that form feeds end are not cut at 25.
     func testFormFeedsEndPages() throws {
         let a = [cells("A")], b = [cells("A"), cells("B")], c = [cells("C")]
         XCTAssertEqual(try pages("A\nB\n\u{0C}C\n"), [b, c])
         XCTAssertEqual(try pages("A\nB\u{0C}C\n"), [b, c])
-        XCTAssertEqual(try pages("A\n\u{0C}"), [a])
-        XCTAssertEqual(try pages("A\n\u{0C}\u{0C}"), [a, []])
+        XCTAssertEqual(try pages("A\n\u{0C}C\n\u{0C}"), [a, c])
+        XCTAssertEqual(try pages("A\n\u{0C}C\n\u{0C}\u{0C}"), [a, c, []])
         XCTAssertEqual(try pages("A\n\u{0C}\u{0C}C\n"), [a, [], c])
-        let thirty = String(repeating: "A\n", count: 30) + "\u{0C}"
-        XCTAssertEqual(try pages(thirty).map(\.count), [30])
+        let thirty = String(repeating: "A\n", count: 30) + "\u{0C}C\n"
+        XCTAssertEqual(try pages(thirty).map(\.count), [30, 1])
+    }
+
+    /// A form feed marks a page only between braille text. One that stands
+    /// only at a file's start or end, with nothing but line ends and blank
+    /// cells before or after it, is read as no form feed: the file is cut
+    /// every 25 lines exactly as the same file without it, and marks no pages
+    /// of its own, so that braille page numbers decide whether those pieces
+    /// are pages. Counted, the one form feed at the end of a six-page file
+    /// made it a single page.
+    func testAFormFeedOnlyAtTheStartOrTheEndIsNoFormFeed() throws {
+        let thirty = String(repeating: "A\n", count: 30)
+        let files = [
+            "\u{0C}" + thirty, thirty + "\u{0C}", thirty + "\u{0C}\u{0C}", "\u{0C}" + thirty + "\u{0C}",
+            thirty + "\u{0C}\r\n", "\r\n\u{0C}" + thirty, "\u{0C}\u{0C}A\n", "A\n\u{0C}",
+        ]
+        for file in files {
+            let read = try BrailleFileReader.pages(fromASCII: Data(file.utf8), kind: .brf)
+            let unmarked = file.replacingOccurrences(of: "\u{0C}", with: "")
+            XCTAssertEqual(read.pages, try pages(unmarked), file.debugDescription)
+            XCTAssertFalse(read.marksItsPages, file.debugDescription)
+        }
+        XCTAssertEqual(try pages(thirty + "\u{0C}").map(\.count), [25, 5])
+
+        // Between braille text a form feed marks its page, whatever stands at the ends.
+        let marked = try BrailleFileReader.pages(fromASCII: Data(("\u{0C}" + thirty + "\u{0C}B\n\u{0C}").utf8), kind: .brf)
+        XCTAssertTrue(marked.marksItsPages)
+        XCTAssertEqual(marked.pages.map(\.count), [0, 30, 1])
     }
 
     /// A file of nothing but form feeds holds no page at all.
