@@ -276,6 +276,9 @@ final class OnDiskContractTests: XCTestCase {
             "epubISBN", "epubLanguage", "epubIdentifier", "epubVersion", "cacheFormatVersion",
             "contentIndexVersion", "textCacheFingerprint", "editedText", "pageReaderVersion",
             "metadataReaderVersion", "handEdits", "brailleTable", "brailleTableVersion",
+            // FMT16: the encoding a text book's file was guessed to be in. An optional key, written only for
+            // a book imported with a guess, so every other row is exactly as it was.
+            "textEncoding",
         ]
         XCTAssertEqual(Set(row.keys), expected, Self.because("a library row's key", Self.keyForces))
         // Every property but the feed link is a key; the feed link is the
@@ -306,6 +309,8 @@ final class OnDiskContractTests: XCTestCase {
             "bookID", "sourceFilePath", "publisher", "publicationDate", "isbn", "language", "epubIdentifier",
             "epubVersion", "audioAlbum", "audioGenre", "audioYear", "metadataReaderVersion", "handEdits",
             "feedLink", "brailleTable", "brailleTableVersion",
+            // FMT16, as in a library row.
+            "textEncoding",
         ]
         XCTAssertEqual(
             Set(metadata.keys),
@@ -623,7 +628,8 @@ final class OnDiskContractTests: XCTestCase {
             handEdits: Book.HandEdits(fields: [.title], sinceImport: true),
             feedLink: FeedBookLink(feedID: UUID(), itemID: "item"),
             brailleTable: "table.ctb",
-            brailleTableVersion: "liblouis"
+            brailleTableVersion: "liblouis",
+            textEncoding: "windows-1251"
         )
     }
 }

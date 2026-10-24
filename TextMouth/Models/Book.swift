@@ -141,6 +141,12 @@ enum BookFormat: String, Codable, CaseIterable {
 
     var isAudio: Bool { self == .audio }
 
+    /// Whether the book's file is plain text that `TextFileDecoder` reads in
+    /// an encoding the file may not name (FMT16): plain text, Markdown, and
+    /// HTML. The other formats are read through their own readers, which
+    /// know their encodings, so a recorded text encoding means nothing to them.
+    var usesTextFileDecoder: Bool { self == .txt || self == .markdown || self == .html }
+
     /// Whether this format exposes format-specific fields in the rich metadata editor.
     /// Other document formats only support the shared title and author fields.
     var usesRichMetadataEditor: Bool { self == .epub || isAudio }
@@ -368,6 +374,21 @@ struct Book: Identifiable, Codable, Hashable {
     /// and the removal marker.
     var brailleTableVersion: String?
 
+    /// The encoding TextMouth guessed this plain-text, Markdown, or HTML
+    /// book's file is in (FMT16), by its identifier in `TextEncodingCatalog`,
+    /// such as "windows-1251" or "koi8-r": set when the book is imported from
+    /// a file whose bytes named no encoding (not UTF-8, no byte-order mark,
+    /// no declaration) and `TextEncodingGuesser` found one that reads them
+    /// better than the Windows-1252 default. Every later reading of the
+    /// book uses it, the Markdown cache's rebuild included
+    /// (`TextFileDecoder.EncodingPolicy.recorded(_:)`), so that a better
+    /// guesser, or a macOS update, never moves the book's text under its
+    /// reader's places. Nil for a book whose bytes named their encoding, for
+    /// one Windows-1252 reads correctly, and for every book imported before
+    /// guesses were recorded, which are read as they always were. Kept in the
+    /// row, the record, and the removal marker.
+    var textEncoding: String?
+
     /// Whether this row is a feed item's download (FR11): its feed lists it,
     /// and the library's own lists, counts, and maintenance leave it out.
     var isFeedItem: Bool {
@@ -433,7 +454,8 @@ struct Book: Identifiable, Codable, Hashable {
         handEdits: HandEdits? = nil,
         feedLink: FeedBookLink? = nil,
         brailleTable: String? = nil,
-        brailleTableVersion: String? = nil
+        brailleTableVersion: String? = nil,
+        textEncoding: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -482,6 +504,7 @@ struct Book: Identifiable, Codable, Hashable {
         self.feedLink = feedLink
         self.brailleTable = brailleTable
         self.brailleTableVersion = brailleTableVersion
+        self.textEncoding = textEncoding
     }
 
     // Custom decoding to handle missing fields from old library.json.
@@ -569,6 +592,9 @@ struct Book: Identifiable, Codable, Hashable {
         // library failing over one damaged field.
         brailleTable = fields.optionalValue(.brailleTable) { $0 }
         brailleTableVersion = fields.optionalValue(.brailleTableVersion) { $0 }
+        // A text encoding that cannot be read counts as none (FMT16): the book
+        // is then read as every book was before guesses were recorded.
+        textEncoding = fields.optionalValue(.textEncoding) { $0 }
     }
 
     /// The .tmb package directory URL: in the library, or, while an import
@@ -1037,7 +1063,9 @@ struct Book: Identifiable, Codable, Hashable {
     ///
     /// A braille book's table (`BookMetadata.brailleTable`, FMT21) is kept
     /// the same way: the stored record's survives a row that lost it; and so
-    /// is the Mac's liblouis version it was read with (review R2).
+    /// is the Mac's liblouis version it was read with (review R2), and the
+    /// encoding a text book's file was guessed to be in
+    /// (`BookMetadata.textEncoding`, FMT16).
     ///
     /// The revision is one more than the stored record's, or one more than
     /// `revisionFloor` when that is higher. The metadata queue passes the
@@ -1063,6 +1091,8 @@ struct Book: Identifiable, Codable, Hashable {
         // The braille table: the row's, or else the stored record's (FMT21).
         info.metadata.brailleTable = brailleTable ?? stored?.info.metadata.brailleTable
         info.metadata.brailleTableVersion = brailleTableVersion ?? stored?.info.metadata.brailleTableVersion
+        // The text encoding: the row's, or else the stored record's (FMT16).
+        info.metadata.textEncoding = textEncoding ?? stored?.info.metadata.textEncoding
         return info
     }
 
@@ -1125,6 +1155,7 @@ struct Book: Identifiable, Codable, Hashable {
         info.metadata.feedLink = feedLink
         info.metadata.brailleTable = brailleTable
         info.metadata.brailleTableVersion = brailleTableVersion
+        info.metadata.textEncoding = textEncoding
         return info
     }
 
@@ -1185,7 +1216,8 @@ struct Book: Identifiable, Codable, Hashable {
             handEdits: metadata.handEdits,
             feedLink: metadata.feedLink,
             brailleTable: metadata.brailleTable,
-            brailleTableVersion: metadata.brailleTableVersion
+            brailleTableVersion: metadata.brailleTableVersion,
+            textEncoding: metadata.textEncoding
         )
     }
 

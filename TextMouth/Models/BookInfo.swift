@@ -135,6 +135,13 @@ struct BookMetadata: Codable {
     /// for a record written before it was kept.
     var brailleTableVersion: String? = nil
 
+    /// The encoding a text book's file was guessed to be in (FMT16): the
+    /// row's field (`Book.textEncoding`), by its identifier in
+    /// `TextEncodingCatalog`; nil for every book whose bytes named their
+    /// encoding or that Windows-1252 reads correctly, and for a record
+    /// written before guesses were kept.
+    var textEncoding: String? = nil
+
     init(
         title: String = "Untitled",
         author: String = Book.unknownAuthor,

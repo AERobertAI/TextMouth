@@ -379,7 +379,7 @@ extension FileImportService {
 
     /// The book a retained package holds, rebuilt for a package whose
     /// bookInfo.json is gone, as Remove from Library Only deletes it. The
-    /// book keeps its ID, title, author, and braille table from the removal marker; its
+    /// book keeps its ID, title, author, braille table, and text encoding from the removal marker; its
     /// format and checksum come from its one content entry, and the rest of
     /// its metadata is read from that file as an import reads it. Its
     /// reading position, bookmarks, and per-book settings lived only in the
@@ -429,7 +429,11 @@ extension FileImportService {
             // it; without it the text would be read again with the default
             // table. Only a braille book has one.
             brailleTable: format == .braille ? marker.brailleTable : nil,
-            brailleTableVersion: format == .braille ? marker.brailleTableVersion : nil
+            brailleTableVersion: format == .braille ? marker.brailleTableVersion : nil,
+            // A text book is read in the encoding it was guessed to be in
+            // (FMT16), which the deleted record held as well. Without it the
+            // book would be read by the fallback, and its text would change.
+            textEncoding: format.usesTextFileDecoder ? marker.textEncoding : nil
         )
     }
 
