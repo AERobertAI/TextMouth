@@ -160,6 +160,15 @@ enum DuplicateReplacement {
         ImportStaging.removeStagedPackage(at: aside)
     }
 
+    /// What VoiceOver hears once the new copy took the place of the book
+    /// titled `title` and the old copy's text was kept beside the new text
+    /// as `copy`, naming the copy as Edit Text names the copies it keeps
+    /// (`BookTextEditWording.kept(_:)`), so the user knows where the earlier
+    /// text is.
+    static func keptTextAnnouncement(title: String, copy: URL) -> String {
+        "Replaced “\(title)”. Its earlier text was kept as \(copy.lastPathComponent), in the book's package."
+    }
+
     /// What the library's alert says when the package of the copy titled
     /// `title` could not be removed for `reason` after the new copy took its
     /// place, which stands: moved to the Trash, or deleted, as

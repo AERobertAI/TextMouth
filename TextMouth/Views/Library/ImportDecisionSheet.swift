@@ -87,7 +87,7 @@ struct ImportDecisionSheet: View {
             HStack {
                 choiceButton(.keepBoth, shortcut: .defaultAction, answer: .keepBoth)
                     .firstQuestionControl($firstControlFocused, movingVoiceOver: takesFocus, after: voiceOverDelay)
-                choiceButton(.replaceExisting, answer: .replaceExisting)
+                choiceButton(.replaceExisting(acrossKinds: wording.replacesAcrossKinds), answer: .replaceExisting)
                 Spacer()
                 choiceButton(.cancelDuplicate, shortcut: .cancelAction, answer: .cancel)
             }
@@ -186,12 +186,27 @@ struct ImportDecisionChoiceWording: Equatable {
         hint: "Adds the new copy to the library as a separate book."
     )
     /// A duplicate: replace the library's copy. The hint says what the new
-    /// copy keeps of it (ST04): its reading position, bookmarks, and
-    /// settings, which the question itself names in full.
+    /// copy keeps of the existing one (ST04): its reading position,
+    /// bookmarks, and settings, which the question itself names in full.
     static let replaceExisting = ImportDecisionChoiceWording(
         title: "Replace Existing",
-        hint: "Puts the new copy in place of the one already in the library, keeping its reading position, bookmarks, and settings."
+        hint: "Puts the new copy in place of the one already in the library, "
+            + "keeping the existing copy's reading position, bookmarks, and settings."
     )
+    /// A duplicate whose copies are an audiobook and a book that is not:
+    /// replacing keeps only the book's place in the library (ST04), and the
+    /// hint promises no more.
+    static let replaceExistingAcrossKinds = ImportDecisionChoiceWording(
+        title: "Replace Existing",
+        hint: "Puts the new copy in place of the one already in the library, "
+            + "keeping only the existing copy's folder and place on the reading list."
+    )
+
+    /// Replace Existing's words for a duplicate whose copies differ in kind
+    /// when `acrossKinds`, an audiobook and a book that is not.
+    static func replaceExisting(acrossKinds: Bool) -> ImportDecisionChoiceWording {
+        acrossKinds ? replaceExistingAcrossKinds : replaceExisting
+    }
     /// A duplicate: discard the new copy.
     static let cancelDuplicate = ImportDecisionChoiceWording(
         title: "Cancel",

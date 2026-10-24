@@ -311,16 +311,39 @@ final class ImportDecisionQueueTests: XCTestCase {
         XCTAssertEqual(ImportDecisionChoiceWording.replaceExisting.title, "Replace Existing")
         XCTAssertEqual(
             ImportDecisionChoiceWording.replaceExisting.hint,
-            "Puts the new copy in place of the one already in the library, keeping its reading position, bookmarks, and settings."
+            "Puts the new copy in place of the one already in the library, "
+                + "keeping the existing copy's reading position, bookmarks, and settings."
         )
+        XCTAssertEqual(ImportDecisionChoiceWording.replaceExisting(acrossKinds: false), .replaceExisting)
+        XCTAssertEqual(
+            ImportDecisionChoiceWording.replaceExisting(acrossKinds: true).hint,
+            "Puts the new copy in place of the one already in the library, "
+                + "keeping only the existing copy's folder and place on the reading list."
+        )
+    }
+
+    /// A duplicate's wording says when its copies differ in kind, so the
+    /// sheet's hint promises no more than replacing keeps; no other question
+    /// does (ST04 review, finding 10).
+    func testTheWordingSaysWhenACopyDiffersInKind() {
+        let text = Book(title: "Earlier Tide", format: .daisy, filePath: "/library/a.zip", md5Hash: "text")
+        let audio = Book(title: "Tide", format: .audio, filePath: "/library/b.zip", md5Hash: "audio")
+        let acrossKinds = ImportDecision(
+            kind: .duplicate(.init(book: audio, existing: text, originalURL: nil, warning: nil)),
+            request: ImportRequest()
+        )
+
+        XCTAssertTrue(ImportDecisionWording(for: acrossKinds, position: 1, total: 1, movesToTrash: true).replacesAcrossKinds)
+        XCTAssertFalse(ImportDecisionWording(for: Self.duplicateQuestion(), position: 1, total: 1, movesToTrash: true).replacesAcrossKinds)
+        XCTAssertFalse(ImportDecisionWording(for: Self.originalFileQuestion(), position: 1, total: 1, movesToTrash: true).replacesAcrossKinds)
     }
 
     // MARK: - What Replacing Keeps, as VoiceOver Reads It
 
     /// What Replace Existing keeps of a text book, and what it does not.
     private static let textKeptWords =
-        "Replacing keeps the existing copy's reading position and bookmarks, found again in the new text, "
-        + "and its settings, folder, and place on the reading list. "
+        "Replacing keeps the existing copy's reading position and bookmarks, moved to their words in the new text "
+        + "wherever those are found, and its settings, folder, and place on the reading list. "
         + "An edit of its text is kept beside the new text as a copy, not applied to it."
 
     /// What Replace Existing keeps of an audiobook, and what it does not.
@@ -331,7 +354,7 @@ final class ImportDecisionQueueTests: XCTestCase {
 
     /// Where the old copy goes with "Move to Trash instead of deleting" on.
     private static let trashWords =
-        "The existing copy's files go to the Trash, where you can recover them until the Trash is emptied."
+        "The existing copy's files go to the Trash, but putting them back won't return that copy to your library."
 
     /// Where the old copy goes with that setting off.
     private static let deletedWords = "The existing copy's files are deleted permanently and cannot be recovered."

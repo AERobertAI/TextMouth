@@ -222,6 +222,12 @@ struct ImportDecisionWording: Equatable {
     /// For a question about an original file, the words of its deletion,
     /// including its deleting button's title; nil for every other question.
     let originalFile: OriginalFileDeletionWording?
+    /// For a duplicate, whether one copy is an audiobook and the other is
+    /// not, so replacing keeps only the book's place in the library, which
+    /// Replace Existing's hint says too
+    /// (`ImportDecisionChoiceWording.replaceExisting(acrossKinds:)`); false
+    /// for every other question.
+    let replacesAcrossKinds: Bool
 
     /// The title of a duplicate's question.
     static let duplicateTitle = "Duplicate Book Found"
@@ -248,6 +254,10 @@ struct ImportDecisionWording: Equatable {
         matchingFormat: BookFormat? = nil,
         movesToTrash: Bool
     ) {
+        replacesAcrossKinds = {
+            guard case .duplicate(let duplicate) = decision.kind else { return false }
+            return (matchingFormat ?? duplicate.existing.format).isAudio != duplicate.book.format.isAudio
+        }()
         switch decision.kind {
         case .duplicate(let duplicate):
             title = Self.counted(Self.duplicateTitle, position: position, total: total)
@@ -296,11 +306,13 @@ struct ImportDecisionWording: Equatable {
 
     /// What Replace Existing keeps of the library's copy of a text book, and
     /// what it does not (ST04): the new copy takes the old one's place, its
-    /// places found again by their words, and an edit of the old text is
-    /// kept as a copy, never laid over the new text (`DuplicateReplacement`).
+    /// places moved to their words where those are found (a place whose
+    /// words nothing finds keeps its place in the text), and an edit of the
+    /// old text is kept as a copy, never laid over the new text
+    /// (`DuplicateReplacement`).
     static let replacingKeepsTextSentence =
-        "Replacing keeps the existing copy's reading position and bookmarks, found again in the new text, "
-        + "and its settings, folder, and place on the reading list. "
+        "Replacing keeps the existing copy's reading position and bookmarks, moved to their words in the new text "
+        + "wherever those are found, and its settings, folder, and place on the reading list. "
         + "An edit of its text is kept beside the new text as a copy, not applied to it."
 
     /// What Replace Existing keeps of the library's copy of an audiobook,
@@ -331,12 +343,17 @@ struct ImportDecisionWording: Equatable {
         return new.isAudio ? replacingKeepsAudioSentence : replacingKeepsTextSentence
     }
 
-    /// Where the library's copy goes once replaced, in the words a removal
-    /// uses for the same Trash setting (`RemovalMode`): "The existing copy's
-    /// files go to the Trash, where you can recover them until the Trash is
-    /// emptied." or "... are deleted permanently and cannot be recovered."
+    /// Where the library's copy goes once replaced. In the Trash its files
+    /// can be put back, but never as a book of the library again: its
+    /// record names the book the new copy now is, which no launch adopts a
+    /// second time (`FileImportService.adoptOrphanedTMBPackages`), so the
+    /// Trash's sentence says so rather than promise a recovery. Deleted,
+    /// the files go in a removal's own words (`RemovalMode`).
     static func replacedCopySentence(movesToTrash: Bool) -> String {
-        RemovalMode.deleting(movesToTrash: movesToTrash).filesClause(of: "The existing copy's") + "."
+        guard !movesToTrash else {
+            return "The existing copy's files go to the Trash, but putting them back won't return that copy to your library."
+        }
+        return RemovalMode.deletePermanently.filesClause(of: "The existing copy's") + "."
     }
 
     /// What a duplicate's question asks: which file matches which book, the

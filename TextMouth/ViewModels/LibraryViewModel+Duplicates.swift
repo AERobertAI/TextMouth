@@ -374,6 +374,15 @@ extension LibraryViewModel {
             return .failure(Self.replaceFailureContext, error)
         }
         removeReplacedPackage(of: existing)
+        if let keptText = preparation.keptText {
+            // Where the old copy's text went is said aloud, as every other
+            // path that keeps such a copy says it: after the answer's own
+            // words rather than over them.
+            VoiceOverAnnouncer.announce(
+                DuplicateReplacement.keptTextAnnouncement(title: existing.title, copy: keptText),
+                priority: .medium
+            )
+        }
         finishKeeping(preparation.book, from: duplicate, of: decision, offeringTranscription: !preparation.keptTranscript)
         return .success(nil)
     }

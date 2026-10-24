@@ -813,7 +813,9 @@ final class ImportDecisionFlowTests: XCTestCase {
         drainImports(of: scene.model)
         let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
 
-        XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+        let recorder = recordingAnnouncements {
+            XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+        }
 
         XCTAssertNil(scene.model.errorMessage)
         XCTAssertEqual(try shelf.entries(), [copy.tmbDirectoryName], "something of the old package stayed in its folder")
@@ -821,6 +823,10 @@ final class ImportDecisionFlowTests: XCTestCase {
         let names = try FileManager.default.contentsOfDirectory(atPath: replaced.tmbDirectory.path)
         let kept = try XCTUnwrap(names.first(where: TextMouthPaths.isKeptTextCopy), "the edit kept beside the new text is gone")
         XCTAssertEqual(try Data(contentsOf: replaced.tmbDirectory.appendingPathComponent(kept)), edited)
+        XCTAssertEqual(
+            recorder.announcements.map(\.message),
+            ["Replaced “Earlier Atlas of Tides”. Its earlier text was kept as \(kept), in the book's package."]
+        )
     }
 
     /// A replacement whose index cannot be saved, as while an unreadable
