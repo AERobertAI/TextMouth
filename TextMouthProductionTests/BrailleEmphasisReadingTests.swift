@@ -70,6 +70,24 @@ final class BrailleEmphasisReadingTests: XCTestCase {
         }
     }
 
+    /// What `body` returns with the bundled helper reading braille back by
+    /// liblouis alone, without the reading passes, when `liblouisAlone`
+    /// (its test-only `back-liblouis`), and loading the table file `file`,
+    /// when given, in place of the table named: en_US.tbl's own
+    /// en-us-g2.ctb, which TextMouth does not offer.
+    private func withHelper<T>(liblouisAlone: Bool, file: String?, _ body: () throws -> T) throws -> T {
+        let helper = BrailleTranslator.Tool.helper
+        var tool = helper
+        tool.command = { mode, table, input, output in
+            guard var command = helper.command(liblouisAlone && mode == "back" ? "back-liblouis" : mode, table, input, output) else {
+                return nil
+            }
+            if let file { command.arguments = command.arguments.map { $0 == table ? file : $0 } }
+            return command
+        }
+        return try BrailleTranslator.$tool.withValue(tool, operation: body)
+    }
+
     /// Asserts that each of `samples`, braille ASCII and the print it holds,
     /// reads back as that print with `table`, whatever its emphasis.
     private func assertReadsWords(
@@ -215,6 +233,42 @@ final class BrailleEmphasisReadingTests: XCTestCase {
         XCTAssertFalse(print.first?.hasEmphasis ?? true)
     }
 
+    /// BANA's signs never change a word: 3,000 seeded sentences with real
+    /// signs in each EBAE table (`BANASentenceGenerator`) read back with
+    /// exactly the words liblouis reads alone from the same braille, case
+    /// included, as main (e110d985) read them (the helper's test-only
+    /// `back-liblouis`), and at least two in three keep emphasis. Before the
+    /// safety net, the verifier's 24,000 such sentences read other words in
+    /// 52 (October 24, 2026). The third table is en-us-g2.ctb, which
+    /// en_US.tbl includes and TextMouth does not offer, read through the
+    /// bundled helper by its file name.
+    func testBANAEmphasisReadsLiblouissOwnWords() throws {
+        let tables: [(name: String, file: String?)] = [(ebaeUncontracted, nil), (ebaeContracted, nil), (ebaeContracted, "en-us-g2.ctb")]
+        for table in tables {
+            let label = table.file ?? table.name
+            let pieces = BANASentenceGenerator.pieces
+            let braille = try withHelper(liblouisAlone: false, file: table.file) {
+                try BrailleTranslator.translate(pieces, table: table.name, direction: .printToBraille, workingIn: work)
+            }
+            var generator = BANASentenceGenerator(
+                seed: 20_261_024, braille: Dictionary(zip(pieces, braille), uniquingKeysWith: { first, _ in first }),
+                contracted: table.name == ebaeContracted
+            )
+            let sentences = (0..<3_000).map { _ in EmphasizedText(generator.sentence()) }
+            let read = try withHelper(liblouisAlone: false, file: table.file) {
+                try BrailleTranslator.translate(sentences, table: table.name, direction: .brailleToPrint, workingIn: work)
+            }
+            let alone = try withHelper(liblouisAlone: true, file: table.file) {
+                try BrailleTranslator.translate(sentences, table: table.name, direction: .brailleToPrint, workingIn: work)
+            }
+            let changed = zip(read, alone).filter { $0.text != $1.text }
+            XCTAssertEqual(read.count, sentences.count, label)
+            XCTAssertEqual(alone.count, sentences.count, label)
+            XCTAssertEqual(changed.count, 0, "\(label): \(changed.prefix(5).map { "\($0.1.text) → \($0.0.text)" })")
+            XCTAssertGreaterThan(read.filter(\.hasEmphasis).count, sentences.count * 2 / 3, label)
+        }
+    }
+
     /// What is no sign reads exactly as liblouis read it before the pass
     /// (main, e110d985): ⠨ inside a number, the decimal point ("3.e" for 3.5,
     /// liblouis's own reading), ⠨ beginning a contraction inside a word
@@ -358,10 +412,9 @@ final class BrailleEmphasisReadingTests: XCTestCase {
 /// "by". The tokens are those liblouis reads back exactly on main: a period
 /// stands only before a word beginning a to j (before other letters liblouis
 /// drops it), and numbers never stand beside a dash (liblouis reads "10 --"
-/// as an en dash). A 64-bit linear congruential generator, so the sentences
-/// are the same on every run.
+/// as an en dash). Seeded, so the sentences are the same on every run.
 private struct SymbolSentenceGenerator {
-    private var state: UInt64
+    private var random: SeededRandom
 
     private static let words = [
         "cat", "sat", "on", "mat", "kite", "more", "mom", "zoo", "dog", "ice", "hello", "jam", "bad", "fig",
@@ -375,52 +428,204 @@ private struct SymbolSentenceGenerator {
     private static let numbers = [3, 5, 10, 25, 100, 2024]
 
     init(seed: UInt64) {
-        state = seed
-    }
-
-    /// The next 31 bits.
-    private mutating func next() -> UInt64 {
-        state = state &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
-        return state >> 33
-    }
-
-    /// A number from 0 to `count` less 1.
-    private mutating func pick(_ count: Int) -> Int {
-        Int(next() % UInt64(count))
+        random = SeededRandom(seed: seed)
     }
 
     /// One token; a number is a word in a sentence with dashes.
     private mutating func token(dashes: Bool) -> String {
-        let kind = pick(10)
-        let word = Self.words[pick(Self.words.count)]
-        let symbol = Self.symbols[pick(Self.symbols.count)]
+        let kind = random.pick(10)
+        let word = random.element(of: Self.words)
+        let symbol = random.element(of: Self.symbols)
         switch kind {
         case 0...2:
             return word
         case 3:
-            let number = String(Self.numbers[pick(Self.numbers.count)])
+            let number = String(random.element(of: Self.numbers))
             return dashes ? word : number
         case 4:
-            return word + "-" + Self.words[pick(Self.words.count)]
+            return word + "-" + random.element(of: Self.words)
         case 5:
             return symbol + word
         case 6:
-            let k = pick(Self.openers.count)
+            let k = random.pick(Self.openers.count)
             return Self.openers[k] + symbol + Self.closers[k]
         case 7:
-            return Self.joined[pick(Self.joined.count)] + " " + symbol + word
+            return random.element(of: Self.joined) + " " + symbol + word
         case 8:
-            return "." + Self.wordsFromAToJ[pick(Self.wordsFromAToJ.count)]
+            return "." + random.element(of: Self.wordsFromAToJ)
         default:
-            return word + "/" + symbol + Self.words[pick(Self.words.count)]
+            return word + "/" + symbol + random.element(of: Self.words)
         }
     }
 
     /// One sentence of three to seven tokens, a quarter of them joined by
     /// dashes.
     mutating func sentence() -> String {
-        let dashes = pick(4) == 0
-        let count = 3 + pick(5)
+        let dashes = random.pick(4) == 0
+        let count = 3 + random.pick(5)
         return (0..<count).map { _ in token(dashes: dashes) }.joined(separator: dashes ? " -- " : " ")
+    }
+}
+
+/// A 64-bit linear congruential generator (Knuth's MMIX constants), so that
+/// seeded sentences are the same on every run.
+private struct SeededRandom {
+    private var state: UInt64
+
+    init(seed: UInt64) {
+        state = seed
+    }
+
+    /// A number from 0 to `count` less 1, from the next state's top 31 bits
+    /// (0 when `count` is less than 1, rather than a trap).
+    mutating func pick(_ count: Int) -> Int {
+        state = state &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
+        return Int((state >> 33) % UInt64(max(count, 1)))
+    }
+
+    /// One of `items`, which is never empty here.
+    mutating func element<Item>(of items: [Item]) -> Item {
+        items[pick(items.count)]
+    }
+}
+
+/// Seeded braille sentences with emphasis signs as BANA writes them, for
+/// `BrailleEmphasisReadingTests.testBANAEmphasisReadsLiblouissOwnWords`
+/// (verifier, October 24, 2026). Each has three to nine words: words that
+/// begin with every kind of letter and contraction (among them the "be"
+/// words, whose ⠆ contracted EBAE reads with a "(" before it as "}"),
+/// capitals, whole and begun inside a word, numbers, and hyphenated words,
+/// each liblouis's braille of the word alone in the table read
+/// (`braille`); with parentheses, brackets, quotation marks, dashes, and
+/// punctuation; in contracted braille, a "to", "into", or "by" joined to
+/// its word; and italic and bold as BANA's EBAE writes them (Instruction
+/// Manual for Braille Transcribing, lesson 15; Braille Formats, 2011): ⠨ or
+/// ⠸⠨ before a word, after its opening punctuation, a dash, or a joined word
+/// (or before the joined word, which marks it alone); ⠨⠨ or ⠸⠨⠨ before a
+/// passage of four words or more, and ⠨ or ⠸⠨ before its last; and the
+/// termination sign ⠠⠄ where emphasis ends inside a word.
+private struct BANASentenceGenerator {
+    /// The words, each translated alone.
+    static let words = [
+        "cat", "dog", "egg", "fig", "good", "hello", "ice", "jam", "bad", "city", "aunt", "kite", "knowledge",
+        "more", "mother", "March", "lamp", "nest", "open", "people", "quiet", "rose", "sun", "tree", "under",
+        "very", "wide", "yes", "zoo", "before", "because", "beside", "between", "below", "beyond", "behind",
+        "the", "and", "for", "with", "of", "child", "can", "that", "his", "were", "enough", "perhaps",
+        "little", "friend", "today", "Alice", "George", "NASA", "McDONALDs", "X-RAYs", "ABCs", "3", "25",
+        "100", "blue-eyed", "well-known",
+    ]
+
+    /// Words emphasized in part: the part emphasized, then the rest, each
+    /// translated alone, which the termination sign parts, as BANA writes
+    /// "*per*haps".
+    static let partWords: [(part: String, rest: String)] = [
+        ("per", "haps"), ("be", "side"), ("be", "fore"), ("un", "done"), ("zoo", "keeper"), ("some", "thing"),
+        ("ABC", "def"), ("over", "due"), ("re", "read"),
+    ]
+
+    /// Every piece of print whose braille the generator takes.
+    static let pieces = words + partWords.flatMap { [$0.part, $0.rest] }
+
+    /// The cells the generator writes itself, as EBAE writes them.
+    private enum Cells {
+        static let blank = "\u{2800}"
+        static let sign = "⠨"
+        static let boldPrefix = "⠸"
+        static let termination = "⠠⠄"
+        static let dash = "⠤⠤"
+        /// Parentheses, brackets, and quotation marks: opening, closing.
+        static let enclosures = [("⠶", "⠶"), ("⠠⠶", "⠶⠄"), ("⠦", "⠴")]
+        /// A comma, a period, an exclamation mark, a question mark, and a
+        /// semicolon.
+        static let punctuation = ["⠂", "⠲", "⠖", "⠦", "⠆"]
+        /// Contracted EBAE's "to", "into", and "by", joined to the next word.
+        static let joinedWords = ["⠖", "⠔⠖", "⠴"]
+    }
+
+    /// One word of a sentence, with its cells in the order they stand.
+    private struct Word {
+        /// Whether a dash, rather than a blank cell, joins it to the word
+        /// before.
+        var afterDash = false
+        var opening = ""
+        /// The sign before a joined word, which marks the joined word alone.
+        var joinedSign = ""
+        var joined = ""
+        var sign = ""
+        var cells: String
+        var closing = ""
+        /// Whether an emphasis already marks it, or a passage holds it.
+        var marked = false
+
+        /// All its cells.
+        var braille: String { opening + joinedSign + joined + sign + cells + closing }
+    }
+
+    private var random: SeededRandom
+    /// liblouis's braille of each of `pieces`, in the table read.
+    private let braille: [String: String]
+    /// Whether the table is contracted, so that "to", "into", and "by" join
+    /// the words after them.
+    private let contracted: Bool
+
+    init(seed: UInt64, braille: [String: String], contracted: Bool) {
+        random = SeededRandom(seed: seed)
+        self.braille = braille
+        self.contracted = contracted
+    }
+
+    /// One sentence, in braille.
+    mutating func sentence() -> String {
+        var words: [Word] = []
+        for _ in 0..<(3 + random.pick(7)) {
+            let word = random.element(of: Self.words)
+            words.append(Word(cells: braille[word, default: ""]))
+        }
+        let count = words.count
+        // Parentheses, brackets, or quotation marks around one to three words.
+        if random.pick(2) == 0 {
+            let first = random.pick(count)
+            let (opening, closing) = random.element(of: Cells.enclosures)
+            words[first].opening = opening
+            words[min(count - 1, first + random.pick(3))].closing = closing
+        }
+        // A dash between two words, punctuation after one, and, contracted,
+        // a joined word before one.
+        if random.pick(4) == 0 { words[1 + random.pick(count - 1)].afterDash = true }
+        if random.pick(3) == 0 { words[random.pick(count)].closing += random.element(of: Cells.punctuation) }
+        if contracted && random.pick(3) == 0 { words[random.pick(count)].joined = random.element(of: Cells.joinedWords) }
+        emphasize(&words)
+        if random.pick(3) == 0 { emphasize(&words) }
+        return words.enumerated().map { index, word in
+            (index == 0 ? "" : word.afterDash ? Cells.dash : Cells.blank) + word.braille
+        }.joined()
+    }
+
+    /// Marks `words` with one emphasis, italic or, one time in three, bold,
+    /// in BANA's signs: a word, a passage of four words or more, part of a
+    /// word, or a joined word alone. Words an emphasis marks already are
+    /// left as they are.
+    private mutating func emphasize(_ words: inout [Word]) {
+        let prefix = random.pick(3) == 0 ? Cells.boldPrefix : ""
+        let first = random.pick(words.count)
+        let kind = random.pick(4)
+        guard !words[first].marked else { return }
+        switch kind {
+        case 0 where words.count - first >= 4:
+            let last = first + 3 + random.pick(words.count - first - 3)
+            guard !words[first...last].contains(where: \.marked) else { return }
+            for index in first...last { words[index].marked = true }
+            words[first].sign = prefix + Cells.sign + Cells.sign
+            words[last].sign = prefix + Cells.sign
+        case 1:
+            let split = random.element(of: Self.partWords)
+            words[first].cells = braille[split.part, default: ""] + Cells.termination + braille[split.rest, default: ""]
+            words[first].sign = prefix + Cells.sign
+        case 2 where !words[first].joined.isEmpty:
+            words[first].joinedSign = prefix + Cells.sign
+        default:
+            words[first].sign = prefix + Cells.sign
+        }
+        words[first].marked = true
     }
 }
