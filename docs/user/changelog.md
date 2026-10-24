@@ -15,6 +15,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - A PDF's own page label that looks like a number with a thousands separator, such as 1.100, stays as the PDF gives it, and a PDF already in your library keeps its old labels until Redo Text Extraction reads it again.
 - Plain text books have pages: each form feed between words begins one, up to 100,000.
 - The first time this version opens, every braille, plain text, EPUB, and HTML book is read again once, and a braille book whose new reading differs from its text keeps a copy of its old text beside it (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+- A plain text, Markdown, or HTML file that is neither UTF-8 nor UTF-16 and names no encoding is no longer always read as Windows-1252, since TextMouth now guesses its encoding when you add it, and books already in your library keep their text (see [What TextMouth reads](what-textmouth-reads.md)).
 
 ### Braille
 - BRF and PEF books have pages, the braille pages an embosser or a braille display counts, named by their braille page number read as print, such as 12 or p1, and Next Page, Previous Page, and Go to Page… move by them.
@@ -33,6 +34,8 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Replace Existing removes the old copy's files only after the library holds the new copy, and says so if it cannot remove them.
 - When Replace Existing keeps an edit of the old copy's text as a copy, VoiceOver says where it was kept.
 - Edit Text says it has stopped for a book that Replace Existing replaced.
+- Book Information shows a Text Encoding row, and Speak Full Info says the encoding, as in "Text encoding: Windows-1251 (Cyrillic), guessed.", for a text book whose encoding was guessed (see [The Library window](library-window.md)).
+- A TextMouth older than 0.2.2 drops a guessed encoding when it saves a book, and that book's text may then read as Windows-1252 again the next time it is rebuilt (see [Where TextMouth keeps your library](where-your-library-lives.md)).
 
 ## 0.2.1 (October 23, 2026)
 ### Reading
