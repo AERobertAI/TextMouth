@@ -378,6 +378,39 @@ final class PageNavigationTests: XCTestCase {
         XCTAssertFalse(reader.hasPages)
     }
 
+    /// While the book loads every page command does nothing and says
+    /// nothing, as Next Heading does: the reader has no book to ask yet, and
+    /// "This book has no pages." for the moments a book with pages takes to
+    /// load would tell the listener otherwise. Once it has loaded, the same
+    /// commands move.
+    func testWhileTheBookLoadsThePageCommandsAreSilent() {
+        let reader = makePagedReader(pages: Self.fivePages)
+        defer { reader.close() }
+        let loaded = reader.content
+        reader.content = nil
+        reader.isLoading = true
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 0
+        reader.lastAnnouncement = nil
+
+        reader.nextPage()
+        reader.previousPage()
+        reader.performSkip(unit: .page, forward: true)
+        reader.performSkip(unit: .page, forward: false)
+        reader.requestGoToPage()
+
+        XCTAssertNil(reader.lastAnnouncement, "a page command spoke while the book loaded")
+        XCTAssertEqual(reader.goToPageRequests, 0)
+        XCTAssertEqual(pagedPlace(of: reader), "0:0")
+
+        reader.content = loaded
+        reader.isLoading = false
+        reader.nextPage()
+        XCTAssertEqual(pagedPlace(of: reader), "0:100")
+        reader.requestGoToPage()
+        XCTAssertEqual(reader.goToPageRequests, 1)
+    }
+
     /// The Page unit skips by page from the playback bar's buttons.
     func testPerformSkipByPageMovesByPage() {
         let reader = makePagedReader(pages: Self.fivePages)

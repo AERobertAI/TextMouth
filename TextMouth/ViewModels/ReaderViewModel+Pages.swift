@@ -131,16 +131,28 @@ extension ReaderViewModel {
 
     // MARK: - The commands
 
-    /// Move to the start of the next page and say its label ("Page 13").
-    /// Without pages it says so and moves nothing; after the last page it
-    /// does nothing, as Next Heading does after the last heading. A page
-    /// after the book's last word has no words to move to, and is passed
-    /// over (`withPassedOverCheck(_:)`).
-    func nextPage() {
+    /// Whether a page command has pages to work on. A reader that has not
+    /// loaded its book yet has nothing to ask, so the command does nothing,
+    /// as Next Heading does: the book may well have pages, and saying that it
+    /// had none, for the moments it takes to load, would tell the listener
+    /// otherwise. A loaded book without pages says so and moves nothing
+    /// (`ReaderPageWording.noPages`).
+    private func pageCommandHasPages() -> Bool {
+        guard content != nil else { return false }
         guard hasPages else {
             announceToVoiceOver(ReaderPageWording.noPages)
-            return
+            return false
         }
+        return true
+    }
+
+    /// Move to the start of the next page and say its label ("Page 13").
+    /// Without pages it says so and moves nothing (while the book loads, it
+    /// does nothing); after the last page it does nothing, as Next Heading
+    /// does after the last heading. A page after the book's last word has no
+    /// words to move to, and is passed over (`withPassedOverCheck(_:)`).
+    func nextPage() {
+        guard pageCommandHasPages() else { return }
         let pages = bookPages
         let page = withPassedOverCheck { isPassedOver in
             Self.nextPage(
@@ -155,13 +167,10 @@ extension ReaderViewModel {
 
     /// Move to the start of the page being read, or of the one before when
     /// the place is already at a page's start, and say its label. Without
-    /// pages it says so and moves nothing; before the first page it does
-    /// nothing.
+    /// pages it says so and moves nothing (while the book loads, it does
+    /// nothing); before the first page it does nothing.
     func previousPage() {
-        guard hasPages else {
-            announceToVoiceOver(ReaderPageWording.noPages)
-            return
-        }
+        guard pageCommandHasPages() else { return }
         let pages = bookPages
         let page = withPassedOverCheck { isPassedOver in
             Self.previousPage(
@@ -227,12 +236,9 @@ extension ReaderViewModel {
 
     /// Ask for the page field (Go to Page…, PG03): the status row opens it at
     /// each request, and puts the keyboard in it. A book without pages says
-    /// so and opens nothing.
+    /// so and opens nothing (while the book loads, it does nothing).
     func requestGoToPage() {
-        guard hasPages else {
-            announceToVoiceOver(ReaderPageWording.noPages)
-            return
-        }
+        guard pageCommandHasPages() else { return }
         goToPageRequests += 1
     }
 
