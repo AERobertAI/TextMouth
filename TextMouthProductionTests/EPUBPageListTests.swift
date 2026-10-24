@@ -318,6 +318,41 @@ final class EPUBPageListTests: XCTestCase {
         XCTAssertTrue(result.markdown.contains("## Part Two\n"), result.markdown)
     }
 
+    /// Through a whole EPUB: a heading holding a page-break element's number
+    /// is the heading without it, whether the book has no page list (the
+    /// element is the page) or a page list names the element as a page of
+    /// its own, numbered otherwise ("ix" for the number 9), and the page
+    /// begins where the heading does. The number is read nowhere.
+    func testAnEPUBHeadingLeavesOutAPageBreaksNumber() throws {
+        let chapter = xhtml("""
+            <h1>Title</h1><p>Alpha text.</p>
+            <h2>Part <span id="p9" epub:type="pagebreak">9</span>Two</h2><p>Bravo text.</p>
+            """)
+        let toc = "<nav epub:type=\"toc\"><ol><li><a href=\"ch1.xhtml\">Title</a></li></ol></nav>"
+        let list = "<nav epub:type=\"page-list\"><ol><li><a href=\"ch1.xhtml#p9\">ix</a></li></ol></nav>"
+        for (name, nav, label) in [("no page list", toc, "9"), ("a page list", toc + list, "ix")] {
+            let epub = try makeEPUB(
+                manifest: """
+                    <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+                    <item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>
+                    """,
+                spine: "<itemref idref=\"ch1\"/>",
+                members: ["nav.xhtml": xhtml(nav), "ch1.xhtml": chapter]
+            )
+
+            let chapters = try EPUBParser.prepareBook(url: epub).chapters
+            XCTAssertEqual(chapters.count, 1, name)
+            guard let first = chapters.first?.chapter else { return XCTFail("no chapter with \(name)") }
+
+            XCTAssertTrue(first.headings.contains { $0.text == "Part Two" }, "\(name): \(first.headings.map(\.text))")
+            XCTAssertFalse(first.headings.contains { $0.text.contains("9") }, "\(name): \(first.headings.map(\.text))")
+            XCTAssertFalse(first.text.contains("9"), "\(name): \(first.text)")
+            let part = first.headings.first { $0.text == "Part Two" }
+            XCTAssertEqual(first.pages.map(\.label).filter { $0 == label }, [label], name)
+            XCTAssertEqual(first.pages.first { $0.label == label }?.characterOffset, part?.characterOffset, name)
+        }
+    }
+
     /// Whatever inline markup a page-break element inside a heading stands
     /// in, the label reads as the same markup does in a paragraph, where the
     /// number is not read: its number in the other numbering ("V" for page
