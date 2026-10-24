@@ -67,8 +67,8 @@ enum ReaderPageWording {
     /// asked for as the book spells it, and `cursor` where the cursor is
     /// (`cursorPlace(_:occurrence:)`). The reader reads it from the pages
     /// themselves (`DocumentContent.pageHoldsWord(at:outside:)`), never from
-    /// the cursor's being elsewhere, which a jump while the book plays can be
-    /// for another reason.
+    /// the cursor's being elsewhere, which after a jump while the book plays
+    /// can have another reason.
     ///
     /// A page asked for whose label other pages carry too is named as which
     /// of them it is, `occurrence` counting from 1 in book order: "The first

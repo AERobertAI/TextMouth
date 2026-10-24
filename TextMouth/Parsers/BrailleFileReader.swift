@@ -433,8 +433,8 @@ enum BrailleFileReader {
                 // number of lines, as in a file with no form feed at all.
                 try pages.repage(every: BrailleFileReader.linesPerUnmarkedPage)
             }
-            // Only a BRF's form feeds between its text mark pages (a BRL's
-            // end none).
+            // Only a BRF's form feeds between its text mark pages; a BRL's
+            // end no page.
             pages.marksItsPages = formFeedBetweenText
             return pages
         }
