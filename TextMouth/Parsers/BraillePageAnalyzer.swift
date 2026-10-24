@@ -13,8 +13,8 @@ struct BrailleStructure: Equatable, Sendable {
 
 /// The numbers a braille page carries, each braille cells such as "⠼⠁", and
 /// where the page begins in the book's blocks. The braille page number names
-/// the page in the reader (PG12); the print page numbers are kept for
-/// navigation by print page, which is a follow-up.
+/// the page in the reader (PG12, `braillePageLabel`); the print page numbers
+/// are kept for navigation by print page, which is a follow-up.
 struct BraillePageNumbers: Equatable, Sendable {
     var braillePageNumber: String?
     var printPageNumber: String?
@@ -841,3 +841,88 @@ enum BraillePageAnalyzer {
     }
 }
 
+// MARK: - Page labels
+
+extension BraillePageNumbers {
+    /// The page's label in the reader (PG12): its braille page number read
+    /// as print, as "⠼⠁⠃" reads "12" and "⠏⠼⠁" reads "p1"
+    /// (`printLabel(of:)`). Nil for a page without a braille page number, or
+    /// with one that reading does not know, which the reader labels by the
+    /// page's place among the file's pages instead.
+    var braillePageLabel: String? {
+        braillePageNumber.flatMap(Self.printLabel(of:))
+    }
+
+    /// The print that the number word `number` writes, read the same way in
+    /// every English braille code, since a page number uses only the cells
+    /// UEB and EBAE share: nil for anything else.
+    ///
+    /// The word is read cell by cell, as its braille ASCII (`BrailleCells
+    /// .ascii(for:)`), in three parts:
+    /// 1. letters before the number, such as the "p" of a preliminary page
+    ///    ("⠏⠼⠁", p1) or the "t" of a transcriber's page;
+    /// 2. the number sign and at least one digit, a to j for 1 to 9 and 0;
+    /// 3. letters after it, such as the "a" of "1a": a letter sign (⠰) before
+    ///    one of a to j, which would otherwise be a digit, or any of k to z,
+    ///    which ends the number by itself.
+    ///
+    /// A capital sign (⠠) before a letter makes it a capital, and ends the
+    /// number's digits. Letters are lowercase otherwise. A word with a second
+    /// number, a cell outside these, an indicator with no letter after it, or
+    /// no digit at all is not read: a reading that guessed could name a page
+    /// wrongly, while the page's place names it rightly.
+    static func printLabel(of number: String) -> String? {
+        var label = ""
+        // While the number's digits go on: after the number sign, until a
+        // cell that is no digit.
+        var inNumber = false
+        // Whether a number sign and a digit after it were read.
+        var readNumber = false
+        // An indicator waiting for the letter it applies to.
+        var capitalizesNext = false
+        var letterSignWaits = false
+        for scalar in number.unicodeScalars {
+            guard let byte = BrailleCells.ascii(for: scalar) else { return nil }
+            switch byte {
+            case UInt8(ascii: "#"):
+                // The number sign: one number in a word, and no indicator
+                // waiting for a letter before it.
+                guard !readNumber, !inNumber, !capitalizesNext, !letterSignWaits else { return nil }
+                inNumber = true
+            case UInt8(ascii: "A")...UInt8(ascii: "J") where inNumber:
+                // A digit: "A" (⠁) is 1, up to "I" (⠊), 9; "J" (⠚) is 0.
+                let digit = byte == UInt8(ascii: "J") ? UInt8(ascii: "0") : byte - UInt8(ascii: "A") + UInt8(ascii: "1")
+                label.unicodeScalars.append(Unicode.Scalar(digit))
+                readNumber = true
+            case UInt8(ascii: ","):
+                // The capital sign, which ends the digits; never straight
+                // after the number sign, nor after another indicator.
+                guard !capitalizesNext, !letterSignWaits, !(inNumber && !readNumber) else { return nil }
+                inNumber = false
+                capitalizesNext = true
+            case UInt8(ascii: ";"):
+                // The letter sign: only after the digits, which it ends.
+                guard inNumber, readNumber else { return nil }
+                inNumber = false
+                letterSignWaits = true
+            case UInt8(ascii: "A")...UInt8(ascii: "Z"):
+                // A letter. In the number, a to j were digits (above), so
+                // this is k to z, which ends the number, and only after a digit.
+                if inNumber {
+                    guard readNumber else { return nil }
+                    inNumber = false
+                }
+                // Braille ASCII writes letters in capitals; print them in
+                // lowercase unless a capital sign came first.
+                let letter = capitalizesNext ? byte : byte + (UInt8(ascii: "a") - UInt8(ascii: "A"))
+                label.unicodeScalars.append(Unicode.Scalar(letter))
+                capitalizesNext = false
+                letterSignWaits = false
+            default:
+                return nil
+            }
+        }
+        guard readNumber, !capitalizesNext, !letterSignWaits else { return nil }
+        return label
+    }
+}

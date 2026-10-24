@@ -1018,4 +1018,41 @@ final class BraillePageAnalyzerTests: XCTestCase {
         XCTAssertEqual(structure.pages.count, 20_000)
         XCTAssertEqual(structure.blocks.count, 4 * 20_000)
     }
+
+    // MARK: Page labels (PG12)
+
+    /// A braille page number reads as the print it writes: digits after the
+    /// number sign, letters before it or after it, a capital sign's capital.
+    func testABraillePageNumberReadsAsPrint() {
+        let expectations: [(ascii: String, label: String)] = [
+            ("#A", "1"), ("#AB", "12"), ("#AJJ", "100"), ("#J", "0"),
+            ("P#A", "p1"), ("T#C", "t3"), ("A#A", "a1"), (",P#A", "P1"),
+            ("#A;A", "1a"), ("#AK", "1k"), ("#A,B", "1B"), ("#AB;CD", "12cd"),
+        ]
+        for (ascii, label) in expectations {
+            XCTAssertEqual(BraillePageNumbers.printLabel(of: cells(ascii)), label, ascii)
+        }
+    }
+
+    /// A word this reading does not know has no label: no number, a second
+    /// number, a sign with nothing after it, a cell no page number uses, a
+    /// blank cell, an eight-dot cell, or text that is no braille.
+    func testAWordThisReadingDoesNotKnowHasNoLabel() {
+        let unknown = ["", "#", "P", "P#", "#A#B", "##A", "#,A", "#;A", "#A;", "#A,", ",#A", "#-A", "#A-B", "A1", "#A B", "#K"]
+        for ascii in unknown {
+            XCTAssertNil(BraillePageNumbers.printLabel(of: cells(ascii)), ascii)
+        }
+        XCTAssertNil(BraillePageNumbers.printLabel(of: "⠼⣁"))
+        XCTAssertNil(BraillePageNumbers.printLabel(of: "#A"))
+    }
+
+    /// A page's label is its braille page number read as print, and a page
+    /// without one has none; the sample's pages are 1 and 2.
+    func testAPagesLabelIsItsBraillePageNumberReadAsPrint() throws {
+        XCTAssertNil(BraillePageNumbers(firstBlockIndex: 0).braillePageLabel)
+        XCTAssertEqual(BraillePageNumbers(braillePageNumber: cells("#AB"), firstBlockIndex: 0).braillePageLabel, "12")
+        let structure = BraillePageAnalyzer.structure(
+            of: try sampleBRFPages("brf/pride-and-prejudice-ch1-grade1.brf"), formatted: true)
+        XCTAssertEqual(structure.pages.map(\.braillePageLabel), ["1", "2"])
+    }
 }
