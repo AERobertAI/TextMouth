@@ -49,10 +49,17 @@ final class ImportStaging {
     /// choose, for a package to be published at `destination`.
     private init(destination: URL, folder: URL) {
         self.destination = destination
-        directory = folder.appendingPathComponent(
-            "\(Self.namePrefix)\(UUID().uuidString)\(Self.nameSuffix)",
-            isDirectory: true
-        )
+        directory = folder.appendingPathComponent(Self.freshName(), isDirectory: true)
+    }
+
+    /// A staged package's name no other can have: `.import-`, a new UUID,
+    /// then `.tmb`. Replace Existing sets a replaced package aside under one
+    /// before deleting it (ST04, `DuplicateReplacement`), so that a deletion
+    /// stopped partway leaves only what every walk of the library passes
+    /// over and the next import into its folder removes
+    /// (`removeAbandoned(in:)`).
+    static func freshName() -> String {
+        "\(namePrefix)\(UUID().uuidString)\(nameSuffix)"
     }
 
     /// The staged package's directory name, which a staged `Book` uses as

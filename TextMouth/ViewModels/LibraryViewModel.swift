@@ -223,9 +223,10 @@ final class LibraryViewModel: ObservableObject {
     var offersTranscription: @MainActor (Book) -> Bool = { TranscriptionOffers.offersTranscription(of: $0) }
     /// Removes the package of a book Replace Existing replaced, once the new
     /// copy is committed (ST04), to the Trash when the flag is true and for
-    /// good otherwise; tests replace it to make the removal fail.
-    var removesReplacedPackage: @MainActor (Book, Bool) throws -> Void = { book, _ in
-        try FileImportService.deleteBookPackage(book)
+    /// good otherwise (`DuplicateReplacement.removeReplacedPackage`); tests
+    /// replace it to make the removal fail.
+    var removesReplacedPackage: @MainActor (Book, Bool) throws -> Void = { book, movesToTrash in
+        try DuplicateReplacement.removeReplacedPackage(of: book, movesToTrash: movesToTrash)
     }
     /// The offers to transcribe that the user accepted (FR05), for the
     /// Library window that asked to open the Transcribe Audio sheet.

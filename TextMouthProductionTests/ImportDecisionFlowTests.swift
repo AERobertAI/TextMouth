@@ -753,6 +753,41 @@ final class ImportDecisionFlowTests: XCTestCase {
         )
     }
 
+    /// With the Trash off, an old package holding a read-only folder, as an
+    /// imported RTFD's can be, which a plain deletion stops partway through,
+    /// is set aside and deleted whole: nothing of it stays in its folder,
+    /// under any name, and the edit kept beside the new copy's text is never
+    /// taken back out of the new package.
+    func testAnOldPackageHoldingAReadOnlyFolderGoesWholeAndTheNewCopyKeepsTheEdit() throws {
+        let scene = try makeScene()
+        let shelf = makeIntegrationLibraryFolder("Import Decisions Shelf")
+        let copySource = try writeSource("Atlas of Tides", in: scene)
+        let earlier = scene.sources.appendingPathComponent("Earlier Atlas of Tides.txt")
+        try FileManager.default.copyItem(at: copySource, to: earlier)
+        var existing = try FileImportService.importFileWithReport(from: earlier, toFolder: shelf.path).book
+        let edited = Data("An edit the reader made to the chart notes.".utf8)
+        try edited.write(to: MarkdownCacheService.cacheURL(for: existing))
+        existing.editedText = EditedText(cacheDigest: FingerprintHasher.md5.digestOfData(edited), takenAt: Date())
+        let locked = existing.tmbDirectory.appendingPathComponent("Plates.rtfd", isDirectory: true)
+        try FileManager.default.createDirectory(at: locked, withIntermediateDirectories: true)
+        try Data("plate".utf8).write(to: locked.appendingPathComponent("plate.txt"))
+        XCTAssertEqual(chmod(locked.path, 0o555), 0)
+        scene.model.library = Library(books: [existing])
+        useAfterImportingBehavior(.keepOriginal)
+        scene.model.importFiles(urls: [copySource], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
+
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+
+        XCTAssertNil(scene.model.errorMessage)
+        XCTAssertEqual(try shelf.entries(), [copy.tmbDirectoryName], "something of the old package stayed in its folder")
+        let replaced = try XCTUnwrap(scene.model.bookByID(existing.id))
+        let names = try FileManager.default.contentsOfDirectory(atPath: replaced.tmbDirectory.path)
+        let kept = try XCTUnwrap(names.first(where: TextMouthPaths.isKeptTextCopy), "the edit kept beside the new text is gone")
+        XCTAssertEqual(try Data(contentsOf: replaced.tmbDirectory.appendingPathComponent(kept)), edited)
+    }
+
     /// A replacement whose index cannot be saved, as while an unreadable
     /// index holds every write, changes nothing: the library and both
     /// packages are as they were, the new copy's record names its own ID

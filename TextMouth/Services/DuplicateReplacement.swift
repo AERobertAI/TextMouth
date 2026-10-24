@@ -108,6 +108,44 @@ enum DuplicateReplacement {
         }
     }
 
+    // MARK: Removing the Old Copy's Package
+
+    /// Removes the package of `existing`, which a committed new copy has
+    /// replaced: to the Trash in one move when `movesToTrash`, under its own
+    /// name, so the Trash shows it; otherwise renamed first, in one step, to
+    /// a staged package's hidden name in its own folder
+    /// (`ImportStaging.freshName()`), then deleted with everything in it
+    /// (`ImportStaging.removeStagedPackage(at:)`, which gives back write
+    /// permission a read-only item inside took away, as an RTFD's folder can
+    /// keep). The rename comes first because a deletion can stop partway,
+    /// and a half-deleted package left under its own name would be a broken
+    /// book in the library; under a staged name nothing in TextMouth treats
+    /// it as a book or a folder, and the next import into that folder
+    /// removes what is left (`ImportStaging.removeAbandoned(in:)`). This is
+    /// simpler than an undo, which could only take back what the new copy
+    /// was given. A package already gone counts as removed.
+    /// - Throws: the deletion guard's refusal
+    ///   (`FileImportService.managedPackageURLForDeletion`), or why the
+    ///   package could not be moved to the Trash or set aside: it is then
+    ///   whole, in its folder.
+    @MainActor
+    static func removeReplacedPackage(of existing: Book, movesToTrash: Bool) throws {
+        let package = try FileImportService.managedPackageURLForDeletion(existing)
+        let fileManager = FileManager.default
+        guard fileManager.fileExists(atPath: package.path) else { return }
+        if movesToTrash {
+            // Never a permanent deletion in its place: a Trash failure stays
+            // a failure.
+            try fileManager.trashItem(at: package, resultingItemURL: nil)
+            return
+        }
+        let aside = package.deletingLastPathComponent().appendingPathComponent(ImportStaging.freshName(), isDirectory: true)
+        try fileManager.moveItem(at: package, to: aside)
+        // What cannot be deleted is logged (IMPORT_STAGING_LEFT) and left
+        // for the next import into the folder.
+        ImportStaging.removeStagedPackage(at: aside)
+    }
+
     /// What the library's alert says when the package of the copy titled
     /// `title` could not be removed for `reason` after the new copy took its
     /// place, which stands: moved to the Trash, or deleted, as
