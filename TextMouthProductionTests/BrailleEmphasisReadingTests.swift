@@ -12,6 +12,9 @@ import XCTest
 /// BANA's rules write them (the Library of Congress's Instruction Manual for
 /// Braille Transcribing, fifth edition, lesson 15, whose examples most of
 /// the contracted samples are), and gives liblouis the braille without them.
+/// Each word keeps the emphasis its signs mark, which content.md holds as
+/// Markdown emphasis (`BrailleBookReader.markdownLine(of:)`, every
+/// punctuation character escaped).
 final class BrailleEmphasisReadingTests: XCTestCase {
     /// The folder the helper's hidden files are made in.
     private var work = URL(fileURLWithPath: "/var/empty", isDirectory: true)  // replaced in setUp
@@ -36,9 +39,23 @@ final class BrailleEmphasisReadingTests: XCTestCase {
         return try XCTUnwrap(print.first, "\(table): \(ascii)")
     }
 
-    /// Asserts that each of `samples`, braille ASCII and the print it holds,
-    /// reads back as that print with `table`.
+    /// Asserts that each of `samples`, braille ASCII and the Markdown line
+    /// content.md holds for it, reads back as that line with `table`: the
+    /// print, its emphasis as Markdown's, and every punctuation character
+    /// escaped.
     private func assertReads(
+        _ samples: [(braille: String, markdown: String)], _ table: String,
+        file: StaticString = #filePath, line: UInt = #line
+    ) throws {
+        for sample in samples {
+            let print = try read(sample.braille, table)
+            XCTAssertEqual(BrailleBookReader.markdownLine(of: print), sample.markdown, "\(table): \(sample.braille)", file: file, line: line)
+        }
+    }
+
+    /// Asserts that each of `samples`, braille ASCII and the print it holds,
+    /// reads back as that print with `table`, whatever its emphasis.
+    private func assertReadsWords(
         _ samples: [(braille: String, print: String)], _ table: String,
         file: StaticString = #filePath, line: UInt = #line
     ) throws {
@@ -47,62 +64,73 @@ final class BrailleEmphasisReadingTests: XCTestCase {
         }
     }
 
-    // MARK: - EBAE: The Words
+    // MARK: - EBAE
 
     /// Contracted EBAE as BANA writes it reads without a stray period, "=",
-    /// or "µ": a word's sign, a passage's (⠨⠨, then ⠨ before its last word),
-    /// bold's (⠸⠨, ⠸⠨⠨), a sign after opening punctuation, after a dash or a
-    /// slash, and after a joined "to", "into", or "by", the termination sign
-    /// ⠠⠄, and liblouis's own signs before punctuation. Before this pass the
-    /// first sample read ".blue-eyed", and "6.me" read "µe".
-    func testContractedEBAEReadsWithoutStraySigns() throws {
+    /// or "µ", and keeps the emphasis its signs mark: a word's sign, a
+    /// passage's (⠨⠨, then ⠨ before its last word, which ends it), bold's
+    /// (⠸⠨, ⠸⠨⠨), a sign after opening punctuation, after a dash or a slash
+    /// (which end a word's emphasis), and after a joined "to", "into", or
+    /// "by" (which take a sign of their own), the termination sign ⠠⠄, and
+    /// liblouis's own signs before punctuation. Before the pass the second
+    /// sample read ".blue-eyed", and "6.me" read "µe", with no emphasis.
+    func testContractedEBAEReadsWithoutStraySignsAndKeepsItsEmphasis() throws {
         try assertReads([
-            (".,m>*", "March"),
-            (".blue-ey$", "blue-eyed"),
-            (".,hold .! .bus6", "Hold the bus!"),
-            ("..,pl1se6 ,hold ! .bus6", "Please! Hold the bus!"),
-            (",w[6 ..,look at page .#c4", "Wow! Look at page 3."),
-            (#",%e ?"\3 ..,poor ,alice ,faye .re,y ne$s .t .job4"#, "She thought: Poor Alice Faye really needs that job."),
-            (",? is .8 coat4", "This is his coat."),
-            (".,2 .c>e;l6", "Be careful!"),
-            (".96.t[n", "into town"),
-            (",give x 6..hm1 n 6.me6", "Give it to him, not to me!"),
-            (",0.default", "By default"),
-            (".6,george", "to George"),
-            (".,0.,george6", "By George!"),
-            ("..,6]r is .human4", "To err is human."),
-            (".,hel,'lo6", "Hello!"),
-            ("8.,help60 ! boy yell$4", "\"Help!\" the boy yelled."),
-            (".,/op--.,n[6", "Stop -- Now!"),
-            (".&_/.or", "and/or"),
-            ("_.cat sat", "cat sat"),
-            (#"_..one two ?ree f\r _.five4"#, "one two three four five."),
+            (".,m>*", "*March*"),
+            (".blue-ey$", #"*blue\-eyed*"#),
+            (".,hold .! .bus6", #"*Hold the bus*\!"#),
+            ("..,pl1se6 ,hold ! .bus6", #"*Please\! Hold the bus*\!"#),
+            (",w[6 ..,look at page .#c4", #"Wow\! *Look at page 3*\."#),
+            (#",%e ?"\3 ..,poor ,alice ,faye .re,y ne$s .t .job4"#, #"She thought\: *Poor Alice Faye really* needs *that job*\."#),
+            (",? is .8 coat4", #"This is *his* coat\."#),
+            (".,2 .c>e;l6", #"*Be careful*\!"#),
+            (".96.t[n", "*into town*"),
+            (".96!", "*into* the"),
+            (",give x 6..hm1 n 6.me6", #"Give it to *him\, not to me*\!"#),
+            (",0.default", "By *default*"),
+            (".6,george", "*to* George"),
+            (".,0.,george6", #"*By George*\!"#),
+            ("..,6]r is .human4", #"*To err is human*\."#),
+            (".,hel,'lo6", #"*Hel*lo\!"#),
+            ("8.,help60 ! boy yell$4", #"\"*Help*\!\" the boy yelled\."#),
+            (".,/op--.,n[6", #"*Stop* \-\- *Now*\!"#),
+            (".&_/or", #"*and*\/or"#),
+            (".&_/.or", #"*and*\/*or*"#),
+            ("_.cat sat", "**cat** sat"),
+            (#"_..one two ?ree f\r _.five4"#, #"**one two three four five**\."#),
             // liblouis's own signs: ⠨ again before a passage's punctuation,
             // and the termination sign before a word's.
-            (#".."o two ?ree f\r .five.1 six"#, "one two three four five, six"),
-            (".s.d,'1 ;x", "sound, x"),
-            (#".."o two ?ree f\r .s.d.1 ;x"#, "one two three four sound, x"),
+            (#".."o two ?ree f\r .five.1 six"#, #"*one two three four five*\, six"#),
+            (".s.d,'1 ;x", #"*sound*\, x"#),
+            (#".."o two ?ree f\r .s.d.1 ;x"#, #"*one two three four sound*\, x"#),
         ], ebaeContracted)
     }
 
     /// Uncontracted EBAE reads without a stray period or "=" too, in BANA's
-    /// signs and in those liblouis writes. Before this pass ".kite" read
-    /// "=ite", and ".five.1" read ".five>".
-    func testUncontractedEBAEReadsWithoutStraySigns() throws {
+    /// signs and in liblouis's, and keeps its emphasis, bold italic too:
+    /// liblouis writes bold's sign before italic's, so ⠸⠨⠨ is a bold word in
+    /// italic unless a later word of the paragraph, its fourth or after,
+    /// closes it as a bold passage. Before the pass ".kite" read "=ite", and
+    /// ".five.1" read ".five>".
+    func testUncontractedEBAEReadsWithoutStraySignsAndKeepsItsEmphasis() throws {
         try assertReads([
-            (";a .cat sat", "a cat sat"),
-            ("..one two three four .five1 six", "one two three four five, six"),
-            ("..it was not at .all4", "it was not at all."),
-            (".one .two .three four", "one two three four"),
-            (".,march", "March"),
-            ("8.,help60 the boy yelled4", "\"Help!\" the boy yelled."),
-            (".cat,''s", "cat's"),
-            ("_..one two three four _.five4", "one two three four five."),
-            (".cat-dog", "cat-dog"),
-            (".cat,'-dog", "cat-dog"),
-            (".kite flew", "kite flew"),
-            ("..one two three four .five.1 six", "one two three four five, six"),
-            (".cat,'1 sat", "cat, sat"),
+            (";a .cat sat", "a *cat* sat"),
+            ("..one two three four .five1 six", #"*one two three four five*\, six"#),
+            ("..it was not at .all4", #"*it was not at all*\."#),
+            (".one .two .three four", "*one two three* four"),
+            (".,march", "*March*"),
+            ("8.,help60 the boy yelled4", #"\"*Help*\!\" the boy yelled\."#),
+            (".cat,''s", #"*cat*\'s"#),
+            ("_..one two three four _.five4", #"**one two three four five**\."#),
+            (".cat-dog", #"*cat\-dog*"#),
+            (".cat,'-dog", #"*cat*\-dog"#),
+            (".kite flew", "*kite* flew"),
+            ("..one two three four .five.1 six", #"*one two three four five*\, six"#),
+            (".cat,'1 sat", #"*cat*\, sat"#),
+            ("_..cat sat", "***cat*** sat"),
+            ("_..one _..two three", "***one two*** three"),
+            ("..one _.two three four .five six", "*one* ***two*** *three four five* six"),
+            ("_....one two three four _..five._.1 six", #"***one two three four five***\, six"#),
         ], ebaeUncontracted)
     }
 
@@ -115,7 +143,7 @@ final class BrailleEmphasisReadingTests: XCTestCase {
     func testEBAELeavesWhatIsNoSign() throws {
         XCTAssertEqual(try read(".#c.e", ebaeUncontracted).text, try read("#c.e", ebaeUncontracted).text)
         XCTAssertEqual(try read("! .#c.e cats", ebaeContracted).text, try read("! #c.e cats", ebaeContracted).text)
-        try assertReads([(".s.d is", "sound is"), ("a .b.d book", "a bound book"), ("a .k ;b", "a = b")], ebaeContracted)
-        try assertReads([(";a .k ;b", "a = b")], ebaeUncontracted)
+        try assertReadsWords([(".s.d is", "sound is"), ("a .b.d book", "a bound book"), ("a .k ;b", "a = b")], ebaeContracted)
+        try assertReadsWords([(";a .k ;b", "a = b")], ebaeUncontracted)
     }
 }
