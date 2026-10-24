@@ -89,7 +89,10 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - **`fix/replace-existing` (7a2e503e).** ST04's carry-over: Replace Existing keeps the old copy's ID, places, bookmarks, settings, folder, reading-list place, and transcript. The new copy is committed before the old one goes.
 - **`fix/pages-oct24` (2370465e).** Go to Page takes its reasons from the pages, and a BRF whose only form feeds are at its edges counts as having none.
 - **`docs/oct24b` (723052e4)** and **version 0.2.2** (c7958b3c).
-- **Held back: `formats/encodings` (FMT16).** After one fix round, its guesses still turned some Western text into other encodings. Its second round waits for a re-verify.
+- **`formats/encodings` (1cf19935, with docs `docs/fmt16`, 7335f088): FMT16.**
+  - At import, TextMouth guesses the encoding of a text file that names none, only when the Windows-1252 reading proves wrong. The guess is recorded with the book and named in Book Information.
+  - It was held back from the first integration after one fix round still turned some Western text into other encodings.
+  - The user then asked for its check ("Just do the check now"). After a second fix round and a one-line book-ID check, it merged on `integrate/fmt16`, after its own full suite.
 
 **October 23.** The user asked for four things before installing: transcript work, a review of transcription for bugs, a plan of the breaking changes to make before the official install, and a changelog with a daily version policy ("I want to install the new version with it as stable as you can make it"). Friday's line was 95% of the week used, before Saturday's 08:00 reset. Merged into main:
 - **`team/transcripts` (fec4de73).**
@@ -128,9 +131,8 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - Documentation passes: `docs/oct19` (c77c9cf4), `docs/oct19b` (bc5ef365), and `docs/oct20` (077b4e1e).
 
 **State at the end:**
-- **Main's suite:** **8606 tests, 78 skipped, 0 failures**. This is the integration suite on 2370465e; the docs merge and the 0.2.2 bump followed it, and the bump was built and checked.
+- **Main's suite:** **8706 tests, 78 skipped, 0 failures**, the suite after the FMT16 merge (62575681). Only its docs merge followed. The first integration's suite was 8606 tests, 78 skipped, 0 failures.
 - **Not installed yet:** the user's installed build is 0.1.1 (fb46ea6e). 0.2.2's first launch re-reads every text book for pages, safely (PG16), braille and plain text books included (V07).
-- **FMT16:** its branch `formats/encodings` holds the second fix round. Ask its reviewer (a831cb806eacae9f9, if still reachable, or a fresh one) to verify it before merging, with `build/orchestrator/verify-fmt16-report.md` as the brief.
 - **Questions:** `humanQuestions/2026-10-23.md` holds four.
   - The escaping (V06) comes after the install.
   - V03 is built; V04 is not.
@@ -139,7 +141,7 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - **Pending with the user:** the install and push, and the rm-hook offer.
 - **The next candidates:**
   - read the first launch's `PAGES_UPGRADE_SUMMARY` once the user installs;
-  - FMT16's re-verify and merge, then Reopen with Encoding;
+  - Reopen with Encoding, the user's way to fix a wrong or lost guess (FMT16's follow-up);
   - V06 in the first update after the install;
   - FMT43;
   - the TODO's follow-ups, among them the October 24 integration's.
