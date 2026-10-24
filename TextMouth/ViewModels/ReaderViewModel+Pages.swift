@@ -106,6 +106,19 @@ extension ReaderViewModel {
 
     // MARK: - Skipped sections
 
+    /// The ranges of chapter `chapterIndex`'s text, in UTF-16 offsets, that
+    /// the sections headed by `skippedIDs` take out, as speech passes over
+    /// them (`SkippedSectionFilter.excludedRanges`): none for a chapter the
+    /// book does not have, and none when it skips nothing.
+    private func skippedRanges(inChapter chapterIndex: Int, skipping skippedIDs: Set<String>) -> [Range<Int>] {
+        guard !skippedIDs.isEmpty, let content, content.chapters.indices.contains(chapterIndex) else { return [] }
+        return SkippedSectionFilter.excludedRanges(
+            textLength: content.chapters[chapterIndex].text.utf16Length,
+            headings: headings.filter { $0.chapterIndex == chapterIndex },
+            skippedIDs: skippedIDs
+        )
+    }
+
     /// Hands `body` a check that says whether a page is passed over: it
     /// starts inside a skipped section, as speech passes over the section, or
     /// after the book's last word, where it has no words and the reader
@@ -122,15 +135,10 @@ extension ReaderViewModel {
         var rangesByChapter: [Int: [Range<Int>]] = [:]
         return body { page in
             guard content.chapters.indices.contains(page.chapterIndex) else { return false }
-            let textLength = content.chapters[page.chapterIndex].text.utf16Length
-            if page.characterOffset >= textLength { return true }
+            if page.characterOffset >= content.chapters[page.chapterIndex].text.utf16Length { return true }
             guard !skippedIDs.isEmpty else { return false }
             if rangesByChapter[page.chapterIndex] == nil {
-                rangesByChapter[page.chapterIndex] = SkippedSectionFilter.excludedRanges(
-                    textLength: textLength,
-                    headings: headings.filter { $0.chapterIndex == page.chapterIndex },
-                    skippedIDs: skippedIDs
-                )
+                rangesByChapter[page.chapterIndex] = skippedRanges(inChapter: page.chapterIndex, skipping: skippedIDs)
             }
             return rangesByChapter[page.chapterIndex]?.contains { $0.contains(page.characterOffset) } ?? false
         }
