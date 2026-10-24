@@ -26,10 +26,11 @@
  *   emphasis it is given into the braille as the table's indicators, and
  *   `back` reports the emphasis it reads from the indicators: EBAE's signs
  *   and UEB's terminators it finds itself, before liblouis reads the braille
- *   (`read_braille`, October 24, 2026). Both carry only the classes read
- *   back exactly with the table (`check_readable`). Braille, in and out, is
- *   Unicode braille patterns (U+2800 to U+28FF), the blank cell U+2800
- *   included; a space is never braille.
+ *   (`read_braille`, October 24, 2026). `forward` carries only the classes
+ *   liblouis reads back exactly with the table (`check_readable`), and
+ *   `back` reports those and the EBAE signs it reads itself. Braille, in and
+ *   out, is Unicode braille patterns (U+2800 to U+28FF), the blank cell
+ *   U+2800 included; a space is never braille.
  *
  * The table is a bare file name, such as en-ueb-g2.ctb, of a table in the
  * tables folder: the app bundle's own (Contents/Resources/liblouis/tables),
@@ -122,8 +123,6 @@ enum {
 #define CELL_4 CELL(D4)                 /* ⠈ UEB's script prefix */
 #define CELL_5 CELL(D5)                 /* ⠐ UEB's fourth transcriber prefix */
 #define CELL_6 CELL(D6)                 /* ⠠ capital sign */
-#define CELL_13 CELL(D1 | D3)           /* ⠅ k; after ⠨, liblouis's "=" in EBAE */
-#define CELL_23 CELL(D2 | D3)           /* ⠆ UEB's symbol indicator after a prefix */
 #define CELL_34 CELL(D3 | D4)           /* ⠌ after ⠸, EBAE's slash */
 #define CELL_35 CELL(D3 | D5)           /* ⠔ "in" in contracted EBAE, as in ⠔⠖ "into" */
 #define CELL_36 CELL(D3 | D6)           /* ⠤ hyphen; two make EBAE's dash */

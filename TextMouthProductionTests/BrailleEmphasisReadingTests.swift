@@ -194,6 +194,36 @@ final class BrailleEmphasisReadingTests: XCTestCase {
         ], ebaeContracted)
     }
 
+    /// The review's plain sentences (October 24, 2026), each written and
+    /// read back in both EBAE tables, read back as their print, as main read
+    /// them; the pass had read "5 µg" as "5 *m;g*", "x >= y" as "x *1=* y",
+    /// and "(=)" as "(*knowledge*)".
+    func testTheReviewsSymbolSentencesReadBackAsTheirPrint() throws {
+        let sentences = ["5 \u{B5}g", "x >= y", "x == y", "(=)", ">quoted", "a->b", "km/\u{B5}s", "\u{B5}", "[=]", "a -- =b",
+                         "go to =x", "into >y", "by \u{B5}"]
+        for table in [ebaeUncontracted, ebaeContracted] {
+            let braille = try BrailleTranslator.translate(sentences, table: table, direction: .printToBraille, workingIn: work)
+            XCTAssertEqual(try BrailleTranslator.translate(braille, table: table, direction: .brailleToPrint, workingIn: work), sentences, table)
+        }
+    }
+
+    /// An italic passage across `BrailleTranslator`'s cut of a paragraph of
+    /// more than 4,000 cells, as BANA writes it (⠨⠨ before its first word,
+    /// ⠨ before its last), reads its words exactly: the piece after the cut
+    /// has no opening sign, so its words come back plain but for the last,
+    /// whose sign is read alone, and no sign is read as print.
+    func testAPassageAcrossTheCutReadsItsWords() throws {
+        let passage = "one two three four five six seven eight nine ten eleven twelve"
+        let braille = String(repeating: "zoo ", count: 985) + ".." + passage + " .zebra1 six"
+        let expected = String(repeating: "zoo ", count: 985) + passage + " zebra, six"
+        XCTAssertGreaterThan(braille.count, BrailleTranslator.maximumPieceScalars)
+        for table in [ebaeUncontracted, ebaeContracted] {
+            let print = try read(braille, table)
+            XCTAssertEqual(print.text, expected, table)
+            XCTAssertTrue(print.hasEmphasis, table)
+        }
+    }
+
     /// Plain print with the signs liblouis's EBAE writes with ⠨ (a period
     /// before a word, "=", ">", "µ") at a word's start, after "(", "[", a
     /// quotation mark, a dash, a hyphen, or a slash, and after a joined

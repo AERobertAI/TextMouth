@@ -14,9 +14,8 @@ import SwiftUI
 ///
 /// Each block's print keeps its runs' emphasis (October 21, 2026: the user
 /// asked that exported braille mark italics), which liblouis writes as the
-/// table's indicators where they read back exactly (UEB, and EBAE since
-/// October 24, 2026; most of this Mac's tables write plain braille, see
-/// `BraillePrintBlock`):
+/// table's indicators where it reads them back exactly (UEB; EBAE and most
+/// of this Mac's tables write plain braille, see `BraillePrintBlock`):
 /// emphasis (`*…*`) as italic and strong (`**…**`) as bold, both as both
 /// (`EmphasizedText(runs:)`). Text with no runs of its own, a code block's
 /// lines, a table's cells, an ordered item's number, and the book's title,

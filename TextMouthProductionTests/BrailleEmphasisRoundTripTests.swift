@@ -313,17 +313,71 @@ final class BrailleEmphasisRoundTripTests: XCTestCase {
         }
     }
 
+    /// The review's EBAE export cases (October 24, 2026), whose emphasis,
+    /// once written, came back with other words or other emphasis: EBAE
+    /// writes them plain, byte for byte the plain cases' braille, and they
+    /// come back word for word, as on main.
+    func testEBAEWritesTheReviewsExportCasesPlain() throws {
+        let cases = #"""
+        # The Sea Chapter
+
+        the \$*3* fee
+
+        a cat\-*one two three four five*\, six
+
+        re\-*read the whole long chapter*\.
+
+        un*believ*able and super*man* and book*keeper* and cat*s*
+
+        *ABCs* here
+        """#
+        let plainCases = cases.replacingOccurrences(of: "*", with: "")
+        for table in ["en-us-g1.ctb", "en_US.tbl"] {
+            let emphasized = try roundTrip(cases, table)
+            XCTAssertEqual(emphasized.brf, try roundTrip(plainCases, table).brf, "\(table): the BRF holds emphasis signs")
+            XCTAssertEqual(emphasized.readBack, plainCases, table)
+        }
+    }
+
     // MARK: - Every Bundled Table
 
+    /// Lines with numbers, symbols, hyphens, dashes, and bold italic followed
+    /// by bold, in content.md's form, for `testNoBundledTableReadsOtherWordsForEmphasis`.
+    private let symbolsSample = #"""
+    # The Sea Chapter
+
+    the ***cat*** sat on the **mat** today
+
+    it costs *\$3* or **25** dollars
+
+    a *well\-known* fact and *re\-read* it
+
+    *Stop* \-\- **now** \-\- *please*
+
+    x *\>\=* y and *a \= b* here
+
+    5 *µg* of *salt*\, said **Dr\. Lee**\.
+
+    ***one two three four five***\, six
+
+    **bold** and ***both*** then **bold again**
+
+    *1914\-18* was **long**
+
+    see *page 3* and **4**
+    """#
+
     /// Emphasis changes no word in any bundled table: each reads back the
-    /// emphasized export of the sample and of the six contraction sentences
-    /// with the words of their plain export, liblouis's own readings
-    /// included, so its content.md is the plain one's with emphasis added.
-    /// Before the reading passes, contracted UEB read "p" where plain braille
-    /// read "people", and EBAE could not be written with emphasis at all.
+    /// emphasized export of the sample, of the six contraction sentences, and
+    /// of lines with numbers, symbols, hyphens, dashes, and bold italic
+    /// followed by bold, with the words of their plain export, liblouis's own
+    /// readings included, so its content.md is the plain one's with emphasis
+    /// added (EBAE's, which writes no emphasis, trivially). Before the
+    /// reading passes, contracted UEB read "p" where plain braille read
+    /// "people".
     func testNoBundledTableReadsOtherWordsForEmphasis() throws {
         for table in ["en-us-g1.ctb", "en_US.tbl", "en-ueb-g1.ctb", "en-ueb-g2.ctb"] {
-            for markdown in [source, contractionCases] {
+            for markdown in [source, contractionCases, symbolsSample] {
                 let emphasized = try roundTrip(markdown, table).readBack
                 let plain = try roundTrip(markdown.replacingOccurrences(of: "*", with: ""), table).readBack
                 XCTAssertEqual(emphasized.replacingOccurrences(of: "*", with: ""), plain, table)

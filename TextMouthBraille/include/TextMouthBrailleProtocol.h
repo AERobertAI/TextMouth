@@ -25,11 +25,12 @@
  *   code line. `back` (braille to print) reads braille with an empty code
  *   line (braille holds its emphasis in its cells) and writes the print
  *   with the codes of the emphasis liblouis reported.
- * - Both carry only the emphasis read back exactly with the table, which
- *   the helper checks on each run: a table whose indicators cannot be read
- *   back, such as most of this Mac's that have any, writes and reads plain
- *   braille. EBAE's signs, which liblouis misreads, the helper reads itself
- *   (October 24, 2026), and they are carried; the protocol is unchanged.
+ * - `forward` carries only the emphasis liblouis reads back exactly with
+ *   the table, which the helper checks on each run: a table whose
+ *   indicators it cannot read back, such as EBAE's italic and bold, or most
+ *   of this Mac's that have any, writes plain braille. `back` reports that
+ *   emphasis too, and EBAE's, whose signs the helper reads itself where it
+ *   can tell them from print (October 24, 2026); the protocol is unchanged.
  *
  * Protocol 1 (October 19, 2026) was one line for each paragraph, with no
  * header and no emphasis.
