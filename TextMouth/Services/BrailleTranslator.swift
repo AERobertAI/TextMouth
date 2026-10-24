@@ -294,7 +294,10 @@ enum BrailleTranslator {
     /// emphasis of its own. Braille sent back comes back as print with the
     /// emphasis read from the indicators: EBAE's signs the helper reads
     /// itself, which liblouis misreads ("a .cat sat"), and liblouis gives
-    /// the braille without them (October 24, 2026). Both directions carry
+    /// the braille without them; UEB braille with a terminator the helper
+    /// reads a second time without its terminators, so that the contraction
+    /// before one reads as the word it is ("people", not "p"), keeping the
+    /// emphasis of the first reading (October 24, 2026). Both directions carry
     /// only the classes the helper finds read back exactly with this table
     /// (`check_readable` in `TextMouthBraille/main.c`): UEB's and EBAE's.
     /// Those of most of this Mac's tables liblouis misreads, so with them
