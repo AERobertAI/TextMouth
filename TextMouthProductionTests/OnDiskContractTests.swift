@@ -533,8 +533,8 @@ final class OnDiskContractTests: XCTestCase {
     }
 
     /// The names of `value`'s stored properties. A mirror shows the storage
-    /// of a property wrapper as "_name" (`BookMetadata.textEncoding`), and the
-    /// property, and its key, are "name".
+    /// of a property wrapper as "_name" (`BookMetadata.textEncoding`), while
+    /// the property, and its key in the file, are "name".
     private static func propertyNames(of value: Any) -> Set<String> {
         Set(Mirror(reflecting: value).children.compactMap(\.label).map { $0.hasPrefix("_") ? String($0.dropFirst()) : $0 })
     }

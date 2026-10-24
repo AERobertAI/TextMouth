@@ -143,18 +143,6 @@ struct BookMetadata: Codable {
     /// as the row's is, and does not fail the record.
     @LenientOptional var textEncoding: String? = nil
 
-    /// The keys of the metadata in bookInfo.json, written out because the
-    /// synthesized ones would key a property wrapper's backing storage, as
-    /// "_textEncoding". Every property above has its key here, under its own
-    /// name; a property missing from this list is not saved, and
-    /// `OnDiskContractTests` pins the keys that are.
-    private enum CodingKeys: String, CodingKey {
-        case title, author, format, md5Hash, dateAdded, lastOpened, originalFileName, folderPath, bookID, sourceFilePath
-        case publisher, publicationDate, isbn, language, epubIdentifier, epubVersion
-        case audioAlbum, audioGenre, audioYear
-        case metadataReaderVersion, handEdits, feedLink, brailleTable, brailleTableVersion, textEncoding
-    }
-
     init(
         title: String = "Untitled",
         author: String = Book.unknownAuthor,
