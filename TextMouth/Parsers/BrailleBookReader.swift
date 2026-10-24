@@ -81,15 +81,18 @@ enum BrailleBookReader {
     /// from liblouis with the emphasis it read from the braille's
     /// indicators, which becomes Markdown's own (`markdownLine(of:)`).
     ///
-    /// Emphasis changes no word the reader reads. Markdown's delimiters are
-    /// never text, so every block reads, scalar for scalar, as it read before
-    /// emphasis was kept, and so do the heading list's labels and offsets
-    /// (`BrailleImportTests` pins it). So a braille book imported before
-    /// keeps its content.md until something rebuilds it (Redo Text
-    /// Extraction, a changed file, a new cache version; nothing forces one),
-    /// and the rebuild then only adds the delimiters: each saved place's
-    /// anchor still meets the same words where it is (T06's direct check,
-    /// `TextAnchorFinder`), and no place or bookmark moves.
+    /// Keeping emphasis changes no word by itself. Markdown's delimiters are
+    /// never text, and the helper's pass for EBAE's emphasis signs keeps
+    /// every word liblouis reads alone, so a block reads, scalar for scalar,
+    /// as it read before emphasis was kept, and so do the heading list's
+    /// labels and offsets (`BrailleImportTests` pins it). Only the helper's
+    /// pass for UEB's emphasis terminators changes words, where liblouis
+    /// misread them (contracted UEB's "p" for "people"). A braille book
+    /// imported before braille had pages is read again once at a launch
+    /// (braille's line in `PageReaderVersions`): PG16's compare keeps a copy
+    /// of its old text when the new reading differs from it, even by
+    /// emphasis alone, and its saved places move with the text, as at every
+    /// re-read (T06).
     /// - Parameters:
     ///   - url: The book's file.
     ///   - table: The stored value of an offered table: a bundled table's
