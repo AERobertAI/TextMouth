@@ -73,7 +73,23 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - A test host that joins the system's media session takes the user's AirPods; it never does now, but a branch older than that fix still can until it rebases.
 - A tool call that waits on a permission prompt stops its agent until the user answers, and the user may be away. Claude Code asks before an `rm` through a shell variable: on October 18, 2026 a team lead's `rm -f "$D/$out"` in a throwaway test loop waited five hours while its team stood still. Every `rm`, in a brief or the orchestrator's own commands, takes literal paths. While agents work, the orchestrator runs `python3 -I Scripts/agents/stall-watch.py --subagents ~/.claude/projects/<project folder>/<session id>/subagents` as a background task; it exits naming any agent whose tool call has waited fifteen minutes for its result.
 
-## Where things stood on October 23, 2026
+## Where things stood on October 24, 2026
+
+**October 24.** At 02:25 ET on Saturday, with 13% of the week left before the 08:00 reset, the user asked: "Are there any more formats or bugs / todos you could work on? ... I want you to use as much as possible". Five agents worked on branches (`Scripts/agents/briefs/2026-10-24/`). The week ran out at 04:43, and they resumed after the reset. An independent Opus reviewer read each branch, and every one had real bugs, which its author fixed and a verifier checked. The branches were merged on `integrate/oct24`, one full suite ran there, and main was fast-forwarded to it (c7958b3c). Merged into main:
+- **`pages/polish` (cedc79ef).** The pages follow-ups:
+  - Go to Page's words, and Return on a repeated label;
+  - heading labels without page-break numbers, so the EPUB and HTML page readers are at 1.0.1;
+  - PDF grouped labels;
+  - Page left out of the bar's pickers for a book without pages.
+- **`pages/braille` (bd9bc748).** PG12 (braille pages) and PG13 (plain text form feeds), each with its own page-reader line (V07).
+- **`braille/reading` (d8d2a3d7).**
+  - EBAE emphasis is read where it is certain, with a safety net that keeps liblouis's words.
+  - EBAE export stays plain.
+  - Contracted UEB reads "people", not "p", before a terminator.
+- **`fix/replace-existing` (7a2e503e).** ST04's carry-over: Replace Existing keeps the old copy's ID, places, bookmarks, settings, folder, reading-list place, and transcript. The new copy is committed before the old one goes.
+- **`fix/pages-oct24` (2370465e).** Go to Page takes its reasons from the pages, and a BRF whose only form feeds are at its edges counts as having none.
+- **`docs/oct24b` (723052e4)** and **version 0.2.2** (c7958b3c).
+- **Held back: `formats/encodings` (FMT16).** After one fix round, its guesses still turned some Western text into other encodings. Its second round waits for a re-verify.
 
 **October 23.** The user asked for four things before installing: transcript work, a review of transcription for bugs, a plan of the breaking changes to make before the official install, and a changelog with a daily version policy ("I want to install the new version with it as stable as you can make it"). Friday's line was 95% of the week used, before Saturday's 08:00 reset. Merged into main:
 - **`team/transcripts` (fec4de73).**
@@ -112,8 +128,9 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - Documentation passes: `docs/oct19` (c77c9cf4), `docs/oct19b` (bc5ef365), and `docs/oct20` (077b4e1e).
 
 **State at the end:**
-- **Main's suite:** **8467 tests, 75 skipped, 0 failures**, the release check of 0.2.1 after `fix/polish020b` (b2e44b3c: abandoned audio reads refused, failed transcript installs put back) and its policy-pin fix (9ab48e49).
-- **Not installed yet:** the user's installed build is 0.1.1 (fb46ea6e). 0.2.1's first launch re-reads every text book for pages, safely (PG16).
+- **Main's suite:** **8606 tests, 78 skipped, 0 failures**. This is the integration suite on 2370465e; the docs merge and the 0.2.2 bump followed it, and the bump was built and checked.
+- **Not installed yet:** the user's installed build is 0.1.1 (fb46ea6e). 0.2.2's first launch re-reads every text book for pages, safely (PG16), braille and plain text books included (V07).
+- **FMT16:** its branch `formats/encodings` holds the second fix round. Ask its reviewer (a831cb806eacae9f9, if still reachable, or a fresh one) to verify it before merging, with `build/orchestrator/verify-fmt16-report.md` as the brief.
 - **Questions:** `humanQuestions/2026-10-23.md` holds four.
   - The escaping (V06) comes after the install.
   - V03 is built; V04 is not.
@@ -122,12 +139,19 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - **Pending with the user:** the install and push, and the rm-hook offer.
 - **The next candidates:**
   - read the first launch's `PAGES_UPGRADE_SUMMARY` once the user installs;
+  - FMT16's re-verify and merge, then Reopen with Encoding;
   - V06 in the first update after the install;
-  - PG12 (braille pages);
-  - ST04's carry-over of a replaced copy's state;
-  - the emphasis reading passes;
   - FMT43;
-  - the TODO's follow-ups.
+  - the TODO's follow-ups, among them the October 24 integration's.
+
+**Lessons of October 24:**
+- **Every branch needed a fix round.** All five reviews found real bugs, two of them data loss or changed words, and the verifications after the fixes found new bugs in three branches. Plan review, fix, and verify for each branch.
+- **Integrate on a branch.** A fresh integration branch from main, merging only verified branches, keeps main installable throughout, and a branch that fails verification (FMT16) is simply left out.
+- **A guarantee by construction beats fuzz and patch.** Braille's safety net uses liblouis's reading whenever the pass's words differ from it.
+- **Narrow verifiers.** A fresh Opus verifier, given the review report and the fix range, cost less than resuming a large reviewer.
+- **After the weekly reset,** a SendMessage to each stopped agent resumed it with its uncommitted work intact. Resumed long-context agents are costly: 3% of the new week went in 10 minutes.
+- **Every prompt needs the live-library rule.** The pages reviewer copied two of the user's books to /tmp because its prompt lacked it.
+- **zsh's `status` is read-only.** A background script that assigns `status=$?` dies after the suite and reports a failure; use another name.
 
 **Lessons of October 23:**
 - **Two teams in parallel.** Two teams, each with an in-team Opus reviewer and then an outside Opus review of its branch, found real bugs both times. The outside reviews' fixes were small enough for one Sonnet or Opus agent each.
