@@ -267,6 +267,60 @@ extension LenientFields {
     }
 }
 
+// MARK: - A field that reads as absent when damaged
+
+/// An optional field of a stored record that decodes as nil when its value
+/// cannot be read, as `LenientFields.optionalValue(_:validate:)` reads the
+/// same field of a library row, and is left out of the file when nil. For a
+/// record that decodes by synthesis, such as `BookMetadata`, whose other
+/// fields stay strict: one damaged field must not discard the record around
+/// it, and a hand-written decoder of every field would silently drop the next
+/// field added. Declare it as
+/// `@LenientOptional var textEncoding: String? = nil`.
+@propertyWrapper
+struct LenientOptional<Value: Codable & Equatable & Sendable>: Codable, Equatable, Sendable {
+    var wrappedValue: Value?
+
+    init(wrappedValue: Value?) {
+        self.wrappedValue = wrappedValue
+    }
+
+    // A keyed container reads and writes the field through the extensions
+    // below, which are lenient and leave nil out. These stand for any other
+    // container, which has no key to leave out.
+    init(from decoder: Decoder) throws {
+        wrappedValue = try decoder.singleValueContainer().decode(Value?.self)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(wrappedValue)
+    }
+}
+
+extension KeyedDecodingContainer {
+    /// A `LenientOptional` field: nil when it is missing, null, or cannot be
+    /// read (the last logged as a repair).
+    func decode<Value: Codable & Equatable & Sendable>(
+        _ type: LenientOptional<Value>.Type,
+        forKey key: Key
+    ) throws -> LenientOptional<Value> {
+        let fields = LenientFields(self, source: SettingsPolicy.bookStateSource)
+        return LenientOptional(wrappedValue: fields.optionalValue(key) { (value: Value) in value })
+    }
+}
+
+extension KeyedEncodingContainer {
+    /// A `LenientOptional` field is left out of the file when it is nil, as an
+    /// optional one is.
+    mutating func encode<Value: Codable & Equatable & Sendable>(
+        _ value: LenientOptional<Value>,
+        forKey key: Key
+    ) throws {
+        try encodeIfPresent(value.wrappedValue, forKey: key)
+    }
+}
+
 // MARK: - Repair log
 
 /// Records every repair of a stored value in the debug log, so a preference

@@ -954,8 +954,14 @@ enum FileImportService {
                 brailleTable: brailleTable,
                 brailleTableVersion: brailleTable.flatMap(BrailleTableCatalog.versionToRecord(forTable:))
             )
+            // The one import that guesses (FMT16): a file the user chose, whose
+            // bytes may name no encoding, is read in the encoding the guesser
+            // finds, and the book records it. Every other way a book comes to
+            // the library (a package, a feed, a recording, text typed in) reads
+            // as it always did, and so does every later reading of this book.
             var imported = try publishReadableBook(
-                staged, from: staging, run: &run, refusingBlankText: true, adoptingDocumentNames: true
+                staged, from: staging, run: &run, refusingBlankText: true, adoptingDocumentNames: true,
+                guessingEncoding: true
             )
             // A DAISY package is copied file by file from its folder; an RTFD
             // is a folder, whole, which no import deletes.
@@ -1487,6 +1493,9 @@ enum FileImportService {
     /// so does `adoptingDocumentNames`, which gives the book the title and
     /// author a textutil document names (`MarkdownCacheService`): the import
     /// of a file lists it by its file name until its text is read.
+    /// `guessingEncoding` is passed on to
+    /// `readableContent(of:run:refusingBlankText:adoptingDocumentNames:guessingEncoding:)`
+    /// and set by that import alone (FMT16).
     static func publishReadableBook(
         _ staged: Book,
         from staging: ImportStaging,
@@ -1495,6 +1504,7 @@ enum FileImportService {
         replacing replaced: BookState? = nil,
         refusingBlankText: Bool = false,
         adoptingDocumentNames: Bool = false,
+        guessingEncoding: Bool = false,
         publish: (ImportStaging) throws -> Void = { try $0.publish() }
     ) throws -> ImportedBook {
         var staged = staged
@@ -1505,7 +1515,8 @@ enum FileImportService {
             run: &run
         )
         let content = try readableContent(
-            of: &staged, run: &run, refusingBlankText: refusingBlankText, adoptingDocumentNames: adoptingDocumentNames
+            of: &staged, run: &run, refusingBlankText: refusingBlankText, adoptingDocumentNames: adoptingDocumentNames,
+            guessingEncoding: guessingEncoding
         )
         let book = staging.published(staged)
 
@@ -1570,11 +1581,18 @@ enum FileImportService {
     /// With `adoptingDocumentNames`, `book` also takes the title and author
     /// the document names, read by the one conversion that reads its text
     /// (`MarkdownCacheService.generateReportedCacheAnalyzeAndStamp`).
+    ///
+    /// With `guessingEncoding`, a text file whose bytes name no encoding is
+    /// read in the encoding `TextEncodingGuesser` finds, and `book` records
+    /// it (`Book.textEncoding`, FMT16). Only the import of a file the user
+    /// chose sets it: the other callers re-read a book that already exists
+    /// (a package added back, a reinstated one), whose text must not change.
     static func readableContent(
         of book: inout Book,
         run: inout ImportRun,
         refusingBlankText: Bool = false,
-        adoptingDocumentNames: Bool = false
+        adoptingDocumentNames: Bool = false,
+        guessingEncoding: Bool = false
     ) throws -> ReadableContent {
         if book.format.isAudio {
             try run.begin(.readingAudio, in: book.tmbDirectory)
@@ -1591,7 +1609,7 @@ enum FileImportService {
 
         try run.begin(.readingText, in: book.tmbDirectory)
         guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(
-            for: &book, adoptingDocumentNames: adoptingDocumentNames
+            for: &book, adoptingDocumentNames: adoptingDocumentNames, guessingEncoding: guessingEncoding
         ) else {
             // Only a book without a package gets no cache, and every
             // import gives its book one before reading it.

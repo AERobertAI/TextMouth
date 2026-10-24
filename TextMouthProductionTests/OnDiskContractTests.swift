@@ -276,6 +276,9 @@ final class OnDiskContractTests: XCTestCase {
             "epubISBN", "epubLanguage", "epubIdentifier", "epubVersion", "cacheFormatVersion",
             "contentIndexVersion", "textCacheFingerprint", "editedText", "pageReaderVersion",
             "metadataReaderVersion", "handEdits", "brailleTable", "brailleTableVersion",
+            // FMT16: the encoding a text book's file was guessed to be in. An optional key, written only for
+            // a book imported with a guess, so every other row is exactly as it was.
+            "textEncoding",
         ]
         XCTAssertEqual(Set(row.keys), expected, Self.because("a library row's key", Self.keyForces))
         // Every property but the feed link is a key; the feed link is the
@@ -306,6 +309,8 @@ final class OnDiskContractTests: XCTestCase {
             "bookID", "sourceFilePath", "publisher", "publicationDate", "isbn", "language", "epubIdentifier",
             "epubVersion", "audioAlbum", "audioGenre", "audioYear", "metadataReaderVersion", "handEdits",
             "feedLink", "brailleTable", "brailleTableVersion",
+            // FMT16, as in a library row.
+            "textEncoding",
         ]
         XCTAssertEqual(
             Set(metadata.keys),
@@ -530,9 +535,11 @@ final class OnDiskContractTests: XCTestCase {
         try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
     }
 
-    /// The names of `value`'s stored properties.
+    /// The names of `value`'s stored properties. A mirror shows the storage
+    /// of a property wrapper as "_name" (`BookMetadata.textEncoding`), while
+    /// the property, and its key in the file, are "name".
     private static func propertyNames(of value: Any) -> Set<String> {
-        Set(Mirror(reflecting: value).children.compactMap(\.label))
+        Set(Mirror(reflecting: value).children.compactMap(\.label).map { $0.hasPrefix("_") ? String($0.dropFirst()) : $0 })
     }
 
     /// A config with every optional setting set, so each one is a key.
@@ -626,7 +633,8 @@ final class OnDiskContractTests: XCTestCase {
             handEdits: Book.HandEdits(fields: [.title], sinceImport: true),
             feedLink: FeedBookLink(feedID: UUID(), itemID: "item"),
             brailleTable: "table.ctb",
-            brailleTableVersion: "liblouis"
+            brailleTableVersion: "liblouis",
+            textEncoding: "windows-1251"
         )
     }
 }

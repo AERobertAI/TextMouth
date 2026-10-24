@@ -848,7 +848,8 @@ final class ContentAnalysisMergeTests: XCTestCase {
             ),
             feedLink: FeedBookLink(feedID: UUID(), itemID: "item-\(seed)"),
             brailleTable: "table-\(seed).ctb",
-            brailleTableVersion: "liblouis-\(seed)"
+            brailleTableVersion: "liblouis-\(seed)",
+            textEncoding: "encoding-\(seed)"
         )
     }
 

@@ -38,6 +38,12 @@ struct RemovedFromLibraryMarker: Codable, Equatable, Sendable {
     /// refuses a rebuild after a macOS update changed its table. Nil for a
     /// bundled table and for a marker written before it was kept.
     let brailleTableVersion: String?
+    /// The encoding the book's text file was guessed to be in
+    /// (`Book.textEncoding`, FMT16), so that a book added back from this
+    /// marker is read as it was, not by the Windows-1252 fallback, which
+    /// would change its text under the places it keeps. Nil for a book with
+    /// none, and for a marker written before it was kept.
+    let textEncoding: String?
 
     /// The marker recording that `book` was removed at `removedAt`.
     init(book: Book, removedAt: Date = Date()) {
@@ -47,6 +53,7 @@ struct RemovedFromLibraryMarker: Codable, Equatable, Sendable {
         self.removedAt = removedAt
         brailleTable = book.brailleTable
         brailleTableVersion = book.brailleTableVersion
+        textEncoding = book.textEncoding
     }
 }
 

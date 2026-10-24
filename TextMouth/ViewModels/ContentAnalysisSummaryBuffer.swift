@@ -4,7 +4,8 @@ import Foundation
 
 /// The analysis fields a batch committed to one book's package record,
 /// and the places a rebuild moved (T06's branch D) that the record took,
-/// on their way to the book's library row.
+/// and the encoding the record keeps for a text file, on their way to the
+/// book's library row.
 ///
 /// The row takes only the moves its record took, so a move never wins over a
 /// newer write another Mac left in the record: a moved place is dated at the
@@ -28,6 +29,12 @@ struct ContentAnalysisSummary: Sendable {
     /// none. For a book recovered from its record, the moves that bring the
     /// row to the record's places (`init(recovered:record:)`).
     let movedPlaces: MovedPlaces?
+    /// The encoding the book's package record keeps for its text file
+    /// (`Book.textEncoding`, FMT16), which a row that lost its own takes
+    /// back: a damaged value in library.json reads as none, and so does a row
+    /// an older build wrote, while the record keeps it. Nil when the record
+    /// names none, or names another book.
+    let textEncoding: String?
 
     /// The analysis fields of `committed`, the book as its package records
     /// it once the analysis is saved (`LibraryPersistenceService.saveContentAnalysis`),
@@ -39,6 +46,7 @@ struct ContentAnalysisSummary: Sendable {
         packageName = committed.tmbDirectoryName
         fields = committed.contentAnalysisFields
         self.movedPlaces = movedPlaces.map { $0.taken(by: committed) }
+        textEncoding = committed.textEncoding
     }
 
     /// The analysis fields of `recovered`, the library row with the analysis
@@ -49,11 +57,19 @@ struct ContentAnalysisSummary: Sendable {
     /// the earlier run stopped) takes them as moves from its own places
     /// (`placesMoved(to:from:)`). The record is the source of these moves, so
     /// they are not narrowed to what it took, as a fresh commit's are.
+    ///
+    /// The record's encoding is taken only from this book's own record, and
+    /// only for a format that reads text files, as `recordedTextEncoding()`
+    /// takes it: a package record that names another book, as an old shared
+    /// package's may, must never give this row that book's encoding, which
+    /// every later reading of this book would then use.
     init(recovered: Book, record: Book) {
         bookID = recovered.id
         packageName = recovered.tmbDirectoryName
         fields = recovered.contentAnalysisFields
         movedPlaces = Self.placesMoved(to: record, from: recovered)
+        let ownRecord = record.id == recovered.id && recovered.format.usesTextFileDecoder
+        textEncoding = ownRecord ? record.textEncoding : nil
     }
 
     /// The moves that bring the places of `row`, the library row, to those
@@ -117,10 +133,15 @@ struct ContentAnalysisSummary: Sendable {
     /// did: only where it still holds the place as it was, so a place saved
     /// meanwhile wins. A move the record refused is not taken, so a moved
     /// place never wins over a newer write another Mac left in the record.
+    /// A row with no encoding takes the record's (`textEncoding`); a row
+    /// that has one keeps it.
     func apply(to book: inout Book) {
         book.contentAnalysisFields = fields
         if let movedPlaces {
             book.takeMovedPlaces(original: movedPlaces.original, moved: movedPlaces.moved)
+        }
+        if book.textEncoding == nil {
+            book.textEncoding = textEncoding
         }
     }
 }

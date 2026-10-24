@@ -19,9 +19,18 @@ struct DecodedText: Equatable, Sendable {
         /// element's charset or the XML declaration's encoding, given here
         /// as the file spells it.
         case declaration(label: String)
+        /// The book was imported with a guess, which it recorded
+        /// (`Book.textEncoding`), and is read again in that encoding: the
+        /// bytes still give no evidence of their own, and nothing is guessed
+        /// a second time (`EncodingPolicy.recorded(_:)`).
+        case recorded
+        /// Nothing above applied, and `TextEncodingGuesser` judged the bytes
+        /// to be in this encoding: a guess (FMT16), logged once as the book
+        /// is imported, and recorded with it.
+        case guess
         /// Nothing above applied, so each byte was read as its Windows-1252
         /// character. The bytes gave no evidence for this encoding, so it is
-        /// the one basis the decoder logs.
+        /// the one basis the decoder logs on every read.
         case fallback
     }
 
@@ -36,6 +45,14 @@ struct DecodedText: Equatable, Sendable {
     /// Whether the bytes were read by the Windows-1252 fallback because
     /// nothing in them said what their encoding was.
     var usedFallback: Bool { basis == .fallback }
+
+    /// The identifier to record with the book (`Book.textEncoding`) when the
+    /// encoding was a guess, or nil when the bytes or the book's record
+    /// settled it, in which case nothing needs recording.
+    var guessedEncodingIdentifier: String? {
+        guard basis == .guess else { return nil }
+        return TextEncodingCatalog.entry(for: encoding)?.identifier
+    }
 }
 
 // MARK: - Encoding Errors
@@ -89,13 +106,16 @@ enum TextEncodingError: LocalizedError, Equatable {
 ///    (little- or big-endian) names the encoding. The bytes after a UTF-16
 ///    or UTF-32 mark must be valid in it, or `TextEncodingError` reports the
 ///    file as damaged. Bytes after a UTF-8 mark that are not valid UTF-8 are
-///    read by the fallback (step 5), like any other broken UTF-8; no
+///    read by the fallback (step 6), like any other broken UTF-8; no
 ///    declaration can overrule the mark.
 /// 2. UTF-16 without a mark is recognized by its zero bytes (see
 ///    `unmarkedUTF16Encoding(of:)`). It must be looked for before UTF-8,
 ///    because UTF-16 holding only ASCII characters is also valid UTF-8, read
 ///    as a NUL after every letter.
-/// 3. Bytes that are valid UTF-8 are UTF-8.
+/// 3. Bytes that are valid UTF-8 are UTF-8, except a file in ISO-2022-JP,
+///    which is valid UTF-8 too: the guessing policy looks for one (and a
+///    book that recorded the encoding reads in it) before it takes bytes
+///    for UTF-8 (`sevenBitText(_:policy:)`).
 /// 4. An HTML file whose bytes are not valid UTF-8 is read in the encoding
 ///    it declares in its first 1024 bytes, with a meta element or an XML
 ///    declaration (see `declaredEncodingLabel(in:)`). Valid UTF-8 is read as
@@ -105,11 +125,24 @@ enum TextEncodingError: LocalizedError, Equatable {
 ///    encoding such as ISO-2022-JP is always valid UTF-8, so its
 ///    declaration goes unread.) A declaration TextMouth cannot follow is
 ///    reported, never guessed past (`TextEncodingError`).
-/// 5. Otherwise each byte is read as its Windows-1252 character. Every byte
+/// 5. What the book's reading policy says to do with bytes that name no
+///    encoding (`EncodingPolicy`):
+///    - the encoding the book recorded when it was imported with a guess
+///      (`EncodingPolicy.recorded(_:)`), which a book read before guesses
+///      were recorded does not have;
+///    - a guess by `TextEncodingGuesser` (`EncodingPolicy.guess`), which
+///      only the import of a new file makes and then records with the book;
+///    - or nothing, which is what every read did before FMT16.
+/// 6. Otherwise each byte is read as its Windows-1252 character. Every byte
 ///    has one (see `windows1252Text(_:)`), and Windows-1252 agrees with ISO
 ///    Latin 1 on every printable character Latin 1 has, so older texts in
 ///    either encoding read correctly. The fallback is logged, because it is
-///    a guess (see `readText(at:format:)`).
+///    a guess (see `readText(at:format:policy:)`).
+///
+/// The policy is what keeps a book's text from changing under its reader: a
+/// book imported before guesses were recorded has no record, and is read by
+/// steps 1 to 4 and 6 exactly as it always was, however well the guesser
+/// would do on it now.
 ///
 /// No byte is dropped or replaced to make the bytes fit an encoding: an
 /// encoding either reads every byte or is not used. Only the finishing
@@ -122,23 +155,66 @@ enum TextEncodingError: LocalizedError, Equatable {
 /// `normalizingLineEndings(_:)`).
 enum TextFileDecoder {
 
+    // MARK: Encoding Policy
+
+    /// What a read does with bytes that name no encoding: the book's
+    /// policy, which keeps its text from changing under its reader (FMT16).
+    enum EncodingPolicy: Equatable, Sendable {
+        /// Read them as Windows-1252, as every read did before guesses: the
+        /// policy of a book that has no recorded encoding, and of every
+        /// reader of a file that is no book (a playlist, a web archive).
+        case fallback
+        /// Guess their encoding (`TextEncodingGuesser`), and read them as
+        /// Windows-1252 only when no guess can be trusted: the policy of the
+        /// import of a new file, which records the guess with the book.
+        case guess
+        /// Read them in the encoding an earlier read recorded with the book
+        /// (`Book.textEncoding`), by its identifier (`TextEncodingCatalog`).
+        /// An identifier that names no catalogued encoding, or an encoding
+        /// the bytes are not valid in, leaves them to the fallback.
+        case recorded(String)
+
+        /// The policy for a book whose recorded encoding is `identifier`:
+        /// that encoding, or the fallback for a book that has none.
+        static func forBook(recording identifier: String?) -> EncodingPolicy {
+            identifier.map(EncodingPolicy.recorded) ?? .fallback
+        }
+    }
+
     // MARK: Reading Files
 
     /// The tag that begins the debug log line recording a fallback.
     static let fallbackLogTag = "TEXT_ENCODING_FALLBACK"
+    /// The tag that begins the debug log line recording a guess.
+    static let guessLogTag = "TEXT_ENCODING_GUESS"
 
     /// The text of the plain-text, Markdown, or HTML book at `url`. When the
     /// bytes had to be read by the Windows-1252 fallback, one line records it
     /// in the console and the debug log:
-    /// `TEXT_ENCODING_FALLBACK: <file>: decoded as Windows-1252`.
+    /// `TEXT_ENCODING_FALLBACK: <file>: decoded as Windows-1252`. When they
+    /// were read in a guessed encoding, one line records that too:
+    /// `TEXT_ENCODING_GUESS: <file>: read as windows-1251`.
     /// - Throws: the error reading the file, or `TextEncodingError`.
-    static func readText(at url: URL, format: BookFormat) throws -> String {
+    static func readText(at url: URL, format: BookFormat, policy: EncodingPolicy = .fallback) throws -> String {
+        try readDecodedText(at: url, format: format, policy: policy).text
+    }
+
+    /// The book file at `url` read as `readText(at:format:policy:)` reads
+    /// it, with the encoding it was read in and what decided it, so that an
+    /// import can record a guess with its book.
+    /// - Throws: the error reading the file, or `TextEncodingError`.
+    static func readDecodedText(at url: URL, format: BookFormat, policy: EncodingPolicy = .fallback) throws -> DecodedText {
         let fileName = url.lastPathComponent
-        let decoded = try decode(Data(contentsOf: url), fileName: fileName, format: format)
-        if decoded.usedFallback {
+        let decoded = try decode(Data(contentsOf: url), fileName: fileName, format: format, policy: policy)
+        switch decoded.basis {
+        case .fallback:
             logFallback(fileName: fileName, encoding: decoded.encoding)
+        case .guess:
+            logGuess(fileName: fileName, identifier: decoded.guessedEncodingIdentifier)
+        default:
+            break
         }
-        return decoded.text
+        return decoded
     }
 
     /// Record that `fileName` was read by the fallback, as one import event.
@@ -148,21 +224,32 @@ enum TextFileDecoder {
         DiagnosticLog.event(.import, "\(fallbackLogTag): \(fileName): decoded as \(name(of: encoding))")
     }
 
+    /// Record that `fileName` was read in the guessed encoding `identifier`,
+    /// as one import event.
+    private static func logGuess(fileName: String, identifier: String?) {
+        DiagnosticLog.event(.import, "\(guessLogTag): \(fileName): read as \(identifier ?? "an unnamed encoding")")
+    }
+
     // MARK: Decoding
 
     /// Decode the bytes of a book file named `fileName` (named in any error)
-    /// whose format is `format`. Only an HTML file's declarations are read.
+    /// whose format is `format`, settling bytes that name no encoding as
+    /// `policy` says. Only an HTML file's declarations are read.
     /// - Throws: `TextEncodingError` when the file names an encoding its
     ///   bytes cannot be read in.
-    static func decode(_ data: Data, fileName: String, format: BookFormat) throws -> DecodedText {
-        var decoded = try decodeBytes(data, fileName: fileName, readsDeclarations: format == .html)
+    static func decode(
+        _ data: Data, fileName: String, format: BookFormat, policy: EncodingPolicy = .fallback
+    ) throws -> DecodedText {
+        var decoded = try decodeBytes(data, fileName: fileName, readsDeclarations: format == .html, policy: policy)
         decoded.text = normalizingLineEndings(droppingLeadingByteOrderMarks(decoded.text))
         return decoded
     }
 
     /// Choose the encoding by the steps in the type's description and read
     /// `data` in it, before the text is finished.
-    private static func decodeBytes(_ data: Data, fileName: String, readsDeclarations: Bool) throws -> DecodedText {
+    private static func decodeBytes(
+        _ data: Data, fileName: String, readsDeclarations: Bool, policy: EncodingPolicy
+    ) throws -> DecodedText {
         // 1. A byte-order mark names the encoding.
         if let mark = byteOrderMarks.first(where: { data.starts(with: $0.bytes) }) {
             let content = data.dropFirst(mark.bytes.count)
@@ -183,7 +270,13 @@ enum TextFileDecoder {
             return DecodedText(text: text, encoding: encoding, basis: .unmarkedUTF16)
         }
 
-        // 3. Valid UTF-8.
+        // 3. A file in a 7-bit encoding the policy names (ISO-2022-JP), which
+        // is valid UTF-8 too and so is looked for before UTF-8 is.
+        if let sevenBit = sevenBitText(data, policy: policy) {
+            return sevenBit
+        }
+
+        // 3b. Valid UTF-8.
         if let text = String(data: data, encoding: .utf8) {
             return DecodedText(text: text, encoding: .utf8, basis: .validUTF8)
         }
@@ -194,8 +287,58 @@ enum TextFileDecoder {
             return declared
         }
 
-        // 5. The fallback, which reads every byte.
+        // 5. The book's policy: the encoding it recorded, or a guess.
+        if let settled = settledText(data, policy: policy) {
+            return settled
+        }
+
+        // 6. The fallback, which reads every byte.
         return fallbackText(data)
+    }
+
+    /// `data` read in a 7-bit encoding (ISO-2022-JP) when `policy` names one:
+    /// the guessing policy, when the file is well formed ISO-2022-JP
+    /// (`TextEncodingGuesser.guessSevenBit(_:)`), and the recorded policy,
+    /// when the book recorded such an encoding and the bytes still read in
+    /// it. Nil for every other policy and file, which leaves the bytes to
+    /// the steps after: a file in one of these encodings is valid UTF-8, and
+    /// every book read before guesses were recorded reads it so.
+    private static func sevenBitText(_ data: Data, policy: EncodingPolicy) -> DecodedText? {
+        switch policy {
+        case .fallback:
+            return nil
+        case let .recorded(identifier):
+            // The file must still be well formed in the encoding: Foundation's
+            // reader would let a changed file through.
+            guard TextEncodingCatalog.entry(forIdentifier: identifier)?.isSevenBit == true,
+                  let guess = TextEncodingGuesser.guessSevenBit(data) else { return nil }
+            return DecodedText(text: guess.text, encoding: guess.encoding, basis: .recorded)
+        case .guess:
+            guard let guess = TextEncodingGuesser.guessSevenBit(data) else { return nil }
+            return DecodedText(text: guess.text, encoding: guess.encoding, basis: .guess)
+        }
+    }
+
+    /// `data` read as `policy` says to read bytes that name no encoding, or
+    /// nil when the policy leaves them to the fallback: it says to, the
+    /// recorded encoding is one TextMouth does not know or the bytes are not
+    /// valid in it (a changed file, or a record from a later TextMouth), or
+    /// no guess can be trusted.
+    private static func settledText(_ data: Data, policy: EncodingPolicy) -> DecodedText? {
+        switch policy {
+        case .fallback:
+            return nil
+        case let .recorded(identifier):
+            // A 7-bit encoding was tried before UTF-8 (`sevenBitText`); bytes
+            // that got this far are not in it, and Foundation's reader would
+            // let them through.
+            guard let entry = TextEncodingCatalog.entry(forIdentifier: identifier), !entry.isSevenBit,
+                  let text = decodedText(data, in: entry.encoding) else { return nil }
+            return DecodedText(text: text, encoding: entry.encoding, basis: .recorded)
+        case .guess:
+            guard let guess = TextEncodingGuesser.guess(data) else { return nil }
+            return DecodedText(text: guess.text, encoding: guess.encoding, basis: .guess)
+        }
     }
 
     // MARK: Byte-Order Marks and Unicode

@@ -52,6 +52,14 @@ struct LibraryBookInfoSheet: View {
                         Text(row.value)
                     }
                 }
+                // A text book whose file named no encoding says the one it
+                // was guessed to be in (FMT16), which VoiceOver reads as
+                // "Text Encoding, Windows-1251 (Cyrillic), guessed".
+                if let row = book.bookInfoTextEncodingRow {
+                    LabeledContent(row.label) {
+                        Text(row.value)
+                    }
+                }
                 LabeledContent("Added") {
                     Text(book.dateAdded, style: .date)
                 }

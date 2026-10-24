@@ -16,17 +16,24 @@ enum BookParser {
     ///   Mac's tables, the Mac's liblouis version it was read with
     ///   (`Book.brailleTableVersion`); another version refuses the reading
     ///   (review R2).
+    /// - Parameter textEncoding: For a plain-text, Markdown, or HTML book,
+    ///   the encoding it was guessed to be in (`Book.textEncoding`, FMT16),
+    ///   which its file is read in when its bytes name none, as the Markdown
+    ///   cache reads it; nil reads such bytes as Windows-1252, as every book
+    ///   was read before guesses were recorded. Every other format ignores it.
     static func parse(
         url: URL,
         format: BookFormat,
         brailleTable: String? = nil,
-        brailleTableVersion: String? = nil
+        brailleTableVersion: String? = nil,
+        textEncoding: String? = nil
     ) throws -> DocumentContent {
+        let encodingPolicy = TextFileDecoder.EncodingPolicy.forBook(recording: textEncoding)
         switch format {
         case .epub:
             return try EPUBParser.parse(url: url)
         case .html:
-            let html = try TextFileDecoder.readText(at: url, format: format)
+            let html = try TextFileDecoder.readText(at: url, format: format, policy: encodingPolicy)
             return try HTMLParser.parse(html: html, title: url.deletingPathExtension().lastPathComponent)
         case .webarchive:
             // The archive's main page, as an HTML or a text book is read.
@@ -38,10 +45,10 @@ enum BookParser {
             // `emphasis` element), nor as text with its tags.
             return try HTMLParser.parse(html: SSMLReader.html(from: url), title: url.deletingPathExtension().lastPathComponent)
         case .markdown:
-            let text = try TextFileDecoder.readText(at: url, format: format)
+            let text = try TextFileDecoder.readText(at: url, format: format, policy: encodingPolicy)
             return try MarkdownDocParser.parse(markdown: text, title: url.deletingPathExtension().lastPathComponent)
         case .txt:
-            let text = try TextFileDecoder.readText(at: url, format: format)
+            let text = try TextFileDecoder.readText(at: url, format: format, policy: encodingPolicy)
             return PlainTextParser.parse(text: text, title: url.deletingPathExtension().lastPathComponent)
         case .docx:
             return try DOCXParser.parse(url: url)

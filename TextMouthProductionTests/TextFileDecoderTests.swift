@@ -502,4 +502,183 @@ final class TextFileDecoderTests: XCTestCase {
         _ = try TextFileDecoder.readText(at: file, format: .txt)
         XCTAssertEqual(debugLogLines(containing: "TEXT_ENCODING_FALLBACK: Two Lines \(id).txt: decoded as Windows-1252").count, 1)
     }
+
+    // MARK: - Guessing and Recording an Encoding (FMT16)
+
+    /// The Russian sentence the encoding policy tests write in KOI8-R and
+    /// Windows-1251.
+    private static let russian = "Съешь же ещё этих мягких французских булок, да выпей чаю.\nПаром отходит в семь.\n"
+
+    /// `text` as the bytes of a file in the encoding named `name`.
+    private func bytes(of text: String, in name: String) throws -> [UInt8] {
+        let encoding = try XCTUnwrap(TextEncodingFixtures.encoding(named: name), name)
+        return Array(try XCTUnwrap(text.data(using: encoding, allowLossyConversion: false), name))
+    }
+
+    /// Decode `bytes` as a plain-text file under `policy`.
+    private func decode(_ bytes: [UInt8], policy: TextFileDecoder.EncodingPolicy) throws -> DecodedText {
+        try TextFileDecoder.decode(Data(bytes), fileName: "Fixture.txt", format: .txt, policy: policy)
+    }
+
+    /// Under the guessing policy, bytes that name no encoding are read in the
+    /// encoding the guesser finds, which is the basis and is recorded.
+    func testTheGuessingPolicyReadsBytesThatNameNoEncodingInTheGuessedOne() throws {
+        let koi8 = try bytes(of: Self.russian, in: "koi8-r")
+        let decoded = try decode(koi8, policy: .guess)
+        XCTAssertEqual(decoded.text, Self.russian)
+        XCTAssertEqual(decoded.basis, .guess)
+        XCTAssertEqual(TextFileDecoder.name(of: decoded.encoding), "koi8-r")
+        XCTAssertEqual(decoded.guessedEncodingIdentifier, "koi8-r")
+        XCTAssertFalse(decoded.usedFallback)
+    }
+
+    /// The default policy reads the same bytes as it always did, as
+    /// Windows-1252, and has nothing to record; so does a record that names
+    /// no encoding of the catalog.
+    func testThePolicyOfNoGuessReadsAsItAlwaysDid() throws {
+        let koi8 = try bytes(of: Self.russian, in: "koi8-r")
+        for policy in [TextFileDecoder.EncodingPolicy.fallback, .recorded("not-an-encoding")] {
+            let decoded = try decode(koi8, policy: policy)
+            XCTAssertEqual(decoded.basis, .fallback)
+            XCTAssertEqual(decoded.encoding, .windowsCP1252)
+            XCTAssertEqual(decoded.text, TextFileDecoder.windows1252Text(Data(koi8)))
+            XCTAssertNil(decoded.guessedEncodingIdentifier)
+        }
+        // A call that names no policy has the same one.
+        let plain = try TextFileDecoder.decode(Data(koi8), fileName: "Fixture.txt", format: .txt)
+        XCTAssertEqual(plain.basis, .fallback)
+    }
+
+    /// Evidence in the bytes comes before a guess: a byte-order mark, valid
+    /// UTF-8, unmarked UTF-16, and an HTML declaration are read as before.
+    func testEvidenceInTheBytesComesBeforeAGuess() throws {
+        XCTAssertEqual(try decode(Self.sampleUTF8, policy: .guess).basis, .validUTF8)
+        XCTAssertEqual(try decode([0xFF, 0xFE] + Self.sampleUTF16LE, policy: .guess).basis, .byteOrderMark)
+        XCTAssertEqual(try decode(Self.sampleUTF16BE, policy: .guess).basis, .unmarkedUTF16)
+        let declared = try TextFileDecoder.decode(
+            Data(Self.html(head: "<meta charset=\"windows-1252\">", body: Self.windows1252Bytes)),
+            fileName: "Fixture.html", format: .html, policy: .guess
+        )
+        XCTAssertEqual(declared.basis, .declaration(label: "windows-1252"))
+    }
+
+    /// The 13 short files in TestData/format-samples/txt-encodings, decoded
+    /// under the guessing policy as an import decodes them: UTF-8 and UTF-16
+    /// by their evidence, the two Windows-1252 reads by the fallback, and
+    /// the other nine as the text each holds, by a guess.
+    func testEverySampleFileReadsRightUnderTheGuessingPolicy() throws {
+        for sample in TextEncodingFixtures.sampleFiles {
+            let bytes = try Data(contentsOf: formatSampleURL("txt-encodings/\(sample.name).txt"))
+            let decoded = try TextFileDecoder.decode(bytes, fileName: "\(sample.name).txt", format: .txt, policy: .guess)
+            XCTAssertEqual(decoded.text, sample.text, sample.name)
+            XCTAssertEqual(decoded.basis, sample.basis, sample.name)
+        }
+    }
+
+    /// Bytes Windows-1252 reads correctly are not guessed away from it, even
+    /// under the guessing policy: they are read by the fallback.
+    func testTheGuessingPolicyLeavesWindows1252TextToTheFallback() throws {
+        let decoded = try decode(Self.windows1252Bytes, policy: .guess)
+        XCTAssertEqual(decoded, DecodedText(text: Self.windows1252Text, encoding: .windowsCP1252, basis: .fallback))
+    }
+
+    /// A book that recorded its encoding is read in it, whatever a guess
+    /// would say, and the same bytes read differently in another encoding.
+    func testTheRecordedPolicyReadsInTheRecordedEncoding() throws {
+        let koi8 = try bytes(of: Self.russian, in: "koi8-r")
+        let asKOI8 = try decode(koi8, policy: .recorded("koi8-r"))
+        XCTAssertEqual(asKOI8.text, Self.russian)
+        XCTAssertEqual(asKOI8.basis, .recorded)
+        XCTAssertNil(asKOI8.guessedEncodingIdentifier)
+
+        // The record decides, not the bytes: a book recorded as Windows-1251 reads them that way.
+        let asWindows1251 = try decode(koi8, policy: .recorded("windows-1251"))
+        XCTAssertEqual(asWindows1251.basis, .recorded)
+        XCTAssertEqual(asWindows1251.encoding, .windowsCP1251)
+        XCTAssertEqual(asWindows1251.text, String(data: Data(koi8), encoding: .windowsCP1251))
+        XCTAssertNotEqual(asWindows1251.text, Self.russian)
+
+        // An identifier in any letter case is found, and Windows-1252 recorded reads as the fallback does.
+        XCTAssertEqual(try decode(koi8, policy: .recorded("KOI8-R")).text, Self.russian)
+        XCTAssertEqual(try decode(koi8, policy: .recorded("windows-1252")).text, TextFileDecoder.windows1252Text(Data(koi8)))
+    }
+
+    /// A record the bytes cannot be read in, or one TextMouth does not know,
+    /// leaves the bytes to the fallback: a rebuild never fails where it did
+    /// not, and never reads half a file in an encoding that does not fit.
+    func testARecordTheBytesCannotBeReadInLeavesThemToTheFallback() throws {
+        // 0x98 is undefined in Windows-1251.
+        let undefined: [UInt8] = [0x41, 0x98, 0x42]
+        XCTAssertNil(String(data: Data(undefined), encoding: .windowsCP1251))
+        XCTAssertEqual(try decode(undefined, policy: .recorded("windows-1251")).basis, .fallback)
+        XCTAssertEqual(try decode(undefined, policy: .recorded("x-klingon")).basis, .fallback)
+        XCTAssertEqual(try decode(undefined, policy: .recorded("")).basis, .fallback)
+    }
+
+    /// A file in ISO-2022-JP is valid UTF-8, and so is read as ASCII with its
+    /// escape sequences by every read that does not look for it, as it always
+    /// was; the guessing policy, and the policy of a book that recorded the
+    /// encoding, look for it before taking bytes for UTF-8, and read it as
+    /// Japanese.
+    func testAnISO2022JPFileIsFoundBeforeUTF8ByTheGuessingAndRecordedPolicies() throws {
+        let japanese = "いろはにほへと ちりぬるを。\nフェリーは七時に出ます。\n"
+        let bytes = Array(try XCTUnwrap(japanese.data(using: .iso2022JP)))
+        XCTAssertNotNil(String(data: Data(bytes), encoding: .utf8))
+
+        let guessed = try decode(bytes, policy: .guess)
+        XCTAssertEqual(guessed.text, japanese)
+        XCTAssertEqual(guessed.basis, .guess)
+        XCTAssertEqual(guessed.guessedEncodingIdentifier, "iso-2022-jp")
+
+        let recorded = try decode(bytes, policy: .recorded("iso-2022-jp"))
+        XCTAssertEqual(recorded.text, japanese)
+        XCTAssertEqual(recorded.basis, .recorded)
+
+        // Every other read takes it for UTF-8 as it always did.
+        let plain = try decode(bytes, policy: .fallback)
+        XCTAssertEqual(plain.basis, .validUTF8)
+        XCTAssertTrue(plain.text.contains("\u{1B}"))
+        // So does a read under another encoding's record.
+        XCTAssertEqual(try decode(bytes, policy: .recorded("windows-1251")).basis, .validUTF8)
+
+        // A changed file that is no longer well formed ISO-2022-JP is left to the steps after,
+        // not read by Foundation's lenient reader.
+        XCTAssertEqual(try decode(bytes + [0xE9], policy: .recorded("iso-2022-jp")).basis, .fallback)
+    }
+
+    /// A book's policy is the encoding it recorded, or the fallback for a
+    /// book that recorded none.
+    func testABooksPolicyIsItsRecordedEncodingOrTheFallback() {
+        XCTAssertEqual(TextFileDecoder.EncodingPolicy.forBook(recording: nil), .fallback)
+        XCTAssertEqual(TextFileDecoder.EncodingPolicy.forBook(recording: "koi8-r"), .recorded("koi8-r"))
+    }
+
+    /// A guessed reading is finished like any other: line feeds for every
+    /// line ending, and no byte-order mark.
+    func testAGuessedReadingHasLineFeedEndings() throws {
+        let crlf = try bytes(of: Self.russian.replacingOccurrences(of: "\n", with: "\r\n"), in: "windows-1251")
+        let decoded = try decode(crlf, policy: .guess)
+        XCTAssertEqual(decoded.basis, .guess)
+        XCTAssertEqual(decoded.text, Self.russian)
+    }
+
+    // MARK: Logging a Guess
+
+    /// Reading a file under the guessing policy writes exactly one line
+    /// naming the file and the guessed encoding; a read under a book's record
+    /// writes none, and is no fallback either.
+    func testAGuessIsLoggedOnceAndARecordedReadNotAtAll() throws {
+        let name = "Guess \(UUID().uuidString).txt"
+        let file = try temporaryFile(named: name, holding: try bytes(of: Self.russian, in: "koi8-r"))
+
+        let decoded = try TextFileDecoder.readDecodedText(at: file, format: .txt, policy: .guess)
+        XCTAssertEqual(decoded.basis, .guess)
+        let lines = debugLogLines(containing: "\(TextFileDecoder.guessLogTag): \(name):")
+        XCTAssertEqual(lines.count, 1, "\(lines)")
+        XCTAssertTrue(lines.first?.hasSuffix("TEXT_ENCODING_GUESS: \(name): read as koi8-r") == true, "\(lines)")
+
+        _ = try TextFileDecoder.readText(at: file, format: .txt, policy: .recorded("koi8-r"))
+        XCTAssertEqual(debugLogLines(containing: "\(TextFileDecoder.guessLogTag): \(name):").count, 1)
+        XCTAssertEqual(debugLogLines(containing: "\(TextFileDecoder.fallbackLogTag): \(name):").count, 0)
+    }
 }

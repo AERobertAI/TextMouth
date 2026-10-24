@@ -364,6 +364,71 @@ final class ContentAnalysisSummaryBufferTests: XCTestCase {
         )
     }
 
+    // MARK: - The Encoding a Row Lost
+
+    /// A summary gives a row that lost the encoding its text file was guessed
+    /// to be in (FMT16: a damaged value in library.json, or a row an older
+    /// build wrote) the one its package record keeps, as the committed book
+    /// holds it. A row that has an encoding keeps it, and a record with none
+    /// gives none. A book recovered from its record gives the record's.
+    func testASummaryGivesARowThatLostItsEncodingTheRecordsOne() throws {
+        var committed = try XCTUnwrap(Self.books(count: 1).first)
+        committed.textEncoding = "koi8-r"
+        let summary = ContentAnalysisSummary(committed: committed)
+        XCTAssertEqual(summary.textEncoding, "koi8-r")
+
+        var lost = committed
+        lost.textEncoding = nil
+        summary.apply(to: &lost)
+        XCTAssertEqual(lost.textEncoding, "koi8-r")
+
+        var own = committed
+        own.textEncoding = "windows-1251"
+        summary.apply(to: &own)
+        XCTAssertEqual(own.textEncoding, "windows-1251", "a row's own encoding is not replaced")
+
+        committed.textEncoding = nil
+        var none = committed
+        ContentAnalysisSummary(committed: committed).apply(to: &none)
+        XCTAssertNil(none.textEncoding)
+
+        var row = committed
+        var record = committed
+        record.textEncoding = "euc-kr"
+        ContentAnalysisSummary(recovered: row, record: record).apply(to: &row)
+        XCTAssertEqual(row.textEncoding, "euc-kr")
+    }
+
+    /// A book recovered from a package record that names another book, as an
+    /// old shared package's may, takes no encoding from it: every later
+    /// reading of the book would use that other book's encoding.
+    func testARecoveredBookTakesNoEncodingFromAnotherBooksRecord() throws {
+        let books = Self.books(count: 2)
+        var row = try XCTUnwrap(books.first)
+        var stranger = try XCTUnwrap(books.last)
+        XCTAssertNotEqual(row.id, stranger.id)
+        stranger.textEncoding = "euc-kr"
+        let summary = ContentAnalysisSummary(recovered: row, record: stranger)
+        XCTAssertNil(summary.textEncoding)
+        summary.apply(to: &row)
+        XCTAssertNil(row.textEncoding, "a record that names another book gives no encoding")
+    }
+
+    /// Through the library: the row takes the encoding back with the
+    /// analysis, in the same change and save.
+    func testTheLibraryRowTakesItsEncodingBackWithTheAnalysis() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        addTeardownBlock { sandbox.restore() }
+        let model = makeModel(bookCount: 1)
+        XCTAssertNil(model.library.books.first?.textEncoding)
+        var committed = try XCTUnwrap(model.library.books.first)
+        committed.textEncoding = "koi8-r"
+
+        model.applyAnalysisSummaries([ContentAnalysisSummary(committed: committed)])
+
+        XCTAssertEqual(model.library.books.first?.textEncoding, "koi8-r")
+    }
+
     // MARK: - Other Fixtures
 
     /// An inert model holding `bookCount` plain text books.
