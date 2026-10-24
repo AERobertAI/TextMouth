@@ -132,19 +132,31 @@ extension LibraryViewModel {
     /// the book when `request` asked for that. A question about the original
     /// is asked first, and the book opens once it is answered.
     ///
-    /// - Parameter followingAnswer: Whether answering the current question
-    ///   added the book: that question is settled here, and the question
-    ///   about the same file's original is asked next, before every other
-    ///   question waiting. Otherwise an import added the book directly, and
-    ///   its question waits behind the others.
-    func finishAddedBook(_ book: Book, originalURL: URL?, request: ImportRequest, followingAnswer: Bool = false) {
+    /// - Parameters:
+    ///   - followingAnswer: Whether answering the current question added the
+    ///     book: that question is settled here, and the question about the
+    ///     same file's original is asked next, before every other question
+    ///     waiting. Otherwise an import added the book directly, and its
+    ///     question waits behind the others.
+    ///   - offeringTranscription: Whether an audiobook is offered for
+    ///     transcription, as every import offers one, except a replaced book
+    ///     that kept its transcript (ST04).
+    func finishAddedBook(
+        _ book: Book,
+        originalURL: URL?,
+        request: ImportRequest,
+        followingAnswer: Bool = false,
+        offeringTranscription: Bool = true
+    ) {
         let question = originalFileQuestion(for: originalURL, of: book.id, request: request)
         if followingAnswer {
             importDecisions.settleCurrent(followedBy: question)
         } else if let question {
             ask(question)
         }
-        offerTranscription(of: book, request: request)
+        if offeringTranscription {
+            offerTranscription(of: book, request: request)
+        }
         if question == nil {
             openAfterImport(book.id, request: request)
         }
@@ -233,13 +245,13 @@ extension LibraryViewModel {
         return .success(nil)
     }
 
-    /// Answers a duplicate's question. Replace removes the library's copy
-    /// that matches now, which an earlier answer may have changed since the
-    /// question arose, and adds the new copy, which takes the old copy's
-    /// place on the reading list (FR09); Keep Both adds it beside the old
-    /// one; either then follows the "After Importing a Book" preference for
-    /// the new copy's original and opens the book when its import asked.
-    /// Cancel discards the new copy, which leaves its original alone.
+    /// Answers a duplicate's question. Replace puts the new copy in the place
+    /// of the library's copy that matches now, as that same book
+    /// (`replaceExisting(with:of:)`, ST04); Keep Both adds it beside the old
+    /// one (`keep(_:of:)`); either then follows the "After Importing a Book"
+    /// preference for the new copy's original and opens the book when its
+    /// import asked. Cancel discards the new copy, which leaves its original
+    /// alone.
     private func settle(
         _ duplicate: ImportDecision.DuplicateBook,
         of decision: ImportDecision,
@@ -247,20 +259,10 @@ extension LibraryViewModel {
     ) -> OperationOutcome {
         switch answer {
         case .replaceExisting:
-            if let existing = duplicateMatch(for: duplicate.book) {
-                do {
-                    try FileImportService.deleteBookPackage(existing)
-                } catch {
-                    return .failure("Could not replace duplicate", error)
-                }
-                // The new copy has an ID of its own: it takes the old copy's
-                // place on the list before the old copy leaves the library,
-                // which would take that place off the list.
-                library.readingList.replace(existing.id, with: duplicate.book.id)
-                removeDeletedBook(existing)
-            }
+            return replaceExisting(with: duplicate, of: decision)
         case .keepBoth:
-            break
+            keep(duplicate, of: decision)
+            return .success(nil)
         case .cancel:
             do {
                 try FileImportService.deleteBookPackage(duplicate.book)
@@ -273,16 +275,162 @@ extension LibraryViewModel {
             // A duplicate does not take these (`ImportDecisionAnswer.fits`).
             return .success(nil)
         }
+    }
+
+    /// Keeps a duplicate's new copy as a book of its own, beside the copy
+    /// it matched, as Keep Both does, and as Replace does once no copy
+    /// matches any more.
+    private func keep(_ duplicate: ImportDecision.DuplicateBook, of decision: ImportDecision) {
         // `Library.addBook` refuses a second copy of the same content, which
-        // Keep Both asks for, and which Replace still meets when the library
-        // held two copies: the new copy joins directly.
+        // Keep Both asks for: the new copy joins directly.
         library.books.append(duplicate.book)
         save()
-        // Imported at the Reading List, the copy joins the list's end, unless
-        // Replace already gave it the old copy's place there.
-        addImportedBooksToReadingList([duplicate.book], request: decision.request)
-        finishAddedBook(duplicate.book, originalURL: duplicate.originalURL, request: decision.request, followingAnswer: true)
+        finishKeeping(duplicate.book, from: duplicate, of: decision)
+    }
+
+    /// Finishes keeping `book`, the book a duplicate's answer left in the
+    /// library: imported at the Reading List, it joins the list's end,
+    /// unless it already has a place there, as a replaced book keeps its
+    /// own; then the question about its original is asked, and the book
+    /// opened, as its import asked. An audiobook is offered for
+    /// transcription while `offeringTranscription`.
+    private func finishKeeping(
+        _ book: Book,
+        from duplicate: ImportDecision.DuplicateBook,
+        of decision: ImportDecision,
+        offeringTranscription: Bool = true
+    ) {
+        addImportedBooksToReadingList([book], request: decision.request)
+        finishAddedBook(
+            book,
+            originalURL: duplicate.originalURL,
+            request: decision.request,
+            followingAnswer: true,
+            offeringTranscription: offeringTranscription
+        )
+    }
+
+    // MARK: - Replacing (ST04)
+
+    /// How a replacement that could not go ahead is reported.
+    private static let replaceFailureContext = "Could not replace duplicate"
+
+    /// Answers Replace Existing (ST04): the new copy takes the place of the
+    /// library's copy that matches now, which an earlier answer may have
+    /// changed since the question arose, as that same book, with its ID,
+    /// places, bookmarks, settings, folder, place on the reading list, and,
+    /// for the same audio, its transcript (`DuplicateReplacement`). Once no
+    /// copy matches, the new copy joins as Keep Both adds it.
+    ///
+    /// The library's copy is left as it is, and the question stays, saying
+    /// why, while the copy is in use (`replacementRefusal(of:)`), while
+    /// something carried over is only in the cloud, and when its package
+    /// cannot be deleted; the new copy's package is then as its import left
+    /// it. Otherwise the old package goes (to the Trash, or for good, as
+    /// Removal Behavior says) before the library changes.
+    private func replaceExisting(
+        with duplicate: ImportDecision.DuplicateBook,
+        of decision: ImportDecision
+    ) -> OperationOutcome {
+        guard let match = duplicateMatch(for: duplicate.book) else {
+            keep(duplicate, of: decision)
+            return .success(nil)
+        }
+        if let refusal = replacementRefusal(of: match) {
+            return .failure(refusal.sentence)
+        }
+        // An analysis of the old copy that finished but has not reached the
+        // library yet reaches its row now, while the row is the old copy's:
+        // after the replacement, the same ID would take it to the new copy.
+        analysisSummaries.flush()
+        let existing = bookByID(match.id) ?? match
+        let preparation: DuplicateReplacement.Preparation
+        do {
+            preparation = try DuplicateReplacement.prepare(replacing: existing, with: duplicate.book)
+        } catch let refusal as DuplicateReplacement.Refusal {
+            return .failure(refusal.sentence)
+        } catch {
+            return .failure(Self.replaceFailureContext, error)
+        }
+        do {
+            try FileImportService.deleteBookPackage(existing)
+        } catch {
+            preparation.undo()
+            return .failure(Self.replaceFailureContext, error)
+        }
+        commitReplacement(of: existing, by: preparation)
+        finishKeeping(preparation.book, from: duplicate, of: decision, offeringTranscription: !preparation.keptTranscript)
         return .success(nil)
+    }
+
+    /// Why Replace Existing waits for `existing`, the library's copy of a
+    /// duplicate, or nil when it need not: the copy is open in a reader,
+    /// whose saves of places in the old text would reach the new copy under
+    /// the same ID; being transcribed or exported, work that reads the old
+    /// copy's files and would lose what it makes (`feedBookUse(of:)`, the
+    /// uses a feed download's deletion refuses); or its audio is being
+    /// edited, or saved from the audio editor.
+    func replacementRefusal(of existing: Book) -> DuplicateReplacement.Refusal? {
+        if let use = feedBookUse(of: existing.id) {
+            return .inUse(use, title: existing.title)
+        }
+        if audioEditActivity.isBeingEdited(existing.id) {
+            return .audioBeingEdited(title: existing.title)
+        }
+        return nil
+    }
+
+    /// Puts `preparation.book`, the new copy, in the place of `existing`,
+    /// whose package is gone: in its row, so the library's order and the
+    /// reading list, which name the book by its ID, keep it. No write queued
+    /// for the old copy may chase its package or count as unsaved, and the
+    /// reading text this Mac kept for it goes; the new row's record is then
+    /// written into its package under the kept ID. A session editing the old
+    /// copy's text or manifest ends: what it watches went with the old copy.
+    private func commitReplacement(of existing: Book, by preparation: DuplicateReplacement.Preparation) {
+        let book = preparation.book
+        LibraryPersistenceService.forgetDeletedBook(existing)
+        ReadingTextCache.shared.remove(bookID: existing.id)
+        if let index = library.books.firstIndex(where: { $0.id == existing.id }) {
+            library.books[index] = book
+        } else {
+            library.books.append(book)
+        }
+        save()
+        LibraryPersistenceService.saveBookInfo(for: book)
+        endEditingSessions(of: existing.id)
+        if book.format.isAudio || existing.format.isAudio {
+            TranscribedBooks.shared.record(book.id, isTranscribed: preparation.keptTranscript)
+        }
+        DiagnosticLog.event(.storage, Self.replacementLogLine(for: book, preparation: preparation))
+    }
+
+    /// The debug log's line for a replacement: the book, what it kept, and
+    /// the copy of the old text kept beside the new one, if any.
+    static func replacementLogLine(for book: Book, preparation: DuplicateReplacement.Preparation) -> String {
+        var line = "DUPLICATE_REPLACED: \(book.title): the new copy took its place under its ID, "
+            + "with \(CountWording.bookmarks(book.bookmarks.count))"
+        if book.format.isAudio {
+            line += preparation.keptTranscript ? ", and its transcript" : ", without a transcript"
+        }
+        if let keptText = preparation.keptText {
+            line += "; its earlier text was kept as \(keptText.lastPathComponent)"
+        }
+        return line
+    }
+
+    /// Ends the Edit Text and Edit Manifest sessions of the book `bookID`,
+    /// if any: what they watch is the old copy's content.md or manifest, and
+    /// a check finding the new copy's files would take them for an edit.
+    /// Only a session that exists is ended, so no editor is made for none.
+    private func endEditingSessions(of bookID: UUID) {
+        if BookTextEditSessions.shared.isEditing(bookID) {
+            BookTextEditor.shared.end(bookID)
+        }
+        textEditSessions.end(bookID)
+        if BookManifestEditSessions.shared.isEditing(bookID) {
+            BookManifestEditor.shared.end(bookID)
+        }
     }
 
     /// Answers an original file's question: deletes the file, or keeps it.

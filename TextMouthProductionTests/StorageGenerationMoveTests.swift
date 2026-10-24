@@ -256,7 +256,8 @@ final class StorageGenerationMoveTests: XCTestCase {
     /// book, for adoption to bring back once no other copy of it is listed.
     /// The answer is refused, saying why, and the question stays asked; once
     /// the move ends, the same answer replaces the moved copy and leaves
-    /// nothing of it behind.
+    /// nothing of it behind. The new copy takes the replaced book's ID
+    /// (ST04), with the new copy's package.
     func testReplaceAnsweredWhileTheLibraryIsCopiedWaitsForTheMoveToEnd() async throws {
         keepDeletionsOutOfTheTrash()
         useAfterImportingBehavior(.keepOriginal)
@@ -296,8 +297,13 @@ final class StorageGenerationMoveTests: XCTestCase {
         XCTAssertEqual(duringCopy.questionStillAsked, true, "the refused answer settled the question")
         XCTAssertTrue(answerAfterMove.succeeded, answerAfterMove.failureMessage ?? "")
         XCTAssertNil(model.importDecisions.current)
-        XCTAssertFalse(model.library.books.contains { $0.id == existing.id }, "Replace kept the library's copy")
-        let replacement = try XCTUnwrap(model.library.books.first { $0.id == question.bookID })
+        XCTAssertEqual(model.library.books.filter { $0.id == existing.id }.count, 1)
+        let replacement = try XCTUnwrap(model.library.books.first { $0.id == existing.id })
+        XCTAssertEqual(
+            replacement.tmbDirectoryName,
+            question.duplicate?.book.tmbDirectoryName,
+            "Replace kept the library's copy"
+        )
         XCTAssertTrue(replacement.filePath.hasPrefix(destination.path + "/"), "The new copy is not in the moved data directory")
         XCTAssertEqual(
             Self.entries(of: Self.folder(world.folder.path, under: destination)),
