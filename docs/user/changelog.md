@@ -4,6 +4,36 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.2.2 (October 24, 2026)
+### Reading
+- Go to Page… says which page of a shared label it reached, as in "Jumped to page 2, the second page labelled 2."
+- Go to Page… says where the cursor is, and why, when it cannot land on the page asked for, as in "Page 7 has no words, so the cursor is on page 8." and "Page 40 is in a skipped section, so the cursor is on page 52.", where it said the page typed.
+- Return in Go to Page's field, on a label that another page carries too, goes to that label's next page, and round to the first after the last, where it closed the panel and did nothing.
+- A page break's number inside an EPUB or HTML heading is no longer part of the heading: "Part 9Two" is now "Part Two".
+- Next Page, Previous Page, and Go to Page… do nothing while a book is still loading, where they said "This book has no pages."
+- The playback bar's navigation unit pickers leave Page out for a book without pages.
+- A PDF's own page label that looks like a number with a thousands separator, such as 1.100, stays as the PDF gives it, and a PDF already in your library keeps its old labels until Redo Text Extraction reads it again.
+- Plain text books have pages: each form feed between words begins one, up to 100,000.
+- The first time this version opens, every braille, plain text, EPUB, and HTML book is read again once, and a braille book whose new reading differs from its text keeps a copy of its old text beside it (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+
+### Braille
+- BRF and PEF books have pages, the braille pages an embosser or a braille display counts, named by their braille page number read as print, such as 12 or p1, and Next Page, Previous Page, and Go to Page… move by them.
+- A BRF has pages only when it marks them, with form feeds between its braille text or with braille page numbers that end most of its 25-line pieces, and a page with neither words nor a number is not a page.
+- English Braille, American Edition is read with its italic and bold where the sign is certain, in words that start with l or n to z, in capitals and numbers, and in most contractions, and no word reads differently from before.
+- An emphasized word of English Braille, American Edition that starts with a to j still reads with a stray period, one that starts with k reads with an equals sign, and one that starts with m reads with µ, as before.
+- Contracted Unified English Braille reads a whole word before an emphasis end sign as the word, so "people" is no longer "p".
+
+### Library
+- Replace Existing puts the new copy in the place of the old one, keeping its reading position, bookmarks, settings, folder, and place on the reading list, and an audiobook's transcript when its audio is proven the same, where it threw them away.
+- The duplicate question says what Replace Existing keeps and where the old copy's files go, in place of what it threw away, and for a text book that an edit of its text is kept beside the new text as a copy.
+- When one copy is an audiobook and the other is read from its text, Replace Existing keeps only the old copy's folder and place on the reading list, and the question and the button's hint say so.
+- With the Trash on, the duplicate question says that putting the old copy's files back won't return that copy to your library, and putting them back does not add it to the library again.
+- An audiobook's reading position and bookmarks follow the new copy's chapters when they differ from the old copy's.
+- Replace Existing waits, and says why, while the old copy is open in a reader, being transcribed, being exported, or having its audio edited, while some of its files are only in the cloud, or while TextMouth moves books between folders or rebuilds its data directory.
+- Replace Existing removes the old copy's files only after the library holds the new copy, and says so if it cannot remove them.
+- When Replace Existing keeps an edit of the old copy's text as a copy, VoiceOver says where it was kept.
+- Edit Text says it has stopped for a book that Replace Existing replaced.
+
 ## 0.2.1 (October 23, 2026)
 ### Reading
 - Search in Book also searches an audiobook's transcript, telling you when each match is heard and moving the audio there when you choose one, and Go Back (Command-[) returns to where you were.
