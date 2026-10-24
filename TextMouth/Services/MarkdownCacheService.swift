@@ -583,7 +583,8 @@ enum MarkdownCacheService {
             )
         case .braille:
             markdown = try BrailleBookReader.markdown(
-                of: url, table: brailleTable ?? BrailleTableCatalog.defaultTableID, recordedVersion: brailleTableVersion
+                of: url, table: brailleTable ?? BrailleTableCatalog.defaultTableID, recordedVersion: brailleTableVersion,
+                includesPages: includesPages
             )
         case .daisy:
             markdown = try DAISYParser.extractMarkdown(from: url, includesPages: includesPages)
