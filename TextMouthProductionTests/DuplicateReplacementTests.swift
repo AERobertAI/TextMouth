@@ -562,6 +562,60 @@ final class DuplicateReplacementTests: XCTestCase {
         XCTAssertFalse(keptForUnproven.keptTranscript, "a file whose date moved was taken for the same audio unproven")
     }
 
+    /// The transcript of an audiobook imported from a ZIP goes with the same
+    /// archive imported again, though extracting it gave every track a new
+    /// date: the archive's content hash is the same, and so are its tracks'
+    /// paths and sizes (ST04 verify, finding 1). An archive with one track
+    /// changed, its size the same, keeps none.
+    func testATranscriptGoesWithTheSameArchiveOnly() throws {
+        let scene = try makeScene()
+        let harbor = scene.sources.appendingPathComponent("01 Harbor.wav")
+        let tollRoad = scene.sources.appendingPathComponent("02 Toll Road.wav")
+        try AudioTestFixtures.writeSilence(to: harbor, duration: 1)
+        try AudioTestFixtures.writeSilence(to: tollRoad, duration: 2)
+        let harborBytes = try Data(contentsOf: harbor)
+        let tollRoadBytes = try Data(contentsOf: tollRoad)
+        var changedBytes = tollRoadBytes
+        changedBytes[changedBytes.count - 1] ^= 0x01
+        let archive = try writeArchive(named: "Harbor Lectures.zip", in: scene, holding: [
+            TestZIPEntry("01 Harbor.wav", harborBytes), TestZIPEntry("02 Toll Road.wav", tollRoadBytes),
+        ])
+        let sameArchive = scene.sources.appendingPathComponent("Harbor Lectures Again.zip")
+        try FileManager.default.copyItem(at: archive, to: sameArchive)
+        let changedArchive = try writeArchive(named: "Harbor Lectures Revised.zip", in: scene, holding: [
+            TestZIPEntry("01 Harbor.wav", harborBytes), TestZIPEntry("02 Toll Road.wav", changedBytes),
+        ])
+        let existing = try FileImportService.importAudioZipWithReport(from: archive, toFolder: scene.shelf.path).book
+        let transcript = try TranscriptFixtures.transcript(of: existing, sentences: [
+            "01 Harbor.wav": [TranscriptFixtures.sentence("The ferry waits at the slip.", from: 0, to: 900)],
+        ])
+        XCTAssertEqual(transcript.files.map(\.path), ["01 Harbor.wav", "02 Toll Road.wav"])
+        try TranscriptStore.write(transcript, into: existing.tmbDirectory)
+        let copy = try FileImportService.importAudioZipWithReport(from: sameArchive, toFolder: scene.imports.path).book
+        let changed = try FileImportService.importAudioZipWithReport(from: changedArchive, toFolder: scene.imports.path).book
+        let copyIndex = try XCTUnwrap(try BookInfo.load(from: copy.tmbDirectory).contentIndex)
+        XCTAssertNil(
+            DuplicateReplacement.fitted(transcript, to: copy, index: copyIndex),
+            "the extracted tracks kept their dates, so the archive's hash went untested"
+        )
+
+        let kept = try DuplicateReplacement.prepare(replacing: existing, with: copy)
+        let notKept = try DuplicateReplacement.prepare(replacing: existing, with: changed)
+
+        XCTAssertTrue(kept.keptTranscript, "the same archive's transcript was dropped")
+        XCTAssertEqual(TranscriptStore.read(from: kept.movedTo), .found(transcript))
+        XCTAssertFalse(notKept.keptTranscript, "an archive with a track changed kept the transcript")
+        XCTAssertEqual(TranscriptStore.read(from: notKept.movedTo), .missing)
+    }
+
+    /// A ZIP archive named `name` in the scene's sources, holding `entries`.
+    private func writeArchive(named name: String, in scene: Scene, holding entries: [TestZIPEntry]) throws -> URL {
+        let made = try makeTemporaryZip(prefix: "ReplaceArchive", orderedEntries: entries)
+        let archive = scene.sources.appendingPathComponent(name)
+        try FileManager.default.moveItem(at: made, to: archive)
+        return archive
+    }
+
     /// A transcript of a layout a later TextMouth writes, which this one
     /// cannot check, goes into the new copy's package as it is, rather than
     /// leave with the old package unannounced.

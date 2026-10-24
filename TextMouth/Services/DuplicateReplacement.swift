@@ -659,7 +659,7 @@ enum DuplicateReplacement {
     /// Reads the transcript in the old package `old`, whose names are
     /// `names`, as the replacement by `copy` carries it over: for two
     /// audiobooks, when the transcript describes the new copy's audio
-    /// (`fitted(_:to:index:access:)`). A transcript TextMouth cannot read,
+    /// (`fitted(_:to:index:sourceMatches:access:)`). A transcript TextMouth cannot read,
     /// or one of a later layout, stays behind with the old package.
     private static func readTranscript(in old: OldPackage, names: [String], for copy: Book) throws -> TranscriptCarried {
         let transcriptURL = TextMouthPaths.transcriptPath(in: old.package)
@@ -685,7 +685,13 @@ enum DuplicateReplacement {
         var result = TranscriptCarried(wasEdited: transcript.editedAt != nil)
         guard copy.format.isAudio,
               let index = (try? BookInfo.load(from: copy.tmbDirectory))?.contentIndex,
-              let fitted = fitted(transcript, to: copy, index: index, access: old.access) else { return result }
+              let fitted = fitted(
+                  transcript,
+                  to: copy,
+                  index: index,
+                  sourceMatches: !copy.md5Hash.isEmpty && old.book.md5Hash == copy.md5Hash,
+                  access: old.access
+              ) else { return result }
 
         // The transcript as it was written, unless its file was renamed to
         // the new copy's, when it is written anew in the transcript's form.
@@ -733,6 +739,12 @@ enum DuplicateReplacement {
     ///   transcript is kept, its file renamed to the new copy's when the
     ///   names differ, as when the same file is imported from another place
     ///   under another name.
+    /// - The same source imported again (`sourceMatches`: the two copies'
+    ///   content hashes are equal, an archive's own for a book imported from
+    ///   a ZIP, a folder's for a folder of tracks): every file the
+    ///   transcript names is the new copy's file at the same path when it has
+    ///   the same size. Dates prove nothing here, since extracting an archive
+    ///   gives every file a new one (`ArchiveExtraction`).
     /// - Otherwise each new file must be the one transcribed by its path,
     ///   size, and date (`TranscriptTextLoader.audioCheck`), a book of one
     ///   file by its name or the new one; a file whose date moved would need
@@ -741,6 +753,7 @@ enum DuplicateReplacement {
         _ transcript: Transcript,
         to copy: Book,
         index: BookContentIndex,
+        sourceMatches: Bool = false,
         access: MaintenanceFileAccess = .live
     ) -> Transcript? {
         let locations = TranscriptionPlan.audioFileLocations(of: copy, index: index)
@@ -755,6 +768,17 @@ enum DuplicateReplacement {
         }
         if isOneFile, transcript.files.count == 1, transcript.files[0].fingerprint.digest == copy.md5Hash {
             return transcript.files[0].path == newName ? transcript : renamed()
+        }
+        if sourceMatches {
+            // The size of each new file there is, by the path a transcript
+            // names it by: a file missing is left out, and fails the match.
+            let sizes = Dictionary(
+                locations.compactMap { location in FileStamp(of: location.url).map { (location.path, $0.byteCount) } },
+                uniquingKeysWith: { first, _ in first }
+            )
+            let sameFiles = Set(sizes.keys) == Set(transcript.files.map(\.path))
+                && transcript.files.allSatisfy { sizes[$0.path] == $0.fingerprint.byteCount }
+            if sameFiles { return transcript }
         }
         /// Whether `candidate` describes the new copy's files by their
         /// paths, sizes, and dates alone.
