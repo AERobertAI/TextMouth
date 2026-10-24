@@ -475,9 +475,12 @@ final class OnDiskContractTests: XCTestCase {
                 withoutPages.insert(format.rawValue)
             }
         }
+        // EPUB and HTML are at 1.0.1 since October 24, 2026: their converter
+        // left a page-break element's number out of the label of a heading
+        // that holds one, which changed those books' reading text.
         XCTAssertEqual(
             versions,
-            Dictionary(uniqueKeysWithValues: withPages.map { ($0, "1.0.0") }),
+            Dictionary(uniqueKeysWithValues: withPages.map { ($0, ["epub", "html"].contains($0) ? "1.0.1" : "1.0.0") }),
             Self.because("a page reader's version, or the formats with pages", forces)
         )
         XCTAssertEqual(

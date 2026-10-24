@@ -169,7 +169,9 @@ struct PlaybackControlsView: View {
             get: { viewModel.playbackSkipForwardUnit },
             set: { viewModel.setSharedPlaybackSkipUnit($0) }
         )) {
-            ForEach(SkipUnit.allCases, id: \.self) { unit in
+            // Page is left out for a book without pages, unless it is the
+            // unit in force (`ReaderViewModel.navigationUnitChoices`).
+            ForEach(viewModel.navigationUnitChoices(keeping: viewModel.playbackSkipForwardUnit), id: \.self) { unit in
                 Text(unit.rawValue).tag(unit)
             }
         }
@@ -191,7 +193,7 @@ struct PlaybackControlsView: View {
                 get: { viewModel.playbackSkipForwardUnit },
                 set: { viewModel.setPlaybackSkipUnit($0, direction: .forward) }
             )) {
-                ForEach(SkipUnit.allCases, id: \.self) { unit in
+                ForEach(viewModel.navigationUnitChoices(keeping: viewModel.playbackSkipForwardUnit), id: \.self) { unit in
                     Text(unit.rawValue).tag(unit)
                 }
             }
@@ -200,7 +202,7 @@ struct PlaybackControlsView: View {
                 get: { viewModel.playbackSkipBackwardUnit },
                 set: { viewModel.setPlaybackSkipUnit($0, direction: .backward) }
             )) {
-                ForEach(SkipUnit.allCases, id: \.self) { unit in
+                ForEach(viewModel.navigationUnitChoices(keeping: viewModel.playbackSkipBackwardUnit), id: \.self) { unit in
                     Text(unit.rawValue).tag(unit)
                 }
             }

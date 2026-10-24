@@ -31,13 +31,15 @@ final class PagesUpgradeTests: XCTestCase {
     // MARK: - The Versions
 
     /// Only the formats that gained pages have a page reader; every other
-    /// format has none, so no book of it is ever read again for pages.
+    /// format has none, so no book of it is ever read again for pages. EPUB
+    /// and HTML, whose shared converter changed a heading's label, are at
+    /// 1.0.1; the others have not changed since they gained pages.
     func testOnlyTheFormatsWithPagesHaveAPageReader() {
         let withPages: Set<BookFormat> = [.epub, .html, .pdf, .docx, .daisy, .rtf, .rtfd, .doc, .odt, .wordml]
         for format in BookFormat.allCases {
             XCTAssertEqual(
                 PageReaderVersions.current(for: format),
-                withPages.contains(format) ? "1.0.0" : nil,
+                withPages.contains(format) ? (format == .epub || format == .html ? "1.0.1" : "1.0.0") : nil,
                 format.rawValue
             )
         }
@@ -46,12 +48,21 @@ final class PagesUpgradeTests: XCTestCase {
     /// A book is outdated when its format has a page reader and the book
     /// recorded none or an older one; never for a format without pages.
     func testABookIsOutdatedOnlyWhenItsFormatHasANewerPageReader() {
-        let epub = Book(title: "Outdated", format: .epub, filePath: "/tmp/outdated.epub", md5Hash: "m", folderPath: "")
-        XCTAssertTrue(PageReaderVersions.isOutdated(epub), "no page reader recorded")
+        // A PDF's page reader is 1.0.0, as it was when every format gained pages.
+        let pdf = Book(title: "Outdated", format: .pdf, filePath: "/tmp/outdated.pdf", md5Hash: "m", folderPath: "")
+        XCTAssertTrue(PageReaderVersions.isOutdated(pdf), "no page reader recorded")
         for (stored, outdated) in [("0.9.0", true), ("1", false), ("1.0.0", false), ("1.2.0", false), ("", true)] {
-            var book = epub
+            var book = pdf
             book.pageReaderVersion = stored
             XCTAssertEqual(PageReaderVersions.isOutdated(book), outdated, "stored \"\(stored)\"")
+        }
+        // An EPUB's is 1.0.1, so a book the first reader stamped is behind it.
+        let epub = Book(title: "Outdated", format: .epub, filePath: "/tmp/outdated.epub", md5Hash: "m", folderPath: "")
+        XCTAssertTrue(PageReaderVersions.isOutdated(epub), "no page reader recorded")
+        for (stored, outdated) in [("0.9.0", true), ("1", true), ("1.0.0", true), ("1.0.1", false), ("1.2.0", false)] {
+            var book = epub
+            book.pageReaderVersion = stored
+            XCTAssertEqual(PageReaderVersions.isOutdated(book), outdated, "stored \"\(stored)\" of an EPUB")
         }
         let text = Book(title: "Plain", format: .txt, filePath: "/tmp/plain.txt", md5Hash: "m", folderPath: "")
         XCTAssertFalse(PageReaderVersions.isOutdated(text))
@@ -140,7 +151,7 @@ final class PagesUpgradeTests: XCTestCase {
 
         let index = try XCTUnwrap(BookInfo.load(from: fixture.book.tmbDirectory).contentIndex)
         _ = try LibraryPersistenceService.saveContentAnalysis(
-            for: fixture.book, index: index, cacheFormatVersion: nil, pageReaderVersion: .some("1.0.0")
+            for: fixture.book, index: index, cacheFormatVersion: nil, pageReaderVersion: .some("1.0.1")
         )
         XCTAssertNotNil(try recovered())
     }
@@ -170,7 +181,7 @@ final class PagesUpgradeTests: XCTestCase {
         let content = try MarkdownCacheService.loadFromCache(for: row)
         XCTAssertFalse(content.pages.isEmpty, "the book gained no pages")
         for book in [row, record] {
-            XCTAssertEqual(book.pageReaderVersion, "1.0.0")
+            XCTAssertEqual(book.pageReaderVersion, "1.0.1")
             XCTAssertEqual(book.cacheFormatVersion, MarkdownCacheService.currentCacheVersion)
             assertPlaces(of: book, areAt: Self.epubPlaces, in: content)
         }
@@ -211,7 +222,7 @@ final class PagesUpgradeTests: XCTestCase {
         let kept = try XCTUnwrap(world.library.bookByID(fixture.book.id))
         XCTAssertEqual(try Data(contentsOf: MarkdownCacheService.cacheURL(for: kept)), fixture.bytes, "the text was read over")
         XCTAssertTrue(try MarkdownCacheService.loadFromCache(for: kept).pages.isEmpty)
-        XCTAssertEqual(kept.pageReaderVersion, "1.0.0", "the row was not stamped")
+        XCTAssertEqual(kept.pageReaderVersion, "1.0.1", "the row was not stamped")
         XCTAssertEqual(keptCopies(of: kept), [])
         XCTAssertEqual(debugLogLines(containing: "PAGES_SKIPPED_CHANGED_TEXT: \(kept.title)").count, 1)
         try assertRecordedAsEdited(kept, holding: fixture.bytes)
@@ -280,7 +291,7 @@ final class PagesUpgradeTests: XCTestCase {
 
         XCTAssertEqual(try Data(contentsOf: MarkdownCacheService.cacheURL(for: fixture.book)), fixture.bytes, "the edit was read over")
         let row = try XCTUnwrap(world.library.bookByID(fixture.book.id))
-        XCTAssertEqual(row.pageReaderVersion, "1.0.0")
+        XCTAssertEqual(row.pageReaderVersion, "1.0.1")
         XCTAssertEqual(row.editedText?.cacheDigest, fixture.book.editedText?.cacheDigest)
         XCTAssertTrue(try MarkdownCacheService.loadFromCache(for: row).pages.isEmpty)
         XCTAssertEqual(debugLogLines(containing: "PAGES_SKIPPED_CHANGED_TEXT: \(title)").count, 1)
@@ -371,11 +382,14 @@ final class PagesUpgradeTests: XCTestCase {
         await runBatch(in: world)
         await runBatch(in: world)
 
-        for (fixture, launchesLogged) in [(missing, 1), (damaged, 2)] {
+        // Each book, how many launches logged it, and its stamp: "+failed"
+        // after the version of its own format's page reader, which differs
+        // for the EPUB and the PDF.
+        for (fixture, launchesLogged, stamp) in [(missing, 1, "1.0.1+failed"), (damaged, 2, "1.0.0+failed")] {
             let row = try XCTUnwrap(world.library.bookByID(fixture.book.id))
             XCTAssertEqual(try Data(contentsOf: MarkdownCacheService.cacheURL(for: row)), fixture.bytes)
-            XCTAssertEqual(row.pageReaderVersion, "1.0.0+failed")
-            XCTAssertEqual(try BookInfo.load(from: row.tmbDirectory).state.pageReaderVersion, "1.0.0+failed")
+            XCTAssertEqual(row.pageReaderVersion, stamp)
+            XCTAssertEqual(try BookInfo.load(from: row.tmbDirectory).state.pageReaderVersion, stamp)
             XCTAssertNil(row.editedText, "a book that could not be compared was recorded as edited")
             XCTAssertEqual(debugLogLines(containing: "PAGES_SKIPPED_UNREADABLE: \(row.title):").count, launchesLogged)
             XCTAssertEqual(LibraryViewModel.booksNeedingCacheUpdate([row], access: .live), [])
@@ -534,8 +548,8 @@ final class PagesUpgradeTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: MarkdownCacheService.cacheURL(for: row)), withPages, "the book was not read again")
         XCTAssertEqual(keptCopies(of: row), [], "a copy was kept of text an earlier reader wrote")
         XCTAssertEqual(debugLogLines(containing: "PAGES_REPLACED_TEXT: \(row.title);").count, 0)
-        XCTAssertEqual(row.pageReaderVersion, "1.0.0", "the row was not stamped")
-        XCTAssertEqual(try BookInfo.load(from: row.tmbDirectory).state.pageReaderVersion, "1.0.0", "the record was not stamped")
+        XCTAssertEqual(row.pageReaderVersion, "1.0.1", "the row was not stamped")
+        XCTAssertEqual(try BookInfo.load(from: row.tmbDirectory).state.pageReaderVersion, "1.0.1", "the record was not stamped")
         XCTAssertNil(row.editedText, "the text read again was recorded as an edit")
         assertPlaces(of: row, areAt: Self.epubPlaces, in: try MarkdownCacheService.loadFromCache(for: row))
     }
@@ -601,7 +615,7 @@ final class PagesUpgradeTests: XCTestCase {
 
         let row = try XCTUnwrap(world.library.bookByID(fixture.book.id))
         XCTAssertEqual(try Data(contentsOf: cacheURL), withPages)
-        XCTAssertEqual(row.pageReaderVersion, "1.0.0", "the row was not stamped")
+        XCTAssertEqual(row.pageReaderVersion, "1.0.1", "the row was not stamped")
         XCTAssertNil(row.editedText, "TextMouth's own text was taken for an edit")
         XCTAssertEqual(keptCopies(of: row), [])
     }
@@ -621,7 +635,7 @@ final class PagesUpgradeTests: XCTestCase {
         let copies = keptCopies(of: row)
         XCTAssertEqual(copies.count, 1, "the text without a stamp was not compared")
         XCTAssertEqual(try copies.first.map { try Data(contentsOf: $0) }, fixture.bytes)
-        XCTAssertEqual(row.pageReaderVersion, "1.0.0", "the row was not stamped")
+        XCTAssertEqual(row.pageReaderVersion, "1.0.1", "the row was not stamped")
     }
 
     /// A book stamped "+failed" by an earlier reader, while its file was
@@ -649,7 +663,7 @@ final class PagesUpgradeTests: XCTestCase {
         let sameRow = try XCTUnwrap(world.library.bookByID(same.book.id))
         XCTAssertEqual(keptCopies(of: sameRow), [])
         for row in [changedRow, sameRow] {
-            XCTAssertEqual(row.pageReaderVersion, "1.0.0", "the row was not stamped")
+            XCTAssertEqual(row.pageReaderVersion, "1.0.1", "the row was not stamped")
             XCTAssertFalse(try MarkdownCacheService.loadFromCache(for: row).pages.isEmpty, "the book gained no pages")
         }
     }
@@ -661,7 +675,7 @@ final class PagesUpgradeTests: XCTestCase {
         let world = try makeIntegrationWorld("Pages Upgrade Failed Once")
         let fixture = try makeBookBeforePages(
             sample: Self.epubSample, changingText: { $0.replacingOccurrences(of: "crate", with: "carton") },
-            stamp: "1.0.0+failed-once", in: world
+            stamp: "1.0.1+failed-once", in: world
         )
         XCTAssertTrue(PageReaderVersions.isOutdated(fixture.book), "the book is not read once more")
 
@@ -669,7 +683,7 @@ final class PagesUpgradeTests: XCTestCase {
 
         let row = try XCTUnwrap(world.library.bookByID(fixture.book.id))
         XCTAssertEqual(keptCopies(of: row).count, 1, "the text was not compared")
-        XCTAssertEqual(row.pageReaderVersion, "1.0.0", "the row was not stamped")
+        XCTAssertEqual(row.pageReaderVersion, "1.0.1", "the row was not stamped")
     }
 
     // MARK: - Books open in a reader (ST01)
@@ -703,7 +717,7 @@ final class PagesUpgradeTests: XCTestCase {
             "the reader never showed the book's pages"
         )
         let content = try XCTUnwrap(reader.content)
-        XCTAssertEqual(reader.book.pageReaderVersion, "1.0.0")
+        XCTAssertEqual(reader.book.pageReaderVersion, "1.0.1")
         // The cursor follows its words, in the same chapter. Its offset is
         // judged by the words there, not by the number: the second reading
         // removes the page number after a page break from the text.
@@ -727,7 +741,7 @@ final class PagesUpgradeTests: XCTestCase {
         let row = try XCTUnwrap(world.library.bookByID(fixture.book.id))
         let content = try MarkdownCacheService.loadFromCache(for: row)
         XCTAssertFalse(content.pages.isEmpty, "the book gained no pages")
-        XCTAssertEqual(row.pageReaderVersion, "1.0.0")
+        XCTAssertEqual(row.pageReaderVersion, "1.0.1")
         assertPlaces(of: row, areAt: Self.epubPlaces, in: content)
     }
 
@@ -977,7 +991,7 @@ final class PagesUpgradeTests: XCTestCase {
         )
         let content = try MarkdownCacheService.loadFromCache(for: row)
         XCTAssertFalse(content.pages.isEmpty, "the book gained no pages", file: file, line: line)
-        XCTAssertEqual(row.pageReaderVersion, "1.0.0", "the row was not stamped", file: file, line: line)
+        XCTAssertEqual(row.pageReaderVersion, "1.0.1", "the row was not stamped", file: file, line: line)
         XCTAssertNil(row.editedText, "the text read again was recorded as an edit", file: file, line: line)
         assertPlaces(of: row, areAt: Self.epubPlaces, in: content, file: file, line: line)
         return (world, fixture, row)

@@ -73,11 +73,20 @@ final class TextutilImportTests: XCTestCase {
         XCTAssertEqual(textutilFiles(under: book.tmbDirectory), [], label, file: file, line: line)
     }
 
+    /// Whether `name` ends as a hidden file textutil writes does: the HTML
+    /// run's, or the plain-text run's for a document's pages
+    /// (`TextutilConverter.temporarySuffixes`). The check looked for the
+    /// HTML run's alone, so a plain-text file a run left behind went
+    /// unseen.
+    private func isTextutilTemporary(_ name: String) -> Bool {
+        TextutilConverter.temporarySuffixes.contains { name.hasSuffix($0) }
+    }
+
     /// The paths, relative to `folder`, of the hidden files textutil writes
-    /// (`TextutilConverter.temporarySuffix`) anywhere inside it.
+    /// (`TextutilConverter.temporarySuffixes`) anywhere inside it.
     private func textutilFiles(under folder: URL) -> [String] {
         let paths = FileManager.default.enumerator(atPath: folder.path)?.allObjects as? [String] ?? []
-        return paths.filter { $0.hasSuffix(TextutilConverter.temporarySuffix) }.sorted()
+        return paths.filter(isTextutilTemporary).sorted()
     }
 
     /// Every textutil leftover in the places a conversion could write: the
@@ -89,7 +98,7 @@ final class TextutilImportTests: XCTestCase {
             found.insert("staging/\(path)")
         }
         for name in (try? FileManager.default.contentsOfDirectory(atPath: temporaryRoot.path)) ?? []
-        where name.hasPrefix("TextMouth-textutil-") || name.hasSuffix(TextutilConverter.temporarySuffix) {
+        where name.hasPrefix("TextMouth-textutil-") || isTextutilTemporary(name) {
             found.insert("temporary/\(name)")
         }
         return found

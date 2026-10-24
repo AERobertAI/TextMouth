@@ -303,16 +303,200 @@ final class EPUBPageListTests: XCTestCase {
         XCTAssertEqual(chapter.pages.first { $0.label == "6" }?.characterOffset, heading?.characterOffset)
     }
 
-    /// What a heading that holds a page-break element's visible text reads as:
-    /// the heading's label is made by `HTMLReadingText`, which this task leaves
-    /// alone, and it still includes that text ("Part 9Two"). The page is
-    /// written before the heading and the body text never holds the "9".
-    func testAHeadingHoldingAPageBreaksTextKeepsItInItsLabel() throws {
+    /// A heading that holds a page-break element's number leaves it out of
+    /// its label, as the body text does: "Part <page 9>Two" is the heading
+    /// "Part Two", read aloud and listed so, and page 9 begins where the
+    /// heading does. The label was "Part 9Two" while this was pinned the
+    /// other way (PG05 left `HTMLReadingText` alone).
+    func testAHeadingLeavesAPageBreaksNumberOutOfItsLabel() throws {
         let result = try parsed("<h2>Part <span epub:type=\"pagebreak\" title=\"9\">9</span>Two</h2><p>Body words.</p>")
         XCTAssertEqual(result.chapter.pages.map(\.label), ["9"])
         XCTAssertEqual(result.chapter.pages.first?.characterOffset, 0)
-        XCTAssertEqual(result.chapter.headings.first?.text, "Part 9Two")
+        XCTAssertEqual(result.chapter.headings.first?.text, "Part Two")
+        XCTAssertFalse(result.chapter.text.contains("9"), "the number is read nowhere: \(result.chapter.text)")
         XCTAssertTrue(result.markdown.hasPrefix("<!-- page: 9 -->"), result.markdown)
+        XCTAssertTrue(result.markdown.contains("## Part Two\n"), result.markdown)
+    }
+
+    /// Through a whole EPUB: a heading holding a page-break element's number
+    /// is the heading without it, whether the book has no page list (the
+    /// element is the page) or a page list names the element as a page of
+    /// its own, numbered otherwise ("ix" for the number 9), and the page
+    /// begins where the heading does. The number is read nowhere.
+    func testAnEPUBHeadingLeavesOutAPageBreaksNumber() throws {
+        let chapter = xhtml("""
+            <h1>Title</h1><p>Alpha text.</p>
+            <h2>Part <span id="p9" epub:type="pagebreak">9</span>Two</h2><p>Bravo text.</p>
+            """)
+        let toc = "<nav epub:type=\"toc\"><ol><li><a href=\"ch1.xhtml\">Title</a></li></ol></nav>"
+        let list = "<nav epub:type=\"page-list\"><ol><li><a href=\"ch1.xhtml#p9\">ix</a></li></ol></nav>"
+        for (name, nav, label) in [("no page list", toc, "9"), ("a page list", toc + list, "ix")] {
+            let epub = try makeEPUB(
+                manifest: """
+                    <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+                    <item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>
+                    """,
+                spine: "<itemref idref=\"ch1\"/>",
+                members: ["nav.xhtml": xhtml(nav), "ch1.xhtml": chapter]
+            )
+
+            let chapters = try EPUBParser.prepareBook(url: epub).chapters
+            XCTAssertEqual(chapters.count, 1, name)
+            guard let first = chapters.first?.chapter else { return XCTFail("no chapter with \(name)") }
+
+            XCTAssertTrue(first.headings.contains { $0.text == "Part Two" }, "\(name): \(first.headings.map(\.text))")
+            XCTAssertFalse(first.headings.contains { $0.text.contains("9") }, "\(name): \(first.headings.map(\.text))")
+            XCTAssertFalse(first.text.contains("9"), "\(name): \(first.text)")
+            let part = first.headings.first { $0.text == "Part Two" }
+            XCTAssertEqual(first.pages.map(\.label).filter { $0 == label }, [label], name)
+            XCTAssertEqual(first.pages.first { $0.label == label }?.characterOffset, part?.characterOffset, name)
+        }
+    }
+
+    /// Whatever inline markup a page-break element inside a heading stands
+    /// in, the label reads as the same markup does in a paragraph, where the
+    /// number is not read: its number in the other numbering ("V" for page
+    /// 5), a break inside emphasis, a trailing period, and two breaks whose
+    /// markup is the same. The number leaves no space behind where the source
+    /// gave none, as in a paragraph. A block is the one difference, since a
+    /// heading is one line: it keeps the words on either side apart.
+    func testAHeadingsLabelReadsAsTheSameMarkupDoesInAParagraph() throws {
+        let markups = [
+            ("Chapter <span role=\"doc-pagebreak\" aria-label=\"5\">V</span>Five", "Chapter Five"),
+            ("<em>Part <span epub:type=\"pagebreak\" title=\"9\">9</span></em> Two", "Part Two"),
+            ("Part<span epub:type=\"pagebreak\" title=\"9\">9</span>Two", "PartTwo"),
+            ("A <span epub:type=\"pagebreak\" title=\"1\">1</span>B <span epub:type=\"pagebreak\" title=\"1\">1</span>C", "A B C"),
+            ("One <b>two <span epub:type=\"pagebreak\" title=\"4\">4.</span></b> three", "One two three"),
+        ]
+        for (markup, label) in markups {
+            let heading = try parsed("<h2>\(markup)</h2>")
+            let paragraph = try parsed("<p>\(markup)</p>")
+            XCTAssertEqual(heading.chapter.headings.first?.text, label, markup)
+            XCTAssertEqual(paragraph.chapter.text, label, markup)
+            XCTAssertFalse(heading.chapter.pages.isEmpty, markup)
+            XCTAssertEqual(heading.chapter.pages.map(\.label), paragraph.chapter.pages.map(\.label), markup)
+        }
+
+        let block = try parsed("<h2>Part<div epub:type=\"pagebreak\" title=\"9\">9</div>Two</h2>")
+        XCTAssertEqual(block.chapter.headings.first?.text, "Part Two")
+        XCTAssertEqual(block.chapter.pages.map(\.label), ["9"])
+    }
+
+    /// Inline markup assembled at random: words, spaces, wrappers, and the
+    /// kinds of page-break element a heading could hold (empty, only its
+    /// number with or without a period, the number in the other numbering,
+    /// and words), nested up to `depth` deep.
+    private func randomInlineMarkup(depth: Int, using generator: inout SeededGenerator) -> String {
+        var html = ""
+        for _ in 0..<Int.random(in: 1...4, using: &generator) {
+            let number = Int.random(in: 1...30, using: &generator)
+            switch Int.random(in: 0..<10, using: &generator) {
+            case 0..<3:
+                html += ["alpha", "Beta ", " gamma", "delta, ", "(epsilon)", "zeta."].randomElement(using: &generator) ?? ""
+            case 3:
+                html += " "
+            case 4:
+                html += "<span epub:type=\"pagebreak\" title=\"\(number)\"></span>"
+            case 5:
+                html += "<span epub:type=\"pagebreak\" title=\"\(number)\">\(number)</span>"
+            case 6:
+                html += "<span role=\"doc-pagebreak\" aria-label=\"\(number)\"> \(number). </span>"
+            case 7:
+                html += "<span epub:type=\"pagebreak\" title=\"5\">V</span>"
+            case 8:
+                html += "<span epub:type=\"pagebreak\" title=\"\(number)\">Page words</span>"
+            default:
+                guard depth > 0 else { continue }
+                let tag = ["em", "b", "span", "a"].randomElement(using: &generator) ?? "span"
+                html += "<\(tag)>" + randomInlineMarkup(depth: depth - 1, using: &generator) + "</\(tag)>"
+            }
+        }
+        return html
+    }
+
+    /// For inline markup of every arrangement, a heading's label is the
+    /// words the same markup gives a paragraph, whitespace aside, and the
+    /// pages are the same: the label leaves out exactly the page-break
+    /// elements the body text does. The seed is fixed, so a failure names
+    /// markup that replays exactly.
+    func testHeadingLabelsAgreeWithParagraphTextOnGeneratedMarkup() throws {
+        var generator = SeededGenerator(state: 0x5041_4745)
+        var compared = 0
+        for _ in 0..<400 {
+            let markup = randomInlineMarkup(depth: 3, using: &generator)
+            let paragraph = try parsed("<p>\(markup)</p>")
+            let heading = try parsed("<h2>\(markup)</h2>")
+            // Markup with no word at all makes no heading, and no paragraph.
+            guard let label = heading.chapter.headings.first?.text else {
+                XCTAssertEqual(normalizedWords(paragraph.chapter.text), "", markup)
+                continue
+            }
+            compared += 1
+            XCTAssertEqual(normalizedWords(label), normalizedWords(paragraph.chapter.text), markup)
+            XCTAssertEqual(heading.chapter.pages.map(\.label), paragraph.chapter.pages.map(\.label), markup)
+            // One failing arrangement explains the rest; stop there.
+            if (testRun?.totalFailureCount ?? 0) > 0 { break }
+        }
+        XCTAssertGreaterThan(compared, 200, "too few arrangements were compared")
+    }
+
+    /// `text` with each run of whitespace one space and none at either end.
+    private func normalizedWords(_ text: String) -> String {
+        text.unicodeScalars
+            .split(whereSeparator: \.properties.isWhitespace)
+            .map { String(String.UnicodeScalarView($0)) }
+            .joined(separator: " ")
+    }
+
+    /// Words in a page-break element are words of the heading, as they are
+    /// of a paragraph (ST02): only a page's own number is left out of the
+    /// label. A page the book's page list names is the same, whatever its
+    /// element holds; and a heading that was nothing but the number is no
+    /// heading, its page kept.
+    func testAHeadingKeepsWordsAPageBreakHoldsAndTheNumberOfAListedPageGoesToo() throws {
+        let words = try parsed("<h2>Part <span epub:type=\"pagebreak\" title=\"9\">Nine</span> Two</h2>")
+        XCTAssertEqual(words.chapter.headings.first?.text, "Part Nine Two")
+        XCTAssertEqual(words.chapter.pages.map(\.label), ["9"])
+
+        let listed = try parsed(
+            "<h2>Part <span id=\"p9\" epub:type=\"pagebreak\">IX</span>Two</h2><p>Body.</p>",
+            pages: HTMLPageTargets(markers: ["p9": MarkdownPageMarker(label: "9", ordinal: 1)], pageBreaksArePages: false)
+        )
+        XCTAssertEqual(listed.chapter.headings.first?.text, "Part Two")
+        XCTAssertEqual(listed.chapter.pages.map(\.label), ["9"])
+
+        let alone = try parsed("<h2><span epub:type=\"pagebreak\" title=\"9\">9</span></h2><p>Body words.</p>")
+        XCTAssertTrue(alone.chapter.headings.isEmpty, "\(alone.chapter.headings.map(\.text))")
+        XCTAssertEqual(alone.chapter.pages.map(\.label), ["9"])
+        XCTAssertEqual(alone.chapter.text, "Body words.")
+    }
+
+    /// Without pages a heading reads exactly as cache format 3.0.7 wrote it,
+    /// the number in its label.
+    func testAHeadingKeepsAPageBreaksNumberWithoutPages() throws {
+        let result = try parsed(
+            "<h2>Part <span epub:type=\"pagebreak\" title=\"9\">9</span>Two</h2>",
+            includesPages: false
+        )
+        XCTAssertEqual(result.chapter.headings.first?.text, "Part 9Two")
+        XCTAssertTrue(result.chapter.pages.isEmpty)
+    }
+
+    /// The elements a label leaves out are found by identity: leaving out
+    /// the first of two spans with the same markup leaves the second in.
+    func testALabelLeavesOutTheElementsNamedAndNoOther() throws {
+        let document = try SwiftSoup.parse("<h2 id=\"h\">Part <span id=\"a\">9</span>Two <span id=\"b\">9</span></h2>")
+        let heading = try XCTUnwrap(try document.select("#h").first())
+        let first = try XCTUnwrap(try document.select("#a").first())
+        let second = try XCTUnwrap(try document.select("#b").first())
+
+        XCTAssertEqual(HTMLReadingText.label(of: heading), "Part 9Two 9")
+        XCTAssertEqual(HTMLReadingText.label(of: heading, leavingOut: [first]), "Part Two 9")
+        XCTAssertEqual(HTMLReadingText.label(of: heading, leavingOut: [second]), "Part 9Two")
+        XCTAssertEqual(HTMLReadingText.label(of: heading, leavingOut: [first, second]), "Part Two")
+        // An element that is not below the heading changes nothing.
+        let elsewhere = try XCTUnwrap(try SwiftSoup.parse("<p>9</p>").select("p").first())
+        XCTAssertEqual(HTMLReadingText.label(of: heading, leavingOut: [elsewhere]), "Part 9Two 9")
     }
 
     // MARK: - The EPUB 2 page list
@@ -604,11 +788,10 @@ final class EPUBPageListTests: XCTestCase {
     /// Page-break and page-list vocabulary: the `epub:type` and `role` tokens,
     /// without regard to case or to other tokens beside them, and nothing else.
     func testThePageBreakAndPageListVocabulary() throws {
+        // Markup that parses to no element fails the test: a test that
+        // skipped here would pass vacuously on a parser that read nothing.
         func element(_ markup: String) throws -> Element {
-            guard let element = try SwiftSoup.parseBodyFragment(markup).body()?.children().first() else {
-                throw XCTSkip("no element in \(markup)")
-            }
-            return element
+            try XCTUnwrap(try SwiftSoup.parseBodyFragment(markup).body()?.children().first(), "no element in \(markup)")
         }
         XCTAssertTrue(PublicationSemantics.isPageBreak(try element("<span epub:type=\"pagebreak\"></span>")))
         XCTAssertTrue(PublicationSemantics.isPageBreak(try element("<span role=\"doc-pagebreak\"></span>")))

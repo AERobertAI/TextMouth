@@ -243,14 +243,19 @@ enum HTMLToMarkdownConverter {
             // parser gives both the same offset and keeps the visible heading,
             // and a heading without visible text still keeps its destination.
             // A page that begins inside the heading is written there too.
-            for marker in destinationMarkers(inside: element, context: context) {
+            let enclosed = destinationMarkers(inside: element, context: context)
+            for marker in enclosed.markers {
                 emit(marker, inline: false, into: &result)
             }
             // The heading line holds the label the direct reader gives it,
             // as literal text: one line even when the heading contains a line
             // break or a block, and no link, emphasis, or code syntax, whose
             // markers the parser would otherwise have to keep out of the label.
-            let label = HTMLReadingText.label(of: element)
+            // A page-break element inside the heading whose text is only its
+            // page's number keeps that number out of the label, as it keeps it
+            // out of the body text: "Part <page 9>Two" is the heading "Part
+            // Two", and the page is the marker written above.
+            let label = HTMLReadingText.label(of: element, leavingOut: enclosed.unreadPageBreaks)
             result += String(repeating: "#", count: level) + " " + MarkdownLiteral.escaped(label) + "\n\n"
 
         // Line breaks
@@ -319,7 +324,7 @@ enum HTMLToMarkdownConverter {
         // and it always stands on a line of its own. Destinations inside the
         // block precede it rather than becoming words of the code.
         case "pre":
-            for marker in destinationMarkers(inside: element, context: context) {
+            for marker in destinationMarkers(inside: element, context: context).markers {
                 emit(marker, inline: false, into: &result)
             }
             let code = HTMLReadingText.preformattedText(of: element)
@@ -332,7 +337,7 @@ enum HTMLToMarkdownConverter {
         // Inline code. A code span is read verbatim, so destinations inside
         // it precede it rather than becoming words of the code.
         case "code":
-            for marker in destinationMarkers(inside: element, context: context) {
+            for marker in destinationMarkers(inside: element, context: context).markers {
                 emit(marker, inline: true, into: &result)
             }
             appendSpaced(HTMLReadingText.inlineText(of: element), to: &result, codeSpan(_:after:))
@@ -401,14 +406,31 @@ enum HTMLToMarkdownConverter {
         return markers
     }
 
+    /// What a heading, `pre`, or `code` element holds besides its words: the
+    /// destinations its descendants carry, and the page-break elements among
+    /// them whose text is not read.
+    private struct EnclosedDestinations {
+        /// The Markdown of the destinations, in document order, which are
+        /// written before the element instead of inside it.
+        var markers: [String] = []
+        /// The descendant page-break elements whose text conversion does not
+        /// read (`readsOwnText`), which are no more than their markers: a
+        /// reading of the element's words leaves them out, as the body text's
+        /// does.
+        var unreadPageBreaks: [Element] = []
+    }
+
     /// Destinations carried by the descendants of a heading, `pre`, or `code`,
     /// in document order, where they are written before that element instead
     /// of inside it. Content outside the reading flow is skipped exactly as
     /// conversion skips it, and so are the children of a page-break element
-    /// whose text conversion does not read (`readsOwnText`).
-    private static func destinationMarkers(inside container: Element, context: Context) -> [String] {
-        guard !context.headingTargets.isEmpty || context.mayHoldPages else { return [] }
-        var markers: [String] = []
+    /// whose text conversion does not read (`readsOwnText`), which are
+    /// returned so the element's own words can leave them out. Each page-break
+    /// element is looked at once, here: looking up a page the page list names
+    /// records it as written (`pageMarker`), so a second lookup would find none.
+    private static func destinationMarkers(inside container: Element, context: Context) -> EnclosedDestinations {
+        var enclosed = EnclosedDestinations()
+        guard !context.headingTargets.isEmpty || context.mayHoldPages else { return enclosed }
         for child in container.getChildNodes() {
             guard let element = child as? Element,
                   !context.readingFlow.excludes(element) else { continue }
@@ -416,12 +438,16 @@ enum HTMLToMarkdownConverter {
             guard tag != "script", tag != "style" else { continue }
             let isBreak = isPageBreakElement(element, context: context)
             let page = pageMarker(for: element, tag: tag, isPageBreak: isBreak, context: context)
-            markers += destinationMarkers(for: element, tag: tag, page: page, context: context)
+            enclosed.markers += destinationMarkers(for: element, tag: tag, page: page, context: context)
             if !isBreak || readsOwnText(ofPageBreak: element, page: page) {
-                markers += destinationMarkers(inside: element, context: context)
+                let inner = destinationMarkers(inside: element, context: context)
+                enclosed.markers += inner.markers
+                enclosed.unreadPageBreaks += inner.unreadPageBreaks
+            } else {
+                enclosed.unreadPageBreaks.append(element)
             }
         }
-        return markers
+        return enclosed
     }
 
     // MARK: - Pages

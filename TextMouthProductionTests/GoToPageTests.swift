@@ -91,6 +91,18 @@ final class GoToPageTests: XCTestCase {
         XCTAssertEqual(ReaderPageWording.fieldHint, "Type a page as the book numbers it, such as 12 or xii.")
         XCTAssertEqual(ReaderPageWording.emptyField, "Type a page number.")
         XCTAssertEqual(ReaderPageWording.jumped(to: "12"), "Jumped to page 12.")
+        XCTAssertEqual(
+            ReaderPageWording.jumped(to: "2", occurrence: 2),
+            "Jumped to page 2, the second page labelled 2."
+        )
+        XCTAssertEqual(
+            ReaderPageWording.hasNoWords("7", cursorOn: "8"),
+            "Page 7 has no words, so the cursor is on page 8."
+        )
+        XCTAssertEqual(
+            ReaderPageWording.hasNoWords("5", cursorOn: "2", occurrence: 2),
+            "Page 5 has no words, so the cursor is on page 2, the second page labelled 2."
+        )
         XCTAssertEqual(ReaderPageWording.openHint, "Opens jump to page controls")
         XCTAssertEqual(ReaderPageWording.hideHint, "Hides jump to page controls")
         XCTAssertEqual(ReaderPageWording.switchHint, "Switches to jump to page controls")
@@ -123,6 +135,113 @@ final class GoToPageTests: XCTestCase {
         XCTAssertEqual(reader.lastAnnouncement, "Jumped to page 300.")
         reader.returnToSavedPosition()
         XCTAssertEqual(pagedPlace(of: reader), "0:0")
+    }
+
+    /// Go to Page says the page the status row names at the place it reaches,
+    /// which is the last of the pages that begin there, and why it is not the
+    /// page asked for: a blank page "7" shares its place with page "8", so
+    /// asking for 7 lands where the row reads "Page 8", and "Jumped to page
+    /// 7." would have told the listener a page the row, Where Am I?, and Next
+    /// Page all deny. A page that begins alone is said as it is, whatever
+    /// case it was typed in.
+    func testGoToPageSaysThePageTheRowNames() {
+        let pages = [
+            PageBreak(label: "6", chapterIndex: 0, characterOffset: 0),
+            PageBreak(label: "7", chapterIndex: 0, characterOffset: 100),
+            PageBreak(label: "8", chapterIndex: 0, characterOffset: 100),
+            PageBreak(label: "ix", chapterIndex: 1, characterOffset: 0),
+        ]
+        let reader = makePagedReader(pages: pages)
+        defer { reader.close() }
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 0
+
+        XCTAssertNil(reader.goToPage(typed: "7"))
+        XCTAssertEqual(pagedPlace(of: reader), "0:100")
+        XCTAssertEqual(reader.currentPagePosition.page?.label, "8", "the row names the later page")
+        XCTAssertEqual(reader.lastAnnouncement, "Page 7 has no words, so the cursor is on page 8.")
+
+        // The later page itself, typed, is the same place and the same words.
+        reader.lastAnnouncement = nil
+        reader.currentCharacterOffset = 0
+        XCTAssertNil(reader.goToPage(typed: "8"))
+        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page 8.")
+
+        // A page that begins alone is said as the book labels it.
+        XCTAssertNil(reader.goToPage(typed: "IX"))
+        XCTAssertEqual(pagedPlace(of: reader), "1:0")
+        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page ix.")
+        XCTAssertEqual(reader.currentPagePosition.page?.label, "ix")
+    }
+
+    /// The page said is read from where the reader stands after the jump,
+    /// not worked out from the page typed: a page that begins after the
+    /// book's last word (the chapter holds 100 characters, and page 9 begins
+    /// at 100) is reached at the last word, where the row names the page
+    /// before it, and that is the page said, with the reason the cursor is
+    /// not on page 9. The sentence is pinned as it is spoken, and the page it
+    /// names is the row's, checked on its own: the expected words are not
+    /// taken from the row, which the code under test reads as well.
+    func testGoToPageSaysThePageAtTheCursorWhereTheJumpStopsShort() {
+        let pages = [
+            PageBreak(label: "7", chapterIndex: 1, characterOffset: 0),
+            PageBreak(label: "8", chapterIndex: 1, characterOffset: 50),
+            PageBreak(label: "9", chapterIndex: 1, characterOffset: 100),
+        ]
+        let reader = makePagedReader(pages: pages)
+        defer { reader.close() }
+        reader.currentChapterIndex = 1
+        reader.currentCharacterOffset = 0
+
+        XCTAssertNil(reader.goToPage(typed: "9"))
+
+        XCTAssertEqual(reader.currentChapterIndex, 1)
+        XCTAssertEqual(reader.currentPagePosition.page?.label, "8", "the reader stands on page 8, whose words end the book")
+        XCTAssertEqual(reader.lastAnnouncement, "Page 9 has no words, so the cursor is on page 8.")
+    }
+
+    /// The reason and the place go together: a blank page asked for, whose
+    /// place the cursor shares with one of several pages of a label, is told
+    /// as "Page 5 has no words, so the cursor is on page 2, the second page
+    /// labelled 2." A blank page that shares a label with the page it is
+    /// beside is told too, since it is another page; and a page that has
+    /// words, whatever its label, is told without a reason.
+    func testTheReasonNamesWhichPageOfASharedLabelTheCursorIsOn() {
+        let pages = [
+            PageBreak(label: "2", chapterIndex: 0, characterOffset: 0),
+            PageBreak(label: "5", chapterIndex: 0, characterOffset: 50),
+            PageBreak(label: "2", chapterIndex: 0, characterOffset: 50),
+            PageBreak(label: "3", chapterIndex: 0, characterOffset: 100),
+            PageBreak(label: "3", chapterIndex: 0, characterOffset: 100),
+        ]
+        let reader = makePagedReader(pages: pages)
+        defer { reader.close() }
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 0
+
+        // Page 5 is blank: the cursor is on the second page labelled 2.
+        XCTAssertNil(reader.goToPage(typed: "5"))
+        XCTAssertEqual(pagedPlace(of: reader), "0:50")
+        XCTAssertEqual(
+            reader.lastAnnouncement,
+            "Page 5 has no words, so the cursor is on page 2, the second page labelled 2."
+        )
+
+        // The first page labelled 3 is blank beside the second, which has
+        // the words: the reason, and the second of them.
+        reader.currentCharacterOffset = 0
+        XCTAssertNil(reader.goToPage(typed: "3"))
+        XCTAssertEqual(pagedPlace(of: reader), "0:100")
+        XCTAssertEqual(
+            reader.lastAnnouncement,
+            "Page 3 has no words, so the cursor is on page 3, the second page labelled 3."
+        )
+
+        // "2" asked for from there goes round to its first page, which has
+        // words of its own: no reason, and the place it is.
+        XCTAssertNil(reader.goToPage(typed: "2"))
+        XCTAssertEqual(pagedPlace(of: reader), "0:0")
+        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page 2, the first page labelled 2.")
     }
 
     /// A refusal is the sentence, and nothing moves or is said.
@@ -160,8 +279,206 @@ final class GoToPageTests: XCTestCase {
         XCTAssertEqual(pagedPlace(of: reader), "0:150")
     }
 
+    // MARK: - A Label More Than One Page Carries
+
+    /// What Return does in the page panel on the text its field started at,
+    /// as the panel asks it (`JumpFieldPanel.take`).
+    private func returnOnTheStartingLabel(of reader: ReaderViewModel) -> JumpFieldOutcome {
+        let starting = reader.goToPageStartingText
+        return JumpFieldOutcome.taking(
+            starting,
+            startedAt: starting,
+            submitsUnchanged: reader.goToPageLabelIsRepeated(starting),
+            submit: reader.goToPage(typed:)
+        )
+    }
+
+    /// Every page a label names is found by the one rule, spaces and case
+    /// set aside, in book order; a label no page carries, and an empty one,
+    /// name none.
+    func testEveryPageOfALabelIsFoundByOneRule() {
+        let pages = BookPages(breaks: Self.sixPages)
+        XCTAssertEqual(JumpInputValidator.pageIndices(named: "2", in: pages), [3, 4])
+        XCTAssertEqual(JumpInputValidator.pageIndices(named: " II\n", in: pages), [1])
+        XCTAssertEqual(JumpInputValidator.pageIndices(named: "300", in: pages), [5])
+        XCTAssertEqual(JumpInputValidator.pageIndices(named: "400", in: pages), [])
+        XCTAssertEqual(JumpInputValidator.pageIndices(named: "", in: pages), [])
+        XCTAssertEqual(JumpInputValidator.pageIndices(named: "2", in: .none), [])
+    }
+
+    /// Return on the label the field started at, when another page carries
+    /// it too, goes to that label's next page, and the last goes round to
+    /// the first, so every page of a repeated label can be reached from the
+    /// panel. Before, the starting label was always no change, and the
+    /// second "2" could be reached only by typing something else first.
+    func testReturnOnARepeatedStartingLabelGoesToItsNextPage() {
+        let reader = makePagedReader(pages: Self.sixPages)
+        defer { reader.close() }
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 160
+        XCTAssertEqual(reader.goToPageStartingText, "2")
+        XCTAssertTrue(reader.goToPageLabelIsRepeated("2"))
+
+        XCTAssertEqual(returnOnTheStartingLabel(of: reader), .jumped)
+        XCTAssertEqual(pagedPlace(of: reader), "1:0")
+        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page 2, the second page labelled 2.")
+
+        // The panel opens afresh at the new place, still on a "2": the next
+        // press wraps to the first, and says so, and a Return position was
+        // kept.
+        XCTAssertEqual(returnOnTheStartingLabel(of: reader), .jumped)
+        XCTAssertEqual(pagedPlace(of: reader), "0:150")
+        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page 2, the first page labelled 2.")
+        XCTAssertTrue(reader.hasSavedPosition)
+    }
+
+    /// Go to Page says which of the pages that carry a label it reached,
+    /// however it came to be there (typed from elsewhere, by Return on the
+    /// starting label, or by wrapping round), counting in book order and
+    /// naming the label as the book spells it; a label of one page is said
+    /// as ever. Without this a listener hears "Jumped to page A." for each
+    /// of three pages and cannot tell where they are.
+    func testGoToPageSaysWhichPageOfASharedLabelItReached() {
+        let pages = [
+            PageBreak(label: "1", chapterIndex: 0, characterOffset: 0),
+            PageBreak(label: "A", chapterIndex: 0, characterOffset: 50),
+            PageBreak(label: "2", chapterIndex: 0, characterOffset: 100),
+            PageBreak(label: "A", chapterIndex: 0, characterOffset: 150),
+            PageBreak(label: "A", chapterIndex: 1, characterOffset: 0),
+            PageBreak(label: "3", chapterIndex: 1, characterOffset: 50),
+        ]
+        let reader = makePagedReader(pages: pages)
+        defer { reader.close() }
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 0
+
+        // Typed from page 1, in the case the field was given: the book's own.
+        XCTAssertNil(reader.goToPage(typed: "a"))
+        XCTAssertEqual(pagedPlace(of: reader), "0:50")
+        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page A, the first page labelled A.")
+
+        // Return on the starting label goes on, and round.
+        for (place, said) in [
+            ("0:150", "Jumped to page A, the second page labelled A."),
+            ("1:0", "Jumped to page A, the third page labelled A."),
+            ("0:50", "Jumped to page A, the first page labelled A."),
+        ] {
+            XCTAssertEqual(returnOnTheStartingLabel(of: reader), .jumped)
+            XCTAssertEqual(pagedPlace(of: reader), place)
+            XCTAssertEqual(reader.lastAnnouncement, said)
+        }
+
+        // A label of one page says nothing of the kind.
+        XCTAssertNil(reader.goToPage(typed: "2"))
+        XCTAssertEqual(reader.lastAnnouncement, "Jumped to page 2.")
+    }
+
+    /// The first ten ordinals are said in words, the rest in figures with
+    /// their endings, 11th, 12th, and 13th among the "th"s.
+    func testTheOccurrenceOfALabelIsSaidAsAnOrdinal() {
+        let expected = [
+            (1, "first"), (2, "second"), (3, "third"), (4, "fourth"), (5, "fifth"), (6, "sixth"),
+            (7, "seventh"), (8, "eighth"), (9, "ninth"), (10, "tenth"), (11, "11th"), (12, "12th"),
+            (13, "13th"), (14, "14th"), (21, "21st"), (22, "22nd"), (23, "23rd"), (24, "24th"),
+            (101, "101st"), (111, "111th"), (112, "112th"), (113, "113th"), (122, "122nd"),
+        ]
+        for (occurrence, ordinal) in expected {
+            XCTAssertEqual(
+                ReaderPageWording.jumped(to: "2", occurrence: occurrence),
+                "Jumped to page 2, the \(ordinal) page labelled 2.",
+                "occurrence \(occurrence)"
+            )
+        }
+        XCTAssertEqual(ReaderPageWording.jumped(to: "2", occurrence: nil), "Jumped to page 2.")
+    }
+
+    /// Return on a starting label that only the page being read carries is
+    /// no change, as before: the panel closes as Cancel does, nothing moves
+    /// or is said, and no Return position is kept. So is Return before the
+    /// first page, where the field starts empty.
+    func testReturnOnAUniqueStartingLabelMovesNothing() {
+        let reader = makePagedReader(pages: Self.sixPages)
+        defer { reader.close() }
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 110
+        reader.lastAnnouncement = nil
+        XCTAssertEqual(reader.goToPageStartingText, "1")
+        XCTAssertFalse(reader.goToPageLabelIsRepeated("1"))
+
+        XCTAssertEqual(returnOnTheStartingLabel(of: reader), .unchanged)
+        XCTAssertEqual(pagedPlace(of: reader), "0:110")
+        XCTAssertNil(reader.lastAnnouncement)
+        XCTAssertFalse(reader.hasSavedPosition)
+
+        let later = makePagedReader(pages: [PageBreak(label: "i", chapterIndex: 0, characterOffset: 50)])
+        defer { later.close() }
+        later.currentChapterIndex = 0
+        later.currentCharacterOffset = 0
+        XCTAssertEqual(later.goToPageStartingText, "")
+        XCTAssertEqual(returnOnTheStartingLabel(of: later), .unchanged)
+        XCTAssertEqual(pagedPlace(of: later), "0:0")
+    }
+
+    /// The page panel's own Return does the same: the panel hosted offscreen,
+    /// its field given the label it started at, a "2" the book carries on
+    /// two pages, goes to the second and closes by jumping; on a label of one
+    /// page it closes as Cancel. Skipped where an offscreen window gives the
+    /// field no keyboard focus or takes no key.
+    func testTheHostedPanelsReturnOnARepeatedLabelJumpsAndOnAUniqueOneCancels() throws {
+        let repeated = makePagedReader(pages: Self.sixPages)
+        defer { repeated.close() }
+        repeated.currentChapterIndex = 0
+        repeated.currentCharacterOffset = 160
+        var jumped = false
+        var cancelled = false
+        let panel = JumpToPagePanel(viewModel: repeated, onJump: { jumped = true }, onCancel: { cancelled = true })
+
+        try withHostedField(panel, holding: "2") { field, _ in
+            let hostingView = field.hostingView
+            let textField = try XCTUnwrap(
+                editableTextFields(in: hostingView).first { $0.placeholderString == "Page" },
+                "the field was not drawn"
+            )
+            // The starting label typed back over itself, which gives the
+            // field the keyboard as the user's own typing would.
+            try typeReplacingText("2", in: textField, of: hostingView)
+
+            _ = pressReturnKey(in: hostingView)
+            settleHostedView(hostingView)
+            guard jumped || cancelled else { throw XCTSkip("This macOS hands an offscreen window's field no Return") }
+            XCTAssertTrue(jumped, "Return on a repeated starting label did not jump")
+            XCTAssertFalse(cancelled)
+            XCTAssertEqual(pagedPlace(of: repeated), "1:0")
+        }
+
+        let unique = makePagedReader(pages: Self.sixPages)
+        defer { unique.close() }
+        unique.currentChapterIndex = 0
+        unique.currentCharacterOffset = 110
+        jumped = false
+        cancelled = false
+        let uniquePanel = JumpToPagePanel(viewModel: unique, onJump: { jumped = true }, onCancel: { cancelled = true })
+
+        try withHostedField(uniquePanel, holding: "1") { field, _ in
+            let hostingView = field.hostingView
+            let textField = try XCTUnwrap(
+                editableTextFields(in: hostingView).first { $0.placeholderString == "Page" },
+                "the field was not drawn"
+            )
+            try typeReplacingText("1", in: textField, of: hostingView)
+
+            _ = pressReturnKey(in: hostingView)
+            settleHostedView(hostingView)
+            guard jumped || cancelled else { throw XCTSkip("This macOS hands an offscreen window's field no Return") }
+            XCTAssertTrue(cancelled, "Return on a unique starting label did not close the panel as Cancel does")
+            XCTAssertFalse(jumped)
+            XCTAssertEqual(pagedPlace(of: unique), "0:110")
+        }
+    }
+
     /// The field starts at the current page's label, and empty before the
-    /// first page; Jump on the starting text is no change.
+    /// first page; Jump on the starting text of a label one page carries is
+    /// no change.
     func testTheStartingTextIsTheCurrentPagesLabel() {
         let reader = makePagedReader(pages: Self.sixPages)
         defer { reader.close() }

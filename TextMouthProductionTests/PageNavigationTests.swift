@@ -1,10 +1,13 @@
+import AppKit
+import SwiftUI
 import XCTest
 @testable import TextMouth
 
 /// Page as a navigation unit (PG02): the Page skip unit and its place in the
-/// unit cycle, Next Page and Previous Page over a book's pages, the pages a
-/// skipped section is passed over for, the words VoiceOver hears, and the
-/// three actions that carry the commands.
+/// unit cycle, the pickers that offer it (the playback bar's leave it out
+/// for a book without pages), Next Page and Previous Page over a book's
+/// pages, the pages a skipped section is passed over for, the words
+/// VoiceOver hears, and the three actions that carry the commands.
 @MainActor
 final class PageNavigationTests: XCTestCase {
 
@@ -49,6 +52,115 @@ final class PageNavigationTests: XCTestCase {
             XCTAssertEqual(settings.skipForwardUnit, expected, withPages ? "with pages" : "without pages")
             XCTAssertEqual(reader.playbackSkipForwardUnit, expected)
         }
+    }
+
+    // MARK: - The Playback Bar's Pickers
+
+    /// A picker for one book offers every unit, in the one order, when the
+    /// book has pages, and leaves Page out when it has none: there would be
+    /// nothing to move by. A unit already in force stays in, Page included,
+    /// so the picker still holds the value it shows.
+    func testAPickerLeavesPageOutForABookWithoutPages() {
+        let everyUnit = SkipUnit.allCases
+        let withoutPage = everyUnit.filter { $0 != .page }
+
+        for selected in everyUnit {
+            XCTAssertEqual(
+                ReaderViewModel.navigationUnitChoices(bookHasPages: true, keeping: selected),
+                everyUnit,
+                "with pages, \(selected.rawValue) selected"
+            )
+            XCTAssertEqual(
+                ReaderViewModel.navigationUnitChoices(bookHasPages: false, keeping: selected),
+                selected == .page ? everyUnit : withoutPage,
+                "without pages, \(selected.rawValue) selected"
+            )
+        }
+        XCTAssertFalse(withoutPage.isEmpty)
+        XCTAssertEqual(withoutPage.first, .seconds10)
+        XCTAssertEqual(withoutPage.last, .bookmark)
+    }
+
+    /// The reader asks for its own book's pages: a book with pages offers
+    /// Page, one without does not, and an audiobook, which has none, does
+    /// not either; each keeps the unit in force.
+    func testTheReaderOffersPageOnlyForABookWithPages() throws {
+        let paged = makePagedReader(pages: Self.fivePages)
+        defer { paged.close() }
+        XCTAssertTrue(paged.navigationUnitChoices(keeping: .seconds15).contains(.page))
+
+        let plain = makePagedReader(pages: [])
+        defer { plain.close() }
+        XCTAssertFalse(plain.navigationUnitChoices(keeping: .seconds15).contains(.page))
+        XCTAssertTrue(plain.navigationUnitChoices(keeping: .page).contains(.page), "the unit in force stays")
+
+        let audiobook = RecordingTimeFixtures.makeReader(format: .audio)
+        defer { audiobook.close() }
+        audiobook.content = try RecordingTimeFixtures.audioContent(.oneFile)
+        XCTAssertFalse(audiobook.hasPages)
+        XCTAssertEqual(
+            audiobook.navigationUnitChoices(keeping: .heading),
+            SkipUnit.allCases.filter { $0 != .page }
+        )
+    }
+
+    /// The shared picker the playback bar draws lists Page for a book with
+    /// pages and not for one without, and shows a Page already in force.
+    /// Skipped where no pop-up is drawn offscreen.
+    func testTheSharedPickerOffersPageOnlyForABookWithPages() throws {
+        let everyUnit = SkipUnit.allCases.map(\.rawValue)
+        let withoutPage = SkipUnit.allCases.filter { $0 != .page }.map(\.rawValue)
+        // (pages, the unit in force, the titles the pop-up lists, the title it shows)
+        let cases: [(pages: [PageBreak], unit: SkipUnit, titles: [String], shown: String)] = [
+            (Self.fivePages, .seconds30, everyUnit, "30 seconds"),
+            ([], .seconds30, withoutPage, "30 seconds"),
+            ([], .page, everyUnit, "Page"),
+        ]
+        for (pages, unit, titles, shown) in cases {
+            let settings = try makeIsolatedSettings("page-picker")
+            settings.playbackNavigationUnitControlMode = .shared
+            settings.skipForwardUnit = unit
+            settings.skipBackwardUnit = unit
+            let reader = makePagedReader(pages: pages, settings: settings)
+            defer { reader.close() }
+            let size = NSSize(width: 700, height: 80)
+
+            try withHostedView(
+                PlaybackControlsView(viewModel: reader).frame(width: size.width, height: size.height),
+                size: size,
+                until: { !self.descendants(of: $0, as: NSPopUpButton.self).isEmpty }
+            ) { hosting in
+                let popUp = try XCTUnwrap(
+                    descendants(of: hosting, as: NSPopUpButton.self).first { $0.itemTitles.contains("15 seconds") },
+                    "no navigation unit pop-up was drawn"
+                )
+                XCTAssertEqual(popUp.itemTitles, titles, "\(pages.count) pages, \(unit.rawValue) in force")
+                XCTAssertEqual(popUp.titleOfSelectedItem, shown)
+            }
+        }
+    }
+
+    /// Only Settings' own pickers list every unit by name: they choose the
+    /// units of all books at once, so Page stays among them. The playback
+    /// bar's pickers take theirs from the reader, which leaves Page out for
+    /// a book without pages, and a list of every unit written into the bar
+    /// again would offer it there.
+    func testOnlySettingsPickersListEveryUnit() throws {
+        let sources = try AppSourceFile.all()
+        let listing = sources.filter { $0.text.contains("ForEach(SkipUnit.allCases") }.map(\.path)
+        XCTAssertEqual(listing, ["Views/Settings/SettingsView.swift"])
+        let settings = try XCTUnwrap(sources.first { $0.path == "Views/Settings/SettingsView.swift" })
+        XCTAssertEqual(
+            settings.text.components(separatedBy: "ForEach(SkipUnit.allCases").count - 1,
+            4,
+            "Skip Forward, Skip Backward, and the two Shift+Skip pickers"
+        )
+        let bar = try XCTUnwrap(sources.first { $0.path == "Views/Reader/PlaybackControlsView.swift" })
+        XCTAssertEqual(
+            bar.text.components(separatedBy: "navigationUnitChoices(keeping:").count - 1,
+            3,
+            "the shared picker, and the forward and backward pickers"
+        )
     }
 
     // MARK: - Choosing the Page
@@ -264,6 +376,39 @@ final class PageNavigationTests: XCTestCase {
         XCTAssertEqual(reader.lastAnnouncement, "This book has no pages.")
         XCTAssertEqual(pagedPlace(of: reader), "0:50")
         XCTAssertFalse(reader.hasPages)
+    }
+
+    /// While the book loads every page command does nothing and says
+    /// nothing, as Next Heading does: the reader has no book to ask yet, and
+    /// "This book has no pages." for the moments a book with pages takes to
+    /// load would tell the listener otherwise. Once it has loaded, the same
+    /// commands move.
+    func testWhileTheBookLoadsThePageCommandsAreSilent() {
+        let reader = makePagedReader(pages: Self.fivePages)
+        defer { reader.close() }
+        let loaded = reader.content
+        reader.content = nil
+        reader.isLoading = true
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 0
+        reader.lastAnnouncement = nil
+
+        reader.nextPage()
+        reader.previousPage()
+        reader.performSkip(unit: .page, forward: true)
+        reader.performSkip(unit: .page, forward: false)
+        reader.requestGoToPage()
+
+        XCTAssertNil(reader.lastAnnouncement, "a page command spoke while the book loaded")
+        XCTAssertEqual(reader.goToPageRequests, 0)
+        XCTAssertEqual(pagedPlace(of: reader), "0:0")
+
+        reader.content = loaded
+        reader.isLoading = false
+        reader.nextPage()
+        XCTAssertEqual(pagedPlace(of: reader), "0:100")
+        reader.requestGoToPage()
+        XCTAssertEqual(reader.goToPageRequests, 1)
     }
 
     /// The Page unit skips by page from the playback bar's buttons.

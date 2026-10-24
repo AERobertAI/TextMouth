@@ -62,6 +62,47 @@ final class PDFPageLabelTests: XCTestCase {
         return url
     }
 
+    /// A PDF of `pageCount` pages, each holding one line of text ("This is
+    /// page 1."), whose catalog carries the page-label number tree `nums`
+    /// (what stands between the brackets of `/Nums [ ... ]`), saved as `name`
+    /// in a sandbox folder of this test's own. Written by hand, object by
+    /// object, with a cross-reference table of exact byte offsets, as
+    /// `make_labelled_pdf.py` writes the labelled sample: Core Graphics
+    /// writes no page labels.
+    private func makeLabelledPDF(pages pageCount: Int, nums: String, named name: String) throws -> URL {
+        // Objects 1 to 3 are the catalog, the page tree, and the font; each
+        // page then takes two, its page object and its content stream.
+        var objects: [String] = []
+        let kids = (0..<pageCount).map { "\(4 + $0 * 2) 0 R" }.joined(separator: " ")
+        objects.append("<< /Type /Catalog /Pages 2 0 R /PageLabels << /Nums [\(nums)] >> >>")
+        objects.append("<< /Type /Pages /Kids [\(kids)] /Count \(pageCount) >>")
+        objects.append("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+        for index in 0..<pageCount {
+            objects.append(
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents \(5 + index * 2) 0 R "
+                    + "/Resources << /Font << /F1 3 0 R >> >> >>"
+            )
+            let stream = "BT /F1 24 Tf 72 700 Td (This is page \(index + 1).) Tj ET"
+            objects.append("<< /Length \(stream.utf8.count) >>\nstream\n\(stream)\nendstream")
+        }
+        // The file is ASCII, so a string's length in UTF-8 is its byte count.
+        var file = "%PDF-1.4\n"
+        var offsets: [Int] = []
+        for (index, body) in objects.enumerated() {
+            offsets.append(file.utf8.count)
+            file += "\(index + 1) 0 obj\n\(body)\nendobj\n"
+        }
+        let crossReference = file.utf8.count
+        file += "xref\n0 \(objects.count + 1)\n0000000000 65535 f \n"
+        for offset in offsets {
+            file += String(format: "%010ld 00000 n \n", offset)
+        }
+        file += "trailer\n<< /Size \(objects.count + 1) /Root 1 0 R >>\nstartxref\n\(crossReference)\n%%EOF\n"
+        let url = try makeSandboxDirectory("PDFPages").appendingPathComponent(name)
+        try Data(file.utf8).write(to: url)
+        return url
+    }
+
     // MARK: - Labels
 
     /// The sample's five pages carry the labels i, ii, 1, 2, A-1, each at the
@@ -237,21 +278,66 @@ final class PDFPageLabelTests: XCTestCase {
 
     /// PDFKit writes the thousandth page of a PDF without labels as "1,000"
     /// (or "1.000", "1 000" in other locales): the marker says "1000", so it
-    /// counts as a whole number in "of N". Roman numerals, prefixed labels,
-    /// and numbers that are not one to three digits and groups of exactly
-    /// three stay as PDFKit gave them.
-    func testPlainNumberLabelRemovesOnlyANumbersGroupingSeparators() {
-        for (given, expected) in [
-            ("1,000", "1000"), ("12.345", "12345"), ("1 000", "1000"), ("123,456", "123456"),
-            ("1\u{00A0}000", "1000"), ("1\u{202F}000", "1000"), ("1'000", "1000"), ("1\u{2019}000", "1000"),
-            ("1,000,000", "1000000"), ("1.234,567", "1234567"),
-            ("7", "7"), ("2000", "2000"), ("", ""), ("xiv", "xiv"), ("A-1", "A-1"),
-            ("1,5", "1,5"), ("1,00", "1,00"), ("1,0000", "1,0000"), ("1234,567", "1234,567"),
-            ("-1,000", "-1,000"), (",000", ",000"), ("1,", "1,"), ("1,,000", "1,,000"), ("A,000", "A,000"),
-            ("1,000a", "1,000a"), ("\u{0661},000", "\u{0661},000"),
+    /// counts as a whole number in "of N". Only a label that is the page's
+    /// own number is changed: roman numerals, prefixed labels, numbers that
+    /// are not one to three digits and groups of exactly three, and a label
+    /// of another page's number stay as PDFKit gave them.
+    func testPlainNumberLabelRemovesOnlyThePagesOwnNumbersGroupingSeparators() {
+        // (the label, the page's own number, what the marker says)
+        for (given, ordinal, expected) in [
+            ("1,000", 1000, "1000"), ("12.345", 12345, "12345"), ("1 000", 1000, "1000"),
+            ("123,456", 123_456, "123456"), ("1\u{00A0}000", 1000, "1000"), ("1\u{202F}000", 1000, "1000"),
+            ("1'000", 1000, "1000"), ("1\u{2019}000", 1000, "1000"),
+            ("1,000,000", 1_000_000, "1000000"), ("1.234,567", 1_234_567, "1234567"),
+            // Not a grouped number: plain digits, roman numerals, prefixed labels.
+            ("7", 7, "7"), ("2000", 2000, "2000"), ("", 1, ""), ("xiv", 14, "xiv"), ("A-1", 1, "A-1"),
+            // Not the form of a grouped number, though the digits are the page's number.
+            ("1,5", 15, "1,5"), ("1,00", 100, "1,00"), ("1,0000", 10_000, "1,0000"),
+            ("1234,567", 1_234_567, "1234,567"), ("-1,000", 1000, "-1,000"), (",000", 0, ",000"),
+            ("1,", 1, "1,"), ("1,,000", 1000, "1,,000"), ("A,000", 0, "A,000"), ("1,000a", 1000, "1,000a"),
+            ("\u{0661},000", 1000, "\u{0661},000"), ("0.100", 100, "0.100"), ("01,000", 1000, "01,000"),
         ] {
-            XCTAssertEqual(PDFTextParser.plainNumberLabel(given), expected, "label \(given)")
+            XCTAssertEqual(PDFTextParser.plainNumberLabel(given, ordinal: ordinal), expected, "label \(given) of page \(ordinal)")
         }
+    }
+
+    /// A label the PDF gave that looks like a grouped number is a label, not
+    /// the page's number: "1.100" on page 100 (a prefix "1." and the number
+    /// 100) stays "1.100", where it was read as the whole number 1100 and
+    /// took the book's "of N" to 1100. The same text on page 1100 is that
+    /// page's number as a German Mac writes it, and is read as 1100; and on
+    /// any other page it is a label again.
+    func testALabelThatLooksGroupedButIsNotThePagesNumberStays() {
+        XCTAssertEqual(PDFTextParser.plainNumberLabel("1.100", ordinal: 100), "1.100")
+        XCTAssertEqual(PDFTextParser.plainNumberLabel("1.100", ordinal: 1100), "1100")
+        XCTAssertEqual(PDFTextParser.plainNumberLabel("1.100", ordinal: 1101), "1.100")
+        XCTAssertEqual(PDFTextParser.plainNumberLabel("1,000", ordinal: 5), "1,000")
+        XCTAssertEqual(PDFTextParser.plainNumberLabel("1,000", ordinal: 1000), "1000")
+    }
+
+    /// A PDF whose labels are a prefix and a number ("1.100", "1.101", ...)
+    /// keeps them: none is a whole number, so "of N" is the page count, and
+    /// the markers say what the PDF's own page numbers say. Before, "1.100"
+    /// became 1100 and the book ran to 1102 pages.
+    func testPrefixedLabelsThatLookGroupedAreKept() throws {
+        let url = try makeLabelledPDF(pages: 3, nums: "0 << /S /D /P (1.) /St 100 >>", named: "prefixed.pdf")
+
+        let content = parsed(try markdown(of: url, includesPages: true))
+
+        XCTAssertEqual(content.pages.breaks.map(\.label), ["1.100", "1.101", "1.102"])
+        XCTAssertEqual(content.pages.total, 3)
+        XCTAssertEqual(content.pages.position(atChapter: 0, offset: 0).label, "Page 1.100 of 3")
+    }
+
+    /// A PDF's own decimal labels past 999 come out of PDFKit plain, and are
+    /// kept: the pages run to 1002.
+    func testOwnNumberLabelsPast999AreWholeNumbers() throws {
+        let url = try makeLabelledPDF(pages: 3, nums: "0 << /S /D /St 1000 >>", named: "thousand.pdf")
+
+        let content = parsed(try markdown(of: url, includesPages: true))
+
+        XCTAssertEqual(content.pages.breaks.map(\.label), ["1000", "1001", "1002"])
+        XCTAssertEqual(content.pages.total, 1002)
     }
 
     // MARK: - A long PDF

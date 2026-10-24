@@ -19,9 +19,16 @@ extension ReaderViewModel {
         !bookPages.isEmpty
     }
 
+    /// The index in `bookPages.breaks` of the page holding the reading
+    /// cursor: the last page that begins at or before it, nil before the
+    /// first page and in a book without pages.
+    var currentPageIndex: Int? {
+        bookPages.index(ofPageAtChapter: currentChapterIndex, offset: currentCharacterOffset)
+    }
+
     /// The page holding the reading cursor, as "Page 12 of 300".
     var currentPagePosition: PagePosition {
-        bookPages.position(atChapter: currentChapterIndex, offset: currentCharacterOffset)
+        PagePosition(pages: bookPages, index: currentPageIndex)
     }
 
     /// The page holding the place the reader screen shows (the throttled
@@ -78,6 +85,25 @@ extension ReaderViewModel {
         return next == .page && !bookHasPages ? next.nextNavigationUnit : next
     }
 
+    /// The units a picker for one book offers, in the order every picker
+    /// shows them: every unit, except Page when the book has no pages (an
+    /// audiobook, or a text book whose format or file gives none), which
+    /// would have nothing to move by. A unit already in force stays in the
+    /// list even then, so the picker always holds the value it shows: a
+    /// global default of Page reaches a book without pages (its skip says
+    /// "This book has no pages."), and a picker whose selection is not among
+    /// its choices shows no value. Settings' own pickers choose the units of
+    /// every book at once and offer them all.
+    nonisolated static func navigationUnitChoices(bookHasPages: Bool, keeping selected: SkipUnit) -> [SkipUnit] {
+        SkipUnit.allCases.filter { $0 != .page || bookHasPages || $0 == selected }
+    }
+
+    /// The units the playback bar's pickers offer for this book, one of
+    /// whose pickers is showing `selected` (`navigationUnitChoices(bookHasPages:keeping:)`).
+    func navigationUnitChoices(keeping selected: SkipUnit) -> [SkipUnit] {
+        Self.navigationUnitChoices(bookHasPages: hasPages, keeping: selected)
+    }
+
     // MARK: - Skipped sections
 
     /// Hands `body` a check that says whether a page is passed over: it
@@ -112,16 +138,28 @@ extension ReaderViewModel {
 
     // MARK: - The commands
 
-    /// Move to the start of the next page and say its label ("Page 13").
-    /// Without pages it says so and moves nothing; after the last page it
-    /// does nothing, as Next Heading does after the last heading. A page
-    /// after the book's last word has no words to move to, and is passed
-    /// over (`withPassedOverCheck(_:)`).
-    func nextPage() {
+    /// Whether a page command has pages to work on. A reader that has not
+    /// loaded its book yet has nothing to ask, so the command does nothing,
+    /// as Next Heading does: the book may well have pages, and saying that it
+    /// had none, for the moments it takes to load, would tell the listener
+    /// otherwise. A loaded book without pages says so and moves nothing
+    /// (`ReaderPageWording.noPages`).
+    private func pageCommandHasPages() -> Bool {
+        guard content != nil else { return false }
         guard hasPages else {
             announceToVoiceOver(ReaderPageWording.noPages)
-            return
+            return false
         }
+        return true
+    }
+
+    /// Move to the start of the next page and say its label ("Page 13").
+    /// Without pages it says so and moves nothing (while the book loads, it
+    /// does nothing); after the last page it does nothing, as Next Heading
+    /// does after the last heading. A page after the book's last word has no
+    /// words to move to, and is passed over (`withPassedOverCheck(_:)`).
+    func nextPage() {
+        guard pageCommandHasPages() else { return }
         let pages = bookPages
         let page = withPassedOverCheck { isPassedOver in
             Self.nextPage(
@@ -136,13 +174,10 @@ extension ReaderViewModel {
 
     /// Move to the start of the page being read, or of the one before when
     /// the place is already at a page's start, and say its label. Without
-    /// pages it says so and moves nothing; before the first page it does
-    /// nothing.
+    /// pages it says so and moves nothing (while the book loads, it does
+    /// nothing); before the first page it does nothing.
     func previousPage() {
-        guard hasPages else {
-            announceToVoiceOver(ReaderPageWording.noPages)
-            return
-        }
+        guard pageCommandHasPages() else { return }
         let pages = bookPages
         let page = withPassedOverCheck { isPassedOver in
             Self.previousPage(
@@ -159,40 +194,92 @@ extension ReaderViewModel {
 
     /// Go to Page's starting value: the label of the page holding the
     /// reading position, or nothing before the first page, so typing the
-    /// first page's label still jumps there. The panel never takes the
-    /// value it started at as an answer (`JumpFieldOutcome.unchanged`).
+    /// first page's label still jumps there. The panel does not take the
+    /// value it started at as an answer (`JumpFieldOutcome.unchanged`),
+    /// except a label that more than one page carries
+    /// (`goToPageLabelIsRepeated(_:)`).
     var goToPageStartingText: String {
         currentPagePosition.page?.label ?? ""
+    }
+
+    /// Whether the label `text` names more than one page of this book (a "2"
+    /// on the plates and another in the text). Return in the page panel on
+    /// its starting label is no change for a label of one page, which the
+    /// reader is on already, but for a repeated label it asks for that
+    /// label's next page: `goToPage(typed:)` takes the first page with the
+    /// label after the page being read, else wraps to the book's first, so
+    /// each press reaches the next of them and the last goes round to the
+    /// first. A book without pages repeats nothing.
+    func goToPageLabelIsRepeated(_ text: String) -> Bool {
+        JumpInputValidator.pageIndices(named: text, in: bookPages).count > 1
     }
 
     /// Go to Page's answer: jumps to the start of the page `text` names,
     /// keeping a Return position, says "Jumped to page 12." and returns nil;
     /// or returns why it will not do (`JumpInputValidator.page`), as a
     /// sentence the panel shows and announces, and moves nothing.
+    ///
+    /// The page it says is the one the status row names where the reader
+    /// stands after the jump (`jumpAnnouncement(toPage:at:)`), which is not
+    /// always the page typed: a blank page shares its place with the page
+    /// after it, and the row names the later one. Saying the typed label
+    /// then told the listener one page while the row, Where Am I?, and Next
+    /// Page all named another; now it names the row's page and says why the
+    /// cursor is not on the page asked for.
     func goToPage(typed text: String) -> String? {
         let pages = bookPages
-        let currentIndex = pages.index(ofPageAtChapter: currentChapterIndex, offset: currentCharacterOffset)
-        switch JumpInputValidator.page(text, in: pages, currentIndex: currentIndex) {
+        switch JumpInputValidator.page(text, in: pages, currentIndex: currentPageIndex) {
         case .page(let index):
             // The index comes from the pages themselves; check it anyway.
             guard pages.breaks.indices.contains(index) else { return ReaderPageWording.noPages }
             let page = pages.breaks[index]
             navigatePreservingReturnPosition(chapterIndex: page.chapterIndex, characterOffset: page.characterOffset)
-            announceToVoiceOver(ReaderPageWording.jumped(to: page.label))
+            announceToVoiceOver(jumpAnnouncement(toPage: page, at: index))
             return nil
         case .error(let message):
             return message
         }
     }
 
+    /// What Go to Page says once it has moved to the start of `page`, the
+    /// page at `index` of the book's pages: the page the status row names
+    /// where the reader stands (`labelShown(afterMovingTo:)`), and, when more
+    /// than one page carries its label, which of them it is
+    /// (`occurrence(ofPageAt:)`): "Jumped to page 2, the second page labelled
+    /// 2." When the cursor is on another page than the one asked for, the
+    /// page asked for has no words of its own (a blank page shares its place
+    /// with the page after it, and a last page that begins after the book's
+    /// last word is reached at that word), and the sentence says so: "Page 7
+    /// has no words, so the cursor is on page 8." A cursor on no page, which
+    /// a move to one of the book's pages rules out, is told as `page`.
+    private func jumpAnnouncement(toPage page: PageBreak, at index: Int) -> String {
+        let label = labelShown(afterMovingTo: page)
+        // Which of the pages with the reached page's label it is, if several.
+        let which = currentPageIndex.flatMap(occurrence(ofPageAt:))
+        guard let reached = currentPageIndex, reached != index else {
+            return ReaderPageWording.jumped(to: label, occurrence: which)
+        }
+        return ReaderPageWording.hasNoWords(page.label, cursorOn: label, occurrence: which)
+    }
+
+    /// Which of the pages that carry the label of the page at `index` it is,
+    /// counting from 1 in book order; nil when it is the only page with its
+    /// label. Labels are matched as Go to Page matches what is typed
+    /// (`JumpInputValidator.pageIndices(named:in:)`), so two pages the
+    /// field would reach by one label are two of one label here.
+    private func occurrence(ofPageAt index: Int) -> Int? {
+        let pages = bookPages
+        guard pages.breaks.indices.contains(index) else { return nil }
+        let sharing = JumpInputValidator.pageIndices(named: pages.breaks[index].label, in: pages)
+        guard sharing.count > 1, let position = sharing.firstIndex(of: index) else { return nil }
+        return position + 1
+    }
+
     /// Ask for the page field (Go to Page…, PG03): the status row opens it at
     /// each request, and puts the keyboard in it. A book without pages says
-    /// so and opens nothing.
+    /// so and opens nothing (while the book loads, it does nothing).
     func requestGoToPage() {
-        guard hasPages else {
-            announceToVoiceOver(ReaderPageWording.noPages)
-            return
-        }
+        guard pageCommandHasPages() else { return }
         goToPageRequests += 1
     }
 
@@ -204,7 +291,21 @@ extension ReaderViewModel {
             chapterIndex: page.chapterIndex,
             characterOffset: page.characterOffset
         )
-        let reached = bookPages.position(atChapter: page.chapterIndex, offset: page.characterOffset)
-        announceToVoiceOver(ReaderPageWording.arrived(at: reached.page?.label ?? page.label))
+        announceToVoiceOver(ReaderPageWording.arrived(at: labelShown(afterMovingTo: page)))
+    }
+
+    /// The label of the page the status row names where the reader stands
+    /// once it has moved to the start of `page`: the page holding the cursor,
+    /// which is the last of the pages that begin at that place
+    /// (`BookPages.index(ofPageAtChapter:offset:)`) and so `page` itself when
+    /// no other page shares its place. What every command that lands on a
+    /// page says is this label, so the words spoken, the row, and Where Am
+    /// I? always agree. The cursor is read after the move, not worked out
+    /// from `page`, because a move may stop short of a page's place (the
+    /// last word of the book is as far as the reader goes). `page`'s own
+    /// label is the fallback for a cursor no page holds, which a move to one
+    /// of the book's pages rules out.
+    private func labelShown(afterMovingTo page: PageBreak) -> String {
+        currentPagePosition.page?.label ?? page.label
     }
 }
