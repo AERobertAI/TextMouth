@@ -21,15 +21,22 @@ import os
 enum PageReaderVersions {
     /// The version of `format`'s page reader; nil for a format that writes
     /// no page markers. Every format listed was given pages in the same
-    /// release, so each starts at "1.0.0".
+    /// release, so each started at "1.0.0".
     ///
     /// The formats textutil reads (`.rtf`, `.rtfd`, `.doc`, `.odt`, and
     /// `.wordml`, PG11) gained their pages in the same release. A format that
     /// gains pages later (PG12's braille) adds a case of its own with its own
     /// version, which reads again only its own books.
+    ///
+    /// EPUB and HTML are at "1.0.1": the HTML converter they share no longer
+    /// leaves a page-break element's number in the label of a heading that
+    /// holds one ("Part 9Two" is "Part Two"), which changes the reading text
+    /// of the books that have such a heading and of no others.
     static func current(for format: BookFormat) -> String? {
         switch format {
-        case .epub, .html, .pdf, .docx, .daisy:
+        case .epub, .html:
+            return "1.0.1"
+        case .pdf, .docx, .daisy:
             return "1.0.0"
         case .rtf, .rtfd, .doc, .odt, .wordml:
             return "1.0.0"
