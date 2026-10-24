@@ -748,6 +748,23 @@ writes_code(const char *table, const table_emphasis *emphasis, size_t index, int
 }
 
 /*
+ * Whether `table` reads the cell `cell` standing alone, with no emphasis
+ * read, as one ASCII punctuation character, such as English EBAE's ⠨ as ".",
+ * and not as a letter of its own.
+ */
+static int
+reads_cell_as_punctuation(const char *table, widechar cell) {
+	translation print;
+	int punctuation;
+	if (!translate(table, 0, &cell, NULL, 1, 0, &print)) return 0;
+	punctuation = print.length == 1 && print.chars[0] > ' ' && print.chars[0] < 0x7F &&
+			!(print.chars[0] >= '0' && print.chars[0] <= '9') &&
+			!((print.chars[0] | 0x20) >= 'a' && (print.chars[0] | 0x20) <= 'z');
+	free_translation(&print);
+	return punctuation;
+}
+
+/*
  * Sets `emphasis->code` for each class the table has: the code whose signs
  * liblouis writes it in (`writes_code`), or none. Found by translating, as
  * `check_readable` judges, so that one of this Mac's tables is judged by
@@ -781,6 +798,14 @@ detect_codes(const char *table, table_emphasis *emphasis) {
 			emphasis->code[k] = CODE_UEB;
 	}
 	free_translation(&plain);
+	/* EBAE's signs mean emphasis only where ⠨ is no letter: English EBAE
+	   reads ⠨ alone as a period, but the Bharati tables, which also write
+	   italic as ⠨ before a word, read it as the letter "kh" (ख, ਖ), and a pass
+	   there would drop the letter from every word it begins (review,
+	   October 24, 2026). */
+	if (uses_code(emphasis, CODE_EBAE) && !reads_cell_as_punctuation(table, CELL_46))
+		for (size_t k = 0; k < EMPHASIS_CLASS_COUNT; k++)
+			if (emphasis->code[k] == CODE_EBAE) emphasis->code[k] = CODE_NONE;
 }
 
 /* MARK: - Reading EBAE */

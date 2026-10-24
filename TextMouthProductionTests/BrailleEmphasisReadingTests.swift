@@ -200,6 +200,29 @@ final class BrailleEmphasisReadingTests: XCTestCase {
         try assertReads([("..one two three ._+a.b.com_: now", #"*one two three a\.b\.com* now"#)], ebaeUncontracted)
     }
 
+    /// The EBAE pass runs only where EBAE's signs mean emphasis. This Mac's
+    /// Bharati tables also write italic as ⠨ before a word, but read ⠨ as
+    /// the letter "kh", which the pass dropped from every word it began
+    /// (review, October 24, 2026): Punjabi "ਖਾਣਾ ਖਾਓ" came back "ਆਣਾ ਆਓ".
+    /// Each word, written and read back, reads as main read it: the Punjabi
+    /// exactly, and Hindi "खेल" as ".एल", liblouis's own reading. Skips a
+    /// table this Mac does not offer.
+    func testTheEBAEPassLeavesTheBharatiTablesAlone() throws {
+        let cases: [(table: String, print: String, readBack: String)] = [
+            ("mac:pa.tbl", "ਖਾਣਾ ਖਾਓ", "ਖਾਣਾ ਖਾਓ"),
+            ("mac:pa.tbl", "ਖੇਡ", "ਖੇਡ"),
+            ("mac:pa.tbl", "ਖਿੜਕੀ ਖੋਲ੍ਹੋ", "ਖਿੜਕੀ ਖੋਲ੍ਹੋ"),
+            ("mac:hi.tbl", "खेल", ".एल"),
+        ]
+        let offered = cases.filter { BrailleTableCatalog.table(withID: $0.table) != nil }
+        try XCTSkipIf(offered.isEmpty, "This Mac offers neither pa.tbl nor hi.tbl (\(BrailleTableCatalog.macTablesFolder.path))")
+        for sample in offered {
+            let braille = try BrailleTranslator.translate([sample.print], table: sample.table, direction: .printToBraille, workingIn: work)
+            let print = try BrailleTranslator.translate(braille, table: sample.table, direction: .brailleToPrint, workingIn: work)
+            XCTAssertEqual(print, [sample.readBack], sample.table)
+        }
+    }
+
     // MARK: - UEB
 
     /// Contracted UEB reads the contraction before a terminator as the word
