@@ -226,6 +226,16 @@ final class PlainTextFormFeedPageTests: XCTestCase {
         XCTAssertEqual(TextutilPageBreaks.maximumPages, MarkdownPageMarker.maximumPagesPerBook)
     }
 
+    /// A web archive whose page is plain text writes no pages, whatever form
+    /// feeds it holds: the format has no page reader (V07), so a book of it
+    /// is never read again for pages, and its text must not gain them by
+    /// another path.
+    func testAWebArchivesTextPageWritesNoPages() throws {
+        let page = WebArchiveReader.MainPage(text: "one\u{0C}two", isHTML: false)
+        XCTAssertFalse(try page.markdown().contains("<!--"))
+        XCTAssertEqual(try page.markdown(), PlainTextParser.markdown(text: "one\u{0C}two", includesPages: false))
+    }
+
     /// Text that looks like Markdown on the line before a page, or on the
     /// page's first line, stays literal: the marker never makes a line raw
     /// HTML, a list, or a heading.
