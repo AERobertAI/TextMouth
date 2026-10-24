@@ -78,6 +78,25 @@ extension ReaderViewModel {
         return next == .page && !bookHasPages ? next.nextNavigationUnit : next
     }
 
+    /// The units a picker for one book offers, in the order every picker
+    /// shows them: every unit, except Page when the book has no pages (an
+    /// audiobook, or a text book whose format or file gives none), which
+    /// would have nothing to move by. A unit already in force stays in the
+    /// list even then, so the picker always holds the value it shows: a
+    /// global default of Page reaches a book without pages (its skip says
+    /// "This book has no pages."), and a picker whose selection is not among
+    /// its choices shows no value. Settings' own pickers choose the units of
+    /// every book at once and offer them all.
+    nonisolated static func navigationUnitChoices(bookHasPages: Bool, keeping selected: SkipUnit) -> [SkipUnit] {
+        SkipUnit.allCases.filter { $0 != .page || bookHasPages || $0 == selected }
+    }
+
+    /// The units the playback bar's pickers offer for this book, one of
+    /// whose pickers is showing `selected` (`navigationUnitChoices(bookHasPages:keeping:)`).
+    func navigationUnitChoices(keeping selected: SkipUnit) -> [SkipUnit] {
+        Self.navigationUnitChoices(bookHasPages: hasPages, keeping: selected)
+    }
+
     // MARK: - Skipped sections
 
     /// Hands `body` a check that says whether a page is passed over: it
