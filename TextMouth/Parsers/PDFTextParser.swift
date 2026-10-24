@@ -813,8 +813,9 @@ enum PDFTextParser {
             }
         }
         // The label must end on a complete group of three digits, and say
-        // the page's own number.
-        guard separators > 0, digitsSinceSeparator == 3, Int(digits) == ordinal else { return label }
+        // the page's own number, written as numbers are written: "0.100" on
+        // page 100 is not that number with its leading zero kept.
+        guard separators > 0, digitsSinceSeparator == 3, digits == String(ordinal) else { return label }
         return digits
     }
 
