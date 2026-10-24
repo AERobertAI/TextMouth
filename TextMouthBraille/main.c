@@ -24,11 +24,12 @@
  *   the paragraph's text on one line and its emphasis codes on the next, one
  *   code for each character, or an empty line for none. `forward` writes the
  *   emphasis it is given into the braille as the table's indicators, and
- *   `back` reports the emphasis liblouis reads from the indicators, both of
- *   only the classes liblouis reads back exactly with the table
- *   (`check_readable`). Braille, in and out, is Unicode braille patterns
- *   (U+2800 to U+28FF), the blank cell U+2800 included; a space is never
- *   braille.
+ *   `back` reports the emphasis it reads from the indicators: EBAE's signs
+ *   and UEB's terminators it finds itself, before liblouis reads the braille
+ *   (`read_braille`, October 24, 2026). Both carry only the classes read
+ *   back exactly with the table (`check_readable`). Braille, in and out, is
+ *   Unicode braille patterns (U+2800 to U+28FF), the blank cell U+2800
+ *   included; a space is never braille.
  *
  * The table is a bare file name, such as en-ueb-g2.ctb, of a table in the
  * tables folder: the app bundle's own (Contents/Resources/liblouis/tables),
@@ -102,46 +103,129 @@ enum {
    liblouis writes for a character a table lacks. */
 #define MIN_SPARE_ROOM 16
 
+/* A braille cell by its dots: the Unicode braille pattern U+2800 plus a bit
+   for each dot, dot 1 the lowest, so that CELL(D4 | D6), dots 4 and 6, is ⠨
+   (U+2828). */
+#define D1 0x01u
+#define D2 0x02u
+#define D3 0x04u
+#define D4 0x08u
+#define D5 0x10u
+#define D6 0x20u
+#define CELL(dots) ((widechar)(BRAILLE_FIRST | (dots)))
+
+/* The cells the reading passes look for (`read_ebae`, `read_ueb`), named by
+   their dots, with what each is in EBAE and UEB. */
+#define CELL_BLANK CELL(0)
+#define CELL_2 CELL(D2)                 /* ⠂ comma in EBAE; UEB's word indicator after a prefix */
+#define CELL_3 CELL(D3)                 /* ⠄ apostrophe; UEB's terminator after a prefix */
+#define CELL_4 CELL(D4)                 /* ⠈ UEB's script prefix */
+#define CELL_5 CELL(D5)                 /* ⠐ UEB's fourth transcriber prefix */
+#define CELL_6 CELL(D6)                 /* ⠠ capital sign */
+#define CELL_13 CELL(D1 | D3)           /* ⠅ k; after ⠨, liblouis's "=" in EBAE */
+#define CELL_23 CELL(D2 | D3)           /* ⠆ UEB's symbol indicator after a prefix */
+#define CELL_34 CELL(D3 | D4)           /* ⠌ after ⠸, EBAE's slash */
+#define CELL_35 CELL(D3 | D5)           /* ⠔ "in" in contracted EBAE, as in ⠔⠖ "into" */
+#define CELL_36 CELL(D3 | D6)           /* ⠤ hyphen; two make EBAE's dash */
+#define CELL_45 CELL(D4 | D5)           /* ⠘ UEB's bold prefix */
+#define CELL_46 CELL(D4 | D6)           /* ⠨ EBAE's emphasis sign; UEB's italic prefix */
+#define CELL_235 CELL(D2 | D3 | D5)     /* ⠖ "to", joined to its word, in contracted EBAE */
+#define CELL_236 CELL(D2 | D3 | D6)     /* ⠦ EBAE's opening quotation mark */
+#define CELL_356 CELL(D3 | D5 | D6)     /* ⠴ "by", joined to its word, in contracted EBAE */
+#define CELL_456 CELL(D4 | D5 | D6)     /* ⠸ EBAE's bold prefix; UEB's underline prefix */
+#define CELL_2356 CELL(D2 | D3 | D5 | D6) /* ⠶ EBAE's parenthesis; UEB's passage indicator */
+#define CELL_3456 CELL(D3 | D4 | D5 | D6) /* ⠼ number sign; in UEB's transcriber prefixes */
+
+/*
+ * The braille codes whose emphasis signs the helper reads itself, before
+ * liblouis reads a paragraph back (October 24, 2026; `read_braille`):
+ * - EBAE, English Braille American Edition, as BANA writes it (the Library
+ *   of Congress's Instruction Manual for Braille Transcribing, fifth
+ *   edition, lesson 15): ⠨ before a word, ⠨⠨ before the first word of a
+ *   passage of four words or more and ⠨ before its last, and the
+ *   termination sign ⠠⠄ where emphasis ends inside a word; bold, where it
+ *   is told apart, as ⠸⠨, ⠸⠨⠨, and ⠸⠨ (BANA's Braille Formats, 2011).
+ *   liblouis 3.39.0 reads these signs wrongly (`read_ebae`).
+ * - UEB, Unified English Braille: after each typeform's prefix (⠨ italic,
+ *   ⠘ bold, ⠸ underline, ⠈ script, and five transcriber-defined ones), ⠂
+ *   for a word, ⠆ for a symbol, ⠶ for a passage, and ⠄ for the terminator.
+ *   liblouis reads them, but misreads the contraction just before a
+ *   terminator (`read_ueb`).
+ * Which code, if either, a table writes each class in is found by
+ * translating (`detect_codes`), never by its name.
+ */
+enum { CODE_NONE = 0, CODE_EBAE, CODE_UEB };
+
 /*
  * The emphasis classes the protocol carries, by the names liblouis's tables
- * give them, each with TextMouth's flag for it. liblouis numbers a table's
- * classes in the order the table declares them, so the same bit means
- * "script" in one table and "transnote" in another; names are the only
- * thing tables share. The five transcriber-defined typefaces share one
- * flag, and a flag written forward goes to the first readable class listed
- * with it ("trans1" for TMB_EMPHASIS_TRANSCRIBER in UEB). Classes not listed
- * here, such as UEB's "transnote" (a transcriber's note, no typeface of the
- * print), are not carried: liblouis still reads their indicators as
- * indicators, and the text they mark comes back plain.
+ * give them, each with TextMouth's flag for it and its prefix in the two
+ * codes' signs (none when the code has no sign of its own for the class).
+ * liblouis numbers a table's classes in the order the table declares them,
+ * so the same bit means "script" in one table and "transnote" in another;
+ * names are the only thing tables share. The five transcriber-defined
+ * typefaces share one flag, and a flag written forward goes to the first
+ * readable class listed with it ("trans1" for TMB_EMPHASIS_TRANSCRIBER in
+ * UEB). Classes not listed here, such as UEB's "transnote" (a transcriber's
+ * note, no typeface of the print), are not carried: liblouis still reads
+ * their indicators as indicators, and the text they mark comes back plain.
  */
 static const struct {
 	const char *name;
 	unsigned flag;
+	/* EBAE's sign for one word, which also comes before a passage's last
+	   word; the passage's own sign is this and ⠨. */
+	widechar ebae[2];
+	int ebae_length;
+	/* UEB's prefix, which ⠂, ⠆, ⠶, or ⠄ follows. */
+	widechar ueb[2];
+	int ueb_length;
 } EMPHASIS_CLASSES[] = {
-		{"italic", TMB_EMPHASIS_ITALIC},
-		{"bold", TMB_EMPHASIS_BOLD},
-		{"underline", TMB_EMPHASIS_UNDERLINE},
-		{"script", TMB_EMPHASIS_SCRIPT},
-		{"trans1", TMB_EMPHASIS_TRANSCRIBER},
-		{"trans2", TMB_EMPHASIS_TRANSCRIBER},
-		{"trans3", TMB_EMPHASIS_TRANSCRIBER},
-		{"trans4", TMB_EMPHASIS_TRANSCRIBER},
-		{"trans5", TMB_EMPHASIS_TRANSCRIBER},
+		{"italic", TMB_EMPHASIS_ITALIC, {CELL_46}, 1, {CELL_46}, 1},
+		{"bold", TMB_EMPHASIS_BOLD, {CELL_456, CELL_46}, 2, {CELL_45}, 1},
+		{"underline", TMB_EMPHASIS_UNDERLINE, {0}, 0, {CELL_456}, 1},
+		{"script", TMB_EMPHASIS_SCRIPT, {0}, 0, {CELL_4}, 1},
+		{"trans1", TMB_EMPHASIS_TRANSCRIBER, {0}, 0, {CELL_4, CELL_3456}, 2},
+		{"trans2", TMB_EMPHASIS_TRANSCRIBER, {0}, 0, {CELL_45, CELL_3456}, 2},
+		{"trans3", TMB_EMPHASIS_TRANSCRIBER, {0}, 0, {CELL_456, CELL_3456}, 2},
+		{"trans4", TMB_EMPHASIS_TRANSCRIBER, {0}, 0, {CELL_5, CELL_3456}, 2},
+		{"trans5", TMB_EMPHASIS_TRANSCRIBER, {0}, 0, {CELL_46, CELL_3456}, 2},
 };
 #define EMPHASIS_CLASS_COUNT (sizeof EMPHASIS_CLASSES / sizeof EMPHASIS_CLASSES[0])
 
 /*
  * The loaded table's emphasis: for each class of EMPHASIS_CLASSES, its
- * typeform bit in the table (0 when the table has no such class), and
- * whether liblouis reads it back exactly with this table
- * (`check_readable`). Both directions carry only the readable classes:
- * `forward` writes no indicator `back` could not read, and `back` reports
- * no emphasis it may have misread.
+ * typeform bit in the table (0 when the table has no such class), the code
+ * the table writes it in (`detect_codes`), and whether it is read back
+ * exactly with this table (`check_readable`). Both directions carry only
+ * the readable classes: `forward` writes no indicator `back` could not
+ * read, and `back` reports no emphasis it may have misread.
  */
 typedef struct {
 	formtype bit[EMPHASIS_CLASS_COUNT];
+	int code[EMPHASIS_CLASS_COUNT];
 	int readable[EMPHASIS_CLASS_COUNT];
 } table_emphasis;
+
+/*
+ * A translation liblouis made (`translate`), or a reading pass made with it
+ * (`read_braille`), which `free_translation` frees.
+ */
+typedef struct {
+	/* The output: braille forward, print back. */
+	widechar *chars;
+	/* How many characters `chars` holds. */
+	int length;
+	/* Back, when the emphasis is read: each output character's typeform, in
+	   the table's bits; otherwise NULL. */
+	formtype *typeform;
+	/* Back: for each output character, the input cell where the rule that
+	   wrote it began. */
+	int *input_pos;
+	/* Back: for each input cell, the first output character of the rule it
+	   is in, or of the next rule when its own wrote none, at most the last
+	   character (liblouis's outputPos). */
+	int *output_pos;
+} translation;
 
 /*
  * Decodes the UTF-8 bytes `bytes[0..count)` into `out`, which holds at least
@@ -305,11 +389,21 @@ leave_tables_folder(void) {
 	(void)chdir("/var/empty");
 }
 
+/* Frees what `t` holds, and empties it. */
+static void
+free_translation(translation *t) {
+	free(t->chars);
+	free(t->typeform);
+	free(t->input_pos);
+	free(t->output_pos);
+	memset(t, 0, sizeof *t);
+}
+
 /*
  * Translates `in[0..length)` with the table named `table` (already loaded by
- * `main`, which liblouis keeps by that name), forward (print to
- * braille) or back, into a buffer it allocates and returns, with the
- * output's length in `*out_length`; NULL when liblouis fails. The braille
+ * `main`, which liblouis keeps by that name), forward (print to braille) or
+ * back, into `*result`, which the caller frees with `free_translation`.
+ * Returns 1, or 0 when liblouis fails, leaving `*result` empty. The braille
  * side is Unicode braille: dotsIO with ucBrl makes liblouis read each input
  * cell's dots from the low byte of U+28xx and write each output cell as
  * U+2800 plus its dots, with no display table in between.
@@ -325,13 +419,20 @@ leave_tables_folder(void) {
  *   (lou_translateString.c), however long the output is, so the array
  *   passed is a fresh copy as long as the output's room, never the
  *   caller's.
- * - Back, liblouis is always given an array, one entry for each output
- *   character, which it fills with the emphasis it finds; it is returned in
- *   `*out_typeform`, which the caller frees, unless that is NULL. liblouis
- *   takes an emphasis indicator, such as UEB's italic word indicator ⠨⠂, as
- *   an indicator only when there is such an array to record it in; without
- *   one it writes the cells as its notation for cells it cannot translate
- *   ("\46/,"), which a listener would hear mid-sentence.
+ * - Back, when `reads_emphasis` is set, liblouis is given an array, one
+ *   entry for each output character, which it fills with the emphasis it
+ *   finds, and which is returned in `result->typeform`. liblouis takes an
+ *   emphasis indicator, such as UEB's italic word indicator ⠨⠂, as an
+ *   indicator only when there is such an array to record it in; without one
+ *   it writes the cells as its notation for cells it cannot translate
+ *   ("\46/,"), which a listener would hear mid-sentence. Every caller reads
+ *   the emphasis.
+ *
+ * Back, liblouis also says where each output character came from
+ * (`result->input_pos`) and where each input cell went
+ * (`result->output_pos`), which the reading passes map emphasis through
+ * (`give_cells_emphasis`). Asking for them changes nothing in the
+ * translation (lou_backTranslateString is lou_backTranslate without them).
  *
  * liblouis answers an output that fills its room in one of three ways: it
  * stops early, using only part of the input; it fails; or, when the text
@@ -348,42 +449,49 @@ leave_tables_folder(void) {
  * MOST_ROOM times the input's length; a line that never leaves 16 cells over
  * is a failure (exit status 5). Back-translation is held to the same rule.
  */
-static widechar *
+static int
 translate(const char *table, int forward, const widechar *in, const formtype *in_typeform, int length,
-		int *out_length, formtype **out_typeform) {
+		int reads_emphasis, translation *result) {
 	const int mode = dotsIO | ucBrl;
+	memset(result, 0, sizeof *result);
 	for (int multiple = FIRST_ROOM; multiple <= MOST_ROOM; multiple *= 2) {
 		/* MAX_LINE * MOST_ROOM + 64 is far below INT_MAX. */
 		int room = length * multiple + 64;
-		int wants_typeform = !forward || in_typeform != NULL;
-		widechar *out = malloc((size_t)room * sizeof(widechar));
-		/* calloc: the entries past the input's (forward) start plain. */
-		formtype *typeform = wants_typeform ? calloc((size_t)room, sizeof(formtype)) : NULL;
+		int wants_typeform = forward ? in_typeform != NULL : reads_emphasis;
+		translation t = {0};
 		int used = length;
 		int written = room;
 		int ok;
-		if (out == NULL || (wants_typeform && typeform == NULL)) {
-			free(out);
-			free(typeform);
-			return NULL;
+		t.chars = malloc((size_t)room * sizeof(widechar));
+		/* calloc: the entries past the input's (forward) start plain. */
+		t.typeform = wants_typeform ? calloc((size_t)room, sizeof(formtype)) : NULL;
+		if (!forward) {
+			t.input_pos = malloc((size_t)room * sizeof(int));
+			t.output_pos = malloc(((size_t)length + 1) * sizeof(int));
+		}
+		if (t.chars == NULL || (wants_typeform && t.typeform == NULL) ||
+				(!forward && (t.input_pos == NULL || t.output_pos == NULL))) {
+			free_translation(&t);
+			return 0;
 		}
 		if (forward && in_typeform != NULL)
-			memcpy(typeform, in_typeform, (size_t)length * sizeof(formtype));
-		ok = forward ? lou_translateString(table, in, &used, out, &written, typeform, NULL, mode)
-					 : lou_backTranslateString(
-							   table, in, &used, out, &written, typeform, NULL, mode);
+			memcpy(t.typeform, in_typeform, (size_t)length * sizeof(formtype));
+		ok = forward ? lou_translateString(table, in, &used, t.chars, &written, t.typeform, NULL, mode)
+					 : lou_backTranslate(table, in, &used, t.chars, &written, t.typeform, NULL,
+							   t.output_pos, t.input_pos, NULL, mode);
 		if (ok && used >= length && room - written >= MIN_SPARE_ROOM) {
-			*out_length = written;
-			if (out_typeform != NULL && !forward)
-				*out_typeform = typeform;
-			else
-				free(typeform);
-			return out;
+			t.length = written;
+			/* Forward, the typeform array was only liblouis's to write in. */
+			if (forward) {
+				free(t.typeform);
+				t.typeform = NULL;
+			}
+			*result = t;
+			return 1;
 		}
-		free(typeform);
-		free(out);
+		free_translation(&t);
 	}
-	return NULL;
+	return 0;
 }
 
 /*
@@ -430,6 +538,546 @@ flags_for_typeform(const table_emphasis *emphasis, formtype typeform) {
 	for (size_t i = 0; i < EMPHASIS_CLASS_COUNT; i++)
 		if (emphasis->readable[i] && (typeform & emphasis->bit[i])) flags |= EMPHASIS_CLASSES[i].flag;
 	return flags;
+}
+
+/* Whether the table writes any class in `code` (`detect_codes`). */
+static int
+uses_code(const table_emphasis *emphasis, int code) {
+	for (size_t i = 0; i < EMPHASIS_CLASS_COUNT; i++)
+		if (emphasis->code[i] == code) return 1;
+	return 0;
+}
+
+/*
+ * Whether `cells[i..end)` begins with the `length` cells of `sign`.
+ */
+static int
+has_cells(const widechar *cells, int i, int end, const widechar *sign, int length) {
+	return length > 0 && i + length <= end &&
+			memcmp(cells + i, sign, (size_t)length * sizeof(widechar)) == 0;
+}
+
+/*
+ * Puts `length` cells of `cells` at `kept[count..]`, each with the typeform
+ * `emphasis` at the same place in `bits`, and returns the new count.
+ */
+static int
+keep(widechar *kept, formtype *bits, int count, const widechar *cells, int length, formtype emphasis) {
+	for (int k = 0; k < length; k++) {
+		kept[count] = cells[k];
+		bits[count++] = emphasis;
+	}
+	return count;
+}
+
+/*
+ * Gives each character of `t`, the translation back of braille whose cell k
+ * is in the emphasis `bits[k]` (the table's bits), the emphasis of the cell
+ * where the rule that wrote it began (`t->input_pos`). The typeform liblouis
+ * read from the indicators, if any, is replaced. Returns 0 when memory runs
+ * out.
+ */
+static int
+give_cells_emphasis(const formtype *bits, int n, translation *t) {
+	formtype *typeform = calloc((size_t)t->length + 1, sizeof *typeform);
+	if (typeform == NULL) return 0;
+	for (int k = 0; k < t->length; k++) {
+		int cell = t->input_pos[k];
+		typeform[k] = cell >= 0 && cell < n ? bits[cell] : 0;
+	}
+	free(t->typeform);
+	t->typeform = typeform;
+	return 1;
+}
+
+/* MARK: - Which code a table writes */
+
+/* The words `detect_codes` translates: lowercase words that every bundled
+   table writes the same way alone and emphasized, with a blank cell between
+   each two, the second word the one emphasized alone, and the second to the
+   fifth the longest passage tried (EBAE's shortest, four words). */
+static const char CODE_PROBE[] = "alpha bravo charlie delta echo foxtrot";
+#define CODE_PROBE_WORDS 6
+
+/*
+ * Cells `matches_with_signs` expects in the emphasized braille that the plain
+ * braille lacks: `length` cells of `cells`, before the plain cell at `at`
+ * (the plain braille's length, for the end).
+ */
+typedef struct {
+	int at;
+	widechar cells[4];
+	int length;
+} added_sign;
+
+/*
+ * Whether `actual[0..actual_length)` is `plain[0..n)` with exactly the cells
+ * of each of `signs[0..count)` added, and nothing else; `signs` are in the
+ * order of their places.
+ */
+static int
+matches_with_signs(const widechar *actual, int actual_length, const widechar *plain, int n,
+		const added_sign *signs, int count) {
+	int a = 0;
+	int next = 0;
+	for (int i = 0; i <= n; i++) {
+		for (; next < count && signs[next].at == i; next++)
+			for (int k = 0; k < signs[next].length; k++)
+				if (a >= actual_length || actual[a++] != signs[next].cells[k]) return 0;
+		if (i < n && (a >= actual_length || actual[a++] != plain[i])) return 0;
+	}
+	return a == actual_length;
+}
+
+/*
+ * An added sign before the plain cell `at`: the `length` cells of `prefix`,
+ * then `last` unless it is 0.
+ */
+static added_sign
+sign_with(int at, const widechar *prefix, int length, widechar last) {
+	added_sign sign = {at, {0}, 0};
+	for (int k = 0; k < length && k < 3; k++) sign.cells[sign.length++] = prefix[k];
+	if (last != 0) sign.cells[sign.length++] = last;
+	return sign;
+}
+
+/*
+ * The emphasized braille of the code probe, the class with the table's bit
+ * `bit` on its words `first` to `last` and the spaces between them, into
+ * `*result`. Returns 1, or 0 when liblouis fails.
+ */
+static int
+translate_marked_probe(const char *table, formtype bit, int first, int last, translation *result) {
+	widechar probe[sizeof CODE_PROBE];
+	formtype marks[sizeof CODE_PROBE];
+	int word = 0;
+	int length = (int)strlen(CODE_PROBE);
+	for (int i = 0; i < length; i++) {
+		probe[i] = (widechar)(unsigned char)CODE_PROBE[i];
+		if (CODE_PROBE[i] == ' ') word++;
+		marks[i] = word >= first && word <= last && !(CODE_PROBE[i] == ' ' && word == first) ? bit : 0;
+	}
+	return translate(table, 1, probe, marks, length, 0, result);
+}
+
+/*
+ * Whether `table` writes class `index` in `code`'s signs, given the code
+ * probe's plain braille `plain[0..n)`, whose words begin at `starts` and end
+ * before `ends`. The probe, translated with the class on its second word,
+ * then on a passage beginning there, must be the plain braille with only the
+ * code's signs added:
+ * - EBAE: the word's sign before the word; the passage's sign (the word's
+ *   sign and ⠨) before the first of four words, and the word's sign before
+ *   the last.
+ * - UEB: the word indicator (prefix and ⠂) before the word; the passage
+ *   indicator (prefix and ⠶) before the first of three words, and the
+ *   terminator (prefix and ⠄) after the last.
+ */
+static int
+writes_code(const char *table, const table_emphasis *emphasis, size_t index, int code, const widechar *plain,
+		int n, const int *starts, const int *ends) {
+	int ebae = code == CODE_EBAE;
+	const widechar *prefix = ebae ? EMPHASIS_CLASSES[index].ebae : EMPHASIS_CLASSES[index].ueb;
+	int length = ebae ? EMPHASIS_CLASSES[index].ebae_length : EMPHASIS_CLASSES[index].ueb_length;
+	int last = ebae ? 4 : 3;
+	added_sign word[1];
+	added_sign passage[2];
+	translation marked;
+	int matches;
+	if (length == 0 || emphasis->bit[index] == 0) return 0;
+	word[0] = sign_with(starts[1], prefix, length, ebae ? 0 : CELL_2);
+	passage[0] = sign_with(starts[1], prefix, length, ebae ? CELL_46 : CELL_2356);
+	passage[1] = ebae ? sign_with(starts[last], prefix, length, 0) : sign_with(ends[last], prefix, length, CELL_3);
+	if (!translate_marked_probe(table, emphasis->bit[index], 1, 1, &marked)) return 0;
+	matches = matches_with_signs(marked.chars, marked.length, plain, n, word, 1);
+	free_translation(&marked);
+	if (!matches || !translate_marked_probe(table, emphasis->bit[index], 1, last, &marked)) return 0;
+	matches = matches_with_signs(marked.chars, marked.length, plain, n, passage, 2);
+	free_translation(&marked);
+	return matches;
+}
+
+/*
+ * Sets `emphasis->code` for each class the table has: the code whose signs
+ * liblouis writes it in (`writes_code`), or none. Found by translating, as
+ * `check_readable` judges, so that one of this Mac's tables is judged by
+ * what its own rules write: one that writes EBAE's or UEB's signs is read
+ * with that code's pass, and any other as before.
+ */
+static void
+detect_codes(const char *table, table_emphasis *emphasis) {
+	widechar probe[sizeof CODE_PROBE];
+	int length = (int)strlen(CODE_PROBE);
+	int starts[CODE_PROBE_WORDS];
+	int ends[CODE_PROBE_WORDS];
+	int words = 0;
+	translation plain;
+	for (int i = 0; i < length; i++) probe[i] = (widechar)(unsigned char)CODE_PROBE[i];
+	if (!translate(table, 1, probe, NULL, length, 0, &plain)) return;
+	/* The plain braille's words: one blank cell between each two, as many
+	   as the probe's, or the table is not judged. */
+	for (int i = 0; i <= plain.length && words <= CODE_PROBE_WORDS; i++) {
+		int blank = i == plain.length || plain.chars[i] == CELL_BLANK;
+		int begins = i < plain.length && !blank && (i == 0 || plain.chars[i - 1] == CELL_BLANK);
+		if (begins && words < CODE_PROBE_WORDS) starts[words] = i;
+		if (begins) words++;
+		if (blank && (i == 0 || plain.chars[i - 1] == CELL_BLANK)) words = CODE_PROBE_WORDS + 1;
+		if (blank && words >= 1 && words <= CODE_PROBE_WORDS) ends[words - 1] = i;
+	}
+	for (size_t k = 0; words == CODE_PROBE_WORDS && k < EMPHASIS_CLASS_COUNT; k++) {
+		if (writes_code(table, emphasis, k, CODE_EBAE, plain.chars, plain.length, starts, ends))
+			emphasis->code[k] = CODE_EBAE;
+		else if (writes_code(table, emphasis, k, CODE_UEB, plain.chars, plain.length, starts, ends))
+			emphasis->code[k] = CODE_UEB;
+	}
+	free_translation(&plain);
+}
+
+/* MARK: - Reading EBAE */
+
+/*
+ * An EBAE emphasis sign (`ebae_sign_at`): how many cells it has, 0 for none;
+ * the table's bits of the classes it marks; and whether it opens a passage.
+ */
+typedef struct {
+	int length;
+	formtype bits;
+	int opens_passage;
+} ebae_sign;
+
+/*
+ * The EBAE sign at `cells[i..end)`, the rest of a word, where a sign may
+ * stand: for a class the table writes in EBAE, its passage's sign (⠨⠨, ⠸⠨⠨)
+ * or its word's (⠨, ⠸⠨), the longest there, so that bold's ⠸⠨ is never read
+ * as a cell and italic's ⠨. A sign must have a cell of its word after it,
+ * and ⠨⠅ and ⠨⠂ standing alone are not signs but the "=" and ">" liblouis's
+ * EBAE tables write with those cells (en-us-g1.ctb); contracted EBAE's ⠨⠅
+ * alone is also "knowledge" emphasized, which is left to liblouis too.
+ */
+static ebae_sign
+ebae_sign_at(const table_emphasis *emphasis, const widechar *cells, int i, int end) {
+	ebae_sign best = {0, 0, 0};
+	for (size_t k = 0; k < EMPHASIS_CLASS_COUNT; k++) {
+		int length = EMPHASIS_CLASSES[k].ebae_length;
+		ebae_sign found = {length, emphasis->bit[k], 0};
+		if (emphasis->code[k] != CODE_EBAE || !has_cells(cells, i, end, EMPHASIS_CLASSES[k].ebae, length))
+			continue;
+		/* The passage's sign is the word's and ⠨. */
+		if (i + length < end && cells[i + length] == CELL_46) {
+			found.length++;
+			found.opens_passage = 1;
+		}
+		if (i + found.length < end && found.length > best.length) best = found;
+	}
+	if (best.length == 1 && !best.opens_passage && i + 2 == end &&
+			(cells[i + 1] == CELL_13 || cells[i + 1] == CELL_2)) {
+		best.length = 0;
+		best.bits = 0;
+	}
+	return best;
+}
+
+/*
+ * The length of the opening punctuation at `cells[i..end)` that may stand
+ * before an EBAE sign, with more of its word after it: an opening
+ * parenthesis ⠶ or bracket ⠠⠶, an opening quotation mark ⠦ or ⠠⠦, or a
+ * dash ⠤⠤, which come before the sign in that order (EBAE 15.1a(2), 15.7:
+ * ⠦⠨⠠⠓⠑⠇⠏⠖⠴ for "Help!" emphasized in quotation marks); 0 for none.
+ */
+static int
+opening_punctuation(const widechar *cells, int i, int end) {
+	static const struct {
+		widechar cells[2];
+		int length;
+	} marks[] = {
+			{{CELL_2356}, 1},
+			{{CELL_6, CELL_2356}, 2},
+			{{CELL_236}, 1},
+			{{CELL_6, CELL_236}, 2},
+			{{CELL_36, CELL_36}, 2},
+	};
+	for (size_t k = 0; k < sizeof marks / sizeof marks[0]; k++)
+		if (has_cells(cells, i, end, marks[k].cells, marks[k].length) && i + marks[k].length < end)
+			return marks[k].length;
+	return 0;
+}
+
+/*
+ * The length of EBAE's dash ⠤⠤ or slash ⠸⠌ at `cells[i..end)`, either of
+ * which ends a word's emphasis, a sign standing after it for the word that
+ * follows (EBAE 15.1a); 0 for neither.
+ */
+static int
+dash_or_slash(const widechar *cells, int i, int end) {
+	if (i + 1 >= end) return 0;
+	if ((cells[i] == CELL_36 && cells[i + 1] == CELL_36) || (cells[i] == CELL_456 && cells[i + 1] == CELL_34))
+		return 2;
+	return 0;
+}
+
+/*
+ * The length of contracted EBAE's "to" ⠖, "into" ⠔⠖, or "by" ⠴ at
+ * `cells[i..end)`, with its capital sign, when it is joined to the word
+ * after it, which may have a sign of its own (EBAE 15.1c(2): ⠨⠖⠠⠛⠑⠕⠗⠛⠑ is
+ * "to" emphasized before George, and ⠖⠨⠞⠪⠝ "to" before town emphasized);
+ * 0 otherwise. The word after it begins with a cell of dot 1 or 4, or a
+ * capital, letter, or contraction prefix, never with lower punctuation,
+ * which these signs never touch. In uncontracted EBAE these cells are
+ * punctuation that no word begins with.
+ */
+static int
+joined_word(const widechar *cells, int i, int end) {
+	int k = i;
+	widechar next;
+	if (k < end && cells[k] == CELL_6) k++;
+	if (k + 1 < end && cells[k] == CELL_35 && cells[k + 1] == CELL_235)
+		k += 2;
+	else if (k < end && (cells[k] == CELL_235 || cells[k] == CELL_356))
+		k++;
+	else
+		return 0;
+	if (k >= end) return 0;
+	next = cells[k];
+	if ((next & (D1 | D4)) != 0 || next == CELL_6 || next == CELL(D5) || next == CELL(D5 | D6)) return k - i;
+	return 0;
+}
+
+/* Whether `cell` is one of the letters a to j, EBAE's digits after its
+   number sign. */
+static int
+is_digit_cell(widechar cell) {
+	static const unsigned digits[] = {D1, D1 | D2, D1 | D4, D1 | D4 | D5, D1 | D5, D1 | D2 | D4,
+			D1 | D2 | D4 | D5, D1 | D2 | D5, D2 | D4, D2 | D4 | D5};
+	for (size_t k = 0; k < sizeof digits / sizeof digits[0]; k++)
+		if (cell == CELL(digits[k])) return 1;
+	return 0;
+}
+
+/*
+ * The length of liblouis's sign inside a passage's last word, at
+ * `cells[i..end)`: the word's sign, again, of a class in `closing`, which
+ * liblouis writes before whatever of the word is not emphasized
+ * (".FIVE.1" for "*one two three four five*,", ".FI.VE" for its "fi*ve"),
+ * where EBAE writes nothing or the termination sign. It ends the emphasis.
+ * 0 for none: ⠨ is no sign where it is a decimal point (in a number, before
+ * a digit, EBAE 15.8d) or begins one of contracted EBAE's ⠨⠙ "ound", ⠨⠑
+ * "ance", ⠨⠎ "less", ⠨⠝ "sion", and ⠨⠞ "ount".
+ */
+static int
+extra_closing_sign(const table_emphasis *emphasis, formtype closing, const widechar *cells, int i, int end,
+		int in_number) {
+	static const unsigned contractions[] = {D1 | D4 | D5, D1 | D5, D2 | D3 | D4, D1 | D3 | D4 | D5,
+			D2 | D3 | D4 | D5};
+	for (size_t k = 0; k < EMPHASIS_CLASS_COUNT; k++) {
+		int length = EMPHASIS_CLASSES[k].ebae_length;
+		widechar next = i + length < end ? cells[i + length] : CELL_BLANK;
+		int forms_sign = 0;
+		if (emphasis->code[k] != CODE_EBAE || !(closing & emphasis->bit[k]) ||
+				!has_cells(cells, i, end, EMPHASIS_CLASSES[k].ebae, length))
+			continue;
+		if (length == 1) {
+			forms_sign = in_number && is_digit_cell(next);
+			for (size_t c = 0; c < sizeof contractions / sizeof contractions[0]; c++)
+				forms_sign = forms_sign || next == CELL(contractions[c]);
+		}
+		if (!forms_sign) return length;
+	}
+	return 0;
+}
+
+/*
+ * Keeps the cells of one word, `cells[start..end)`, at `kept[count..]`, each
+ * with the table's bits of the emphasis it is in at `bits[count..]`, leaving
+ * out the EBAE signs it reads, and returns the new count (`read_ebae`).
+ * `*passage` holds the classes whose passage is open, which a passage's sign
+ * opens and the word after its closing sign ends (EBAE 15.1b; a passage of
+ * several paragraphs opens again in each, 15.1i, so one left open ends with
+ * its paragraph).
+ *
+ * A sign may stand at the word's start, after its opening punctuation; after
+ * a dash or a slash; after a joined "to", "into", or "by"; and after a hyphen,
+ * where liblouis writes one when the emphasis stopped before it. The word's
+ * own sign marks it to its end, or to the first dash or slash (EBAE 15.1a),
+ * the termination sign ⠠⠄, or liblouis's sign inside a passage's last word
+ * (`extra_closing_sign`), the last two left out. A passage's emphasis goes on
+ * through every dash, slash, and punctuation mark (15.1b), and past a
+ * termination sign to the next word. Whatever is not a sign, such as ⠨ as a
+ * decimal point or a contraction inside a word, is kept for liblouis.
+ */
+static int
+strip_ebae_word(const table_emphasis *emphasis, const widechar *cells, int start, int end, formtype *passage,
+		widechar *kept, formtype *bits, int count) {
+	/* The classes this word's own signs mark, and of those, the classes
+	   whose passage it closes. */
+	formtype word = 0;
+	formtype closing = 0;
+	/* Whether a termination ended the emphasis of the rest of the word. */
+	int ended = 0;
+	/* Whether a sign may stand at `i`. */
+	int sign_may_follow = 1;
+	/* Whether the word is in double capitals, which ⠠⠄ ends too. */
+	int capitals = 0;
+	/* Whether `i` is in a number, after its number sign. */
+	int in_number = 0;
+	int i = start;
+	while (i < end) {
+		int length;
+		ebae_sign sign;
+		if (sign_may_follow) {
+			sign_may_follow = 0;
+			while ((length = opening_punctuation(cells, i, end)) > 0) {
+				count = keep(kept, bits, count, cells + i, length, *passage);
+				i += length;
+			}
+			sign = ebae_sign_at(emphasis, cells, i, end);
+			if (sign.opens_passage)
+				*passage |= sign.bits;
+			else
+				word |= sign.bits;
+			closing |= sign.opens_passage ? 0 : sign.bits & *passage;
+			ended = ended && sign.length == 0;
+			i += sign.length;
+			capitals = i + 1 < end && cells[i] == CELL_6 && cells[i + 1] == CELL_6;
+			/* "to", "into", or "by" joined to the next word takes this
+			   sign alone, and the next word may have its own. */
+			if ((length = joined_word(cells, i, end)) > 0) {
+				count = keep(kept, bits, count, cells + i, length, word | *passage);
+				i += length;
+				*passage &= ~closing;
+				word = closing = 0;
+				sign_may_follow = 1;
+			}
+			continue;
+		}
+		/* The termination sign (EBAE 15.6). After double capitals it ends
+		   them, and is left for liblouis, and with them the word's own
+		   emphasis but not a passage's. */
+		if (!ended && (word | *passage) != 0 && i + 1 < end && cells[i] == CELL_6 && cells[i + 1] == CELL_3) {
+			ended = !capitals || word != 0;
+			if (capitals) count = keep(kept, bits, count, cells + i, 2, ended ? 0 : *passage);
+			i += 2;
+			continue;
+		}
+		if (!ended && closing != 0 && (length = extra_closing_sign(emphasis, closing, cells, i, end, in_number)) > 0) {
+			ended = 1;
+			i += length;
+			continue;
+		}
+		/* A dash or a slash ends the word's own emphasis, and a passage's
+		   if this is its last word. */
+		if ((length = dash_or_slash(cells, i, end)) > 0) {
+			*passage &= ~closing;
+			count = keep(kept, bits, count, cells + i, length, *passage);
+			i += length;
+			word = closing = 0;
+			ended = in_number = 0;
+			sign_may_follow = 1;
+			continue;
+		}
+		/* A hyphen, after which liblouis begins emphasis again with a sign. */
+		if (cells[i] == CELL_36) {
+			count = keep(kept, bits, count, cells + i, 1, ended ? 0 : word | *passage);
+			i++;
+			in_number = 0;
+			sign = ebae_sign_at(emphasis, cells, i, end);
+			if (sign.length > 0 && !sign.opens_passage) {
+				word |= sign.bits;
+				closing |= sign.bits & *passage;
+				ended = 0;
+				i += sign.length;
+			}
+			continue;
+		}
+		if (cells[i] == CELL_3456)
+			in_number = 1;
+		else if (!is_digit_cell(cells[i]) && cells[i] != CELL_46 && cells[i] != CELL_2)
+			in_number = 0;
+		count = keep(kept, bits, count, cells + i, 1, ended ? 0 : word | *passage);
+		i++;
+	}
+	*passage &= ~closing;
+	return count;
+}
+
+/*
+ * Reads EBAE's emphasis signs out of `cells[0..n)`, a paragraph or a piece
+ * of one (`strip_ebae_word`): keeps every other cell in `kept`, which holds
+ * n, each with the table's bits of the emphasis it is in at the same place
+ * in `bits`, and returns how many it kept. A blank cell takes the emphasis
+ * the words on both sides of it share, so that a passage, or words
+ * emphasized one by one, reads as one stretch, as liblouis gives a passage
+ * in UEB.
+ */
+static int
+strip_ebae_signs(const table_emphasis *emphasis, const widechar *cells, int n, widechar *kept, formtype *bits) {
+	formtype passage = 0;
+	int count = 0;
+	int i = 0;
+	while (i < n) {
+		int end = i;
+		if (cells[i] == CELL_BLANK) {
+			count = keep(kept, bits, count, cells + i, 1, 0);
+			i++;
+			continue;
+		}
+		while (end < n && cells[end] != CELL_BLANK) end++;
+		count = strip_ebae_word(emphasis, cells, i, end, &passage, kept, bits, count);
+		i = end;
+	}
+	for (int k = 0; k < count; k++) {
+		int before = k - 1;
+		int after = k + 1;
+		if (kept[k] != CELL_BLANK) continue;
+		while (before >= 0 && kept[before] == CELL_BLANK) before--;
+		while (after < count && kept[after] == CELL_BLANK) after++;
+		bits[k] = before >= 0 && after < count ? (formtype)(bits[before] & bits[after]) : 0;
+	}
+	return count;
+}
+
+/*
+ * Reads `cells[0..n)` back to print into `*result` with a table that writes
+ * its emphasis in EBAE's signs (`read_braille`), which liblouis 3.39.0 reads
+ * wrongly: it takes ⠨ before a letter a to j for a decimal point (".cat"),
+ * ⠨⠅ for "=" and ⠨⠂ for ">", drops bold's ⠸⠨ with its emphasis, and lets
+ * a passage run to the end of the paragraph. So the signs are read here
+ * (`strip_ebae_signs`), BARD's EBAE books' and TextMouth's own exports'
+ * alike, and liblouis is given the braille without them, so that its words
+ * are the words the braille holds; each character then takes the emphasis
+ * of the cell it was read from (`give_cells_emphasis`). liblouis is still
+ * given a typeform array, as every reading is, so that a sign the pass left
+ * (one inside a word, say) is taken as a sign, never written as a period;
+ * the emphasis it reads is replaced. Braille with no sign reads exactly as
+ * it did before. Returns 1, or 0 when a translation fails.
+ */
+static int
+read_ebae(const char *table, const table_emphasis *emphasis, const widechar *cells, int n, translation *result) {
+	widechar *kept = malloc(((size_t)n + 1) * sizeof *kept);
+	formtype *bits = malloc(((size_t)n + 1) * sizeof *bits);
+	int ok = 0;
+	memset(result, 0, sizeof *result);
+	if (kept != NULL && bits != NULL) {
+		int count = strip_ebae_signs(emphasis, cells, n, kept, bits);
+		ok = translate(table, 0, kept, NULL, count, 1, result) && give_cells_emphasis(bits, count, result);
+		if (!ok) free_translation(result);
+	}
+	free(kept);
+	free(bits);
+	return ok;
+}
+
+/*
+ * Translates the braille `cells[0..n)` back to print into `*result`, as
+ * `back` reads each record, reading its emphasis: through the pass of the
+ * code the table writes its emphasis in (`read_ebae`), or through liblouis
+ * alone. `result->typeform` holds the table's bits of every class; the
+ * caller keeps those of the readable ones. Returns 1, or 0 when a
+ * translation fails.
+ */
+static int
+read_braille(const char *table, const table_emphasis *emphasis, const widechar *cells, int n, translation *result) {
+	if (uses_code(emphasis, CODE_EBAE)) return read_ebae(table, emphasis, cells, n, result);
+	return translate(table, 0, cells, NULL, n, 1, result);
 }
 
 /* The probe of `check_readable`: plain lowercase words, which every bundled
@@ -491,19 +1139,18 @@ check_readable(const char *table, table_emphasis *emphasis) {
 	widechar probe[sizeof PROBE];
 	formtype marked[sizeof PROBE];
 	formtype carried = 0;
-	widechar *braille, *print;
-	formtype *read = NULL;
-	int braille_length = 0, print_length = 0;
+	translation braille = {0};
+	translation print = {0};
+	int plain_reads_back;
 	for (size_t i = 0; i < length; i++) probe[i] = (widechar)(unsigned char)PROBE[i];
 	for (size_t i = 0; i < EMPHASIS_CLASS_COUNT; i++) carried |= emphasis->bit[i];
 
 	/* The probe must come back as itself when plain, or nothing can be judged. */
-	braille = translate(table, 1, probe, NULL, (int)length, &braille_length, NULL);
-	print = braille == NULL ? NULL : translate(table, 0, braille, NULL, braille_length, &print_length, NULL);
-	int plain_reads_back = print != NULL && print_length == (int)length &&
-			memcmp(print, probe, length * sizeof(widechar)) == 0;
-	free(braille);
-	free(print);
+	plain_reads_back = translate(table, 1, probe, NULL, (int)length, 0, &braille) &&
+			translate(table, 0, braille.chars, NULL, braille.length, 1, &print) &&
+			print.length == (int)length && memcmp(print.chars, probe, length * sizeof(widechar)) == 0;
+	free_translation(&braille);
+	free_translation(&print);
 	if (!plain_reads_back) return;
 
 	for (size_t i = 0; i < EMPHASIS_CLASS_COUNT; i++) {
@@ -511,31 +1158,29 @@ check_readable(const char *table, table_emphasis *emphasis) {
 		int passes;
 		if (bit == 0) continue;
 		for (size_t k = 0; k < length; k++) marked[k] = is_probe_marked(k) ? bit : 0;
-		braille = translate(table, 1, probe, marked, (int)length, &braille_length, NULL);
-		print = braille == NULL ? NULL
-								: translate(table, 0, braille, NULL, braille_length, &print_length, &read);
-		passes = print != NULL && print_length == (int)length &&
-				memcmp(print, probe, length * sizeof(widechar)) == 0;
+		passes = translate(table, 1, probe, marked, (int)length, 0, &braille) &&
+				translate(table, 0, braille.chars, NULL, braille.length, 1, &print) &&
+				print.length == (int)length && memcmp(print.chars, probe, length * sizeof(widechar)) == 0;
 		for (size_t k = 0; passes && k < length; k++)
-			if (PROBE[k] >= 'a' && PROBE[k] <= 'z') passes = (read[k] & carried) == marked[k];
+			if (PROBE[k] >= 'a' && PROBE[k] <= 'z') passes = (print.typeform[k] & carried) == marked[k];
 		emphasis->readable[i] = passes;
-		free(braille);
-		free(print);
-		free(read);
-		read = NULL;
+		free_translation(&braille);
+		free_translation(&print);
 	}
 }
 
 /*
  * Reads the table's bit for each class of EMPHASIS_CLASSES into `emphasis`,
- * and which classes liblouis reads back exactly (`check_readable`), the
- * only ones either direction carries.
+ * the code it writes each in (`detect_codes`), and which classes liblouis
+ * reads back exactly (`check_readable`), the only ones either direction
+ * carries.
  */
 static void
 look_up_emphasis(const char *table, table_emphasis *emphasis) {
 	memset(emphasis, 0, sizeof *emphasis);
 	for (size_t i = 0; i < EMPHASIS_CLASS_COUNT; i++)
 		emphasis->bit[i] = lou_getTypeformForEmphClass(table, EMPHASIS_CLASSES[i].name);
+	detect_codes(table, emphasis);
 	check_readable(table, emphasis);
 }
 
@@ -549,11 +1194,10 @@ translate_record(const char *table, int forward, const table_emphasis *emphasis,
 		size_t bytes, const char *codes, size_t code_bytes, FILE *output) {
 	size_t count = 0;
 	widechar *chars;
-	widechar *out;
+	translation out;
 	formtype *typeform = NULL;
-	formtype *read = NULL;
 	unsigned char *flags = NULL;
-	int out_length = 0;
+	int translated;
 	int status = EXIT_DONE;
 	/* Each line feed ends its line; it is not part of the record. */
 	if (bytes > 0 && line[bytes - 1] == '\n') bytes--;
@@ -600,23 +1244,23 @@ translate_record(const char *table, int forward, const table_emphasis *emphasis,
 			return status;
 		}
 	}
-	out = translate(table, forward, chars, typeform, (int)count, &out_length, forward ? NULL : &read);
+	translated = forward ? translate(table, 1, chars, typeform, (int)count, 0, &out)
+						 : read_braille(table, emphasis, chars, (int)count, &out);
 	free(chars);
 	free(typeform);
-	if (out == NULL) return EXIT_TRANSLATION;
-	/* Back: the flags of the emphasis liblouis read, for each character. */
-	if (!forward && read != NULL) {
-		flags = malloc((size_t)out_length + 1);
+	if (!translated) return EXIT_TRANSLATION;
+	/* Back: the flags of the emphasis read, for each character. */
+	if (!forward && out.typeform != NULL) {
+		flags = malloc((size_t)out.length + 1);
 		if (flags == NULL) status = EXIT_TRANSLATION;
-		for (int i = 0; flags != NULL && i < out_length; i++)
-			flags[i] = (unsigned char)flags_for_typeform(emphasis, read[i]);
+		for (int i = 0; flags != NULL && i < out.length; i++)
+			flags[i] = (unsigned char)flags_for_typeform(emphasis, out.typeform[i]);
 	}
 	if (status == EXIT_DONE &&
-			(write_line(output, out, (size_t)out_length) != 0 ||
-					write_codes(output, flags, (size_t)out_length) != 0))
+			(write_line(output, out.chars, (size_t)out.length) != 0 ||
+					write_codes(output, flags, (size_t)out.length) != 0))
 		status = EXIT_OUTPUT;
-	free(out);
-	free(read);
+	free_translation(&out);
 	free(flags);
 	return status;
 }
