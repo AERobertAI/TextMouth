@@ -30,6 +30,35 @@ Part of [TextMouth's documentation](../../README.md).
     - liblouis runs in a separate process that TextMouth watches, never inside TextMouth, so a hang or a crash in liblouis costs that process and never TextMouth or the import. [Where TextMouth keeps your library](where-your-library-lives.md) gives its limits.
   - PDF files. A page that holds only a scanned image is read with the Mac's own text recognition.
   - HTML, Markdown, and plain text files, whatever their text encoding and line endings.
+    - TextMouth takes a file's text encoding from the file where it can, using the first of these that applies: a byte-order mark for UTF-8, UTF-16, or UTF-32; UTF-16 without a mark, if it is mostly Latin letters, which shows in its zero bytes; bytes that are valid UTF-8; and, for an HTML file, an encoding other than Unicode that its first 1,024 bytes declare, where ISO Latin 1 and ASCII are read as Windows-1252, as web browsers read them.
+    - A file that none of these settles, because it is neither UTF-8 nor UTF-16 and names no encoding, was always read as Windows-1252, so a file in an encoding that Windows-1252 does not match, such as Mac Roman, Cyrillic, or Japanese, had the wrong letters. Since the update of October 24, 2026, TextMouth guesses its encoding when you add the file with Open Book…, from Finder, or in a ZIP of books, and a book whose encoding it guessed is read in that encoding from then on. Only a file you add yourself is guessed at: a feed's article is read as it always was.
+    - TextMouth guesses among the encodings below. Book Information and Speak Full Info name the one it chose as written here, then "guessed" (see [The Library window](library-window.md)). Windows-1252 is not among them: a file is read as Windows-1252 when no guess can be trusted.
+      - Western European: "Mac Roman (Western European)" and "ISO 8859-15 (Western European)".
+      - Central European: "Windows-1250 (Central European)" and "ISO 8859-2 (Central European)".
+      - Cyrillic: "Windows-1251 (Cyrillic)", "KOI8-R (Russian)", "KOI8-U (Ukrainian)", "CP866 (Russian DOS)", "ISO 8859-5 (Cyrillic)", and "Mac Cyrillic".
+      - Greek: "Windows-1253 (Greek)" and "ISO 8859-7 (Greek)".
+      - Turkish: "Windows-1254 (Turkish)" and "ISO 8859-9 (Turkish)".
+      - Hebrew: "Windows-1255 (Hebrew)" and "ISO 8859-8 (Hebrew)".
+      - Arabic: "Windows-1256 (Arabic)" and "ISO 8859-6 (Arabic)".
+      - Baltic: "Windows-1257 (Baltic)" and "ISO 8859-13 (Baltic)".
+      - Thai: "Windows-874 (Thai)".
+      - Japanese: "Shift JIS (Japanese)", "EUC-JP (Japanese)", and "ISO 2022-JP (Japanese)". ISO 2022-JP writes only 7-bit bytes, so it is valid UTF-8 too; TextMouth looks for it, by its escape sequences, before it takes bytes for UTF-8.
+      - Chinese: "GB 18030 (Simplified Chinese)", "GBK (Simplified Chinese)", "GB 2312 (Simplified Chinese)", and "Big5 (Traditional Chinese)".
+      - Korean: "EUC-KR (Korean)".
+    - TextMouth guesses only when it can trust the guess more than Windows-1252, since a wrong guess turns text that was right into text that is not, which the book keeps, while a missed guess leaves a book as garbled as it was. It examines the lines that hold a byte beyond plain ASCII, about 64 KB of them from the start, and takes a guess only when all of these hold:
+      - The Windows-1252 reading shows that it is wrong: it holds at least three characters that real writing almost never holds (symbols inside words, control characters, and the like), not all the same character; or at least five capitals inside lowercase words; or a fifth or more of its letters beyond plain ASCII lie outside the alphabet of the one language that fits them best, where the other reading's letters fit one language.
+      - Another encoding reads them clearly better, with almost nothing odd left. When other encodings read them as well but differently, the file stays Windows-1252, unless macOS's own guess names one of exactly two of them.
+      - The whole file, not only the lines examined, reads in that encoding with no byte dropped or replaced, and writes back to exactly the same bytes.
+    - The same bytes always give the same guess.
+    - Some files stay Windows-1252, as they were read before:
+      - Short texts, which show too little to guess from. A Cyrillic note of a line or two may stay garbled, though a paragraph of Cyrillic is read right.
+      - Text in some languages: Hungarian, Croatian, Slovenian, and Latvian, and French saved in ISO 8859-15.
+      - Short sentences in Mac Roman, in Spanish, Portuguese, Italian, Dutch, Danish, or German.
+      - A file whose only accented letters are capitals inside program names, such as "zeigeÜbersicht", when it is not in Windows-1252: read right, those capitals look as odd as they do read wrong.
+      - Hebrew text, which is guessed only when macOS's own guess names Hebrew, so a short Hebrew text may stay as it was.
+      - A file in an encoding that is not listed above, such as the DOS code pages CP437 and CP850 or Mac Central European, which TextMouth does not try.
+    - A guess can still be wrong, most often for a text of only a few lines, and, rarely, for a Windows-1252 file of program code with several accented capitals inside its names, which can be read as Mac Roman. Book Information names the encoding a book was read in, so a book whose letters read oddly can be checked there.
+    - A book already in your library keeps its text. TextMouth records a guess with the book when the book is added, and reads the book in it every time its text is built again, after an update or with Redo Text Extraction. A book added before then, and a book whose file named its encoding or read right as Windows-1252, has no record and is read as it always was (see [Where TextMouth keeps your library](where-your-library-lives.md)).
   - Safari web archives (.webarchive). Only the archive's main page is read, as an HTML file is read (or a text file, for a text page), so its headings, lists, and tables read as in an HTML book. The archive's pictures, scripts, style sheets, and frames, and every address it names, are never read, decoded, or fetched, and WebKit is not used.
   - SSML files (.ssml), read as text: the markup is removed, and the paragraphs and sentences are kept.
     - A sub element's alias is read in place of its written text: <sub alias="World Wide Web Consortium">W3C</sub> reads "World Wide Web Consortium".
