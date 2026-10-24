@@ -490,23 +490,29 @@ final class DuplicateReplacementTests: XCTestCase {
     // MARK: - The Old Copy Put Back
 
     /// The old copy Replace Existing sent to the Trash names its
-    /// replacement's ID. Put back by Finder into the folder it left, it is
-    /// adopted at the next launch as a book of its own, under a new ID, so
-    /// no two rows share one; the replacement keeps the ID.
-    func testAnOldCopyPutBackIsAdoptedUnderAnIDOfItsOwn() throws {
-        let libraryDirectory = try makeSandboxDirectory("ReplaceAdoption")
-        let id = UUID()
-        let replacement = try Self.writePackage(named: "New.tmb", id: id, hash: "new", in: libraryDirectory)
-        _ = try Self.writePackage(named: "Old.tmb", id: id, hash: "old", in: libraryDirectory)
-        var library = Library(books: [replacement])
+    /// replacement's ID, as does an old package a stop or a failed removal
+    /// left. Put back by Finder into the folder it left, it is never adopted
+    /// at a launch, with the replacement's content or another, and its
+    /// record is not rewritten: no two rows share an ID, and nothing is
+    /// written on a guess, inside the test's folder or anywhere (ST04 review,
+    /// finding 9).
+    func testAnOldCopyNamingAListedBookIsLeftAsItIs() throws {
+        for hash in ["new", "old"] {
+            let libraryDirectory = try makeSandboxDirectory("ReplaceAdoption")
+            let id = UUID()
+            let replacement = try Self.writePackage(named: "New.tmb", id: id, hash: "new", in: libraryDirectory)
+            _ = try Self.writePackage(named: "Old.tmb", id: id, hash: hash, in: libraryDirectory)
+            let putBack = libraryDirectory.appendingPathComponent("Old.tmb", isDirectory: true)
+            let recordBefore = try Data(contentsOf: TextMouthPaths.bookInfoPath(in: putBack))
+            var library = Library(books: [replacement])
 
-        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, libraryDirectory: libraryDirectory)
+            let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, libraryDirectory: libraryDirectory)
 
-        XCTAssertEqual(adopted, 1)
-        XCTAssertEqual(library.books.filter { $0.id == id }.map(\.tmbDirectoryName), ["New.tmb"])
-        let putBack = try XCTUnwrap(library.books.first { $0.tmbDirectoryName == "Old.tmb" })
-        XCTAssertNotEqual(putBack.id, id)
-        XCTAssertEqual(putBack.md5Hash, "old")
+            XCTAssertEqual(adopted, 0, "content \(hash)")
+            XCTAssertEqual(library.books.map(\.tmbDirectoryName), ["New.tmb"], "content \(hash)")
+            XCTAssertEqual(try Data(contentsOf: TextMouthPaths.bookInfoPath(in: putBack)), recordBefore, "content \(hash)")
+            XCTAssertEqual(try BookInfo.load(from: putBack).metadata.bookID, id, "content \(hash)")
+        }
     }
 
     /// A package named `name` in `folder`, holding a plain-text book file

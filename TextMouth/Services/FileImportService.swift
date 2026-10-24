@@ -3013,9 +3013,14 @@ enum FileImportService {
     ///
     /// An orphan whose record names a book the library already lists, under
     /// that book's ID, is another copy of it: the old copy Replace Existing
-    /// sent to the Trash (ST04) names its replacement's ID once Finder puts
-    /// it back. It is adopted as a book of its own, under a new ID written
-    /// into its record, so no two rows ever share an ID.
+    /// sent to the Trash names its replacement's ID once Finder puts it
+    /// back, and an old package a stop or a failed removal left beside its
+    /// replacement names it too (ST04). It is left as it is, unadopted and
+    /// unwritten, with one ORPHAN_ID_LISTED line, so no two rows ever share
+    /// an ID and no record is rewritten on a guess: during an index
+    /// recovery, which writes nothing, and in a cloud library whose
+    /// library.json, listing the book at that very package, may arrive
+    /// after the package does.
     ///
     /// The walk and every check run with dataless files left in the cloud
     /// (FR02). A folder that cannot be listed without downloading is passed
@@ -3078,22 +3083,27 @@ enum FileImportService {
                     continue
                 }
 
-                // A second copy of a book the library lists by this ID gets
-                // an ID of its own (ST04).
-                let listedID = library.books.contains { $0.id == orphan.book.id }
-                let book = listedID ? orphan.book.withID(UUID()) : orphan.book
+                // A second copy of a book the library lists by this ID is
+                // left as it is (ST04).
+                guard !library.books.contains(where: { $0.id == orphan.book.id }) else {
+                    DiagnosticLog.event(
+                        .storage,
+                        "ORPHAN_ID_LISTED: \(url.lastPathComponent): its record names a book the library lists "
+                            + "in another package, so it was left as it is"
+                    )
+                    continue
+                }
 
                 // addBook guards against duplicate hashes — only truly new books get added
                 let countBefore = library.books.count
-                library.addBook(book)
+                library.addBook(orphan.book)
                 if library.books.count > countBefore {
                     adopted += 1
 
                     // Update the bookInfo.json folderPath if it was empty but the .tmb
-                    // lives inside a subfolder (common with orphans from zip imports),
-                    // and the ID of a copy that took a new one.
-                    if listedID || orphan.recordedFolderPath != book.folderPath {
-                        try? book.saveBookInfoThrowing()
+                    // lives inside a subfolder (common with orphans from zip imports)
+                    if orphan.recordedFolderPath != orphan.book.folderPath {
+                        try? orphan.book.saveBookInfoThrowing()
                     }
                 }
             }

@@ -377,6 +377,8 @@ final class LogContentPolicyTests: XCTestCase {
         // Replace Existing (ST04): a duplicate's new copy taking the old copy's place under its ID, and what an
         // undone replacement could not put back in the new copy's package.
         "DUPLICATE_REPLACED", "DUPLICATE_REPLACE_UNDONE",
+        // A package left unadopted because its record names a book the library lists in another package.
+        "ORPHAN_ID_LISTED",
     ]
 
     /// Each tag still begins a string literal in the app's code, so none was
