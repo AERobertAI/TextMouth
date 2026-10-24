@@ -151,8 +151,9 @@ enum BrailleBookReader {
     /// Whether the pages of a braille file, read as `file` and laid out as
     /// `structure`, are pages an embosser counts, so that they become the
     /// book's pages (PG12, the review of October 24): a PEF's page elements,
-    /// a BRF's form feeds, or, in a BRF with no form feed, braille page
-    /// numbers ending more than half of the pages it was cut into.
+    /// a BRF's form feeds between its braille text, or, in a BRF with none
+    /// (a form feed only at its start or end is none), braille page numbers
+    /// ending more than half of the pages it was cut into.
     ///
     /// A BRF with no form feed is cut every 25 rows only so that its layout
     /// can be read (`BrailleFileReader.linesPerUnmarkedPage`). Laid out at
