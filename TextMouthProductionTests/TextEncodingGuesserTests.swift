@@ -71,29 +71,13 @@ final class TextEncodingGuesserTests: XCTestCase {
     /// they hold, and the two that Windows-1252 reads correctly are left to
     /// it. (The UTF-8 and UTF-16 files never reach the guesser.)
     func testTheSampleFilesAreReadRight() throws {
-        let western = "Café au lait for the señor — naïve, “quoted” text with über-accents: à è ì ò ù ß.\n"
-        let cases: [(file: String, text: String?)] = [
-            ("mac-roman", western + "Second line: the price is EUR5 (not GBP5).\n"),
-            ("windows-1250", "Příliš žluťoučký kůň úpěl ďábelské ódy.\nZażółć gęślą jaźń.\n"),
-            ("iso-8859-2", "Příliš žluťoučký kůň úpěl ďábelské ódy.\nZażółć gęślą jaźń.\n"),
-            ("windows-1251", "Съешь же ещё этих мягких французских булок, да выпей чаю.\nПаром отходит в семь.\n"),
-            ("koi8-r", "Съешь же ещё этих мягких французских булок, да выпей чаю.\nПаром отходит в семь.\n"),
-            ("shift-jis", "いろはにほへと ちりぬるを わかよたれそ つねならむ。\nフェリーは七時に出ます。\n"),
-            ("euc-jp", "いろはにほへと ちりぬるを わかよたれそ つねならむ。\nフェリーは七時に出ます。\n"),
-            ("big5", "天地玄黃，宇宙洪荒。\n渡輪七點開。\n"),
-            ("gb18030", "天地玄黄，宇宙洪荒。\n渡轮七点开。\n"),
-            // Windows-1252 reads these two correctly, so nothing is guessed.
-            ("windows-1252", nil),
-            ("iso-8859-1", nil),
-        ]
-        for (name, expected) in cases {
-            let url = try formatSampleURL("txt-encodings/\(name).txt")
-            let bytes = try Data(contentsOf: url)
+        for sample in Fixtures.sampleFiles where sample.basis == .guess || sample.basis == .fallback {
+            let bytes = try Data(contentsOf: formatSampleURL("txt-encodings/\(sample.name).txt"))
             let guess = TextEncodingGuesser.guess(bytes)
-            if let expected {
-                XCTAssertEqual(guess?.text, expected, name)
+            if sample.basis == .guess {
+                XCTAssertEqual(guess?.text, sample.text, sample.name)
             } else {
-                XCTAssertNil(guess, name)
+                XCTAssertNil(guess, sample.name)
             }
         }
     }
@@ -306,6 +290,44 @@ final class TextEncodingGuesserTests: XCTestCase {
         for _ in 0..<800 { unbroken.append(japanese) }
         XCTAssertGreaterThan(unbroken.count, 4 * limit)
         XCTAssertNil(TextEncodingGuesser.guess(unbroken))
+    }
+
+    /// A long line is not cut inside a four-byte GB18030 character, whose
+    /// second and fourth bytes are digits: Chinese text with such a character
+    /// where the cut would fall (its second byte at the limit) is found all
+    /// the same, and read whole, character included.
+    func testALongLineIsNotCutInsideAFourByteGB18030Character() throws {
+        let limit = TextEncodingGuesser.sampleLimit
+        let (hanzi, hanziText) = try Fixtures.file("天地玄黄宇宙洪荒日月盈昃辰宿列张", inEncodingNamed: "gb18030")
+        XCTAssertEqual(hanzi.count, 32, "sixteen characters of two bytes")
+        let supplementary = Data([0x95, 0x32, 0x82, 0x36])
+        let supplementaryText = try XCTUnwrap(String(data: supplementary, encoding: XCTUnwrap(Fixtures.encoding(named: "gb18030"))))
+        XCTAssertEqual(supplementaryText.unicodeScalars.count, 1)
+
+        // Characters in chunks of 34 bytes, with two spaces to cut at, up to two
+        // bytes short of the limit; then the four-byte character, whose second
+        // byte is the one at the limit; then enough to make the line longer
+        // than four limits, so that it is cut.
+        var bytes = Data()
+        var text = ""
+        for _ in 0..<1_927 {
+            bytes += hanzi + Data([0x20, 0x20])
+            text += hanziText + "  "
+        }
+        bytes += hanzi.prefix(16)
+        text += String(hanziText.prefix(8))
+        XCTAssertEqual(bytes.count, limit - 2)
+        bytes += supplementary
+        text += supplementaryText
+        for _ in 0..<5_800 {
+            bytes += hanzi + Data([0x20, 0x20])
+            text += hanziText + "  "
+        }
+        bytes += Data([0x0A])
+        text += "\n"
+        XCTAssertGreaterThan(bytes.count, 4 * limit)
+
+        XCTAssertEqual(TextEncodingGuesser.guess(bytes)?.text, text)
     }
 
     // MARK: - ISO-2022-JP

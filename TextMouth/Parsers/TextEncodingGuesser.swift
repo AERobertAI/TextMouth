@@ -246,8 +246,8 @@ enum TextEncodingGuesser {
     /// which no text holds. A line ends at a line feed or a carriage return,
     /// which no multi-byte encoding the guess reads uses inside a
     /// character, so a line is never cut inside one; a single line longer
-    /// than four limits is cut at a byte below 0x40, which no such encoding
-    /// uses inside a character either (`lastByte(ofLineFrom:to:in:)`).
+    /// than four limits is cut after a byte that ends a character in all of
+    /// them (`lastByte(ofLineFrom:to:in:)`).
     private static func examinedBytes(of data: Data) -> Data? {
         var gathered = Data()
         data.withUnsafeBytes { (bytes: UnsafeRawBufferPointer) in
@@ -273,13 +273,23 @@ enum TextEncodingGuesser {
     /// The index of the last byte to take of the line that runs from
     /// `lineStart` to `lineEnd`: `lineEnd` itself for a line of up to four
     /// limits, which ends at a line ending or at the end of the file, where
-    /// no character is split; for a longer one, the last byte below 0x40
-    /// within the limit, or nil when there is none, and the line is left out.
+    /// no character is split; for a longer one, the last byte within the
+    /// limit that ends a character, or nil when there is none, and the line
+    /// is left out.
     private static func lastByte(ofLineFrom lineStart: Int, to lineEnd: Int, in bytes: UnsafeRawBufferPointer) -> Int? {
         guard lineEnd - lineStart + 1 > 4 * sampleLimit else { return lineEnd }
         var cut = lineStart + sampleLimit - 1
-        while cut > lineStart, bytes[cut] >= 0x40 { cut -= 1 }
+        while cut > lineStart, !endsACharacter(bytes[cut]) { cut -= 1 }
         return cut > lineStart ? cut : nil
+    }
+
+    /// Whether a character of every encoding the guess reads ends at `byte`:
+    /// a byte below 0x40 is never the second byte of a Shift JIS, Big5, GBK,
+    /// EUC, or Korean character, whose second bytes are 0x40 and above, with
+    /// the exception of the digits, which are the second and fourth bytes of
+    /// a four-byte GB18030 character.
+    private static func endsACharacter(_ byte: UInt8) -> Bool {
+        byte < 0x40 && !(0x30...0x39).contains(byte)
     }
 }
 

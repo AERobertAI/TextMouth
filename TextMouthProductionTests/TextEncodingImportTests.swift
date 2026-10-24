@@ -60,29 +60,10 @@ final class TextEncodingImportTests: XCTestCase {
     /// the other four (UTF-8, UTF-16, and the two Windows-1252 reads) record
     /// none, as they always imported.
     func testEverySampleImportsAsTheTextItHolds() throws {
-        let western = "Café au lait for the señor — naïve, “quoted” text with über-accents: à è ì ò ù ß.\n"
-        let czechAndPolish = "Příliš žluťoučký kůň úpěl ďábelské ódy.\nZażółć gęślą jaźń.\n"
-        let japanese = "いろはにほへと ちりぬるを わかよたれそ つねならむ。\nフェリーは七時に出ます。\n"
-        let cases: [(file: String, text: String, recordsAnEncoding: Bool)] = [
-            ("utf-8", western + "Second line: the price is €5 (not £5).\n", false),
-            ("utf-16le-bom", western + "Second line: the price is €5 (not £5).\n", false),
-            ("windows-1252", western + "Second line: the price is €5 (not £5).\n", false),
-            ("iso-8859-1", western.replacingOccurrences(of: "—", with: "-").replacingOccurrences(of: "“", with: "\"")
-                .replacingOccurrences(of: "”", with: "\"") + "Second line: the price is EUR5 (not £5).\n", false),
-            ("mac-roman", western + "Second line: the price is EUR5 (not GBP5).\n", true),
-            ("windows-1250", czechAndPolish, true),
-            ("iso-8859-2", czechAndPolish, true),
-            ("windows-1251", Self.russian, true),
-            ("koi8-r", Self.russian, true),
-            ("shift-jis", japanese, true),
-            ("euc-jp", japanese, true),
-            ("big5", "天地玄黃，宇宙洪荒。\n渡輪七點開。\n", true),
-            ("gb18030", "天地玄黄，宇宙洪荒。\n渡轮七点开。\n", true),
-        ]
-        for (name, text, recordsAnEncoding) in cases {
-            let imported = try importedForTest(copyOfFormatSample("txt-encodings/\(name).txt"))
-            XCTAssertEqual(allText(of: try openedContent(of: imported.book)), reading(of: text), name)
-            XCTAssertEqual(imported.book.textEncoding != nil, recordsAnEncoding, name)
+        for sample in TextEncodingFixtures.sampleFiles {
+            let imported = try importedForTest(copyOfFormatSample("txt-encodings/\(sample.name).txt"))
+            XCTAssertEqual(allText(of: try openedContent(of: imported.book)), reading(of: sample.text), sample.name)
+            XCTAssertEqual(imported.book.textEncoding != nil, sample.basis == .guess, sample.name)
         }
     }
 

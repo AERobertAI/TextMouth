@@ -12,7 +12,7 @@ final class BookTextEncodingTests: XCTestCase {
     /// A plain-text book guessed to be in `encoding`, nil for none.
     private func book(encoding: String?, format: BookFormat = .txt) -> Book {
         Book(
-            title: "Ledger", format: format, filePath: "/nowhere/Ledger.\(format.fileExtensions[0])",
+            title: "Ledger", format: format, filePath: "/nowhere/Ledger.\(format.fileExtensions.first ?? "txt")",
             md5Hash: "text-encoding-fixture", tmbDirectoryName: "Ledger.tmb", textEncoding: encoding
         )
     }

@@ -35,9 +35,7 @@ enum TextEncodingFixtures {
 
     /// The encoding Core Foundation knows by the IANA name `name`.
     static func encoding(named name: String) -> String.Encoding? {
-        let coreFoundationEncoding = CFStringConvertIANACharSetNameToEncoding(name as CFString)
-        guard coreFoundationEncoding != kCFStringEncodingInvalidId else { return nil }
-        return String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(coreFoundationEncoding))
+        TextFileDecoder.encoding(forLabel: name)
     }
 
     /// `text` without the characters `encoding` cannot write (a Cyrillic
@@ -192,6 +190,47 @@ enum TextEncodingFixtures {
             아침 일찍 일어난 할머니는 마루에 앉아 천천히 차를 마셨다. 마당에는 어제 내린 비가 아직 마르지 않았고, 감나무 가지 끝에는 붉은 열매가 무겁게 매달려 있었다. “올해는 감이 참 많이 열렸구나.” 할머니는 혼잣말을 하며 미소를 지었다. 멀리서 아이들의 웃음소리가 들려왔고, 부엌에서는 된장찌개 끓는 냄새가 퍼지고 있었다.
             """, encodings: ["euc-kr", "cp949"]),
     ]
+
+    // MARK: Sample Files
+
+    /// One of the 13 short files in TestData/format-samples/txt-encodings.
+    struct SampleFile {
+        /// The file's name, without ".txt".
+        let name: String
+        /// The text the file holds.
+        let text: String
+        /// How the decoder reads the file under the guessing policy, as an
+        /// import does: by the evidence the bytes hold (UTF-8, UTF-16 with a
+        /// mark), by the fallback (the two files Windows-1252 reads
+        /// correctly), or by a guess (the other nine).
+        let basis: DecodedText.Basis
+    }
+
+    /// The 13 sample files and the text each holds, for the tests of the
+    /// guesser, the decoder, and the import to read them against.
+    static let sampleFiles: [SampleFile] = {
+        let western = "Café au lait for the señor — naïve, “quoted” text with über-accents: à è ì ò ù ß.\n"
+        let czechAndPolish = "Příliš žluťoučký kůň úpěl ďábelské ódy.\nZażółć gęślą jaźń.\n"
+        let russian = "Съешь же ещё этих мягких французских булок, да выпей чаю.\nПаром отходит в семь.\n"
+        let japanese = "いろはにほへと ちりぬるを わかよたれそ つねならむ。\nフェリーは七時に出ます。\n"
+        let latin1Western = western.replacingOccurrences(of: "—", with: "-").replacingOccurrences(of: "“", with: "\"")
+            .replacingOccurrences(of: "”", with: "\"")
+        return [
+            SampleFile(name: "utf-8", text: western + "Second line: the price is €5 (not £5).\n", basis: .validUTF8),
+            SampleFile(name: "utf-16le-bom", text: western + "Second line: the price is €5 (not £5).\n", basis: .byteOrderMark),
+            SampleFile(name: "windows-1252", text: western + "Second line: the price is €5 (not £5).\n", basis: .fallback),
+            SampleFile(name: "iso-8859-1", text: latin1Western + "Second line: the price is EUR5 (not £5).\n", basis: .fallback),
+            SampleFile(name: "mac-roman", text: western + "Second line: the price is EUR5 (not GBP5).\n", basis: .guess),
+            SampleFile(name: "windows-1250", text: czechAndPolish, basis: .guess),
+            SampleFile(name: "iso-8859-2", text: czechAndPolish, basis: .guess),
+            SampleFile(name: "windows-1251", text: russian, basis: .guess),
+            SampleFile(name: "koi8-r", text: russian, basis: .guess),
+            SampleFile(name: "shift-jis", text: japanese, basis: .guess),
+            SampleFile(name: "euc-jp", text: japanese, basis: .guess),
+            SampleFile(name: "big5", text: "天地玄黃，宇宙洪荒。\n渡輪七點開。\n", basis: .guess),
+            SampleFile(name: "gb18030", text: "天地玄黄，宇宙洪荒。\n渡轮七点开。\n", basis: .guess),
+        ]
+    }()
 
     // MARK: Western Text That Looks Odd
 

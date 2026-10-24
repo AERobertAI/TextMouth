@@ -25,9 +25,9 @@ import Foundation
 ///   reading with "õ" and "û" together ("főterén" read as Latin 1) fits no
 ///   language of the table, and one in which a language's every letter
 ///   belongs to it does.
-/// - **Excess uppercase**, uppercase letters beyond about a third of the
-///   cased ones. Text read in the wrong Cyrillic encoding swaps its lower
-///   and upper case, which a language's alphabet cannot show.
+/// - **Excess uppercase**, uppercase letters beyond 35 in 100 of the cased
+///   ones. Text read in the wrong Cyrillic encoding swaps its lower and
+///   upper case, which a language's alphabet cannot show.
 ///
 /// The three counts add up to the reading's `surprise`, the number the
 /// guesser compares. That a reading has more surprise than a rival does not
@@ -57,7 +57,7 @@ struct TextPlausibility: Equatable, Sendable {
     private(set) var lowercaseLetters = 0
 
     /// How many uppercase letters running text does not account for: those
-    /// beyond a third of the cased non-ASCII letters, counted only once
+    /// beyond 35 in 100 of the cased non-ASCII letters, counted only once
     /// there are enough letters to tell.
     var excessUppercaseLetters: Int {
         let cased = uppercaseLetters + lowercaseLetters

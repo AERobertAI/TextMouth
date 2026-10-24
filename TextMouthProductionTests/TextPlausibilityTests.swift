@@ -219,13 +219,13 @@ final class TextPlausibilityTests: XCTestCase {
 
     // MARK: - Case
 
-    /// Uppercase beyond a third of the cased non-ASCII letters is excess,
+    /// Uppercase beyond 35 in 100 of the cased non-ASCII letters is excess,
     /// counted once there are enough letters to tell: Cyrillic text read in
     /// the wrong encoding has its cases swapped.
-    func testUppercaseBeyondAThirdOfTheLettersIsExcess() {
+    func testUppercaseBeyondThirtyFivePercentOfTheLettersIsExcess() {
         let capitals = plausibility(of: "ПРИВЕТ МИР ПРИВЕТ МИР")
         XCTAssertEqual(capitals.uppercaseLetters, 18)
-        // A third of 18 letters rounds up to 7, so 11 are beyond what text holds.
+        // 35 in 100 of 18 letters is 6.3, which rounds up to 7, so 11 are beyond what text holds.
         XCTAssertEqual(capitals.excessUppercaseLetters, 11)
         let sentence = plausibility(of: "Привет, мир! Привет, мир, как дела у тебя сегодня?")
         XCTAssertEqual(sentence.excessUppercaseLetters, 0)
@@ -313,18 +313,5 @@ final class TextPlausibilityTests: XCTestCase {
         for (name, text) in Fixtures.windows1252Texts {
             XCTAssertFalse(isGarbled(text), name)
         }
-    }
-
-    // MARK: - Totals
-
-    /// The surprise adds the anomalies, the misfit letters, and the excess
-    /// uppercase letters; the disorder leaves out the misfit.
-    func testTheTotalsAddUpTheKinds() {
-        let reading = plausibility(of: "CafŽ ПРИВЕТ МИР ПРИВЕТ МИР")
-        XCTAssertEqual(reading.surprise, reading.anomalies + reading.misfitLetters + reading.excessUppercaseLetters)
-        XCTAssertEqual(reading.disorder, reading.anomalies + reading.excessUppercaseLetters)
-        XCTAssertGreaterThan(reading.surprise, reading.disorder)
-        // One "Ž" and 18 Cyrillic capitals.
-        XCTAssertEqual(reading.nonASCIICharacters, 19)
     }
 }

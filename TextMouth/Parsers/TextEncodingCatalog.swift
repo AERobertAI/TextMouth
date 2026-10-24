@@ -120,9 +120,7 @@ enum TextEncodingCatalog {
     /// `identifier`, or nil on a Mac whose Core Foundation does not know it,
     /// which leaves the entry out instead of failing the app.
     private static func row(_ identifier: String, _ name: String, tried: Bool = false, sevenBit: Bool = false) -> Entry? {
-        let coreFoundationEncoding = CFStringConvertIANACharSetNameToEncoding(identifier as CFString)
-        guard coreFoundationEncoding != kCFStringEncodingInvalidId else { return nil }
-        let encoding = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(coreFoundationEncoding))
+        guard let encoding = TextFileDecoder.encoding(forLabel: identifier) else { return nil }
         return Entry(identifier: identifier, encoding: encoding, name: name, isAlwaysTried: tried, isSevenBit: sevenBit)
     }
 }

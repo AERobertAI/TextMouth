@@ -567,31 +567,11 @@ final class TextFileDecoderTests: XCTestCase {
     /// by their evidence, the two Windows-1252 reads by the fallback, and
     /// the other nine as the text each holds, by a guess.
     func testEverySampleFileReadsRightUnderTheGuessingPolicy() throws {
-        let western = "Café au lait for the señor — naïve, “quoted” text with über-accents: à è ì ò ù ß.\n"
-        let czechAndPolish = "Příliš žluťoučký kůň úpěl ďábelské ódy.\nZażółć gęślą jaźń.\n"
-        let russian = "Съешь же ещё этих мягких французских булок, да выпей чаю.\nПаром отходит в семь.\n"
-        let japanese = "いろはにほへと ちりぬるを わかよたれそ つねならむ。\nフェリーは七時に出ます。\n"
-        let cases: [(file: String, text: String, basis: DecodedText.Basis)] = [
-            ("utf-8", western + "Second line: the price is €5 (not £5).\n", .validUTF8),
-            ("utf-16le-bom", western + "Second line: the price is €5 (not £5).\n", .byteOrderMark),
-            ("windows-1252", western + "Second line: the price is €5 (not £5).\n", .fallback),
-            ("iso-8859-1", western.replacingOccurrences(of: "—", with: "-").replacingOccurrences(of: "“", with: "\"")
-                .replacingOccurrences(of: "”", with: "\"") + "Second line: the price is EUR5 (not £5).\n", .fallback),
-            ("mac-roman", western + "Second line: the price is EUR5 (not GBP5).\n", .guess),
-            ("windows-1250", czechAndPolish, .guess),
-            ("iso-8859-2", czechAndPolish, .guess),
-            ("windows-1251", russian, .guess),
-            ("koi8-r", russian, .guess),
-            ("shift-jis", japanese, .guess),
-            ("euc-jp", japanese, .guess),
-            ("big5", "天地玄黃，宇宙洪荒。\n渡輪七點開。\n", .guess),
-            ("gb18030", "天地玄黄，宇宙洪荒。\n渡轮七点开。\n", .guess),
-        ]
-        for (name, text, basis) in cases {
-            let bytes = try Data(contentsOf: formatSampleURL("txt-encodings/\(name).txt"))
-            let decoded = try TextFileDecoder.decode(bytes, fileName: "\(name).txt", format: .txt, policy: .guess)
-            XCTAssertEqual(decoded.text, text, name)
-            XCTAssertEqual(decoded.basis, basis, name)
+        for sample in TextEncodingFixtures.sampleFiles {
+            let bytes = try Data(contentsOf: formatSampleURL("txt-encodings/\(sample.name).txt"))
+            let decoded = try TextFileDecoder.decode(bytes, fileName: "\(sample.name).txt", format: .txt, policy: .guess)
+            XCTAssertEqual(decoded.text, sample.text, sample.name)
+            XCTAssertEqual(decoded.basis, sample.basis, sample.name)
         }
     }
 

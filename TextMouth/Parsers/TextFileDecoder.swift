@@ -106,7 +106,7 @@ enum TextEncodingError: LocalizedError, Equatable {
 ///    (little- or big-endian) names the encoding. The bytes after a UTF-16
 ///    or UTF-32 mark must be valid in it, or `TextEncodingError` reports the
 ///    file as damaged. Bytes after a UTF-8 mark that are not valid UTF-8 are
-///    read by the fallback (step 5), like any other broken UTF-8; no
+///    read by the fallback (step 6), like any other broken UTF-8; no
 ///    declaration can overrule the mark.
 /// 2. UTF-16 without a mark is recognized by its zero bytes (see
 ///    `unmarkedUTF16Encoding(of:)`). It must be looked for before UTF-8,
