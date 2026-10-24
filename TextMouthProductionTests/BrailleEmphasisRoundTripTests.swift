@@ -251,6 +251,24 @@ final class BrailleEmphasisRoundTripTests: XCTestCase {
         }
     }
 
+    // MARK: - Every Bundled Table
+
+    /// Emphasis changes no word in any bundled table: each reads back the
+    /// emphasized export of the sample and of the six contraction sentences
+    /// with the words of their plain export, liblouis's own readings
+    /// included, so its content.md is the plain one's with emphasis added.
+    /// Before the reading passes, contracted UEB read "p" where plain braille
+    /// read "people", and EBAE could not be written with emphasis at all.
+    func testNoBundledTableReadsOtherWordsForEmphasis() throws {
+        for table in ["en-us-g1.ctb", "en_US.tbl", "en-ueb-g1.ctb", "en-ueb-g2.ctb"] {
+            for markdown in [source, contractionCases] {
+                let emphasized = try roundTrip(markdown, table).readBack
+                let plain = try roundTrip(markdown.replacingOccurrences(of: "*", with: ""), table).readBack
+                XCTAssertEqual(emphasized.replacingOccurrences(of: "*", with: ""), plain, table)
+            }
+        }
+    }
+
     // MARK: - Tables liblouis Cannot Read Back
 
     /// One of this Mac's tables liblouis cannot read back, uncontracted
