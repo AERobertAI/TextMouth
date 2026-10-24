@@ -37,15 +37,16 @@ extension LibraryViewModel {
     /// preference in force, which its deletion reads too.
     var currentImportDecisionWording: ImportDecisionWording? {
         guard let decision = importDecisions.current else { return nil }
-        var matchingTitle: String?
+        var match: Book?
         if case .duplicate(let duplicate) = decision.kind {
-            matchingTitle = duplicateMatch(for: duplicate.book)?.title
+            match = duplicateMatch(for: duplicate.book)
         }
         return ImportDecisionWording(
             for: decision,
             position: importDecisions.position,
             total: importDecisions.total,
-            matchingTitle: matchingTitle,
+            matchingTitle: match?.title,
+            matchingFormat: match?.format,
             movesToTrash: removalPreferences.movesToTrash
         )
     }

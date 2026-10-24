@@ -247,6 +247,39 @@ final class ImportDecisionQueueTests: XCTestCase {
         XCTAssertEqual(ImportDecisionWording.replacingKeepsAudioSentence, Self.audioKeptWords)
     }
 
+    /// When one copy is an audiobook and the other is not, the question
+    /// says replacing keeps only the book's place in the library, and not
+    /// its position, bookmarks with their notes, or settings, whichever copy
+    /// is which; the copy matching now decides, over the one matched on
+    /// import (ST04 review, finding 1).
+    func testADuplicateOfTheOtherKindSaysReplacingKeepsOnlyItsPlace() {
+        let text = Book(title: "Earlier Tide", format: .daisy, filePath: "/library/a.zip", md5Hash: "text")
+        let audio = Book(title: "Tide", format: .audio, filePath: "/library/b.zip", md5Hash: "audio")
+        let audioForText = ImportDecision(
+            kind: .duplicate(.init(book: audio, existing: text, originalURL: nil, warning: nil)),
+            request: ImportRequest()
+        )
+        let textForAudio = ImportDecision(
+            kind: .duplicate(.init(book: text, existing: audio, originalURL: nil, warning: nil)),
+            request: ImportRequest()
+        )
+        let acrossKinds = "One copy is an audiobook and the other is not, so replacing keeps only the existing copy's folder "
+            + "and place on the reading list, not its reading position, its bookmarks and their notes, or its settings."
+
+        for question in [audioForText, textForAudio] {
+            XCTAssertTrue(
+                ImportDecisionWording(for: question, position: 1, total: 1, movesToTrash: false).message
+                    .hasSuffix("\n\n" + acrossKinds + " " + Self.deletedWords)
+            )
+        }
+        XCTAssertTrue(
+            ImportDecisionWording(for: audioForText, position: 1, total: 1, matchingFormat: .audio, movesToTrash: false).message
+                .hasSuffix("\n\n" + Self.audioKeptWords + " " + Self.deletedWords),
+            "the copy matching now is an audiobook too"
+        )
+        XCTAssertEqual(ImportDecisionWording.replacingAcrossKindsSentence, acrossKinds)
+    }
+
     /// An incomplete copy's warning comes last, after the choice and what
     /// replacing keeps, whichever way the old copy goes.
     func testTheDuplicateQuestionPutsTheWarningAfterTheChoiceAndWhatIsKept() {
