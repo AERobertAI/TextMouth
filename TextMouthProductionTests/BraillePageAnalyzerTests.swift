@@ -923,6 +923,91 @@ final class BraillePageAnalyzerTests: XCTestCase {
         XCTAssertEqual(structure.pages.map(\.firstBlockIndex), [0, 1, 1, 2])
     }
 
+    // MARK: Where each page begins (PG12)
+
+    /// Where the word `word` begins in `ascii`, counted in cells: each
+    /// character of a row written in braille ASCII is one cell (`cells(_:)`),
+    /// so a block's text and its ASCII count alike.
+    private func offset(of word: String, in ascii: String) -> Int {
+        guard let range = ascii.range(of: word) else {
+            XCTFail("\"\(word)\" is not in \"\(ascii)\"")
+            return -1
+        }
+        return ascii.distance(from: ascii.startIndex, to: range.lowerBound)
+    }
+
+    /// The sample's second page begins inside the paragraph it goes on (the
+    /// 7th, block 8), at "taken": the cell after the first page's last word
+    /// and the blank cell that joins the paragraph's rows.
+    func testTheSamplesSecondPageBeginsInsideTheParagraphItGoesOn() throws {
+        let structure = BraillePageAnalyzer.structure(
+            of: try sampleBRFPages("brf/pride-and-prejudice-ch1-grade1.brf"), formatted: true)
+        let lastRowOfPageOne = "8,DO NOT YOU WANT TO KNOW WHO HAS"
+        XCTAssertEqual(structure.pages.map(\.firstBlockIndex), [0, 8])
+        XCTAssertEqual(structure.pages.map(\.firstCellOffset), [0, lastRowOfPageOne.count + 1])
+        guard structure.blocks.count > 8 else { return XCTFail("the sample has \(structure.blocks.count) blocks") }
+        let text = Array(structure.blocks[8].text.unicodeScalars)
+        XCTAssertEqual(text[lastRowOfPageOne.count], BrailleCells.blank)
+        XCTAssertEqual(String(String.UnicodeScalarView(text[(lastRowOfPageOne.count + 1)...].prefix(5))), cells("TAKEN"))
+    }
+
+    /// A paragraph over three pages: the second and third pages each begin
+    /// at the first word of their first row, inside it.
+    func testAParagraphOverThreePagesNamesWhereEachPageBeginsInIt() {
+        let pages = [
+            [row(2, "ONE"), "", row(2, "A LONG PARAGRAPH"), rightAligned("#A")],
+            [row(0, "GOES ON HERE"), rightAligned("#B")],
+            [row(0, "AND ENDS"), "", row(2, "NEXT"), rightAligned("#C")],
+        ]
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        let long = "A LONG PARAGRAPH GOES ON HERE AND ENDS"
+        XCTAssertEqual(structure.blocks, [paragraph("ONE"), paragraph(long), paragraph("NEXT")])
+        XCTAssertEqual(structure.pages.map(\.firstBlockIndex), [0, 1, 1])
+        XCTAssertEqual(structure.pages.map(\.firstCellOffset), [0, offset(of: "GOES", in: long), offset(of: "AND", in: long)])
+    }
+
+    /// A cell-5 heading that goes on at the top of the next page: that page
+    /// begins inside the heading, at its row's first word.
+    func testAHeadingThatGoesOnOverAPageNamesWhereThePageBeginsInIt() {
+        let pages = [
+            [row(2, "TEXT"), "", row(4, "A HEADING IN CELL FIVE"), rightAligned("#A")],
+            [row(4, "THAT GOES ON"), "", row(2, "MORE"), rightAligned("#B")],
+        ]
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        let heading = "A HEADING IN CELL FIVE THAT GOES ON"
+        XCTAssertEqual(structure.blocks, [paragraph("TEXT"), .heading(level: 2, text: cells(heading)), paragraph("MORE")])
+        XCTAssertEqual(structure.pages.map(\.firstBlockIndex), [0, 1])
+        XCTAssertEqual(structure.pages.map(\.firstCellOffset), [0, offset(of: "THAT", in: heading)])
+    }
+
+    /// A page with nothing but its number, in the middle of a paragraph,
+    /// begins where the next page does, inside the paragraph.
+    func testAPageWithNoTextInsideAParagraphBeginsWhereTheNextPageDoes() {
+        let pages = [
+            [row(2, "A PARAGRAPH THAT"), rightAligned("#A")],
+            [rightAligned("#B")],
+            [row(0, "GOES ON"), rightAligned("#C")],
+        ]
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        let paragraphText = "A PARAGRAPH THAT GOES ON"
+        XCTAssertEqual(structure.blocks, [paragraph(paragraphText)])
+        XCTAssertEqual(structure.pages.map(\.braillePageNumber), ["⠼⠁", "⠼⠃", "⠼⠉"])
+        XCTAssertEqual(structure.pages.map(\.firstBlockIndex), [0, 0, 0])
+        let goesOn = offset(of: "GOES", in: paragraphText)
+        XCTAssertEqual(structure.pages.map(\.firstCellOffset), [0, goesOn, goesOn])
+    }
+
+    /// Pages that begin a block begin at its first cell, and a page after the
+    /// last block (past the end) at 0 too.
+    func testAPageThatBeginsABlockOrComesAfterTheLastBeginsAtItsFirstCell() {
+        let pages = [[row(2, "ONE"), rightAligned("#A")], ["", ""], [row(2, "TWO"), rightAligned("#C")], [""]]
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertEqual(structure.pages.map(\.firstBlockIndex), [0, 1, 1, 2])
+        XCTAssertEqual(structure.pages.map(\.firstCellOffset), [0, 0, 0, 0])
+        // The block-style book's fourth paragraph begins page 2.
+        XCTAssertEqual(BraillePageAnalyzer.structure(of: blockStylePages(), formatted: true).pages.map(\.firstCellOffset), [0, 0])
+    }
+
     // MARK: Large input
 
     func testALargeBookIsReadInAReasonableTime() {
