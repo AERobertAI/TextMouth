@@ -3011,6 +3011,22 @@ enum FileImportService {
     /// no orphan either: it is passed over before its record is read, so it
     /// is never adopted as a second book of the same package.
     ///
+    /// An orphan whose record names a book the library already lists, under
+    /// that book's ID, is another copy of it: the old copy Replace Existing
+    /// sent to the Trash names its replacement's ID once Finder puts it
+    /// back, and an old package a stop or a failed removal left beside its
+    /// replacement names it too (ST04). It is left as it is, unadopted and
+    /// unwritten, with one ORPHAN_ID_LISTED line, so no two rows ever share
+    /// an ID and no record is rewritten on a guess: during an index
+    /// recovery, which writes nothing, and in a cloud library whose
+    /// library.json, listing the book at that very package, may arrive
+    /// after the package does. Of two orphans naming one book that no row
+    /// listed before the walk, as an index rebuilt from the packages finds
+    /// an old copy put back beside its replacement, the one whose record was
+    /// written later becomes the book, whichever the folder lists first: the
+    /// replacement, whose record Replace Existing wrote after the old copy's
+    /// last one. The other is left as it is, its record never rewritten.
+    ///
     /// The walk and every check run with dataless files left in the cloud
     /// (FR02). A folder that cannot be listed without downloading is passed
     /// over, and a package whose folder, record, removal marker, or book file
@@ -3035,6 +3051,13 @@ enum FileImportService {
         return DatalessFiles.withoutDownloading { () -> Int in
             // Walk the library directory tree to find all .tmb packages on disk
             var adopted = 0
+            // The books this walk adopted, by ID: the package each came from
+            // and when its record was written.
+            var adoptedHere: [UUID: (package: String, recordWritten: Int64)] = [:]
+            // The records given their folder path once the walk ends, by ID:
+            // only the package each book is adopted from in the end, so a
+            // package another one took the place of is never written.
+            var folderPathFixes: [UUID: Book] = [:]
             guard let enumerator = fm.enumerator(
                 at: libraryDir,
                 includingPropertiesForKeys: [.isDirectoryKey],
@@ -3072,18 +3095,49 @@ enum FileImportService {
                     continue
                 }
 
+                // A second copy of a book the library lists by this ID is
+                // left as it is (ST04). Of two packages naming a book only
+                // this walk adopted, the one whose record was written later
+                // is the book, whichever the folder lists first, as when an
+                // index rebuilt from the packages finds Replace Existing's
+                // old copy put back beside its replacement.
+                if let row = library.books.firstIndex(where: { $0.id == orphan.book.id }) {
+                    let written = recordWrittenTime(inPackageAt: url)
+                    var left = url.lastPathComponent
+                    if let earlier = adoptedHere[orphan.book.id], written > earlier.recordWritten {
+                        left = earlier.package
+                        library.books[row] = orphan.book
+                        adoptedHere[orphan.book.id] = (package: url.lastPathComponent, recordWritten: written)
+                        let needsFix = orphan.recordedFolderPath != orphan.book.folderPath
+                        folderPathFixes[orphan.book.id] = needsFix ? orphan.book : nil
+                    }
+                    DiagnosticLog.event(
+                        .storage,
+                        "ORPHAN_ID_LISTED: \(left): its record names a book the library lists "
+                            + "in another package, so it was left as it is"
+                    )
+                    continue
+                }
+
                 // addBook guards against duplicate hashes — only truly new books get added
                 let countBefore = library.books.count
                 library.addBook(orphan.book)
                 if library.books.count > countBefore {
                     adopted += 1
+                    adoptedHere[orphan.book.id] = (
+                        package: url.lastPathComponent,
+                        recordWritten: recordWrittenTime(inPackageAt: url)
+                    )
 
                     // Update the bookInfo.json folderPath if it was empty but the .tmb
                     // lives inside a subfolder (common with orphans from zip imports)
                     if orphan.recordedFolderPath != orphan.book.folderPath {
-                        try? orphan.book.saveBookInfoThrowing()
+                        folderPathFixes[orphan.book.id] = orphan.book
                     }
                 }
+            }
+            for book in folderPathFixes.values {
+                try? book.saveBookInfoThrowing()
             }
 
             if adopted > 0 {
@@ -3091,6 +3145,13 @@ enum FileImportService {
             }
             return adopted
         }
+    }
+
+    /// When the record in the package at `url` was last written, in
+    /// nanoseconds since 1970 (`FileStamp`); the earliest time there is when
+    /// it cannot be examined.
+    private static func recordWrittenTime(inPackageAt url: URL) -> Int64 {
+        FileStamp(of: TextMouthPaths.bookInfoPath(in: url))?.modificationTimeNanoseconds ?? .min
     }
 
     /// The library folder the package at `url` is in, relative to

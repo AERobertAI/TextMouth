@@ -36,15 +36,27 @@ enum FeedBookUse: Equatable, Sendable {
     /// "is being transcribed, and deleting its download now would lose the
     /// transcript".
     var clause: String {
+        clause(doing: Self.deletingItsDownload)
+    }
+
+    /// What the book is doing, as a sentence goes on after its subject, with
+    /// what doing `action` now would cost where it would cost something:
+    /// "is being transcribed, and replacing it now would lose the
+    /// transcript". Replace Existing (ST04) waits for the same uses a
+    /// download's deletion refuses, and names its own action.
+    func clause(doing action: String) -> String {
         switch self {
         case .openInReader:
             return "is open in a reader"
         case .transcribing:
-            return "is being transcribed, and deleting its download now would lose the transcript"
+            return "is being transcribed, and \(action) now would lose the transcript"
         case .exporting:
-            return "is being exported, and deleting its download now would stop the export"
+            return "is being exported, and \(action) now would stop the export"
         }
     }
+
+    /// The action a deletion of a download names in its clause.
+    static let deletingItsDownload = "deleting its download"
 
     /// What the listener can do before trying again: "Close it", or "Wait
     /// until the transcription ends, or cancel it".
@@ -64,7 +76,15 @@ enum FeedBookUse: Equatable, Sendable {
     /// transcribed, and deleting its download now would lose the transcript.
     /// Wait until the transcription ends, or cancel it, then try again."
     func refusal(of subject: String, retry: String = FeedBookUse.tryAgain) -> String {
-        "\(subject) \(clause). \(remedy), then \(retry)."
+        refusal(of: subject, doing: Self.deletingItsDownload, retry: retry)
+    }
+
+    /// The refusal of `action`, done to the book `subject` names, which ends
+    /// with `retry`: "“Moby-Dick” is being transcribed, and replacing it now
+    /// would lose the transcript. Wait until the transcription ends, or
+    /// cancel it, then choose Replace Existing again."
+    func refusal(of subject: String, doing action: String, retry: String) -> String {
+        "\(subject) \(clause(doing: action)). \(remedy), then \(retry)."
     }
 
     /// The end of a refusal whose command is not named again.

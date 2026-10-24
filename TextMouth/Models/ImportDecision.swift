@@ -222,6 +222,12 @@ struct ImportDecisionWording: Equatable {
     /// For a question about an original file, the words of its deletion,
     /// including its deleting button's title; nil for every other question.
     let originalFile: OriginalFileDeletionWording?
+    /// For a duplicate, whether one copy is an audiobook and the other is
+    /// not, so replacing keeps only the book's place in the library, which
+    /// Replace Existing's hint says too
+    /// (`ImportDecisionChoiceWording.replaceExisting(acrossKinds:)`); false
+    /// for every other question.
+    let replacesAcrossKinds: Bool
 
     /// The title of a duplicate's question.
     static let duplicateTitle = "Duplicate Book Found"
@@ -234,6 +240,9 @@ struct ImportDecisionWording: Equatable {
     /// - Parameters:
     ///   - matchingTitle: For a duplicate, the title of the library's copy
     ///     it matches now; nil to name the copy it matched on import.
+    ///   - matchingFormat: For a duplicate, the format of the library's copy
+    ///     it matches now, which with the new copy's decides what replacing
+    ///     keeps; nil for the copy it matched on import.
     ///   - movesToTrash: Whether "Move to Trash instead of deleting" is on,
     ///     which decides the words of an original file's question, as it
     ///     decides where the file goes.
@@ -242,14 +251,20 @@ struct ImportDecisionWording: Equatable {
         position: Int,
         total: Int,
         matchingTitle: String? = nil,
+        matchingFormat: BookFormat? = nil,
         movesToTrash: Bool
     ) {
+        replacesAcrossKinds = {
+            guard case .duplicate(let duplicate) = decision.kind else { return false }
+            return (matchingFormat ?? duplicate.existing.format).isAudio != duplicate.book.format.isAudio
+        }()
         switch decision.kind {
         case .duplicate(let duplicate):
             title = Self.counted(Self.duplicateTitle, position: position, total: total)
             message = Self.duplicateMessage(
                 duplicate,
                 matchingTitle: matchingTitle ?? duplicate.existing.title,
+                matchingFormat: matchingFormat ?? duplicate.existing.format,
                 movesToTrash: movesToTrash
             )
             originalFile = nil
@@ -289,29 +304,73 @@ struct ImportDecisionWording: Equatable {
         return "\(title)\(separator)\(position) of \(total)"
     }
 
-    /// What Replace Existing does to the library's copy when "Move to Trash
-    /// instead of deleting" is on. The question must say what the choice
-    /// throws away (ST04): Replace Existing removes the old package, and
-    /// the new copy is a new book that starts from the beginning.
-    static let replacingMovesToTrashSentence =
-        "Replacing moves the existing copy to the Trash, with its reading position, bookmarks, settings, "
-        + "and any edit of its text or transcript; the new copy starts from the beginning."
+    /// What Replace Existing keeps of the library's copy of a text book, and
+    /// what it does not (ST04): the new copy takes the old one's place, its
+    /// places moved to their words where those are found (a place whose
+    /// words nothing finds keeps its place in the text), and an edit of the
+    /// old text is kept as a copy, never laid over the new text
+    /// (`DuplicateReplacement`).
+    static let replacingKeepsTextSentence =
+        "Replacing keeps the existing copy's reading position and bookmarks, moved to their words in the new text "
+        + "wherever those are found, and its settings, folder, and place on the reading list. "
+        + "An edit of its text is kept beside the new text as a copy, not applied to it."
 
-    /// What Replace Existing does to the library's copy when "Move to Trash
-    /// instead of deleting" is off, and so the package is deleted for good.
-    static let replacingDeletesSentence =
-        "Replacing deletes the existing copy, with its reading position, bookmarks, settings, "
-        + "and any edit of its text or transcript; the new copy starts from the beginning."
+    /// What Replace Existing keeps of the library's copy of an audiobook,
+    /// and what it does not (ST04): its transcript only for the same audio,
+    /// and never its audio edits or an edit of its manifest (FR17), which
+    /// are edits of the old copy's files; its places follow their tracks, or
+    /// their times (`DuplicateReplacement.movedAudioPlaces`).
+    static let replacingKeepsAudioSentence =
+        "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, "
+        + "and place on the reading list, and its transcript when the audio is the same. "
+        + "Edits of its audio or of its manifest are not kept."
+
+    /// What Replace Existing keeps when one copy is an audiobook and the
+    /// other is not (ST04): only the book's place in the library. A place in
+    /// a text means nothing in a recording, and a recording's speed nothing
+    /// to a voice, so the position, the bookmarks with the notes the user
+    /// wrote in them, and the settings stay behind (`DuplicateReplacement.carriedBook`),
+    /// and the question says so plainly, so Keep Both can keep them. It
+    /// tells the copies apart by how TextMouth reads them, never calling one
+    /// "not an audiobook": a DAISY talking book, which TextMouth reads from
+    /// its text, is an audiobook to its owner (ST04 verify, finding 2).
+    static let replacingAcrossKindsSentence =
+        "One copy is played from its recording and the other is read aloud from its text, so replacing keeps "
+        + "only the existing copy's folder and place on the reading list, not its reading position, "
+        + "its bookmarks and their notes, or its settings."
+
+    /// What Replace Existing keeps of the library's copy, in the format
+    /// `existing`, for a new copy in the format `new`: chosen from both
+    /// kinds, never promising what `DuplicateReplacement.carriedBook` drops.
+    static func replacingKeepsSentence(existing: BookFormat, new: BookFormat) -> String {
+        guard existing.isAudio == new.isAudio else { return replacingAcrossKindsSentence }
+        return new.isAudio ? replacingKeepsAudioSentence : replacingKeepsTextSentence
+    }
+
+    /// Where the library's copy goes once replaced. In the Trash its files
+    /// can be put back, but never as a book of the library again: its
+    /// record names the book the new copy now is, which no launch adopts a
+    /// second time (`FileImportService.adoptOrphanedTMBPackages`), so the
+    /// Trash's sentence says so rather than promise a recovery. Deleted,
+    /// the files go in a removal's own words (`RemovalMode`).
+    static func replacedCopySentence(movesToTrash: Bool) -> String {
+        guard !movesToTrash else {
+            return "The existing copy's files go to the Trash, but putting them back won't return that copy to your library."
+        }
+        return RemovalMode.deletePermanently.filesClause(of: "The existing copy's") + "."
+    }
 
     /// What a duplicate's question asks: which file matches which book, the
-    /// choice, what Replace Existing throws away (ST04: it must say so, in
-    /// the words of where the old copy goes), and, for a copy missing
-    /// chapters, what it lacks, so it never replaces a complete copy
-    /// unannounced. The new copy is named by the file it came from, or by
-    /// its title when it came from no file.
+    /// choice, what Replace Existing keeps and does not (ST04), in the words
+    /// of both copies' kinds (the matching copy's is `matchingFormat`) and
+    /// of where the old copy goes, and, for a copy missing chapters, what it
+    /// lacks, so it never replaces a complete copy unannounced. The new copy
+    /// is named by the file it came from, or by its title when it came from
+    /// no file.
     private static func duplicateMessage(
         _ duplicate: ImportDecision.DuplicateBook,
         matchingTitle: String,
+        matchingFormat: BookFormat,
         movesToTrash: Bool
     ) -> String {
         let newCopy = duplicate.book.sourceFilePath
@@ -319,8 +378,8 @@ struct ImportDecisionWording: Equatable {
             ?? duplicate.book.title
         let choice = "“\(newCopy)” matches “\(matchingTitle)”, which is already in your library. "
             + "Replace the existing copy, or keep both as separate books?"
-        let loss = movesToTrash ? replacingMovesToTrashSentence : replacingDeletesSentence
-        let question = choice + "\n\n" + loss
+        let kept = replacingKeepsSentence(existing: matchingFormat, new: duplicate.book.format)
+        let question = choice + "\n\n" + kept + " " + replacedCopySentence(movesToTrash: movesToTrash)
         guard let warning = duplicate.warning else { return question }
         return question + "\n\nThe copy just imported is incomplete. \(warning)"
     }

@@ -446,7 +446,8 @@ final class ImportDecisionFlowTests: XCTestCase {
     /// answered.
     func testReplaceActsOnTheCopyMatchingWhenAnswered() throws {
         let scene = try makeScene()
-        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        var atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        atlas.existing.bookmarks = [Bookmark(number: 1, chapterIndex: 0, characterOffset: 0, label: "Coil")]
         let again = scene.sources.appendingPathComponent("Atlas of Tides Again.txt")
         try FileManager.default.copyItem(at: atlas.copy, to: again)
         scene.model.library = Library(books: [atlas.existing])
@@ -461,6 +462,10 @@ final class ImportDecisionFlowTests: XCTestCase {
 
         XCTAssertEqual(scene.model.library.books.map(\.title), ["Atlas of Tides Again"])
         XCTAssertEqual(try scene.folder.entries(), Set(scene.model.library.books.map(\.tmbDirectoryName)))
+        // The second question, queued for the same book, replaced the first
+        // copy in turn: the book keeps its ID and its bookmark through both.
+        XCTAssertEqual(scene.model.library.books.map(\.id), [atlas.existing.id])
+        XCTAssertEqual(scene.model.library.books.first?.bookmarks.map(\.label), ["Coil"])
     }
 
     /// While the library moves, no question of any kind is answered: each
@@ -540,9 +545,9 @@ final class ImportDecisionFlowTests: XCTestCase {
 
     // MARK: - The Reading List (FR09)
 
-    /// Replace gives the new copy, which has an ID of its own, the replaced
-    /// book's place on the reading list: the list names the copy where the
-    /// book was, the others keep their order, and the list saved in the
+    /// Replace gives the new copy the replaced book's place on the reading
+    /// list: the copy takes the book's ID (ST04), which the list names where
+    /// the book was, the others keep their order, and the list saved in the
     /// index says the same. Keep Both leaves the list as it was.
     func testReplaceGivesTheCopyTheReplacedBooksPlaceOnTheReadingList() throws {
         let scene = try makeScene()
@@ -566,11 +571,356 @@ final class ImportDecisionFlowTests: XCTestCase {
         LibraryPersistenceService.flushPendingSave()
 
         let copy = try XCTUnwrap(scene.model.library.books.first { $0.title == "Atlas of Tides" })
-        XCTAssertNotEqual(copy.id, atlas.existing.id)
-        XCTAssertEqual(scene.model.library.readingList.bookIDs, [bestiary.existing.id, copy.id, charts.id])
+        XCTAssertEqual(copy.id, atlas.existing.id, "the copy kept an ID of its own instead of the replaced book's (ST04)")
+        XCTAssertEqual(scene.model.library.readingList.bookIDs, listed)
         XCTAssertEqual(scene.model.readingListBooks.map(\.title), [bestiary.existing.title, "Atlas of Tides", charts.title])
         let saved = try XCTUnwrap(LibraryPersistenceService.load().library)
-        XCTAssertEqual(saved.readingList.bookIDs, [bestiary.existing.id, copy.id, charts.id])
+        XCTAssertEqual(saved.readingList.bookIDs, listed)
+    }
+
+    // MARK: - Replace Existing Keeps the Old Copy's State (ST04)
+
+    /// The file a book came from changes, as a new edition saved over it
+    /// does, and is imported again elsewhere. Replace Existing puts the new
+    /// copy in the book's place, as that same book: its ID, its folder, its
+    /// place in the library's order and on the reading list, its settings,
+    /// and its bookmark, which follows its words into the new text. The old
+    /// package is gone, the new one is in the book's folder, and its record
+    /// names the book by its own ID.
+    func testReplaceKeepsTheOldCopysIDFolderPlacesAndSettings() throws {
+        let scene = try makeScene()
+        let shelf = makeIntegrationLibraryFolder("Import Decisions Shelf")
+        let source = scene.sources.appendingPathComponent("Atlas of Tides.txt")
+        try Data(Self.firstEdition.utf8).write(to: source)
+        var existing = try FileImportService.importFileWithReport(from: source, toFolder: shelf.path).book
+        let firstText = try MarkdownCacheService.loadFromCache(for: existing)
+        let firstChapter = try XCTUnwrap(firstText.chapters.first?.text) as NSString
+        let marked = TextPlace(chapter: 0, offset: firstChapter.range(of: Self.markedWords).location)
+        existing.bookmarks = [Bookmark(
+            number: 1,
+            chapterIndex: 0,
+            characterOffset: marked.offset,
+            label: "Pilot",
+            anchor: firstText.anchor(at: marked, measuredIn: nil)
+        )]
+        existing.localWPM = 240
+        existing.localEndOfBookBehavior = EndOfBookBehavior.loop.rawValue
+        existing.manualSortOrder = 2
+        let other = try FileImportService.importFileWithReport(from: writeSource("Bestiary of Knots", in: scene), toFolder: shelf.path).book
+        scene.model.library = Library(books: [existing, other], readingList: ReadingList(bookIDs: [other.id, existing.id]))
+        useAfterImportingBehavior(.keepOriginal)
+
+        try Data(Self.secondEdition.utf8).write(to: source)
+        scene.model.importFiles(urls: [source], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertTrue(scene.model.importDecisions.isEmpty)
+        XCTAssertEqual(scene.model.library.books.map(\.id), [existing.id, other.id])
+        let replaced = try XCTUnwrap(scene.model.bookByID(existing.id))
+        XCTAssertEqual(replaced.tmbDirectoryName, copy.tmbDirectoryName)
+        XCTAssertEqual(replaced.md5Hash, copy.md5Hash)
+        XCTAssertEqual(replaced.folderPath, shelf.path)
+        XCTAssertEqual(replaced.manualSortOrder, 2)
+        XCTAssertEqual(replaced.localWPM, 240)
+        XCTAssertEqual(replaced.localEndOfBookBehavior, EndOfBookBehavior.loop.rawValue)
+        XCTAssertEqual(scene.model.library.readingList.bookIDs, [other.id, existing.id])
+        XCTAssertEqual(try shelf.entries(), [other.tmbDirectoryName, copy.tmbDirectoryName])
+        XCTAssertEqual(try scene.folder.entries(), [], "the new copy's package stayed where it was imported")
+        let secondText = try MarkdownCacheService.loadFromCache(for: replaced)
+        let secondChapter = try XCTUnwrap(secondText.chapters.first?.text) as NSString
+        XCTAssertEqual(replaced.bookmarks.map(\.characterOffset), [secondChapter.range(of: Self.markedWords).location])
+        XCTAssertEqual(replaced.bookmarks.map(\.label), ["Pilot"])
+        XCTAssertEqual(try BookInfo.load(from: replaced.tmbDirectory).metadata.bookID, existing.id)
+    }
+
+    /// While the library's copy is open in a reader, which would go on
+    /// saving its places in the old text into the book, Replace Existing
+    /// waits: it says why, changes nothing, and keeps the question asked.
+    /// Once the reader closes, the same answer replaces the book.
+    func testReplaceWaitsWhileTheOldCopyIsOpenInAReader() throws {
+        let scene = try makeScene()
+        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        scene.model.library = Library(books: [atlas.existing])
+        useAfterImportingBehavior(.keepOriginal)
+        scene.model.importFiles(urls: [atlas.copy], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let asked = try XCTUnwrap(scene.model.importDecisions.current)
+        let copy = try XCTUnwrap(asked.duplicate?.book)
+        scene.model.openBookIDs = [atlas.existing.id]
+
+        let refused = scene.model.answerCurrentImportDecision(.replaceExisting)
+
+        XCTAssertEqual(
+            refused.failureMessage,
+            "“Earlier Atlas of Tides” is open in a reader. Close it, then choose Replace Existing again."
+        )
+        XCTAssertEqual(scene.model.importDecisions.current?.id, asked.id)
+        XCTAssertEqual(scene.model.library.books.map(\.tmbDirectoryName), [atlas.existing.tmbDirectoryName])
+        XCTAssertEqual(try scene.folder.entries(), [atlas.existing.tmbDirectoryName, copy.tmbDirectoryName])
+
+        scene.model.openBookIDs = []
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+        XCTAssertEqual(scene.model.library.books.map(\.id), [atlas.existing.id])
+        XCTAssertEqual(try scene.folder.entries(), [copy.tmbDirectoryName])
+    }
+
+    /// While the library's copy is being transcribed, or its audio edited,
+    /// Replace Existing waits too, saying why, and the question stays.
+    func testReplaceWaitsWhileTheOldCopyIsTranscribedOrItsAudioEdited() throws {
+        let scene = try makeScene()
+        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        scene.model.library = Library(books: [atlas.existing])
+        useAfterImportingBehavior(.keepOriginal)
+        scene.model.importFiles(urls: [atlas.copy], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let asked = try XCTUnwrap(scene.model.importDecisions.current)
+
+        TranscribedBooks.shared.setTranscribing(atlas.existing.id)
+        let whileTranscribed = scene.model.answerCurrentImportDecision(.replaceExisting)
+        TranscribedBooks.shared.setTranscribing(nil)
+        scene.model.audioEditActivity.beginUse(of: atlas.existing.id)
+        let whileEdited = scene.model.answerCurrentImportDecision(.replaceExisting)
+        scene.model.audioEditActivity.endUse(of: atlas.existing.id)
+
+        XCTAssertEqual(
+            whileTranscribed.failureMessage,
+            "“Earlier Atlas of Tides” is being transcribed, and replacing it now would lose the transcript. "
+                + "Wait until the transcription ends, or cancel it, then choose Replace Existing again."
+        )
+        XCTAssertEqual(
+            whileEdited.failureMessage,
+            "The audio of “Earlier Atlas of Tides” is being edited. Close the audio editor, or wait until it has saved, "
+                + "then choose Replace Existing again."
+        )
+        XCTAssertEqual(scene.model.importDecisions.current?.id, asked.id)
+        XCTAssertEqual(scene.model.library.books, [atlas.existing])
+    }
+
+    /// While the library's copy is being exported, or a folder edit moves
+    /// books between folders, Replace Existing waits too, saying why, and
+    /// changes nothing; once both are over, the same answer replaces the
+    /// book (ST04 review, finding 5).
+    func testReplaceWaitsWhileTheOldCopyIsExportedOrBooksMoveBetweenFolders() throws {
+        let scene = try makeScene()
+        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        scene.model.library = Library(books: [atlas.existing])
+        useAfterImportingBehavior(.keepOriginal)
+        scene.model.importFiles(urls: [atlas.copy], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let asked = try XCTUnwrap(scene.model.importDecisions.current)
+
+        BookExportModel.noteExportStarted([atlas.existing.id])
+        let whileExported = scene.model.answerCurrentImportDecision(.replaceExisting)
+        BookExportModel.noteExportEnded([atlas.existing.id])
+        let hold = try StorageBoundary.shared.holdWork(for: .movingBooksBetweenFolders)
+        let whileMoving = scene.model.answerCurrentImportDecision(.replaceExisting)
+        hold.release()
+
+        XCTAssertEqual(
+            whileExported.failureMessage,
+            "“Earlier Atlas of Tides” is being exported, and replacing it now would stop the export. "
+                + "Wait until the export ends, then choose Replace Existing again."
+        )
+        XCTAssertEqual(
+            whileMoving.failureMessage,
+            "TextMouth is moving books between folders. Wait until that finishes, then choose Replace Existing again."
+        )
+        XCTAssertEqual(scene.model.importDecisions.current?.id, asked.id)
+        XCTAssertEqual(scene.model.library.books, [atlas.existing])
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+        XCTAssertEqual(scene.model.library.books.map(\.id), [atlas.existing.id])
+    }
+
+    /// A session editing the old copy's text with Edit Text ends with the
+    /// replacement, through the editor, which says so aloud: what the
+    /// session watched went with the old copy, and a check of the new copy's
+    /// files against it would take them for an edit.
+    func testReplaceEndsTheOldCopysEditTextSessionSayingSo() throws {
+        let scene = try makeScene()
+        let sessions = BookTextEditSessions()
+        let editor = BookTextEditor(
+            sessions: sessions,
+            preferences: makeSandboxedPreferences("Replace Edit Text"),
+            notificationCenter: NotificationCenter(),
+            explain: { _, _ in true },
+            chooseApp: { _, _ in nil },
+            open: { _, _ in },
+            isAppActive: { true }
+        )
+        scene.model.textEditSessions = sessions
+        scene.model.bookTextEditor = { editor }
+        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        scene.model.library = Library(books: [atlas.existing])
+        useAfterImportingBehavior(.keepOriginal)
+        let baseline = BookTextBaseline(source: nil, cache: TranscriptFixtures.fingerprint())
+        sessions.begin(atlas.existing.id, BookTextEditSessions.Session(baseline: baseline, report: { _, _ in }))
+        scene.model.importFiles(urls: [atlas.copy], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+
+        let recorder = recordingAnnouncements {
+            XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+        }
+
+        XCTAssertFalse(sessions.isEditing(atlas.existing.id), "the old copy's Edit Text session goes on")
+        XCTAssertEqual(recorder.announcements.map(\.message), [
+            "Edit Text has stopped for Earlier Atlas of Tides, since a new copy replaced it. "
+                + "Choose Edit Text again to edit the new copy's text.",
+        ])
+    }
+
+    /// The new copy is committed before the old copy's package goes: its
+    /// record carries the book's state under the book's ID, and the saved
+    /// index names it, as a crash right after the commit would find them. So
+    /// an old package that then cannot be removed changes nothing of the
+    /// replacement: it stays in its folder, and the library's alert says so.
+    func testAnOldCopyThatCannotBeRemovedStaysBehindItsCommittedReplacement() throws {
+        let scene = try makeScene()
+        let shelf = makeIntegrationLibraryFolder("Import Decisions Shelf")
+        let copySource = try writeSource("Atlas of Tides", in: scene)
+        let earlier = scene.sources.appendingPathComponent("Earlier Atlas of Tides.txt")
+        try FileManager.default.copyItem(at: copySource, to: earlier)
+        var existing = try FileImportService.importFileWithReport(from: earlier, toFolder: shelf.path).book
+        existing.bookmarks = [Bookmark(number: 1, chapterIndex: 0, characterOffset: 0, label: "Coil")]
+        scene.model.library = Library(books: [existing])
+        useAfterImportingBehavior(.keepOriginal)
+        let refusal = CocoaError(.fileWriteNoPermission)
+        scene.model.removesReplacedPackage = { _, _ in throw refusal }
+        scene.model.importFiles(urls: [copySource], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
+
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+
+        XCTAssertTrue(scene.model.importDecisions.isEmpty)
+        let replaced = try XCTUnwrap(scene.model.bookByID(existing.id))
+        XCTAssertEqual(replaced.tmbDirectoryName, copy.tmbDirectoryName)
+        XCTAssertEqual(try shelf.entries(), [existing.tmbDirectoryName, copy.tmbDirectoryName])
+        let saved = try XCTUnwrap(LibraryPersistenceService.load().library)
+        XCTAssertEqual(saved.books.first { $0.id == existing.id }?.tmbDirectoryName, copy.tmbDirectoryName)
+        let record = try BookInfo.load(from: replaced.tmbDirectory)
+        XCTAssertEqual(record.metadata.bookID, existing.id)
+        XCTAssertEqual(record.bookmarks.map(\.label), ["Coil"])
+        // A launch after a stop here reads that index, and leaves the old
+        // package, whose record names the listed book, unadopted.
+        var relaunched = saved
+        XCTAssertEqual(FileImportService.adoptOrphanedTMBPackages(library: &relaunched, libraryDirectory: shelf.url), 0)
+        XCTAssertEqual(relaunched.books.filter { $0.id == existing.id }.map(\.tmbDirectoryName), [copy.tmbDirectoryName])
+        XCTAssertEqual(
+            scene.model.errorMessage,
+            "The new copy took the place of “Earlier Atlas of Tides”, but the old copy's files could not be deleted, "
+                + "so they stay in its folder: \(refusal.localizedDescription)"
+        )
+    }
+
+    /// With the Trash off, an old package holding a read-only folder, as an
+    /// imported RTFD's can be, which a plain deletion stops partway through,
+    /// is set aside and deleted whole: nothing of it stays in its folder,
+    /// under any name, and the edit kept beside the new copy's text is never
+    /// taken back out of the new package.
+    func testAnOldPackageHoldingAReadOnlyFolderGoesWholeAndTheNewCopyKeepsTheEdit() throws {
+        let scene = try makeScene()
+        let shelf = makeIntegrationLibraryFolder("Import Decisions Shelf")
+        let copySource = try writeSource("Atlas of Tides", in: scene)
+        let earlier = scene.sources.appendingPathComponent("Earlier Atlas of Tides.txt")
+        try FileManager.default.copyItem(at: copySource, to: earlier)
+        var existing = try FileImportService.importFileWithReport(from: earlier, toFolder: shelf.path).book
+        let edited = Data("An edit the reader made to the chart notes.".utf8)
+        try edited.write(to: MarkdownCacheService.cacheURL(for: existing))
+        existing.editedText = EditedText(cacheDigest: FingerprintHasher.md5.digestOfData(edited), takenAt: Date())
+        let locked = existing.tmbDirectory.appendingPathComponent("Plates.rtfd", isDirectory: true)
+        try FileManager.default.createDirectory(at: locked, withIntermediateDirectories: true)
+        try Data("plate".utf8).write(to: locked.appendingPathComponent("plate.txt"))
+        XCTAssertEqual(chmod(locked.path, 0o555), 0)
+        scene.model.library = Library(books: [existing])
+        useAfterImportingBehavior(.keepOriginal)
+        scene.model.importFiles(urls: [copySource], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
+
+        let recorder = recordingAnnouncements {
+            XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+        }
+
+        XCTAssertNil(scene.model.errorMessage)
+        XCTAssertEqual(try shelf.entries(), [copy.tmbDirectoryName], "something of the old package stayed in its folder")
+        let replaced = try XCTUnwrap(scene.model.bookByID(existing.id))
+        let names = try FileManager.default.contentsOfDirectory(atPath: replaced.tmbDirectory.path)
+        let kept = try XCTUnwrap(names.first(where: TextMouthPaths.isKeptTextCopy), "the edit kept beside the new text is gone")
+        XCTAssertEqual(try Data(contentsOf: replaced.tmbDirectory.appendingPathComponent(kept)), edited)
+        XCTAssertEqual(
+            recorder.announcements.map(\.message),
+            ["Replaced “Earlier Atlas of Tides”. Its earlier text was kept as \(kept), in the book's package."]
+        )
+    }
+
+    /// A replacement whose index cannot be saved, as while an unreadable
+    /// index holds every write, changes nothing: the library and both
+    /// packages are as they were, the new copy's record names its own ID
+    /// again, and the question stays, saying why.
+    func testAReplacementWhoseIndexCannotBeSavedChangesNothing() throws {
+        let scene = try makeScene()
+        let shelf = makeIntegrationLibraryFolder("Import Decisions Shelf")
+        let copySource = try writeSource("Atlas of Tides", in: scene)
+        let earlier = scene.sources.appendingPathComponent("Earlier Atlas of Tides.txt")
+        try FileManager.default.copyItem(at: copySource, to: earlier)
+        let existing = try FileImportService.importFileWithReport(from: earlier, toFolder: shelf.path).book
+        scene.model.library = Library(books: [existing])
+        useAfterImportingBehavior(.keepOriginal)
+        scene.model.importFiles(urls: [copySource], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
+        let published = try FileManager.default.contentsOfDirectory(atPath: copy.tmbDirectory.path).sorted()
+        try scene.index.stage(.truncated, at: scene.index.indexURL)
+        _ = LibraryPersistenceService.load()
+
+        let outcome = scene.model.answerCurrentImportDecision(.replaceExisting)
+
+        XCTAssertEqual(
+            outcome.failureMessage,
+            "Could not replace duplicate: TextMouth couldn't save the library's index, so it left both copies as they are."
+        )
+        XCTAssertEqual(scene.model.importDecisions.current?.duplicate?.book.id, copy.id)
+        XCTAssertEqual(scene.model.library.books, [existing])
+        XCTAssertEqual(try scene.folder.entries(), [copy.tmbDirectoryName])
+        XCTAssertEqual(try shelf.entries(), [existing.tmbDirectoryName])
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: copy.tmbDirectory.path).sorted(), published)
+        XCTAssertEqual(try BookInfo.load(from: copy.tmbDirectory).metadata.bookID, copy.id)
+    }
+
+    /// An audiobook whose copy has the same audio, imported under another
+    /// name, keeps its transcript, which the library then lists it with,
+    /// and the import offers no transcription of it.
+    func testReplacingAnAudiobookKeepsItsTranscriptAndOffersNone() throws {
+        let scene = try makeScene()
+        let earlier = scene.sources.appendingPathComponent("Earlier Tide.wav")
+        try AudioTestFixtures.writeSilence(to: earlier, duration: 1)
+        let existing = try FileImportService.importFileWithReport(from: earlier, toFolder: scene.folder.path).book
+        let transcript = try TranscriptFixtures.transcript(of: existing, sentences: [
+            "Earlier Tide.wav": [TranscriptFixtures.sentence("The ferry waits at the slip.", from: 0, to: 900)],
+        ])
+        try TranscriptStore.write(transcript, into: existing.tmbDirectory)
+        let copySource = scene.sources.appendingPathComponent("Tide.wav")
+        try FileManager.default.copyItem(at: earlier, to: copySource)
+        scene.model.library = Library(books: [existing])
+        scene.model.offersTranscription = { _ in true }
+        useAfterImportingBehavior(.keepOriginal)
+        let bookID = existing.id
+        addTeardownBlock { await MainActor.run { TranscribedBooks.shared.record(bookID, isTranscribed: false) } }
+
+        scene.model.importFiles(urls: [copySource], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+
+        let replaced = try XCTUnwrap(scene.model.bookByID(existing.id))
+        XCTAssertTrue(scene.model.importDecisions.isEmpty, "a transcription was offered: \(waitingQuestions(of: scene.model))")
+        XCTAssertTrue(TranscribedBooks.shared.contains(existing.id))
+        guard case .found(let kept) = TranscriptStore.read(from: replaced.tmbDirectory) else {
+            return XCTFail("the transcript stayed behind")
+        }
+        XCTAssertEqual(kept.files.map(\.path), [replaced.bookFileURL.lastPathComponent])
     }
 
     /// A book imported at the Reading List goes to the folder the window
@@ -690,6 +1040,30 @@ final class ImportDecisionFlowTests: XCTestCase {
 
     // MARK: - Fixtures
 
+    /// The words a bookmark marks in both editions of a book.
+    private static let markedWords = "the harbor pilot"
+
+    /// A book's text as it was first imported.
+    private static let firstEdition = """
+        The first paragraph tells of the tides along the outer coast.
+
+        The second paragraph names the harbor pilot who keeps the channel.
+
+        The last paragraph ends the chart notes for the season.
+        """
+
+    /// The same book's next edition, saved over the first: a preface comes
+    /// before the first edition's words, which move on.
+    private static let secondEdition = """
+        A preface added in this edition, before the notes begin.
+
+        The first paragraph tells of the tides along the outer coast.
+
+        The second paragraph names the harbor pilot who keeps the channel.
+
+        The last paragraph ends the chart notes for the season.
+        """
+
     /// What one test imports from and into.
     private struct Scene {
         /// The library folder the test imports into, removed when it ends.
@@ -701,6 +1075,8 @@ final class ImportDecisionFlowTests: XCTestCase {
         let model: LibraryViewModel
         /// The books the model opened, in place of reader windows.
         let opened: OpenedBooks
+        /// The library index as the test found it, put back when it ends.
+        let index: LibraryIndexSandbox
     }
 
     /// A scene of this test's own. The library index is put back, and
@@ -715,7 +1091,8 @@ final class ImportDecisionFlowTests: XCTestCase {
             folder: makeIntegrationLibraryFolder("Import Decisions"),
             sources: try makeSandboxDirectory("ImportDecisionSources"),
             model: model,
-            opened: OpenedBooks(recordingFor: model)
+            opened: OpenedBooks(recordingFor: model),
+            index: sandbox
         )
     }
 

@@ -374,6 +374,11 @@ final class LogContentPolicyTests: XCTestCase {
         "BRAILLE_MAC_TABLE_REFUSED",
         // Library index (V03): rows of library.json a newer TextMouth wrote, kept as they are, counted.
         "LIBRARY_ROWS_KEPT",
+        // Replace Existing (ST04): a duplicate's new copy taking the old copy's place under its ID, and what an
+        // undone replacement could not put back in the new copy's package.
+        "DUPLICATE_REPLACED", "DUPLICATE_REPLACE_UNDONE",
+        // A package left unadopted because its record names a book the library lists in another package.
+        "ORPHAN_ID_LISTED",
     ]
 
     /// Each tag still begins a string literal in the app's code, so none was

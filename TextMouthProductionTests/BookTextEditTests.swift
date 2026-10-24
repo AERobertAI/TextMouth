@@ -114,6 +114,30 @@ final class BookTextEditTests: XCTestCase {
         XCTAssertEqual(editor.sessions.bookIDs, [])
     }
 
+    /// A session whose book a new copy replaced (Replace Existing, ST04)
+    /// ends, saying that Edit Text has stopped for the book by the title the
+    /// session began with, since the text being edited went with the old
+    /// copy. A book without a session hears nothing.
+    func testASessionWhoseBookWasReplacedEndsSayingSo() async throws {
+        let world = try makeIntegrationWorld("Edit Text Replaced")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md", Self.twoChapters))
+        let editor = makeEditor()
+        defer { editor.endAll() }
+        await editor.editor.edit(book, choosingApp: false, in: world.library, from: nil)
+        XCTAssertTrue(editor.sessions.isEditing(book.id))
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+
+        editor.editor.endBecauseBookWasReplaced(book.id, title: "Harbour Pilots, Second Edition")
+        editor.editor.endBecauseBookWasReplaced(UUID(), title: "Unedited Pilots")
+
+        XCTAssertFalse(editor.sessions.isEditing(book.id))
+        XCTAssertEqual(announcements.messages, [
+            "Edit Text has stopped for \(book.title), since a new copy replaced it. "
+                + "Choose Edit Text again to edit the new copy's text.",
+        ])
+    }
+
     // MARK: - Taking an Edit
 
     /// An edit saved in the editor is the book's text once TextMouth is

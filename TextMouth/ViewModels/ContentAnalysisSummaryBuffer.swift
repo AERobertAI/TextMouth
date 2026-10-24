@@ -16,6 +16,12 @@ import Foundation
 /// for the whole batch.
 struct ContentAnalysisSummary: Sendable {
     let bookID: UUID
+    /// The package whose record took the analysis, by name. A row whose
+    /// package is another took no part in it, even under the same ID, as
+    /// the new copy Replace Existing puts in a book's place has (ST04): the
+    /// old copy's counts, fingerprints, and record of an edit describe
+    /// files the new copy does not hold. Moves keep a package's name.
+    let packageName: String
     let fields: Book.ContentAnalysisFields
     /// The places the rebuild behind this analysis moved, narrowed to the
     /// moves the record took (`MovedPlaces.taken(by:)`); nil when it moved
@@ -30,6 +36,7 @@ struct ContentAnalysisSummary: Sendable {
     /// another Mac) is put back, so the row does not take it either.
     init(committed: Book, movedPlaces: MovedPlaces? = nil) {
         bookID = committed.id
+        packageName = committed.tmbDirectoryName
         fields = committed.contentAnalysisFields
         self.movedPlaces = movedPlaces.map { $0.taken(by: committed) }
     }
@@ -44,6 +51,7 @@ struct ContentAnalysisSummary: Sendable {
     /// they are not narrowed to what it took, as a fresh commit's are.
     init(recovered: Book, record: Book) {
         bookID = recovered.id
+        packageName = recovered.tmbDirectoryName
         fields = recovered.contentAnalysisFields
         movedPlaces = Self.placesMoved(to: record, from: recovered)
     }
@@ -207,14 +215,18 @@ final class ContentAnalysisSummaryBuffer {
 extension LibraryViewModel {
     /// Gives the rows of `summaries`' books their committed analysis fields
     /// in one change of the library and one save (TODO PERF12). A book no
-    /// longer in the library is skipped; for a book summarized twice, the
+    /// longer in the library is skipped, and so is a row whose package is
+    /// not the one the analysis was committed to, as the new copy Replace
+    /// Existing put in the book's place under its ID while the old copy's
+    /// analysis was on its way (ST04); for a book summarized twice, the
     /// later summary wins.
     func applyAnalysisSummaries(_ summaries: [ContentAnalysisSummary]) {
         let latest = Dictionary(summaries.map { ($0.bookID, $0) }, uniquingKeysWith: { _, later in later })
         var books = library.books
         var changed = false
         for index in books.indices {
-            guard let summary = latest[books[index].id] else { continue }
+            guard let summary = latest[books[index].id],
+                  summary.packageName == books[index].tmbDirectoryName else { continue }
             summary.apply(to: &books[index])
             changed = true
         }
