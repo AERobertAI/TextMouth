@@ -198,8 +198,8 @@ final class TextEncodingChoiceTests: XCTestCase {
         )
         XCTAssertEqual(TextEncodingWording.confirmTitle(bookTitle: "Ledger", option: .automatic), "Read “Ledger” again automatically?")
         let places = "Your place and bookmarks move with their words. "
-            + "Where the new reading has none of their words, as when garbled letters become Cyrillic, "
-            + "each goes to about the same point in its chapter."
+            + "Where none of their words are left, as when garbled letters become Cyrillic, "
+            + "each goes to about the same point in its chapter, or to the nearest passage the two readings share."
         XCTAssertEqual(
             TextEncodingWording.confirmMessage(option: .encoding("cp932"), holdsEdit: false),
             "Its text is replaced by the new reading. " + places

@@ -841,22 +841,7 @@ extension LibraryViewModel {
 
         let updateProgress: @MainActor @Sendable (TextCacheUpdate) -> Void = { [weak self] update in
             guard let self else { return }
-            if let summary = update.summary {
-                if let text = update.textForOpenReader, self.openBookIDs.contains(summary.bookID) {
-                    // A reader has the book open and shows its old text (ST01):
-                    // the row takes the analysis now, as after an edit
-                    // (`commitTextEdit`), so the reader's copy of the book
-                    // agrees with the text it is given, which it shows in
-                    // place of the old one, its cursor following its words.
-                    self.applyAnalysisSummaries([summary])
-                    self.bookUpdates.textReplaced(bookID: summary.bookID, with: text.content, movedPlaces: text.movedPlaces)
-                } else {
-                    // The package record already holds the analysis, so a crash
-                    // before the summary reaches the row loses nothing: the next
-                    // launch's batch recovers it from the record.
-                    self.analysisSummaries.add(summary)
-                }
-            }
+            self.applyTextCacheUpdate(update)
             self.textExtraction.advance()
         }
 
@@ -898,6 +883,37 @@ extension LibraryViewModel {
                 completion?(skippedInCloud, heldByEdits)
             }
         })
+    }
+
+    /// Gives the library `update`, what a rewrite of one book's text cache
+    /// committed: a batch's (`rebuildTextCaches`), or a re-read in another
+    /// encoding's (encodingchoice).
+    ///
+    /// A reader that has the book open shows its old text (ST01): the row
+    /// takes the analysis now, as after an edit (`commitTextEdit`), so the
+    /// reader's copy of the book agrees with the text it is given, which it
+    /// shows in place of the old one, its cursor following its words. Any
+    /// other book's summary waits to reach the library with the others
+    /// (`analysisSummaries`, PERF12): the package record already holds the
+    /// analysis, so a crash before the summary reaches the row loses
+    /// nothing, as the next launch's batch recovers it from the record. With
+    /// `atOnce`, for a book the listener is waiting on, the row takes it now
+    /// whether or not a reader has the book open, once any summary waiting
+    /// for it has gone first, so none lands over it afterwards.
+    func applyTextCacheUpdate(_ update: TextCacheUpdate, atOnce: Bool = false) {
+        guard let summary = update.summary else { return }
+        let textForReader = openBookIDs.contains(summary.bookID) ? update.textForOpenReader : nil
+        if atOnce {
+            analysisSummaries.flush()
+        }
+        if textForReader != nil || atOnce {
+            applyAnalysisSummaries([summary])
+        } else {
+            analysisSummaries.add(summary)
+        }
+        if let textForReader {
+            bookUpdates.textReplaced(bookID: summary.bookID, with: textForReader.content, movedPlaces: textForReader.movedPlaces)
+        }
     }
 
     /// `books` with those whose IDs are in `open` first, every open book and

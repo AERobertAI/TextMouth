@@ -566,13 +566,12 @@ enum DuplicateReplacement {
         }
         let oldTextIsWritten = oldTextBytes.map { holdsTextOfPlaces($0, of: existing, hasher: access.hasher) } ?? false
         if !existing.format.isAudio, holdsOldText {
+            // An edit on record is kept whatever it takes: never left behind
+            // because it is only in the cloud.
             if existing.editedText != nil {
-                // An edit on record is kept whatever it takes: never left
-                // behind because it is only in the cloud.
                 try old.requireOnThisMac(oldTextURL)
-                carried.unwrittenText = oldTextBytes
-            } else if let bytes = oldTextBytes, existing.textCacheFingerprint != nil, !oldTextIsWritten {
-                // A save no edit took: not the text TextMouth wrote.
+            }
+            if let bytes = oldTextBytes, holdsUnwrittenText(bytes, of: existing, hasher: access.hasher) {
                 carried.unwrittenText = bytes
             }
         }
@@ -608,6 +607,19 @@ enum DuplicateReplacement {
     static func holdsTextOfPlaces(_ bytes: Data, of book: Book, hasher: FingerprintHasher = .md5) -> Bool {
         guard let written = book.textCacheFingerprint?.cache.digest ?? book.editedText?.cacheDigest else { return false }
         return hasher.digestOfData(bytes) == written
+    }
+
+    /// Whether `bytes`, the content.md of the text book `book`, hold text
+    /// TextMouth did not write, which is kept beside the text that replaces
+    /// it rather than lost: an edit the user made with Edit Text, on record
+    /// (`Book.editedText`, B12), or a save no edit took, which differs from
+    /// the text the book's record says TextMouth last wrote. A book whose
+    /// record keeps no fingerprint of its text holds none it can tell.
+    /// Replace Existing keeps such text beside the new copy's (ST04), and a
+    /// re-read in another encoding beside the new reading (encodingchoice).
+    static func holdsUnwrittenText(_ bytes: Data, of book: Book, hasher: FingerprintHasher = .md5) -> Bool {
+        if book.editedText != nil { return true }
+        return book.textCacheFingerprint != nil && !holdsTextOfPlaces(bytes, of: book, hasher: hasher)
     }
 
     /// The old copy's package, as a replacement reads it: through `access`,

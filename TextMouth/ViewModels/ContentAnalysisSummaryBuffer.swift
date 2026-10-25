@@ -145,14 +145,18 @@ struct ContentAnalysisSummary: Sendable {
     /// meanwhile wins. A move the record refused is not taken, so a moved
     /// place never wins over a newer write another Mac left in the record.
     /// A row with no encoding, and nobody's decision about one, takes the
-    /// record's, with who decided it (`textEncodingRecord`); a row that has
-    /// either keeps its own.
+    /// record's, with who decided it (`textEncodingRecord`). So does a row
+    /// whose record holds the listener's own decision (`TextEncodingSource`):
+    /// a re-read in another encoding writes it into the record with its new
+    /// text before the row takes it (encodingchoice), so a row a stop left
+    /// behind catches up when its analysis is recovered. A row that holds a
+    /// guess of its own otherwise keeps it.
     func apply(to book: inout Book) {
         book.contentAnalysisFields = fields
         if let movedPlaces {
             book.takeMovedPlaces(original: movedPlaces.original, moved: movedPlaces.moved)
         }
-        if book.textEncodingRecord.isEmpty {
+        if book.textEncodingRecord.isEmpty || textEncodingSource != nil {
             book.textEncodingRecord = textEncodingRecord
         }
     }

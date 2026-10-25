@@ -223,11 +223,16 @@ enum TextEncodingWording {
     /// What any re-read does to the book's text.
     static let replacedNote = "Its text is replaced by the new reading."
     /// What a re-read does to the book's places (T06): they move with their
-    /// words, and where none of a place's words are left, the place moves as
-    /// `PlaceRelocator` moves it then.
+    /// words. Where none of a place's words are left, `PlaceRelocator` moves
+    /// it to about the same point in its chapter when the two readings share
+    /// no passage (the very word, for two encodings of one byte to a
+    /// character, whose readings are as long), and otherwise to the edge of
+    /// the nearest passage they share: after an English sentence in a Russian
+    /// book, to the start of the changed passage that follows it
+    /// (`TextEncodingRereadTests`).
     static let placesNote = "Your place and bookmarks move with their words. "
-        + "Where the new reading has none of their words, as when garbled letters become Cyrillic, "
-        + "each goes to about the same point in its chapter."
+        + "Where none of their words are left, as when garbled letters become Cyrillic, "
+        + "each goes to about the same point in its chapter, or to the nearest passage the two readings share."
     /// What a re-read does to text changed with Edit Text, said only for a
     /// book that holds such text.
     static let editNote = "The text you changed with Edit Text is kept beside it, as a copy in the book's package."
@@ -306,11 +311,13 @@ enum TextEncodingWording {
 
     /// What VoiceOver hears once the book titled `bookTitle` is read again,
     /// now in `reading`: "“Ledger” is now read as Shift JIS (Japanese),
-    /// chosen."; and, when text TextMouth did not write was kept beside it
-    /// as `keptCopy`, where, in Replace Existing's words
+    /// chosen.", or "“Ledger” was read again." when what it is read in
+    /// could not be learnt (its file went to the cloud as it was read);
+    /// and, when text TextMouth did not write was kept beside it as
+    /// `keptCopy`, where, in Replace Existing's words
     /// (`BookTextEditWording.earlierTextKept(_:)`).
-    static func readAgainAnnouncement(bookTitle: String, reading: TextEncodingReading, keptCopy: URL?) -> String {
-        let done = "“\(bookTitle)” is now read as \(reading.description)."
+    static func readAgainAnnouncement(bookTitle: String, reading: TextEncodingReading?, keptCopy: URL?) -> String {
+        let done = reading.map { "“\(bookTitle)” is now read as \($0.description)." } ?? "“\(bookTitle)” was read again."
         guard let keptCopy else { return done }
         return done + " " + BookTextEditWording.earlierTextKept(keptCopy)
     }

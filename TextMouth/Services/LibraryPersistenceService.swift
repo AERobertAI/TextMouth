@@ -621,6 +621,12 @@ enum LibraryPersistenceService {
     /// nil keeps the record's own, and `.some(version)` sets it, `.some(nil)`
     /// for a format without pages.
     ///
+    /// `textEncoding` is the encoding the content.md was read in and who
+    /// decided it (`Book.textEncodingRecord`), which a re-read in an
+    /// encoding the listener chose passes (encodingchoice), so the record
+    /// never holds the new text beside the old encoding; nil keeps the
+    /// latest state's own.
+    ///
     /// A result is dropped, with one CONTENT_ANALYSIS_DROPPED line in the
     /// debug log, when the latest state describes other content than was
     /// analyzed (`contentChange(from:to:)`), or when it would have to be
@@ -644,7 +650,8 @@ enum LibraryPersistenceService {
         cacheFormatVersion: String?,
         movedPlaces: MovedPlaces? = nil,
         editedText: EditedText? = nil,
-        pageReaderVersion: String?? = nil
+        pageReaderVersion: String?? = nil,
+        textEncoding: TextEncodingRecord? = nil
     ) throws -> Book? {
         guard !analyzed.tmbDirectoryName.isEmpty else { return nil }
 
@@ -668,6 +675,10 @@ enum LibraryPersistenceService {
             }
             if let pageReaderVersion {
                 merged.pageReaderVersion = pageReaderVersion
+            }
+            // The encoding the new text was read in, with who decided it.
+            if let textEncoding {
+                merged.textEncodingRecord = textEncoding
             }
             // The places a rebuild moved, each only where the latest state
             // still holds it as it was when the old text was copied aside.
