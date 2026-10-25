@@ -1,4 +1,5 @@
 import Combine
+import os
 import XCTest
 @testable import TextMouth
 
@@ -98,6 +99,43 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
         defer { VoiceOverAnnouncer.poster = previous }
         let outcome = await model.readTextAgain(bookID: book.id, as: option, access: access)
         return (outcome, announced)
+    }
+
+    /// What `model` makes of reading `book` again as `option`, held inside its
+    /// rebuild, once it has chosen where content.md goes and before it reads
+    /// the book's file (`MarkdownCacheService.extractionObserver`), while
+    /// `meanwhile` runs on the main actor; then let go to finish.
+    private func readAgainHeldInItsRebuild(
+        _ book: Book,
+        as option: TextEncodingOption,
+        in model: LibraryViewModel,
+        meanwhile: () async throws -> Void
+    ) async throws -> OperationOutcome {
+        let reached = OSAllocatedUnfairLock(initialState: false)
+        let release = DispatchSemaphore(value: 0)
+        let bookID = book.id
+        MarkdownCacheService.extractionObserver = { observed in
+            guard observed.id == bookID else { return }
+            reached.withLock { $0 = true }
+            _ = release.wait(timeout: .now() + 20)
+        }
+        defer { MarkdownCacheService.extractionObserver = nil }
+        let run = Task { await model.readTextAgain(bookID: bookID, as: option) }
+        var held = false
+        for _ in 0..<1_000 where !held {
+            held = reached.withLock { $0 }
+            if !held { try await Task.sleep(nanoseconds: 10_000_000) }
+        }
+        XCTAssertTrue(held, "the re-read never reached its rebuild")
+        do {
+            try await meanwhile()
+        } catch {
+            release.signal()
+            _ = await run.value
+            throw error
+        }
+        release.signal()
+        return await run.value
     }
 
     // MARK: - Reading Again
@@ -262,6 +300,36 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
         model.library.books.append(typed)
         let (offered, _) = await readAgain(typed, as: .encoding("koi8-r"), in: model)
         XCTAssertEqual(offered, .failure("TextMouth couldn't read “\(typed.title)” again, so it left the book as it was."))
+    }
+
+    /// A commit the book's record drops, here because its file was replaced
+    /// meanwhile, leaves the book as it was, as the refusal says: content.md
+    /// is put back, byte for byte and with its dates, so no later load takes
+    /// the new reading for text changed by hand (review of October 24,
+    /// finding 2).
+    func testADroppedCommitPutsTheTextBack() async throws {
+        let title = "Breakwater \(UUID().uuidString.prefix(8))"
+        let book = try makeTextBook(title)
+        let model = makeModel(with: [book])
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let textBefore = try Data(contentsOf: cache)
+        let stampBefore = FileStamp(of: cache)
+
+        let outcome = try await readAgainHeldInItsRebuild(book, as: .encoding("koi8-r"), in: model) {
+            // The record now names another file, as after a replacement.
+            let recordURL = TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
+            var record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: recordURL)) as? [String: Any])
+            var metadata = try XCTUnwrap(record["metadata"] as? [String: Any])
+            metadata["md5Hash"] = "another file"
+            record["metadata"] = metadata
+            try JSONSerialization.data(withJSONObject: record).write(to: recordURL)
+        }
+
+        XCTAssertEqual(outcome, .failure("TextMouth couldn't read “\(title)” again, so it left the book as it was."))
+        XCTAssertEqual(try Data(contentsOf: cache), textBefore, "content.md kept the new reading")
+        XCTAssertEqual(FileStamp(of: cache), stampBefore, "content.md was not put back with its dates")
+        XCTAssertEqual(try recordedEncoding(of: book), book.textEncodingRecord)
+        XCTAssertEqual(model.bookByID(book.id)?.textEncodingRecord, book.textEncodingRecord)
     }
 
     // MARK: - Places

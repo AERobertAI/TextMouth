@@ -124,6 +124,13 @@ extension LibraryViewModel {
     /// is written; the text TextMouth did not write kept; the file read
     /// again, with its places moved; and the analysis committed with the
     /// encoding and who decided it, in one write of the book's record.
+    ///
+    /// It is one piece of storage work, from the first read to the commit
+    /// (`StorageBoundary.perform`, whose work started inside it, such as the
+    /// rebuild's own, is part of it): a folder edit or a data-directory move
+    /// that begins meanwhile waits for it to end, so the book's package
+    /// never moves between content.md's write and the record's commit
+    /// (review of October 24, finding 2).
     nonisolated static func rereadText(
         of book: Book,
         as option: TextEncodingOption,
@@ -131,66 +138,106 @@ extension LibraryViewModel {
         isOpenInReader: Bool
     ) -> TextEncodingReread {
         let notDownloaded = TextEncodingReread.refused(LibraryCloudWording.notDownloaded(titles: [book.title]))
-        guard access.fileInCloud(of: book, reading: .all) == nil else { return notDownloaded }
-        do {
-            return try access.read(book.bookFileURL) {
-                // 1. The encoding chosen, read strictly before anything is written.
-                var chosen: TextEncodingRecord?
-                if option != .automatic {
-                    guard let validated = try validatedChoice(of: option, for: book) else {
-                        return .refused(TextEncodingWording.notValidRefusal(
-                            bookTitle: book.title, encoding: TextEncodingChoices.name(of: option)
-                        ))
-                    }
-                    chosen = validated
+        return StorageBoundary.shared.perform(.textExtraction) { _ in
+            // Its paths in the data directory in use now, should a move have
+            // published while the work waited to begin.
+            let book = StorageBoundary.shared.rebasedToCurrent(book)
+            guard access.fileInCloud(of: book, reading: .all) == nil else { return notDownloaded }
+            do {
+                return try access.read(book.bookFileURL) {
+                    try rereadFiles(of: book, as: option, access: access, isOpenInReader: isOpenInReader)
                 }
-                // 2. Text TextMouth did not write, kept beside the new text.
-                let keptCopy = try keptUnwrittenText(of: book, access: access)
-                // 3. The file read again, as chosen, or as an import reads it.
-                var updated = book
-                updated.textEncodingRecord = chosen ?? .unrecorded
-                guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(
-                    for: &updated, replacingEditedText: true, guessingEncoding: chosen == nil
-                ) else {
-                    return .refused(TextEncodingWording.failedRefusal(bookTitle: book.title, reason: nil))
-                }
-                // Automatic records its guess, if it made one, and that the
-                // listener chose Automatic, so no older choice in the record
-                // comes back in place of nothing (`TextEncodingSource`).
-                let record = chosen ?? TextEncodingRecord(identifier: updated.textEncoding, source: .automatic)
-                updated.textEncodingRecord = record
-                // A file that went to the cloud meanwhile may have been read
-                // in part, so nothing is committed from it.
-                try access.requireOnThisMac(book, reading: .all)
-                guard let committed = try LibraryPersistenceService.saveContentAnalysis(
-                    for: updated,
-                    index: generated.content.contentIndex,
-                    cacheFormatVersion: MarkdownCacheService.currentCacheVersion,
-                    movedPlaces: generated.movedPlaces,
-                    pageReaderVersion: .some(generated.pageReaderVersion),
-                    textEncoding: record
-                ) else {
-                    return .refused(TextEncodingWording.failedRefusal(bookTitle: book.title, reason: nil))
-                }
-                let textForOpenReader = isOpenInReader
-                    ? TextForOpenReader(content: generated.content, movedPlaces: generated.movedPlaces)
-                    : nil
-                let update = TextCacheUpdate(
-                    summary: ContentAnalysisSummary(committed: committed, movedPlaces: generated.movedPlaces),
-                    textForOpenReader: textForOpenReader
-                )
-                // What it is read in now, for VoiceOver to say.
-                guard case .known(let reading) = TextEncodingReading.current(of: committed, access: access) else {
-                    return .readAgain(update, reading: nil, keptCopy: keptCopy)
-                }
-                return .readAgain(update, reading: reading, keptCopy: keptCopy)
+            } catch where DatalessFiles.isDownloadRefusal(error) {
+                return notDownloaded
+            } catch is UnwrittenTextNotKept {
+                return .refused(TextEncodingWording.editNotKeptRefusal(bookTitle: book.title))
+            } catch is CommitDropped {
+                return .refused(TextEncodingWording.failedRefusal(bookTitle: book.title, reason: nil))
+            } catch {
+                return .refused(TextEncodingWording.failedRefusal(bookTitle: book.title, reason: error.localizedDescription))
             }
-        } catch where DatalessFiles.isDownloadRefusal(error) {
-            return notDownloaded
-        } catch is UnwrittenTextNotKept {
-            return .refused(TextEncodingWording.editNotKeptRefusal(bookTitle: book.title))
+        }
+    }
+
+    /// The reads and writes of `rereadText(of:as:access:isOpenInReader:)`,
+    /// with dataless files left in the cloud.
+    ///
+    /// content.md is put back as it was, its bytes and its dates, when
+    /// anything fails once it is replaced, as a transcript's install puts
+    /// back what it wrote (`PackageFileBeforeInstall`): the record then still
+    /// describes it, so no later load takes the new reading for text changed
+    /// by hand, and the refusal's "left the book as it was" is true. Putting
+    /// back is simpler than committing the record first, since the record's
+    /// fingerprint of content.md is only known once content.md is written.
+    /// - Throws: why the book was not read again; `CommitDropped` when the
+    ///   record took nothing (`LibraryPersistenceService.saveContentAnalysis`).
+    private nonisolated static func rereadFiles(
+        of book: Book,
+        as option: TextEncodingOption,
+        access: MaintenanceFileAccess,
+        isOpenInReader: Bool
+    ) throws -> TextEncodingReread {
+        // 1. The encoding chosen, read strictly before anything is written.
+        var chosen: TextEncodingRecord?
+        if option != .automatic {
+            guard let validated = try validatedChoice(of: option, for: book) else {
+                return .refused(TextEncodingWording.notValidRefusal(
+                    bookTitle: book.title, encoding: TextEncodingChoices.name(of: option)
+                ))
+            }
+            chosen = validated
+        }
+        // 2. Text TextMouth did not write, kept beside the new text.
+        let keptCopy = try keptUnwrittenText(of: book, access: access)
+        // 3. The file read again, as chosen, or as an import reads it, with
+        // content.md as it is now kept to be put back.
+        let cacheURL = MarkdownCacheService.cacheURL(for: book)
+        let textBefore = PackageFileBeforeInstall(cacheURL)
+        var updated = book
+        updated.textEncodingRecord = chosen ?? .unrecorded
+        guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(
+            for: &updated, replacingEditedText: true, guessingEncoding: chosen == nil
+        ) else {
+            return .refused(TextEncodingWording.failedRefusal(bookTitle: book.title, reason: nil))
+        }
+        let textWritten = generated.content.contentIndex.textCacheFingerprint?.cache.stamp ?? FileStamp(of: cacheURL)
+        do {
+            // Automatic records its guess, if it made one, and that the
+            // listener chose Automatic, so no older choice in the record
+            // comes back in place of nothing (`TextEncodingSource`).
+            let record = chosen ?? TextEncodingRecord(identifier: updated.textEncoding, source: .automatic)
+            updated.textEncodingRecord = record
+            // A file that went to the cloud meanwhile may have been read in
+            // part, so nothing is committed from it.
+            try access.requireOnThisMac(book, reading: .all)
+            guard let committed = try LibraryPersistenceService.saveContentAnalysis(
+                for: updated,
+                index: generated.content.contentIndex,
+                cacheFormatVersion: MarkdownCacheService.currentCacheVersion,
+                movedPlaces: generated.movedPlaces,
+                pageReaderVersion: .some(generated.pageReaderVersion),
+                textEncoding: record
+            ) else { throw CommitDropped() }
+            let textForOpenReader = isOpenInReader
+                ? TextForOpenReader(content: generated.content, movedPlaces: generated.movedPlaces)
+                : nil
+            let update = TextCacheUpdate(
+                summary: ContentAnalysisSummary(committed: committed, movedPlaces: generated.movedPlaces),
+                textForOpenReader: textForOpenReader
+            )
+            // What it is read in now, for VoiceOver to say.
+            guard case .known(let reading) = TextEncodingReading.current(of: committed, access: access) else {
+                return .readAgain(update, reading: nil, keptCopy: keptCopy)
+            }
+            return .readAgain(update, reading: reading, keptCopy: keptCopy)
         } catch {
-            return .refused(TextEncodingWording.failedRefusal(bookTitle: book.title, reason: error.localizedDescription))
+            // The places' copy of the old text stays with the places, for
+            // the launch's place recovery, which moves nothing to the same
+            // text and then lets it go, as after any dropped commit.
+            PackageFileBeforeInstall.putBack(
+                [(textBefore, textWritten)], of: book, after: "the re-read", logTag: textEncodingChangedLogTag
+            )
+            throw error
         }
     }
 
@@ -259,3 +306,8 @@ extension LibraryViewModel {
 /// Why a book was not read again in another encoding: the text TextMouth did
 /// not write could not be kept beside the new reading.
 private struct UnwrittenTextNotKept: Error {}
+
+/// Why a book was not read again in another encoding: its record took
+/// nothing, as when its file was replaced or moved meanwhile, so content.md
+/// is put back.
+private struct CommitDropped: Error {}
