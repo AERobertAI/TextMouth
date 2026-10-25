@@ -164,16 +164,21 @@ enum MarkdownCacheService {
     /// (a file name at that point). A regeneration never sets it: the
     /// book's title and author may have been edited by hand.
     ///
-    /// With `guessingEncoding`, as the same import sets it, a plain-text,
-    /// Markdown, or HTML file whose bytes name no encoding is read in the
-    /// encoding `TextEncodingGuesser` finds, which the result names for the
-    /// book to record (`GeneratedCache.guessedEncoding`, FMT16). Nothing
-    /// else guesses: a book with a recorded encoding (`Book.textEncoding`)
-    /// is read in it, and any other as it always was, so no rebuild, re-read,
+    /// With `decidingEncoding`, the read decides the book's encoding, as an
+    /// import of a file the user chose and a re-read in another encoding
+    /// from Book Information do (encodingchoice): the book is read as its
+    /// own row says, whatever its package record holds, and a plain-text,
+    /// Markdown, or HTML file of a row that records nothing (an import, or
+    /// Automatic), whose bytes name no encoding, is read in the encoding
+    /// `TextEncodingGuesser` finds, which the result names for the book to
+    /// record (`GeneratedCache.guessedEncoding`, FMT16). Nothing else
+    /// guesses or decides: any other read goes by the encoding that stands
+    /// between the row and the record (`Book.recordedTextEncodingRecord()`),
+    /// and a book that records none is read as it always was, so no rebuild
     /// or migration changes the text of a book already in the library.
     static func generateReportedCacheContent(
         for book: Book, adoptingDocumentNames: Bool = false, replacingEditedText: Bool = false,
-        guessingEncoding: Bool = false
+        decidingEncoding: Bool = false
     ) throws -> GeneratedCache? {
         guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return nil }
         let boundary = StorageBoundary.shared
@@ -182,23 +187,21 @@ enum MarkdownCacheService {
                 for: boundary.rebasedToCurrent(book),
                 adoptingDocumentNames: adoptingDocumentNames,
                 replacingEditedText: replacingEditedText,
-                guessingEncoding: guessingEncoding
+                decidingEncoding: decidingEncoding
             )
         }
     }
 
-    /// How a text file in `book` is read: by a guess when `guessingEncoding`
-    /// says so and the book records no encoding and nobody's decision about
-    /// one, and otherwise as the book records (its row's, or its package
-    /// record's when the row lost it: `Book.recordedTextEncodingRecord()`):
-    /// in the encoding the listener chose, whatever the bytes say
-    /// (encodingchoice); in the encoding guessed, when the bytes name none;
-    /// or as it always was read, when it records none.
-    private static func encodingPolicy(of book: Book, guessingEncoding: Bool = false) -> TextFileDecoder.EncodingPolicy {
-        if guessingEncoding && book.textEncodingRecord.isEmpty {
-            return .guess
-        }
-        return book.recordedTextEncodingRecord().policy
+    /// How a text file in `book` is read: for a read `decidingEncoding`, as
+    /// the book's row says, by a guess when it records nothing; otherwise by
+    /// the encoding that stands between the row and the package record
+    /// (`Book.recordedTextEncodingRecord()`): in the encoding the listener
+    /// chose, whatever the bytes say (encodingchoice); in the encoding
+    /// guessed, when the bytes name none; or as it always was read, when
+    /// nothing is recorded.
+    private static func encodingPolicy(of book: Book, decidingEncoding: Bool = false) -> TextFileDecoder.EncodingPolicy {
+        guard decidingEncoding else { return book.recordedTextEncodingRecord().policy }
+        return book.textEncodingRecord.isEmpty ? .guess : book.textEncodingRecord.policy
     }
 
     /// The work of `generateReportedCacheContent(for:)` for a book with a
@@ -208,7 +211,7 @@ enum MarkdownCacheService {
     ///   content.md holds the text of an edit the user made (B12); nothing
     ///   is read or written then.
     private static func writeCache(
-        for book: Book, adoptingDocumentNames: Bool, replacingEditedText: Bool, guessingEncoding: Bool
+        for book: Book, adoptingDocumentNames: Bool, replacingEditedText: Bool, decidingEncoding: Bool
     ) throws -> GeneratedCache {
         // An automatic re-read never replaces the user's finished edit.
         if !replacingEditedText, BookTextEditSessions.holdsTakenEdit(book, access: BookTextEditSessions.shared.access) {
@@ -225,7 +228,7 @@ enum MarkdownCacheService {
             extracted = try extractCache(
                 from: fileURL, format: book.format, brailleTable: book.brailleTable,
                 brailleTableVersion: book.brailleTableVersion,
-                encodingPolicy: encodingPolicy(of: book, guessingEncoding: guessingEncoding), includesPages: true
+                encodingPolicy: encodingPolicy(of: book, decidingEncoding: decidingEncoding), includesPages: true
             )
         } catch EPUBParserError.noReadableChapters(let report) {
             // Nothing can be cached, but which chapters could not be read is
@@ -426,25 +429,29 @@ enum MarkdownCacheService {
     /// With `replacingEditedText`, as Redo Text Extraction sets it, the book's
     /// file is read over the text of an edit the user made (B12), and `book`
     /// loses its record of that edit, since content.md is no longer it.
-    /// With `guessingEncoding`, as an import of a file the user chose sets
-    /// it, a text file whose bytes name no encoding is read in a guessed
+    /// With `decidingEncoding`, as an import of a file the user chose and a
+    /// re-read in another encoding set it, the file is read as `book`'s row
+    /// says (`generateReportedCacheContent`), and a text file whose bytes
+    /// name no encoding, of a row that records nothing, is read in a guessed
     /// one, which `book` records (`Book.textEncoding`, FMT16) so that every
-    /// later reading of it uses the same. Without it, a book whose row lost
-    /// its encoding is read in the one its package record keeps, and `book`
-    /// takes it back, with who decided it (`Book.recordedTextEncodingRecord()`);
-    /// the library row takes it with the analysis the caller commits
-    /// (`ContentAnalysisSummary`).
+    /// later reading of it uses the same. Without it, the book is read in
+    /// the encoding that stands between its row and its package record,
+    /// which `book` takes, with who decided it
+    /// (`Book.recordedTextEncodingRecord()`): a row that lost its encoding
+    /// takes the record's back, and one that lags behind a re-read takes its
+    /// decision; the library row takes it with the analysis the caller
+    /// commits (`ContentAnalysisSummary`).
     /// - Returns: nil for a book with no text cache.
     /// - Throws: why no cache could be written; `book` is then unchanged.
     ///   `EditedTextKept` when content.md holds the user's edit and
     ///   `replacingEditedText` is false.
     static func generateReportedCacheAnalyzeAndStamp(
         for book: inout Book, adoptingDocumentNames: Bool = false, replacingEditedText: Bool = false,
-        guessingEncoding: Bool = false
+        decidingEncoding: Bool = false
     ) throws -> GeneratedCache? {
         guard let generated = try generateReportedCacheContent(
             for: book, adoptingDocumentNames: adoptingDocumentNames, replacingEditedText: replacingEditedText,
-            guessingEncoding: guessingEncoding
+            decidingEncoding: decidingEncoding
         ) else { return nil }
         book.cacheFormatVersion = currentCacheVersion
         // The content.md just written has its format's pages (PG09).
@@ -457,10 +464,10 @@ enum MarkdownCacheService {
         if let guessed = generated.guessedEncoding {
             // The encoding the file was guessed to be in is the book's from now on.
             book.textEncoding = guessed
-        } else if !guessingEncoding, book.textEncodingRecord.isEmpty {
-            // A row that lost its encoding takes it back, with who decided
-            // it, from the record the file was just read by (none when the
-            // record names none).
+        } else if !decidingEncoding {
+            // The book takes the encoding the file was just read in, with
+            // who decided it: its own, the record's for a row that lost its
+            // own, or the record's decision for a row that lags behind it.
             book.textEncodingRecord = book.recordedTextEncodingRecord()
         }
         return generated

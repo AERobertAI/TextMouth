@@ -239,13 +239,15 @@ extension LibraryViewModel {
         // 2. Text TextMouth did not write, kept beside the new text.
         let keptCopy = try keptUnwrittenText(of: book, access: access)
         // 3. The file read again, as chosen, or as an import reads it, with
-        // content.md as it is now kept to be put back.
+        // content.md as it is now kept to be put back. The read decides the
+        // encoding, so the decision the record holds, which it replaces, is
+        // not read in its place.
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
         let textBefore = PackageFileBeforeInstall(cacheURL)
         var updated = book
         updated.textEncodingRecord = chosen ?? .unrecorded
         guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(
-            for: &updated, replacingEditedText: true, guessingEncoding: chosen == nil
+            for: &updated, replacingEditedText: true, decidingEncoding: true
         ) else {
             return .refused(TextEncodingWording.failedRefusal(bookTitle: book.title, reason: nil))
         }

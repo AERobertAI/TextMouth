@@ -532,6 +532,28 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
         XCTAssertNil(try BookInfo.load(from: book.tmbDirectory).state.editedText)
     }
 
+    /// A rebuild reads the book in the decision its record holds, as the
+    /// record's saves keep it, even while the library row lags behind it,
+    /// as after a stop before library.json was saved, or another Mac's
+    /// re-read; the rebuilt book takes the decision it was read in (review
+    /// of October 25, item 3).
+    func testARebuildReadsTheRecordsDecisionOverALaggingRow() throws {
+        let book = try makeTextBook("Sounding \(UUID().uuidString.prefix(8))")
+        let chosen = TextEncodingRecord(identifier: "koi8-r", source: .chosen)
+        var decided = book
+        decided.textEncodingRecord = chosen
+        try decided.saveBookInfoThrowing()
+        XCTAssertEqual(try recordedEncoding(of: book), chosen, "the record must hold the decision, or this proves nothing")
+        let koi8 = try reading(of: book, .chosen("koi8-r"))
+
+        XCTAssertEqual(book.recordedTextEncodingRecord(), chosen)
+        var rebuilt = book
+        XCTAssertNotNil(try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &rebuilt))
+
+        XCTAssertEqual(try cachedText(of: book), PlainTextParser.markdown(text: koi8))
+        XCTAssertEqual(rebuilt.textEncodingRecord, chosen)
+    }
+
     // MARK: - Places
 
     /// The book's places move with the text. Where the new reading shares

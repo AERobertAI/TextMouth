@@ -1059,24 +1059,29 @@ struct Book: Identifiable, Codable, Hashable {
     }
 
     /// The encoding to read a text book's file in, and who decided it
-    /// (FMT16, encodingchoice): the row's (`textEncodingRecord`), or, for a
-    /// row that lost both, the ones the package's record keeps
-    /// (`BookMetadata.textEncodingRecord`). A value in library.json that
-    /// cannot be read decodes as none, and so does a row an older build
-    /// wrote, while bookInfo.json keeps the encoding through every save of
-    /// the book (`bookInfo(replacing:contentIndex:revisionFloor:)`); reading
-    /// it here keeps a rebuild from reading the book as Windows-1252 for want
-    /// of a row. `TextEncodingRecord.unrecorded` when neither names one, when the
-    /// record names another book, cannot be read, or is in the cloud (which
-    /// is not downloaded for this), and for a format that does not read text
-    /// files. Every reading of the book's file goes by its policy
-    /// (`TextEncodingRecord.policy`).
+    /// (FMT16, encodingchoice): the one that stands between the row's
+    /// (`textEncodingRecord`) and the one the package's record keeps
+    /// (`BookMetadata.textEncodingRecord`), as every save of the record
+    /// keeps it (`TextEncodingRecord.standing(row:recorded:)`). The record's
+    /// decision comes first, so a rebuild reads the text in the encoding
+    /// its record will label it with, though the row lags behind a re-read
+    /// (review of October 25, item 3); then the row's; then the record's,
+    /// for a row that lost both. A value in library.json that cannot be read
+    /// decodes as none, and so does a row an older build wrote, while
+    /// bookInfo.json keeps the encoding through every save of the book;
+    /// reading it here keeps a rebuild from reading the book as Windows-1252
+    /// for want of a row. The record counts for nothing when it names
+    /// another book, cannot be read, or is in the cloud (which is not
+    /// downloaded for this), and is not read for a format that does not
+    /// read text files, nor for a book without a package. Every reading of
+    /// the book's file goes by its policy (`TextEncodingRecord.policy`).
     func recordedTextEncodingRecord() -> TextEncodingRecord {
-        if !textEncodingRecord.isEmpty { return textEncodingRecord }
-        guard format.usesTextFileDecoder, !tmbDirectoryName.isEmpty else { return .unrecorded }
+        guard format.usesTextFileDecoder, !tmbDirectoryName.isEmpty else { return textEncodingRecord }
         let stored = try? DatalessFiles.withoutDownloading { try StoredBookRecord.read(from: tmbDirectory) }
-        guard let metadata = stored?.info.metadata, metadata.bookID == id else { return .unrecorded }
-        return metadata.textEncodingRecord
+        // The record counts only when it is this book's.
+        let metadata = stored?.info.metadata
+        let recorded = metadata?.bookID == id ? metadata?.textEncodingRecord ?? .unrecorded : .unrecorded
+        return .standing(row: textEncodingRecord, recorded: recorded)
     }
 
     /// The record this book writes over `stored`, the record now in its
@@ -1121,10 +1126,11 @@ struct Book: Identifiable, Codable, Hashable {
     /// re-read's) replaces it: a row that lags behind the re-read, as a
     /// reading checkpoint's can, with or without an index, never writes the
     /// old encoding back beside the new text (review of October 24,
-    /// finding 5). A recovered analysis gives the row that decision the same
-    /// way (`ContentAnalysisSummary.apply(to:)`). Over a record that names
-    /// no decision, a row that holds either writes its own, its nil encoding
-    /// included; only a row that holds neither takes the stored record's.
+    /// finding 5). Over a record that names no decision, a row that holds
+    /// either writes its own, its nil encoding included; only a row that
+    /// holds neither takes the stored record's. The rule is one
+    /// (`TextEncodingRecord.standing(row:recorded:)`), which a recovered
+    /// analysis and every reading of the book's file follow too.
     ///
     /// The revision is one more than the stored record's, or one more than
     /// `revisionFloor` when that is higher. The metadata queue passes the
@@ -1160,14 +1166,12 @@ struct Book: Identifiable, Codable, Hashable {
         info.metadata.brailleTable = brailleTable ?? stored?.info.metadata.brailleTable
         info.metadata.brailleTableVersion = brailleTableVersion ?? stored?.info.metadata.brailleTableVersion
         // The text encoding and who decided it, as one (FMT16, encodingchoice):
-        // the stored record's decision, unless this write decides anew;
-        // otherwise the row's, or else the stored record's.
+        // this write's own when it decides anew, and otherwise the one that
+        // stands between the row and the stored record.
         let storedEncoding = stored?.info.metadata.textEncodingRecord ?? .unrecorded
-        if storedEncoding.source != nil, !decidingTextEncoding {
-            info.metadata.textEncodingRecord = storedEncoding
-        } else {
-            info.metadata.textEncodingRecord = textEncodingRecord.isEmpty ? storedEncoding : textEncodingRecord
-        }
+        info.metadata.textEncodingRecord = decidingTextEncoding && !textEncodingRecord.isEmpty
+            ? textEncodingRecord
+            : TextEncodingRecord.standing(row: textEncodingRecord, recorded: storedEncoding)
         return info
     }
 
