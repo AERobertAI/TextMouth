@@ -631,6 +631,11 @@ extension LibraryViewModel {
     /// or whose source or content.md has changed size since the cache was written.
     /// Runs in the background with progress tracking so the UI stays responsive.
     /// Calls the optional completion handler on the main actor when finished.
+    /// A book whose text is being read again in another encoding is left to
+    /// that re-read (`readingAgainRefusal(of:)`, encodingchoice): the content.md
+    /// it writes before its record would look like an edit saved while
+    /// TextMouth was closed, or a stale cache; no re-read begins while the
+    /// batch runs (`textEncodingChangeRefusal(of:)`).
     /// - Parameter access: How the batch reaches the books' files (FR02):
     ///   `live` in the app; tests pass one that pretends files are in the
     ///   cloud.
@@ -652,7 +657,8 @@ extension LibraryViewModel {
             // another thread.
             DispatchQueue.main.async { [weak self] in
                 guard let self, !self.isExtracting else { return }
-                self.rebuildTextCaches(books: booksNeedingCache, force: false, access: access) { _, _ in
+                let notReadAgain = booksNeedingCache.filter { self.readingAgainRefusal(of: $0.id) == nil }
+                self.rebuildTextCaches(books: notReadAgain, force: false, access: access) { _, _ in
                     // The pass has looked at every book: a copy of an edit's
                     // old text that a quit left, for a book with nothing
                     // saved since, is no use, except one whose book's

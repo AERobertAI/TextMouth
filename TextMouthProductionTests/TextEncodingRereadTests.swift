@@ -444,6 +444,34 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
         XCTAssertEqual(replies, [true], "the quit was not answered once the re-read was over")
     }
 
+    /// The content.md a re-read has written, before its record is
+    /// committed, with the book marked as being read again, as the re-read
+    /// leaves it between the two writes; returns that text.
+    private func markAsMidReread(_ book: Book, in model: LibraryViewModel) throws -> String {
+        let written = PlainTextParser.markdown(text: try reading(of: book, .chosen("koi8-r")))
+        try written.write(to: MarkdownCacheService.cacheURL(for: book), atomically: true, encoding: .utf8)
+        model.booksBeingReadAgain.insert(book.id)
+        return written
+    }
+
+    /// The launch's text batch leaves a book being read again alone: the
+    /// content.md the re-read has written is neither taken for an edit
+    /// saved while TextMouth was closed nor read again from the book's file
+    /// (review of October 25, item 2).
+    func testTheLaunchBatchLeavesABookBeingReadAgainAlone() async throws {
+        let book = try makeTextBook("Lantern \(UUID().uuidString.prefix(8))")
+        let model = makeModel(with: [book])
+        let written = try markAsMidReread(book, in: model)
+        defer { model.booksBeingReadAgain.remove(book.id) }
+
+        await withCheckedContinuation { (finished: CheckedContinuation<Void, Never>) in
+            model.extractMissingContentCaches(access: .live) { finished.resume() }
+        }
+
+        XCTAssertEqual(try cachedText(of: book), written, "the batch rewrote content.md")
+        XCTAssertNil(try BookInfo.load(from: book.tmbDirectory).state.editedText, "the batch took the new reading for an edit")
+    }
+
     // MARK: - Places
 
     /// The book's places move with the text. Where the new reading shares
