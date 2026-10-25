@@ -111,15 +111,6 @@ extension Book {
         guard format.usesTextFileDecoder else { return nil }
         return TextEncodingReading(record: textEncodingRecord)?.description
     }
-
-    /// The words of Book Information's "Text Encoding" row for this book: the
-    /// label and the encoding, which VoiceOver reads as "Text Encoding,
-    /// Windows-1251 (Cyrillic), guessed". Nil for a book with no recorded
-    /// encoding, which has no such row. The sheet draws the row from this, so
-    /// a test can pin the words without a hosted sheet.
-    var bookInfoTextEncodingRow: (label: String, value: String)? {
-        textEncodingDescription.map { (TextEncodingWording.bookInfoLabel, $0) }
-    }
 }
 
 /// The words around a text book's encoding (FMT16) and the listener's choice
@@ -190,6 +181,14 @@ enum TextEncodingWording {
     static func speakInfoPart(_ description: String) -> String {
         "Text encoding: \(description)"
     }
+
+    // MARK: The Pop-up
+
+    /// The pop-up's hint, which VoiceOver says after its label and value.
+    static let popUpHint = "Choose another encoding to read the book's file again in it."
+    /// What Book Information shows, beside a spinner, while the book is read
+    /// again (`SheetWorkIndicator`).
+    static let workingLabel = "Reading the book again..."
 
     // MARK: The Pop-up While the File Says Nothing Yet
 

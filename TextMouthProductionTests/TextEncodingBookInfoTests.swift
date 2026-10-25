@@ -91,17 +91,16 @@ final class TextEncodingBookInfoTests: XCTestCase {
 
     // MARK: - Book Information's Row
 
-    /// Book Information's "Text Encoding" row, which the sheet draws from
-    /// `bookInfoTextEncodingRow`: its label and the description for a book
-    /// whose encoding was guessed, and no row for any other. This needs no
-    /// hosted sheet, whose texts SwiftUI does not always expose to a test run.
-    func testTheBookInfoRowIsLabelledTextEncodingForAGuessedBookOnly() throws {
-        let row = try XCTUnwrap(book(encoding: "windows-1251").bookInfoTextEncodingRow)
-        XCTAssertEqual(row.label, "Text Encoding")
-        XCTAssertEqual(row.value, "Windows-1251 (Cyrillic), guessed")
-
-        XCTAssertNil(book(encoding: nil).bookInfoTextEncodingRow)
-        XCTAssertNil(book(encoding: "windows-1251", format: .pdf).bookInfoTextEncodingRow)
+    /// Book Information's "Text Encoding" row is a pop-up since the listener
+    /// can choose the encoding (encodingchoice): its label, value, and items
+    /// are pinned by `TextEncodingPopUpTests`, from a model and the hosted
+    /// sheet. Its value for a guessed book is the description Speak Info
+    /// says, so the two never differ.
+    func testThePopUpsValueIsTheDescriptionSpeakInfoSays() {
+        let guessed = book(encoding: "windows-1251")
+        let model = TextEncodingChoiceModel(book: guessed, library: LibraryViewModel(initializeServices: false))
+        XCTAssertEqual(model.valueDescription, guessed.textEncodingDescription)
+        XCTAssertEqual(model.valueDescription, "Windows-1251 (Cyrillic), guessed")
     }
 
     // MARK: - Speak Info

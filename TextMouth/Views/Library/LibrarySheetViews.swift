@@ -17,6 +17,11 @@ struct LibraryBookInfoSheet: View {
     /// reader's copy, which takes every change the library makes; this does
     /// not.
     @State private var opened: Book.MetadataValues
+    /// The Text Encoding pop-up of a text book from the listener's own file
+    /// (encodingchoice): what its file is read in, and the re-read in
+    /// another encoding. Made for every book the sheet shows, cheaply, and
+    /// shown only for one that offers the choice.
+    @StateObject private var encoding: TextEncodingChoiceModel
     @Environment(\.dismiss) private var dismiss
 
     init(book: Book, libraryViewModel: LibraryViewModel) {
@@ -25,6 +30,7 @@ struct LibraryBookInfoSheet: View {
         self._title = State(initialValue: book.title)
         self._author = State(initialValue: book.author)
         self._opened = State(initialValue: Self.values(title: book.title, author: book.author))
+        self._encoding = StateObject(wrappedValue: TextEncodingChoiceModel(book: book, library: libraryViewModel))
     }
 
     var body: some View {
@@ -52,13 +58,12 @@ struct LibraryBookInfoSheet: View {
                         Text(row.value)
                     }
                 }
-                // A text book whose file named no encoding says the one it
-                // was guessed to be in (FMT16), which VoiceOver reads as
-                // "Text Encoding, Windows-1251 (Cyrillic), guessed".
-                if let row = book.bookInfoTextEncodingRow {
-                    LabeledContent(row.label) {
-                        Text(row.value)
-                    }
+                // A text book from the listener's own file names the encoding
+                // its file is read in, and offers another (FMT16,
+                // encodingchoice): VoiceOver reads "Windows-1251 (Cyrillic),
+                // guessed, Text Encoding, pop-up button".
+                if book.offersTextEncodingChoice {
+                    TextEncodingPopUp(model: encoding)
                 }
                 LabeledContent("Added") {
                     Text(book.dateAdded, style: .date)
@@ -75,11 +80,20 @@ struct LibraryBookInfoSheet: View {
                 }
             }
 
+            // Why the last choice of an encoding changed nothing, and the
+            // re-read under way (encodingchoice).
+            OperationFailureNotice(message: encoding.failureMessage)
+            if encoding.isWorking {
+                SheetWorkIndicator(label: TextEncodingWording.workingLabel)
+            }
+
             HStack {
                 Button("Cancel") {
                     dismiss()
                 }
                 .keyboardShortcut(.escape, modifiers: [])
+                // The sheet stays open until a re-read in another encoding ends.
+                .disabled(encoding.isWorking)
 
                 Spacer()
 
@@ -99,12 +113,22 @@ struct LibraryBookInfoSheet: View {
                     }
                 }
                 .keyboardShortcut(.return, modifiers: [])
-                .disabled(Self.edit(from: opened, title: title, author: author) == nil)
+                .disabled(encoding.isWorking || Self.edit(from: opened, title: title, author: author) == nil)
             }
         }
         .padding()
-        .frame(width: 400, height: 350)
+        // Taller with the Text Encoding pop-up, and room for a refusal of a
+        // few lines below the form.
+        .frame(width: 400, height: book.offersTextEncodingChoice ? 470 : 350)
         .navigationTitle("Info: \(book.title)")
+        .textEncodingConfirmation(encoding)
+        .task {
+            // What the file is read in, worked out off the main actor, so the
+            // sheet never waits on a large file.
+            if book.offersTextEncodingChoice {
+                await encoding.load()
+            }
+        }
     }
 
     /// `title` and `author` as Save stores them: each less the spaces
@@ -128,6 +152,57 @@ struct LibraryBookInfoSheet: View {
         let saved = values(title: title, author: author)
         guard let savedTitle = saved[.title], !savedTitle.isEmpty else { return nil }
         return Book.MetadataEdit(opened: opened, saved: saved)
+    }
+}
+
+// MARK: - Text Encoding (encodingchoice)
+
+/// Book Information's Text Encoding row: a pop-up button of the options
+/// (`TextEncodingChoices`), with the encoding the book is read in now
+/// selected and named with what decided it, so the button shows, and
+/// VoiceOver reads, "Windows-1251 (Cyrillic), guessed, Text Encoding, pop-up
+/// button" (`TextEncodingChoiceModel.name(of:)`). Choosing another option asks
+/// first (`textEncodingConfirmation(_:)`); the pop-up is dimmed while the
+/// file is checked and while the book is read again.
+struct TextEncodingPopUp: View {
+    @ObservedObject var model: TextEncodingChoiceModel
+
+    var body: some View {
+        Picker(TextEncodingWording.bookInfoLabel, selection: Binding(get: { model.selection }, set: { model.choose($0) })) {
+            ForEach(model.items, id: \.self) { item in
+                Text(model.name(of: item)).tag(item)
+            }
+        }
+        .pickerStyle(.menu)
+        // The label is spoken from the control itself: a pop-up button takes
+        // no label from the picker's title.
+        .accessibilityLabel(TextEncodingWording.bookInfoLabel)
+        .accessibilityHint(TextEncodingWording.popUpHint)
+        .disabled(!model.isEnabled)
+    }
+}
+
+extension View {
+    /// The confirmation `model` asks before its book is read again in the
+    /// option chosen: its title names the book and the option ("Read “Ledger”
+    /// again as Shift JIS (Japanese)?"), its message says what changes, Read
+    /// Again (Return) reads it again, and Cancel (Escape) leaves everything,
+    /// the pop-up included, as it was.
+    func textEncodingConfirmation(_ model: TextEncodingChoiceModel) -> some View {
+        alert(
+            model.pending.map(model.confirmTitle(for:)) ?? "",
+            isPresented: Binding(get: { model.pending != nil }, set: { if !$0 { model.cancel() } }),
+            presenting: model.pending
+        ) { option in
+            Button(TextEncodingWording.confirmButton) {
+                Task { await model.confirm(option) }
+            }
+            Button("Cancel", role: .cancel) {
+                model.cancel()
+            }
+        } message: { option in
+            Text(model.confirmMessage(for: option))
+        }
     }
 }
 
