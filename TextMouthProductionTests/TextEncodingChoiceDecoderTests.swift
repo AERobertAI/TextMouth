@@ -18,7 +18,7 @@ final class TextEncodingChoiceDecoderTests: XCTestCase {
     /// `format`, read as the listener chose: in `identifier`.
     private func decode(_ bytes: [UInt8], chosen identifier: String, format: BookFormat = .txt) throws -> DecodedText {
         try TextFileDecoder.decode(
-            Data(bytes), fileName: "Fixture.\(format.fileExtensions[0])", format: format, policy: .chosen(identifier)
+            Data(bytes), fileName: "Fixture.\(format.fileExtensions.first ?? "txt")", format: format, policy: .chosen(identifier)
         )
     }
 

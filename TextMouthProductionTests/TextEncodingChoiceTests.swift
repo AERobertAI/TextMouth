@@ -85,7 +85,7 @@ final class TextEncodingChoiceTests: XCTestCase {
     func testTheReadingTheBytesGive() throws {
         func reading(_ bytes: [UInt8], format: BookFormat = .txt, policy: TextFileDecoder.EncodingPolicy = .fallback) throws -> TextEncodingReading {
             TextEncodingReading(decoded: try TextFileDecoder.decode(
-                Data(bytes), fileName: "Fixture.\(format.fileExtensions[0])", format: format, policy: policy
+                Data(bytes), fileName: "Fixture.\(format.fileExtensions.first ?? "txt")", format: format, policy: policy
             ))
         }
         let utf16 = try reading([0xFF, 0xFE, 0x41, 0x00, 0xE9, 0x00])
