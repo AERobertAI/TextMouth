@@ -624,8 +624,10 @@ enum LibraryPersistenceService {
     /// `textEncoding` is the encoding the content.md was read in and who
     /// decided it (`Book.textEncodingRecord`), which a re-read in an
     /// encoding the listener chose passes (encodingchoice), so the record
-    /// never holds the new text beside the old encoding; nil keeps the
-    /// latest state's own.
+    /// never holds the new text beside the old encoding. It is a decision,
+    /// which replaces the one the record holds (`Book.bookInfo(replacing:
+    /// contentIndex:revisionFloor:decidingTextEncoding:)`); nil keeps the
+    /// record's decision, or else the latest state's own encoding.
     ///
     /// A result is dropped, with one CONTENT_ANALYSIS_DROPPED line in the
     /// debug log, when the latest state describes other content than was
@@ -685,7 +687,9 @@ enum LibraryPersistenceService {
             if let movedPlaces {
                 merged.takeMovedPlaces(original: movedPlaces.original, moved: movedPlaces.moved)
             }
-            guard try writeMerged(merged, contentIndex: index, state: state) else { return nil }
+            guard try writeMerged(
+                merged, contentIndex: index, state: state, decidingTextEncoding: textEncoding != nil
+            ) else { return nil }
             // The record holds the moved places now: the copy is no longer needed.
             movedPlaces?.discardSnapshot()
             return merged
@@ -811,13 +815,18 @@ enum LibraryPersistenceService {
     /// Writes `merged`, a merge into `state`, and settles what the write
     /// replaces; reports whether it was written. A failed write throws here,
     /// leaving any waiting snapshot to its own debounce, so the newer user
-    /// state outlives the lost result. Must run on bookInfoSaveQueue.
+    /// state outlives the lost result. `decidingTextEncoding` is passed on
+    /// to the record (`Book.bookInfo(replacing:contentIndex:revisionFloor:
+    /// decidingTextEncoding:)`). Must run on bookInfoSaveQueue.
     private static func writeMerged(
         _ merged: Book,
         contentIndex: BookContentIndex?,
-        state: LatestDurableState
+        state: LatestDurableState,
+        decidingTextEncoding: Bool = false
     ) throws -> Bool {
-        guard try writeBookInfo(merged, contentIndex: contentIndex, stored: state.stored) else { return false }
+        guard try writeBookInfo(
+            merged, contentIndex: contentIndex, stored: state.stored, decidingTextEncoding: decidingTextEncoding
+        ) else { return false }
         // The waiting snapshot is on disk now, merged: forget it, so its
         // debounce does not write it a second time.
         cancelQueuedWrites(for: state.book)
@@ -981,7 +990,10 @@ enum LibraryPersistenceService {
     /// record now in the package when the caller has just read it, without
     /// downloading anything; otherwise it is read here, the same way
     /// (`storedRecord(of:)`), before anything else in the package is
-    /// looked at. Must run on bookInfoSaveQueue.
+    /// looked at. Only a write `decidingTextEncoding`, a re-read's, replaces
+    /// the decision about the text encoding the stored record holds
+    /// (`Book.bookInfo(replacing:contentIndex:revisionFloor:decidingTextEncoding:)`).
+    /// Must run on bookInfoSaveQueue.
     ///
     /// Only bookInfo.json is read and, unless `contentIndex` is given,
     /// written (PERF15): the package's contentIndex.json stays as it is, so
@@ -991,7 +1003,8 @@ enum LibraryPersistenceService {
     private static func writeBookInfo(
         _ book: Book,
         contentIndex: BookContentIndex?,
-        stored: StoredBookRecord? = nil
+        stored: StoredBookRecord? = nil,
+        decidingTextEncoding: Bool = false
     ) throws -> Bool {
         let replaced: StoredBookRecord?
         if let stored {
@@ -1013,7 +1026,8 @@ enum LibraryPersistenceService {
         let record = book.bookInfo(
             replacing: replaced,
             contentIndex: contentIndex,
-            revisionFloor: bookInfoRevisions[book.id] ?? 0
+            revisionFloor: bookInfoRevisions[book.id] ?? 0,
+            decidingTextEncoding: decidingTextEncoding
         )
         try record.saveRecord(to: book.tmbDirectory)
         bookInfoRevisions[book.id] = record.state.revision

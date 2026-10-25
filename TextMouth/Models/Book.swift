@@ -1111,19 +1111,35 @@ struct Book: Identifiable, Codable, Hashable {
     ///
     /// A braille book's table (`BookMetadata.brailleTable`, FMT21) is kept
     /// the same way: the stored record's survives a row that lost it; and so
-    /// is the Mac's liblouis version it was read with (review R2), and the
-    /// encoding a text book's file was guessed to be in
-    /// (`BookMetadata.textEncoding`, FMT16), with who decided it
-    /// (`BookMetadata.textEncodingSource`, encodingchoice). The two are taken
-    /// as one: a row that holds either writes its own, its nil encoding
-    /// included, as a row the listener set to Automatic holds; only a row
-    /// that holds neither takes the stored record's.
+    /// is the Mac's liblouis version it was read with (review R2).
+    ///
+    /// The encoding a text book's file is read in (`BookMetadata.textEncoding`,
+    /// FMT16) and who decided it (`BookMetadata.textEncodingSource`,
+    /// encodingchoice) are taken as one. A decision the stored record holds
+    /// is a re-read's, which writes it with the new text before the library
+    /// row takes it, so only a write `decidingTextEncoding` (the next
+    /// re-read's) replaces it: a row that lags behind the re-read, as a
+    /// reading checkpoint's can, with or without an index, never writes the
+    /// old encoding back beside the new text (review of October 24,
+    /// finding 5). A recovered analysis gives the row that decision the same
+    /// way (`ContentAnalysisSummary.apply(to:)`). Over a record that names
+    /// no decision, a row that holds either writes its own, its nil encoding
+    /// included; only a row that holds neither takes the stored record's.
     ///
     /// The revision is one more than the stored record's, or one more than
     /// `revisionFloor` when that is higher. The metadata queue passes the
     /// highest revision it has written for this book, so its revisions keep
     /// rising even when the stored record has lost its own.
-    func bookInfo(replacing stored: StoredBookRecord?, contentIndex: BookContentIndex?, revisionFloor: Int = 0) -> BookInfo {
+    /// - Parameter decidingTextEncoding: Whether the write records a new
+    ///   decision about the encoding, this book's own: a re-read in another
+    ///   encoding (`LibraryPersistenceService.saveContentAnalysis`'s
+    ///   `textEncoding`).
+    func bookInfo(
+        replacing stored: StoredBookRecord?,
+        contentIndex: BookContentIndex?,
+        revisionFloor: Int = 0,
+        decidingTextEncoding: Bool = false
+    ) -> BookInfo {
         var recorded = self
         var index = contentIndex
         if index == nil, let stored, stored.keepsContentIndex {
@@ -1143,11 +1159,15 @@ struct Book: Identifiable, Codable, Hashable {
         // The braille table: the row's, or else the stored record's (FMT21).
         info.metadata.brailleTable = brailleTable ?? stored?.info.metadata.brailleTable
         info.metadata.brailleTableVersion = brailleTableVersion ?? stored?.info.metadata.brailleTableVersion
-        // The text encoding and who decided it, as one: the row's, or else
-        // the stored record's (FMT16, encodingchoice).
-        info.metadata.textEncodingRecord = textEncodingRecord.isEmpty
-            ? stored?.info.metadata.textEncodingRecord ?? .unrecorded
-            : textEncodingRecord
+        // The text encoding and who decided it, as one (FMT16, encodingchoice):
+        // the stored record's decision, unless this write decides anew;
+        // otherwise the row's, or else the stored record's.
+        let storedEncoding = stored?.info.metadata.textEncodingRecord ?? .unrecorded
+        if storedEncoding.source != nil, !decidingTextEncoding {
+            info.metadata.textEncodingRecord = storedEncoding
+        } else {
+            info.metadata.textEncodingRecord = textEncodingRecord.isEmpty ? storedEncoding : textEncodingRecord
+        }
         return info
     }
 

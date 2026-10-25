@@ -351,6 +351,24 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
         XCTAssertTrue(events.contains { if case .textReplaced = $0 { return true } else { return false } }, "\(events)")
     }
 
+    /// A save of the book's row that lags behind the re-read, as a reader's
+    /// checkpoint between the record's commit and the row's update can, does
+    /// not write the old encoding back beside the new text: only a re-read
+    /// replaces the decision the record holds (review of October 24,
+    /// finding 5).
+    func testALaggingRowDoesNotWriteTheOldEncodingBack() async throws {
+        let book = try makeTextBook("Bollard \(UUID().uuidString.prefix(8))")
+        let model = makeModel(with: [book])
+        let (outcome, _) = await readAgain(book, as: .encoding("koi8-r"), in: model)
+        XCTAssertTrue(outcome.succeeded, "\(outcome)")
+
+        // The row as it was before the re-read, saved as a checkpoint saves it.
+        LibraryPersistenceService.saveBookInfo(for: book)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(try recordedEncoding(of: book), TextEncodingRecord(identifier: "koi8-r", source: .chosen))
+    }
+
     // MARK: - Places
 
     /// The book's places move with the text. Where the new reading shares

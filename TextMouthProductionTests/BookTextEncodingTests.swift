@@ -292,28 +292,57 @@ final class BookTextEncodingTests: XCTestCase {
         }
     }
 
-    /// The encoding and who decided it go into the record as one: a row
-    /// that holds either writes its own, so a row the listener set to
-    /// Automatic, with no encoding left to record, clears the record's
-    /// choice; a row that holds a guess of its own never takes the record's
-    /// source; and only a row that holds neither takes the record's pair.
+    /// The encoding and who decided it go into the record as one. A
+    /// decision the record holds is a re-read's, which only the next
+    /// re-read's write replaces: a row that lags behind it, saved with or
+    /// without an index, keeps it (review of October 24, finding 5), and the
+    /// next re-read records its own, Automatic with no encoding left to
+    /// record included. Over a record that names no decision, a row that
+    /// holds either writes its own, so a guess never takes another's source,
+    /// and only a row that holds neither takes the record's pair.
     func testTheEncodingAndWhoDecidedGoIntoTheRecordAsOne() {
-        let stored = StoredBookRecord(
-            info: book(encoding: "koi8-r", source: .chosen).makeBookInfo(), keepsContentIndex: false
+        let chosen = StoredBookRecord(
+            info: book(encoding: "koi8-r", source: .chosen).makeBookInfo(), keepsContentIndex: true
         )
-        func written(_ row: Book) -> TextEncodingRecord {
-            row.bookInfo(replacing: stored, contentIndex: nil).metadata.textEncodingRecord
+        let guessed = StoredBookRecord(info: book(encoding: "koi8-r").makeBookInfo(), keepsContentIndex: true)
+        let index = BookContentIndex.build(fromChapters: [Chapter(title: "One", text: "one two")], format: .txt)
+        func written(
+            _ row: Book, over stored: StoredBookRecord?, index: BookContentIndex? = nil, deciding: Bool = false
+        ) -> TextEncodingRecord {
+            row.bookInfo(replacing: stored, contentIndex: index, decidingTextEncoding: deciding)
+                .metadata.textEncodingRecord
         }
+        let koi8Chosen = TextEncodingRecord(identifier: "koi8-r", source: .chosen)
+        let cp866Chosen = book(encoding: "cp866", source: .chosen)
+        let automaticWithNothing = book(encoding: nil, source: .automatic)
 
+        // The record's decision, kept by a lagging row with or without an index.
+        for row in [book(encoding: "windows-1251"), automaticWithNothing, cp866Chosen] {
+            XCTAssertEqual(written(row, over: chosen), koi8Chosen, "\(row.textEncodingRecord)")
+            XCTAssertEqual(written(row, over: chosen, index: index), koi8Chosen, "\(row.textEncodingRecord)")
+        }
+        // Replaced by the next re-read's decision.
         XCTAssertEqual(
-            written(book(encoding: nil, source: .automatic)), TextEncodingRecord(identifier: nil, source: .automatic),
-            "Automatic with nothing to record clears the stored choice"
+            written(automaticWithNothing, over: chosen, index: index, deciding: true),
+            TextEncodingRecord(identifier: nil, source: .automatic)
         )
-        XCTAssertEqual(written(book(encoding: "windows-1251")), TextEncodingRecord(identifier: "windows-1251", source: nil))
-        XCTAssertEqual(written(book(encoding: nil)), TextEncodingRecord(identifier: "koi8-r", source: .chosen))
         XCTAssertEqual(
-            book(encoding: nil).bookInfo(replacing: nil, contentIndex: nil).metadata.textEncodingRecord, .unrecorded
+            written(cp866Chosen, over: chosen, index: index, deciding: true),
+            TextEncodingRecord(identifier: "cp866", source: .chosen)
         )
+
+        // No decision in the record: the row's own, or else the record's.
+        XCTAssertEqual(
+            written(book(encoding: "windows-1251"), over: guessed),
+            TextEncodingRecord(identifier: "windows-1251", source: nil)
+        )
+        XCTAssertEqual(
+            written(book(encoding: "koi8-r", source: .chosen), over: guessed), koi8Chosen,
+            "a decision a record lost, as an older build rewrites it, goes back"
+        )
+        XCTAssertEqual(written(book(encoding: nil), over: guessed), TextEncodingRecord(identifier: "koi8-r", source: nil))
+        XCTAssertEqual(written(book(encoding: nil), over: chosen), koi8Chosen)
+        XCTAssertEqual(written(book(encoding: nil), over: nil), .unrecorded)
     }
 
     /// The removal marker keeps who decided, so a book added back keeps the
