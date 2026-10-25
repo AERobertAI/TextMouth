@@ -415,6 +415,35 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
         XCTAssertFalse(model.isExtracting)
     }
 
+    // MARK: - Around the Re-read
+
+    /// A quit waits while a book is read again and goes ahead once the
+    /// re-read is over: stopped between content.md's write and the record's,
+    /// the re-read would leave the new reading beside the old record, which
+    /// the next launch takes for an edit saved while TextMouth was closed
+    /// (review of October 25, item 1). A library reading nothing again holds
+    /// no quit.
+    func testAQuitWaitsForTheReread() async throws {
+        let book = try makeTextBook("Halyard \(UUID().uuidString.prefix(8))")
+        let model = makeModel(with: [book])
+        model.textRereads = TextRereads()
+        let rereads = model.textRereads
+        var replies: [Bool] = []
+        XCTAssertFalse(QuitHold.hold([rereads.quitWork()]) { _ in XCTFail("a library reading nothing again held the quit") })
+
+        let outcome = try await readAgainHeldInItsRebuild(book, as: .encoding("koi8-r"), in: model) {
+            XCTAssertTrue(QuitHold.hold([rereads.quitWork()]) { replies.append($0) }, "the quit was not held")
+            try await Task.sleep(nanoseconds: 50_000_000)
+            XCTAssertEqual(replies, [], "the quit went ahead while the book was read again")
+        }
+
+        XCTAssertTrue(outcome.succeeded, "\(outcome)")
+        for _ in 0..<500 where replies.isEmpty {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertEqual(replies, [true], "the quit was not answered once the re-read was over")
+    }
+
     // MARK: - Places
 
     /// The book's places move with the text. Where the new reading shares

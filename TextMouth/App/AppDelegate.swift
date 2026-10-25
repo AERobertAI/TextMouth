@@ -185,10 +185,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     ///    which starts over at step 1. Quit Anyway asks to quit again, and
     ///    that second request quits at step 2, whatever is unsaved. Cancel
     ///    keeps TextMouth open.
-    /// 4. A quit that goes ahead at step 2 while feed downloads wait or run
-    ///    is answered later (FR03): each keeps its place for the next
-    ///    launch, the one under way its resume data (`FeedQuitHold`), and
-    ///    then TextMouth quits, after three seconds at most.
+    /// 4. A quit that goes ahead at step 2 while feed downloads wait or run,
+    ///    or while a book's text is read again in another encoding, is
+    ///    answered later (`QuitHold`): each download keeps its place for the
+    ///    next launch, the one under way its resume data (`FeedQuitHold`,
+    ///    FR03), after three seconds at most; then each re-read finishes, its
+    ///    text and its record both written (`TextRereads`, encodingchoice),
+    ///    after ten seconds at most; and then TextMouth quits.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         // The memory guard quits to protect the Mac, everything saved,
         // asking nothing (B07).
@@ -205,7 +208,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return .terminateCancel
         }
         let reply = terminationGuard.reply()
-        if reply == .terminateNow, FeedQuitHold.hold(FeedCenter.shared.downloads, reply: { sender.reply(toApplicationShouldTerminate: $0) }) {
+        let heldWork = [FeedQuitHold.work(FeedCenter.shared.downloads), TextRereads.shared.quitWork()]
+        if reply == .terminateNow, QuitHold.hold(heldWork, reply: { sender.reply(toApplicationShouldTerminate: $0) }) {
             return .terminateLater
         }
         return reply

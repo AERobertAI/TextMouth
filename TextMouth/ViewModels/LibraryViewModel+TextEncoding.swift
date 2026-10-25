@@ -376,3 +376,73 @@ private struct UnwrittenTextNotKept: Error {}
 /// nothing, as when its file was replaced or moved meanwhile, so content.md
 /// is put back.
 private struct CommitDropped: Error {}
+
+// MARK: - Re-reads Under Way
+
+/// The books whose text is being read again in another encoding, app-wide:
+/// from the listener's confirmation until the library row has the new
+/// reading (`LibraryViewModel.readTextAgain(bookID:as:access:)`, which marks
+/// them through `LibraryViewModel.booksBeingReadAgain`). What would rewrite
+/// such a book's text waits for its re-read
+/// (`LibraryViewModel.readingAgainRefusal(of:)`), and so does a quit
+/// (`quitWork()`): a re-read stopped between content.md's write and its
+/// record's would leave the new reading beside the old record, which the
+/// next launch takes for an edit saved while TextMouth was closed (review
+/// of October 25, item 1).
+@MainActor
+final class TextRereads {
+    /// The app's re-reads, which its library model marks and its quit waits for.
+    static let shared = TextRereads()
+
+    /// The longest a quit waits for the re-reads under way: one takes about
+    /// a second for a long book, and past this TextMouth quits anyway.
+    static let longestQuitWait: Duration = .seconds(10)
+
+    /// The books being read again.
+    var bookIDs: Set<UUID> = [] {
+        didSet {
+            begun &+= bookIDs.subtracting(oldValue).count
+            resumeWaitersWhoMayGoOn()
+        }
+    }
+
+    /// How many re-reads have begun, so a reader of a book's text can tell
+    /// whether one began, and maybe ended, while it read (`BookTextEditor`).
+    private(set) var begun = 0
+
+    /// Those waiting for a re-read to end, each with the book it waits for,
+    /// or nil for every book (`ended(_:)`).
+    private var waiters: [(bookID: UUID?, continuation: CheckedContinuation<Void, Never>)] = []
+
+    /// Whether the book `bookID` is being read again, or, when nil, any book.
+    func isReadingAgain(_ bookID: UUID? = nil) -> Bool {
+        bookID.map(bookIDs.contains) ?? !bookIDs.isEmpty
+    }
+
+    /// Returns once the book `bookID` is no longer being read again, or,
+    /// when nil, once no book is: at once when that is so already.
+    func ended(_ bookID: UUID? = nil) async {
+        guard isReadingAgain(bookID) else { return }
+        await withCheckedContinuation { waiters.append((bookID, $0)) }
+    }
+
+    /// The re-reads as work a quit waits for (`QuitHold`): while any runs,
+    /// until every one has ended, for at most `longestWait`.
+    func quitWork(longestWait: Duration = TextRereads.longestQuitWait) -> QuitHold.Work {
+        QuitHold.Work(
+            isRunning: { self.isReadingAgain() },
+            end: { await self.ended() },
+            longestWait: longestWait
+        )
+    }
+
+    /// Lets each waiter whose book is no longer being read again go on.
+    private func resumeWaitersWhoMayGoOn() {
+        let ready = waiters.filter { !isReadingAgain($0.bookID) }
+        guard !ready.isEmpty else { return }
+        waiters.removeAll { !isReadingAgain($0.bookID) }
+        for waiter in ready {
+            waiter.continuation.resume()
+        }
+    }
+}
