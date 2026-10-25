@@ -1609,7 +1609,7 @@ enum FileImportService {
 
         try run.begin(.readingText, in: book.tmbDirectory)
         guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(
-            for: &book, adoptingDocumentNames: adoptingDocumentNames, guessingEncoding: guessingEncoding
+            for: &book, adoptingDocumentNames: adoptingDocumentNames, decidingEncoding: guessingEncoding
         ) else {
             // Only a book without a package gets no cache, and every
             // import gives its book one before reading it.

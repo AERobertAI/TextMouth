@@ -86,10 +86,14 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
     }
 
     /// An Edit Text editor for `model`, sharing its sessions, which stands in
-    /// for the listener and the system: its explanation goes on, no app is
+    /// for the listener and the system: its first-use explanation is
+    /// `explain`, which goes on unless a test gives its own, no app is
     /// chosen, a file it opens is only noted in `opened`, and TextMouth is
     /// active. The caller ends its sessions (`BookTextEditor.endAll()`).
-    private func makeEditor(for model: LibraryViewModel) -> (editor: BookTextEditor, opened: OSAllocatedUnfairLock<[URL]>) {
+    private func makeEditor(
+        for model: LibraryViewModel,
+        explain: @escaping BookTextEditor.Explainer = { _, _ in true }
+    ) -> (editor: BookTextEditor, opened: OSAllocatedUnfairLock<[URL]>) {
         let sessions = BookTextEditSessions()
         model.textEditSessions = sessions
         let opened = OSAllocatedUnfairLock<[URL]>(initialState: [])
@@ -97,7 +101,7 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
             sessions: sessions,
             preferences: makeSandboxedPreferences("Edit Text"),
             notificationCenter: NotificationCenter(),
-            explain: { _, _ in true },
+            explain: explain,
             chooseApp: { _, _ in nil },
             open: { file, _ in opened.withLock { $0.append(file) } },
             isAppActive: { true }
@@ -413,6 +417,195 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
         XCTAssertEqual(opened.withLock { $0 }, [], "an editor opened")
         XCTAssertNil(model.readingAgainRefusal(), "the book is still busy")
         XCTAssertFalse(model.isExtracting)
+    }
+
+    // MARK: - Around the Re-read
+
+    /// A quit waits while a book is read again and goes ahead once the
+    /// re-read is over: stopped between content.md's write and the record's,
+    /// the re-read would leave the new reading beside the old record, which
+    /// the next launch takes for an edit saved while TextMouth was closed
+    /// (review of October 25, item 1). A library reading nothing again holds
+    /// no quit.
+    func testAQuitWaitsForTheReread() async throws {
+        let book = try makeTextBook("Halyard \(UUID().uuidString.prefix(8))")
+        let model = makeModel(with: [book])
+        model.textRereads = TextRereads()
+        let rereads = model.textRereads
+        var replies: [Bool] = []
+        XCTAssertFalse(QuitHold.hold([rereads.quitWork()]) { _ in XCTFail("a library reading nothing again held the quit") })
+
+        let outcome = try await readAgainHeldInItsRebuild(book, as: .encoding("koi8-r"), in: model) {
+            XCTAssertTrue(QuitHold.hold([rereads.quitWork()]) { replies.append($0) }, "the quit was not held")
+            try await Task.sleep(nanoseconds: 50_000_000)
+            XCTAssertEqual(replies, [], "the quit went ahead while the book was read again")
+        }
+
+        XCTAssertTrue(outcome.succeeded, "\(outcome)")
+        for _ in 0..<500 where replies.isEmpty {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertEqual(replies, [true], "the quit was not answered once the re-read was over")
+    }
+
+    /// The content.md a re-read has written, before its record is
+    /// committed, with the book marked as being read again, as the re-read
+    /// leaves it between the two writes; returns that text.
+    private func markAsMidReread(_ book: Book, in model: LibraryViewModel) throws -> String {
+        let written = PlainTextParser.markdown(text: try reading(of: book, .chosen("koi8-r")))
+        try written.write(to: MarkdownCacheService.cacheURL(for: book), atomically: true, encoding: .utf8)
+        model.booksBeingReadAgain.insert(book.id)
+        return written
+    }
+
+    /// The launch's text batch leaves a book being read again alone: the
+    /// content.md the re-read has written is neither taken for an edit
+    /// saved while TextMouth was closed nor read again from the book's file
+    /// (review of October 25, item 2).
+    func testTheLaunchBatchLeavesABookBeingReadAgainAlone() async throws {
+        let book = try makeTextBook("Lantern \(UUID().uuidString.prefix(8))")
+        let model = makeModel(with: [book])
+        let written = try markAsMidReread(book, in: model)
+        defer { model.booksBeingReadAgain.remove(book.id) }
+
+        await withCheckedContinuation { (finished: CheckedContinuation<Void, Never>) in
+            model.extractMissingContentCaches(access: .live) { finished.resume() }
+        }
+
+        XCTAssertEqual(try cachedText(of: book), written, "the batch rewrote content.md")
+        XCTAssertNil(try BookInfo.load(from: book.tmbDirectory).state.editedText, "the batch took the new reading for an edit")
+    }
+
+    /// A reader that opens a book while it is read again loads it only once
+    /// the re-read is over: before, its load took the content.md the re-read
+    /// had written for a stale cache and read the file again over it, in
+    /// the old encoding (review of October 25, item 2).
+    func testAReaderOpenedDuringTheRereadLoadsOnceItIsOver() async throws {
+        let book = try makeTextBook("Tidewater \(UUID().uuidString.prefix(8))")
+        let model = makeModel(with: [book])
+        let written = try markAsMidReread(book, in: model)
+        let loads = DispatchQueue(label: "TextEncodingRereadTests.loads")
+
+        let reader = ReaderViewModel(
+            book: book,
+            libraryViewModel: model,
+            settingsViewModel: SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false),
+            loadQueue: loads
+        )
+        addTeardownBlock { @MainActor in reader.close() }
+        // Whatever read the load began has run.
+        loads.sync {}
+
+        XCTAssertTrue(reader.isLoading)
+        XCTAssertEqual(try cachedText(of: book), written, "the load read the file again over the re-read's text")
+
+        model.booksBeingReadAgain.remove(book.id)
+        for _ in 0..<500 where reader.isLoading {
+            try await Task.sleep(nanoseconds: 10_000_000)
+            loads.sync {}
+        }
+        XCTAssertFalse(reader.isLoading, "the reader never loaded once the re-read was over")
+    }
+
+    /// Edit Text, asked to begin while a re-read runs from start to end
+    /// behind its first-use explanation, begins from the text the re-read
+    /// left, so it never takes the new reading for the listener's edit
+    /// (review of October 25, item 2).
+    func testEditTextBeginsFromTheTextAReadAgainBehindItsDialogLeft() async throws {
+        let book = try makeTextBook("Ropewalk \(UUID().uuidString.prefix(8))")
+        let model = makeModel(with: [book])
+        let (editor, _) = makeEditor(for: model) { _, _ in
+            let (outcome, _) = await self.readAgain(book, as: .encoding("koi8-r"), in: model)
+            XCTAssertTrue(outcome.succeeded, "\(outcome)")
+            return true
+        }
+        defer { editor.endAll() }
+
+        await editor.edit(book, choosingApp: false, in: model, from: nil)
+        XCTAssertTrue(editor.sessions.isEditing(book.id), "no session began")
+        // A check of the book, as TextMouth becoming active makes one.
+        editor.check(book.id)
+        let checks = editor.sessions.queue
+        await withCheckedContinuation { (done: CheckedContinuation<Void, Never>) in checks.async { done.resume() } }
+
+        XCTAssertNil(model.bookByID(book.id)?.editedText, "the new reading was taken for an edit")
+        XCTAssertNil(try BookInfo.load(from: book.tmbDirectory).state.editedText)
+    }
+
+    /// A rebuild reads the book in the decision its record holds, as the
+    /// record's saves keep it, even while the library row lags behind it,
+    /// as after a stop before library.json was saved, or another Mac's
+    /// re-read; the rebuilt book takes the decision it was read in (review
+    /// of October 25, item 3).
+    func testARebuildReadsTheRecordsDecisionOverALaggingRow() throws {
+        let book = try makeTextBook("Sounding \(UUID().uuidString.prefix(8))")
+        let chosen = TextEncodingRecord(identifier: "koi8-r", source: .chosen)
+        var decided = book
+        decided.textEncodingRecord = chosen
+        try decided.saveBookInfoThrowing()
+        XCTAssertEqual(try recordedEncoding(of: book), chosen, "the record must hold the decision, or this proves nothing")
+        let koi8 = try reading(of: book, .chosen("koi8-r"))
+
+        XCTAssertEqual(book.recordedTextEncodingRecord(), chosen)
+        var rebuilt = book
+        XCTAssertNotNil(try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &rebuilt))
+
+        XCTAssertEqual(try cachedText(of: book), PlainTextParser.markdown(text: koi8))
+        XCTAssertEqual(rebuilt.textEncodingRecord, chosen)
+    }
+
+    /// A commit that fails once contentIndex.json is written, as when
+    /// bookInfo.json can't be, puts the index back with content.md, so the
+    /// package keeps a text and an index that match (review of October 25,
+    /// item 4).
+    func testAFailedRecordWritePutsTheIndexBackToo() async throws {
+        let book = try makeTextBook("Fairlead \(UUID().uuidString.prefix(8))")
+        let model = makeModel(with: [book])
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let indexURL = TextMouthPaths.contentIndexPath(in: book.tmbDirectory)
+        let textBefore = try Data(contentsOf: cache)
+        let indexBefore = try Data(contentsOf: indexURL)
+
+        let outcome = try await readAgainHeldInItsRebuild(book, as: .encoding("koi8-r"), in: model) {
+            // bookInfo.json becomes a folder, which no record can be written over.
+            let recordURL = TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
+            try FileManager.default.removeItem(at: recordURL)
+            try FileManager.default.createDirectory(at: recordURL, withIntermediateDirectories: false)
+        }
+
+        XCTAssertFalse(outcome.succeeded, "\(outcome)")
+        XCTAssertEqual(try Data(contentsOf: cache), textBefore, "content.md was not put back")
+        XCTAssertEqual(try Data(contentsOf: indexURL), indexBefore, "contentIndex.json kept the new reading's index")
+    }
+
+    /// When the listener's editor saves between the copy kept of text
+    /// TextMouth did not write and the re-read's write, the rebuild keeps
+    /// that save as a second copy, and VoiceOver hears the one kept last,
+    /// which holds the newer text (review of October 25, item 5).
+    func testTheCopyKeptLastIsTheOneNamed() async throws {
+        let title = "Gunwale \(UUID().uuidString.prefix(8))"
+        var book = try makeTextBook(title)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let edited = try cachedText(of: book).replacingOccurrences(of: "двести", with: "триста")
+        try edited.write(to: cache, atomically: true, encoding: .utf8)
+        book.editedText = EditedText(cacheDigest: try FileImportService.md5Hash(of: cache), takenAt: Date())
+        try book.saveBookInfoThrowing()
+        let model = makeModel(with: [book])
+        let savedAgain = edited.replacingOccurrences(of: "триста", with: "четыреста")
+
+        let outcome = try await readAgainHeldInItsRebuild(book, as: .encoding("koi8-r"), in: model) {
+            try savedAgain.write(to: cache, atomically: true, encoding: .utf8)
+        }
+
+        let copies = keptCopies(of: book)
+        XCTAssertEqual(copies.count, 2, "\(copies)")
+        let last = try XCTUnwrap(copies.last)
+        XCTAssertEqual(try String(contentsOf: last, encoding: .utf8), savedAgain)
+        XCTAssertEqual(
+            outcome,
+            .success("“\(title)” is now read as KOI8-R (Russian), chosen. "
+                + "Its earlier text was kept as \(last.lastPathComponent), in the book's package.")
+        )
     }
 
     // MARK: - Places

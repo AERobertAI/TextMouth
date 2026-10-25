@@ -64,7 +64,9 @@ extension LibraryViewModel {
     /// Extraction, and Replace Existing (`replacementRefusal(of:)`) all ask
     /// here, so each waits in the same words, and none leaves content.md
     /// from one run beside the record of another (review of October 24,
-    /// finding 3).
+    /// finding 3); so does the launch's text batch, which leaves such a book
+    /// alone (`extractMissingContentCaches(access:then:)`), and a reader's
+    /// load, which waits for its re-read (`ReaderViewModel.beginReadingForLoad()`).
     func readingAgainRefusal(of bookID: UUID? = nil) -> String? {
         guard !booksBeingReadAgain.isEmpty else { return nil }
         let busy = library.books.first { book in
@@ -216,6 +218,10 @@ extension LibraryViewModel {
     /// by hand, and the refusal's "left the book as it was" is true. Putting
     /// back is simpler than committing the record first, since the record's
     /// fingerprint of content.md is only known once content.md is written.
+    /// contentIndex.json is put back the same way when the commit wrote it
+    /// before bookInfo.json failed (`BookInfo.saveRecord(to:)` writes the
+    /// index first), so the package keeps a text and an index that match
+    /// (review of October 25, item 4).
     /// - Throws: why the book was not read again; `CommitDropped` when the
     ///   record took nothing (`LibraryPersistenceService.saveContentAnalysis`).
     private nonisolated static func rereadFiles(
@@ -234,16 +240,21 @@ extension LibraryViewModel {
             }
             chosen = validated
         }
-        // 2. Text TextMouth did not write, kept beside the new text.
+        // 2. Text TextMouth did not write, kept beside the new text, the
+        // copies already there noted first.
+        let copiesBefore = Set(keptTextCopies(of: book))
         let keptCopy = try keptUnwrittenText(of: book, access: access)
         // 3. The file read again, as chosen, or as an import reads it, with
-        // content.md as it is now kept to be put back.
+        // content.md and contentIndex.json as they are now kept to be put
+        // back. The read decides the encoding, so the decision the record
+        // holds, which it replaces, is not read in its place.
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
         let textBefore = PackageFileBeforeInstall(cacheURL)
+        let indexBefore = PackageFileBeforeInstall(TextMouthPaths.contentIndexPath(in: book.tmbDirectory))
         var updated = book
         updated.textEncodingRecord = chosen ?? .unrecorded
         guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(
-            for: &updated, replacingEditedText: true, guessingEncoding: chosen == nil
+            for: &updated, replacingEditedText: true, decidingEncoding: true
         ) else {
             return .refused(TextEncodingWording.failedRefusal(bookTitle: book.title, reason: nil))
         }
@@ -276,17 +287,25 @@ extension LibraryViewModel {
                 summary: ContentAnalysisSummary(committed: committed, movedPlaces: generated.movedPlaces),
                 textForOpenReader: textForOpenReader
             )
+            // The copy VoiceOver hears of is the one kept last, which holds
+            // the newest text: a save made after the copy above, which the
+            // rebuild kept as a second (review of October 25, item 5).
+            let lastKept = keptTextCopies(of: book).last { !copiesBefore.contains($0) } ?? keptCopy
             // What it is read in now, for VoiceOver to say.
             guard case .known(let reading) = TextEncodingReading.current(of: committed, access: access) else {
-                return .readAgain(update, reading: nil, keptCopy: keptCopy)
+                return .readAgain(update, reading: nil, keptCopy: lastKept)
             }
-            return .readAgain(update, reading: reading, keptCopy: keptCopy)
+            return .readAgain(update, reading: reading, keptCopy: lastKept)
         } catch {
             // The places' copy of the old text stays with the places, for
             // the launch's place recovery, which moves nothing to the same
-            // text and then lets it go, as after any dropped commit.
+            // text and then lets it go, as after any dropped commit. The
+            // index's stamp now is the one the commit's write left, or the
+            // one it had when the commit never wrote it, which puts nothing
+            // back.
             PackageFileBeforeInstall.putBack(
-                [(textBefore, textWritten)], of: book, after: "the re-read", logTag: textEncodingChangedLogTag
+                [(textBefore, textWritten), (indexBefore, FileStamp(of: indexBefore.url))],
+                of: book, after: "the re-read", logTag: textEncodingChangedLogTag
             )
             throw error
         }
@@ -325,6 +344,12 @@ extension LibraryViewModel {
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
         guard let copy = BookTextEditSessions.keepCopy(of: cacheURL, bytes: bytes) else { throw UnwrittenTextNotKept() }
         return copy
+    }
+
+    /// The copies kept beside `book`'s content.md of text TextMouth did not
+    /// write, oldest first (`LibraryIndexQuarantine.existingCopies`).
+    private nonisolated static func keptTextCopies(of book: Book) -> [URL] {
+        LibraryIndexQuarantine.existingCopies(of: MarkdownCacheService.cacheURL(for: book), marker: TextMouthPaths.keptTextCopyMarker)
     }
 
     /// The bytes of `book`'s content.md when they hold text TextMouth did not
@@ -376,3 +401,73 @@ private struct UnwrittenTextNotKept: Error {}
 /// nothing, as when its file was replaced or moved meanwhile, so content.md
 /// is put back.
 private struct CommitDropped: Error {}
+
+// MARK: - Re-reads Under Way
+
+/// The books whose text is being read again in another encoding, app-wide:
+/// from the listener's confirmation until the library row has the new
+/// reading (`LibraryViewModel.readTextAgain(bookID:as:access:)`, which marks
+/// them through `LibraryViewModel.booksBeingReadAgain`). What would rewrite
+/// such a book's text waits for its re-read
+/// (`LibraryViewModel.readingAgainRefusal(of:)`), and so does a quit
+/// (`quitWork()`): a re-read stopped between content.md's write and its
+/// record's would leave the new reading beside the old record, which the
+/// next launch takes for an edit saved while TextMouth was closed (review
+/// of October 25, item 1).
+@MainActor
+final class TextRereads {
+    /// The app's re-reads, which its library model marks and its quit waits for.
+    static let shared = TextRereads()
+
+    /// The longest a quit waits for the re-reads under way: one takes about
+    /// a second for a long book, and past this TextMouth quits anyway.
+    static let longestQuitWait: Duration = .seconds(10)
+
+    /// The books being read again.
+    var bookIDs: Set<UUID> = [] {
+        didSet {
+            begun &+= bookIDs.subtracting(oldValue).count
+            resumeWaitersWhoMayGoOn()
+        }
+    }
+
+    /// How many re-reads have begun, so a reader of a book's text can tell
+    /// whether one began, and maybe ended, while it read (`BookTextEditor`).
+    private(set) var begun = 0
+
+    /// Those waiting for a re-read to end, each with the book it waits for,
+    /// or nil for every book (`ended(_:)`).
+    private var waiters: [(bookID: UUID?, continuation: CheckedContinuation<Void, Never>)] = []
+
+    /// Whether the book `bookID` is being read again, or, when nil, any book.
+    func isReadingAgain(_ bookID: UUID? = nil) -> Bool {
+        bookID.map(bookIDs.contains) ?? !bookIDs.isEmpty
+    }
+
+    /// Returns once the book `bookID` is no longer being read again, or,
+    /// when nil, once no book is: at once when that is so already.
+    func ended(_ bookID: UUID? = nil) async {
+        guard isReadingAgain(bookID) else { return }
+        await withCheckedContinuation { waiters.append((bookID, $0)) }
+    }
+
+    /// The re-reads as work a quit waits for (`QuitHold`): while any runs,
+    /// until every one has ended, for at most `longestWait`.
+    func quitWork(longestWait: Duration = TextRereads.longestQuitWait) -> QuitHold.Work {
+        QuitHold.Work(
+            isRunning: { self.isReadingAgain() },
+            end: { await self.ended() },
+            longestWait: longestWait
+        )
+    }
+
+    /// Lets each waiter whose book is no longer being read again go on.
+    private func resumeWaitersWhoMayGoOn() {
+        let ready = waiters.filter { !isReadingAgain($0.bookID) }
+        guard !ready.isEmpty else { return }
+        waiters.removeAll { !isReadingAgain($0.bookID) }
+        for waiter in ready {
+            waiter.continuation.resume()
+        }
+    }
+}

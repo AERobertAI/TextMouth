@@ -242,6 +242,13 @@ extension ReaderViewModel {
     /// takes once did, finding the package gone and saying the book could
     /// not be read (TODO P10).
     ///
+    /// A book whose text is being read again in another encoding loads the
+    /// same way, once that is over, from the text and record it leaves
+    /// (`LibraryViewModel.readingAgainRefusal(of:)`, encodingchoice): a load
+    /// meanwhile would find the content.md the re-read writes before its
+    /// record, take it for a stale cache, and read the book's file over it
+    /// in the old encoding (review of October 25, item 2).
+    ///
     /// - Returns: Whether the read may begin now.
     func beginReadingForLoad() -> Bool {
         guard !isPackageMoving else {
@@ -249,9 +256,29 @@ extension ReaderViewModel {
             DiagnosticLog.trace(.storage, "a load waits for the book's package to finish moving")
             return false
         }
+        guard libraryViewModel.readingAgainRefusal(of: book.id) == nil else {
+            waitForRereadThenLoad()
+            return false
+        }
         // The read beginning now has met no move yet.
         loadMetPackageMove = false
         return true
+    }
+
+    /// Loads the book from the start once its text is no longer being read
+    /// again, from wherever it is then; a wait already under way is kept.
+    private func waitForRereadThenLoad() {
+        guard !loadWaitsForReread else { return }
+        loadWaitsForReread = true
+        DiagnosticLog.trace(.storage, "a load waits for the book's text to be read again")
+        let rereads = libraryViewModel.textRereads
+        let bookID = book.id
+        Task { @MainActor [weak self] in
+            await rereads.ended(bookID)
+            guard let self else { return }
+            self.loadWaitsForReread = false
+            self.loadContent()
+        }
     }
 
     /// Notes, as the library says the book's package will move, that the

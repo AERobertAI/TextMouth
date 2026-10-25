@@ -1164,10 +1164,11 @@ final class FeedDownloadManager {
 
 // MARK: - Holding a Quit
 
-/// Holds a quit while the feed downloads keep their place (FR03). The
-/// application delegate asks it only once the quit is sure to go ahead,
-/// with nothing unsaved or Quit Anyway chosen, so a quit that leaves
-/// TextMouth open never stops a download.
+/// Holds a quit while the feed downloads keep their place (FR03), through
+/// the hold every piece of such work shares (`QuitHold`). The application
+/// delegate asks it only once the quit is sure to go ahead, with nothing
+/// unsaved or Quit Anyway chosen, so a quit that leaves TextMouth open never
+/// stops a download.
 @MainActor
 enum FeedQuitHold {
     /// The longest a quit waits for the downloads: producing resume data
@@ -1185,36 +1186,16 @@ enum FeedQuitHold {
         longestWait: Duration = FeedQuitHold.longestWait,
         reply: @escaping @MainActor (Bool) -> Void
     ) -> Bool {
-        guard downloads.hasWork, !downloads.isStoppedForQuit else { return false }
-        let answer = HeldQuitAnswer(reply)
-        Task {
-            await downloads.stopForQuit()
-            answer.give()
-        }
-        Task {
-            try? await Task.sleep(for: longestWait)
-            answer.give()
-        }
-        return true
-    }
-}
-
-/// The answer to one held quit, given once, by whichever of its waits ends
-/// first.
-@MainActor
-private final class HeldQuitAnswer {
-    /// Answers the quit, until it has been answered.
-    private var reply: ((Bool) -> Void)?
-
-    /// An answer given through `reply`.
-    init(_ reply: @escaping @MainActor (Bool) -> Void) {
-        self.reply = reply
+        QuitHold.hold([work(downloads, longestWait: longestWait)], reply: reply)
     }
 
-    /// Lets the quit go ahead, unless it was let go already.
-    func give() {
-        guard let reply else { return }
-        self.reply = nil
-        reply(true)
+    /// `downloads` as work a quit waits for (`QuitHold`): while any waits or
+    /// runs, until they have kept their place, for at most `longestWait`.
+    static func work(_ downloads: FeedDownloadManager, longestWait: Duration = FeedQuitHold.longestWait) -> QuitHold.Work {
+        QuitHold.Work(
+            isRunning: { downloads.hasWork && !downloads.isStoppedForQuit },
+            end: { await downloads.stopForQuit() },
+            longestWait: longestWait
+        )
     }
 }

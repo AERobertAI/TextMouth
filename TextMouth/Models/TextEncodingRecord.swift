@@ -63,6 +63,22 @@ struct TextEncodingRecord: Equatable, Sendable {
         }
         return .forBook(recording: identifier)
     }
+
+    /// The encoding that stands, with who decided it, when a book's library
+    /// row holds `row` and its package record holds `recorded`: the record's
+    /// decision when it names one, since a re-read in another encoding, the
+    /// only thing that writes a decision, writes it into the record with its
+    /// new text before the row takes it, so a row that differs lags behind
+    /// it (after a stop before library.json was saved, or another Mac's
+    /// re-read); otherwise the row's, or else the record's, for a row that
+    /// lost both. Every place the two meet follows it: a write of the record
+    /// (`Book.bookInfo(replacing:contentIndex:revisionFloor:decidingTextEncoding:)`),
+    /// a reading of the book's file (`Book.recordedTextEncodingRecord()`), and
+    /// an analysis recovered from the record (`ContentAnalysisSummary.apply(to:)`).
+    static func standing(row: TextEncodingRecord, recorded: TextEncodingRecord) -> TextEncodingRecord {
+        if recorded.source != nil { return recorded }
+        return row.isEmpty ? recorded : row
+    }
 }
 
 // MARK: - The Fields as One

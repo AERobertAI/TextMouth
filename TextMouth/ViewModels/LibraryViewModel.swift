@@ -232,14 +232,20 @@ final class LibraryViewModel: ObservableObject {
     /// so (ST04): the app's, made only when a session is to end; tests give
     /// their own, with the sessions they give `textEditSessions`.
     var bookTextEditor: @MainActor () -> BookTextEditor = { BookTextEditor.shared }
+    /// The re-reads in another encoding under way, app-wide, which a quit
+    /// waits for (`TextRereads`): the app's, unless a test gives its own.
+    var textRereads: TextRereads = .shared
     /// The books whose text is being read again in another encoding, from
     /// the moment the listener confirms until the library row has the new
-    /// reading (`readTextAgain(bookID:as:access:)`, encodingchoice). What
-    /// would rewrite such a book's text meanwhile waits for it, each asking
-    /// `readingAgainRefusal(of:)`: a second re-read of it, from either Book
-    /// Information, Edit Text, Redo Text Extraction (review of October 24,
-    /// finding 3), and Replace Existing.
-    var booksBeingReadAgain: Set<UUID> = []
+    /// reading (`readTextAgain(bookID:as:access:)`, encodingchoice), kept in
+    /// `textRereads`. What would rewrite such a book's text meanwhile waits
+    /// for it, each asking `readingAgainRefusal(of:)`: a second re-read of
+    /// it, from either Book Information, Edit Text, Redo Text Extraction
+    /// (review of October 24, finding 3), and Replace Existing.
+    var booksBeingReadAgain: Set<UUID> {
+        get { textRereads.bookIDs }
+        set { textRereads.bookIDs = newValue }
+    }
     /// The offers to transcribe that the user accepted (FR05), for the
     /// Library window that asked to open the Transcribe Audio sheet.
     let acceptedTranscriptionOffers = PassthroughSubject<TranscriptionOfferAcceptance, Never>()
