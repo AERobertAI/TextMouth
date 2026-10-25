@@ -187,17 +187,18 @@ enum MarkdownCacheService {
         }
     }
 
-    /// How a text file in `book` is read when its bytes name no encoding:
-    /// by a guess when `guessingEncoding` says so and the book has not
-    /// recorded an encoding already, in the encoding the book recorded
-    /// otherwise (its row's, or its package record's when the row lost it:
-    /// `Book.recordedTextEncoding()`), and as it always was read when it
-    /// recorded none.
+    /// How a text file in `book` is read: by a guess when `guessingEncoding`
+    /// says so and the book records no encoding and nobody's decision about
+    /// one, and otherwise as the book records (its row's, or its package
+    /// record's when the row lost it: `Book.recordedTextEncodingRecord()`):
+    /// in the encoding the listener chose, whatever the bytes say
+    /// (encodingchoice); in the encoding guessed, when the bytes name none;
+    /// or as it always was read, when it records none.
     private static func encodingPolicy(of book: Book, guessingEncoding: Bool = false) -> TextFileDecoder.EncodingPolicy {
-        if guessingEncoding && book.textEncoding == nil {
+        if guessingEncoding && book.textEncodingRecord.isEmpty {
             return .guess
         }
-        return .forBook(recording: book.recordedTextEncoding())
+        return book.recordedTextEncodingRecord().policy
     }
 
     /// The work of `generateReportedCacheContent(for:)` for a book with a
@@ -430,8 +431,9 @@ enum MarkdownCacheService {
     /// one, which `book` records (`Book.textEncoding`, FMT16) so that every
     /// later reading of it uses the same. Without it, a book whose row lost
     /// its encoding is read in the one its package record keeps, and `book`
-    /// takes it back (`Book.recordedTextEncoding()`); the library row takes
-    /// it with the analysis the caller commits (`ContentAnalysisSummary`).
+    /// takes it back, with who decided it (`Book.recordedTextEncodingRecord()`);
+    /// the library row takes it with the analysis the caller commits
+    /// (`ContentAnalysisSummary`).
     /// - Returns: nil for a book with no text cache.
     /// - Throws: why no cache could be written; `book` is then unchanged.
     ///   `EditedTextKept` when content.md holds the user's edit and
@@ -455,10 +457,11 @@ enum MarkdownCacheService {
         if let guessed = generated.guessedEncoding {
             // The encoding the file was guessed to be in is the book's from now on.
             book.textEncoding = guessed
-        } else if !guessingEncoding, book.textEncoding == nil {
-            // A row that lost its encoding takes it back from the record the
-            // file was just read by (nil when the record names none).
-            book.textEncoding = book.recordedTextEncoding()
+        } else if !guessingEncoding, book.textEncodingRecord.isEmpty {
+            // A row that lost its encoding takes it back, with who decided
+            // it, from the record the file was just read by (none when the
+            // record names none).
+            book.textEncodingRecord = book.recordedTextEncodingRecord()
         }
         return generated
     }

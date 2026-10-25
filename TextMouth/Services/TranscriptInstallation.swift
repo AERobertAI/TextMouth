@@ -161,13 +161,14 @@ extension TranscriptStore {
 // MARK: - Putting Back What a Failed Install Wrote
 
 /// A file of a book's package as an install found it before writing over it
-/// (`TranscriptStore.install`), kept so that a step failing afterwards can
-/// put it back exactly: its bytes, and its access and modification times,
-/// since the book's record and an Edit Text session's baseline know the file
-/// by its size and modification time; or that there was no file. Nothing is
-/// downloaded to keep it, so a file only in the cloud, or one that can't be
-/// read, is not kept.
-private struct PackageFileBeforeInstall {
+/// (`TranscriptStore.install`), or a re-read in another encoding
+/// (`LibraryViewModel.readTextAgain`, encodingchoice), kept so that a step
+/// failing afterwards can put it back exactly: its bytes, and its access and
+/// modification times, since the book's record and an Edit Text session's
+/// baseline know the file by its size and modification time; or that there
+/// was no file. Nothing is downloaded to keep it, so a file only in the
+/// cloud, or one that can't be read, is not kept.
+struct PackageFileBeforeInstall {
     /// What the file was before the install.
     private enum State {
         /// There was no file.
@@ -218,8 +219,14 @@ private struct PackageFileBeforeInstall {
     /// kept, because it was only in the cloud or could not be read, none is
     /// put back: the new transcript then stays with any text written from
     /// it, and the next open of the book writes the text from transcript.json
-    /// if none was. A file that cannot be put back is named in the debug log.
-    static func putBack(_ files: [(file: PackageFileBeforeInstall, written: FileStamp?)], of book: Book) {
+    /// if none was. A file that cannot be put back is named in the debug log,
+    /// in a line beginning with `logTag` that says `work` failed.
+    static func putBack(
+        _ files: [(file: PackageFileBeforeInstall, written: FileStamp?)],
+        of book: Book,
+        after work: String = "the install",
+        logTag: String = TranscriptStore.logTag
+    ) {
         let replaced = files.filter { $0.file.stillHolds($0.written) }.map(\.file)
         guard replaced.allSatisfy(\.isKept) else { return }
         for file in replaced {
@@ -231,8 +238,8 @@ private struct PackageFileBeforeInstall {
                 let failure = error as NSError
                 DiagnosticLog.event(
                     .storage,
-                    "\(TranscriptStore.logTag): \(book.title): \(file.url.lastPathComponent) could not be put back "
-                        + "after the install failed: error \(failure.code) in \(failure.domain)"
+                    "\(logTag): \(book.title): \(file.url.lastPathComponent) could not be put back "
+                        + "after \(work) failed: error \(failure.code) in \(failure.domain)"
                 )
             }
         }

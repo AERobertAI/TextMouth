@@ -66,6 +66,17 @@ enum BookTextEditWording {
             + "Choose Edit Text again to edit the new copy's text."
     }
 
+    /// A session ended because the listener had its book's file read again
+    /// in another encoding from Book Information (encodingchoice): the new
+    /// reading replaced the text being edited, which was kept beside it.
+    /// Said once the re-read is done, as the last part of what VoiceOver
+    /// hears of it (`TextEncodingWording.readAgainAnnouncement`), with what
+    /// to do to edit the new text.
+    static func stoppedBookReadAgain(bookTitle: String) -> String {
+        "Edit Text has stopped for \(bookTitle), since its file was read again. "
+            + "Choose Edit Text again to edit the new text."
+    }
+
     /// Why an edit was not taken, as VoiceOver hears it once a check found
     /// it, then where the edited text was kept (`kept(_:)`), as in "Text not
     /// updated: the edited text of Harbour Pilots isn't UTF-8 text. Save it
@@ -162,6 +173,15 @@ enum BookTextEditWording {
         case .failed(let reason):
             return reason
         }
+    }
+
+    /// Where the text a replacement or a re-read replaced was kept, beside
+    /// the new text, named as Edit Text names the copies it keeps: "Its
+    /// earlier text was kept as content.md.edited-20261024T123012Z, in the
+    /// book's package." Replace Existing (ST04) and a re-read in another
+    /// encoding (encodingchoice) both say it from here.
+    static func earlierTextKept(_ copy: URL) -> String {
+        "Its earlier text was kept as \(copy.lastPathComponent), in the book's package."
     }
 
     /// A rebuild read the book's text from its own file again, over other

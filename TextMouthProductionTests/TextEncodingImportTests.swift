@@ -93,7 +93,7 @@ final class TextEncodingImportTests: XCTestCase {
         _ = try MarkdownCacheService.generateReportedCacheContent(for: book)
         XCTAssertEqual(try cachedMarkdown(of: book), imported)
 
-        let direct = try BookParser.parse(url: book.bookFileURL, format: book.format, textEncoding: book.textEncoding)
+        let direct = try BookParser.parse(url: book.bookFileURL, format: book.format, encodingPolicy: book.textEncodingRecord.policy)
         XCTAssertEqual(direct.chapters.map(\.text).joined(separator: "\n\n"), reading(of: Self.russian))
     }
 
@@ -144,8 +144,10 @@ final class TextEncodingImportTests: XCTestCase {
 
         var lost = book
         lost.textEncoding = nil
-        XCTAssertEqual(lost.recordedTextEncoding(), "koi8-r")
-        let direct = try BookParser.parse(url: lost.bookFileURL, format: lost.format, textEncoding: lost.recordedTextEncoding())
+        XCTAssertEqual(lost.recordedTextEncodingRecord().identifier, "koi8-r")
+        let direct = try BookParser.parse(
+            url: lost.bookFileURL, format: lost.format, encodingPolicy: lost.recordedTextEncodingRecord().policy
+        )
         XCTAssertEqual(direct.chapters.map(\.text).joined(separator: "\n\n"), reading(of: Self.russian))
 
         MarkdownCacheService.deleteCache(for: lost)
@@ -182,22 +184,22 @@ final class TextEncodingImportTests: XCTestCase {
         let book = try importedForTest(copyOfFormatSample("txt-encodings/koi8-r.txt")).book
         var lost = book
         lost.textEncoding = nil
-        XCTAssertEqual(lost.recordedTextEncoding(), "koi8-r")
+        XCTAssertEqual(lost.recordedTextEncodingRecord().identifier, "koi8-r")
 
         let another = Book(
             id: UUID(), title: book.title, format: book.format, filePath: book.filePath,
             md5Hash: book.md5Hash, tmbDirectoryName: book.tmbDirectoryName
         )
-        XCTAssertNil(another.recordedTextEncoding(), "the record names another book")
+        XCTAssertNil(another.recordedTextEncodingRecord().identifier, "the record names another book")
 
         let unpackaged = Book(title: "Loose", format: .txt, filePath: "/nowhere/Loose.txt", md5Hash: "loose")
-        XCTAssertNil(unpackaged.recordedTextEncoding(), "no package, no record")
+        XCTAssertNil(unpackaged.recordedTextEncodingRecord().identifier, "no package, no record")
 
-        XCTAssertEqual(book.recordedTextEncoding(), "koi8-r", "a row's own encoding is used as it is")
+        XCTAssertEqual(book.recordedTextEncodingRecord().identifier, "koi8-r", "a row's own encoding is used as it is")
 
         try Data("not json".utf8).write(to: TextMouthPaths.bookInfoPath(in: book.tmbDirectory))
-        XCTAssertNil(lost.recordedTextEncoding(), "an unreadable record")
-        XCTAssertEqual(book.recordedTextEncoding(), "koi8-r", "a row's own encoding needs no record")
+        XCTAssertNil(lost.recordedTextEncodingRecord().identifier, "an unreadable record")
+        XCTAssertEqual(book.recordedTextEncodingRecord().identifier, "koi8-r", "a row's own encoding needs no record")
     }
 
     /// A book removed from the library only and added back from its package
@@ -279,6 +281,48 @@ final class TextEncodingImportTests: XCTestCase {
 
         let ascii = try importedBook(Data("Plain ASCII text.\n".utf8), named: "Plain \(UUID().uuidString).txt")
         XCTAssertNil(ascii.textEncoding)
+    }
+
+    // MARK: - A Chosen Encoding (encodingchoice)
+
+    /// A book whose record holds the listener's choice is read in it by
+    /// every later reading: a rebuild of the cache, which keeps the choice,
+    /// the re-read for pages, which finds the same text, and the direct
+    /// reading of the file. A row that lost both fields takes both back from
+    /// the record. Here a KOI8-R file, guessed right at its import, is
+    /// chosen to be read as Windows-1251, which reads its bytes as other
+    /// letters.
+    func testEveryLaterReadingUsesTheChosenEncoding() throws {
+        var book = try importedForTest(copyOfFormatSample("txt-encodings/koi8-r.txt")).book
+        XCTAssertEqual(book.textEncodingRecord, TextEncodingRecord(identifier: "koi8-r", source: nil))
+        let chosen = TextEncodingRecord(identifier: "windows-1251", source: .chosen)
+        let chosenText = try TextFileDecoder.decode(
+            Data(contentsOf: book.bookFileURL), fileName: "koi8-r.txt", format: .txt, policy: chosen.policy
+        ).text
+        XCTAssertNotEqual(chosenText, Self.russian, "Windows-1251 must read the file otherwise, or this proves nothing")
+        book.textEncodingRecord = chosen
+        try book.saveBookInfoThrowing()
+
+        MarkdownCacheService.deleteCache(for: book)
+        XCTAssertNotNil(try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &book))
+        let written = try cachedMarkdown(of: book)
+        XCTAssertEqual(written, PlainTextParser.markdown(text: chosenText))
+        XCTAssertEqual(book.textEncodingRecord, chosen, "a rebuild keeps the choice")
+
+        let again = try XCTUnwrap(MarkdownCacheService.extractedText(for: book, includesPages: true))
+        XCTAssertEqual(again.markdown, written)
+        let direct = try BookParser.parse(
+            url: book.bookFileURL, format: book.format, encodingPolicy: book.recordedTextEncodingRecord().policy
+        )
+        XCTAssertEqual(direct.chapters.map(\.text).joined(separator: "\n\n"), reading(of: chosenText))
+
+        var lost = book
+        lost.textEncodingRecord = .unrecorded
+        XCTAssertEqual(lost.recordedTextEncodingRecord(), chosen)
+        MarkdownCacheService.deleteCache(for: lost)
+        XCTAssertNotNil(try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &lost))
+        XCTAssertEqual(try cachedMarkdown(of: lost), written, "read in the record's choice")
+        XCTAssertEqual(lost.textEncodingRecord, chosen, "the row has the choice again")
     }
 
     /// Text typed or pasted in is UTF-8 and is never guessed at, whatever

@@ -431,9 +431,11 @@ extension FileImportService {
             brailleTable: format == .braille ? marker.brailleTable : nil,
             brailleTableVersion: format == .braille ? marker.brailleTableVersion : nil,
             // A text book is read in the encoding it was guessed to be in
-            // (FMT16), which the deleted record held as well. Without it the
-            // book would be read by the fallback, and its text would change.
-            textEncoding: format.usesTextFileDecoder ? marker.textEncoding : nil
+            // (FMT16), or chosen in (encodingchoice), which the deleted
+            // record held as well. Without it the book would be read by the
+            // fallback, and its text would change.
+            textEncoding: format.usesTextFileDecoder ? marker.textEncoding : nil,
+            textEncodingSource: format.usesTextFileDecoder ? marker.textEncodingSource : nil
         )
     }
 

@@ -734,6 +734,37 @@ final class ImportDecisionFlowTests: XCTestCase {
         XCTAssertEqual(scene.model.library.books.map(\.id), [atlas.existing.id])
     }
 
+    /// While the library's copy is being read again in another encoding
+    /// (encodingchoice), which writes into the package a replacement
+    /// removes, Replace Existing waits in the re-read's own words, changes
+    /// nothing, and keeps the question asked; once the re-read is over, the
+    /// same answer replaces the book.
+    func testReplaceWaitsWhileTheOldCopyIsReadAgainInAnotherEncoding() throws {
+        let scene = try makeScene()
+        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        scene.model.library = Library(books: [atlas.existing])
+        useAfterImportingBehavior(.keepOriginal)
+        scene.model.importFiles(urls: [atlas.copy], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let asked = try XCTUnwrap(scene.model.importDecisions.current)
+        let copy = try XCTUnwrap(asked.duplicate?.book)
+
+        // As the re-read marks its book, from the confirmation until its row has the new reading.
+        scene.model.booksBeingReadAgain.insert(atlas.existing.id)
+        let whileReadAgain = scene.model.answerCurrentImportDecision(.replaceExisting)
+        scene.model.booksBeingReadAgain.remove(atlas.existing.id)
+
+        XCTAssertEqual(
+            whileReadAgain.failureMessage,
+            "TextMouth is reading “Earlier Atlas of Tides” again in another encoding. Try again when that finishes."
+        )
+        XCTAssertEqual(scene.model.importDecisions.current?.id, asked.id)
+        XCTAssertEqual(scene.model.library.books, [atlas.existing])
+        XCTAssertEqual(try scene.folder.entries(), [atlas.existing.tmbDirectoryName, copy.tmbDirectoryName])
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+        XCTAssertEqual(scene.model.library.books.map(\.id), [atlas.existing.id])
+    }
+
     /// A session editing the old copy's text with Edit Text ends with the
     /// replacement, through the editor, which says so aloud: what the
     /// session watched went with the old copy, and a check of the new copy's

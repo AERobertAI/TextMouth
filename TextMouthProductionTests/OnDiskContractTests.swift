@@ -279,6 +279,10 @@ final class OnDiskContractTests: XCTestCase {
             // FMT16: the encoding a text book's file was guessed to be in. An optional key, written only for
             // a book imported with a guess, so every other row is exactly as it was.
             "textEncoding",
+            // encodingchoice: who decided that encoding, "chosen" or "automatic", when the listener chose
+            // in Book Information. An optional key, read leniently, written only for such a book; an older
+            // TextMouth drops it, and the chosen encoding then reads as a guess of the same encoding.
+            "textEncodingSource",
         ]
         XCTAssertEqual(Set(row.keys), expected, Self.because("a library row's key", Self.keyForces))
         // Every property but the feed link is a key; the feed link is the
@@ -309,8 +313,8 @@ final class OnDiskContractTests: XCTestCase {
             "bookID", "sourceFilePath", "publisher", "publicationDate", "isbn", "language", "epubIdentifier",
             "epubVersion", "audioAlbum", "audioGenre", "audioYear", "metadataReaderVersion", "handEdits",
             "feedLink", "brailleTable", "brailleTableVersion",
-            // FMT16, as in a library row.
-            "textEncoding",
+            // FMT16, and encodingchoice's source, as in a library row.
+            "textEncoding", "textEncodingSource",
         ]
         XCTAssertEqual(
             Set(metadata.keys),
@@ -634,7 +638,8 @@ final class OnDiskContractTests: XCTestCase {
             feedLink: FeedBookLink(feedID: UUID(), itemID: "item"),
             brailleTable: "table.ctb",
             brailleTableVersion: "liblouis",
-            textEncoding: "windows-1251"
+            textEncoding: "windows-1251",
+            textEncodingSource: .chosen
         )
     }
 }

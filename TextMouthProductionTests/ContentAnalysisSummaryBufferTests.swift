@@ -399,6 +399,50 @@ final class ContentAnalysisSummaryBufferTests: XCTestCase {
         XCTAssertEqual(row.textEncoding, "euc-kr")
     }
 
+    /// Who decided the encoding travels with it (encodingchoice): a row that
+    /// lost both takes both from the record, and a book recovered from its
+    /// own record takes both.
+    func testASummaryCarriesWhoDecidedWithTheEncoding() throws {
+        var committed = try XCTUnwrap(Self.books(count: 1).first)
+        committed.textEncodingRecord = TextEncodingRecord(identifier: "koi8-r", source: .chosen)
+        let summary = ContentAnalysisSummary(committed: committed)
+        XCTAssertEqual(summary.textEncodingRecord, committed.textEncodingRecord)
+
+        var lost = committed
+        lost.textEncodingRecord = .unrecorded
+        summary.apply(to: &lost)
+        XCTAssertEqual(lost.textEncodingRecord, TextEncodingRecord(identifier: "koi8-r", source: .chosen))
+
+        var row = committed
+        row.textEncodingRecord = .unrecorded
+        ContentAnalysisSummary(recovered: row, record: committed).apply(to: &row)
+        XCTAssertEqual(row.textEncodingRecord, TextEncodingRecord(identifier: "koi8-r", source: .chosen))
+    }
+
+    /// A record that holds the listener's own decision gives it to the row
+    /// that holds another: a re-read in another encoding writes it into the
+    /// record with its new text before the row takes it, so a row a stop
+    /// left behind catches up, a choice or Automatic's nil alike. A record
+    /// that holds a guess gives a row with an encoding of its own nothing.
+    func testARecordOfTheListenersDecisionReachesARowLeftBehind() throws {
+        var committed = try XCTUnwrap(Self.books(count: 1).first)
+        func row(_ record: TextEncodingRecord, after recorded: TextEncodingRecord) -> TextEncodingRecord {
+            committed.textEncodingRecord = recorded
+            var row = committed
+            row.textEncodingRecord = record
+            ContentAnalysisSummary(committed: committed).apply(to: &row)
+            return row.textEncodingRecord
+        }
+        let chosen = TextEncodingRecord(identifier: "koi8-r", source: .chosen)
+        let automatic = TextEncodingRecord(identifier: nil, source: .automatic)
+        let guess = TextEncodingRecord(identifier: "windows-1251", source: nil)
+        XCTAssertEqual(row(automatic, after: chosen), chosen)
+        XCTAssertEqual(row(guess, after: chosen), chosen)
+        XCTAssertEqual(row(chosen, after: automatic), automatic)
+        XCTAssertEqual(row(guess, after: automatic), automatic)
+        XCTAssertEqual(row(chosen, after: guess), chosen, "a record's guess gives a row with its own nothing")
+    }
+
     /// A book recovered from a package record that names another book, as an
     /// old shared package's may, takes no encoding from it: every later
     /// reading of the book would use that other book's encoding.
@@ -408,10 +452,13 @@ final class ContentAnalysisSummaryBufferTests: XCTestCase {
         var stranger = try XCTUnwrap(books.last)
         XCTAssertNotEqual(row.id, stranger.id)
         stranger.textEncoding = "euc-kr"
+        stranger.textEncodingSource = .chosen
         let summary = ContentAnalysisSummary(recovered: row, record: stranger)
         XCTAssertNil(summary.textEncoding)
+        XCTAssertNil(summary.textEncodingSource)
         summary.apply(to: &row)
         XCTAssertNil(row.textEncoding, "a record that names another book gives no encoding")
+        XCTAssertNil(row.textEncodingSource, "nor who decided it")
     }
 
     /// Through the library: the row takes the encoding back with the

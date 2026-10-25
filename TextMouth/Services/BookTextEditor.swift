@@ -109,10 +109,11 @@ final class BookTextEditor {
     /// its transcript's, which takes the edit (FR05). A book already being
     /// edited keeps its session, so an edit it has not taken yet is never
     /// lost. Says why nothing opened: an audiobook without a transcript, a
-    /// text that is only in the cloud (FR02) or not written yet, or an
-    /// editor that could not open it. `window` is where the dialogs and
-    /// announcements appear.
+    /// text that is only in the cloud (FR02) or not written yet, a text
+    /// being read again in another encoding, or an editor that could not
+    /// open it. `window` is where the dialogs and announcements appear.
     func edit(_ book: Book, choosingApp: Bool, in library: LibraryViewModel, from window: NSWindow?) async {
+        guard !refusesWhileReadAgain(book, in: library, from: window) else { return }
         guard await Self.hasText(book) else {
             files.announce(BookTextEditWording.noText(bookTitle: book.title), from: window)
             return
@@ -129,6 +130,8 @@ final class BookTextEditor {
             baseline = current
         }
         guard let choice = await files.chooseEditor(bookTitle: book.title, choosingApp: choosingApp, from: window) else { return }
+        // Asked again: a re-read may have begun while the dialogs were open.
+        guard !refusesWhileReadAgain(book, in: library, from: window) else { return }
         let startedSession = begin(book.id, baseline: baseline)
         do {
             try await files.open(MarkdownCacheService.cacheURL(for: book), choice.app)
@@ -140,8 +143,19 @@ final class BookTextEditor {
         }
     }
 
+    /// Whether `book`'s text is being read again in another encoding, which
+    /// Edit Text waits for, saying so (`LibraryViewModel.readingAgainRefusal(of:)`):
+    /// the re-read replaces the text a session would watch (review of
+    /// October 24, finding 3).
+    private func refusesWhileReadAgain(_ book: Book, in library: LibraryViewModel, from window: NSWindow?) -> Bool {
+        guard let refusal = library.readingAgainRefusal(of: book.id) else { return false }
+        files.announce(refusal, from: window)
+        return true
+    }
+
     /// Pauses `book`'s session before a change rewrites its transcript
-    /// (Clean Up, Undo Cleanup, a new transcription, Delete Transcript):
+    /// (Clean Up, Undo Cleanup, a new transcription, Delete Transcript), or
+    /// its text (a re-read in another encoding, encodingchoice):
     /// a check of the book already running finishes, and an edit saved but
     /// not yet checked is taken, committed, and announced as any taken edit
     /// is (`BookTextEditSessions.settlePendingEdit(of:)`), all off the main

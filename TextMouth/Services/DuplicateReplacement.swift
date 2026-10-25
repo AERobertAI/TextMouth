@@ -79,11 +79,18 @@ enum DuplicateReplacement {
         /// edit moving its books' packages does: the replacement would move
         /// and remove packages under it (ST04 review, finding 5).
         case storageBusy(StorageHoldReason)
+        /// The copy's text is being read again in another encoding
+        /// (encodingchoice), which writes into the package the replacement
+        /// removes. It carries the re-read's own sentence
+        /// (`LibraryViewModel.readingAgainRefusal(of:)`), said as it is.
+        case readingAgain(String)
 
         /// The refusal as the question's sheet shows it and VoiceOver
         /// speaks it.
         var sentence: String {
             switch self {
+            case .readingAgain(let sentence):
+                return sentence
             case .inUse(let use, let title):
                 return use.refusal(of: "“\(title)”", doing: "replacing it", retry: DuplicateReplacement.retry)
             case .audioBeingEdited(let title):
@@ -169,10 +176,10 @@ enum DuplicateReplacement {
     /// What VoiceOver hears once the new copy took the place of the book
     /// titled `title` and the old copy's text was kept beside the new text
     /// as `copy`, naming the copy as Edit Text names the copies it keeps
-    /// (`BookTextEditWording.kept(_:)`), so the user knows where the earlier
-    /// text is.
+    /// (`BookTextEditWording.earlierTextKept(_:)`, which a re-read in another
+    /// encoding says too), so the user knows where the earlier text is.
     static func keptTextAnnouncement(title: String, copy: URL) -> String {
-        "Replaced “\(title)”. Its earlier text was kept as \(copy.lastPathComponent), in the book's package."
+        "Replaced “\(title)”. \(BookTextEditWording.earlierTextKept(copy))"
     }
 
     /// What the library's alert says when the package of the copy titled
@@ -566,13 +573,12 @@ enum DuplicateReplacement {
         }
         let oldTextIsWritten = oldTextBytes.map { holdsTextOfPlaces($0, of: existing, hasher: access.hasher) } ?? false
         if !existing.format.isAudio, holdsOldText {
+            // An edit on record is kept whatever it takes: never left behind
+            // because it is only in the cloud.
             if existing.editedText != nil {
-                // An edit on record is kept whatever it takes: never left
-                // behind because it is only in the cloud.
                 try old.requireOnThisMac(oldTextURL)
-                carried.unwrittenText = oldTextBytes
-            } else if let bytes = oldTextBytes, existing.textCacheFingerprint != nil, !oldTextIsWritten {
-                // A save no edit took: not the text TextMouth wrote.
+            }
+            if let bytes = oldTextBytes, holdsUnwrittenText(bytes, of: existing, hasher: access.hasher) {
                 carried.unwrittenText = bytes
             }
         }
@@ -608,6 +614,19 @@ enum DuplicateReplacement {
     static func holdsTextOfPlaces(_ bytes: Data, of book: Book, hasher: FingerprintHasher = .md5) -> Bool {
         guard let written = book.textCacheFingerprint?.cache.digest ?? book.editedText?.cacheDigest else { return false }
         return hasher.digestOfData(bytes) == written
+    }
+
+    /// Whether `bytes`, the content.md of the text book `book`, hold text
+    /// TextMouth did not write, which is kept beside the text that replaces
+    /// it rather than lost: an edit the user made with Edit Text, on record
+    /// (`Book.editedText`, B12), or a save no edit took, which differs from
+    /// the text the book's record says TextMouth last wrote. A book whose
+    /// record keeps no fingerprint of its text holds none it can tell.
+    /// Replace Existing keeps such text beside the new copy's (ST04), and a
+    /// re-read in another encoding beside the new reading (encodingchoice).
+    static func holdsUnwrittenText(_ bytes: Data, of book: Book, hasher: FingerprintHasher = .md5) -> Bool {
+        if book.editedText != nil { return true }
+        return book.textCacheFingerprint != nil && !holdsTextOfPlaces(bytes, of: book, hasher: hasher)
     }
 
     /// The old copy's package, as a replacement reads it: through `access`,

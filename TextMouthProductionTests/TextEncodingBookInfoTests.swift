@@ -60,12 +60,30 @@ final class TextEncodingBookInfoTests: XCTestCase {
         XCTAssertNil(book(encoding: "windows-1251", format: .epub).textEncodingDescription)
     }
 
+    /// An encoding the listener chose says so (encodingchoice), and UTF-8,
+    /// which only a choice records, is named as it is; Automatic's guess is
+    /// a guess, and Automatic with nothing to record says nothing, as a book
+    /// with no guess says nothing.
+    func testTheDescriptionSaysWhenTheListenerChose() {
+        func book(_ encoding: String?, _ source: TextEncodingSource?) -> Book {
+            var decided = self.book(encoding: encoding)
+            decided.textEncodingSource = source
+            return decided
+        }
+        XCTAssertEqual(book("windows-1251", .chosen).textEncodingDescription, "Windows-1251 (Cyrillic), chosen")
+        XCTAssertEqual(book("utf-8", .chosen).textEncodingDescription, "UTF-8, chosen")
+        XCTAssertEqual(book("cp950", .chosen).textEncodingDescription, "Big5 (Traditional Chinese), chosen")
+        XCTAssertEqual(book("koi8-r", .automatic).textEncodingDescription, "KOI8-R (Russian), guessed")
+        XCTAssertNil(book(nil, .automatic).textEncodingDescription)
+    }
+
     /// The wording is pinned in one place. The label names the thing and the
     /// value says it was guessed; "Read As" is not used, as it is heard as
     /// "reed as" and sounds like a setting the listener can change.
     func testTheWordsAreThePinnedOnes() {
         XCTAssertEqual(TextEncodingWording.bookInfoLabel, "Text Encoding")
         XCTAssertEqual(TextEncodingWording.guessNote, "guessed")
+        XCTAssertEqual(TextEncodingWording.chosenNote, "chosen")
         XCTAssertEqual(
             TextEncodingWording.speakInfoPart("Windows-1251 (Cyrillic), guessed"), "Text encoding: Windows-1251 (Cyrillic), guessed"
         )
@@ -73,17 +91,16 @@ final class TextEncodingBookInfoTests: XCTestCase {
 
     // MARK: - Book Information's Row
 
-    /// Book Information's "Text Encoding" row, which the sheet draws from
-    /// `bookInfoTextEncodingRow`: its label and the description for a book
-    /// whose encoding was guessed, and no row for any other. This needs no
-    /// hosted sheet, whose texts SwiftUI does not always expose to a test run.
-    func testTheBookInfoRowIsLabelledTextEncodingForAGuessedBookOnly() throws {
-        let row = try XCTUnwrap(book(encoding: "windows-1251").bookInfoTextEncodingRow)
-        XCTAssertEqual(row.label, "Text Encoding")
-        XCTAssertEqual(row.value, "Windows-1251 (Cyrillic), guessed")
-
-        XCTAssertNil(book(encoding: nil).bookInfoTextEncodingRow)
-        XCTAssertNil(book(encoding: "windows-1251", format: .pdf).bookInfoTextEncodingRow)
+    /// Book Information's "Text Encoding" row is a pop-up since the listener
+    /// can choose the encoding (encodingchoice): its label, value, and items
+    /// are pinned by `TextEncodingPopUpTests`, from a model and the hosted
+    /// sheet. Its value for a guessed book is the description Speak Info
+    /// says, so the two never differ.
+    func testThePopUpsValueIsTheDescriptionSpeakInfoSays() {
+        let guessed = book(encoding: "windows-1251")
+        let model = TextEncodingChoiceModel(book: guessed, library: LibraryViewModel(initializeServices: false))
+        XCTAssertEqual(model.valueDescription, guessed.textEncodingDescription)
+        XCTAssertEqual(model.valueDescription, "Windows-1251 (Cyrillic), guessed")
     }
 
     // MARK: - Speak Info
@@ -102,6 +119,11 @@ final class TextEncodingBookInfoTests: XCTestCase {
         XCTAssertFalse(LibraryInfoWording.brief(.book(facts(of: guessed))).contains("Text encoding"))
 
         XCTAssertFalse(fullSummary(of: book(encoding: nil)).contains("Text encoding"))
+
+        // A choice is said as one (encodingchoice).
+        var chosen = book(encoding: "cp932")
+        chosen.textEncodingSource = .chosen
+        XCTAssertTrue(fullSummary(of: chosen).contains("Text encoding: Shift JIS (Japanese), chosen."), fullSummary(of: chosen))
     }
 
     /// The encoding's part sits between the bookmarks and the parts after
