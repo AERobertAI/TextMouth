@@ -218,6 +218,10 @@ extension LibraryViewModel {
     /// by hand, and the refusal's "left the book as it was" is true. Putting
     /// back is simpler than committing the record first, since the record's
     /// fingerprint of content.md is only known once content.md is written.
+    /// contentIndex.json is put back the same way when the commit wrote it
+    /// before bookInfo.json failed (`BookInfo.saveRecord(to:)` writes the
+    /// index first), so the package keeps a text and an index that match
+    /// (review of October 25, item 4).
     /// - Throws: why the book was not read again; `CommitDropped` when the
     ///   record took nothing (`LibraryPersistenceService.saveContentAnalysis`).
     private nonisolated static func rereadFiles(
@@ -239,11 +243,12 @@ extension LibraryViewModel {
         // 2. Text TextMouth did not write, kept beside the new text.
         let keptCopy = try keptUnwrittenText(of: book, access: access)
         // 3. The file read again, as chosen, or as an import reads it, with
-        // content.md as it is now kept to be put back. The read decides the
-        // encoding, so the decision the record holds, which it replaces, is
-        // not read in its place.
+        // content.md and contentIndex.json as they are now kept to be put
+        // back. The read decides the encoding, so the decision the record
+        // holds, which it replaces, is not read in its place.
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
         let textBefore = PackageFileBeforeInstall(cacheURL)
+        let indexBefore = PackageFileBeforeInstall(TextMouthPaths.contentIndexPath(in: book.tmbDirectory))
         var updated = book
         updated.textEncodingRecord = chosen ?? .unrecorded
         guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(
@@ -288,9 +293,13 @@ extension LibraryViewModel {
         } catch {
             // The places' copy of the old text stays with the places, for
             // the launch's place recovery, which moves nothing to the same
-            // text and then lets it go, as after any dropped commit.
+            // text and then lets it go, as after any dropped commit. The
+            // index's stamp now is the one the commit's write left, or the
+            // one it had when the commit never wrote it, which puts nothing
+            // back.
             PackageFileBeforeInstall.putBack(
-                [(textBefore, textWritten)], of: book, after: "the re-read", logTag: textEncodingChangedLogTag
+                [(textBefore, textWritten), (indexBefore, FileStamp(of: indexBefore.url))],
+                of: book, after: "the re-read", logTag: textEncodingChangedLogTag
             )
             throw error
         }

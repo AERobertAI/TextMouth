@@ -554,6 +554,30 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
         XCTAssertEqual(rebuilt.textEncodingRecord, chosen)
     }
 
+    /// A commit that fails once contentIndex.json is written, as when
+    /// bookInfo.json can't be, puts the index back with content.md, so the
+    /// package keeps a text and an index that match (review of October 25,
+    /// item 4).
+    func testAFailedRecordWritePutsTheIndexBackToo() async throws {
+        let book = try makeTextBook("Fairlead \(UUID().uuidString.prefix(8))")
+        let model = makeModel(with: [book])
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let indexURL = TextMouthPaths.contentIndexPath(in: book.tmbDirectory)
+        let textBefore = try Data(contentsOf: cache)
+        let indexBefore = try Data(contentsOf: indexURL)
+
+        let outcome = try await readAgainHeldInItsRebuild(book, as: .encoding("koi8-r"), in: model) {
+            // bookInfo.json becomes a folder, which no record can be written over.
+            let recordURL = TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
+            try FileManager.default.removeItem(at: recordURL)
+            try FileManager.default.createDirectory(at: recordURL, withIntermediateDirectories: false)
+        }
+
+        XCTAssertFalse(outcome.succeeded, "\(outcome)")
+        XCTAssertEqual(try Data(contentsOf: cache), textBefore, "content.md was not put back")
+        XCTAssertEqual(try Data(contentsOf: indexURL), indexBefore, "contentIndex.json kept the new reading's index")
+    }
+
     // MARK: - Places
 
     /// The book's places move with the text. Where the new reading shares
