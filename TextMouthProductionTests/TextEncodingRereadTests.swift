@@ -578,6 +578,36 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
         XCTAssertEqual(try Data(contentsOf: indexURL), indexBefore, "contentIndex.json kept the new reading's index")
     }
 
+    /// When the listener's editor saves between the copy kept of text
+    /// TextMouth did not write and the re-read's write, the rebuild keeps
+    /// that save as a second copy, and VoiceOver hears the one kept last,
+    /// which holds the newer text (review of October 25, item 5).
+    func testTheCopyKeptLastIsTheOneNamed() async throws {
+        let title = "Gunwale \(UUID().uuidString.prefix(8))"
+        var book = try makeTextBook(title)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let edited = try cachedText(of: book).replacingOccurrences(of: "двести", with: "триста")
+        try edited.write(to: cache, atomically: true, encoding: .utf8)
+        book.editedText = EditedText(cacheDigest: try FileImportService.md5Hash(of: cache), takenAt: Date())
+        try book.saveBookInfoThrowing()
+        let model = makeModel(with: [book])
+        let savedAgain = edited.replacingOccurrences(of: "триста", with: "четыреста")
+
+        let outcome = try await readAgainHeldInItsRebuild(book, as: .encoding("koi8-r"), in: model) {
+            try savedAgain.write(to: cache, atomically: true, encoding: .utf8)
+        }
+
+        let copies = keptCopies(of: book)
+        XCTAssertEqual(copies.count, 2, "\(copies)")
+        let last = try XCTUnwrap(copies.last)
+        XCTAssertEqual(try String(contentsOf: last, encoding: .utf8), savedAgain)
+        XCTAssertEqual(
+            outcome,
+            .success("“\(title)” is now read as KOI8-R (Russian), chosen. "
+                + "Its earlier text was kept as \(last.lastPathComponent), in the book's package.")
+        )
+    }
+
     // MARK: - Places
 
     /// The book's places move with the text. Where the new reading shares

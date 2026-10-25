@@ -240,7 +240,9 @@ extension LibraryViewModel {
             }
             chosen = validated
         }
-        // 2. Text TextMouth did not write, kept beside the new text.
+        // 2. Text TextMouth did not write, kept beside the new text, the
+        // copies already there noted first.
+        let copiesBefore = Set(keptTextCopies(of: book))
         let keptCopy = try keptUnwrittenText(of: book, access: access)
         // 3. The file read again, as chosen, or as an import reads it, with
         // content.md and contentIndex.json as they are now kept to be put
@@ -285,11 +287,15 @@ extension LibraryViewModel {
                 summary: ContentAnalysisSummary(committed: committed, movedPlaces: generated.movedPlaces),
                 textForOpenReader: textForOpenReader
             )
+            // The copy VoiceOver hears of is the one kept last, which holds
+            // the newest text: a save made after the copy above, which the
+            // rebuild kept as a second (review of October 25, item 5).
+            let lastKept = keptTextCopies(of: book).last { !copiesBefore.contains($0) } ?? keptCopy
             // What it is read in now, for VoiceOver to say.
             guard case .known(let reading) = TextEncodingReading.current(of: committed, access: access) else {
-                return .readAgain(update, reading: nil, keptCopy: keptCopy)
+                return .readAgain(update, reading: nil, keptCopy: lastKept)
             }
-            return .readAgain(update, reading: reading, keptCopy: keptCopy)
+            return .readAgain(update, reading: reading, keptCopy: lastKept)
         } catch {
             // The places' copy of the old text stays with the places, for
             // the launch's place recovery, which moves nothing to the same
@@ -338,6 +344,12 @@ extension LibraryViewModel {
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
         guard let copy = BookTextEditSessions.keepCopy(of: cacheURL, bytes: bytes) else { throw UnwrittenTextNotKept() }
         return copy
+    }
+
+    /// The copies kept beside `book`'s content.md of text TextMouth did not
+    /// write, oldest first (`LibraryIndexQuarantine.existingCopies`).
+    private nonisolated static func keptTextCopies(of book: Book) -> [URL] {
+        LibraryIndexQuarantine.existingCopies(of: MarkdownCacheService.cacheURL(for: book), marker: TextMouthPaths.keptTextCopyMarker)
     }
 
     /// The bytes of `book`'s content.md when they hold text TextMouth did not
