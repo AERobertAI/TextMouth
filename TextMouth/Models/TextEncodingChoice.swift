@@ -52,11 +52,7 @@ enum TextEncodingChoices {
     /// which may stand for another entry of the same name ("cp950" is offered
     /// as Big5's option, "big5"). Nil for an encoding no option names.
     static func option(forIdentifier identifier: String) -> TextEncodingOption? {
-        if identifier.lowercased() == TextFileDecoder.utf8Identifier {
-            return .encoding(TextFileDecoder.utf8Identifier)
-        }
-        guard let entry = TextEncodingCatalog.entry(forIdentifier: identifier) else { return nil }
-        return option(named: entry.name)
+        TextFileDecoder.chosenEncoding(forIdentifier: identifier).flatMap(option(for:))
     }
 
     /// The option of the catalog's entry for `encoding`, or UTF-8's; nil for

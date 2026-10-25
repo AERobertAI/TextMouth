@@ -390,7 +390,9 @@ enum TextFileDecoder {
 
     /// The encoding a book chosen to be read in `identifier` is read in,
     /// in any letter case: UTF-8 (`utf8Identifier`) or one of the catalog's;
-    /// nil for one this TextMouth does not know.
+    /// nil for one this TextMouth does not know. The one place UTF-8's
+    /// identifier is told from the catalog's: everything that names or
+    /// offers a choice goes through it.
     static func chosenEncoding(forIdentifier identifier: String) -> String.Encoding? {
         if identifier.lowercased() == utf8Identifier {
             return .utf8
@@ -403,7 +405,7 @@ enum TextFileDecoder {
     /// (Japanese)"), or the identifier itself for one it does not know, so
     /// that nothing recorded is ever left unnamed.
     static func chosenEncodingName(forIdentifier identifier: String) -> String {
-        identifier.lowercased() == utf8Identifier ? "UTF-8" : TextEncodingCatalog.name(forIdentifier: identifier)
+        chosenEncoding(forIdentifier: identifier).map(TextEncodingWording.name(of:)) ?? identifier
     }
 
     /// `data` read in the encoding the listener chose for the book,
