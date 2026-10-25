@@ -54,14 +54,16 @@ enum TextEncodingByteGrammar: Sendable {
         [[0x81...0x9F, 0xE0...0xFC], [0x40...0x7E, 0x80...0xFC]],
     ])
 
-    /// EUC-JP: ASCII; pairs of 0xA1 to 0xFE (JIS X 0208); the single shift
-    /// 0x8E before a half-width katakana, 0xA1 to 0xDF; and the single shift
-    /// 0x8F before a pair of 0xA1 to 0xFE (JIS X 0212).
+    /// EUC-JP: ASCII; pairs of 0xA1 to 0xFE (JIS X 0208); and the single
+    /// shift 0x8E before a half-width katakana, 0xA1 to 0xDF. The single shift
+    /// 0x8F before a pair (JIS X 0212) is refused, though EUC-JP has it:
+    /// Foundation's reader takes the last of its three bytes for the start of
+    /// another character, so "Le café." with é written so (0x8F 0xAB 0xB1)
+    /// reads "Le café窺" (review of October 24, finding 1).
     static let eucJP = TextEncodingByteGrammar.sequences([
         ascii,
         [[0xA1...0xFE], [0xA1...0xFE]],
         [[0x8E...0x8E], [0xA1...0xDF]],
-        [[0x8F...0x8F], [0xA1...0xFE], [0xA1...0xFE]],
     ])
 
     /// The EUC encodings of one double-byte character set, GB 2312 (EUC-CN)

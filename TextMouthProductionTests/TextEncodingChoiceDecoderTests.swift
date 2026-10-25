@@ -149,6 +149,17 @@ final class TextEncodingChoiceDecoderTests: XCTestCase {
         }
     }
 
+    /// EUC-JP's JIS X 0212 characters (the single shift 0x8F and two bytes)
+    /// are refused: Foundation's reader takes the last of the three bytes for
+    /// the start of another character, so "Le café." with é written so
+    /// (0x8F 0xAB 0xB1, as Python's euc_jp writes it) would read "Le café窺"
+    /// (review of October 24, finding 1).
+    func testJISX0212InEUCJPIsRefusedSinceFoundationMisreadsIt() throws {
+        let bytes = Data("Le caf".utf8) + Data([0x8F, 0xAB, 0xB1]) + Data(".".utf8)
+        XCTAssertNil(TextFileDecoder.strictlyDecodedText(bytes, in: try encoding("euc-jp")))
+        XCTAssertThrowsError(try decode(Array(bytes), chosen: "euc-jp"))
+    }
+
     /// Valid text in an encoding with two codes for one character is read,
     /// though Foundation writes it back with the other code: Windows' CP932
     /// writes the surname kanji 髙 and 﨑, and the small Roman numeral one,
