@@ -86,10 +86,14 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
     }
 
     /// An Edit Text editor for `model`, sharing its sessions, which stands in
-    /// for the listener and the system: its explanation goes on, no app is
+    /// for the listener and the system: its first-use explanation is
+    /// `explain`, which goes on unless a test gives its own, no app is
     /// chosen, a file it opens is only noted in `opened`, and TextMouth is
     /// active. The caller ends its sessions (`BookTextEditor.endAll()`).
-    private func makeEditor(for model: LibraryViewModel) -> (editor: BookTextEditor, opened: OSAllocatedUnfairLock<[URL]>) {
+    private func makeEditor(
+        for model: LibraryViewModel,
+        explain: @escaping BookTextEditor.Explainer = { _, _ in true }
+    ) -> (editor: BookTextEditor, opened: OSAllocatedUnfairLock<[URL]>) {
         let sessions = BookTextEditSessions()
         model.textEditSessions = sessions
         let opened = OSAllocatedUnfairLock<[URL]>(initialState: [])
@@ -97,7 +101,7 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
             sessions: sessions,
             preferences: makeSandboxedPreferences("Edit Text"),
             notificationCenter: NotificationCenter(),
-            explain: { _, _ in true },
+            explain: explain,
             chooseApp: { _, _ in nil },
             open: { file, _ in opened.withLock { $0.append(file) } },
             isAppActive: { true }
@@ -501,6 +505,31 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
             loads.sync {}
         }
         XCTAssertFalse(reader.isLoading, "the reader never loaded once the re-read was over")
+    }
+
+    /// Edit Text, asked to begin while a re-read runs from start to end
+    /// behind its first-use explanation, begins from the text the re-read
+    /// left, so it never takes the new reading for the listener's edit
+    /// (review of October 25, item 2).
+    func testEditTextBeginsFromTheTextAReadAgainBehindItsDialogLeft() async throws {
+        let book = try makeTextBook("Ropewalk \(UUID().uuidString.prefix(8))")
+        let model = makeModel(with: [book])
+        let (editor, _) = makeEditor(for: model) { _, _ in
+            let (outcome, _) = await self.readAgain(book, as: .encoding("koi8-r"), in: model)
+            XCTAssertTrue(outcome.succeeded, "\(outcome)")
+            return true
+        }
+        defer { editor.endAll() }
+
+        await editor.edit(book, choosingApp: false, in: model, from: nil)
+        XCTAssertTrue(editor.sessions.isEditing(book.id), "no session began")
+        // A check of the book, as TextMouth becoming active makes one.
+        editor.check(book.id)
+        let checks = editor.sessions.queue
+        await withCheckedContinuation { (done: CheckedContinuation<Void, Never>) in checks.async { done.resume() } }
+
+        XCTAssertNil(model.bookByID(book.id)?.editedText, "the new reading was taken for an edit")
+        XCTAssertNil(try BookInfo.load(from: book.tmbDirectory).state.editedText)
     }
 
     // MARK: - Places

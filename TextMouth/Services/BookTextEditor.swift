@@ -113,25 +113,17 @@ final class BookTextEditor {
     /// being read again in another encoding, or an editor that could not
     /// open it. `window` is where the dialogs and announcements appear.
     func edit(_ book: Book, choosingApp: Bool, in library: LibraryViewModel, from window: NSWindow?) async {
-        guard !refusesWhileReadAgain(book, in: library, from: window) else { return }
         guard await Self.hasText(book) else {
             files.announce(BookTextEditWording.noText(bookTitle: book.title), from: window)
             return
         }
         self.library = library
-        let access = sessions.access
-        let found = await OffMainWork.run { BookTextEditSessions.baseline(of: book, access: access) }
-        let baseline: BookTextBaseline
-        switch found {
-        case .failure(let failure):
-            files.announce(BookTextEditWording.cannotBegin(failure, bookTitle: book.title), from: window)
-            return
-        case .success(let current):
-            baseline = current
-        }
+        // Read before the dialogs, so a text that can't be edited is said at once.
+        guard await currentBaseline(of: book, in: library, from: window) != nil else { return }
         guard let choice = await files.chooseEditor(bookTitle: book.title, choosingApp: choosingApp, from: window) else { return }
-        // Asked again: a re-read may have begun while the dialogs were open.
-        guard !refusesWhileReadAgain(book, in: library, from: window) else { return }
+        // Read again as the dialogs close: a re-read in another encoding may
+        // have replaced the text while they were open, even one over by now.
+        guard let baseline = await currentBaseline(of: book, in: library, from: window) else { return }
         let startedSession = begin(book.id, baseline: baseline)
         do {
             try await files.open(MarkdownCacheService.cacheURL(for: book), choice.app)
@@ -151,6 +143,31 @@ final class BookTextEditor {
         guard let refusal = library.readingAgainRefusal(of: book.id) else { return false }
         files.announce(refusal, from: window)
         return true
+    }
+
+    /// The baseline of `book`'s text as it is now (`BookTextEditSessions.baseline(of:access:)`),
+    /// read off the main actor once no re-read of the book in another
+    /// encoding is under way, which is said instead (`refusesWhileReadAgain`),
+    /// and read again when one began, and maybe ended, while it was read
+    /// (`TextRereads.begun`): a session begun from text a re-read then
+    /// replaced would take the new reading for the listener's edit (review
+    /// of October 25, item 2). Nil, with why announced, when the text can't
+    /// be read or is being read again.
+    private func currentBaseline(of book: Book, in library: LibraryViewModel, from window: NSWindow?) async -> BookTextBaseline? {
+        let access = sessions.access
+        while !refusesWhileReadAgain(book, in: library, from: window) {
+            let begun = library.textRereads.begun
+            switch await OffMainWork.run({ BookTextEditSessions.baseline(of: book, access: access) }) {
+            case .failure(let failure):
+                files.announce(BookTextEditWording.cannotBegin(failure, bookTitle: book.title), from: window)
+                return nil
+            case .success(let baseline) where begun == library.textRereads.begun:
+                return baseline
+            case .success:
+                continue
+            }
+        }
+        return nil
     }
 
     /// Pauses `book`'s session before a change rewrites its transcript
