@@ -25,6 +25,15 @@ import Foundation
 /// characters an encoding defines is still Foundation's to say: a well formed
 /// sequence it does not define is refused by Foundation's own reader. A test
 /// pins that every multi-byte encoding of the catalog has a grammar here.
+///
+/// What no grammar can mend, since Foundation's reader decides it (review of
+/// October 24, item 7): the euro sign in Big5 and CP950 (0xA3 0xE1) and in
+/// EUC-KR and CP949 (0xA2 0xE6) is refused; Big5-HKSCS's characters (0x87
+/// 0x40 and up) are refused, even through Core Foundation's own big5-hkscs;
+/// CP950's 0xA2 0xCC reads as 十 followed by a private-use character
+/// (U+F87F), which a braille display shows; and a GB 18030 file holding a
+/// literal U+FFFD is refused by the replacement-character check
+/// (`TextFileDecoder.strictlyDecodedText(_:in:)`).
 enum TextEncodingByteGrammar: Sendable {
     /// Bytes that may stand at one position of a character.
     typealias Position = [ClosedRange<UInt8>]
@@ -191,19 +200,31 @@ enum TextEncodingByteGrammar: Sendable {
 
     // MARK: ISO-2022-JP
 
-    /// Whether `data` is well formed ISO-2022-JP, as RFC 1468 defines it:
-    /// only the escape sequences for ASCII, JIS Roman, and JIS X 0208 (ESC
-    /// ( B, ESC ( J, ESC $ @, ESC $ B), pairs of bytes from 0x21 to 0x7E
-    /// while in JIS X 0208, no byte above ASCII, no shift-out or shift-in,
-    /// and a return to ASCII or JIS Roman before the end. With
-    /// `requiringAShift`, as the guesser asks it
-    /// (`TextEncodingGuesser.guessSevenBit(_:)`), the file must also shift
-    /// into JIS X 0208 at least once, or it is plain ASCII, which every
-    /// encoding reads alike and no guess needs; a file chosen to be read in
-    /// ISO-2022-JP need not.
+    /// The character sets an ISO-2022-JP file switches between.
+    private enum ISO2022JPSet {
+        /// ASCII or JIS Roman (ESC ( B, ESC ( J): one byte a character.
+        case roman
+        /// JIS X 0201's half-width katakana (ESC ( I), as Windows writes them
+        /// in mail: one byte a character, 0x21 to 0x5F.
+        case katakana
+        /// JIS X 0208 (ESC $ @, ESC $ B): pairs of bytes from 0x21 to 0x7E.
+        case kanji
+    }
+
+    /// Whether `data` is well formed ISO-2022-JP, as RFC 1468 defines it,
+    /// with the half-width katakana Windows writes in mail, which
+    /// Foundation's reader reads (review of October 24, item 6): only the
+    /// escape sequences of `ISO2022JPSet`, each character as its set has it
+    /// (controls, line breaks among them, stand anywhere but inside JIS X
+    /// 0208), no byte above ASCII, no shift-out or shift-in, and a return to
+    /// ASCII or JIS Roman before the end. With `requiringAShift`, as the
+    /// guesser asks it (`TextEncodingGuesser.guessSevenBit(_:)`), the file
+    /// must also shift into JIS X 0208 at least once, or it is plain ASCII,
+    /// which every encoding reads alike and no guess needs; a file chosen to
+    /// be read in ISO-2022-JP need not.
     static func isWellFormedISO2022JP(_ data: Data, requiringAShift: Bool) -> Bool {
         data.withUnsafeBytes { (bytes: UnsafeRawBufferPointer) -> Bool in
-            var inJISX0208 = false
+            var set = ISO2022JPSet.roman
             var holdsFirstByteOfPair = false
             var shifts = 0
             var index = 0
@@ -216,24 +237,31 @@ enum TextEncodingByteGrammar: Sendable {
                     guard !holdsFirstByteOfPair, index + 2 < bytes.count else { return false }
                     switch (bytes[index + 1], bytes[index + 2]) {
                     case (0x28, 0x42), (0x28, 0x4A):
-                        inJISX0208 = false
+                        set = .roman
+                    case (0x28, 0x49):
+                        set = .katakana
                     case (0x24, 0x40), (0x24, 0x42):
-                        inJISX0208 = true
+                        set = .kanji
                         shifts += 1
                     default:
                         return false
                     }
                     index += 3
-                } else if inJISX0208 {
-                    // JIS X 0208 characters are pairs of bytes from 0x21 to 0x7E.
+                    continue
+                }
+                switch set {
+                case .kanji:
                     guard (0x21...0x7E).contains(byte) else { return false }
                     holdsFirstByteOfPair.toggle()
-                    index += 1
-                } else {
-                    index += 1
+                case .katakana:
+                    // Half-width katakana are 0x21 to 0x5F; the controls below pass.
+                    guard byte <= 0x5F else { return false }
+                case .roman:
+                    break
                 }
+                index += 1
             }
-            return !inJISX0208 && !holdsFirstByteOfPair && (shifts > 0 || !requiringAShift)
+            return set == .roman && !holdsFirstByteOfPair && (shifts > 0 || !requiringAShift)
         }
     }
 }

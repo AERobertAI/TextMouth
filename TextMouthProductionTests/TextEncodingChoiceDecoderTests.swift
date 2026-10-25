@@ -160,6 +160,16 @@ final class TextEncodingChoiceDecoderTests: XCTestCase {
         XCTAssertThrowsError(try decode(Array(bytes), chosen: "euc-jp"))
     }
 
+    /// ISO-2022-JP's half-width katakana, after ESC ( I as Windows writes
+    /// mail, are read (review of October 24, item 6): 0x31 there is "ｱ".
+    func testISO2022JPHalfWidthKatakanaAreRead() throws {
+        let katakana: [UInt8] = [0x41, 0x1B, 0x28, 0x49, 0x31, 0x32, 0x1B, 0x28, 0x42, 0x42]
+        XCTAssertEqual(TextFileDecoder.strictlyDecodedText(Data(katakana), in: try encoding("iso-2022-jp")), "AｱｲB")
+        // A byte half-width katakana does not have, and a file that ends among them, are refused.
+        XCTAssertNil(TextFileDecoder.strictlyDecodedText(Data([0x1B, 0x28, 0x49, 0x60, 0x1B, 0x28, 0x42]), in: try encoding("iso-2022-jp")))
+        XCTAssertFalse(TextEncodingByteGrammar.isWellFormedISO2022JP(Data([0x1B, 0x28, 0x49, 0x31]), requiringAShift: false))
+    }
+
     /// Valid text in an encoding with two codes for one character is read,
     /// though Foundation writes it back with the other code: Windows' CP932
     /// writes the surname kanji 髙 and 﨑, and the small Roman numeral one,
