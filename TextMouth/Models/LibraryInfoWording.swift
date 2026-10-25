@@ -142,6 +142,27 @@ enum TextEncodingWording {
     static func speakInfoPart(_ description: String) -> String {
         "Text encoding: \(description)"
     }
+
+    // MARK: A Choice That Cannot Be Read (encodingchoice)
+
+    /// Why a file chosen to be read in the encoding named `encoding` was not
+    /// read: some of its bytes are not valid in it. `subject` names the file
+    /// or the book, as the sentence begins: "“Ledger” can't be read as Shift
+    /// JIS (Japanese): it holds bytes that are not valid in that encoding."
+    /// The decoder's error (`TextEncodingError.invalidForChosenEncoding`) and
+    /// Book Information's refusal both say it from here.
+    static func notValid(in encoding: String, subject: String) -> String {
+        "\(subject) can't be read as \(encoding): it holds bytes that are not valid in that encoding."
+    }
+
+    /// Why a file chosen to be read in an encoding this TextMouth does not
+    /// know, recorded as `identifier`, was not read: "The file “Ledger.txt”
+    /// is set to be read as “x-cp1999”, a text encoding this version of
+    /// TextMouth can't read. Choose another in Book Information."
+    static func unknownChoice(_ identifier: String, subject: String) -> String {
+        "\(subject) is set to be read as “\(identifier)”, a text encoding this version of TextMouth can't read. "
+            + "Choose another in Book Information."
+    }
 }
 
 /// What Speak Info knows of a folder.

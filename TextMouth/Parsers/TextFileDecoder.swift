@@ -8,6 +8,10 @@ struct DecodedText: Equatable, Sendable {
     /// What decided the encoding. `TextFileDecoder` looks for each in this
     /// order and takes the first it finds.
     enum Basis: Equatable, Sendable {
+        /// The listener chose the encoding in Book Information, and every
+        /// byte was read in it, whatever the bytes say of themselves
+        /// (`EncodingPolicy.chosen(_:)`, encodingchoice).
+        case chosen
         /// A byte-order mark at the start of the file named the encoding.
         case byteOrderMark
         /// No mark, but the bytes show the zero high bytes of UTF-16 text
@@ -72,6 +76,14 @@ enum TextEncodingError: LocalizedError, Equatable {
     /// partway through a character, or hold half of a surrogate pair or a
     /// code point beyond Unicode.
     case invalidForMarkedEncoding(file: String, encoding: String)
+    /// A file chosen to be read in an encoding (`EncodingPolicy.chosen(_:)`,
+    /// encodingchoice) holds bytes that are not valid in it. `encoding` is
+    /// the encoding's name as a listener hears it, "Shift JIS (Japanese)".
+    case invalidForChosenEncoding(file: String, encoding: String)
+    /// A file chosen to be read in an encoding this TextMouth does not know:
+    /// one a later TextMouth recorded, or a damaged record. `identifier` is
+    /// the encoding as the book recorded it.
+    case unknownChosenEncoding(file: String, identifier: String)
 
     /// What a reader hears, in the form `PackageDamage` gives damaged files:
     /// the file in curly quotation marks, what is wrong with it, and what to
@@ -89,6 +101,10 @@ enum TextEncodingError: LocalizedError, Equatable {
             return "The file “\(file)” is damaged or incomplete: it begins with a \(encoding) byte-order mark, "
                 + "but the rest of it is not valid \(encoding) text. "
                 + "Get a fresh copy of the file, then import it again."
+        case let .invalidForChosenEncoding(file, encoding):
+            return TextEncodingWording.notValid(in: encoding, subject: "The file “\(file)”")
+        case let .unknownChosenEncoding(file, identifier):
+            return TextEncodingWording.unknownChoice(identifier, subject: "The file “\(file)”")
         }
     }
 }
@@ -100,8 +116,13 @@ enum TextEncodingError: LocalizedError, Equatable {
 /// the direct parsers (`BookParser`) and the Markdown cache
 /// (`MarkdownCacheService`), so the two can never start from different text.
 ///
-/// The encoding comes from the strongest evidence the bytes hold, tried in
-/// this order:
+/// A book whose encoding the listener chose in Book Information
+/// (`EncodingPolicy.chosen(_:)`, encodingchoice) is read in that encoding
+/// alone, whatever its bytes say of themselves: every byte must be valid in
+/// it (`strictlyDecodedText(_:in:)`), or the file is refused by name
+/// (`TextEncodingError.invalidForChosenEncoding`), and nothing below is
+/// tried. Otherwise the encoding comes from the strongest evidence the bytes
+/// hold, tried in this order:
 /// 1. A byte-order mark for UTF-8, UTF-16 (little- or big-endian), or UTF-32
 ///    (little- or big-endian) names the encoding. The bytes after a UTF-16
 ///    or UTF-32 mark must be valid in it, or `TextEncodingError` reports the
@@ -173,6 +194,16 @@ enum TextFileDecoder {
         /// An identifier that names no catalogued encoding, or an encoding
         /// the bytes are not valid in, leaves them to the fallback.
         case recorded(String)
+        /// Read every byte in the encoding the listener chose for the book in
+        /// Book Information (encodingchoice), by its identifier: UTF-8
+        /// (`utf8Identifier`) or one of the catalog's. Unlike every other
+        /// policy, this one overrules what the bytes say of themselves (a
+        /// byte-order mark, valid UTF-8, an HTML declaration), since the
+        /// listener chose it because the file was read wrong; and it is
+        /// strict: bytes that are not valid in the encoding, or an
+        /// identifier this TextMouth does not know, are refused
+        /// (`TextEncodingError`), never left to the fallback.
+        case chosen(String)
 
         /// The policy for a book whose recorded encoding is `identifier`:
         /// that encoding, or the fallback for a book that has none.
@@ -250,6 +281,11 @@ enum TextFileDecoder {
     private static func decodeBytes(
         _ data: Data, fileName: String, readsDeclarations: Bool, policy: EncodingPolicy
     ) throws -> DecodedText {
+        // 0. The listener's choice, which overrules everything the bytes say.
+        if case let .chosen(identifier) = policy {
+            return try chosenText(data, identifier: identifier, fileName: fileName)
+        }
+
         // 1. A byte-order mark names the encoding.
         if let mark = byteOrderMarks.first(where: { data.starts(with: $0.bytes) }) {
             let content = data.dropFirst(mark.bytes.count)
@@ -305,7 +341,8 @@ enum TextFileDecoder {
     /// every book read before guesses were recorded reads it so.
     private static func sevenBitText(_ data: Data, policy: EncodingPolicy) -> DecodedText? {
         switch policy {
-        case .fallback:
+        case .fallback, .chosen:
+            // A choice was read before any of the steps (`chosenText`).
             return nil
         case let .recorded(identifier):
             // The file must still be well formed in the encoding: Foundation's
@@ -326,7 +363,8 @@ enum TextFileDecoder {
     /// no guess can be trusted.
     private static func settledText(_ data: Data, policy: EncodingPolicy) -> DecodedText? {
         switch policy {
-        case .fallback:
+        case .fallback, .chosen:
+            // A choice was read before any of the steps (`chosenText`).
             return nil
         case let .recorded(identifier):
             // A 7-bit encoding was tried before UTF-8 (`sevenBitText`); bytes
@@ -339,6 +377,91 @@ enum TextFileDecoder {
             guard let guess = TextEncodingGuesser.guess(data) else { return nil }
             return DecodedText(text: guess.text, encoding: guess.encoding, basis: .guess)
         }
+    }
+
+    // MARK: The Listener's Choice
+
+    /// The identifier a book records when the listener chooses UTF-8 for it
+    /// in Book Information (encodingchoice): its IANA name in lowercase, as
+    /// the catalog spells the others. UTF-8 is not in the catalog, which
+    /// holds the encodings a guess can name; a guess never names UTF-8,
+    /// which the decoder finds by its bytes.
+    static let utf8Identifier = "utf-8"
+
+    /// The encoding a book chosen to be read in `identifier` is read in,
+    /// in any letter case: UTF-8 (`utf8Identifier`) or one of the catalog's;
+    /// nil for one this TextMouth does not know.
+    static func chosenEncoding(forIdentifier identifier: String) -> String.Encoding? {
+        if identifier.lowercased() == utf8Identifier {
+            return .utf8
+        }
+        return TextEncodingCatalog.entry(forIdentifier: identifier)?.encoding
+    }
+
+    /// What a listener hears for the encoding a book is chosen to be read
+    /// in: "UTF-8", the catalog's name for one of its own ("Shift JIS
+    /// (Japanese)"), or the identifier itself for one it does not know, so
+    /// that nothing recorded is ever left unnamed.
+    static func chosenEncodingName(forIdentifier identifier: String) -> String {
+        identifier.lowercased() == utf8Identifier ? "UTF-8" : TextEncodingCatalog.name(forIdentifier: identifier)
+    }
+
+    /// `data` read in the encoding the listener chose for the book,
+    /// `identifier`, whatever the bytes say of themselves, with nothing
+    /// dropped or replaced (`strictlyDecodedText(_:in:)`).
+    /// - Throws: `TextEncodingError.unknownChosenEncoding` for an identifier
+    ///   this TextMouth does not know, and
+    ///   `TextEncodingError.invalidForChosenEncoding` when a byte is not
+    ///   valid in the encoding.
+    private static func chosenText(_ data: Data, identifier: String, fileName: String) throws -> DecodedText {
+        guard let encoding = chosenEncoding(forIdentifier: identifier) else {
+            throw TextEncodingError.unknownChosenEncoding(file: fileName, identifier: identifier)
+        }
+        guard let text = strictlyDecodedText(data, in: encoding) else {
+            throw TextEncodingError.invalidForChosenEncoding(
+                file: fileName, encoding: chosenEncodingName(forIdentifier: identifier)
+            )
+        }
+        return DecodedText(text: text, encoding: encoding, basis: .chosen)
+    }
+
+    /// `data` read in `encoding` strictly: every byte belongs to a character
+    /// the encoding defines, and none is dropped or replaced. Nil when one
+    /// does not.
+    ///
+    /// - Windows-1252, and the encodings read as it (ISO Latin 1, ASCII),
+    ///   give every byte a character (`windows1252Text(_:)`).
+    /// - Foundation's UTF-8 reader refuses every malformed sequence: a
+    ///   stray continuation, an overlong form, a surrogate, a character cut
+    ///   off at the end.
+    /// - A multi-byte encoding's bytes must first keep to its grammar
+    ///   (`TextEncodingByteGrammar`), since Foundation's readers of several
+    ///   let malformed bytes through, taking a following letter into another
+    ///   character.
+    /// - Any other encoding is read by Foundation, which refuses a byte the
+    ///   encoding does not define rather than replace it; a replacement
+    ///   character in the result, which none of these encodings defines a
+    ///   byte as, is refused too.
+    ///
+    /// This is not the guesser's rule, which also asks the text to write
+    /// back to the same bytes (`TextEncodingGuesser.guess(_:)`): that refuses
+    /// valid text in encodings with two codes for one character, as Windows
+    /// writes "髙" in CP932 (0xFB 0xFC, written back by Foundation as 0xEE
+    /// 0xE0), which a listener choosing Shift JIS must be able to read.
+    static func strictlyDecodedText(_ data: Data, in encoding: String.Encoding) -> String? {
+        if windows1252Equivalents.contains(encoding) {
+            return windows1252Text(data)
+        }
+        if encoding == .utf8 {
+            return String(data: data, encoding: .utf8)
+        }
+        if let grammar = TextEncodingByteGrammar.of(encoding), !grammar.admits(data) {
+            return nil
+        }
+        guard let text = String(data: data, encoding: encoding), !text.unicodeScalars.contains("\u{FFFD}") else {
+            return nil
+        }
+        return text
     }
 
     // MARK: Byte-Order Marks and Unicode
