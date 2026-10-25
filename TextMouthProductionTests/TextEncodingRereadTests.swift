@@ -472,6 +472,37 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
         XCTAssertNil(try BookInfo.load(from: book.tmbDirectory).state.editedText, "the batch took the new reading for an edit")
     }
 
+    /// A reader that opens a book while it is read again loads it only once
+    /// the re-read is over: before, its load took the content.md the re-read
+    /// had written for a stale cache and read the file again over it, in
+    /// the old encoding (review of October 25, item 2).
+    func testAReaderOpenedDuringTheRereadLoadsOnceItIsOver() async throws {
+        let book = try makeTextBook("Tidewater \(UUID().uuidString.prefix(8))")
+        let model = makeModel(with: [book])
+        let written = try markAsMidReread(book, in: model)
+        let loads = DispatchQueue(label: "TextEncodingRereadTests.loads")
+
+        let reader = ReaderViewModel(
+            book: book,
+            libraryViewModel: model,
+            settingsViewModel: SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false),
+            loadQueue: loads
+        )
+        addTeardownBlock { @MainActor in reader.close() }
+        // Whatever read the load began has run.
+        loads.sync {}
+
+        XCTAssertTrue(reader.isLoading)
+        XCTAssertEqual(try cachedText(of: book), written, "the load read the file again over the re-read's text")
+
+        model.booksBeingReadAgain.remove(book.id)
+        for _ in 0..<500 where reader.isLoading {
+            try await Task.sleep(nanoseconds: 10_000_000)
+            loads.sync {}
+        }
+        XCTAssertFalse(reader.isLoading, "the reader never loaded once the re-read was over")
+    }
+
     // MARK: - Places
 
     /// The book's places move with the text. Where the new reading shares

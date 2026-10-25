@@ -514,6 +514,11 @@ final class ReaderViewModel: ObservableObject {
     /// the book's files begins (`beginReadingForLoad()`). Accessed from the
     /// LibraryUpdates extension.
     var loadMetPackageMove = false
+    /// Whether a load waits for the book's text to be read again in another
+    /// encoding (`beginReadingForLoad()`, encodingchoice), so a load asked
+    /// for again meanwhile adds no second wait. Accessed from the
+    /// LibraryUpdates extension.
+    var loadWaitsForReread = false
     /// The book's edited text, with the moves of its places the edit took,
     /// when the user's edit was taken while this reader was still loading
     /// the text it had (FR05): shown once loading ends

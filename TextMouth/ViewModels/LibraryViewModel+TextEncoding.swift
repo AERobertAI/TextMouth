@@ -65,7 +65,8 @@ extension LibraryViewModel {
     /// here, so each waits in the same words, and none leaves content.md
     /// from one run beside the record of another (review of October 24,
     /// finding 3); so does the launch's text batch, which leaves such a book
-    /// alone (`extractMissingContentCaches(access:then:)`).
+    /// alone (`extractMissingContentCaches(access:then:)`), and a reader's
+    /// load, which waits for its re-read (`ReaderViewModel.beginReadingForLoad()`).
     func readingAgainRefusal(of bookID: UUID? = nil) -> String? {
         guard !booksBeingReadAgain.isEmpty else { return nil }
         let busy = library.books.first { book in
