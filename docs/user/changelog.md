@@ -4,6 +4,24 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.2.3 (October 25, 2026)
+### Reading
+- You can choose the encoding a plain text, Markdown, or HTML book's file is read in, which mends a guess that was wrong or missed, and the book is read again in it with its places moving to their words (see [The Library window](library-window.md)).
+- Automatic, in the same choice, reads the file as TextMouth reads a file you add, which takes a choice back.
+- A file is read in the encoding you choose whatever its bytes say of themselves, and one with a byte that is not valid in it is refused with "“Moby-Dick” can't be read as Shift JIS (Japanese): it holds bytes that are not valid in that encoding. Nothing was changed."
+- Characters of JIS X 0212 in EUC-JP, the euro sign in Big5 and EUC-KR, and Big5-HKSCS characters are refused when you choose those encodings, since macOS reads them wrongly or not at all (see [What TextMouth reads](what-textmouth-reads.md)).
+
+### Library
+- Book Information's Text Encoding is a pop-up button now, for every plain text, Markdown, or HTML book you added from a file, where it was a row only for a book whose encoding was guessed.
+- The pop-up names the encoding the book is read in and what decided it, as in "Windows-1251 (Cyrillic), guessed", "Shift JIS (Japanese), chosen", "UTF-8, from its byte order mark", "ISO 8859-2 (Central European), declared in the file", or "Windows-1252 (Western European), the default".
+- Choosing an encoding asks first, and says what happens to your place and bookmarks and to an edit of the book's text, which is kept beside the new reading as a copy.
+- VoiceOver says what the book is now read as, as in "“Moby-Dick” is now read as KOI8-R (Russian), chosen.", and where a copy of its earlier text was kept.
+- Speak Full Info says "Text encoding: Shift JIS (Japanese), chosen." for a book whose encoding you chose.
+- A book is not read again in another encoding, and the sheet says why, while the library's text is being read again, while the book is being exported, or while it is being read again already.
+- Edit Text stops for a book you have read again in another encoding, keeps your edit as a copy, and says "Edit Text has stopped for Moby-Dick, since its file was read again. Choose Edit Text again to edit the new text."
+- Edit Text, Replace Existing, and Redo Text Extraction wait while a book is read again in another encoding, and say "TextMouth is reading “Moby-Dick” again in another encoding. Try again when that finishes.", where Redo Text Extraction in Storage settings said nothing.
+- A TextMouth older than 0.2.3 drops the note that an encoding was chosen: 0.2.2 reads the book in the same encoding as a guess, and 0.1.1 drops the encoding too (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+
 ## 0.2.2 (October 24, 2026)
 ### Reading
 - Go to Page… says which page of a shared label it reached, as in "Jumped to page 2, the second page labelled 2."
