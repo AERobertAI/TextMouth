@@ -237,8 +237,8 @@ final class LibraryViewModel: ObservableObject {
     /// reading (`readTextAgain(bookID:as:access:)`, encodingchoice). What
     /// would rewrite such a book's text meanwhile waits for it, each asking
     /// `readingAgainRefusal(of:)`: a second re-read of it, from either Book
-    /// Information, Edit Text, and Redo Text Extraction (review of October
-    /// 24, finding 3).
+    /// Information, Edit Text, Redo Text Extraction (review of October 24,
+    /// finding 3), and Replace Existing.
     var booksBeingReadAgain: Set<UUID> = []
     /// The offers to transcribe that the user accepted (FR05), for the
     /// Library window that asked to open the Transcribe Audio sheet.

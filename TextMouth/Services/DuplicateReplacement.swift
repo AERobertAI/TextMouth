@@ -79,11 +79,18 @@ enum DuplicateReplacement {
         /// edit moving its books' packages does: the replacement would move
         /// and remove packages under it (ST04 review, finding 5).
         case storageBusy(StorageHoldReason)
+        /// The copy's text is being read again in another encoding
+        /// (encodingchoice), which writes into the package the replacement
+        /// removes. It carries the re-read's own sentence
+        /// (`LibraryViewModel.readingAgainRefusal(of:)`), said as it is.
+        case readingAgain(String)
 
         /// The refusal as the question's sheet shows it and VoiceOver
         /// speaks it.
         var sentence: String {
             switch self {
+            case .readingAgain(let sentence):
+                return sentence
             case .inUse(let use, let title):
                 return use.refusal(of: "“\(title)”", doing: "replacing it", retry: DuplicateReplacement.retry)
             case .audioBeingEdited(let title):

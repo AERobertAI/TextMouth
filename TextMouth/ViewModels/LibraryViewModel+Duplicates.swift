@@ -398,7 +398,10 @@ extension LibraryViewModel {
     /// does while it moves packages off the main thread: the replacement
     /// would carry nothing from a package moved meanwhile, and its record
     /// would be written into the old package's new place (ST04 review,
-    /// finding 5).
+    /// finding 5). Nor while the copy's text is being read again in another
+    /// encoding, which writes into the package the replacement removes
+    /// (`readingAgainRefusal(of:)`, encodingchoice); asked last, as it ends
+    /// by itself in a moment.
     func replacementRefusal(of existing: Book) -> DuplicateReplacement.Refusal? {
         if let held = StorageBoundary.shared.heldFor {
             return .storageBusy(held)
@@ -408,6 +411,9 @@ extension LibraryViewModel {
         }
         if audioEditActivity.isBeingEdited(existing.id) {
             return .audioBeingEdited(title: existing.title)
+        }
+        if let readingAgain = readingAgainRefusal(of: existing.id) {
+            return .readingAgain(readingAgain)
         }
         return nil
     }

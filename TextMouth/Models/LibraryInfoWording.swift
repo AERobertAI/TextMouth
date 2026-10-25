@@ -275,8 +275,9 @@ enum TextEncodingWording {
 
     /// Why what would rewrite the text of the book titled `bookTitle` waits
     /// while TextMouth reads it again in another encoding, in the same
-    /// words as `extractionRefusal`: a second re-read of it, Edit Text, and
-    /// Redo Text Extraction (`LibraryViewModel.readingAgainRefusal(of:)`).
+    /// words as `extractionRefusal`: a second re-read of it, Edit Text, Redo
+    /// Text Extraction, and Replace Existing
+    /// (`LibraryViewModel.readingAgainRefusal(of:)`).
     static func readingAgainRefusal(bookTitle: String) -> String {
         "TextMouth is reading “\(bookTitle)” again in another encoding. Try again when that finishes."
     }

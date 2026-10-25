@@ -60,10 +60,11 @@ extension LibraryViewModel {
     /// text again in another encoding (`booksBeingReadAgain`), in full: the
     /// book `bookID`'s, or, when nil, any book's, as Redo Text Extraction
     /// asks, since it rewrites every book's text. Nil when no such re-read
-    /// is under way. A second re-read of the book, Edit Text, and Redo Text
-    /// Extraction all ask here, so each waits in the same words, and none
-    /// leaves content.md from one run beside the record of another (review
-    /// of October 24, finding 3).
+    /// is under way. A second re-read of the book, Edit Text, Redo Text
+    /// Extraction, and Replace Existing (`replacementRefusal(of:)`) all ask
+    /// here, so each waits in the same words, and none leaves content.md
+    /// from one run beside the record of another (review of October 24,
+    /// finding 3).
     func readingAgainRefusal(of bookID: UUID? = nil) -> String? {
         guard !booksBeingReadAgain.isEmpty else { return nil }
         let busy = library.books.first { book in
