@@ -154,7 +154,8 @@ final class BookTextEditor {
     }
 
     /// Pauses `book`'s session before a change rewrites its transcript
-    /// (Clean Up, Undo Cleanup, a new transcription, Delete Transcript):
+    /// (Clean Up, Undo Cleanup, a new transcription, Delete Transcript), or
+    /// its text (a re-read in another encoding, encodingchoice):
     /// a check of the book already running finishes, and an edit saved but
     /// not yet checked is taken, committed, and announced as any taken edit
     /// is (`BookTextEditSessions.settlePendingEdit(of:)`), all off the main

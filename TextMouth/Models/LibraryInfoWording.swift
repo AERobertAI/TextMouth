@@ -232,23 +232,33 @@ enum TextEncodingWording {
     static let placesNote = "Your place and bookmarks move with their words. "
         + "Where none of their words are left, as when garbled letters become Cyrillic, "
         + "each goes to about the same point in its chapter, or to the nearest passage the two readings share."
-    /// What a re-read does to text changed with Edit Text, said only for a
-    /// book that holds such text.
-    static let editNote = "The text you changed with Edit Text is kept beside it, as a copy in the book's package."
+    /// What a re-read does to text TextMouth did not write, said only for a
+    /// book whose content.md holds such text: an edit made with Edit Text,
+    /// or a save no edit took, either kept as Replace Existing keeps it
+    /// (`ImportDecisionWording.replacingKeepsTextSentence`).
+    static let keptTextNote = "An edit of its text is kept beside the new reading, as a copy in the book's package."
+    /// What a re-read does to Edit Text, said only for a book being edited:
+    /// the session ends with the re-read, whose new text it never watched
+    /// (`BookTextEditWording.stoppedBookReadAgain(bookTitle:)`).
+    static let stopsEditingNote = "Edit Text stops for this book; choose Edit Text again to edit the new reading."
 
     /// The alert's message before a book is read again as `option` says:
     /// what Automatic does, for it; that the text is replaced; what happens
-    /// to the places; and, for a book whose text was changed with Edit Text
-    /// (`holdsEdit`), that the changed text is kept.
-    static func confirmMessage(option: TextEncodingOption, holdsEdit: Bool) -> String {
+    /// to the places; that an edit of the text is kept, when content.md
+    /// holds one (`keepsText`); and that Edit Text stops, for a book being
+    /// edited (`stopsEditing`).
+    static func confirmMessage(option: TextEncodingOption, keepsText: Bool, stopsEditing: Bool) -> String {
         var parts: [String] = []
         if option == .automatic {
             parts.append(automaticNote)
         }
         parts.append(replacedNote)
         parts.append(placesNote)
-        if holdsEdit {
-            parts.append(editNote)
+        if keepsText {
+            parts.append(keptTextNote)
+        }
+        if stopsEditing {
+            parts.append(stopsEditingNote)
         }
         return parts.joined(separator: " ")
     }
@@ -269,14 +279,6 @@ enum TextEncodingWording {
     /// Redo Text Extraction (`LibraryViewModel.readingAgainRefusal(of:)`).
     static func readingAgainRefusal(bookTitle: String) -> String {
         "TextMouth is reading “\(bookTitle)” again in another encoding. Try again when that finishes."
-    }
-
-    /// Why the book titled `bookTitle` can't be read again while it is being
-    /// edited with Edit Text, whose session watches its text until TextMouth
-    /// quits.
-    static func editingRefusal(bookTitle: String) -> String {
-        "“\(bookTitle)” is being edited with Edit Text, and reading its file again now would replace the text being edited. "
-            + "Edit Text ends when TextMouth quits, so quit and open TextMouth again, then try again."
     }
 
     /// Why the book titled `bookTitle` can't be read again while it is being
@@ -320,13 +322,24 @@ enum TextEncodingWording {
     /// now in `reading`: "“Ledger” is now read as Shift JIS (Japanese),
     /// chosen.", or "“Ledger” was read again." when what it is read in
     /// could not be learnt (its file went to the cloud as it was read);
-    /// and, when text TextMouth did not write was kept beside it as
-    /// `keptCopy`, where, in Replace Existing's words
-    /// (`BookTextEditWording.earlierTextKept(_:)`).
-    static func readAgainAnnouncement(bookTitle: String, reading: TextEncodingReading?, keptCopy: URL?) -> String {
-        let done = reading.map { "“\(bookTitle)” is now read as \($0.description)." } ?? "“\(bookTitle)” was read again."
-        guard let keptCopy else { return done }
-        return done + " " + BookTextEditWording.earlierTextKept(keptCopy)
+    /// when text TextMouth did not write was kept beside it as `keptCopy`,
+    /// where, in Replace Existing's words
+    /// (`BookTextEditWording.earlierTextKept(_:)`); and, when Edit Text was
+    /// editing the book (`stoppedEditing`), that it has stopped, in the
+    /// words Edit Text says it with
+    /// (`BookTextEditWording.stoppedBookReadAgain(bookTitle:)`). One
+    /// announcement says it all, so no part cuts another off.
+    static func readAgainAnnouncement(
+        bookTitle: String, reading: TextEncodingReading?, keptCopy: URL?, stoppedEditing: Bool = false
+    ) -> String {
+        var sentences = [reading.map { "“\(bookTitle)” is now read as \($0.description)." } ?? "“\(bookTitle)” was read again."]
+        if let keptCopy {
+            sentences.append(BookTextEditWording.earlierTextKept(keptCopy))
+        }
+        if stoppedEditing {
+            sentences.append(BookTextEditWording.stoppedBookReadAgain(bookTitle: bookTitle))
+        }
+        return sentences.joined(separator: " ")
     }
 
     // MARK: A Choice That Cannot Be Read (encodingchoice)

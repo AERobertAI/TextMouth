@@ -201,14 +201,20 @@ final class TextEncodingChoiceTests: XCTestCase {
             + "Where none of their words are left, as when garbled letters become Cyrillic, "
             + "each goes to about the same point in its chapter, or to the nearest passage the two readings share."
         XCTAssertEqual(
-            TextEncodingWording.confirmMessage(option: .encoding("cp932"), holdsEdit: false),
+            TextEncodingWording.confirmMessage(option: .encoding("cp932"), keepsText: false, stopsEditing: false),
             "Its text is replaced by the new reading. " + places
         )
         XCTAssertEqual(
-            TextEncodingWording.confirmMessage(option: .automatic, holdsEdit: true),
+            TextEncodingWording.confirmMessage(option: .automatic, keepsText: true, stopsEditing: false),
             "TextMouth reads its file as it reads a file you add: in the encoding the file names, or else the one TextMouth finds. "
                 + "Its text is replaced by the new reading. " + places + " "
-                + "The text you changed with Edit Text is kept beside it, as a copy in the book's package."
+                + "An edit of its text is kept beside the new reading, as a copy in the book's package."
+        )
+        XCTAssertEqual(
+            TextEncodingWording.confirmMessage(option: .encoding("cp932"), keepsText: true, stopsEditing: true),
+            "Its text is replaced by the new reading. " + places + " "
+                + "An edit of its text is kept beside the new reading, as a copy in the book's package. "
+                + "Edit Text stops for this book; choose Edit Text again to edit the new reading."
         )
         XCTAssertEqual(TextEncodingWording.confirmButton, "Read Again")
     }
@@ -217,9 +223,8 @@ final class TextEncodingChoiceTests: XCTestCase {
     func testTheWordsOfARefusalAndOfDone() throws {
         XCTAssertEqual(TextEncodingWording.extractionRefusal, "TextMouth is reading the library's text again. Try again when that finishes.")
         XCTAssertEqual(
-            TextEncodingWording.editingRefusal(bookTitle: "Ledger"),
-            "“Ledger” is being edited with Edit Text, and reading its file again now would replace the text being edited. "
-                + "Edit Text ends when TextMouth quits, so quit and open TextMouth again, then try again."
+            TextEncodingWording.readingAgainRefusal(bookTitle: "Ledger"),
+            "TextMouth is reading “Ledger” again in another encoding. Try again when that finishes."
         )
         XCTAssertEqual(TextEncodingWording.exportingRefusal(bookTitle: "Ledger"), "“Ledger” is being exported. Wait until the export ends, then try again.")
         XCTAssertEqual(
@@ -247,6 +252,12 @@ final class TextEncodingChoiceTests: XCTestCase {
             TextEncodingWording.readAgainAnnouncement(bookTitle: "Ledger", reading: reading, keptCopy: copy),
             "“Ledger” is now read as Shift JIS (Japanese), chosen. "
                 + "Its earlier text was kept as content.md.edited-20261024T120000Z, in the book's package."
+        )
+        XCTAssertEqual(
+            TextEncodingWording.readAgainAnnouncement(bookTitle: "Ledger", reading: nil, keptCopy: copy, stoppedEditing: true),
+            "“Ledger” was read again. "
+                + "Its earlier text was kept as content.md.edited-20261024T120000Z, in the book's package. "
+                + "Edit Text has stopped for Ledger, since its file was read again. Choose Edit Text again to edit the new text."
         )
         // Replace Existing says where its copy went in the same words.
         XCTAssertEqual(

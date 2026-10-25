@@ -32,15 +32,14 @@ extension LibraryViewModel {
     ///   Extraction), which may be rewriting this very book.
     /// - The book is being read again already, from Book Information in the
     ///   library or in a reader (`readingAgainRefusal(of:)`).
-    /// - The book is being edited with Edit Text: the session watches the
-    ///   content.md a re-read would replace, and moves the book's places
-    ///   itself, so a re-read would neither move them nor keep the
-    ///   listener's editor in step. A session lasts until TextMouth quits,
-    ///   as the refusal says.
     /// - The book is being exported: the export would write the old text or
     ///   the new, whichever it read. Of the uses Replace Existing waits for
     ///   (`FeedBookUse`), it is the one a text book can have but for a
     ///   reader, which shows the new text instead.
+    ///
+    /// A book being edited with Edit Text is not refused: its session stops
+    /// for the re-read, as it does for Replace Existing
+    /// (`readTextAgain(bookID:as:access:)`, review of October 24, finding 6).
     func textEncodingChangeRefusal(of book: Book) -> String? {
         if let held = StorageBoundary.shared.heldFor {
             return StorageBusyError(reason: held).errorDescription
@@ -50,9 +49,6 @@ extension LibraryViewModel {
         }
         if let refusal = readingAgainRefusal(of: book.id) {
             return refusal
-        }
-        if textEditSessions.isEditing(book.id) {
-            return TextEncodingWording.editingRefusal(bookTitle: book.title)
         }
         if BookExportModel.booksBeingExported.contains(book.id) {
             return TextEncodingWording.exportingRefusal(bookTitle: book.title)
@@ -95,6 +91,16 @@ extension LibraryViewModel {
     /// The analysis and the encoding go into the book's record in one write,
     /// before the row takes them.
     ///
+    /// A book being edited with Edit Text has its session paused first, an
+    /// edit saved and not yet checked being taken
+    /// (`BookTextEditor.pauseEditing(of:)`): the session watches the
+    /// content.md the re-read replaces, and would take the new reading for
+    /// an edit. A re-read that goes ahead ends it, as Replace Existing ends
+    /// one, keeping its text beside the new reading, and VoiceOver hears
+    /// that Edit Text has stopped (review of October 24, finding 6); one
+    /// that changes nothing begins it again (`resumeEditing(of:)`), so the
+    /// listener's later saves are still taken.
+    ///
     /// Nothing changes, and why is returned, when the book is busy
     /// (`textEncodingChangeRefusal(of:)`), when a file it reads is only in
     /// the cloud, when its bytes are not valid in the encoding chosen, which
@@ -123,16 +129,27 @@ extension LibraryViewModel {
         // rewrite its text meanwhile waits (`readingAgainRefusal(of:)`).
         booksBeingReadAgain.insert(bookID)
         defer { booksBeingReadAgain.remove(bookID) }
+        // Edit Text's session pauses, an editor made only for a session
+        // there is, as Replace Existing makes one.
+        let editor = textEditSessions.isEditing(bookID) ? bookTextEditor() : nil
+        let wasEditing = await editor?.pauseEditing(of: book) ?? false
+        // The row as the pause left it, with any edit it took.
+        guard let current = bookByID(bookID) else {
+            return .failure(TextEncodingWording.bookGoneRefusal)
+        }
         // Asked from the work's thread at the commit: the activity mirrors
         // the books open in readers (`openBookIDs`) behind a lock, as the
         // batch asks it.
         let activity = audioEditActivity
         let isOpenInReader: @Sendable (UUID) -> Bool = { activity.isOpenInReader($0) }
         let reread = await OffMainWork.run {
-            Self.rereadText(of: book, as: option, access: access, isOpenInReader: isOpenInReader)
+            Self.rereadText(of: current, as: option, access: access, isOpenInReader: isOpenInReader)
         }
         switch reread {
         case .refused(let reason):
+            if wasEditing, let editor {
+                await editor.resumeEditing(of: current)
+            }
             return .failure(reason)
         case let .readAgain(update, reading, keptCopy):
             applyTextCacheUpdate(update, atOnce: true)
@@ -140,7 +157,7 @@ extension LibraryViewModel {
                 DiagnosticLog.event(.storage, Self.textEncodingLogLine(title: book.title, record: record, keptCopy: keptCopy))
             }
             let announcement = TextEncodingWording.readAgainAnnouncement(
-                bookTitle: book.title, reading: reading, keptCopy: keptCopy
+                bookTitle: book.title, reading: reading, keptCopy: keptCopy, stoppedEditing: wasEditing
             )
             VoiceOverAnnouncer.announce(announcement)
             return .success(announcement)
@@ -303,12 +320,26 @@ extension LibraryViewModel {
     /// - Throws: `UnwrittenTextNotKept` when it could not be kept, so the
     ///   book is not read again over it.
     private nonisolated static func keptUnwrittenText(of book: Book, access: MaintenanceFileAccess) throws -> URL? {
+        guard let bytes = try unwrittenText(of: book, access: access) else { return nil }
+        let cacheURL = MarkdownCacheService.cacheURL(for: book)
+        guard let copy = BookTextEditSessions.keepCopy(of: cacheURL, bytes: bytes) else { throw UnwrittenTextNotKept() }
+        return copy
+    }
+
+    /// The bytes of `book`'s content.md when they hold text TextMouth did not
+    /// write, which a re-read keeps beside the new reading: an Edit Text
+    /// change, or a save no edit took
+    /// (`DuplicateReplacement.holdsUnwrittenText(_:of:hasher:)`). Nil when
+    /// there is no such text, or no content.md. Read through `access`, so a
+    /// content.md only in the cloud is never downloaded for it; the
+    /// confirmation asks it too, to say whether a copy will be kept
+    /// (`TextEncodingChoiceModel.choose(_:)`).
+    /// - Throws: why content.md could not be read.
+    nonisolated static func unwrittenText(of book: Book, access: MaintenanceFileAccess) throws -> Data? {
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
         guard FileStamp(of: cacheURL) != nil else { return nil }
         let bytes = try access.read(cacheURL) { try Data(contentsOf: cacheURL) }
-        guard DuplicateReplacement.holdsUnwrittenText(bytes, of: book, hasher: access.hasher) else { return nil }
-        guard let copy = BookTextEditSessions.keepCopy(of: cacheURL, bytes: bytes) else { throw UnwrittenTextNotKept() }
-        return copy
+        return DuplicateReplacement.holdsUnwrittenText(bytes, of: book, hasher: access.hasher) ? bytes : nil
     }
 
     /// The debug log's line for a book read again in another encoding: the

@@ -86,19 +86,20 @@ final class TextEncodingPopUpTests: CloudMaintenanceTestCase {
     /// A new option is asked about first; Cancel leaves the pop-up, the
     /// book, and its text as they were; the option already selected asks
     /// nothing.
-    func testANewOptionIsAskedAboutAndCancelLeavesEverything() throws {
+    func testANewOptionIsAskedAboutAndCancelLeavesEverything() async throws {
         let book = try makeTextBook("Gulls", bytes: Self.russian1251, record: TextEncodingRecord(identifier: "windows-1251", source: nil))
         let library = makeModel(with: [book])
         let model = TextEncodingChoiceModel(book: book, library: library)
         let textBefore = try Data(contentsOf: MarkdownCacheService.cacheURL(for: book))
 
-        model.choose(.option(.encoding("windows-1251")))
+        await model.choose(.option(.encoding("windows-1251")))
         XCTAssertNil(model.pending, "the option already selected asks nothing")
 
-        model.choose(.option(.encoding("koi8-r")))
-        XCTAssertEqual(model.pending, .encoding("koi8-r"))
+        await model.choose(.option(.encoding("koi8-r")))
+        let pending = try XCTUnwrap(model.pending)
+        XCTAssertEqual(pending, TextEncodingChoiceModel.Confirmation(option: .encoding("koi8-r"), keepsText: false, stopsEditing: false))
         XCTAssertEqual(model.confirmTitle(for: .encoding("koi8-r")), "Read “Gulls” again as KOI8-R (Russian)?")
-        XCTAssertFalse(model.confirmMessage(for: .encoding("koi8-r")).contains("Edit Text"), "the book holds no edit")
+        XCTAssertFalse(model.confirmMessage(for: pending).contains("Edit"), "the book holds no edit, nor is it edited")
         XCTAssertEqual(model.selection, .option(.encoding("windows-1251")), "the pop-up shows what it showed while it asks")
 
         model.cancel()
@@ -114,7 +115,7 @@ final class TextEncodingPopUpTests: CloudMaintenanceTestCase {
         let library = makeModel(with: [book])
         let model = TextEncodingChoiceModel(book: book, library: library)
 
-        model.choose(.option(.encoding("koi8-r")))
+        await model.choose(.option(.encoding("koi8-r")))
         await model.confirm(.encoding("koi8-r"))
 
         XCTAssertNil(model.failureMessage)
@@ -137,19 +138,45 @@ final class TextEncodingPopUpTests: CloudMaintenanceTestCase {
         defer { VoiceOverAnnouncer.poster = previous }
 
         library.textExtraction.begin("Updating text cache", total: 1)
-        model.choose(.option(.encoding("koi8-r")))
+        await model.choose(.option(.encoding("koi8-r")))
         library.textExtraction.end()
         let busy = "TextMouth is reading the library's text again. Try again when that finishes."
         XCTAssertNil(model.pending, "a busy book is not asked about")
         XCTAssertEqual(model.failureMessage, busy)
 
-        model.choose(.option(.encoding("utf-8")))
+        await model.choose(.option(.encoding("utf-8")))
         XCTAssertNil(model.failureMessage, "a new choice clears the last refusal")
         await model.confirm(.encoding("utf-8"))
         let notValid = "“Pier” can't be read as UTF-8: it holds bytes that are not valid in that encoding. Nothing was changed."
         XCTAssertEqual(model.failureMessage, notValid)
         XCTAssertEqual(announced, [busy, notValid])
         XCTAssertEqual(model.selection, .option(.encoding("windows-1251")))
+    }
+
+    /// The confirmation says an edit of the text is kept whenever one will
+    /// be, here a save no edit took, which the book's record does not name
+    /// as an edit; and that Edit Text stops, for a book being edited (review
+    /// of October 24, finding 6 and item 7).
+    func testTheConfirmationSaysAnEditIsKeptAndEditTextStops() async throws {
+        let book = try makeTextBook("Dock", bytes: Self.russian1251, record: TextEncodingRecord(identifier: "windows-1251", source: nil))
+        let library = makeModel(with: [book])
+        let model = TextEncodingChoiceModel(book: book, library: library)
+        try Data("Saved over by hand.\n".utf8).write(to: MarkdownCacheService.cacheURL(for: book))
+        XCTAssertNil(book.editedText, "the save must not be an edit on record, or this proves nothing new")
+        let sessions = BookTextEditSessions()
+        library.textEditSessions = sessions
+        let baseline = try BookTextEditSessions.baseline(of: book, access: .live).get()
+        sessions.begin(book.id, BookTextEditSessions.Session(baseline: baseline, report: { _, _ in }))
+        defer { sessions.end(book.id) }
+
+        await model.choose(.option(.encoding("koi8-r")))
+
+        let pending = try XCTUnwrap(model.pending)
+        XCTAssertEqual(pending, TextEncodingChoiceModel.Confirmation(option: .encoding("koi8-r"), keepsText: true, stopsEditing: true))
+        XCTAssertTrue(
+            model.confirmMessage(for: pending).hasSuffix(TextEncodingWording.keptTextNote + " " + TextEncodingWording.stopsEditingNote),
+            model.confirmMessage(for: pending)
+        )
     }
 
     // MARK: - VoiceOver

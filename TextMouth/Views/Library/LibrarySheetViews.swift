@@ -168,7 +168,10 @@ struct TextEncodingPopUp: View {
     @ObservedObject var model: TextEncodingChoiceModel
 
     var body: some View {
-        Picker(TextEncodingWording.bookInfoLabel, selection: Binding(get: { model.selection }, set: { model.choose($0) })) {
+        Picker(
+            TextEncodingWording.bookInfoLabel,
+            selection: Binding(get: { model.selection }, set: { item in Task { await model.choose(item) } })
+        ) {
             ForEach(model.items, id: \.self) { item in
                 Text(model.name(of: item)).tag(item)
             }
@@ -185,23 +188,24 @@ struct TextEncodingPopUp: View {
 extension View {
     /// The confirmation `model` asks before its book is read again in the
     /// option chosen: its title names the book and the option ("Read “Ledger”
-    /// again as Shift JIS (Japanese)?"), its message says what changes, Read
-    /// Again (Return) reads it again, and Cancel (Escape) leaves everything,
-    /// the pop-up included, as it was.
+    /// again as Shift JIS (Japanese)?"), its message says what changes (an
+    /// edit of the text kept, and Edit Text stopping, included), Read Again
+    /// (Return) reads it again, and Cancel (Escape) leaves everything, the
+    /// pop-up included, as it was.
     func textEncodingConfirmation(_ model: TextEncodingChoiceModel) -> some View {
         alert(
-            model.pending.map(model.confirmTitle(for:)) ?? "",
+            model.pending.map { model.confirmTitle(for: $0.option) } ?? "",
             isPresented: Binding(get: { model.pending != nil }, set: { if !$0 { model.cancel() } }),
             presenting: model.pending
-        ) { option in
+        ) { confirmation in
             Button(TextEncodingWording.confirmButton) {
-                Task { await model.confirm(option) }
+                Task { await model.confirm(confirmation.option) }
             }
             Button("Cancel", role: .cancel) {
                 model.cancel()
             }
-        } message: { option in
-            Text(model.confirmMessage(for: option))
+        } message: { confirmation in
+            Text(model.confirmMessage(for: confirmation))
         }
     }
 }

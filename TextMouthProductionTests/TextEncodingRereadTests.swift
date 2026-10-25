@@ -85,6 +85,27 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
         LibraryIndexQuarantine.existingCopies(of: MarkdownCacheService.cacheURL(for: book), marker: TextMouthPaths.keptTextCopyMarker)
     }
 
+    /// An Edit Text editor for `model`, sharing its sessions, which stands in
+    /// for the listener and the system: its explanation goes on, no app is
+    /// chosen, a file it opens is only noted in `opened`, and TextMouth is
+    /// active. The caller ends its sessions (`BookTextEditor.endAll()`).
+    private func makeEditor(for model: LibraryViewModel) -> (editor: BookTextEditor, opened: OSAllocatedUnfairLock<[URL]>) {
+        let sessions = BookTextEditSessions()
+        model.textEditSessions = sessions
+        let opened = OSAllocatedUnfairLock<[URL]>(initialState: [])
+        let editor = BookTextEditor(
+            sessions: sessions,
+            preferences: makeSandboxedPreferences("Edit Text"),
+            notificationCenter: NotificationCenter(),
+            explain: { _, _ in true },
+            chooseApp: { _, _ in nil },
+            open: { file, _ in opened.withLock { $0.append(file) } },
+            isAppActive: { true }
+        )
+        model.bookTextEditor = { editor }
+        return (editor, opened)
+    }
+
     /// What `model` makes of reading `book` again as `option`, with every
     /// announcement it makes on the way.
     private func readAgain(
@@ -250,9 +271,10 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
     }
 
     /// Each refusal says why, and changes nothing: another operation holding
-    /// the library's storage work, the library's text being read again, Edit
-    /// Text, an export, a file only in the cloud, a book gone, and a book
-    /// that offers no choice.
+    /// the library's storage work, the library's text being read again, an
+    /// export, a file only in the cloud, a book gone, and a book that offers
+    /// no choice. Edit Text is no refusal: it stops for the re-read
+    /// (`testEditTextStopsForTheRereadAndItsEditIsKept`).
     func testEachRefusalSaysWhyAndChangesNothing() async throws {
         let title = "Quay \(UUID().uuidString.prefix(8))"
         let book = try makeTextBook(title)
@@ -273,16 +295,6 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
         model.textExtraction.begin("Updating text cache", total: 1)
         await expectRefusal("TextMouth is reading the library's text again. Try again when that finishes.")
         model.textExtraction.end()
-
-        let sessions = BookTextEditSessions()
-        model.textEditSessions = sessions
-        let baseline = try BookTextEditSessions.baseline(of: book, access: .live).get()
-        sessions.begin(book.id, BookTextEditSessions.Session(baseline: baseline, report: { _, _ in }))
-        await expectRefusal(
-            "“\(title)” is being edited with Edit Text, and reading its file again now would replace the text being edited. "
-                + "Edit Text ends when TextMouth quits, so quit and open TextMouth again, then try again."
-        )
-        sessions.end(book.id)
 
         BookExportModel.noteExportStarted([book.id])
         await expectRefusal("“\(title)” is being exported. Wait until the export ends, then try again.")
@@ -378,19 +390,7 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
         let title = "Mooring \(UUID().uuidString.prefix(8))"
         let book = try makeTextBook(title)
         let model = makeModel(with: [book])
-        let sessions = BookTextEditSessions()
-        model.textEditSessions = sessions
-        let opened = OSAllocatedUnfairLock<[URL]>(initialState: [])
-        let editor = BookTextEditor(
-            sessions: sessions,
-            preferences: makeSandboxedPreferences("Edit Text"),
-            notificationCenter: NotificationCenter(),
-            explain: { _, _ in true },
-            chooseApp: { _, _ in nil },
-            open: { file, _ in opened.withLock { $0.append(file) } },
-            isAppActive: { true }
-        )
-        model.bookTextEditor = { editor }
+        let (editor, opened) = makeEditor(for: model)
         defer { editor.endAll() }
         let busy = "TextMouth is reading “\(title)” again in another encoding. Try again when that finishes."
         var announced: [String] = []
@@ -409,7 +409,7 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
 
         XCTAssertTrue(outcome.succeeded, "\(outcome)")
         XCTAssertEqual(announced, [busy])
-        XCTAssertFalse(sessions.isEditing(book.id), "a session began")
+        XCTAssertFalse(editor.sessions.isEditing(book.id), "a session began")
         XCTAssertEqual(opened.withLock { $0 }, [], "an editor opened")
         XCTAssertNil(model.readingAgainRefusal(), "the book is still busy")
         XCTAssertFalse(model.isExtracting)
@@ -515,6 +515,45 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
             logLineCount("TEXT_ENCODING_CHANGED: \(title): read again as koi8-r, chosen; its earlier text was kept as \(copy.lastPathComponent)"),
             1
         )
+    }
+
+    /// A book being edited with Edit Text is read again: its session stops,
+    /// as Replace Existing stops one, its edit is kept beside the new
+    /// reading, and VoiceOver hears both in one announcement, with what to
+    /// do to edit the new text. A re-read refused first begins the session
+    /// again, so the listener's later saves are still taken (review of
+    /// October 24, finding 6).
+    func testEditTextStopsForTheRereadAndItsEditIsKept() async throws {
+        let title = "Capstan \(UUID().uuidString.prefix(8))"
+        var book = try makeTextBook(title)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let edited = try cachedText(of: book).replacingOccurrences(of: "двести", with: "триста")
+        try edited.write(to: cache, atomically: true, encoding: .utf8)
+        book.editedText = EditedText(cacheDigest: try FileImportService.md5Hash(of: cache), takenAt: Date())
+        try book.saveBookInfoThrowing()
+        let model = makeModel(with: [book])
+        let (editor, _) = makeEditor(for: model)
+        defer { editor.endAll() }
+        let baseline = try BookTextEditSessions.baseline(of: book, access: .live).get()
+        editor.begin(book.id, baseline: baseline)
+        let koi8 = try reading(of: book, .chosen("koi8-r"))
+
+        let (refused, _) = await readAgain(book, as: .encoding("utf-8"), in: model)
+        XCTAssertFalse(refused.succeeded, "UTF-8 must refuse these bytes, or this proves nothing: \(refused)")
+        XCTAssertTrue(editor.sessions.isEditing(book.id), "the session did not begin again")
+
+        let (outcome, announced) = await readAgain(book, as: .encoding("koi8-r"), in: model)
+
+        let copy = try XCTUnwrap(keptCopies(of: book).first, "the edit was not kept")
+        XCTAssertEqual(keptCopies(of: book).count, 1)
+        XCTAssertEqual(try String(contentsOf: copy, encoding: .utf8), edited)
+        let said = "“\(title)” is now read as KOI8-R (Russian), chosen. "
+            + "Its earlier text was kept as \(copy.lastPathComponent), in the book's package. "
+            + "Edit Text has stopped for \(title), since its file was read again. Choose Edit Text again to edit the new text."
+        XCTAssertEqual(outcome, .success(said))
+        XCTAssertEqual(announced, [said])
+        XCTAssertFalse(editor.sessions.isEditing(book.id), "the session went on")
+        XCTAssertEqual(try cachedText(of: book), PlainTextParser.markdown(text: koi8))
     }
 
     // MARK: - An Open Reader
