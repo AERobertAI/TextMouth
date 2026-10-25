@@ -60,12 +60,30 @@ final class TextEncodingBookInfoTests: XCTestCase {
         XCTAssertNil(book(encoding: "windows-1251", format: .epub).textEncodingDescription)
     }
 
+    /// An encoding the listener chose says so (encodingchoice), and UTF-8,
+    /// which only a choice records, is named as it is; Automatic's guess is
+    /// a guess, and Automatic with nothing to record says nothing, as a book
+    /// with no guess says nothing.
+    func testTheDescriptionSaysWhenTheListenerChose() {
+        func book(_ encoding: String?, _ source: TextEncodingSource?) -> Book {
+            var decided = self.book(encoding: encoding)
+            decided.textEncodingSource = source
+            return decided
+        }
+        XCTAssertEqual(book("windows-1251", .chosen).textEncodingDescription, "Windows-1251 (Cyrillic), chosen")
+        XCTAssertEqual(book("utf-8", .chosen).textEncodingDescription, "UTF-8, chosen")
+        XCTAssertEqual(book("cp950", .chosen).textEncodingDescription, "Big5 (Traditional Chinese), chosen")
+        XCTAssertEqual(book("koi8-r", .automatic).textEncodingDescription, "KOI8-R (Russian), guessed")
+        XCTAssertNil(book(nil, .automatic).textEncodingDescription)
+    }
+
     /// The wording is pinned in one place. The label names the thing and the
     /// value says it was guessed; "Read As" is not used, as it is heard as
     /// "reed as" and sounds like a setting the listener can change.
     func testTheWordsAreThePinnedOnes() {
         XCTAssertEqual(TextEncodingWording.bookInfoLabel, "Text Encoding")
         XCTAssertEqual(TextEncodingWording.guessNote, "guessed")
+        XCTAssertEqual(TextEncodingWording.chosenNote, "chosen")
         XCTAssertEqual(
             TextEncodingWording.speakInfoPart("Windows-1251 (Cyrillic), guessed"), "Text encoding: Windows-1251 (Cyrillic), guessed"
         )
@@ -102,6 +120,11 @@ final class TextEncodingBookInfoTests: XCTestCase {
         XCTAssertFalse(LibraryInfoWording.brief(.book(facts(of: guessed))).contains("Text encoding"))
 
         XCTAssertFalse(fullSummary(of: book(encoding: nil)).contains("Text encoding"))
+
+        // A choice is said as one (encodingchoice).
+        var chosen = book(encoding: "cp932")
+        chosen.textEncodingSource = .chosen
+        XCTAssertTrue(fullSummary(of: chosen).contains("Text encoding: Shift JIS (Japanese), chosen."), fullSummary(of: chosen))
     }
 
     /// The encoding's part sits between the bookmarks and the parts after

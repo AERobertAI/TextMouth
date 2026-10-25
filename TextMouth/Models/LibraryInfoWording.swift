@@ -51,9 +51,11 @@ struct BookInfoFacts: Equatable {
     /// English Braille, contracted (Grade 2)" (`Book.brailleCodeDescription`,
     /// FMT21), which only the full summary says; nil for every other book.
     var brailleCode: String? = nil
-    /// The encoding a text book's file was guessed to be in, in words, such
-    /// as "Windows-1251 (Cyrillic), guessed" (`Book.textEncodingDescription`,
-    /// FMT16), which only the full summary says; nil for every other book.
+    /// The encoding a text book's file was guessed to be in, or chosen to be
+    /// read in, in words, such as "Windows-1251 (Cyrillic), guessed" or
+    /// "Shift JIS (Japanese), chosen" (`Book.textEncodingDescription`, FMT16,
+    /// encodingchoice), which only the full summary says; nil for every other
+    /// book.
     var textEncoding: String? = nil
 }
 
@@ -90,21 +92,24 @@ enum BrailleCodeWording {
     static let bookInfoLabel = "Braille Code"
 }
 
-// MARK: - A Text Book's Encoding (FMT16)
+// MARK: - A Text Book's Encoding (FMT16, encodingchoice)
 
 extension Book {
-    /// The encoding this text book's file was guessed to be in, in words: the
-    /// catalog's name for it and that it was guessed, such as "Windows-1251
-    /// (Cyrillic), guessed". A file whose bytes named no encoding is read in
-    /// one TextMouth chose, which the listener should be able to learn when
-    /// a book's accents or letters read oddly. Nil for a book with no
-    /// recorded encoding (its file named one, Windows-1252 read it right, or
-    /// it was imported before guesses were recorded), and for a book of a
-    /// format that has no use for one. Book Information and Speak Info both
-    /// say it, from this one expression.
+    /// The encoding this text book's file is read in, as its record says,
+    /// in words: the encoding's name and who decided it, such as
+    /// "Windows-1251 (Cyrillic), guessed" or "Shift JIS (Japanese), chosen"
+    /// (`TextEncodingReading.description`). A file whose bytes named no
+    /// encoding is read in one TextMouth or the listener chose, which the
+    /// listener should be able to learn when a book's accents or letters read
+    /// oddly. Nil for a book whose record names no encoding (its file named
+    /// one, Windows-1252 read it right, it was imported before guesses were
+    /// recorded, or Automatic found nothing to record), and for a book of a
+    /// format that has no use for one. Speak Info says it from this one
+    /// expression, from the row alone; Book Information shows what the file
+    /// says too (`TextEncodingReading.current(of:access:)`).
     var textEncodingDescription: String? {
-        guard format.usesTextFileDecoder, let identifier = textEncoding else { return nil }
-        return TextEncodingWording.description(ofEncodingNamed: identifier)
+        guard format.usesTextFileDecoder else { return nil }
+        return TextEncodingReading(record: textEncodingRecord)?.description
     }
 
     /// The words of Book Information's "Text Encoding" row for this book: the
@@ -117,23 +122,66 @@ extension Book {
     }
 }
 
-/// The words around a text book's guessed encoding (FMT16), kept together so
-/// a test pins them. The label names the thing ("Text Encoding", as Speak
-/// Info's "Braille code" names a braille book's), and the value says that it
-/// was guessed: a label such as "Read As" is heard as "reed as", the other
-/// way to say "read", and sounds like a setting the listener can change.
+/// The words around a text book's encoding (FMT16) and the listener's choice
+/// of it (encodingchoice), kept together so a test pins them. The label names
+/// the thing ("Text Encoding", as Speak Info's "Braille code" names a braille
+/// book's), and the value says what decided it: a label such as "Read As" is
+/// heard as "reed as", the other way to say "read".
 enum TextEncodingWording {
-    /// The label of Book Information's row that names the encoding.
+    /// The label of Book Information's row, and pop-up, that names the
+    /// encoding.
     static let bookInfoLabel = "Text Encoding"
-    /// What follows the encoding's name, since the file did not say it.
-    static let guessNote = "guessed"
 
-    /// The encoding recorded as `identifier` in words, such as "Windows-1251
-    /// (Cyrillic), guessed": the catalog's name for it (`TextEncodingCatalog`;
-    /// the identifier itself for one the catalog does not know), then that it
-    /// was guessed.
-    static func description(ofEncodingNamed identifier: String) -> String {
-        "\(TextEncodingCatalog.name(forIdentifier: identifier)), \(guessNote)"
+    // MARK: What Decided It
+
+    /// What follows the encoding's name when TextMouth guessed it, since the
+    /// file did not say it.
+    static let guessNote = "guessed"
+    /// What follows the encoding's name when the listener chose it.
+    static let chosenNote = "chosen"
+    /// What follows the name of a Unicode encoding a byte-order mark names.
+    static let byteOrderMarkNote = "from its byte order mark"
+    /// What follows "UTF-16" for a file recognized as UTF-16 by its zero
+    /// bytes, which has no byte-order mark.
+    static let unmarkedUTF16Note = "recognized by its bytes"
+    /// What follows the name of the encoding an HTML file declares.
+    static let declaredNote = "declared in the file"
+    /// What follows "Windows-1252 (Western European)" for a file whose bytes
+    /// say nothing of their encoding and that no guess was made for.
+    static let defaultNote = "the default"
+
+    /// The encoding named `name`, decided as `basis` says, in words: the
+    /// name, then what decided it ("Windows-1251 (Cyrillic), guessed",
+    /// "ISO 8859-2 (Central European), declared in the file"); valid UTF-8,
+    /// which needs no word, as its name alone ("UTF-8").
+    static func describe(name: String, basis: TextEncodingReading.Basis) -> String {
+        let note: String?
+        switch basis {
+        case .chosen: note = chosenNote
+        case .guessed: note = guessNote
+        case .byteOrderMark: note = byteOrderMarkNote
+        case .unmarkedUTF16: note = unmarkedUTF16Note
+        case .validUTF8: note = nil
+        case .declared: note = declaredNote
+        case .defaultEncoding: note = defaultNote
+        }
+        return note.map { "\(name), \($0)" } ?? name
+    }
+
+    /// The name a listener hears for `encoding`: the catalog's for one of its
+    /// own, "UTF-8", the Unicode encodings with their byte order in words
+    /// ("UTF-16 (little-endian)"), and any other by its IANA name
+    /// (`TextFileDecoder.name(of:)`), such as an encoding an HTML file
+    /// declares that the catalog does not hold.
+    static func name(of encoding: String.Encoding) -> String {
+        switch encoding {
+        case .utf8: return "UTF-8"
+        case .utf16LittleEndian: return "UTF-16 (little-endian)"
+        case .utf16BigEndian: return "UTF-16 (big-endian)"
+        case .utf32LittleEndian: return "UTF-32 (little-endian)"
+        case .utf32BigEndian: return "UTF-32 (big-endian)"
+        default: return TextEncodingCatalog.entry(for: encoding)?.name ?? TextFileDecoder.name(of: encoding)
+        }
     }
 
     /// Speak Info's sentence for an encoding described as `description`
@@ -141,6 +189,130 @@ enum TextEncodingWording {
     /// (Cyrillic), guessed".
     static func speakInfoPart(_ description: String) -> String {
         "Text encoding: \(description)"
+    }
+
+    // MARK: The Pop-up While the File Says Nothing Yet
+
+    /// The pop-up's value while the book's file is read to learn what it
+    /// says of its encoding.
+    static let checkingValue = "Checking the file"
+    /// The pop-up's value for a book that records no encoding and whose file
+    /// is only in the cloud, which is never downloaded to learn it.
+    static let inCloudValue = "Not known until the book is downloaded"
+    /// The pop-up's value for a book that records no encoding and whose file
+    /// cannot be read.
+    static let unreadableValue = "Not known, since the file can't be read"
+
+    // MARK: The Confirmation
+
+    /// The title of the alert that asks before a book is read again as
+    /// `option` says: "Read “Ledger” again as Shift JIS (Japanese)?", or
+    /// "Read “Ledger” again automatically?".
+    static func confirmTitle(bookTitle: String, option: TextEncodingOption) -> String {
+        switch option {
+        case .automatic:
+            return "Read “\(bookTitle)” again automatically?"
+        case .encoding:
+            return "Read “\(bookTitle)” again as \(TextEncodingChoices.name(of: option))?"
+        }
+    }
+
+    /// What Automatic does, as the alert says it before it is chosen.
+    static let automaticNote = "TextMouth reads its file as it reads a file you add: "
+        + "in the encoding the file names, or else the one TextMouth finds."
+    /// What any re-read does to the book's text.
+    static let replacedNote = "Its text is replaced by the new reading."
+    /// What a re-read does to the book's places (T06): they move with their
+    /// words, and where none of a place's words are left, the place moves as
+    /// `PlaceRelocator` moves it then.
+    static let placesNote = "Your place and bookmarks move with their words. "
+        + "Where the new reading has none of their words, as when garbled letters become Cyrillic, "
+        + "each goes to about the same point in its chapter."
+    /// What a re-read does to text changed with Edit Text, said only for a
+    /// book that holds such text.
+    static let editNote = "The text you changed with Edit Text is kept beside it, as a copy in the book's package."
+
+    /// The alert's message before a book is read again as `option` says:
+    /// what Automatic does, for it; that the text is replaced; what happens
+    /// to the places; and, for a book whose text was changed with Edit Text
+    /// (`holdsEdit`), that the changed text is kept.
+    static func confirmMessage(option: TextEncodingOption, holdsEdit: Bool) -> String {
+        var parts: [String] = []
+        if option == .automatic {
+            parts.append(automaticNote)
+        }
+        parts.append(replacedNote)
+        parts.append(placesNote)
+        if holdsEdit {
+            parts.append(editNote)
+        }
+        return parts.joined(separator: " ")
+    }
+
+    /// The alert's button that reads the book again; Cancel leaves it.
+    static let confirmButton = "Read Again"
+
+    // MARK: Refusals
+
+    /// Why a book can't be read again while the library's text is being
+    /// read again (the launch batch, Redo Text Extraction), in the words
+    /// TextMouth uses while its storage work is held (`StorageBusyError`).
+    static let extractionRefusal = "TextMouth is reading the library's text again. Try again when that finishes."
+
+    /// Why the book titled `bookTitle` can't be read again while it is being
+    /// edited with Edit Text, whose session watches its text until TextMouth
+    /// quits.
+    static func editingRefusal(bookTitle: String) -> String {
+        "“\(bookTitle)” is being edited with Edit Text, and reading its file again now would replace the text being edited. "
+            + "Edit Text ends when TextMouth quits, so quit and open TextMouth again, then try again."
+    }
+
+    /// Why the book titled `bookTitle` can't be read again while it is being
+    /// exported, with what to do, as a refusal for a book in use says it
+    /// (`FeedBookUse.exporting`): "“Ledger” is being exported. Wait until the
+    /// export ends, then try again."
+    static func exportingRefusal(bookTitle: String) -> String {
+        "“\(bookTitle)” is being exported. \(FeedBookUse.exporting.remedy), then \(FeedBookUse.tryAgain)."
+    }
+
+    /// Why the book titled `bookTitle` was not read again as `encoding`: its
+    /// bytes are not valid in it (`notValid(in:subject:)`), and nothing
+    /// changed.
+    static func notValidRefusal(bookTitle: String, encoding: String) -> String {
+        "\(notValid(in: encoding, subject: "“\(bookTitle)”")) Nothing was changed."
+    }
+
+    /// Why the book titled `bookTitle` was not read again: the text changed
+    /// with Edit Text could not be kept beside the new reading, so nothing
+    /// was replaced, as Replace Existing leaves both copies then
+    /// (`DuplicateReplacement.TextNotKept`).
+    static func editNotKeptRefusal(bookTitle: String) -> String {
+        "TextMouth couldn't keep the text you changed in “\(bookTitle)” beside the new reading, so it left the book as it was."
+    }
+
+    /// Why the book titled `bookTitle` was not read again: the reading
+    /// failed, for `reason` when one was given.
+    static func failedRefusal(bookTitle: String, reason: String?) -> String {
+        let sentence = "TextMouth couldn't read “\(bookTitle)” again, so it left the book as it was"
+        guard let reason, !reason.isEmpty else { return sentence + "." }
+        return sentence + ": " + reason
+    }
+
+    /// Why a book that left the library while its Book Information was open
+    /// is not read again.
+    static let bookGoneRefusal = "The book is no longer in the library, so it was not read again."
+
+    // MARK: Done
+
+    /// What VoiceOver hears once the book titled `bookTitle` is read again,
+    /// now in `reading`: "“Ledger” is now read as Shift JIS (Japanese),
+    /// chosen."; and, when text TextMouth did not write was kept beside it
+    /// as `keptCopy`, where, in Replace Existing's words
+    /// (`BookTextEditWording.earlierTextKept(_:)`).
+    static func readAgainAnnouncement(bookTitle: String, reading: TextEncodingReading, keptCopy: URL?) -> String {
+        let done = "“\(bookTitle)” is now read as \(reading.description)."
+        guard let keptCopy else { return done }
+        return done + " " + BookTextEditWording.earlierTextKept(keptCopy)
     }
 
     // MARK: A Choice That Cannot Be Read (encodingchoice)
@@ -314,8 +486,8 @@ enum LibraryInfoWording {
     /// Mac. Open in a reader window." A braille book says its code right
     /// after its bookmarks: "3 bookmarks. Braille code: Unified English
     /// Braille, contracted (Grade 2). File size 1.2 MB." A text book whose
-    /// encoding was guessed says it there too: "3 bookmarks. Text encoding:
-    /// Windows-1251 (Cyrillic), guessed. File size 1.2 MB."
+    /// encoding was guessed, or chosen, says it there too: "3 bookmarks. Text
+    /// encoding: Windows-1251 (Cyrillic), guessed. File size 1.2 MB."
     static func fullParts(of book: BookInfoFacts, now: Date, calendar: Calendar, locale: Locale) -> [String] {
         var parts = ["Added \(FeedWording.moment(book.dateAdded, now: now, calendar: calendar, locale: locale))"]
         if let lastOpened = book.lastOpened {

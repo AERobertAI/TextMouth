@@ -164,6 +164,15 @@ enum BookTextEditWording {
         }
     }
 
+    /// Where the text a replacement or a re-read replaced was kept, beside
+    /// the new text, named as Edit Text names the copies it keeps: "Its
+    /// earlier text was kept as content.md.edited-20261024T123012Z, in the
+    /// book's package." Replace Existing (ST04) and a re-read in another
+    /// encoding (encodingchoice) both say it from here.
+    static func earlierTextKept(_ copy: URL) -> String {
+        "Its earlier text was kept as \(copy.lastPathComponent), in the book's package."
+    }
+
     /// A rebuild read the book's text from its own file again, over other
     /// text in content.md, which was kept first: "The text of Harbour Pilots
     /// was read again from its own file. The text content.md held before was
