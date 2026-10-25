@@ -98,7 +98,11 @@ extension LibraryViewModel {
         if let refusal = textEncodingChangeRefusal(of: book) {
             return .failure(refusal)
         }
-        let isOpenInReader = openBookIDs.contains(bookID)
+        // Asked from the work's thread at the commit: the activity mirrors
+        // the books open in readers (`openBookIDs`) behind a lock, as the
+        // batch asks it.
+        let activity = audioEditActivity
+        let isOpenInReader: @Sendable (UUID) -> Bool = { activity.isOpenInReader($0) }
         let reread = await OffMainWork.run {
             Self.rereadText(of: book, as: option, access: access, isOpenInReader: isOpenInReader)
         }
@@ -135,7 +139,7 @@ extension LibraryViewModel {
         of book: Book,
         as option: TextEncodingOption,
         access: MaintenanceFileAccess,
-        isOpenInReader: Bool
+        isOpenInReader: @escaping @Sendable (UUID) -> Bool
     ) -> TextEncodingReread {
         let notDownloaded = TextEncodingReread.refused(LibraryCloudWording.notDownloaded(titles: [book.title]))
         return StorageBoundary.shared.perform(.textExtraction) { _ in
@@ -175,7 +179,7 @@ extension LibraryViewModel {
         of book: Book,
         as option: TextEncodingOption,
         access: MaintenanceFileAccess,
-        isOpenInReader: Bool
+        isOpenInReader: @Sendable (UUID) -> Bool
     ) throws -> TextEncodingReread {
         // 1. The encoding chosen, read strictly before anything is written.
         var chosen: TextEncodingRecord?
@@ -218,7 +222,11 @@ extension LibraryViewModel {
                 pageReaderVersion: .some(generated.pageReaderVersion),
                 textEncoding: record
             ) else { throw CommitDropped() }
-            let textForOpenReader = isOpenInReader
+            // Which readers have the book open is asked now, at the commit,
+            // as the batch asks it (`updateTextCache`): a reader opened while
+            // the book was read is given the new text too, so its checkpoints
+            // never write the old text's places.
+            let textForOpenReader = isOpenInReader(book.id)
                 ? TextForOpenReader(content: generated.content, movedPlaces: generated.movedPlaces)
                 : nil
             let update = TextCacheUpdate(

@@ -332,6 +332,25 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
         XCTAssertEqual(model.bookByID(book.id)?.textEncodingRecord, book.textEncodingRecord)
     }
 
+    /// A reader opened while the book is read again is given the new text, as
+    /// one open when it began is: which readers are open is decided at the
+    /// commit, as the batch decides it (review of October 24, finding 4).
+    func testAReaderOpenedDuringTheReadIsGivenTheNewText() async throws {
+        let book = try makeTextBook("Slipway \(UUID().uuidString.prefix(8))")
+        let model = makeModel(with: [book])
+        var events: [LibraryBookEvent] = []
+        let subscription = model.bookUpdates.events(for: book.id).sink { events.append($0) }
+        defer { subscription.cancel() }
+
+        let outcome = try await readAgainHeldInItsRebuild(book, as: .encoding("koi8-r"), in: model) {
+            model.openBookIDs.insert(book.id)
+            model.bookUpdates.watch(book)
+        }
+
+        XCTAssertTrue(outcome.succeeded, "\(outcome)")
+        XCTAssertTrue(events.contains { if case .textReplaced = $0 { return true } else { return false } }, "\(events)")
+    }
+
     // MARK: - Places
 
     /// The book's places move with the text. Where the new reading shares
