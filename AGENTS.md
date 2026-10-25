@@ -73,7 +73,14 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - A test host that joins the system's media session takes the user's AirPods; it never does now, but a branch older than that fix still can until it rebases.
 - A tool call that waits on a permission prompt stops its agent until the user answers, and the user may be away. Claude Code asks before an `rm` through a shell variable: on October 18, 2026 a team lead's `rm -f "$D/$out"` in a throwaway test loop waited five hours while its team stood still. Every `rm`, in a brief or the orchestrator's own commands, takes literal paths. While agents work, the orchestrator runs `python3 -I Scripts/agents/stall-watch.py --subagents ~/.claude/projects/<project folder>/<session id>/subagents` as a background task; it exits naming any agent whose tool call has waited fifteen minutes for its result.
 
-## Where things stood on October 24, 2026
+## Where things stood on October 25, 2026
+
+**October 25 (after midnight).** On the evening of October 24 the user asked for FMT16's follow-up: "Go ahead and do the reopening with a different encoding … can it be set in the info screen for a book with the current one seleted in the popup?" One Opus agent built it (`Scripts/agents/briefs/2026-10-24/encodingchoice.md`). One Opus reviewer found a wrong-text bug and four risks, then verified the first fix round and found four more gaps; both rounds were fixed. It was merged on `integrate/encoding-choice` after a green full suite, and main was fast-forwarded (b835fa79). Merged into main:
+- **`formats/encoding-choice` (7b5375b9 and 0b1bf8dd).**
+  - Book Information's Text Encoding row is a pop-up, with the encoding the book is read in selected and how it was decided.
+  - Choosing another reads the file again in it, strictly. Places move with their words, an edit is kept as a copy, and the book stays busy throughout (a quit waits through the shared quit hold).
+  - A failure puts the old text back. `textEncodingSource` records a choice.
+- **`docs/encoding-choice` (c4d8ae8e)** and **version 0.2.3** (b835fa79).
 
 **October 24.** At 02:25 ET on Saturday, with 13% of the week left before the 08:00 reset, the user asked: "Are there any more formats or bugs / todos you could work on? ... I want you to use as much as possible". Five agents worked on branches (`Scripts/agents/briefs/2026-10-24/`). The week ran out at 04:43, and they resumed after the reset. An independent Opus reviewer read each branch, and every one had real bugs, which its author fixed and a verifier checked. The branches were merged on `integrate/oct24`, one full suite ran there, and main was fast-forwarded to it (c7958b3c). Merged into main:
 - **`pages/polish` (cedc79ef).** The pages follow-ups:
@@ -131,8 +138,8 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - Documentation passes: `docs/oct19` (c77c9cf4), `docs/oct19b` (bc5ef365), and `docs/oct20` (077b4e1e).
 
 **State at the end:**
-- **Main's suite:** **8706 tests, 78 skipped, 0 failures**, the suite after the FMT16 merge (62575681). Only its docs merge followed. The first integration's suite was 8606 tests, 78 skipped, 0 failures.
-- **Not installed yet:** the user's installed build is 0.1.1 (fb46ea6e). 0.2.2's first launch re-reads every text book for pages, safely (PG16), braille and plain text books included (V07).
+- **Main's suite:** **8777 tests, 78 skipped, 0 failures**, the suite after the encoding choice's last merge (71b6aa41). Only the 0.2.3 bump followed, and it was built and checked. The earlier suites that day: 8606 (the first integration) and 8706 (after FMT16), each with 78 skipped and 0 failures.
+- **Not installed yet:** the user's installed build is 0.1.1 (fb46ea6e). 0.2.3's first launch re-reads every text book for pages, safely (PG16), braille and plain text books included (V07).
 - **Questions:** `humanQuestions/2026-10-23.md` holds four.
   - The escaping (V06) comes after the install.
   - V03 is built; V04 is not.
@@ -141,7 +148,7 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - **Pending with the user:** the install and push, and the rm-hook offer.
 - **The next candidates:**
   - read the first launch's `PAGES_UPGRADE_SUMMARY` once the user installs;
-  - Reopen with Encoding, the user's way to fix a wrong or lost guess (FMT16's follow-up);
+  - a choice of BRF braille ASCII code beside the braille table, if the user reads BRFs from outside North America (asked on October 25, unanswered);
   - V06 in the first update after the install;
   - FMT43;
   - the TODO's follow-ups, among them the October 24 integration's.
