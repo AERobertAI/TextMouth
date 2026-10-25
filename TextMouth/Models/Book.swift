@@ -387,7 +387,19 @@ struct Book: Identifiable, Codable, Hashable {
     /// one Windows-1252 reads correctly, and for every book imported before
     /// guesses were recorded, which are read as they always were. Kept in the
     /// row, the record, and the removal marker.
+    ///
+    /// Since the listener can choose a book's encoding in Book Information
+    /// (encodingchoice), it holds the choice too, and `textEncodingSource`
+    /// says who decided it: the two travel together (`textEncodingRecord`).
     var textEncoding: String?
+
+    /// Who decided `textEncoding` (encodingchoice): the listener's choice of
+    /// an encoding, or of Automatic, in Book Information; nil for the
+    /// import (FMT16), which is every book the listener has not chosen for,
+    /// so their rows and records are written exactly as before. A value that
+    /// cannot be read, as a later TextMouth's might be, is nil. Kept in the
+    /// row, the record, and the removal marker.
+    var textEncodingSource: TextEncodingSource?
 
     /// Whether this row is a feed item's download (FR11): its feed lists it,
     /// and the library's own lists, counts, and maintenance leave it out.
@@ -455,7 +467,8 @@ struct Book: Identifiable, Codable, Hashable {
         feedLink: FeedBookLink? = nil,
         brailleTable: String? = nil,
         brailleTableVersion: String? = nil,
-        textEncoding: String? = nil
+        textEncoding: String? = nil,
+        textEncodingSource: TextEncodingSource? = nil
     ) {
         self.id = id
         self.title = title
@@ -505,6 +518,7 @@ struct Book: Identifiable, Codable, Hashable {
         self.brailleTable = brailleTable
         self.brailleTableVersion = brailleTableVersion
         self.textEncoding = textEncoding
+        self.textEncodingSource = textEncodingSource
     }
 
     // Custom decoding to handle missing fields from old library.json.
@@ -595,6 +609,9 @@ struct Book: Identifiable, Codable, Hashable {
         // A text encoding that cannot be read counts as none (FMT16): the book
         // is then read as every book was before guesses were recorded.
         textEncoding = fields.optionalValue(.textEncoding) { $0 }
+        // Who decided it, when it cannot be read (a later TextMouth's value),
+        // counts as the import: the encoding then reads as a guess.
+        textEncodingSource = fields.optionalValue(.textEncodingSource) { $0 }
     }
 
     /// The .tmb package directory URL: in the library, or, while an import
@@ -856,8 +873,11 @@ struct Book: Identifiable, Codable, Hashable {
 
     /// What a reader takes from the library's row of its book whenever the
     /// library changes that row while the reader has the book open (TODO
-    /// P10): where the book's files are, its editable metadata, and what
-    /// content analysis measured.
+    /// P10): where the book's files are, its editable metadata, what content
+    /// analysis measured, and the encoding its text file is read in, with
+    /// who decided it (encodingchoice), so the reader's Book Information
+    /// shows a new choice and any reading of the file the reader makes uses
+    /// it.
     ///
     /// Everything else is the reader's own: its position and bookmarks, its
     /// voice, speed, pitch, navigation units, skipped sections, end-of-book
@@ -869,18 +889,25 @@ struct Book: Identifiable, Codable, Hashable {
         var location: FileLocation
         var metadata: EditableMetadata
         var analysis: ContentAnalysisFields
+        var textEncoding: TextEncodingRecord
     }
 
     /// This book's library fields. Setting them changes exactly those
     /// fields, so a reader that takes them keeps all of its own state.
     var libraryFields: LibraryFields {
         get {
-            LibraryFields(location: fileLocation, metadata: editableMetadata, analysis: contentAnalysisFields)
+            LibraryFields(
+                location: fileLocation,
+                metadata: editableMetadata,
+                analysis: contentAnalysisFields,
+                textEncoding: textEncodingRecord
+            )
         }
         set {
             fileLocation = newValue.location
             editableMetadata = newValue.metadata
             contentAnalysisFields = newValue.analysis
+            textEncodingRecord = newValue.textEncoding
         }
     }
 
@@ -1031,22 +1058,25 @@ struct Book: Identifiable, Codable, Hashable {
         try? BookInfo.load(from: tmbDirectory)
     }
 
-    /// The encoding to read a text book's file in when its bytes name none
-    /// (FMT16): the row's (`textEncoding`), or, for a row that lost it, the
-    /// one the package's record keeps (`BookMetadata.textEncoding`). A value
-    /// in library.json that cannot be read decodes as none, and so does a row
-    /// an older build wrote, while bookInfo.json keeps the encoding through
-    /// every save of the book (`bookInfo(replacing:contentIndex:revisionFloor:)`);
-    /// reading it here keeps a rebuild from reading the book as Windows-1252
-    /// for want of a row. Nil when neither names one, when the record names
-    /// another book, cannot be read, or is in the cloud (which is not
-    /// downloaded for this), and for a format that does not read text files.
-    func recordedTextEncoding() -> String? {
-        if let textEncoding { return textEncoding }
-        guard format.usesTextFileDecoder, !tmbDirectoryName.isEmpty else { return nil }
+    /// The encoding to read a text book's file in, and who decided it
+    /// (FMT16, encodingchoice): the row's (`textEncodingRecord`), or, for a
+    /// row that lost both, the ones the package's record keeps
+    /// (`BookMetadata.textEncodingRecord`). A value in library.json that
+    /// cannot be read decodes as none, and so does a row an older build
+    /// wrote, while bookInfo.json keeps the encoding through every save of
+    /// the book (`bookInfo(replacing:contentIndex:revisionFloor:)`); reading
+    /// it here keeps a rebuild from reading the book as Windows-1252 for want
+    /// of a row. `TextEncodingRecord.unrecorded` when neither names one, when the
+    /// record names another book, cannot be read, or is in the cloud (which
+    /// is not downloaded for this), and for a format that does not read text
+    /// files. Every reading of the book's file goes by its policy
+    /// (`TextEncodingRecord.policy`).
+    func recordedTextEncodingRecord() -> TextEncodingRecord {
+        if !textEncodingRecord.isEmpty { return textEncodingRecord }
+        guard format.usesTextFileDecoder, !tmbDirectoryName.isEmpty else { return .unrecorded }
         let stored = try? DatalessFiles.withoutDownloading { try StoredBookRecord.read(from: tmbDirectory) }
-        guard let metadata = stored?.info.metadata, metadata.bookID == id else { return nil }
-        return metadata.textEncoding
+        guard let metadata = stored?.info.metadata, metadata.bookID == id else { return .unrecorded }
+        return metadata.textEncodingRecord
     }
 
     /// The record this book writes over `stored`, the record now in its
@@ -1083,7 +1113,11 @@ struct Book: Identifiable, Codable, Hashable {
     /// the same way: the stored record's survives a row that lost it; and so
     /// is the Mac's liblouis version it was read with (review R2), and the
     /// encoding a text book's file was guessed to be in
-    /// (`BookMetadata.textEncoding`, FMT16).
+    /// (`BookMetadata.textEncoding`, FMT16), with who decided it
+    /// (`BookMetadata.textEncodingSource`, encodingchoice). The two are taken
+    /// as one: a row that holds either writes its own, its nil encoding
+    /// included, as a row the listener set to Automatic holds; only a row
+    /// that holds neither takes the stored record's.
     ///
     /// The revision is one more than the stored record's, or one more than
     /// `revisionFloor` when that is higher. The metadata queue passes the
@@ -1109,8 +1143,11 @@ struct Book: Identifiable, Codable, Hashable {
         // The braille table: the row's, or else the stored record's (FMT21).
         info.metadata.brailleTable = brailleTable ?? stored?.info.metadata.brailleTable
         info.metadata.brailleTableVersion = brailleTableVersion ?? stored?.info.metadata.brailleTableVersion
-        // The text encoding: the row's, or else the stored record's (FMT16).
-        info.metadata.textEncoding = textEncoding ?? stored?.info.metadata.textEncoding
+        // The text encoding and who decided it, as one: the row's, or else
+        // the stored record's (FMT16, encodingchoice).
+        info.metadata.textEncodingRecord = textEncodingRecord.isEmpty
+            ? stored?.info.metadata.textEncodingRecord ?? .unrecorded
+            : textEncodingRecord
         return info
     }
 
@@ -1173,7 +1210,7 @@ struct Book: Identifiable, Codable, Hashable {
         info.metadata.feedLink = feedLink
         info.metadata.brailleTable = brailleTable
         info.metadata.brailleTableVersion = brailleTableVersion
-        info.metadata.textEncoding = textEncoding
+        info.metadata.textEncodingRecord = textEncodingRecord
         return info
     }
 
@@ -1235,7 +1272,8 @@ struct Book: Identifiable, Codable, Hashable {
             feedLink: metadata.feedLink,
             brailleTable: metadata.brailleTable,
             brailleTableVersion: metadata.brailleTableVersion,
-            textEncoding: metadata.textEncoding
+            textEncoding: metadata.textEncoding,
+            textEncodingSource: metadata.textEncodingSource
         )
     }
 

@@ -44,6 +44,12 @@ struct RemovedFromLibraryMarker: Codable, Equatable, Sendable {
     /// would change its text under the places it keeps. Nil for a book with
     /// none, and for a marker written before it was kept.
     let textEncoding: String?
+    /// Who decided `textEncoding` (`Book.textEncodingSource`,
+    /// encodingchoice), so a book added back keeps the listener's choice.
+    /// Nil for the import, and for a marker written before it was kept; a
+    /// value that cannot be read, as a later TextMouth's might be, is nil
+    /// too, and never makes the marker unreadable.
+    @LenientOptional var textEncodingSource: TextEncodingSource? = nil
 
     /// The marker recording that `book` was removed at `removedAt`.
     init(book: Book, removedAt: Date = Date()) {
@@ -54,6 +60,7 @@ struct RemovedFromLibraryMarker: Codable, Equatable, Sendable {
         brailleTable = book.brailleTable
         brailleTableVersion = book.brailleTableVersion
         textEncoding = book.textEncoding
+        textEncodingSource = book.textEncodingSource
     }
 }
 

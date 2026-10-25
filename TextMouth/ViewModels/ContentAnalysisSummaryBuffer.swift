@@ -35,6 +35,14 @@ struct ContentAnalysisSummary: Sendable {
     /// an older build wrote, while the record keeps it. Nil when the record
     /// names none, or names another book.
     let textEncoding: String?
+    /// Who decided `textEncoding`, as the record keeps it
+    /// (`Book.textEncodingSource`, encodingchoice), taken back with it.
+    let textEncodingSource: TextEncodingSource?
+
+    /// The record's encoding and who decided it, as one.
+    var textEncodingRecord: TextEncodingRecord {
+        TextEncodingRecord(identifier: textEncoding, source: textEncodingSource)
+    }
 
     /// The analysis fields of `committed`, the book as its package records
     /// it once the analysis is saved (`LibraryPersistenceService.saveContentAnalysis`),
@@ -47,6 +55,7 @@ struct ContentAnalysisSummary: Sendable {
         fields = committed.contentAnalysisFields
         self.movedPlaces = movedPlaces.map { $0.taken(by: committed) }
         textEncoding = committed.textEncoding
+        textEncodingSource = committed.textEncodingSource
     }
 
     /// The analysis fields of `recovered`, the library row with the analysis
@@ -58,9 +67,10 @@ struct ContentAnalysisSummary: Sendable {
     /// (`placesMoved(to:from:)`). The record is the source of these moves, so
     /// they are not narrowed to what it took, as a fresh commit's are.
     ///
-    /// The record's encoding is taken only from this book's own record, and
-    /// only for a format that reads text files, as `recordedTextEncoding()`
-    /// takes it: a package record that names another book, as an old shared
+    /// The record's encoding, and who decided it, are taken only from this
+    /// book's own record, and only for a format that reads text files, as
+    /// `Book.recordedTextEncodingRecord()` takes them: a package record that
+    /// names another book, as an old shared
     /// package's may, must never give this row that book's encoding, which
     /// every later reading of this book would then use.
     init(recovered: Book, record: Book) {
@@ -70,6 +80,7 @@ struct ContentAnalysisSummary: Sendable {
         movedPlaces = Self.placesMoved(to: record, from: recovered)
         let ownRecord = record.id == recovered.id && recovered.format.usesTextFileDecoder
         textEncoding = ownRecord ? record.textEncoding : nil
+        textEncodingSource = ownRecord ? record.textEncodingSource : nil
     }
 
     /// The moves that bring the places of `row`, the library row, to those
@@ -133,15 +144,16 @@ struct ContentAnalysisSummary: Sendable {
     /// did: only where it still holds the place as it was, so a place saved
     /// meanwhile wins. A move the record refused is not taken, so a moved
     /// place never wins over a newer write another Mac left in the record.
-    /// A row with no encoding takes the record's (`textEncoding`); a row
-    /// that has one keeps it.
+    /// A row with no encoding, and nobody's decision about one, takes the
+    /// record's, with who decided it (`textEncodingRecord`); a row that has
+    /// either keeps its own.
     func apply(to book: inout Book) {
         book.contentAnalysisFields = fields
         if let movedPlaces {
             book.takeMovedPlaces(original: movedPlaces.original, moved: movedPlaces.moved)
         }
-        if book.textEncoding == nil {
-            book.textEncoding = textEncoding
+        if book.textEncodingRecord.isEmpty {
+            book.textEncodingRecord = textEncodingRecord
         }
     }
 }

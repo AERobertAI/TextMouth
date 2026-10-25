@@ -140,8 +140,14 @@ struct BookMetadata: Codable {
     /// `TextEncodingCatalog`; nil for every book whose bytes named their
     /// encoding or that Windows-1252 reads correctly, and for a record
     /// written before guesses were kept. A value that cannot be read is nil,
-    /// as the row's is, and does not fail the record.
+    /// as the row's is, and does not fail the record. It holds the
+    /// listener's choice too (encodingchoice).
     @LenientOptional var textEncoding: String? = nil
+    /// Who decided `textEncoding` (encodingchoice): the row's field
+    /// (`Book.textEncodingSource`); nil for the import, and for a record
+    /// written before the listener could choose. A value that cannot be read
+    /// is nil, as the row's is, and does not fail the record.
+    @LenientOptional var textEncodingSource: TextEncodingSource? = nil
 
     init(
         title: String = "Untitled",

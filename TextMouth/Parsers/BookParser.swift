@@ -16,19 +16,20 @@ enum BookParser {
     ///   Mac's tables, the Mac's liblouis version it was read with
     ///   (`Book.brailleTableVersion`); another version refuses the reading
     ///   (review R2).
-    /// - Parameter textEncoding: For a plain-text, Markdown, or HTML book,
-    ///   the encoding it was guessed to be in (`Book.textEncoding`, FMT16),
-    ///   which its file is read in when its bytes name none, as the Markdown
-    ///   cache reads it; nil reads such bytes as Windows-1252, as every book
-    ///   was read before guesses were recorded. Every other format ignores it.
+    /// - Parameter encodingPolicy: For a plain-text, Markdown, or HTML book,
+    ///   how its file is read, as the Markdown cache reads it: the policy of
+    ///   the encoding the book records (`Book.recordedTextEncodingRecord()`),
+    ///   chosen by the listener (encodingchoice) or guessed (FMT16). The
+    ///   default reads bytes that name no encoding as Windows-1252, as every
+    ///   book was read before guesses were recorded. Every other format
+    ///   ignores it.
     static func parse(
         url: URL,
         format: BookFormat,
         brailleTable: String? = nil,
         brailleTableVersion: String? = nil,
-        textEncoding: String? = nil
+        encodingPolicy: TextFileDecoder.EncodingPolicy = .fallback
     ) throws -> DocumentContent {
-        let encodingPolicy = TextFileDecoder.EncodingPolicy.forBook(recording: textEncoding)
         switch format {
         case .epub:
             return try EPUBParser.parse(url: url)

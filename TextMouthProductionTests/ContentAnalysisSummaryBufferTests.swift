@@ -399,6 +399,33 @@ final class ContentAnalysisSummaryBufferTests: XCTestCase {
         XCTAssertEqual(row.textEncoding, "euc-kr")
     }
 
+    /// Who decided the encoding travels with it (encodingchoice): a row that
+    /// lost both takes both from the record, a book recovered from its own
+    /// record takes both, and a row the listener set to Automatic, with no
+    /// encoding left to record, keeps that nil rather than take the record's
+    /// encoding.
+    func testASummaryCarriesWhoDecidedWithTheEncoding() throws {
+        var committed = try XCTUnwrap(Self.books(count: 1).first)
+        committed.textEncodingRecord = TextEncodingRecord(identifier: "koi8-r", source: .chosen)
+        let summary = ContentAnalysisSummary(committed: committed)
+        XCTAssertEqual(summary.textEncodingRecord, committed.textEncodingRecord)
+
+        var lost = committed
+        lost.textEncodingRecord = .unrecorded
+        summary.apply(to: &lost)
+        XCTAssertEqual(lost.textEncodingRecord, TextEncodingRecord(identifier: "koi8-r", source: .chosen))
+
+        var automatic = committed
+        automatic.textEncodingRecord = TextEncodingRecord(identifier: nil, source: .automatic)
+        summary.apply(to: &automatic)
+        XCTAssertEqual(automatic.textEncodingRecord, TextEncodingRecord(identifier: nil, source: .automatic))
+
+        var row = committed
+        row.textEncodingRecord = .unrecorded
+        ContentAnalysisSummary(recovered: row, record: committed).apply(to: &row)
+        XCTAssertEqual(row.textEncodingRecord, TextEncodingRecord(identifier: "koi8-r", source: .chosen))
+    }
+
     /// A book recovered from a package record that names another book, as an
     /// old shared package's may, takes no encoding from it: every later
     /// reading of the book would use that other book's encoding.
@@ -408,10 +435,13 @@ final class ContentAnalysisSummaryBufferTests: XCTestCase {
         var stranger = try XCTUnwrap(books.last)
         XCTAssertNotEqual(row.id, stranger.id)
         stranger.textEncoding = "euc-kr"
+        stranger.textEncodingSource = .chosen
         let summary = ContentAnalysisSummary(recovered: row, record: stranger)
         XCTAssertNil(summary.textEncoding)
+        XCTAssertNil(summary.textEncodingSource)
         summary.apply(to: &row)
         XCTAssertNil(row.textEncoding, "a record that names another book gives no encoding")
+        XCTAssertNil(row.textEncodingSource, "nor who decided it")
     }
 
     /// Through the library: the row takes the encoding back with the

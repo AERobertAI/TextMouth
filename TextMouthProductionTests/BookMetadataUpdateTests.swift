@@ -78,11 +78,12 @@ final class BookMetadataUpdateTests: XCTestCase {
     // MARK: - What a Reader Takes from the Library (TODO P10)
 
     /// A reader taking the library's fields from the library's row gets the
-    /// row's file location, editable metadata, and analysis, and keeps every
-    /// part of its own state: position, bookmarks, voice, speed, pitch,
-    /// navigation units, skipped sections, end-of-book behavior, and
-    /// playback times. The library's bookkeeping stays the reader's too.
-    func testLibraryFieldsCarryLocationMetadataAndAnalysisButNoReaderState() {
+    /// row's file location, editable metadata, analysis, and text encoding
+    /// with who decided it (encodingchoice), and keeps every part of its own
+    /// state: position, bookmarks, voice, speed, pitch, navigation units,
+    /// skipped sections, end-of-book behavior, and playback times. The
+    /// library's bookkeeping stays the reader's too.
+    func testLibraryFieldsCarryLocationMetadataAnalysisAndEncodingButNoReaderState() {
         let id = UUID()
         let readerPosition = ReadingPosition(chapterIndex: 3, characterOffset: 120)
         let readerBookmark = Bookmark(number: 1, chapterIndex: 2, characterOffset: 9, label: "Ebb")
@@ -129,7 +130,9 @@ final class BookMetadataUpdateTests: XCTestCase {
             localWPM: 180,
             manualSortOrder: 0,
             epubPublisher: "Harbour Press",
-            epubPublicationDate: "2026"
+            epubPublicationDate: "2026",
+            textEncoding: "koi8-r",
+            textEncodingSource: .chosen
         )
 
         reader.libraryFields = row.libraryFields
@@ -143,6 +146,7 @@ final class BookMetadataUpdateTests: XCTestCase {
         XCTAssertEqual(reader.editableMetadata, row.editableMetadata)
         XCTAssertEqual(reader.epubPublisher, "Harbour Press")
         XCTAssertEqual(reader.totalWordCount, 99)
+        XCTAssertEqual(reader.textEncodingRecord, TextEncodingRecord(identifier: "koi8-r", source: .chosen))
         // The reader's own state, and the library's bookkeeping, are untouched.
         XCTAssertEqual(reader.readingPosition, readerPosition)
         XCTAssertEqual(reader.bookmarks, [readerBookmark])
@@ -161,8 +165,9 @@ final class BookMetadataUpdateTests: XCTestCase {
 
     /// Two rows that differ only in reader state or library bookkeeping have
     /// equal library fields, so such a change is nothing a reader must
-    /// apply; a change of folder, of metadata, or of analysis is.
-    func testOnlyLocationMetadataAndAnalysisChangeTheLibraryFields() {
+    /// apply; a change of folder, of metadata, of analysis, or of the text
+    /// encoding or who decided it (encodingchoice) is.
+    func testOnlyLocationMetadataAnalysisAndEncodingChangeTheLibraryFields() {
         let book = Book(title: "Slack Water", format: .txt, filePath: "/Library/a.tmb/a.txt", md5Hash: "hash")
 
         var readerState = book
@@ -184,6 +189,14 @@ final class BookMetadataUpdateTests: XCTestCase {
         var measured = book
         measured.audioDuration = 61
         XCTAssertNotEqual(measured.libraryFields, book.libraryFields)
+
+        var chosen = book
+        chosen.textEncoding = "koi8-r"
+        XCTAssertNotEqual(chosen.libraryFields, book.libraryFields)
+
+        var automatic = book
+        automatic.textEncodingSource = .automatic
+        XCTAssertNotEqual(automatic.libraryFields, book.libraryFields)
     }
 
     /// An audiobook's tags give way to the library's title and author, and

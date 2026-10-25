@@ -203,4 +203,175 @@ final class BookTextEncodingTests: XCTestCase {
             Set(BookFormat.allCases.filter(\.usesTextFileDecoder)), [.txt, .markdown, .html]
         )
     }
+
+    // MARK: - Who Decided (encodingchoice)
+
+    /// A book whose encoding the listener decided, `source`, with the
+    /// encoding `encoding`.
+    private func book(encoding: String?, source: TextEncodingSource?, format: BookFormat = .txt) -> Book {
+        var decided = book(encoding: encoding, format: format)
+        decided.textEncodingSource = source
+        return decided
+    }
+
+    /// The source is written by its saved names, "chosen" and "automatic",
+    /// and read back; a book nobody chose for writes no key, so its row is
+    /// exactly as it was.
+    func testARowHoldsWhoDecidedOnlyWhenTheListenerDid() throws {
+        let chosen = try row(of: book(encoding: "koi8-r", source: .chosen))
+        XCTAssertEqual(chosen["textEncodingSource"] as? String, "chosen")
+        XCTAssertEqual(try decoded(chosen).textEncodingSource, .chosen)
+        XCTAssertEqual(try decoded(chosen).textEncoding, "koi8-r")
+
+        let automatic = try row(of: book(encoding: nil, source: .automatic))
+        XCTAssertEqual(automatic["textEncodingSource"] as? String, "automatic")
+        XCTAssertNil(automatic["textEncoding"])
+        XCTAssertEqual(try decoded(automatic).textEncodingRecord, TextEncodingRecord(identifier: nil, source: .automatic))
+
+        XCTAssertNil(try row(of: book(encoding: "windows-1251"))["textEncodingSource"])
+    }
+
+    /// A row written before the field existed decodes as the import's; one
+    /// whose value cannot be read, as a later TextMouth's might be, does too,
+    /// keeping its encoding (which then reads as a guess) and the rest of
+    /// the book.
+    func testARowWithoutTheSourceOrWithAnUnreadableOneDecodesAsTheImports() throws {
+        var older = try row(of: book(encoding: "koi8-r", source: .chosen))
+        older.removeValue(forKey: "textEncodingSource")
+        XCTAssertEqual(try decoded(older).textEncodingRecord, TextEncodingRecord(identifier: "koi8-r", source: nil))
+
+        for damaged in ["picked", 17, ["chosen"]] as [Any] {
+            var row = try row(of: book(encoding: "koi8-r", source: .chosen))
+            row["textEncodingSource"] = damaged
+            let repaired = try decoded(row)
+            XCTAssertNil(repaired.textEncodingSource, "\(damaged)")
+            XCTAssertEqual(repaired.textEncoding, "koi8-r", "\(damaged)")
+            XCTAssertEqual(repaired.title, "Ledger", "\(damaged)")
+        }
+    }
+
+    /// The package record keeps who decided, written to bookInfo.json and
+    /// read from it, and the book made from the record has it.
+    func testThePackageRecordKeepsWhoDecided() throws {
+        let chosen = book(encoding: "utf-8", source: .chosen)
+        let info = chosen.makeBookInfo()
+        XCTAssertEqual(info.metadata.textEncodingRecord, TextEncodingRecord(identifier: "utf-8", source: .chosen))
+
+        let package = try makeSandboxDirectory("TextEncoding").appendingPathComponent("Ledger.tmb", isDirectory: true)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        try info.save(to: package)
+        let loaded = try BookInfo.load(from: package)
+        XCTAssertEqual(loaded.metadata.textEncodingSource, .chosen)
+        let rebuilt = Book(record: loaded, filePath: chosen.filePath, folderPath: "", tmbDirectoryName: "Ledger.tmb")
+        XCTAssertEqual(rebuilt.textEncodingRecord, chosen.textEncodingRecord)
+    }
+
+    /// A record without the source, or with one that cannot be read, loads
+    /// with none, keeping its encoding and the rest of the record.
+    func testARecordWithoutTheSourceOrWithAnUnreadableOneStillLoads() throws {
+        let package = try makeSandboxDirectory("TextEncoding").appendingPathComponent("Ledger.tmb", isDirectory: true)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        let recordURL = TextMouthPaths.bookInfoPath(in: package)
+        func load(withSource value: Any?) throws -> BookInfo {
+            try book(encoding: "koi8-r", source: .chosen).makeBookInfo().save(to: package)
+            var record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: recordURL)) as? [String: Any])
+            var metadata = try XCTUnwrap(record["metadata"] as? [String: Any])
+            XCTAssertEqual(metadata["textEncodingSource"] as? String, "chosen")
+            metadata["textEncodingSource"] = value
+            record["metadata"] = metadata
+            try JSONSerialization.data(withJSONObject: record).write(to: recordURL)
+            return try BookInfo.load(from: package)
+        }
+
+        XCTAssertEqual(try load(withSource: "automatic").metadata.textEncodingSource, .automatic)
+        for damaged in [nil, NSNull(), "picked", 3] as [Any?] {
+            let info = try load(withSource: damaged)
+            XCTAssertNil(info.metadata.textEncodingSource, "\(String(describing: damaged))")
+            XCTAssertEqual(info.metadata.textEncoding, "koi8-r", "\(String(describing: damaged))")
+            XCTAssertEqual(info.metadata.title, "Ledger", "\(String(describing: damaged))")
+        }
+    }
+
+    /// The encoding and who decided it go into the record as one: a row
+    /// that holds either writes its own, so a row the listener set to
+    /// Automatic, with no encoding left to record, clears the record's
+    /// choice; a row that holds a guess of its own never takes the record's
+    /// source; and only a row that holds neither takes the record's pair.
+    func testTheEncodingAndWhoDecidedGoIntoTheRecordAsOne() {
+        let stored = StoredBookRecord(
+            info: book(encoding: "koi8-r", source: .chosen).makeBookInfo(), keepsContentIndex: false
+        )
+        func written(_ row: Book) -> TextEncodingRecord {
+            row.bookInfo(replacing: stored, contentIndex: nil).metadata.textEncodingRecord
+        }
+
+        XCTAssertEqual(
+            written(book(encoding: nil, source: .automatic)), TextEncodingRecord(identifier: nil, source: .automatic),
+            "Automatic with nothing to record clears the stored choice"
+        )
+        XCTAssertEqual(written(book(encoding: "windows-1251")), TextEncodingRecord(identifier: "windows-1251", source: nil))
+        XCTAssertEqual(written(book(encoding: nil)), TextEncodingRecord(identifier: "koi8-r", source: .chosen))
+        XCTAssertEqual(
+            book(encoding: nil).bookInfo(replacing: nil, contentIndex: nil).metadata.textEncodingRecord, .unrecorded
+        )
+    }
+
+    /// The removal marker keeps who decided, so a book added back keeps the
+    /// listener's choice; a marker without the field, or with one that
+    /// cannot be read, still reads, with none.
+    func testTheMarkerKeepsWhoDecided() throws {
+        let package = try makeSandboxDirectory("TextEncoding").appendingPathComponent("Ledger.tmb", isDirectory: true)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        let chosen = book(encoding: "koi8-r", source: .chosen)
+        try RemovedFromLibraryMarker(book: chosen).write(into: package)
+        XCTAssertEqual(try RemovedFromLibraryMarker.read(in: package).textEncodingSource, .chosen)
+
+        let url = TextMouthPaths.removedFromLibraryMarkerPath(in: package)
+        for value in [nil, "picked", 5] as [Any?] {
+            try RemovedFromLibraryMarker(book: chosen).write(into: package)
+            var fields = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+            fields["textEncodingSource"] = value
+            try JSONSerialization.data(withJSONObject: fields).write(to: url)
+            let marker = try RemovedFromLibraryMarker.read(in: package)
+            XCTAssertEqual(marker.bookID, chosen.id, "\(String(describing: value))")
+            XCTAssertNil(marker.textEncodingSource, "\(String(describing: value))")
+            XCTAssertEqual(marker.textEncoding, "koi8-r", "\(String(describing: value))")
+        }
+        XCTAssertNil(RemovedFromLibraryMarker(book: book(encoding: "koi8-r")).textEncodingSource)
+    }
+
+    /// A text book rebuilt from its marker keeps who decided; a book of a
+    /// format that has no use for an encoding takes neither.
+    func testABookRebuiltFromItsMarkerKeepsWhoDecided() throws {
+        for (format, fileName, expected) in [
+            (BookFormat.txt, "Ledger.txt", TextEncodingRecord(identifier: "koi8-r", source: .chosen)),
+            (.epub, "Ledger.epub", TextEncodingRecord.unrecorded),
+        ] {
+            let package = try makeSandboxDirectory("TextEncoding").appendingPathComponent("Ledger.tmb", isDirectory: true)
+            try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+            try Data("Hello\n".utf8).write(to: package.appendingPathComponent(fileName))
+            let marker = RemovedFromLibraryMarker(book: book(encoding: "koi8-r", source: .chosen, format: format))
+            let rebuilt = try FileImportService.reconstructedBook(
+                inPackage: package, marker: marker, folderPath: "", dateAdded: Date()
+            )
+            XCTAssertEqual(rebuilt.textEncodingRecord, expected, fileName)
+        }
+    }
+
+    /// How a book's record says to read its file: a choice whatever the
+    /// bytes say, a guess (the import's or Automatic's) only when they name
+    /// no encoding, and with nothing recorded as every book was read before
+    /// guesses. A source without an encoding chooses nothing.
+    func testTheReadingPolicyOfARecord() {
+        XCTAssertEqual(TextEncodingRecord.unrecorded.policy, .fallback)
+        XCTAssertEqual(TextEncodingRecord(identifier: "koi8-r", source: nil).policy, .recorded("koi8-r"))
+        XCTAssertEqual(TextEncodingRecord(identifier: "koi8-r", source: .automatic).policy, .recorded("koi8-r"))
+        XCTAssertEqual(TextEncodingRecord(identifier: "koi8-r", source: .chosen).policy, .chosen("koi8-r"))
+        XCTAssertEqual(TextEncodingRecord(identifier: nil, source: .automatic).policy, .fallback)
+        XCTAssertEqual(TextEncodingRecord(identifier: nil, source: .chosen).policy, .fallback)
+        XCTAssertTrue(TextEncodingRecord(identifier: "utf-8", source: .chosen).isChosen)
+        XCTAssertFalse(TextEncodingRecord(identifier: nil, source: .chosen).isChosen)
+        XCTAssertTrue(TextEncodingRecord.unrecorded.isEmpty)
+        XCTAssertFalse(TextEncodingRecord(identifier: nil, source: .automatic).isEmpty)
+    }
 }

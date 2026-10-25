@@ -849,7 +849,9 @@ final class ContentAnalysisMergeTests: XCTestCase {
             feedLink: FeedBookLink(feedID: UUID(), itemID: "item-\(seed)"),
             brailleTable: "table-\(seed).ctb",
             brailleTableVersion: "liblouis-\(seed)",
-            textEncoding: "encoding-\(seed)"
+            textEncoding: "encoding-\(seed)",
+            // Two values only, so books of two seeds differ when one is odd and one even.
+            textEncodingSource: seed.isMultiple(of: 2) ? .automatic : .chosen
         )
     }
 
