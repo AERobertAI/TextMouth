@@ -30,6 +30,8 @@ extension LibraryViewModel {
     ///   the same words (`StorageBusyError`).
     /// - The library's text is being read again (the launch batch, Redo Text
     ///   Extraction), which may be rewriting this very book.
+    /// - The book is being read again already, from Book Information in the
+    ///   library or in a reader (`readingAgainRefusal(of:)`).
     /// - The book is being edited with Edit Text: the session watches the
     ///   content.md a re-read would replace, and moves the book's places
     ///   itself, so a re-read would neither move them nor keep the
@@ -46,6 +48,9 @@ extension LibraryViewModel {
         if isExtracting {
             return TextEncodingWording.extractionRefusal
         }
+        if let refusal = readingAgainRefusal(of: book.id) {
+            return refusal
+        }
         if textEditSessions.isEditing(book.id) {
             return TextEncodingWording.editingRefusal(bookTitle: book.title)
         }
@@ -53,6 +58,22 @@ extension LibraryViewModel {
             return TextEncodingWording.exportingRefusal(bookTitle: book.title)
         }
         return nil
+    }
+
+    /// Why text can't be rewritten now because TextMouth is reading a book's
+    /// text again in another encoding (`booksBeingReadAgain`), in full: the
+    /// book `bookID`'s, or, when nil, any book's, as Redo Text Extraction
+    /// asks, since it rewrites every book's text. Nil when no such re-read
+    /// is under way. A second re-read of the book, Edit Text, and Redo Text
+    /// Extraction all ask here, so each waits in the same words, and none
+    /// leaves content.md from one run beside the record of another (review
+    /// of October 24, finding 3).
+    func readingAgainRefusal(of bookID: UUID? = nil) -> String? {
+        guard !booksBeingReadAgain.isEmpty else { return nil }
+        let busy = library.books.first { book in
+            booksBeingReadAgain.contains(book.id) && (bookID == nil || book.id == bookID)
+        }
+        return busy.map { TextEncodingWording.readingAgainRefusal(bookTitle: $0.title) }
     }
 
     // MARK: Reading Again
@@ -98,6 +119,10 @@ extension LibraryViewModel {
         if let refusal = textEncodingChangeRefusal(of: book) {
             return .failure(refusal)
         }
+        // The book is busy until its row has the new reading: whatever would
+        // rewrite its text meanwhile waits (`readingAgainRefusal(of:)`).
+        booksBeingReadAgain.insert(bookID)
+        defer { booksBeingReadAgain.remove(bookID) }
         // Asked from the work's thread at the commit: the activity mirrors
         // the books open in readers (`openBookIDs`) behind a lock, as the
         // batch asks it.

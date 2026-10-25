@@ -263,6 +263,14 @@ enum TextEncodingWording {
     /// TextMouth uses while its storage work is held (`StorageBusyError`).
     static let extractionRefusal = "TextMouth is reading the library's text again. Try again when that finishes."
 
+    /// Why what would rewrite the text of the book titled `bookTitle` waits
+    /// while TextMouth reads it again in another encoding, in the same
+    /// words as `extractionRefusal`: a second re-read of it, Edit Text, and
+    /// Redo Text Extraction (`LibraryViewModel.readingAgainRefusal(of:)`).
+    static func readingAgainRefusal(bookTitle: String) -> String {
+        "TextMouth is reading “\(bookTitle)” again in another encoding. Try again when that finishes."
+    }
+
     /// Why the book titled `bookTitle` can't be read again while it is being
     /// edited with Edit Text, whose session watches its text until TextMouth
     /// quits.

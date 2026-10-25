@@ -369,6 +369,52 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
         XCTAssertEqual(try recordedEncoding(of: book), TextEncodingRecord(identifier: "koi8-r", source: .chosen))
     }
 
+    /// While a book is read again, what would rewrite its text waits, in the
+    /// same words: a second re-read of it, Redo Text Extraction, which
+    /// starts no pass, and Edit Text, which opens nothing and begins no
+    /// session. The book is busy no longer once the re-read ends (review of
+    /// October 24, finding 3).
+    func testWhatWouldRewriteTheTextWaitsForTheReread() async throws {
+        let title = "Mooring \(UUID().uuidString.prefix(8))"
+        let book = try makeTextBook(title)
+        let model = makeModel(with: [book])
+        let sessions = BookTextEditSessions()
+        model.textEditSessions = sessions
+        let opened = OSAllocatedUnfairLock<[URL]>(initialState: [])
+        let editor = BookTextEditor(
+            sessions: sessions,
+            preferences: makeSandboxedPreferences("Edit Text"),
+            notificationCenter: NotificationCenter(),
+            explain: { _, _ in true },
+            chooseApp: { _, _ in nil },
+            open: { file, _ in opened.withLock { $0.append(file) } },
+            isAppActive: { true }
+        )
+        model.bookTextEditor = { editor }
+        defer { editor.endAll() }
+        let busy = "TextMouth is reading “\(title)” again in another encoding. Try again when that finishes."
+        var announced: [String] = []
+
+        let outcome = try await readAgainHeldInItsRebuild(book, as: .encoding("koi8-r"), in: model) {
+            let (second, _) = await readAgain(book, as: .automatic, in: model)
+            XCTAssertEqual(second, .failure(busy))
+            XCTAssertFalse(model.redoAllTextExtraction(), "Redo Text Extraction started")
+            let redo = await model.redoAllTextExtractionReturningOutcome()
+            XCTAssertEqual(redo, .failure(busy))
+            let previous = VoiceOverAnnouncer.poster
+            VoiceOverAnnouncer.poster = { announcement, _ in announced.append(announcement.message) }
+            defer { VoiceOverAnnouncer.poster = previous }
+            await editor.edit(book, choosingApp: false, in: model, from: nil)
+        }
+
+        XCTAssertTrue(outcome.succeeded, "\(outcome)")
+        XCTAssertEqual(announced, [busy])
+        XCTAssertFalse(sessions.isEditing(book.id), "a session began")
+        XCTAssertEqual(opened.withLock { $0 }, [], "an editor opened")
+        XCTAssertNil(model.readingAgainRefusal(), "the book is still busy")
+        XCTAssertFalse(model.isExtracting)
+    }
+
     // MARK: - Places
 
     /// The book's places move with the text. Where the new reading shares

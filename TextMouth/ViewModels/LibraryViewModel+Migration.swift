@@ -754,13 +754,15 @@ extension LibraryViewModel {
     ///   - completion: Told on the main actor, once every book is done, what
     ///     the pass did (`textReextractionOutcome(skippedInCloud:heldByEdits:)`).
     /// - Returns: Whether the pass started: false while another text
-    ///   extraction runs, when nothing is done and `completion` is not told.
+    ///   extraction runs, or while a book's text is being read again in
+    ///   another encoding (`readingAgainRefusal(of:)`, encodingchoice), when
+    ///   nothing is done and `completion` is not told.
     @discardableResult
     func redoAllTextExtraction(
         access: MaintenanceFileAccess = .live,
         completion: (@MainActor @Sendable (OperationOutcome) -> Void)? = nil
     ) -> Bool {
-        guard !isExtracting else { return false }
+        guard !isExtracting, readingAgainRefusal() == nil else { return false }
         let booksToExtract = library.books.filter { book in
             !book.format.isAudio && !book.tmbDirectoryName.isEmpty
         }
@@ -772,8 +774,9 @@ extension LibraryViewModel {
 
     /// Redo Text Extraction for Storage settings, returning once every book
     /// is done with what the pass did, which Storage settings' status line
-    /// says and VoiceOver hears; nil when another text extraction runs and
-    /// nothing was started.
+    /// says and VoiceOver hears; why it did not start while a book's text is
+    /// being read again in another encoding, which it says the same way;
+    /// nil when another text extraction runs and nothing was started.
     /// - Parameter access: How the pass reaches the books' files (FR02).
     func redoAllTextExtractionReturningOutcome(access: MaintenanceFileAccess = .live) async -> OperationOutcome? {
         await withCheckedContinuation { continuation in
@@ -781,7 +784,7 @@ extension LibraryViewModel {
                 continuation.resume(returning: outcome)
             }
             if !started {
-                continuation.resume(returning: nil)
+                continuation.resume(returning: readingAgainRefusal().map(OperationOutcome.failure))
             }
         }
     }
