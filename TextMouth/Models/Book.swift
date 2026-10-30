@@ -374,6 +374,27 @@ struct Book: Identifiable, Codable, Hashable {
     /// and the removal marker.
     var brailleTableVersion: String?
 
+    /// The braille file characters this BRF or BRL book's file writes its
+    /// cells in (braillecodes), by the code's id (`BrailleFileCode`), such
+    /// as "ascii-na" for North American Braille ASCII, "ascii-eurobraille"
+    /// for Eurobraille's six-dot code, or "unicode" for Unicode braille
+    /// patterns: the code an import read the file with, or the one a re-read
+    /// in other braille file characters in Book Information read it with,
+    /// which every later reading of the book uses. Nil for a book that
+    /// records none: every braille book imported before codes were recorded,
+    /// every PEF, and every book of another format; a braille book's nil is
+    /// read as North American Braille ASCII. An id this TextMouth does not
+    /// know, as a later TextMouth's may be, is kept exactly as it is stored,
+    /// through every save, and the book's reading refuses it by name, never
+    /// reading it as another code. A value that cannot be read counts as
+    /// none. A re-read writes its id into the package record first, with
+    /// the new text, and the row takes it afterwards, so the record's code
+    /// stands over the row's when it names one
+    /// (`BrailleFileCodeRecord.standing(row:recorded:)`). An older TextMouth
+    /// ignores the key, and drops it at its next write. Kept in the row, the
+    /// record, and the removal marker.
+    var brailleFileCode: String?
+
     /// The encoding TextMouth guessed this plain-text, Markdown, or HTML
     /// book's file is in (FMT16), by its identifier in `TextEncodingCatalog`,
     /// such as "windows-1251" or "koi8-r": set when the book is imported from
@@ -467,6 +488,7 @@ struct Book: Identifiable, Codable, Hashable {
         feedLink: FeedBookLink? = nil,
         brailleTable: String? = nil,
         brailleTableVersion: String? = nil,
+        brailleFileCode: String? = nil,
         textEncoding: String? = nil,
         textEncodingSource: TextEncodingSource? = nil
     ) {
@@ -517,6 +539,7 @@ struct Book: Identifiable, Codable, Hashable {
         self.feedLink = feedLink
         self.brailleTable = brailleTable
         self.brailleTableVersion = brailleTableVersion
+        self.brailleFileCode = brailleFileCode
         self.textEncoding = textEncoding
         self.textEncodingSource = textEncodingSource
     }
@@ -606,6 +629,11 @@ struct Book: Identifiable, Codable, Hashable {
         // library failing over one damaged field.
         brailleTable = fields.optionalValue(.brailleTable) { $0 }
         brailleTableVersion = fields.optionalValue(.brailleTableVersion) { $0 }
+        // A braille file code that cannot be read counts as none
+        // (braillecodes), as a damaged table name does, instead of the whole
+        // library failing over it; the package record's code, when it names
+        // one, stands over it (`BrailleFileCodeRecord.standing(row:recorded:)`).
+        brailleFileCode = fields.optionalValue(.brailleFileCode) { $0 }
         // A text encoding that cannot be read counts as none (FMT16): the book
         // is then read as every book was before guesses were recorded.
         textEncoding = fields.optionalValue(.textEncoding) { $0 }
@@ -874,10 +902,11 @@ struct Book: Identifiable, Codable, Hashable {
     /// What a reader takes from the library's row of its book whenever the
     /// library changes that row while the reader has the book open (TODO
     /// P10): where the book's files are, its editable metadata, what content
-    /// analysis measured, and the encoding its text file is read in, with
-    /// who decided it (encodingchoice), so the reader's Book Information
-    /// shows a new choice and any reading of the file the reader makes uses
-    /// it.
+    /// analysis measured, the encoding its text file is read in, with who
+    /// decided it (encodingchoice), and the braille file characters its BRF
+    /// or BRL file is read in (braillecodes), so the reader's Book
+    /// Information shows a new choice and any reading of the file the
+    /// reader makes uses it.
     ///
     /// Everything else is the reader's own: its position and bookmarks, its
     /// voice, speed, pitch, navigation units, skipped sections, end-of-book
@@ -890,6 +919,7 @@ struct Book: Identifiable, Codable, Hashable {
         var metadata: EditableMetadata
         var analysis: ContentAnalysisFields
         var textEncoding: TextEncodingRecord
+        var brailleFileCode: String?
     }
 
     /// This book's library fields. Setting them changes exactly those
@@ -900,7 +930,8 @@ struct Book: Identifiable, Codable, Hashable {
                 location: fileLocation,
                 metadata: editableMetadata,
                 analysis: contentAnalysisFields,
-                textEncoding: textEncodingRecord
+                textEncoding: textEncodingRecord,
+                brailleFileCode: brailleFileCode
             )
         }
         set {
@@ -908,6 +939,7 @@ struct Book: Identifiable, Codable, Hashable {
             editableMetadata = newValue.metadata
             contentAnalysisFields = newValue.analysis
             textEncodingRecord = newValue.textEncoding
+            brailleFileCode = newValue.brailleFileCode
         }
     }
 
@@ -1076,12 +1108,47 @@ struct Book: Identifiable, Codable, Hashable {
     /// read text files, nor for a book without a package. Every reading of
     /// the book's file goes by its policy (`TextEncodingRecord.policy`).
     func recordedTextEncodingRecord() -> TextEncodingRecord {
-        guard format.usesTextFileDecoder, !tmbDirectoryName.isEmpty else { return textEncodingRecord }
+        guard format.usesTextFileDecoder else { return textEncodingRecord }
+        let recorded = ownStoredMetadata()?.textEncodingRecord ?? .unrecorded
+        return .standing(row: textEncodingRecord, recorded: recorded)
+    }
+
+    /// The braille file characters to read a braille book's file in
+    /// (braillecodes), by the code's id: the one that stands between the
+    /// row's (`brailleFileCode`) and the one the package's record keeps
+    /// (`BookMetadata.brailleFileCode`), as every save of the record keeps
+    /// it (`BrailleFileCodeRecord.standing(row:recorded:)`). The record's
+    /// code comes first, so a rebuild reads the file in the characters its
+    /// record will label the new text with, though the row lags behind a
+    /// re-read in other braille file characters; then the row's, nil
+    /// included, which a later reading takes for North American Braille
+    /// ASCII. A value in library.json that cannot be read decodes as none,
+    /// and so does a row an older build wrote, while bookInfo.json keeps the
+    /// code through every save of the book. The record counts for nothing
+    /// when it names another book, cannot be read, or is in the cloud (which
+    /// is not downloaded for this), and is not read for a book of another
+    /// format, which returns its row's code, nor for a book without a
+    /// package.
+    func recordedBrailleFileCode() -> String? {
+        guard format == .braille else { return brailleFileCode }
+        return BrailleFileCodeRecord.standing(row: brailleFileCode, recorded: ownStoredMetadata()?.brailleFileCode)
+    }
+
+    /// The metadata of the record now in this book's package when that
+    /// record is this book's own (its `bookID` is this row's `id`), read
+    /// without downloading anything: what `recordedTextEncodingRecord()`
+    /// and `recordedBrailleFileCode()` weigh against the row. Nil for a book
+    /// without a package, and when the package holds no record, one that
+    /// cannot be read, one only in the cloud, or another book's, as an old
+    /// shared package's may: such a record must never give this row that
+    /// book's encoding or braille file code, which every later reading of
+    /// this book would then use.
+    private func ownStoredMetadata() -> BookMetadata? {
+        guard !tmbDirectoryName.isEmpty else { return nil }
         let stored = try? DatalessFiles.withoutDownloading { try StoredBookRecord.read(from: tmbDirectory) }
         // The record counts only when it is this book's.
-        let metadata = stored?.info.metadata
-        let recorded = metadata?.bookID == id ? metadata?.textEncodingRecord ?? .unrecorded : .unrecorded
-        return .standing(row: textEncodingRecord, recorded: recorded)
+        guard let metadata = stored?.info.metadata, metadata.bookID == id else { return nil }
+        return metadata
     }
 
     /// The record this book writes over `stored`, the record now in its
@@ -1118,6 +1185,15 @@ struct Book: Identifiable, Codable, Hashable {
     /// the same way: the stored record's survives a row that lost it; and so
     /// is the Mac's liblouis version it was read with (review R2).
     ///
+    /// A braille book's file code (`BookMetadata.brailleFileCode`,
+    /// braillecodes) is the stored record's when it names one, and otherwise
+    /// the row's (`BrailleFileCodeRecord.standing(row:recorded:)`): a re-read
+    /// in other braille file characters writes its code into the record
+    /// with the new text before the library row takes it, so only a write
+    /// `decidingBrailleFileCode` (the next re-read's) replaces it, and a row
+    /// that lags behind, with or without an index, never writes the old code
+    /// back beside the new text.
+    ///
     /// The encoding a text book's file is read in (`BookMetadata.textEncoding`,
     /// FMT16) and who decided it (`BookMetadata.textEncodingSource`,
     /// encodingchoice) are taken as one. A decision the stored record holds
@@ -1136,15 +1212,21 @@ struct Book: Identifiable, Codable, Hashable {
     /// `revisionFloor` when that is higher. The metadata queue passes the
     /// highest revision it has written for this book, so its revisions keep
     /// rising even when the stored record has lost its own.
-    /// - Parameter decidingTextEncoding: Whether the write records a new
-    ///   decision about the encoding, this book's own: a re-read in another
-    ///   encoding (`LibraryPersistenceService.saveContentAnalysis`'s
-    ///   `textEncoding`).
+    /// - Parameters:
+    ///   - decidingTextEncoding: Whether the write records a new decision
+    ///     about the encoding, this book's own: a re-read in another
+    ///     encoding (`LibraryPersistenceService.saveContentAnalysis`'s
+    ///     `textEncoding`).
+    ///   - decidingBrailleFileCode: Whether the write records a new braille
+    ///     file code, this book's own: a re-read in other braille file
+    ///     characters (`LibraryPersistenceService.saveContentAnalysis`'s
+    ///     `brailleFileCode`).
     func bookInfo(
         replacing stored: StoredBookRecord?,
         contentIndex: BookContentIndex?,
         revisionFloor: Int = 0,
-        decidingTextEncoding: Bool = false
+        decidingTextEncoding: Bool = false,
+        decidingBrailleFileCode: Bool = false
     ) -> BookInfo {
         var recorded = self
         var index = contentIndex
@@ -1165,6 +1247,12 @@ struct Book: Identifiable, Codable, Hashable {
         // The braille table: the row's, or else the stored record's (FMT21).
         info.metadata.brailleTable = brailleTable ?? stored?.info.metadata.brailleTable
         info.metadata.brailleTableVersion = brailleTableVersion ?? stored?.info.metadata.brailleTableVersion
+        // The braille file code (braillecodes): this write's own when it
+        // decides anew, and otherwise the one that stands between the row
+        // and the stored record, the record's whenever it names one.
+        info.metadata.brailleFileCode = decidingBrailleFileCode && brailleFileCode != nil
+            ? brailleFileCode
+            : BrailleFileCodeRecord.standing(row: brailleFileCode, recorded: stored?.info.metadata.brailleFileCode)
         // The text encoding and who decided it, as one (FMT16, encodingchoice):
         // this write's own when it decides anew, and otherwise the one that
         // stands between the row and the stored record.
@@ -1234,6 +1322,7 @@ struct Book: Identifiable, Codable, Hashable {
         info.metadata.feedLink = feedLink
         info.metadata.brailleTable = brailleTable
         info.metadata.brailleTableVersion = brailleTableVersion
+        info.metadata.brailleFileCode = brailleFileCode
         info.metadata.textEncodingRecord = textEncodingRecord
         return info
     }
@@ -1296,6 +1385,7 @@ struct Book: Identifiable, Codable, Hashable {
             feedLink: metadata.feedLink,
             brailleTable: metadata.brailleTable,
             brailleTableVersion: metadata.brailleTableVersion,
+            brailleFileCode: metadata.brailleFileCode,
             textEncoding: metadata.textEncoding,
             textEncodingSource: metadata.textEncodingSource
         )

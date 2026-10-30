@@ -934,7 +934,8 @@ final class DuplicateReplacementTests: XCTestCase {
             handEdits: Book.HandEdits(fields: [.title], sinceImport: true),
             feedLink: FeedBookLink(feedID: UUID(), itemID: "item"),
             brailleTable: "table.ctb",
-            brailleTableVersion: "liblouis"
+            brailleTableVersion: "liblouis",
+            brailleFileCode: "ascii-eurobraille"
         )
     }
 

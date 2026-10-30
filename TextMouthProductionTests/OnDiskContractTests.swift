@@ -276,6 +276,10 @@ final class OnDiskContractTests: XCTestCase {
             "epubISBN", "epubLanguage", "epubIdentifier", "epubVersion", "cacheFormatVersion",
             "contentIndexVersion", "textCacheFingerprint", "editedText", "pageReaderVersion",
             "metadataReaderVersion", "handEdits", "brailleTable", "brailleTableVersion",
+            // braillecodes: the braille file characters a BRF or BRL book is read with, by the code's id. An
+            // optional key, read leniently; an older TextMouth drops it, and the book then reads as North
+            // American Braille ASCII.
+            "brailleFileCode",
             // FMT16: the encoding a text book's file was guessed to be in. An optional key, written only for
             // a book imported with a guess, so every other row is exactly as it was.
             "textEncoding",
@@ -313,6 +317,8 @@ final class OnDiskContractTests: XCTestCase {
             "bookID", "sourceFilePath", "publisher", "publicationDate", "isbn", "language", "epubIdentifier",
             "epubVersion", "audioAlbum", "audioGenre", "audioYear", "metadataReaderVersion", "handEdits",
             "feedLink", "brailleTable", "brailleTableVersion",
+            // braillecodes: the braille file code, as in a library row.
+            "brailleFileCode",
             // FMT16, and encodingchoice's source, as in a library row.
             "textEncoding", "textEncodingSource",
         ]
@@ -638,6 +644,7 @@ final class OnDiskContractTests: XCTestCase {
             feedLink: FeedBookLink(feedID: UUID(), itemID: "item"),
             brailleTable: "table.ctb",
             brailleTableVersion: "liblouis",
+            brailleFileCode: "ascii-eurobraille",
             textEncoding: "windows-1251",
             textEncodingSource: .chosen
         )

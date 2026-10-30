@@ -38,6 +38,15 @@ struct RemovedFromLibraryMarker: Codable, Equatable, Sendable {
     /// refuses a rebuild after a macOS update changed its table. Nil for a
     /// bundled table and for a marker written before it was kept.
     let brailleTableVersion: String?
+    /// The braille file characters the book's BRF or BRL file was read in
+    /// (`Book.brailleFileCode`, braillecodes), by the code's id. bookInfo.json,
+    /// which also holds it, is deleted by the removal, so a book added back
+    /// from this marker would otherwise be read as North American Braille
+    /// ASCII, which would change its text under the places it keeps. Nil
+    /// for a book that records none, and for a marker written before it was
+    /// kept; a value that cannot be read is nil too, and never makes the
+    /// marker unreadable.
+    @LenientOptional var brailleFileCode: String? = nil
     /// The encoding the book's text file was guessed to be in
     /// (`Book.textEncoding`, FMT16), so that a book added back from this
     /// marker is read as it was, not by the Windows-1252 fallback, which
@@ -60,6 +69,8 @@ struct RemovedFromLibraryMarker: Codable, Equatable, Sendable {
         brailleTable = book.brailleTable
         brailleTableVersion = book.brailleTableVersion
         textEncoding = book.textEncoding
+        // The wrapped fields last, once every stored constant is set.
+        brailleFileCode = book.brailleFileCode
         textEncodingSource = book.textEncodingSource
     }
 }

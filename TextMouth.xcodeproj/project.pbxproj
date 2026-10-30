@@ -333,6 +333,7 @@
 		4A319F6C55CE202551610D71 /* LibraryBookUpdates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E1172AED5226D2AD3F61771 /* LibraryBookUpdates.swift */; };
 		4A32359A51BACAA64B4E47AF /* LibraryIndexPersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C0FBD655842F63B0DD95540 /* LibraryIndexPersistenceTests.swift */; };
 		4AADAF8070F169D3FFEF386F /* TranscriptionLanguageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C40E1A301C82B4C699F1B9 /* TranscriptionLanguageTests.swift */; };
+		4ABEC9B9E89C9F6FFE8B01E5 /* BrailleFileCodeRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33F950D093C28AFB01CF8127 /* BrailleFileCodeRecord.swift */; };
 		4AF32878BBAD6B9E037798A0 /* AudioPlaybackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7193BE2578C776548134DB0 /* AudioPlaybackService.swift */; };
 		4AF74F0DF4E61AB3988EA061 /* ListeningOptionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5C65FA8955736DF1DDF54E6 /* ListeningOptionsTests.swift */; };
 		4B06B020E1F161031A536B55 /* LegacyBookStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5769D95FA9B026AE0E583FFD /* LegacyBookStateTests.swift */; };
@@ -1075,6 +1076,7 @@
 		E8B6B168002D1969FB1E316D /* TextutilSourceCheckTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04B569C8B164C39F2683207F /* TextutilSourceCheckTests.swift */; };
 		E92AD474DFE41E5BAB23E353 /* SleepTimerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBCC589BF20B6C90A39EE43D /* SleepTimerService.swift */; };
 		E941F10EA5AE5DA124DC9083 /* FeedBookUse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D9B46FF46B870E2355B439D /* FeedBookUse.swift */; };
+		E99E01242CF6D05B74035525 /* BrailleFileCodeRecordTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79A249FED99EB68F8E36F496 /* BrailleFileCodeRecordTests.swift */; };
 		E9A2A97218D04F150D466456 /* TextSubstitutionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C6B9C07025815378361DC3 /* TextSubstitutionService.swift */; };
 		EA15CC7517412607016E7EBE /* AudioFilterProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC50C8AA4AFC5516A20C2B23 /* AudioFilterProcessor.swift */; };
 		EA42D0257F09D5F56109662E /* PlaybackFuzzTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 877E8C4F4FF6101E4F1B9009 /* PlaybackFuzzTests.swift */; };
@@ -1222,10 +1224,11 @@
 		9279BF2ABA7F3526AB66874A /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = liblouis;
+			dstPath = Licenses/liblouis;
 			dstSubfolderSpec = 7;
 			files = (
-				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
+				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
+				41F911ECAF492222AF723C10 /* README in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1254,11 +1257,10 @@
 		C4DD7093AEE01EB21DD71ECD /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/liblouis;
+			dstPath = liblouis;
 			dstSubfolderSpec = 7;
 			files = (
-				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
-				41F911ECAF492222AF723C10 /* README in CopyFiles */,
+				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1523,6 +1525,7 @@
 		33B295B1BF84FFCD94A60E5A /* LibraryIndexQuarantine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryIndexQuarantine.swift; sourceTree = "<group>"; };
 		33C1855D7961D9E74034F5EC /* TranscriptionUITestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionUITestSupport.swift; sourceTree = "<group>"; };
 		33D9589C839961150DA506BF /* ReadingTextCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingTextCacheTests.swift; sourceTree = "<group>"; };
+		33F950D093C28AFB01CF8127 /* BrailleFileCodeRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleFileCodeRecord.swift; sourceTree = "<group>"; };
 		3441B703C0173CE738D199DC /* LibraryViewModel+FeedDownloadReturn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LibraryViewModel+FeedDownloadReturn.swift"; sourceTree = "<group>"; };
 		3450279E11EFC69474C1B838 /* DOCXParser+Converter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DOCXParser+Converter.swift"; sourceTree = "<group>"; };
 		3513FFEA50E02225F427D2D5 /* TranscriptionModelInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionModelInstaller.swift; sourceTree = "<group>"; };
@@ -1829,6 +1832,7 @@
 		78D20D205E302A5F6F7739FF /* SoundEffectsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundEffectsSettingsView.swift; sourceTree = "<group>"; };
 		7979387A72CE2DF27C037269 /* RTFExportWriterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RTFExportWriterTests.swift; sourceTree = "<group>"; };
 		799C6CABC6FBDA4AA38809D1 /* JSONValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONValue.swift; sourceTree = "<group>"; };
+		79A249FED99EB68F8E36F496 /* BrailleFileCodeRecordTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleFileCodeRecordTests.swift; sourceTree = "<group>"; };
 		7A4B4C3156E99F62A6982489 /* TrackFolderBooks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackFolderBooks.swift; sourceTree = "<group>"; };
 		7A7736E43ABC347934724648 /* FolderSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderSettingsSheet.swift; sourceTree = "<group>"; };
 		7AA4EA7F825ED543CF3360D3 /* AudioEditRenderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditRenderingTests.swift; sourceTree = "<group>"; };
@@ -2875,6 +2879,7 @@
 				FBBDAA8C879D8BBA35627323 /* BookOrigin.swift */,
 				B8242C2F692806F62CA41FF6 /* BookPages.swift */,
 				1207FC60FA1FFBF8FAA826E0 /* BookTextEditWording.swift */,
+				33F950D093C28AFB01CF8127 /* BrailleFileCodeRecord.swift */,
 				0233D0E3D21B14FE80F00311 /* BrailleTableCatalog.swift */,
 				2978A59EB5FDE6F5FFB3746C /* ChapterPauses.swift */,
 				CE2B66EFF35A64B12E09E502 /* CloudStorageContract.swift */,
@@ -3231,6 +3236,7 @@
 				2FBB7167F9EBC0C86DABEE8E /* BrailleEmphasisReadingTests.swift */,
 				39E8A8EF712EFED7347A32CB /* BrailleEmphasisRoundTripTests.swift */,
 				8CD1B3006DAA910AEFA0062E /* BrailleExportWriterTests.swift */,
+				79A249FED99EB68F8E36F496 /* BrailleFileCodeRecordTests.swift */,
 				BEC01A3D214C2229A097DAEA /* BrailleFileCodeTests.swift */,
 				EBEE87F9F742B4C259CC28FA /* BrailleFileReaderTests.swift */,
 				A90CC3DBF530227B54EE9E57 /* BrailleFileWriterTests.swift */,
@@ -4237,6 +4243,7 @@
 				0144539CA3BBD4C4C825D789 /* BrailleEmphasisReadingTests.swift in Sources */,
 				D9B729C76815F849FB598827 /* BrailleEmphasisRoundTripTests.swift in Sources */,
 				300935A0EAF74C123A15F126 /* BrailleExportWriterTests.swift in Sources */,
+				E99E01242CF6D05B74035525 /* BrailleFileCodeRecordTests.swift in Sources */,
 				DBC8002206AED9703FC734E6 /* BrailleFileCodeTests.swift in Sources */,
 				D28DCB151E81D6F89EA8A45F /* BrailleFileReaderTests.swift in Sources */,
 				1070B8D83EE7A9F6611E95AE /* BrailleFileWriterTests.swift in Sources */,
@@ -4904,6 +4911,7 @@
 				6A87EA3FE1B0E11C8DD8F32A /* BrailleExportOptionsView.swift in Sources */,
 				E41C74BB43C71BC9CF89B9BD /* BrailleExportWriters.swift in Sources */,
 				14B4484BB8243AE22F98FB47 /* BrailleFileCode.swift in Sources */,
+				4ABEC9B9E89C9F6FFE8B01E5 /* BrailleFileCodeRecord.swift in Sources */,
 				9C14865C9E7CD208E1A6A0B4 /* BrailleFileReader.swift in Sources */,
 				B06B739ECFE94A038DD00EE5 /* BrailleFileWriter.swift in Sources */,
 				1658467685F1D0B55E149340 /* BrailleLayout.swift in Sources */,
