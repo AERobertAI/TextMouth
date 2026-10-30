@@ -864,8 +864,8 @@ extension BraillePageNumbers {
     /// every English braille code, since a page number uses only the cells
     /// UEB and EBAE share: nil for anything else.
     ///
-    /// The word is read cell by cell, as its braille ASCII (`BrailleCells
-    /// .ascii(for:)`), in three parts:
+    /// The word is read cell by cell, as its North American Braille ASCII
+    /// (`SevenBitBrailleTable.northAmerican`), in three parts:
     /// 1. letters before the number, such as the "p" of a preliminary page
     ///    ("⠏⠼⠁", p1) or the "t" of a transcriber's page;
     /// 2. the number sign and at least one digit, a to j for 1 to 9 and 0;
@@ -889,7 +889,11 @@ extension BraillePageNumbers {
         var capitalizesNext = false
         var letterSignWaits = false
         for scalar in number.unicodeScalars {
-            guard let byte = BrailleCells.ascii(for: scalar) else { return nil }
+            // North American Braille ASCII's letters only name the cells
+            // here, whatever characters the book's file wrote them with
+            // (`BrailleFileCode`, research section 8.7): the cells are what
+            // count, so a Eurobraille book's pages get the same labels.
+            guard let byte = SevenBitBrailleTable.northAmerican.byte(forCell: scalar) else { return nil }
             switch byte {
             case UInt8(ascii: "#"):
                 // The number sign: one number in a word, and no indicator

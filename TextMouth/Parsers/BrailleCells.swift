@@ -11,8 +11,11 @@ import Foundation
 /// to and from liblouis (`BrailleTranslator`), and between the readers, the
 /// layout, and the writers.
 ///
-/// A BRF or BRL file writes each six-dot cell as one character of North
-/// American Braille ASCII, which this type converts to and from.
+/// A BRF or BRL file writes each six-dot cell as one character, in one of
+/// the braille file codes of `BrailleFileCode` (braillecodes). The three
+/// conversions here are North American Braille ASCII's always, whatever a
+/// book's code is: the tests' fixtures write their cells in it, by its
+/// mnemonic letters.
 enum BrailleCells {
     /// The blank cell, U+2800: the space between braille words.
     static let blank = Unicode.Scalar(0x2800)!
@@ -25,45 +28,23 @@ enum BrailleCells {
 
     /// North American Braille ASCII: the character for each six-dot cell, in
     /// the order of the cells' dot values 0 to 63 (dot 1 counts 1, dot 6
-    /// counts 32), so the blank cell is the space and ⠁ (dot 1) is "A".
-    /// Verified 64 of 64 against liblouis's own en-us-brf.dis
-    /// (FORMATS-RESEARCH-2026-10-17.md, section 3.2).
-    static let asciiByDots: [UInt8] = Array(#" A1B'K2L@CIF/MSP"E3H9O6R^DJG>NTQ,*5<-U8V.%[$+X!&;:4\0Z7(_?W]#Y)="#.utf8)
+    /// counts 32), so the blank cell is the space and ⠁ (dot 1) is "A"
+    /// (`SevenBitBrailleTable.northAmerican`, whose bytes these are).
+    static let asciiByDots: [UInt8] = SevenBitBrailleTable.northAmerican.bytes
 
-    /// The dots of each braille ASCII character from 0x20 to 0x5F, at the
-    /// character's value less 0x20: the inverse of `asciiByDots`.
-    private static let dotsByASCII: [UInt8] = {
-        var dots = [UInt8](repeating: 0, count: 64)
-        for (value, character) in asciiByDots.enumerated() {
-            dots[Int(character) - 0x20] = UInt8(value)
-        }
-        return dots
-    }()
-
-    /// The cell a byte of a BRF or BRL file stands for, or nil for a byte
-    /// that is not braille ASCII.
-    ///
-    /// The 64 characters 0x20 to 0x5F are the table's. Files also write
-    /// them in lowercase, 0x60 to 0x7E, which stand for the same six dots as
-    /// the character 0x20 below each: a lowercase letter is read as its
-    /// capital, and ` { | } ~ as @ [ \ ] ^ (in eight-dot computer braille,
-    /// the two differ only by dot 7, which a six-dot file has not got).
+    /// The cell a byte of North American Braille ASCII stands for, or nil
+    /// for a byte that is not braille ASCII: the 64 characters 0x20 to 0x5F,
+    /// and lowercase, 0x60 to 0x7E, read as the character 0x20 below
+    /// (`SevenBitBrailleTable.northAmerican`).
     static func cell(forASCII byte: UInt8) -> Unicode.Scalar? {
-        let folded: UInt8
-        switch byte {
-        case 0x20...0x5F: folded = byte
-        case 0x60...0x7E: folded = byte - 0x20
-        default: return nil
-        }
-        return Unicode.Scalar(firstPattern + UInt32(dotsByASCII[Int(folded) - 0x20]))
+        SevenBitBrailleTable.northAmerican.cell(forByte: byte)
     }
 
-    /// The braille ASCII character of a six-dot cell, U+2800 to U+283F, in
-    /// the table's uppercase form; nil for any other character, eight-dot
-    /// cells included.
+    /// The North American Braille ASCII character of a six-dot cell, U+2800
+    /// to U+283F, in the table's uppercase form; nil for any other
+    /// character, eight-dot cells included.
     static func ascii(for cell: Unicode.Scalar) -> UInt8? {
-        guard (firstPattern...lastSixDotPattern).contains(cell.value) else { return nil }
-        return asciiByDots[Int(cell.value - firstPattern)]
+        SevenBitBrailleTable.northAmerican.byte(forCell: cell)
     }
 
     /// Whether `scalar` is a Unicode braille pattern, U+2800 to U+28FF.
