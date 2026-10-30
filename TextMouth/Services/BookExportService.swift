@@ -962,8 +962,9 @@ enum BookExportService {
     /// Where that cannot be done (`EXDEV`: the scratch folder is on another
     /// volume than `target`; `ENOTSUP` and `EINVAL`: a volume without
     /// exclusive rename) the source is copied with exclusive creation and
-    /// then removed; a copy that fails other than for an existing target
-    /// removes only what it created itself.
+    /// then removed; a copy that fails removes only the item it created
+    /// itself, and only while that item is still the one at `target`
+    /// (`copyExclusively`).
     ///
     /// `rename` stands for `renamex_np(RENAME_EXCL)` and returns 0, or -1
     /// with `errno` set; it exists only so a test can make it report
@@ -983,7 +984,7 @@ enum BookExportService {
             try copyExclusively(source, to: target)
             try FileManager.default.removeItem(at: source)
         default:
-            throw POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO)
+            throw posixError(code)
         }
     }
 
@@ -993,24 +994,150 @@ enum BookExportService {
         renamex_np(source.path, target.path, UInt32(RENAME_EXCL))
     }
 
-    /// Copies `source`, a file or a folder with all it holds, to `target`,
-    /// which is created exclusively: if anything is there, nothing is
-    /// written and it throws `CocoaError.fileWriteFileExists`. When the copy
-    /// fails for another reason, what it made at `target` (which was made by
-    /// the copy, since it did not exist) is removed, and the error thrown.
-    private static func copyExclusively(_ source: URL, to target: URL) throws {
-        var flags = copyfile_flags_t(COPYFILE_ALL | COPYFILE_EXCL)
+    /// Copies `source`, a file or a folder with all it holds, to `target`.
+    ///
+    /// The copy first creates `target` itself, exclusively: an empty file
+    /// (`O_CREAT | O_EXCL`) or an empty folder (`mkdir`), so that if anything
+    /// is there, even something that appeared an instant ago, nothing is
+    /// written and it throws `CocoaError.fileWriteFileExists`. It notes the
+    /// identity of the item it created (`ItemIdentity`: its volume and file
+    /// number) the moment it exists, then copies into it (`copyContents`).
+    ///
+    /// When the copy then fails, the item at `target` is removed only while
+    /// it is still the one this copy created: another app's file that took
+    /// its place meanwhile is never removed. (The copy used to let `copyfile`
+    /// create `target` and, on any failure but "already exists", remove
+    /// whatever was at `target`, which could be another app's file that had
+    /// landed there before the copy got as far as making its own: the export
+    /// team's follow-up of October 19, a data-loss item in the October 30
+    /// triage.)
+    ///
+    /// `copyContents` copies the source into the item made at its second
+    /// argument (`copyIntoCreatedItem`): a file's bytes and attributes into
+    /// the descriptor given, or a folder's items into it, given no
+    /// descriptor. It exists only so a test can make a copy fail
+    /// after `target` is made, and replace `target` with a file of its own
+    /// first.
+    static func copyExclusively(
+        _ source: URL,
+        to target: URL,
+        copyContents: (_ source: URL, _ target: URL, _ targetDescriptor: Int32?) throws -> Void = copyIntoCreatedItem
+    ) throws {
         if isFolder(source) {
-            flags |= copyfile_flags_t(COPYFILE_RECURSIVE)
+            guard mkdir(target.path, S_IRWXU) == 0 else { throw creationError(errno, target: target) }
+            // Noted at once: what is at `target` from here on may not stay ours.
+            let made = ItemIdentity(ofItemAt: target)
+            do {
+                try copyContents(source, target, nil)
+            } catch {
+                removeItem(at: target, ifStill: made)
+                throw error
+            }
+            return
         }
-        guard copyfile(source.path, target.path, nil, flags) != 0 else { return }
-        let code = errno
-        if code == EEXIST {
-            throw targetExistsError(target)
+        let descriptor = open(target.path, O_RDWR | O_CREAT | O_EXCL | O_CLOEXEC, S_IRUSR | S_IWUSR)
+        guard descriptor >= 0 else { throw creationError(errno, target: target) }
+        // The descriptor names the file this copy created, whatever later
+        // happens to the name `target`.
+        let made = ItemIdentity(ofDescriptor: descriptor)
+        do {
+            try copyContents(source, target, descriptor)
+        } catch {
+            close(descriptor)
+            removeItem(at: target, ifStill: made)
+            throw error
         }
-        // Not EEXIST, so the exclusive creation of `target` was ours.
+        close(descriptor)
+    }
+
+    /// The copy `copyExclusively` makes into the item it created at
+    /// `target`: a file's contents into `targetDescriptor`, or a folder's
+    /// items into the folder at `target` when there is no descriptor.
+    static func copyIntoCreatedItem(_ source: URL, _ target: URL, _ targetDescriptor: Int32?) throws {
+        if let targetDescriptor {
+            try copyFileContents(source, into: targetDescriptor)
+        } else {
+            try copyFolderContents(source, into: target)
+        }
+    }
+
+    /// Copies the file at `source`, its bytes and its attributes (extended
+    /// attributes, access control list, permissions, and dates:
+    /// `COPYFILE_ALL`), into the open file `targetDescriptor`.
+    /// - Throws: the system's error, as a `POSIXError`.
+    private static func copyFileContents(_ source: URL, into targetDescriptor: Int32) throws {
+        let sourceDescriptor = open(source.path, O_RDONLY | O_CLOEXEC)
+        guard sourceDescriptor >= 0 else { throw posixError(errno) }
+        defer { close(sourceDescriptor) }
+        guard fcopyfile(sourceDescriptor, targetDescriptor, nil, copyfile_flags_t(COPYFILE_ALL)) == 0 else {
+            throw posixError(errno)
+        }
+    }
+
+    /// Copies every item of the folder at `source`, hidden ones included,
+    /// each with all it holds and its attributes, into the new, empty folder
+    /// at `target`, and gives that folder the source's permissions. Each item
+    /// is created exclusively, so nothing in `target` is replaced.
+    /// - Throws: the system's error, as a `POSIXError`, or the file
+    ///   manager's.
+    private static func copyFolderContents(_ source: URL, into target: URL) throws {
+        let flags = copyfile_flags_t(COPYFILE_ALL | COPYFILE_RECURSIVE | COPYFILE_EXCL)
+        for name in try FileManager.default.contentsOfDirectory(atPath: source.path) {
+            let from = source.appendingPathComponent(name)
+            let to = target.appendingPathComponent(name)
+            guard copyfile(from.path, to.path, nil, flags) == 0 else { throw posixError(errno) }
+        }
+        if let permissions = try FileManager.default.attributesOfItem(atPath: source.path)[.posixPermissions] {
+            try FileManager.default.setAttributes([.posixPermissions: permissions], ofItemAtPath: target.path)
+        }
+    }
+
+    /// What tells one item of the file system from every other while it
+    /// exists: the volume it is on and its file number there. The name an
+    /// item has can be given to another in an instant; these cannot.
+    struct ItemIdentity: Equatable {
+        /// The volume (`st_dev`).
+        let device: dev_t
+        /// The file number on that volume (`st_ino`).
+        let fileNumber: ino_t
+
+        /// The identity of what is at `url` now, itself, not what a symbolic
+        /// link there points to (`lstat`); nil when nothing is there.
+        init?(ofItemAt url: URL) {
+            var info = stat()
+            guard lstat(url.path, &info) == 0 else { return nil }
+            device = info.st_dev
+            fileNumber = info.st_ino
+        }
+
+        /// The identity of the open file `descriptor`; nil when the system
+        /// cannot say.
+        init?(ofDescriptor descriptor: Int32) {
+            var info = stat()
+            guard fstat(descriptor, &info) == 0 else { return nil }
+            device = info.st_dev
+            fileNumber = info.st_ino
+        }
+    }
+
+    /// Removes the item at `target`, a file or a folder with all it holds,
+    /// only while it is still the item `made` names. Nothing is removed when
+    /// `made` is unknown, or when another item has taken its place.
+    private static func removeItem(at target: URL, ifStill made: ItemIdentity?) {
+        guard let made, ItemIdentity(ofItemAt: target) == made else { return }
         try? FileManager.default.removeItem(at: target)
-        throw POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO)
+    }
+
+    /// The error of a failed exclusive creation at `target`, whose `errno`
+    /// was `code`: the name is taken (`EEXIST`), or the system's error.
+    private static func creationError(_ code: Int32, target: URL) -> Error {
+        code == EEXIST ? targetExistsError(target) : posixError(code)
+    }
+
+    /// `code`, an `errno` value, as a `POSIXError`; `EIO` for a value the
+    /// type does not know.
+    private static func posixError(_ code: Int32) -> POSIXError {
+        POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO)
     }
 
     /// The error for a move or copy onto a name that is taken.
