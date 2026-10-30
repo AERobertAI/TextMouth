@@ -4,7 +4,9 @@ import XCTest
 /// Tests for `BrailleFileWriter` (FMT22, Phase A): the BRF and PEF writers.
 /// The real samples are the oracle: the pages of the BRF sample, written
 /// back as a BRF, give the sample's bytes, and written as a PEF with the
-/// sample's metadata, give the PEF sample's bytes.
+/// sample's metadata, give the PEF sample's bytes. A BRF in each braille
+/// file code (braillecodes) is pinned by its bytes and read back by the
+/// reader in the same code.
 final class BrailleFileWriterTests: XCTestCase {
     // MARK: Helpers
 
@@ -148,6 +150,122 @@ final class BrailleFileWriterTests: XCTestCase {
         XCTAssertFalse(one.contains(formFeed))
         XCTAssertEqual(Array(one), [0x41, 0x0D, 0x0A])
         XCTAssertTrue(try BrailleFileWriter.brf(pages: []).isEmpty)
+    }
+
+    // MARK: Braille File Codes
+
+    /// Every six-dot cell, U+2800 to U+283F in the order of its dots: the
+    /// blank cell first, so it is no trailing blank and is written too.
+    private let everySixDotCell = String(String.UnicodeScalarView((0x2800...0x283F).compactMap { Unicode.Scalar($0) }))
+
+    /// North American Braille ASCII is the default code, and writes exactly
+    /// the bytes every BRF was written in before files had a code: the
+    /// sample's own, with either line end.
+    func testNorthAmericanBrailleASCIIWritesTheSampleBytes() throws {
+        let sample = try Data(contentsOf: copyOfFormatSample("brf/pride-and-prejudice-ch1-grade1.brf"))
+        let pages = brfPages(sample)
+        XCTAssertEqual(try BrailleFileWriter.brf(pages: pages, code: .northAmerican), sample)
+        XCTAssertEqual(try BrailleFileWriter.brf(pages: pages, lineEnd: .lf, code: .northAmerican), Data(sample.filter { $0 != 0x0D }))
+    }
+
+    /// Each seven-bit code writes the 64 six-dot cells as its own 64
+    /// characters, in the order of their dots (liblouis's `en-us-brf.dis`
+    /// and `de-eurobrl6.dis`, which `BrailleFileCodeTests` compares with the
+    /// tables): ASCII only, and Eurobraille in its lowercase form.
+    func testEachSevenBitCodeWritesItsOwnCharacters() throws {
+        let expected: [(BrailleFileCode, String)] = [
+            (.northAmerican, #" A1B'K2L@CIF/MSP"E3H9O6R^DJG>NTQ,*5<-U8V.%[$+X!&;:4\0Z7(_?W]#Y)="#),
+            (.eurobraille, #" a,b.k;l"cif|msp!e:h*o+r>djg`ntq'1?2-u(v$3960x~&<5/8)z={_4w7#y}%"#),
+        ]
+        for (code, characters) in expected {
+            let data = try BrailleFileWriter.brf(pages: [[everySixDotCell]], lineEnd: .lf, code: code)
+            XCTAssertEqual(String(data: data, encoding: .ascii), characters + "\n", code.name)
+            XCTAssertTrue(data.allSatisfy { $0 < 0x80 }, code.name)
+        }
+    }
+
+    /// Eurobraille writes the same cells as other characters than North
+    /// American Braille ASCII: dot 1 is "a" (never "A"), dots 4-5-6 are "_"
+    /// in both, the blank cell is the space in both, and the digits are the
+    /// letters a to j with dot 6 (0 is dots 3-4-6), which North American
+    /// Braille ASCII writes as punctuation.
+    func testEurobrailleWritesLowercaseLettersAndItsOwnDigits() throws {
+        // ⠁ ⠸, a blank cell, then the cells of the digits 1 to 9 and 0.
+        let digits = "\u{2821}\u{2823}\u{2829}\u{2839}\u{2831}\u{282B}\u{283B}\u{2833}\u{282A}\u{282C}"
+        let page = [["\u{2801}\u{2838}\u{2800}" + digits]]
+        let eurobraille = try BrailleFileWriter.brf(pages: page, lineEnd: .lf, code: .eurobraille)
+        XCTAssertEqual(String(data: eurobraille, encoding: .ascii), "a_ 1234567890\n")
+        let northAmerican = try BrailleFileWriter.brf(pages: page, lineEnd: .lf, code: .northAmerican)
+        XCTAssertEqual(String(data: northAmerican, encoding: .ascii), "A_ *<%?:$]\\[+\n")
+    }
+
+    /// Unicode braille patterns write each cell as its pattern's UTF-8, an
+    /// inner blank cell (and a scalar that is no pattern) as U+2800, never
+    /// the ASCII space, and no trailing blank cell; CR LF and the form feed
+    /// between pages are the same bytes as in every code, and the file has
+    /// no byte order mark.
+    func testUnicodeBraillePatternsWriteEachCellAsUTF8() throws {
+        let pages = [["\u{2801}\u{2800}\u{2803}\u{2800}\u{2800}", "\u{2800}"], ["x\u{283F}"]]
+        let data = try BrailleFileWriter.brf(pages: pages, lineEnd: .crlf, code: .unicode)
+        XCTAssertEqual(Array(data), [
+            0xE2, 0xA0, 0x81, 0xE2, 0xA0, 0x80, 0xE2, 0xA0, 0x83, 0x0D, 0x0A,  // ⠁, a blank cell, ⠃
+            0x0D, 0x0A,  // the row of blank cells, written as an empty line
+            0x0C,  // the form feed between the two pages
+            0xE2, 0xA0, 0x80, 0xE2, 0xA0, 0xBF, 0x0D, 0x0A,  // the "x" as a blank cell, then ⠿
+        ])
+        XCTAssertEqual(String(data: data, encoding: .utf8), "\u{2801}\u{2800}\u{2803}\r\n\r\n\u{0C}\u{2800}\u{283F}\r\n")
+        XCTAssertFalse(data.contains(0x20), "no ASCII space")
+        XCTAssertFalse(data.starts(with: [0xEF, 0xBB, 0xBF]), "no byte order mark")
+    }
+
+    /// liblouis's escape backslash, U+2873, is written as ⠳ in every code:
+    /// braille ASCII's backslash, Eurobraille's "8", and the pattern itself.
+    func testTheEscapesBackslashIsWrittenAsTheSixDotCellInEveryCode() throws {
+        let row = "\u{2804}\u{2873}\u{2835}"
+        let expected: [(BrailleFileCode, String)] = [
+            (.northAmerican, "'\\Z\n"),
+            (.eurobraille, ".8z\n"),
+            (.unicode, "\u{2804}\u{2833}\u{2835}\n"),
+        ]
+        XCTAssertEqual(expected.map { $0.0 }, BrailleFileCode.all, "every code is checked")
+        for (code, text) in expected {
+            let data = try BrailleFileWriter.brf(pages: [[row]], lineEnd: .lf, code: code)
+            XCTAssertEqual(String(data: data, encoding: .utf8), text, code.name)
+        }
+    }
+
+    /// A cell with dot 7 or 8 (here U+2841) is refused in every code, as it
+    /// was before files had a code (review R1): no code writes its six-dot
+    /// part.
+    func testAnEightDotCellIsRefusedInEveryCode() {
+        for code in BrailleFileCode.all {
+            XCTAssertThrowsError(try BrailleFileWriter.brf(pages: [["\u{2801}\u{2841}"]], code: code), code.name) {
+                XCTAssertEqual($0 as? BrailleFileWriter.EightDotCell, BrailleFileWriter.EightDotCell(cell: "\u{2841}"), code.name)
+            }
+        }
+    }
+
+    /// Pages written in each code, with either line end, are read back in
+    /// that code by the reader as the same pages: every six-dot cell, an
+    /// inner blank cell, leading blank cells, a blank row, and two pages,
+    /// whose form feed stands between braille text. Each row comes back
+    /// without the trailing blank cells the writer leaves out.
+    func testPagesWrittenInEachCodeReadBackAsTheSamePages() throws {
+        let pages = [
+            [everySixDotCell, "", "\u{2801}\u{2800}\u{2803}\u{2800}\u{2800}"],
+            ["\u{2800}\u{2800}\u{283F}", "\u{2838}"],
+        ]
+        let expected = [
+            [everySixDotCell, "", "\u{2801}\u{2800}\u{2803}"],
+            ["\u{2800}\u{2800}\u{283F}", "\u{2838}"],
+        ]
+        for code in BrailleFileCode.all {
+            for lineEnd in [BrailleLineEnd.crlf, .lf] {
+                let data = try BrailleFileWriter.brf(pages: pages, lineEnd: lineEnd, code: code)
+                let read = try BrailleFileReader.pages(fromText: data, kind: .brf, code: code)
+                XCTAssertEqual(read.pages, expected, "\(code.name), \(lineEnd)")
+            }
+        }
     }
 
     // MARK: PEF

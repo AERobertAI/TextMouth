@@ -66,37 +66,57 @@ enum BrailleFileWriter {
 
     // MARK: BRF
 
-    /// `pages` as the bytes of a BRF file: every row as North American
-    /// Braille ASCII with `lineEnd` after it (the last row of a page too),
-    /// and one form feed between pages and none after the last. The result is
-    /// ASCII only.
+    /// `pages` as the bytes of a BRF file: every row in the braille file
+    /// code `code` (North American Braille ASCII unless another is given)
+    /// with `lineEnd` after it (the last row of a page too), and one form
+    /// feed between pages and none after the last. Line ends and form feeds
+    /// are the same bytes in every code. In a seven-bit code, North American
+    /// Braille ASCII or Eurobraille, the result is ASCII only; in Unicode
+    /// braille patterns it is UTF-8, with no byte order mark.
     ///
-    /// A BRF has six dots to a cell. liblouis's escape backslash (U+2873)
-    /// is written as ⠳; any other cell with dot 7 or 8 is refused, never
-    /// written as its six-dot part (review R1); and a scalar that is no
-    /// braille pattern is written as a blank cell, so that no row loses its
-    /// columns (`sixDotCells(of:)`, which the PEF writer uses too). Trailing
-    /// blank cells of a row are not written.
+    /// A BRF has six dots to a cell, in every code. liblouis's escape
+    /// backslash (U+2873) is written as ⠳; any other cell with dot 7 or 8 is
+    /// refused, never written as its six-dot part (review R1); and a scalar
+    /// that is no braille pattern is written as a blank cell, so that no row
+    /// loses its columns (`sixDotCells(of:)`, which the PEF writer uses
+    /// too). Trailing blank cells of a row are not written. Only then does
+    /// the code decide how each cell is written (`bytes(of:in:)`).
     /// - Throws: `EightDotCell` for an eight-dot cell other than the escape
     ///   backslash.
-    static func brf(pages: [[String]], lineEnd: BrailleLineEnd = .crlf) throws -> Data {
-        var bytes: [UInt8] = []
+    static func brf(
+        pages: [[String]], lineEnd: BrailleLineEnd = .crlf, code: BrailleFileCode = .northAmerican
+    ) throws -> Data {
+        var file: [UInt8] = []
         for (index, page) in pages.enumerated() {
-            if index > 0 { bytes.append(formFeed) }
+            if index > 0 { file.append(formFeed) }
             for row in page {
-                bytes.append(contentsOf: try asciiBytes(of: row))
-                bytes.append(contentsOf: lineEnd.bytes)
+                file.append(contentsOf: try bytes(of: row, in: code))
+                file.append(contentsOf: lineEnd.bytes)
             }
         }
-        return Data(bytes)
+        return Data(file)
     }
 
-    /// `row` as braille ASCII bytes, without its trailing blank cells.
+    /// `row` as the bytes of the braille file code `code`, without its
+    /// trailing blank cells: the one place a BRF's row is written.
+    ///
+    /// A seven-bit code writes one byte for each cell, the character its
+    /// table gives (the blank cell's is the space). Unicode braille patterns
+    /// write each cell as its pattern's UTF-8, three bytes, and the blank
+    /// cell as U+2800, never as the space.
     /// - Throws: `EightDotCell`, as `sixDotCells(of:)` does.
-    private static func asciiBytes(of row: String) throws -> [UInt8] {
-        // A six-dot cell always has a braille ASCII character; the blank
-        // cell's is the space.
-        try sixDotCells(of: row).map { BrailleCells.ascii(for: $0) ?? UInt8(ascii: " ") }
+    private static func bytes(of row: String, in code: BrailleFileCode) throws -> [UInt8] {
+        let cells = try sixDotCells(of: row)
+        switch code.kind {
+        case .sevenBit(let table):
+            // Every six-dot cell has a character in a seven-bit code, so the
+            // space is only a fallback that no table of TextMouth's needs.
+            return cells.map { table.byte(forCell: $0) ?? UInt8(ascii: " ") }
+        case .unicodePatterns:
+            // The cells are already Unicode braille patterns, the blank cell
+            // U+2800 among them: they are written as they are.
+            return Array(String(String.UnicodeScalarView(cells)).utf8)
+        }
     }
 
     /// The cells of `row` as TextMouth writes them to a file
