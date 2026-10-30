@@ -15,18 +15,32 @@ enum LibraryBookSorter {
     /// quick-access list to a small stable count. Of each feed's items, only
     /// the one opened last is listed, within the same count (FR11), so a
     /// week of one podcast takes one place, and resuming it stays one step.
+    /// A limit below 1 lists nothing. The shipped Recently Opened view
+    /// chooses its rows through the same `latestOpened(_:limit:onePerFeed:)`
+    /// (`LibraryViewFilterEvaluator`), so the two cannot drift apart.
     static func recent(_ books: [Book], limit: Int = recentlyOpenedCount) -> [Book] {
-        guard limit > 0 else { return [] }
-        let opened = books
-            .filter { !$0.isUnopened }
-            .sorted { ($0.lastOpened ?? .distantPast) > ($1.lastOpened ?? .distantPast) }
+        latestOpened(books.filter { !$0.isUnopened }, limit: limit, onePerFeed: true)
+    }
+
+    /// The rows of `books` opened last first (by last opened, newest first; a
+    /// row never opened sorts as the distant past), with, when `onePerFeed`,
+    /// only the first of each feed's items, and at most `limit` (nil: all; a
+    /// limit below 1 lists nothing).
+    static func latestOpened(_ books: [Book], limit: Int?, onePerFeed: Bool) -> [Book] {
+        if let limit, limit < 1 {
+            return []
+        }
+        let byLastOpened = books.sorted { ($0.lastOpened ?? .distantPast) > ($1.lastOpened ?? .distantPast) }
         var listedFeeds = Set<UUID>()
         var listed: [Book] = []
-        for book in opened {
-            if let feedID = book.feedLink?.feedID, !listedFeeds.insert(feedID).inserted {
+        for book in byLastOpened {
+            // A feed's later items in this order were opened before the one
+            // listed already.
+            if onePerFeed, let feedID = book.feedLink?.feedID, !listedFeeds.insert(feedID).inserted {
                 continue
             }
             listed.append(book)
+            // Never true with no limit.
             if listed.count == limit {
                 break
             }
