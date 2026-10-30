@@ -656,6 +656,19 @@ final class LibraryViewFilterEvaluatorTests: XCTestCase {
         }
     }
 
+    /// A list's counts tell its rows apart by the same rule: the library's
+    /// own audiobook is counted as a book, a feed's audio item as an
+    /// episode, and its other items as articles.
+    func testAListsCountsTellItsRowsApartByTheSameRule() {
+        let feedID = UUID()
+        let rows = [(BookFormat.txt, false), (.audio, false), (.audio, true), (.html, true), (.pdf, true)].map { format, inFeed in
+            Fixture.row("\(format.rawValue) row", format, added: Fixture.now, opened: nil, feedID: inFeed ? feedID : nil)
+        }
+        XCTAssertEqual(rows.map(\.listedKind), [.books, .books, .episodes, .articles, .articles])
+        XCTAssertEqual(CountWording.listItems(of: rows), "2 books, 1 episode, 2 articles")
+        XCTAssertEqual(CountWording.booksHeader(of: rows), "Books (2), Episodes (1), Articles (2)")
+    }
+
     // MARK: - Helpers
 
     /// Asserts that a filter listing every kind of row, with the one
