@@ -178,12 +178,17 @@ enum FeedOPML {
 
     /// `text` escaped for an XML attribute or element: the five markup
     /// characters as entities, and tabs and line breaks as character
-    /// references, which an attribute would otherwise read as spaces.
+    /// references, which an attribute would otherwise read as spaces; a
+    /// Windows line break (CR LF) becomes "&#13;&#10;", so it reads back
+    /// whole. The text is walked by Unicode scalar, as XML reads it: a Swift
+    /// Character can hide what must be escaped, as CR LF is one Character,
+    /// and so is an "&", "<", or quote with a combining accent after it,
+    /// which written raw would break the markup.
     static func escaped(_ text: String) -> String {
         var result = ""
         result.reserveCapacity(text.count)
-        for character in text {
-            switch character {
+        for scalar in text.unicodeScalars {
+            switch scalar {
             case "&": result += "&amp;"
             case "<": result += "&lt;"
             case ">": result += "&gt;"
@@ -192,7 +197,7 @@ enum FeedOPML {
             case "\t": result += "&#9;"
             case "\n": result += "&#10;"
             case "\r": result += "&#13;"
-            default: result.append(character)
+            default: result.unicodeScalars.append(scalar)
             }
         }
         return result

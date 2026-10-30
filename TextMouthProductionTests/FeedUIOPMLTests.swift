@@ -122,6 +122,25 @@ final class FeedUIOPMLTests: XCTestCase {
         ])
     }
 
+    /// A title holding a Windows line break (CR LF, one Character in Swift)
+    /// reads back with it, as do an old Mac one (CR) and a line feed: each is
+    /// written as character references, which XML keeps, where a raw break
+    /// in an attribute reads back as a space. So does a title whose "&",
+    /// "<", or quote has a combining accent after it, making one Character
+    /// with it, which written raw would break the markup.
+    func testLineBreaksAndAccentedMarkupInATitleReadBackTheSame() throws {
+        var feed = Feed(feedURL: try XCTUnwrap(URL(string: "https://locks.example/feed.xml")), folderID: UUID(), subscribedDate: Date())
+        // Each title in a list of its own, so a title that breaks the markup
+        // can't hide what happens to the other.
+        for title in ["Locks\r\nand Weirs\rof the\nCanal", "Weirs &\u{301} Locks <\u{301} \"\u{301}"] {
+            feed.title = title
+            let data = FeedOPML.document(listing: [feed], title: "Line\r\nbreaks", date: Date())
+
+            XCTAssertEqual(try FeedOPML.subscriptions(in: data).map(\.title), [title], String(decoding: data, as: UTF8.self))
+        }
+        XCTAssertEqual(FeedOPML.escaped("a\r\nb"), "a&#13;&#10;b")
+    }
+
     // MARK: - Importing
 
     /// An import subscribes to each feed in turn, each into a folder of its
