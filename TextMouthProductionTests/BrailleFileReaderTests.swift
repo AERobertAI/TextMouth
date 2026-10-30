@@ -31,6 +31,33 @@ final class BrailleFileReaderTests: XCTestCase {
         }
     }
 
+    /// `bytes` read as a BRF (or BRL) in the braille file code `code`.
+    private func pages(of bytes: [UInt8], kind: BrailleFileKind = .brf,
+                       in code: BrailleFileCode) throws -> BrailleFilePages {
+        try BrailleFileReader.pages(fromText: Data(bytes), kind: kind, code: code)
+    }
+
+    /// The refusal `bytes` are met with when read as a BRF (or BRL) in the
+    /// braille file code `code`, nil if read.
+    private func refusal(of bytes: [UInt8], kind: BrailleFileKind = .brf,
+                         in code: BrailleFileCode) -> BrailleFileError? {
+        do {
+            _ = try pages(of: bytes, kind: kind, in: code)
+            return nil
+        } catch {
+            return error as? BrailleFileError
+        }
+    }
+
+    /// The dots of the 64 six-dot cells, in order: 0, the blank cell, to 63.
+    private let sixDotCells = Array(UInt8(0)..<64)
+
+    /// The 64 six-dot cells, in the order of their dots, as the seven-bit
+    /// table `table` writes them.
+    private func everyCell(in table: SevenBitBrailleTable) -> [UInt8] {
+        sixDotCells.map { table.byte(forDots: $0) }
+    }
+
     /// The UTF-8 bytes of `text` repeated `count` times.
     private func repeating(_ text: String, _ count: Int) -> [UInt8] {
         Array([[UInt8]](repeating: Array(text.utf8), count: count).joined())
@@ -223,10 +250,11 @@ final class BrailleFileReaderTests: XCTestCase {
         XCTAssertEqual(control?.errorDescription,
                        "Line 1 holds the control character U+0007, which is not braille ASCII.")
 
-        // A lone Latin-1 é is no valid UTF-8.
+        // A lone Latin-1 é is no valid UTF-8: eight-bit computer braille.
         let byte = refusal(of: [0x41, 0x0A, 0x41, 0xE9])
-        XCTAssertEqual(byte, .notBrailleASCII(.byte(0xE9), line: 2))
-        XCTAssertEqual(byte?.errorDescription, "Line 2 holds the byte 0xE9, which is not braille ASCII.")
+        XCTAssertEqual(byte, .eightBitBraille)
+        XCTAssertEqual(byte?.errorDescription,
+                       "This file looks like eight-bit computer braille, which TextMouth does not read.")
 
         // A control character past four digits keeps them all, and the DEL
         // character is a control character too.
@@ -234,8 +262,9 @@ final class BrailleFileReaderTests: XCTestCase {
                        "Line 1 holds the control character U+007F, which is not braille ASCII.")
         XCTAssertEqual(refusal(of: Array("A\u{85}".utf8))?.errorDescription,
                        "Line 1 holds the control character U+0085, which is not braille ASCII.")
-        // A UTF-8 sequence cut short at the end of the file is a byte.
-        XCTAssertEqual(refusal(of: [0x41, 0xC3]), .notBrailleASCII(.byte(0xC3), line: 1))
+        // A UTF-8 sequence cut short at the end of the file is a byte that
+        // begins no character: eight-bit computer braille too.
+        XCTAssertEqual(refusal(of: [0x41, 0xC3]), .eightBitBraille)
     }
 
     /// White space, format characters, and combining marks are named by
@@ -518,5 +547,132 @@ final class BrailleFileReaderTests: XCTestCase {
                        "This file looks like eight-bit computer braille, which TextMouth does not read.")
         XCTAssertEqual(BrailleFileError.unknownFileCode("x-code").errorDescription,
                        "TextMouth has no braille file characters named “x-code”.")
+    }
+
+    /// A file of Eurobraille bytes reads as the same cells as the North
+    /// American Braille ASCII bytes of the same cells, the 64 six-dot cells
+    /// in order, and each code reads its other written form alike:
+    /// Eurobraille its capitals, and North American Braille ASCII its
+    /// lowercase.
+    func testEurobrailleReadsAsTheSameCellsAsNorthAmericanBrailleASCII() throws {
+        let northAmerican = everyCell(in: .northAmerican)
+        let eurobraille = everyCell(in: .eurobraille)
+        // The codes write most cells with other characters, so reading them
+        // alike means something.
+        XCTAssertNotEqual(eurobraille, northAmerican)
+        let read = try pages(of: northAmerican, in: .northAmerican)
+        XCTAssertEqual(read.cells, sixDotCells)
+        XCTAssertEqual(try pages(of: eurobraille, in: .eurobraille), read)
+
+        // Eurobraille's capitals form writes each of its characters 0x60 to
+        // 0x7E 0x20 lower; North American Braille ASCII's lowercase form
+        // writes each of its characters 0x40 to 0x5E 0x20 higher.
+        let capitals = eurobraille.map { (0x60...0x7E).contains($0) ? $0 - 0x20 : $0 }
+        let lowercase = northAmerican.map { (0x40...0x5E).contains($0) ? $0 + 0x20 : $0 }
+        XCTAssertNotEqual(capitals, eurobraille)
+        XCTAssertNotEqual(lowercase, northAmerican)
+        XCTAssertEqual(try pages(of: capitals, in: .eurobraille), read)
+        XCTAssertEqual(try pages(of: lowercase, in: .northAmerican), read)
+    }
+
+    /// Both seven-bit codes read every printable character, 0x20 to 0x7E.
+    /// They differ on DEL, which Eurobraille reads as dots 4-5-6 and North
+    /// American Braille ASCII refuses in today's words. Eurobraille refuses
+    /// a control character, BEL, and a letter that is no braille by its own
+    /// name.
+    func testEurobrailleReadsDELAndRefusesByItsName() throws {
+        let printable = Array(UInt8(0x20)...UInt8(0x7E))
+        for code in [BrailleFileCode.northAmerican, .eurobraille] {
+            XCTAssertEqual(try pages(of: printable, in: code).cells.count, printable.count, code.id)
+        }
+
+        XCTAssertEqual(try pages(of: [0x7F], in: .eurobraille).pages, [["\u{2838}"]])
+        let delete = refusal(of: [0x7F], in: .northAmerican)
+        XCTAssertEqual(delete, .notBrailleASCII(.controlCharacter(0x7F), line: 1))
+        XCTAssertEqual(delete?.errorDescription,
+                       "Line 1 holds the control character U+007F, which is not braille ASCII.")
+
+        let bell = refusal(of: [0x07], in: .eurobraille)
+        XCTAssertEqual(bell, .notInFileCode(.controlCharacter(7), line: 1, characters: "Eurobraille"))
+        XCTAssertEqual(bell?.errorDescription,
+                       "Line 1 holds the control character U+0007, which is not Eurobraille.")
+        let letter = refusal(of: Array("a\r\nb\r\n,é".utf8), in: .eurobraille)
+        XCTAssertEqual(letter, .notInFileCode(.character("é"), line: 3, characters: "Eurobraille"))
+        XCTAssertEqual(letter?.errorDescription, "Line 3 holds “é”, which is not Eurobraille.")
+    }
+
+    /// A byte above 0x7F that begins no UTF-8 character is eight-bit
+    /// computer braille in either seven-bit code, refused with that sentence.
+    func testAByteThatBeginsNoUTF8IsEightBitBrailleInASevenBitCode() {
+        for code in [BrailleFileCode.northAmerican, .eurobraille] {
+            let refused = refusal(of: [0xE9], in: code)
+            XCTAssertEqual(refused, .eightBitBraille, code.id)
+            XCTAssertEqual(refused?.errorDescription,
+                           "This file looks like eight-bit computer braille, which TextMouth does not read.",
+                           code.id)
+        }
+    }
+
+    /// Unicode braille patterns read as their cells, the 64 six-dot cells in
+    /// order, and a blank cell written U+2800 or as a space reads alike.
+    func testUnicodeBraillePatternsReadAsTheirCells() throws {
+        let patterns = String(String.UnicodeScalarView(
+            sixDotCells.compactMap { Unicode.Scalar(0x2800 + UInt32($0)) }))
+        XCTAssertEqual(try pages(of: Array(patterns.utf8), in: .unicode).cells, sixDotCells)
+
+        let blanksAsPatterns = try pages(of: Array("⠁⠀⠃⠀".utf8), in: .unicode)
+        XCTAssertEqual(blanksAsPatterns.pages, [["⠁⠀⠃⠀"]])
+        XCTAssertEqual(try pages(of: Array("⠁ ⠃ ".utf8), in: .unicode), blanksAsPatterns)
+    }
+
+    /// Line ends (CR LF, LF, and CR), form feeds, tabs, a leading byte order
+    /// mark, and a final Ctrl-Z are read in Unicode braille patterns as in a
+    /// seven-bit file: the same text in both codes gives the same pages, in a
+    /// BRF and in a BRL.
+    func testUnicodeBraillePatternsKeepTheLinesAndPagesOfASevenBitFile() throws {
+        let northAmerican = "\u{FEFF}A B\r\nC\tD\n\rE\u{0C}F\r\n\u{0C}\u{0C}G H\nI\u{1A}"
+        let unicode = "\u{FEFF}⠁⠀⠃\r\n⠉\t⠙\n\r⠑\u{0C}⠋\r\n\u{0C}\u{0C}⠛ ⠓\n⠊\u{1A}"
+        // As a BRF, the form feeds between text end four pages; a BRL is one.
+        let rowsOfPagesByKind: [(kind: BrailleFileKind, rowsOfPages: [Int])] = [(.brf, [4, 1, 0, 2]), (.brl, [6])]
+        for (kind, rowsOfPages) in rowsOfPagesByKind {
+            let expected = try pages(of: Array(northAmerican.utf8), kind: kind, in: .northAmerican)
+            XCTAssertEqual(expected.pages.map(\.count), rowsOfPages, "\(kind)")
+            XCTAssertEqual(try pages(of: Array(unicode.utf8), kind: kind, in: .unicode), expected, "\(kind)")
+        }
+    }
+
+    /// In Unicode braille patterns a pattern with dot 7 or 8 is eight-dot
+    /// braille. A letter, a lead byte with no pattern after it, a pattern
+    /// cut off by the end of the file, and a byte that begins no UTF-8
+    /// character are each refused on their line, by name.
+    func testUnicodeBraillePatternsRefuseEightDotsAndOtherCharacters() {
+        let eightDots = refusal(of: Array("⠁\n⠃\u{2841}".utf8), in: .unicode)
+        XCTAssertEqual(eightDots, .eightDotBraille)
+        XCTAssertEqual(eightDots?.errorDescription, "This file is eight-dot braille, which TextMouth does not read.")
+        XCTAssertEqual(refusal(of: Array("\u{28FF}".utf8), in: .unicode), .eightDotBraille)
+
+        let letter = refusal(of: Array("⠁\n⠃A".utf8), in: .unicode)
+        XCTAssertEqual(letter, .notInFileCode(.character("A"), line: 2, characters: "a Unicode braille pattern"))
+        XCTAssertEqual(letter?.errorDescription, "Line 2 holds “A”, which is not a Unicode braille pattern.")
+        // A character of the patterns' own three-byte block is named too.
+        XCTAssertEqual(refusal(of: Array("⠁•".utf8), in: .unicode)?.errorDescription,
+                       "Line 1 holds “•”, which is not a Unicode braille pattern.")
+
+        // A lead byte with a line end after it, and one that ends the file.
+        XCTAssertEqual(refusal(of: [0xE2] + Array("\n⠃".utf8), in: .unicode)?.errorDescription,
+                       "Line 1 holds the byte 0xE2, which is not a Unicode braille pattern.")
+        XCTAssertEqual(refusal(of: Array("⠁\n".utf8) + [0xE2], in: .unicode)?.errorDescription,
+                       "Line 2 holds the byte 0xE2, which is not a Unicode braille pattern.")
+        // A pattern whose last byte the end of the file cuts off.
+        let cutOff = refusal(of: Array("⠁\n\n".utf8) + [0xE2, 0xA0], in: .unicode)
+        XCTAssertEqual(cutOff, .notInFileCode(.byte(0xE2), line: 3, characters: "a Unicode braille pattern"))
+        XCTAssertEqual(cutOff?.errorDescription,
+                       "Line 3 holds the byte 0xE2, which is not a Unicode braille pattern.")
+        // A byte that begins no UTF-8 character is named: a file of patterns
+        // is UTF-8, so it is no eight-bit braille.
+        let byte = refusal(of: Array("⠁\n".utf8) + [0xE9], in: .unicode)
+        XCTAssertEqual(byte, .notInFileCode(.byte(0xE9), line: 2, characters: "a Unicode braille pattern"))
+        XCTAssertEqual(byte?.errorDescription,
+                       "Line 2 holds the byte 0xE9, which is not a Unicode braille pattern.")
     }
 }

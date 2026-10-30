@@ -4,9 +4,11 @@ import Foundation
 
 /// The kinds of braille file TextMouth reads (FMT20).
 enum BrailleFileKind: Equatable, Sendable {
-    /// Braille ASCII in finished pages.
+    /// Braille in finished pages, each cell a character of the file's
+    /// braille file code (`BrailleFileCode`).
     case brf
-    /// Braille ASCII, unformatted.
+    /// Braille, unformatted, each cell a character of the file's braille
+    /// file code.
     case brl
     /// Portable Embosser Format: XML of Unicode braille rows.
     case pef
@@ -224,7 +226,8 @@ enum BrailleFileError: LocalizedError, Equatable {
     /// A PEF file that is not well-formed XML, not a PEF document, or
     /// holds a row that is not braille.
     case damagedPEF
-    /// A PEF file whose rows use dots 7 and 8.
+    /// A PEF file whose rows use dots 7 and 8, or a BRF or BRL file of
+    /// Unicode braille patterns whose cells do.
     case eightDotBraille
     /// A file of more than `BrailleFilePages.maxPages` pages, which no
     /// book could have.
@@ -291,6 +294,12 @@ enum BrailleFileError: LocalizedError, Equatable {
 /// cells, and nothing more: no layout is interpreted here (FMT20). The
 /// layout, the headings and paragraphs and page numbers, is read from the
 /// pages by another type.
+///
+/// A BRF or BRL file writes each cell as a character of a braille file code
+/// (`BrailleFileCode`, braillecodes), and is read in the code given: North
+/// American Braille ASCII when none is, as every braille file was read
+/// before files had a code. A PEF's rows are Unicode braille patterns,
+/// whatever the code.
 enum BrailleFileReader {
     /// The lines on a page of a BRF file that has no form feed between its
     /// braille text.
@@ -300,15 +309,19 @@ enum BrailleFileReader {
     /// The bytes of a UTF-8 byte order mark (U+FEFF).
     private static let utf8ByteOrderMark: [UInt8] = [0xEF, 0xBB, 0xBF]
 
-    /// The pages of the braille file at `url`, read as `kind`.
+    /// The pages of the braille file at `url`, read as `kind`: a BRF or BRL
+    /// in the braille file code `code`, North American Braille ASCII when
+    /// none is given, and a PEF as its rows of Unicode braille, whatever the
+    /// code.
     /// - Throws: `FileImportError.noTextToRead` for an empty file,
     ///   `DocumentTooLargeError` for one past the limit, a
-    ///   `BrailleFileError` for one that is not braille, and the file
-    ///   system's error for one that cannot be read.
-    static func read(_ url: URL, as kind: BrailleFileKind) throws -> BrailleFilePages {
+    ///   `BrailleFileError` for one that is not braille in the code, and the
+    ///   file system's error for one that cannot be read.
+    static func read(_ url: URL, as kind: BrailleFileKind,
+                     code: BrailleFileCode = .northAmerican) throws -> BrailleFilePages {
         let data = try DocumentByteLimit.contents(of: url)
         switch kind {
-        case .brf, .brl: return try pages(fromASCII: data, kind: kind)
+        case .brf, .brl: return try pages(fromText: data, kind: kind, code: code)
         case .pef: return try pages(fromPEF: data)
         }
     }
@@ -322,17 +335,31 @@ enum BrailleFileReader {
 
     // MARK: BRF and BRL
 
-    /// The pages of a BRF or BRL file's `data`. A `.pef` kind is read as a
-    /// PEF, so a caller cannot misuse this function into a trap.
-    /// - Throws: `BrailleFileError.notBrailleASCII` for the first byte that
-    ///   is not braille ASCII, `.tooManyPages` and `.tooManyRows` for a file
-    ///   past those limits, and `DocumentTooLargeError` for data too large
-    ///   for the pages' offsets.
+    /// The pages of a BRF or BRL file's `data` in North American Braille
+    /// ASCII, as every braille file was read before files had a code
+    /// (`pages(fromText:kind:code:)`).
     static func pages(fromASCII data: Data, kind: BrailleFileKind) throws -> BrailleFilePages {
+        try pages(fromText: data, kind: kind, code: .northAmerican)
+    }
+
+    /// The pages of a BRF or BRL file's `data`, whose cells are written in
+    /// the braille file code `code`. A `.pef` kind is read as a PEF, so a
+    /// caller cannot misuse this function into a trap.
+    /// - Throws: for the first thing that is neither a cell of `code` nor a
+    ///   line end, form feed, or tab: `BrailleFileError.eightBitBraille` for
+    ///   a seven-bit code's byte above 0x7F that begins no UTF-8 character,
+    ///   `.eightDotBraille` for a Unicode braille pattern with dot 7 or 8,
+    ///   and otherwise `.notBrailleASCII` (North American Braille ASCII) or
+    ///   `.notInFileCode` (any other code), which name it and its line;
+    ///   `.tooManyPages` and `.tooManyRows` for a file past those limits;
+    ///   and `DocumentTooLargeError` for data too large for the pages'
+    ///   offsets.
+    static func pages(fromText data: Data, kind: BrailleFileKind,
+                      code: BrailleFileCode) throws -> BrailleFilePages {
         guard kind != .pef else { return try pages(fromPEF: data) }
         try requireOffsetsFit(data)
 
-        var scanner = ASCIIScanner(kind: kind)
+        var scanner = TextScanner(kind: kind, code: code)
         // The bytes are scanned where they are, with no copy of them.
         try data.withUnsafeBytes { (raw: UnsafeRawBufferPointer) in
             var bytes = raw.bindMemory(to: UInt8.self)
@@ -342,28 +369,51 @@ enum BrailleFileReader {
             // A final Ctrl-Z is an old DOS end-of-file mark, not braille.
             if bytes.last == 0x1A { bytes = UnsafeBufferPointer(rebasing: bytes.dropLast()) }
 
-            // A cell is a byte at most, a row ends at a line end, a page at a
-            // form feed: counting them gives the room the pages can need.
+            // A cell takes a byte at least, a row ends at a line end, a page
+            // at a form feed: counting them gives the room the pages can need.
             let lineEnds = bytes.lazy.filter { $0 == 0x0A || $0 == 0x0D }.count
             let formFeeds = kind == .brf ? bytes.lazy.filter { $0 == 0x0C }.count : 0
             scanner.reserveCapacity(cells: bytes.count, rows: lineEnds + 1, pages: formFeeds + 1)
 
+            // Each step takes what begins at `index`, a byte or more of it.
             var index = 0
             while index < bytes.count {
-                let byte = bytes[index]
-                index += 1
-                try scanner.take(byte, following: bytes, at: index)
-                // A CR LF is one line end: the LF after a CR is not another.
-                if byte == 0x0D, index < bytes.count, bytes[index] == 0x0A { index += 1 }
+                index += try scanner.take(at: index, in: bytes)
             }
         }
         return try scanner.finish()
     }
 
-    /// Collects the rows of a BRF or BRL file byte by byte, in pages cut
-    /// at its form feeds, into the compact pages.
-    private struct ASCIIScanner {
+    /// The dots of the Unicode braille pattern whose UTF-8 begins at `index`
+    /// of `bytes`, or nil when the bytes there are no braille pattern.
+    ///
+    /// U+2800 to U+28FF are the three bytes E2, A0 to A3, and 80 to BF, and a
+    /// pattern's dots are its low eight bits: the second byte's low two bits
+    /// above the third byte's low six. All three must be inside `bytes`, so
+    /// a pattern cut short by the end is none, and nothing past the end is
+    /// read.
+    private static func patternDots(at index: Int, in bytes: UnsafeBufferPointer<UInt8>) -> UInt8? {
+        guard index + 2 < bytes.count, bytes[index] == 0xE2 else { return nil }
+        let second = bytes[index + 1], third = bytes[index + 2]
+        guard (0xA0...0xA3).contains(second), (0x80...0xBF).contains(third) else { return nil }
+        return ((second & 0x03) << 6) | (third & 0x3F)
+    }
+
+    /// Collects the rows of a BRF or BRL file, cell by cell in its braille
+    /// file code, in pages cut at its form feeds, into the compact pages.
+    ///
+    /// What is not a cell is read alike in every code: a line end, a form
+    /// feed, and a tab. Only what a cell is differs from code to code: a
+    /// byte of a seven-bit code is the cell its table gives, and a Unicode
+    /// braille pattern is its own dots.
+    private struct TextScanner {
         let kind: BrailleFileKind
+        /// The code the file's cells are written in, which a refusal names.
+        private let code: BrailleFileCode
+        /// The code's seven-bit table, kept for the whole file, so that a
+        /// cell of a seven-bit code is one lookup for each byte; nil for
+        /// Unicode braille patterns.
+        private let table: SevenBitBrailleTable?
         /// The pages being built.
         private var pages: BrailleFilePages
         /// Whether braille text, a cell that is not blank, has been read.
@@ -385,8 +435,11 @@ enum BrailleFileReader {
         /// line ends, and a form feed does not start one.
         private var lineNumber = 1
 
-        init(kind: BrailleFileKind) {
+        /// A scanner for a file of `kind` whose cells are written in `code`.
+        init(kind: BrailleFileKind, code: BrailleFileCode) {
             self.kind = kind
+            self.code = code
+            self.table = code.sevenBitTable
             self.pages = BrailleFilePages(kind: kind)
         }
 
@@ -398,32 +451,79 @@ enum BrailleFileReader {
         /// Whether a form feed ends a page: in a BRF; a BRL has no pages.
         private var formFeedsEndPages: Bool { kind == .brf }
 
-        /// Take `byte`, which the caller read at `index - 1` of `bytes`.
-        /// - Throws: `BrailleFileError.notBrailleASCII` for a byte that is
-        ///   no braille ASCII, a tab, or a line or page end, and the limits'
-        ///   refusals.
-        mutating func take(_ byte: UInt8, following bytes: UnsafeBufferPointer<UInt8>, at index: Int) throws {
-            switch byte {
-            case 0x0A, 0x0D:
+        /// Take what begins at `index` of `bytes`: a line end, a form feed, a
+        /// tab, or a cell of the file's code.
+        /// - Returns: The number of bytes taken, at least one: two for a CR
+        ///   LF, which is one line end, and three for a Unicode braille
+        ///   pattern.
+        /// - Throws: `cell(at:in:)`'s refusals for anything else, and the
+        ///   limits' refusals.
+        mutating func take(at index: Int, in bytes: UnsafeBufferPointer<UInt8>) throws -> Int {
+            switch bytes[index] {
+            case 0x0A:
                 try endLine()
+                return 1
+            case 0x0D:
+                try endLine()
+                // A CR LF is one line end: the LF after a CR is not another.
+                return index + 1 < bytes.count && bytes[index + 1] == 0x0A ? 2 : 1
             case 0x0C:
                 // BRL has no pages: its form feeds are not even characters.
                 if formFeedsEndPages { try endPage() }
+                return 1
             case 0x09:
                 // A tab is one blank cell.
                 pages.append(cell: 0)
                 lineStarted = true
+                return 1
             default:
-                guard let cell = BrailleCells.cell(forASCII: byte) else {
-                    throw BrailleFileError.notBrailleASCII(
-                        Self.found(at: index - 1, in: bytes), line: lineNumber)
-                }
-                let dots = UInt8(truncatingIfNeeded: cell.value)
+                let (dots, length) = try cell(at: index, in: bytes)
                 pages.append(cell: dots)
                 lineStarted = true
                 // The blank cell, the space, is no text.
                 if dots != 0 { noteText() }
+                return length
             }
+        }
+
+        /// The cell whose character begins at `index` of `bytes`, by its
+        /// dots, and the number of bytes the character takes.
+        /// - Throws: `BrailleFileError.eightDotBraille` for a Unicode braille
+        ///   pattern with dot 7 or 8, and `refusal(at:in:)` for a character
+        ///   that is no cell of the code.
+        private func cell(at index: Int, in bytes: UnsafeBufferPointer<UInt8>) throws -> (dots: UInt8, length: Int) {
+            let byte = bytes[index]
+            if let table {
+                // A seven-bit code: each byte is the cell its table gives,
+                // the code's other written forms (its aliases) included.
+                guard let dots = table.dots(forByte: byte) else { throw refusal(at: index, in: bytes) }
+                return (dots, 1)
+            }
+            // Unicode braille patterns: the ASCII space, which some tools
+            // write between words, is the blank cell.
+            if byte == 0x20 { return (0, 1) }
+            guard let dots = BrailleFileReader.patternDots(at: index, in: bytes) else {
+                throw refusal(at: index, in: bytes)
+            }
+            // A pattern past U+283F uses dot 7 or 8.
+            guard dots <= 0x3F else { throw BrailleFileError.eightDotBraille }
+            return (dots, 3)
+        }
+
+        /// The refusal of the character at `index` of `bytes`, which is no
+        /// cell of the code, on the line being read, named as
+        /// `found(at:in:)` names it.
+        private func refusal(at index: Int, in bytes: UnsafeBufferPointer<UInt8>) -> BrailleFileError {
+            let found = Self.found(at: index, in: bytes)
+            // A byte above 0x7F that begins no UTF-8 character is no text in
+            // a seven-bit code: the file is eight-bit computer braille, in a
+            // code page TextMouth cannot read. Unicode braille patterns are
+            // UTF-8, so there the byte itself is named.
+            if table != nil, case .byte = found { return .eightBitBraille }
+            // North American Braille ASCII keeps its own refusal; any other
+            // code's refusal names what that code's characters are called.
+            guard code != .northAmerican else { return .notBrailleASCII(found, line: lineNumber) }
+            return .notInFileCode(found, line: lineNumber, characters: code.characterName)
         }
 
         /// Note braille text: a cell that is not blank. A form feed read
@@ -470,10 +570,11 @@ enum BrailleFileReader {
             return pages
         }
 
-        /// What the file holds at `start`, the first byte that is no braille
-        /// ASCII: the UTF-8 character that begins there, named as itself
-        /// or, for a control, white space, format, or combining character,
-        /// by its code; or, when the bytes begin no valid character, the byte.
+        /// What the file holds at `start`, the first byte that is no cell of
+        /// the file's code: the UTF-8 character that begins there, named as
+        /// itself or, for a control, white space, format, or combining
+        /// character, by its code; or, when the bytes begin no valid
+        /// character, the byte.
         private static func found(at start: Int, in bytes: UnsafeBufferPointer<UInt8>) -> BrailleFileError.Found {
             // The length a UTF-8 character has, from its first byte.
             let length: Int
