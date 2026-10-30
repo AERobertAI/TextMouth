@@ -268,6 +268,19 @@ final class BrailleFileWriterTests: XCTestCase {
         }
     }
 
+    /// The real BRF sample's pages, as the reader reads them, written in
+    /// each code and read back in that code, are the same pages: two pages
+    /// of a book, page numbers and all.
+    func testTheBRFSampleWrittenInEachCodeReadsBackAsItself() throws {
+        let copy = try copyOfFormatSample("brf/pride-and-prejudice-ch1-grade1.brf")
+        let sample = try BrailleFileReader.read(copy, as: .brf, code: .northAmerican).pages
+        XCTAssertEqual(sample.count, 2)
+        for code in BrailleFileCode.all {
+            let written = try BrailleFileWriter.brf(pages: sample, code: code)
+            XCTAssertEqual(try BrailleFileReader.pages(fromText: written, kind: .brf, code: code).pages, sample, code.name)
+        }
+    }
+
     // MARK: PEF
 
     /// The same pages with the sample's metadata, at 40 by 25, give the PEF
