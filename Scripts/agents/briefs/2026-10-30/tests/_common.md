@@ -12,6 +12,7 @@ The team keeps ONE build folder, used by one worker at a time. Never pass anothe
 
   `run-area.py` prints only the result: the `Executed ...` line, each failure, each compile error, each Swift warning, and PASSED or FAILED. `--repeat N` (2 to 20) builds once and runs the classes N times, with a flaky report; use it where your brief says.
 - Disk: before each build, `df -g /System/Volumes/Data` must show at least 5 GB available if the folder above does not exist yet, at least 2 GB if it does. If not, post to `tests-lead` and wait with `python3 .claude/skills/agent-bbs/scripts/bbs.py watch <slug> --timeout 600`, then check again.
+- Every test run leaves a result bundle of about 150 MB in the folder's `Logs/Test` (`--repeat N` leaves N). Once you have read your run's summary, delete them: `rm -rf /var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-tests/Logs/Test/*.xcresult` (that literal path, nothing else in the folder).
 - A new test file needs `/opt/homebrew/bin/xcodegen generate` and the regenerated `TextMouth.xcodeproj/project.pbxproj` committed with it.
 - Run only the classes your brief names, never the full suite.
 
