@@ -1,0 +1,59 @@
+# Task `attach`: Book > Attach Transcript… (FMT23, step 2)
+
+Slug `podcastext-attach`, branch `podcastext/attach` (from `team/podcastext`, which by now holds the readers, the store's builder, and `TimedTextReader`). Read `common.md` beside this brief first.
+
+## Goal
+A reader's Book menu gains "Attach Transcript…", for an audiobook (not a text book), dimmed while a transcript is being attached to that book. It asks for a .vtt or .srt file, reads it, and makes it the book's transcript, timed on the book's audio from its start (a book of several tracks takes one file for the whole book: its times run across the tracks one after another, as Export writes them). A book that has a transcript keeps it unless the listener chooses to replace it, in an alert as Retranscribe asks. VoiceOver hears what happened.
+
+Read first (by line): `TextMouth/Views/Transcription/TranscriptionPresentation.swift` (all, 309 lines: the presenter and its alerts; Delete Transcript is the pattern to follow), `TextMouth/Views/Reader/ReaderBookCommands.swift:60-205`, `TextMouth/App/MenuCommands.swift:536-645, 915-930`, `TextMouth/ViewModels/TranscriptionSheetModel.swift:38-110` (the services), `TextMouth/Models/TranscriptionWording.swift:1-40, 330-375`, `TextMouth/Views/Feeds/OPMLImportSheet.swift:321-345` (an Open panel as a sheet), `TextMouth/Services/OutsideTranscript.swift`, `TextMouth/Parsers/TimedTextReader.swift`, and `TextMouth/Models/TimedText.swift`.
+
+## Files
+- `TextMouth/Views/Transcription/TranscriptionPresentation.swift`: the flow on the presenter, its alert.
+- New `TextMouth/ViewModels/TranscriptAttachments.swift`: which books are being attached to, and `canAttach`.
+- `TextMouth/Views/Reader/ReaderBookCommands.swift`, `TextMouth/App/MenuCommands.swift`: the command.
+- `TextMouth/Models/TranscriptionWording.swift`: the words (a new `// MARK: Attach Transcript` section).
+- `TextMouthProductionTests/KeyboardReachabilityTests.swift`: one entry in `standaloneMenuCommands` (item 14), nothing else.
+- New `TextMouthProductionTests/TranscriptAttachTests.swift`.
+
+## Behavior
+1. **Which books.** `TranscriptAttachments` (`@MainActor final class ...: ObservableObject`, `static let shared`, `@Published private(set) var bookIDs: Set<UUID>`, `begin(_:)`, `end(_:)`) records the books a transcript is being attached to. `static func canAttach(_ book: Book, attaching: Set<UUID>) -> Bool` is `LibraryAudioCommand.isTranscribable(book) && !attaching.contains(book.id)`.
+2. **The command.** `MenuCommands.swift`: a `CanAttachBookTranscriptKey` focused value and `canAttachBookTranscript` (as `CanTranscribeBookAudioKey`, `:536-548`); in `BookCommands`, `Button(TranscriptionWording.attachCommandTitle)` right after the Transcribe/Retranscribe button, posting `.attachBookTranscript` (a new `Notification.Name`, documented beside `.transcribeBookAudio`), `.disabled(canAttachBookTranscript != true)`; and the struct's comment names it. `ReaderBookCommands.swift`: observe `TranscriptAttachments.shared`, publish `.focusedSceneValue(\.canAttachBookTranscript, TranscriptAttachments.canAttach(viewModel.book, attaching: attachments.bookIDs))`, and on `.attachBookTranscript` (when `takesCommand`) call the presenter's `chooseTranscriptFile(for:library:window:)` with the book as the library holds it now.
+3. **Choosing the file** (`TranscriptionPresenter.chooseTranscriptFile(for:library:window:)`): when the same book is being transcribed (`services().center.current?.bookID == book.id`) show the notice (title `attachNoticeTitle`, message `attachWhileTranscribing(bookTitle:)`) instead. Otherwise an `NSOpenPanel` as a sheet on the window (or alone without one): `allowedContentTypes` = `TimedTextFormat.cueFileFormats` mapped through `UTType(filenameExtension:)`, one file, no folders, `message` = `attachPanelMessage(bookTitle:)`, `prompt` = `attachPanelPrompt`, and `directoryURL` = the folder of `book.sourceFilePath` when that folder exists (where the book came from, where its transcript most likely lies). OK calls item 4.
+4. **Attaching** (`func attachTranscript(fileAt url: URL, to book: Book, library: LibraryViewModel, window: NSWindow?) async`, the testable part; tests call it directly):
+   - `TranscriptAttachments.shared.begin(book.id)` now, and `end` on every way out.
+   - The format is `TimedTextFormat.cueFileFormat(forExtension: url.pathExtension)`; nil gives the notice `attachFailed(fileName:bookTitle:reason: attachUnknownFormat)`.
+   - Off the main thread: `TimedTextReader.read(fileAt: url, as: format)` (the 20 MB limit is its default). An error gives the notice `attachFailed(fileName:bookTitle:reason: error.localizedDescription)`.
+   - Then the book's transcript and text, through `services().readTranscript(book)` and `services().isTextInCloud(book)`: a transcript only in iCloud gives the notice with `TranscriptionWording.transcriptInCloud`; a text only in iCloud, `TranscriptionWording.textInCloud`. A transcript found, or one of a later layout (`.unsupportedVersion`), asks first (item 5). `.missing` and `.unusable` go straight on (item 6).
+5. **Asking first.** Publish `@Published var attachReplacement: TranscriptAttachRequest?` (`Identifiable`: an id, the book, the file's URL, its document, `isEdited`, `isCleanedUp` from the transcript found), shown by `TranscriptionPresentation` as an alert like Delete Transcript's (`:207-224`): title `replaceConfirmationTitle(bookTitle:)`, message `replaceConfirmationMessage(fileName:isEdited:isCleanedUp:)`, a `replaceButtonTitle` button (role `.destructive`) calling `replaceConfirmed(_:)`, and Cancel (role `.cancel`, which Escape presses), which attaches nothing. `isShowingAny` includes it. Cancel and the alert's dismissal end the book's attaching (item 4).
+6. **Saving** (`replaceConfirmed(_:)`, and directly when nothing is replaced): check the transcription center again (a transcription may have begun meanwhile: the same notice as item 3). Then, as the library holds the book now (`library.bookByID`), off the main thread: `TranscriptionPlan.make(for:)`, `OutsideTranscript.transcript(bookTimeline: document.sentences, plan:, source: TranscriptSource(origin: .attached, format: format, fileName: url.lastPathComponent))`, and `TranscriptStore.install(_:for:)`. When a transcript is replaced, pause the book's Edit Text session first (`services().pauseTextEdit`) and resume it if anything fails, exactly as `deleteConfirmed` (`:181-198`) does. A failure gives the notice `attachFailed(..., reason: error.localizedDescription)`.
+7. **Done:** `services().transcribedBooks.record(book.id, isTranscribed: true)`, `library.bookUpdates.transcriptReplaced(bookID: book.id, with: installation.text)`, and VoiceOver hears `attached(fileName:bookTitle:wordCount:skipped:)` through `services().announce(_, window)`, with the transcript's `wordCount` and the document's `skippedCueCount`. One debug log line, `DiagnosticLog.event(.storage, "TRANSCRIPT_ATTACHED: \(book.title): \(format.name) file, \(sentences) sentences, \(skipped) passages left out")`, never the text or a path.
+8. **The words** (`TranscriptionWording`, each documented, each pinned by a test):
+   - `attachCommandTitle = "Attach Transcript…"`
+   - `attachPanelMessage(bookTitle:)`: "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of \(bookTitle). Its times count from the start of the book's audio."
+   - `attachPanelPrompt = "Attach"`
+   - `attachNoticeTitle = "Attach Transcript"`
+   - `attachWhileTranscribing(bookTitle:)`: "\(bookTitle) is being transcribed. Cancel the transcription first, or attach the transcript once it finishes."
+   - `attachUnknownFormat = "TextMouth attaches WebVTT (.vtt) and SubRip (.srt) files."`
+   - `attachFailed(fileName:bookTitle:reason:)`: "“\(fileName)” wasn't attached to \(bookTitle): \(reason)"
+   - `replaceConfirmationTitle(bookTitle:)`: "Replace the Transcript of \(bookTitle)?"
+   - `replaceConfirmationMessage(fileName:isEdited:isCleanedUp:)`: "The transcript from “\(fileName)” replaces the book's transcript and the text made from it. The audiobook's audio, your place, and your bookmarks stay as they are." then " Your edits to the transcript are replaced too." when edited, then " Its cleanup is replaced too." when cleaned up.
+   - `replaceButtonTitle = "Replace Transcript"`
+   - `attached(fileName:bookTitle:wordCount:skipped:)`: "Attached “\(fileName)” to \(bookTitle): \(n) words." (`n` with the user's grouping, "1 word" for one, as `finished(bookTitle:wordCount:seconds:)` words it), then, when `skipped` > 0, " 1 timed passage couldn't be read and was left out." or " 3 timed passages couldn't be read and were left out."
+9. The menu item, the panel, the alert, and the notices are all standard controls VoiceOver reads by their titles; the alert's buttons are reached by Tab and Return, Cancel by Escape. Add no custom control.
+
+## Tests (TranscriptAttachTests)
+- every word of item 8, exactly;
+- `canAttach`: an audiobook in a package, a text book, a book being attached to, an audiobook without a package (`tmbDirectoryName` "");
+- attaching the sample: `let world = try makeIntegrationWorld("Attach Transcript")`, `let book = try world.makeSilentAudioFileBook(title: "Four Tones", duration: 4)`, `let url = try copyOfFormatSample("vtt/tone4.vtt")`, a presenter made with sheet services as `TranscriptionSheetTests` makes them (`makeSheetServices`; read how it builds `TranscriptionSheetServices` and pass your own `announce` that records messages): after `await presenter.attachTranscript(fileAt:to:library:window: nil)`, `TranscriptStore.read(from: book.tmbDirectory)` finds a transcript whose `source` is attached/webvtt/"tone4.vtt", whose sentences begin "Ana: First tone, 440 hertz."; the recorder heard `attached(...)`; `TranscriptAttachments.shared.bookIDs` no longer holds the book; the services' `transcribedBooks` holds it;
+- a book of two tracks (`makeSilentAudioBook(title:trackDurations: [2, 2])`) and the SubRip sample: the third and fourth cues land in the second track at 0 to 900 and 1,000 to 1,900 ms;
+- replacing: a book with a transcript installed first (`TranscriptFixtures.transcript(of:sentences:)` with `editedAt` set): `attachReplacement` is published with `isEdited` true and the message saying so; `replaceConfirmed` replaces it; a second run cancelled (set `attachReplacement = nil` as the alert's dismissal does) leaves transcript.json's bytes unchanged and the book no longer attaching;
+- refusals, each with its exact notice: a garbage .vtt (`WEBVTT` missing); a .vtt whose last cue ends at 20 s on a 4-second book (the `runsPastTheEnd` sentence, through `OutsideTranscriptError`'s own description); a .txt URL (`attachUnknownFormat`); a transcript only in iCloud (services' `readTranscript` returning `.inCloud`); and the same book being transcribed (read how `TranscriptionSheetTests` puts a job on the center, and do the same; if none does, give the presenter services whose center reports the book, and say so in your report);
+- `KeyboardReachabilityTests` passes with item 14.
+
+Run: `TranscriptAttachTests KeyboardReachabilityTests TranscriptionSheetTests TranscriptDeletionTests TranscriptCleanupSheetTests OutsideTranscriptTests`.
+
+## Item 14: the one existing test file you change
+`KeyboardReachabilityTests.standaloneMenuCommands` (`:42-...`) lists every menu button that is no shortcut action's; its comment says a new one is added there. Add exactly `"TranscriptionWording.attachCommandTitle": "A Book menu command that attaches a transcript file to an audiobook; it has no shortcut action and is reached from the menu bar.",` beside the other Book menu entries. Nothing else in that file.
+
+## Not yours
+The library row's commands (a follow-up), the import, feeds, export. Do not change `TimedText.swift`, `OutsideTranscript.swift`, or `TimedTextReader.swift` (ask the lead).
