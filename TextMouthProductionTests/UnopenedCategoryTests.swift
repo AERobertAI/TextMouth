@@ -406,11 +406,13 @@ final class UnopenedCategoryTests: XCTestCase {
 
     // MARK: - VoiceOver
 
-    /// The View picker's third segment reads "Unopened", under the picker's
-    /// own label, and the window title names the category the same way.
+    /// The View pop-up's third item reads "Unopened", under the pop-up's
+    /// own label, "Library view" since October 30, 2026 (it was "Library
+    /// category" while the picker was segmented), and the window title
+    /// names the view the same way.
     @MainActor
     func testThePickerSegmentReadsUnopened() {
-        XCTAssertEqual(LibraryView.categoryPickerLabel, "Library category")
+        XCTAssertEqual(LibraryView.categoryPickerLabel, "Library view")
         XCTAssertEqual(LibraryCategory.allCases.firstIndex(of: .unopened), 2)
         XCTAssertEqual(LibraryCategory.unopened.rawValue, "Unopened")
         XCTAssertEqual(LibraryLocation(category: .unopened, folderPath: "Essays").name, "Unopened")
