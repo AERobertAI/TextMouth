@@ -198,8 +198,9 @@ enum BrailleFileError: LocalizedError, Equatable {
         case controlCharacter(UInt32)
         /// A character that cannot be told apart on the screen or by ear:
         /// white space (Zs, Zl, Zp, such as U+00A0), a format character (Cf,
-        /// such as U+200B or U+FEFF), or a combining mark (Mn, Mc, Me).
-        /// Named by its code, as a control character is.
+        /// such as U+200B or U+FEFF), a combining mark (Mn, Mc, Me), or the
+        /// blank braille pattern, U+2800. Named by its code, as a control
+        /// character is.
         case unseenCharacter(UInt32)
         /// A byte that begins no valid UTF-8 character.
         case byte(UInt8)
@@ -597,6 +598,13 @@ enum BrailleFileReader {
                   // The character must use all the bytes its first byte promised.
                   case .emptyInput = decoder.decode(&iterator) else {
                 return .byte(bytes[start])
+            }
+            // The blank braille pattern shows as nothing too, in quotes on the
+            // screen and as an empty cell on a braille display, so it is named
+            // by its code: a file of Unicode braille patterns read in another
+            // code may well begin with one.
+            if scalar == BrailleCells.blank {
+                return .unseenCharacter(scalar.value)
             }
             switch scalar.properties.generalCategory {
             case .control:

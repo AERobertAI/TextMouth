@@ -290,6 +290,20 @@ final class BrailleFileReaderTests: XCTestCase {
                        "Line 1 holds the control character U+0007, which is not braille ASCII.")
     }
 
+    /// The blank braille pattern, which shows as nothing in quotes and as an
+    /// empty cell on a braille display, is named by its code, in North
+    /// American Braille ASCII and Eurobraille alike, while any other pattern
+    /// keeps its quotes: a file of Unicode braille patterns read in another
+    /// code often begins with a blank cell.
+    func testTheBlankBraillePatternIsNamedByItsCode() {
+        XCTAssertEqual(refusal(of: Array("\u{2800}\u{2801}".utf8))?.errorDescription,
+                       "Line 1 holds the character U+2800, which is not braille ASCII.")
+        XCTAssertEqual(refusal(of: Array("A\n\u{2800}".utf8), in: .eurobraille)?.errorDescription,
+                       "Line 2 holds the character U+2800, which is not Eurobraille.")
+        XCTAssertEqual(refusal(of: Array("\u{2801}".utf8))?.errorDescription,
+                       "Line 1 holds “\u{2801}”, which is not braille ASCII.")
+    }
+
     /// A UTF-8 byte order mark at the very start is dropped, in a BRF and a BRL.
     func testAByteOrderMarkAtTheStartIsDropped() throws {
         let mark: [UInt8] = [0xEF, 0xBB, 0xBF]
