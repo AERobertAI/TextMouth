@@ -29,7 +29,7 @@ The `views` team edits `ConfigService.swift` and `SettingsViewModel.swift` tonig
 3. `BrailleExportWriterTests`: `BrailleExportOptions.standard()` takes `fileCode` from a bound `BraillePreferences.$fileCodeForImports` (Eurobraille, and Unicode), North American for nothing bound in the test's store, and keeps it when it falls back to the default table (bind an unusable Mac table as its existing tests of `replacedTable` do, if they do; otherwise skip that case and say so in your report).
 4. `SettingsTabFitTests` and `make lint-a11y` (a new Settings control).
 
-Run, through the wrapper: `BrailleSettingsViewTests BrailleFileCodeSettingTests OnDiskContractTests ConfigSyncTests SettingsTabFitTests BrailleExportWriterTests BrailleTableCatalogTests SettingsViewModelTests`. Then `make lint-tests LINT_BASE=team/braillecodes` and `make lint-a11y`.
+Run, through the wrapper: `BrailleSettingsViewTests BrailleFileCodeSettingTests OnDiskContractTests ConfigSyncTests SettingsTabFitTests BrailleExportWriterTests BrailleTableCatalogTests SettingsPolicyTests ConfigWatcherTests FeedSettingsTests`. Then `make lint-tests LINT_BASE=team/braillecodes` and `make lint-a11y`.
 
 ## Do not
 
