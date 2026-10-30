@@ -1,6 +1,6 @@
 # bughunt-importoriginals: "Delete After Import" never deletes the only copy of something, and Open Book… opens a package
 
-Worker slug `bughunt-importoriginals`, branch `bughunt/importoriginals` (from `team/bughunt`). Read `README.md` beside this file first. Three fixes, one commit each, each with its tests. All three were verified by the lead by reading.
+Worker slug `bughunt-importoriginals`, branch `bughunt/importoriginals` (from `team/bughunt`). Read `README.md` beside this file first. Four fixes, one commit each, each with its tests. All four were verified by the lead by reading (4 comes from the orchestrator's triage of the TODO).
 
 ## 1. A ZIP holding a DAISY book with audio is imported as its audio alone, and then deleted
 `LibraryViewModel+Import.swift:486-501`: an archive `DAISYParser.isDAISYZip(url:)` accepts, whose DAISY book has audio, goes to `FileImportService.importDAISYAudioZipWithReport` (`FileImportService.swift:2189-2255`), which stages only the converted audio and a `manifest.json`: the book is an audiobook, and the DAISY text (the DTBook XML a braille reader uses), its images, and anything else in the archive are not imported. Yet its `ImportedBook` is an ordinary complete one (`mayDeleteOriginal`, `FileImportService.swift:106`), so `completeSingleImportedBook` deletes the ZIP under "Delete After Import", or offers to under "Ask" (`LibraryViewModel+Import.swift:616`). The archive was the only copy of the text.
@@ -26,8 +26,15 @@ Fix: `importFiles` sends a `.tmb` to `openTMBPackage(from:)`, exactly as `import
 
 Test, in `TMBPackageImportTests` (grep how it makes a valid package outside the library): `model.importFiles(urls: [package], toFolder: "")`, wait for the import queue as the class waits, and the library lists the package's book with no error message set.
 
+## 4. A Markdown book whose file is named content.md is overwritten by its own text cache (TODO-2026-09-04.md line 3552, from the orchestrator's triage)
+`stageContent(of:format:package:in:)` (`FileImportService.swift:1059-1070`) copies a single-file source into the package under its own name, and the text cache is `content.md` in the same folder (`TextMouthPaths.contentMarkdownFileName`, `TextMouthPaths.swift:307`). So a book whose file is `content.md`, or `Content.md` (APFS compares names without regard to case), is staged as the cache's file, and the cache write replaces the book's own file: its exact bytes (line endings, encoding, anything the reading drops) are gone, and Redo Text Extraction or a re-read in another encoding has no original left. `LegacyBookMigration.swift:602` stages old books the same way.
+
+Fix: one shared function giving the name a source is staged under: its own name, unless that name equals the cache's file name compared without regard to case (`caseInsensitiveCompare`, or `lowercased()` on both), when it is "content (book).md" (keeping the source's own extension's spelling); used by `stageContent` and by the legacy migration's staging (read `LegacyBookMigration.swift` around 602 and use it there only if that code stages a single file the same way; otherwise say so in your report). The book's `filePath` names the staged file as it does today, so nothing else needs to know.
+
+Tests, in `StagedImportTests`: importing a Markdown file named `Content.md` whose bytes use CR LF line endings leaves, in the package, the book's file with exactly those bytes beside a separate `content.md` cache; a file named `notes.md` is staged under its own name, as today. In `LegacyBookMigrationTests` too, if you changed the migration.
+
 ## Run
-`DAISYPackageImportTests OriginalFileDeletionTests RTFDOriginalTests TMBPackageImportTests ImportDecisionFlowTests ZIPImportTests StagedImportTests`.
+`DAISYPackageImportTests OriginalFileDeletionTests RTFDOriginalTests TMBPackageImportTests ImportDecisionFlowTests ZIPImportTests StagedImportTests LegacyBookMigrationTests`.
 
 ## Do not touch
 `keepsOriginal` of a ZIP batch (`ZipImportResult`, which other files in an archive raise: a question for the user, not tonight), Replace Existing, and the rest of the import.
