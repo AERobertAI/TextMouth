@@ -23,6 +23,8 @@ final class BrailleFileCodeImportTests: XCTestCase {
 
     /// The grade 1 BRF sample, a North American Braille ASCII file.
     private static let sample = "brf/pride-and-prejudice-ch1-grade1.brf"
+    /// The PEF of the same chapter.
+    private static let pefSample = "pef/pride-and-prejudice-ch1-grade1.pef"
     /// The table both samples are written in: uncontracted UEB.
     private static let table = "en-ueb-g1.ctb"
     /// The id of a code no TextMouth knows yet, as a later TextMouth might
@@ -60,6 +62,14 @@ final class BrailleFileCodeImportTests: XCTestCase {
         try BookInfo.load(from: book.tmbDirectory).metadata.brailleFileCode
     }
 
+    /// What `book`'s file reads as in the code the id `code` names, with
+    /// pages, as a generation writes content.md: its UTF-8.
+    private func reading(of book: Book, in code: String?) throws -> Data {
+        Data(try BrailleBookReader.markdown(
+            of: URL(fileURLWithPath: book.filePath), table: Self.table, fileCode: code, includesPages: true
+        ).utf8)
+    }
+
     /// Writes `code` into the record in `book`'s package as the code it
     /// keeps, as a later TextMouth's record may hold one, and changes nothing
     /// else in the record.
@@ -72,7 +82,111 @@ final class BrailleFileCodeImportTests: XCTestCase {
         try JSONSerialization.data(withJSONObject: record).write(to: recordURL)
     }
 
+    // MARK: - The Import
+
+    /// A BRF imported with the setting North American Braille ASCII records
+    /// "ascii-na" explicitly, in its row and its package record, as the table
+    /// is recorded, and reads as a book that records no code reads, as every
+    /// braille book read before files had a code: its content.md is, byte
+    /// for byte, what the reader gives with no code (`BrailleSampleGoldenTests`
+    /// pins those bytes).
+    func testANorthAmericanBRFRecordsItsCodeAndReadsAsBefore() throws {
+        let book = try imported(copyOfFormatSample(Self.sample), settingCode: .northAmerican)
+
+        XCTAssertEqual(book.brailleFileCode, "ascii-na")
+        XCTAssertEqual(try recordedCode(of: book), "ascii-na")
+        XCTAssertEqual(try contentMD(of: book), try reading(of: book, in: nil))
+    }
+
+    /// The sample written in Eurobraille, imported with the setting
+    /// Eurobraille, records "ascii-eurobraille" and reads, byte for byte, as
+    /// the North American sample does. Imported with the setting North
+    /// American instead, it reads with no error and gives other text: no byte
+    /// tells the seven-bit codes apart, which is why the listener chooses the
+    /// code and the book keeps it.
+    func testAEurobrailleBRFIsReadInTheSettingsCode() throws {
+        let expected = try contentMD(of: imported(copyOfFormatSample(Self.sample), settingCode: .northAmerican))
+        let eurobraille = try copyOfBrailleSample(Self.sample, writtenIn: .eurobraille)
+
+        let book = try imported(eurobraille, settingCode: .eurobraille)
+        XCTAssertEqual(book.brailleFileCode, "ascii-eurobraille")
+        XCTAssertEqual(try recordedCode(of: book), "ascii-eurobraille")
+        XCTAssertEqual(try contentMD(of: book), expected)
+
+        let misread = try imported(eurobraille, settingCode: .northAmerican)
+        XCTAssertEqual(misread.brailleFileCode, "ascii-na")
+        XCTAssertNotEqual(try contentMD(of: misread), expected, "a wrong choice is silent, but it is wrong")
+    }
+
+    /// The sample written in Unicode braille patterns records "unicode"
+    /// whatever the setting names (Eurobraille here), since its bytes say so
+    /// for certain, and reads, byte for byte, as the North American sample
+    /// does.
+    func testAUnicodeBRFIsKnownByItsBytesWhateverTheSetting() throws {
+        let expected = try contentMD(of: imported(copyOfFormatSample(Self.sample), settingCode: .northAmerican))
+
+        let book = try imported(copyOfBrailleSample(Self.sample, writtenIn: .unicode), settingCode: .eurobraille)
+
+        XCTAssertEqual(book.brailleFileCode, "unicode")
+        XCTAssertEqual(try recordedCode(of: book), "unicode")
+        XCTAssertEqual(try contentMD(of: book), expected)
+    }
+
+    /// A PEF records no code, whatever the setting names, and so does a PEF
+    /// named .xml: its rows are always Unicode braille patterns.
+    func testAPEFRecordsNoCode() throws {
+        let imports: [(name: String?, setting: BrailleFileCode)] = [
+            (nil, .northAmerican),
+            (nil, .eurobraille),
+            ("pride-and-prejudice-ch1-grade1.xml", .eurobraille),
+        ]
+        for (name, setting) in imports {
+            let book = try imported(copyOfFormatSample(Self.pefSample, named: name), settingCode: setting)
+            let label = "\(name ?? "the PEF") with the setting \(setting.id)"
+            XCTAssertEqual(book.format, .braille, label)
+            XCTAssertNil(book.brailleFileCode, label)
+            XCTAssertNil(try recordedCode(of: book), label)
+        }
+    }
+
     // MARK: - Every Later Reading
+
+    /// A rebuild reads the book's file in the code its package record keeps,
+    /// over a row that lags behind it: a Eurobraille book whose row says
+    /// North American Braille ASCII writes its content.md again unchanged,
+    /// which reading it as North American would change, and the row takes
+    /// the record's code back.
+    func testARebuildReadsTheRecordsCodeOverALaggingRow() throws {
+        var book = try imported(copyOfBrailleSample(Self.sample, writtenIn: .eurobraille), settingCode: .eurobraille)
+        let before = try contentMD(of: book)
+        XCTAssertNotEqual(try reading(of: book, in: "ascii-na"), before, "the codes must read otherwise, or this proves nothing")
+        book.brailleFileCode = "ascii-na"
+
+        XCTAssertNotNil(try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &book, replacingEditedText: true))
+
+        XCTAssertEqual(try contentMD(of: book), before)
+        XCTAssertEqual(book.brailleFileCode, "ascii-eurobraille")
+        XCTAssertEqual(try recordedCode(of: book), "ascii-eurobraille")
+    }
+
+    /// A read that decides, as an import's does and a re-read's in other
+    /// braille file characters will, reads the book's file in the code its
+    /// row names, over the record's, and the row keeps it: that read is the
+    /// decision, which the record takes when the re-read commits it.
+    func testAReadThatDecidesReadsTheRowsCode() throws {
+        var book = try imported(copyOfBrailleSample(Self.sample, writtenIn: .eurobraille), settingCode: .eurobraille)
+        let before = try contentMD(of: book)
+        book.brailleFileCode = "ascii-na"
+
+        XCTAssertNotNil(try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(
+            for: &book, replacingEditedText: true, decidingEncoding: true
+        ))
+
+        let after = try contentMD(of: book)
+        XCTAssertNotEqual(after, before, "the row's code was not read")
+        XCTAssertEqual(after, try reading(of: book, in: "ascii-na"))
+        XCTAssertEqual(book.brailleFileCode, "ascii-na")
+    }
 
     /// A code this TextMouth does not know, as a later TextMouth may record,
     /// is refused by name and changes nothing: the rebuild of a book whose
@@ -146,5 +260,26 @@ final class BrailleFileCodeImportTests: XCTestCase {
         }
         XCTAssertNil(BraillePreferences.fileCodeForImports)
         XCTAssertEqual(BraillePreferences.importFileCode(), "ascii-eurobraille")
+    }
+}
+
+// MARK: - A Braille Sample in Another Code
+
+extension XCTestCase {
+    /// A copy of the BRF or BRL sample at `relativePath` inside
+    /// `TestData/format-samples`, a North American Braille ASCII file, with
+    /// its cells written in `code` instead (`BrailleFileCodeSampleTests
+    /// .bytes(_:writtenIn:)`), named as the sample is, in a new folder of
+    /// this test's own. No sample was written in another code by the
+    /// software of a country that uses it, so a book of such a copy proves
+    /// round trips, not real use. Shared by the tests of the import and of
+    /// the re-read in other braille file characters.
+    func copyOfBrailleSample(_ relativePath: String, writtenIn code: BrailleFileCode) throws -> URL {
+        let copy = try copyOfFormatSample(relativePath)
+        let bytes = try [UInt8](Data(contentsOf: copy))
+        // Written atomically, in place of the copy, whatever the copy's
+        // permissions: the samples' folder itself is never written.
+        try Data(BrailleFileCodeSampleTests.bytes(bytes, writtenIn: code)).write(to: copy, options: .atomic)
+        return copy
     }
 }

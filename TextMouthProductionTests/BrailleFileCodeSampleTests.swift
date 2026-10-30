@@ -64,8 +64,11 @@ final class BrailleFileCodeSampleTests: XCTestCase {
     /// American Braille ASCII `bytes` hold: each byte that is a cell becomes
     /// the byte `code` writes for the same dots or, in Unicode braille
     /// patterns, the pattern's UTF-8; every other byte (a line end, a form
-    /// feed, a tab) is kept as it is.
-    private static func bytes(_ bytes: [UInt8], writtenIn code: BrailleFileCode) -> [UInt8] {
+    /// feed, a tab) is kept as it is. Other braille test classes write their
+    /// samples in another code with it too, through
+    /// `copyOfBrailleSample(_:writtenIn:)` (`BrailleFileCodeImportTests`),
+    /// so a sample is written in a code in one way only.
+    static func bytes(_ bytes: [UInt8], writtenIn code: BrailleFileCode) -> [UInt8] {
         var written: [UInt8] = []
         // A pattern takes three bytes, the most a cell can take.
         written.reserveCapacity(bytes.count * 3)
