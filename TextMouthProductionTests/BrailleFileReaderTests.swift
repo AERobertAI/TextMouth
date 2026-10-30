@@ -675,4 +675,56 @@ final class BrailleFileReaderTests: XCTestCase {
         XCTAssertEqual(byte?.errorDescription,
                        "Line 2 holds the byte 0xE9, which is not a Unicode braille pattern.")
     }
+
+    /// Unicode braille patterns are a certain code when a file's first
+    /// character, after a byte order mark at the start, line ends, form
+    /// feeds, tabs, and spaces, is a pattern, six-dot or eight-dot. Nothing
+    /// else is certain: a seven-bit code's character first, nothing at all,
+    /// only blank lines, a pattern cut off at the end, or a byte order mark
+    /// that is not at the start.
+    func testOnlyUnicodeBraillePatternsAreACertainCode() {
+        // The certain code of a prefix holding `bytes`.
+        func certainCode(_ bytes: [UInt8]) -> BrailleFileCode? {
+            BrailleFileReader.certainCode(of: Data(bytes))
+        }
+        XCTAssertEqual(certainCode(Array("⠠⠏⠗⠊⠙⠑".utf8)), .unicode)
+        XCTAssertEqual(certainCode(Array("⠀⠁".utf8)), .unicode)
+        XCTAssertEqual(certainCode([0xEF, 0xBB, 0xBF] + Array("\r\n\n\r \t\u{0C}⠁A".utf8)), .unicode)
+        XCTAssertEqual(certainCode(Array("\u{2841}⠁".utf8)), .unicode)
+
+        XCTAssertNil(certainCode(Array(",PRIDE AND ,PREJUDICE\r\n".utf8)))
+        XCTAssertNil(certainCode(everyCell(in: .eurobraille)))
+        // Every character of North American Braille ASCII and Eurobraille,
+        // DEL too, decides alone, whatever follows it.
+        for byte in UInt8(0x21)...UInt8(0x7F) {
+            XCTAssertNil(certainCode([byte] + Array("⠁⠃".utf8)), "byte \(byte)")
+        }
+        XCTAssertNil(certainCode([]))
+        XCTAssertNil(certainCode(Array("\r\n\r\n \t\u{0C}".utf8)))
+        XCTAssertNil(certainCode(Array("\n".utf8) + [0xE2, 0xA0]))
+        XCTAssertNil(certainCode(Array("\n\u{FEFF}⠁".utf8)))
+    }
+
+    /// `certainCode(ofFileAt:)` reads a file's first 65,536 bytes only: a
+    /// pattern whose last byte is the 65,536th is read, and one a byte later
+    /// is cut off. A file of North American Braille ASCII, an empty file,
+    /// and a missing one give nil.
+    func testTheCertainCodeOfAFileIsReadFromItsFirstBytes() throws {
+        XCTAssertEqual(BrailleFileReader.detectionByteCount, 65_536)
+        let folder = try makeSandboxDirectory("BrailleCertainCode")
+        // The certain code of a file named `name` in the folder, holding `bytes`.
+        func certainCode(_ bytes: [UInt8], named name: String) throws -> BrailleFileCode? {
+            let url = folder.appendingPathComponent(name)
+            try Data(bytes).write(to: url)
+            return BrailleFileReader.certainCode(ofFileAt: url)
+        }
+        XCTAssertEqual(try certainCode(Array("\r\n⠠⠏⠗⠊⠙⠑\r\n".utf8), named: "patterns.brf"), .unicode)
+        XCTAssertNil(try certainCode(Array(",PRIDE\r\n".utf8), named: "ascii.brf"))
+        XCTAssertNil(try certainCode([], named: "empty.brf"))
+
+        let blankLines = [UInt8](repeating: 0x0A, count: 65_536 - 3)
+        XCTAssertEqual(try certainCode(blankLines + Array("⠁".utf8), named: "fits.brf"), .unicode)
+        XCTAssertNil(try certainCode(blankLines + [0x0A] + Array("⠁".utf8), named: "cut.brf"))
+        XCTAssertNil(BrailleFileReader.certainCode(ofFileAt: folder.appendingPathComponent("missing.brf")))
+    }
 }

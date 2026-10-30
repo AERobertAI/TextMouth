@@ -306,6 +306,9 @@ enum BrailleFileReader {
     static let linesPerUnmarkedPage = 25
     /// How much of a PEF file `pefMetadata(of:)` reads: its head comes first.
     static let metadataByteCount = 65_536
+    /// How much of a BRF or BRL file `certainCode(ofFileAt:)` reads: the
+    /// first character after its blank lines is all it looks at.
+    static let detectionByteCount = 65_536
     /// The bytes of a UTF-8 byte order mark (U+FEFF).
     private static let utf8ByteOrderMark: [UInt8] = [0xEF, 0xBB, 0xBF]
 
@@ -607,6 +610,49 @@ enum BrailleFileReader {
                 return .character(Character(scalar))
             }
         }
+    }
+
+    // MARK: Detection
+
+    /// The braille file code that `prefix`, the first bytes of a BRF or BRL
+    /// file, is certainly written in, or nil when nothing in it is certain
+    /// (BRAILLE-CODES-RESEARCH-2026-10-25.md, section 8.5).
+    ///
+    /// Only Unicode braille patterns are ever certain: when the first
+    /// character that is not a byte order mark at the very start, a line
+    /// end, a form feed, a tab, or a space is a braille pattern, U+2800 to
+    /// U+28FF, with all three of its bytes in `prefix` (one cut off at its
+    /// end is no pattern). A seven-bit code is never guessed: the codes
+    /// write their cells with the same printable characters, so no byte
+    /// tells them apart for certain (research section 7.2). An empty prefix,
+    /// or a blank one, gives nil.
+    static func certainCode(of prefix: Data) -> BrailleFileCode? {
+        prefix.withUnsafeBytes { (raw: UnsafeRawBufferPointer) -> BrailleFileCode? in
+            let bytes = raw.bindMemory(to: UInt8.self)
+            var index = bytes.starts(with: utf8ByteOrderMark) ? utf8ByteOrderMark.count : 0
+            while index < bytes.count {
+                switch bytes[index] {
+                case 0x09, 0x0A, 0x0C, 0x0D, 0x20:
+                    // A tab, line end, form feed, or space: no character yet.
+                    index += 1
+                default:
+                    // The first character decides.
+                    return patternDots(at: index, in: bytes) == nil ? nil : .unicode
+                }
+            }
+            return nil
+        }
+    }
+
+    /// The braille file code the BRF or BRL file at `url` is certainly
+    /// written in (`certainCode(of:)`), from its first `detectionByteCount`
+    /// bytes only, or nil. It never throws: a file that cannot be read, or
+    /// is empty, gives nil.
+    static func certainCode(ofFileAt url: URL) -> BrailleFileCode? {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+        defer { try? handle.close() }
+        guard let prefix = try? handle.read(upToCount: detectionByteCount) else { return nil }
+        return certainCode(of: prefix)
     }
 
     // MARK: PEF
