@@ -1,10 +1,10 @@
 import XCTest
 @testable import TextMouth
 
-/// The WebVTT reader (FMT23): `WebVTTReader` turns a file's bytes into a
-/// `TimedTextDocument`, with the timestamp grammar, the markup and character
-/// references, and the finishing of the cue list that the SubRip reader
-/// will share (`TimedTextMarkup`). The files are third-party data, so the
+/// The WebVTT and SubRip readers (FMT23): `WebVTTReader` and `SubRipReader`
+/// turn a file's bytes into a `TimedTextDocument`, sharing the timestamp
+/// grammar, the markup and character references, and the finishing of the
+/// cue list (`TimedTextMarkup`). The files are third-party data, so the
 /// tests prove what the readers take, what they pass over and count, what
 /// they refuse, and that nothing a file holds makes them fail any other
 /// way. The samples are copied into a folder of the test's own before they
@@ -23,10 +23,23 @@ final class TimedTextReaderTests: XCTestCase {
         try WebVTTReader.read(Data(text.utf8), maximumCues: maximumCues)
     }
 
+    /// `text` read as the bytes of a SubRip file.
+    private func subRip(_ text: String, maximumCues: Int = TimedTextLimits.maximumCues) throws -> TimedTextDocument {
+        try SubRipReader.read(Data(text.utf8), maximumCues: maximumCues)
+    }
+
     /// The one cue of a WebVTT file whose one cue runs from 1 to 2 seconds
     /// and holds the lines `text`.
     private func webVTTCue(_ text: String, file: StaticString = #filePath, line: UInt = #line) throws -> TimedTextCue {
         let document = try webVTT("WEBVTT\n\n00:01.000 --> 00:02.000\n\(text)\n")
+        XCTAssertEqual(document.cues.count, 1, file: file, line: line)
+        return try XCTUnwrap(document.cues.first, file: file, line: line)
+    }
+
+    /// The one cue of a SubRip file whose one cue, numbered 1, runs from 1 to
+    /// 2 seconds and holds the lines `text`.
+    private func subRipCue(_ text: String, file: StaticString = #filePath, line: UInt = #line) throws -> TimedTextCue {
+        let document = try subRip("1\n00:00:01,000 --> 00:00:02,000\n\(text)\n")
         XCTAssertEqual(document.cues.count, 1, file: file, line: line)
         return try XCTUnwrap(document.cues.first, file: file, line: line)
     }
@@ -41,12 +54,12 @@ final class TimedTextReaderTests: XCTestCase {
         }
     }
 
-    /// Asserts that the reader either reads `data` into a document that
+    /// Asserts that each reader either reads `data` into a document that
     /// keeps every promise `TimedTextDocument` makes, or refuses it with a
     /// `TimedTextError`, and fails in no other way. `label` names the case.
     private func assertReadsOrRefuses(_ data: Data, _ label: String, file: StaticString = #filePath, line: UInt = #line) {
         let readers: [(format: TimedTextFormat, read: (Data, Int) throws -> TimedTextDocument)] = [
-            (.webVTT, WebVTTReader.read),
+            (.webVTT, WebVTTReader.read), (.subRip, SubRipReader.read),
         ]
         for reader in readers {
             do {
@@ -134,6 +147,23 @@ final class TimedTextReaderTests: XCTestCase {
             "Ana: Third tone, café 660 hertz. Second line of the cue.",
             "The fourth, 880 hertz, with no speaker.",
         ])
+    }
+
+    /// The SubRip sample (CR LF line endings, times with a comma, an `<i>`
+    /// tag, and a cue of two lines) reads as exactly its four cues, with no
+    /// voices, none passed over.
+    func testTheSubRipSampleReadsAsItsFourCues() throws {
+        let sample = try copyOfFormatSample("srt/tone4.srt")
+        let document = try SubRipReader.read(Data(contentsOf: sample))
+
+        XCTAssertEqual(document.format, .subRip)
+        XCTAssertEqual(document.cues, [
+            cue(0, 900, "This sentence belongs to the first tone, 440 hertz."),
+            cue(1_000, 1_900, "This one belongs to the second tone, 550 hertz."),
+            cue(2_000, 2_900, "Third tone, 660 hertz. A café, an étude."),
+            cue(3_000, 3_900, "The fourth and last tone is 880 hertz."),
+        ])
+        XCTAssertEqual(document.skippedCueCount, 0)
     }
 
     // MARK: - Timestamps
@@ -342,11 +372,15 @@ final class TimedTextReaderTests: XCTestCase {
     // MARK: - Encodings and Line Endings
 
     /// A byte-order mark and CR LF line endings, as Windows tools write them,
-    /// read like a plain file, the mark before the signature line; so do the
-    /// lone CR line endings of the classic Mac OS.
+    /// read like a plain file, in WebVTT (where the mark comes before the
+    /// signature line) and in SubRip; so do the lone CR line endings of the
+    /// classic Mac OS.
     func testAByteOrderMarkAndOtherLineEndingsRead() throws {
         let webVTTWithMark = try webVTT("\u{FEFF}WEBVTT\r\n\r\n00:01.000 --> 00:02.000\r\nHello.\r\n")
         XCTAssertEqual(webVTTWithMark.cues, [cue(1_000, 2_000, "Hello.")])
+
+        let subRipWithMark = try subRip("\u{FEFF}1\r\n00:00:01,000 --> 00:00:02,000\r\nHello.\r\n\r\n")
+        XCTAssertEqual(subRipWithMark.cues, [cue(1_000, 2_000, "Hello.")])
 
         let classicMac = try webVTT("WEBVTT\r\r00:01.000 --> 00:02.000\rHello.\r")
         XCTAssertEqual(classicMac.cues, [cue(1_000, 2_000, "Hello.")])
@@ -360,12 +394,23 @@ final class TimedTextReaderTests: XCTestCase {
         XCTAssertEqual(try WebVTTReader.read(data).cues, [cue(1_000, 2_000, "Zoë.")])
     }
 
+    /// A SubRip file in Windows-1252, the bytes of "café" with 0xE9, reads
+    /// as "café".
+    func testAWindows1252SubRipFileReadsInItsEncoding() throws {
+        var data = Data("1\r\n00:00:01,000 --> 00:00:02,000\r\nA caf".utf8)
+        data.append(0xE9)
+        data.append(Data(" at the corner.\r\n".utf8))
+
+        XCTAssertEqual(try SubRipReader.read(data).cues, [cue(1_000, 2_000, "A café at the corner.")])
+    }
+
     /// A file whose byte-order mark names UTF-16, but whose bytes are not
-    /// UTF-16, is not timed text.
+    /// UTF-16, is not timed text, and each reader says so in its own words.
     func testBytesNotInTheEncodingTheirMarkNamesAreNotTimedText() {
         let data = Data([0xFF, 0xFE, 0x57])
 
         assertRefuses(.notTimedText(.webVTT)) { try WebVTTReader.read(data) }
+        assertRefuses(.notTimedText(.subRip)) { try SubRipReader.read(data) }
     }
 
     // MARK: - Cues Passed Over
@@ -401,6 +446,27 @@ final class TimedTextReaderTests: XCTestCase {
 
         XCTAssertEqual(document.cues, [cue(4_000, 5_000, "Kept.")])
         XCTAssertEqual(document.skippedCueCount, 6)
+    }
+
+    /// SubRip passes over and counts the same cues, and a cue may end where
+    /// it begins.
+    func testSubRipPassesOverTheSameCues() throws {
+        let document = try subRip("""
+        1
+        00:00:03,000 --> 00:00:02,000
+        Backwards.
+
+        2
+        00:00:01,000 --> 00:00:02,000
+        {\\an8}<i></i>
+
+        3
+        00:00:04,000 --> 00:00:04,000
+        An instant.
+        """)
+
+        XCTAssertEqual(document.cues, [cue(4_000, 4_000, "An instant.")])
+        XCTAssertEqual(document.skippedCueCount, 2)
     }
 
     /// A cue may end at `Transcript.maximumMilliseconds`, 100 hours, and no
@@ -558,12 +624,24 @@ final class TimedTextReaderTests: XCTestCase {
         XCTAssertEqual(try webVTTCue("left&lrm;to&rlm;right").text, "lefttoright")
     }
 
-    /// A "<" with no ">" after it is text, with everything after it; one
-    /// with a ">" after it begins a tag, since a file writes the character
-    /// as `&lt;`.
+    /// A "<" with no ">" after it is text, with everything after it, in
+    /// either format; one with a ">" after it begins a tag, since a file
+    /// writes the character as `&lt;`.
     func testALoneLessThanSignIsText() throws {
         XCTAssertEqual(try webVTTCue("1 < 2, and 3 <= 4").text, "1 < 2, and 3 <= 4")
+        XCTAssertEqual(try subRipCue("x < y").text, "x < y")
         XCTAssertEqual(try webVTTCue("x < y and y > z").text, "x z")
+    }
+
+    /// SubRip's overrides (`{\an8}`) are removed from a SubRip cue, while a
+    /// `{\` with no `}` after it stays, and braces without a backslash are
+    /// text; a WebVTT cue keeps an override as text.
+    func testSubRipOverridesAreRemovedInSubRipAlone() throws {
+        XCTAssertEqual(try subRipCue("{\\an8}At the top.").text, "At the top.")
+        XCTAssertEqual(try subRipCue("{\\b1}Bold{\\b0} and {plain} braces.").text, "Bold and {plain} braces.")
+        XCTAssertEqual(try subRipCue("{\\an8 <i>open</i>").text, "{\\an8 open")
+        XCTAssertEqual(try subRipCue("x < y {\\an8}z").text, "x < y z")
+        XCTAssertEqual(try webVTTCue("{\\an8}At the top.").text, "{\\an8}At the top.")
     }
 
     /// A combining mark right after a tag's ">" does not hide the tag's end,
@@ -574,11 +652,103 @@ final class TimedTextReaderTests: XCTestCase {
         XCTAssertEqual(try webVTTCue("<v Ana>\u{0301}Hi.").voice, "Ana")
     }
 
+    // MARK: - SubRip's Structure
+
+    /// A cue number written without the blank line before it ends the cue
+    /// before it, and is never its text (item 12).
+    func testACueNumberWithoutTheBlankLineBeforeItIsNotText() throws {
+        let document = try subRip("1\n00:00:01,000 --> 00:00:02,000\nFirst.\n2\n00:00:03,000 --> 00:00:04,000\nSecond.\n")
+
+        XCTAssertEqual(document.cues, [cue(1_000, 2_000, "First."), cue(3_000, 4_000, "Second.")])
+    }
+
+    /// A line of digits is text when no timing line follows it, and spaces
+    /// around a cue's number are allowed.
+    func testDigitsNotFollowedByATimingLineAreText() throws {
+        let document = try subRip(
+            "1\n00:00:01,000 --> 00:00:02,000\nWe counted to\n3\n\n 2 \n00:00:03,000 --> 00:00:04,000\nThen to\n 4 \nand on.\n"
+        )
+
+        XCTAssertEqual(document.cues.map(\.text), ["We counted to 3", "Then to 4 and on."])
+    }
+
+    /// A cue's text ends at the next line holding "-->", even with no blank
+    /// line or number before it.
+    func testACuesTextEndsAtTheNextTimingLine() throws {
+        let document = try subRip("00:00:01,000 --> 00:00:02,000\nOne.\n00:00:02,000 --> 00:00:03,000\nTwo.\n")
+
+        XCTAssertEqual(document.cues, [cue(1_000, 2_000, "One."), cue(2_000, 3_000, "Two.")])
+    }
+
+    /// A line holding "-->" whose times do not read counts one cue passed
+    /// over, and its lines up to the next blank line are never text
+    /// (item 13).
+    func testAnUnreadableTimingLineIsCountedAndItsLinesIgnored() throws {
+        let document = try subRip(
+            "1\n00:00:0X,000 --> 00:00:02,000\nLost words.\nMore lost words.\n\n2\n00:00:03,000 --> 00:00:04,000\nKept.\n"
+        )
+
+        XCTAssertEqual(document.cues, [cue(3_000, 4_000, "Kept.")])
+        XCTAssertEqual(document.skippedCueCount, 1)
+    }
+
+    /// The lines after an unreadable timing line end where a cue's text
+    /// would, so a broken cue missing the blank line after it does not take
+    /// the next cue with it, numbered or not (decision 5).
+    func testAnUnreadableTimingLineDoesNotTakeTheNextCue() throws {
+        let numbered = try subRip("1\n00:00:0X,000 --> 00:00:02,000\nLost.\n2\n00:00:03,000 --> 00:00:04,000\nKept.\n")
+        XCTAssertEqual(numbered.cues, [cue(3_000, 4_000, "Kept.")])
+        XCTAssertEqual(numbered.skippedCueCount, 1)
+
+        let unnumbered = try subRip("00:00:01,000 --> soon\nLost.\n00:00:03,000 --> 00:00:04,000\nKept.\n")
+        XCTAssertEqual(unnumbered.cues, [cue(3_000, 4_000, "Kept.")])
+        XCTAssertEqual(unnumbered.skippedCueCount, 1)
+    }
+
+    /// Cue numbers need not be in order, nor be there at all: the cues are
+    /// read by their timing lines.
+    func testCueNumbersNeedNotBeInOrderOrPresent() throws {
+        let document = try subRip("""
+        7
+        00:00:03,000 --> 00:00:04,000
+        Third.
+
+        00:00:01,000 --> 00:00:02,000
+        First, with no number.
+
+        1
+        00:00:02,000 --> 00:00:03,000
+        Second.
+        """)
+
+        XCTAssertEqual(document.cues.map(\.text), ["First, with no number.", "Second.", "Third."])
+        XCTAssertEqual(document.skippedCueCount, 0)
+    }
+
+    /// The coordinates some tools write after the times
+    /// (`X1:40 X2:600 Y1:20 Y2:50`) are ignored, and a time written with a
+    /// "." reads as one written with a ",".
+    func testCoordinatesAfterTheTimesAreIgnored() throws {
+        let document = try subRip(
+            "1\n00:00:01,000 --> 00:00:02,500  X1:40 X2:600 Y1:20 Y2:50\nPlaced.\n\n2\n00:00:03.000 --> 00:00:04.000\nDotted.\n"
+        )
+
+        XCTAssertEqual(document.cues, [cue(1_000, 2_500, "Placed."), cue(3_000, 4_000, "Dotted.")])
+    }
+
+    /// Lines before the first timing line are ignored, and not counted.
+    func testLinesBeforeTheFirstTimingLineAreIgnored() throws {
+        let document = try subRip("Made with a subtitle editor\n\n\n1\n00:00:01,000 --> 00:00:02,000\nHello.\n")
+
+        XCTAssertEqual(document.cues, [cue(1_000, 2_000, "Hello.")])
+        XCTAssertEqual(document.skippedCueCount, 0)
+    }
+
     // MARK: - Finishing
 
     /// A file of more cues than `maximumCues` is refused as soon as one too
-    /// many is kept; as many as the limit read, and cues passed over do not
-    /// count toward it.
+    /// many is kept, in either format; as many as the limit read, and cues
+    /// passed over do not count toward it.
     func testMoreCuesThanTheLimitAreRefused() throws {
         let fourCues = (1...4).map { "00:0\($0).000 --> 00:0\($0).500\nCue \($0).\n" }.joined(separator: "\n")
         assertRefuses(.tooManyCues(limit: 3)) { try webVTT("WEBVTT\n\n" + fourCues, maximumCues: 3) }
@@ -587,13 +757,22 @@ final class TimedTextReaderTests: XCTestCase {
         let withOnePassedOver = try webVTT("WEBVTT\n\n" + fourCues + "\n00:09.000 --> 00:08.000\nBackwards.\n", maximumCues: 4)
         XCTAssertEqual(withOnePassedOver.cues.count, 4)
         XCTAssertEqual(withOnePassedOver.skippedCueCount, 1)
+
+        let fourNumberedCues = (1...4).map { "\($0)\n00:00:0\($0),000 --> 00:00:0\($0),500\nCue \($0).\n" }.joined(separator: "\n")
+        assertRefuses(.tooManyCues(limit: 3)) { try subRip(fourNumberedCues, maximumCues: 3) }
+        XCTAssertEqual(try subRip(fourNumberedCues, maximumCues: 4).cues.count, 4)
     }
 
-    /// A file holding no cue that can be used is refused: one of its
-    /// signature line alone, of a comment alone, or of cues all passed over.
+    /// A file holding no cue that can be used is refused, in its format's
+    /// words: a WebVTT file of its signature line alone, of a comment alone,
+    /// or of cues all passed over; an empty SubRip file, one of text alone,
+    /// or one whose only cue cannot be used.
     func testAFileWithNoUsableCueIsRefused() {
         for text in ["WEBVTT", "WEBVTT\n\nNOTE only a comment\n", "WEBVTT\n\n00:02.000 --> 00:01.000\nBackwards.\n"] {
             assertRefuses(.noCues(.webVTT), text.debugDescription) { try webVTT(text) }
+        }
+        for text in ["", "Just a line of text.\n", "1\n00:00:0X,000 --> 00:00:01,000\nBroken.\n"] {
+            assertRefuses(.noCues(.subRip), text.debugDescription) { try subRip(text) }
         }
     }
 
@@ -626,11 +805,11 @@ final class TimedTextReaderTests: XCTestCase {
 
     // MARK: - Robustness
 
-    /// Every prefix of the sample, cut every 5 bytes (inside a timing line,
+    /// Every prefix of each sample, cut every 5 bytes (inside a timing line,
     /// a tag, a reference, or the two bytes of an "é"), either reads or is
-    /// refused with a `TimedTextError`.
+    /// refused with a `TimedTextError`, by either reader.
     func testEveryPrefixOfTheSamplesReadsOrIsRefused() throws {
-        for samplePath in ["vtt/tone4.vtt"] {
+        for samplePath in ["vtt/tone4.vtt", "srt/tone4.srt"] {
             let bytes = try Data(contentsOf: copyOfFormatSample(samplePath))
             for length in stride(from: 0, through: bytes.count, by: 5) {
                 assertReadsOrRefuses(bytes.prefix(length), "\(samplePath) cut at \(length)")
@@ -639,8 +818,9 @@ final class TimedTextReaderTests: XCTestCase {
     }
 
     /// Random bytes, a few kilobytes at a time from a fixed seed, either
-    /// read or are refused with a `TimedTextError`; half of them follow a
-    /// signature line, so the reader reads past it into the noise.
+    /// read or are refused with a `TimedTextError`, by either reader; half
+    /// of them follow a signature line, so the WebVTT reader reads past it
+    /// into the noise.
     func testRandomBytesReadOrAreRefused() {
         var generator = SeededBytes(seed: 0x7E57_F00D)
         for round in 0..<48 {
@@ -656,8 +836,8 @@ final class TimedTextReaderTests: XCTestCase {
     /// Text made of the formats' own pieces in a random order from a fixed
     /// seed (arrows, times, tags open and closed, references whole and cut,
     /// overrides, digits, line breaks, a combining mark) either reads or is
-    /// refused with a `TimedTextError`: noise of the kind that takes every
-    /// path through the markup.
+    /// refused with a `TimedTextError`, by either reader: noise of the kind
+    /// that takes every path through the markup.
     func testScrambledMarkupReadsOrIsRefused() {
         let pieces = [
             "<", ">", "&", ";", "#", "x", "{", "\\", "}", "-->", " --> ", "0", "1", "5", "9", ":", ".", ",",
@@ -675,18 +855,18 @@ final class TimedTextReaderTests: XCTestCase {
     }
 
     /// A hostile cue of 150,000 "<" and "{\" with no ">" or "}" after them
-    /// stays as text and reads in a moment: each "<" is known at once to
-    /// have no closer, rather than by reading the rest of the cue again for
-    /// each, which would take minutes. The limit leaves the moment it takes
-    /// room fifty times over.
+    /// stays as text and reads in a moment, in either format: each is known
+    /// at once to have no closer, rather than by reading the rest of the cue
+    /// again for each, which would take minutes. The limit leaves the
+    /// moment it takes room fifty times over.
     func testAHostileCueReadsInAMoment() throws {
         let hostile = String(repeating: "<{\\", count: 150_000)
         var texts: [String] = []
         let elapsed = try ContinuousClock().measure {
-            texts = [try webVTTCue(hostile).text]
+            texts = [try subRipCue(hostile).text, try webVTTCue(hostile).text]
         }
 
-        XCTAssertEqual(texts.map { $0 == hostile }, [true], "the cue keeps its characters as text")
+        XCTAssertEqual(texts.map { $0 == hostile }, [true, true], "each cue keeps its characters as text")
         XCTAssertLessThan(elapsed, .seconds(10))
     }
 }
