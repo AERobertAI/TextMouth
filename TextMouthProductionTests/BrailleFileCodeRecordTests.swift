@@ -445,6 +445,49 @@ final class BrailleFileCodeRecordTests: XCTestCase {
         }
     }
 
+    // MARK: - A Re-read's Save
+
+    /// A re-read's analysis saved with its code writes the code into the
+    /// record and the book it returns. A later save from a row still
+    /// holding the old code (an analysis without one, or a reading
+    /// checkpoint's save of the row) keeps the record's, and the row takes
+    /// the record's with the analysis. The next re-read's code, North
+    /// American Braille ASCII's included, replaces it.
+    func testAReReadsSaveRecordsItsCodeAndALaggingRowKeepsIt() throws {
+        let row = try makePackagedBook(code: "ascii-na")
+        try row.saveBookInfoThrowing()
+        XCTAssertEqual(try recordedCode(of: row), "ascii-na", "the record holds the import's code")
+        let index = BookContentIndex.build(
+            fromChapters: [Chapter(title: "Tide Tables", text: "High water at noon.")], format: .braille
+        )
+        let version = MarkdownCacheService.currentCacheVersion
+
+        let reread = try XCTUnwrap(LibraryPersistenceService.saveContentAnalysis(
+            for: row, index: index, cacheFormatVersion: version, brailleFileCode: "ascii-eurobraille"
+        ))
+        XCTAssertEqual(reread.brailleFileCode, "ascii-eurobraille")
+        XCTAssertEqual(try recordedCode(of: row), "ascii-eurobraille")
+
+        // The row still holds the import's code.
+        let later = try XCTUnwrap(LibraryPersistenceService.saveContentAnalysis(
+            for: row, index: index, cacheFormatVersion: version
+        ))
+        XCTAssertEqual(later.brailleFileCode, "ascii-eurobraille")
+        XCTAssertEqual(try recordedCode(of: row), "ascii-eurobraille", "an analysis without a code")
+        try row.saveBookInfoThrowing()
+        XCTAssertEqual(try recordedCode(of: row), "ascii-eurobraille", "a save of the lagging row")
+
+        var caughtUp = row
+        ContentAnalysisSummary(committed: later).apply(to: &caughtUp)
+        XCTAssertEqual(caughtUp.brailleFileCode, "ascii-eurobraille")
+
+        let next = try XCTUnwrap(LibraryPersistenceService.saveContentAnalysis(
+            for: caughtUp, index: index, cacheFormatVersion: version, brailleFileCode: "ascii-na"
+        ))
+        XCTAssertEqual(next.brailleFileCode, "ascii-na")
+        XCTAssertEqual(try recordedCode(of: row), "ascii-na")
+    }
+
     // MARK: - The Reader's Library Fields
 
     /// The code is one of the library fields a reader takes from its book's
