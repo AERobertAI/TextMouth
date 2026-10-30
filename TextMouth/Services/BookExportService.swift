@@ -1186,15 +1186,25 @@ enum BookExportService {
     // MARK: Reading Text
 
     /// The reading text of the book `title` whose text cache holds `bytes`,
-    /// read from `url`, as plain text (`plainText(of:)`): its chapters as
-    /// the reader parses them, a book without chapter markers being one
-    /// chapter named after the book.
+    /// read from `url`: its chapters and headings as the reader parses them,
+    /// a book without chapter markers being one chapter named after the
+    /// book. The plain text export reads the book through it, and so does a
+    /// speech export (FMT43), so that it speaks the reader's text and finds
+    /// the headings the reader shows.
+    /// - Throws: the error reading content.md as text throws, for bytes
+    ///   that are not UTF-8.
+    static func readingContent(fromMarkdown bytes: Data, at url: URL, title: String) throws -> DocumentContent {
+        let markdown = try MarkdownCacheService.cacheText(from: bytes, at: url)
+        return MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: title, bookAuthor: "")
+    }
+
+    /// The reading text of the book `title` whose text cache holds `bytes`,
+    /// read from `url` (`readingContent(fromMarkdown:at:title:)`), as plain
+    /// text (`plainText(of:)`).
     /// - Throws: the error reading content.md as text throws, for bytes
     ///   that are not UTF-8.
     static func plainText(fromMarkdown bytes: Data, at url: URL, title: String) throws -> String {
-        let markdown = try MarkdownCacheService.cacheText(from: bytes, at: url)
-        let content = MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: title, bookAuthor: "")
-        return plainText(of: content.chapters)
+        try plainText(of: readingContent(fromMarkdown: bytes, at: url, title: title).chapters)
     }
 
     /// `chapters` as plain text, as TextMouth reads them: each chapter's
