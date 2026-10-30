@@ -236,6 +236,7 @@ final class OnDiskContractTests: XCTestCase {
             "repeatedSymbolStyle", "repeatedSymbolThreshold", "repeatedSymbolSet", "recordingInputDeviceID",
             "recordingAnnouncesLevel", "recordingLevelAnnouncementSeconds", "recordingOriginalPolicy",
             "recordingOriginalDays", "useInstalledFFmpeg", "audioEditorPreviewsFilters",
+            "libraryViews",
             "audioEditorPlaysAfterMoves", "keyboardShortcuts", "shortcutDoublePressSeconds", "feedRefreshAtLaunch",
             "feedRefreshIntervalHours", "feedItems", "feedNewestCount", "feedDeleteDownloadsDaysAfterPlayed",
             "feedRefreshAlert", "feedNotifications", "logLocation", "transcriptionLocale",
@@ -574,6 +575,7 @@ final class OnDiskContractTests: XCTestCase {
         config.feedRefreshAlert = true
         config.feedNotifications = true
         config.offerTranscriptionAfterImport = true
+        config.libraryViews = LibraryViewDefinitionList.shipped.fileEntries
         return config
     }
 
