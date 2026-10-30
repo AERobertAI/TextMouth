@@ -239,6 +239,7 @@
 		33A2351FD63A6EDA0DBCAC1E /* ReaderBookCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F25BEE263DD1F82846EF9C6 /* ReaderBookCommands.swift */; };
 		33ABB7A117EF56B62B525B89 /* StorageGeneration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6911FC05129C43EA36905F38 /* StorageGeneration.swift */; };
 		33BD610B4DCB337C566BC9A4 /* OggFlacConversionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B17FB3D3FCF64A97266381B /* OggFlacConversionTests.swift */; };
+		33CD1065B9FD2EF2F3CED91E /* SpeechExportEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EF12FD0C4EEDCA30F119ADC /* SpeechExportEncoder.swift */; };
 		33D467B89B78C912A60F2666 /* TranscriptCleanupRuleFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93581DF09202F50E6492C7C2 /* TranscriptCleanupRuleFile.swift */; };
 		33D8B358A2BCB0AB5EC7B1DA /* BookExportWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9796080EE27EA74E47D9C04A /* BookExportWording.swift */; };
 		341DA372EF8FD040EB2A252D /* BrailleTranslatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21DCC7EAD2395E4AF650BF99 /* BrailleTranslatorTests.swift */; };
@@ -1928,6 +1929,7 @@
 		8E76FA0DCFE44736F8A90986 /* AudioClipChainTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioClipChainTests.swift; sourceTree = "<group>"; };
 		8E841CA6FD4026AEE939DFE2 /* MigrationStagingLeftoversTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrationStagingLeftoversTests.swift; sourceTree = "<group>"; };
 		8EE1F023B98D0CC3214344FF /* TranscriptCleanupStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptCleanupStore.swift; sourceTree = "<group>"; };
+		8EF12FD0C4EEDCA30F119ADC /* SpeechExportEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechExportEncoder.swift; sourceTree = "<group>"; };
 		8F0D2F9BC86E082D72177503 /* SpeechEngineCreationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechEngineCreationTests.swift; sourceTree = "<group>"; };
 		8FB5FACD72EB69C2B4F205F7 /* ReadingListOpenRequests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingListOpenRequests.swift; sourceTree = "<group>"; };
 		900A5AD2B60753FBEC15C791 /* BrailleFileReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleFileReader.swift; sourceTree = "<group>"; };
@@ -2999,6 +3001,7 @@
 		987123B3A999E76B3B3FC386 /* SpeechExport */ = {
 			isa = PBXGroup;
 			children = (
+				8EF12FD0C4EEDCA30F119ADC /* SpeechExportEncoder.swift */,
 				F802CEF390832BDC1132C1DF /* SpeechExportText.swift */,
 			);
 			path = SpeechExport;
@@ -5230,6 +5233,7 @@
 				DFEA4A7750B07D5E886A1404 /* SleepTimerView.swift in Sources */,
 				DF1327ACB24442B9080C3A18 /* SoundEffectService.swift in Sources */,
 				532B42D410BD9A0A3AA2E1DF /* SoundEffectsSettingsView.swift in Sources */,
+				33CD1065B9FD2EF2F3CED91E /* SpeechExportEncoder.swift in Sources */,
 				CA8C2BEBE093E09251693327 /* SpeechExportText.swift in Sources */,
 				08A08291FB1A2DEF650D643C /* SpeechMarkupGuard.swift in Sources */,
 				DE57329042C5199C4E1CE9DE /* SpeechRefusalReport.swift in Sources */,
