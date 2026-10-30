@@ -23,6 +23,11 @@ enum BrailleSettingsWording {
     /// What the contraction pop-up does, spoken after its label and value.
     static let contractionHint =
         "Whether that code's braille is contracted. Contracted braille writes common words and letter groups in fewer cells."
+    /// The label of the pop-up that chooses how a BRF or BRL file writes
+    /// each braille cell as a character, its braille file code
+    /// (braillecodes); the Braille tab and Export's braille options share
+    /// it, as they share the labels above.
+    static let fileCodeLabel = "Braille file characters"
     /// The caption under the pop-ups: where the setting is used, and what it
     /// leaves alone.
     static let caption =

@@ -339,6 +339,11 @@ final class BrailleExportWriterTests: XCTestCase {
         XCTAssertEqual(BrailleExportWording.lineEndsHint, "CR LF suits most braille displays and embossers.")
         XCTAssertEqual(BrailleExportWording.name(of: .crlf), "CR LF")
         XCTAssertEqual(BrailleExportWording.name(of: .lf), "LF")
+        XCTAssertEqual(BrailleSettingsWording.fileCodeLabel, "Braille file characters")
+        XCTAssertEqual(
+            BrailleExportWording.fileCodeHint,
+            "How the BRF file writes each braille cell. Most braille displays and embossers read North American Braille ASCII, and those set up for German read Eurobraille. To share braille with a reader elsewhere, export a PEF."
+        )
         // The ranges the hints state are the layout's.
         XCTAssertEqual(BraillePageFormat.cellsPerLineRange, 18...80)
         XCTAssertEqual(BraillePageFormat.linesPerPageRange, 4...50)
@@ -378,7 +383,7 @@ final class BrailleExportWriterTests: XCTestCase {
     func testTheBRFOptionsViewIsLabelledAndHinted() throws {
         try skipUnlessHostedWindowsExposeAccessibility()
         let box = OptionsBox(BrailleExportOptions(table: "en-ueb-g2.ctb"))
-        try withOptionsView(box, choosesLineEnds: true, popUps: 4) { hosting in
+        try withOptionsView(box, choosesLineEnds: true, popUps: 5) { hosting in
             let controls = accessibleControls(in: hosting)
             XCTAssertEqual(try control(labelled: "Language", in: controls).hint, "The language of the braille code the book is written in.")
             XCTAssertEqual(try control(labelled: "Braille code", in: controls).hint, "The braille code the book is written in.")
@@ -410,14 +415,38 @@ final class BrailleExportWriterTests: XCTestCase {
         }
     }
 
-    /// A PEF's options view has everything but the line ends pop-up: only
-    /// the language, code, and contraction pop-ups.
+    /// A BRF's braille file characters pop-up (braillecodes) is found by its
+    /// label with its hint exactly, says the chosen code's name as its
+    /// value, as in "North American Braille ASCII, Braille file characters,
+    /// pop-up button", and comes after the line ends, so every other pop-up
+    /// keeps its place in the reading order.
+    func testTheBrailleFileCharactersPopUpIsLabelledAndHinted() throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
+        let box = OptionsBox(BrailleExportOptions(table: "en-ueb-g2.ctb"))
+        try withOptionsView(box, choosesLineEnds: true, popUps: 5) { hosting in
+            let controls = accessibleControls(in: hosting)
+            let fileCode = try control(labelled: "Braille file characters", in: controls)
+            XCTAssertEqual(
+                fileCode.hint,
+                "How the BRF file writes each braille cell. Most braille displays and embossers read North American Braille ASCII, and those set up for German read Eurobraille. To share braille with a reader elsewhere, export a PEF."
+            )
+            XCTAssertEqual(fileCode.role, .popUpButton)
+            XCTAssertEqual(fileCode.element.accessibilityValue() as? String, "North American Braille ASCII")
+            let popUps = controls.filter { $0.role == .popUpButton }.map(\.label)
+            XCTAssertEqual(popUps, ["Language", "Braille code", "Contraction", "Line ends", "Braille file characters"])
+        }
+    }
+
+    /// A PEF's options view has everything but the line ends and braille
+    /// file characters pop-ups: only the language, code, and contraction
+    /// pop-ups.
     func testThePEFOptionsViewHasNoLineEnds() throws {
         try skipUnlessHostedWindowsExposeAccessibility()
         let box = OptionsBox(BrailleExportOptions(table: "en-ueb-g2.ctb"))
         try withOptionsView(box, choosesLineEnds: false, popUps: 3) { hosting in
             let controls = accessibleControls(in: hosting)
             XCTAssertFalse(controls.contains { $0.label == "Line ends" }, "\(controls.map(\.label))")
+            XCTAssertFalse(controls.contains { $0.label == "Braille file characters" }, "\(controls.map(\.label))")
             _ = try control(labelled: "Braille code", in: controls)
             _ = try control(labelled: "Cells per line", in: controls)
             XCTAssertEqual(descendants(of: hosting, as: NSPopUpButton.self).count, 3)
@@ -425,19 +454,20 @@ final class BrailleExportWriterTests: XCTestCase {
     }
 
     /// The pop-ups show the table's code and contraction and offer what the
-    /// bundle has; choosing a code, a contraction, or a line end sets the
-    /// options, as the Braille tab does, and a stepper raised as VoiceOver
-    /// raises it sets its number.
+    /// bundle has; choosing a code, a contraction, a line end, or the
+    /// braille file characters sets the options, as the Braille tab does,
+    /// and a stepper raised as VoiceOver raises it sets its number.
     func testTheControlsSetTheOptions() throws {
         // The steppers are read through the accessibility tree, which a CI
         // runner does not expose: skip there, as the other hosted checks do.
         try skipUnlessHostedWindowsExposeAccessibility()
         let box = OptionsBox(BrailleExportOptions(table: "en-ueb-g2.ctb"))
-        try withOptionsView(box, choosesLineEnds: true, popUps: 4) { hosting in
+        try withOptionsView(box, choosesLineEnds: true, popUps: 5) { hosting in
             let found = descendants(of: hosting, as: NSPopUpButton.self)
-            XCTAssertEqual(found.count, 4)
-            guard found.count == 4 else { return }
-            // In reading order: language, code, contraction, line ends.
+            XCTAssertEqual(found.count, 5)
+            guard found.count == 5 else { return }
+            // In reading order: language, code, contraction, line ends, and
+            // braille file characters.
             let (language, code, contraction, lineEnds) = (found[0], found[1], found[2], found[3])
             XCTAssertEqual(language.itemTitles, [Locale.current.localizedString(forIdentifier: "en") ?? "en"])
             XCTAssertEqual(code.titleOfSelectedItem, "Unified English Braille")
@@ -446,6 +476,10 @@ final class BrailleExportWriterTests: XCTestCase {
             XCTAssertEqual(contraction.itemTitles, ["Uncontracted (Grade 1)", "Contracted (Grade 2)"])
             XCTAssertEqual(lineEnds.itemTitles, ["CR LF", "LF"])
             XCTAssertEqual(lineEnds.titleOfSelectedItem, "CR LF")
+            // The last, the braille file characters: every code, in the
+            // catalog's order, North American Braille ASCII chosen.
+            XCTAssertEqual(found.last?.itemTitles, BrailleFileCode.all.map(\.name))
+            XCTAssertEqual(found.last?.titleOfSelectedItem, "North American Braille ASCII")
 
             // The American code, keeping the contraction.
             code.menu?.performActionForItem(at: 0)
@@ -454,20 +488,26 @@ final class BrailleExportWriterTests: XCTestCase {
             XCTAssertTrue(waitUntil {
                 hosting.layoutSubtreeIfNeeded()
                 let now = self.descendants(of: hosting, as: NSPopUpButton.self)
-                return now.count == 4 && now[1].titleOfSelectedItem == "English Braille, American Edition"
+                return now.count == 5 && now[1].titleOfSelectedItem == "English Braille, American Edition"
                     && now[2].titleOfSelectedItem == "Contracted (Grade 2)"
             })
             // Then its Grade 1 table.
             let next = descendants(of: hosting, as: NSPopUpButton.self)
-            guard next.count == 4 else { return XCTFail("\(next.count) pop-ups") }
+            guard next.count == 5 else { return XCTFail("\(next.count) pop-ups") }
             next[2].menu?.performActionForItem(at: 0)
             XCTAssertTrue(waitUntil { box.options.table == "en-us-g1.ctb" }, "the table is \(box.options.table)")
 
             // The line end.
             let again = descendants(of: hosting, as: NSPopUpButton.self)
-            guard again.count == 4 else { return XCTFail("\(again.count) pop-ups") }
+            guard again.count == 5 else { return XCTFail("\(again.count) pop-ups") }
             again[3].menu?.performActionForItem(at: 1)
             XCTAssertTrue(waitUntil { box.options.lineEnd == .lf })
+
+            // The braille file characters: the second code, Eurobraille.
+            let last = descendants(of: hosting, as: NSPopUpButton.self)
+            guard last.count == 5 else { return XCTFail("\(last.count) pop-ups") }
+            last[4].menu?.performActionForItem(at: 1)
+            XCTAssertTrue(waitUntil { box.options.fileCode == .eurobraille }, "the code is \(box.options.fileCode.name)")
 
             // The steppers, raised once each, as VoiceOver raises them.
             let controls = accessibleControls(in: hosting)
