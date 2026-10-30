@@ -29,19 +29,20 @@ final class SettingsTabFitTests: XCTestCase {
 
     // MARK: - The Tabs
 
-    /// The window offers its ten tabs in the order they have always had
-    /// (Braille, added with FMT21, after Text), each with a symbol that
-    /// exists, and only Text, whose rule list scrolls by itself, does not
-    /// scroll as a whole.
-    func testTheWindowOffersItsTenTabsInTheirOrder() {
+    /// The window offers its eleven tabs in the order they have always had
+    /// (Braille, added with FMT21, after Text, and Library, added on October
+    /// 30, 2026, after Stats), each with a symbol that exists, and only Text
+    /// and Library, whose lists scroll by themselves, do not scroll as a
+    /// whole.
+    func testTheWindowOffersItsElevenTabsInTheirOrder() {
         XCTAssertEqual(
             SettingsTab.allCases.map(\.title),
-            ["Voice", "Playback", "Shortcuts", "Text", "Braille", "Sounds", "Stats", "Feeds", "Storage", "Miscellaneous"]
+            ["Voice", "Playback", "Shortcuts", "Text", "Braille", "Sounds", "Stats", "Library", "Feeds", "Storage", "Miscellaneous"]
         )
         for tab in SettingsTab.allCases {
             XCTAssertNotNil(NSImage(systemSymbolName: tab.systemImage, accessibilityDescription: nil), tab.title)
         }
-        XCTAssertEqual(SettingsTab.allCases.filter { !$0.scrollsAsAWhole }, [.text])
+        XCTAssertEqual(SettingsTab.allCases.filter { !$0.scrollsAsAWhole }, [.text, .library])
     }
 
     // MARK: - Fitting the Window
@@ -131,6 +132,24 @@ final class SettingsTabFitTests: XCTestCase {
             XCTAssertNotNil(list, "the rule list was not drawn")
             let listHeight = list?.enclosingScrollView?.frame.height ?? 0
             XCTAssertGreaterThanOrEqual(listHeight, windowSize.height / 3, "the rule list is \(Int(listHeight)) points tall")
+            XCTAssertEqual(
+                visibleControls(in: page).filter { !isReachable($0, in: page) }.map { describe($0, in: page) },
+                []
+            )
+        }
+    }
+
+    /// The Library tab, which does not scroll as a whole, leaves its list of
+    /// views at least a third of the window, with every control around it
+    /// within the window.
+    func testTheLibraryTabLeavesItsListRoom() throws {
+        let environment = try makeEnvironment()
+        let store = LibraryViewDefinitionStore(preferences: makeSandboxedPreferences("settings-tab-fit-views"))
+        withSettingsPage(environment.apply(to: LibraryViewsSettingsView(store: store))) { page in
+            let list = descendants(of: page, as: NSTableView.self).first
+            XCTAssertNotNil(list, "the list of views was not drawn")
+            let listHeight = list?.enclosingScrollView?.frame.height ?? 0
+            XCTAssertGreaterThanOrEqual(listHeight, windowSize.height / 3, "the list of views is \(Int(listHeight)) points tall")
             XCTAssertEqual(
                 visibleControls(in: page).filter { !isReachable($0, in: page) }.map { describe($0, in: page) },
                 []
