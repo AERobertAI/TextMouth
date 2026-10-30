@@ -376,6 +376,7 @@
 		53282511E5137925139B6A3A /* FeedUITestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = E001D0BD44B872AAD53A503E /* FeedUITestSupport.swift */; };
 		532B42D410BD9A0A3AA2E1DF /* SoundEffectsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78D20D205E302A5F6F7739FF /* SoundEffectsSettingsView.swift */; };
 		5330CF49C5FCD4587112032B /* DAISYPackageImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9668D0A781F496DE66617683 /* DAISYPackageImportTests.swift */; };
+		53768C4ADE077AF51E92918A /* OutsideTranscriptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28988A40AB57D3DA4D308FEC /* OutsideTranscriptTests.swift */; };
 		53A2DBE8DEACD2E075B7A5DF /* LibraryAndSectionPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98556C9CF97D9116A6192403 /* LibraryAndSectionPolicyTests.swift */; };
 		53BA0CD2E44F09DDEF070597 /* KeptBooks.swift in Sources */ = {isa = PBXBuildFile; fileRef = B84D4D0381F8922E081AC1AC /* KeptBooks.swift */; };
 		55645DE7B08BB6581959D85C /* TextPipelineBenchmarkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE229E5FAE14E92B0ABD84A5 /* TextPipelineBenchmarkTests.swift */; };
@@ -1220,21 +1221,21 @@
 		9279BF2ABA7F3526AB66874A /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = liblouis;
+			dstPath = Licenses/LAME;
 			dstSubfolderSpec = 7;
 			files = (
-				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
+				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
+				943853340D2809882740233D /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		BF489798E33F1F27D1434BD7 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/LAME;
+			dstPath = liblouis;
 			dstSubfolderSpec = 7;
 			files = (
-				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
-				943853340D2809882740233D /* LICENSE in CopyFiles */,
+				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1472,6 +1473,7 @@
 		27B0A6A99A05BE2B716407A0 /* LibraryBookSorter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryBookSorter.swift; sourceTree = "<group>"; };
 		281E20A89D2813228F72279E /* utils.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = utils.c; sourceTree = "<group>"; };
 		2853424E04196A2DCB1FD89B /* UseThisLibraryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UseThisLibraryTests.swift; sourceTree = "<group>"; };
+		28988A40AB57D3DA4D308FEC /* OutsideTranscriptTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutsideTranscriptTests.swift; sourceTree = "<group>"; };
 		28A3F6623A621E2BD84065AF /* TimedText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimedText.swift; sourceTree = "<group>"; };
 		28AFC3B3F51ED0B400EA98D2 /* BrailleSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleSettingsView.swift; sourceTree = "<group>"; };
 		28D3594AE5B5CA713E9BCEBD /* RecordingPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingPreferences.swift; sourceTree = "<group>"; };
@@ -3522,6 +3524,7 @@
 				E58620AAB02D3D9D6B84753E /* OnDiskContractTests.swift */,
 				FF75D114EAF3FF1D823C69C3 /* OriginalFileDeletionTests.swift */,
 				5EF89369D0568F09A675E925 /* OrphanedConversionSweepTests.swift */,
+				28988A40AB57D3DA4D308FEC /* OutsideTranscriptTests.swift */,
 				88F3E9E25E1EF04717C11E94 /* PackageNavigationAuditTests.swift */,
 				F693AE53B3728BAF17C097FF /* PackageTrackScanTests.swift */,
 				194B729738D0E9397A3FAB0F /* PageModelTests.swift */,
@@ -4540,6 +4543,7 @@
 				4E7384F27A158D66E253A16F /* OriginalFileDeletionTests.swift in Sources */,
 				64E871B55330D8F36C069FFC /* OrphanAdoptionTests.swift in Sources */,
 				06591A7782316B6B7211A171 /* OrphanedConversionSweepTests.swift in Sources */,
+				53768C4ADE077AF51E92918A /* OutsideTranscriptTests.swift in Sources */,
 				1698E87A478DCD0AFDFF9740 /* PDFExtractionDiagnosticsTests.swift in Sources */,
 				5BC70AE6FA21B34BD608BF4F /* PDFImportReportTests.swift in Sources */,
 				F72BA1A922786F6D5360327E /* PDFPageImageScannerTests.swift in Sources */,

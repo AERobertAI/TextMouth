@@ -56,10 +56,18 @@ struct Transcript: Codable, Equatable, Sendable {
     /// for a transcript never cleaned up. transcript.json leaves it out
     /// until then, as it leaves out `editedAt`.
     var cleanedUp: TranscriptCleanupNote? = nil
+    /// Where the transcript came from when TextMouth's recognizer did not
+    /// make it: a timed-text file attached or found at import, or a
+    /// podcast's own transcript (FMT23, FMT25). Nil for a transcript
+    /// recognition made. transcript.json leaves it out until then, so a
+    /// recognized transcript is written byte for byte as before, and an
+    /// earlier TextMouth reads a transcript with a source as any other
+    /// (JSONDecoder passes over keys it does not know).
+    var source: TranscriptSource? = nil
 
     /// What a book's record notes about this transcript (`BookState.transcript`).
     var note: TranscriptNote {
-        TranscriptNote(version: version, locale: locale, createdAt: createdAt)
+        TranscriptNote(version: version, locale: locale, createdAt: createdAt, source: source)
     }
 
     /// The file whose path, relative to the book's audio folder, is `path`,
@@ -253,8 +261,9 @@ extension Transcript {
 /// What a transcribed audiobook's record, bookInfo.json, notes about its
 /// transcript (`BookState.transcript`), so that knowing whether a book has
 /// one, and which, never means reading transcript.json or the content
-/// index: the transcript's layout version, its language, and when it was
-/// made.
+/// index: the transcript's layout version, its language, when it was
+/// made, and, for one TextMouth's recognizer did not make, where it came
+/// from.
 struct TranscriptNote: Codable, Hashable, Sendable {
     /// The layout version of the book's transcript.json.
     var version: Int
@@ -262,6 +271,81 @@ struct TranscriptNote: Codable, Hashable, Sendable {
     var locale: String
     /// When the transcription finished (`Transcript.createdAt`).
     var createdAt: Date
+    /// Where the transcript came from (`Transcript.source`); nil for one
+    /// recognition made, and then left out of the record, as before.
+    var source: TranscriptSource? = nil
+}
+
+// MARK: - Where a Transcript Came From
+
+/// Where a transcript that TextMouth's recognizer did not make came from
+/// (FMT23, FMT25): how it reached the book, the format of the file it was
+/// read from, and that file's name. transcript.json keeps it with the
+/// transcript (`Transcript.source`), and the book's record notes it
+/// (`TranscriptNote.source`), so the Transcribe Audio sheet can say where
+/// the book's transcript came from before transcribing replaces it.
+///
+/// The origin and the format are kept as the strings written, not as
+/// enumerations: a value a later TextMouth writes, such as an origin this
+/// one does not know, then neither fails the whole transcript.json (an
+/// unknown case would throw as it decodes, and a transcript.json that
+/// cannot be decoded is set aside unread) nor is lost when this TextMouth
+/// saves the transcript again, as an edit or a cleanup does.
+/// `knownOrigin` and `knownFormat` read them as this TextMouth knows them.
+struct TranscriptSource: Codable, Hashable, Sendable {
+    /// How a transcript reached its book. The raw values are kept in
+    /// transcript.json and bookInfo.json, so they never change.
+    enum Origin: String, Sendable {
+        /// The listener attached it with Book > Attach Transcript….
+        case attached
+        /// A file found beside the audio when the book was imported.
+        case imported
+        /// The podcast's own transcript, downloaded with the episode.
+        case podcast
+    }
+
+    /// How the transcript reached its book: an `Origin`'s raw value, or a
+    /// later TextMouth's, kept as it was written.
+    var origin: String
+    /// The format of the file it was read from: a `TimedTextFormat`'s raw
+    /// value, or a later TextMouth's, kept as it was written.
+    var format: String
+    /// The name of the file it was read from, when one file was read, as
+    /// "lecture.vtt"; nil when several were, or when it has no name worth
+    /// showing. Never a path, never an address: it is shown to the
+    /// listener, and kept in files that sync with the library.
+    var fileName: String?
+
+    /// The source of a transcript that reached its book by `origin`, read
+    /// from a file of `format` named `fileName`. A name given with folders
+    /// before it keeps only its last part, so no folder of the listener's
+    /// is ever kept or shown; a name of nothing but white space is no name.
+    init(origin: Origin, format: TimedTextFormat, fileName: String? = nil) {
+        self.origin = origin.rawValue
+        self.format = format.rawValue
+        self.fileName = fileName.flatMap(Self.lastPathComponent(of:))
+    }
+
+    /// The origin, when it is one this TextMouth knows; nil for one a later
+    /// TextMouth wrote.
+    var knownOrigin: Origin? {
+        Origin(rawValue: origin)
+    }
+
+    /// The format, when it is one this TextMouth knows; nil for one a later
+    /// TextMouth wrote.
+    var knownFormat: TimedTextFormat? {
+        TimedTextFormat(rawValue: format)
+    }
+
+    /// The last part of `name` after any slashes ("lecture.vtt" of
+    /// "Talks/2026/lecture.vtt"), or nil when there is none or it is
+    /// nothing but white space.
+    private static func lastPathComponent(of name: String) -> String? {
+        guard let last = name.split(separator: "/").last,
+              !last.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return String(last)
+    }
 }
 
 // MARK: - Validation
