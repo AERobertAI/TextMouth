@@ -1,6 +1,6 @@
-# bughunt-quitsaves: a quit keeps the listener's place, sleep is not listening, and a data-directory move waits for the statistics
+# bughunt-quitsaves: a quit keeps the listener's place, and sleep is not listening
 
-Worker slug `bughunt-quitsaves`, branch `bughunt/quitsaves` (from `team/bughunt`). Read `README.md` beside this file first. Three small fixes, one commit each, each with its test.
+Worker slug `bughunt-quitsaves`, branch `bughunt/quitsaves` (from `team/bughunt`). Read `README.md` beside this file first. Two small fixes, one commit each, each with its test.
 
 ## 1. Quitting while a book plays loses up to 30 seconds of the place
 While a book plays, `ReaderViewModel.publishLivePosition` (`TextMouth/ViewModels/ReaderViewModel.swift`, about line 2069-2100) saves a checkpoint to the book's row and record only every 30 seconds (`PlaybackCheckpointPolicy`, line 127); between checkpoints the place lives only in memory. Command-Q, logging out, or shutting down runs `AppDelegate.applicationShouldTerminate` (`TextMouth/App/AppDelegate.swift:195`), whose flush, `UnsavedChangesTerminationGuard.flushPendingWrites()` (`TextMouth/App/UnsavedChangesTermination.swift:158-162`), writes only what is already queued, and then `applicationWillTerminate` (`:218`). Nothing saves an open reader: its `close()` runs from the window's `.onDisappear` (`TextMouth/Views/Reader/BookReaderWindowView.swift:69`), which SwiftUI does not call at termination. So the next launch opens the book up to about 30 seconds back. The memory guard's own quit already saves every open reader first (`PlaybackMemoryGuard.saveEverythingAndQuit`, `TextMouth/Services/PlaybackMemoryGuard.swift:367-374`).
@@ -23,15 +23,8 @@ Fix:
 
 Test, in `ReadingStatsServiceTests` (grep how it makes a service on a temporary file and starts sessions at given dates): start a session at t0, checkpoint at t0+60, `noteSystemWillSleep(at: t0+60)`, `noteSystemDidWake(at: t0+8h)`, end the session at t0+8h+30; the book's total and today's are 90 seconds (within the class's tolerance). Also: a wake with no session open changes nothing.
 
-## 3. A data-directory move does not wait for queued statistics saves (found by the tests team, board #4038)
-`withStorageWorkHeld` (`TextMouth/ViewModels/LibraryViewModel+Migration.swift:1696-1736`) flushes the library save, `config.json`'s scheduled save, and the logs before it copies, but not `ReadingStatsService`'s saves, which `save()` (`ReadingStatsService.swift:603-614`) writes to `reading_stats.json` in the data directory on its own queue (`saveQueue`, `:587`) with an atomic write, which makes and renames a temporary file beside it. `DataDirectoryMigrator.copyItems` plans the copy from a listing first and then copies item by item, so a stats write landing between the two fails the move ("The file “.dat.nosync…” couldn’t be opened"), and one landing after its file was copied is lost from the moved directory. A move is refused while a book is open, but a book's window closing ends its listening session and queues a save just then.
-
-Fix: call `ReadingStatsService.waitForQueuedSaves()` (`:676`, it only waits for the save queue; any thread may call it) beside the other flushes in `withStorageWorkHeld`, with a comment.
-
-Test, in `DataDirectoryMoveTests` (grep how it moves a sandbox data directory): queue, on the statistics' save queue, a block that waits half a second and then writes a small marker file into the data directory (make `saveQueue` internal for the test if it is private, with a comment saying so), then start the move at once; the marker file is in the moved directory. Without the fix the copy can start before the block runs. Run the class alone first if it fails once: `DataDirectoryMoveTests.testAMoveShowsItsProgressWhileItCopies` is load-sensitive (`teams-common.md`).
-
 ## Run
-`PlaybackMemoryGuardTests UnsavedChangesTerminationTests ReadingStatsServiceTests DataDirectoryMoveTests ReadingStatsTimeZoneTests` (if that class exists; grep) plus the class you used to open a reader for item 1.
+`PlaybackMemoryGuardTests UnsavedChangesTerminationTests ReadingStatsServiceTests ReadingStatsTimeZoneTests` (if that class exists; grep) plus the class you used to open a reader for item 1.
 
 ## Do not touch
-The checkpoint policy's 30 seconds, the reader's close path, the quit sequence's order beyond the one call added to the flush, or any wording (none changes).
+`withStorageWorkHeld` and `DataDirectoryMigrator.swift` (the tests team fixes the writers racing a data-directory move tonight, the statistics' saves among them), the checkpoint policy's 30 seconds, the reader's close path, the quit sequence's order beyond the one call added to the flush, or any wording (none changes).
