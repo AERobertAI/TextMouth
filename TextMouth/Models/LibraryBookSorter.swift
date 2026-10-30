@@ -7,11 +7,15 @@ import Foundation
 /// because equality then returns true in both directions. This helper compares
 /// values explicitly and adds stable title/UUID tie-breakers.
 enum LibraryBookSorter {
+    /// How many rows Recently Opened lists: the ten opened last, which its
+    /// shipped Library view keeps too (`LibraryViewDefinition.shipped`).
+    static let recentlyOpenedCount = 10
+
     /// Recent-library policy: omit unopened books, newest first, and cap the
     /// quick-access list to a small stable count. Of each feed's items, only
     /// the one opened last is listed, within the same count (FR11), so a
     /// week of one podcast takes one place, and resuming it stays one step.
-    static func recent(_ books: [Book], limit: Int = 10) -> [Book] {
+    static func recent(_ books: [Book], limit: Int = recentlyOpenedCount) -> [Book] {
         guard limit > 0 else { return [] }
         let opened = books
             .filter { !$0.isUnopened }

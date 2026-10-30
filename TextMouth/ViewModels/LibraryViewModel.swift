@@ -74,12 +74,12 @@ enum LibraryCategory: String, CaseIterable, Codable {
         }
     }
 
-    /// Reads a saved category by its name, taking the former name "No
-    /// Folder" for Unopened, which replaced it, and "Recent" for Recently
-    /// Opened (FR13), so nothing saved under an old name fails to load.
-    /// Saving still writes the name itself.
-    init(from decoder: Decoder) throws {
-        let name = try decoder.singleValueContainer().decode(String.self)
+    /// Reads a category by the name it was saved under: its own name, or a
+    /// former one, "No Folder" for Unopened, which replaced it, and "Recent"
+    /// for Recently Opened (FR13); nil for any other name. The decoder and
+    /// the Library views' stored identities (`LibraryViewID`) read names
+    /// this one way, so nothing saved under an old name fails to load.
+    init?(savedName name: String) {
         if let category = LibraryCategory(rawValue: name) {
             self = category
         } else if name == Self.formerNoFolderName {
@@ -87,11 +87,22 @@ enum LibraryCategory: String, CaseIterable, Codable {
         } else if name == Self.formerRecentName {
             self = .recent
         } else {
+            return nil
+        }
+    }
+
+    /// Reads a saved category by its name (`init(savedName:)`), so nothing
+    /// saved under an old name fails to load. Saving still writes the name
+    /// itself.
+    init(from decoder: Decoder) throws {
+        let name = try decoder.singleValueContainer().decode(String.self)
+        guard let category = LibraryCategory(savedName: name) else {
             throw DecodingError.dataCorrupted(DecodingError.Context(
                 codingPath: decoder.codingPath,
                 debugDescription: "No library category is named \(name)."
             ))
         }
+        self = category
     }
 }
 
