@@ -481,6 +481,7 @@
 		6D86FFF46267459C8A6B08F1 /* DAISYParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2B2B615C2055C998533620E /* DAISYParserTests.swift */; };
 		6DAC96752CABB35C8B679BE7 /* ConvertedOriginalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16C270E0D5CB549D26F51D9E /* ConvertedOriginalTests.swift */; };
 		6DC9878F84302994E5C14D26 /* TranscriptTextBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A90275D129A43DA36FB0B72A /* TranscriptTextBuilder.swift */; };
+		6DE981787FC40A1F4B3BBC71 /* BrailleSampleGoldenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FA70E787F5A70747B14C47C /* BrailleSampleGoldenTests.swift */; };
 		6E2045860BA25445B95DEEE1 /* DuplicateReplacement.swift in Sources */ = {isa = PBXBuildFile; fileRef = F651303C38D0B60903811A1E /* DuplicateReplacement.swift */; };
 		6E3441D6F4A44300E44B6F76 /* LibraryFeedIndexCloudTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B009A489342005B68CEB09DE /* LibraryFeedIndexCloudTests.swift */; };
 		6E83EC8B8E18CE91A0B392A0 /* SpeechDirectChunkingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BBEFC172AD282562E5CE1BA /* SpeechDirectChunkingTests.swift */; };
@@ -1219,21 +1220,21 @@
 		9279BF2ABA7F3526AB66874A /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = liblouis;
+			dstPath = Licenses/liblouis;
 			dstSubfolderSpec = 7;
 			files = (
-				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
+				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
+				41F911ECAF492222AF723C10 /* README in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		BF489798E33F1F27D1434BD7 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/liblouis;
+			dstPath = liblouis;
 			dstSubfolderSpec = 7;
 			files = (
-				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
-				41F911ECAF492222AF723C10 /* README in CopyFiles */,
+				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1926,6 +1927,7 @@
 		8E841CA6FD4026AEE939DFE2 /* MigrationStagingLeftoversTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrationStagingLeftoversTests.swift; sourceTree = "<group>"; };
 		8EE1F023B98D0CC3214344FF /* TranscriptCleanupStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptCleanupStore.swift; sourceTree = "<group>"; };
 		8F0D2F9BC86E082D72177503 /* SpeechEngineCreationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechEngineCreationTests.swift; sourceTree = "<group>"; };
+		8FA70E787F5A70747B14C47C /* BrailleSampleGoldenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleSampleGoldenTests.swift; sourceTree = "<group>"; };
 		8FB5FACD72EB69C2B4F205F7 /* ReadingListOpenRequests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingListOpenRequests.swift; sourceTree = "<group>"; };
 		900A5AD2B60753FBEC15C791 /* BrailleFileReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleFileReader.swift; sourceTree = "<group>"; };
 		90CC6CBA49002A776C2559F9 /* SummaryPress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryPress.swift; sourceTree = "<group>"; };
@@ -3230,6 +3232,7 @@
 				0B570C71A0B6F7289B63C3D2 /* BrailleImportTests.swift */,
 				D6CF814833EA245F32E97171 /* BrailleLayoutTests.swift */,
 				A985391BC67E6497E264978C /* BraillePageAnalyzerTests.swift */,
+				8FA70E787F5A70747B14C47C /* BrailleSampleGoldenTests.swift */,
 				D74ECF5C1E9782911D9CB5D5 /* BrailleSettingsViewTests.swift */,
 				C2A9614130B87AF85BFCC298 /* BrailleTableCatalogTests.swift */,
 				21DCC7EAD2395E4AF650BF99 /* BrailleTranslatorTests.swift */,
@@ -4234,6 +4237,7 @@
 				B88DF3448DCC3856CA6AD74C /* BrailleImportTests.swift in Sources */,
 				BF813BAFB01C549F53A8E674 /* BrailleLayoutTests.swift in Sources */,
 				0E17B62C11F17D7F43D5122F /* BraillePageAnalyzerTests.swift in Sources */,
+				6DE981787FC40A1F4B3BBC71 /* BrailleSampleGoldenTests.swift in Sources */,
 				65B9C9DF4B771B62D4B00DE8 /* BrailleSettingsViewTests.swift in Sources */,
 				B16BBDC6F50633D9BBE57B5F /* BrailleTableCatalogTests.swift in Sources */,
 				341DA372EF8FD040EB2A252D /* BrailleTranslatorTests.swift in Sources */,
