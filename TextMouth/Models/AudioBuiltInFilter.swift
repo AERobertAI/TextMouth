@@ -33,6 +33,14 @@ enum AudioBuiltInFilter: Equatable, Sendable {
         "volume",
     ]
 
+    /// `value` as a refusal writes it: without a trailing ".0", so a
+    /// frequency of 1000 reads "1000", as it was most likely typed. The
+    /// options' refusals here and the runner's (`AudioFilterRunner`) write
+    /// their numbers through it.
+    static func written(_ value: Double) -> String {
+        value == value.rounded() && abs(value) < 1e15 ? String(Int64(value)) : String(value)
+    }
+
     // MARK: Parameters
 
     /// A biquad filter's parameters, as ffmpeg's af_biquads takes them.
@@ -357,8 +365,8 @@ enum AudioBuiltInFilter: Equatable, Sendable {
             guard let text = values[name] else { return fallback }
             guard let value = Double(text.trimmingCharacters(in: .whitespaces)), value.isFinite,
                   range.contains(value), !whole || value == value.rounded() else {
-                throw bad(name, text, expected: "give \(whole ? "a whole number" : "a number") from \(Self.number(range.lowerBound)) "
-                    + "to \(Self.number(range.upperBound))")
+                throw bad(name, text, expected: "give \(whole ? "a whole number" : "a number") from "
+                    + "\(AudioBuiltInFilter.written(range.lowerBound)) to \(AudioBuiltInFilter.written(range.upperBound))")
             }
             return value
         }
@@ -436,11 +444,6 @@ enum AudioBuiltInFilter: Equatable, Sendable {
                 return Double(text.dropLast(unit.suffix.count)).map { $0 * unit.scale }
             }
             return Double(text)
-        }
-
-        /// `value` as an error writes it: without a trailing ".0".
-        private static func number(_ value: Double) -> String {
-            value == value.rounded() && abs(value) < 1e15 ? String(Int64(value)) : String(value)
         }
     }
 }
