@@ -174,6 +174,9 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         /// When the user last cleaned it up by rule (Clean Up Transcript), or
         /// nil when they never have.
         var cleanedUpAt: Date? = nil
+        /// Where it came from, when TextMouth's recognizer did not make it
+        /// (FMT23, FMT25); nil for a transcript recognition made.
+        var source: TranscriptSource? = nil
     }
 
     /// A transcript the book has that this TextMouth could not read. A
@@ -319,7 +322,8 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
                 createdAt: transcript.createdAt,
                 locale: transcript.locale,
                 editedAt: transcript.editedAt,
-                cleanedUpAt: transcript.cleanedUp?.cleanedAt
+                cleanedUpAt: transcript.cleanedUp?.cleanedAt,
+                source: transcript.source
             )
         case .inCloud:
             unreadableExisting = .inCloud
@@ -424,10 +428,18 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
     }
 
     /// The line naming the book's transcript, when it has one: as it was
-    /// made, or, for one a later TextMouth wrote, who wrote it. One only in
-    /// iCloud is named by `bookInCloudLine` instead, which says what to do.
+    /// made, by recognition in its language or from outside, where it came
+    /// from (FMT23, FMT25); or, for one a later TextMouth wrote, who wrote
+    /// it. One only in iCloud is named by `bookInCloudLine` instead, which
+    /// says what to do.
     var existingLine: String? {
         if let existing {
+            // A transcript from outside names no language worth saying
+            // (`OutsideTranscript.undeterminedLocale`): where it came from
+            // is said instead.
+            if let source = existing.source {
+                return TranscriptionWording.outsideTranscript(source, on: existing.createdAt)
+            }
             return TranscriptionWording.alreadyTranscribed(
                 on: existing.createdAt,
                 languageName: TranscriptionLanguage.name(of: existing.locale)

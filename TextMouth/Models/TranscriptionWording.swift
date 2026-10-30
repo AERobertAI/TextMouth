@@ -149,7 +149,43 @@ enum TranscriptionWording {
     /// English (United States). Transcribing again replaces this
     /// transcript."
     static func alreadyTranscribed(on date: Date, languageName: String) -> String {
-        "Transcribed on \(day(date)), in \(languageName). Transcribing again replaces this transcript."
+        "Transcribed on \(day(date)), in \(languageName). \(transcribingAgainReplaces)"
+    }
+
+    /// The line naming a transcript the book has from outside TextMouth's
+    /// recognizer (FMT23, FMT25), which transcribing again replaces: one
+    /// sentence of where it came from and when, as in "Attached from
+    /// “lecture.vtt” on October 30, 2026. Transcribing again replaces this
+    /// transcript."
+    static func outsideTranscript(_ source: TranscriptSource, on date: Date) -> String {
+        "\(cameFrom(source, on: day(date))) \(transcribingAgainReplaces)"
+    }
+
+    /// What each line naming the book's transcript ends with.
+    private static let transcribingAgainReplaces = "Transcribing again replaces this transcript."
+
+    /// Where a transcript from outside came from, as one sentence ending with
+    /// `day`, the day the book was given it: attached from a file, named
+    /// when one file was read and otherwise by its format; found when the
+    /// book was imported; or the podcast's own. An origin a later TextMouth
+    /// wrote, which this one cannot name, is said only to be attached.
+    private static func cameFrom(_ source: TranscriptSource, on day: String) -> String {
+        let quotedName = source.fileName.map { "“\($0)”" }
+        let formatName = source.knownFormat?.name
+        switch source.knownOrigin {
+        case .attached:
+            if let quotedName { return "Attached from \(quotedName) on \(day)." }
+            if let formatName { return "Attached from a \(formatName) file on \(day)." }
+            return "Attached from a file on \(day)."
+        case .imported:
+            // One file by its name; several by their format, when known.
+            let files = quotedName ?? formatName.map { "\($0) files" } ?? "files"
+            return "Attached from \(files) when the book was imported, on \(day)."
+        case .podcast:
+            return "The podcast's own transcript, downloaded with the episode on \(day)."
+        case nil:
+            return "Attached on \(day)."
+        }
     }
 
     /// The line warning that transcribing again replaces the user's own

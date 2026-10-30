@@ -6,7 +6,8 @@ import XCTest
 /// the book's record so that a later TextMouth's values survive; a
 /// transcript made from timed sentences as recognition makes one, cut from
 /// the book's timeline into its files, and refused when it runs past the
-/// end of its audio; and an install that keeps a transcript the book has.
+/// end of its audio; an install that keeps a transcript the book has; and
+/// the Retranscribe sheet saying where the book's transcript came from.
 ///
 /// The sentences are invented, so a line of the debug log that quoted them
 /// would stand out. Each book is silent tracks in a library folder of the
@@ -397,6 +398,80 @@ final class OutsideTranscriptTests: XCTestCase {
 
         XCTAssertEqual(TranscriptStore.read(from: book.tmbDirectory), .found(attached))
         XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).state.transcript?.source, Self.lectureSource)
+    }
+
+    // MARK: - The Retranscribe Sheet's Line
+
+    /// The line naming a transcript from outside says where it came from,
+    /// exactly, for each origin, with and without a file's name, and for a
+    /// format or an origin a later TextMouth wrote.
+    func testTheLineNamingATranscriptFromOutsideSaysWhereItCameFrom() throws {
+        let date = TranscriptFixtures.date
+        let day = TranscriptionWording.day(date)
+        func line(_ origin: TranscriptSource.Origin, _ format: TimedTextFormat, _ fileName: String? = nil) -> String {
+            TranscriptionWording.outsideTranscript(TranscriptSource(origin: origin, format: format, fileName: fileName), on: date)
+        }
+        // A source as transcript.json holds it, for values a later
+        // TextMouth wrote.
+        func lineOfStored(_ json: String) throws -> String {
+            TranscriptionWording.outsideTranscript(try JSONDecoder().decode(TranscriptSource.self, from: Data(json.utf8)), on: date)
+        }
+
+        XCTAssertEqual(
+            line(.attached, .webVTT, "lecture.vtt"),
+            "Attached from “lecture.vtt” on \(day). Transcribing again replaces this transcript."
+        )
+        XCTAssertEqual(line(.attached, .webVTT), "Attached from a WebVTT file on \(day). Transcribing again replaces this transcript.")
+        XCTAssertEqual(line(.attached, .subRip), "Attached from a SubRip file on \(day). Transcribing again replaces this transcript.")
+        XCTAssertEqual(
+            try lineOfStored(#"{"format":"ttml","origin":"attached"}"#),
+            "Attached from a file on \(day). Transcribing again replaces this transcript."
+        )
+        XCTAssertEqual(
+            line(.imported, .subRip, "lecture.srt"),
+            "Attached from “lecture.srt” when the book was imported, on \(day). Transcribing again replaces this transcript."
+        )
+        XCTAssertEqual(
+            line(.imported, .webVTT),
+            "Attached from WebVTT files when the book was imported, on \(day). Transcribing again replaces this transcript."
+        )
+        XCTAssertEqual(
+            try lineOfStored(#"{"format":"ttml","origin":"imported"}"#),
+            "Attached from files when the book was imported, on \(day). Transcribing again replaces this transcript."
+        )
+        XCTAssertEqual(
+            line(.podcast, .podcastJSON),
+            "The podcast's own transcript, downloaded with the episode on \(day). Transcribing again replaces this transcript."
+        )
+        XCTAssertEqual(line(.podcast, .webVTT, "episode.vtt"), line(.podcast, .podcastJSON))
+        XCTAssertEqual(
+            try lineOfStored(Self.laterSourceJSON),
+            "Attached on \(day). Transcribing again replaces this transcript."
+        )
+    }
+
+    /// The Transcribe Audio sheet of a book whose transcript came from a
+    /// file says where it came from, in place of the language it was
+    /// transcribed in, and offers Retranscribe.
+    func testTheSheetSaysWhereTheBooksTranscriptCameFrom() async {
+        var transcript = TranscriptFixtures.transcript(
+            [(path: "01.mp3", duration: 1_000, sentences: [])],
+            locale: OutsideTranscript.undeterminedLocale
+        )
+        transcript.source = Self.lectureSource
+        let model = TranscriptionSheetModel(
+            request: .book(TranscriptionSheetTests.audiobook("Harbour Captions")),
+            library: nil,
+            services: makeSheetServices(transcript: .found(transcript))
+        )
+
+        await model.load()
+
+        let line = "Attached from “lecture.vtt” on \(TranscriptionWording.day(TranscriptFixtures.date)). "
+            + "Transcribing again replaces this transcript."
+        XCTAssertEqual(model.existingLine, line)
+        XCTAssertEqual(model.noticeLines, [line])
+        XCTAssertEqual(model.transcribeTitle, "Retranscribe")
     }
 
     // MARK: - Helpers
