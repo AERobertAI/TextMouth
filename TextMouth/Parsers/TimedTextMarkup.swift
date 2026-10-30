@@ -30,8 +30,8 @@ enum TimedTextTimestamp {
     /// not a timestamp: `milliseconds(_:)` for the readers, which hold a
     /// file's lines as bytes.
     static func milliseconds(utf8 bytes: some Collection<UInt8>) -> Int? {
-        // At most four pieces are split off, so a line of colons costs no
-        // more than a timestamp; a fourth piece refuses the text anyway.
+        // At most four pieces are made, however many colons the text holds:
+        // a fourth refuses it anyway.
         let fields = bytes.split(separator: TimedTextMarkup.Byte.colon, maxSplits: 3, omittingEmptySubsequences: false)
         guard (2...3).contains(fields.count), let secondsField = fields.last,
               let seconds = secondsAndMilliseconds(of: secondsField) else { return nil }
@@ -62,7 +62,7 @@ enum TimedTextTimestamp {
         guard separator == TimedTextMarkup.Byte.period || separator == TimedTextMarkup.Byte.comma,
               !fraction.isEmpty, fraction.allSatisfy(TimedTextMarkup.Byte.isDigit) else { return nil }
         // The first three digits are tenths, hundredths, and thousandths;
-        // any after them are finer than a transcript times, and are dropped.
+        // any after them are finer than a transcript's times, and are dropped.
         let milliseconds = zip([100, 10, 1], fraction).reduce(0) { sum, pair in
             sum + pair.0 * Int(pair.1 - TimedTextMarkup.Byte.zero)
         }
