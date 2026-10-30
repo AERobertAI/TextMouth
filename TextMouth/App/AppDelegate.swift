@@ -80,6 +80,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // folders this Mac's journal still lists are removed now, and no
         // other folder is touched.
         MigrationStagingLeftovers.sweepInBackground()
+        // A speech export's kept chapters outlive only the session that
+        // spoke them: the ones a quit or a crash left in this Mac's Caches
+        // folder are removed now, unless an export has already begun.
+        SpeechExportStore.sweepInBackground()
 
         // Disable automatic window tabbing (prevents "New Tab" menu proliferation)
         NSWindow.allowsAutomaticWindowTabbing = false

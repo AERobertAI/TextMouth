@@ -1,15 +1,17 @@
 import AVFoundation
+import CryptoKit
 import XCTest
 @testable import TextMouth
 
 /// The parts a speech export (FMT43) stands on, each tested on its own: the
 /// voice, speed, and pitch a book is read with; what is known of an
-/// installed voice; and the words of each refusal.
+/// installed voice; the words of each refusal; and the chapters kept
+/// between runs of an export.
 ///
 /// Nothing here speaks, plays a sound, or uses a Personal Voice: voices are
 /// only looked up by identifier and read for their names and traits, and the
-/// one `SpeechService` made is never asked to speak. Preferences are
-/// sandboxed, never the user's.
+/// one `SpeechService` made is never asked to speak. Preferences and
+/// files are sandboxed, never the user's.
 final class SpeechExportSupportTests: XCTestCase {
 
     // MARK: - The Voice Settings
@@ -284,5 +286,357 @@ final class SpeechExportSupportTests: XCTestCase {
         let error: Error = SpeechExportError.nothingToSpeak
 
         XCTAssertEqual(error.localizedDescription, "The part of the book chosen has no words to speak.")
+    }
+
+    // MARK: - The Kept Chapters
+
+    /// A store under the key `key`, whose root is a folder not yet made in
+    /// a new sandbox folder.
+    private func makeStore(key: String = "export-key") throws -> SpeechExportStore {
+        let sandbox = try makeSandboxDirectory("speech-export-store")
+        return SpeechExportStore(root: sandbox.appendingPathComponent("Speech Export", isDirectory: true), key: key)
+    }
+
+    /// Writes a whole chapter at `url`: a tenth of a second of 16-bit mono
+    /// silence in a CAF file.
+    private func writeChapter(at url: URL) throws {
+        try AudioTestFixtures.writeSilence(to: url, duration: 0.1)
+    }
+
+    /// The names of the items in `folder`, hidden ones too, sorted.
+    private func names(in folder: URL) throws -> [String] {
+        try FileManager.default.contentsOfDirectory(atPath: folder.path).sorted()
+    }
+
+    /// Whether anything is at `url`.
+    private func exists(_ url: URL) -> Bool {
+        FileManager.default.fileExists(atPath: url.path)
+    }
+
+    /// The key as the brief describes it, made here byte by byte apart
+    /// from the store's own code: SHA-256 over the version, the book ID, the
+    /// voice, the speed, the pitch, and the sections, each string as its
+    /// UTF-8 length and then its bytes, each length and count in 8 bytes,
+    /// least significant first; the first 16 bytes, in lowercase hex.
+    private func keyMadeByHand(
+        bookID: UUID,
+        voice: String?,
+        wordsPerMinute: Double,
+        pitch: Double,
+        sections: [[String]]
+    ) -> String {
+        var bytes: [UInt8] = []
+        func number(_ value: Int) {
+            bytes += (0..<8).map { UInt8(truncatingIfNeeded: UInt64(value) >> (8 * UInt64($0))) }
+        }
+        func string(_ text: String) {
+            number(text.utf8.count)
+            bytes += Array(text.utf8)
+        }
+        string("TextMouth speech export 1")
+        string(bookID.uuidString)
+        string(voice ?? "")
+        string(String(wordsPerMinute))
+        string(String(pitch))
+        number(sections.count)
+        for section in sections {
+            number(section.count)
+            section.forEach(string)
+        }
+        return SHA256.hash(data: bytes).prefix(16).map { String(format: "%02x", $0) }.joined()
+    }
+
+    /// The key is 32 lowercase hexadecimal digits: the first 16 bytes of the
+    /// digest the brief describes, the same for the same inputs.
+    func testTheKeyIsTheDigestOfItsInputs() {
+        let bookID = UUID()
+        let sections = [["Departures", "The ferry leaves at six."], ["Crossing", "Gulls.", "Rain on the deck."]]
+
+        let key = SpeechExportStore.key(
+            bookID: bookID, voiceIdentifier: "voice.a", wordsPerMinute: 215, pitch: 1.1, sections: sections
+        )
+
+        XCTAssertEqual(key.count, 32)
+        XCTAssertTrue(key.allSatisfy { "0123456789abcdef".contains($0) }, key)
+        XCTAssertEqual(
+            key,
+            SpeechExportStore.key(bookID: bookID, voiceIdentifier: "voice.a", wordsPerMinute: 215, pitch: 1.1, sections: sections)
+        )
+        XCTAssertEqual(
+            key,
+            keyMadeByHand(bookID: bookID, voice: "voice.a", wordsPerMinute: 215, pitch: 1.1, sections: sections)
+        )
+        XCTAssertEqual(
+            SpeechExportStore.key(bookID: bookID, voiceIdentifier: nil, wordsPerMinute: 200, pitch: 1, sections: []),
+            keyMadeByHand(bookID: bookID, voice: nil, wordsPerMinute: 200, pitch: 1, sections: [])
+        )
+    }
+
+    /// Changing any one input changes the key, so chapters are only used
+    /// again for the same book, voice, speed, pitch, and words; and inputs
+    /// never run together: ["a", "bc"] is not ["ab", "c"], and a section
+    /// split in two is not the section whole.
+    func testTheKeyChangesWithEachInput() {
+        let bookID = UUID()
+        let sections = [["Departures", "a", "bc"]]
+        let key = { (bookID: UUID, voice: String?, wordsPerMinute: Double, pitch: Double, sections: [[String]]) in
+            SpeechExportStore.key(
+                bookID: bookID, voiceIdentifier: voice, wordsPerMinute: wordsPerMinute, pitch: pitch, sections: sections
+            )
+        }
+        let original = key(bookID, "voice.a", 200, 1, sections)
+
+        let changed = [
+            "another book": key(UUID(), "voice.a", 200, 1, sections),
+            "another voice": key(bookID, "voice.b", 200, 1, sections),
+            "no voice": key(bookID, nil, 200, 1, sections),
+            "another speed": key(bookID, "voice.a", 201, 1, sections),
+            "another pitch": key(bookID, "voice.a", 200, 1.05, sections),
+            "another title": key(bookID, "voice.a", 200, 1, [["Arrivals", "a", "bc"]]),
+            "another text": key(bookID, "voice.a", 200, 1, [["Departures", "a", "bd"]]),
+            "a text more": key(bookID, "voice.a", 200, 1, [["Departures", "a", "bc", ""]]),
+            "the texts run together": key(bookID, "voice.a", 200, 1, [["Departures", "ab", "c"]]),
+            "the section split in two": key(bookID, "voice.a", 200, 1, [["Departures", "a"], ["bc"]]),
+            "no sections": key(bookID, "voice.a", 200, 1, []),
+            "an empty section": key(bookID, "voice.a", 200, 1, [[]])
+        ]
+
+        for (change, changedKey) in changed {
+            XCTAssertNotEqual(changedKey, original, change)
+        }
+        XCTAssertEqual(Set(changed.values).count, changed.count, "Two different changes made one key")
+        XCTAssertNotEqual(key(bookID, nil, 200, 1, [["a", "bc"]]), key(bookID, nil, 200, 1, [["ab", "c"]]))
+    }
+
+    /// The chapter files' names: four digits at least, counted from 1, the
+    /// part file keeping the `caf` extension, all in the key's folder.
+    func testTheChapterFilesNames() {
+        let root = URL(fileURLWithPath: "/Volumes/Spoken/Speech Export", isDirectory: true)
+        let store = SpeechExportStore(root: root, key: "0123abcd")
+
+        XCTAssertEqual(store.folder.path, "/Volumes/Spoken/Speech Export/0123abcd")
+        XCTAssertEqual(store.chapterName(0), "0001.caf")
+        XCTAssertEqual(store.chapterName(41), "0042.caf")
+        XCTAssertEqual(store.chapterName(9_999), "10000.caf")
+        XCTAssertEqual(store.chapterURL(0).path, "/Volumes/Spoken/Speech Export/0123abcd/0001.caf")
+        XCTAssertEqual(store.partURL(0).path, "/Volumes/Spoken/Speech Export/0123abcd/0001.partial.caf")
+        XCTAssertEqual(store.partURL(0).pathExtension, "caf")
+        XCTAssertEqual(store.partURL(41).lastPathComponent, "0042.partial.caf")
+    }
+
+    /// The app keeps exports' chapters in "Speech Export" in this Mac's
+    /// Caches folder, which is in the sandbox under hosted tests.
+    func testTheLiveRootIsInThisMacsCachesFolder() {
+        XCTAssertEqual(
+            SpeechExportStore.liveRoot,
+            MachineLocalPaths.caches.appendingPathComponent("Speech Export", isDirectory: true)
+        )
+        XCTAssertTrue(SpeechExportStore.liveRoot.path.hasPrefix(HostedTestSandbox.home.path))
+    }
+
+    /// A store opened for the first time makes its root and its folder,
+    /// and keeps no chapters.
+    func testAStoreOpenedForTheFirstTimeKeepsNoChapters() throws {
+        let store = try makeStore()
+        XCTAssertFalse(exists(store.root))
+
+        XCTAssertEqual(try store.open(), 0)
+
+        var isFolder: ObjCBool = false
+        XCTAssertTrue(FileManager.default.fileExists(atPath: store.folder.path, isDirectory: &isFolder))
+        XCTAssertTrue(isFolder.boolValue)
+        XCTAssertEqual(try names(in: store.root), [store.key])
+    }
+
+    /// Opening removes every other export's folder and anything else in the
+    /// root, hidden files too, and every part file, even a readable one;
+    /// the whole chapters are counted and kept.
+    func testOpeningRemovesOtherExportsAndPartFiles() throws {
+        let store = try makeStore()
+        let other = SpeechExportStore(root: store.root, key: "another-export")
+        try writeChapter(at: other.chapterURL(0))
+        try writeChapter(at: store.chapterURL(0))
+        try writeChapter(at: store.chapterURL(1))
+        try writeChapter(at: store.partURL(2))
+        try AudioTestFixtures.writeNonAudioBytes(to: store.partURL(3))
+        try Data("left by the Finder".utf8).write(to: store.root.appendingPathComponent(".DS_Store"))
+        try Data("a stray note".utf8).write(to: store.root.appendingPathComponent("stray.txt"))
+
+        XCTAssertEqual(try store.open(), 2)
+
+        XCTAssertEqual(try names(in: store.root), [store.key])
+        XCTAssertEqual(try names(in: store.folder), ["0001.caf", "0002.caf"])
+    }
+
+    /// The count stops at the first chapter missing, and every chapter
+    /// after it is removed, to be spoken again in order.
+    func testTheCountStopsAtAMissingChapter() throws {
+        let store = try makeStore()
+        try writeChapter(at: store.chapterURL(0))
+        try writeChapter(at: store.chapterURL(1))
+        try writeChapter(at: store.chapterURL(3))
+        try writeChapter(at: store.chapterURL(4))
+
+        XCTAssertEqual(try store.open(), 2)
+
+        XCTAssertEqual(try names(in: store.folder), ["0001.caf", "0002.caf"])
+    }
+
+    /// The count stops at the first chapter that is not audio, which is
+    /// removed with every chapter after it.
+    func testTheCountStopsAtAnUnreadableChapter() throws {
+        let store = try makeStore()
+        try writeChapter(at: store.chapterURL(0))
+        try AudioTestFixtures.writeNonAudioBytes(to: store.chapterURL(1))
+        try writeChapter(at: store.chapterURL(2))
+
+        XCTAssertEqual(try store.open(), 1)
+
+        XCTAssertEqual(try names(in: store.folder), ["0001.caf"])
+    }
+
+    /// A chapter file holding no audio frames is not a whole chapter.
+    func testAChapterWithoutFramesIsNotKept() throws {
+        let store = try makeStore()
+        try writeChapter(at: store.chapterURL(0))
+        try AudioTestFixtures.writeSilence(to: store.chapterURL(1), duration: 0)
+
+        XCTAssertEqual(try store.open(), 1)
+
+        XCTAssertEqual(try names(in: store.folder), ["0001.caf"])
+    }
+
+    /// A chapter file whose bytes are Ogg is refused by its first four bytes
+    /// before Apple's decoder could see it, and is spoken again.
+    func testAChapterWhoseBytesAreOggIsNeverOpened() throws {
+        let store = try makeStore()
+        try writeChapter(at: store.chapterURL(0))
+        try Data(Array("OggS".utf8) + [UInt8](repeating: 0, count: 60)).write(to: store.chapterURL(1))
+
+        XCTAssertEqual(try store.open(), 1)
+
+        XCTAssertEqual(try names(in: store.folder), ["0001.caf"])
+    }
+
+    /// Files in the folder that are neither a chapter nor a part, and
+    /// chapter-like names that are not a chapter's own, are left alone.
+    func testOpeningLeavesFilesThatAreNotChapters() throws {
+        let store = try makeStore()
+        try writeChapter(at: store.chapterURL(0))
+        try writeChapter(at: store.folder.appendingPathComponent("00002.caf"))
+        try Data("a note".utf8).write(to: store.folder.appendingPathComponent("notes.txt"))
+
+        XCTAssertEqual(try store.open(), 1)
+
+        XCTAssertEqual(try names(in: store.folder), ["00002.caf", "0001.caf", "notes.txt"])
+    }
+
+    /// Finishing a chapter gives its part file the chapter's name, replacing
+    /// a file already there, and the next opening keeps it.
+    func testFinishingAChapterMovesItsPartIntoPlace() throws {
+        let store = try makeStore()
+        XCTAssertEqual(try store.open(), 0)
+
+        try writeChapter(at: store.partURL(0))
+        try store.finishChapter(0)
+        XCTAssertTrue(exists(store.chapterURL(0)))
+        XCTAssertFalse(exists(store.partURL(0)))
+
+        try AudioTestFixtures.writeNonAudioBytes(to: store.chapterURL(1))
+        try writeChapter(at: store.partURL(1))
+        try store.finishChapter(1)
+        XCTAssertFalse(exists(store.partURL(1)))
+        XCTAssertGreaterThan(try AVAudioFile(forReading: store.chapterURL(1)).length, 0)
+
+        XCTAssertEqual(try store.open(), 2)
+    }
+
+    /// Finishing a chapter that was never spoken throws, and leaves nothing.
+    func testFinishingAChapterNeverSpokenThrows() throws {
+        let store = try makeStore()
+        XCTAssertEqual(try store.open(), 0)
+
+        XCTAssertThrowsError(try store.finishChapter(0))
+
+        XCTAssertEqual(try names(in: store.folder), [])
+    }
+
+    /// Removing all removes the root and everything in it; doing it again,
+    /// with nothing there, is harmless.
+    func testRemovingAllRemovesTheRoot() throws {
+        let store = try makeStore()
+        XCTAssertEqual(try store.open(), 0)
+        try writeChapter(at: store.chapterURL(0))
+
+        store.removeAll()
+        XCTAssertFalse(exists(store.root))
+
+        store.removeAll()
+        XCTAssertFalse(exists(store.root))
+    }
+
+    /// One export at a time: a claim is refused until the export that holds
+    /// the store releases it.
+    func testAClaimIsExclusiveUntilReleased() {
+        guard SpeechExportStore.claim() else {
+            return XCTFail("The store was already claimed")
+        }
+        defer { SpeechExportStore.release() }
+
+        XCTAssertFalse(SpeechExportStore.claim())
+        XCTAssertFalse(SpeechExportStore.claim())
+        SpeechExportStore.release()
+        XCTAssertTrue(SpeechExportStore.claim())
+    }
+
+    /// The launch sweep removes every export's kept chapters, but not while
+    /// an export holds the store, and never lets go of a claim it did not
+    /// make.
+    func testTheSweepRemovesTheRootUnlessAnExportHoldsTheStore() throws {
+        let store = try makeStore()
+        XCTAssertEqual(try store.open(), 0)
+        try writeChapter(at: store.chapterURL(0))
+
+        guard SpeechExportStore.claim() else {
+            return XCTFail("The store was already claimed")
+        }
+        SpeechExportStore.sweep(root: store.root)
+        let stillClaimed = !SpeechExportStore.claim()
+        SpeechExportStore.release()
+        XCTAssertTrue(exists(store.chapterURL(0)), "The sweep removed the chapters of an export that holds the store")
+        XCTAssertTrue(stillClaimed, "The sweep let go of a claim it did not make")
+
+        SpeechExportStore.sweep(root: store.root)
+        let claimedAfterSweep = SpeechExportStore.claim()
+        if claimedAfterSweep {
+            SpeechExportStore.release()
+        }
+        XCTAssertFalse(exists(store.root))
+        XCTAssertTrue(claimedAfterSweep, "The sweep kept the store claimed")
+    }
+
+    /// At launch the sweep does nothing under a hosted test, and otherwise
+    /// removes the live root off the main thread (in the sandbox here).
+    func testTheBackgroundSweepRunsOnlyOutsideHostedTests() throws {
+        let live = SpeechExportStore(root: SpeechExportStore.liveRoot, key: "launch-sweep")
+        guard live.root.path.hasPrefix(HostedTestSandbox.home.path) else {
+            return XCTFail("The live root is not in the sandbox: \(live.root.path)")
+        }
+        XCTAssertEqual(try live.open(), 0)
+        try writeChapter(at: live.chapterURL(0))
+        addTeardownBlock { live.removeAll() }
+
+        let hosted = expectation(description: "a hosted sweep ran")
+        hosted.isInverted = true
+        hosted.assertForOverFulfill = false
+        SpeechExportStore.sweepInBackground(isHostedTest: true) { hosted.fulfill() }
+        wait(for: [hosted], timeout: 0.3)
+        XCTAssertTrue(exists(live.chapterURL(0)))
+
+        let ran = expectation(description: "the sweep ran")
+        ran.assertForOverFulfill = false
+        SpeechExportStore.sweepInBackground(isHostedTest: false) { ran.fulfill() }
+        wait(for: [ran], timeout: 10)
+        XCTAssertFalse(exists(live.root))
     }
 }
