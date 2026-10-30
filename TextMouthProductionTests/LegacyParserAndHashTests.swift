@@ -209,6 +209,34 @@ final class LegacyHTMLToMarkdownTests: XCTestCase {
         XCTAssertGreaterThan(result.count, 1_000)
         XCTAssertTrue(result.contains("#"))
     }
+
+    /// Markup that opens 10,000 elements without closing them, as a feed's
+    /// item or a web page can, converts on a worker thread's 512 KiB stack,
+    /// where an import or a feed refresh converts it, keeping its words. The
+    /// converter once recursed for every level and overflowed that stack,
+    /// ending TextMouth at every launch that refreshed such a feed.
+    func testMarkupNestedThousandsDeepConvertsOnAWorkerStack() {
+        let html = String(repeating: "<div>", count: 10_000) + "Deep words"
+        let markdown = onWorkerSizedStack { (try? HTMLToMarkdownConverter.convert(html)) ?? "" }
+        XCTAssertEqual(markdown?.contains("Deep words"), true)
+    }
+
+    /// Nested past the deepest level the converter follows
+    /// (`HTMLNesting.deepestLevel`), a subtree is written as one paragraph of
+    /// its words: 150 nested block quotes give no line with more than that
+    /// many quote markers, where every level once wrote one, and the words
+    /// are all there.
+    func testQuotesNestedPastTheDeepestLevelAreWrittenAsTheirWords() throws {
+        let html = String(repeating: "<blockquote>", count: 150) + "Deep words"
+            + String(repeating: "</blockquote>", count: 150)
+        let markdown = try HTMLToMarkdownConverter.convert(html)
+        XCTAssertTrue(markdown.contains("Deep words"))
+        let deepestQuote = markdown.components(separatedBy: "\n")
+            .map { line in line.filter { $0 == ">" }.count }
+            .max() ?? 0
+        XCTAssertLessThanOrEqual(deepestQuote, HTMLNesting.deepestLevel)
+        XCTAssertGreaterThan(deepestQuote, 0)
+    }
 }
 
 final class LegacyMD5Tests: XCTestCase {
