@@ -154,7 +154,8 @@ enum AudioBuiltInFilter: Equatable, Sendable {
 
     /// The filter `filter` describes, with its options checked.
     /// - Throws: `AudioFilterError.unknownFilter`, `.unknownOption`,
-    ///   `.tooManyValues`, or `.badValue`.
+    ///   `.tooManyValues`, `.badValue`, or `.missingValue` for an option it
+    ///   needs (the equalizer's frequency).
     init(_ filter: AudioFilterChain.Filter) throws {
         guard let spec = Self.specs[filter.name] else { throw AudioFilterError.unknownFilter(filter.name) }
         let values = try Self.resolve(filter, spec)
@@ -176,7 +177,10 @@ enum AudioBuiltInFilter: Equatable, Sendable {
         case "equalizer":
             self = .biquad(Biquad(
                 kind: .peaking,
-                frequency: try reader.number("frequency", default: 0, range: 0.000_1...999_999),
+                // ffmpeg's default frequency, 0 Hz, makes no usable filter
+                // (with a width in hertz, kilohertz, or octaves it computes
+                // NaN), so it must be given.
+                frequency: try reader.requiredNumber("frequency", range: 0.000_1...999_999),
                 width: try reader.number("width", default: 1, range: 0.000_1...99_999),
                 widthType: try reader.choice("width_type", default: .q),
                 poles: 2,
@@ -363,12 +367,35 @@ enum AudioBuiltInFilter: Equatable, Sendable {
         /// it isn't given; with `whole`, a whole number.
         func number(_ name: String, default fallback: Double, range: ClosedRange<Double>, whole: Bool = false) throws -> Double {
             guard let text = values[name] else { return fallback }
+            return try checkedNumber(text, for: name, range: range, whole: whole)
+        }
+
+        /// The option `name` as a number within `range`, for an option that
+        /// must be given, since no default would make a usable filter.
+        /// - Throws: `AudioFilterError.missingValue` when it isn't given, or
+        ///   `.badValue` for a value `number` would refuse.
+        func requiredNumber(_ name: String, range: ClosedRange<Double>) throws -> Double {
+            guard let text = values[name] else {
+                throw AudioFilterError.missingValue(filter: filter, option: name, expected: Self.expectedNumber(in: range, whole: false))
+            }
+            return try checkedNumber(text, for: name, range: range, whole: false)
+        }
+
+        /// `text`, given for the option `name`, as a number within `range`;
+        /// with `whole`, a whole number.
+        private func checkedNumber(_ text: String, for name: String, range: ClosedRange<Double>, whole: Bool) throws -> Double {
             guard let value = Double(text.trimmingCharacters(in: .whitespaces)), value.isFinite,
                   range.contains(value), !whole || value == value.rounded() else {
-                throw bad(name, text, expected: "give \(whole ? "a whole number" : "a number") from "
-                    + "\(AudioBuiltInFilter.written(range.lowerBound)) to \(AudioBuiltInFilter.written(range.upperBound))")
+                throw bad(name, text, expected: Self.expectedNumber(in: range, whole: whole))
             }
             return value
+        }
+
+        /// What a number option within `range` takes, as its refusals say
+        /// it: "give a number from 0.0001 to 999999".
+        private static func expectedNumber(in range: ClosedRange<Double>, whole: Bool) -> String {
+            "give \(whole ? "a whole number" : "a number") from "
+                + "\(AudioBuiltInFilter.written(range.lowerBound)) to \(AudioBuiltInFilter.written(range.upperBound))"
         }
 
         /// The option `name` as a linear amplitude within `range`: a plain
