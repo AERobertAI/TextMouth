@@ -35,6 +35,12 @@ struct StubResponse: Sendable {
     /// A failure after this many bytes of the body, as a connection that
     /// drops partway.
     var failAfterBytes: Int?
+    /// The gate the failure after `failAfterBytes` waits at, on a background
+    /// queue, before it is told to the client: a test opens it once the app
+    /// has written the bytes before the failure, so the dropped connection
+    /// cannot overtake them, as a real connection's bytes arrive before it
+    /// drops. Nil tells the failure at once.
+    var failureGate: WorkGate?
 
     /// A response of `status` whose body is `body`.
     init(status: Int = 200, headers: [String: String] = [:], body: Data = Data()) {
@@ -229,19 +235,27 @@ final class FeedStubProtocol: URLProtocol, @unchecked Sendable {
             client?.urlProtocol(self, didFailWithError: URLError(.cannotFindHost))
             return
         }
-        let steps = Self.steps(of: Self.answering(range: request.value(forHTTPHeaderField: "Range"), with: response), for: url)
-        if response.pause <= 0 {
+        let answer = Self.answering(range: request.value(forHTTPHeaderField: "Range"), with: response)
+        let steps = Self.steps(of: answer, for: url)
+        if answer.pause <= 0 && answer.failureGate == nil {
             for step in steps {
                 deliver(step)
             }
             return
         }
-        // A paused response is delivered from a background queue, each part
-        // run on this thread's run loop.
+        // A paused response, or one whose failure waits at a gate, is
+        // delivered from a background queue, each part run on this thread's
+        // run loop in order, so a failure the gate holds back still comes
+        // after the bytes before it.
         let runLoop = RunLoopReference(CFRunLoopGetCurrent())
         DispatchQueue.global(qos: .userInitiated).async {
             for step in steps {
-                Thread.sleep(forTimeInterval: response.pause)
+                if answer.pause > 0 {
+                    Thread.sleep(forTimeInterval: answer.pause)
+                }
+                if step.isFailure {
+                    answer.failureGate?.pass()
+                }
                 guard !self.lock.withLock({ self.isStopped }) else { return }
                 CFRunLoopPerformBlock(runLoop.runLoop, CFRunLoopMode.defaultMode.rawValue) {
                     guard !self.lock.withLock({ self.isStopped }) else { return }
@@ -265,6 +279,16 @@ final class FeedStubProtocol: URLProtocol, @unchecked Sendable {
         case fail(URLError.Code)
         /// A failure the network gave its reason for.
         case refuse(URLError)
+
+        /// Whether this step ends the load with a failure.
+        var isFailure: Bool {
+            switch self {
+            case .fail, .refuse:
+                return true
+            case .response, .redirect, .data, .finish:
+                return false
+            }
+        }
     }
 
     /// `response` as it answers a request for the bytes `range` names
@@ -281,6 +305,7 @@ final class FeedStubProtocol: URLProtocol, @unchecked Sendable {
         partial.headers["Content-Range"] = "bytes \(start)-\(response.body.count - 1)/\(response.body.count)"
         partial.headers["Content-Length"] = "\(partial.body.count)"
         partial.failAfterBytes = nil
+        partial.failureGate = nil
         return partial
     }
 
