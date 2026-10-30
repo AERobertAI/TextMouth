@@ -503,4 +503,20 @@ final class BrailleFileReaderTests: XCTestCase {
             }
         }
     }
+
+    // MARK: - Braille File Codes
+
+    /// The refusals the braille file codes add, exactly, beside North
+    /// American Braille ASCII's own, whose words are unchanged.
+    func testTheBrailleFileCodeSentences() {
+        XCTAssertEqual(BrailleFileError.notBrailleASCII(.character("é"), line: 3).errorDescription,
+                       "Line 3 holds “é”, which is not braille ASCII.")
+        XCTAssertEqual(BrailleFileError.notInFileCode(.character("é"), line: 3, characters: "Eurobraille")
+                        .errorDescription,
+                       "Line 3 holds “é”, which is not Eurobraille.")
+        XCTAssertEqual(BrailleFileError.eightBitBraille.errorDescription,
+                       "This file looks like eight-bit computer braille, which TextMouth does not read.")
+        XCTAssertEqual(BrailleFileError.unknownFileCode("x-code").errorDescription,
+                       "TextMouth has no braille file characters named “x-code”.")
+    }
 }

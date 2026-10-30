@@ -187,7 +187,8 @@ struct BrailleFilePages: Equatable, Sendable {
 /// listener after the import's own ("Could not import “book.brf”. Reading
 /// its text failed: "), so none names the file.
 enum BrailleFileError: LocalizedError, Equatable {
-    /// What a BRF or BRL file held where braille ASCII belongs.
+    /// What a BRF or BRL file held where a cell of its braille file code
+    /// belongs.
     enum Found: Equatable {
         /// A printable character, such as é.
         case character(Character)
@@ -202,9 +203,24 @@ enum BrailleFileError: LocalizedError, Equatable {
         case byte(UInt8)
     }
 
-    /// A BRF or BRL file holds something that is not braille ASCII, first
-    /// on `line`, counted from 1.
+    /// A BRF or BRL file read in North American Braille ASCII holds
+    /// something that is not braille ASCII, first on `line`, counted from 1.
     case notBrailleASCII(Found, line: Int)
+    /// A BRF or BRL file read in any other braille file code holds something
+    /// that is no character of that code, first on `line`, counted from 1.
+    /// `characters` is what the code's characters are called
+    /// (`BrailleFileCode.characterName`), such as "Eurobraille".
+    case notInFileCode(Found, line: Int, characters: String)
+    /// A BRF or BRL file read in a seven-bit code holds a byte above 0x7F
+    /// that begins no UTF-8 character: eight-bit computer braille, in a code
+    /// page TextMouth cannot read (BRAILLE-CODES-RESEARCH-2026-10-25.md,
+    /// section 8.5).
+    case eightBitBraille
+    /// A braille book records a braille file code, by the id given, that
+    /// this TextMouth does not know, such as a later TextMouth's: the book is
+    /// refused by name, never read as another code, which would give wrong
+    /// text with no error (`BrailleFileCode.code(forStored:)`).
+    case unknownFileCode(String)
     /// A PEF file that is not well-formed XML, not a PEF document, or
     /// holds a row that is not braille.
     case damagedPEF
@@ -222,7 +238,13 @@ enum BrailleFileError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case let .notBrailleASCII(found, line):
-            return "Line \(line) holds \(Self.words(for: found)), which is not braille ASCII."
+            return Self.sentence(found, line: line, isNot: BrailleFileCode.northAmerican.characterName)
+        case let .notInFileCode(found, line, characters):
+            return Self.sentence(found, line: line, isNot: characters)
+        case .eightBitBraille:
+            return "This file looks like eight-bit computer braille, which TextMouth does not read."
+        case let .unknownFileCode(id):
+            return "TextMouth has no braille file characters named “\(id)”."
         case .damagedPEF:
             return "This file could not be read as a PEF braille file. It may be damaged, or another kind of file."
         case .eightDotBraille:
@@ -234,6 +256,15 @@ enum BrailleFileError: LocalizedError, Equatable {
         case .fileTooLarge:
             return "This braille file holds more than 32 MB, the most TextMouth reads from one braille file."
         }
+    }
+
+    /// The sentence that refuses `found`, on `line`, as no character of a
+    /// code whose characters are called `characters`: "Line 3 holds “é”,
+    /// which is not braille ASCII." Every code's refusal is made here, North
+    /// American Braille ASCII's and the others' alike, so the words are
+    /// written once.
+    private static func sentence(_ found: Found, line: Int, isNot characters: String) -> String {
+        "Line \(line) holds \(words(for: found)), which is not \(characters)."
     }
 
     /// How the sentence names what was found, made in this one place.
