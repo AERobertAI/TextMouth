@@ -3,10 +3,10 @@ import XCTest
 
 /// A transcript from outside TextMouth's recognizer, in the one transcript
 /// store (FMT23, FMT25): where it came from, kept in transcript.json and in
-/// the book's record so that a later TextMouth's values survive; and a
+/// the book's record so that a later TextMouth's values survive; a
 /// transcript made from timed sentences as recognition makes one, cut from
 /// the book's timeline into its files, and refused when it runs past the
-/// end of its audio.
+/// end of its audio; and an install that keeps a transcript the book has.
 ///
 /// The sentences are invented, so a line of the debug log that quoted them
 /// would stand out. Each book is silent tracks in a library folder of the
@@ -359,6 +359,44 @@ final class OutsideTranscriptTests: XCTestCase {
         let load = TranscriptTextLoader.load(for: book, audioIndex: index)
         XCTAssertEqual(load.text?.chapterText(0), "01\n\nGulls circle the quay.")
         XCTAssertEqual(load.text?.chapterText(1), "02\n\nRopes go taut.")
+    }
+
+    // MARK: - Keeping a Transcript the Book Has
+
+    /// An install asked to keep the book's transcript installs one when the
+    /// book has none; once it has one, it changes nothing, transcript.json,
+    /// the text, and the record alike, and says the transcript was kept.
+    /// An install not asked to keep it replaces it.
+    func testAnInstallKeepingTheBooksTranscriptLeavesItAsItWas() throws {
+        let (book, plan) = try makeBook("Outside Transcript Kept")
+        let fetched = try OutsideTranscript.transcript(
+            sentencesByFile: ["01.wav": [TranscriptFixtures.sentence("Gulls circle the quay.", from: 0, to: 1_200)]],
+            plan: plan,
+            source: Self.podcastSource
+        )
+        let attached = try OutsideTranscript.transcript(
+            sentencesByFile: ["02.wav": [TranscriptFixtures.sentence("Ropes go taut.", from: 400, to: 1_400)]],
+            plan: plan,
+            source: Self.lectureSource
+        )
+        try TranscriptStore.install(fetched, for: book, keepingExisting: true)
+        let transcriptURL = TextMouthPaths.transcriptPath(in: book.tmbDirectory)
+        let textURL = MarkdownCacheService.cacheURL(for: book)
+        let transcriptBytes = try Data(contentsOf: transcriptURL)
+        let textBytes = try Data(contentsOf: textURL)
+
+        XCTAssertThrowsError(try TranscriptStore.install(attached, for: book, keepingExisting: true)) {
+            XCTAssertEqual($0 as? OutsideTranscriptError, .alreadyTranscribed)
+        }
+
+        XCTAssertEqual(try Data(contentsOf: transcriptURL), transcriptBytes)
+        XCTAssertEqual(try Data(contentsOf: textURL), textBytes)
+        XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).state.transcript?.source, Self.podcastSource)
+
+        try TranscriptStore.install(attached, for: book)
+
+        XCTAssertEqual(TranscriptStore.read(from: book.tmbDirectory), .found(attached))
+        XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).state.transcript?.source, Self.lectureSource)
     }
 
     // MARK: - Helpers

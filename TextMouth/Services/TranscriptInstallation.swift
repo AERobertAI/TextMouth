@@ -52,18 +52,31 @@ extension TranscriptStore {
     /// waits for, and blocks while it reads and writes; call it off the main
     /// thread. Pass the book as the library holds it now: a transcription
     /// takes minutes, and the book may have moved meanwhile.
+    /// - Parameter keepingExisting: Keeps a transcript the book has already:
+    ///   when its package holds a transcript.json, on this Mac or only in
+    ///   iCloud (`hasTranscript(of:)`, a look that never downloads), nothing
+    ///   is read or written, and `OutsideTranscriptError.alreadyTranscribed`
+    ///   is thrown. The podcast fetch (FMT25) passes true, so a transcript
+    ///   the listener has, such as an earlier download's kept with the
+    ///   episode, is never replaced. The look is made inside the storage
+    ///   work, at the book's package as it is now, before anything is read,
+    ///   so no data-directory move comes between it and the install's write;
+    ///   installs are not made one at a time, though, so another install of
+    ///   the same book at the same moment still could.
     /// - Parameter saveIndex: Saves the book's audio index, with the text's
     ///   layer, through the book's record, returning the book as the record
     ///   holds it then (`LibraryPersistenceService.saveContentAnalysis`);
     ///   tests pass one that fails.
     /// - Throws: `TranscriptionError.notAnAudiobook`, `.audioChanged` when a
     ///   file of the book is no longer the one transcribed,
-    ///   `TranscriptTextError.textOnlyInCloud` or `.textNotKept`, and the
-    ///   error that kept a file from being written.
+    ///   `OutsideTranscriptError.alreadyTranscribed` when the book has a
+    ///   transcript to keep, `TranscriptTextError.textOnlyInCloud` or
+    ///   `.textNotKept`, and the error that kept a file from being written.
     @discardableResult
     static func install(
         _ transcript: Transcript,
         for book: Book,
+        keepingExisting: Bool = false,
         hasher: FingerprintHasher = .md5,
         isDataless: @escaping (URL) -> Bool = DatalessFiles.isDataless,
         keepCopy: @escaping (URL, Data?) -> URL? = BookTextEditSessions.keepCopy(of:bytes:),
@@ -80,6 +93,11 @@ extension TranscriptStore {
             let book = boundary.rebasedToCurrent(book)
             guard FileManager.default.fileExists(atPath: book.tmbDirectory.path) else {
                 throw CocoaError(.fileNoSuchFile, userInfo: [NSFilePathErrorKey: book.tmbDirectory.lastPathComponent])
+            }
+            // A transcript the book has, kept when asked, before anything
+            // is read or written.
+            if keepingExisting, hasTranscript(of: book) {
+                throw OutsideTranscriptError.alreadyTranscribed
             }
             var audioIndex = try BookContentAnalysisService.load(book: book).index
             // The text the book's transcript wrote last: other text in
@@ -155,6 +173,19 @@ extension TranscriptStore {
                 throw error
             }
         }
+    }
+}
+
+// MARK: - Whether a Book Has a Transcript
+
+extension TranscriptStore {
+    /// Whether `book`'s package holds a transcript, transcript.json, on this
+    /// Mac or only in iCloud: a look at the package's folder, never a read,
+    /// so nothing is downloaded, and whether the transcript can be read is
+    /// not known from it. An install that keeps a transcript the book has
+    /// looks with it (`install`'s `keepingExisting`).
+    static func hasTranscript(of book: Book) -> Bool {
+        FileManager.default.fileExists(atPath: TextMouthPaths.transcriptPath(in: book.tmbDirectory).path)
     }
 }
 
