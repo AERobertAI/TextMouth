@@ -183,7 +183,9 @@ extension TranscriptStore {
     /// Mac or only in iCloud: a look at the package's folder, never a read,
     /// so nothing is downloaded, and whether the transcript can be read is
     /// not known from it. An install that keeps a transcript the book has
-    /// looks with it (`install`'s `keepingExisting`).
+    /// looks with it (`install`'s `keepingExisting`), and so does an import
+    /// deciding whether to offer to transcribe its book
+    /// (`TranscriptionOffers`).
     static func hasTranscript(of book: Book) -> Bool {
         FileManager.default.fileExists(atPath: TextMouthPaths.transcriptPath(in: book.tmbDirectory).path)
     }

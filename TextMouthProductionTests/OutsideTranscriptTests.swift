@@ -6,8 +6,9 @@ import XCTest
 /// the book's record so that a later TextMouth's values survive; a
 /// transcript made from timed sentences as recognition makes one, cut from
 /// the book's timeline into its files, and refused when it runs past the
-/// end of its audio; an install that keeps a transcript the book has; and
-/// the Retranscribe sheet saying where the book's transcript came from.
+/// end of its audio; an install that keeps a transcript the book has; the
+/// Retranscribe sheet saying where the book's transcript came from; and no
+/// offer to transcribe a book that has a transcript.
 ///
 /// The sentences are invented, so a line of the debug log that quoted them
 /// would stand out. Each book is silent tracks in a library folder of the
@@ -472,6 +473,29 @@ final class OutsideTranscriptTests: XCTestCase {
         XCTAssertEqual(model.existingLine, line)
         XCTAssertEqual(model.noticeLines, [line])
         XCTAssertEqual(model.transcribeTitle, "Retranscribe")
+    }
+
+    // MARK: - No Offer to Transcribe
+
+    /// With the offer to transcribe after an import on, an audiobook is
+    /// offered exactly when this Mac can transcribe, until its package
+    /// holds a transcript, as an import that found a timed-text file gives
+    /// it one; then it is not.
+    func testABookWithATranscriptIsNotOfferedTranscription() throws {
+        preservePreferences([TranscriptionPreferences.offerAfterImport.key])
+        TranscriptionPreferences.offerAfterImport.write(true, to: TextMouthRuntime.current.preferences)
+        let (book, _) = try makeBook("Outside Transcript Offer")
+
+        XCTAssertFalse(TranscriptStore.hasTranscript(of: book))
+        XCTAssertEqual(
+            TranscriptionOffers.offersTranscription(of: book),
+            TranscriptionAvailability.systemSupport == .available
+        )
+
+        try TranscriptStore.write(TranscriptFixtures.twoFiles, into: book.tmbDirectory)
+
+        XCTAssertTrue(TranscriptStore.hasTranscript(of: book))
+        XCTAssertFalse(TranscriptionOffers.offersTranscription(of: book))
     }
 
     // MARK: - Helpers
