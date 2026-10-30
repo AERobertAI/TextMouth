@@ -10,7 +10,7 @@ Each brief comes from a read-only review whose finding the lead checked by readi
       bash Scripts/agents/briefs/2026-10-30/bughunt/locked-build.sh <slug> <TestClass> [<TestClass> ...]
 
   It waits for the team's build lock, checks the free disk, runs `Scripts/test/run-area.py` in the team's shared build folder (`/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-bughunt`), frees the lock however the build ends, and prints run-area.py's short result. Waiting for the lock is normal: another member is building.
-- The shared folder replaces "your own build folder" in `teams-common.md`: **never delete it, and never pass `--clean`**. The lead deletes it at the end.
+- The shared folder replaces "your own build folder" in `teams-common.md`: **never delete it yourself, and never pass `--clean`**. The disk is short tonight, so the script deletes the folder itself once a build ends and no other member waits to build (each build may then start from an empty folder: that is expected), and refuses to build below 4 GB free (5 GB for a new folder). When it says NOT BUILT, post that to `bughunt-lead` and wait for an answer.
 - Run only the test classes your brief names (with any class you added), never the full suite and never a whole area unless the brief says so.
 - Build only once your change and its tests are written; a build that is waiting holds nothing, but a build you do not need holds the whole team back.
 
