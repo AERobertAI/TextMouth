@@ -1,0 +1,692 @@
+import XCTest
+@testable import TextMouth
+
+/// The WebVTT reader (FMT23): `WebVTTReader` turns a file's bytes into a
+/// `TimedTextDocument`, with the timestamp grammar, the markup and character
+/// references, and the finishing of the cue list that the SubRip reader
+/// will share (`TimedTextMarkup`). The files are third-party data, so the
+/// tests prove what the readers take, what they pass over and count, what
+/// they refuse, and that nothing a file holds makes them fail any other
+/// way. The samples are copied into a folder of the test's own before they
+/// are read; no test plays sound.
+final class TimedTextReaderTests: XCTestCase {
+
+    // MARK: - Helpers
+
+    /// A cue without timed words, from `start` to `end` milliseconds.
+    private func cue(_ start: Int, _ end: Int, _ text: String, voice: String? = nil) -> TimedTextCue {
+        TimedTextCue(startMilliseconds: start, endMilliseconds: end, text: text, voice: voice)
+    }
+
+    /// `text` read as the bytes of a WebVTT file.
+    private func webVTT(_ text: String, maximumCues: Int = TimedTextLimits.maximumCues) throws -> TimedTextDocument {
+        try WebVTTReader.read(Data(text.utf8), maximumCues: maximumCues)
+    }
+
+    /// The one cue of a WebVTT file whose one cue runs from 1 to 2 seconds
+    /// and holds the lines `text`.
+    private func webVTTCue(_ text: String, file: StaticString = #filePath, line: UInt = #line) throws -> TimedTextCue {
+        let document = try webVTT("WEBVTT\n\n00:01.000 --> 00:02.000\n\(text)\n")
+        XCTAssertEqual(document.cues.count, 1, file: file, line: line)
+        return try XCTUnwrap(document.cues.first, file: file, line: line)
+    }
+
+    /// Asserts that `read` throws `expected`.
+    private func assertRefuses(
+        _ expected: TimedTextError, _ label: String = "",
+        file: StaticString = #filePath, line: UInt = #line, _ read: () throws -> TimedTextDocument
+    ) {
+        XCTAssertThrowsError(try read(), label, file: file, line: line) { error in
+            XCTAssertEqual(error as? TimedTextError, expected, label, file: file, line: line)
+        }
+    }
+
+    /// Asserts that the reader either reads `data` into a document that
+    /// keeps every promise `TimedTextDocument` makes, or refuses it with a
+    /// `TimedTextError`, and fails in no other way. `label` names the case.
+    private func assertReadsOrRefuses(_ data: Data, _ label: String, file: StaticString = #filePath, line: UInt = #line) {
+        let readers: [(format: TimedTextFormat, read: (Data, Int) throws -> TimedTextDocument)] = [
+            (.webVTT, WebVTTReader.read),
+        ]
+        for reader in readers {
+            do {
+                let document = try reader.read(data, TimedTextLimits.maximumCues)
+                assertKeepsItsPromises(document, format: reader.format, "\(label), \(reader.format.name)", file: file, line: line)
+            } catch is TimedTextError {
+                // A refusal in the readers' own words is an answer too.
+            } catch {
+                XCTFail("\(label), \(reader.format.name): \(error)", file: file, line: line)
+            }
+        }
+    }
+
+    /// Asserts what every document read promises: its format, at least one
+    /// cue, in the order they begin, each ending at or after its start and
+    /// no later than `Transcript.maximumMilliseconds`, with plain text that
+    /// is never blank and a voice that is nil or never blank.
+    private func assertKeepsItsPromises(
+        _ document: TimedTextDocument, format: TimedTextFormat, _ label: String,
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
+        XCTAssertEqual(document.format, format, label, file: file, line: line)
+        XCTAssertFalse(document.cues.isEmpty, label, file: file, line: line)
+        XCTAssertEqual(document.cues.map(\.startMilliseconds), document.cues.map(\.startMilliseconds).sorted(), label, file: file, line: line)
+        for cue in document.cues {
+            XCTAssertTrue((0...cue.endMilliseconds).contains(cue.startMilliseconds), label, file: file, line: line)
+            XCTAssertLessThanOrEqual(cue.endMilliseconds, Transcript.maximumMilliseconds, label, file: file, line: line)
+            XCTAssertFalse(cue.text.isEmpty, label, file: file, line: line)
+            XCTAssertEqual(cue.text, TimedTextCue.plainText(cue.text), label, file: file, line: line)
+            XCTAssertNotEqual(cue.voice, "", label, file: file, line: line)
+        }
+    }
+
+    /// A linear congruential generator (Knuth's MMIX constants) with a fixed
+    /// seed, so the test's random bytes are the same on every run:
+    /// `SystemRandomNumberGenerator` cannot be seeded. Each byte is the top
+    /// eight bits of the state, the well-mixed ones; an LCG's low bits
+    /// repeat quickly.
+    private struct SeededBytes {
+        /// The generator's state.
+        private var state: UInt64
+
+        /// A generator that starts from `seed`.
+        init(seed: UInt64) {
+            state = seed
+        }
+
+        /// The next byte.
+        mutating func next() -> UInt8 {
+            state = state &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
+            return UInt8(truncatingIfNeeded: state >> 56)
+        }
+    }
+
+    // MARK: - The Samples
+
+    /// The WebVTT sample (a header with text, a comment of two lines and one
+    /// of one line, a cue identifier, cue settings, `<v>` and `<v.loud>`
+    /// voices, `&amp;` and `<b>`, both forms of time, and a cue of two lines)
+    /// reads as exactly its four cues, none passed over.
+    func testTheWebVTTSampleReadsAsItsFourCues() throws {
+        let sample = try copyOfFormatSample("vtt/tone4.vtt")
+        let document = try WebVTTReader.read(Data(contentsOf: sample))
+
+        XCTAssertEqual(document.format, .webVTT)
+        XCTAssertEqual(document.cues, [
+            cue(0, 900, "First tone, 440 hertz.", voice: "Ana"),
+            cue(1_000, 1_900, "Second tone, 550 hertz & bold.", voice: "Ben"),
+            cue(2_000, 2_900, "Third tone, café 660 hertz. Second line of the cue.", voice: "Ana"),
+            cue(3_000, 3_900, "The fourth, 880 hertz, with no speaker."),
+        ])
+        XCTAssertEqual(document.skippedCueCount, 0)
+    }
+
+    /// The WebVTT sample's sentences name the speaker each time the speaker
+    /// changes, Ana, Ben, and Ana again, and the cue with no speaker names
+    /// nobody.
+    func testTheWebVTTSamplesSentencesNameEachChangeOfSpeaker() throws {
+        let sample = try copyOfFormatSample("vtt/tone4.vtt")
+        let sentences = try WebVTTReader.read(Data(contentsOf: sample)).sentences
+
+        XCTAssertEqual(sentences.map(\.text), [
+            "Ana: First tone, 440 hertz.",
+            "Ben: Second tone, 550 hertz & bold.",
+            "Ana: Third tone, café 660 hertz. Second line of the cue.",
+            "The fourth, 880 hertz, with no speaker.",
+        ])
+    }
+
+    // MARK: - Timestamps
+
+    /// Every rule of the timestamp grammar, by the times it reads: hours,
+    /// minutes, and seconds, or minutes and seconds; fields of one digit;
+    /// hours of three digits and any value; minutes alone of four digits
+    /// and any value; a "." or a "," before the fraction; a fraction of one
+    /// to three digits read as tenths to thousandths, and its later digits
+    /// dropped; and no fraction at all.
+    func testTimestampsThatRead() {
+        let readings: [(text: String, milliseconds: Int)] = [
+            ("00:00:01.000", 1_000),
+            ("00:01.000", 1_000),
+            ("0:01.5", 1_500),
+            ("1:02.5", 62_500),
+            ("0:0:1", 1_000),
+            ("00:01", 1_000),
+            ("1:59:59.123", 7_199_123),
+            ("100:00:00.000", 360_000_000),
+            ("999:59:59.999", 3_599_999_999),
+            ("75:00.000", 4_500_000),
+            ("9999:59.999", 599_999_999),
+            ("00:00:01,500", 1_500),
+            ("00:00.5", 500),
+            ("00:00.05", 50),
+            ("00:00.005", 5),
+            ("00:00.0059", 5),
+            ("00:00.9999", 999),
+            ("00:00.123456789012345678901234567890", 123),
+        ]
+        for reading in readings {
+            XCTAssertEqual(TimedTextTimestamp.milliseconds(Substring(reading.text)), reading.milliseconds, reading.text)
+        }
+    }
+
+    /// A timestamp is read from a slice of a longer line as from a string of
+    /// its own.
+    func testATimestampReadsFromASliceOfALine() throws {
+        let line = "start 00:01:02.250 end"
+        let slice = try XCTUnwrap(line.split(separator: " ")[safe: 1])
+
+        XCTAssertEqual(TimedTextTimestamp.milliseconds(slice), 62_250)
+    }
+
+    /// Every way a text is no timestamp: one field or four, an empty field,
+    /// a separator with no fraction after it, 60 seconds or 60 minutes,
+    /// fields of too many digits, a letter, a sign, a space, another
+    /// separator or two of them, and digits that are not ASCII.
+    func testTimestampsThatDoNotRead() {
+        let refusals = [
+            "", "01", "1.000",
+            "1:2:3:4", "00:00:00:01.000",
+            ":01.000", "00::01.000", "00:01:", "a:00.000",
+            "00:01.", "00:01,",
+            "00:60.000", "00:00:60,000", "00:60:00.000",
+            "1000:00:00.000", "00:100:00.000", "10000:00.000", "00:001.000",
+            "00:1a.000", "00:01.0x0",
+            "-1:00.000", "+1:00.000", "00:01.-5",
+            " 00:01.000", "00:01.000 ", "0 0:01.000", "00 :01.000", "00:01\t.000",
+            "00:01;000", "00:01..5", "00:01.5.", "00:01:02.000.5",
+            "\u{FF10}0:01.000",
+            "\u{0660}\u{0660}:\u{0660}\u{0661}.\u{0660}\u{0660}\u{0660}",
+        ]
+        for text in refusals {
+            XCTAssertNil(TimedTextTimestamp.milliseconds(Substring(text)), text.debugDescription)
+        }
+    }
+
+    // MARK: - WebVTT's Header and Blocks
+
+    /// A WebVTT file begins with `WEBVTT`, alone or followed by a space or a
+    /// tab and anything.
+    func testAWebVTTFileBeginsWithItsSignatureLine() throws {
+        for signature in ["WEBVTT", "WEBVTT ", "WEBVTT - four tones", "WEBVTT\tcaptions"] {
+            let document = try webVTT("\(signature)\n\n00:01.000 --> 00:02.000\nHello.\n")
+            XCTAssertEqual(document.cues.map(\.text), ["Hello."], signature)
+        }
+    }
+
+    /// A file that does not begin with the signature line is no WebVTT file:
+    /// `WEBVTTX`, an empty file, a blank first line, the word in lowercase or
+    /// after a space, a shorter word, and a file of cues alone.
+    func testAFileWithoutItsSignatureLineIsNotWebVTT() {
+        let cueBlock = "00:01.000 --> 00:02.000\nHello.\n"
+        let texts = [
+            "WEBVTTX\n\n" + cueBlock, "", "\nWEBVTT\n\n" + cueBlock, "webvtt\n\n" + cueBlock,
+            " WEBVTT\n\n" + cueBlock, "WEBVT\n\n" + cueBlock, cueBlock,
+        ]
+        for text in texts {
+            assertRefuses(.notTimedText(.webVTT), text.debugDescription) { try webVTT(text) }
+        }
+    }
+
+    /// The header's lines, up to the first blank line, are ignored.
+    func testTheHeaderIsIgnoredUpToTheFirstBlankLine() throws {
+        let document = try webVTT("WEBVTT\nKind: captions\nLanguage: en\n\n00:01.000 --> 00:02.000\nHello.\n")
+
+        XCTAssertEqual(document.cues, [cue(1_000, 2_000, "Hello.")])
+        XCTAssertEqual(document.skippedCueCount, 0)
+    }
+
+    /// A line holding "-->" ends the header as a blank line does, as in the
+    /// W3C's reader, so a cue written right after the signature line or the
+    /// header's lines is kept (decision 1).
+    func testATimingLineEndsTheHeader() throws {
+        let afterSignature = try webVTT("WEBVTT\n00:01.000 --> 00:02.000\nHello.\n\n00:02.000 --> 00:03.000\nAgain.\n")
+        XCTAssertEqual(afterSignature.cues.map(\.text), ["Hello.", "Again."])
+
+        let afterHeader = try webVTT("WEBVTT\nKind: captions\n00:01.000 --> 00:02.000\nHello.\n")
+        XCTAssertEqual(afterHeader.cues.map(\.text), ["Hello."])
+    }
+
+    /// Comments (`NOTE`), style sheets (`STYLE`), and regions (`REGION`) are
+    /// ignored, without being counted as cues passed over: the word alone or
+    /// followed by a space or a tab, before the cues and between them.
+    func testCommentStyleAndRegionBlocksAreIgnoredWithoutBeingCounted() throws {
+        let document = try webVTT("""
+        WEBVTT
+
+        NOTE
+        A comment of two lines,
+        both ignored.
+
+        NOTE a comment on one line
+
+        NOTE\tafter a tab
+
+        STYLE
+        ::cue { color: yellow }
+
+        REGION
+        id:lower width:40%
+
+        00:01.000 --> 00:02.000
+        Hello.
+
+        NOTE between the cues
+
+        00:02.000 --> 00:03.000
+        Again.
+        """)
+
+        XCTAssertEqual(document.cues.map(\.text), ["Hello.", "Again."])
+        XCTAssertEqual(document.skippedCueCount, 0)
+    }
+
+    /// Only the words themselves begin a comment, a style sheet, or a
+    /// region: a block beginning `NOTES` or `STYLESHEET` is a cue, and that
+    /// line its identifier.
+    func testOnlyTheWordsThemselvesBeginABlockHoldingNoCue() throws {
+        let document = try webVTT("WEBVTT\n\nNOTES\n00:01.000 --> 00:02.000\nHello.\n\nSTYLESHEET\n00:02.000 --> 00:03.000\nAgain.\n")
+
+        XCTAssertEqual(document.cues.map(\.text), ["Hello.", "Again."])
+    }
+
+    /// A cue's identifier, the line before its timing line, is ignored, as
+    /// are the cue settings after its end; a block with no "-->" in its
+    /// first two lines holds no cue, and is not counted.
+    func testIdentifiersAndCueSettingsAreIgnored() throws {
+        let document = try webVTT("""
+        WEBVTT
+
+        intro
+        00:01.000 --> 00:02.000 align:start position:10% line:0
+        Hello.
+
+        00:02.000 --> 00:03.000\tvertical:rl
+        Again.
+
+        A stray line of text.
+
+        3
+        00:03.000 --> 00:04.000
+        Third.
+        """)
+
+        XCTAssertEqual(document.cues, [
+            cue(1_000, 2_000, "Hello."), cue(2_000, 3_000, "Again."), cue(3_000, 4_000, "Third."),
+        ])
+        XCTAssertEqual(document.skippedCueCount, 0)
+    }
+
+    /// A line holding "-->" that cannot be its block's timing line ends the
+    /// block and begins the next, as in the W3C's reader (decision 1): a
+    /// file missing the blank line between two cues reads as two cues,
+    /// never as one whose text holds a timing line; a cue right after a
+    /// comment or two stray lines is kept; and a timing line right after
+    /// another leaves the first cue no text, so it is counted.
+    func testATimingLineThatCannotBeItsBlocksBeginsTheNext() throws {
+        let missingBlank = try webVTT("WEBVTT\n\n00:01.000 --> 00:02.000\nOne.\n00:02.000 --> 00:03.000\nTwo.\n")
+        XCTAssertEqual(missingBlank.cues, [cue(1_000, 2_000, "One."), cue(2_000, 3_000, "Two.")])
+
+        let afterComment = try webVTT("WEBVTT\n\nNOTE a comment\n00:01.000 --> 00:02.000\nHello.\n")
+        XCTAssertEqual(afterComment.cues.map(\.text), ["Hello."])
+
+        let afterStrayLines = try webVTT("WEBVTT\n\nstray\nlines\n00:01.000 --> 00:02.000\nHello.\n")
+        XCTAssertEqual(afterStrayLines.cues.map(\.text), ["Hello."])
+        XCTAssertEqual(afterStrayLines.skippedCueCount, 0)
+
+        let twoTimingLines = try webVTT("WEBVTT\n\n00:01.000 --> 00:02.000\n00:02.000 --> 00:03.000\nTwo.\n")
+        XCTAssertEqual(twoTimingLines.cues.map(\.text), ["Two."])
+        XCTAssertEqual(twoTimingLines.skippedCueCount, 1)
+    }
+
+    // MARK: - Encodings and Line Endings
+
+    /// A byte-order mark and CR LF line endings, as Windows tools write them,
+    /// read like a plain file, the mark before the signature line; so do the
+    /// lone CR line endings of the classic Mac OS.
+    func testAByteOrderMarkAndOtherLineEndingsRead() throws {
+        let webVTTWithMark = try webVTT("\u{FEFF}WEBVTT\r\n\r\n00:01.000 --> 00:02.000\r\nHello.\r\n")
+        XCTAssertEqual(webVTTWithMark.cues, [cue(1_000, 2_000, "Hello.")])
+
+        let classicMac = try webVTT("WEBVTT\r\r00:01.000 --> 00:02.000\rHello.\r")
+        XCTAssertEqual(classicMac.cues, [cue(1_000, 2_000, "Hello.")])
+    }
+
+    /// A file in UTF-16 with its byte-order mark reads.
+    func testAUTF16FileReads() throws {
+        var data = Data([0xFF, 0xFE])
+        data.append(try XCTUnwrap("WEBVTT\n\n00:01.000 --> 00:02.000\nZoë.\n".data(using: .utf16LittleEndian)))
+
+        XCTAssertEqual(try WebVTTReader.read(data).cues, [cue(1_000, 2_000, "Zoë.")])
+    }
+
+    /// A file whose byte-order mark names UTF-16, but whose bytes are not
+    /// UTF-16, is not timed text.
+    func testBytesNotInTheEncodingTheirMarkNamesAreNotTimedText() {
+        let data = Data([0xFF, 0xFE, 0x57])
+
+        assertRefuses(.notTimedText(.webVTT)) { try WebVTTReader.read(data) }
+    }
+
+    // MARK: - Cues Passed Over
+
+    /// Each kind of cue that cannot be used is passed over and counted: a
+    /// start that does not read, an end that does not read or is missing,
+    /// an end before its start, text that is nothing but markup and white
+    /// space, and no text at all. The cue after them is kept.
+    func testEachUnusableCueIsPassedOverAndCounted() throws {
+        let document = try webVTT("""
+        WEBVTT
+
+        00:0x.000 --> 00:02.000
+        A start that does not read.
+
+        00:01.000 --> 2 seconds
+        An end that does not read.
+
+        00:01.000 -->
+        No end at all.
+
+        00:03.000 --> 00:02.000
+        An end before its start.
+
+        00:01.000 --> 00:02.000
+        <b> </b> <i></i>
+
+        00:01.000 --> 00:02.000
+
+        00:04.000 --> 00:05.000
+        Kept.
+        """)
+
+        XCTAssertEqual(document.cues, [cue(4_000, 5_000, "Kept.")])
+        XCTAssertEqual(document.skippedCueCount, 6)
+    }
+
+    /// A cue may end at `Transcript.maximumMilliseconds`, 100 hours, and no
+    /// later: one ending a millisecond after, or beginning after it, is
+    /// passed over and counted.
+    func testTheLongestTimeIsKeptAndOneMillisecondMoreIsNot() throws {
+        XCTAssertEqual(Transcript.maximumMilliseconds, 360_000_000)
+        let document = try webVTT("""
+        WEBVTT
+
+        99:59:59.000 --> 100:00:00.000
+        The last second.
+
+        99:59:59.000 --> 100:00:00.001
+        One millisecond too long.
+
+        100:00:00.001 --> 100:00:01.000
+        Past the end.
+        """)
+
+        XCTAssertEqual(document.cues, [cue(359_999_000, 360_000_000, "The last second.")])
+        XCTAssertEqual(document.skippedCueCount, 2)
+    }
+
+    // MARK: - Markup
+
+    /// Every tag is removed and its text stays: a timestamp tag, a class, a
+    /// bold, an italic, an underline, a language, ruby and its text, and
+    /// each closing tag.
+    func testTagsAreRemovedAndTheirTextStays() throws {
+        let tagged = try webVTTCue(
+            "<00:00:01.500>Timed, <c.yellow.bg_blue>classed</c>, <b>bold</b>, <i>italic</i>, "
+                + "<u>underlined</u>, <lang fr>français</lang>, <ruby>base<rt>reading</rt></ruby>."
+        )
+
+        XCTAssertEqual(tagged.text, "Timed, classed, bold, italic, underlined, français, basereading.")
+        XCTAssertNil(tagged.voice)
+    }
+
+    /// A cue's voice is the first voice tag's annotation, and the tag leaves
+    /// no trace in the text.
+    func testTheFirstVoiceTagGivesTheCueItsVoice() throws {
+        let spoken = try webVTTCue("<v Ana>Hello.</v>")
+
+        XCTAssertEqual(spoken.voice, "Ana")
+        XCTAssertEqual(spoken.text, "Hello.")
+    }
+
+    /// Another voice in the same cue is named where its tag stood ("Ben: "),
+    /// once for each change of speaker: the same voice again puts nothing
+    /// in, and the first voice is named again when she speaks after another.
+    func testAnotherVoiceInOneCueIsNamedWhereItsTagStood() throws {
+        let twoVoices = try webVTTCue("<v Ana>Hello.\n<v Ben>Hi.")
+        XCTAssertEqual(twoVoices.voice, "Ana")
+        XCTAssertEqual(twoVoices.text, "Hello. Ben: Hi.")
+
+        XCTAssertEqual(try webVTTCue("<v Ana>Hello.\n<v Ana>Again.").text, "Hello. Again.")
+        XCTAssertEqual(
+            try webVTTCue("<v Ana>One.\n<v Ben>Two.\n<v Ben>Three.\n<v Ana>Four.").text,
+            "One. Ben: Two. Three. Ana: Four."
+        )
+    }
+
+    /// A voice's classes are not its name (`<v.loud.first Ben>` is "Ben"),
+    /// and the white space of its annotation is made plain.
+    func testAVoicesClassesAndWhiteSpaceAreNotItsName() throws {
+        XCTAssertEqual(try webVTTCue("<v.loud.first Ben>Hi.").voice, "Ben")
+        XCTAssertEqual(try webVTTCue("<v\tAna   Paula  >Hi.").voice, "Ana Paula")
+    }
+
+    /// Only a tag named `v` alone is a voice tag: `<vx Ana>` and `<V Ana>`
+    /// are other tags, removed without naming anybody.
+    func testOnlyATagNamedVAloneIsAVoice() throws {
+        for text in ["<vx Ana>Hi.", "<V Ana>Hi.", "<voice Ana>Hi."] {
+            let unvoiced = try webVTTCue(text)
+            XCTAssertNil(unvoiced.voice, text)
+            XCTAssertEqual(unvoiced.text, "Hi.", text)
+        }
+    }
+
+    /// A voice tag naming nobody (`<v>`, `<v.loud>`, `<v   >`) gives no
+    /// voice, puts nothing in the text, and leaves the voice named last as
+    /// it was; the cue's voice is the first that names somebody
+    /// (decision 2).
+    func testAVoiceTagNamingNobodyLeavesNoTrace() throws {
+        for text in ["<v>Hello.", "<v.loud>Hello.", "<v   >Hello."] {
+            let unnamed = try webVTTCue(text)
+            XCTAssertNil(unnamed.voice, text)
+            XCTAssertEqual(unnamed.text, "Hello.", text)
+        }
+
+        let between = try webVTTCue("<v Ana>One.\n<v>Two.\n<v Ana>Three.")
+        XCTAssertEqual(between.voice, "Ana")
+        XCTAssertEqual(between.text, "One. Two. Three.")
+
+        let namedLater = try webVTTCue("<v>One.\n<v Ben>Two.")
+        XCTAssertEqual(namedLater.voice, "Ben")
+        XCTAssertEqual(namedLater.text, "One. Two.")
+    }
+
+    /// A name put in never runs into the words before it: a space comes
+    /// first when no white space stands before the tag (decision 3).
+    func testANamePutInNeverRunsIntoTheWordsBeforeIt() throws {
+        XCTAssertEqual(try webVTTCue("<v Ana>Hi.<v Ben>Hello.").text, "Hi. Ben: Hello.")
+        XCTAssertEqual(try webVTTCue("<v Ana>Hi. <v Ben>Hello.").text, "Hi. Ben: Hello.")
+    }
+
+    /// A voice's character references are decoded, as the W3C's reader
+    /// decodes an annotation, so the voice and the names put in read like
+    /// the text; a name put in is never decoded a second time (decision 4).
+    func testAVoicesCharacterReferencesAreDecodedOnce() throws {
+        let voiced = try webVTTCue("<v Ana &amp; Ben>Together.\n<v Zo&#235;>Alone.\n<v &amp;lt;tag&amp;gt;>Odd.")
+
+        XCTAssertEqual(voiced.voice, "Ana & Ben")
+        XCTAssertEqual(voiced.text, "Together. Zoë: Alone. &lt;tag&gt;: Odd.")
+    }
+
+    /// Character references are decoded after the tags are removed:
+    /// `&lt;b&gt;` is the text "<b>", never a tag; a decoded "&" is never
+    /// read again (`&amp;lt;` is "&lt;"); a reference that a tag split in
+    /// two is whole once the tag is gone; and the named references each
+    /// become their character, the no-break space a space once the text is
+    /// made plain.
+    func testCharacterReferencesAreDecodedAfterTheTags() throws {
+        XCTAssertEqual(try webVTTCue("&lt;b&gt;not bold&lt;/b&gt;").text, "<b>not bold</b>")
+        XCTAssertEqual(try webVTTCue("&amp;lt;").text, "&lt;")
+        XCTAssertEqual(try webVTTCue("&am<b>p;").text, "&")
+        XCTAssertEqual(
+            try webVTTCue("Q&amp;A, &quot;quoted&quot;, it&apos;s, 1&nbsp;2").text,
+            "Q&A, \"quoted\", it's, 1 2"
+        )
+    }
+
+    /// A numeric reference becomes the character it numbers, in decimal or
+    /// in hexadecimal after an `x` or an `X`, in up to seven digits.
+    func testNumericReferencesBecomeTheirCharacters() throws {
+        XCTAssertEqual(
+            try webVTTCue("Caf&#233;, &#x1F600;, &#X1F600;, &#x00E9;, &#0000233;").text,
+            "Café, 😀, 😀, é, é"
+        )
+    }
+
+    /// A reference that names no character TextMouth takes stays as written:
+    /// U+0000, a name it does not know, no digits, more than seven digits, a
+    /// surrogate, a number past Unicode, a digit that is not decimal, and an
+    /// "&" with no ";".
+    func testReferencesThatNameNoCharacterStayAsWritten() throws {
+        let written = "&#0; &bogus; &#; &#x; &#00000233; &#xD800; &#x110000; &#12a; AT&T & co"
+
+        XCTAssertEqual(try webVTTCue(written).text, written)
+    }
+
+    /// The marks of text direction, `&lrm;` and `&rlm;`, are removed.
+    func testMarksOfDirectionAreRemoved() throws {
+        XCTAssertEqual(try webVTTCue("left&lrm;to&rlm;right").text, "lefttoright")
+    }
+
+    /// A "<" with no ">" after it is text, with everything after it; one
+    /// with a ">" after it begins a tag, since a file writes the character
+    /// as `&lt;`.
+    func testALoneLessThanSignIsText() throws {
+        XCTAssertEqual(try webVTTCue("1 < 2, and 3 <= 4").text, "1 < 2, and 3 <= 4")
+        XCTAssertEqual(try webVTTCue("x < y and y > z").text, "x z")
+    }
+
+    /// A combining mark right after a tag's ">" does not hide the tag's end,
+    /// as it would among Swift's characters, where the two are one: the tag
+    /// is removed, and the mark stays with the text after it.
+    func testACombiningMarkAfterATagDoesNotHideIt() throws {
+        XCTAssertEqual(try webVTTCue("<b>\u{0301}x</b>").text, "\u{0301}x")
+        XCTAssertEqual(try webVTTCue("<v Ana>\u{0301}Hi.").voice, "Ana")
+    }
+
+    // MARK: - Finishing
+
+    /// A file of more cues than `maximumCues` is refused as soon as one too
+    /// many is kept; as many as the limit read, and cues passed over do not
+    /// count toward it.
+    func testMoreCuesThanTheLimitAreRefused() throws {
+        let fourCues = (1...4).map { "00:0\($0).000 --> 00:0\($0).500\nCue \($0).\n" }.joined(separator: "\n")
+        assertRefuses(.tooManyCues(limit: 3)) { try webVTT("WEBVTT\n\n" + fourCues, maximumCues: 3) }
+        XCTAssertEqual(try webVTT("WEBVTT\n\n" + fourCues, maximumCues: 4).cues.count, 4)
+
+        let withOnePassedOver = try webVTT("WEBVTT\n\n" + fourCues + "\n00:09.000 --> 00:08.000\nBackwards.\n", maximumCues: 4)
+        XCTAssertEqual(withOnePassedOver.cues.count, 4)
+        XCTAssertEqual(withOnePassedOver.skippedCueCount, 1)
+    }
+
+    /// A file holding no cue that can be used is refused: one of its
+    /// signature line alone, of a comment alone, or of cues all passed over.
+    func testAFileWithNoUsableCueIsRefused() {
+        for text in ["WEBVTT", "WEBVTT\n\nNOTE only a comment\n", "WEBVTT\n\n00:02.000 --> 00:01.000\nBackwards.\n"] {
+            assertRefuses(.noCues(.webVTT), text.debugDescription) { try webVTT(text) }
+        }
+    }
+
+    /// Cues come back in the order they begin, whatever order the file gives
+    /// them, and cues that begin together keep the file's order.
+    func testCuesComeBackInTheOrderTheyBegin() throws {
+        let document = try webVTT("""
+        WEBVTT
+
+        00:02.000 --> 00:03.000
+        At two seconds, first in the file.
+
+        00:01.000 --> 00:02.000
+        At one second.
+
+        00:02.000 --> 00:02.500
+        At two seconds, second in the file.
+
+        00:02.000 --> 00:04.000
+        At two seconds, third in the file.
+        """)
+
+        XCTAssertEqual(document.cues.map(\.text), [
+            "At one second.",
+            "At two seconds, first in the file.",
+            "At two seconds, second in the file.",
+            "At two seconds, third in the file.",
+        ])
+    }
+
+    // MARK: - Robustness
+
+    /// Every prefix of the sample, cut every 5 bytes (inside a timing line,
+    /// a tag, a reference, or the two bytes of an "é"), either reads or is
+    /// refused with a `TimedTextError`.
+    func testEveryPrefixOfTheSamplesReadsOrIsRefused() throws {
+        for samplePath in ["vtt/tone4.vtt"] {
+            let bytes = try Data(contentsOf: copyOfFormatSample(samplePath))
+            for length in stride(from: 0, through: bytes.count, by: 5) {
+                assertReadsOrRefuses(bytes.prefix(length), "\(samplePath) cut at \(length)")
+            }
+        }
+    }
+
+    /// Random bytes, a few kilobytes at a time from a fixed seed, either
+    /// read or are refused with a `TimedTextError`; half of them follow a
+    /// signature line, so the reader reads past it into the noise.
+    func testRandomBytesReadOrAreRefused() {
+        var generator = SeededBytes(seed: 0x7E57_F00D)
+        for round in 0..<48 {
+            let count = Int(generator.next()) * 16
+            var bytes = (0..<count).map { _ in generator.next() }
+            if round.isMultiple(of: 2) {
+                bytes.insert(contentsOf: Array("WEBVTT\n\n".utf8), at: 0)
+            }
+            assertReadsOrRefuses(Data(bytes), "random round \(round)")
+        }
+    }
+
+    /// Text made of the formats' own pieces in a random order from a fixed
+    /// seed (arrows, times, tags open and closed, references whole and cut,
+    /// overrides, digits, line breaks, a combining mark) either reads or is
+    /// refused with a `TimedTextError`: noise of the kind that takes every
+    /// path through the markup.
+    func testScrambledMarkupReadsOrIsRefused() {
+        let pieces = [
+            "<", ">", "&", ";", "#", "x", "{", "\\", "}", "-->", " --> ", "0", "1", "5", "9", ":", ".", ",",
+            "\n", "\n\n", " ", "\t", "v", "<v ", "NOTE", "WEBVTT\n", "é", "\u{0301}", "&#", "&amp;", "<v Ana>",
+            "00:00:01.000", "00:01,500", "\r", "\u{FEFF}",
+        ]
+        var generator = SeededBytes(seed: 0x5C2A_4B1E)
+        for round in 0..<160 {
+            var text = round.isMultiple(of: 2) ? "WEBVTT\n\n" : ""
+            for _ in 0...Int(generator.next()) {
+                text += pieces[safe: Int(generator.next()) % pieces.count] ?? ""
+            }
+            assertReadsOrRefuses(Data(text.utf8), "scrambled round \(round): \(text.debugDescription)")
+        }
+    }
+
+    /// A hostile cue of 150,000 "<" and "{\" with no ">" or "}" after them
+    /// stays as text and reads in a moment: each "<" is known at once to
+    /// have no closer, rather than by reading the rest of the cue again for
+    /// each, which would take minutes. The limit leaves the moment it takes
+    /// room fifty times over.
+    func testAHostileCueReadsInAMoment() throws {
+        let hostile = String(repeating: "<{\\", count: 150_000)
+        var texts: [String] = []
+        let elapsed = try ContinuousClock().measure {
+            texts = [try webVTTCue(hostile).text]
+        }
+
+        XCTAssertEqual(texts.map { $0 == hostile }, [true], "the cue keeps its characters as text")
+        XCTAssertLessThan(elapsed, .seconds(10))
+    }
+}
