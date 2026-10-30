@@ -10,7 +10,7 @@
 # such as --classes A,B pass through too. The script waits for the lock
 # (mkdir is atomic, so one holder at a time), checks the free disk, runs the
 # build, and frees the lock however the build ends. It exits with
-# run-area.py's status, or 3 when the disk is too full to build (tell
+# run-area.py's status, or 3 when the disk stayed too full for an hour (tell
 # bughunt-lead, and do not build).
 #
 # The disk is short tonight (the orchestrator, October 30, 19:40): a build in
@@ -67,16 +67,24 @@ rm -f "$waiting/$slug"
 echo "$slug since $(date '+%H:%M:%S')" > "$lock/holder"
 trap release EXIT
 
-# A new build folder needs 5 GB free, an existing one 4 GB.
+# A new build folder needs 5 GB free, an existing one 4 GB. No member of the
+# team can build while the disk is short, so the lock is held while this
+# waits for room, checking each minute, for an hour at most.
 need=5
 if [ -d "$data" ]; then
     need=4
 fi
-avail=$(df -g /System/Volumes/Data | awk 'NR==2 {print $4}')
-if [ "$avail" -lt "$need" ]; then
-    echo "NOT BUILT: only ${avail} GB free, ${need} GB needed; post this to bughunt-lead and do not build"
-    exit 3
-fi
+for minute in $(seq 1 60); do
+    avail=$(df -g /System/Volumes/Data | awk 'NR==2 {print $4}')
+    if [ "$avail" -ge "$need" ]; then
+        break
+    fi
+    if [ "$minute" -eq 60 ]; then
+        echo "NOT BUILT: only ${avail} GB free after an hour, ${need} GB needed; post this to bughunt-lead and do not build"
+        exit 3
+    fi
+    sleep 60
+done
 
 echo "$slug: building in $data, log $log"
 BBS_AGENT="$slug" python3 Scripts/test/run-area.py --derived-data "$data" --log "$log" "$@"

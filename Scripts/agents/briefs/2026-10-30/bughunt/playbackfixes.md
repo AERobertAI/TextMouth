@@ -1,6 +1,6 @@
-# bughunt-playbackfixes: the end of a chaptered audiobook, bookmark order, the sleep timer after a stop, and a spoken range past its text
+# bughunt-playbackfixes: the end of a chaptered audiobook, bookmark order, the sleep timer and a chapter download after a stop, a spoken range past its text, and a waiting play that holds the main thread
 
-Worker slug `bughunt-playbackfixes`, branch `bughunt/playbackfixes` (from `team/bughunt`). Read `README.md` beside this file first. Four small fixes, one commit each, each with its test. All four were verified by the lead by reading.
+Worker slug `bughunt-playbackfixes`, branch `bughunt/playbackfixes` (from `team/bughunt`). Read `README.md` beside this file first. Six small fixes, one commit each, each with its test. All six were verified by the lead by reading (5 and 6 come from the orchestrator's triage of the TODO).
 
 ## 1. A one-file audiobook with chapter markers stops before its audio ends
 `ReaderViewModel+Playback.swift:2150-2156` sets a clip end for every chapter of a `.chaptersInOneFile` book, the last one included: `chapterStartTime(currentChapterIndex) + chapterChars / audioCharsPerSecond`. Chapter lengths are placeholder text, 10 characters a second (`AudioBookParser.placeholderLength(for:)`, `AudioBookParser.swift:8-10`, `ReaderViewModel.audioCharsPerSecond`), truncated to whole tenths, and `AudioLayout.chapterStartTime(chapterIndex:chapterUTF16Lengths:)` (`:1858-1870`) sums those truncated lengths. So the last chapter's clip end falls up to 0.1 s per chapter before the file's real end (about 1.4 s at 30 chapters, 5 s at 100); the clip end fires `.finishClip` (`AudioPlaybackService.swift:218`), the book is announced finished and counted in Books Finished, and its last seconds never play. Between chapters nothing is lost: each chapter's end and the next one's start are the same drifted time.
@@ -30,8 +30,22 @@ Fix: when the range does not lie within the utterance's `speechString` (`NSMaxRa
 
 Test, in `SpeechDirectChunkingTests` or the class that already drives `placeSpokenWord` through a stand-in synthesizer report (grep `onWordSpoken`): a report of a range past the end leaves the cursor where it was and does not trap; a range inside moves it as today. Per the README, write the past-the-end report's test so it cannot trap even without the fix, by testing the decision function on its own; the test through the speech service runs only with the fix in place.
 
+## 5. Stop, and so Release Media Controls, leaves a chapter's download waiting, and Play then does nothing (TODO-2026-09-04.md line 3947, from the orchestrator's triage)
+`stop()` (`ReaderViewModel+Playback.swift:468-504`) lets go of a chapter's pause (`stopWaitingOutChapterPause`) and of audio set aside for a move (`letGoOfAudioSetAsideForMove`), but not of a chapter whose files it waits to download (FR02, a cloud library). `isWaitingForChapterDownload` (`ReaderViewModel+CloudDownload.swift:576-578`) keeps `isPlaybackUnderWay` true (`:3338-3343`), so `playOrResume()` ignores Play (`:176-184`) until the download ends, and then nothing plays. `pause()` already lets go of all three through `stopAudioWaitingToPlay(because:)` (`:3309-3313`).
+
+Fix: `stop()` calls `stopAudioWaitingToPlay(because: "playback stopped")` in place of its two calls (DRY), and counts a chapter download in its `wasActive`, as it counts the chapter pause and the move. Item 3's countdown pause then applies to it too.
+
+Test, in `ReaderCloudDownloadTests` (grep how it makes a reader wait for a chapter's download): Stop during a chapter's download, and Release Media Controls during one, each leave `isWaitingForChapterDownload` and `isPlaybackUnderWay` false and no download view; a Play afterwards starts the chapter (or waits for its download afresh, as Play from stopped does).
+
+## 6. A settings change while Play waits for a long chapter's speech prepares that chapter on the main thread (TODO line 3867, from the triage)
+`continueWaitingPlay()` (`ReaderViewModel+Playback.swift:1617-1630`) searches with `searchForSpeechStart(preparingLongChapters: .nowUnlessUnderWay)` (`:1623`). When the speech it waited for was prepared from settings that changed meanwhile (a voice, a rate, a substitution rule), that speech was not kept, so the long chapter is prepared again at once, on the main actor (`.nowUnlessUnderWay`, `:1752-1756`), holding the main thread, and VoiceOver with it, for as long as a long chapter takes.
+
+Fix: search with `.inBackground` (`:1757-1759`) there, so the play goes on waiting, showing Playing, while the chapter is prepared again off the main thread from the settings in force, and starts once it is ready (`.preparingInBackground` → `waitForChapterSpeech`). Short chapters are prepared as before (the option governs long chapters only; confirm that by reading `searchForSpeechStart`). Update the doc comment (it says "at once").
+
+Test, in `SpeechPreparationCacheTests` (grep how it makes Play wait for a long chapter's speech and changes a setting meanwhile): a settings change during the wait prepares the chapter again off the main thread (the class's way of observing where preparation runs), and the play starts once, from the settings in force.
+
 ## Run
-`AudioLayoutTests PlaybackLifecyclePolicyTests MediaCommandPlaybackTests IntegrationSleepTimerTests FinishedBookReaderTests EndBehaviorMatrixTests SpeechDirectChunkingTests PlaybackFuzzTests` plus any class you grep that pins the countdown (`COUNTDOWN_PAUSED`). The sleep-timer integration tests are load-sensitive: rerun a failure there in its class alone and report both results.
+`AudioLayoutTests PlaybackLifecyclePolicyTests MediaCommandPlaybackTests IntegrationSleepTimerTests FinishedBookReaderTests EndBehaviorMatrixTests SpeechDirectChunkingTests PlaybackFuzzTests ReaderCloudDownloadTests SpeechPreparationCacheTests WhereAmIAnnouncementEndTests` plus any class you grep that pins the countdown (`COUNTDOWN_PAUSED`). The sleep-timer integration tests are load-sensitive: rerun a failure there in its class alone and report both results.
 
 ## Do not touch
 The sleep timer service itself, the checkpoint policy, the speech backends' choice (never switch a playing book from direct speech to the engine), and every announcement's wording (none changes).
