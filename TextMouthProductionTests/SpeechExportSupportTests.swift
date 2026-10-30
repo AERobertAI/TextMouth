@@ -1,17 +1,21 @@
 import AVFoundation
 import CryptoKit
+import IOKit.pwr_mgt
+import os
 import XCTest
 @testable import TextMouth
 
 /// The parts a speech export (FMT43) stands on, each tested on its own: the
 /// voice, speed, and pitch a book is read with; what is known of an
-/// installed voice; the words of each refusal; and the chapters kept
-/// between runs of an export.
+/// installed voice; the words of each refusal; the chapters kept between
+/// runs of an export; the disk check; and the power assertion that keeps
+/// the Mac awake.
 ///
 /// Nothing here speaks, plays a sound, or uses a Personal Voice: voices are
 /// only looked up by identifier and read for their names and traits, and the
 /// one `SpeechService` made is never asked to speak. Preferences and
-/// files are sandboxed, never the user's.
+/// files are sandboxed, never the user's, and the one power assertion
+/// taken is let go at once.
 final class SpeechExportSupportTests: XCTestCase {
 
     // MARK: - The Voice Settings
@@ -638,5 +642,237 @@ final class SpeechExportSupportTests: XCTestCase {
         SpeechExportStore.sweepInBackground(isHostedTest: false) { ran.fulfill() }
         wait(for: [ran], timeout: 10)
         XCTAssertFalse(exists(live.root))
+    }
+
+    // MARK: - The Disk Check
+
+    /// Where kept speech goes in the disk check's tests, which never look
+    /// at a real disk.
+    private static let speechFolder = URL(fileURLWithPath: "/Volumes/Spoken/Speech Export", isDirectory: true)
+    /// Where the exported file goes in those tests.
+    private static let fileFolder = URL(fileURLWithPath: "/Volumes/Shelf/Exports", isDirectory: true)
+    /// The bytes those tests keep free on every volume: few, so the sums
+    /// stay readable.
+    private static let reserve: Int64 = 1_000
+    /// Ten seconds of kept speech, in bytes.
+    private static let speechNeed: Int64 = 441_000
+    /// Ten seconds of the exported file, in bytes.
+    private static let fileNeed: Int64 = 80_000
+
+    /// Checks ten seconds of speech and ten of the file (unless told
+    /// otherwise) against the free space `free` gives each folder, the two
+    /// folders on one volume or on two.
+    private func checkSpace(
+        sameVolume: Bool,
+        speechSeconds: TimeInterval = 10,
+        fileSeconds: TimeInterval = 10,
+        free: (URL) -> Int64?
+    ) throws {
+        try SpeechExportSpace.check(
+            speechSeconds: speechSeconds,
+            fileSeconds: fileSeconds,
+            speechFolder: Self.speechFolder,
+            fileFolder: Self.fileFolder,
+            freeSpace: free,
+            sameVolume: { _, _ in sameVolume },
+            reserve: Self.reserve
+        )
+    }
+
+    /// What `check` throws, or nil when it passes.
+    private func refusal(_ check: () throws -> Void) -> Error? {
+        do {
+            try check()
+            return nil
+        } catch {
+            return error
+        }
+    }
+
+    /// A second of kept speech takes 44,100 bytes (16-bit mono at
+    /// 22,050 Hz), and a second of the file 8,000 (64 kbit/s).
+    func testWhatASecondTakes() {
+        XCTAssertEqual(SpeechExportSpace.speechBytesPerSecond, 44_100)
+        XCTAssertEqual(SpeechExportSpace.fileBytesPerSecond, 8_000)
+        XCTAssertEqual(SpeechExportSpace.bytes(forSeconds: 10, at: SpeechExportSpace.speechBytesPerSecond), Self.speechNeed)
+        XCTAssertEqual(SpeechExportSpace.bytes(forSeconds: 10, at: SpeechExportSpace.fileBytesPerSecond), Self.fileNeed)
+    }
+
+    /// On one volume the speech's need and the file's add up: free space
+    /// exactly the reserve above their sum passes, and a byte less throws
+    /// with the sum.
+    func testOnOneVolumeTheTwoNeedsAddUp() {
+        let need = Self.speechNeed + Self.fileNeed
+
+        XCTAssertNil(refusal { try checkSpace(sameVolume: true) { _ in Self.reserve + need } })
+        XCTAssertEqual(
+            refusal { try checkSpace(sameVolume: true) { _ in Self.reserve + need - 1 } } as? SpeechExportError,
+            .notEnoughSpace(needed: need)
+        )
+    }
+
+    /// On two volumes each is checked apart, for its own need: each with
+    /// exactly the reserve above its need passes, though the two needs
+    /// together would not fit on either; either a byte short throws with
+    /// its own need.
+    func testOnTwoVolumesEachIsCheckedApart() {
+        /// Free space `speechSpare` bytes beyond the reserve and the
+        /// speech's need on the speech's volume, and `fileSpare` beyond the
+        /// reserve and the file's need on the file's.
+        func free(speechSpare: Int64, fileSpare: Int64) -> (URL) -> Int64? {
+            return { folder in
+                folder == Self.speechFolder
+                    ? Self.reserve + Self.speechNeed + speechSpare
+                    : Self.reserve + Self.fileNeed + fileSpare
+            }
+        }
+
+        XCTAssertNil(refusal { try checkSpace(sameVolume: false, free: free(speechSpare: 0, fileSpare: 0)) })
+        XCTAssertEqual(
+            refusal { try checkSpace(sameVolume: false, free: free(speechSpare: -1, fileSpare: 0)) } as? SpeechExportError,
+            .notEnoughSpace(needed: Self.speechNeed)
+        )
+        XCTAssertEqual(
+            refusal { try checkSpace(sameVolume: false, free: free(speechSpare: 0, fileSpare: -1)) } as? SpeechExportError,
+            .notEnoughSpace(needed: Self.fileNeed)
+        )
+        XCTAssertEqual(
+            refusal { try checkSpace(sameVolume: true, free: free(speechSpare: 0, fileSpare: 0)) } as? SpeechExportError,
+            .notEnoughSpace(needed: Self.speechNeed + Self.fileNeed)
+        )
+    }
+
+    /// A volume whose free space is unknown is not checked, however much is
+    /// needed; the other volume still is.
+    func testUnknownFreeSpaceIsNotChecked() {
+        XCTAssertNil(refusal { try checkSpace(sameVolume: true, speechSeconds: 1e9, fileSeconds: 1e9) { _ in nil } })
+        XCTAssertNil(refusal {
+            try checkSpace(sameVolume: false) { $0 == Self.speechFolder ? nil : Self.reserve + Self.fileNeed }
+        })
+        XCTAssertEqual(
+            refusal { try checkSpace(sameVolume: false) { $0 == Self.speechFolder ? nil : Self.reserve } } as? SpeechExportError,
+            .notEnoughSpace(needed: Self.fileNeed)
+        )
+    }
+
+    /// Every second begun is counted whole; a time not above 0, or not a
+    /// number, needs nothing; and a time beyond any count of bytes needs
+    /// the most there can be, which no disk has, rather than stopping the
+    /// app.
+    func testEverySecondBegunIsCountedWhole() {
+        XCTAssertEqual(SpeechExportSpace.bytes(forSeconds: 1.2, at: 44_100), 88_200)
+        XCTAssertEqual(SpeechExportSpace.bytes(forSeconds: 2, at: 44_100), 88_200)
+        XCTAssertEqual(SpeechExportSpace.bytes(forSeconds: 0.01, at: 8_000), 8_000)
+        XCTAssertEqual(SpeechExportSpace.bytes(forSeconds: 0, at: 44_100), 0)
+        XCTAssertEqual(SpeechExportSpace.bytes(forSeconds: -3, at: 44_100), 0)
+        XCTAssertEqual(SpeechExportSpace.bytes(forSeconds: .nan, at: 44_100), 0)
+        XCTAssertEqual(SpeechExportSpace.bytes(forSeconds: .infinity, at: 44_100), .max)
+        XCTAssertEqual(SpeechExportSpace.bytes(forSeconds: 1e300, at: 44_100), .max)
+        XCTAssertEqual(SpeechExportSpace.bytes(forSeconds: 1e15, at: 44_100), .max)
+
+        // Half a second of speech, and no file, still needs a whole second.
+        XCTAssertEqual(
+            refusal {
+                try checkSpace(sameVolume: true, speechSeconds: 0.5, fileSeconds: 0) { _ in Self.reserve + 44_099 }
+            } as? SpeechExportError,
+            .notEnoughSpace(needed: 44_100)
+        )
+        // Two needs as large as can be, on one volume, add up to the most
+        // there can be.
+        XCTAssertEqual(
+            refusal {
+                try checkSpace(sameVolume: true, speechSeconds: .infinity, fileSeconds: .infinity) { _ in .max }
+            } as? SpeechExportError,
+            .notEnoughSpace(needed: .max)
+        )
+    }
+
+    /// How long words take to speak: words over words a minute, in seconds;
+    /// 0 for a speed not above 0, or not a finite number.
+    func testHowLongWordsTakeToSpeak() {
+        XCTAssertEqual(SpeechExportSpace.seconds(wordCount: 400, wordsPerMinute: 200), 120)
+        XCTAssertEqual(SpeechExportSpace.seconds(wordCount: 450, wordsPerMinute: 180), 150)
+        XCTAssertEqual(SpeechExportSpace.seconds(wordCount: 0, wordsPerMinute: 200), 0)
+        XCTAssertEqual(SpeechExportSpace.seconds(wordCount: 400, wordsPerMinute: 0), 0)
+        XCTAssertEqual(SpeechExportSpace.seconds(wordCount: 400, wordsPerMinute: -200), 0)
+        XCTAssertEqual(SpeechExportSpace.seconds(wordCount: 400, wordsPerMinute: .nan), 0)
+        XCTAssertEqual(SpeechExportSpace.seconds(wordCount: 400, wordsPerMinute: .infinity), 0)
+    }
+
+    // MARK: - The Power Assertion
+
+    /// A power assertion that records each hold and release in `log`, and
+    /// gives the ID `id`, or none when `id` is nil, as when the system will
+    /// not take the assertion.
+    private func recordingPower(
+        _ log: OSAllocatedUnfairLock<[String]>,
+        id: IOPMAssertionID? = 7
+    ) -> SpeechExportPower {
+        SpeechExportPower(
+            hold: { reason in
+                log.withLock { $0.append("hold \(reason)") }
+                return id
+            },
+            release: { released in
+                log.withLock { $0.append("release \(released)") }
+            }
+        )
+    }
+
+    /// `whileHeld` holds once, runs its body, and releases once when the
+    /// body returns, giving what the body gives.
+    func testWhileHeldHoldsAndReleasesOnceAroundItsBody() {
+        let log = OSAllocatedUnfairLock<[String]>(initialState: [])
+
+        let value = recordingPower(log).whileHeld(reason: "Exporting") { () -> Int in
+            log.withLock { $0.append("body") }
+            return 42
+        }
+
+        XCTAssertEqual(value, 42)
+        XCTAssertEqual(log.withLock { $0 }, ["hold Exporting", "body", "release 7"])
+    }
+
+    /// When its body throws, `whileHeld` still releases once, and the error
+    /// passes through.
+    func testWhileHeldReleasesWhenItsBodyThrows() {
+        let log = OSAllocatedUnfairLock<[String]>(initialState: [])
+
+        XCTAssertThrowsError(
+            try recordingPower(log).whileHeld(reason: "Exporting") { () throws -> Int in
+                log.withLock { $0.append("body") }
+                throw SpeechExportError.busy
+            }
+        ) { error in
+            XCTAssertEqual(error as? SpeechExportError, .busy)
+        }
+        XCTAssertEqual(log.withLock { $0 }, ["hold Exporting", "body", "release 7"])
+    }
+
+    /// When the system will not take the assertion, the body still runs,
+    /// and nothing is released.
+    func testWhileHeldRunsItsBodyWhenNoAssertionIsHeld() {
+        let log = OSAllocatedUnfairLock<[String]>(initialState: [])
+
+        let value = recordingPower(log, id: nil).whileHeld(reason: "Exporting") { "spoken" }
+
+        XCTAssertEqual(value, "spoken")
+        XCTAssertEqual(log.withLock { $0 }, ["hold Exporting"])
+    }
+
+    /// The live assertion: holding gives an ID the system knows, named as
+    /// asked and keeping the system from idle sleep, and releasing lets it
+    /// go. It keeps the Mac awake for a moment and makes no sound.
+    func testTheLiveAssertionIsHeldAndLetGo() throws {
+        let reason = "TextMouth's tests hold this for a moment"
+
+        let id = try XCTUnwrap(SpeechExportPower.live.hold(reason))
+        let held = IOPMAssertionCopyProperties(id)?.takeRetainedValue() as? [String: Any]
+        SpeechExportPower.live.release(id)
+        let afterRelease = IOPMAssertionCopyProperties(id)?.takeRetainedValue()
+
+        XCTAssertEqual(held?[kIOPMAssertionNameKey] as? String, reason)
+        XCTAssertEqual(held?[kIOPMAssertionTypeKey] as? String, kIOPMAssertPreventUserIdleSystemSleep)
+        XCTAssertNil(afterRelease, "The assertion was not let go")
     }
 }
