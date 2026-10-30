@@ -3,7 +3,14 @@ import XCTest
 
 /// A transcript from outside TextMouth's recognizer, in the one transcript
 /// store (FMT23, FMT25): where it came from, kept in transcript.json and in
-/// the book's record so that a later TextMouth's values survive.
+/// the book's record so that a later TextMouth's values survive; and a
+/// transcript made from timed sentences as recognition makes one, cut from
+/// the book's timeline into its files, and refused when it runs past the
+/// end of its audio.
+///
+/// The sentences are invented, so a line of the debug log that quoted them
+/// would stand out. Each book is silent tracks in a library folder of the
+/// test's own: nothing plays, and nothing reaches the user's library.
 @MainActor
 final class OutsideTranscriptTests: XCTestCase {
 
@@ -108,6 +115,252 @@ final class OutsideTranscriptTests: XCTestCase {
         XCTAssertNil(TranscriptSource(origin: .attached, format: .subRip).fileName)
     }
 
+    // MARK: - Fitting the Audio
+
+    /// A transcript may end exactly the margin past the end of its audio,
+    /// but not a millisecond more; the latest end among its sentences is
+    /// the one measured, whichever sentence has it; no sentences fit any
+    /// audio.
+    func testATranscriptMayEndExactlyTheMarginPastItsAudio() {
+        let margin = TimedTextLimits.pastTheEndMarginMilliseconds
+        let lastCall = TranscriptFixtures.sentence("Last call for the ferry.", from: 2_000, to: 3_000 + margin)
+        let tooLate = TranscriptFixtures.sentence("Last call for the ferry.", from: 2_000, to: 3_001 + margin)
+
+        XCTAssertNoThrow(try OutsideTranscript.checkFits([lastCall], durationMilliseconds: 3_000))
+        XCTAssertThrowsError(try OutsideTranscript.checkFits([tooLate], durationMilliseconds: 3_000)) {
+            XCTAssertEqual($0 as? OutsideTranscriptError, .runsPastTheEnd(transcriptEnd: 3_001 + margin, audioEnd: 3_000))
+        }
+        let longFirst = [
+            TranscriptFixtures.sentence("The tide turns at noon.", from: 0, to: 9_000),
+            TranscriptFixtures.sentence("Boats wait.", from: 1_000, to: 2_000),
+        ]
+        XCTAssertThrowsError(try OutsideTranscript.checkFits(longFirst, durationMilliseconds: 3_000)) {
+            XCTAssertEqual($0 as? OutsideTranscriptError, .runsPastTheEnd(transcriptEnd: 9_000, audioEnd: 3_000))
+        }
+        XCTAssertNoThrow(try OutsideTranscript.checkFits([], durationMilliseconds: 0))
+    }
+
+    /// Each refusal says plainly why, as the screen shows it and VoiceOver
+    /// speaks it: how far a transcript runs, in spoken time, against where
+    /// the audio ends; and never the reason an unusable transcript's times
+    /// gave the log.
+    func testEachRefusalIsWordedForTheListener() {
+        XCTAssertEqual(
+            OutsideTranscriptError.runsPastTheEnd(transcriptEnd: 3_725_000, audioEnd: 3_600_000).localizedDescription,
+            "The transcript runs to \(TimeFormatting.spoken(3_725)), past the end of the audio at "
+                + "\(TimeFormatting.spoken(3_600)), so it was made for other audio."
+        )
+        XCTAssertEqual(OutsideTranscriptError.noText.localizedDescription, "The transcript holds no text to attach.")
+        XCTAssertEqual(
+            OutsideTranscriptError.alreadyTranscribed.localizedDescription,
+            "The book has a transcript already, so TextMouth kept it."
+        )
+        XCTAssertEqual(
+            OutsideTranscriptError.unusable("files[0].sentences[1].startMilliseconds is 0").localizedDescription,
+            "The transcript's times don't fit together, so TextMouth can't use it."
+        )
+    }
+
+    // MARK: - Cutting the Book's Timeline into Its Files
+
+    /// On a book of a 3-second file and a 2-second file, a sentence at the
+    /// start stays as it is; one starting in the first file and running on
+    /// into the second stays in the first, its end held at the file's end
+    /// and its words, no longer inside it, gone; one starting exactly where
+    /// the second file starts opens it, its words moved with it; and one
+    /// starting past the book's end is held at the second file's end.
+    func testSentencesOnTheBooksTimelineGoToTheFilesTheyWereSpokenIn() throws {
+        let files = [Self.planFile("01.wav", seconds: 3), Self.planFile("02.wav", seconds: 2)]
+        let opening = TranscriptFixtures.sentence("Gulls circle the quay.", from: 0, to: 1_200)
+        let crossing = TranscriptFixtures.sentence("The ferry docks late.", from: 2_500, to: 3_400)
+        let atSecond = TranscriptFixtures.sentence("Ropes go taut.", from: 3_000, to: 4_000)
+        let pastTheEnd = TranscriptFixtures.sentence("Lamps come on.", from: 5_200, to: 5_900)
+
+        let split = OutsideTranscript.split([opening, crossing, atSecond, pastTheEnd], across: files)
+
+        XCTAssertEqual(Set(split.keys), ["01.wav", "02.wav"])
+        let first = try XCTUnwrap(split["01.wav"])
+        let second = try XCTUnwrap(split["02.wav"])
+        XCTAssertEqual(first.map(\.text), [opening.text, crossing.text])
+        XCTAssertEqual(first.map(\.startMilliseconds), [0, 2_500])
+        XCTAssertEqual(first.map(\.endMilliseconds), [1_200, 3_000])
+        XCTAssertEqual(first.first?.words, opening.words)
+        XCTAssertEqual(first.last?.words, [], "a word past the file's end was kept")
+        XCTAssertEqual(second.map(\.text), [atSecond.text, pastTheEnd.text])
+        XCTAssertEqual(second.map(\.startMilliseconds), [0, 2_000])
+        XCTAssertEqual(second.map(\.endMilliseconds), [1_000, 2_000])
+        let moved = try XCTUnwrap(second.first?.words)
+        XCTAssertEqual(moved.map(\.startMilliseconds), atSecond.words.map { $0.startMilliseconds - 3_000 })
+        XCTAssertEqual(moved.map(\.endMilliseconds), atSecond.words.map { $0.endMilliseconds - 3_000 })
+        XCTAssertEqual(moved.map(\.characterOffset), atSecond.words.map(\.characterOffset))
+        XCTAssertEqual(moved.map(\.confidence), atSecond.words.map(\.confidence))
+        XCTAssertEqual(second.last?.words, [], "a word past the book's end was kept")
+    }
+
+    /// A file of no length takes no sentence: one between two others leaves
+    /// a sentence starting where it lies to the file after it, one at the
+    /// end leaves a sentence at the book's end to the file before it, and
+    /// a book of no length at all takes none.
+    func testAFileOfNoLengthTakesNoSentence() throws {
+        let atBoundary = TranscriptFixtures.sentence("Ropes go taut.", from: 3_000, to: 3_600)
+
+        let between = OutsideTranscript.split([atBoundary], across: [
+            Self.planFile("01.wav", seconds: 3),
+            Self.planFile("silence.wav", seconds: 0),
+            Self.planFile("02.wav", seconds: 2),
+        ])
+        let atTheEnd = OutsideTranscript.split([atBoundary], across: [
+            Self.planFile("01.wav", seconds: 3),
+            Self.planFile("silence.wav", seconds: 0),
+        ])
+
+        XCTAssertEqual(Set(between.keys), ["02.wav"])
+        XCTAssertEqual(between["02.wav"]?.map(\.startMilliseconds), [0])
+        XCTAssertEqual(between["02.wav"]?.map(\.endMilliseconds), [600])
+        XCTAssertEqual(Set(atTheEnd.keys), ["01.wav"])
+        XCTAssertEqual(atTheEnd["01.wav"]?.map(\.startMilliseconds), [3_000])
+        XCTAssertEqual(atTheEnd["01.wav"]?.map(\.endMilliseconds), [3_000])
+        XCTAssertTrue(OutsideTranscript.split([atBoundary], across: [Self.planFile("silence.wav", seconds: 0)]).isEmpty)
+    }
+
+    // MARK: - Making the Transcript
+
+    /// A transcript made from each file's sentences is made as recognition
+    /// makes one: each of the book's files in order, fingerprinted as it is
+    /// now and measured, with its sentences as given; sentences of a file
+    /// the book does not have are passed over; it names no recognizer and
+    /// no language, was made by this build, in whole seconds, and records
+    /// where it came from.
+    func testATranscriptFromOutsideIsMadeAsRecognitionMakesOne() throws {
+        let (_, plan) = try makeBook("Outside Transcript")
+        let opening = TranscriptFixtures.sentence("Gulls circle the quay.", from: 0, to: 1_200)
+        let closing = TranscriptFixtures.sentence("Ropes go taut.", from: 400, to: 1_400)
+        let fingerprints = try plan.files.map { try XCTUnwrap(FileFingerprint(of: $0.url, hasher: .md5)) }
+
+        let transcript = try OutsideTranscript.transcript(
+            sentencesByFile: [
+                "01.wav": [opening],
+                "02.wav": [closing],
+                "Bonus/03.wav": [TranscriptFixtures.sentence("Nobody hears this.", from: 0, to: 900)],
+            ],
+            plan: plan,
+            source: Self.lectureSource,
+            now: Date(timeIntervalSince1970: 1_790_000_000.75)
+        )
+
+        XCTAssertEqual(transcript.files.map(\.path), ["01.wav", "02.wav"])
+        XCTAssertEqual(transcript.files.map(\.durationMilliseconds), [3_000, 2_000])
+        XCTAssertEqual(transcript.files.map(\.fingerprint), fingerprints)
+        XCTAssertEqual(transcript.files.map(\.sentences), [[opening], [closing]])
+        XCTAssertEqual(transcript.version, Transcript.currentVersion)
+        XCTAssertEqual(transcript.locale, "und")
+        XCTAssertEqual(transcript.model, TranscriptSpeechModel(
+            engine: "none",
+            assetStatus: "none",
+            systemVersion: ProcessInfo.processInfo.operatingSystemVersionString
+        ))
+        XCTAssertEqual(transcript.app, TranscriptAppBuild.current)
+        XCTAssertEqual(transcript.createdAt, Date(timeIntervalSince1970: 1_790_000_000))
+        XCTAssertEqual(transcript.source, Self.lectureSource)
+        XCTAssertNil(transcript.editedAt)
+        XCTAssertNil(transcript.cleanedUp)
+        XCTAssertNil(transcript.validationFailure())
+    }
+
+    /// A transcript timed on the book's timeline, as a podcast's transcript
+    /// of the whole episode is, is cut into the book's files.
+    func testATranscriptOfTheBooksTimelineIsCutIntoItsFiles() throws {
+        let (_, plan) = try makeBook("Outside Transcript Timeline")
+
+        let transcript = try OutsideTranscript.transcript(
+            bookTimeline: [
+                TranscriptFixtures.sentence("Gulls circle the quay.", from: 0, to: 1_200),
+                TranscriptFixtures.sentence("Ropes go taut.", from: 3_400, to: 4_400),
+            ],
+            plan: plan,
+            source: Self.podcastSource
+        )
+
+        XCTAssertEqual(transcript.files.map(\.path), ["01.wav", "02.wav"])
+        XCTAssertEqual(transcript.files.map { $0.sentences.map(\.text) }, [["Gulls circle the quay."], ["Ropes go taut."]])
+        XCTAssertEqual(transcript.files.map { $0.sentences.map(\.startMilliseconds) }, [[0], [400]])
+        XCTAssertEqual(transcript.files.map { $0.sentences.map(\.endMilliseconds) }, [[1_200], [1_400]])
+        XCTAssertEqual(transcript.source, Self.podcastSource)
+    }
+
+    /// No transcript is made without text for the book's files, from
+    /// sentences running past the end of a file or of the book, from
+    /// sentences out of order, or for a file that can no longer be read.
+    func testATranscriptThatCannotBeUsedIsRefused() throws {
+        let (_, plan) = try makeBook("Outside Transcript Refused")
+        func refusal(_ make: () throws -> Transcript) -> Error? {
+            do {
+                _ = try make()
+                return nil
+            } catch {
+                return error
+            }
+        }
+        func made(_ sentencesByFile: [String: [TranscriptSentence]]) -> Error? {
+            refusal { try OutsideTranscript.transcript(sentencesByFile: sentencesByFile, plan: plan, source: Self.lectureSource) }
+        }
+        func madeFromTimeline(_ sentences: [TranscriptSentence]) -> Error? {
+            refusal { try OutsideTranscript.transcript(bookTimeline: sentences, plan: plan, source: Self.podcastSource) }
+        }
+        let elsewhere = TranscriptFixtures.sentence("Nobody hears this.", from: 0, to: 900)
+
+        XCTAssertEqual(made([:]) as? OutsideTranscriptError, .noText)
+        XCTAssertEqual(made(["Bonus/03.wav": [elsewhere]]) as? OutsideTranscriptError, .noText)
+        XCTAssertEqual(madeFromTimeline([]) as? OutsideTranscriptError, .noText)
+        XCTAssertEqual(
+            made(["02.wav": [TranscriptFixtures.sentence("The bell rings late.", from: 1_000, to: 7_001)]]) as? OutsideTranscriptError,
+            .runsPastTheEnd(transcriptEnd: 7_001, audioEnd: 2_000)
+        )
+        XCTAssertEqual(
+            madeFromTimeline([TranscriptFixtures.sentence("The bell rings late.", from: 4_000, to: 10_001)]) as? OutsideTranscriptError,
+            .runsPastTheEnd(transcriptEnd: 10_001, audioEnd: 5_000)
+        )
+        let outOfOrder = made(["01.wav": [
+            TranscriptFixtures.sentence("Ropes go taut.", from: 1_000, to: 2_000),
+            TranscriptFixtures.sentence("Gulls circle the quay.", from: 0, to: 900),
+        ]])
+        XCTAssertEqual(
+            outOfOrder as? OutsideTranscriptError,
+            .unusable("files[0].sentences[1].startMilliseconds is 0, before the previous sentence's 1000")
+        )
+
+        let secondTrack = try XCTUnwrap(plan.files.last)
+        try FileManager.default.removeItem(at: secondTrack.url)
+        XCTAssertEqual(
+            made(["01.wav": [elsewhere]]) as? TranscriptionError,
+            .unreadableFile(file: "02.wav", reason: TranscriptionError.unreadableAudioReason)
+        )
+    }
+
+    /// A transcript from outside, installed, is the book's text, and the
+    /// book's record notes where it came from.
+    func testAnInstalledTranscriptFromOutsideIsTheBooksTextAndItsRecordNotesItsSource() throws {
+        let (book, plan) = try makeBook("Outside Transcript Installed")
+        let transcript = try OutsideTranscript.transcript(
+            sentencesByFile: [
+                "01.wav": [TranscriptFixtures.sentence("Gulls circle the quay.", from: 0, to: 1_200)],
+                "02.wav": [TranscriptFixtures.sentence("Ropes go taut.", from: 400, to: 1_400)],
+            ],
+            plan: plan,
+            source: Self.lectureSource
+        )
+
+        try TranscriptStore.install(transcript, for: book)
+
+        let record = try BookInfo.load(from: book.tmbDirectory)
+        XCTAssertEqual(record.state.transcript?.source, Self.lectureSource)
+        XCTAssertEqual(TranscriptStore.read(from: book.tmbDirectory), .found(transcript))
+        let index = try XCTUnwrap(record.contentIndex)
+        let load = TranscriptTextLoader.load(for: book, audioIndex: index)
+        XCTAssertEqual(load.text?.chapterText(0), "01\n\nGulls circle the quay.")
+        XCTAssertEqual(load.text?.chapterText(1), "02\n\nRopes go taut.")
+    }
+
     // MARK: - Helpers
 
     /// The source of a transcript attached from one WebVTT file.
@@ -131,5 +384,20 @@ final class OutsideTranscriptTests: XCTestCase {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
         return String(decoding: try encoder.encode(value), as: UTF8.self)
+    }
+
+    /// A file of a transcription plan, `seconds` long, made by hand for a
+    /// test that never reads it.
+    private static func planFile(_ path: String, seconds: TimeInterval) -> TranscriptionPlan.File {
+        TranscriptionPlan.File(path: path, url: URL(fileURLWithPath: "/nonexistent/\(path)"), duration: seconds)
+    }
+
+    /// A silent audiobook of two tracks, "01.wav" of 3 seconds and "02.wav"
+    /// of 2, in a world of the test's own named after `label`, and the plan
+    /// of its audio, as a transcription makes it.
+    private func makeBook(_ label: String) throws -> (book: Book, plan: TranscriptionPlan) {
+        let world = try makeIntegrationWorld(label)
+        let book = try world.makeSilentAudioBook(title: "Harbour Captions", trackDurations: [3, 2])
+        return (book, try TranscriptionPlan.make(for: book))
     }
 }
