@@ -816,8 +816,10 @@ enum BrailleTableCatalog {
 
 // MARK: - The Setting
 
-/// The preference that chooses the braille table (FMT21), kept in the
-/// preferences store and mirrored in config.json as `brailleTable`.
+/// The preferences that choose how braille files are read, kept in the
+/// preferences store: the braille table (FMT21), mirrored in config.json as
+/// `brailleTable`, and the braille file characters an import reads a BRF or
+/// BRL file in (braillecodes).
 enum BraillePreferences {
     /// The table braille files are read and written with, by its stored
     /// value (`BrailleTableSource`): a bundled table's file name, or "mac:"
@@ -849,5 +851,37 @@ enum BraillePreferences {
     /// import in a test never reads the user's real setting.
     static func importTable() -> String {
         tableForImports ?? table.read(from: TextMouthRuntime.current.preferences)
+    }
+
+    /// The braille file characters a BRF or BRL file is read in when it is
+    /// imported (braillecodes), by the code's id (`BrailleFileCode`). It
+    /// reads as the stored id when that is a code of `BrailleFileCode.all`,
+    /// and as North American Braille ASCII (`BrailleFileCode.defaultCode`)
+    /// otherwise: when nothing is stored, the value is empty, or it names a
+    /// code this TextMouth does not know. Unlike a book's own code, which is
+    /// refused by name when unknown, the setting only chooses for books not
+    /// yet imported, so an unknown value falls back to the default. A book
+    /// keeps the code it was imported with whatever the setting says later.
+    static let fileCode = StoredPreference<String>(
+        key: "brailleFileCode",
+        read: { store, key in
+            store.string(forKey: key).flatMap(BrailleFileCode.code(withID:))?.id ?? BrailleFileCode.defaultCode.id
+        },
+        write: { id, store, key in store.set(id, forKey: key) }
+    )
+
+    /// The braille file code an import uses in place of the setting, by its
+    /// id, bound by a hosted test
+    /// (`$fileCodeForImports.withValue("ascii-eurobraille") { ... }`) so it
+    /// never writes the real preferences store, as `tableForImports` is.
+    @TaskLocal static var fileCodeForImports: String? = nil
+
+    /// The braille file code an import reads a BRF or BRL file in when its
+    /// bytes name none for certain, by its id: the one a test bound, else the
+    /// setting in the runtime's preferences store, read as `importTable()`
+    /// reads the table, so an import in a test never reads the user's real
+    /// setting.
+    static func importFileCode() -> String {
+        fileCodeForImports ?? fileCode.read(from: TextMouthRuntime.current.preferences)
     }
 }
