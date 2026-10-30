@@ -17,6 +17,8 @@ Candidate writers, unconfirmed (find the real one; do not guess): `ReadingStatsS
 3. Post what you found to `tests-lead` (`bbs post tests-movewriter --to tests-lead --topic "movewriter: <writer> writes <path> during the copy because ..."`), with the fix you propose, then wait for the answer (`bbs watch tests-movewriter --timeout 600`, repeated). Remove the temporary prints.
 
 ## Step 2: the fix (once the lead confirms)
+Whatever step 1 finds, this task also takes the reading-statistics flush that `bughunt-lead` handed over (board #4111): call `ReadingStatsService.waitForQueuedSaves()` (it touches only the stats save queue; any thread may wait) beside the other flushes in `withStorageWorkHeld`, with a test that queues a held stats save before a move and sees the move wait for it. bughunt edits `ReadingStatsService.swift` tonight (sleep and wake), so do not edit that file; it will not touch `withStorageWorkHeld` or `DataDirectoryMigrator.swift`.
+
 The move must wait for, or flush, that writer before it plans the copy, in `withStorageWorkHeld` beside the other flushes, or the writer must be held as storage work while a move holds it; whichever matches how the writer works. No change in what the app does otherwise. Then a regression test that fails deterministically without the fix: hold the writer mid-write at a test seam (an injected queue, a gate in a test-only hook with no effect in the app), start the move, and assert the move waits for it and succeeds, with the write's latest bytes in the moved directory. Prove it fails with the fix removed. Run `--repeat 10 StorageGenerationMoveTests DataDirectoryMoveTests` at the end: all pass.
 
 ## Files
