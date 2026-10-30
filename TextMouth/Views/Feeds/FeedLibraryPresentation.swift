@@ -161,35 +161,54 @@ struct FeedRowContent: Equatable, Identifiable {
 /// Which feeds a Library window's Feeds section lists, and what each row
 /// says (FR03).
 ///
-/// The section shows where feeds are: at a folder holding feeds' folders,
-/// at any depth, which makes the top of the library list every feed, and
-/// in All Items, which lists every feed. Unopened lists a feed only while
-/// it has a new item (FR11, the user's answer to question 8): one published
-/// since the subscription began, neither played nor opened
-/// (`FeedCenter.isNew`), so a podcast's back catalogue, every item of which
-/// is listed and unplayed, never keeps its feed there. Each row counts its
-/// items as it does everywhere. A feed's own folder lists its items rather
-/// than itself, and Recently Opened and the Reading List list no feeds. A
-/// feed whose folder is gone shows at the top of the library, in All Items,
-/// and, with a new item, in Unopened, where it can still be found.
+/// The section shows where feeds are: in Folders, at a folder holding
+/// feeds' folders, at any depth, which makes the top of the library list
+/// every feed; in a filter view, the feeds its filter finds (October 30,
+/// 2026, `LibraryViewFilterEvaluator.feeds`); at the Reading List, none.
+/// The views TextMouth ships list what the categories did: All Items and
+/// Feeds every feed; Unopened a feed only while it has a new item (FR11,
+/// the user's answer to question 8), one published since the subscription
+/// began, neither played nor opened (`FeedCenter.isNew`), so a podcast's
+/// back catalogue, every item of which is listed and unplayed, never keeps
+/// its feed there; and Recently Opened none. Each row counts its items as
+/// it does everywhere. A feed's own folder lists its items rather than
+/// itself. A feed whose folder is gone shows at the top of the library, in
+/// All Items and Feeds, and, with a new item, in Unopened, where it can
+/// still be found.
 enum LibraryFeedsSectionRows {
     /// The feeds the Feeds section lists at `location`, by title.
     @MainActor
     static func feeds(at location: LibraryLocation, center: FeedCenter) -> [Feed] {
-        switch location.category {
-        case .allItems:
-            return center.feeds
+        switch location.view.kind {
         case .folders:
             let base = location.folderPath
             return center.feeds.filter { feed in
                 guard let path = center.folderPath(of: feed) else { return base.isEmpty }
                 return base.isEmpty || path.hasPrefix(base + "/")
             }
-        case .unopened:
-            // Every feed with a new item, whatever its folder (FR11).
-            return center.feeds.filter { center.counts(of: $0.id).new > 0 }
-        case .recent, .readingList:
+        case .readingList:
             return []
+        case .filter:
+            guard let filter = location.view.filter, filter.lists.contains(.feeds) else { return [] }
+            // A feed's conditions read its folder, its title and author, its
+            // new items, and whether it is subscribed: the context holds the
+            // paths of the folders the conditions name, and nothing else.
+            let context = LibraryViewFilterContext(
+                for: filter,
+                now: Date(),
+                calendar: .current,
+                finishedIDs: { [] },
+                readingListIDs: { [] },
+                folderPath: { center.library?.feedFolderPath(forFolderID: $0) },
+                feedFolderPaths: { [:] }
+            )
+            return LibraryViewFilterEvaluator.feeds(
+                of: filter,
+                in: center.feeds,
+                context: context,
+                newItemCount: { center.counts(of: $0).new },
+                folderPath: { center.folderPath(of: $0) }
+            )
         }
     }
 
