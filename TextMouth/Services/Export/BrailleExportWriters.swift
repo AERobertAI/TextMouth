@@ -147,10 +147,10 @@ private enum BrailleExportWriting {
     /// of its print blocks, with their emphasis, given the folder the
     /// translator may make its hidden files in (the export's scratch folder,
     /// which holds `url`).
-    /// - Throws: `CancellationError` when stopped before or after the
-    ///   translation; a `TextExportError` saying why the translator failed;
-    ///   and whatever writing the file throws (a file already at `url` is an
-    ///   error, and is left as it was).
+    /// - Throws: `CancellationError` when stopped before, during, or after
+    ///   the translation; a `TextExportError` saying why the translator
+    ///   failed; and whatever writing the file throws (a file already at
+    ///   `url` is an error, and is left as it was).
     static func write(
         _ document: ExportDocument,
         to url: URL,
@@ -161,7 +161,16 @@ private enum BrailleExportWriting {
         try cancellation.checkCancelled()
         let data: Data
         do {
-            data = try makeData(BrailleExportBlocks.printBlocks(of: document), url.deletingLastPathComponent())
+            // The braille helper listens to the export's Stop as it listens
+            // to an import's Cancel (TODO 3985): Stop kills a translation
+            // under way at once, rather than waiting up to its time limit.
+            data = try ImportCancellation.$current.withValue(cancellation.childProcesses) {
+                try makeData(BrailleExportBlocks.printBlocks(of: document), url.deletingLastPathComponent())
+            }
+        } catch is ImportCancelled {
+            // Stop killed the helper: the book ends as one stopped between
+            // its steps does, and nothing is written.
+            throw CancellationError()
         } catch let failure as BrailleTranslator.Failure {
             // The dialog names the file before this sentence.
             throw TextExportError(failure.localizedDescription)
