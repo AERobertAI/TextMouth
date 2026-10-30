@@ -544,6 +544,7 @@
 		78B1C0D583A8E48586C5635B /* libliblouis.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0ADC7F01E33F051F35D1E26B /* libliblouis.a */; };
 		78CAAB81289BCFDE9F13FAE2 /* AudioMediaValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08A8864CC76B6D2AE16A8BDB /* AudioMediaValidationTests.swift */; };
 		78D691C7670A329A4710D675 /* OggLibraryConversionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFFB504D6A130FA65547ADDA /* OggLibraryConversionTests.swift */; };
+		794D65E1835F023A405A1937 /* FFmpegMetadataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DF7A0BB5950C52F5B7B5DF4 /* FFmpegMetadataTests.swift */; };
 		799D4B31D2AD581B1F94427E /* VbrTag.c in Sources */ = {isa = PBXBuildFile; fileRef = 75D668D0A68BBCA302341BCA /* VbrTag.c */; };
 		79EC6CB6460F822FEA3780C0 /* LogWriteSafetyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0A2769737DFEEFA52348F7 /* LogWriteSafetyTests.swift */; };
 		79F3F3F76A648AC2CFA5C633 /* AudioEditingPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E80AFA1DBE5DFA92AB8A50F /* AudioEditingPreferences.swift */; };
@@ -1424,6 +1425,7 @@
 		1DB2853BE8A46EC4B41B30FA /* version.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
 		1DBAC9F0C48046FA5AF60A01 /* MigrationStagingLeftovers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrationStagingLeftovers.swift; sourceTree = "<group>"; };
 		1DD131A59F71D6F064DBC160 /* TranscriptCleanupSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptCleanupSheet.swift; sourceTree = "<group>"; };
+		1DF7A0BB5950C52F5B7B5DF4 /* FFmpegMetadataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FFmpegMetadataTests.swift; sourceTree = "<group>"; };
 		1E1C9B4F92D7D43D1D80CAB4 /* RepeatedSymbolSpeechTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepeatedSymbolSpeechTests.swift; sourceTree = "<group>"; };
 		1E8B1FA64FBBA558A90F0FF0 /* fft.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = fft.c; sourceTree = "<group>"; };
 		1EAB008FD69BED739FF65067 /* FolderPathEquivalenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderPathEquivalenceTests.swift; sourceTree = "<group>"; };
@@ -3372,6 +3374,7 @@
 				F2BED1520F63F09117E5FFF4 /* FeedUIOPMLTests.swift */,
 				E68239E404B1B7FFD4E31228 /* FeedUISettingsTests.swift */,
 				E001D0BD44B872AAD53A503E /* FeedUITestSupport.swift */,
+				1DF7A0BB5950C52F5B7B5DF4 /* FFmpegMetadataTests.swift */,
 				FF3D9742A4204AD65A2DB3CB /* FinishedBookModelTests.swift */,
 				FE6818FA9394F470013B0AE6 /* FinishedBookReaderTests.swift */,
 				BEFA45A331D30C7553CA35C6 /* FinishedBooksAtEndMoveTests.swift */,
@@ -4342,6 +4345,7 @@
 				FB620436B23F53CA070169DF /* EpisodeSuccessionTests.swift in Sources */,
 				4E4994644D5BC8CA075E7597 /* ExportDocumentWalkerTests.swift in Sources */,
 				ADDB53521DD65E8ACFE36ECF /* ExtractionReportTests.swift in Sources */,
+				794D65E1835F023A405A1937 /* FFmpegMetadataTests.swift in Sources */,
 				9316E11F7C4A636EB232AAE9 /* FeatureModelProductionTests.swift in Sources */,
 				E36AE2762D4CDF20C2CFE317 /* FeedDeleteFeedTests.swift in Sources */,
 				454BAB340F38E391ECB7251F /* FeedDownloadProgressEngineTests.swift in Sources */,

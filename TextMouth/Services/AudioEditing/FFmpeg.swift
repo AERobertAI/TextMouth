@@ -113,7 +113,8 @@ struct FFmpeg: Equatable, Sendable {
     }
 
     /// `chapters` as ffmpeg's metadata file holds them: a header, then one
-    /// section for each chapter, its times in milliseconds.
+    /// section for each chapter, its times in milliseconds, each rounded to
+    /// the nearest, and its title escaped (`escapeMetadata(_:)`).
     static func ffmetadata(chapters: [AudioRenderChapter]) -> String {
         var lines = [";FFMETADATA1"]
         for chapter in chapters {
@@ -124,17 +125,38 @@ struct FFmpeg: Equatable, Sendable {
         return lines.joined(separator: "\n") + "\n"
     }
 
-    /// `value` as an ffmetadata value: "=", ";", "#", the backslash, and a
-    /// line break each escaped with a backslash.
+    /// `value` as an ffmetadata value: "=", ";", "#", and the backslash each
+    /// escaped with a backslash, and every line break, whether a line feed,
+    /// a carriage return, or the pair of them Windows writes, as one escaped
+    /// line feed (a backslash, then a line feed), which ffmpeg's reader
+    /// takes as a line break within the value. Its reader ends a line at an
+    /// unescaped carriage return as at a line feed, and an escaped return
+    /// would still leave the line feed after it to end the line.
+    ///
+    /// The value is walked by Unicode scalar, as ffmpeg reads it byte by
+    /// byte: a Swift Character can hide what must be escaped, as CR LF is
+    /// one Character, and so is a backslash with a combining accent after it.
     static func escapeMetadata(_ value: String) -> String {
-        var escaped = ""
-        for character in value {
-            if ["=", ";", "#", "\\", "\n"].contains(character) {
+        var escaped = String.UnicodeScalarView()
+        // Whether the scalar before was a carriage return, whose line feed,
+        // when one follows, belongs to the same line break.
+        var afterReturn = false
+        for scalar in value.unicodeScalars {
+            switch scalar {
+            case "\n" where afterReturn:
+                // The line feed of a CR LF: its return wrote the line break.
+                break
+            case "\n", "\r":
+                escaped.append(contentsOf: "\\\n".unicodeScalars)
+            case "=", ";", "#", "\\":
                 escaped.append("\\")
+                escaped.append(scalar)
+            default:
+                escaped.append(scalar)
             }
-            escaped.append(character)
+            afterReturn = scalar == "\r"
         }
-        return escaped
+        return String(escaped)
     }
 
     // MARK: Running
