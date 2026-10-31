@@ -160,13 +160,9 @@ final class ViewsAndWindowsReaderSheetTests: XCTestCase {
             settle(hosted.hostingView, seconds: 0.2)
         }
         moveCursor(to: sections[0].characterOffset)
-        // The first time the presenting parent draws again after the sheet
-        // appears, SwiftUI draws the sheet once more, whatever changed; one
-        // publish that changes nothing takes that draw out of the counts.
-        reader.objectWillChange.send()
-        settle(hosted.hostingView, seconds: 0.3)
-
         let watched = ["HeadingNavigatorView", "HeadingNavigatorRow"]
+        readyForCounting(hosted.hostingView, watching: watched, ownDelay: Self.headingsSheetOwnDelay, reader: reader)
+
         let withinTheHeading = bodyRuns(of: watched, in: hosted.hostingView, publishing: 1, warmUps: 0) { _ in
             moveCursor(to: sections[0].characterOffset + 1)
         }
@@ -198,11 +194,12 @@ final class ViewsAndWindowsReaderSheetTests: XCTestCase {
             size: NSSize(width: 600, height: 700)
         )
         defer { takeDown(hosted.window) }
-        settle(hosted.hostingView, seconds: 0.4)
-        // The first draw of the parent after the sheet appears draws the
-        // sheet once more, whatever changed; one publish takes it out.
-        reader.objectWillChange.send()
-        settle(hosted.hostingView, seconds: 0.3)
+        readyForCounting(
+            hosted.hostingView,
+            watching: ["HeadingNavigatorView", "HeadingNavigatorRow"],
+            ownDelay: Self.headingsSheetOwnDelay,
+            reader: reader
+        )
 
         // Rows redrawn by `change`, once the sheet has caught up with it.
         func rowRedraws(_ change: () -> Void) -> Int {
