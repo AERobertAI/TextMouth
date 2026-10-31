@@ -285,10 +285,14 @@ extension LibrarySortState {
         hasDirection
     }
 
+    /// Why manual order offers no direction: the direction command's hint,
+    /// and the view editor's Order pop-up's, while it is dimmed.
+    static let manualOrderHasNoDirection = "Manual order has no direction"
+
     /// The direction command's hint, which VoiceOver speaks and the pointer
     /// shows as a tooltip. In manual order it says why the command is off.
     var directionCommandHint: String {
-        hasDirection ? "Reverses the order of the books" : "Manual order has no direction"
+        hasDirection ? "Reverses the order of the books" : Self.manualOrderHasNoDirection
     }
 
     /// The Sort button's spoken label: "Sort books by Title, ascending", or

@@ -12,7 +12,7 @@ import XCTest
 /// `UnopenedCategoryTests` explains.
 final class LibraryViewsSettingsTests: XCTestCase {
     /// The isolated data root's index, put back after a test that saves.
-    private var sandbox: LibraryIndexSandbox!
+    private var sandbox: LibraryIndexSandbox?
 
     override func setUpWithError() throws {
         sandbox = try LibraryIndexSandbox.capture()
@@ -98,9 +98,16 @@ final class LibraryViewsSettingsTests: XCTestCase {
     /// The tab's row hints and Restore Default's hint, by view.
     @MainActor
     func testTheHintsEachViewGets() {
-        XCTAssertEqual(LibraryViewsSettingsView.rowHint(of: .shipped(.folders)), "Shows one folder at a time")
-        XCTAssertEqual(LibraryViewsSettingsView.rowHint(of: .shipped(.readingList)), "Shows the books in the order you arrange")
-        XCTAssertEqual(LibraryViewsSettingsView.rowHint(of: .shipped(.unopened)), "")
+        let noFolders: (UUID?) -> String = { LibraryFolderChoice.name(of: $0, among: []) }
+        XCTAssertEqual(LibraryViewsSettingsView.rowHint(of: .shipped(.folders), folderName: noFolders), "Shows one folder at a time")
+        XCTAssertEqual(
+            LibraryViewsSettingsView.rowHint(of: .shipped(.readingList), folderName: noFolders),
+            "Shows the books in the order you arrange"
+        )
+        XCTAssertEqual(
+            LibraryViewsSettingsView.rowHint(of: .shipped(.unopened), folderName: noFolders),
+            "Lists books and feeds: reading state is Unopened and has new episodes or articles."
+        )
         XCTAssertEqual(LibraryViewsSettingsView.restoreHint(of: .shipped(.unopened), available: true), LibraryViewsSettingsWording.restoreHint)
         XCTAssertEqual(LibraryViewsSettingsView.restoreHint(of: .shipped(.unopened), available: false), LibraryViewsSettingsWording.restoreUnchangedHint)
         XCTAssertEqual(LibraryViewsSettingsView.restoreHint(of: .shipped(.folders), available: false), LibraryViewsSettingsWording.restoreUnchangedHint)
@@ -127,24 +134,24 @@ final class LibraryViewsSettingsTests: XCTestCase {
             return LibraryViewsSettingsCommand.available(for: view, in: list, sortIsSaved: sortIsSaved)
         }
         XCTAssertEqual(commands(.category(.folders)), [.moveDown])
-        XCTAssertEqual(commands(.category(.allItems)), [.moveUp, .moveDown, .show(.whenApplicable), .show(.hidden), .duplicate])
+        XCTAssertEqual(commands(.category(.allItems)), [.edit, .moveUp, .moveDown, .show(.whenApplicable), .show(.hidden), .duplicate])
         XCTAssertEqual(
             commands(.category(.allItems), sortIsSaved: true),
-            [.moveUp, .moveDown, .show(.whenApplicable), .show(.hidden), .duplicate, .restoreDefault]
+            [.edit, .moveUp, .moveDown, .show(.whenApplicable), .show(.hidden), .duplicate, .restoreDefault]
         )
         XCTAssertEqual(commands(.category(.readingList)), [.moveUp, .moveDown, .show(.whenApplicable), .show(.hidden)])
         XCTAssertEqual(commands(.category(.readingList), sortIsSaved: true), [.moveUp, .moveDown, .show(.whenApplicable), .show(.hidden)])
-        XCTAssertEqual(commands(.feeds), [.moveUp, .moveDown, .show(.always), .show(.hidden), .duplicate])
-        XCTAssertEqual(commands(mine.id), [.moveUp, .show(.whenApplicable), .show(.hidden), .duplicate, .delete])
+        XCTAssertEqual(commands(.feeds), [.edit, .moveUp, .moveDown, .show(.always), .show(.hidden), .duplicate])
+        XCTAssertEqual(commands(mine.id), [.edit, .moveUp, .show(.whenApplicable), .show(.hidden), .duplicate, .delete])
 
         var renamed = LibraryViewDefinition.shipped(.unopened)
         renamed.name = "Not Yet"
         list.replace(renamed)
         XCTAssertEqual(commands(.category(.unopened)).last, .restoreDefault)
         XCTAssertEqual(
-            [LibraryViewsSettingsCommand.moveUp, .moveDown, .show(.always), .show(.whenApplicable), .show(.hidden), .duplicate, .delete, .restoreDefault]
+            [LibraryViewsSettingsCommand.edit, .moveUp, .moveDown, .show(.always), .show(.whenApplicable), .show(.hidden), .duplicate, .delete, .restoreDefault]
                 .map(\.title),
-            ["Move Up", "Move Down", "Show Always", "Show When Applicable", "Hide", "Duplicate", "Delete…", "Restore Default…"]
+            ["Edit…", "Move Up", "Move Down", "Show Always", "Show When Applicable", "Hide", "Duplicate", "Delete…", "Restore Default…"]
         )
     }
 

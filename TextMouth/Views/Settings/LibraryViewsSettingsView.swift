@@ -4,7 +4,8 @@ import SwiftUI
 /// LIBRARY-VIEWS-RESEARCH-2026-10-30.md, section 7): the Library window's
 /// views in order, each row one element VoiceOver reads whole, with the
 /// commands for the selected view under the list: its visibility, Move Up
-/// and Move Down, Duplicate, Delete…, and Restore Default…. A row's
+/// and Move Down, New View…, Edit…, Duplicate, Delete…, and Restore
+/// Default…, the editor in a sheet (`LibraryViewEditorSheet`). A row's
 /// VoiceOver actions and the list's context menu offer the same commands
 /// (`LibraryViewsSettingsCommand`), and every change goes through the views
 /// store, which config.json follows.
@@ -22,6 +23,8 @@ struct LibraryViewsSettingsView: View {
     @State private var pendingDelete: LibraryViewDefinition?
     /// The built-in view Restore Default… is asking about, or nil.
     @State private var pendingRestore: LibraryViewDefinition?
+    /// The editor's draft while its sheet shows, or nil.
+    @State private var editor: LibraryViewEditorModel?
 
     /// The tab on `store`, the app's views unless a test gives its own.
     init(store: LibraryViewDefinitionStore = .shared) {
@@ -72,6 +75,15 @@ struct LibraryViewsSettingsView: View {
         } message: {
             Text(Wording.restoreMessage)
         }
+        .sheet(item: $editor) { model in
+            LibraryViewEditorSheet(
+                model: model,
+                folders: folderChoices,
+                count: countSentence(for:),
+                onCancel: { editor = nil },
+                onSave: { save(model) }
+            )
+        }
     }
 
     // MARK: - Parts
@@ -109,6 +121,11 @@ struct LibraryViewsSettingsView: View {
                     Button(command.title) { perform(command, on: view) }
                 }
             }
+        } primaryAction: { ids in
+            // Return or a double-click edits a filter view.
+            if let id = ids.first, let view = store.list.view(id), view.kind == .filter {
+                perform(.edit, on: view)
+            }
         }
         .frame(maxHeight: .infinity)
     }
@@ -131,7 +148,7 @@ struct LibraryViewsSettingsView: View {
             number: number,
             count: count
         ))
-        .accessibilityHint(Self.rowHint(of: view))
+        .accessibilityHint(Self.rowHint(of: view, folderName: { LibraryFolderChoice.name(of: $0, among: folderChoices) }))
         .accessibilityActions {
             ForEach(actions.commands(for: view), id: \.self) { command in
                 Button(command.title) { perform(command, on: view) }
@@ -173,6 +190,18 @@ struct LibraryViewsSettingsView: View {
                 )
             }
             HStack(spacing: 12) {
+                Button(LibraryViewEditorWording.newViewButton) {
+                    editor = LibraryViewEditorModel()
+                }
+                .accessibilityHint(LibraryViewEditorWording.newViewHint)
+                .help(LibraryViewEditorWording.newViewHint)
+                commandButton(
+                    LibraryViewEditorWording.editButton,
+                    label: LibraryViewEditorWording.editButton,
+                    hint: commands.contains(.edit) ? LibraryViewEditorWording.editHint : LibraryViewEditorWording.editDisabledHint,
+                    command: .edit,
+                    available: commands
+                )
                 commandButton(
                     Wording.duplicateAction,
                     label: Wording.duplicateAction,
@@ -249,13 +278,44 @@ struct LibraryViewsSettingsView: View {
         )
     }
 
-    /// The row hint of `view`: what Folders and the Reading List show; none
-    /// for a filter view, until the editor describes its filter.
-    static func rowHint(of view: LibraryViewDefinition) -> String {
+    /// The folders a Folder condition can name, in tree order.
+    private var folderChoices: [LibraryFolderChoice] {
+        LibraryFolderChoice.choices(in: libraryViewModel.library)
+    }
+
+    /// The row hint of `view`: what Folders and the Reading List show, and
+    /// a filter view's filter described, its folders named by `folderName`
+    /// (`LibraryViewEditorWording.description(of:folderName:)`).
+    static func rowHint(of view: LibraryViewDefinition, folderName: (UUID?) -> String) -> String {
         switch view.kind {
         case .folders: return LibraryViewsSettingsWording.foldersHint
         case .readingList: return LibraryViewsSettingsWording.readingListHint
-        case .filter: return ""
+        case .filter:
+            return view.filter.map { LibraryViewEditorWording.description(of: $0, folderName: folderName) } ?? ""
+        }
+    }
+
+    /// What the draft `view` lists now, as the editor's count says it,
+    /// derived afresh, never through the list cache, so editing never
+    /// evicts a Library window's lists.
+    private func countSentence(for view: LibraryViewDefinition) -> String {
+        let location = LibraryLocation(view: view, folderPath: "")
+        let rows = libraryViewModel.books(listedAt: location, context: libraryViewModel.filterContext(for: location))
+        let feeds = LibraryFeedsSectionRows.feeds(at: location, center: LibraryFeedFolders.shared.center).count
+        return LibraryViewEditorWording.count(of: rows, feeds: feeds)
+    }
+
+    /// Saves the editor's draft: a problem stays on the sheet and is said; a
+    /// saved view is selected, and said once the sheet has closed.
+    private func save(_ model: LibraryViewEditorModel) {
+        switch actions.save(model) {
+        case .problem(let problem):
+            model.problem = problem
+            VoiceOverAnnouncer.announce(problem)
+        case .saved(let id, let announcement):
+            editor = nil
+            selection = id
+            VoiceOverAnnouncer.announceAfterSheetCloses(announcement, from: nil)
         }
     }
 
@@ -276,6 +336,8 @@ struct LibraryViewsSettingsView: View {
     private func perform(_ command: LibraryViewsSettingsCommand, on view: LibraryViewDefinition) {
         selection = view.id
         switch command {
+        case .edit:
+            editor = LibraryViewEditorModel(editing: view, sort: actions.shownSortSetting(of: view))
         case .moveUp, .moveDown:
             if let announcement = actions.move(view, by: command == .moveUp ? -1 : 1) {
                 VoiceOverAnnouncer.announce(announcement)

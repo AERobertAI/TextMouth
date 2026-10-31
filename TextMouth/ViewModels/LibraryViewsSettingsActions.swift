@@ -7,6 +7,8 @@ import Foundation
 /// list all ask `available(for:in:sortIsSaved:)`, so the three never offer
 /// different commands.
 enum LibraryViewsSettingsCommand: Hashable {
+    /// Opens the editor on a filter view.
+    case edit
     /// Moves the view one place up the list.
     case moveUp
     /// Moves the view one place down the list.
@@ -22,7 +24,8 @@ enum LibraryViewsSettingsCommand: Hashable {
     case restoreDefault
 
     /// The commands that apply to `view` in `list` now, in the order the
-    /// menu offers them: the moves it can make, the visibilities it does not
+    /// menu offers them: Edit… for a filter view, the moves it can make, the
+    /// visibilities it does not
     /// have (none for Folders, which is always offered), Duplicate for a
     /// filter view, Delete… for a custom one, and Restore Default… for a
     /// built-in filter view that differs from TextMouth's own, or whose sort
@@ -33,6 +36,9 @@ enum LibraryViewsSettingsCommand: Hashable {
         sortIsSaved: Bool
     ) -> [LibraryViewsSettingsCommand] {
         var commands: [LibraryViewsSettingsCommand] = []
+        if view.kind == .filter {
+            commands.append(.edit)
+        }
         if let place = list.place(of: view.id) {
             if place.number > 1 { commands.append(.moveUp) }
             if place.number < place.count { commands.append(.moveDown) }
@@ -61,6 +67,7 @@ enum LibraryViewsSettingsCommand: Hashable {
     /// The command's name, as a VoiceOver action and a menu item.
     var title: String {
         switch self {
+        case .edit: return LibraryViewEditorWording.editButton
         case .moveUp: return LibraryViewsSettingsWording.moveUpAction
         case .moveDown: return LibraryViewsSettingsWording.moveDownAction
         case .show(let visibility): return LibraryViewsSettingsWording.showAction(visibility)
@@ -91,18 +98,12 @@ struct LibraryViewsSettingsActions {
         return library.library.folderSortSettings[key] != nil
     }
 
-    /// The sort `view` shows, as the Library window restores it: a
-    /// category's view through `LibraryViewModel.sortState(at:)`, with its
-    /// rules (such as Unopened's sort carried over from No Folder), and
-    /// any other view from the setting saved under its key, or its default.
+    /// The sort `view` shows, as the Library window restores it, by the one
+    /// function every window and list loads a sort with
+    /// (`LibraryViewModel.sortState(at:)`), with its rules, such as
+    /// Unopened's sort carried over from No Folder.
     func shownSortSetting(of view: LibraryViewDefinition) -> FolderSortSetting {
-        if let category = view.id.category {
-            return library.sortState(at: LibraryLocation(category: category, folderPath: "")).setting
-        }
-        guard let key = view.sortSettingsKey, let saved = library.library.folderSortSettings[key] else {
-            return view.defaultSortSetting
-        }
-        return LibrarySortState(restoring: saved).setting
+        library.sortState(at: LibraryLocation(view: view, folderPath: "")).setting
     }
 
     /// The commands that apply to `view` now.
@@ -158,6 +159,40 @@ struct LibraryViewsSettingsActions {
         let after = store.list.views
         let next = after.indices.contains(index) ? after[index].id : after.last?.id
         return (next, LibraryViewsSettingsWording.deleted(name: view.name))
+    }
+
+    /// What Save in the editor did: found a problem, which the sheet shows
+    /// and VoiceOver says, keeping it open; or saved the view, to select it,
+    /// and what to say once the sheet has closed.
+    enum SaveOutcome: Equatable {
+        /// The draft has this problem; nothing was saved.
+        case problem(String)
+        /// The view was saved.
+        case saved(id: LibraryViewID, announcement: String)
+    }
+
+    /// Saves the editor's draft (design section 7): when it has a problem,
+    /// says which; otherwise adds the view at the end, or puts it in its
+    /// place, and saves its sort under its key when the draft's differs
+    /// from the sort the view shows.
+    func save(_ model: LibraryViewEditorModel) -> SaveOutcome {
+        if let problem = model.firstProblem(in: store.list) {
+            return .problem(problem)
+        }
+        let view = model.definition()
+        let isNew = model.original == nil
+        let shown = shownSortSetting(of: view)
+        store.update { list -> Bool in
+            isNew ? list.add(view, after: nil) : list.replace(view)
+        }
+        let chosen = model.sortSetting(from: shown)
+        if chosen != shown, let key = view.sortSettingsKey {
+            library.setFolderSortSetting(chosen, for: key)
+        }
+        guard isNew, let place = store.list.place(of: view.id) else {
+            return .saved(id: view.id, announcement: LibraryViewEditorWording.saved(view.name))
+        }
+        return .saved(id: view.id, announcement: LibraryViewEditorWording.added(view.name, number: place.number, count: place.count))
     }
 
     /// Gives the built-in filter view `view` back its own name and filter,

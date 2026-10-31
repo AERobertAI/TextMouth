@@ -12,7 +12,7 @@ import XCTest
 /// `UnopenedCategoryTests` explains.
 final class LibraryViewLocationTests: XCTestCase {
     /// The isolated data root's index, put back after a test that saves.
-    private var sandbox: LibraryIndexSandbox!
+    private var sandbox: LibraryIndexSandbox?
 
     override func setUpWithError() throws {
         sandbox = try LibraryIndexSandbox.capture()
