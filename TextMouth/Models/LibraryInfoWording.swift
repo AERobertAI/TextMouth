@@ -180,12 +180,10 @@ enum BrailleFileCodeWording {
     /// section 8.3).
     static let uncheckedNote = "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another."
 
-    /// What a re-read does to the book's places, as the encoding's alert
-    /// says it (`TextEncodingWording.placesNote`) without its example of
-    /// garbled letters becoming Cyrillic, which is no braille book's.
-    static let placesNote = "Your place and bookmarks move with their words. "
-        + "Where none of their words are left, each goes to about the same point in its chapter, "
-        + "or to the nearest passage the two readings share."
+    /// What a re-read does to the book's places, in the encoding's sentence
+    /// (`TextEncodingWording.placesSentence(example:)`) without its example
+    /// of garbled letters becoming Cyrillic, which is no braille book's.
+    static let placesNote = TextEncodingWording.placesSentence(example: nil)
 
     /// The alert's message before a braille book is read again with other
     /// braille file characters: that nothing checks the choice, that the
@@ -362,17 +360,32 @@ enum TextEncodingWording {
         + "in the encoding the file names, or else the one TextMouth finds."
     /// What any re-read does to the book's text.
     static let replacedNote = "Its text is replaced by the new reading."
-    /// What a re-read does to the book's places (T06): they move with their
-    /// words. Where none of a place's words are left, `PlaceRelocator` moves
-    /// it to about the same point in its chapter when the two readings share
-    /// no passage (the very word, for two encodings of one byte to a
-    /// character, whose readings are as long), and otherwise to the edge of
-    /// the nearest passage they share: after an English sentence in a Russian
-    /// book, to the start of the changed passage that follows it
-    /// (`TextEncodingRereadTests`).
-    static let placesNote = "Your place and bookmarks move with their words. "
-        + "Where none of their words are left, as when garbled letters become Cyrillic, "
-        + "each goes to about the same point in its chapter, or to the nearest passage the two readings share."
+    /// What the encoding's alert says a re-read does to the book's places
+    /// (`placesSentence(example:)`), with garbled letters becoming Cyrillic
+    /// as its example.
+    static let placesNote = placesSentence(example: "as when garbled letters become Cyrillic")
+
+    /// What a re-read does to the book's places (T06), as both re-read
+    /// alerts say it, so the two never drift apart (review of October 30,
+    /// finding 8): they move with their words. Where none of a place's words
+    /// are left, `PlaceRelocator` moves it to about the same point in its
+    /// chapter when the two readings share no passage (the very word, for
+    /// two encodings of one byte to a character, whose readings are as
+    /// long), and otherwise to the edge of the nearest passage they share:
+    /// after an English sentence in a Russian book, to the start of the
+    /// changed passage that follows it (`TextEncodingRereadTests`).
+    /// `example`, when given, says when that happens, as a clause of its own
+    /// after "are left": the encoding's alert gives one (`placesNote`), and
+    /// the braille file characters' gives none
+    /// (`BrailleFileCodeWording.placesNote`), since no braille book's
+    /// letters become Cyrillic.
+    static func placesSentence(example: String?) -> String {
+        // The example, when there is one, sits between commas of its own.
+        let whenNoneAreLeft = ["Where none of their words are left", example].compactMap { $0 }.joined(separator: ", ")
+        return "Your place and bookmarks move with their words. \(whenNoneAreLeft), "
+            + "each goes to about the same point in its chapter, or to the nearest passage the two readings share."
+    }
+
     /// What a re-read does to text TextMouth did not write, said only for a
     /// book whose content.md holds such text: an edit made with Edit Text,
     /// or a save no edit took, either kept as Replace Existing keeps it
