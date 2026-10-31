@@ -101,6 +101,38 @@ final class StorageGenerationMoveTests: XCTestCase {
         XCTAssertTrue(try XCTUnwrap(model.library.books.first { $0.id == book.id }).filePath.hasPrefix(destination.path + "/"))
     }
 
+    /// Listening statistics saved just before a move are in the moved data
+    /// directory: the move waits for the statistics' saves still queued, as
+    /// it does for the library's, before it copies anything. Before, a save
+    /// still writing as the copy listed the data directory left its
+    /// temporary ".dat.nosync" file in the listing, renamed away before the
+    /// copy reached it, and under load the move failed with "The file
+    /// “.dat.nosync…” couldn’t be opened because there is no such file"; a
+    /// save written after the listing was missing from the copy. The save
+    /// is held on a queue standing in for the statistics' own until the
+    /// move waits for that queue.
+    func testStatisticsSavedJustBeforeTheMoveAreInTheMovedDataDirectory() async throws {
+        let world = try makeIntegrationWorld("Storage Move Statistics")
+        let model = world.library
+        let destination = try makeDataDirectoryMoveDestination("StatisticsDuringMove")
+        let saved = try Self.statisticsFile(listening: 754)
+        let save = HeldStatisticsSave(writing: saved, to: TextMouthPaths.readingStatsFile)
+        addTeardownBlock { save.letGo() }
+
+        let outcome = await LibraryViewModel.$waitForQueuedStatisticsSaves.withValue({ save.waitForIt() }) {
+            await model.moveDataDirectoryReturningOutcome(to: destination)
+        }
+        // A move that did not wait for it left the save held until now.
+        save.waitForIt()
+
+        XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
+        XCTAssertEqual(
+            try? Data(contentsOf: destination.appendingPathComponent("reading_stats.json")),
+            saved,
+            "The moved data directory does not hold the statistics saved before the move"
+        )
+    }
+
     /// A text cache rebuild held after it has chosen where its content.md
     /// goes finishes before the move copies anything: the moved package
     /// holds the rebuilt cache and the record that describes it, and
@@ -468,6 +500,18 @@ final class StorageGenerationMoveTests: XCTestCase {
         return FileImportService.adoptOrphanedTMBPackages(library: &library, libraryDirectory: folder)
     }
 
+    /// reading_stats.json's bytes for statistics holding `seconds` of
+    /// listening to one book today, encoded as the statistics service
+    /// encodes its file.
+    private static func statisticsFile(listening seconds: TimeInterval) throws -> Data {
+        var statistics = ReadingStats()
+        statistics.addListening(seconds, bookID: UUID(), dayKey: ReadingStatsService.dateKey(Date()))
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return try encoder.encode(statistics)
+    }
+
     /// A plain-text book file, `name`, in a scratch folder of the test's
     /// own. Its text begins with its name, so no two are copies of one book.
     private func makeTextSource(named name: String) throws -> URL {
@@ -576,6 +620,40 @@ private final class AnswerDuringCopy {
     var outcome: OperationOutcome?
     /// Whether the question was still being asked after the answer.
     var questionStillAsked: Bool?
+}
+
+/// A listening statistics save held on a serial queue of its own, which
+/// stands in for the statistics' save queue: it writes its bytes at its
+/// file, atomically, as the statistics service writes reading_stats.json,
+/// once it is let go.
+private final class HeldStatisticsSave: Sendable {
+    /// The stand-in for the statistics' save queue.
+    private let queue = DispatchQueue(label: "StorageGenerationMoveTests.statisticsSaves")
+    /// Holds the save until it is let go.
+    private let gate = DispatchSemaphore(value: 0)
+
+    /// Queues the save of `bytes` at `file`, held until it is let go.
+    init(writing bytes: Data, to file: URL) {
+        let gate = self.gate
+        queue.async {
+            // A save never let go writes nothing, so a test gone wrong fails
+            // on the bytes missing from the copy instead of holding a thread.
+            guard gate.wait(timeout: .now() + 30) == .success else { return }
+            try? bytes.write(to: file, options: .atomic)
+        }
+    }
+
+    /// Lets the save go on. Letting it go again changes nothing.
+    func letGo() {
+        gate.signal()
+    }
+
+    /// Waits as a move waits for the statistics' saves: lets the save go
+    /// on, then returns once it is written.
+    func waitForIt() {
+        letGo()
+        queue.sync {}
+    }
 }
 
 /// Answers true exactly once, to whichever thread asks first.
