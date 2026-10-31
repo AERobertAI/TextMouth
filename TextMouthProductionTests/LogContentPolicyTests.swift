@@ -270,8 +270,6 @@ final class LogContentPolicyTests: XCTestCase {
         // A text file's encoding guessed at its import (FMT16), and a book read again in the encoding the
         // listener chose in Book Information, or automatically (encodingchoice).
         "TEXT_ENCODING_GUESS", "TEXT_ENCODING_CHANGED",
-        // Markup nested too deep for SwiftSoup's parse, read as its words alone, its length named.
-        "HTML_TOO_DEEP",
         // The data directory: a move and what it waits for (TODO S04); a library found again, lost,
         // or back, a switch to another library, the library's identity and session lease, and the
         // files read once it is back (FR02).

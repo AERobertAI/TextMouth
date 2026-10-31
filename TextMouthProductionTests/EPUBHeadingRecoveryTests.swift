@@ -180,22 +180,19 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         XCTAssertEqual(chapters, ["Level 0: First chapter words.", "Innermost entry: Second chapter words."])
     }
 
-    /// A navigation document nesting 900 lists, whose outermost item links
-    /// the first chapter and whose innermost links the second, is read on a
-    /// worker thread's 512 KiB stack, where an import reads it: both
+    /// A navigation document nesting 20,000 lists, whose outermost item
+    /// links the first chapter and whose innermost links the second, is read
+    /// on a worker thread's 512 KiB stack, where an import reads it: both
     /// chapters keep their words, and the innermost entry names the second.
     /// The navigation walk, and the search for page lists beside it, once
-    /// called themselves for every element, which overflowed that stack;
-    /// 900 levels still overflowed it in the old walk.
+    /// called themselves for every element, which overflowed that stack.
     ///
-    /// 900 lists, each one level as the parse counts them, stay within the
-    /// shared parse's limit (`HTMLNesting.deepestParsedLevel`), which reads
-    /// deeper markup as its words alone, with no entry to find. The lists are
-    /// left for `</nav>` to close: SwiftSoup itself calls itself once for
-    /// every level above an `</li>` it reads, so closing each list item
-    /// would spend the stack in SwiftSoup's parse, before TextMouth's walk.
+    /// The lists are left for `</nav>` to close: SwiftSoup itself calls
+    /// itself once for every level above an `</li>` it reads, so closing
+    /// each list item would overflow the stack in SwiftSoup's parse, before
+    /// TextMouth's walk.
     func testNavigationDocumentNestedThousandsDeepIsReadOnAWorkerStack() throws {
-        let depth = 900
+        let depth = 20_000
         let nav = "<html xmlns:epub='http://www.idpf.org/2007/ops'><body><nav epub:type='toc'>"
             + "<ol><li><a href='../Text/one.xhtml'>Outer entry</a>"
             + String(repeating: "<ol><li>", count: depth - 2)

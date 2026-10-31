@@ -691,18 +691,6 @@ final class ParserContentFidelityTests: XCTestCase {
         XCTAssertEqual(text?.contains("Deep words"), true)
     }
 
-    /// An HTML book nesting 5,000 spans with attributes, closed level by
-    /// level, is read directly on a worker thread's stack, keeping its words.
-    /// SwiftSoup itself calls itself once for every level above each
-    /// `</span>` it reads, so its parse overflowed that stack during an
-    /// import; markup nested past `HTMLNesting.deepestParsedLevel` is now
-    /// read as its words alone.
-    func testSpansClosedLevelByLevelAreReadDirectlyOnAWorkerStack() {
-        let html = String(repeating: "<span class=\"x\">", count: 5_000) + "Deep words" + String(repeating: "</span>", count: 5_000)
-        let text = onWorkerSizedStack { (try? HTMLParser.parse(html: html))?.chapters.first?.text ?? "" }
-        XCTAssertEqual(text, "Deep words")
-    }
-
     /// Past the deepest level both readings follow (`HTMLNesting`), each
     /// reads a subtree as one paragraph of its words, so a direct reading and
     /// a cached one still agree, word for word and heading for heading, and

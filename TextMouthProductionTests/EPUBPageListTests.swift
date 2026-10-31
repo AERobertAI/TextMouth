@@ -625,22 +625,19 @@ final class EPUBPageListTests: XCTestCase {
         assertPages(of: first, [("i", "Alpha text."), ("2", "Bravo text."), ("3", "Charlie text.")])
     }
 
-    /// A navigation document whose page list is followed by 900 nested
+    /// A navigation document whose page list is followed by 20,000 nested
     /// divisions is read on a worker thread's 512 KiB stack, where an import
     /// reads it, and gives the list's page. The search for page lists, which
     /// goes on into the divisions, once called itself for every element,
     /// which overflowed that stack and ended TextMouth during the import.
     ///
-    /// 900 divisions stay within the shared parse's limit
-    /// (`HTMLNesting.deepestParsedLevel`), which reads deeper markup as its
-    /// words alone, with no page list to find; at this depth the old search
-    /// fit the stack, so the test pins the search's order and depth rather
-    /// than the overflow. The list lies beside the divisions rather than
-    /// inside them, and they are left open: SwiftSoup itself calls itself
-    /// once for every level above an element whose attributes are read, the
-    /// list's included, or above most end tags it reads.
+    /// The list lies beside the divisions rather than inside them, and they
+    /// are left open: SwiftSoup itself calls itself once for every level
+    /// above an element whose attributes are read, the list's included, or
+    /// above most end tags it reads, which would overflow the stack in
+    /// SwiftSoup before TextMouth's walk.
     func testAPageListBesideMarkupNestedThousandsDeepIsReadOnAWorkerStack() throws {
-        let depth = 900
+        let depth = 20_000
         let nav = xhtml(
             "<nav epub:type=\"page-list\"><ol><li><a href=\"ch1.xhtml#a\">7</a></li></ol></nav>"
                 + String(repeating: "<div>", count: depth) + "Deep words"

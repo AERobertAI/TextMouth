@@ -1,4 +1,3 @@
-import SwiftSoup
 import XCTest
 @testable import TextMouth
 
@@ -237,32 +236,6 @@ final class LegacyHTMLToMarkdownTests: XCTestCase {
             .max() ?? 0
         XCTAssertLessThanOrEqual(deepestQuote, HTMLNesting.deepestLevel)
         XCTAssertGreaterThan(deepestQuote, 0)
-    }
-
-    /// Lists nested 5,000 deep and closed level by level, as a table of
-    /// contents closes them, convert on a worker thread's 512 KiB stack,
-    /// keeping their words. SwiftSoup itself calls itself once for every
-    /// level above each `</li>` it reads, so its parse overflowed that stack
-    /// before the converter began; markup nested past
-    /// `HTMLNesting.deepestParsedLevel` is now read as its words alone.
-    func testListsNestedThousandsDeepAndClosedLevelByLevelConvertOnAWorkerStack() {
-        let html = String(repeating: "<ol><li>", count: 5_000) + "Deep words" + String(repeating: "</li></ol>", count: 5_000)
-        let markdown = onWorkerSizedStack { (try? HTMLToMarkdownConverter.convert(html)) ?? "" }
-        XCTAssertEqual(markdown?.contains("Deep words"), true)
-    }
-
-    /// Lists nested past the parse's limit (`HTMLNesting.deepestParsedLevel`)
-    /// convert to their words alone, with no list item written, where the
-    /// converter once wrote the first levels as lists. At 1,200 levels, which
-    /// cannot overflow the main thread's stack, this fails without the limit
-    /// rather than crashing.
-    func testListsNestedPastTheParseLimitConvertToTheirWordsAlone() throws {
-        let html = String(repeating: "<ol><li>Item ", count: 1_200) + "Deep words"
-            + String(repeating: "</li></ol>", count: 1_200)
-        let markdown = try HTMLToMarkdownConverter.convert(html)
-        XCTAssertTrue(markdown.contains("Item Item"))
-        XCTAssertTrue(markdown.hasSuffix("Deep words"))
-        XCTAssertFalse(markdown.contains("1. "), String(markdown.prefix(200)))
     }
 }
 
@@ -504,79 +477,6 @@ final class HTMLNestingTests: XCTestCase {
         XCTAssertEqual(HTMLNesting.TreeBuilder(reading: "<?XML version=\"1.0\"?>"), .html)
         XCTAssertEqual(HTMLNesting.TreeBuilder(reading: "\u{FEFF}<?xml version=\"1.0\"?>"), .html)
         XCTAssertEqual(HTMLNesting.TreeBuilder(reading: ""), .html)
-    }
-
-    // MARK: - The Shared Parse
-
-    /// 1,200 spans nested around two words and closed level by level, past
-    /// the limit, are parsed as the words alone: the document's body holds
-    /// them and no span. On the main thread, whose stack SwiftSoup's own
-    /// recursion cannot overflow at this depth, so this fails without the
-    /// limit rather than crashing.
-    func testMarkupPastTheLimitIsParsedAsItsWordsAlone() throws {
-        let html = repeated("<span>", 1_200) + "Deep words" + repeated("</span>", 1_200)
-        let document = try HTMLNesting.parse(html)
-        XCTAssertEqual(try document.body()?.text(), "Deep words")
-        XCTAssertTrue(try document.select("span").isEmpty())
-    }
-
-    /// Markup within the limit is parsed exactly as SwiftSoup parses it, by
-    /// its HTML tree builder or, after an XML declaration, its XML tree
-    /// builder, and relative addresses resolve against the base address.
-    func testMarkupWithinTheLimitIsParsedAsSwiftSoupParsesIt() throws {
-        let sources = [
-            "<html><head><title>A Title</title><meta name=\"author\" content=\"A. Writer\"></head>"
-                + "<body><h1>One</h1><p>Words &amp; more<br>words<ul><li>An item<li>Another</ul></body></html>",
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<html xmlns=\"http://www.w3.org/1999/xhtml\">"
-                + "<body><p>Line<br>Next line</p><p>After</p></body></html>",
-            "Bare words < and a <b>bold</b> one",
-        ]
-        for source in sources {
-            XCTAssertEqual(try HTMLNesting.parse(source).outerHtml(), try SwiftSoup.parse(source).outerHtml(), source)
-        }
-        let page = "<a href=\"feed.xml\">The feed</a>"
-        let base = "https://show.example/podcast/"
-        XCTAssertEqual(
-            try HTMLNesting.parse(page, baseURI: base).select("a").first()?.absUrl("href"),
-            "https://show.example/podcast/feed.xml"
-        )
-    }
-
-    /// XML markup past the limit is read as its words by the HTML tree
-    /// builder, in one paragraph.
-    func testXMLMarkupPastTheLimitIsReadAsItsWords() throws {
-        let xml = "<?xml version=\"1.0\"?><html><body>" + repeated("<p>Deep words ", 1_500) + "</body></html>"
-        let document = try HTMLNesting.parse(xml)
-        XCTAssertEqual(try document.select("p").count, 1)
-        XCTAssertEqual(try document.body()?.text(), Array(repeating: "Deep words", count: 1_500).joined(separator: " "))
-    }
-
-    /// Markup read as words keeps its character references, read by
-    /// SwiftSoup, and leaves out the code of its scripts and styles, which
-    /// no reading reads.
-    func testWordsKeepCharacterReferencesAndLeaveOutScripts() throws {
-        let html = "<style>p { color: red; }</style>" + repeated("<span>", 1_200)
-            + "Fish &amp; chips<script>if (a < b) { run(); }</script> &lt;tonight&gt;" + repeated("</span>", 1_200)
-        XCTAssertEqual(try HTMLNesting.parse(html).body()?.text(), "Fish & chips <tonight>")
-    }
-
-    /// A parse read as words writes one event to the log, naming the
-    /// markup's length and never its words.
-    func testAParseReadAsWordsLogsItsLengthAlone() throws {
-        try TextMouthPaths.ensureDirectoryStructure()
-        let html = repeated("<span>", 1_200) + "Quillwort harbor" + repeated("</span>", 1_200)
-        let lines = try logLines(in: .debug) {
-            _ = try HTMLNesting.parse(html)
-        }
-        let events = lines.filter { $0.contains("HTML_TOO_DEEP:") }
-        XCTAssertEqual(events.count, 1, "\(lines)")
-        XCTAssertTrue(
-            events.first?.hasSuffix(
-                "HTML_TOO_DEEP: \(html.utf8.count) bytes of markup may nest past 1000 levels; read as plain words"
-            ) == true,
-            "\(events)"
-        )
-        XCTAssertFalse(lines.contains { $0.contains("Quillwort") }, "\(lines)")
     }
 }
 

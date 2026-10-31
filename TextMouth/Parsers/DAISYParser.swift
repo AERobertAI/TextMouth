@@ -781,7 +781,7 @@ enum DAISYParser {
                     continue
                 }
                 html = decodedHTML
-                doc = try HTMLNesting.parse(decodedHTML)
+                doc = try SwiftSoup.parse(decodedHTML)
                 documents[split.path] = doc
                 htmlByPath[split.path] = decodedHTML
             }

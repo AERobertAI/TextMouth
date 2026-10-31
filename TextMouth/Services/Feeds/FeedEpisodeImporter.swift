@@ -395,7 +395,7 @@ enum FeedEpisodeImporter {
     /// element, else its `main` element, else its body, as HTML; nil when
     /// the page can't be read.
     static func readablePart(ofPage html: String) -> String? {
-        guard let document = try? HTMLNesting.parse(html) else { return nil }
+        guard let document = try? SwiftSoup.parse(html) else { return nil }
         for tag in ["article", "main"] {
             if let element = FeedHTMLWalk.first(tag, in: document), let inner = try? element.html() {
                 return inner

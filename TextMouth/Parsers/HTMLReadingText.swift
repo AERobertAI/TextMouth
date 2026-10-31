@@ -46,9 +46,7 @@ enum HTMLReadingBoundary: Equatable {
 ///
 /// SwiftSoup recurses too, while it builds that tree and when it first reads
 /// an element's attributes: before a parse, `mayNest(_:deeperThan:as:)` says
-/// whether markup may nest past `deepestParsedLevel`, too deep for that, and
-/// the one parse of markup from outside TextMouth (`parse(_:baseURI:)`) reads
-/// such markup as its words alone.
+/// whether markup may nest past `deepestParsedLevel`, too deep for that.
 enum HTMLNesting {
     /// The deepest level of nested elements the readers follow, counted
     /// from where a reading begins. A book's chapter or a feed's item rarely
@@ -369,42 +367,6 @@ struct HTMLReadingText {
     }
 }
 
-// MARK: - The Parse of Untrusted Markup
-
-extension HTMLNesting {
-    /// `html` parsed exactly as `SwiftSoup.parse(html, baseURI)` parses it:
-    /// by SwiftSoup's HTML tree builder or, when the markup begins with an
-    /// XML declaration, its XML tree builder (`TreeBuilder`). Markup whose
-    /// elements may nest past `deepestParsedLevel` reaches neither: it is
-    /// read as its words alone, in one paragraph (`markupOfWords(in:as:)`),
-    /// keeping every word and no heading, list, link, or page, and the log
-    /// says so once. Every reader of markup from outside TextMouth parses
-    /// through here: a feed's item, a fetched page, an EPUB or DAISY
-    /// document, an HTML book or web archive, and textutil's HTML of a
-    /// document.
-    static func parse(_ html: String, baseURI: String = "") throws -> Document {
-        try parse(html, readBy: TreeBuilder(reading: html)) { try SwiftSoup.parse($0, baseURI) }
-    }
-
-    /// `html` handed to `swiftSoup` as it is, when `builder` nests its
-    /// elements within `deepestParsedLevel`, or else its words alone in one
-    /// paragraph, with one event in the log naming only the markup's length.
-    private static func parse(
-        _ html: String,
-        readBy builder: TreeBuilder,
-        with swiftSoup: (String) throws -> Document
-    ) throws -> Document {
-        guard mayNest(html, deeperThan: deepestParsedLevel, as: builder) else {
-            return try swiftSoup(html)
-        }
-        DiagnosticLog.event(
-            .import,
-            "HTML_TOO_DEEP: \(html.utf8.count) bytes of markup may nest past \(deepestParsedLevel) levels; read as plain words"
-        )
-        return try swiftSoup(markupOfWords(in: html, as: builder))
-    }
-}
-
 // MARK: - Nesting Read Before SwiftSoup Parses
 
 extension HTMLNesting {
@@ -475,93 +437,6 @@ extension HTMLNesting {
             }
             return false
         }
-    }
-
-    /// The words of `html` alone, as the markup of one paragraph: every tag
-    /// a space, by the same reading of tags as `mayNest(_:deeperThan:as:)`;
-    /// comments, doctypes, and the code of `script` and `style`, which no
-    /// reading reads, left out; and every other word kept, with each `<` of
-    /// the text escaped, so the paragraph holds no tag. Character references
-    /// are left for SwiftSoup to read, as it reads them in the markup, but
-    /// for those in the literal text of a CDATA section, `noframes`, or
-    /// `plaintext`, which are escaped too. `builder` decides, as for
-    /// SwiftSoup, which elements hold text rather than markup: under the
-    /// XML tree builder, only the script and style left out.
-    static func markupOfWords(in html: String, as builder: TreeBuilder) -> String {
-        var markup = html
-        return markup.withUTF8 { bytes in
-            var tokens = MarkupTokens(bytes)
-            var words = WordsMarkup(capacity: bytes.count)
-            while let token = tokens.next() {
-                switch token {
-                case let .text(range):
-                    words.append(range, of: bytes, literally: false)
-                case let .cdata(range):
-                    words.append(range, of: bytes, literally: true)
-                case let .startTag(name, closesItself):
-                    words.appendSpace()
-                    let name = tokens.name(at: name, as: .html)
-                    guard let element = RawTextElement(htmlName: name),
-                          builder == .html || element == .script || element == .style,
-                          element == .plaintext || !closesItself else { break }
-                    let text = tokens.skipText(of: element)
-                    switch element {
-                    case .script, .style:
-                        break
-                    case .title:
-                        words.append(text, of: bytes, literally: false)
-                    case .noframes, .plaintext:
-                        words.append(text, of: bytes, literally: true)
-                    }
-                case .endTag:
-                    words.appendSpace()
-                case .nothing:
-                    break
-                }
-            }
-            return words.paragraph
-        }
-    }
-}
-
-/// The markup `HTMLNesting.markupOfWords(in:as:)` writes: text in one
-/// paragraph, with no tag in it.
-private struct WordsMarkup {
-    /// The markup so far, from the paragraph's start tag.
-    private var bytes: [UInt8]
-
-    /// How `<` and `&` are written in it as text.
-    private static let lessThanReference = Array("&lt;".utf8)
-    private static let ampersandReference = Array("&amp;".utf8)
-
-    /// An empty paragraph, room made for `capacity` bytes of words.
-    init(capacity: Int) {
-        bytes = Array("<p>".utf8)
-        bytes.reserveCapacity(capacity + 16)
-    }
-
-    /// A space where a tag stood, which keeps the words on either side apart.
-    mutating func appendSpace() {
-        bytes.append(0x20)
-    }
-
-    /// The text at `range` of `source`, each `<` escaped, and each `&` too
-    /// when the text is literal, so SwiftSoup reads it as it is written.
-    mutating func append(_ range: Range<Int>, of source: UnsafeBufferPointer<UInt8>, literally: Bool) {
-        var runStart = range.lowerBound
-        for index in range {
-            let byte = source[index]
-            guard byte == UInt8(ascii: "<") || (literally && byte == UInt8(ascii: "&")) else { continue }
-            bytes.append(contentsOf: source[runStart..<index])
-            bytes.append(contentsOf: byte == UInt8(ascii: "<") ? Self.lessThanReference : Self.ampersandReference)
-            runStart = index + 1
-        }
-        bytes.append(contentsOf: source[runStart..<range.upperBound])
-    }
-
-    /// The finished paragraph.
-    var paragraph: String {
-        String(decoding: bytes + Array("</p>".utf8), as: UTF8.self)
     }
 }
 
