@@ -64,6 +64,51 @@ final class LibraryViewPickerTests: XCTestCase {
         XCTAssertFalse(model.listsSomething(nothing, center: center))
     }
 
+    /// Which views shown when applicable list something is asked outside
+    /// the list cache, sorting and measuring nothing: forty such views,
+    /// asked for the View pop-up and for Go to View, derive no list, and
+    /// those listing something are offered (review of October 31, 2026,
+    /// finding 4).
+    @MainActor
+    func testWhichViewsApplyDerivesNoList() throws {
+        let model = Self.model()
+        let center = LibraryFeedFolders.shared.center
+        var list = LibraryViewDefinitionList.shipped
+        list.setVisibility(.hidden, of: .feeds)
+        for number in 1...40 {
+            // The even views list the EPUB, Atlas; the odd ones a PDF, none.
+            let format: BookFormat = number.isMultiple(of: 2) ? .epub : .pdf
+            let view = LibraryViewDefinition(
+                id: .custom(UUID()),
+                name: "View \(number)",
+                visibility: .whenApplicable,
+                filter: LibraryViewFilter(
+                    lists: [.books],
+                    conditions: [LibraryViewCondition(test: .format(format))],
+                    limit: LibraryViewLimit(count: 1, chosenBy: .viewSort)
+                )
+            )
+            XCTAssertTrue(list.add(view, after: nil))
+        }
+        let derivations = model.listCache.derivationCount
+        let measurements = model.listCache.fileMeasurementCount
+
+        // As a window's body asks: once for the views that apply, then the
+        // pop-up's views and Go to View's.
+        let applicable = model.applicableViews(in: list, center: center)
+        let poppedUp = model.offeredViews(in: list, current: .category(.recent), center: center, applicable: applicable)
+        let offered = model.offeredViews(in: list, current: nil, center: center, applicable: applicable)
+        XCTAssertEqual(
+            offered.map(\.name).filter { $0.hasPrefix("View ") },
+            (1...40).filter { $0.isMultiple(of: 2) }.map { "View \($0)" }
+        )
+        XCTAssertEqual(poppedUp, offered)
+        // Asked afresh, as Go to View's key asks.
+        XCTAssertEqual(model.offeredViews(in: list, current: nil, center: center), offered)
+        XCTAssertEqual(model.listCache.derivationCount, derivations, "asking which views apply derived a list")
+        XCTAssertEqual(model.listCache.fileMeasurementCount, measurements, "asking which views apply measured a file")
+    }
+
     /// The pop-up offers the views always offered and those offered when
     /// applicable while they list something, and keeps the view the window
     /// shows, however hidden; a window showing none yet, or a deleted view,

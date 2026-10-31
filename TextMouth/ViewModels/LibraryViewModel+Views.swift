@@ -5,9 +5,12 @@ import Foundation
 extension LibraryViewModel {
     /// Whether `view` lists something now: Folders always; the Reading List
     /// while it holds a book, an episode, or an article; a filter view while
-    /// its books (`displayedBooks(at:)`, asked first, since the list cache
-    /// keeps them) or its feed rows (`LibraryFeedsSectionRows.feeds(at:center:)`,
-    /// from `center`) are not empty.
+    /// one of its rows matches its filter, a book, episode, or article first
+    /// (`LibraryViewFilterEvaluator.listsAnyItem`), then a feed from `center`
+    /// (`LibraryFeedsSectionRows.listsAnyFeed`). Each search ends at the first
+    /// match, outside the list cache, and sorts and measures nothing, so a
+    /// window may ask it of every view at every redraw (review of October
+    /// 31, 2026, finding 4).
     func listsSomething(_ view: LibraryViewDefinition, center: FeedCenter) -> Bool {
         switch view.kind {
         case .folders:
@@ -15,17 +18,32 @@ extension LibraryViewModel {
         case .readingList:
             return !readingListBooks.isEmpty
         case .filter:
-            let location = LibraryLocation(view: view, folderPath: "")
-            return !displayedBooks(at: location).isEmpty
-                || !LibraryFeedsSectionRows.feeds(at: location, center: center).isEmpty
+            guard let filter = view.filter else { return false }
+            let context = filterContext(for: LibraryLocation(view: view, folderPath: "")) ?? LibraryViewFilterContext()
+            return LibraryViewFilterEvaluator.listsAnyItem(of: filter, in: library.books, context: context)
+                || LibraryFeedsSectionRows.listsAnyFeed(of: view, center: center)
         }
     }
 
+    /// The views of `list` shown when applicable that list something now
+    /// (`listsSomething(_:center:)`), each asked once: what a window's View
+    /// pop-up and Go to View share for a whole redraw.
+    func applicableViews(in list: LibraryViewDefinitionList, center: FeedCenter) -> Set<LibraryViewID> {
+        Set(list.views.filter { $0.visibility == .whenApplicable && listsSomething($0, center: center) }.map(\.id))
+    }
+
     /// The views the View pop-up offers a window showing `current`
-    /// (`LibraryViewDefinitionList.offeredViews`), a view offered when
-    /// applicable while `listsSomething(_:center:)` says so.
-    func offeredViews(in list: LibraryViewDefinitionList, current: LibraryViewID?, center: FeedCenter) -> [LibraryViewDefinition] {
-        list.offeredViews(current: current) { listsSomething($0, center: center) }
+    /// (`LibraryViewDefinitionList.offeredViews`), those shown when
+    /// applicable among `applicable` (`applicableViews(in:center:)`), which
+    /// is worked out here when not given.
+    func offeredViews(
+        in list: LibraryViewDefinitionList,
+        current: LibraryViewID?,
+        center: FeedCenter,
+        applicable: Set<LibraryViewID>? = nil
+    ) -> [LibraryViewDefinition] {
+        let applying = applicable ?? applicableViews(in: list, center: center)
+        return list.offeredViews(current: current) { applying.contains($0.id) }
     }
 
     /// The view a window showing `id` shows: that view, or, when the list no

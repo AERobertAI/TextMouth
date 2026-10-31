@@ -341,12 +341,26 @@ struct LibraryView: View {
         // the model again.
         let allBooks = displayedBooks
         let books = filteredBooks
-        // The views the View pop-up offers, read once for the body.
-        let offered = libraryViewModel.offeredViews(in: views.list, current: shownViewID, center: feedFolders.center)
+        // Which views shown when applicable list something, asked once for
+        // the body, and shared by the View pop-up and Go to View (review of
+        // October 31, 2026, finding 4).
+        let applicable = libraryViewModel.applicableViews(in: views.list, center: feedFolders.center)
+        // The views the View pop-up offers.
+        let offered = libraryViewModel.offeredViews(
+            in: views.list,
+            current: shownViewID,
+            center: feedFolders.center,
+            applicable: applicable
+        )
         // The names of the views Go to View counts, those offered to a
         // window showing none, which the Library menu's Go to View submenu
         // lists (design section 6).
-        let goToViewNames = libraryViewModel.offeredViews(in: views.list, current: nil, center: feedFolders.center).map(\.name)
+        let goToViewNames = libraryViewModel.offeredViews(
+            in: views.list,
+            current: nil,
+            center: feedFolders.center,
+            applicable: applicable
+        ).map(\.name)
         let folders = libraryViewModel.subfoldersOf(currentFolderPath)
         // The Folders section's rows and the Folders rotor's entries: none
         // outside Folders, and no row for a feed's folder where the Feeds

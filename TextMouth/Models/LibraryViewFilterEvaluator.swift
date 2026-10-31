@@ -145,18 +145,24 @@ enum LibraryViewFilterEvaluator {
         context: LibraryViewFilterContext,
         sorted: ([Book]) -> [Book]
     ) -> [Book] {
-        // The conditions that test each kind the filter lists, found once
-        // rather than for every row.
-        var conditionsByKind: [LibraryViewItemKind: [LibraryViewCondition]] = [:]
-        for kind in itemKinds where filter.lists.contains(kind) {
-            conditionsByKind[kind] = conditions(of: filter, testing: kind)
-        }
+        let conditionsByKind = itemConditions(of: filter)
         guard !conditionsByKind.isEmpty else { return [] }
-        let matched = rows.filter { row in
-            guard let rowConditions = conditionsByKind[row.listedKind] else { return false }
-            return meets(rowConditions, filter.match) { passes($0, item: row, context: context) }
-        }
+        let matched = rows.filter { isListed($0, conditionsByKind, filter.match, context: context) }
         return chosen(from: matched, by: filter, sorted: sorted)
+    }
+
+    /// Whether `filter` lists any of `rows`, as `items` would (review of
+    /// October 31, 2026, finding 4): the search ends at the first row that
+    /// matches, since one per feed and a limit keep at least one of any rows
+    /// that match, and nothing is sorted or measured on disk. What a
+    /// window's View pop-up asks of each view shown when applicable, at
+    /// every redraw.
+    static func listsAnyItem(of filter: LibraryViewFilter, in rows: [Book], context: LibraryViewFilterContext) -> Bool {
+        let conditionsByKind = itemConditions(of: filter)
+        // A limit below 1, which only code could make, keeps nothing, as
+        // `items` keeps nothing then.
+        guard !conditionsByKind.isEmpty, (filter.limit?.count ?? 1) >= 1 else { return false }
+        return rows.contains { isListed($0, conditionsByKind, filter.match, context: context) }
     }
 
     /// The feeds of `feeds` that `filter` lists, in their order: none unless
@@ -173,9 +179,61 @@ enum LibraryViewFilterEvaluator {
         guard filter.lists.contains(.feeds) else { return [] }
         let feedConditions = conditions(of: filter, testing: .feeds)
         return feeds.filter { feed in
-            meets(feedConditions, filter.match) { test in
-                passes(test, feed: feed, context: context, newItemCount: newItemCount, folderPath: folderPath)
-            }
+            isListed(feed, feedConditions, filter.match, context: context, newItemCount: newItemCount, folderPath: folderPath)
+        }
+    }
+
+    /// Whether `filter` lists any of `feeds`, the search ending at the first
+    /// feed that matches (`listsAnyItem`'s companion).
+    static func listsAnyFeed(
+        of filter: LibraryViewFilter,
+        in feeds: [Feed],
+        context: LibraryViewFilterContext,
+        newItemCount: (UUID) -> Int,
+        folderPath: (Feed) -> String?
+    ) -> Bool {
+        guard filter.lists.contains(.feeds) else { return false }
+        let feedConditions = conditions(of: filter, testing: .feeds)
+        return feeds.contains { feed in
+            isListed(feed, feedConditions, filter.match, context: context, newItemCount: newItemCount, folderPath: folderPath)
+        }
+    }
+
+    /// The conditions that test each kind of book row `filter` lists, found
+    /// once for a whole list rather than for every row; empty when it lists
+    /// no books, episodes, or articles.
+    private static func itemConditions(of filter: LibraryViewFilter) -> [LibraryViewItemKind: [LibraryViewCondition]] {
+        var conditionsByKind: [LibraryViewItemKind: [LibraryViewCondition]] = [:]
+        for kind in itemKinds where filter.lists.contains(kind) {
+            conditionsByKind[kind] = conditions(of: filter, testing: kind)
+        }
+        return conditionsByKind
+    }
+
+    /// Whether `row` is of a kind listed (`conditionsByKind` names the kinds)
+    /// and meets the conditions that test its kind under `match`.
+    private static func isListed(
+        _ row: Book,
+        _ conditionsByKind: [LibraryViewItemKind: [LibraryViewCondition]],
+        _ match: LibraryViewMatch,
+        context: LibraryViewFilterContext
+    ) -> Bool {
+        guard let rowConditions = conditionsByKind[row.listedKind] else { return false }
+        return meets(rowConditions, match) { passes($0, item: row, context: context) }
+    }
+
+    /// Whether `feed` meets `feedConditions`, the conditions that test feeds,
+    /// under `match` (`feeds` and `listsAnyFeed` share it).
+    private static func isListed(
+        _ feed: Feed,
+        _ feedConditions: [LibraryViewCondition],
+        _ match: LibraryViewMatch,
+        context: LibraryViewFilterContext,
+        newItemCount: (UUID) -> Int,
+        folderPath: (Feed) -> String?
+    ) -> Bool {
+        meets(feedConditions, match) { test in
+            passes(test, feed: feed, context: context, newItemCount: newItemCount, folderPath: folderPath)
         }
     }
 

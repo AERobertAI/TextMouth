@@ -499,6 +499,79 @@ final class LibraryViewFilterEvaluatorTests: XCTestCase {
         }
     }
 
+    // MARK: - Whether a Filter Lists Anything
+
+    /// Whether a filter lists any row or feed, which ends at the first that
+    /// matches, says what the whole lists say: for each condition either
+    /// way, on every kind, one kind, and feeds alone; for every condition at
+    /// once, all or any; with only the latest from each feed and a limit
+    /// chosen each way, of no rows too; and for a limit of no rows, which
+    /// only code could make (review of October 31, 2026, finding 4).
+    func testWhetherAFilterListsAnythingAgreesWithWhatItLists() throws {
+        let fixture = try Fixture()
+        let tests: [LibraryViewCondition.Test] = [
+            .format(.epub), .format(.daisy),
+            .folder(id: fixture.fiction.id, includingSubfolders: true), .folder(id: fixture.goneFolderID, includingSubfolders: false),
+            .readingState(.unopened), .readingState(.finished), .inReadingList,
+            .addedWithin(days: 1), .openedWithin(days: 2),
+            .titleOrAuthorContains("ferry"), .titleOrAuthorContains("nowhere at all"),
+            .hasNewItems, .subscribed,
+        ]
+        let kinds: [Set<LibraryViewItemKind>] = [Set(LibraryViewItemKind.allCases), [.episodes], [.feeds]]
+        var filters: [LibraryViewFilter] = []
+        for test in tests {
+            for isNegated in [false, true] {
+                for lists in kinds {
+                    filters.append(LibraryViewFilter(lists: lists, conditions: [LibraryViewCondition(test: test, isNegated: isNegated)]))
+                }
+            }
+        }
+        let every = tests.map { LibraryViewCondition(test: $0) }
+        filters.append(LibraryViewFilter(lists: Set(LibraryViewItemKind.allCases), conditions: every))
+        filters.append(LibraryViewFilter(lists: Set(LibraryViewItemKind.allCases), match: .any, conditions: every))
+        for order in LibraryViewLimit.Order.allCases {
+            for count in [1, 3, 0] {
+                filters.append(LibraryViewFilter(
+                    lists: [.books, .episodes, .articles],
+                    conditions: [LibraryViewCondition(test: .readingState(.unopened))],
+                    onePerFeed: true,
+                    limit: LibraryViewLimit(count: count, chosenBy: order)
+                ))
+            }
+        }
+
+        var answers: [Bool] = []
+        for filter in filters {
+            let context = fixture.context(for: filter)
+            for rows in [fixture.rows, []] {
+                let listsAny = LibraryViewFilterEvaluator.listsAnyItem(of: filter, in: rows, context: context)
+                XCTAssertEqual(listsAny, !fixture.listedItems(filter, in: rows, context: context).isEmpty, "\(filter), \(rows.count) rows")
+                answers.append(listsAny)
+            }
+            for feeds in [fixture.feeds, []] {
+                let listsAny = LibraryViewFilterEvaluator.listsAnyFeed(
+                    of: filter,
+                    in: feeds,
+                    context: context,
+                    newItemCount: { fixture.newItemCounts[$0] ?? 0 },
+                    folderPath: { fixture.folderPath($0.folderID) }
+                )
+                let listed = LibraryViewFilterEvaluator.feeds(
+                    of: filter,
+                    in: feeds,
+                    context: context,
+                    newItemCount: { fixture.newItemCounts[$0] ?? 0 },
+                    folderPath: { fixture.folderPath($0.folderID) }
+                )
+                XCTAssertEqual(listsAny, !listed.isEmpty, "\(filter), \(feeds.count) feeds")
+                answers.append(listsAny)
+            }
+        }
+        // The filters ask both ways.
+        XCTAssertTrue(answers.contains(true))
+        XCTAssertTrue(answers.contains(false))
+    }
+
     // MARK: - The Context
 
     /// The context gathers only what the filter reads, each source asked at

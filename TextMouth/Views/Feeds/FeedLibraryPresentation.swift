@@ -190,26 +190,46 @@ enum LibraryFeedsSectionRows {
             return []
         case .filter:
             guard let filter = location.view.filter, filter.lists.contains(.feeds) else { return [] }
-            // A feed's conditions read its folder, its title and author, its
-            // new items, and whether it is subscribed: the context holds the
-            // paths of the folders the conditions name, and nothing else.
-            let context = LibraryViewFilterContext(
-                for: filter,
-                now: Date(),
-                calendar: .current,
-                finishedIDs: { [] },
-                readingListIDs: { [] },
-                folderPath: { center.library?.feedFolderPath(forFolderID: $0) },
-                feedFolderPaths: { [:] }
-            )
             return LibraryViewFilterEvaluator.feeds(
                 of: filter,
                 in: center.feeds,
-                context: context,
+                context: feedContext(for: filter, center: center),
                 newItemCount: { center.counts(of: $0).new },
                 folderPath: { center.folderPath(of: $0) }
             )
         }
+    }
+
+    /// Whether the filter view `view` lists any feed, the search ending at
+    /// the first that matches: what a window's View pop-up asks of a view
+    /// shown when applicable (review of October 31, 2026, finding 4).
+    @MainActor
+    static func listsAnyFeed(of view: LibraryViewDefinition, center: FeedCenter) -> Bool {
+        guard let filter = view.filter, filter.lists.contains(.feeds) else { return false }
+        return LibraryViewFilterEvaluator.listsAnyFeed(
+            of: filter,
+            in: center.feeds,
+            context: feedContext(for: filter, center: center),
+            newItemCount: { center.counts(of: $0).new },
+            folderPath: { center.folderPath(of: $0) }
+        )
+    }
+
+    /// What a filter reads of the feeds: their folder, their title and
+    /// author, their new items, and whether they are subscribed, so the
+    /// context holds the paths of the folders the conditions name, and
+    /// nothing else.
+    @MainActor
+    private static func feedContext(for filter: LibraryViewFilter, center: FeedCenter) -> LibraryViewFilterContext {
+        LibraryViewFilterContext(
+            for: filter,
+            now: Date(),
+            calendar: .current,
+            finishedIDs: { [] },
+            readingListIDs: { [] },
+            folderPath: { center.library?.feedFolderPath(forFolderID: $0) },
+            feedFolderPaths: { [:] }
+        )
     }
 
     /// The rows of the Feeds section at `location`, in order.
