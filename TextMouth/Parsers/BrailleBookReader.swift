@@ -52,6 +52,24 @@ enum BrailleBookReader {
         guard Int64(size) <= maximumFileBytes else { throw BrailleFileError.fileTooLarge }
     }
 
+    // MARK: - A code chosen
+
+    /// Refuses the braille file at `url` unless it reads with the braille
+    /// file characters `code` (braillecodes), as a re-read with other braille
+    /// file characters checks it before anything is written
+    /// (`LibraryViewModel.readTextAgain(bookID:choosing:access:)`): a file
+    /// past `maximumFileBytes` before a byte of it is read, as `markdown`
+    /// refuses one, and then a file whose pages do not read in `code`. The
+    /// pages are read whole and let go; nothing is translated. A PEF's rows
+    /// are Unicode braille patterns, whatever `code` names.
+    /// - Throws: `BrailleFileError` for a file past the limit, or one that is
+    ///   not braille in `code`, and otherwise what the file's reading throws
+    ///   (`BrailleFileReader.read(_:as:code:)`).
+    static func requireReadable(_ url: URL, as code: BrailleFileCode) throws {
+        try requireSizeWithinLimit(of: url)
+        _ = try BrailleFileReader.read(url, as: kind(of: url), code: code)
+    }
+
     // MARK: - Reading
 
     /// Throws `BrailleTranslator.Failure.changedTable` when the book was read

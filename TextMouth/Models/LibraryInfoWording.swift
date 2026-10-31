@@ -92,6 +92,37 @@ enum BrailleCodeWording {
     static let bookInfoLabel = "Braille Code"
 }
 
+/// The words around the braille file characters a BRF or BRL braille book's
+/// file is read with (braillecodes), kept together so a test pins them. A
+/// re-read with other braille file characters is the encoding's re-read
+/// (`LibraryViewModel.readTextAgain(bookID:choosing:access:)`), so it says
+/// what it shares with it in the encoding's words: the refusals of a busy
+/// library, a failure, and the announcement once the book is read again
+/// (`TextEncodingWording`). Only what differs is here.
+enum BrailleFileCodeWording {
+    /// Why the book titled `bookTitle` was not read again with the braille
+    /// file characters named `codeName`: its file is not braille in them, as
+    /// `reason`, the reader's own sentence (`BrailleFileError`), says, and
+    /// nothing changed. It has the shape of an encoding's refusal
+    /// (`TextEncodingWording.notValidRefusal(bookTitle:encoding:)`):
+    /// "“Ledger” can't be read as Eurobraille, six-dot (German-speaking
+    /// countries): Line 3 holds the control character U+0007, which is not
+    /// Eurobraille. Nothing was changed."
+    static func notReadableRefusal(bookTitle: String, codeName: String, reason: String) -> String {
+        "“\(bookTitle)” can't be read as \(codeName): \(reason) Nothing was changed."
+    }
+
+    /// Why what would rewrite the text of the braille book titled
+    /// `bookTitle` waits while TextMouth reads it again with other braille
+    /// file characters, as the encoding's sentence says it for any other
+    /// book (`TextEncodingWording.readingAgainRefusal(bookTitle:)`): a second
+    /// re-read of it, Edit Text, Redo Text Extraction, and Replace Existing
+    /// (`LibraryViewModel.readingAgainRefusal(of:)`).
+    static func readingAgainRefusal(bookTitle: String) -> String {
+        "TextMouth is reading “\(bookTitle)” again with other braille file characters. Try again when that finishes."
+    }
+}
+
 // MARK: - A Text Book's Encoding (FMT16, encodingchoice)
 
 extension Book {
@@ -320,20 +351,27 @@ enum TextEncodingWording {
     // MARK: Done
 
     /// What VoiceOver hears once the book titled `bookTitle` is read again,
-    /// now in `reading`: "“Ledger” is now read as Shift JIS (Japanese),
-    /// chosen.", or "“Ledger” was read again." when what it is read in
-    /// could not be learnt (its file went to the cloud as it was read);
-    /// when text TextMouth did not write was kept beside it as `keptCopy`,
-    /// where, in Replace Existing's words
+    /// now as `readingDescription` says in words: "“Ledger” is now read as
+    /// Shift JIS (Japanese), chosen." for an encoding
+    /// (`TextEncodingReading.description`), "“Ledger” is now read as
+    /// Eurobraille, six-dot (German-speaking countries)." for braille file
+    /// characters (`BrailleFileCode.name`, braillecodes), or "“Ledger” was
+    /// read again." when what it is read in could not be learnt (its file
+    /// went to the cloud as it was read); when text TextMouth did not write
+    /// was kept beside it as `keptCopy`, where, in Replace Existing's words
     /// (`BookTextEditWording.earlierTextKept(_:)`); and, when Edit Text was
     /// editing the book (`stoppedEditing`), that it has stopped, in the
     /// words Edit Text says it with
     /// (`BookTextEditWording.stoppedBookReadAgain(bookTitle:)`). One
     /// announcement says it all, so no part cuts another off.
+    ///
+    /// Its label is not `reading`, as the encoding's form below has it: two
+    /// functions told apart only by the type of `reading` could not be
+    /// called with `reading: nil`, which Swift could give to either.
     static func readAgainAnnouncement(
-        bookTitle: String, reading: TextEncodingReading?, keptCopy: URL?, stoppedEditing: Bool = false
+        bookTitle: String, readingDescription: String?, keptCopy: URL?, stoppedEditing: Bool = false
     ) -> String {
-        var sentences = [reading.map { "“\(bookTitle)” is now read as \($0.description)." } ?? "“\(bookTitle)” was read again."]
+        var sentences = [readingDescription.map { "“\(bookTitle)” is now read as \($0)." } ?? "“\(bookTitle)” was read again."]
         if let keptCopy {
             sentences.append(BookTextEditWording.earlierTextKept(keptCopy))
         }
@@ -341,6 +379,18 @@ enum TextEncodingWording {
             sentences.append(BookTextEditWording.stoppedBookReadAgain(bookTitle: bookTitle))
         }
         return sentences.joined(separator: " ")
+    }
+
+    /// What VoiceOver hears once the book titled `bookTitle` is read again,
+    /// now in the encoding `reading`, or nil when that could not be learnt:
+    /// `readAgainAnnouncement(bookTitle:readingDescription:keptCopy:stoppedEditing:)`
+    /// with the reading in its words (`TextEncodingReading.description`).
+    static func readAgainAnnouncement(
+        bookTitle: String, reading: TextEncodingReading?, keptCopy: URL?, stoppedEditing: Bool = false
+    ) -> String {
+        readAgainAnnouncement(
+            bookTitle: bookTitle, readingDescription: reading?.description, keptCopy: keptCopy, stoppedEditing: stoppedEditing
+        )
     }
 
     // MARK: A Choice That Cannot Be Read (encodingchoice)
