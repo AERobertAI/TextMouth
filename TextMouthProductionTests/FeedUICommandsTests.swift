@@ -185,6 +185,28 @@ final class FeedUICommandsTests: XCTestCase {
         XCTAssertTrue(harness.world.library.library.books.isEmpty)
     }
 
+    /// Cancel Download chosen once the episode's book is already being
+    /// added to the library comes too late: it says so, in the words the
+    /// feed downloads section's Cancel says it, and the book arrives.
+    func testCancelDownloadTooLateSaysTheBookIsAlreadyBeingAdded() async throws {
+        let harness = try await Harness(self, label: "FeedUICommandsCancelLate")
+        let downloads = harness.world.center.downloads
+        downloads.beforeCommit = { [weak harness] _ in
+            guard let harness else { return }
+            harness.presenter.perform(harness.action(.cancelDownload), in: harness.context)
+        }
+        defer { downloads.beforeCommit = nil }
+
+        harness.presenter.perform(harness.action(.download), in: harness.context)
+        let book = try await downloadedBook(harness.world, feed: harness.feed, item: Harness.episodeID)
+
+        XCTAssertEqual(harness.heard, [
+            "Downloading “A map you can touch”.",
+            "“A map you can touch” is already being added to the library.",
+        ])
+        XCTAssertEqual(harness.item?.state, .downloaded(bookID: book.id))
+    }
+
     // MARK: - Played, Descriptions, and Deleting
 
     /// Mark Played and Mark Unplayed change the item and say so; Mark All

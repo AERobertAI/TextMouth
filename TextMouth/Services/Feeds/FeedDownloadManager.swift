@@ -143,7 +143,8 @@ extension FeedFetchError {
 /// its text, or from its web page when the feed gives only a summary.
 ///
 /// A failure is kept with its item, with its reason, until it is tried
-/// again; cancelling forgets the download and any part of it. An item asked
+/// again; cancelling forgets the download and any part of it, unless its
+/// book is already being added to the library, which finishes. An item asked
 /// for while it waits or downloads is not asked for twice, and opening an
 /// item downloads it first and opens its book once it is in the library.
 ///
@@ -316,11 +317,33 @@ final class FeedDownloadManager {
         startNext()
     }
 
+    /// What Cancel Download did to an item's download (`cancel(_:of:)`), for
+    /// the words VoiceOver hears and for who the item is then.
+    enum CancelOutcome: Equatable, Sendable {
+        /// It stopped, whether under way, waiting to start, or put off, or
+        /// there was none to stop.
+        case stopped
+        /// It finishes all the same: it is the download under way, and its
+        /// book is already being added to the library, which an import never
+        /// stops partway, as the feed downloads section's Cancel lets such a
+        /// download finish (`cancelEveryDownload()`).
+        case finishing
+    }
+
     /// Stops the download of the item `itemID`, or takes it out of the
     /// queue, or out of the downloads put off, forgetting any part
     /// downloaded, the partial file its resume data names included (FR14);
-    /// the item is not downloaded, nor waiting (FR11).
-    func cancel(_ itemID: FeedItem.ID, of feedID: UUID) {
+    /// the item is not downloaded, nor waiting (FR11). The download under
+    /// way whose book is already being added to the library comes too late
+    /// to stop, an import never being stopped partway: it finishes, and
+    /// nothing of it changes, as the feed downloads section's Cancel leaves
+    /// it (`cancelTargets`).
+    /// - Returns: Whether the download stopped, or finishes all the same.
+    @discardableResult
+    func cancel(_ itemID: FeedItem.ID, of feedID: UUID) -> CancelOutcome {
+        if isAddingToLibrary, current?.feedID == feedID, current?.itemID == itemID {
+            return .finishing
+        }
         defer { publishQueue() }
         putOff.removeAll { $0.feedID == feedID && $0.itemID == itemID }
         if let waiting = queue.firstIndex(where: { $0.feedID == feedID && $0.itemID == itemID }) {
@@ -339,6 +362,7 @@ final class FeedDownloadManager {
             }
         }
         FeedPartialDownloads.discard(resumeDataAt: resumeDataFile(for: itemID, of: feedID))
+        return .stopped
     }
 
     /// What the feed downloads section's Cancel stopped
@@ -438,7 +462,7 @@ final class FeedDownloadManager {
     /// the last only their items' states say. Each is stopped once, by its
     /// feed, item, and title; one whose item is gone is no download.
     private var cancelTargets: (underWay: Request?, finishing: Request?, stopping: [Cancellation.Stopped]) {
-        let finishing = progress.state.download?.isAddingToLibrary == true ? current : nil
+        let finishing = isAddingToLibrary ? current : nil
         let underWay = finishing == nil ? current : nil
         var asked = ((underWay.map { [$0] } ?? []) + queue + putOff).map { (feedID: $0.feedID, itemID: $0.itemID) }
         for record in store.records.values {
@@ -453,6 +477,15 @@ final class FeedDownloadManager {
             return Cancellation.Stopped(feedID: download.feedID, itemID: download.itemID, title: title)
         }
         return (underWay, finishing, stopping)
+    }
+
+    /// Whether the book of the download under way is already being added to
+    /// the library, as the downloads' progress says (FR10). An import is
+    /// never stopped partway, so such a download finishes: Cancel Download
+    /// (`cancel(_:of:)`) and the feed downloads section's Cancel
+    /// (`cancelTargets`) both let it.
+    private var isAddingToLibrary: Bool {
+        progress.state.download?.isAddingToLibrary == true
     }
 
     /// Announces that each of `requests` was cancelled before it finished,

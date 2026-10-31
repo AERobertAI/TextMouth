@@ -528,6 +528,64 @@ final class FeedDownloadTests: XCTestCase {
         ))
     }
 
+    // MARK: - Cancel Download Too Late
+
+    /// Cancel Download of the newest-N rule's download while its file is
+    /// still arriving stops it, and leaves the item to the listener, so the
+    /// rule never downloads it again by itself (FR11).
+    func testCancellingADownloadStillArrivingStopsItForTheListener() async throws {
+        let world = try FeedTestWorld(self, label: "FeedCancelArriving")
+        let feed = try await subscribeSlowly(world)
+
+        world.center.downloads.download("guid:ep-1", of: feed.id, origin: .window)
+        await waitFor("the download is under way") { world.server.requests(to: "/audio/1.m4a").count == 1 }
+        let outcome = world.center.cancelDownload("guid:ep-1", of: feed.id)
+        await waitFor("the download stops") { world.center.downloads.current == nil }
+
+        XCTAssertEqual(outcome, .stopped)
+        let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-1"))
+        XCTAssertEqual(item.state, .notDownloaded)
+        XCTAssertEqual(item.downloadOrigin, .listener)
+        XCTAssertEqual(world.library.library.books, [])
+    }
+
+    /// Cancel Download chosen once the episode's book is already being
+    /// added to the library comes too late, as an import is never stopped
+    /// partway: it finishes, its book in the library, and a download the
+    /// newest-N rule asked for stays the rule's, to remove once it is no
+    /// longer among the newest, rather than becoming the listener's for
+    /// good.
+    func testCancellingADownloadBeingAddedLetsItFinishAsTheRules() async throws {
+        let world = try FeedTestWorld(self, label: "FeedCancelFinishing")
+        world.server.serve("/audio/1.m4a", FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(), mimeType: "audio/mp4"))
+        let feed = try await subscribe(world, enclosure: "/audio/1.m4a", type: "audio/mp4")
+        let downloads = world.center.downloads
+        var outcomes: [FeedDownloadManager.CancelOutcome] = []
+        downloads.beforeCommit = { [weak world] request in
+            guard let world else { return }
+            outcomes.append(world.center.cancelDownload(request.itemID, of: request.feedID))
+        }
+        defer { downloads.beforeCommit = nil }
+
+        downloads.download("guid:ep-1", of: feed.id, origin: .window)
+        let book = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+
+        XCTAssertEqual(outcomes, [.finishing])
+        let item = try XCTUnwrap(world.center.store.record(of: feed.id)?.item("guid:ep-1"))
+        XCTAssertEqual(item.state, .downloaded(bookID: book.id))
+        XCTAssertEqual(item.downloadOrigin, .window, "Cancel Download that came too late made the download the listener's")
+    }
+
+    /// Cancel Download that comes too late says so in the words the feed
+    /// downloads section's Cancel says of a download it lets finish.
+    func testCancelDownloadTooLateIsWordedAsTheSectionsCancelSaysIt() {
+        XCTAssertEqual(FeedWording.alreadyBeingAdded(title: "Ep. 3"), "“Ep. 3” is already being added to the library.")
+        XCTAssertEqual(
+            FeedDownloadProgressWording.cancelled(stopped: [], finishing: "Ep. 3", comingBack: FeedCancelReturn()),
+            FeedWording.alreadyBeingAdded(title: "Ep. 3")
+        )
+    }
+
     // MARK: - The Cancelled Event (REV18a finding 6)
 
     /// What a test heard of `.downloadCancelled`: the item of each event,
@@ -982,5 +1040,18 @@ final class FeedDownloadTests: XCTestCase {
                                 enclosure: world.server.url(enclosure).absoluteString, enclosureType: type)
         world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [item])))
         return try await world.subscribe("/feed.xml")
+    }
+
+    /// Starts `world`'s engine and subscribes it to a feed of one episode,
+    /// "Episode One", whose file arrives at first in ten parts a tenth of a
+    /// second apart, so its download is still under way a moment after it
+    /// starts, and whole when asked for again.
+    private func subscribeSlowly(_ world: FeedTestWorld) async throws -> Feed {
+        let audio = try FeedMediaFixtures.silentAAC(duration: 2)
+        var slow = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
+        slow.chunkSize = max(1, audio.count / 10)
+        slow.pause = 0.1
+        world.server.serve("/audio/1.m4a", slow, FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
+        return try await subscribe(world, enclosure: "/audio/1.m4a", type: "audio/mp4")
     }
 }
