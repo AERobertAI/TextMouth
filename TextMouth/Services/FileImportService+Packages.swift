@@ -290,22 +290,55 @@ extension FileImportService {
         // files, bookInfo.json and the content index beside it. Each is put
         // back should the reinstatement fail, at whatever step; one it did
         // not change is left alone.
-        let previousFiles = [
-            TextMouthPaths.contentMarkdownPath(in: location),
+        let previousText = PackageFileSnapshot(of: TextMouthPaths.contentMarkdownPath(in: location))
+        let previousFiles = [previousText] + [
             TextMouthPaths.bookInfoPath(in: location),
             TextMouthPaths.contentIndexPath(in: location),
         ].map(PackageFileSnapshot.init(of:))
+        // A book recording no fingerprint of its text (the marker of a book
+        // removed before markers carried an edit, with no record to say)
+        // cannot tell whether content.md holds an edit, so what content.md
+        // holds is kept below should reading the book's file replace it.
+        let textIsUnrecorded = !book.format.isAudio && book.textCacheFingerprint == nil
         do {
             let content = try readableContent(of: &book, run: &run)
+            let keptNotice = try keepingUnrecordedText(of: book, held: textIsUnrecorded ? previousText : nil)
             try run.begin(.savingRecord, in: location)
             try writeVerifiedRecord(of: book, contentIndex: content.index, into: location)
             try run.begin(.reinstating, in: location)
             try LibraryPersistenceService.reinstatePackage(of: book)
-            return ImportedBook(book: book, report: content.report)
+            var imported = ImportedBook(book: book, report: content.report)
+            imported.notice = keptNotice
+            return imported
         } catch {
             previousFiles.forEach { $0.restore() }
             throw error
         }
+    }
+
+    /// Keeps the text content.md held before a reinstatement read the book's
+    /// file, as a `content.md.edited-` copy, when reading it wrote other
+    /// text there. This is the second safeguard for a book whose marker
+    /// records no fingerprint (`reinstate`): an edit saved with Edit Text
+    /// before this build's markers carried one would otherwise be lost
+    /// without a word.
+    /// - Parameters:
+    ///   - book: The book reinstated, its text now read.
+    ///   - held: content.md as it was before the read, or nil when the book
+    ///     records a fingerprint, so the read's own safeguards apply.
+    /// - Returns: What to tell the listener (`BookTextEditWording.replaced`),
+    ///   or nil when nothing was replaced.
+    /// - Throws: `FileImportError.importFailed` when the copy could not be
+    ///   kept, so the reinstatement puts content.md back and the package
+    ///   stays retired.
+    private static func keepingUnrecordedText(of book: Book, held: PackageFileSnapshot?) throws -> String? {
+        guard let held, let before = held.bytes,
+              let now = try? Data(contentsOf: held.url), now != before else { return nil }
+        guard let copy = BookTextEditSessions.keepCopy(of: held.url, bytes: before) else {
+            throw FileImportError.importFailed(BookTextEditWording.addBackNoCopyKept(bookTitle: book.title))
+        }
+        BookTextEditSessions.logAddBackKeptText(of: book, copy: copy)
+        return BookTextEditWording.replaced(bookTitle: book.title, keptCopy: copy)
     }
 
     /// The book a retained package is reinstated as (see `reinstate`), or
