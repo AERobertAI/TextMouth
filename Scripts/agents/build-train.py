@@ -86,6 +86,27 @@ def split_list(text):
     return [name.strip() for name in (text or "").split(",") if name.strip()]
 
 
+# MARK: - Names
+
+def known_names(cwd):
+    """The areas and test classes run-area.py knows in the checkout at `cwd`:
+    an unknown name makes run-area.py refuse the whole run, so every name is
+    checked against these first."""
+    def listed(*args):
+        out = subprocess.run(["python3", "-I", "Scripts/test/run-area.py", "--list", *args],
+                             cwd=cwd, capture_output=True, text=True).stdout
+        return out.splitlines()
+    areas = {line.split(":", 1)[0].strip() for line in listed() if ":" in line}
+    classes = {line.strip() for line in listed("all") if line.strip()}
+    return areas | {"all"}, classes
+
+
+def unknown_names(request, areas, classes):
+    """The names in `request` that are neither a known area nor a known class."""
+    return ([a for a in request["areas"] if a not in areas]
+            + [c for c in request["classes"] if c not in classes])
+
+
 # MARK: - Requests
 
 def command_request(args):
@@ -95,6 +116,15 @@ def command_request(args):
         print(f"build-train: no branch named {args.branch}", file=sys.stderr)
         return 2
     QUEUE.mkdir(parents=True, exist_ok=True)
+    # Names are checked for certain against the merged tree at train time, where
+    # a class new on the branch exists; main may lack it, so this is a warning.
+    areas, classes = known_names(ROOT)
+    bad = unknown_names({"areas": split_list(args.areas), "classes": split_list(args.classes)}, areas, classes)
+    if bad:
+        print(f"build-train: warning: main has no area or class named {', '.join(bad)}. A class is the name "
+              f"after `class`, not its file's name (`Scripts/test/run-area.py --list all` lists them). If your "
+              f"branch adds them, they run; a name still unknown on the merged tree is left out and you are told.",
+              file=sys.stderr)
     request = {
         "agent": args.agent,
         "branch": args.branch,
@@ -211,12 +241,18 @@ def changed_files(base, branch):
 
 
 def run_tests(merged, train_dir):
-    """Runs the union of the merged requests' areas and classes; returns run-area's output."""
+    """Runs the union of the merged requests' areas and classes; returns run-area's
+    output. Names the merged tree does not know are left out, and each request
+    keeps a list of its own, so its agent is told."""
+    known_areas, known_classes = known_names(WORKTREE)
     areas, classes = [], []
     for request in merged:
-        areas += [a for a in request["areas"] if a not in areas]
-        classes += [c for c in request["classes"] if c not in classes]
+        request["dropped"] = unknown_names(request, known_areas, known_classes)
+        areas += [a for a in request["areas"] if a in known_areas and a not in areas]
+        classes += [c for c in request["classes"] if c in known_classes and c not in classes]
     names = ["all"] if "all" in areas else areas
+    if not names and not classes:
+        return "no tests ran: every name asked for was unknown\nFAILED"
     command = ["python3", "-I", "Scripts/test/run-area.py", *names]
     if classes and names != ["all"]:
         command += ["--classes", ",".join(classes)]
@@ -273,6 +309,8 @@ def report(train_id, base, merged, conflicts, output, train_dir):
                  f"- Verdict of the whole train: {verdict}", f"- {executed}",
                  f"- Failures in the classes you asked for: {len(mine)}", *[f"  - {f}" for f in mine],
                  f"- Compile errors in files your branch changes: {len(my_errors)}", *[f"  - {e}" for e in my_errors],
+                 f"- Names left out, unknown to run-area.py on the merged tree: "
+                 f"{', '.join(request.get('dropped', [])) or 'none'}",
                  f"- Every failure and error in the train: {train_dir / 'summary.md'}", ""]
         (RESULTS / f"{agent}.md").write_text("\n".join(lines))
         post(agent, f"train {train_id}: {verdict}; yours: {len(mine)} failures, {len(my_errors)} compile errors; "
