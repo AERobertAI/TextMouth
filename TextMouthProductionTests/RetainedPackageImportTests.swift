@@ -436,6 +436,46 @@ final class RetainedPackageImportTests: XCTestCase {
         XCTAssertFalse(exists(marker(of: book)))
     }
 
+    /// A book edited with Edit Text and removed with Remove from Library Only
+    /// by a build whose marker carried no edit (no editedText or
+    /// textCacheFingerprint key) has nothing but its content.md to say it was
+    /// edited. Adding it back reads the book's file over that text, so the
+    /// edited text is first kept as a content.md.edited- copy, which the
+    /// listener is told of by name (data review, finding 2).
+    @MainActor
+    func testAnEditRemovedByAnOlderMarkerIsKeptWhenTheBookIsAddedBack() throws {
+        let taken = try takingTextEdit(of: try makePackage(title: "Hub Gears")) {
+            $0.replacingOccurrences(of: "Notes on", with: "Corrected notes on")
+        }
+        try removeFromLibraryOnly(taken.book)
+        let older = """
+            {
+              "author" : "Test Fixture",
+              "bookID" : "\(taken.book.id.uuidString)",
+              "removedAt" : "2026-09-01T12:00:00Z",
+              "title" : "Hub Gears"
+            }
+            """
+        try Data(older.utf8).write(to: marker(of: taken.book), options: .atomic)
+
+        let imported = try FileImportService.importTMBPackage(FileImportService.identifyTMBPackage(at: taken.book.tmbDirectory))
+
+        let cache = MarkdownCacheService.cacheURL(for: imported.book)
+        let copies = keptTextCopies(of: cache)
+        XCTAssertEqual(copies.compactMap { try? Data(contentsOf: $0) }, [taken.edited], "the edited text was not kept")
+        XCTAssertEqual(
+            try Data(contentsOf: cache),
+            try MarkdownCacheService.extractedText(for: imported.book, includesPages: true)?.bytes,
+            "the book's file was not read"
+        )
+        let copyName = try XCTUnwrap(copies.first).lastPathComponent
+        XCTAssertEqual(
+            imported.announcement,
+            "The text of Hub Gears was read again from its own file. "
+                + "The text content.md held before was kept as \(copyName), in the book's package."
+        )
+    }
+
     /// Text changed by hand while the book was out of the library, which no
     /// record of an edit describes, is kept beside content.md when adding
     /// the book back reads its file again: the marker's fingerprints say

@@ -268,7 +268,22 @@ extension LibraryViewModel {
     /// is copied into the library (`FileImportService.importTMBPackage`).
     /// The import overlay names the package and the step it is at, from
     /// checking it on, as it names a file imported (FR10).
-    func openTMBPackage(from url: URL) {
+    ///
+    /// A package the library does not list takes the place the listener
+    /// chose, as a file imported there does: it is moved to `folderPath`
+    /// once imported, and with `addingToReadingList` it joins the end of the
+    /// reading list (FR09), VoiceOver hearing both. A package the library
+    /// lists opens where it is. Several packages chosen at once open one
+    /// reader, for the first, so `opensReader` is false for the others: they
+    /// are imported and not opened.
+    func openTMBPackage(
+        from url: URL,
+        toFolder folderPath: String = "",
+        from origin: ImportOrigin? = nil,
+        addingToReadingList: Bool = false,
+        opensReader: Bool = true
+    ) {
+        let request = importRequest(from: origin, addingToReadingList: addingToReadingList)
         let queue = importOperationQueue
         let progress = importProgress
         enqueueImport { [weak self] in
@@ -286,12 +301,16 @@ extension LibraryViewModel {
                         isListed = true
                         // Nothing is imported: the book opens instead.
                         progress.clear()
-                        self.readerOpener(listedBookID)
+                        if opensReader { self.readerOpener(listedBookID) }
                     }
                 }
                 guard !isListed else { return }
                 let imported = try FileImportService.importTMBPackage(source, observer: observer)
-                DispatchQueue.main.sync { self.completePackageImport(imported, openAfterImport: true) }
+                DispatchQueue.main.sync {
+                    self.completePackageImport(
+                        imported, openAfterImport: opensReader, toFolder: folderPath, request: request
+                    )
+                }
             } catch {
                 DispatchQueue.main.async { self.presentImportError(error) }
             }
@@ -379,14 +398,43 @@ extension LibraryViewModel {
     /// reader window does not take focus from the warning. The package the
     /// user chose is never deleted. VoiceOver hears the end of an import
     /// that ran long, as for a file imported (FR10).
-    func completePackageImport(_ imported: ImportedBook, openAfterImport: Bool) {
+    ///
+    /// A package imported for a folder (`folderPath`, not the top level) is
+    /// moved there first, as the packages move off the main actor, and the
+    /// rest follows once it has: `request` adds the book to the reading list
+    /// then, whose announcement names the folder the book is in, and the
+    /// reader opens.
+    func completePackageImport(
+        _ imported: ImportedBook,
+        openAfterImport: Bool,
+        toFolder folderPath: String = "",
+        request: ImportRequest = ImportRequest()
+    ) {
         importProgress.end(.book)
         library.addBook(imported.book)
         save()
+        guard !folderPath.isEmpty else {
+            finishPackageImport(imported, openAfterImport: openAfterImport, request: request)
+            return
+        }
+        let move = moveBook(imported.book, toFolder: folderPath)
+        Task { [weak self] in
+            await move.value
+            self?.finishPackageImport(imported, openAfterImport: openAfterImport, request: request)
+        }
+    }
+
+    /// The end of a package's import, once the book is where it belongs:
+    /// the book joins the reading list when `request` asks, then a warning
+    /// for a book missing chapters, or else the reader, is shown.
+    private func finishPackageImport(_ imported: ImportedBook, openAfterImport: Bool, request: ImportRequest) {
+        // The book as the library holds it now, in its folder.
+        let book = bookByID(imported.book.id) ?? imported.book
+        addImportedBooksToReadingList([book], request: request)
         if let warning = imported.warning {
             presentImportMessage(warning, title: ImportProgressWording.bookImportedTitle)
         } else if openAfterImport {
-            readerOpener(imported.book.id)
+            readerOpener(book.id)
         }
     }
 
@@ -829,20 +877,31 @@ extension LibraryViewModel {
     /// they reach the library (FR09).
     ///
     /// A TextMouth package, which the Open Book… panel offers, is opened as
-    /// the book it holds, exactly as when it is opened from Finder
-    /// (`openTMBPackage(from:)`, which decides where its book is in the
-    /// library: a book the library lists opens where it is). So neither
-    /// `folderPath` nor `addingToReadingList` applies to a package.
+    /// the book it holds, as when it is opened from Finder
+    /// (`openTMBPackage(from:toFolder:from:addingToReadingList:opensReader:)`):
+    /// a book the library lists opens where it is, and any other is imported
+    /// into `folderPath` and, with `addingToReadingList`, the reading list,
+    /// as a file is. Of several packages chosen at once, only the first
+    /// opens a reader.
     func importFiles(
         urls: [URL],
         toFolder folderPath: String = "",
         from origin: ImportOrigin? = nil,
         addingToReadingList: Bool = false
     ) {
+        // Only the first package opens a window; the others are imported.
+        var hasOpenedPackage = false
         for url in urls {
             let ext = url.pathExtension.lowercased()
             if FileImportService.isBookPackage(url) {
-                openTMBPackage(from: url)
+                openTMBPackage(
+                    from: url,
+                    toFolder: folderPath,
+                    from: origin,
+                    addingToReadingList: addingToReadingList,
+                    opensReader: !hasOpenedPackage
+                )
+                hasOpenedPackage = true
             } else if ext == "zip" {
                 importZipAsync(from: url, toFolder: folderPath, origin: origin, addingToReadingList: addingToReadingList)
             } else {

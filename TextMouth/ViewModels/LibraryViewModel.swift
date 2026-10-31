@@ -506,12 +506,19 @@ extension LibraryViewModel {
             return true
         case .unavailable(let reason):
             DataDirectoryGate.close(root)
-            if reason != dataDirectoryUnavailability {
-                DiagnosticLog.event(.storage, "DATA_DIRECTORY_UNAVAILABLE: \(reason.logDescription)")
-                dataDirectoryUnavailability = reason
-            }
+            noteDataDirectoryUnavailable(reason)
             return false
         }
+    }
+
+    /// Records that the data directory is unavailable for `reason`, once for
+    /// each reason: the one place that sets `dataDirectoryUnavailability`.
+    /// The check calls it, and tests use it to stand for a library whose
+    /// drive dropped off.
+    func noteDataDirectoryUnavailable(_ reason: DataDirectoryUnavailability) {
+        guard reason != dataDirectoryUnavailability else { return }
+        DiagnosticLog.event(.storage, "DATA_DIRECTORY_UNAVAILABLE: \(reason.logDescription)")
+        dataDirectoryUnavailability = reason
     }
 
     /// Makes `folder`, where the bookmark found the library last named

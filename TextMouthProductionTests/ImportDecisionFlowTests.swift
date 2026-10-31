@@ -1155,34 +1155,53 @@ final class ImportDecisionFlowTests: XCTestCase {
         XCTAssertFalse(DuplicateQuestionMarker.isHeld(by: replaced.tmbDirectory), "the copy kept its marker where it landed")
     }
 
-    /// TextMouth quits while a duplicate's question waits. The next launch,
-    /// a library model of its own on the same data directory, reads the
-    /// index as it was and runs its repair: the copy no one answered for is
-    /// discarded (here for good, as the Trash is off), the library lists
-    /// only the book it matched, the debug log says what went and why, and
-    /// the file the copy came from stays. Once that book is deleted, the
-    /// next launch brings back nothing.
-    func testALaunchAfterAQuitDiscardsTheCopyWhoseQuestionWasNeverAnswered() throws {
+    /// TextMouth quits while a duplicate's question waits, and the question
+    /// stands a day or more. The next launch, a library model of its own on
+    /// the same data directory, reads the index as it was and runs its
+    /// repair: the copy no one answered for goes to the Trash, whatever the
+    /// Trash setting (here it is off, the data review's scenario: no one
+    /// chose to delete the copy, which may be all that is left of the new
+    /// content), the library lists only the book it matched, the debug log
+    /// says what went and why, an alert names the book, and the file the
+    /// copy came from stays. Once that book is deleted, the next launch
+    /// brings back nothing.
+    func testALaunchAfterAQuitMovesTheCopyWhoseQuestionWasNeverAnsweredToTheTrash() throws {
         let scene = try makeScene()
+        XCTAssertFalse(ConfigService.shared.config.moveToTrashInsteadOfDeleting, "the Trash setting is on")
         let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
         scene.model.library = Library(books: [atlas.existing])
         useAfterImportingBehavior(.keepOriginal)
         scene.model.importFiles(urls: [atlas.copy], toFolder: scene.folder.path)
         drainImports(of: scene.model)
         let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
+        let trash = try TrashStandIn(in: makeSandboxDirectory("Unanswered Trash"))
 
         let relaunched = LibraryViewModel(initializeServices: false)
         relaunched.library = Library(books: [atlas.existing])
-        XCTAssertEqual(relaunched.adoptOrphanedPackages(libraryDirectory: scene.folder.url), 0)
+        XCTAssertEqual(
+            relaunched.adoptOrphanedPackages(
+                libraryDirectory: scene.folder.url, trashItem: trash.move, now: Date().addingTimeInterval(2 * 86_400)
+            ),
+            0
+        )
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: copy.tmbDirectory.path), "the copy no one answered for stays")
+        XCTAssertEqual(trash.moved, [copy.tmbDirectory.lastPathComponent], "the copy did not reach the Trash")
+        XCTAssertTrue(relaunched.showError, "nothing told the listener")
+        XCTAssertEqual(relaunched.errorTitle, "Duplicate Copies Moved to the Trash")
+        XCTAssertEqual(
+            relaunched.errorMessage,
+            "TextMouth moved the new copy of “Atlas of Tides” to the Trash, because the question "
+                + "whether to keep it as a duplicate was never answered before TextMouth closed. "
+                + "To get it back, open the Trash and choose Put Back."
+        )
         XCTAssertEqual(relaunched.library.books.map(\.id), [atlas.existing.id])
         let lines = debugLogLines(naming: copy.tmbDirectory).filter { $0.contains("DUPLICATE_UNANSWERED") }
         XCTAssertEqual(lines.count, 1, "\(lines)")
         XCTAssertTrue(
             lines.first?.hasSuffix(
                 ": DUPLICATE_UNANSWERED: \(DiagnosticLog.loggablePath(copy.tmbDirectory)): "
-                    + "the duplicate question about this new copy was never answered, so the copy was deleted"
+                    + "the duplicate question about this new copy was never answered, so the copy was moved to the Trash"
             ) == true,
             "\(lines)"
         )
@@ -1190,9 +1209,48 @@ final class ImportDecisionFlowTests: XCTestCase {
 
         relaunched.library.removeBook(id: atlas.existing.id)
         try FileImportService.deleteBookPackage(atlas.existing)
-        XCTAssertEqual(relaunched.adoptOrphanedPackages(libraryDirectory: scene.folder.url), 0)
+        XCTAssertEqual(relaunched.adoptOrphanedPackages(libraryDirectory: scene.folder.url, trashItem: trash.move), 0)
         XCTAssertEqual(relaunched.library.books, [])
         XCTAssertEqual(try scene.folder.entries(), [])
+    }
+
+    /// A copy whose question is less than a day old is left alone by the
+    /// launch, unadopted and still marked, since another Mac sharing the
+    /// library may be asking that question and still hold its answer; the
+    /// debug log says why, and nothing is shown. The same launch a day
+    /// later moves it to the Trash (data review, finding 3).
+    func testALaunchLeavesTheCopyWhoseQuestionIsLessThanADayOld() throws {
+        let scene = try makeScene()
+        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        scene.model.library = Library(books: [atlas.existing])
+        useAfterImportingBehavior(.keepOriginal)
+        scene.model.importFiles(urls: [atlas.copy], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
+        let trash = try TrashStandIn(in: makeSandboxDirectory("Fresh Question Trash"))
+
+        let relaunched = LibraryViewModel(initializeServices: false)
+        relaunched.library = Library(books: [atlas.existing])
+        let almostADay = Date().addingTimeInterval(23 * 3_600)
+        XCTAssertEqual(
+            relaunched.adoptOrphanedPackages(libraryDirectory: scene.folder.url, trashItem: trash.move, now: almostADay),
+            0
+        )
+
+        XCTAssertTrue(DuplicateQuestionMarker.isHeld(by: copy.tmbDirectory), "a question under a day old lost its copy")
+        XCTAssertEqual(trash.moved, [])
+        XCTAssertFalse(relaunched.showError, "something was shown for a copy that stayed")
+        let lines = debugLogLines(naming: copy.tmbDirectory).filter { $0.contains("DUPLICATE_UNANSWERED") }
+        XCTAssertEqual(lines.count, 1, "\(lines)")
+        XCTAssertTrue(
+            lines.first?.hasSuffix("but it is less than a day old, so another Mac may be asking it and the copy stays") == true,
+            "\(lines)"
+        )
+
+        relaunched.adoptOrphanedPackages(
+            libraryDirectory: scene.folder.url, trashItem: trash.move, now: Date().addingTimeInterval(25 * 3_600)
+        )
+        XCTAssertEqual(trash.moved, [copy.tmbDirectory.lastPathComponent], "a day later the copy stayed")
     }
 
     /// The repair run by the library still asking a duplicate's question, as
@@ -1259,7 +1317,7 @@ final class ImportDecisionFlowTests: XCTestCase {
         drainImports(of: scene.model)
         let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
         try FileManager.default.removeItem(at: copy.tmbDirectory)
-        let gone = "The new copy's files are no longer in the library, so it can't be kept. "
+        let gone = "The files of the new copy of “Atlas of Tides” are no longer in the library, so it can't be kept. "
             + "Choose Cancel, then import the file again."
 
         XCTAssertEqual(scene.model.answerCurrentImportDecision(.keepBoth).failureMessage, gone)
@@ -1272,6 +1330,65 @@ final class ImportDecisionFlowTests: XCTestCase {
         XCTAssertTrue(scene.model.importDecisions.isEmpty)
         XCTAssertEqual(scene.model.library.books, [atlas.existing])
         XCTAssertTrue(FileManager.default.fileExists(atPath: atlas.copy.path))
+    }
+
+    /// While the library can't be reached (its drive dropped off while the
+    /// question waited) the new copy is intact, though it cannot be found
+    /// there: Keep Both and Replace Existing keep the question and say the
+    /// library can't be reached and to answer once it is back, naming the
+    /// book, and not that the copy's files are gone, which would send the
+    /// listener to Cancel an intact copy (data review, finding 6).
+    func testWhileTheLibraryCannotBeReachedTheQuestionStaysAndSaysSo() throws {
+        let scene = try makeScene()
+        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        scene.model.library = Library(books: [atlas.existing])
+        useAfterImportingBehavior(.keepOriginal)
+        scene.model.importFiles(urls: [atlas.copy], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
+        // The drive drops off: the copy cannot be found where it was.
+        scene.model.noteDataDirectoryUnavailable(.driveNotConnected(volume: "Spare Disk", folder: "/Volumes/Spare Disk/TextMouth"))
+        let unreachable = "The library can't be reached right now, so TextMouth can't keep the new copy of “Atlas of Tides”. "
+            + "Answer again once the library is back."
+
+        XCTAssertEqual(scene.model.answerCurrentImportDecision(.keepBoth).failureMessage, unreachable)
+        XCTAssertEqual(scene.model.answerCurrentImportDecision(.replaceExisting).failureMessage, unreachable)
+
+        XCTAssertEqual(scene.model.importDecisions.current?.duplicate?.book.id, copy.id, "the question did not stay")
+        XCTAssertTrue(DuplicateQuestionMarker.isHeld(by: copy.tmbDirectory), "the copy was touched")
+        XCTAssertEqual(scene.model.library.books, [atlas.existing])
+    }
+
+    /// A marker that won't come off keeps the copy out and the question
+    /// asked, and the sentence names the book, says TextMouth could not keep
+    /// the copy, and that Cancel discards it, without the hidden file's name
+    /// the system's reason holds (data review, finding 6). Cancel then
+    /// discards the copy.
+    func testAMarkerThatWontComeOffSaysTheCopyCouldNotBeKept() throws {
+        let scene = try makeScene()
+        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        scene.model.library = Library(books: [atlas.existing])
+        useAfterImportingBehavior(.keepOriginal)
+        scene.model.importFiles(urls: [atlas.copy], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
+        // A package that can't be written to keeps its marker from coming off.
+        let package = copy.tmbDirectory
+        try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: package.path)
+        addTeardownBlock { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: package.path) }
+
+        let outcome = scene.model.answerCurrentImportDecision(.keepBoth)
+
+        XCTAssertEqual(
+            outcome.failureMessage,
+            "TextMouth could not keep the new copy of “Atlas of Tides”. "
+                + "Choose Cancel to discard the copy, then import the file again."
+        )
+        XCTAssertEqual(scene.model.importDecisions.current?.duplicate?.book.id, copy.id, "the question did not stay")
+        XCTAssertEqual(scene.model.library.books, [atlas.existing])
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: package.path)
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.cancel).succeeded)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: package.path), "Cancel left the copy")
     }
 
     // MARK: - Fixtures
@@ -1299,6 +1416,27 @@ final class ImportDecisionFlowTests: XCTestCase {
 
         The last paragraph ends the chart notes for the season.
         """
+
+    /// A stand-in for the Trash: moves each item into a folder of the
+    /// test's own, as the Trash takes one, and records the names it took,
+    /// so nothing a test discards reaches the real Trash.
+    private final class TrashStandIn {
+        /// The folder the Trash's items land in.
+        private let folder: URL
+        /// The names of the items moved, in order.
+        private(set) var moved: [String] = []
+
+        init(in folder: URL) {
+            self.folder = folder
+        }
+
+        /// Moves `item` into the folder, as `FileManager.trashItem` moves it
+        /// to the Trash.
+        func move(_ item: URL) throws {
+            try FileManager.default.moveItem(at: item, to: folder.appendingPathComponent(item.lastPathComponent))
+            moved.append(item.lastPathComponent)
+        }
+    }
 
     /// What one test imports from and into.
     private struct Scene {

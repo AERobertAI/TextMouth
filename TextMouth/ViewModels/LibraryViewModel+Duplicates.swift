@@ -18,18 +18,6 @@ extension LibraryViewModel {
     /// How a duplicate's new copy that cannot be discarded is reported.
     private static let discardFailureContext = "Could not discard duplicate import"
 
-    /// How Keep Both is reported when the new copy's package still says it
-    /// waits for an answer, because that marker could not be removed.
-    private static let keepFailureContext = "Could not keep both copies"
-
-    /// What Keep Both and Replace Existing say, keeping the question, when
-    /// the new copy's package is gone while its question waited: taken by
-    /// the launch of another Mac sharing the library, or in Finder. Cancel
-    /// settles the question then, and the file it came from, which an
-    /// unanswered copy never deletes, can be imported again.
-    private static let copyGoneSentence =
-        "The new copy's files are no longer in the library, so it can't be kept. Choose Cancel, then import the file again."
-
     // MARK: - Asking
 
     /// Asks `decision` once every question queued before it is settled. A
@@ -295,8 +283,11 @@ extension LibraryViewModel {
     ///
     /// Neither Replace nor Keep Both keeps a copy whose package is gone, as
     /// another Mac's launch or Finder can take it while the question waits:
-    /// the question stays, saying so (`copyGoneSentence`), so no row names
-    /// files that are not there and the original is never deleted for them.
+    /// the question stays, saying so (`DuplicateCopyWording.copyGone`), so no
+    /// row names files that are not there and the original is never deleted
+    /// for them. While the library can't be reached (its drive dropped off
+    /// while the question waited) the question stays too, saying that
+    /// instead (`refusalToKeep`), since the copy is intact.
     private func settle(
         _ duplicate: ImportDecision.DuplicateBook,
         of decision: ImportDecision,
@@ -304,9 +295,9 @@ extension LibraryViewModel {
     ) -> OperationOutcome {
         switch answer {
         case .replaceExisting:
-            return Self.refusalToKeep(duplicate) ?? replaceExisting(with: duplicate, of: decision)
+            return refusalToKeep(duplicate) ?? replaceExisting(with: duplicate, of: decision)
         case .keepBoth:
-            return Self.refusalToKeep(duplicate) ?? keep(duplicate, of: decision)
+            return refusalToKeep(duplicate) ?? keep(duplicate, of: decision)
         case .cancel:
             do {
                 try FileImportService.deleteBookPackage(duplicate.book)
@@ -328,12 +319,20 @@ extension LibraryViewModel {
     /// The marker saying the copy waits for an answer goes first, before
     /// the copy joins the library, so no package the library lists ever
     /// holds it (`DuplicateQuestionMarker`). A marker that cannot be removed
-    /// keeps the copy out and the question asked, saying why.
+    /// keeps the copy out and the question asked, saying that TextMouth
+    /// could not keep the copy and that Cancel discards it
+    /// (`DuplicateCopyWording.markerStays`); the system's reason, which
+    /// names a hidden file, goes to the debug log.
     private func keep(_ duplicate: ImportDecision.DuplicateBook, of decision: ImportDecision) -> OperationOutcome {
         do {
             try DuplicateQuestionMarker.remove(from: duplicate.book.tmbDirectory)
         } catch {
-            return .failure(Self.keepFailureContext, error)
+            DiagnosticLog.event(
+                .storage,
+                "DUPLICATE_KEEP_FAILED: the marker of a new copy awaiting its answer could not be removed: "
+                    + error.localizedDescription
+            )
+            return .failure(DuplicateCopyWording.markerStays(bookTitle: duplicate.book.title))
         }
         // `Library.addBook` refuses a second copy of the same content, which
         // Keep Both asks for: the new copy joins directly.
@@ -344,13 +343,20 @@ extension LibraryViewModel {
     }
 
     /// The refusal of an answer that would keep `duplicate`'s new copy,
-    /// Replace or Keep Both, once its package is no longer a folder at its
-    /// place in the library (`copyGoneSentence`); nil while it is there.
-    private static func refusalToKeep(_ duplicate: ImportDecision.DuplicateBook) -> OperationOutcome? {
+    /// Replace or Keep Both, while the library can't be reached, which is
+    /// checked first (a copy that cannot be found then is not gone: its
+    /// files are intact where the library is out of reach), and once the
+    /// copy's package is no longer a folder at its place in the library;
+    /// nil while it is there. Each sentence names the book.
+    private func refusalToKeep(_ duplicate: ImportDecision.DuplicateBook) -> OperationOutcome? {
+        let title = duplicate.book.title
+        guard dataDirectoryUnavailability == nil else {
+            return .failure(DuplicateCopyWording.libraryUnreachable(bookTitle: title))
+        }
         var isFolder: ObjCBool = false
         let isThere = FileManager.default.fileExists(atPath: duplicate.book.tmbDirectory.path, isDirectory: &isFolder)
             && isFolder.boolValue
-        return isThere ? nil : .failure(copyGoneSentence)
+        return isThere ? nil : .failure(DuplicateCopyWording.copyGone(bookTitle: title))
     }
 
     /// Finishes keeping `book`, the book a duplicate's answer left in the
@@ -671,23 +677,30 @@ extension LibraryViewModel {
 
     /// The launch repair's adoption of the packages the library does not
     /// list (`FileImportService.adoptOrphanedTMBPackages`), which then
-    /// discards each duplicate's new copy the adoption passed over whose
-    /// question this library is not asking: one that a quit, a logout, or a
-    /// crash left unanswered (`DuplicateQuestionMarker`). A copy whose
+    /// moves to the Trash each duplicate's new copy the adoption passed over
+    /// whose question this library is not asking: one that a quit, a logout,
+    /// or a crash left unanswered (`DuplicateQuestionMarker`). A copy whose
     /// question still waits here, as when the repair runs again once the
-    /// data directory is back, stays for its answer. Only this repair
-    /// discards: every other walk only passes such copies over.
+    /// data directory is back, stays for its answer, and so does one whose
+    /// question is less than a day old, which another Mac sharing the
+    /// library may be asking. Only this repair discards: every other walk
+    /// only passes such copies over.
     ///
     /// - Parameters:
     ///   - libraryDirectory: The folder walked: the library's, or a test's.
     ///   - access: How the repair reaches the packages' files (FR02).
     ///   - skips: The repair's tally of what it left in the cloud.
+    ///   - trashItem: Moves a copy to the Trash; tests replace it, so
+    ///     nothing they do reaches the real Trash.
+    ///   - now: The time the age of a question is measured at.
     /// - Returns: How many books were adopted.
     @discardableResult
     func adoptOrphanedPackages(
         libraryDirectory: URL = TextMouthPaths.libraryDir,
         access: MaintenanceFileAccess = .live,
-        skips: CloudSkips? = nil
+        skips: CloudSkips? = nil,
+        trashItem: (URL) throws -> Void = FileImportService.moveToTrash,
+        now: Date = Date()
     ) -> Int {
         let unanswered = UnansweredDuplicates()
         let adopted = FileImportService.adoptOrphanedTMBPackages(
@@ -697,40 +710,103 @@ extension LibraryViewModel {
             skips: skips,
             unanswered: unanswered
         )
-        discardUnanswered(unanswered)
+        let trashed = discardUnanswered(unanswered, trashItem: trashItem, now: now)
+        // Once, after the repair, so one alert covers every copy.
+        if !trashed.isEmpty {
+            presentLaunchNotice(
+                titled: DuplicateCopyWording.unansweredTrashedTitle,
+                DuplicateCopyWording.unansweredTrashed(titles: trashed)
+            )
+        }
         return adopted
     }
 
-    /// Discards each package in `unanswered` whose question this library is
-    /// not asking, to the Trash or for good as "Move to Trash instead of
-    /// deleting" says, through the very removal Cancel's discard makes
-    /// (`FileImportService.removeItemRespectingTrashSetting`), with one log
-    /// line each, naming the package by its folder and name in the data
-    /// directory. Nothing is lost: a copy's original file is deleted only
-    /// once the copy is kept, never while its question waits. A package that
-    /// cannot be discarded stays as it is, still marked, so no walk adopts
-    /// it, and the next launch tries again.
-    private func discardUnanswered(_ unanswered: UnansweredDuplicates) {
+    /// How long a duplicate's question must have stood unanswered before
+    /// the launch discards its copy: a day. A question another Mac sharing
+    /// the library is asking has a marker newer than that, and its copy is
+    /// there on this Mac too once the library is fully downloaded.
+    private static let unansweredQuestionGrace: TimeInterval = 24 * 60 * 60
+
+    /// Moves to the Trash each package in `unanswered` whose question this
+    /// library is not asking and whose marker is older than a day, whatever
+    /// "Move to Trash instead of deleting" says, since no one chose to
+    /// delete it (and, its original file possibly gone, it can be the only
+    /// copy of the new content). One log line each names the package by its
+    /// folder and name in the data directory. Nothing is lost: a copy's
+    /// original file is deleted only once the copy is kept, never while its
+    /// question waits. A package that cannot be moved stays as it is, still
+    /// marked, so no walk adopts it, and the next launch tries again.
+    /// - Returns: The titles of the copies moved, for the alert.
+    private func discardUnanswered(
+        _ unanswered: UnansweredDuplicates,
+        trashItem: (URL) throws -> Void,
+        now: Date
+    ) -> [String] {
         // The copies this library is still asking about, by package name,
         // which a data-directory move keeps.
         let asked = Set(importDecisions.waiting.compactMap { decision -> String? in
             guard case .duplicate(let duplicate) = decision.kind else { return nil }
             return duplicate.book.tmbDirectoryName
         })
-        let removal = removalPreferences.movesToTrash ? "moved to the Trash" : "deleted"
+        var trashed: [String] = []
         for package in unanswered.packages where !asked.contains(package.lastPathComponent) {
             let named = "DUPLICATE_UNANSWERED: \(DiagnosticLog.loggablePath(package)): "
                 + "the duplicate question about this new copy was never answered"
+            guard Self.questionIsOlderThanGrace(of: package, now: now) else {
+                DiagnosticLog.event(
+                    .storage,
+                    "\(named), but it is less than a day old, so another Mac may be asking it and the copy stays"
+                )
+                continue
+            }
+            // Read before the package goes: the title is in its record.
+            let title = Self.title(ofUnansweredCopy: package)
             do {
-                try FileImportService.removeItemRespectingTrashSetting(at: package)
-                DiagnosticLog.event(.storage, "\(named), so the copy was \(removal)")
+                try trashItem(package)
+                trashed.append(title)
+                DiagnosticLog.event(.storage, "\(named), so the copy was moved to the Trash")
             } catch {
                 DiagnosticLog.event(
                     .storage,
-                    "\(named), and the copy could not be \(removal), so the next launch tries again: "
+                    "\(named), and the copy could not be moved to the Trash, so the next launch tries again: "
                         + error.localizedDescription
                 )
             }
+        }
+        return trashed
+    }
+
+    /// Whether the duplicate question about the copy in `package` has stood
+    /// for more than a day at `now`, by when its marker was written. A
+    /// marker whose date cannot be read counts as new: leaving a copy for
+    /// the next launch loses nothing.
+    private static func questionIsOlderThanGrace(of package: URL, now: Date) -> Bool {
+        let marker = DuplicateQuestionMarker.url(in: package)
+        guard let written = (try? FileManager.default.attributesOfItem(atPath: marker.path))?[.modificationDate] as? Date
+        else { return false }
+        return now.timeIntervalSince(written) > unansweredQuestionGrace
+    }
+
+    /// The title of the new copy in `package`, from its record, or the
+    /// package's name without ".tmb" when the record cannot be read.
+    private static func title(ofUnansweredCopy package: URL) -> String {
+        if let title = (try? BookInfo.load(from: package))?.metadata.title, !title.isEmpty {
+            return title
+        }
+        return package.deletingPathExtension().lastPathComponent
+    }
+
+    /// Shows the library alert `message`, titled `title`, at a launch. A
+    /// message already showing is kept, and `message` follows it in the
+    /// same alert, so two repairs that each have something to say are both
+    /// heard.
+    func presentLaunchNotice(titled title: String?, _ message: String) {
+        if showError, let shown = errorMessage {
+            errorMessage = "\(shown) \(message)"
+        } else {
+            errorTitle = title
+            errorMessage = message
+            showError = true
         }
     }
 

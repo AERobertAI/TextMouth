@@ -160,6 +160,35 @@ final class UnsavedChangesTerminationTests: XCTestCase {
         XCTAssertFalse(reader.hasClosed, "The flush closed the reader")
     }
 
+    /// A reader at rest, whose place has not moved since it was saved, is not
+    /// saved again by the flush: saving it would date its place and its
+    /// opening anew, and write this Mac's library index over a newer one
+    /// that another Mac on a shared library had saved since (data review,
+    /// finding 1). The row's place date, its last opening, and library.json
+    /// are all left as they were.
+    func testTheFlushWritesNothingForAReaderWhosePlaceHasNotMoved() throws {
+        let world = try makeIntegrationWorld("Quit Leaves Rest")
+        let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [10])
+        let reader = world.openReader(for: book)
+        reader.soundEffectService = RecordedSoundEffects()
+        waitForReaderToLoad(reader)
+        // The load saved the place once: let that write reach the disk.
+        LibraryPersistenceService.flushPendingSave()
+        let row = try XCTUnwrap(world.library.bookByID(book.id))
+        let placeDate = try XCTUnwrap(row.readingPosition?.lastUpdated)
+        let openedDate = row.lastOpened
+        let indexBytes = try Data(contentsOf: TextMouthPaths.libraryIndexFile)
+        // Let the clock tick past the second the library's JSON stores.
+        Thread.sleep(forTimeInterval: 1.1)
+
+        UnsavedChangesTerminationGuard.flushPendingWrites()
+
+        let after = try XCTUnwrap(world.library.bookByID(book.id))
+        XCTAssertEqual(after.readingPosition?.lastUpdated, placeDate, "The quit dated the place anew")
+        XCTAssertEqual(after.lastOpened, openedDate, "The quit dated the opening anew")
+        XCTAssertEqual(try Data(contentsOf: TextMouthPaths.libraryIndexFile), indexBytes, "The quit rewrote library.json")
+    }
+
     // MARK: - The Prompt
 
     /// The prompt names each unsaved subsystem as the banner does, leaves

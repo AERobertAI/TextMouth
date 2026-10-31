@@ -383,6 +383,9 @@ final class LogContentPolicyTests: XCTestCase {
         // A duplicate's new copy whose question was never answered (TODO 3780): discarded by the launch's repair,
         // or not discarded, or not marked as waiting, and why.
         "DUPLICATE_UNANSWERED",
+        // Keep Both refused because the mark that a new copy awaits its answer could not be taken off it; the
+        // system's reason goes here, not into the sentence the listener hears.
+        "DUPLICATE_KEEP_FAILED",
         // A package left unadopted because its record names a book the library lists in another package.
         "ORPHAN_ID_LISTED",
     ]

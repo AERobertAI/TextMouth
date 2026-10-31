@@ -282,8 +282,10 @@ final class DAISYPackageImportTests: XCTestCase {
 
     /// What the reader is told when the preference would have deleted the
     /// archive a DAISY book's audio was imported from, or asked about it.
-    private static let talkingBookKeptNotice =
-        "The original file was kept: TextMouth imported this DAISY book's audio, and the archive is the only copy of its text."
+    private static func talkingBookKeptNotice(archive: URL) -> String {
+        "The original file was kept: TextMouth imported the audio of “Ferry Timetables of the Outer Sound” "
+            + "from the archive “\(archive.lastPathComponent)”, and the archive is the only copy of its text."
+    }
 
     /// An archive holding a DAISY book with audio imports as its audio
     /// alone: its text, the DTBook a braille reader reads, stays in the
@@ -311,7 +313,7 @@ final class DAISYPackageImportTests: XCTestCase {
             let imported = try FileImportService.importDAISYAudioZipWithReport(from: archive, toFolder: folderPath)
             XCTAssertTrue(imported.tookOnlyPartOfOriginal, label)
             XCTAssertFalse(imported.mayDeleteOriginal, label)
-            XCTAssertEqual(imported.originalKeptNotice, Self.talkingBookKeptNotice, label)
+            XCTAssertEqual(imported.originalKeptNotice, Self.talkingBookKeptNotice(archive: archive), label)
             withImportDeleteBehavior(behavior) {
                 model.completeSingleImportedBook(imported, originalURL: archive)
             }
@@ -319,10 +321,87 @@ final class DAISYPackageImportTests: XCTestCase {
             XCTAssertTrue(FileManager.default.fileExists(atPath: archive.path), "\(label): the archive is kept")
             XCTAssertTrue(model.library.books.contains { $0.id == imported.book.id }, label)
             XCTAssertTrue(model.importDecisions.isEmpty, "\(label): no question about the archive")
-            XCTAssertEqual(model.errorMessage, says ? Self.talkingBookKeptNotice : nil, label)
+            XCTAssertEqual(model.errorMessage, says ? Self.talkingBookKeptNotice(archive: archive) : nil, label)
             // The book was added, so the alert is no error.
             XCTAssertEqual(model.errorTitle, says ? "Book Imported" : nil, label)
         }
+    }
+
+    /// A talking book of audio and navigation only, the common kind, in an
+    /// archive of its own, leaves no text behind in the archive: the
+    /// "After Importing a Book" preference stands, so Delete After Import
+    /// deletes the archive, and no sentence says it was kept (data review,
+    /// finding 5). The deletion runs with the Trash off, so a regression
+    /// removes only this test's file.
+    @MainActor
+    func testAnAudioOnlyTalkingBookArchiveIsDeletedLikeAnyOther() throws {
+        keepDeletionsOutOfTheTrash()
+        var entries = try Self.talkingBookEntries()
+        // No DTBook: the SMIL files' text elements name a file that is not there.
+        entries["content/timetables.xml"] = nil
+        let archive = try makeArchive(entries)
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+        model.offersTranscription = { _ in false }
+
+        let imported = try FileImportService.importDAISYAudioZipWithReport(from: archive, toFolder: folderPath)
+
+        XCTAssertFalse(imported.tookOnlyPartOfOriginal)
+        XCTAssertTrue(imported.mayDeleteOriginal)
+        XCTAssertNil(imported.originalKeptNotice)
+        withImportDeleteBehavior(.deleteAfterImport) {
+            model.completeSingleImportedBook(imported, originalURL: archive)
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: archive.path), "the archive of an audio-only book was kept")
+        XCTAssertNil(model.errorMessage)
+    }
+
+    /// An archive holding a DAISY book with text beside two other books (an
+    /// EPUB and a PDF) keeps its archive, and the sentence names the book
+    /// and the archive and says how many books were not imported and that
+    /// unzipping the archive lets them be imported (data review, finding 5).
+    @MainActor
+    func testAnArchiveWithOtherBooksBesideTheDAISYFolderSaysHowManyWereNotImported() throws {
+        var entries: [String: Data] = [:]
+        for (path, data) in try Self.talkingBookEntries() { entries["Ferry/\(path)"] = data }
+        entries["reader.epub"] = Data("not really an EPUB".utf8)
+        entries["extras/handout.pdf"] = Data("not really a PDF".utf8)
+        entries["extras/cover.jpg"] = Data("not a book".utf8)
+        let archive = try makeArchive(entries)
+        XCTAssertTrue(DAISYParser.isDAISYZip(url: archive))
+
+        let imported = try FileImportService.importDAISYAudioZipWithReport(from: archive, toFolder: folderPath)
+
+        XCTAssertTrue(imported.tookOnlyPartOfOriginal)
+        XCTAssertEqual(
+            imported.originalKeptNotice,
+            "The original file was kept: TextMouth imported the audio of “Ferry Timetables of the Outer Sound” "
+                + "from the archive “\(archive.lastPathComponent)”, and the archive is the only copy of its text. "
+                + "The archive also holds 2 other books that were not imported; unzip it to import them."
+        )
+    }
+
+    /// An audio-only DAISY book beside one other book keeps its archive too,
+    /// since deleting it would lose the other book, and the sentence says so
+    /// in the words of a book with no text of its own to keep.
+    @MainActor
+    func testAnAudioOnlyTalkingBookBesideAnotherBookKeepsItsArchive() throws {
+        var entries: [String: Data] = [:]
+        for (path, data) in try Self.talkingBookEntries() where path != "content/timetables.xml" {
+            entries["Ferry/\(path)"] = data
+        }
+        entries["reader.epub"] = Data("not really an EPUB".utf8)
+        let archive = try makeArchive(entries)
+
+        let imported = try FileImportService.importDAISYAudioZipWithReport(from: archive, toFolder: folderPath)
+
+        XCTAssertFalse(imported.mayDeleteOriginal)
+        XCTAssertEqual(
+            imported.originalKeptNotice,
+            "The original file was kept: TextMouth imported only the DAISY book “Ferry Timetables of the Outer Sound” "
+                + "from the archive “\(archive.lastPathComponent)”. "
+                + "The archive also holds 1 other book that was not imported; unzip it to import it."
+        )
     }
 
     /// An archive holding a DAISY book without audio is imported whole, the

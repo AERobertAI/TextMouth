@@ -577,6 +577,15 @@ final class ReaderViewModel: ObservableObject {
     private var livePositionWorkItem: DispatchWorkItem?
     private var lastLivePositionPublish = Date.distantPast
     private var lastPersistedCheckpoint: Date?
+    /// The chapter and offset of the last durable save of the place
+    /// (`savePosition()` or a checkpoint), nil before the first: what
+    /// `savePositionIfMoved()` compares the cursor with, so a quit writes
+    /// only the places that changed.
+    private var lastSavedPlace: TextPlace?
+    /// Whether the cursor was published live (playback moving it) since the
+    /// last durable save. It counts as a move even should the cursor have
+    /// come back to the saved place.
+    private var hasPlayedSinceSave = false
     /// The measure of the text this reader shows, which every anchor it
     /// captures records (T06; `noteLoadedTextForAnchors(cacheFormatVersion:)`):
     /// nil before the text loads, or when the version of the content.md it
@@ -2051,6 +2060,28 @@ final class ReaderViewModel: ObservableObject {
         let position = makeCurrentReadingPosition()
         libraryViewModel.persistReadingPosition(bookID: book.id, position: position)
         lastPersistedCheckpoint = position.lastUpdated
+        notePlaceSaved(position)
+    }
+
+    /// Persist the current reading position only when it moved since the
+    /// last durable save: the quit's save (`PlaybackMemoryGuard.
+    /// saveEveryOpenReaderPosition()`). A reader at rest writes nothing, so
+    /// a quit does not date its old place anew, nor write the library's
+    /// index from a copy that another Mac (on a shared library) has since
+    /// moved on from. A reader that played since its last save always
+    /// counts as moved, as does one that never saved.
+    func savePositionIfMoved() {
+        guard content != nil else { return }
+        let place = TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset)
+        guard hasPlayedSinceSave || lastSavedPlace != place else { return }
+        savePosition()
+    }
+
+    /// Record that `position` was just saved durably: the place the next
+    /// `savePositionIfMoved()` compares with, and no live move is waiting.
+    private func notePlaceSaved(_ position: ReadingPosition) {
+        lastSavedPlace = TextPlace(chapter: position.chapterIndex, offset: position.characterOffset)
+        hasPlayedSinceSave = false
     }
 
     /// Builds the one canonical snapshot used by reader persistence and live
@@ -2098,8 +2129,10 @@ final class ReaderViewModel: ObservableObject {
         ) {
             libraryViewModel.persistReadingPosition(bookID: book.id, position: position)
             lastPersistedCheckpoint = now
+            notePlaceSaved(position)
         } else {
             libraryViewModel.updateLiveReadingPosition(bookID: book.id, position: position)
+            hasPlayedSinceSave = true
         }
         lastLivePositionPublish = now
         // With the position published, see whether the next episode of a
