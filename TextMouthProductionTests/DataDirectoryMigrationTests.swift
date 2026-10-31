@@ -210,6 +210,19 @@ final class DataDirectoryMigrationTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: move.current.path), "the refused move made the data directory again")
     }
 
+    /// A file where the data directory was is no data directory: the move
+    /// is refused the same way, and the file is left as it was.
+    @MainActor
+    func testAMoveFromAFileWhereTheDataDirectoryWasIsRefused() throws {
+        let move = try makeMoveOfTheCurrentDataDirectory("FileForDataDirectory")
+        try FileManager.default.removeItem(at: move.current)
+        let note = Data("Not a data directory.".utf8)
+        try note.write(to: move.current)
+
+        assertRefusedAsMissing(move)
+        XCTAssertEqual(try Data(contentsOf: move.current), note, "the file was changed")
+    }
+
     /// The refusal for a book whose content is missing from the copy names
     /// the book by its title, in whatever script the title is written in;
     /// nothing is published or left staged, and the data directory is left
