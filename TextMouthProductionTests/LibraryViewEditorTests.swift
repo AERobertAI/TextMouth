@@ -269,12 +269,14 @@ final class LibraryViewEditorTests: XCTestCase {
     // MARK: - The Sheet
 
     /// The sheet, with 20 conditions, a folder whose path is long, and a
-    /// name of 60 characters, is no wider than its size, and every control
-    /// in it lies where it can be reached.
+    /// name of 60 characters: every control lies where it can be reached,
+    /// none passes the sheet's right edge, and no condition's pop-up is
+    /// wider than its bound (review of October 31, 2026, finding 14).
     @MainActor
     func testTheSheetFitsItsSize() throws {
         let model = LibraryViewEditorModel()
         model.name = String(repeating: "N", count: 60)
+        model.lists = [.books, .episodes]
         let folder = LibraryFolderChoice(id: UUID(), path: String(repeating: "Long Folder/", count: 16) + "End")
         // Every kind of test, over and again, twenty in all.
         for kind in Array(repeating: LibraryViewCondition.Kind.allCases, count: 3).joined().prefix(20) {
@@ -285,18 +287,119 @@ final class LibraryViewEditorTests: XCTestCase {
         }
         let size = LibraryViewEditorSheet.size
         let hosted = hostOffscreen(
-            LibraryViewEditorSheet(model: model, folders: [folder], count: { _ in "Lists nothing now." }, onCancel: {}, onSave: {}),
+            LibraryViewEditorSheet(model: model, folders: [folder], count: { "Lists nothing now." }, onCancel: {}, onSave: {}),
             size: size
         )
         defer { takeDown(hosted.window) }
+        let page = hosted.hostingView
         _ = waitUntil(timeout: 5) {
-            hosted.hostingView.layoutSubtreeIfNeeded()
-            return !self.descendants(of: hosted.hostingView, as: NSPopUpButton.self).isEmpty
+            page.layoutSubtreeIfNeeded()
+            return !self.descendants(of: page, as: NSPopUpButton.self).isEmpty
         }
-        settle(hosted.hostingView, seconds: 0.2)
-        XCTAssertLessThanOrEqual(hosted.hostingView.fittingSize.width, size.width + 0.5)
-        for popUp in descendants(of: hosted.hostingView, as: NSPopUpButton.self) {
-            XCTAssertLessThanOrEqual(popUp.frame.width, LibraryViewEditorSheet.popUpWidth + 120.5, popUp.titleOfSelectedItem ?? "")
+        settle(page, seconds: 0.2)
+        let controls = visibleControls(in: page)
+        XCTAssertFalse(controls.isEmpty, "the sheet's controls were not drawn")
+        XCTAssertEqual(controls.filter { !isReachable($0, in: page) }.map { describe($0, in: page) }, [])
+        XCTAssertEqual(
+            controls.filter { $0.convert($0.bounds, to: page).maxX > size.width + 0.5 }.map { describe($0, in: page) },
+            []
+        )
+        // The conditions' pop-ups, told apart by their items, since their
+        // spoken labels are SwiftUI's rather than the pop-ups' own: the
+        // tests, a relation's two, the formats, the reading states, and the
+        // folders, which begin with Library Root.
+        typealias W = LibraryViewEditorWording
+        let kinds = LibraryViewCondition.Kind.allCases
+        var conditionItems: [Set<String>] = [Set(kinds.map(W.testName))]
+        conditionItems += kinds.map { Set([W.relationName($0, isNegated: false), W.relationName($0, isNegated: true)]) }
+        conditionItems.append(Set(BookFormat.allCases.map(\.displayName)))
+        conditionItems.append(Set(LibraryReadingState.allCases.map(W.stateName)))
+        let conditionPopUps = descendants(of: page, as: NSPopUpButton.self).filter { popUp in
+            conditionItems.contains(Set(popUp.itemTitles)) || popUp.itemTitles.first == LibraryFolderOption.rootLabel
         }
+        XCTAssertFalse(conditionPopUps.isEmpty, "no condition pop-up was found by its items")
+        XCTAssertTrue(conditionPopUps.contains { $0.itemTitles.first == LibraryFolderOption.rootLabel }, "no folder pop-up was drawn")
+        for popUp in conditionPopUps {
+            XCTAssertLessThanOrEqual(
+                popUp.frame.width,
+                LibraryViewEditorSheet.popUpWidth + 0.5,
+                "\(popUp.titleOfSelectedItem ?? "") in \(describe(popUp, in: page))"
+            )
+        }
+    }
+
+    // MARK: - The Review of October 31, 2026
+
+    /// A view listing feeds alone saves no limit and no "only the latest
+    /// from each feed", and its description says neither; one listing
+    /// books alone saves no "only the latest" (finding 6).
+    @MainActor
+    func testSettingsThatCannotApplyAreNeitherSavedNorDescribed() {
+        let model = LibraryViewEditorModel()
+        model.lists = [.feeds]
+        model.limitIsOn = true
+        model.onePerFeed = true
+        XCTAssertFalse(model.limitApplies)
+        XCTAssertFalse(model.onePerFeedApplies)
+        XCTAssertNil(model.filter.limit)
+        XCTAssertFalse(model.filter.onePerFeed)
+        let feedsAlone = LibraryViewFilter(lists: [.feeds], onePerFeed: true, limit: LibraryViewLimit(count: 5, chosenBy: .lastOpened))
+        let description = LibraryViewEditorWording.description(of: feedsAlone) { _ in "" }
+        XCTAssertEqual(description, "Lists feeds.")
+        XCTAssertFalse(description.contains("at most"))
+
+        model.lists = [.books]
+        XCTAssertTrue(model.limitApplies)
+        XCTAssertFalse(model.onePerFeedApplies)
+        XCTAssertEqual(model.filter.limit, LibraryViewLimit(count: 10, chosenBy: .viewSort))
+        XCTAssertFalse(model.filter.onePerFeed)
+        XCTAssertEqual(
+            LibraryViewEditorWording.onePerFeedUnavailableHint,
+            "Applies only to a view that lists episodes or articles."
+        )
+        XCTAssertEqual(
+            LibraryViewEditorWording.limitUnavailableHint,
+            "A limit chooses among books, episodes, and articles, never feeds."
+        )
+    }
+
+    /// The count of a draft whose limit is chosen by First in the Sort
+    /// follows the draft's own sort, as Save will show it (finding 8).
+    @MainActor
+    func testTheCountFollowsTheDraftsSort() throws {
+        let library = LibraryViewModel(initializeServices: false)
+        library.finishedBookIDs = { [] }
+        let start = Date(timeIntervalSince1970: 1_791_000_000)
+        func row(_ title: String, _ format: BookFormat, feed: UUID?, daysLater: Double) -> Book {
+            var book = Book(title: title, format: format, filePath: "/\(title)", md5Hash: title, tmbDirectoryName: "\(title).tmb")
+            book.dateAdded = start.addingTimeInterval(daysLater * 86_400)
+            book.feedLink = feed.map { FeedBookLink(feedID: $0, itemID: "guid:\(title)") }
+            return book
+        }
+        let feed = UUID()
+        library.library = Library(books: [
+            row("Atlas", .epub, feed: nil, daysLater: 0),
+            row("Bestiary", .epub, feed: nil, daysLater: 1),
+            row("Cartography", .epub, feed: nil, daysLater: 2),
+            row("Xylophone Hour", .audio, feed: feed, daysLater: 10),
+            row("Yodel Hour", .audio, feed: feed, daysLater: 11),
+            row("Zither Hour", .audio, feed: feed, daysLater: 12),
+        ])
+        let actions = LibraryViewsSettingsActions(
+            store: LibraryViewDefinitionStore(preferences: makeSandboxedPreferences("library-view-editor-count")),
+            library: library
+        )
+        let model = LibraryViewEditorModel()
+        model.name = "Five"
+        model.lists = [.books, .episodes]
+        model.limitIsOn = true
+        model.limitCount = 3
+        model.limitChosenBy = .viewSort
+        model.sortField = .title
+        model.sortAscending = true
+        XCTAssertEqual(actions.countSentence(for: model), "Lists 3 books.")
+        model.sortField = .dateAdded
+        model.sortAscending = false
+        XCTAssertEqual(actions.countSentence(for: model), "Lists 3 episodes.")
     }
 }

@@ -448,8 +448,15 @@ extension LibraryViewModel {
     /// Recently Opened the ten books, episodes, and articles opened last, one
     /// per feed, and Feeds no books; a feed's downloaded items are left out of
     /// All Items, Unopened, and the top of Folders, their feeds' rows
-    /// standing for them.
-    func books(listedAt location: LibraryLocation, context: LibraryViewFilterContext?) -> [Book] {
+    /// standing for them. A limit chosen by the view's sort ranks the rows by
+    /// `sort`, or by the sort saved for the location when nil, so the view
+    /// editor counts a draft by its own sort (review of October 31, 2026,
+    /// finding 8).
+    func books(
+        listedAt location: LibraryLocation,
+        context: LibraryViewFilterContext?,
+        sortedBy sort: LibrarySortState? = nil
+    ) -> [Book] {
         switch location.view.kind {
         case .folders:
             return library.booksInFolder(location.folderPath) + feedItems(listedIn: location.folderPath)
@@ -461,7 +468,7 @@ extension LibraryViewModel {
                 of: filter,
                 in: library.books,
                 context: context ?? LibraryViewFilterContext(),
-                sorted: { self.sortedBooks($0, by: self.sortState(at: location)) }
+                sorted: { self.sortedBooks($0, by: sort ?? self.sortState(at: location)) }
             )
         }
     }

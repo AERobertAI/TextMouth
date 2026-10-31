@@ -34,8 +34,9 @@ struct LibraryViewEditorSheet: View {
     @ObservedObject var model: LibraryViewEditorModel
     /// The folders a Folder condition can name.
     let folders: [LibraryFolderChoice]
-    /// What a draft lists now, as the count says it.
-    let count: (LibraryViewDefinition) -> String
+    /// What the draft lists now, as the count says it, worked out by the
+    /// tab with the draft's own sort (review of October 31, 2026, finding 8).
+    let count: () -> String
     /// Closes the sheet, changing nothing.
     let onCancel: () -> Void
     /// Asks the tab to check and save the draft.
@@ -61,7 +62,7 @@ struct LibraryViewEditorSheet: View {
                 conditionsSection
                 orderSection
                 Section {
-                    Text(count(model.definition()))
+                    Text(count())
                 }
             }
             .formStyle(.grouped)
@@ -143,10 +144,12 @@ struct LibraryViewEditorSheet: View {
     /// One feed's latest, the sort, and the limit.
     private var orderSection: some View {
         Section {
+            // Dimmed, its hint saying why, while no episode or article is
+            // listed (review of October 31, 2026, finding 6).
             Toggle(Wording.onePerFeedTitle, isOn: $model.onePerFeed)
-                .disabled(model.lists.isDisjoint(with: [.episodes, .articles]))
-                .accessibilityHint(Wording.onePerFeedHint)
-                .help(Wording.onePerFeedHint)
+                .disabled(!model.onePerFeedApplies)
+                .accessibilityHint(model.onePerFeedApplies ? Wording.onePerFeedHint : Wording.onePerFeedUnavailableHint)
+                .help(model.onePerFeedApplies ? Wording.onePerFeedHint : Wording.onePerFeedUnavailableHint)
             if model.lists == [.feeds] {
                 Text(Wording.feedsOnlySortNote)
                     .foregroundColor(.secondary)
@@ -166,7 +169,12 @@ struct LibraryViewEditorSheet: View {
                 .help(model.sortField == .manual ? LibrarySortState.manualOrderHasNoDirection : "")
                 .accessibilityHint(model.sortField == .manual ? LibrarySortState.manualOrderHasNoDirection : "")
             }
+            // Dimmed with its field and Chosen By, its hint saying why, while
+            // the view lists feeds alone (review finding 6).
             Toggle(Wording.limitTitle, isOn: $model.limitIsOn)
+                .disabled(!model.limitApplies)
+                .accessibilityHint(model.limitApplies ? "" : Wording.limitUnavailableHint)
+                .help(model.limitApplies ? "" : Wording.limitUnavailableHint)
             HStack {
                 TextField(Wording.limitFieldLabel, value: $model.limitCount, format: .number)
                     .frame(width: 80)
@@ -181,7 +189,7 @@ struct LibraryViewEditorSheet: View {
                 }
                 .frame(maxWidth: Self.popUpWidth + 100)
             }
-            .disabled(!model.limitIsOn)
+            .disabled(!model.limitIsOn || !model.limitApplies)
         }
     }
 

@@ -159,6 +159,12 @@ enum LibraryViewEditorWording {
     static let onePerFeedTitle = "Only the Latest from Each Feed"
     /// Its hint.
     static let onePerFeedHint = "Of each feed's episodes and articles, lists only the one you opened last."
+    /// Its hint while the view lists no episodes or articles, when it is
+    /// dimmed (review of October 31, 2026, finding 6).
+    static let onePerFeedUnavailableHint = "Applies only to a view that lists episodes or articles."
+    /// Show at Most's hint while the view lists feeds alone, when it is
+    /// dimmed (finding 6).
+    static let limitUnavailableHint = "A limit chooses among books, episodes, and articles, never feeds."
     /// The sort field pop-up's label.
     static let sortByLabel = "Sort By"
     /// The direction pop-up's label.
@@ -247,10 +253,12 @@ enum LibraryViewEditorWording {
         if !conditions.isEmpty {
             text += ": " + (filter.match == .all ? CountWording.list(conditions) : listWithOr(conditions))
         }
-        if filter.onePerFeed {
+        // One per feed and a limit are said only where they apply (review of
+        // October 31, 2026, finding 6).
+        if filter.onePerFeed, !filter.lists.isDisjoint(with: [.episodes, .articles]) {
             text += "; only the latest from each feed"
         }
-        if let limit = filter.limit {
+        if let limit = filter.limit, filter.listsItems {
             text += "; at most \(limit.count), \(limitOrderName(limit.chosenBy).lowercased())"
         }
         return text + "."

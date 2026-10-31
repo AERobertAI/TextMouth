@@ -171,6 +171,20 @@ struct LibraryViewsSettingsActions {
         case saved(id: LibraryViewID, announcement: String)
     }
 
+    /// What the view editor's count says of `model`'s draft now, derived
+    /// afresh, never through the list cache, so editing never evicts a
+    /// Library window's lists, and ranked by the draft's own sort, so a limit
+    /// chosen by First in the Sort counts what Save will show (review of
+    /// October 31, 2026, finding 8).
+    func countSentence(for model: LibraryViewEditorModel) -> String {
+        let view = model.definition()
+        let location = LibraryLocation(view: view, folderPath: "")
+        let sort = LibrarySortState(restoring: model.sortSetting(from: shownSortSetting(of: view)))
+        let rows = library.books(listedAt: location, context: library.filterContext(for: location), sortedBy: sort)
+        let feeds = LibraryFeedsSectionRows.feeds(at: location, center: library.feeds).count
+        return LibraryViewEditorWording.count(of: rows, feeds: feeds)
+    }
+
     /// Saves the editor's draft (design section 7): when it has a problem,
     /// says which; otherwise adds the view at the end, or puts it in its
     /// place, and saves its sort under its key when the draft's differs

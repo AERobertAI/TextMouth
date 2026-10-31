@@ -79,7 +79,7 @@ struct LibraryViewsSettingsView: View {
             LibraryViewEditorSheet(
                 model: model,
                 folders: folderChoices,
-                count: countSentence(for:),
+                count: { actions.countSentence(for: model) },
                 onCancel: { editor = nil },
                 onSave: { save(model) }
             )
@@ -293,16 +293,6 @@ struct LibraryViewsSettingsView: View {
         case .filter:
             return view.filter.map { LibraryViewEditorWording.description(of: $0, folderName: folderName) } ?? ""
         }
-    }
-
-    /// What the draft `view` lists now, as the editor's count says it,
-    /// derived afresh, never through the list cache, so editing never
-    /// evicts a Library window's lists.
-    private func countSentence(for view: LibraryViewDefinition) -> String {
-        let location = LibraryLocation(view: view, folderPath: "")
-        let rows = libraryViewModel.books(listedAt: location, context: libraryViewModel.filterContext(for: location))
-        let feeds = LibraryFeedsSectionRows.feeds(at: location, center: LibraryFeedFolders.shared.center).count
-        return LibraryViewEditorWording.count(of: rows, feeds: feeds)
     }
 
     /// Saves the editor's draft: a problem stays on the sheet and is said; a

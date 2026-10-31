@@ -165,14 +165,30 @@ final class LibraryViewEditorModel: ObservableObject, Identifiable {
         conditions.removeAll { $0.id == id }
     }
 
-    /// The draft's filter.
+    /// Whether "Only the Latest from Each Feed" applies: while the draft
+    /// lists episodes or articles, the rows feeds have.
+    var onePerFeedApplies: Bool {
+        !lists.isDisjoint(with: [.episodes, .articles])
+    }
+
+    /// Whether Show at Most applies: while the draft lists books,
+    /// episodes, or articles, the rows a limit chooses among; feeds are
+    /// always listed whole.
+    var limitApplies: Bool {
+        !lists.isDisjoint(with: [.books, .episodes, .articles])
+    }
+
+    /// The draft's filter. One per feed and the limit are saved only where
+    /// they apply (`onePerFeedApplies`, `limitApplies`), so a view never
+    /// keeps a setting the listener cannot see working (review of October
+    /// 31, 2026, finding 6).
     var filter: LibraryViewFilter {
         LibraryViewFilter(
             lists: lists,
             match: match,
             conditions: conditions.map(\.condition),
-            onePerFeed: onePerFeed,
-            limit: limitIsOn
+            onePerFeed: onePerFeed && onePerFeedApplies,
+            limit: limitIsOn && limitApplies
                 ? LibraryViewLimit(
                     count: min(max(limitCount, LibraryViewLimit.countRange.lowerBound), LibraryViewLimit.countRange.upperBound),
                     chosenBy: limitChosenBy
