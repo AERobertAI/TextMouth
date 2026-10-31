@@ -235,16 +235,3 @@ enum TranscriptExportError: LocalizedError, Equatable {
         }
     }
 }
-
-// MARK: - Arithmetic That Cannot Trap
-
-private extension Int {
-    /// This number plus `other`, held at `Int.max` or `Int.min` rather than
-    /// trapping: a transcript's times and lengths come from a file, and a
-    /// damaged one must not crash TextMouth.
-    func clampedPlus(_ other: Int) -> Int {
-        let (sum, overflowed) = addingReportingOverflow(other)
-        // An overflow runs in the direction the added number points.
-        return overflowed ? (other < 0 ? Int.min : Int.max) : sum
-    }
-}
