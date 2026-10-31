@@ -596,6 +596,71 @@ final class EPUBPageListTests: XCTestCase {
         XCTAssertEqual(result.markdown.components(separatedBy: "<!-- page:").count - 1, 1)
     }
 
+    // MARK: - Page lists in document order, at any depth
+
+    /// The navigation document's page lists are read in document order
+    /// however deep each lies, so an entry without a label takes its place
+    /// in that order as its number: here a list nested in a section and a
+    /// division comes before a later list beside them, giving the pages
+    /// "i", "2", and "3".
+    func testPageListsAreReadInDocumentOrderHoweverDeepEachLies() throws {
+        let nav = xhtml("""
+            <section><div><nav epub:type="page-list"><ol>
+            <li><a href="ch1.xhtml#a">i</a></li><li><a href="ch1.xhtml#b"></a></li>
+            </ol></nav></div></section>
+            <nav epub:type="page-list"><ol><li><a href="ch1.xhtml#c"></a></li></ol></nav>
+            """)
+        let epub = try makeEPUB(
+            manifest: Self.pageListManifest,
+            spine: "<itemref idref=\"ch1\"/>",
+            members: [
+                "nav.xhtml": nav,
+                "ch1.xhtml": xhtml("<p id=\"a\">Alpha text.</p><p id=\"b\">Bravo text.</p><p id=\"c\">Charlie text.</p>"),
+            ]
+        )
+
+        let chapters = try EPUBParser.prepareBook(url: epub).chapters
+        XCTAssertEqual(chapters.count, 1)
+        guard let first = chapters.first?.chapter else { return }
+        assertPages(of: first, [("i", "Alpha text."), ("2", "Bravo text."), ("3", "Charlie text.")])
+    }
+
+    /// A navigation document whose page list is followed by 20,000 nested
+    /// divisions is read on a worker thread's 512 KiB stack, where an import
+    /// reads it, and gives the list's page. The search for page lists, which
+    /// goes on into the divisions, once called itself for every element,
+    /// which overflowed that stack and ended TextMouth during the import.
+    ///
+    /// The list lies beside the divisions rather than inside them, and they
+    /// are left open: SwiftSoup itself calls itself once for every level
+    /// above an element whose attributes are read, the list's included, or
+    /// above most end tags it reads, which would overflow the stack in
+    /// SwiftSoup before TextMouth's walk.
+    func testAPageListBesideMarkupNestedThousandsDeepIsReadOnAWorkerStack() throws {
+        let depth = 20_000
+        let nav = xhtml(
+            "<nav epub:type=\"page-list\"><ol><li><a href=\"ch1.xhtml#a\">7</a></li></ol></nav>"
+                + String(repeating: "<div>", count: depth) + "Deep words"
+        )
+        let epub = try makeEPUB(
+            manifest: Self.pageListManifest,
+            spine: "<itemref idref=\"ch1\"/>",
+            members: ["nav.xhtml": nav, "ch1.xhtml": xhtml("<p>Before the page.</p><p id=\"a\">Alpha text.</p>")]
+        )
+
+        let labels = onWorkerSizedStack {
+            ((try? EPUBParser.prepareBook(url: epub))?.chapters ?? []).flatMap { $0.chapter.pages.map(\.label) }
+        }
+        XCTAssertEqual(labels, ["7"])
+    }
+
+    /// The manifest of the page list order and depth tests: the navigation
+    /// document and one chapter.
+    private static let pageListManifest = """
+        <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+        <item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>
+        """
+
     // MARK: - The converter on its own
 
     /// Standalone HTML: a page-break element is a page, its text is not read,

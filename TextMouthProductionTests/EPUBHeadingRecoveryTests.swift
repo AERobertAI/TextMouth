@@ -96,6 +96,117 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         XCTAssertEqual(direct.allHeadings, content.allHeadings)
     }
 
+    // MARK: - Navigation Order and Depth
+
+    /// An NCX's entries keep their order and levels however they nest: each
+    /// entry comes before those nested in it, which come before its next
+    /// sibling, each a level below its parent, an entry naming no place
+    /// included. A place named twice keeps the name it is given first, so a
+    /// parent's name wins over its child's, and an entry deep in an earlier
+    /// part wins over a later top-level one.
+    func testNCXEntriesKeepTheirOrderAndLevelsHoweverTheyNest() throws {
+        let book = try makeBook(
+            chapters: [("Text/one.xhtml", Self.orderChapter)],
+            extraFiles: ["Navigation/toc.ncx": """
+            <ncx><navMap>
+            <navPoint><navLabel><text>Part One</text></navLabel><content src="../Text/one.xhtml#a"/>
+              <navPoint><navLabel><text>Chapter One</text></navLabel><content src="../Text/one.xhtml#b"/>
+                <navPoint><navLabel><text>Scene One</text></navLabel><content src="../Text/one.xhtml#c"/></navPoint>
+              </navPoint>
+              <navPoint><navLabel><text>Chapter Two</text></navLabel><content src="../Text/one.xhtml#d"/>
+                <navPoint><navLabel><text>Chapter Two continued</text></navLabel><content src="../Text/one.xhtml#d"/></navPoint>
+              </navPoint>
+            </navPoint>
+            <navPoint><navLabel><text>Part Two</text></navLabel><content src="../Text/one.xhtml#e"/>
+              <navPoint><navLabel><text>Unlinked group</text></navLabel>
+                <navPoint><navLabel><text>Interlude</text></navLabel><content src="../Text/one.xhtml#f"/></navPoint>
+              </navPoint>
+            </navPoint>
+            <navPoint><navLabel><text>Scene One again</text></navLabel><content src="../Text/one.xhtml#c"/></navPoint>
+            </navMap></ncx>
+            """],
+            manifest: "<item id='toc' href='../Navigation/toc.ncx' media-type='application/x-dtbncx+xml'/>",
+            spineAttributes: "toc='toc'"
+        )
+        try assertOrderTestHeadings(of: book)
+    }
+
+    /// The same order and levels as `testNCXEntriesKeepTheirOrderAndLevelsHoweverTheyNest`,
+    /// from an EPUB 3 navigation document, whose levels are its nested lists:
+    /// an entry's link comes before the list nested beside it, and an item
+    /// without a link still nests the list inside it.
+    func testNavigationDocumentEntriesKeepTheirOrderAndLevelsHoweverTheyNest() throws {
+        let book = try makeBook(
+            chapters: [("Text/one.xhtml", Self.orderChapter)],
+            extraFiles: ["Navigation/nav.xhtml": """
+            <html xmlns:epub="http://www.idpf.org/2007/ops"><body><nav epub:type="toc"><ol>
+            <li><a href="../Text/one.xhtml#a">Part One</a><ol>
+              <li><a href="../Text/one.xhtml#b">Chapter One</a><ol>
+                <li><a href="../Text/one.xhtml#c">Scene One</a></li></ol></li>
+              <li><a href="../Text/one.xhtml#d">Chapter Two</a><ol>
+                <li><a href="../Text/one.xhtml#d">Chapter Two continued</a></li></ol></li></ol></li>
+            <li><a href="../Text/one.xhtml#e">Part Two</a><ol>
+              <li><span>Unlinked group</span><ol>
+                <li><a href="../Text/one.xhtml#f">Interlude</a></li></ol></li></ol></li>
+            <li><a href="../Text/one.xhtml#c">Scene One again</a></li>
+            </ol></nav></body></html>
+            """],
+            manifest: "<item id='nav' href='../Navigation/nav.xhtml' media-type='application/xhtml+xml' properties='nav'/>"
+        )
+        try assertOrderTestHeadings(of: book)
+    }
+
+    /// An NCX nesting 5,000 entries, each labelled and naming the first
+    /// chapter but the innermost, which names the second, is read on a
+    /// worker thread's 512 KiB stack, where an import reads it: both
+    /// chapters keep their words, and the innermost entry names the second.
+    /// The NCX walk once called itself for every level, which overflowed
+    /// that stack and ended TextMouth during the import.
+    func testNCXNestedThousandsDeepIsReadOnAWorkerStack() throws {
+        let depth = 5_000
+        let outer = (0..<depth - 1).map {
+            "<navPoint><navLabel><text>Level \($0)</text></navLabel><content src='../Text/one.xhtml'/>"
+        }
+        let ncx = "<ncx><navMap>" + outer.joined()
+            + "<navPoint><navLabel><text>Innermost entry</text></navLabel><content src='../Text/two.xhtml'/></navPoint>"
+            + String(repeating: "</navPoint>", count: depth - 1) + "</navMap></ncx>"
+        let url = try makeEPUB(
+            chapters: Self.depthTestChapters,
+            extraFiles: ["Navigation/toc.ncx": ncx],
+            manifest: "<item id='toc' href='../Navigation/toc.ncx' media-type='application/x-dtbncx+xml'/>",
+            spineAttributes: "toc='toc'"
+        )
+        let chapters = onWorkerSizedStack { EPUBHeadingRecoveryTests.chapterTitlesAndWords(of: url) }
+        XCTAssertEqual(chapters, ["Level 0: First chapter words.", "Innermost entry: Second chapter words."])
+    }
+
+    /// A navigation document nesting 20,000 lists, whose outermost item
+    /// links the first chapter and whose innermost links the second, is read
+    /// on a worker thread's 512 KiB stack, where an import reads it: both
+    /// chapters keep their words, and the innermost entry names the second.
+    /// The navigation walk, and the search for page lists beside it, once
+    /// called themselves for every element, which overflowed that stack.
+    ///
+    /// The lists are left for `</nav>` to close: SwiftSoup itself calls
+    /// itself once for every level above an `</li>` it reads, so closing
+    /// each list item would overflow the stack in SwiftSoup's parse, before
+    /// TextMouth's walk.
+    func testNavigationDocumentNestedThousandsDeepIsReadOnAWorkerStack() throws {
+        let depth = 20_000
+        let nav = "<html xmlns:epub='http://www.idpf.org/2007/ops'><body><nav epub:type='toc'>"
+            + "<ol><li><a href='../Text/one.xhtml'>Outer entry</a>"
+            + String(repeating: "<ol><li>", count: depth - 2)
+            + "<ol><li><a href='../Text/two.xhtml'>Innermost entry</a>"
+            + "</nav></body></html>"
+        let url = try makeEPUB(
+            chapters: Self.depthTestChapters,
+            extraFiles: ["Navigation/nav.xhtml": nav],
+            manifest: "<item id='nav' href='../Navigation/nav.xhtml' media-type='application/xhtml+xml' properties='nav'/>"
+        )
+        let chapters = onWorkerSizedStack { EPUBHeadingRecoveryTests.chapterTitlesAndWords(of: url) }
+        XCTAssertEqual(chapters, ["Outer entry: First chapter words.", "Innermost entry: Second chapter words."])
+    }
+
     /// Every spine chapter needs a start destination even if its only semantic
     /// heading is a later subsection. Ordinary prose links are not a TOC.
     func testUnlistedChaptersUseDistinctDocumentTitlesThenNumberedFallbacks() throws {
@@ -1100,6 +1211,40 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         return next == nil
     }
 
+    /// The chapter the navigation order tests name: six paragraphs, `a` to
+    /// `f`, in that order.
+    private static let orderChapter = """
+        <p id='a'>Alpha</p><p id='b'>Bravo</p><p id='c'>Charlie</p>\
+        <p id='d'>Delta</p><p id='e'>Echo</p><p id='f'>Foxtrot</p>
+        """
+
+    /// Check the headings the navigation order tests' entries give
+    /// `orderChapter`, cached and read directly alike: each place named
+    /// once, by its first name in document order, at its entry's level.
+    private func assertOrderTestHeadings(of book: Book, file: StaticString = #filePath, line: UInt = #line) throws {
+        let content = try MarkdownCacheService.loadFromCache(for: book)
+        XCTAssertEqual(
+            content.allHeadings.map(\.text),
+            ["Part One", "Chapter One", "Scene One", "Chapter Two", "Part Two", "Interlude"],
+            file: file, line: line
+        )
+        XCTAssertEqual(content.allHeadings.map(\.level), [1, 2, 3, 2, 1, 3], file: file, line: line)
+        let direct = try EPUBParser.parse(url: URL(fileURLWithPath: book.filePath))
+        XCTAssertEqual(direct.allHeadings, content.allHeadings, file: file, line: line)
+    }
+
+    /// The two chapters of the navigation depth tests.
+    private static let depthTestChapters = [
+        ("Text/one.xhtml", "<p>First chapter words.</p>"),
+        ("Text/two.xhtml", "<p>Second chapter words.</p>")
+    ]
+
+    /// Each chapter of the EPUB at `url`, read directly, as "title: words";
+    /// none when the book cannot be read.
+    private static func chapterTitlesAndWords(of url: URL) -> [String] {
+        ((try? EPUBParser.parse(url: url))?.chapters ?? []).map { "\($0.title): \($0.text)" }
+    }
+
     /// Build and import a real ZIP in the hosted tests' isolated library.
     private func makeBook(
         chapters: [(String, String)],
@@ -1109,6 +1254,28 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         navigationSpineIndex: Int? = nil,
         guide: String = ""
     ) throws -> Book {
+        let archive = try makeEPUB(
+            chapters: chapters, extraFiles: extraFiles, manifest: manifest,
+            spineAttributes: spineAttributes, navigationSpineIndex: navigationSpineIndex, guide: guide
+        )
+        let book = try FileImportService.importFile(from: archive)
+        addTeardownBlock { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+        return book
+    }
+
+    /// Build a real ZIP, without importing it, in a temporary folder the test
+    /// removes when it ends: `chapters` (path and markup) in reading order,
+    /// `extraFiles` beside them, `manifest` items beside the chapters', the
+    /// spine element's attributes, the chapter at `navigationSpineIndex` as
+    /// the navigation document, and the package's `guide`.
+    private func makeEPUB(
+        chapters: [(String, String)],
+        extraFiles: [String: String] = [:],
+        manifest: String = "",
+        spineAttributes: String = "",
+        navigationSpineIndex: Int? = nil,
+        guide: String = ""
+    ) throws -> URL {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
         let source = directory.appendingPathComponent("Source")
@@ -1134,9 +1301,7 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         }
         let archive = directory.appendingPathComponent("book.epub")
         try FileManager.default.zipItem(at: source, to: archive, shouldKeepParent: false)
-        let book = try FileImportService.importFile(from: archive)
-        addTeardownBlock { try? FileManager.default.removeItem(at: book.tmbDirectory) }
-        return book
+        return archive
     }
 
     /// Escape fixture metadata once for both XML text and attribute contexts.
