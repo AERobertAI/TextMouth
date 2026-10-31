@@ -215,12 +215,14 @@ enum MarkdownCacheService {
     /// book's row names, as the row says it: an import of a file the user
     /// chose sets it before the read, and so will a re-read in other braille
     /// file characters from Book Information. Any other read takes the code
-    /// that stands between the row and the package record
-    /// (`Book.recordedBrailleFileCode()`), the record's for a row that lags
-    /// behind a re-read or lost its own. Nil reads North American Braille
-    /// ASCII; every format but braille ignores it.
+    /// that stands between the row and the package record, the record's for
+    /// a row that lags behind a re-read or lost its own, and, for a BRF or
+    /// BRL that records none, Unicode braille patterns when its bytes say so
+    /// for certain (`Book.brailleFileCodeForReading()`, review finding 1).
+    /// Nil reads North American Braille ASCII; every format but braille
+    /// ignores it.
     private static func brailleFileCode(of book: Book, decidingEncoding: Bool) -> String? {
-        decidingEncoding ? book.brailleFileCode : book.recordedBrailleFileCode()
+        decidingEncoding ? book.brailleFileCode : book.brailleFileCodeForReading()
     }
 
     /// The work of `generateReportedCacheContent(for:)` for a book with a
@@ -361,7 +363,7 @@ enum MarkdownCacheService {
             let extracted = try extractCache(
                 from: URL(fileURLWithPath: current.filePath), format: current.format,
                 brailleTable: current.brailleTable, brailleTableVersion: current.brailleTableVersion,
-                brailleFileCode: current.recordedBrailleFileCode(),
+                brailleFileCode: current.brailleFileCodeForReading(),
                 encodingPolicy: encodingPolicy(of: current), includesPages: includesPages
             )
             return ExtractedText(markdown: extracted.markdown, pageRunFailed: extracted.pageRunFailed)
@@ -501,8 +503,11 @@ enum MarkdownCacheService {
         if !decidingEncoding {
             // The book takes the braille file characters its file was just
             // read in (braillecodes): the record's for a row that lags behind
-            // a re-read or lost its own. Another format's row keeps its own.
-            book.brailleFileCode = book.recordedBrailleFileCode()
+            // a re-read or lost its own, or Unicode braille patterns for a
+            // BRF or BRL that records none and whose bytes say so (review
+            // finding 1), which its next save records. Another format's row
+            // keeps its own.
+            book.brailleFileCode = book.brailleFileCodeForReading()
         }
         return generated
     }

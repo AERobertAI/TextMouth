@@ -39,3 +39,31 @@ enum BrailleFileCodeRecord {
         recorded ?? row
     }
 }
+
+// MARK: - The Code a Reading Uses
+
+extension Book {
+    /// The braille file characters a reading of this book's file uses when
+    /// the reading does not decide them (a rebuild of its text, an analysis,
+    /// the launch's re-read for pages), by the code's id: the code that
+    /// stands between its row and its package record
+    /// (`recordedBrailleFileCode()`); and, for a BRF or BRL braille book that
+    /// records none, Unicode braille patterns when the file's bytes say so
+    /// for certain (`BrailleFileReader.certainCode(ofFileAt:)`), nil
+    /// otherwise, which reads as North American Braille ASCII.
+    ///
+    /// It heals a Unicode book whose code an earlier TextMouth dropped from
+    /// both its row and its record (the review of October 30, finding 1),
+    /// which would otherwise fail every rebuild. It changes no other book's
+    /// reading: a file whose first character is a braille pattern could not
+    /// be imported before braille file codes (its import refused it), and
+    /// no seven-bit code is ever guessed. The file's first 64 KB are read,
+    /// so call it only where the book's file is read anyway.
+    func brailleFileCodeForReading() -> String? {
+        let standing = recordedBrailleFileCode()
+        guard standing == nil, format == .braille, BrailleBookReader.kind(of: bookFileURL) != .pef else {
+            return standing
+        }
+        return BrailleFileReader.certainCode(ofFileAt: bookFileURL)?.id
+    }
+}

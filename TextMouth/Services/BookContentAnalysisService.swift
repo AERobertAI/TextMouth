@@ -81,7 +81,7 @@ enum BookContentAnalysisService {
                 let content = try BookParser.parse(
                     url: url, format: book.format, brailleTable: book.brailleTable,
                     brailleTableVersion: book.brailleTableVersion,
-                    brailleFileCode: book.recordedBrailleFileCode(),
+                    brailleFileCode: book.brailleFileCodeForReading(),
                     encodingPolicy: book.recordedTextEncodingRecord().policy
                 )
                 let index = content.contentIndex.replacingFormat(book.format)

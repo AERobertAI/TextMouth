@@ -74,12 +74,7 @@ final class BrailleFileCodeImportTests: XCTestCase {
     /// keeps, as a later TextMouth's record may hold one, and changes nothing
     /// else in the record.
     private func recordCode(_ code: String, inRecordOf book: Book) throws {
-        let recordURL = TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
-        var record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: recordURL)) as? [String: Any])
-        var metadata = try XCTUnwrap(record["metadata"] as? [String: Any])
-        metadata["brailleFileCode"] = code
-        record["metadata"] = metadata
-        try JSONSerialization.data(withJSONObject: record).write(to: recordURL)
+        try editRecordMetadata(of: book) { $0["brailleFileCode"] = code }
     }
 
     // MARK: - The Import
@@ -167,6 +162,26 @@ final class BrailleFileCodeImportTests: XCTestCase {
         XCTAssertEqual(try contentMD(of: book), before)
         XCTAssertEqual(book.brailleFileCode, "ascii-eurobraille")
         XCTAssertEqual(try recordedCode(of: book), "ascii-eurobraille")
+    }
+
+    /// A Unicode book whose code an earlier TextMouth dropped from its row
+    /// and its record heals at its next rebuild (review of October 30,
+    /// finding 1): its bytes say Unicode braille patterns for certain, so it
+    /// is read as such, its content.md comes out unchanged, and the book
+    /// records `unicode` again. Without the heal it would be read as North
+    /// American Braille ASCII and refused at its first cell.
+    func testAUnicodeBookThatLostItsCodeHealsAtItsNextRebuild() throws {
+        let imported = try imported(copyOfBrailleSample(Self.sample, writtenIn: .unicode), settingCode: .northAmerican)
+        XCTAssertEqual(imported.brailleFileCode, "unicode")
+        let before = try contentMD(of: imported)
+        var book = try droppingBrailleFileCode(of: imported)
+        XCTAssertNil(try recordedCode(of: book), "the record still holds the code")
+        XCTAssertNil(book.recordedBrailleFileCode())
+
+        XCTAssertNotNil(try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &book, replacingEditedText: true))
+
+        XCTAssertEqual(try contentMD(of: book), before)
+        XCTAssertEqual(book.brailleFileCode, "unicode")
     }
 
     /// A read that decides, as an import's does and a re-read's in other
@@ -291,5 +306,30 @@ extension XCTestCase {
         // permissions: the samples' folder itself is never written.
         try Data(BrailleFileCodeSampleTests.bytes(bytes, writtenIn: code)).write(to: copy, options: .atomic)
         return copy
+    }
+
+    /// `book` as an earlier TextMouth leaves it after saving it, which drops
+    /// the keys it does not know from both copies (the review of October 30,
+    /// finding 1): its row without a braille file code, and the record in
+    /// its package without the `brailleFileCode` key, all else unchanged.
+    /// Shared by the tests of the import and the samples' golden test.
+    func droppingBrailleFileCode(of book: Book) throws -> Book {
+        try editRecordMetadata(of: book) { $0.removeValue(forKey: "brailleFileCode") }
+        var row = book
+        row.brailleFileCode = nil
+        return row
+    }
+
+    /// Rewrites the record in `book`'s package with `change` made to the
+    /// JSON object of its metadata, and nothing else in the record changed:
+    /// for a test that makes a record as another TextMouth's write may leave
+    /// it.
+    func editRecordMetadata(of book: Book, _ change: (inout [String: Any]) -> Void) throws {
+        let recordURL = TextMouthPaths.bookInfoPath(in: book.tmbDirectory)
+        var record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: recordURL)) as? [String: Any])
+        var metadata = try XCTUnwrap(record["metadata"] as? [String: Any])
+        change(&metadata)
+        record["metadata"] = metadata
+        try JSONSerialization.data(withJSONObject: record).write(to: recordURL)
     }
 }
