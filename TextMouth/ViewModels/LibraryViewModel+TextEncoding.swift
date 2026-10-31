@@ -229,18 +229,6 @@ extension LibraryViewModel {
         }
     }
 
-    /// Reads the text of the book `bookID` again as `option` says, as Book
-    /// Information's Text Encoding pop-up asks for it: the re-read of
-    /// `readTextAgain(bookID:choosing:access:)` in that encoding, or
-    /// automatically.
-    func readTextAgain(
-        bookID: UUID,
-        as option: TextEncodingOption,
-        access: MaintenanceFileAccess = .live
-    ) async -> OperationOutcome {
-        await readTextAgain(bookID: bookID, choosing: .textEncoding(option), access: access)
-    }
-
     /// The work of `readTextAgain(bookID:choosing:access:)` off the main
     /// actor, for `book` as the library held it: every file checked to be on
     /// this Mac; the choice checked against the file before anything is
