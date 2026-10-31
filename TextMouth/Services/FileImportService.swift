@@ -2152,24 +2152,44 @@ enum FileImportService {
         try removeItemRespectingTrashSetting(at: url)
     }
 
-    /// Compute MD5 hash of a file (streaming for large files)
+    /// Compute MD5 hash of a file (streaming for large files), reading it a
+    /// mebibyte at a time with `FileHandle.read(upToCount:)`, which throws
+    /// a Swift error when a read fails (see
+    /// `md5Hash(of:readingChunksWith:)`).
     static func md5Hash(of url: URL) throws -> String {
-        // FileHandle's legacy read raises an Objective-C exception, which
-        // Swift cannot catch, on a folder (an RTFD is one): refuse it first,
-        // so no caller can crash on a book whose file is a folder.
+        try md5Hash(of: url, readingChunksWith: { handle in try handle.read(upToCount: 1024 * 1024) })
+    }
+
+    /// The MD5 digest of the file at `url`, as 32 lowercase hexadecimal
+    /// digits, from the chunks `readChunk` reads from the open file in turn
+    /// until it gives nil or an empty chunk (the end of the file).
+    /// `md5Hash(of:)` reads with `FileHandle.read(upToCount:)`; a test
+    /// stands in for it to make a read fail.
+    ///
+    /// Every import, ZIP batch, folder, and text-cache fingerprint hashes
+    /// through here, so a read must fail as a Swift error: FileHandle's
+    /// legacy `readData(ofLength:)` raises an Objective-C exception, which
+    /// Swift cannot catch and which ends TextMouth, when a disk is
+    /// unplugged, a network share drops, or a cloud download fails
+    /// mid-read. A thrown error reaches the import's own report instead.
+    /// - Throws: `ContentFingerprintError.notARegularFile` for a folder (an
+    ///   RTFD is one), which is never opened; the error opening the file;
+    ///   or the first error `readChunk` throws.
+    static func md5Hash(of url: URL, readingChunksWith readChunk: (FileHandle) throws -> Data?) throws -> String {
+        // A folder (an RTFD is one) is refused with its own error before it
+        // is opened.
         guard !isFolder(url) else { throw ContentFingerprintError.notARegularFile }
         let handle = try FileHandle(forReadingFrom: url)
-        defer { handle.closeFile() }
+        // A file only read from loses nothing if closing it fails, and the
+        // legacy `closeFile()` would raise an exception there too.
+        defer { try? handle.close() }
 
         var hasher = Insecure.MD5()
-        let bufferSize = 1024 * 1024
-
-        while autoreleasepool(invoking: {
-            let chunk = handle.readData(ofLength: bufferSize)
-            guard !chunk.isEmpty else { return false }
+        // Each read runs in its own autorelease pool, so what it autoreleases
+        // is freed before the next read and a large file never fills memory.
+        while let chunk = try autoreleasepool(invoking: { try readChunk(handle) }), !chunk.isEmpty {
             hasher.update(data: chunk)
-            return true
-        }) {}
+        }
 
         let digest = hasher.finalize()
         return digest.map { String(format: "%02hhx", $0) }.joined()

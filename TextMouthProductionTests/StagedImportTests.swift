@@ -1,3 +1,4 @@
+import CryptoKit
 import XCTest
 import ZIPFoundation
 @testable import TextMouth
@@ -503,6 +504,41 @@ final class StagedImportTests: XCTestCase {
 
             XCTAssertTrue(FileManager.default.fileExists(atPath: archive.path), "the archive is kept")
         }
+    }
+
+    // MARK: - Hashing a Source
+
+    /// A source of several mebibyte chunks, the last one partial, hashes to
+    /// the MD5 digest of all its bytes, as every import's hash always has.
+    /// The bytes repeat every 251, so no two chunks are alike, and a chunk
+    /// read twice, skipped, or out of order changes the digest.
+    func testASourceOfSeveralChunksHashesToTheDigestOfAllItsBytes() throws {
+        let bytes = Data((0..<(3 * 1_048_576 + 17)).map { UInt8($0 % 251) })
+        let source = sources.appendingPathComponent("Three Mebibytes.bin")
+        try bytes.write(to: source)
+        let expected = Insecure.MD5.hash(data: bytes).map { String(format: "%02hhx", $0) }.joined()
+
+        XCTAssertEqual(try FileImportService.md5Hash(of: source), expected)
+    }
+
+    /// A read that fails partway through a source, as when the disk holding
+    /// it is unplugged or a network share drops, throws its error, which
+    /// the import reports, instead of raising an Objective-C exception that
+    /// would end TextMouth; no read follows the failed one.
+    func testAReadThatFailsPartwayThrowsItsError() throws {
+        struct Unplugged: Error, Equatable {}
+        let source = sources.appendingPathComponent("Unplugged.bin")
+        try Data(repeating: 0x5A, count: 4_096).write(to: source)
+        var reads = 0
+
+        XCTAssertThrowsError(try FileImportService.md5Hash(of: source, readingChunksWith: { handle in
+            reads += 1
+            if reads == 2 { throw Unplugged() }
+            return try handle.read(upToCount: 1_024)
+        })) { error in
+            XCTAssertEqual(error as? Unplugged, Unplugged())
+        }
+        XCTAssertEqual(reads, 2)
     }
 
     // MARK: - Fixtures
