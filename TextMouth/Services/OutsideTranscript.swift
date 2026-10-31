@@ -105,9 +105,11 @@ enum OutsideTranscript {
         /// duration).
         let length: Int
 
-        /// Where the file ends on the book's timeline.
+        /// Where the file ends on the book's timeline: held at `Int.max`
+        /// rather than trapping, so a book's files, however long they claim
+        /// to be, add up to a time that never overflows (`clampedPlus`).
         var end: Int {
-            OutsideTranscript.sum(start, length)
+            start.clampedPlus(length)
         }
 
         /// `sentence`, timed on the book's timeline, moved into this file:
@@ -178,14 +180,6 @@ enum OutsideTranscript {
             }
         }
         return max(0, low - 1)
-    }
-
-    /// `first + second`, or `Int.max` when the sum is larger, for lengths no
-    /// less than 0: a book's files, however long they claim to be, add up to
-    /// a time that never overflows.
-    private static func sum(_ first: Int, _ second: Int) -> Int {
-        let (sum, overflow) = first.addingReportingOverflow(second)
-        return overflow ? .max : sum
     }
 
     // MARK: Making the Transcript
