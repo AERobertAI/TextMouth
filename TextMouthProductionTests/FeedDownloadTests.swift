@@ -586,6 +586,65 @@ final class FeedDownloadTests: XCTestCase {
         )
     }
 
+    // MARK: - Asked For Again As It Stops
+
+    /// Opening an episode whose download Cancel Download has just stopped,
+    /// before the stopped download has ended, downloads it again and opens
+    /// it: the new ask is not lost as the stopped download ends, which
+    /// leaves the item downloading and says nothing of itself.
+    func testOpeningAnEpisodeAsItsDownloadStopsDownloadsAndOpensIt() async throws {
+        let world = try FeedTestWorld(self, label: "FeedCancelThenOpen")
+        var opened: [UUID] = []
+        world.library.readerOpener = { opened.append($0) }
+
+        let heard = try await cancelAndAskAgain(in: world) { world.center.open("guid:ep-1", of: $0.id) }
+        await waitFor("the book opens") { !opened.isEmpty }
+
+        XCTAssertEqual(opened, [heard.book.id])
+        XCTAssertEqual(heard.states, [.downloading, .downloaded(bookID: heard.book.id)], "the item read otherwise meanwhile")
+        XCTAssertEqual(heard.cancelled, [], "the stopped download said it was cancelled")
+    }
+
+    /// Choosing Download for an episode whose download Cancel Download has
+    /// just stopped, before the stopped download has ended, downloads it
+    /// again.
+    func testDownloadingAnEpisodeAsItsDownloadStopsDownloadsIt() async throws {
+        let world = try FeedTestWorld(self, label: "FeedCancelThenDownload")
+
+        let heard = try await cancelAndAskAgain(in: world) { world.center.download("guid:ep-1", of: $0.id) }
+
+        XCTAssertEqual(heard.states, [.downloading, .downloaded(bookID: heard.book.id)], "the item read otherwise meanwhile")
+        XCTAssertEqual(heard.cancelled, [], "the stopped download said it was cancelled")
+    }
+
+    /// A download Cancel Download stopped that ends otherwise than as
+    /// cancelled, as the newest-N rule's that finds this Mac offline before
+    /// it heeds the cancel, leaves its item to the ask that came meanwhile:
+    /// it is neither put off for a network nor said to wait, and the item
+    /// ends as the new ask does, here failing for want of a network.
+    func testADownloadAskedForAgainAsItStopsIsNotPutOffByTheStoppedOne() async throws {
+        let world = try FeedTestWorld(self, label: "FeedCancelThenOffline")
+        let feed = try await subscribe(world, enclosure: "/audio/1.m4a", type: "audio/mp4")
+        world.online.value = false
+        let log = StateLog()
+        let watcher = watchStates(of: "guid:ep-1", in: feed, of: world, into: log)
+        defer { watcher.cancel() }
+
+        // Asked for, stopped, and asked for again, all before the stopped
+        // download has even begun.
+        world.center.downloads.download("guid:ep-1", of: feed.id, origin: .window)
+        world.center.cancelDownload("guid:ep-1", of: feed.id)
+        world.center.download("guid:ep-1", of: feed.id)
+        await waitFor("both downloads end") {
+            world.center.downloads.current == nil && world.center.downloads.queue.isEmpty
+        }
+
+        XCTAssertEqual(world.center.downloads.putOff, [], "the stopped download was put off for a network")
+        XCTAssertEqual(log.states, [
+            .notDownloaded, .downloading, .failed(FeedFetchError.offline.downloadMessage(about: "Episode One")),
+        ], "the item read otherwise meanwhile")
+    }
+
     // MARK: - The Cancelled Event (REV18a finding 6)
 
     /// What a test heard of `.downloadCancelled`: the item of each event,
@@ -1053,5 +1112,57 @@ final class FeedDownloadTests: XCTestCase {
         slow.pause = 0.1
         world.server.serve("/audio/1.m4a", slow, FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
         return try await subscribe(world, enclosure: "/audio/1.m4a", type: "audio/mp4")
+    }
+
+    /// The states an item read, in turn, each once, as a test watched them
+    /// (`watchStates(of:in:of:into:)`).
+    private final class StateLog {
+        var states: [FeedItemState] = []
+    }
+
+    /// Watches the item `itemID` of `feed` in `world` from now on, noting in
+    /// `log` each state its record reads, in turn, each once.
+    private func watchStates(of itemID: FeedItem.ID, in feed: Feed, of world: FeedTestWorld, into log: StateLog) -> AnyCancellable {
+        world.center.store.$records.sink { records in
+            guard let state = records[feed.id]?.item(itemID)?.state, log.states.last != state else { return }
+            log.states.append(state)
+        }
+    }
+
+    /// What a test of an episode asked for again as its download stopped
+    /// heard (`cancelAndAskAgain(in:_:)`).
+    private struct AskedAgain {
+        /// The book the episode downloaded as.
+        let book: Book
+        /// Each state its item read from the cancel on, in turn, each once.
+        let states: [FeedItemState]
+        /// The items of the `.downloadCancelled` events sent meanwhile.
+        let cancelled: [FeedItem.ID]
+    }
+
+    /// Starts the download of "Episode One" in `world`, whose file arrives
+    /// slowly (`subscribeSlowly(_:)`), and once the file is arriving chooses
+    /// Cancel Download and, at once, before the stopped download has ended,
+    /// asks for the episode again as `askAgain` does; returns what was heard
+    /// until the episode had downloaded.
+    private func cancelAndAskAgain(
+        in world: FeedTestWorld,
+        _ askAgain: @MainActor (Feed) -> Void
+    ) async throws -> AskedAgain {
+        let feed = try await subscribeSlowly(world)
+        world.center.download("guid:ep-1", of: feed.id)
+        await waitFor("the download is under way") { world.server.requests(to: "/audio/1.m4a").count == 1 }
+        let states = StateLog()
+        let cancelled = CancelledLog()
+        let watchers = [
+            watchStates(of: "guid:ep-1", in: feed, of: world, into: states),
+            listenForCancelled(in: world, into: cancelled),
+        ]
+        defer { watchers.forEach { $0.cancel() } }
+
+        world.center.cancelDownload("guid:ep-1", of: feed.id)
+        askAgain(feed)
+        let book = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
+        return AskedAgain(book: book, states: states.states, cancelled: cancelled.itemIDs)
     }
 }
