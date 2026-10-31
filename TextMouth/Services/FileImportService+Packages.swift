@@ -157,6 +157,13 @@ extension FileImportService {
             )
         }
         try RemovedFromLibraryMarker.remove(from: staging.directory)
+        // A copy of a duplicate's package that a Cancel, or the launch's
+        // discard, sent to the Trash still holds the marker saying it waits
+        // for an answer (`DuplicateQuestionMarker`). Imported, it is a book
+        // of the library like any other: kept with the marker, a provisional
+        // library would pass it over while the index cannot be read, and the
+        // next launch would discard it.
+        try DuplicateQuestionMarker.remove(from: staging.directory)
         return try publishReadableBook(staged, from: staging, run: &run)
     }
 
