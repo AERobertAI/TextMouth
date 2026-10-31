@@ -683,6 +683,39 @@ final class FeedDownloadTests: XCTestCase {
         XCTAssertEqual(world.server.requests(to: "/audio/1.m4a"), [], "a cancelled transfer was fetched")
     }
 
+    /// A fetch whose task is cancelled before it first suspends, as a feed's
+    /// refresh or an article's page can be cancelled before its task first
+    /// runs, fails as cancelled at once too, never waiting for good, and
+    /// asks for nothing, offline as well.
+    func testAFetchCancelledBeforeItBeginsFailsAsCancelledAtOnce() async throws {
+        let world = try FeedTestWorld(self, label: "FeedFetchCancelledFirst")
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [])))
+        let fetch = fetching("/feed.xml", in: world, through: world.environment.network)
+
+        let online = await ending(of: fetch, cancelledFirst: true)
+        world.online.value = false
+        let offline = await ending(of: fetch, cancelledFirst: true)
+
+        XCTAssertEqual(online, .cancelled)
+        XCTAssertEqual(offline, .cancelled, "a fetch cancelled before it began failed for this Mac being offline")
+        XCTAssertEqual(world.server.requests(to: "/feed.xml"), [], "a cancelled fetch asked for the feed")
+    }
+
+    /// A fetch whose task is cancelled once it has begun but before its
+    /// URLSession task has a delegate fails as cancelled at once too, once,
+    /// however URLSession then reports the end of the task cancelled
+    /// meanwhile.
+    func testAFetchCancelledAsItBeginsFailsAsCancelledOnce() async throws {
+        let world = try FeedTestWorld(self, label: "FeedFetchCancelledAsItBegins")
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [])))
+        let fetch = fetching("/feed.xml", in: world, through: networkCancellingAsItBegins())
+
+        let ended = await ending(of: fetch, cancelledFirst: false)
+
+        XCTAssertEqual(ended, .cancelled)
+        XCTAssertEqual(world.server.requests(to: "/feed.xml"), [], "a cancelled fetch asked for the feed")
+    }
+
     // MARK: - The Cancelled Event (REV18a finding 6)
 
     /// What a test heard of `.downloadCancelled`: the item of each event,
@@ -1211,6 +1244,16 @@ final class FeedDownloadTests: XCTestCase {
         let destination = world.downloadsFolder.appendingPathComponent("\(UUID().uuidString).download")
         return {
             _ = try await network.download(url, resumingFrom: nil, to: destination, discretionary: false) { _, _ in }
+        }
+    }
+
+    /// A fetch of `path` from `world`'s server through `network`, as a
+    /// refresh or an article's page makes one, for
+    /// `ending(of:cancelledFirst:)`.
+    private func fetching(_ path: String, in world: FeedTestWorld, through network: FeedNetwork) -> @Sendable () async throws -> Void {
+        let url = world.server.url(path)
+        return {
+            _ = try await network.fetch(url, discretionary: false)
         }
     }
 
