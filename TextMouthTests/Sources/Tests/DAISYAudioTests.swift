@@ -151,50 +151,9 @@ test("AudioManifest encodes and decodes segments") {
     try assertEqual(decoded.segments?[2].file, "audio02.mp3")
 }
 
-// DAISY audio file detection
-test("Fire Safety DAISY 2.02 has audio — optional") {
-    let path = testFilePath("fire-safety-d202-audio.zip")
-    guard FileManager.default.fileExists(atPath: path) else { return }
-    let url = URL(fileURLWithPath: path)
-    let archive = try Archive(url: url, accessMode: .read)
-    let hasAudio = archive.contains { entry in
-        let ext = (entry.path as NSString).pathExtension.lowercased()
-        return ext == "mp3" || ext == "wav" || ext == "aac"
-    }
-    try assertTrue(hasAudio, "Fire Safety should contain audio files")
-}
-
-test("Are You Ready DAISY 3 has audio — optional") {
-    let path = testFilePath("are-you-ready-d3-audio.zip")
-    guard FileManager.default.fileExists(atPath: path) else { return }
-    let url = URL(fileURLWithPath: path)
-    let archive = try Archive(url: url, accessMode: .read)
-    let hasAudio = archive.contains { entry in
-        let ext = (entry.path as NSString).pathExtension.lowercased()
-        return ext == "mp3" || ext == "wav" || ext == "aac"
-    }
-    try assertTrue(hasAudio, "Are You Ready should contain audio files")
-}
-
-test("Fire Safety SMIL files contain audio references — optional") {
-    let path = testFilePath("fire-safety-d202-audio.zip")
-    guard FileManager.default.fileExists(atPath: path) else { return }
-    let url = URL(fileURLWithPath: path)
-    let archive = try Archive(url: url, accessMode: .read)
-    var foundAudioClips = false
-    for entry in archive where entry.path.lowercased().hasSuffix(".smil") {
-        var data = Data()
-        _ = try archive.extract(entry) { chunk in data.append(chunk) }
-        guard let smilXML = String(data: data, encoding: .utf8) else { continue }
-        let clips = try parseDAISYAudioSMIL(smilXML)
-        if !clips.isEmpty {
-            foundAudioClips = true
-            break
-        }
-    }
-    try assertTrue(foundAudioClips, "Should find audio clips in SMIL files")
-}
-
+// DAISY audio file detection. The two DAISY audio books' scenarios are
+// DAISYAudioFixtureTests (TextMouthProductionTests), which find the books
+// from a linked worktree too and skip, saying why, when no checkout has them.
 test("Text-only DAISY does not have audio") {
     let url = try requireFile("hyperion_daisy.zip")
     let archive = try Archive(url: url, accessMode: .read)
