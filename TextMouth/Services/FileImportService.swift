@@ -94,6 +94,11 @@ struct ImportedBook {
     /// in the archive. Such an original is never deleted or offered for
     /// deletion.
     var tookOnlyPartOfOriginal = false
+    /// What a DAISY audio ZIP's import left in the archive, and the archive's
+    /// name, when it took only part of its original: names the book and the
+    /// archive in `originalKeptNotice`, and counts the other books the
+    /// archive holds that were not imported. Nil for every other import.
+    var archiveLeftovers: DAISYArchiveLeftovers?
     /// What the import tells the listener once the book is in the library,
     /// besides what is missing from it (`warning`): the entries a playlist
     /// import skipped (FMT10). Nil when there is nothing to tell. It does
@@ -124,10 +129,11 @@ struct ImportedBook {
     /// word (a DAISY folder or a folder of tracks is kept silently, as it
     /// always was).
     var originalKeptNotice: String? {
+        if tookOnlyPartOfOriginal, let leftovers = archiveLeftovers {
+            return DAISYArchiveWording.originalKept(bookTitle: book.title, leftovers: leftovers)
+        }
         let reason: String
-        if tookOnlyPartOfOriginal {
-            reason = "TextMouth imported this DAISY book's audio, and the archive is the only copy of its text"
-        } else if isFromFolder, book.format == .rtfd {
+        if isFromFolder, book.format == .rtfd {
             reason = "it is a folder, and an import never deletes a folder"
         } else {
             return nil
@@ -155,6 +161,47 @@ struct ImportedBook {
     func announcement(warning: String?) -> String? {
         let sentences = [warning, notice].compactMap { $0 }
         return sentences.isEmpty ? nil : sentences.joined(separator: " ")
+    }
+}
+
+/// What the audio import of a DAISY archive left in the archive
+/// (`FileImportService.daisyArchiveLeftovers(of:archiveName:)`).
+struct DAISYArchiveLeftovers: Equatable {
+    /// The archive's file name.
+    var archiveName: String
+    /// Whether the DAISY folder holds text the audio book lacks.
+    var holdsText: Bool
+    /// How many other books the archive holds outside the DAISY folder.
+    var otherBookCount: Int
+
+    /// Whether the archive holds nothing the import left behind.
+    var isEmpty: Bool { !holdsText && otherBookCount == 0 }
+}
+
+/// The files a SMIL document's text elements name, which tell whether a
+/// DAISY book has text of its own beyond its navigation.
+private final class SMILTextSources: NSObject, XMLParserDelegate {
+    /// The `src` of each text element read, fragments included.
+    private var sources: [String] = []
+
+    /// The `src` of each text element in `data`, in order, up to the point
+    /// a damaged document stops the read; the sources found stand.
+    static func scan(_ data: Data) -> [String] {
+        let scanner = SMILTextSources()
+        let parser = XMLParser(data: data)
+        parser.shouldResolveExternalEntities = false
+        parser.delegate = scanner
+        parser.parse()
+        return scanner.sources
+    }
+
+    func parser(
+        _ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?,
+        qualifiedName qName: String?, attributes attributeDict: [String: String]
+    ) {
+        // Prefixed names ("smil:text") count; only the local name matters.
+        guard elementName.split(separator: ":").last == "text", let source = attributeDict["src"] else { return }
+        sources.append(source)
     }
 }
 
@@ -2498,12 +2545,91 @@ enum FileImportService {
                 source: zipURL
             )
             var imported = try publishReadableBook(staged, from: staging, run: &run)
-            // Only the audio and its manifest were staged: the book's text,
-            // its images, and the rest of the archive stay in the archive,
-            // which is then their only copy, so it is never deleted.
-            imported.tookOnlyPartOfOriginal = true
+            // Only the audio and its manifest were staged. Text the package
+            // leaves out, or other books the archive holds, stay in the
+            // archive, which is then their only copy, so it is never
+            // deleted. An audio-only talking book in an archive of its own
+            // leaves nothing behind, so the preference stands.
+            let leftovers = daisyArchiveLeftovers(
+                of: ArchiveFileProvider(archive: archive), archiveName: zipURL.lastPathComponent
+            )
+            imported.tookOnlyPartOfOriginal = !leftovers.isEmpty
+            imported.archiveLeftovers = leftovers
             return imported
         }
+    }
+
+    /// The most SMIL files and XML files `daisyArchiveLeftovers` reads
+    /// looking for text: an archive is untrusted, and one text file settles
+    /// the question.
+    private static let leftoverScanLimit = 2_000
+
+    /// What the audio import of a DAISY archive leaves in the archive that
+    /// `provider` reads: whether the DAISY folder holds text the audio book
+    /// lacks (a DTBook, or a text document a SMIL file points to, other than
+    /// the navigation file, which a talking book's SMIL files point to for
+    /// its headings), and how many other books lie outside that folder: DAISY
+    /// books in folders of their own, and files of the formats TextMouth
+    /// imports (audio not counted, since loose tracks are no book).
+    ///
+    /// The DAISY folder is the one holding the package or navigation file
+    /// (`DAISYParser.packageFolders(inArchivePaths:)`), the archive's top
+    /// level when the book lies there. Hidden entries and `__MACOSX` hold
+    /// nothing. Nothing is extracted: files are read as the parser reads
+    /// them, within its bounds, and a file that cannot be read counts as no
+    /// text.
+    static func daisyArchiveLeftovers(of provider: DAISYFileProvider, archiveName: String) -> DAISYArchiveLeftovers {
+        let paths = provider.listFiles().filter { path in
+            !path.split(separator: "/").contains { $0.hasPrefix(".") || $0 == "__MACOSX" }
+        }
+        let folders = DAISYParser.packageFolders(inArchivePaths: paths)
+        let bookFolder = folders.contains("") ? "" : (folders.sorted().first ?? "")
+        /// Whether `path` lies in `folder`, "" being the whole archive.
+        func lies(_ path: String, in folder: String) -> Bool {
+            folder.isEmpty || path.hasPrefix(folder + "/")
+        }
+        let inBook = paths.filter { lies($0, in: bookFolder) }
+
+        // Other DAISY books in folders of their own count once each, and
+        // every other file of a book format counts as one book, unless it
+        // lies in a folder that is a DAISY book itself.
+        let otherFolders = folders.subtracting([bookFolder])
+        var otherBooks = bookFolder.isEmpty ? 0 : otherFolders.count
+        if !bookFolder.isEmpty {
+            for path in paths where !lies(path, in: bookFolder) && !otherFolders.contains(where: { lies(path, in: $0) }) {
+                if let format = BookFormat.detect(from: URL(fileURLWithPath: path)), !format.isAudio {
+                    otherBooks += 1
+                }
+            }
+        }
+        return DAISYArchiveLeftovers(
+            archiveName: archiveName,
+            holdsText: holdsText(among: inBook, provider: provider),
+            otherBookCount: otherBooks
+        )
+    }
+
+    /// Whether the DAISY book whose files are `paths` has text outside its
+    /// navigation: a file with a DTBook root, or a document that a SMIL
+    /// file's text element names and the book holds.
+    private static func holdsText(among paths: [String], provider: DAISYFileProvider) -> Bool {
+        for path in paths.filter({ $0.lowercased().hasSuffix(".xml") }).prefix(leftoverScanLimit) {
+            if let data = try? provider.readFile(at: path), XMLDocumentSniffer.rootKind(of: data) == .dtbook {
+                return true
+            }
+        }
+        let held = Set(paths.map { $0.lowercased() })
+        for smil in paths.filter({ $0.lowercased().hasSuffix(".smil") }).prefix(leftoverScanLimit) {
+            guard let data = try? provider.readFile(at: smil) else { continue }
+            for source in SMILTextSources.scan(data) {
+                let target = ParserUtilities.resolvedPackagePath(source, relativeTo: smil, preserveFragment: false)
+                let name = (target as NSString).lastPathComponent
+                if !target.isEmpty, !DAISYParser.isNCCFileName(name), held.contains(target.lowercased()) {
+                    return true
+                }
+            }
+        }
+        return false
     }
 
     /// Import a ZIP of audio files as a single multi-chapter audio book.

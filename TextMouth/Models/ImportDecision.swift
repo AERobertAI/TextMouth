@@ -426,3 +426,31 @@ enum DuplicateCopyWording {
             + "To get \(one ? "it" : "them") back, open the Trash and choose Put Back."
     }
 }
+
+/// What an import tells the listener of a DAISY archive whose audio it
+/// imported while the archive keeps something the book lacks.
+enum DAISYArchiveWording {
+    /// Said when "After Importing a Book" would have deleted the archive, or
+    /// asked, and the archive was kept: "The original file was kept:
+    /// TextMouth imported the audio of “Harbour Pilots” from the archive
+    /// “pilots.zip”, and the archive is the only copy of its text. The
+    /// archive also holds 2 other books that were not imported; unzip it to
+    /// import them." The second sentence is for an archive with other books,
+    /// and a talking book with no text, in an archive of other books, says
+    /// "TextMouth imported only the DAISY book “Harbour Pilots” from the
+    /// archive “pilots.zip”" in the first.
+    static func originalKept(bookTitle: String, leftovers: DAISYArchiveLeftovers) -> String {
+        let archive = "the archive “\(leftovers.archiveName)”"
+        let lead = leftovers.holdsText
+            ? "TextMouth imported the audio of “\(bookTitle)” from \(archive), and the archive is the only copy of its text"
+            : "TextMouth imported only the DAISY book “\(bookTitle)” from \(archive)"
+        var notice = "The original file was kept: \(lead)."
+        let others = leftovers.otherBookCount
+        if others > 0 {
+            let phrase = CountWording.phrase(others, singular: "other book", plural: "other books")
+            notice += " The archive also holds \(phrase) that \(others == 1 ? "was" : "were") not imported; "
+                + "unzip it to import \(others == 1 ? "it" : "them")."
+        }
+        return notice
+    }
+}
