@@ -363,7 +363,7 @@ final class LogContentPolicyTests: XCTestCase {
         "MIGRATION_STAGING_REMOVED", "ORIGINAL_KEPT", "PERSISTENCE_FAILURE",
         "PERSISTENCE_RECOVERED", "PERSISTENCE_WITHDRAWN", "PLAYBACK_RESUME_REJECTED", "SPEECH_PLAYER_EXCEPTION",
         "AUDIO_ENGINE_START_FAILED",
-        "READING_TEXT_CACHE_REJECTED", "READING_TEXT_CACHE_SWEPT", "TMB_RECONCILE", "TRACE_SUPPRESSED",
+        "READING_TEXT_CACHE_REJECTED", "READING_TEXT_CACHE_SWEPT", "TMB_ID_LISTED", "TMB_RECONCILE", "TRACE_SUPPRESSED",
         // Transcripts of audiobooks (FR05): a transcript.json that cannot be used, preserved beside itself;
         // a transcript whose audio changed since; and a transcript text written again from its transcript.
         "TRANSCRIPT_FILE", "TRANSCRIPT_STALE", "TRANSCRIPT_TEXT_REBUILT",

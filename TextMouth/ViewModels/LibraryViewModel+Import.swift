@@ -303,11 +303,20 @@ extension LibraryViewModel {
     /// library does not list the book, which must then be imported.
     ///
     /// When the package is the listed book's own managed package, the
-    /// listing's storage fields are first repaired from it. A package that
-    /// Remove from Library Only retired never counts as the listed book's
-    /// own: that book lives in another package now, and repairing its
-    /// listing toward the retired one would point it at a package the next
-    /// launch takes out of the library.
+    /// listing's storage fields are first repaired from it: when it is the
+    /// very package the listing names, however its path is spelled, or when
+    /// the package the listing names is gone, so this one is the only copy
+    /// of the book the library has. Another managed package naming the book
+    /// while the listing's own is still there, such as Replace Existing's
+    /// old copy put back from the Trash (it records its replacement's ID) or
+    /// a copy made in the Finder, never takes the book's place: the listing
+    /// is left as it is, on the package holding its places and transcript,
+    /// and one TMB_ID_LISTED line names the other package's folder and name.
+    ///
+    /// A package that Remove from Library Only retired never counts as the
+    /// listed book's own: that book lives in another package now, and
+    /// repairing its listing toward the retired one would point it at a
+    /// package the next launch takes out of the library.
     func listedBookID(for source: TMBImportSource) -> UUID? {
         if let existingIndex = library.books.firstIndex(where: { $0.id == source.bookID }) {
             let existing = library.books[existingIndex]
@@ -317,16 +326,27 @@ extension LibraryViewModel {
                    inspection: inspection,
                    packageURL: source.packageURL
                ) {
-                let repaired = FileImportService.reconciledLibraryBook(existing, with: managedPackageBook)
-                library.books[existingIndex] = repaired
-                if repaired != existing {
-                    save()
-                    // The line says whether the book's file exists, never where it is.
-                    let pathExists = FileManager.default.fileExists(atPath: repaired.filePath)
+                if Self.mayRepair(existing, fromPackageAt: source.packageURL) {
+                    let repaired = FileImportService.reconciledLibraryBook(existing, with: managedPackageBook)
+                    library.books[existingIndex] = repaired
+                    if repaired != existing {
+                        save()
+                        // The line says whether the book's file exists, never where it is.
+                        let pathExists = FileManager.default.fileExists(atPath: repaired.filePath)
+                        DiagnosticLog.event(
+                            .import,
+                            "TMB_RECONCILE: book=\(existing.id.uuidString.prefix(8)) "
+                                + "folder='\(existing.folderPath)'→'\(repaired.folderPath)' pathExists=\(pathExists)"
+                        )
+                    }
+                } else {
+                    // A second copy of the listed book: the line names it by
+                    // its library folder and its name, never by its path.
                     DiagnosticLog.event(
                         .import,
-                        "TMB_RECONCILE: book=\(existing.id.uuidString.prefix(8)) "
-                            + "folder='\(existing.folderPath)'→'\(repaired.folderPath)' pathExists=\(pathExists)"
+                        "TMB_ID_LISTED: folder='\(managedPackageBook.folderPath)' "
+                            + "package='\(managedPackageBook.tmbDirectoryName)': its record names a book the library "
+                            + "lists in another package, so the listing was left as it is"
                     )
                 }
             }
@@ -336,6 +356,21 @@ extension LibraryViewModel {
         // a different ID. Open the known book without relocating its
         // Library record.
         return library.books.first(where: { $0.md5Hash == source.md5Hash })?.id
+    }
+
+    /// Whether the managed package at `packageURL`, which holds the book
+    /// `listing` lists, may repair that listing (`listedBookID(for:)`): when
+    /// it is the listing's own package, the same item on disk however its
+    /// path is spelled, or when the listing has no package of its own left,
+    /// because its row names none or nothing is where the row names it.
+    private static func mayRepair(_ listing: Book, fromPackageAt packageURL: URL) -> Bool {
+        // A row whose spelling names no package of the library's (an empty
+        // or malformed package name, or a folder path with traversal) has
+        // no package of its own to keep.
+        guard FileImportService.namesManagedPackage(listing) else { return true }
+        let ownPackage = listing.tmbDirectory
+        return !FileManager.default.fileExists(atPath: ownPackage.path)
+            || FileImportService.isSameItem(ownPackage, packageURL)
     }
 
     /// Publish the book a package import produced, and with

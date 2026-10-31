@@ -526,8 +526,11 @@ extension FileImportService {
     }
 
     /// Whether `first` and `second` name the same item, however their paths
-    /// are spelled.
-    private static func isSameItem(_ first: URL, _ second: URL) -> Bool {
+    /// are spelled. Resolving an existing item's path also gives each part
+    /// the capitals it has on disk, so two spellings of one item on a volume
+    /// that ignores case agree. Internal so the library's check of a package
+    /// it opens compares as an import does (`LibraryViewModel.listedBookID(for:)`).
+    static func isSameItem(_ first: URL, _ second: URL) -> Bool {
         first.standardizedFileURL.resolvingSymlinksInPath().path
             == second.standardizedFileURL.resolvingSymlinksInPath().path
     }

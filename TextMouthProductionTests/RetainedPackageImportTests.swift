@@ -287,6 +287,80 @@ final class RetainedPackageImportTests: XCTestCase {
         XCTAssertEqual(model.bookByID(book.id)?.folderPath, book.folderPath)
     }
 
+    /// Opening a second copy of a listed book's package, beside the package
+    /// its listing names (a copy made in the Finder, or Replace Existing's
+    /// old copy put back from the Trash, which records the same ID), opens
+    /// the listed book and never takes its place: the listing still names
+    /// its own package, and one TMB_ID_LISTED line names the copy by its
+    /// folder and name, never by its path.
+    @MainActor
+    func testSecondCopyOfAListedBooksPackageNeverTakesItsPlace() throws {
+        let book = try makePackage(title: "Spoke Tension")
+        let copy = try copyBesideItself(book)
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [book])
+
+        let source = try FileImportService.identifyTMBPackage(at: copy)
+
+        XCTAssertEqual(model.listedBookID(for: source), book.id)
+        let listed = try XCTUnwrap(model.bookByID(book.id))
+        XCTAssertEqual(listed.tmbDirectoryName, book.tmbDirectoryName)
+        XCTAssertEqual(listed.filePath, book.filePath)
+        XCTAssertEqual(listed.folderPath, book.folderPath)
+        XCTAssertEqual(model.library.books, [book])
+        let lines = debugLogLines(containing: copy.lastPathComponent)
+        XCTAssertEqual(lines.count, 1, "\(lines)")
+        XCTAssertTrue(
+            lines.first?.hasSuffix(
+                "TMB_ID_LISTED: folder='\(book.folderPath)' package='\(copy.lastPathComponent)': its record "
+                    + "names a book the library lists in another package, so the listing was left as it is"
+            ) == true,
+            "\(lines)"
+        )
+    }
+
+    /// A listing whose own package is gone is repaired from another package
+    /// of its book in the library, which is the only copy left, as before.
+    @MainActor
+    func testListingWhosePackageIsGoneIsRepairedFromAnotherCopy() throws {
+        let book = try makePackage(title: "Valve Core")
+        let copy = try copyBesideItself(book)
+        try FileManager.default.removeItem(at: book.tmbDirectory)
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [book])
+
+        let source = try FileImportService.identifyTMBPackage(at: copy)
+
+        XCTAssertEqual(model.listedBookID(for: source), book.id)
+        let listed = try XCTUnwrap(model.bookByID(book.id))
+        XCTAssertEqual(listed.tmbDirectoryName, copy.lastPathComponent)
+        XCTAssertEqual(listed.filePath, copy.appendingPathComponent("book.txt").path)
+        XCTAssertEqual(listed.folderPath, book.folderPath)
+        XCTAssertEqual(debugLogLines(containing: "package='\(copy.lastPathComponent)'"), [])
+    }
+
+    /// A listing that names its own package in other capitals, as after its
+    /// folder was renamed in the Finder by case alone, is repaired to the
+    /// folder's spelling on disk when that package is opened, and the
+    /// package is no second copy: on a volume that ignores case, as the
+    /// Mac's own does, both spellings name the one package; on one that
+    /// does not, the listing names no package there.
+    @MainActor
+    func testListedBooksOwnPackageNamedInOtherCapitalsStillRepairsIt() throws {
+        let book = try makePackage(title: "Freewheel Pawls")
+        var otherCapitals = book
+        otherCapitals.folderPath = book.folderPath.uppercased()
+        XCTAssertNotEqual(otherCapitals.folderPath, book.folderPath)
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(books: [otherCapitals])
+
+        let source = try FileImportService.identifyTMBPackage(at: book.tmbDirectory)
+
+        XCTAssertEqual(model.listedBookID(for: source), book.id)
+        XCTAssertEqual(model.bookByID(book.id)?.folderPath, book.folderPath)
+        XCTAssertEqual(debugLogLines(containing: "package='\(book.tmbDirectoryName)'"), [])
+    }
+
     // MARK: - Text the User Changed (B12)
 
     /// A book whose text the user changed with Edit Text, taken out with
@@ -514,6 +588,16 @@ final class RetainedPackageImportTests: XCTestCase {
     /// A copy of `book`'s package outside the library, as it is now.
     private func copyOutOfLibrary(_ book: Book) throws -> URL {
         let copy = try makeScratchDirectory().appendingPathComponent(book.tmbDirectoryName, isDirectory: true)
+        try FileManager.default.copyItem(at: book.tmbDirectory, to: copy)
+        return copy
+    }
+
+    /// A copy of `book`'s package, record and all, under another name in
+    /// the same library folder, as the Finder's Duplicate makes one. The
+    /// folder, and the copy with it, is removed after the test.
+    private func copyBesideItself(_ book: Book) throws -> URL {
+        let copy = book.tmbDirectory.deletingLastPathComponent()
+            .appendingPathComponent("Copy-\(UUID().uuidString).tmb", isDirectory: true)
         try FileManager.default.copyItem(at: book.tmbDirectory, to: copy)
         return copy
     }
