@@ -165,6 +165,7 @@
 		224C5E69897A8AC4AB2D40CF /* BuildIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05D2B67EAF5FDA6D30CF9C53 /* BuildIdentity.swift */; };
 		22B0A3681D373AB2C3168C6E /* PlaceRelocatorSharedRuleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16CF390E4F4B3B7800849DB1 /* PlaceRelocatorSharedRuleTests.swift */; };
 		230C0DED4B5B6FDE756214AE /* TextCacheFingerprint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9998D0949EC2FB8D5A1216C4 /* TextCacheFingerprint.swift */; };
+		2329633D2DEAED41D00B2047 /* BrailleFileCodeReplaceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB845412C7344F489B8B2258 /* BrailleFileCodeReplaceTests.swift */; };
 		232EDDD34176B3169DC9C72D /* DiskImageDrill.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC61B26855110CF5898C20F8 /* DiskImageDrill.swift */; };
 		236CA168590C22365D04C3AB /* AudioEditorFilterSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5264DB4EF7281C549A29BF60 /* AudioEditorFilterSheet.swift */; };
 		23B156B14CDD506E19D0B818 /* WatchedProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 503CB3199F305D5E02E52F8F /* WatchedProcess.swift */; };
@@ -2097,6 +2098,7 @@
 		AB1EF6CAEEEC7F7FA194DAE9 /* LibraryFolderSettingsTarget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryFolderSettingsTarget.swift; sourceTree = "<group>"; };
 		AB49574A27590D4D16102CE0 /* BrailleTranslator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleTranslator.swift; sourceTree = "<group>"; };
 		AB6A423633EFCCD2180C0D7B /* NewBookHandEditsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewBookHandEditsTests.swift; sourceTree = "<group>"; };
+		AB845412C7344F489B8B2258 /* BrailleFileCodeReplaceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleFileCodeReplaceTests.swift; sourceTree = "<group>"; };
 		ABD02911CFAA200C7454DD7F /* TextMouth.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TextMouth.entitlements; sourceTree = "<group>"; };
 		ABFE62580DDAB7656C5EDE7C /* RecordingWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingWindowView.swift; sourceTree = "<group>"; };
 		AC09BED440386F8ACDBF04F1 /* ReadingStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingStatsView.swift; sourceTree = "<group>"; };
@@ -3256,6 +3258,7 @@
 				7CBA90170B3A49CD75BAF04B /* BrailleFileCodeBookInfoTests.swift */,
 				F2B67398A22C05EE6935E40E /* BrailleFileCodeImportTests.swift */,
 				79A249FED99EB68F8E36F496 /* BrailleFileCodeRecordTests.swift */,
+				AB845412C7344F489B8B2258 /* BrailleFileCodeReplaceTests.swift */,
 				74B41CDBB0BB2BF95565C9D3 /* BrailleFileCodeRereadTests.swift */,
 				2E84BD60C40FEBB3CDA5B5A4 /* BrailleFileCodeSampleTests.swift */,
 				8DCFB01F577DB7D26E04A57A /* BrailleFileCodeSettingTests.swift */,
@@ -4271,6 +4274,7 @@
 				04671DA6F9AFD758360A4BAF /* BrailleFileCodeBookInfoTests.swift in Sources */,
 				F9AD307F1AA74E68EEC15904 /* BrailleFileCodeImportTests.swift in Sources */,
 				E99E01242CF6D05B74035525 /* BrailleFileCodeRecordTests.swift in Sources */,
+				2329633D2DEAED41D00B2047 /* BrailleFileCodeReplaceTests.swift in Sources */,
 				33DA9F54471444D5718A5999 /* BrailleFileCodeRereadTests.swift in Sources */,
 				E34C5225674BD5465E6B9487 /* BrailleFileCodeSampleTests.swift in Sources */,
 				DD880CA0FCBAE6503607ABC3 /* BrailleFileCodeSettingTests.swift in Sources */,
