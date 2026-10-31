@@ -375,6 +375,37 @@ final class BrailleExportWriterTests: XCTestCase {
         }
     }
 
+    /// The writers start from the braille file characters the Braille tab
+    /// chose (braillecodes): a bound code, Eurobraille or Unicode, for a BRF
+    /// and a PEF alike, which is kept when one of this Mac's tables that no
+    /// Mac has makes the options start from the default table (review R4).
+    /// An id that names no code starts from North American Braille ASCII,
+    /// as does nothing bound: then the setting is read from the runtime's
+    /// preferences store, the hosted tests' sandboxed one, where no test
+    /// stores a code.
+    func testDefaultOptionsTakeTheSettingsBrailleFileCharacters() {
+        let gone = "mac:no-such-table-on-any-mac.ctb"
+        for code in [BrailleFileCode.eurobraille, .unicode] {
+            BraillePreferences.$fileCodeForImports.withValue(code.id) {
+                for options in [BRFExportWriter().defaultOptions(), PEFExportWriter().defaultOptions()] {
+                    XCTAssertEqual(options.fileCode, code)
+                }
+                BraillePreferences.$tableForImports.withValue(gone) {
+                    let options = BrailleExportOptions.standard()
+                    XCTAssertEqual(options.table, BrailleTableCatalog.defaultTableID)
+                    XCTAssertEqual(options.replacedTable, gone)
+                    XCTAssertEqual(options.fileCode, code, "the default table's options lost \(code.name)")
+                }
+            }
+        }
+        for unknown in ["", "ascii-future"] {
+            BraillePreferences.$fileCodeForImports.withValue(unknown) {
+                XCTAssertEqual(BrailleExportOptions.standard().fileCode, .northAmerican, "for \"\(unknown)\"")
+            }
+        }
+        XCTAssertEqual(BrailleExportOptions.standard().fileCode, .northAmerican)
+    }
+
     // MARK: - The Options View
 
     /// A BRF's options view has the three table pop-ups, the line ends pop-up,
