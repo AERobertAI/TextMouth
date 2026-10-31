@@ -393,12 +393,17 @@ extension LibraryViewModel {
     // MARK: - Async Zip Import
 
     /// Check if a ZIP file contains audio files (for audio book ZIP import).
+    /// An archive holding a TextMouth package never does: an audiobook's
+    /// package holds only its tracks beside its record, and the batch
+    /// imports it as the package, with its places and transcript
+    /// (`FileImportService.liesInTMBPackage(_:)`).
     nonisolated static func isAudioZip(url: URL) -> Bool {
         guard let archive = Archive.openedForReading(at: url) else { return false }
         let audioExtensions = Set(BookFormat.audio.fileExtensions)
         var hasAudio = false
         var hasNonAudio = false
         for entry in archive {
+            guard !FileImportService.liesInTMBPackage(entry.path) else { return false }
             let ext = URL(fileURLWithPath: entry.path).pathExtension.lowercased()
             if ext.isEmpty || ext == "json" { continue } // Skip directories and manifest
             if audioExtensions.contains(ext) {
@@ -552,15 +557,20 @@ extension LibraryViewModel {
                 }
 
                 var existingHashes: Set<String> = []
+                var existingBookIDs: Set<UUID> = []
                 DispatchQueue.main.sync {
                     // The library's own books: a feed's item never keeps a
                     // book of the same file out (FR11).
                     existingHashes = Set(self.library.libraryBooks.map(\.md5Hash))
+                    // Every row, feed items too: a package in the archive
+                    // naming a listed book never becomes a second row of it.
+                    existingBookIDs = Set(self.library.books.map(\.id))
                 }
                 let result = try FileImportService.importZip(
                     from: url,
                     toFolder: folderPath,
                     existingHashes: existingHashes,
+                    existingBookIDs: existingBookIDs,
                     progress: { report in
                         DispatchQueue.main.async { progress.receive(report) }
                     },

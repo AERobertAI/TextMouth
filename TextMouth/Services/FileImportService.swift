@@ -1759,6 +1759,14 @@ enum FileImportService {
     /// preventing orphaned .tmb packages from being created for duplicates.
     /// Returns imported books together with any per-file failures.
     ///
+    /// A TextMouth package in the archive (a .tmb folder) is one book,
+    /// imported with its record as a package opened from the Finder is
+    /// (`importTMBPackage(_:observer:)`): at the library's top level,
+    /// whatever `folderPath` says, or, when the library holds the package
+    /// Remove from Library Only retained for the book, by taking that one
+    /// back where it is. One whose book the library already lists, by its
+    /// ID (`existingBookIDs`) or its checksum, is skipped as a duplicate.
+    ///
     /// The archive and the archives found inside it are extracted within one
     /// budget (`ArchiveLimits`, TODO I05): each is refused before anything of
     /// it is written when its declared size, its entries, or the free space it
@@ -1768,6 +1776,9 @@ enum FileImportService {
     /// shares its volume and in the data directory otherwise (FR02), removed
     /// on every exit.
     /// - Parameters:
+    ///   - existingBookIDs: the books the library lists, feed items
+    ///     included: a package whose record names one of them is skipped as
+    ///     a duplicate, so no two of the library's rows ever share an ID.
     ///   - progress: told the entries extracted and the bytes written of each
     ///     archive's totals, then each book as it begins and as it begins
     ///     each step, and the books done of the total found, so the overlay
@@ -1786,6 +1797,7 @@ enum FileImportService {
         from zipURL: URL,
         toFolder folderPath: String = "",
         existingHashes: Set<String> = [],
+        existingBookIDs: Set<UUID> = [],
         progress: ((ZipImportProgress) -> Void)? = nil,
         isCancelled: @escaping ImportCancellationCheck = { false }
     ) throws -> ZipImportResult {
@@ -1839,6 +1851,7 @@ enum FileImportService {
                 candidates.books,
                 toFolder: folderPath,
                 existingHashes: existingHashes,
+                existingBookIDs: existingBookIDs,
                 progress: progress,
                 isCancelled: isCancelled
             )
@@ -1874,12 +1887,16 @@ enum FileImportService {
     /// - A DAISY book kept as loose files in a folder of its own is one
     ///   book, listed as that folder, and none of the files inside counts
     ///   on its own. A folder with several books' package files lists each
-    ///   package file instead, as does a TextMouth package holding a DAISY
-    ///   book, since neither folder names one book.
+    ///   package file instead, since it names no one book.
     /// - An archive whose own top level holds a DAISY book is that book.
     /// - A folder that is a Rich Text with Attachments document (an .rtfd,
     ///   a package the Finder shows as one file) is one book, listed as
     ///   that folder. Its files (the TXT.rtf and the attachments) are never
+    ///   books or files passed over.
+    /// - A TextMouth package (a .tmb folder, `isTMBPackageFolder(_:)`) is
+    ///   one book, listed as that folder, which the batch imports as a
+    ///   package with its record. Its files (the book's own file, its text
+    ///   cache, its record, its tracks, a DAISY book inside it) are never
     ///   books or files passed over.
     /// - A DAISY ZIP inside is one book. Any other archive inside is
     ///   unpacked through `nested`, within the batch's budget, and searched
@@ -1910,9 +1927,12 @@ enum FileImportService {
                     entries.skipDescendants()
                     continue
                 }
-                // An RTFD is a folder that stands for one document: it is the
-                // book, never its TXT.rtf and its attachments.
-                if BookFormat.detect(from: url) == .rtfd {
+                // An RTFD is a folder that stands for one document, and a
+                // TextMouth package a folder holding one book with its
+                // record: each is the book, never what is inside it (an
+                // RTFD's TXT.rtf and attachments; a package's book file,
+                // text cache, and tracks).
+                if BookFormat.detect(from: url) == .rtfd || isTMBPackageFolder(url) {
                     entries.skipDescendants()
                     found.books.append(url)
                     continue
@@ -1920,8 +1940,7 @@ enum FileImportService {
                 let packageFiles = DAISYParser.packageEntryPoints(in: url)
                 guard !packageFiles.isEmpty else { continue }
                 entries.skipDescendants()
-                let isOneBooksFolder = packageFiles.count == 1 && url.pathExtension.lowercased() != "tmb"
-                found.books += isOneBooksFolder ? [url] : packageFiles
+                found.books += packageFiles.count == 1 ? [url] : packageFiles
             } else if url.pathExtension.lowercased() == "zip" {
                 if DAISYParser.isDAISYZip(url: url) {
                     found.books.append(url)
@@ -1937,6 +1956,30 @@ enum FileImportService {
         found.books.sort { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
         found.failures.sort { $0.fileName.localizedStandardCompare($1.fileName) == .orderedAscending }
         return found
+    }
+
+    /// Whether the item at `url` is a TextMouth package: a folder named
+    /// .tmb, in any capitals. A ZIP batch lists one as a single book
+    /// (`importCandidates(in:unpacking:)`) and imports it as a package, with
+    /// its record (`importSupportedFiles`). A plain file with that name is
+    /// not one.
+    static func isTMBPackageFolder(_ url: URL) -> Bool {
+        url.pathExtension.lowercased() == "tmb" && isFolder(url)
+    }
+
+    /// Whether the entry at `path` in an archive lies inside a TextMouth
+    /// package: whether a folder on its path is named .tmb, in any capitals.
+    /// An archive holding a package is a batch (`importZip`), in which the
+    /// package imports with its record, so it is neither an audiobook's
+    /// tracks (`LibraryViewModel.isAudioZip(url:)`) nor one DAISY book
+    /// (`DAISYParser.isDAISYZip(url:)`), whatever the package holds. A file
+    /// named like a package is not a folder on any path.
+    static func liesInTMBPackage(_ path: String) -> Bool {
+        // Every part but the last names a folder; a folder entry's path
+        // ends in "/", so its own name is a part before the last, "".
+        path.split(separator: "/", omittingEmptySubsequences: false)
+            .dropLast()
+            .contains { (String($0) as NSString).pathExtension.lowercased() == "tmb" }
     }
 
     /// The bytes a ZIP batch's book is timed by, which the estimate of the
@@ -1963,13 +2006,27 @@ enum FileImportService {
     /// and the books imported without some of their chapters.
     /// This is separate from archive discovery so partial-import behavior is
     /// deterministic and independently testable.
+    ///
+    /// A TextMouth package (`isTMBPackageFolder(_:)`) is identified once, by
+    /// its record or its removal marker (`identifyTMBPackage(at:)`), whose
+    /// checksum and book ID the duplicate check compares, and imported as a
+    /// package opened from the Finder is (`importTMBPackage(_:observer:)`),
+    /// never through `checksum` or `importer`: at the library's top level,
+    /// whatever `folderPath` says, or, for a book whose package Remove from
+    /// Library Only retained, by taking that one back where it is. A package
+    /// that cannot be identified is listed among the failures.
     /// - Parameters:
+    ///   - existingHashes: the checksums of the books the library holds; a
+    ///     file known by one of them is skipped as a duplicate.
+    ///   - existingBookIDs: the books the library lists; a package whose
+    ///     record names one of them, or a book this batch imported, is
+    ///     skipped as a duplicate, so no two rows ever share an ID.
     ///   - progress: told first the size each file is timed by
     ///     (`ZipImportProgress.foundBooks`), then, for each file, that it
-    ///     begins by reading the file (`ZipImportProgress.importingBook`),
-    ///     each step its import then begins on its package, and the files
-    ///     done of the total once it is imported, fails, or is skipped as a
-    ///     duplicate (FR10).
+    ///     begins by reading the file, or a package by checking it
+    ///     (`ZipImportProgress.importingBook`), each step its import then
+    ///     begins on its package, and the files done of the total once it is
+    ///     imported, fails, or is skipped as a duplicate (FR10).
     ///   - isCancelled: asked before each file. Once it says to stop, the
     ///     files not yet imported are left alone, the books already imported
     ///     are kept, and the result says after how many of how many files
@@ -1985,6 +2042,7 @@ enum FileImportService {
         _ supportedFiles: [URL],
         toFolder folderPath: String,
         existingHashes: Set<String> = [],
+        existingBookIDs: Set<UUID> = [],
         progress: ((ZipImportProgress) -> Void)? = nil,
         isCancelled: ImportCancellationCheck = { false },
         checksum: (URL) throws -> String = { try importHash(of: $0) },
@@ -2002,6 +2060,9 @@ enum FileImportService {
         // Track hashes from this batch to avoid creating duplicate .tmbs
         // when the same file appears multiple times in a single zip
         var seenHashes = existingHashes
+        // The books listed or imported so far, by ID, so that a package
+        // naming one of them never becomes a second row of it.
+        var seenBookIDs = existingBookIDs
 
         // The size each book is timed by, which the estimate of the time
         // left weighs it by, read once for those who listen (FR10).
@@ -2030,12 +2091,27 @@ enum FileImportService {
                 progress?(.importingBook(number: number, total: total, book: fileURL.lastPathComponent, step: step))
             }
 
-            // Compute hash before creating .tmb to avoid orphaning on
-            // duplicate; a DAISY book in a folder has its package's. The
-            // import is given it, so the book's bytes are read once for it.
-            beganStep(.readingSource)
-            let hash = try? checksum(fileURL)
-            if let hash, seenHashes.contains(hash) {
+            // A TextMouth package is identified once, by its record or its
+            // removal marker, which gives the checksum and the book the
+            // duplicate check compares; its import takes the package so
+            // identified. Any other book's hash is computed before creating
+            // its .tmb to avoid orphaning on duplicate; a DAISY book in a
+            // folder has its package's. The import is given it, so the
+            // book's bytes are read once for it.
+            let package: Result<TMBImportSource, Error>?
+            let hash: String?
+            if isTMBPackageFolder(fileURL) {
+                beganStep(.checkingPackage)
+                package = Result { try identifyTMBPackage(at: fileURL) }
+                hash = try? package?.get().md5Hash
+            } else {
+                beganStep(.readingSource)
+                package = nil
+                hash = try? checksum(fileURL)
+            }
+            let isKnownChecksum = hash.map { seenHashes.contains($0) } ?? false
+            let isListedBook = (try? package?.get().bookID).map { seenBookIDs.contains($0) } ?? false
+            if isKnownChecksum || isListedBook {
                 skippedDuplicates += 1
                 progress?(.importing(done: number, total: total, skippedDuplicate: true))
                 continue
@@ -2044,8 +2120,17 @@ enum FileImportService {
             do {
                 // Each step the import begins on the book's package is told
                 // as it begins.
-                let imported = try importer(fileURL, folderPath, hash) { step, _ in beganStep(step) }
+                let observer: ImportStepObserver = { step, _ in beganStep(step) }
+                let imported: ImportedBook
+                if let package {
+                    // A package that could not be identified throws here,
+                    // and is listed among the failures by its name.
+                    imported = try importTMBPackage(try package.get(), observer: observer)
+                } else {
+                    imported = try importer(fileURL, folderPath, hash, observer)
+                }
                 seenHashes.insert(imported.book.md5Hash)
+                seenBookIDs.insert(imported.book.id)
                 books.append(imported.book)
                 if !imported.report.isComplete {
                     // A PDF whose pictures OCR could not read is missing
