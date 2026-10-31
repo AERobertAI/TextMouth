@@ -166,34 +166,38 @@ extension ReaderViewModel {
         bookmarks = libraryViewModel.bookmarksForBook(book.id)
     }
 
-    /// Navigate to the next bookmark after the current position
-    func goToNextBookmark() {
-        let sorted = bookmarks.sorted { $0.number < $1.number }
-        if let next = sorted.first(where: {
-            $0.chapterIndex > currentChapterIndex ||
-            ($0.chapterIndex == currentChapterIndex && $0.characterOffset > currentCharacterOffset)
-        }) {
-            navigatePreservingReturnPosition(
-                chapterIndex: next.chapterIndex,
-                characterOffset: next.characterOffset
-            )
-            announceToVoiceOver("Bookmark \(next.number)")
+    /// This book's bookmarks in the order they lie in the book: by chapter,
+    /// then by place within the chapter, two at one place by their numbers.
+    /// Next and Previous Bookmark go by this order. The numbers alone follow
+    /// the order the bookmarks were made, so going by them passed over a
+    /// bookmark made later at an earlier place.
+    private var bookmarksInBookOrder: [Bookmark] {
+        bookmarks.sorted { first, second in
+            (first.chapterIndex, first.characterOffset, first.number)
+                < (second.chapterIndex, second.characterOffset, second.number)
         }
     }
 
-    /// Navigate to the previous bookmark before the current position
-    func goToPreviousBookmark() {
-        let sorted = bookmarks.sorted { $0.number > $1.number }
-        if let prev = sorted.first(where: {
-            $0.chapterIndex < currentChapterIndex ||
-            ($0.chapterIndex == currentChapterIndex && $0.characterOffset < currentCharacterOffset)
-        }) {
-            navigatePreservingReturnPosition(
-                chapterIndex: prev.chapterIndex,
-                characterOffset: prev.characterOffset
-            )
-            announceToVoiceOver("Bookmark \(prev.number)")
+    /// Navigate to the nearest bookmark after the current position in the
+    /// book (`bookmarksInBookOrder`), saying its number.
+    func goToNextBookmark() {
+        let cursor = (currentChapterIndex, currentCharacterOffset)
+        guard let next = bookmarksInBookOrder.first(where: { ($0.chapterIndex, $0.characterOffset) > cursor }) else {
+            return
         }
+        navigatePreservingReturnPosition(chapterIndex: next.chapterIndex, characterOffset: next.characterOffset)
+        announceToVoiceOver("Bookmark \(next.number)")
+    }
+
+    /// Navigate to the nearest bookmark before the current position in the
+    /// book (`bookmarksInBookOrder`), saying its number.
+    func goToPreviousBookmark() {
+        let cursor = (currentChapterIndex, currentCharacterOffset)
+        guard let previous = bookmarksInBookOrder.last(where: { ($0.chapterIndex, $0.characterOffset) < cursor }) else {
+            return
+        }
+        navigatePreservingReturnPosition(chapterIndex: previous.chapterIndex, characterOffset: previous.characterOffset)
+        announceToVoiceOver("Bookmark \(previous.number)")
     }
 
     /// Delete a bookmark
