@@ -271,9 +271,7 @@ final class LibraryViewEditorTests: XCTestCase {
     /// The sheet, with 20 conditions, a folder whose path is long, and a
     /// name of 60 characters: every control lies where it can be reached,
     /// none passes the sheet's right edge, and no condition's pop-up is
-    /// wider than its bound (review of October 31, 2026, finding 14). The
-    /// form may draw its rows only near where it is scrolled to, so the
-    /// checks run at every place from its top to its bottom.
+    /// wider than its bound (review of October 31, 2026, finding 14).
     @MainActor
     func testTheSheetFitsItsSize() throws {
         let model = LibraryViewEditorModel()
@@ -287,6 +285,12 @@ final class LibraryViewEditorTests: XCTestCase {
             draft.folderID = folder.id
             model.conditions.append(draft)
         }
+        // Each condition draws a pop-up for its test and one for its
+        // relation, and a third for a format, a folder, or a reading state.
+        let valueKinds: Set<LibraryViewCondition.Kind> = [.format, .folder, .readingState]
+        let conditionPopUpCount = 2 * model.conditions.count + model.conditions.filter { valueKinds.contains($0.kind) }.count
+        // With Match above them, and Sort By, Order, and Chosen By below.
+        let popUpCount = conditionPopUpCount + 4
         let size = LibraryViewEditorSheet.size
         let hosted = hostOffscreen(
             LibraryViewEditorSheet(model: model, folders: [folder], count: { "Lists nothing now." }, onCancel: {}, onSave: {}),
@@ -294,73 +298,31 @@ final class LibraryViewEditorTests: XCTestCase {
         )
         defer { takeDown(hosted.window) }
         let page = hosted.hostingView
-        // The form's scroll view: the one whose document is tallest.
-        func form() -> NSScrollView? {
-            descendants(of: page, as: NSScrollView.self).max {
-                ($0.documentView?.frame.height ?? 0) < ($1.documentView?.frame.height ?? 0)
-            }
+        let drawnInTime = waitUntil(timeout: 15) {
+            page.layoutSubtreeIfNeeded()
+            return self.descendants(of: page, as: NSPopUpButton.self).count >= popUpCount
         }
-        XCTAssertTrue(
-            waitUntil(timeout: 15) {
-                page.layoutSubtreeIfNeeded()
-                return !self.descendants(of: page, as: NSPopUpButton.self).isEmpty && form() != nil
-            },
-            "the sheet's form was not drawn"
-        )
         settle(page, seconds: 0.2)
-        let scrollView = try XCTUnwrap(form(), "the sheet's form has no scroll view")
-        let document = try XCTUnwrap(scrollView.documentView, "the form's scroll view has no document")
+        let popUps = descendants(of: page, as: NSPopUpButton.self)
+        XCTAssertTrue(drawnInTime, "\(popUps.count) pop-ups were drawn, not \(popUpCount)")
 
-        var unreachable = Set<String>()
-        var pastTheEdge = Set<String>()
-        var tooWide = Set<String>()
-        var conditionPopUpCount = 0
-        var sawAFolderPopUp = false
-        // Half the visible height at a time, so every row is drawn at some
-        // place, down to the place that shows the form's end.
-        let step = max(scrollView.contentView.bounds.height / 2, 20)
-        var offset: CGFloat = 0
-        while true {
-            document.scroll(NSPoint(x: 0, y: offset))
-            settle(page, seconds: 0.05)
-            let controls = visibleControls(in: page)
-            unreachable.formUnion(controls.filter { !isReachable($0, in: page) }.map { describe($0, in: page) })
-            pastTheEdge.formUnion(controls.filter { $0.convert($0.bounds, to: page).maxX > size.width + 0.5 }.map { describe($0, in: page) })
-            let popUps = conditionPopUps(in: page)
-            conditionPopUpCount = max(conditionPopUpCount, popUps.count)
-            sawAFolderPopUp = sawAFolderPopUp || popUps.contains { $0.itemTitles.first == LibraryFolderOption.rootLabel }
-            tooWide.formUnion(popUps.filter { $0.frame.width > LibraryViewEditorSheet.popUpWidth + 0.5 }.map {
-                "\($0.titleOfSelectedItem ?? "") \(describe($0, in: page))"
-            })
-            if offset >= document.frame.height {
-                break
-            }
-            offset += step
-        }
-        XCTAssertEqual(unreachable.sorted(), [])
-        XCTAssertEqual(pastTheEdge.sorted(), [])
-        XCTAssertEqual(tooWide.sorted(), [])
-        // What was drawn, said when no condition pop-up was found.
-        let drawn = descendants(of: page, as: NSPopUpButton.self).map(\.itemTitles)
-        XCTAssertGreaterThan(conditionPopUpCount, 0, "no condition pop-up was found by its items; pop-ups drawn: \(drawn); form \(document.frame.size)")
-        XCTAssertTrue(sawAFolderPopUp, "no folder pop-up was drawn; pop-ups drawn: \(drawn)")
-    }
-
-    /// The pop-ups of the conditions drawn in `page`, told apart by their
-    /// items, since their spoken labels are SwiftUI's rather than the
-    /// pop-ups' own: the tests, a relation's two, the formats, the reading
-    /// states, and the folders, which begin with Library Root.
-    @MainActor
-    private func conditionPopUps(in page: NSView) -> [NSPopUpButton] {
-        typealias W = LibraryViewEditorWording
-        let kinds = LibraryViewCondition.Kind.allCases
-        var itemSets: [Set<String>] = [Set(kinds.map(W.testName))]
-        itemSets += kinds.map { Set([W.relationName($0, isNegated: false), W.relationName($0, isNegated: true)]) }
-        itemSets.append(Set(BookFormat.allCases.map(\.displayName)))
-        itemSets.append(Set(LibraryReadingState.allCases.map(W.stateName)))
-        return descendants(of: page, as: NSPopUpButton.self).filter { popUp in
-            itemSets.contains(Set(popUp.itemTitles)) || popUp.itemTitles.first == LibraryFolderOption.rootLabel
-        }
+        let controls = visibleControls(in: page)
+        XCTAssertEqual(controls.filter { !isReachable($0, in: page) }.map { describe($0, in: page) }, [])
+        XCTAssertEqual(
+            controls.filter { $0.convert($0.bounds, to: page).maxX > size.width + 0.5 }.map { describe($0, in: page) },
+            []
+        )
+        // The conditions' pop-ups, told apart by their place: SwiftUI fills a
+        // pop-up's menu only as it opens, and gives the spoken label to an
+        // element of its own, so neither items nor labels name them. From
+        // the top, Match comes first, and Sort By, Order, and Chosen By last.
+        let topDown = popUps.sorted { $0.convert($0.bounds, to: nil).maxY > $1.convert($1.bounds, to: nil).maxY }
+        let conditionPopUps = topDown.dropFirst().dropLast(3)
+        XCTAssertEqual(conditionPopUps.count, conditionPopUpCount)
+        XCTAssertEqual(
+            conditionPopUps.filter { $0.frame.width > LibraryViewEditorSheet.popUpWidth + 0.5 }.map { describe($0, in: page) },
+            []
+        )
     }
 
     // MARK: - The Review of October 31, 2026
