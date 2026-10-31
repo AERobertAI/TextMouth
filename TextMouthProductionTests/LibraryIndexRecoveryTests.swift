@@ -63,6 +63,63 @@ final class LibraryIndexRecoveryTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: sandbox.indexURL), damagedBytes)
     }
 
+    // MARK: - Folder Rows at Startup
+
+    /// With library.json gone but the books' packages and folders still on
+    /// disk, the startup repair adopts the books and gives every folder a
+    /// row, an empty one and a nested one's parent included, so the books
+    /// show in the Folders view, and the index it saves keeps them all.
+    @MainActor
+    func testAStartWithoutTheIndexKeepsEveryFolder() throws {
+        try? FileManager.default.removeItem(at: sandbox.indexURL)
+        try? FileManager.default.removeItem(at: sandbox.legacyURL)
+
+        try assertTheStartupRepairKeepsEveryFolderOnDisk()
+    }
+
+    /// An index holding an empty library records no folder either, so the
+    /// startup repair gives every folder on disk a row, as when it is gone.
+    @MainActor
+    func testAStartWithAnEmptyIndexKeepsEveryFolder() throws {
+        try sandbox.stageValid(Library(), at: sandbox.indexURL)
+
+        try assertTheStartupRepairKeepsEveryFolderOnDisk()
+    }
+
+    /// An index listing a book whose folder has no row, as a race between an
+    /// import or a move into the folder and the folder's rename or deletion
+    /// can leave it: the startup repair gives that folder a row, its parent
+    /// included, and saves it, while a directory on disk that the index has
+    /// no row for, a folder the user deleted, stays out. One line says why,
+    /// and a second run adds nothing.
+    @MainActor
+    func testTheStartupRepairGivesABooksFolderARowButNotADeletedFolder() throws {
+        let shelf = uniqueFolderName("Renamed Shelf")
+        let inner = "\(shelf)/Inner"
+        let deleted = uniqueFolderName("Deleted Shelf")
+        // The top folder first, so the one inside it goes with it at tear-down.
+        try makeFolder(shelf)
+        let book = try makePackage(title: "Raced Fixture", inFolder: inner)
+        try makeFolder(deleted)
+        try sandbox.stageValid(Library(books: [book]), at: sandbox.indexURL)
+        let reason = "for folders books are in that had none"
+        let linesBefore = debugLogLines(containing: reason).count
+        let model = LibraryViewModel(initializeServices: false)
+
+        model.loadLibraryIndex()
+        LibraryPersistenceService.flushPendingSave()
+
+        let written = try XCTUnwrap(LibraryPersistenceService.load().library)
+        for library in [model.library, written] {
+            let paths = Set(library.folders.map(\.fullPath))
+            XCTAssertTrue(paths.isSuperset(of: [shelf, inner]), "the book's folder has no row")
+            XCTAssertFalse(paths.contains(deleted), "a folder the index has no row for came back")
+            XCTAssertEqual(library.books.first { $0.id == book.id }?.folderPath, inner)
+        }
+        XCTAssertEqual(debugLogLines(containing: reason).count, linesBefore + 1)
+        assertASecondRunAddsNothing(to: model)
+    }
+
     // MARK: - Reading Positions Saved While Recovering
 
     /// A reading position saved while the index can't be read reaches the
@@ -748,6 +805,74 @@ final class LibraryIndexRecoveryTests: XCTestCase {
         )
         try book.saveBookInfoThrowing()
         return book
+    }
+
+    /// Lays out a library on disk, two books in a nested folder, one in a
+    /// folder of its own, and an empty folder, then starts a library model
+    /// on the index the test left, which holds nothing, and checks that
+    /// every folder has a row, in the model and in the index it saved, with
+    /// each book in its own folder; that one line says why; and that a
+    /// second run adds nothing.
+    @MainActor
+    private func assertTheStartupRepairKeepsEveryFolderOnDisk(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        let essays = uniqueFolderName("Essays")
+        let short = "\(essays)/Short"
+        let novels = uniqueFolderName("Novels")
+        let empty = uniqueFolderName("Empty")
+        // The top folder first, so the one inside it goes with it at tear-down.
+        try makeFolder(essays)
+        let books = try [
+            makePackage(title: "First Short Essay", inFolder: short),
+            makePackage(title: "Second Short Essay", inFolder: short),
+            makePackage(title: "Novel", inFolder: novels),
+        ]
+        try makeFolder(empty)
+        let reason = "for the folders on disk and the folders books are in, "
+            + "since the library began with no books or folders"
+        let linesBefore = debugLogLines(containing: reason).count
+        let model = LibraryViewModel(initializeServices: false)
+
+        model.loadLibraryIndex()
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertNil(model.indexRecovery, file: file, line: line)
+        let written = try XCTUnwrap(LibraryPersistenceService.load().library, file: file, line: line)
+        for library in [model.library, written] {
+            let paths = Set(library.folders.map(\.fullPath))
+            XCTAssertTrue(
+                paths.isSuperset(of: [essays, short, novels, empty]),
+                "a folder on disk has no row",
+                file: file,
+                line: line
+            )
+            for book in books {
+                let folderPath = library.books.first { $0.id == book.id }?.folderPath
+                XCTAssertEqual(folderPath, book.folderPath, book.title, file: file, line: line)
+            }
+        }
+        XCTAssertEqual(debugLogLines(containing: reason).count, linesBefore + 1, file: file, line: line)
+        assertASecondRunAddsNothing(to: model, file: file, line: line)
+    }
+
+    /// Runs the startup repair on `model` again and checks that it adds no
+    /// folder row and logs none added.
+    @MainActor
+    private func assertASecondRunAddsNothing(
+        to model: LibraryViewModel,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let folders = model.library.folders
+        let added = "FOLDER_REPAIR: added "
+        let linesBefore = debugLogLines(containing: added).count
+
+        model.migrateOldBooksIfNeeded()
+
+        XCTAssertEqual(model.library.folders, folders, "a second run added a folder row", file: file, line: line)
+        XCTAssertEqual(debugLogLines(containing: added).count, linesBefore, file: file, line: line)
     }
 
     /// An index for `book` holding state that only the index keeps: the

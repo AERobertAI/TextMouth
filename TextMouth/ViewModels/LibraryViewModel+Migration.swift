@@ -58,6 +58,13 @@ extension LibraryViewModel {
         defer { skips.log() }
         var needsSave = false
 
+        // Whether the library began the repair with nothing in it, as when
+        // library.json was missing or held an empty library: no book of its
+        // own, no folder, and no row kept unshown (V03). Read before any
+        // repair below changes the library: it decides which folders the
+        // folder rows' adoption counts.
+        let beganEmpty = library.libraryBookCount == 0 && library.folders.isEmpty && library.unreadableRows.isEmpty
+
         // A feed item's row meets none of the repairs below, which reconcile
         // the library's own books with the Library folder: its package is in
         // its feed's folder (FR11). Every feed item's row waits on the shelf
@@ -102,6 +109,10 @@ extension LibraryViewModel {
         // This recovers books left behind by interrupted imports or crashes.
         let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, access: access, skips: skips)
         if adopted > 0 { needsSave = true }
+
+        // Every folder a book lies in gets a row, and, in a library that
+        // began with nothing, every folder on disk too (`adoptFolderRows`).
+        if adoptFolderRows(includingFoldersOnDisk: beganEmpty) { needsSave = true }
 
         // The feed items whose files are here join the books, before anything
         // can edit the reading list or open a reader (FR11).
@@ -386,6 +397,43 @@ extension LibraryViewModel {
     /// and the console.
     private func logFolderRepair(_ message: String) {
         DiagnosticLog.event(.storage, "FOLDER_REPAIR: \(message)")
+    }
+
+    /// Gives a row to every folder a book lies in, with its ancestors, and,
+    /// when `includingFoldersOnDisk`, to every folder directory in the
+    /// Library folder as well (`FileImportService.adoptLibraryFolders`), then
+    /// logs how many rows that added and why. Returns whether it added any.
+    ///
+    /// The startup repair counts the folders on disk only for a library that
+    /// began with nothing, its library.json missing or empty, as recovery's
+    /// provisional library does: the books just adopted from their packages
+    /// keep the folders they lie in, which would otherwise show in All Items
+    /// and never in the Folders view, and the empty folders would be lost for
+    /// good once the index is saved. Any other library's index records the
+    /// user's folders, so only the folders its books name are added, and a
+    /// directory with no row, such as one a deleted folder left behind,
+    /// stays out.
+    ///
+    /// It runs at every launch, since a race can leave a book in a folder
+    /// with no row: an import into a folder renamed or deleted while the
+    /// import ran, or a move into such a folder, which is not refused. This
+    /// repair is what mends such a book.
+    private func adoptFolderRows(includingFoldersOnDisk: Bool) -> Bool {
+        // A copy, so a launch that adds no row leaves the library, and the
+        // lists derived from it, untouched.
+        var repaired = library
+        let added = FileImportService.adoptLibraryFolders(
+            library: &repaired,
+            includingFoldersOnDisk: includingFoldersOnDisk
+        )
+        guard added > 0 else { return false }
+        library = repaired
+        let rows = CountWording.phrase(added, singular: "folder row", plural: "folder rows")
+        let source = includingFoldersOnDisk
+            ? "the folders on disk and the folders books are in, since the library began with no books or folders"
+            : "folders books are in that had none"
+        logFolderRepair("added \(rows) for \(source)")
+        return true
     }
 
     /// Copies the data directory a sandboxed release of TextMouth left in its
