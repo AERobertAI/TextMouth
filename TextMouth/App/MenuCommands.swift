@@ -79,6 +79,24 @@ extension FocusedValues {
     }
 }
 
+/// The names of the views the key Library window's View pop-up offers to a
+/// window showing none, in order (design section 6 of
+/// LIBRARY-VIEWS-RESEARCH-2026-10-30.md): the Library menu's Go to View
+/// submenu lists them, the first nine with Go to View 1 to Go to View 9's
+/// keys. Each Library window publishes its own as a scene value
+/// (`LibraryView`), so the submenu follows the window in front while
+/// VoiceOver reads the list, which holds no keyboard focus.
+struct LibraryOfferedViewNamesKey: FocusedValueKey {
+    typealias Value = [String]
+}
+
+extension FocusedValues {
+    var libraryOfferedViewNames: [String]? {
+        get { self[LibraryOfferedViewNamesKey.self] }
+        set { self[LibraryOfferedViewNamesKey.self] = newValue }
+    }
+}
+
 // MARK: - Menu Commands
 
 /// The File menu's commands beside New Window (Command-N): Open Book…, New
@@ -306,6 +324,9 @@ struct LibraryCommands: Commands {
     /// The key Library window's selection, which the Remove command's title
     /// names as Delete Download for feed items alone (REV11 F2).
     @FocusedValue(\.libraryRemovalSelection) private var removalSelection
+    /// The names of the views the key Library window offers, which the Go
+    /// to View submenu lists; nil while no Library window is in front.
+    @FocusedValue(\.libraryOfferedViewNames) private var offeredViewNames
     /// The shortcuts, observed so Import Folder's and Add Feed's key
     /// equivalents follow a change at once (FR12's branch D).
     @ObservedObject var shortcuts: KeyboardShortcutManager
@@ -451,6 +472,14 @@ struct LibraryCommands: Commands {
                 NotificationCenter.default.post(name: .showFolderOrFeedSettings, object: nil)
             }
 
+            // Shows one of the views the key Library window offers (design
+            // section 6), each item titled by its view's name, the first
+            // nine with Go to View 1 to Go to View 9's keys; while no
+            // Library window is in front, one dimmed item says so.
+            Menu(LibraryViewPickerWording.goToViewMenuTitle) {
+                goToViewItems
+            }
+
             Divider()
 
             // Keeps the selected books downloaded on this Mac, or stops, in
@@ -474,6 +503,28 @@ struct LibraryCommands: Commands {
                 NotificationCenter.default.post(name: .removeFromLibrary, object: nil)
             }
             // Cmd+Delete handled by KeyboardShortcutManager for window targeting
+        }
+    }
+
+    /// The Go to View submenu's items (design section 6): one for each view
+    /// the key Library window offers, titled by its name, asking the window
+    /// for the view by its number (`ShortcutAction.goToViewUserInfo(number:)`),
+    /// the first nine showing Go to View 1 to Go to View 9's keys; or, while
+    /// no Library window is in front, one dimmed item saying so.
+    @ViewBuilder
+    private var goToViewItems: some View {
+        if let names = offeredViewNames {
+            ForEach(Array(names.enumerated()), id: \.offset) { index, viewName in
+                Button(viewName) {
+                    NotificationCenter.default.post(name: .goToLibraryView, object: nil, userInfo: ShortcutAction.goToViewUserInfo(number: index + 1))
+                }
+                .goToViewKey(number: index + 1, shortcuts: shortcuts, frontKind: front.kind)
+            }
+        } else {
+            Button(LibraryViewPickerWording.noLibraryWindow) {
+                // Dimmed: there is no Library window whose view to change.
+            }
+            .disabled(true)
         }
     }
 }
@@ -745,6 +796,18 @@ extension View {
         return keyboardShortcut(acts ? shortcuts.keyboardShortcut(for: action) : nil)
             .disabled(!acts)
     }
+
+    /// The Go to View submenu's item for the `number`th view (design
+    /// section 6 of LIBRARY-VIEWS-RESEARCH-2026-10-30.md): it shows the key
+    /// of the action going to that view, Go to View 1 to Go to View 9, as
+    /// `shortcuts` has it in force (`menuShownKey(for:frontKind:)`), so
+    /// VoiceOver says the key beside the view's name; an item past the ninth
+    /// shows none. The shortcut manager takes these keys itself, for the
+    /// window they are pressed in, and meets a key before the menus do, so
+    /// the item never acts on its key a second time: only choosing it acts.
+    func goToViewKey(number: Int, shortcuts: KeyboardShortcutManager, frontKind: ShortcutWindowKind?) -> some View {
+        keyboardShortcut(ShortcutAction.goToView(number: number).flatMap { shortcuts.menuShownKey(for: $0, frontKind: frontKind) })
+    }
 }
 
 // MARK: - Key Equivalents in Force (FR12's Branch D)
@@ -755,6 +818,17 @@ extension KeyboardShortcutManager {
     /// shows no key rather than one that does something else.
     func keyboardShortcut(for action: ShortcutAction) -> KeyboardShortcut? {
         keyEquivalent(for: action)?.keyboardShortcut
+    }
+
+    /// The key a menu item shows for `action`, whose keys this manager
+    /// takes rather than a menu item (design section 6, Go to View): its
+    /// first key in force that a menu item can show
+    /// (`KeyBinding.keyboardShortcut`), while its keys work in windows of
+    /// `frontKind`; nil otherwise, as with no window in front, so the item
+    /// never shows a key that does something else there.
+    func menuShownKey(for action: ShortcutAction, frontKind: ShortcutWindowKind?) -> KeyboardShortcut? {
+        guard let frontKind, scope(of: action).reaches(frontKind) else { return nil }
+        return bindingsFor(action).lazy.compactMap(\.keyboardShortcut).first
     }
 }
 

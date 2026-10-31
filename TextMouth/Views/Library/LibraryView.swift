@@ -343,6 +343,10 @@ struct LibraryView: View {
         let books = filteredBooks
         // The views the View pop-up offers, read once for the body.
         let offered = libraryViewModel.offeredViews(in: views.list, current: shownViewID, center: feedFolders.center)
+        // The names of the views Go to View counts, those offered to a
+        // window showing none, which the Library menu's Go to View submenu
+        // lists (design section 6).
+        let goToViewNames = libraryViewModel.offeredViews(in: views.list, current: nil, center: feedFolders.center).map(\.name)
         let folders = libraryViewModel.subfoldersOf(currentFolderPath)
         // The Folders section's rows and the Folders rotor's entries: none
         // outside Folders, and no row for a feed's folder where the Feeds
@@ -626,6 +630,9 @@ struct LibraryView: View {
             \.libraryRemovalSelection,
             LibraryRemovalSelection(LibrarySelectionPolicy.selected(in: books, native: selectedBookIDs, edit: editSelection))
         )
+        // The views the Library menu's Go to View submenu lists, by name
+        // (design section 6).
+        .focusedSceneValue(\.libraryOfferedViewNames, goToViewNames)
         // Keeps the books' cloud states refreshed while the window is
         // visible, shows Remove Download's refusals (FR02), and takes the
         // Library menu's Keep on This Mac and Stop Keeping on This Mac.
@@ -765,6 +772,13 @@ struct LibraryView: View {
             } else {
                 isEditMode = true
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .goToLibraryView)) { notification in
+            // Go to View 1 to Go to View 9, Command-1 to Command-9 unless
+            // changed, and the Library menu's Go to View submenu (design
+            // section 6): the view numbered, said with what it lists.
+            guard takesCommand(notification), let number = ShortcutAction.goToViewNumber(in: notification.userInfo) else { return }
+            goToView(numbered: number)
         }
         // Move Book Up and Move Book Down, and Add to Reading List and
         // Remove from Reading List (FR09), for the selection.
@@ -1806,6 +1820,18 @@ struct LibraryView: View {
         guard shown.fellBack else { return }
         shownViewID = shown.view.id
         announceToVoiceOver(LibraryViewPickerWording.deletedView(nowShowing: shown.view.name))
+    }
+
+    /// Goes to the `number`th view Go to View counts and says its name and
+    /// what it lists, or says that there is no such view, as the model
+    /// decides (`LibraryViewModel.goToView(numbered:in:folderPath:center:)`,
+    /// design section 6).
+    private func goToView(numbered number: Int) {
+        let outcome = libraryViewModel.goToView(numbered: number, in: views.list, folderPath: currentFolderPath, center: feedFolders.center)
+        if let view = outcome.view {
+            shownViewID = view.id
+        }
+        announceToVoiceOver(outcome.announcement)
     }
 
     /// The View pop-up (October 30, 2026): the views `offered`, each by its

@@ -6,9 +6,11 @@ import XCTest
 
 /// Go to View 1 to Go to View 9 (the design of October 30, 2026,
 /// LIBRARY-VIEWS-RESEARCH-2026-10-30.md, section 6): nine shortcut actions,
-/// Command-1 to Command-9 by default, in Library windows. Every store here
-/// is on sandboxed preferences of the test's own, every shortcut manager the
-/// test's own, and no key is really pressed.
+/// Command-1 to Command-9 by default, in Library windows; the Library menu's
+/// Go to View submenu; and a Library window's choice of the view, with what
+/// it says. Every store here is on sandboxed preferences of the test's own,
+/// every model and shortcut manager the test's own, and no key is really
+/// pressed.
 ///
 /// Each test runs on the main actor, not the class as a whole, as
 /// `UnopenedCategoryTests` explains.
@@ -179,11 +181,286 @@ final class LibraryViewGoToTests: XCTestCase {
         XCTAssertEqual(manager.bindingsFor(.goToView2), [Self.command(2)])
     }
 
+    // MARK: - Wording
+
+    /// Every name and sentence of Go to View, exactly.
+    func testEveryWording() {
+        XCTAssertEqual(LibraryViewPickerWording.goToViewMenuTitle, "Go to View")
+        XCTAssertEqual(LibraryViewPickerWording.noLibraryWindow, "No Library Window")
+        XCTAssertEqual(
+            LibraryViewPickerWording.wentToView(name: "All Items", counts: "743 books, 2 feeds"),
+            "All Items, 743 books, 2 feeds"
+        )
+        XCTAssertEqual(
+            LibraryViewPickerWording.wentToView(name: "Reading List", counts: CountWording.listItems(books: 1, episodes: 2)),
+            "Reading List, 1 book, 2 episodes"
+        )
+        XCTAssertEqual(LibraryViewPickerWording.noView(number: 7, offered: 6), "There is no view 7. The View pop-up offers 6 views.")
+        XCTAssertEqual(LibraryViewPickerWording.noView(number: 2, offered: 1), "There is no view 2. The View pop-up offers 1 view.")
+    }
+
+    // MARK: - The View a Window Goes To
+
+    /// Go to View counts the views offered to a window showing none: those
+    /// offered always, and those offered when applicable while they list
+    /// something, in the list's order. It says the view's name and what it
+    /// lists there, Folders at the window's folder; a number past them goes
+    /// nowhere and says how many there are, and a number below 1 goes
+    /// nowhere either.
+    @MainActor
+    func testGoToViewCountsTheViewsOfferedAndSaysWhatTheyList() {
+        let model = Self.model()
+        let views = Self.FormatViews()
+        let store = makeStore("library-view-goto-choice", adding: views)
+        let center = LibraryFeedFolders.shared.center
+        func goTo(_ number: Int) -> LibraryViewModel.GoToViewOutcome {
+            model.goToView(numbered: number, in: store.list, folderPath: "Essays", center: center)
+        }
+
+        XCTAssertEqual(goTo(1).view?.id, .category(.folders))
+        XCTAssertEqual(goTo(1).announcement, "Folders, 0 books", "Folders at the window's folder, Essays, which is empty")
+        XCTAssertEqual(goTo(4).view?.id, .category(.recent))
+        XCTAssertEqual(goTo(4).announcement, "Recently Opened, 0 books")
+        XCTAssertEqual(goTo(5).view?.id, .category(.readingList))
+        XCTAssertEqual(goTo(5).announcement, "Reading List, 0 books")
+        XCTAssertEqual(goTo(6), LibraryViewModel.GoToViewOutcome(view: views.epubs, announcement: "EPUBs, 1 book"))
+        // PDFs lists nothing, so it is not offered, and Text Books is 7.
+        XCTAssertEqual(goTo(7), LibraryViewModel.GoToViewOutcome(view: views.textBooks, announcement: "Text Books, 1 book"))
+        XCTAssertEqual(
+            goTo(8),
+            LibraryViewModel.GoToViewOutcome(view: nil, announcement: "There is no view 8. The View pop-up offers 7 views.")
+        )
+        XCTAssertNil(goTo(0).view)
+        XCTAssertNil(goTo(-1).view)
+    }
+
+    /// A hidden view is never counted, even while a window shows it and
+    /// its pop-up keeps it: the numbers follow the views offered to a
+    /// window showing none, so a key always goes to the same view.
+    @MainActor
+    func testAViewKeptOnlyBecauseAWindowShowsItIsNotCounted() {
+        let model = Self.model()
+        let views = Self.FormatViews()
+        let store = makeStore("library-view-goto-hidden", adding: views)
+        store.update { $0.setVisibility(.hidden, of: .category(.unopened)) }
+        let center = LibraryFeedFolders.shared.center
+
+        let poppedUp = model.offeredViews(in: store.list, current: .category(.unopened), center: center).map(\.id)
+        XCTAssertTrue(poppedUp.contains(.category(.unopened)), "the window showing Unopened keeps it in its pop-up")
+        XCTAssertEqual(model.goToView(numbered: 3, in: store.list, folderPath: "", center: center).view?.id, .category(.recent))
+        XCTAssertEqual(
+            model.goToView(numbered: 7, in: store.list, folderPath: "", center: center).announcement,
+            "There is no view 7. The View pop-up offers 6 views."
+        )
+    }
+
+    // MARK: - The Window
+
+    /// A Library window takes Go to View posted for it, from its key or the
+    /// menu: it shows the view numbered and says its name and what it lists,
+    /// or says there is no such view and stays where it is. A key pressed in
+    /// another window is that window's alone.
+    @MainActor
+    func testALibraryWindowGoesToTheViewAskedForAndSaysSo() throws {
+        let model = Self.model()
+        let views = Self.FormatViews()
+        let store = makeStore("library-view-goto-window", adding: views)
+        let settings = SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false)
+        let shown = ShownViewProbe(.category(.folders))
+        let hosted = hostOffscreen(
+            LibraryView(
+                currentFolderPath: .constant(""),
+                shownViewID: shown.binding,
+                showFileImporter: .constant(false),
+                showTextInput: .constant(false),
+                onOpenBook: { _ in },
+                views: store
+            )
+            .environmentObject(model)
+            .environmentObject(settings)
+        )
+        defer { takeDown(hosted.window) }
+        XCTAssertTrue(
+            waitUntil(timeout: 2) {
+                hosted.hostingView.layoutSubtreeIfNeeded()
+                return !self.descendants(of: hosted.hostingView, as: NSPopUpButton.self).isEmpty
+            },
+            "the window was not drawn"
+        )
+        // Lets the list take its window, which it needs to tell a key
+        // pressed in another window from one pressed in its own.
+        settle(hosted.hostingView, seconds: 0.2)
+        // Posts Go to View `number` as a key pressed in `window` posts it.
+        func press(_ number: Int, in window: NSWindow) {
+            var userInfo = ShortcutAction.goToViewUserInfo(number: number)
+            userInfo["sourceWindow"] = window
+            NotificationCenter.default.post(name: .goToLibraryView, object: nil, userInfo: userInfo)
+        }
+
+        let other = makeShortcutWindow(.library)
+        let recorder = recordingAnnouncements {
+            press(6, in: hosted.window)
+            press(8, in: hosted.window)
+            press(2, in: other)
+        }
+
+        XCTAssertEqual(shown.id, views.epubs.id)
+        XCTAssertEqual(
+            recorder.announcements.map(\.message),
+            ["EPUBs, 1 book", "There is no view 8. The View pop-up offers 7 views."]
+        )
+    }
+
+    // MARK: - The Library Menu
+
+    /// The Go to View submenu's first nine items show the keys the shortcut
+    /// manager has in force for Go to View 1 to Go to View 9, where those
+    /// work in the window in front: Command-1 with a Library window in
+    /// front, and none with a reader or no window in front; a key the user
+    /// gave instead; none for a double press, which no menu can show; none
+    /// in a Library window once the user moves the key to reader windows;
+    /// and none for an item past the ninth.
+    @MainActor
+    func testTheSubmenuShowsTheKeysInForceWhereTheyWork() throws {
+        let manager = KeyboardShortcutManager(userDefaults: makeSandboxedPreferences("library-view-goto-menu-keys"), installsEventMonitor: false)
+        let shown = try XCTUnwrap(manager.menuShownKey(for: .goToView1, frontKind: .library))
+        XCTAssertEqual(shown.key.character, "1")
+        XCTAssertEqual(shown.modifiers, .command)
+        XCTAssertNil(manager.menuShownKey(for: .goToView1, frontKind: .reader))
+        XCTAssertNil(manager.menuShownKey(for: .goToView1, frontKind: nil))
+        XCTAssertNil(ShortcutAction.goToView(number: 10).flatMap { manager.menuShownKey(for: $0, frontKind: .library) })
+
+        manager.updateBindings(for: .goToView1, to: [KeyBinding(key: "1", option: true, control: true)])
+        let mine = try XCTUnwrap(manager.menuShownKey(for: .goToView1, frontKind: .library))
+        XCTAssertEqual(mine.key.character, "1")
+        XCTAssertEqual(mine.modifiers, [.control, .option])
+
+        manager.updateBindings(for: .goToView1, to: [Self.command(1).asDoublePress(true)])
+        XCTAssertNil(manager.menuShownKey(for: .goToView1, frontKind: .library), "no menu shows a double press")
+
+        manager.resetToDefault(.goToView1)
+        manager.setScope(.reader, for: .goToView1)
+        XCTAssertEqual(manager.scope(of: .goToView1), .reader)
+        XCTAssertNil(manager.menuShownKey(for: .goToView1, frontKind: .library))
+    }
+
+    /// The Library menu has a Go to View submenu right after Folder or Feed
+    /// Settings: with a Library window in front, an item for each view it
+    /// offers, the first nine showing Command-1 to Command-9; with none, one
+    /// dimmed item, No Library Window. Skipped when this run's menu bar has
+    /// no Library menu.
+    @MainActor
+    func testTheLibraryMenuHasAGoToViewSubmenu() throws {
+        guard let library = NSApp.mainMenu?.items.first(where: { $0.title == "Library" })?.submenu else {
+            throw XCTSkip("This run's menu bar has no Library menu")
+        }
+        library.delegate?.menuNeedsUpdate?(library)
+        let titles = library.items.map(\.title)
+        let settings = try XCTUnwrap(titles.firstIndex(of: ShortcutAction.folderOrFeedSettings.title), titles.joined(separator: ", "))
+        let goTo = try XCTUnwrap(library.items.dropFirst(settings + 1).first, "nothing follows Folder or Feed Settings")
+        XCTAssertEqual(goTo.title, LibraryViewPickerWording.goToViewMenuTitle)
+        let submenu = try XCTUnwrap(goTo.submenu, "Go to View has no submenu")
+        submenu.delegate?.menuNeedsUpdate?(submenu)
+        let items = submenu.items
+
+        if items.map(\.title) == [LibraryViewPickerWording.noLibraryWindow] {
+            XCTAssertEqual(items.map(\.isEnabled), [false], "No Library Window is dimmed")
+            XCTAssertEqual(items.map(\.keyEquivalent), [""])
+            return
+        }
+        XCTAssertFalse(items.isEmpty, "Go to View lists nothing")
+        let showsKeys = FrontWindowKind.shared.kind == .library
+        for (index, item) in items.enumerated() {
+            let key = showsKeys && index < 9 ? "\(index + 1)" : ""
+            XCTAssertTrue(item.isEnabled, item.title)
+            XCTAssertEqual(item.keyEquivalent, key, item.title)
+            if !key.isEmpty {
+                XCTAssertEqual(item.keyEquivalentModifierMask.intersection([.command, .shift, .option, .control]), .command, item.title)
+            }
+        }
+    }
+
     // MARK: - Fixtures
 
     /// Command and the digit `number`: Go to View `number`'s default key.
     private static func command(_ number: Int) -> KeyBinding {
         KeyBinding(key: "\(number)", command: true)
+    }
+
+    /// Three views of the listener's own, each listing the books of one
+    /// format: EPUBs, offered always; PDFs, offered when applicable, which
+    /// lists nothing in `model()`; and Text Books, offered when applicable,
+    /// which lists one book there.
+    private struct FormatViews {
+        let epubs = FormatViews.view("EPUBs", .epub, .always)
+        let pdfs = FormatViews.view("PDFs", .pdf, .whenApplicable)
+        let textBooks = FormatViews.view("Text Books", .txt, .whenApplicable)
+
+        /// In the order they are added, after the shipped views.
+        var all: [LibraryViewDefinition] { [epubs, pdfs, textBooks] }
+
+        /// A view named `name` listing the books of `format`, offered as
+        /// `visibility` says.
+        private static func view(_ name: String, _ format: BookFormat, _ visibility: LibraryViewVisibility) -> LibraryViewDefinition {
+            LibraryViewDefinition(
+                id: .custom(UUID()),
+                name: name,
+                visibility: visibility,
+                filter: LibraryViewFilter(lists: [.books], conditions: [LibraryViewCondition(test: .format(format))])
+            )
+        }
+    }
+
+    /// A store of the test's own, on sandboxed preferences labelled
+    /// `label`: the shipped views, Feeds hidden, since whether it is offered
+    /// follows the app's feed engine, then `views`' three at the end. So the
+    /// views offered are Folders, All Items, Unopened, Recently Opened, the
+    /// Reading List, EPUBs, and Text Books, numbered 1 to 7.
+    @MainActor
+    private func makeStore(_ label: String, adding views: FormatViews) -> LibraryViewDefinitionStore {
+        let store = LibraryViewDefinitionStore(preferences: makeSandboxedPreferences(label))
+        store.update { list in
+            list.setVisibility(.hidden, of: .feeds)
+            for view in views.all {
+                list.add(view, after: nil)
+            }
+        }
+        return store
+    }
+
+    /// A model of two books at the top of the library, an EPUB and a text
+    /// book, neither opened nor in the reading list, and an empty folder,
+    /// Essays.
+    @MainActor
+    private static func model() -> LibraryViewModel {
+        let model = LibraryViewModel(initializeServices: false)
+        model.finishedBookIDs = { [] }
+        model.library = Library(
+            books: [
+                Book(title: "Atlas", format: .epub, filePath: "/Atlas.epub", md5Hash: "atlas", tmbDirectoryName: "Atlas.tmb"),
+                Book(title: "Bestiary", format: .txt, filePath: "/Bestiary.txt", md5Hash: "bestiary", tmbDirectoryName: "Bestiary.tmb"),
+            ],
+            folders: [BookFolder(name: "Essays")]
+        )
+        return model
+    }
+}
+
+/// The view a hosted Library window shows, held where a test can read it, as
+/// the window's `shownViewID` binding sets it.
+@MainActor
+private final class ShownViewProbe {
+    /// The view shown.
+    var id: LibraryViewID
+
+    /// A probe of a window showing `id`.
+    init(_ id: LibraryViewID) {
+        self.id = id
+    }
+
+    /// The binding the window's parent would give it.
+    var binding: Binding<LibraryViewID> {
+        Binding(get: { self.id }, set: { self.id = $0 })
     }
 }
 
