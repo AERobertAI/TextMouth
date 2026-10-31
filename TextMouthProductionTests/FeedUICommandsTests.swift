@@ -169,16 +169,24 @@ final class FeedUICommandsTests: XCTestCase {
     }
 
     /// Cancel Download stops a download under way; the item is not
-    /// downloaded, and nothing joins the library.
+    /// downloaded, and nothing joins the library. The download is under way
+    /// when Cancel Download comes: the slowed episode's first bytes are
+    /// written.
     func testCancelDownloadStopsIt() async throws {
         let harness = try await Harness(self, label: "FeedUICommandsCancel", slowDownload: true)
         harness.presenter.perform(harness.action(.download), in: harness.context)
         XCTAssertTrue(harness.item?.state.isDownloading ?? false)
         XCTAssertEqual(harness.action(.cancelDownload).title, "Cancel Download")
+        // Cancelled in the same turn as Download, the download's task would
+        // be cancelled before it began, which is not the case this test is
+        // for, and which met a race in the transfer under load (TODO 3935).
+        await waitFor("the download is under way", timeout: 30) {
+            (harness.world.center.downloads.progress.state.download?.transfer?.completedBytes ?? 0) > 0
+        }
 
         harness.presenter.perform(harness.action(.cancelDownload), in: harness.context)
 
-        await waitFor("the download stops") {
+        await waitFor("the download stops", timeout: 30) {
             harness.item?.state == .notDownloaded && !harness.world.center.downloads.isDownloading(Harness.episodeID, of: harness.feed.id)
         }
         XCTAssertEqual(harness.heard.last, "Stopped downloading “A map you can touch”.")
