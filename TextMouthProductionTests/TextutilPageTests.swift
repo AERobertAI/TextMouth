@@ -460,20 +460,33 @@ final class TextutilPageTests: XCTestCase {
 
     // MARK: - The Cost
 
+    /// Prints what the plain-text run for pages costs, one run against two,
+    /// for each sample, and checks what each read gives: the read without
+    /// pages writes no page marker, the read with pages has its plain-text
+    /// run succeed, and the samples with page breaks have markers with it.
     func testTheSecondRunsCost() throws {
-        for (path, format) in [("rtf/page-breaks.rtf", BookFormat.rtf), ("doc/page-breaks.doc", .doc), ("rtf/word-styles.rtf", .rtf)] {
+        let samples: [(path: String, format: BookFormat, hasPageBreaks: Bool)] = [
+            ("rtf/page-breaks.rtf", .rtf, true), ("doc/page-breaks.doc", .doc, true), ("rtf/word-styles.rtf", .rtf, false),
+        ]
+        for (path, format, hasPageBreaks) in samples {
             let copy = try copyOfFormatSample(path)
             let started = Date()
-            _ = try TextutilDocumentReader.$temporaryRoot.withValue(work) {
+            let single = try TextutilDocumentReader.$temporaryRoot.withValue(work) {
                 try TextutilDocumentReader.extract(from: copy, bookFormat: format, includesPages: false)
             }
-            let single = Date().timeIntervalSince(started)
+            let singleSeconds = Date().timeIntervalSince(started)
             let startedAgain = Date()
-            _ = try TextutilDocumentReader.$temporaryRoot.withValue(work) {
+            let withPages = try TextutilDocumentReader.$temporaryRoot.withValue(work) {
                 try TextutilDocumentReader.extract(from: copy, bookFormat: format, includesPages: true)
             }
-            let double = Date().timeIntervalSince(startedAgain)
-            print("PG11 cost \(path): one run \(single) s, with the plain-text run \(double) s")
+            let doubleSeconds = Date().timeIntervalSince(startedAgain)
+            print("PG11 cost \(path): one run \(singleSeconds) s, with the plain-text run \(doubleSeconds) s")
+
+            XCTAssertFalse(single.markdown.contains("<!-- page:"), path)
+            XCTAssertFalse(withPages.pageRunFailed, path)
+            if hasPageBreaks {
+                XCTAssertTrue(withPages.markdown.contains("<!-- page:"), path)
+            }
         }
     }
 }
