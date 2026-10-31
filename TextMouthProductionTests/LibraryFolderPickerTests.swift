@@ -308,6 +308,7 @@ final class LibraryFolderPickerTests: XCTestCase {
     /// meets one Cancel, the sheet's, and one Cancel New Folder with its
     /// hint, beside Create and Move.
     func testTheFieldsCancelIsNamedApartFromTheSheetsCancel() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let sheet = MoveFolderSheet(
             books: [makeBook()],
             library: makeLibrary(withFolders: ["Reports"]),

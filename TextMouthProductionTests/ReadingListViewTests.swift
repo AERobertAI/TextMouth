@@ -371,6 +371,7 @@ final class ReadingListViewTests: XCTestCase {
     /// where the wording tests above pin the labels.
     @MainActor
     func testTheEditBarsReadingListButtonsReachAccessibility() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let shelf = Self.shelf()
         let bar = EditModeBar(
             selectedCount: 3,
@@ -451,6 +452,9 @@ final class ReadingListViewTests: XCTestCase {
         let row = BookRow(book: Self.book("Loose Pages", in: ""), isInReadingList: true)
         let label = row.rowAccessibilityLabel
         XCTAssertTrue(label.contains("In reading list"), label)
+        // The label above is checked without a window; what follows reads
+        // SwiftUI's own elements in-process.
+        try skipUnlessSwiftUIExposesItsOwnElements()
 
         try withHostedView(row, until: { !self.accessibilityElements(labelled: label, in: $0).isEmpty }) { hostingView in
             let found = accessibilityElements(labelled: label, in: hostingView)

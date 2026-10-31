@@ -247,6 +247,7 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
     /// assistive app such as VoiceOver. Without one the test is skipped;
     /// the wording tests above still cover every label.
     func testRenderedRowsExposeGoToEditNoteAndDeleteToAccessibility() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let reader = makeReader(bookmarks: makeBookmarks(count: 3))
         defer { reader.close() }
 

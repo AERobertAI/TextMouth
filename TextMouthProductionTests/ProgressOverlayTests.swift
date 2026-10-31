@@ -97,6 +97,7 @@ final class ProgressOverlayTests: XCTestCase {
     /// that holds the Cancel Import button, hint included, as a control of
     /// its own; pressing that button through accessibility cancels once.
     func testContainerHoldsTheCancelButtonForVoiceOver() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let cancels = CancelCounter()
         let overlay = Self.extractingOverlay(onCancel: cancels.cancel)
 
@@ -124,6 +125,7 @@ final class ProgressOverlayTests: XCTestCase {
     /// Without a cancel action the overlay holds no button, as the text
     /// extraction overlay never has.
     func testOverlayWithoutACancelActionHoldsNoButton() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let overlay = ProgressOverlay(title: "Extracting Text", current: 2, total: 5, message: "", itemNoun: TextExtractionProgress.itemNoun)
 
         try withHostedView(overlay, until: { !self.accessibilityElements(labelled: overlay.spokenStatus, in: $0).isEmpty }) { hostingView in

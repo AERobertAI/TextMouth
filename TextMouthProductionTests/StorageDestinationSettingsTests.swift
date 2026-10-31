@@ -115,6 +115,7 @@ final class StorageDestinationSettingsTests: XCTestCase {
     /// settings' labelled buttons, with Change Location, where SwiftUI
     /// exposes them.
     func testStorageSettingsLabelTheMovesCancel() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let view = makeStorageSettingsShowingAMove(copiedPercent: 60)
 
         try withHostedControls(view) { controls in

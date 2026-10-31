@@ -1121,6 +1121,7 @@ final class SleepTimerSheetTests: XCTestCase {
     /// this reader and announces it once; the status line then reads where
     /// the timer stops; pressing End of book replaces it.
     func testStopAtButtonsAreLabelledAndSetTheirTimers() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let timer = SleepTimerService.shared
         preserveSharedSleepTimer()
         let world = try makeIntegrationWorld("Sleep Timer Sheet")

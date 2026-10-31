@@ -156,6 +156,7 @@ final class FullSummaryActionTests: XCTestCase {
     /// elements only for an assistive app, so without one the test is
     /// skipped; the wording above holds either way.
     func testTheirRowsSayTheirKeysToVoiceOver() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let manager = KeyboardShortcutManager(userDefaults: makeSandboxedPreferences("full-summary-tab-rows"), installsEventMonitor: false)
         let labels = ["Where Am I? Full Summary: W twice", "Speak Full Info: Shift + Command + I twice"]
         let view = VStack {

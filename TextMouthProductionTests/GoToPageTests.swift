@@ -739,6 +739,7 @@ final class GoToPageTests: XCTestCase {
     /// A reader on page 12 of 300 has a page button in its status row, named
     /// by the position, with the hint that says what it opens.
     func testTheStatusRowHasAPageButton() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let settings = try makeIsolatedSettings("page-button")
         let reader = makePagedReader(pages: Self.pagesAroundTwelve, settings: settings)
         defer { reader.close() }
@@ -755,6 +756,7 @@ final class GoToPageTests: XCTestCase {
     /// With the setting off, or in a book without pages, the status row has
     /// no page button.
     func testTheStatusRowHasNoPageButtonWhenOffOrWithoutPages() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let hidden = try makeIsolatedSettings("page-button-off")
         hidden.showsPageInReader = false
         let off = makePagedReader(pages: Self.pagesAroundTwelve, settings: hidden)
