@@ -780,6 +780,54 @@ final class ReaderCloudDownloadTests: XCTestCase {
         reader.stop()
     }
 
+    /// Stop while a chapter's files download stops waiting for them, as a
+    /// pause does, and so does Release Media Controls, which stops through
+    /// it: the reader shows neither Playing nor the download, nothing is
+    /// under way, and Play is heard at once: it waits for the chapter's
+    /// download afresh, as Play from stopped does, and plays the chapter
+    /// once its files are here. Before, the stop left the reader waiting,
+    /// which kept playback under way, so Play did nothing until the
+    /// download ended, and then nothing played.
+    func testStoppingDuringAChaptersDownloadStopsWaitingForIt() throws {
+        for releasing in [false, true] {
+            let name = releasing ? "Release Media Controls" : "Stop"
+            let cloud = try makeCloudReaders("Cloud Chapter \(name)", clone: Self.failingClone)
+            // A coordinator of the test's own, so releasing the media
+            // controls tells the system nothing.
+            cloud.nowPlaying = NowPlayingService(installsSystemIntegrations: false)
+            let (reader, book) = try readerWaitingForSecondChapter(in: cloud)
+            let second = try chapterFile(number: 2, of: reader)
+            let mark = announcementMark()
+
+            if releasing {
+                reader.releaseMediaControls()
+            } else {
+                reader.stop()
+            }
+
+            XCTAssertEqual(cloud.storage.downloadsCancelled, [book.id], "\(name): the download was waited for still")
+            XCTAssertFalse(reader.isWaitingForChapterDownload, "\(name): the reader still waits for the chapter")
+            XCTAssertFalse(reader.isPlaybackUnderWay, "\(name): playback is still under way")
+            XCTAssertNil(reader.cloudPhase, "\(name): the download is still shown")
+            XCTAssertFalse(reader.isCurrentlyPlaying, "\(name): the reader still shows Playing")
+            XCTAssertEqual(reader.currentChapterIndex, 1, "\(name): the cursor left the chapter")
+            XCTAssertEqual(announcements(since: mark), releasing ? [MediaControlsWording.released] : [], name)
+
+            cloud.storage.scriptDownload(of: book.id, steps: [Self.halfway], holdsOpen: true)
+            reader.togglePlayPause()
+
+            waitFor("\(name): the chapter's download afresh") { reader.shownDownload?.progress == Self.halfway }
+            XCTAssertTrue(reader.isWaitingForChapterDownload, "\(name): Play did not wait for the chapter")
+            XCTAssertTrue(reader.isCurrentlyPlaying, "\(name): Play does not show Playing")
+            XCTAssertEqual(cloud.storage.downloadsStarted, [book.id, book.id], name)
+            cloud.cloudOnly.clear()
+            cloud.storage.finishHeldDownload(of: book.id)
+            waitFor("\(name): the chapter to play") { reader.audioPlaybackService.isPlaying }
+            XCTAssertEqual(Self.path(try XCTUnwrap(reader.audioPlaybackService.loadedURL)), Self.path(second), name)
+            reader.stop()
+        }
+    }
+
     /// The sleep timer running out while a chapter's files download pauses
     /// the reader for good: the download's end plays nothing.
     func testSleepTimerRunningOutDuringAChaptersDownloadLeavesTheReaderPaused() throws {
