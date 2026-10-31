@@ -239,6 +239,247 @@ final class LegacyHTMLToMarkdownTests: XCTestCase {
     }
 }
 
+/// The scanner that says, before SwiftSoup parses markup, whether its
+/// elements may nest past `HTMLNesting.deepestParsedLevel`
+/// (`HTMLNesting.mayNest(_:deeperThan:as:)`). Each test pins one of its
+/// rules with markup that crosses the limit only if the rule holds, or only
+/// if it fails. The scanner may count more levels than SwiftSoup builds, but
+/// never fewer of those it counts: an undercount would let SwiftSoup recurse
+/// through markup too deep for a worker thread's stack.
+final class HTMLNestingTests: XCTestCase {
+    /// Whether `html`, read by `builder`, is past the shared parse's limit.
+    private func isPastTheLimit(_ html: String, as builder: HTMLNesting.TreeBuilder = .html) -> Bool {
+        HTMLNesting.mayNest(html, deeperThan: HTMLNesting.deepestParsedLevel, as: builder)
+    }
+
+    /// `markup` written `count` times.
+    private func repeated(_ markup: String, _ count: Int) -> String {
+        String(repeating: markup, count: count)
+    }
+
+    // MARK: - Nesting
+
+    /// Lists nested 1,500 deep and closed level by level, as a table of
+    /// contents is, are past the limit: each list counts a level.
+    func testListsNestedPastTheLimitAndClosedLevelByLevelArePastIt() {
+        XCTAssertTrue(isPastTheLimit(repeated("<ol><li>", 1_500) + "Deep words" + repeated("</li></ol>", 1_500)))
+    }
+
+    /// Markup 500 levels deep is within the limit.
+    func testMarkupFiveHundredLevelsDeepIsWithinTheLimit() {
+        XCTAssertFalse(isPastTheLimit(repeated("<div>", 500) + "Deep words" + repeated("</div>", 500)))
+    }
+
+    /// The limit counts the `html` and `body` elements SwiftSoup gives
+    /// every HTML document, written or not: 998 elements inside them are at
+    /// the limit, 999 past it.
+    func testTheLimitCountsTheDocumentsHTMLAndBodyElements() {
+        let depth = HTMLNesting.deepestParsedLevel - 2
+        XCTAssertFalse(isPastTheLimit("<html><body>" + repeated("<div>", depth) + "</body></html>"))
+        XCTAssertFalse(isPastTheLimit(repeated("<div>", depth)))
+        XCTAssertTrue(isPastTheLimit(repeated("<div>", depth + 1)))
+    }
+
+    /// A long chapter of unclosed paragraphs nests nothing, since each
+    /// paragraph ends where the next begins.
+    func testUnclosedParagraphsNestNothing() {
+        XCTAssertFalse(isPastTheLimit(repeated("<p>Words of a paragraph ", 1_500)))
+    }
+
+    /// A table counts four levels, for itself and the body, row, and cell
+    /// SwiftSoup nests in it: 300 tables nested in cells are past the limit,
+    /// 240 are not.
+    func testATableCountsFourLevels() {
+        XCTAssertTrue(isPastTheLimit(repeated("<table><tr><td>", 300) + "Deep words"))
+        XCTAssertFalse(isPastTheLimit(repeated("<table><tr><td>", 240) + "Deep words"))
+    }
+
+    /// Ruby text and option groups, which SwiftSoup lets nest in one
+    /// another, count a level each.
+    func testRubyTextAndOptionGroupsCountALevelEach() {
+        XCTAssertTrue(isPastTheLimit(repeated("<rt>", 1_200)))
+        XCTAssertTrue(isPastTheLimit(repeated("<rb>", 1_200)))
+        XCTAssertTrue(isPastTheLimit(repeated("<optgroup>", 1_200)))
+    }
+
+    // MARK: - What Is No Tag
+
+    /// A script's comparisons are script, not tags: 2,000 of `a<b` are no
+    /// elements.
+    func testAScriptsComparisonsAreNoTags() {
+        XCTAssertFalse(isPastTheLimit("<script>" + repeated("if (a<b) { total = a<b; }\n", 2_000) + "</script><p>After</p>"))
+    }
+
+    /// Comments, a doctype, and CDATA sections hold no elements, nor do a
+    /// processing instruction or a tag the markup ends inside.
+    func testCommentsDoctypesAndCDATACountNothing() {
+        XCTAssertFalse(isPastTheLimit("<!DOCTYPE html><!-- " + repeated("<div>", 1_200) + " --><p>After</p>"))
+        XCTAssertFalse(isPastTheLimit("<![CDATA[" + repeated("<div>", 1_200) + "]]><p>After</p>"))
+        XCTAssertFalse(isPastTheLimit("<?xml-stylesheet href=\"a.css\"?><p>After</p>" + "<div class=\"" + repeated("<div>", 1_200)))
+    }
+
+    /// A comment ends where SwiftSoup ends it: at once after `<!--` and only
+    /// dashes, or at `--!>`, so the tags after it count.
+    func testACommentEndsWhereSwiftSoupEndsIt() {
+        XCTAssertTrue(isPastTheLimit("<!-->" + repeated("<div>", 1_200)))
+        XCTAssertTrue(isPastTheLimit("<!-- a note --!>" + repeated("<div>", 1_200)))
+    }
+
+    /// A tag ending `/>`, which SwiftSoup closes at once, opens nothing,
+    /// whether a void element (`<br/>`) or not (`<div/>`), and so does
+    /// SwiftSoup's `<div / >`.
+    func testSelfClosedTagsCountNothing() {
+        XCTAssertFalse(isPastTheLimit(repeated("Line<br/>", 1_500)))
+        XCTAssertFalse(isPastTheLimit(repeated("<div/>", 1_500)))
+        XCTAssertFalse(isPastTheLimit(repeated("<div class=\"x\"/>", 1_500)))
+        XCTAssertFalse(isPastTheLimit(repeated("<div / >", 1_500)))
+    }
+
+    /// A value without quotes keeps a `/` before the `>`, so the tag does
+    /// not close itself: `<div class=x/>` opens a division.
+    func testAValueWithoutQuotesKeepsItsSlash() {
+        XCTAssertTrue(isPastTheLimit(repeated("<div class=x/>", 1_200)))
+    }
+
+    /// A `>` in a quoted attribute value ends no tag, so the markup after it
+    /// in the value is no tag either: 600 divisions whose titles hold two
+    /// more each are 600 levels.
+    func testAGreaterThanSignInAQuotedValueEndsNoTag() {
+        XCTAssertFalse(isPastTheLimit(repeated("<div title=\"<div><div>\" data-note='a > b'>", 600)))
+    }
+
+    /// The text of `textarea`, `xmp`, `iframe`, and `noembed` is markup to
+    /// SwiftSoup, whatever HTML says, so the elements in it count.
+    func testTheTextOfTextareaXmpIframeAndNoembedIsMarkup() {
+        for name in ["textarea", "xmp", "iframe", "noembed"] {
+            XCTAssertTrue(isPastTheLimit("<\(name)>" + repeated("<span>", 1_200)), name)
+        }
+    }
+
+    /// A script's `<!--` escapes its text, and a `<script>` inside the escape
+    /// hides a `</script>`, as in SwiftSoup: the divisions after the hidden
+    /// end tag are script. A `</script>` in a single escape still ends it.
+    func testAScriptsEscapesFollowSwiftSoup() {
+        XCTAssertFalse(isPastTheLimit("<script><!--<script></script>" + repeated("<div>", 1_200) + "--></script><p>After</p>"))
+        XCTAssertTrue(isPastTheLimit("<script><!--</script>" + repeated("<div>", 1_200)))
+        XCTAssertTrue(isPastTheLimit("<SCRIPT>var a;</ScRiPt>" + repeated("<div>", 1_200)))
+    }
+
+    /// A title's text runs to its end tag; with none anywhere after it,
+    /// SwiftSoup ends the title at the first tag, which is markup.
+    func testATitleWithoutAnEndTagEndsAtTheFirstTag() {
+        XCTAssertFalse(isPastTheLimit("<title>A " + repeated("<div>", 1_200) + "</title><p>After</p>"))
+        XCTAssertTrue(isPastTheLimit("<title>A " + repeated("<div>", 1_200)))
+    }
+
+    /// Everything after `plaintext` is text.
+    func testEverythingAfterPlaintextIsText() {
+        XCTAssertFalse(isPastTheLimit("<plaintext>" + repeated("<div>", 1_200)))
+    }
+
+    // MARK: - End Tags
+
+    /// An end tag naming nothing open closes nothing. A template that
+    /// closes each item's division as a span leaves 3,000 divisions open,
+    /// which SwiftSoup nests, and the scanner too.
+    func testAnEndTagNamingNothingOpenClosesNothing() {
+        XCTAssertTrue(isPastTheLimit(repeated("<div class=item><span>x</span></span>", 3_000)))
+    }
+
+    /// An end tag never closes past a special element such as a division,
+    /// where SwiftSoup ignores it.
+    func testAnEndTagNeverClosesPastASpecialElement() {
+        XCTAssertTrue(isPastTheLimit(repeated("<span><div></span>", 600)))
+    }
+
+    /// An end tag closes its element and everything still open inside it.
+    func testAnEndTagClosesWhatItsElementHolds() {
+        XCTAssertFalse(isPastTheLimit(repeated("<div><span>Words</div>", 1_200)))
+    }
+
+    /// A division's end tag never closes past a table, as SwiftSoup closes
+    /// it only in scope: the divisions outside the table stay open.
+    func testADivisionsEndTagNeverClosesPastATable() {
+        let html = repeated("<div>", 500) + "<table><tr><td>" + repeated("</div>", 500) + repeated("<div>", 500)
+        XCTAssertTrue(isPastTheLimit(html))
+    }
+
+    /// `</body>` and `</html>` close nothing, as SwiftSoup keeps its open
+    /// elements there: markup after them goes on inside.
+    func testTheDocumentsOwnEndTagsCloseNothing() {
+        XCTAssertTrue(isPastTheLimit(repeated("<div>", 600) + "</body></html>" + repeated("<div>", 600)))
+    }
+
+    /// `</form>` closes only a form on top, since SwiftSoup takes the form
+    /// off its stack but leaves what it holds inside it.
+    func testAFormsEndTagClosesOnlyAFormOnTop() {
+        XCTAssertTrue(isPastTheLimit(repeated("<form><div></form>", 600)))
+        XCTAssertFalse(isPastTheLimit(repeated("<form>A field</form>", 1_200)))
+    }
+
+    /// A heading's end tag closes the nearest heading of any level.
+    func testAHeadingsEndTagClosesAnyHeading() {
+        XCTAssertFalse(isPastTheLimit(repeated("<h1>Title</h2>", 1_200)))
+    }
+
+    /// The end tag of an object closes nothing while an element named
+    /// `name` is in scope, as SwiftSoup 2.13.9 has it.
+    func testAnObjectsEndTagClosesNothingWhileANameElementIsInScope() {
+        XCTAssertTrue(isPastTheLimit(repeated("<object><name></object>", 600)))
+        XCTAssertFalse(isPastTheLimit(repeated("<object><div></object>", 600)))
+    }
+
+    // MARK: - Inside a Select
+
+    /// Inside a `select`, SwiftSoup ignores most tags: end tags there close
+    /// none of the divisions outside it.
+    func testASelectIgnoresMostTags() {
+        let html = repeated("<div>", 600) + "<select>" + repeated("</div>", 600) + "</select>" + repeated("<div>", 500)
+        XCTAssertTrue(isPastTheLimit(html))
+        XCTAssertFalse(isPastTheLimit("<select>" + repeated("<div>", 1_200) + "</select>"))
+    }
+
+    /// Inside a `select`, an option group that holds an option is not closed
+    /// by the next group, so groups with options nest; groups alone do not.
+    func testOptionGroupsHoldingOptionsNestInASelect() {
+        XCTAssertTrue(isPastTheLimit("<select>" + repeated("<optgroup><option>Choice", 1_200) + "</select>"))
+        XCTAssertFalse(isPastTheLimit("<select>" + repeated("<optgroup>", 1_200) + "</select>"))
+    }
+
+    // MARK: - XML
+
+    /// SwiftSoup reads markup that begins with an XML declaration with its
+    /// XML tree builder, where an unclosed paragraph holds what follows it:
+    /// 1,500 of them are past the limit as XML, and nest nothing as HTML.
+    func testUnclosedParagraphsNestInMarkupReadAsXML() {
+        let body = repeated("<p>Words of a paragraph ", 1_500)
+        let xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + body
+        XCTAssertEqual(HTMLNesting.TreeBuilder(reading: xml), .xml)
+        XCTAssertTrue(isPastTheLimit(xml, as: .xml))
+        XCTAssertFalse(isPastTheLimit(body, as: .html))
+    }
+
+    /// In XML every element without `/>` holds what follows it, a `<br>`
+    /// too, and an end tag closes only an element of exactly its name.
+    func testXMLElementsCloseOnlyAtTheirOwnEndTags() {
+        let declaration = "<?xml version=\"1.0\"?>"
+        XCTAssertTrue(isPastTheLimit(declaration + repeated("Line<br>", 1_200), as: .xml))
+        XCTAssertFalse(isPastTheLimit(declaration + repeated("Line<br/>", 1_200), as: .xml))
+        XCTAssertTrue(isPastTheLimit(declaration + repeated("<a></A>", 1_200), as: .xml))
+        XCTAssertFalse(isPastTheLimit(declaration + repeated("<a><b></a>", 1_200), as: .xml))
+    }
+
+    /// The tree builder is chosen by SwiftSoup's own test: past whitespace,
+    /// the markup begins with `<?xml`, in small letters.
+    func testTheTreeBuilderIsChosenAsSwiftSoupChoosesIt() {
+        XCTAssertEqual(HTMLNesting.TreeBuilder(reading: " \n\t<?xml version=\"1.0\"?><a/>"), .xml)
+        XCTAssertEqual(HTMLNesting.TreeBuilder(reading: "<html><body>Words</body></html>"), .html)
+        XCTAssertEqual(HTMLNesting.TreeBuilder(reading: "<?XML version=\"1.0\"?>"), .html)
+        XCTAssertEqual(HTMLNesting.TreeBuilder(reading: "\u{FEFF}<?xml version=\"1.0\"?>"), .html)
+        XCTAssertEqual(HTMLNesting.TreeBuilder(reading: ""), .html)
+    }
+}
+
 final class LegacyMD5Tests: XCTestCase {
     func testHashIsA32CharacterHexString() throws {
         let hash = try FileImportService.md5Hash(of: requireFile("alice.epub"))
