@@ -293,6 +293,77 @@ final class LibraryIndexRecoveryTests: XCTestCase {
         XCTAssertEqual(resaved.books.first { $0.id == book.id }?.manualSortOrder, 7)
     }
 
+    /// Rebuild Library Index replaces nothing once the index can be read
+    /// again, as when the user restored it from a backup while the recovery
+    /// options were open: the file keeps its bytes, no copy is made of it,
+    /// index writes stay suspended, and the listener is told to choose Try
+    /// Again, which then uses the index, folder and manual order and all.
+    @MainActor
+    func testRebuildLeavesAnIndexThatCanBeReadAgain() throws {
+        let shelf = uniqueFolderName("Recovery Shelf")
+        let book = try makePackage(title: "Restored Before Rebuild", inFolder: shelf)
+        let index = indexHolding(book)
+        try sandbox.stage(.truncated, of: index, at: sandbox.indexURL)
+        let model = LibraryViewModel(initializeServices: false)
+        model.loadLibraryIndex()
+        let copies = LibraryIndexQuarantine.existingCopies(of: sandbox.indexURL)
+        let restoredBytes = try sandbox.stageValid(index, at: sandbox.indexURL)
+
+        XCTAssertThrowsError(try LibraryPersistenceService.replaceUnreadableIndex(with: model.library)) { error in
+            guard case LibraryIndexRecoveryError.indexReadableAgain = error else {
+                return XCTFail("Expected the index to be found readable again, got \(error)")
+            }
+        }
+        let outcome = model.rebuildLibraryIndex()
+
+        XCTAssertEqual(
+            outcome,
+            .rebuildFailed(
+                reason: "The library index can be read again, so TextMouth did not rebuild it. Choose Try Again to use it."
+            )
+        )
+        XCTAssertEqual(
+            outcome.message,
+            "The library index was not rebuilt. The library index can be read again, so TextMouth did not "
+                + "rebuild it. Choose Try Again to use it."
+        )
+        XCTAssertEqual(model.indexRecovery?.lastAttempt, outcome)
+        XCTAssertTrue(LibraryPersistenceService.areIndexWritesSuspended)
+        XCTAssertEqual(try Data(contentsOf: sandbox.indexURL), restoredBytes)
+        XCTAssertEqual(LibraryIndexQuarantine.existingCopies(of: sandbox.indexURL), copies, "a copy was made")
+
+        let retried = model.retryLibraryIndex()
+
+        XCTAssertEqual(retried, .restored(bookCount: model.library.books.count))
+        XCTAssertEqual(model.bookByID(book.id)?.manualSortOrder, 3)
+        XCTAssertTrue(model.library.folders.contains { $0.fullPath == shelf })
+    }
+
+    /// A legacy index that can be read again is not left unread behind a
+    /// rebuilt library.json, which a load would read in its place: Rebuild
+    /// Library Index writes no library.json and leaves the legacy index as
+    /// it is.
+    @MainActor
+    func testRebuildLeavesALegacyIndexThatCanBeReadAgain() throws {
+        let book = try makePackage(title: "Legacy Restored Before Rebuild", inFolder: uniqueFolderName("Legacy Shelf"))
+        let index = indexHolding(book)
+        try sandbox.stage(.truncated, of: index, at: sandbox.legacyURL)
+        let model = LibraryViewModel(initializeServices: false)
+        model.loadLibraryIndex()
+        XCTAssertEqual(
+            model.indexRecovery?.failure.indexURL.standardizedFileURL,
+            sandbox.legacyURL.standardizedFileURL
+        )
+        let restoredBytes = try sandbox.stageValid(index, at: sandbox.legacyURL)
+
+        let outcome = model.rebuildLibraryIndex()
+
+        XCTAssertEqual(outcome, .rebuildFailed(reason: LibraryIndexRecoveryError.indexReadableAgain.localizedDescription))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: sandbox.indexURL.path), "a library.json was written")
+        XCTAssertEqual(try Data(contentsOf: sandbox.legacyURL), restoredBytes)
+        XCTAssertTrue(LibraryPersistenceService.areIndexWritesSuspended)
+    }
+
     // MARK: - Data-Directory Maintenance
 
     /// Data-directory maintenance waits for recovery to end, because it would

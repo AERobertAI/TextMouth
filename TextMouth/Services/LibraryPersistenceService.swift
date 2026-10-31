@@ -1453,18 +1453,38 @@ enum LibraryPersistenceService {
     /// destroy the only copy of an index. Returns the preserved copy of the
     /// replaced file, or nil when there was no file to replace (the unreadable
     /// index was the legacy one, which stays untouched).
+    ///
+    /// Nor is an index that can be read again replaced, or left unread
+    /// behind the new one. The index a load would read now, library.json or
+    /// else the legacy index, is re-read first, since it may have changed
+    /// since the failed load: another Mac may have finished saving it, or
+    /// the user restored it from a backup while the recovery options were
+    /// open. When it decodes, as a load decodes it, it is the user's index
+    /// again, with the folders, manual order, and rows the rebuilt library
+    /// would lose, and Try Again uses it: nothing is written or preserved,
+    /// and index writes stay suspended.
+    /// - Throws: `LibraryIndexRecoveryError.indexReadableAgain` when that
+    ///   index can be read again, or `.couldNotPreserve` when library.json
+    ///   could not be preserved; nothing is written either way.
     @discardableResult
     static func replaceUnreadableIndex(with library: Library) throws -> URL? {
         try saveQueue.sync { () throws -> URL? in
             let indexURL = libraryFileURL
             var preservedCopy: URL?
+            // Re-read now, choosing the file as a load does
+            // (`loadLibraryIndex()`): it may have changed since the failed load.
             if FileManager.default.fileExists(atPath: indexURL.path) {
-                // Re-read now: the file may have changed since the failed load.
                 let currentBytes = try? Data(contentsOf: indexURL)
+                try refuseRebuildIfReadable(currentBytes, readFrom: indexURL)
                 preservedCopy = LibraryIndexQuarantine.preserve(indexURL, bytes: currentBytes)
                 guard preservedCopy != nil else {
                     throw LibraryIndexRecoveryError.couldNotPreserve(indexURL)
                 }
+            } else if let legacyURL = legacyLibraryFileURL, FileManager.default.fileExists(atPath: legacyURL.path) {
+                // The legacy index stays untouched, but a load would read
+                // the rebuilt library.json in its place from now on.
+                let legacyBytes = try? Data(contentsOf: legacyURL)
+                try refuseRebuildIfReadable(legacyBytes, readFrom: legacyURL)
             }
             try writeIndexFile(library)
             endIndexWriteSuspension()
@@ -1475,6 +1495,22 @@ enum LibraryPersistenceService {
             )
             return preservedCopy
         }
+    }
+
+    /// Refuses Rebuild Library Index when `bytes`, re-read from `url`, the
+    /// index a load would read now, decode as a library the way a load
+    /// decodes them (`decodeLibrary(from:)`): that index can be read again,
+    /// for Try Again to use. Bytes that could not be read refuse nothing.
+    /// Must run on saveQueue.
+    /// - Throws: `LibraryIndexRecoveryError.indexReadableAgain` when they
+    ///   decode.
+    private static func refuseRebuildIfReadable(_ bytes: Data?, readFrom url: URL) throws {
+        guard let bytes, (try? decodeLibrary(from: bytes)) != nil else { return }
+        logIndexEvent(
+            "did not rebuild the library index: \(url.path) can be read again, for Try Again to use; "
+                + "library index writes stay suspended"
+        )
+        throw LibraryIndexRecoveryError.indexReadableAgain
     }
 
     /// Must run on saveQueue. Anything captured during the suspension is stale.
