@@ -1587,6 +1587,23 @@ enum FileImportService {
     /// it (`Book.textEncoding`, FMT16). Only the import of a file the user
     /// chose sets it: the other callers re-read a book that already exists
     /// (a package added back, a reinstated one), whose text must not change.
+    ///
+    /// A text book whose content.md holds the edit the user took with Edit
+    /// Text keeps it (B12): the extraction will not read the book's file over
+    /// it (`EditedTextKept`), so content.md is read as it is and indexed as
+    /// the reader indexes a book whose edit stands
+    /// (`BookContentAnalysisService.load`), and `book` keeps the record of
+    /// the edit (`Book.editedText`) with the fingerprints that describe it
+    /// (`Book.textCacheFingerprint`). Only a package that already holds a
+    /// book meets this: one opened from Finder (a backup, another Mac's
+    /// copy) and one that Remove from Library Only retained. It needs no
+    /// parameter, since it is safe for every caller: an edit is recorded
+    /// only by a book that already exists, in its row or its package's
+    /// bookInfo.json (`BookTextEditSessions.holdsTakenEdit`), and every other
+    /// import (a file the user chose, New from Text, a feed's download, a
+    /// recording) reads into a newly staged package holding no record and no
+    /// content.md, for a row recording no edit, so its text is always read
+    /// from its file.
     static func readableContent(
         of book: inout Book,
         run: inout ImportRun,
@@ -1608,12 +1625,32 @@ enum FileImportService {
         }
 
         try run.begin(.readingText, in: book.tmbDirectory)
-        guard let generated = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(
-            for: &book, adoptingDocumentNames: adoptingDocumentNames, decidingEncoding: guessingEncoding
-        ) else {
-            // Only a book without a package gets no cache, and every
-            // import gives its book one before reading it.
-            throw FileImportError.importFailed("The book has no package to hold its text.")
+        let generated: MarkdownCacheService.GeneratedCache
+        do {
+            guard let written = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(
+                for: &book, adoptingDocumentNames: adoptingDocumentNames, decidingEncoding: guessingEncoding
+            ) else {
+                // Only a book without a package gets no cache, and every
+                // import gives its book one before reading it.
+                throw FileImportError.importFailed("The book has no package to hold its text.")
+            }
+            generated = written
+        } catch is EditedTextKept {
+            // The user's edit stands, and nothing was written: content.md is
+            // indexed as it is, as the reader indexes it, checked against the
+            // record the package holds.
+            var index = try BookContentAnalysisService.load(book: book).index
+            // A package with no record to check content.md against (Remove
+            // from Library Only deleted it) gets no fingerprints from the
+            // load: the book's own stand while they describe the edit, so
+            // that Redo Text Extraction still keeps a copy of the edit before
+            // it reads the book's file over it.
+            if index.textCacheFingerprint == nil, let kept = book.textCacheFingerprint,
+               kept.cache.digest == book.editedText?.cacheDigest {
+                index.textCacheFingerprint = kept
+            }
+            book.applyContentIndexSummary(index)
+            return ReadableContent(index: index)
         }
         if refusingBlankText, refusesBlankText(book),
            !generated.content.chapters.contains(where: { chapter in chapter.text.contains { !$0.isWhitespace } }) {
