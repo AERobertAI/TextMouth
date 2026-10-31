@@ -602,8 +602,10 @@ final class LibraryViewFilterEvaluatorTests: XCTestCase {
     /// Recently Opened view, choose exactly what `recent` chose before
     /// either existed (copied below), on rows of three feeds and books
     /// opened at a few instants, so many share one, in several orders, at
-    /// every limit; with no limit and every feed item kept, every row comes
-    /// in the order of the same sort, the rows never opened last.
+    /// every limit; with no limit and every feed item kept, every row opened
+    /// comes in the order of the same sort, and the rows never opened last,
+    /// by title, all of them added at one instant (review of October 31,
+    /// 2026, finding 7).
     func testTheRowsOpenedLastAreChosenAsRecentChoseThem() throws {
         let fixture = try Fixture()
         let recentView = try ShippedFilters().recent
@@ -620,12 +622,42 @@ final class LibraryViewFilterEvaluatorTests: XCTestCase {
             }
             XCTAssertEqual(fixture.listedItems(recentView, in: order).map(\.title), Self.recentAsItWas(order).map(\.title))
 
-            let bySameSort = order.sorted { ($0.lastOpened ?? .distantPast) > ($1.lastOpened ?? .distantPast) }
+            // Changed on purpose by the review of October 31, 2026 (finding
+            // 7): the rows never opened no longer come as the rows came.
+            let opened = order.filter { !$0.isUnopened }.sorted { ($0.lastOpened ?? .distantPast) > ($1.lastOpened ?? .distantPast) }
             let everyRow = LibraryBookSorter.latestOpened(order, limit: nil, onePerFeed: false)
-            XCTAssertEqual(everyRow.map(\.title), bySameSort.map(\.title))
-            XCTAssertEqual(everyRow.suffix(5).map(\.isUnopened), [true, true, true, true, true])
-            XCTAssertEqual(LibraryBookSorter.latestOpened(order, limit: 4, onePerFeed: false).map(\.title), bySameSort.prefix(4).map(\.title))
+            XCTAssertEqual(everyRow.map(\.title), opened.map(\.title) + ["Row 13", "Row 20", "Row 27", "Row 34", "Row 6"])
+            XCTAssertEqual(LibraryBookSorter.latestOpened(order, limit: 4, onePerFeed: false).map(\.title), opened.prefix(4).map(\.title))
         }
+    }
+
+    /// Of a feed's episodes never opened, only the latest from each feed
+    /// keeps the one added last, whatever order the library holds them in,
+    /// and, of two added at one instant, the first by title; an episode
+    /// opened, however long ago, comes before them all (review of October
+    /// 31, 2026, finding 7).
+    func testTheLatestOfEpisodesNeverOpenedIsTheNewest() throws {
+        let fixture = try Fixture()
+        let feedID = fixture.harbour.id
+        let older = Fixture.row("Harbour Notes, Monday", .audio, added: Fixture.now.addingTimeInterval(-Fixture.day), opened: nil, feedID: feedID)
+        let newer = Fixture.row("Harbour Notes, Tuesday", .audio, added: Fixture.now, opened: nil, feedID: feedID)
+        let twin = Fixture.row("Harbour Notes, Extra", .audio, added: Fixture.now, opened: nil, feedID: feedID)
+        let filter = LibraryViewFilter(lists: [.episodes], onePerFeed: true)
+        for rows in [[older, newer], [newer, older]] {
+            XCTAssertEqual(fixture.listedItems(filter, in: rows).map(\.title), ["Harbour Notes, Tuesday"])
+            XCTAssertEqual(LibraryBookSorter.latestOpened(rows, limit: nil, onePerFeed: true).map(\.title), ["Harbour Notes, Tuesday"])
+        }
+        for rows in [[newer, twin, older], [older, twin, newer], [twin, newer, older]] {
+            XCTAssertEqual(fixture.listedItems(filter, in: rows).map(\.title), ["Harbour Notes, Extra"])
+        }
+        let opened = Fixture.row(
+            "Harbour Notes, Last Year",
+            .audio,
+            added: Fixture.now.addingTimeInterval(-400 * Fixture.day),
+            opened: Fixture.now.addingTimeInterval(-300 * Fixture.day),
+            feedID: feedID
+        )
+        XCTAssertEqual(fixture.listedItems(filter, in: [newer, opened, older]).map(\.title), ["Harbour Notes, Last Year"])
     }
 
     // MARK: - The Kind of a Row
