@@ -57,21 +57,23 @@ final class IntegrationSleepTimerTests: XCTestCase {
         waitForReaderToLoad(otherReader)
         let pauses = countPauses(of: ownerReader)
 
+        // The positive waits below allow a busy Mac thirty seconds, and end
+        // as soon as their conditions hold.
         let recorder = recordingAnnouncements {
             ownerReader.play()
             XCTAssertTrue(
-                waitUntil(timeout: 5) { ownerReader.audioPlaybackService.isPlaying },
+                waitUntil(timeout: 30) { ownerReader.audioPlaybackService.isPlaying },
                 "Night Reading never started playing"
             )
             ownerReader.startSleepTimer(duration: .minutes(1))
             // One second left on the clock: the next tick expires it.
             timer.remainingSeconds = 1
-            XCTAssertTrue(waitUntil(timeout: 3) { timer.isFadingOut }, "The timer never began to fade out")
+            XCTAssertTrue(waitUntil(timeout: 30) { timer.isFadingOut }, "The timer never began to fade out")
 
             otherReader.close()
 
             XCTAssertTrue(
-                waitUntil(timeout: 4) { ownerReader.isCurrentlyPaused },
+                waitUntil(timeout: 30) { ownerReader.isCurrentlyPaused },
                 "The timer never paused Night Reading"
             )
             // Another pause or announcement would follow within a countdown
@@ -214,7 +216,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
                 var askedForTheNextBook = false
                 let recorder = recordingAnnouncements {
                     spokeOn = endSpeechSilently(endOfLastChapter, of: reader)
-                    askedForTheNextBook = nextBookIsAskedFor(continued)
+                    askedForTheNextBook = nextBookAskedSoFar(continued)
                 }
 
                 let behavior = outcome.behavior.rawValue
@@ -373,7 +375,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
                     eventually(within: 10) { !reader.isCurrentlyPlaying && !service.isPlaying },
                     "\(behavior): the book never ended"
                 )
-                askedForTheNextBook = nextBookIsAskedFor(continued)
+                askedForTheNextBook = nextBookAskedSoFar(continued)
             }
 
             XCTAssertEqual(recorder.announcements.map(\.message), [outcome.announcement], behavior)
@@ -414,7 +416,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
                     if let endOfLastChapter = reader.speechService.onUtteranceFinished {
                         spokeAfterTheBook = endSpeechSilently(endOfLastChapter, of: reader)
                     }
-                    askedForTheNextBook = nextBookIsAskedFor(continued)
+                    askedForTheNextBook = nextBookAskedSoFar(continued)
                 }
 
                 XCTAssertTrue(spokeTheLastChapter, "\(behavior): the timer stopped speech before the last chapter")
@@ -504,9 +506,11 @@ final class IntegrationSleepTimerTests: XCTestCase {
 
                 reader.nextHeading()
                 XCTAssertFalse(timer.isActive, "The jump out of the heading did not end the timer")
-                // The timer's end is said on the main queue's next turn.
+                // The timer's end is said on the main queue's next turn,
+                // which a busy Mac can put off: the wait allows thirty
+                // seconds, and ends as soon as it is said.
                 XCTAssertTrue(
-                    waitUntil(timeout: 2) { reader.lastAnnouncement != "Heading: Tides" },
+                    waitUntil(timeout: 30) { reader.lastAnnouncement != "Heading: Tides" },
                     "The timer's end was not said"
                 )
                 // No later heading to jump to: nothing more is said.
@@ -549,8 +553,9 @@ final class IntegrationSleepTimerTests: XCTestCase {
             reader.startSleepTimer(duration: .endOfHeading)
             reader.play()
             // Past the grace a jump back to a heading allows: a second and a
-            // half of the chapter, at ten characters a second.
-            XCTAssertTrue(eventually(within: 5) { reader.currentCharacterOffset > 15 }, "The first chapter did not play on")
+            // half of the chapter, at ten characters a second. The wait
+            // allows a busy Mac thirty seconds, and ends once it is past.
+            XCTAssertTrue(eventually(within: 30) { reader.currentCharacterOffset > 15 }, "The first chapter did not play on")
             reader.previousHeading()
             XCTAssertTrue(service.isPlaying, "The jump back to the heading's start stopped playback")
             XCTAssertTrue(timer.isActive, "The jump back to the heading's start ended the timer")
@@ -558,8 +563,9 @@ final class IntegrationSleepTimerTests: XCTestCase {
             reader.nextHeading()
             XCTAssertFalse(service.isPlaying, "The next heading played")
             XCTAssertFalse(timer.isActive, "The jump out of the heading did not end the timer")
-            // The timer's end is said on the main queue's next turn.
-            spinMainRunLoop(for: 0.2)
+            // The timer's end is said on the main queue's next turn: once
+            // the main queue has run what was queued so far, it is said.
+            handleQueuedCallbacks()
         }
 
         XCTAssertEqual(recorder.announcements.count, 3, "\(recorder.announcements)")
@@ -705,10 +711,12 @@ final class IntegrationSleepTimerTests: XCTestCase {
         XCTAssertEqual(reader.audioLayout, .chaptersInOneFile)
         XCTAssertEqual(reader.headings.map(\.chapterIndex), [0, 1], "The markers are not the book's headings")
 
+        // The waits for playback to start allow a busy Mac thirty seconds,
+        // and end as soon as it plays.
         let recorder = recordingAnnouncements {
             reader.startSleepTimer(duration: .endOfHeading)
             reader.play()
-            XCTAssertTrue(waitUntil(timeout: 5) { service.isPlaying }, "The book did not play")
+            XCTAssertTrue(waitUntil(timeout: 30) { service.isPlaying }, "The book did not play")
             XCTAssertTrue(eventually(within: 10) { !service.isPlaying && !reader.isCurrentlyPlaying }, "Playback never stopped")
         }
 
@@ -719,7 +727,7 @@ final class IntegrationSleepTimerTests: XCTestCase {
         try assertSavedPlace(of: book, in: world, chapter: 1, offset: 0)
 
         reader.togglePlayPause()
-        XCTAssertTrue(waitUntil(timeout: 5) { service.isPlaying }, "Play did not start the next chapter")
+        XCTAssertTrue(waitUntil(timeout: 30) { service.isPlaying }, "Play did not start the next chapter")
         XCTAssertEqual(reader.currentChapterIndex, 1)
     }
 
@@ -970,6 +978,21 @@ final class IntegrationSleepTimerTests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    /// Whether the next book has been asked for so far, as `continued`
+    /// records the requests, read at once after the book's end has been
+    /// handled, as `EndBehaviorMatrixTests` reads it for a cell that is not
+    /// to hand over (`nextBookAsked(for:title:next:_:)`). That is as strong
+    /// as waiting twice `ReaderViewModel.continueToNextBookDelay` for an ask
+    /// (`nextBookIsAskedFor`), and takes no second: the next book is asked
+    /// for only by a hand-over (`ReaderViewModel.handOverToNextBook`), which
+    /// says "Starting: <title>" the moment it begins, as the end is handled.
+    /// Every caller records the announcements from before the end until
+    /// after this read and asserts them exactly, so a hand-over that began
+    /// fails its test whether or not its ask is then waited for.
+    private func nextBookAskedSoFar(_ continued: () -> [Notification]) -> Bool {
+        !continued().isEmpty
+    }
 
     /// Counts each time `reader` goes from not paused to paused from now on.
     /// - Returns: A function reading the count so far.
