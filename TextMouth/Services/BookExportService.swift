@@ -61,6 +61,8 @@ struct BookExportFile: Equatable, Sendable {
         /// written by a text writer. (Every kind is written to a scratch file
         /// and moved into place once whole, so no half-written file is ever
         /// left in the folder chosen.)
+        /// An audiobook's transcript.json, written as captions, is one too
+        /// (FMT23).
         case converted(from: URL, book: ExportBookDetails, by: BookExportConversion)
 
         /// The package file whose bytes are read.
@@ -222,6 +224,11 @@ enum BookExportConversion: Sendable, Equatable {
     /// content.md, walked and written by a text writer with its options.
     case text(TextExportConversion)
 
+    /// A transcript's transcript.json, written as captions in the format
+    /// (FMT23): one file for the book, timed from the start of its audio
+    /// (`Transcript.bookTimelineCues`).
+    case timedText(TranscriptExportFormat)
+
     /// The Markdown an export writes of a text book (and of an audiobook's
     /// transcript): written afresh from the walk of its content.md with only
     /// the escapes Markdown needs (`MarkdownExportWriter`), where content.md
@@ -234,6 +241,8 @@ enum BookExportConversion: Sendable, Equatable {
         switch self {
         case .text(let conversion):
             return conversion.fileExtension
+        case .timedText(let format):
+            return format.fileExtension
         }
     }
 
@@ -244,6 +253,9 @@ enum BookExportConversion: Sendable, Equatable {
         switch self {
         case .text:
             return kind.convertsText
+        case .timedText:
+            // Captions are made of a transcript alone.
+            return kind == .transcript
         }
     }
 
@@ -252,6 +264,8 @@ enum BookExportConversion: Sendable, Equatable {
         switch self {
         case .text(let conversion):
             return conversion.name
+        case .timedText(let format):
+            return format.name
         }
     }
 }
@@ -758,6 +772,9 @@ enum BookExportService {
     /// from content.md) becomes one converted by it instead, named with the
     /// conversion's extension (FMT18). Files made any other way are left as
     /// they are.
+    /// Captions (FMT23) are made of the transcript's transcript.json alone,
+    /// "Moby-Dick - Transcript.json" becoming "Moby-Dick - Transcript.vtt":
+    /// the Markdown written from it is not exported with them.
     private static func files(
         of item: BookExportItem,
         for book: Book,
@@ -767,7 +784,12 @@ enum BookExportService {
             return item.files
         }
         let details = ExportBookDetails(book)
-        return item.files.map { file in
+        var toConvert = item.files
+        // Captions are made of the transcript.json alone (FMT23).
+        if case .timedText = conversion {
+            toConvert = item.files.filter { $0.source.url.lastPathComponent == TextMouthPaths.transcriptFileName }
+        }
+        return toConvert.map { file in
             let url: URL
             switch file.source {
             case .copy(let source), .converted(let source, _, _):
@@ -899,6 +921,9 @@ enum BookExportService {
     /// conversion into a scratch file that `writeThroughScratchFile` moves to
     /// `target` once whole. Stop is checked after the read, during the walk
     /// and the writing, and once more before the move.
+    /// A transcript's captions (FMT23) are made of the transcript its bytes
+    /// hold instead of a walk (`Transcript.exportable(from:)`), which throws
+    /// `TranscriptExportError.unusable` for one that can't be read.
     /// - Throws: `CancellationError` when stopped, the walk's or the
     ///   writer's error, and the move's, which fails rather than replace a
     ///   file that appeared since the plan.
@@ -922,6 +947,12 @@ enum BookExportService {
             )
             try writeThroughScratchFile(to: target, cancellation: cancellation) { scratch in
                 try text.write(document, to: scratch, cancellation: cancellation)
+            }
+        case .timedText(let format):
+            let transcript = try Transcript.exportable(from: bytes)
+            try cancellation.checkCancelled()
+            try writeThroughScratchFile(to: target, cancellation: cancellation) { scratch in
+                try format.fileBytes(of: transcript.bookTimelineCues).write(to: scratch, options: .withoutOverwriting)
             }
         }
     }

@@ -3,8 +3,12 @@ import XCTest
 @testable import TextMouth
 
 /// Export of a transcript as captions (FMT23): the WebVTT and SubRip
-/// writers' exact output, a transcript laid on the book's timeline, and
-/// the transcript read for export.
+/// writers' exact output, a transcript laid on the book's timeline, the
+/// conversion that makes captions, and real exports of an audiobook of
+/// two tracks through the service.
+///
+/// Every export goes to a sandbox folder, never the user's Documents, and
+/// no test reads or writes the live library.
 @MainActor
 final class TranscriptExportTests: XCTestCase {
 
@@ -214,6 +218,26 @@ final class TranscriptExportTests: XCTestCase {
 
     // MARK: - The Conversion
 
+    /// The timed-text conversion takes its format's extension and name, and
+    /// applies to the transcript alone; each format has its picker tag, and
+    /// JSON and Markdown's tag is no format's.
+    func testTheTimedTextConversion() {
+        XCTAssertEqual(BookExportConversion.timedText(.webVTT).fileExtension, "vtt")
+        XCTAssertEqual(BookExportConversion.timedText(.subRip).fileExtension, "srt")
+        XCTAssertEqual(BookExportConversion.timedText(.webVTT).name, "WebVTT")
+        XCTAssertEqual(BookExportConversion.timedText(.subRip).name, "SubRip")
+        for kind in BookExportKind.allCases {
+            XCTAssertEqual(BookExportConversion.timedText(.webVTT).applies(to: kind), kind == .transcript, "\(kind)")
+        }
+        XCTAssertEqual(TranscriptExportFormat.allCases.map(\.timedTextFormat), [.webVTT, .subRip])
+        XCTAssertEqual(TranscriptExportFormat.allCases.map(\.choiceID), ["transcript-webvtt", "transcript-srt"])
+        XCTAssertEqual(TranscriptExportFormat.jsonAndMarkdownChoiceID, "transcript-json")
+        XCTAssertEqual(TranscriptExportFormat(choiceID: "transcript-webvtt"), .webVTT)
+        XCTAssertEqual(TranscriptExportFormat(choiceID: "transcript-srt"), .subRip)
+        XCTAssertNil(TranscriptExportFormat(choiceID: "transcript-json"))
+        XCTAssertNil(TranscriptExportFormat(choiceID: "vtt"))
+    }
+
     /// A transcript is exported as captions only when transcript.json holds
     /// one that passes validation, as the store reads it; any other is
     /// refused with the words the export names it by.
@@ -234,5 +258,195 @@ final class TranscriptExportTests: XCTestCase {
             TranscriptExportError.unusable.localizedDescription,
             "The book's transcript couldn't be read, so it wasn't exported."
         )
+    }
+
+    // MARK: - Exporting
+
+    /// The plan of a transcript written as SubRip: one file,
+    /// "<stem> - Transcript.srt", converted from the book's transcript.json,
+    /// and not the Markdown the offer lists beside it.
+    func testThePlanOfSubRipIsOneFileAndNoMarkdown() throws {
+        let world = try makeIntegrationWorld("Transcript Export Plan")
+        let book = try makeTranscribedBook(in: world)
+        let stem = BookExportService.fileNameStem(for: book.title)
+        let destination = try makeSandboxDirectory("Transcript Export Plan Destination")
+        let offer = BookExportService.offer(for: book)
+        XCTAssertEqual(
+            offer.item(.transcript)?.files.map(\.path),
+            ["\(stem) - Transcript.json", "\(stem) - Transcript.md"],
+            "the offer lists the transcript and its Markdown"
+        )
+
+        let plan = BookExportService.plan(
+            [offer],
+            kinds: [.transcript],
+            conversions: [.transcript: .timedText(.subRip)],
+            in: destination
+        )
+
+        XCTAssertEqual(plan.files.map(\.file.path), ["\(stem) - Transcript.srt"])
+        XCTAssertEqual(plan.files.map(\.target), [destination.appendingPathComponent("\(stem) - Transcript.srt")])
+        XCTAssertEqual(
+            plan.files.map(\.file.source),
+            [.converted(
+                from: TextMouthPaths.transcriptPath(in: book.tmbDirectory),
+                book: ExportBookDetails(book),
+                by: .timedText(.subRip)
+            )]
+        )
+        XCTAssertEqual(plan.booksInCloud, [])
+    }
+
+    /// Exporting the transcript as WebVTT writes exactly one file, the book's
+    /// captions: the first track's sentences at their times, the second
+    /// track's 3,000 ms later, after the first track, and the "&" escaped.
+    func testExportingAsWebVTTWritesTheBooksCaptions() throws {
+        let world = try makeIntegrationWorld("Transcript Export WebVTT")
+        let book = try makeTranscribedBook(in: world)
+        let stem = BookExportService.fileNameStem(for: book.title)
+        let folder = try makeSandboxDirectory("Transcript Export WebVTT Folder")
+
+        let outcome = BookExportService.export(
+            [BookExportService.offer(for: book)],
+            kinds: [.transcript],
+            conversions: [.transcript: .timedText(.webVTT)],
+            to: folder
+        )
+
+        XCTAssertEqual(outcome.failures, [])
+        XCTAssertEqual(outcome.exported.map(\.lastPathComponent), ["\(stem) - Transcript.vtt"])
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), ["\(stem) - Transcript.vtt"])
+        XCTAssertEqual(
+            try Data(contentsOf: folder.appendingPathComponent("\(stem) - Transcript.vtt")),
+            Data(Self.harbourWebVTT.utf8)
+        )
+    }
+
+    /// Exporting the transcript as SubRip writes exactly one file: the same
+    /// captions in SubRip, after the byte-order mark, with CR LF line ends
+    /// and the "&" as it is.
+    func testExportingAsSubRipWritesTheBooksCaptions() throws {
+        let world = try makeIntegrationWorld("Transcript Export SubRip")
+        let book = try makeTranscribedBook(in: world)
+        let stem = BookExportService.fileNameStem(for: book.title)
+        let folder = try makeSandboxDirectory("Transcript Export SubRip Folder")
+
+        let outcome = BookExportService.export(
+            [BookExportService.offer(for: book)],
+            kinds: [.transcript],
+            conversions: [.transcript: .timedText(.subRip)],
+            to: folder
+        )
+
+        XCTAssertEqual(outcome.failures, [])
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), ["\(stem) - Transcript.srt"])
+        XCTAssertEqual(
+            try Data(contentsOf: folder.appendingPathComponent("\(stem) - Transcript.srt")),
+            Data([0xEF, 0xBB, 0xBF]) + Data(Self.harbourSubRip.utf8)
+        )
+    }
+
+    /// A transcript.json that holds no usable transcript is not exported as
+    /// captions: nothing is written, and the export names the file with why,
+    /// in the words the dialog says.
+    func testATranscriptThatCannotBeReadIsNotExported() throws {
+        let world = try makeIntegrationWorld("Transcript Export Unusable")
+        let book = try world.makeSilentAudioBook(title: "Harbour Captions", trackDurations: [3, 2])
+        let stem = BookExportService.fileNameStem(for: book.title)
+        var laterLayout = try TranscriptFixtures.transcript(of: book, sentences: Self.harbourSentences)
+        laterLayout.version = Transcript.currentVersion + 1
+        let laterBytes = try TranscriptStore.encoded(laterLayout)
+        // Bytes cut short partway, and a transcript of a later layout.
+        let unusable = [Data("{\"version\": 1, \"files\": [".utf8), laterBytes]
+
+        for (number, bytes) in unusable.enumerated() {
+            try bytes.write(to: TextMouthPaths.transcriptPath(in: book.tmbDirectory))
+            let folder = try makeSandboxDirectory("Transcript Export Unusable Folder \(number)")
+
+            let outcome = BookExportService.export(
+                [BookExportService.offer(for: book)],
+                kinds: [.transcript],
+                conversions: [.transcript: .timedText(.webVTT)],
+                to: folder
+            )
+
+            XCTAssertEqual(outcome.exported, [], "case \(number)")
+            XCTAssertEqual(
+                outcome.failures,
+                [BookExportFailure(
+                    name: "\(stem) - Transcript.vtt",
+                    reason: "The book's transcript couldn't be read, so it wasn't exported."
+                )],
+                "case \(number)"
+            )
+            XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), [], "case \(number)")
+            XCTAssertEqual(
+                BookExportWording.finished(outcome, folderName: "Captions"),
+                "Couldn't export \(stem) - Transcript.vtt: The book's transcript couldn't be read, so it wasn't exported.",
+                "case \(number)"
+            )
+        }
+    }
+
+    // MARK: - Support
+
+    /// What is heard in the two tracks of "Harbour Captions": two sentences
+    /// in its 3-second first track, one holding an "&", and one in its
+    /// 2-second second track. The words are invented, so a line of the debug
+    /// log that quoted them would stand out.
+    private static let harbourSentences: [String: [TranscriptSentence]] = [
+        "01.wav": [
+            TranscriptFixtures.sentence("Gulls argue over the net shed.", from: 0, to: 1_500),
+            TranscriptFixtures.sentence("Berths 4 & 5 stay shut till noon.", from: 1_500, to: 2_940),
+        ],
+        "02.wav": [
+            TranscriptFixtures.sentence("The pilot boat ties up at the slip.", from: 0, to: 1_920),
+        ],
+    ]
+
+    /// The captions of "Harbour Captions" in WebVTT.
+    private static let harbourWebVTT = [
+        "WEBVTT",
+        "",
+        "00:00:00.000 --> 00:00:01.500",
+        "Gulls argue over the net shed.",
+        "",
+        "00:00:01.500 --> 00:00:02.940",
+        "Berths 4 &amp; 5 stay shut till noon.",
+        "",
+        "00:00:03.000 --> 00:00:04.920",
+        "The pilot boat ties up at the slip.",
+    ].joined(separator: "\n") + "\n"
+
+    /// The captions of "Harbour Captions" in SubRip, without the byte-order
+    /// mark its file begins with.
+    private static let harbourSubRip = [
+        "1",
+        "00:00:00,000 --> 00:00:01,500",
+        "Gulls argue over the net shed.",
+        "",
+        "2",
+        "00:00:01,500 --> 00:00:02,940",
+        "Berths 4 & 5 stay shut till noon.",
+        "",
+        "3",
+        "00:00:03,000 --> 00:00:04,920",
+        "The pilot boat ties up at the slip.",
+    ].joined(separator: "\r\n") + "\r\n"
+
+    /// "Harbour Captions", an audiobook of two silent tracks of 3 and 2
+    /// seconds in `world`, transcribed as `harbourSentences` say: its
+    /// transcript.json and the Markdown written from it installed as a
+    /// transcription installs them.
+    private func makeTranscribedBook(in world: IntegrationWorld) throws -> Book {
+        let book = try world.makeSilentAudioBook(title: "Harbour Captions", trackDurations: [3, 2])
+        let transcript = try TranscriptFixtures.transcript(of: book, sentences: Self.harbourSentences)
+        XCTAssertEqual(
+            transcript.files.map(\.durationMilliseconds),
+            [3_000, 2_000],
+            "the tracks' lengths, by which the second track's captions are moved"
+        )
+        try TranscriptStore.install(transcript, for: book)
+        return book
     }
 }
