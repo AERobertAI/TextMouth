@@ -69,6 +69,22 @@ final class ArchiveBudgetTests: XCTestCase {
         }
     }
 
+    // MARK: - Sizes Past 64 Bits
+
+    /// Declared sizes add up without trapping (audit U19): a sum past what
+    /// 64 bits can count is the largest size, which no limit allows.
+    func testSaturatingSumPastSixtyFourBitsIsTheLargestSize() {
+        XCTAssertEqual(ArchiveInspection.saturatingSum(.max, 1), .max)
+        XCTAssertEqual(ArchiveInspection.saturatingSum(.max, .max), .max)
+    }
+
+    /// A sum that fits is exact, up to the largest size itself.
+    func testSaturatingSumThatFitsIsExact() {
+        XCTAssertEqual(ArchiveInspection.saturatingSum(0, 0), 0)
+        XCTAssertEqual(ArchiveInspection.saturatingSum(5, 7), 12)
+        XCTAssertEqual(ArchiveInspection.saturatingSum(.max - 1, 1), .max)
+    }
+
     // MARK: - Admission
 
     /// An archive within every limit is admitted, and its figures counted.
