@@ -167,4 +167,349 @@ final class TranscriptAttachTests: XCTestCase {
         book.sourceFilePath = nil
         XCTAssertNil(TranscriptAttachments.startingFolder(for: book))
     }
+
+    // MARK: - Attaching
+
+    /// The WebVTT sample attached to a 4-second audiobook becomes its
+    /// transcript, saved in its package and recording that it was attached
+    /// from "tone4.vtt", its first sentence naming its speaker and its cues
+    /// keeping their times; VoiceOver hears it, the row says the book is
+    /// transcribed, and the book is no longer being attached to.
+    func testAttachingTheWebVTTSampleMakesItTheBooksTranscript() async throws {
+        let world = try makeIntegrationWorld("Attach Transcript")
+        let book = try world.makeSilentAudioFileBook(title: "Four Tones", duration: 4)
+        let url = try copyOfFormatSample("vtt/tone4.vtt")
+        let transcribedBooks = TranscribedBooks()
+        let announcements = SheetAnnouncements()
+        let presenter = TranscriptionPresenter(services: {
+            self.makeSheetServices(transcribedBooks: transcribedBooks, announcements: announcements)
+        })
+
+        await presenter.attachTranscript(fileAt: url, to: book, library: world.library, window: nil)
+
+        XCTAssertNil(presenter.notice, presenter.notice?.message ?? "")
+        XCTAssertNil(presenter.attachReplacement, "a book without a transcript was asked about replacing one")
+        guard case .found(let transcript) = TranscriptStore.read(from: book.tmbDirectory) else {
+            return XCTFail("no transcript was saved")
+        }
+        XCTAssertEqual(transcript.source, TranscriptSource(origin: .attached, format: .webVTT, fileName: "tone4.vtt"))
+        XCTAssertEqual(transcript.files.first?.sentences.first?.text, "Ana: First tone, 440 hertz.")
+        XCTAssertEqual(transcript.files.first?.sentences.map(\.startMilliseconds), [0, 1_000, 2_000, 3_000])
+        XCTAssertEqual(announcements.messages, ["Attached “tone4.vtt” to Four Tones: 30 words."])
+        XCTAssertFalse(TranscriptAttachments.shared.bookIDs.contains(book.id), "the book is still being attached to")
+        XCTAssertTrue(transcribedBooks.contains(book.id), "the row does not say the book is transcribed")
+    }
+
+    /// One SubRip file times a book of two 2-second tracks across both, as
+    /// Export writes one: its first two cues land in the first track, and
+    /// its third and fourth in the second, timed from that track's start.
+    func testOneFileTimesABookOfTwoTracksAcrossBoth() async throws {
+        let world = try makeIntegrationWorld("Attach Transcript Tracks")
+        let book = try world.makeSilentAudioBook(title: "Two Tones", trackDurations: [2, 2])
+        let url = try copyOfFormatSample("srt/tone4.srt")
+        let announcements = SheetAnnouncements()
+        let presenter = TranscriptionPresenter(services: { self.makeSheetServices(announcements: announcements) })
+
+        await presenter.attachTranscript(fileAt: url, to: book, library: world.library, window: nil)
+
+        XCTAssertNil(presenter.notice, presenter.notice?.message ?? "")
+        guard case .found(let transcript) = TranscriptStore.read(from: book.tmbDirectory) else {
+            return XCTFail("no transcript was saved")
+        }
+        XCTAssertEqual(transcript.source, TranscriptSource(origin: .attached, format: .subRip, fileName: "tone4.srt"))
+        XCTAssertEqual(transcript.files.map(\.path), ["01.wav", "02.wav"])
+        let times = transcript.files.map { file in
+            file.sentences.map { [$0.startMilliseconds, $0.endMilliseconds] }
+        }
+        XCTAssertEqual(times, [[[0, 900], [1_000, 1_900]], [[0, 900], [1_000, 1_900]]])
+        XCTAssertEqual(announcements.messages, ["Attached “tone4.srt” to Two Tones: 34 words."])
+    }
+
+    // MARK: - Replacing a Transcript
+
+    /// A book with a transcript the user edited is asked about first, the
+    /// confirmation naming the edits and counting among the dialogs a speech
+    /// refusal's report waits for, and nothing changes until Replace,
+    /// which replaces the transcript. Attached again and cancelled, as the
+    /// alert's Cancel or Escape closes it, the transcript stays byte for
+    /// byte, nothing is announced, and the book is no longer being attached
+    /// to.
+    func testABooksTranscriptIsReplacedOnlyOnceTheListenerConfirms() async throws {
+        let world = try makeIntegrationWorld("Attach Transcript Replace")
+        let book = try world.makeSilentAudioFileBook(title: "Four Tones", duration: 4)
+        let path = try XCTUnwrap(try TranscriptionPlan.make(for: book).files.first?.path)
+        var edited = try TranscriptFixtures.transcript(
+            of: book,
+            sentences: [path: [TranscriptFixtures.sentence("Gulls circle the lock gates.", from: 0, to: 1_800)]]
+        )
+        edited.editedAt = TranscriptFixtures.date
+        try TranscriptStore.install(edited, for: book)
+        let transcriptFile = TextMouthPaths.transcriptPath(in: book.tmbDirectory)
+        let before = try Data(contentsOf: transcriptFile)
+        let url = try copyOfFormatSample("vtt/tone4.vtt")
+        let announcements = SheetAnnouncements()
+        let presenter = TranscriptionPresenter(services: {
+            // The transcript as the book's package holds it at each ask.
+            self.makeSheetServices(transcript: TranscriptStore.read(from: book.tmbDirectory), announcements: announcements)
+        })
+
+        await presenter.attachTranscript(fileAt: url, to: book, library: world.library, window: nil)
+
+        let request = try XCTUnwrap(presenter.attachReplacement, "the replacement was not confirmed first")
+        XCTAssertEqual(request.book.id, book.id)
+        XCTAssertEqual(request.fileName, "tone4.vtt")
+        XCTAssertTrue(request.isEdited)
+        XCTAssertFalse(request.isCleanedUp)
+        XCTAssertTrue(presenter.isShowingAny, "a speech refusal's report would not wait for the confirmation")
+        XCTAssertEqual(
+            TranscriptionWording.replaceConfirmationMessage(
+                fileName: request.fileName,
+                isEdited: request.isEdited,
+                isCleanedUp: request.isCleanedUp
+            ),
+            "The transcript from “tone4.vtt” replaces the book's transcript and the text made from it. "
+                + "The audiobook's audio, your place, and your bookmarks stay as they are. "
+                + "Your edits to the transcript are replaced too."
+        )
+        XCTAssertTrue(TranscriptAttachments.shared.bookIDs.contains(book.id), "the book stopped being attached to while asked")
+        XCTAssertEqual(try Data(contentsOf: transcriptFile), before, "the transcript changed before the listener confirmed")
+        XCTAssertEqual(announcements.messages, [])
+
+        await presenter.replaceConfirmed(request)
+
+        XCTAssertNil(presenter.attachReplacement)
+        XCTAssertNil(presenter.notice, presenter.notice?.message ?? "")
+        guard case .found(let replaced) = TranscriptStore.read(from: book.tmbDirectory) else {
+            return XCTFail("the replacement saved no transcript")
+        }
+        XCTAssertEqual(replaced.source, TranscriptSource(origin: .attached, format: .webVTT, fileName: "tone4.vtt"))
+        XCTAssertNil(replaced.editedAt, "the replaced transcript's edits stayed")
+        XCTAssertEqual(replaced.files.first?.sentences.first?.text, "Ana: First tone, 440 hertz.")
+        XCTAssertEqual(announcements.messages, ["Attached “tone4.vtt” to Four Tones: 30 words."])
+        XCTAssertFalse(TranscriptAttachments.shared.bookIDs.contains(book.id), "the book is still being attached to")
+
+        // Attached again, and cancelled as the alert's dismissal does.
+        let replacedBytes = try Data(contentsOf: transcriptFile)
+        await presenter.attachTranscript(fileAt: url, to: book, library: world.library, window: nil)
+        let second = try XCTUnwrap(presenter.attachReplacement, "the second replacement was not confirmed first")
+        XCTAssertFalse(second.isEdited)
+        presenter.attachReplacement = nil
+
+        XCTAssertFalse(presenter.isShowingAny, "a dialog still counts once the confirmation was cancelled")
+        XCTAssertEqual(try Data(contentsOf: transcriptFile), replacedBytes, "a cancelled replacement changed the transcript")
+        XCTAssertFalse(TranscriptAttachments.shared.bookIDs.contains(book.id), "a cancelled replacement left the book being attached to")
+        XCTAssertEqual(announcements.messages.count, 1, "a cancelled replacement was announced")
+    }
+
+    /// A transcript of a later layout, which this TextMouth cannot read, is
+    /// replaced only once confirmed, though nothing can be said of its edits;
+    /// a transcript set aside as unusable is replaced at once, as there is
+    /// nothing in it the listener would lose.
+    func testALaterLayoutIsAskedAboutAndAnUnusableTranscriptIsNot() async throws {
+        let world = try makeIntegrationWorld("Attach Transcript Layouts")
+        let book = try world.makeSilentAudioFileBook(title: "Four Tones", duration: 4)
+        let url = try copyOfFormatSample("vtt/tone4.vtt")
+        let later = TranscriptionPresenter(services: { self.makeSheetServices(transcript: .unsupportedVersion(2)) })
+
+        await later.attachTranscript(fileAt: url, to: book, library: world.library, window: nil)
+
+        let request = try XCTUnwrap(later.attachReplacement, "a later layout's transcript was replaced unasked")
+        XCTAssertFalse(request.isEdited)
+        XCTAssertFalse(request.isCleanedUp)
+        XCTAssertEqual(TranscriptStore.read(from: book.tmbDirectory), .missing, "a transcript was saved before the listener confirmed")
+        later.attachReplacement = nil
+        XCTAssertFalse(TranscriptAttachments.shared.bookIDs.contains(book.id), "a cancelled replacement left the book being attached to")
+
+        let unusable = TranscriptionPresenter(services: { self.makeSheetServices(transcript: .unusable("damaged")) })
+        await unusable.attachTranscript(fileAt: url, to: book, library: world.library, window: nil)
+
+        XCTAssertNil(unusable.attachReplacement, "an unusable transcript was asked about")
+        XCTAssertNil(unusable.notice, unusable.notice?.message ?? "")
+        guard case .found(let transcript) = TranscriptStore.read(from: book.tmbDirectory) else {
+            return XCTFail("no transcript was saved in place of the unusable one")
+        }
+        XCTAssertEqual(transcript.source?.fileName, "tone4.vtt")
+    }
+
+    // MARK: - Refusals
+
+    /// A .vtt file without its WEBVTT line is refused with the reader's own
+    /// reason, and nothing is saved.
+    func testAFileThatIsNotWebVTTIsRefused() async throws {
+        let world = try makeIntegrationWorld("Attach Transcript Garbage")
+        let book = try world.makeSilentAudioFileBook(title: "Four Tones", duration: 4)
+        let url = try makeSandboxDirectory("Attach Garbage").appendingPathComponent("garbage.vtt")
+        try Data("Gulls circle the lock gates.\n\n00:00.000 --> 00:01.000\nNo signature line above.\n".utf8).write(to: url)
+        let presenter = TranscriptionPresenter(services: { self.makeSheetServices() })
+
+        await presenter.attachTranscript(fileAt: url, to: book, library: world.library, window: nil)
+
+        XCTAssertEqual(presenter.notice?.title, "Attach Transcript")
+        XCTAssertEqual(
+            presenter.notice?.message,
+            "“garbage.vtt” wasn't attached to Four Tones: The file isn't a WebVTT transcript TextMouth can read."
+        )
+        assertNothingAttached(to: book, by: presenter)
+    }
+
+    /// A file whose last cue ends at 20 seconds, made for other audio than a
+    /// 4-second book's, is refused, saying how far past the audio it runs.
+    func testAFileRunningPastTheEndOfTheAudioIsRefused() async throws {
+        let world = try makeIntegrationWorld("Attach Transcript Too Long")
+        let book = try world.makeSilentAudioFileBook(title: "Four Tones", duration: 4)
+        let url = try makeSandboxDirectory("Attach Too Long").appendingPathComponent("lecture.vtt")
+        try Data("WEBVTT\n\n00:00.000 --> 00:01.000\nThe lock opens.\n\n00:19.000 --> 00:20.000\nThe barge goes through.\n".utf8)
+            .write(to: url)
+        let audioEnd = try TranscriptionPlan.make(for: book).files.reduce(0) { $0 + Transcript.milliseconds($1.duration) }
+        let reason = try XCTUnwrap(OutsideTranscriptError.runsPastTheEnd(transcriptEnd: 20_000, audioEnd: audioEnd).errorDescription)
+        let presenter = TranscriptionPresenter(services: { self.makeSheetServices() })
+
+        await presenter.attachTranscript(fileAt: url, to: book, library: world.library, window: nil)
+
+        XCTAssertEqual(presenter.notice?.title, "Attach Transcript")
+        XCTAssertEqual(presenter.notice?.message, "“lecture.vtt” wasn't attached to Four Tones: \(reason)")
+        assertNothingAttached(to: book, by: presenter)
+    }
+
+    /// A file of another kind is refused by its name, whatever it holds: the
+    /// WebVTT sample named as plain text is not read.
+    func testAFileOfAnotherKindIsRefused() async throws {
+        let world = try makeIntegrationWorld("Attach Transcript Text File")
+        let book = try world.makeSilentAudioFileBook(title: "Four Tones", duration: 4)
+        let url = try copyOfFormatSample("vtt/tone4.vtt", named: "tone4.txt")
+        let presenter = TranscriptionPresenter(services: { self.makeSheetServices() })
+
+        await presenter.attachTranscript(fileAt: url, to: book, library: world.library, window: nil)
+
+        XCTAssertEqual(presenter.notice?.title, "Attach Transcript")
+        XCTAssertEqual(
+            presenter.notice?.message,
+            "“tone4.txt” wasn't attached to Four Tones: TextMouth attaches WebVTT (.vtt) and SubRip (.srt) files."
+        )
+        assertNothingAttached(to: book, by: presenter)
+    }
+
+    /// A book whose transcript is only in iCloud keeps it, neither read nor
+    /// replaced, and one whose text is only there keeps that: each notice
+    /// says to download the book first.
+    func testABookOnlyInICloudIsRefused() async throws {
+        let world = try makeIntegrationWorld("Attach Transcript Cloud")
+        let book = try world.makeSilentAudioFileBook(title: "Four Tones", duration: 4)
+        let url = try copyOfFormatSample("vtt/tone4.vtt")
+        let transcriptInCloud = TranscriptionPresenter(services: { self.makeSheetServices(transcript: .inCloud) })
+        let textInCloud = TranscriptionPresenter(services: { self.makeSheetServices(textInCloud: true) })
+
+        await transcriptInCloud.attachTranscript(fileAt: url, to: book, library: world.library, window: nil)
+        await textInCloud.attachTranscript(fileAt: url, to: book, library: world.library, window: nil)
+
+        XCTAssertEqual(
+            transcriptInCloud.notice?.message,
+            "“tone4.vtt” wasn't attached to Four Tones: The book's transcript is only in iCloud, "
+                + "so TextMouth leaves it as it is. Download the book, then try again."
+        )
+        XCTAssertEqual(
+            textInCloud.notice?.message,
+            "“tone4.vtt” wasn't attached to Four Tones: The book's text is only in iCloud, "
+                + "so TextMouth leaves it as it is. Download the book, then try again."
+        )
+        assertNothingAttached(to: book, by: transcriptInCloud)
+        assertNothingAttached(to: book, by: textInCloud)
+    }
+
+    /// While the same book is being transcribed, the command says to wait
+    /// instead of opening its Open panel, and a file chosen before the
+    /// transcription began is not attached.
+    func testABookBeingTranscribedIsRefused() async throws {
+        let world = try makeIntegrationWorld("Attach Transcript Busy")
+        let book = try world.makeSilentAudioBook(title: "Long Pier Recordings", trackDurations: [20])
+        let url = try copyOfFormatSample("vtt/tone4.vtt")
+        let center = makeScriptedCenter(script: TranscriptionUIScripts.longTrack, pause: .milliseconds(100))
+        XCTAssertTrue(center.start(book, language: "en-US", library: world.library, window: nil))
+        let presenter = TranscriptionPresenter(services: { self.makeSheetServices(center: center) })
+
+        presenter.chooseTranscriptFile(for: book, library: world.library, window: nil)
+
+        XCTAssertFalse(presenter.isChoosingTranscriptFile, "the Open panel opened")
+        XCTAssertEqual(presenter.notice?.title, "Attach Transcript")
+        XCTAssertEqual(presenter.notice?.message, Self.waitWhileTranscribing("Long Pier Recordings"))
+
+        presenter.notice = nil
+        await presenter.attachTranscript(fileAt: url, to: book, library: world.library, window: nil)
+
+        XCTAssertEqual(presenter.notice?.title, "Attach Transcript")
+        XCTAssertEqual(presenter.notice?.message, Self.waitWhileTranscribing("Long Pier Recordings"))
+        assertNothingAttached(to: book, by: presenter)
+        center.cancel()
+        let ended = await eventuallyHolds { center.current == nil }
+        XCTAssertTrue(ended, "the transcription never stopped")
+    }
+
+    /// A transcription of the book begun while the confirmation showed keeps
+    /// Replace from attaching, since it would save its own transcript over
+    /// the file's: the notice says to wait, the transcript stays byte for
+    /// byte, and the book is no longer being attached to.
+    func testATranscriptionBegunWhileAskingKeepsReplaceFromAttaching() async throws {
+        let world = try makeIntegrationWorld("Attach Transcript Busy Later")
+        let book = try world.makeSilentAudioBook(title: "Long Pier Recordings", trackDurations: [20])
+        try TranscriptStore.install(
+            try TranscriptFixtures.transcript(
+                of: book,
+                sentences: ["01.wav": [TranscriptFixtures.sentence("Bollards line the old pier.", from: 0, to: 1_500)]]
+            ),
+            for: book
+        )
+        let transcriptFile = TextMouthPaths.transcriptPath(in: book.tmbDirectory)
+        let before = try Data(contentsOf: transcriptFile)
+        let url = try copyOfFormatSample("vtt/tone4.vtt")
+        let center = makeScriptedCenter(script: TranscriptionUIScripts.longTrack, pause: .milliseconds(100))
+        let announcements = SheetAnnouncements()
+        let presenter = TranscriptionPresenter(services: {
+            self.makeSheetServices(
+                transcript: TranscriptStore.read(from: book.tmbDirectory),
+                center: center,
+                announcements: announcements
+            )
+        })
+        await presenter.attachTranscript(fileAt: url, to: book, library: world.library, window: nil)
+        let request = try XCTUnwrap(presenter.attachReplacement, "the replacement was not confirmed first")
+        XCTAssertTrue(center.start(book, language: "en-US", library: world.library, window: nil))
+
+        await presenter.replaceConfirmed(request)
+
+        XCTAssertEqual(presenter.notice?.title, "Attach Transcript")
+        XCTAssertEqual(presenter.notice?.message, Self.waitWhileTranscribing("Long Pier Recordings"))
+        XCTAssertEqual(try Data(contentsOf: transcriptFile), before, "the file was attached during the transcription")
+        XCTAssertEqual(announcements.messages, [])
+        XCTAssertFalse(TranscriptAttachments.shared.bookIDs.contains(book.id), "the book is still being attached to")
+        center.cancel()
+        let ended = await eventuallyHolds { center.current == nil }
+        XCTAssertTrue(ended, "the transcription never stopped")
+    }
+
+    // MARK: - Helpers
+
+    /// What the notice says while the book `bookTitle` is being transcribed,
+    /// as `testTheCommandsWords` pins it.
+    private static func waitWhileTranscribing(_ bookTitle: String) -> String {
+        "\(bookTitle) is being transcribed. Cancel the transcription first, or attach the transcript once it finishes."
+    }
+
+    /// Checks that nothing was attached to `book` through `presenter`: no
+    /// transcript in its package, no confirmation showing, and the book no
+    /// longer being attached to.
+    private func assertNothingAttached(
+        to book: Book,
+        by presenter: TranscriptionPresenter,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(TranscriptStore.read(from: book.tmbDirectory), .missing, "a transcript was saved", file: file, line: line)
+        XCTAssertNil(presenter.attachReplacement, "a replacement was asked about", file: file, line: line)
+        XCTAssertFalse(
+            TranscriptAttachments.shared.bookIDs.contains(book.id),
+            "the book is still being attached to",
+            file: file,
+            line: line
+        )
+    }
 }

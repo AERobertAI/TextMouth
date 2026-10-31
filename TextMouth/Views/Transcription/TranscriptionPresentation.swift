@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 // MARK: - A Window's Transcription Dialogs
@@ -13,6 +14,32 @@ struct TranscriptDeletionRequest: Identifiable, Equatable {
     let isEdited: Bool
 }
 
+/// Asking to replace an audiobook's transcript with one from a WebVTT or
+/// SubRip file (FMT23): the confirmation names the book and the file, and
+/// says whether the user's own edits, or a cleanup, go too. It carries the
+/// file as it was read, so Replace attaches what the listener chose
+/// without reading the file again.
+struct TranscriptAttachRequest: Identifiable, Equatable {
+    /// Tells confirmations apart.
+    let id = UUID()
+    /// The book whose transcript would be replaced.
+    let book: Book
+    /// The file the new transcript comes from.
+    let fileURL: URL
+    /// What the file holds, as it was read.
+    let document: TimedTextDocument
+    /// Whether the user edited the transcript the book has.
+    let isEdited: Bool
+    /// Whether the transcript the book has was cleaned up.
+    let isCleanedUp: Bool
+
+    /// The file's name, as the confirmation and VoiceOver say it: never a
+    /// path.
+    var fileName: String {
+        fileURL.lastPathComponent
+    }
+}
+
 /// A sentence a window's transcription dialogs show with OK: why a command
 /// did nothing, or why it failed.
 struct TranscriptionNotice: Identifiable, Equatable {
@@ -26,9 +53,10 @@ struct TranscriptionNotice: Identifiable, Equatable {
 
 /// The transcription dialogs of one window (FR05), a Library window or a
 /// book's: the Transcribe Audio sheet its commands open, the Clean Up sheet,
-/// the confirmation before Delete Transcript, and a notice saying why a
-/// command did nothing. The window's commands ask here, and
-/// `TranscriptionPresentation` shows what is asked.
+/// the confirmation before Delete Transcript, Attach Transcript…'s Open
+/// panel and its confirmation before a transcript is replaced (FMT23), and
+/// a notice saying why a command did nothing. The window's commands ask
+/// here, and `TranscriptionPresentation` shows what is asked.
 @MainActor
 final class TranscriptionPresenter: ObservableObject {
     /// The Transcribe Audio sheet showing, or nil.
@@ -37,14 +65,31 @@ final class TranscriptionPresenter: ObservableObject {
     @Published var cleanup: TranscriptCleanupSheetModel?
     /// The confirmation before deleting a transcript, while it shows.
     @Published var deletion: TranscriptDeletionRequest?
+    /// The confirmation before a transcript from a file replaces the book's
+    /// own (FMT23), while it shows. Its book is being attached to
+    /// (`TranscriptAttachments`) while it shows; once it goes, by Cancel,
+    /// Escape, or the alert's closing, the attaching ends, unless another
+    /// confirmation shows for the same book, and Replace begins it again
+    /// until the transcript is saved (`replaceConfirmed(_:)`).
+    @Published var attachReplacement: TranscriptAttachRequest? {
+        didSet {
+            if let oldValue, oldValue.book.id != attachReplacement?.book.id {
+                TranscriptAttachments.shared.end(oldValue.book.id)
+            }
+        }
+    }
     /// The notice showing, or nil.
     @Published var notice: TranscriptionNotice?
+    /// Whether Attach Transcript…'s Open panel shows on this window (FMT23).
+    @Published private(set) var isChoosingTranscriptFile = false
 
-    /// Whether any of the dialogs shows: a sheet, the confirmation, or the
-    /// notice. A book's window waits for none to show before it shows the
-    /// report of a speech refusal (`SpeechRefusalReportPresenter`).
+    /// Whether any of the dialogs shows: a sheet, a confirmation, the Open
+    /// panel, or the notice. A book's window waits for none to show before
+    /// it shows the report of a speech refusal
+    /// (`SpeechRefusalReportPresenter`).
     var isShowingAny: Bool {
-        sheet != nil || cleanup != nil || deletion != nil || notice != nil
+        sheet != nil || cleanup != nil || deletion != nil || attachReplacement != nil
+            || isChoosingTranscriptFile || notice != nil
     }
 
     /// What the dialogs reach: the app's own, unless a test passes its own.
@@ -56,6 +101,10 @@ final class TranscriptionPresenter: ObservableObject {
     private weak var deletionLibrary: LibraryViewModel?
     /// The window a confirmed deletion is announced from.
     private weak var deletionWindow: NSWindow?
+    /// The library a confirmed replacement attaches in (FMT23).
+    private weak var attachLibrary: LibraryViewModel?
+    /// The window a confirmed replacement is announced from.
+    private weak var attachWindow: NSWindow?
 
     /// A presenter whose dialogs reach `services`, and whose Clean Up sheet
     /// reaches `cleanupServices`.
@@ -195,12 +244,265 @@ final class TranscriptionPresenter: ObservableObject {
         library.bookUpdates.transcriptReplaced(bookID: book.id, with: nil)
         services.announce(TranscriptionWording.deleted(bookTitle: book.title), window)
     }
+
+    // MARK: Attach Transcript
+
+    /// Book > Attach Transcript… (FMT23): asks for a WebVTT or SubRip file
+    /// to make `book`'s transcript, in an Open panel as a sheet on `window`
+    /// (on its own without one), and attaches the file chosen through
+    /// `library` (`attachTranscript(fileAt:to:library:window:)`). The panel
+    /// starts in the folder the book was imported from, where its
+    /// transcript most likely lies, when that is still there
+    /// (`TranscriptAttachments.startingFolder(for:)`).
+    ///
+    /// While the same book is being transcribed, a notice says to wait
+    /// instead. Nothing opens for a book the command is never offered for,
+    /// or one a transcript is being attached to
+    /// (`TranscriptAttachments.canAttach`), the menu's own rule, so every
+    /// path through here agrees with it; nor while this window's Open panel
+    /// or confirmation shows already, so a second panel never waits behind
+    /// the first.
+    func chooseTranscriptFile(for book: Book, library: LibraryViewModel, window: NSWindow?) {
+        guard !isChoosingTranscriptFile, attachReplacement == nil,
+              TranscriptAttachments.canAttach(book, attaching: TranscriptAttachments.shared.bookIDs) else { return }
+        if let busy = Self.transcribingNotice(for: book, center: services().center) {
+            notice = busy
+            return
+        }
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = TranscriptAttachments.fileTypes
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.message = TranscriptionWording.attachPanelMessage(bookTitle: book.title)
+        panel.prompt = TranscriptionWording.attachPanelPrompt
+        if let folder = TranscriptAttachments.startingFolder(for: book) {
+            panel.directoryURL = folder
+        }
+        isChoosingTranscriptFile = true
+        let finish: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+            guard let self else { return }
+            self.isChoosingTranscriptFile = false
+            guard response == .OK, let url = panel.url else { return }
+            Task {
+                await self.attachTranscript(fileAt: url, to: book, library: library, window: window)
+            }
+        }
+        if let window {
+            panel.beginSheetModal(for: window, completionHandler: finish)
+        } else {
+            panel.begin(completionHandler: finish)
+        }
+    }
+
+    /// Attaches the WebVTT or SubRip file at `url` to `book` as its
+    /// transcript (FMT23), timed on the book's audio from its start, through
+    /// `library`, announcing from `window`. The file is read off the main
+    /// thread. When the book has a transcript, or one of a later layout this
+    /// TextMouth cannot read, the listener is asked first
+    /// (`attachReplacement`); otherwise the transcript is saved at once
+    /// (`saveAttachment`).
+    ///
+    /// A book being transcribed, a file of another kind, one that cannot be
+    /// read, and a book whose transcript or text is only in iCloud each give
+    /// a notice saying why, and change nothing. The book is being attached
+    /// to (`TranscriptAttachments`) from now until its transcript is saved
+    /// or refused, or the confirmation goes.
+    func attachTranscript(fileAt url: URL, to book: Book, library: LibraryViewModel, window: NSWindow?) async {
+        let attachments = TranscriptAttachments.shared
+        attachments.begin(book.id)
+        // Every way out ends the attaching but the confirmation's: while the
+        // confirmation shows, the book is still being attached to, and its
+        // answer ends the attaching (`attachReplacement`).
+        var isAsking = false
+        defer {
+            if !isAsking {
+                attachments.end(book.id)
+            }
+        }
+        let services = services()
+        // A transcription that began while the Open panel showed is said
+        // before the file is read or a replacement is asked about.
+        if let busy = Self.transcribingNotice(for: book, center: services.center) {
+            notice = busy
+            return
+        }
+        guard let format = TimedTextFormat.cueFileFormat(forExtension: url.pathExtension) else {
+            showAttachFailure(TranscriptionWording.attachUnknownFormat, fileAt: url, to: book)
+            return
+        }
+        let document: TimedTextDocument
+        do {
+            document = try await OffMainWork.runThrowing { try TimedTextReader.read(fileAt: url, as: format) }
+        } catch {
+            showAttachFailure(error.localizedDescription, fileAt: url, to: book)
+            return
+        }
+        // What the book has: a transcript only in iCloud is neither read nor
+        // replaced unseen, and a text only there is never written over
+        // (`TranscriptStore.install`), so each waits for the book's download.
+        let lookup = await services.readTranscript(book)
+        let found: Transcript?
+        let asksFirst: Bool
+        switch lookup {
+        case .inCloud:
+            showAttachFailure(TranscriptionWording.transcriptInCloud, fileAt: url, to: book)
+            return
+        case .found(let transcript):
+            found = transcript
+            asksFirst = true
+        case .unsupportedVersion:
+            // A later TextMouth's transcript, which this one cannot read,
+            // and so cannot say was edited or cleaned up.
+            found = nil
+            asksFirst = true
+        case .missing, .unusable:
+            // No transcript, or one set aside as unusable: nothing the
+            // listener would lose.
+            found = nil
+            asksFirst = false
+        }
+        if await services.isTextInCloud(book) {
+            showAttachFailure(TranscriptionWording.textInCloud, fileAt: url, to: book)
+            return
+        }
+        guard asksFirst else {
+            await saveAttachment(document, from: url, to: book, library: library, window: window)
+            return
+        }
+        attachLibrary = library
+        attachWindow = window
+        attachReplacement = TranscriptAttachRequest(
+            book: book,
+            fileURL: url,
+            document: document,
+            isEdited: found?.editedAt != nil,
+            isCleanedUp: found?.cleanedUp != nil
+        )
+        isAsking = true
+    }
+
+    /// Replaces the book's transcript with the file's once the listener has
+    /// confirmed `request` (FMT23), saving it as `saveAttachment` does,
+    /// through the library and from the window the request was made in.
+    /// The book is being attached to until its transcript is saved or
+    /// refused.
+    func replaceConfirmed(_ request: TranscriptAttachRequest) async {
+        let attachments = TranscriptAttachments.shared
+        if attachReplacement?.id == request.id {
+            attachReplacement = nil
+        }
+        // The confirmation's going ended the attaching, here or as the alert
+        // closed before this ran: it goes on until the transcript is saved
+        // or refused.
+        attachments.begin(request.book.id)
+        defer { attachments.end(request.book.id) }
+        guard let library = attachLibrary else { return }
+        await saveAttachment(request.document, from: request.fileURL, to: request.book, library: library, window: attachWindow)
+    }
+
+    /// Saves `document`, read from the file at `url`, as the transcript of
+    /// `requested` as the library holds the book now, through `library`,
+    /// announcing from `window`, off the main thread: timed on the book's
+    /// audio from its start, so a book of several tracks takes one file for
+    /// the whole book, its times running on across the tracks
+    /// (`OutsideTranscript.transcript(bookTimeline:plan:source:now:hasher:)`).
+    ///
+    /// A transcription of the same book begun meanwhile gives the notice
+    /// saying to wait, and a transcript that cannot be made or saved a notice
+    /// saying why; neither changes anything. The book's Edit Text session is
+    /// settled and ended before the text it edits is replaced, and begun
+    /// again if the save fails, as Delete Transcript does. Once saved, the
+    /// library row says the book is transcribed, an open reader shows the
+    /// text, and VoiceOver hears how many words it holds.
+    private func saveAttachment(
+        _ document: TimedTextDocument,
+        from url: URL,
+        to requested: Book,
+        library: LibraryViewModel,
+        window: NSWindow?
+    ) async {
+        let services = services()
+        // A transcription begun while the file was read, or while the
+        // confirmation showed, would save its own transcript over this one.
+        if let busy = Self.transcribingNotice(for: requested, center: services.center) {
+            notice = busy
+            return
+        }
+        let book = library.bookByID(requested.id) ?? requested
+        let sentences = document.sentences
+        let source = TranscriptSource(origin: .attached, format: document.format, fileName: url.lastPathComponent)
+        let transcript: Transcript
+        do {
+            // Measuring and fingerprinting the audio reads each file whole.
+            transcript = try await OffMainWork.runThrowing { () throws -> Transcript in
+                let plan = try TranscriptionPlan.make(for: book)
+                return try OutsideTranscript.transcript(bookTimeline: sentences, plan: plan, source: source)
+            }
+        } catch {
+            showAttachFailure(error.localizedDescription, fileAt: url, to: book)
+            return
+        }
+        // The new transcript replaces the text the listener may be editing:
+        // an edit saved but not yet taken is taken first, and the session
+        // ends; if the save fails, the session begins again, so the
+        // listener's later saves are still taken.
+        let wasEditing = await services.pauseTextEdit(book)
+        let installation: TranscriptInstallation
+        do {
+            installation = try await OffMainWork.runThrowing { try TranscriptStore.install(transcript, for: book) }
+        } catch {
+            if wasEditing { await services.resumeTextEdit(book) }
+            showAttachFailure(error.localizedDescription, fileAt: url, to: book)
+            return
+        }
+        services.transcribedBooks.record(book.id, isTranscribed: true)
+        library.bookUpdates.transcriptReplaced(bookID: book.id, with: installation.text)
+        services.announce(
+            TranscriptionWording.attached(
+                fileName: url.lastPathComponent,
+                bookTitle: book.title,
+                wordCount: transcript.wordCount,
+                skipped: document.skippedCueCount
+            ),
+            window
+        )
+        // Counts and the format alone: never the transcript's words, nor a path.
+        let sentenceCount = transcript.files.reduce(0) { $0 + $1.sentences.count }
+        DiagnosticLog.event(
+            .storage,
+            "TRANSCRIPT_ATTACHED: \(book.title): \(document.format.name) file, \(sentenceCount) sentences, "
+                + "\(document.skippedCueCount) passages left out"
+        )
+    }
+
+    /// The notice saying `book` is being transcribed, while `center`
+    /// transcribes it, or nil (FMT23): a transcript is never attached while
+    /// the book's own transcription would save another over it.
+    private static func transcribingNotice(for book: Book, center: TranscriptionJobCenter) -> TranscriptionNotice? {
+        guard center.current?.bookID == book.id else { return nil }
+        return TranscriptionNotice(
+            title: TranscriptionWording.attachNoticeTitle,
+            message: TranscriptionWording.attachWhileTranscribing(bookTitle: book.title)
+        )
+    }
+
+    /// Shows why the file at `url` was not attached to `book` (FMT23):
+    /// `reason`, a sentence of its own, in the Attach Transcript notice.
+    private func showAttachFailure(_ reason: String, fileAt url: URL, to book: Book) {
+        notice = TranscriptionNotice(
+            title: TranscriptionWording.attachNoticeTitle,
+            message: TranscriptionWording.attachFailed(fileName: url.lastPathComponent, bookTitle: book.title, reason: reason)
+        )
+    }
 }
 
 /// Shows a window's transcription dialogs (FR05): the Transcribe Audio
-/// sheet, the Clean Up sheet, the confirmation before Delete Transcript,
-/// whose Cancel Escape presses, and the notice saying why a command did
-/// nothing. A modifier of its own, so a window's body grows by one line.
+/// sheet, the Clean Up sheet, the confirmation before Delete Transcript and
+/// the one before a transcript from a file replaces the book's own (FMT23),
+/// each a standard alert whose Cancel Escape presses, and the notice saying
+/// why a command did nothing. A modifier of its own, so a window's body
+/// grows by one line.
 struct TranscriptionPresentation: ViewModifier {
     /// The window's dialogs.
     @ObservedObject var presenter: TranscriptionPresenter
@@ -226,6 +528,26 @@ struct TranscriptionPresentation: ViewModifier {
                 Button(TranscriptionWording.cancelTitle, role: .cancel) {}
             } message: { request in
                 Text(TranscriptionWording.deleteConfirmationMessage(isEdited: request.isEdited))
+            }
+            // Cancel, Escape, or the alert's closing ends the book's
+            // attaching (`TranscriptionPresenter.attachReplacement`).
+            .alert(
+                presenter.attachReplacement.map { TranscriptionWording.replaceConfirmationTitle(bookTitle: $0.book.title) } ?? "",
+                isPresented: isShowing(\.attachReplacement),
+                presenting: presenter.attachReplacement
+            ) { request in
+                Button(TranscriptionWording.replaceButtonTitle, role: .destructive) {
+                    Task {
+                        await presenter.replaceConfirmed(request)
+                    }
+                }
+                Button(TranscriptionWording.cancelTitle, role: .cancel) {}
+            } message: { request in
+                Text(TranscriptionWording.replaceConfirmationMessage(
+                    fileName: request.fileName,
+                    isEdited: request.isEdited,
+                    isCleanedUp: request.isCleanedUp
+                ))
             }
             .alert(
                 presenter.notice?.title ?? "",
