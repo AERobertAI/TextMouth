@@ -386,6 +386,15 @@ extension HTMLNesting {
         try parse(html, readBy: TreeBuilder(reading: html)) { try SwiftSoup.parse($0, baseURI) }
     }
 
+    /// `html` parsed exactly as `SwiftSoup.parseBodyFragment(html, baseURI)`
+    /// parses it, as the body of an empty document, or, when its elements
+    /// may nest past `deepestParsedLevel`, as its words alone, as
+    /// `parse(_:baseURI:)` reads them. SwiftSoup reads a fragment with its
+    /// HTML tree builder, whatever it begins with.
+    static func parseBodyFragment(_ html: String, baseURI: String = "") throws -> Document {
+        try parse(html, readBy: .html) { try SwiftSoup.parseBodyFragment($0, baseURI) }
+    }
+
     /// `html` handed to `swiftSoup` as it is, when `builder` nests its
     /// elements within `deepestParsedLevel`, or else its words alone in one
     /// paragraph, with one event in the log naming only the markup's length.

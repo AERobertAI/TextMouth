@@ -542,6 +542,25 @@ final class HTMLNestingTests: XCTestCase {
         )
     }
 
+    /// A fragment past the limit, such as a feed's title, is parsed as its
+    /// words alone, as the body of an empty document. One within it is
+    /// parsed exactly as SwiftSoup parses a body fragment, by its HTML tree
+    /// builder even after an XML declaration, so 1,500 unclosed paragraphs
+    /// nest nothing there.
+    func testAFragmentIsParsedAsSwiftSoupParsesItOrAsItsWordsAlone() throws {
+        let deep = repeated("<span>", 1_200) + "Deep words" + repeated("</span>", 1_200)
+        let document = try HTMLNesting.parseBodyFragment(deep)
+        XCTAssertEqual(try document.body()?.text(), "Deep words")
+        XCTAssertTrue(try document.select("span").isEmpty())
+        for fragment in ["Soup <b>for</b> one", "<?xml version=\"1.0\"?>" + repeated("<p>Words ", 1_500)] {
+            XCTAssertEqual(
+                try HTMLNesting.parseBodyFragment(fragment).outerHtml(),
+                try SwiftSoup.parseBodyFragment(fragment).outerHtml(),
+                String(fragment.prefix(40))
+            )
+        }
+    }
+
     /// XML markup past the limit is read as its words by the HTML tree
     /// builder, in one paragraph.
     func testXMLMarkupPastTheLimitIsReadAsItsWords() throws {
