@@ -420,6 +420,62 @@ final class TMBPackageImportTests: XCTestCase {
         XCTAssertEqual(opened.ids, [package.bookID])
     }
 
+    /// A package chosen in Open Book… in a folder, at the Reading List, for a
+    /// book the library does not list takes the folder and the reading-list
+    /// request, as a file imported there does: the book lands in the folder,
+    /// joins the end of the list, and opens (data review, finding 7). Until
+    /// then it landed at the top level, off the list, with nothing said.
+    @MainActor
+    func testAPackageChosenInAFolderAtTheReadingListTakesTheFolderAndTheList() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        defer { sandbox.restore() }
+        let shelf = makeIntegrationLibraryFolder("Open Book Shelf")
+        try FileManager.default.createDirectory(at: shelf.url, withIntermediateDirectories: true)
+        let package = try makeStatefulPackage()
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library(folders: [BookFolder(name: shelf.path)])
+        let opened = OpenedBooks(recordingFor: model)
+
+        model.importFiles(urls: [package.url], toFolder: shelf.path, addingToReadingList: true)
+        drainImports(of: model)
+
+        // The move into the folder runs off the main actor, then the book
+        // joins the list and opens.
+        XCTAssertTrue(
+            waitUntil(timeout: 20) { !opened.ids.isEmpty || model.showError },
+            model.errorMessage ?? "the book never opened"
+        )
+        let book = try XCTUnwrap(model.bookByID(package.bookID), model.errorMessage ?? "no book was added")
+        XCTAssertEqual(book.folderPath, shelf.path, "the book landed at the top level")
+        XCTAssertEqual(model.library.readingList.bookIDs, [package.bookID], "the book is not on the reading list")
+        XCTAssertEqual(opened.ids, [package.bookID])
+        XCTAssertFalse(model.showError, model.errorMessage ?? "")
+    }
+
+    /// Several packages chosen in Open Book… at once open one reader, for
+    /// the first; all of them are imported (data review, finding 7).
+    @MainActor
+    func testSeveralPackagesChosenAtOnceOpenOneReader() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        defer { sandbox.restore() }
+        let first = try makeStatefulPackage(content: Data("Roughen the rubber first.".utf8))
+        let second = try makeStatefulPackage(content: Data("Then spread the cement thin.".utf8))
+        let third = try makeStatefulPackage(content: Data("Wait until the cement loses its shine.".utf8))
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+        let opened = OpenedBooks(recordingFor: model)
+
+        model.importFiles(urls: [first.url, second.url, third.url], toFolder: "")
+        drainImports(of: model)
+
+        XCTAssertEqual(Set(model.library.books.map(\.id)), [first.bookID, second.bookID, third.bookID])
+        for book in model.library.books {
+            // The copies the imports made in the library go when the test ends.
+            addTeardownBlock { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+        }
+        XCTAssertEqual(opened.ids, [first.bookID], "more than the first package opened a reader")
+    }
+
     // MARK: - The Book a Package Record Describes
 
     /// A book built from a package's record keeps every field the record
