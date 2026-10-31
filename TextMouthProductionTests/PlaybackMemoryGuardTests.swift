@@ -285,6 +285,44 @@ final class PlaybackMemoryGuardTests: XCTestCase {
         XCTAssertFalse(marker.wasNothingPlaying)
     }
 
+    // MARK: - Saving Every Place
+
+    /// Every open reader's place is saved, playing or not, as every quit
+    /// saves them first (`UnsavedChangesTerminationGuard.flushPendingWrites()`);
+    /// a closed reader is skipped, and nothing is stopped, written, or quit.
+    func testSavingEveryOpenPlaceSavesOnlyTheOpenReaders() {
+        let (memoryGuard, _, actions) = makeGuard()
+        let playing = StandInReader(title: "Tide Tables")
+        let paused = StandInReader(title: "Ferry Timetables")
+        let closed = StandInReader(title: "Lock Keeping", hasClosed: true)
+        memoryGuard.reader(playing, isPlaying: true, title: playing.title)
+        memoryGuard.reader(paused, isPlaying: false, title: paused.title)
+        memoryGuard.reader(closed, isPlaying: true, title: closed.title)
+
+        memoryGuard.saveEveryOpenReaderPosition()
+
+        XCTAssertEqual(playing.saves, 1)
+        XCTAssertEqual(paused.saves, 1)
+        XCTAssertEqual(closed.saves, 0, "A closed reader was saved")
+        XCTAssertEqual(playing.stops, [], "Saving the places stopped a reader")
+        XCTAssertEqual(actions.recorded, [], "Saving the places wrote, saved, or quit")
+        XCTAssertFalse(memoryGuard.isQuittingToProtectTheMac)
+    }
+
+    /// A guard that watches nothing, as the app's does in the test host,
+    /// still knows every open reader, and saves its place: the readers
+    /// report to it all the same.
+    func testAGuardThatWatchesNothingStillSavesEveryOpenPlace() {
+        let (memoryGuard, _, actions) = makeGuard(isEnabled: false)
+        let reader = StandInReader(title: "Tide Tables")
+        memoryGuard.reader(reader, isPlaying: true, title: reader.title)
+
+        memoryGuard.saveEveryOpenReaderPosition()
+
+        XCTAssertEqual(reader.saves, 1)
+        XCTAssertEqual(actions.recorded, [])
+    }
+
     // MARK: - The Loop
 
     /// A begun guard reads on its own with nothing ever playing, begun twice
@@ -455,8 +493,11 @@ final class PlaybackMemoryGuardTests: XCTestCase {
     /// A guard reading `FootprintDial`'s footprint and recording what it
     /// would do, which never reads on its own (a reading every hour, unless
     /// a loop test gives shorter intervals) and
-    /// quits from its queue a moment after the main thread's quit.
+    /// quits from its queue a moment after the main thread's quit. It reads
+    /// at all only when `isEnabled`, as the app's own guard does outside the
+    /// test host.
     private func makeGuard(
+        isEnabled: Bool = true,
         readInterval: TimeInterval = 3_600,
         idleReadInterval: TimeInterval = 3_600
     ) -> (PlaybackMemoryGuard, FootprintDial, GuardActions) {
@@ -473,7 +514,7 @@ final class PlaybackMemoryGuardTests: XCTestCase {
         environment.savePendingWrites = { actions.record(.savePendingWrites) }
         environment.quit = { actions.record(.quit) }
         environment.quitFromAnyThread = { actions.record(.quitFromAnyThread) }
-        return (PlaybackMemoryGuard(environment: environment), dial, actions)
+        return (PlaybackMemoryGuard(isEnabled: isEnabled, environment: environment), dial, actions)
     }
 }
 
