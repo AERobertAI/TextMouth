@@ -97,9 +97,77 @@ enum BrailleCodeWording {
 /// re-read with other braille file characters is the encoding's re-read
 /// (`LibraryViewModel.readTextAgain(bookID:choosing:access:)`), so it says
 /// what it shares with it in the encoding's words: the refusals of a busy
-/// library, a failure, and the announcement once the book is read again
-/// (`TextEncodingWording`). Only what differs is here.
+/// library, a failure, the alert's button and its sentences of what a
+/// re-read does to the text, and the announcement once the book is read
+/// again (`TextEncodingWording`). Only what differs is here.
 enum BrailleFileCodeWording {
+
+    // MARK: Book Information's Pop-up
+
+    /// The label of Book Information's pop-up that names the braille file
+    /// characters a BRF or BRL book's file is read with, in title case, as
+    /// the sheet's "Braille Code" and "Text Encoding" are; the Settings and
+    /// Export pop-ups say "Braille file characters", in their own sentence
+    /// case.
+    static let bookInfoLabel = "Braille File Characters"
+
+    /// The pop-up's hint, which VoiceOver says after its label and value.
+    static let popUpHint = "Choose other characters to read the book's file again with them."
+
+    /// The pop-up's value, and Speak Info's words, for a book whose stored
+    /// code is `id`, which this TextMouth does not know, as a later
+    /// TextMouth's may be: "“ascii-braillo-no-047-01”, which this version of
+    /// TextMouth can't read".
+    static func unknownValue(_ id: String) -> String {
+        "“\(id)”, which this version of TextMouth can't read"
+    }
+
+    /// Speak Info's sentence for braille file characters described as
+    /// `description` (`Book.brailleFileCodeDescription`), said right after
+    /// the braille code's: "Braille characters: North American Braille
+    /// ASCII".
+    static func speakInfoPart(_ description: String) -> String {
+        "Braille characters: \(description)"
+    }
+
+    // MARK: The Confirmation
+
+    /// The title of the alert that asks before the book titled `bookTitle`
+    /// is read again with `code`, in the encoding's sentence
+    /// (`TextEncodingWording.confirmTitle(bookTitle:readingName:)`): "Read
+    /// “Ledger” again as Eurobraille, six-dot (German-speaking countries)?"
+    static func confirmTitle(bookTitle: String, code: BrailleFileCode) -> String {
+        TextEncodingWording.confirmTitle(bookTitle: bookTitle, readingName: code.name)
+    }
+
+    /// What the alert says first: nothing can tell whether the choice is
+    /// right, since every printable ASCII byte is a cell in every seven-bit
+    /// code, so a wrong one reads with no error (research of October 25,
+    /// section 8.3).
+    static let uncheckedNote = "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another."
+
+    /// What a re-read does to the book's places, as the encoding's alert
+    /// says it (`TextEncodingWording.placesNote`) without its example of
+    /// garbled letters becoming Cyrillic, which is no braille book's.
+    static let placesNote = "Your place and bookmarks move with their words. "
+        + "Where none of their words are left, each goes to about the same point in its chapter, "
+        + "or to the nearest passage the two readings share."
+
+    /// The alert's message before a braille book is read again with other
+    /// braille file characters: that nothing checks the choice, that the
+    /// text is replaced, and what happens to the places; then, as the
+    /// encoding's alert ends, that an edit of the text is kept, when
+    /// content.md holds one (`keepsText`), and that Edit Text stops, for a
+    /// book being edited (`stopsEditing`), in the encoding's own sentences
+    /// (`TextEncodingWording.confirmMessage(_:keepsText:stopsEditing:)`).
+    static func confirmMessage(keepsText: Bool, stopsEditing: Bool) -> String {
+        TextEncodingWording.confirmMessage(
+            [uncheckedNote, TextEncodingWording.replacedNote, placesNote], keepsText: keepsText, stopsEditing: stopsEditing
+        )
+    }
+
+    // MARK: Refusals
+
     /// Why the book titled `bookTitle` was not read again with the braille
     /// file characters named `codeName`: its file is not braille in them, as
     /// `reason`, the reader's own sentence (`BrailleFileError`), says, and
@@ -243,8 +311,16 @@ enum TextEncodingWording {
         case .automatic:
             return "Read “\(bookTitle)” again automatically?"
         case .encoding:
-            return "Read “\(bookTitle)” again as \(TextEncodingChoices.name(of: option))?"
+            return confirmTitle(bookTitle: bookTitle, readingName: TextEncodingChoices.name(of: option))
         }
+    }
+
+    /// The title of the alert that asks before the book titled `bookTitle`
+    /// is read again as the reading named `readingName`: "Read “Ledger” again
+    /// as Shift JIS (Japanese)?". Braille file characters are asked about in
+    /// the same sentence (`BrailleFileCodeWording.confirmTitle(bookTitle:code:)`).
+    static func confirmTitle(bookTitle: String, readingName: String) -> String {
+        "Read “\(bookTitle)” again as \(readingName)?"
     }
 
     /// What Automatic does, as the alert says it before it is chosen.
@@ -279,12 +355,18 @@ enum TextEncodingWording {
     /// holds one (`keepsText`); and that Edit Text stops, for a book being
     /// edited (`stopsEditing`).
     static func confirmMessage(option: TextEncodingOption, keepsText: Bool, stopsEditing: Bool) -> String {
-        var parts: [String] = []
-        if option == .automatic {
-            parts.append(automaticNote)
-        }
-        parts.append(replacedNote)
-        parts.append(placesNote)
+        let automatic = option == .automatic ? [automaticNote] : []
+        return confirmMessage(automatic + [replacedNote, placesNote], keepsText: keepsText, stopsEditing: stopsEditing)
+    }
+
+    /// A re-read alert's message: `notes`, which say what this re-read
+    /// does, then that an edit of the text is kept, when content.md holds
+    /// one (`keepsText`), and that Edit Text stops, for a book being edited
+    /// (`stopsEditing`), one space apart. The encoding's alert and the braille
+    /// file characters' (`BrailleFileCodeWording.confirmMessage(keepsText:stopsEditing:)`)
+    /// both end so.
+    static func confirmMessage(_ notes: [String], keepsText: Bool, stopsEditing: Bool) -> String {
+        var parts = notes
         if keepsText {
             parts.append(keptTextNote)
         }
