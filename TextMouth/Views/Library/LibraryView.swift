@@ -512,11 +512,6 @@ struct LibraryView: View {
                 editSelection = []
                 selectedBookIDs = []
             }
-            // A view deleted while this window shows it gives way to the
-            // first view offered, which is said (October 30, 2026).
-            .onChange(of: views.list) { _, _ in
-                followDeletedView()
-            }
         }
         .toolbar {
             ToolbarItemGroup {
@@ -630,9 +625,16 @@ struct LibraryView: View {
             \.libraryRemovalSelection,
             LibraryRemovalSelection(LibrarySelectionPolicy.selected(in: books, native: selectedBookIDs, edit: editSelection))
         )
-        // The views the Library menu's Go to View submenu lists, by name
-        // (design section 6).
-        .focusedSceneValue(\.libraryOfferedViewNames, goToViewNames)
+        // Go to View's keys and submenu, and a view deleted while shown
+        // (design sections 5 and 6), in a modifier of their own, which keeps
+        // this chain within the type checker's time.
+        .modifier(LibraryViewNavigationSupport(
+            offeredNames: goToViewNames,
+            list: views.list,
+            takesCommand: takesCommand,
+            goToView: { goToView(numbered: $0) },
+            followDeletedView: followDeletedView
+        ))
         // Keeps the books' cloud states refreshed while the window is
         // visible, shows Remove Download's refusals (FR02), and takes the
         // Library menu's Keep on This Mac and Stop Keeping on This Mac.
@@ -772,13 +774,6 @@ struct LibraryView: View {
             } else {
                 isEditMode = true
             }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .goToLibraryView)) { notification in
-            // Go to View 1 to Go to View 9, Command-1 to Command-9 unless
-            // changed, and the Library menu's Go to View submenu (design
-            // section 6): the view numbered, said with what it lists.
-            guard takesCommand(notification), let number = ShortcutAction.goToViewNumber(in: notification.userInfo) else { return }
-            goToView(numbered: number)
         }
         // Move Book Up and Move Book Down, and Add to Reading List and
         // Remove from Reading List (FR09), for the selection.
@@ -2175,6 +2170,44 @@ private struct LibraryOrderCommandsSupport: ViewModifier {
             .onReceive(NotificationCenter.default.publisher(for: .removeFromReadingList)) { notification in
                 guard takesCommand(notification) else { return }
                 changeReadingList(.remove)
+            }
+    }
+}
+
+// MARK: - Moving Between Views (October 30, 2026)
+
+/// A Library window's part in moving between the Library's views (design
+/// sections 5 and 6, LIBRARY-VIEWS-RESEARCH-2026-10-30.md): it gives the
+/// Library menu's Go to View submenu the names of the views it offers, goes
+/// to a view by Go to View's keys and the submenu's items when it takes the
+/// command, and follows a view deleted while it shows it. Only the window
+/// that takes a command acts on it.
+private struct LibraryViewNavigationSupport: ViewModifier {
+    /// The names of the views Go to View counts, which the submenu lists.
+    let offeredNames: [String]
+    /// The Library's views, whose changes the window follows.
+    let list: LibraryViewDefinitionList
+    /// Whether this window takes the command a notification carries.
+    let takesCommand: (Notification) -> Bool
+    /// Goes to the view numbered, 1 for the first.
+    let goToView: (Int) -> Void
+    /// Moves to the first view offered when the view shown was deleted.
+    let followDeletedView: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .focusedSceneValue(\.libraryOfferedViewNames, offeredNames)
+            // Go to View 1 to Go to View 9, Command-1 to Command-9 unless
+            // changed, and the submenu: the view numbered, said with what it
+            // lists.
+            .onReceive(NotificationCenter.default.publisher(for: .goToLibraryView)) { notification in
+                guard takesCommand(notification), let number = ShortcutAction.goToViewNumber(in: notification.userInfo) else { return }
+                goToView(number)
+            }
+            // A view deleted while this window shows it gives way to the
+            // first view offered, which is said.
+            .onChange(of: list) { _, _ in
+                followDeletedView()
             }
     }
 }
