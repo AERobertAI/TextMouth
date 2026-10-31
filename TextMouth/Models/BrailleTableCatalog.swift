@@ -855,17 +855,20 @@ enum BraillePreferences {
 
     /// The braille file characters a BRF or BRL file is read in when it is
     /// imported (braillecodes), by the code's id (`BrailleFileCode`). It
-    /// reads as the stored id when that is a code of `BrailleFileCode.all`,
-    /// and as North American Braille ASCII (`BrailleFileCode.defaultCode`)
-    /// otherwise: when nothing is stored, the value is empty, or it names a
-    /// code this TextMouth does not know. Unlike a book's own code, which is
+    /// reads as the stored id when that is one of the import's choices
+    /// (`BrailleFileCode.importChoices`, the seven-bit codes), and as North
+    /// American Braille ASCII (`BrailleFileCode.defaultCode`) otherwise: when
+    /// nothing is stored, the value is empty, it names Unicode braille
+    /// patterns, which an import recognizes and never takes from the setting
+    /// (review finding 4), or it names a code this TextMouth does not know.
+    /// Unlike a book's own code, which is
     /// refused by name when unknown, the setting only chooses for books not
     /// yet imported, so an unknown value falls back to the default. A book
     /// keeps the code it was imported with whatever the setting says later.
     static let fileCode = StoredPreference<String>(
         key: "brailleFileCode",
         read: { store, key in
-            store.string(forKey: key).flatMap(BrailleFileCode.code(withID:))?.id ?? BrailleFileCode.defaultCode.id
+            store.string(forKey: key).flatMap(BrailleFileCode.importChoice(withID:))?.id ?? BrailleFileCode.defaultCode.id
         },
         write: { id, store, key in store.set(id, forKey: key) }
     )
@@ -882,6 +885,9 @@ enum BraillePreferences {
     /// reads the table, so an import in a test never reads the user's real
     /// setting.
     static func importFileCode() -> String {
-        fileCodeForImports ?? fileCode.read(from: TextMouthRuntime.current.preferences)
+        guard let bound = fileCodeForImports else { return fileCode.read(from: TextMouthRuntime.current.preferences) }
+        // A bound id is held to the import's choices as a stored one is:
+        // Unicode braille patterns, or an unknown id, reads as the default.
+        return BrailleFileCode.importChoice(withID: bound)?.id ?? BrailleFileCode.defaultCode.id
     }
 }

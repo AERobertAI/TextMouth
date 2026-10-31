@@ -228,6 +228,22 @@ extension BrailleFileCode {
     /// lists them.
     static let all: [BrailleFileCode] = [northAmerican, eurobraille, unicode]
 
+    /// The codes the Braille setting may choose for an import to read a BRF
+    /// or BRL with: the seven-bit codes, in the pop-ups' order. Unicode
+    /// braille patterns are recognized by a file's bytes and never chosen
+    /// for an import (the review of October 30, finding 4): every file the
+    /// Unicode reader can read is detected as Unicode already
+    /// (`BrailleFileReader.certainCode(of:)` skips exactly the bytes that
+    /// reader treats as blank or structure), so choosing it would only
+    /// refuse every other file. Export's own pop-up still offers all three.
+    static let importChoices: [BrailleFileCode] = all.filter { $0.sevenBitTable != nil }
+
+    /// The code of `importChoices` whose id is exactly `id`, or nil: the one
+    /// test the setting, config.json, and the settings model apply.
+    static func importChoice(withID id: String) -> BrailleFileCode? {
+        importChoices.first { $0.id == id }
+    }
+
     /// The code a book that records none is read in, and the setting's
     /// default.
     static let defaultCode = northAmerican

@@ -16,18 +16,23 @@ final class BrailleFileCodeSettingTests: XCTestCase {
     // MARK: - The Settings Model
 
     /// The model reads North American Braille ASCII while nothing is
-    /// stored, without storing it, and takes every code of the catalog by
-    /// its id, storing that.
-    func testTheModelTakesEveryCodeOfTheCatalog() throws {
+    /// stored, without storing it, and takes each of the import's choices
+    /// (the seven-bit codes) by its id, storing that. Unicode braille
+    /// patterns are recognized by a file's bytes, never chosen for an
+    /// import (review finding 4): the model refuses them and keeps its code.
+    func testTheModelTakesTheImportsChoicesAndRefusesUnicode() throws {
         let defaults = try isolatedDefaults()
         let settings = try makeSettings(defaults: defaults)
         XCTAssertEqual(settings.brailleFileCode, "ascii-na")
         XCTAssertNil(defaults.object(forKey: "brailleFileCode"), "reading the default stored it")
-        for id in ["ascii-eurobraille", "unicode", "ascii-na"] {
+        for id in ["ascii-eurobraille", "ascii-na"] {
             settings.brailleFileCode = id
             XCTAssertEqual(settings.brailleFileCode, id)
             XCTAssertEqual(defaults.string(forKey: "brailleFileCode"), id)
         }
+        settings.brailleFileCode = "unicode"
+        XCTAssertEqual(settings.brailleFileCode, "ascii-na")
+        XCTAssertEqual(defaults.string(forKey: "brailleFileCode"), "ascii-na")
     }
 
     /// The model refuses an id that names no code of the catalog (a later
@@ -65,48 +70,55 @@ final class BrailleFileCodeSettingTests: XCTestCase {
         )
 
         // In the model.
-        settings.brailleFileCode = "unicode"
-        XCTAssertTrue(waitUntil { service.config.brailleFileCode == "unicode" }, "the config holds \(service.config.brailleFileCode)")
+        settings.brailleFileCode = "ascii-eurobraille"
+        XCTAssertTrue(
+            waitUntil { service.config.brailleFileCode == "ascii-eurobraille" },
+            "the config holds \(service.config.brailleFileCode)"
+        )
         service.flushScheduledSave()
-        XCTAssertEqual(try savedString("brailleFileCode", in: url), "unicode")
+        XCTAssertEqual(try savedString("brailleFileCode", in: url), "ascii-eurobraille")
 
         // In the store, by anything else.
         var announcements = 0
         let counter = settings.objectWillChange.sink { announcements += 1 }
         defer { counter.cancel() }
-        BraillePreferences.fileCode.write("ascii-eurobraille", to: defaults)
+        // Back to North American Braille ASCII, the other choice, so the
+        // store really changes.
+        BraillePreferences.fileCode.write("ascii-na", to: defaults)
         XCTAssertTrue(
-            waitUntil { announcements > 0 && service.config.brailleFileCode == "ascii-eurobraille" },
+            waitUntil { announcements > 0 && service.config.brailleFileCode == "ascii-na" },
             "announced \(announcements) times; the config holds \(service.config.brailleFileCode)"
         )
-        XCTAssertEqual(settings.brailleFileCode, "ascii-eurobraille")
+        XCTAssertEqual(settings.brailleFileCode, "ascii-na")
         service.flushScheduledSave()
-        XCTAssertEqual(try savedString("brailleFileCode", in: url), "ascii-eurobraille")
+        XCTAssertEqual(try savedString("brailleFileCode", in: url), "ascii-na")
     }
 
     /// config.json's `brailleFileCode` is adopted into the store when it
-    /// names a code of the catalog: each code in turn, read from the file's
-    /// text as a launch or an edit reads it.
+    /// names one of the import's choices: each seven-bit code in turn, read
+    /// from the file's text as a launch or an edit reads it.
     func testACodeConfigJSONNamesIsAdopted() throws {
         let defaults = try isolatedDefaults()
         let settings = try makeSettings(defaults: defaults)
-        for id in ["ascii-eurobraille", "unicode", "ascii-na"] {
+        for id in ["ascii-eurobraille", "ascii-na"] {
             settings.applyConfigChanges(try decodedConfig(["brailleFileCode": id]))
             XCTAssertEqual(defaults.string(forKey: "brailleFileCode"), id)
             XCTAssertEqual(settings.brailleFileCode, id)
         }
     }
 
-    /// An empty id, one this TextMouth lacks, or no field at all, as in a
-    /// file an older TextMouth wrote, leaves the store's code alone.
-    /// Decoding repairs an id that names no code to empty; the model refuses
-    /// one too, should a configuration hold it all the same.
+    /// An empty id, one this TextMouth lacks, Unicode braille patterns'
+    /// (recognized by a file's bytes, never the import's choice, review
+    /// finding 4), or no field at all, as in a file an older TextMouth
+    /// wrote, leaves the store's code alone. Decoding repairs an id that
+    /// names no choice to empty; the model refuses one too, should a
+    /// configuration hold it all the same.
     func testAnEmptyOrUnknownIDLeavesTheStoresCodeAlone() throws {
         let defaults = try isolatedDefaults()
         let settings = try makeSettings(defaults: defaults)
         BraillePreferences.fileCode.write("ascii-eurobraille", to: defaults)
 
-        for id in ["", "ascii-future", "ASCII-NA", "Unicode braille patterns"] {
+        for id in ["", "ascii-future", "ASCII-NA", "Unicode braille patterns", "unicode"] {
             let decoded = try decodedConfig(["brailleFileCode": id])
             XCTAssertEqual(decoded.brailleFileCode, "", "decoding kept \"\(id)\"")
             settings.applyConfigChanges(decoded)

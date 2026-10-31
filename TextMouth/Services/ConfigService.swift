@@ -431,9 +431,10 @@ final class ConfigService: ObservableObject {
         var brailleTable: String = ""
         /// The braille file characters TextMouth imports a BRF or BRL file
         /// with (`BraillePreferences.fileCode`), by the code's id:
-        /// "ascii-na" (North American Braille ASCII), "ascii-eurobraille",
-        /// or "unicode". Empty keeps the current choice, as does an id this
-        /// TextMouth lacks.
+        /// "ascii-na" (North American Braille ASCII) or "ascii-eurobraille".
+        /// Empty keeps the current choice, as does an id this TextMouth
+        /// lacks, and "unicode", which an import recognizes by a file's bytes
+        /// and never takes from the setting (`BrailleFileCode.importChoices`).
         var brailleFileCode: String = ""
 
         /// Decodes config.json one field at a time, because people edit it
@@ -571,7 +572,7 @@ final class ConfigService: ObservableObject {
             // An id this TextMouth lacks is repaired to empty, and logged, so
             // it leaves the current braille file characters alone.
             brailleFileCode = fields.value(.brailleFileCode, default: fallback.brailleFileCode) {
-                BrailleFileCode.code(withID: $0) == nil ? "" : $0
+                BrailleFileCode.importChoice(withID: $0) == nil ? "" : $0
             }
         }
 

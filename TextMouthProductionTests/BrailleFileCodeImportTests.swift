@@ -227,12 +227,15 @@ final class BrailleFileCodeImportTests: XCTestCase {
         XCTAssertEqual(BraillePreferences.fileCode.key, "brailleFileCode")
         XCTAssertEqual(BraillePreferences.fileCode.read(from: defaults), "ascii-na")
 
-        for code in BrailleFileCode.all {
+        for code in BrailleFileCode.importChoices {
             BraillePreferences.fileCode.write(code.id, to: defaults)
             XCTAssertEqual(defaults.string(forKey: "brailleFileCode"), code.id)
             XCTAssertEqual(BraillePreferences.fileCode.read(from: defaults), code.id)
         }
-        let unreadable: [Any] = ["", Self.unknownCode, 42]
+        // Unicode braille patterns are recognized by a file's bytes, never
+        // the import's choice (review finding 4), so a stored one reads as
+        // the default too.
+        let unreadable: [Any] = ["", Self.unknownCode, 42, BrailleFileCode.unicode.id]
         for stored in unreadable {
             defaults.set(stored, forKey: "brailleFileCode")
             XCTAssertEqual(BraillePreferences.fileCode.read(from: defaults), "ascii-na", "stored: \(stored)")
@@ -254,9 +257,16 @@ final class BrailleFileCodeImportTests: XCTestCase {
         BraillePreferences.fileCode.write("ascii-eurobraille", to: store)
         XCTAssertEqual(BraillePreferences.importFileCode(), "ascii-eurobraille")
 
-        // A bound code wins over the store, and only while it is bound.
-        BraillePreferences.$fileCodeForImports.withValue("unicode") {
-            XCTAssertEqual(BraillePreferences.importFileCode(), "unicode")
+        // A bound code wins over the store, and only while it is bound; it is
+        // held to the import's choices as a stored one is, so Unicode braille
+        // patterns, or an unknown id, read as the default.
+        BraillePreferences.$fileCodeForImports.withValue("ascii-na") {
+            XCTAssertEqual(BraillePreferences.importFileCode(), "ascii-na")
+        }
+        for notAChoice in ["unicode", Self.unknownCode] {
+            BraillePreferences.$fileCodeForImports.withValue(notAChoice) {
+                XCTAssertEqual(BraillePreferences.importFileCode(), "ascii-na", notAChoice)
+            }
         }
         XCTAssertNil(BraillePreferences.fileCodeForImports)
         XCTAssertEqual(BraillePreferences.importFileCode(), "ascii-eurobraille")

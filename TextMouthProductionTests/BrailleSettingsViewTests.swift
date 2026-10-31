@@ -157,15 +157,28 @@ final class BrailleSettingsViewTests: XCTestCase {
 
     // MARK: - The Braille File Characters (braillecodes)
 
-    /// The fourth pop-up lists every braille file code by its name, in the
-    /// catalog's order, with North American Braille ASCII chosen when
-    /// nothing is stored.
-    func testTheBrailleFileCharactersPopUpListsEveryCode() throws {
+    /// The fourth pop-up lists the import's choices, the two seven-bit codes,
+    /// by name, in the catalog's order, with North American Braille ASCII
+    /// chosen when nothing is stored: Unicode braille patterns are recognized
+    /// by a file's bytes, never chosen for an import (review finding 4).
+    func testTheBrailleFileCharactersPopUpListsTheSevenBitCodes() throws {
         try withBrailleTab(settings: makeSettings()) { hosting, _ in
             let fileCode = try fileCodePopUp(in: hosting)
-            XCTAssertEqual(fileCode.itemTitles, [northAmerican, eurobraille, "Unicode braille patterns"])
+            XCTAssertEqual(fileCode.itemTitles, [northAmerican, eurobraille])
             XCTAssertEqual(fileCode.titleOfSelectedItem, northAmerican)
         }
+    }
+
+    /// The rows after the table pop-ups come in this reading order: the
+    /// code's caption, then the braille file characters pop-up and its own
+    /// caption, so neither caption is heard as the other's (review finding
+    /// 7); with no tables, the caption alone.
+    func testTheBrailleFileCharactersFollowTheCodesCaption() {
+        XCTAssertEqual(
+            BrailleSettingsView.trailingRows(for: .choices),
+            [.caption, .fileCodePopUp, .fileCodeCaption]
+        )
+        XCTAssertEqual(BrailleSettingsView.trailingRows(for: .noTables(BrailleSettingsWording.noTables)), [.caption])
     }
 
     /// Choosing Eurobraille stores its id, in the preferences store and in
@@ -356,7 +369,11 @@ final class BrailleSettingsViewTests: XCTestCase {
         )
         XCTAssertEqual(
             BrailleSettingsWording.caption,
-            "TextMouth reads braille files (BRF, BRL, and PEF) with this code, and exports braille with it unless you choose another in the Export dialog. A book keeps the code it was imported with, and a BRF or BRL book keeps its braille file characters, which Book Information can change."
+            "TextMouth reads braille files (BRF, BRL, and PEF) with this code, and exports braille with it unless you choose another in the Export dialog. A book keeps the code it was imported with."
+        )
+        XCTAssertEqual(
+            BrailleSettingsWording.fileCodeCaption,
+            "TextMouth reads BRF and BRL files you add from now on with these characters; a file of Unicode braille patterns is recognized by itself. The Export dialog starts a BRF with them. A book keeps the characters it was imported with, which Book Information can change."
         )
         XCTAssertEqual(BrailleSettingsWording.noTables, "TextMouth found no braille tables in its bundle.")
     }

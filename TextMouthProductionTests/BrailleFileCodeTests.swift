@@ -209,6 +209,17 @@ final class BrailleFileCodeTests: XCTestCase {
         XCTAssertNil(BrailleFileCode.code(forStored: "ascii-braillo-no-047-01"))
     }
 
+    /// An import may be set to the two seven-bit codes only: Unicode braille
+    /// patterns are recognized by a file's bytes, never chosen (review of
+    /// October 30, finding 4), and neither is an id the catalog lacks.
+    func testTheImportsChoicesAreTheSevenBitCodes() {
+        XCTAssertEqual(BrailleFileCode.importChoices.map(\.id), ["ascii-na", "ascii-eurobraille"])
+        XCTAssertEqual(BrailleFileCode.importChoice(withID: "ascii-na"), .northAmerican)
+        XCTAssertEqual(BrailleFileCode.importChoice(withID: "ascii-eurobraille"), .eurobraille)
+        XCTAssertNil(BrailleFileCode.importChoice(withID: "unicode"))
+        XCTAssertNil(BrailleFileCode.importChoice(withID: "ascii-braillo-no-047-01"))
+    }
+
     /// Two codes are the same code exactly when their ids are.
     func testCodesAreEqualByTheirIDs() {
         XCTAssertNotEqual(BrailleFileCode.northAmerican, .eurobraille)

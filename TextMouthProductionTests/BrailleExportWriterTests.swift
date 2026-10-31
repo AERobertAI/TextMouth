@@ -378,16 +378,19 @@ final class BrailleExportWriterTests: XCTestCase {
     }
 
     /// The writers start from the braille file characters the Braille tab
-    /// chose (braillecodes): a bound code, Eurobraille or Unicode, for a BRF
-    /// and a PEF alike, which is kept when one of this Mac's tables that no
-    /// Mac has makes the options start from the default table (review R4).
+    /// chose (braillecodes): a bound code, Eurobraille, for a BRF and a PEF
+    /// alike, which is kept when one of this Mac's tables that no Mac has
+    /// makes the options start from the default table (review R4). Unicode
+    /// braille patterns are never the setting (review finding 4), so a bound
+    /// one starts from North American Braille ASCII, as an unknown id does;
+    /// Export's own pop-up still offers it.
     /// An id that names no code starts from North American Braille ASCII,
     /// as does nothing bound: then the setting is read from the runtime's
     /// preferences store, the hosted tests' sandboxed one, where no test
     /// stores a code.
     func testDefaultOptionsTakeTheSettingsBrailleFileCharacters() {
         let gone = "mac:no-such-table-on-any-mac.ctb"
-        for code in [BrailleFileCode.eurobraille, .unicode] {
+        for code in [BrailleFileCode.eurobraille] {
             BraillePreferences.$fileCodeForImports.withValue(code.id) {
                 for options in [BRFExportWriter().defaultOptions(), PEFExportWriter().defaultOptions()] {
                     XCTAssertEqual(options.fileCode, code)
@@ -400,7 +403,7 @@ final class BrailleExportWriterTests: XCTestCase {
                 }
             }
         }
-        for unknown in ["", "ascii-future"] {
+        for unknown in ["", "ascii-future", BrailleFileCode.unicode.id] {
             BraillePreferences.$fileCodeForImports.withValue(unknown) {
                 XCTAssertEqual(BrailleExportOptions.standard().fileCode, .northAmerican, "for \"\(unknown)\"")
             }

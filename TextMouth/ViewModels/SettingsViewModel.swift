@@ -925,13 +925,14 @@ final class SettingsViewModel: ObservableObject {
     /// American Braille ASCII or "ascii-eurobraille". Imports read it
     /// (`BraillePreferences.importFileCode()`), and Export's braille options
     /// start from it; config.json follows it through the observer below,
-    /// which also announces a change made anywhere else. A value that is no
-    /// code of the catalog (`BrailleFileCode.all`), or the one already
-    /// chosen, changes nothing.
+    /// which also announces a change made anywhere else. A value that is not
+    /// one of the import's choices (`BrailleFileCode.importChoices`, the
+    /// seven-bit codes; Unicode braille patterns are recognized, never
+    /// chosen), or the one already chosen, changes nothing.
     var brailleFileCode: String {
         get { BraillePreferences.fileCode.read(from: preferences) }
         set {
-            guard let chosen = BrailleFileCode.code(withID: newValue)?.id, chosen != brailleFileCode else { return }
+            guard let chosen = BrailleFileCode.importChoice(withID: newValue)?.id, chosen != brailleFileCode else { return }
             objectWillChange.send()
             BraillePreferences.fileCode.write(chosen, to: preferences)
         }
@@ -1138,7 +1139,7 @@ final class SettingsViewModel: ObservableObject {
         adopt(BrailleTableCatalog.storableValue(config.brailleTable), into: BraillePreferences.table)
         // An empty id, or one this TextMouth lacks, leaves the current braille
         // file characters alone.
-        adopt(BrailleFileCode.code(withID: config.brailleFileCode)?.id, into: BraillePreferences.fileCode)
+        adopt(BrailleFileCode.importChoice(withID: config.brailleFileCode)?.id, into: BraillePreferences.fileCode)
         return shortcutsWereRepaired
     }
 
