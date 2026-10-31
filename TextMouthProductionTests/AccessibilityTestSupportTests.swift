@@ -9,7 +9,9 @@ import XCTest
 /// measured one shows, on any Mac, that without the capability a test is
 /// skipped with the one message naming it before its checks run. Where the
 /// capability exists, as on the development Mac, the checks still run: a
-/// stepper deliberately left without a label fails its label check.
+/// stepper deliberately left without a label fails its label check. The
+/// up-front skip of the checks that read SwiftUI's own texts and buttons
+/// in-process is shown both ways too.
 @MainActor
 final class AccessibilityTestSupportTests: XCTestCase {
 
@@ -82,6 +84,27 @@ final class AccessibilityTestSupportTests: XCTestCase {
         )
 
         XCTAssertEqual(labelsChecked, [""], "The label check ran on the one stepper, which has no label")
+    }
+
+    // MARK: - SwiftUI's Own Elements
+
+    /// Where SwiftUI exposes nothing of its own to an in-process read, the
+    /// skip carries the one message saying so, word for word; where it
+    /// exposes its elements, the test goes on.
+    func testTheSwiftUISkipSaysWhyAndComesOnlyWithoutTheExposure() throws {
+        XCTAssertEqual(
+            SwiftUIElementExposure.unavailableMessage,
+            "SwiftUI exposes the accessibility elements of its own texts and buttons only to an accessibility client, "
+                + "never to a test reading them in-process"
+        )
+        try SwiftUIElementExposure.assuming(false) {
+            XCTAssertThrowsError(try skipUnlessSwiftUIExposesItsOwnElements()) { error in
+                XCTAssertEqual((error as? XCTSkip)?.message, SwiftUIElementExposure.unavailableMessage)
+            }
+        }
+        try SwiftUIElementExposure.assuming(true) {
+            XCTAssertNoThrow(try skipUnlessSwiftUIExposesItsOwnElements())
+        }
     }
 
     // MARK: - Helpers
