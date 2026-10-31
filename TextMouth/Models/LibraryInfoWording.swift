@@ -51,6 +51,12 @@ struct BookInfoFacts: Equatable {
     /// English Braille, contracted (Grade 2)" (`Book.brailleCodeDescription`,
     /// FMT21), which only the full summary says; nil for every other book.
     var brailleCode: String? = nil
+    /// The braille file characters a BRF or BRL braille book's file is read
+    /// with, in words, such as "North American Braille ASCII"
+    /// (`Book.brailleFileCodeDescription`, braillecodes), which only the full
+    /// summary says, right after the braille code; nil for every other book,
+    /// a PEF's included.
+    var brailleFileCharacters: String? = nil
     /// The encoding a text book's file was guessed to be in, or chosen to be
     /// read in, in words, such as "Windows-1251 (Cyrillic), guessed" or
     /// "Shift JIS (Japanese), chosen" (`Book.textEncodingDescription`, FMT16,
@@ -59,7 +65,7 @@ struct BookInfoFacts: Equatable {
     var textEncoding: String? = nil
 }
 
-// MARK: - A Braille Book's Code (FMT21)
+// MARK: - A Braille Book's Code (FMT21) and File Characters (braillecodes)
 
 extension Book {
     /// The braille code this braille book is read in, in words: the
@@ -82,6 +88,22 @@ extension Book {
     /// a test can pin the words without a hosted sheet.
     var bookInfoBrailleCodeRow: (label: String, value: String)? {
         brailleCodeDescription.map { (BrailleCodeWording.bookInfoLabel, $0) }
+    }
+
+    /// The braille file characters this BRF or BRL braille book's file is
+    /// read with, in words, as its row stores them (braillecodes): the
+    /// code's name for a known id, and North American Braille ASCII's for
+    /// none, such as "North American Braille ASCII"; an id this TextMouth
+    /// does not know as `BrailleFileCodeWording.unknownValue(_:)` says it.
+    /// Nil for a book that offers no such choice
+    /// (`offersBrailleFileCodeChoice`): a PEF, whose rows are always Unicode
+    /// braille patterns, a feed's item, and every book of another format.
+    /// Speak Info says it, in the words Book Information's pop-up lists the
+    /// code by (`BrailleFileCodeChoiceModel.Item.name`), so the two never
+    /// differ.
+    var brailleFileCodeDescription: String? {
+        guard offersBrailleFileCodeChoice else { return nil }
+        return BrailleFileCodeChoiceModel.Item(stored: brailleFileCode).name
     }
 }
 
@@ -644,10 +666,13 @@ enum LibraryInfoWording {
     /// it open. Example: "Added September 1 at 9:00 AM. Last opened today
     /// at 3:05 PM. 3 bookmarks. File size 1.2 MB. In Cloud. Kept on this
     /// Mac. Open in a reader window." A braille book says its code right
-    /// after its bookmarks: "3 bookmarks. Braille code: Unified English
-    /// Braille, contracted (Grade 2). File size 1.2 MB." A text book whose
-    /// encoding was guessed, or chosen, says it there too: "3 bookmarks. Text
-    /// encoding: Windows-1251 (Cyrillic), guessed. File size 1.2 MB."
+    /// after its bookmarks, and a BRF or BRL book the braille file
+    /// characters its file is read with right after that: "3 bookmarks.
+    /// Braille code: Unified English Braille, contracted (Grade 2). Braille
+    /// characters: North American Braille ASCII. File size 1.2 MB." A text
+    /// book whose encoding was guessed, or chosen, says it there too: "3
+    /// bookmarks. Text encoding: Windows-1251 (Cyrillic), guessed. File size
+    /// 1.2 MB."
     static func fullParts(of book: BookInfoFacts, now: Date, calendar: Calendar, locale: Locale) -> [String] {
         var parts = ["Added \(FeedWording.moment(book.dateAdded, now: now, calendar: calendar, locale: locale))"]
         if let lastOpened = book.lastOpened {
@@ -656,6 +681,9 @@ enum LibraryInfoWording {
         parts.append(CountWording.bookmarks(book.bookmarkCount))
         if let code = book.brailleCode {
             parts.append("Braille code: \(code)")
+        }
+        if let characters = book.brailleFileCharacters {
+            parts.append(BrailleFileCodeWording.speakInfoPart(characters))
         }
         if let encoding = book.textEncoding {
             parts.append(TextEncodingWording.speakInfoPart(encoding))

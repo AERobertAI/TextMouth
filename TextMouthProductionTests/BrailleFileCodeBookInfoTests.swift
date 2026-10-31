@@ -354,6 +354,115 @@ final class BrailleFileCodeBookInfoTests: CloudMaintenanceTestCase {
         }
     }
 
+    // MARK: - Speak Full Info
+
+    /// A book that is never read: a braille book whose file is named
+    /// `fileName`, read with contracted UEB and the code `code`, or a book of
+    /// another `format`.
+    private func unreadBook(_ fileName: String, format: BookFormat = .braille, code: String? = nil) -> Book {
+        Book(
+            title: "Short Sentences", format: format, filePath: "/nowhere/\(fileName)", md5Hash: "braille-file-code-info-fixture",
+            brailleTable: format == .braille ? "en-ueb-g2.ctb" : nil, brailleFileCode: code
+        )
+    }
+
+    /// The facts Speak Info makes of `book`, as the Library window makes them
+    /// from the row.
+    private func facts(of book: Book) -> BookInfoFacts {
+        BookInfoFacts(
+            book,
+            library: makeModel(with: [book]),
+            wordsPerMinute: 200,
+            cloudStates: BookCloudStates(),
+            keptBooks: KeptBooks(file: nil),
+            measuresFileSize: false
+        )
+    }
+
+    /// The full Speak Info summary of `book`, in a fixed calendar and locale.
+    private func fullSummary(of book: Book) -> String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC") ?? .current
+        return LibraryInfoWording.full(
+            .book(facts(of: book)), now: book.dateAdded, calendar: calendar, locale: Locale(identifier: "en_US_POSIX")
+        )
+    }
+
+    /// Speak Full Info of a BRF book says the braille file characters right
+    /// after the braille code, in the words the pop-up names the code by; a
+    /// code this TextMouth lacks is said as one it can't read; the brief
+    /// summary never says them.
+    func testSpeakFullInfoSaysTheCharactersRightAfterTheBrailleCode() {
+        let brf = unreadBook("Short Sentences.brf")
+        XCTAssertTrue(
+            fullSummary(of: brf).contains(
+                "Braille code: Unified English Braille, contracted (Grade 2). Braille characters: North American Braille ASCII."
+            ),
+            fullSummary(of: brf)
+        )
+        XCTAssertEqual(facts(of: brf).brailleFileCharacters, "North American Braille ASCII")
+        XCTAssertFalse(LibraryInfoWording.brief(.book(facts(of: brf))).contains("Braille characters"))
+
+        let eurobraille = unreadBook("Short Sentences.brl", code: "ascii-eurobraille")
+        XCTAssertTrue(
+            fullSummary(of: eurobraille).contains("Braille characters: Eurobraille, six-dot (German-speaking countries)."),
+            fullSummary(of: eurobraille)
+        )
+
+        let unknown = unreadBook("Short Sentences.brf", code: Self.unknownCode)
+        XCTAssertTrue(
+            fullSummary(of: unknown).contains(
+                "Braille characters: “ascii-braillo-no-047-01”, which this version of TextMouth can't read."
+            ),
+            fullSummary(of: unknown)
+        )
+
+        // The pop-up's value is the sentence's description, so the two never differ.
+        for book in [brf, eurobraille, unknown] {
+            let model = BrailleFileCodeChoiceModel(book: book, library: makeModel(with: [book]))
+            XCTAssertEqual(model.name(of: model.selection), book.brailleFileCodeDescription)
+        }
+    }
+
+    /// A PEF's full summary, which says its braille code, and an EPUB's say
+    /// no braille file characters, as a feed's BRF does not.
+    func testOnlyABRFOrBRLBookSaysItsCharacters() {
+        let pef = unreadBook("Short Sentences.pef")
+        XCTAssertNil(pef.brailleFileCodeDescription)
+        XCTAssertTrue(fullSummary(of: pef).contains("Braille code: "), "the PEF must say its code, or this proves less")
+        XCTAssertFalse(fullSummary(of: pef).contains("Braille characters"), fullSummary(of: pef))
+
+        let epub = unreadBook("Short Sentences.epub", format: .epub)
+        XCTAssertNil(epub.brailleFileCodeDescription)
+        XCTAssertFalse(fullSummary(of: epub).contains("Braille characters"), fullSummary(of: epub))
+
+        var feedItem = unreadBook("Short Sentences.brf")
+        feedItem.feedLink = FeedBookLink(feedID: UUID(), itemID: "item")
+        XCTAssertNil(feedItem.brailleFileCodeDescription)
+    }
+
+    /// The braille file characters' part sits right after the braille
+    /// code's and before the parts after them (the file size, the cloud
+    /// note), in `fullParts`'s own order.
+    func testThePartsPutTheCharactersRightAfterTheCode() throws {
+        let facts = BookInfoFacts(
+            title: "Short Sentences", author: Book.unknownAuthor, format: "Braille", folderPath: "",
+            progress: nil, timeRemaining: nil, isUnopened: true, dateAdded: Date(), lastOpened: nil,
+            bookmarkCount: 2, fileSize: 2_000, cloudNote: "In Cloud", isKeptOnThisMac: false, isOpenInWindow: false,
+            brailleCode: "Unified English Braille, contracted (Grade 2)",
+            brailleFileCharacters: "North American Braille ASCII"
+        )
+        let parts = LibraryInfoWording.fullParts(of: facts, now: facts.dateAdded, calendar: .current, locale: Locale(identifier: "en_US_POSIX"))
+        let bookmarks = try XCTUnwrap(parts.firstIndex(of: "2 bookmarks"), "\(parts)")
+        let after = Array(parts.dropFirst(bookmarks + 1))
+        XCTAssertEqual(
+            Array(after.prefix(2)),
+            ["Braille code: Unified English Braille, contracted (Grade 2)", "Braille characters: North American Braille ASCII"]
+        )
+        XCTAssertTrue(after.dropFirst(2).first?.hasPrefix("File size") == true, "\(parts)")
+        XCTAssertEqual(after.last, "In Cloud")
+    }
+
     // MARK: - The Words
 
     /// Every sentence of the pop-up, its alert, and Speak Info, exactly: the
