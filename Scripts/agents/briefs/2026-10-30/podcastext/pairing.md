@@ -10,7 +10,7 @@ Read first (by line): `TextMouth/Services/FileImportService.swift:855-972` (one 
 ## Files
 - New `TextMouth/Services/TranscriptPairing.swift`: where to look, the attaching, the notice.
 - `TextMouth/Services/FileImportService.swift`: the hook in `publishReadableBook` and the four callers' pairings (items 5 and 6) — your lines only; the `bughunt` team may fix bugs in this file tonight, so claim it on the board (`bbs claim`) before you edit it, read `bbs claims`, and say on `team:podcastext` which functions you touch.
-- `TextMouth/Models/TranscriptionWording.swift`: the notice's words, in a new `// MARK: A Transcript Found at Import` section.
+- The notice's words go in an `extension TranscriptionWording` (`// MARK: - A Transcript Found at Import`) at the end of your `TranscriptPairing.swift`, not in `TranscriptionWording.swift`: the `attach` task edits that file at the same time, and this keeps the two from touching the same lines.
 - New `TextMouthProductionTests/TranscriptPairingTests.swift`.
 
 ## Behavior
@@ -33,7 +33,7 @@ Read first (by line): `TextMouth/Services/FileImportService.swift:855-972` (one 
    - when any was kept: `OutsideTranscript.transcript(sentencesByFile:plan:source:)` with `TranscriptSource(origin: .imported, format: <the first kept file's format>, fileName: <its name when exactly one file was kept, else nil>)`, written into the staged package with `TranscriptStore.write(_:into: staged.tmbDirectory)`. The book's text is then written from it the first time the book opens (`TranscriptTextLoader`'s rebuild of a transcript without a text layer), as an episode's kept transcript is; its library row says "Transcribed" as soon as it is listed (`TranscribedBooks` looks for transcript.json), and no offer to transcribe it is made (`TranscriptionOffers` skips a book with a transcript.json);
    - a failure to build or write is logged and returns nil: it never fails the import;
    - the debug log: one `DiagnosticLog.event(.import, "TRANSCRIPT_FOUND_AT_IMPORT: \(title): \(kept) of \(files) tracks' transcripts attached")` when any was kept, and one `TRANSCRIPT_FOUND_AT_IMPORT_REFUSED: \(title): \(fileName): \(reason)` per file set aside (the reason is the error's description, which never quotes the file's text); names, never paths.
-4. **The notice** (returned, nil when nothing was set aside), in `TranscriptionWording`, pinned by tests:
+4. **The notice** (returned, nil when nothing was set aside), in that `TranscriptionWording` extension, pinned by tests:
    - one file set aside: `transcriptNotAttached(fileName:reason:)`: "“\(fileName)” was beside the audio but wasn't attached as the book's transcript: \(reason)"
    - several: `transcriptsNotAttached(fileNames:)`: "These transcript files were beside the audio but weren't attached: “03.vtt”, “07.vtt”, and “09.srt”. The debug log says why." Names in the plan's order, an Oxford comma before "and" from three on ("“a.vtt” and “b.vtt”" for two), at most five named and then ", and 4 more" for the rest.
 5. **The hook:** `publishReadableBook` (`:1499`) gains `pairingTranscripts pairing: TranscriptPairing? = nil`. Right after `readableContent` returns, for an audiobook with a pairing, `let notice = TranscriptPairing.attach(pairing, to: staged, index: content.index)`; the `ImportedBook` it returns carries that notice. Every other caller (feeds, recordings, packages) passes nothing and is unchanged.
