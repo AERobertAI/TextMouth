@@ -231,21 +231,34 @@ final class TextutilPageTests: XCTestCase {
         )
     }
 
+    /// A plain-text run the watchdog stops is read without pages too. The
+    /// stand-in plain-text run never ends by itself (`sleep 60`), and the
+    /// test's one-second limits stop it; the real HTML run before it is held
+    /// to textutil's own limits. A tool's limits are asked for by the
+    /// document's size alone, so the one-second limits once held the HTML
+    /// run too, which a busy Mac could stop, failing the read.
     func testAStoppedPlainTextRunIsReadWithoutPagesToo() throws {
         let real = TextutilConverter.Tool.textutil
         let stalled = WatchedProcess.Limits(
             maximumSeconds: 1, maximumResidentBytes: 1 << 30, maximumStalledSeconds: 1, pollInterval: 0.1
         )
+        // Set as the converter asks for the plain-text run's command, which
+        // it does once the HTML run has ended, just before it asks for that
+        // run's limits.
+        let plainTextAskedFor = LockedValue(false)
         let hangsOnThePlainText = TextutilConverter.Tool(
             command: { input, format, output in
-                TextutilConverter.Output(outputName: output.lastPathComponent) == .plainText
-                    ? (URL(fileURLWithPath: "/bin/sleep"), ["60"])
-                    : real.command(input, format, output)
+                guard TextutilConverter.Output(outputName: output.lastPathComponent) == .plainText else {
+                    return real.command(input, format, output)
+                }
+                plainTextAskedFor.value = true
+                return (URL(fileURLWithPath: "/bin/sleep"), ["60"])
             },
-            limits: { bytes in bytes < 1_000_000 ? stalled : real.limits(bytes) },
+            limits: { bytes in plainTextAskedFor.value ? stalled : real.limits(bytes) },
             residentMemory: { _ in nil }
         )
         let read = try read("rtf/page-breaks.rtf", as: .rtf, using: hangsOnThePlainText)
+        XCTAssertTrue(plainTextAskedFor.value, "the plain-text run was never asked for")
         XCTAssertEqual(read.chapter.pages, [])
         XCTAssertTrue(read.chapter.text.contains("First page paragraph one."))
     }
