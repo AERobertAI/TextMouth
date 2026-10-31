@@ -70,8 +70,9 @@ enum TextPipelineFixtures {
 
     /// The large DAISY audio books some checkouts keep in TestData beside
     /// its own books, downloaded separately and ignored by git, so most
-    /// checkouts lack them. Their output is recorded too, and compared
-    /// wherever they are present.
+    /// checkouts lack them; a linked worktree finds them in the main
+    /// checkout's TestData. Their output is recorded too, and compared
+    /// wherever they are found.
     static let optionalTestDataBookNames = ["are-you-ready-d3-audio.zip", "fire-safety-d202-audio.zip"]
 
     // MARK: Format Samples
@@ -176,14 +177,14 @@ enum TextPipelineFixtures {
 
     /// TestData's recorded books with their files: every one of
     /// `testDataBookNames`, and those of `optionalTestDataBookNames` that
-    /// this checkout holds.
+    /// this checkout holds or, from a linked worktree, the main checkout
+    /// holds (`testDataArchiveIfPresent(_:)`).
     /// - Throws: `TestError.fileNotFound` when one of `testDataBookNames`
     ///   is missing.
     static func testDataBooks() throws -> [(name: String, url: URL)] {
         let required = try testDataBookNames.map { (name: $0, url: try requireFile($0)) }
         let optional = optionalTestDataBookNames.compactMap { name -> (name: String, url: URL)? in
-            let url = URL(fileURLWithPath: testFilePath(name))
-            return FileManager.default.fileExists(atPath: url.path) ? (name, url) : nil
+            testDataArchiveIfPresent(name).map { (name, $0) }
         }
         return required + optional
     }
