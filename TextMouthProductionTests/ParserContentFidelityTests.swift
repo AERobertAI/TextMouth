@@ -680,34 +680,6 @@ final class ParserContentFidelityTests: XCTestCase {
             }
         }
     }
-
-    /// An HTML book that opens 10,000 elements without closing them is read
-    /// directly on a worker thread's stack, where an import reads it,
-    /// keeping its words. The direct reader once recursed for every level
-    /// and overflowed that stack.
-    func testHTMLNestedThousandsDeepIsReadDirectlyOnAWorkerStack() {
-        let html = String(repeating: "<div>", count: 10_000) + "Deep words"
-        let text = onWorkerSizedStack { (try? HTMLParser.parse(html: html))?.chapters.first?.text ?? "" }
-        XCTAssertEqual(text?.contains("Deep words"), true)
-    }
-
-    /// Past the deepest level both readings follow (`HTMLNesting`), each
-    /// reads a subtree as one paragraph of its words, so a direct reading and
-    /// a cached one still agree, word for word and heading for heading, and
-    /// no word is lost on either side of the limit.
-    func testHTMLReadingsAgreePastTheDeepestLevel() throws {
-        let quotes = String(repeating: "<blockquote>", count: 150) + "<p>Deep words</p>"
-            + String(repeating: "</blockquote>", count: 150) + "<p>After the quotes</p>"
-        let levels = (0..<150).map { "<div><span>Level \($0)</span>" }.joined()
-            + "<h2>Deep heading</h2>" + String(repeating: "</div>", count: 150)
-        for html in [quotes, levels] {
-            let chapter = try assertHTMLReadingsAgree(html)
-            for words in ["Deep words", "After the quotes", "Level 0", "Level 99", "Level 149", "Deep heading"]
-            where html.contains(words) {
-                XCTAssertTrue(chapter.text.contains(words), words)
-            }
-        }
-    }
 }
 
 extension XCTestCase {

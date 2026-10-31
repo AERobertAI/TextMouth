@@ -604,17 +604,6 @@ final class FeedParserTests: XCTestCase {
         }
     }
 
-    /// An item whose text opens 10,000 elements without closing them is read
-    /// on a worker thread's stack, where a refresh merges a feed, keeping
-    /// its words. The HTML converter once recursed for every level, so such
-    /// an item ended TextMouth during the refresh, and again at every launch
-    /// that refreshed the feed.
-    func testItemTextNestedThousandsDeepIsReadOnAWorkerStack() {
-        let html = String(repeating: "<div>", count: 10_000) + "Deep words"
-        let plainText = onWorkerSizedStack { FeedTextConverter.read(html: html)?.plainText ?? "" }
-        XCTAssertEqual(plainText?.contains("Deep words"), true)
-    }
-
     // MARK: - Helpers
 
     /// The fixture `name` in TestData/feeds, parsed as fetched from

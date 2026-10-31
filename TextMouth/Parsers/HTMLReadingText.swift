@@ -34,36 +34,6 @@ enum HTMLReadingBoundary: Equatable {
     }
 }
 
-/// How deep both HTML readers follow nested elements: the direct reader
-/// (`HTMLReadingText`) and the Markdown converter (`HTMLToMarkdownConverter`)
-/// each recurse once for every level of nesting, and SwiftSoup builds a tree
-/// of any depth, so markup that opens thousands of elements without closing
-/// them (a feed's item, a web page, a book's chapter) would overflow the
-/// 512 KiB stack of the worker threads that imports and feed refreshes run
-/// on, and end TextMouth. Past `deepestLevel`, each reader reads an
-/// element's whole subtree as one paragraph of its words instead
-/// (`words(of:)`), keeping every word and no structure.
-enum HTMLNesting {
-    /// The deepest level of nested elements the readers follow, counted
-    /// from where a reading begins. A book's chapter or a feed's item rarely
-    /// nests half as deep, and below it the words are kept all the same.
-    /// It is this low because the converter's every level costs several
-    /// kilobytes of a 512 KiB stack in a debug build (100 levels overflowed
-    /// it in the tests), and it keeps the Markdown the converter writes
-    /// shallow enough for the Markdown parser, which recurses as well.
-    static let deepestLevel = 32
-
-    /// The words of everything `element` holds, on one line with its
-    /// whitespace collapsed and a space wherever a block or a line break
-    /// separated words. SwiftSoup's text walk (`NodeTraversor`) uses a loop,
-    /// not recursion, so a subtree of any depth is safe. Unlike a reading,
-    /// it keeps hidden content and reads no image's alt text, a difference
-    /// only markup nested past `deepestLevel` ever meets.
-    static func words(of element: Element) -> String {
-        (try? element.text()) ?? ""
-    }
-}
-
 /// The words an HTML subtree contributes to a reading, in document order.
 ///
 /// The direct HTML reader reads a whole book body with it. The Markdown
@@ -113,10 +83,6 @@ struct HTMLReadingText {
     /// text of their own: headings, `pre`, and `code`. A heading inside one
     /// of them is part of that text, so it is not a heading of the reading.
     private var flattenedDepth = 0
-    /// How many elements enclose the node being read, counted from where
-    /// this reading began; past `HTMLNesting.deepestLevel` an element's
-    /// subtree is read as one paragraph of its words, without recursion.
-    private var elementDepth = 0
 
     /// Elements other than headings that the converter writes as plain text.
     private static let flattenedTags: Set<String> = ["pre", "code"]
@@ -254,10 +220,8 @@ struct HTMLReadingText {
         let headingLevel = Self.headingLevel(of: tag)
         // The separator is already written, so the offset is where the
         // label's first word will begin. A heading is recorded exactly when
-        // the cache's reader keeps one: its label is not blank, and it is not
-        // nested past the deepest level followed, where the converter writes
-        // only words (`HTMLNesting`).
-        if recordsHeadings, flattenedDepth == 0, elementDepth < HTMLNesting.deepestLevel, let headingLevel {
+        // the cache's reader keeps one: its label is not blank.
+        if recordsHeadings, flattenedDepth == 0, let headingLevel {
             let label = Self.label(of: element)
             if !label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 headings.append(Heading(level: headingLevel, text: label, characterOffset: utf16Length))
@@ -267,26 +231,10 @@ struct HTMLReadingText {
         let flattens = headingLevel != nil || Self.flattenedTags.contains(tag)
         preservedWhitespaceDepth += preservesWhitespace ? 1 : 0
         flattenedDepth += flattens ? 1 : 0
-        appendContents(of: element)
+        appendChildren(of: element)
         preservedWhitespaceDepth -= preservesWhitespace ? 1 : 0
         flattenedDepth -= flattens ? 1 : 0
         separate(at: boundary)
-    }
-
-    /// Read what `element` holds: its children, one level deeper, or, at the
-    /// deepest level the readers follow (`HTMLNesting`), all of its words as
-    /// one paragraph, as the Markdown converter writes them there, so a
-    /// deeply nested page never overflows the stack and both readings agree.
-    private mutating func appendContents(of element: Element) {
-        guard elementDepth < HTMLNesting.deepestLevel else {
-            separate(at: .paragraph)
-            appendFlowing(HTMLNesting.words(of: element))
-            separate(at: .paragraph)
-            return
-        }
-        elementDepth += 1
-        appendChildren(of: element)
-        elementDepth -= 1
     }
 
     // MARK: - Writing Text

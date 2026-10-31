@@ -105,10 +105,6 @@ enum HTMLToMarkdownConverter {
     /// Cached `Elements` strongly reference their root and form a cycle for
     /// every parsed EPUB chapter, which is catastrophic during library-wide
     /// migrations. A direct DOM walk is both sufficient and leak-free here.
-    /// It keeps its own stack of the elements still to visit rather than
-    /// recursing, so markup nested thousands deep cannot overflow the stack
-    /// (`HTMLNesting`); children are pushed in reverse, so elements are
-    /// visited in document order.
     private static func collectNavigationDetails(
         from node: Node,
         insideNavigation: Bool,
@@ -117,20 +113,13 @@ enum HTMLToMarkdownConverter {
         navHeadingCount: inout Int,
         navigationElements: inout [Element]
     ) {
-        /// The child elements of `parent`, last first, each with whether it
-        /// lies inside navigation.
-        func pending(under parent: Node, insideNavigation: Bool) -> [(element: Element, insideNavigation: Bool)] {
-            parent.getChildNodes().reversed().compactMap { child in
-                (child as? Element).map { ($0, insideNavigation) }
-            }
-        }
-        var stack = pending(under: node, insideNavigation: insideNavigation)
-        while let (element, isInsideNavigation) = stack.popLast() {
+        for child in node.getChildNodes() {
             // Hidden content, page lists, and landmarks are never converted,
             // so they neither count as headings nor need removing as navigation.
-            guard !readingFlow.excludes(element) else { continue }
+            guard let element = child as? Element,
+                  !readingFlow.excludes(element) else { continue }
             let tag = element.tagName().lowercased()
-            let isNavigation = isInsideNavigation || tag == "nav"
+            let isNavigation = insideNavigation || tag == "nav"
             if tag == "nav" {
                 navigationElements.append(element)
             }
@@ -143,7 +132,14 @@ enum HTMLToMarkdownConverter {
             default:
                 break
             }
-            stack += pending(under: element, insideNavigation: isNavigation)
+            collectNavigationDetails(
+                from: element,
+                insideNavigation: isNavigation,
+                readingFlow: readingFlow,
+                allHeadingCount: &allHeadingCount,
+                navHeadingCount: &navHeadingCount,
+                navigationElements: &navigationElements
+            )
         }
     }
 
@@ -176,10 +172,6 @@ enum HTMLToMarkdownConverter {
         var insideLink = false
         /// Inside emphasis, whose words are marked once, by the outermost.
         var insideEmphasis = false
-        /// How many elements enclose the one being converted, counted from
-        /// the body; at `HTMLNesting.deepestLevel` an element's subtree is
-        /// written as one paragraph of its words, without recursion.
-        var depth = 0
 
         /// Whether any page marker may be written: pages are included and the
         /// document names a page or can hold a page-break element (PG05).
@@ -206,23 +198,13 @@ enum HTMLToMarkdownConverter {
     }
 
     /// Convert a single HTML element to its Markdown equivalent.
-    private static func convertElement(_ element: Element, into result: inout String, context outer: Context) {
+    private static func convertElement(_ element: Element, into result: inout String, context: Context) {
         let tag = element.tagName().lowercased()
         // Non-content elements are ignored without running selector queries.
         // Content outside the rendered reading flow (the hidden attribute, page
         // lists, and landmarks) contributes no words, headings, or destinations.
         guard tag != "script", tag != "style",
-              !outer.readingFlow.excludes(element) else { return }
-        // Nested past the deepest level followed, the element is its words
-        // alone, which keeps a page of thousands of unclosed elements from
-        // overflowing the stack (`HTMLNesting`). Everything inside it is
-        // converted one level deeper.
-        guard outer.depth < HTMLNesting.deepestLevel else {
-            appendFlattened(element, to: &result)
-            return
-        }
-        var context = outer
-        context.depth += 1
+              !context.readingFlow.excludes(element) else { return }
 
         // Keep the element's words apart from its neighbors' exactly where the
         // direct reader does (HTMLReadingBoundary): a block is a paragraph of
@@ -446,14 +428,9 @@ enum HTMLToMarkdownConverter {
     /// returned so the element's own words can leave them out. Each page-break
     /// element is looked at once, here: looking up a page the page list names
     /// records it as written (`pageMarker`), so a second lookup would find none.
-    /// Nested past `HTMLNesting.deepestLevel` below `container`, an element
-    /// is not looked into (`depth` counts the levels already entered), as
-    /// conversion does not convert it as structure, so the walk stays
-    /// shallow however deep the markup nests.
-    private static func destinationMarkers(inside container: Element, context: Context, depth: Int = 0) -> EnclosedDestinations {
+    private static func destinationMarkers(inside container: Element, context: Context) -> EnclosedDestinations {
         var enclosed = EnclosedDestinations()
-        guard !context.headingTargets.isEmpty || context.mayHoldPages,
-              depth < HTMLNesting.deepestLevel else { return enclosed }
+        guard !context.headingTargets.isEmpty || context.mayHoldPages else { return enclosed }
         for child in container.getChildNodes() {
             guard let element = child as? Element,
                   !context.readingFlow.excludes(element) else { continue }
@@ -463,7 +440,7 @@ enum HTMLToMarkdownConverter {
             let page = pageMarker(for: element, tag: tag, isPageBreak: isBreak, context: context)
             enclosed.markers += destinationMarkers(for: element, tag: tag, page: page, context: context)
             if !isBreak || readsOwnText(ofPageBreak: element, page: page) {
-                let inner = destinationMarkers(inside: element, context: context, depth: depth + 1)
+                let inner = destinationMarkers(inside: element, context: context)
                 enclosed.markers += inner.markers
                 enclosed.unreadPageBreaks += inner.unreadPageBreaks
             } else {
@@ -709,17 +686,6 @@ enum HTMLToMarkdownConverter {
             text.unicodeScalars.removeFirst()
         }
         result += MarkdownLiteral.escaped(text)
-    }
-
-    /// Write the words of `element`'s whole subtree, nested past the deepest
-    /// level the converter follows, as one paragraph of literal text: no
-    /// heading, list, link, or destination of that subtree, but every word,
-    /// read without recursion (`HTMLNesting.words(of:)`), as the direct
-    /// reader reads it there.
-    private static func appendFlattened(_ element: Element, to result: inout String) {
-        separate(at: .paragraph, in: &result)
-        appendText(HTMLNesting.words(of: element), to: &result)
-        separate(at: .paragraph, in: &result)
     }
 
     /// Write inline words (`text`, with whitespace collapsed) as `render`
