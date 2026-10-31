@@ -4,8 +4,9 @@ import XCTest
 
 /// PDFs the parser cannot read, and the sentences a listener hears for
 /// them (audit U18): a file that is not a PDF, a page with no text that OCR
-/// could not read or found nothing on, and a PDF locked by a password. Each
-/// test makes its PDF in a sandbox folder of its own.
+/// could not read or found nothing on, and a PDF locked by a password; and
+/// an outline nested deeper than the parser reads. Each test makes its PDF
+/// in memory or in a sandbox folder of its own.
 final class PDFFailureTests: XCTestCase {
 
     // MARK: - Failures
@@ -84,7 +85,56 @@ final class PDFFailureTests: XCTestCase {
         }
     }
 
+    // MARK: - Outline Depth
+
+    /// An outline nested deeper than the deepest level read gives entries
+    /// for levels 0 through 63 only, and its reading finishes: the levels
+    /// below, which no real table of contents has, are not visited, so a
+    /// crafted outline cannot exhaust the import thread's stack.
+    func testAnOutlineDeeperThanTheLimitIsReadToTheLimitOnly() throws {
+        let document = try Self.document(withOutlineLevels: 80)
+
+        let entries = PDFTextParser.extractOutline(from: document)
+
+        XCTAssertEqual(PDFTextParser.deepestOutlineLevel, 64)
+        XCTAssertEqual(entries.count, 64, "an outline 80 levels deep must be read to 64 levels")
+        XCTAssertEqual(entries.map(\.level), Array(0..<64))
+        XCTAssertEqual(entries.map(\.title), (0..<64).map { "Level \($0)" })
+    }
+
+    /// An outline within the limit keeps every level, each leading to its page.
+    func testAnOutlineWithinTheLimitKeepsEveryLevel() throws {
+        let document = try Self.document(withOutlineLevels: 10)
+
+        let entries = PDFTextParser.extractOutline(from: document)
+
+        XCTAssertEqual(entries.map(\.level), Array(0..<10))
+        XCTAssertEqual(entries.map(\.title), (0..<10).map { "Level \($0)" })
+        XCTAssertEqual(entries.map(\.pageIndex), Array(repeating: 0, count: 10))
+    }
+
     // MARK: - Fixtures
+
+    /// A one-page PDF document, in memory, whose outline is a chain
+    /// `levels` deep built with `PDFOutline.insertChild`: each entry the
+    /// only child of the one above, labelled "Level 0" on, and leading to
+    /// the page. The depth is kept modest; no test needs a deep stack.
+    private static func document(withOutlineLevels levels: Int) throws -> PDFDocument {
+        let document = PDFDocument()
+        document.insert(PDFPage(), at: 0)
+        let page = try XCTUnwrap(document.page(at: 0))
+        let root = PDFOutline()
+        document.outlineRoot = root
+        var parent = root
+        for level in 0..<levels {
+            let entry = PDFOutline()
+            entry.label = "Level \(level)"
+            entry.destination = PDFDestination(page: page, at: CGPoint(x: 0, y: PDFFixtures.letter.maxY))
+            parent.insertChild(entry, at: 0)
+            parent = entry
+        }
+        return document
+    }
 
     /// A one-page blank PDF made with PDFKit, in a sandbox folder of its
     /// own: a letter-size page with no text and no picture, which only OCR

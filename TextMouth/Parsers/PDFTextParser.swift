@@ -717,7 +717,14 @@ enum PDFTextParser {
         var pageIndex: Int // zero-based page index
     }
 
-    /// Extract the table of contents from a PDF's outline/bookmarks
+    /// The deepest outline level read: deeper entries, which no real table of
+    /// contents has, are left out, so a crafted outline cannot exhaust the
+    /// import thread's stack. Levels count from 1 here, so the entries read
+    /// have `OutlineEntry.level` 0 through 63.
+    static let deepestOutlineLevel = 64
+
+    /// Extract the table of contents from a PDF's outline/bookmarks, to
+    /// `deepestOutlineLevel` levels deep.
     static func extractOutline(from document: PDFDocument) -> [OutlineEntry] {
         guard let root = document.outlineRoot else { return [] }
 
@@ -726,13 +733,18 @@ enum PDFTextParser {
         return entries
     }
 
-    /// Recursively traverse the PDF outline tree
+    /// Recursively traverse the PDF outline tree below `outline`, whose
+    /// children are at level `depth + 1` (the root's at 0), stopping at
+    /// `deepestOutlineLevel`: one call per level, so the recursion is never
+    /// deeper than that, whatever the file holds.
     private static func traverseOutline(
         _ outline: PDFOutline,
         depth: Int,
         document: PDFDocument,
         entries: inout [OutlineEntry]
     ) {
+        // Children past the deepest level read are not visited at all.
+        guard depth + 1 < deepestOutlineLevel else { return }
         for i in 0..<outline.numberOfChildren {
             guard let child = outline.child(at: i) else { continue }
             let label = child.label?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
