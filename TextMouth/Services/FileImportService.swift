@@ -2180,28 +2180,85 @@ enum FileImportService {
         }
     }
 
+    /// Whether `url` names a TextMouth book package: its extension is .tmb,
+    /// in any case. Open Book… and Finder open such a package as the book
+    /// it holds rather than import it as a file
+    /// (`LibraryViewModel.openTMBPackage(from:)`), and no import's original
+    /// that lies inside one is ever deleted (`reasonToKeepOriginal(at:)`).
+    static func isBookPackage(_ url: URL) -> Bool {
+        url.pathExtension.lowercased() == "tmb"
+    }
+
+    /// Why the item at `url`, an import's original, is never deleted, in the
+    /// words of the log line that says so; nil when it may be deleted.
+    ///
+    /// - A folder, or a symbolic link to one: a folder import (a DAISY book
+    ///   kept as loose files, a folder of audio tracks) leaves files the
+    ///   import did not copy in it, such as a cover, lyrics, or other books.
+    /// - A file inside a book package: a book's own file, or a track of its
+    ///   audio, opened from inside the package in Finder (Show Package
+    ///   Contents), which its deletion would take from that book.
+    /// - A file inside `dataDirectory`, the data directory, which holds the
+    ///   library and everything else TextMouth keeps.
+    ///
+    /// Where the item lies is read with symbolic links resolved, on the item
+    /// and on the data directory alike (`lies(_:inside:)`), so neither a
+    /// link nor a folder whose name merely begins like the data
+    /// directory's (Library2 beside Library) can mislead it.
+    static func reasonToKeepOriginal(at url: URL, dataDirectory: URL = TextMouthPaths.root) -> String? {
+        // `fileExists(atPath:isDirectory:)` follows a symbolic link, so a link
+        // to a folder counts as a folder, which is wanted.
+        var isDirectory: ObjCBool = false
+        if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
+           isDirectory.boolValue {
+            return "is a folder, which an import never deletes"
+        }
+        let item = url.resolvingSymlinksInPath()
+        // The names of the folders that hold the item, its own name left
+        // out: a package is known by its name alone, as Open Book… and
+        // Finder know it.
+        let folderNames = item.pathComponents.dropLast()
+        if folderNames.contains(where: { isBookPackage(URL(fileURLWithPath: $0, isDirectory: true)) }) {
+            return "is inside a book package, whose files an import never deletes"
+        }
+        if lies(item, inside: dataDirectory.resolvingSymlinksInPath()) {
+            return "is inside the data directory, whose files an import never deletes"
+        }
+        return nil
+    }
+
+    /// Whether `item` lies inside `folder`, somewhere below it, compared path
+    /// component by path component, so a folder whose name merely begins
+    /// with `folder`'s (Library2 beside Library) is not taken for it, and
+    /// without regard to case, as the Mac's volumes compare names: on a
+    /// volume that tells case apart, the worst a mismatch can do is keep a
+    /// file. Neither path is resolved here.
+    private static func lies(_ item: URL, inside folder: URL) -> Bool {
+        let itemPath = item.pathComponents.map { $0.lowercased() }
+        let folderPath = folder.pathComponents.map { $0.lowercased() }
+        return itemPath.count > folderPath.count && itemPath.starts(with: folderPath)
+    }
+
     /// Delete the original source file after import (if the user chose that
     /// option), to the Trash or permanently as "Move to Trash instead of
     /// deleting" chooses, like every other deletion. Throws when the file
     /// could not be removed, so the caller can say so (TODO S09); a file
     /// that is already gone counts as removed.
     ///
-    /// A folder is never deleted as an import's original: a folder import
-    /// (a DAISY book kept as loose files, a folder of audio tracks) leaves
-    /// files the import did not copy in it, such as a cover, lyrics, or other
-    /// books. The library already never offers the deletion for such a book
-    /// (`ImportedBook.mayDeleteOriginal`); this refuses it too, so a caller
-    /// that is ever given a folder (or a symbolic link to one) still cannot
-    /// remove it. The refusal removes nothing, sends nothing to the Trash,
-    /// and does not throw, since nothing failed: it writes one log line.
+    /// Some originals are never deleted, whatever the caller decided
+    /// (`reasonToKeepOriginal(at:)`): a folder, which a folder import
+    /// leaves holding files it did not copy, and any file inside a book
+    /// package or inside the data directory, which belongs to a book or to
+    /// TextMouth. The library already never offers the deletion of a
+    /// folder (`ImportedBook.mayDeleteOriginal`); this refuses one too, so
+    /// a caller that is ever given a folder (or a symbolic link to one)
+    /// still cannot remove it. A refusal removes nothing, sends nothing to
+    /// the Trash, and does not throw, since nothing failed: it writes one
+    /// log line naming the item, never its path, and saying why.
     @MainActor
     static func deleteOriginalFile(at url: URL) throws {
-        // `fileExists(atPath:isDirectory:)` follows a symbolic link, so a link
-        // to a folder counts as a folder, which is wanted.
-        var isDirectory: ObjCBool = false
-        if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
-           isDirectory.boolValue {
-            DiagnosticLog.event(.import, "ORIGINAL_KEPT: \(url.lastPathComponent): is a folder, which an import never deletes")
+        if let reason = reasonToKeepOriginal(at: url) {
+            DiagnosticLog.event(.import, "ORIGINAL_KEPT: \(url.lastPathComponent): \(reason)")
             return
         }
         try removeItemRespectingTrashSetting(at: url)
