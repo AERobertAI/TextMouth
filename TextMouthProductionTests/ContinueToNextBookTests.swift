@@ -289,7 +289,9 @@ final class ContinueToNextBookTests: XCTestCase {
             asked().first?.userInfo?[Notification.ContinueToNextBookKey.previousBookID] as? UUID,
             finished.id
         )
-        XCTAssertTrue(world.requests.hasRequest(for: next.id))
+        // Waited for, as `asked()` was, so a busy Mac cannot read the
+        // world's request queue too soon (as in the pass-over test below).
+        XCTAssertTrue(eventually { world.requests.hasRequest(for: next.id) }, "The next book was never requested")
         XCTAssertFalse(world.requests.hasRequest(for: finished.id))
         XCTAssertFalse(finishedReader.isCurrentlyPlaying)
         XCTAssertFalse(finishedReader.audioPlaybackService.isPlaying)
@@ -352,7 +354,9 @@ final class ContinueToNextBookTests: XCTestCase {
         }
 
         XCTAssertEqual(starts(), 1)
-        XCTAssertTrue(nextReader.audioPlaybackService.isPlaying)
+        // Waited for, not read once the spin above ends: the spin is there
+        // for a second start, which must not come, not for the first.
+        XCTAssertTrue(eventually { nextReader.audioPlaybackService.isPlaying }, "The next book's audio never played")
         XCTAssertNil(nextReader.lastAnnouncement)
         XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Second Volume"])
         XCTAssertFalse(finishedReader.isCurrentlyPlaying)
@@ -552,12 +556,17 @@ final class ContinueToNextBookTests: XCTestCase {
                     "\(testCase.name): not saved at the end"
                 )
             }
-            // Only a loop that restarts plays after the end.
-            XCTAssertEqual(
-                reader.audioPlaybackService.isPlaying,
-                testCase.behavior == .loop && !testCase.timer,
-                "\(testCase.name): playing after the end"
-            )
+            // Only a loop that restarts plays after the end: its playing is
+            // waited for, not read once the spin above ends, which is there
+            // for what must not start.
+            if testCase.behavior == .loop && !testCase.timer {
+                XCTAssertTrue(
+                    eventually { reader.audioPlaybackService.isPlaying },
+                    "\(testCase.name): not playing after the end"
+                )
+            } else {
+                XCTAssertFalse(reader.audioPlaybackService.isPlaying, "\(testCase.name): playing after the end")
+            }
 
             let skipping = recordingAnnouncements {
                 reader.skipBackward()
