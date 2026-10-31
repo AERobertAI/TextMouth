@@ -56,6 +56,7 @@ final class KeyboardReachabilityTests: XCTestCase {
         "BookManifestEditWording.editWithTitle": "A Book menu command that edits the book's manifest with another app; it has no shortcut action and is reached from the menu bar.",
         "TranscriptionWording.transcribeCommandTitle(hasTranscript: canDeleteBookTranscript == true)":
             "A Book menu command that transcribes a book's audio, or retranscribes it once it has a transcript; it has no shortcut action and is reached from the menu bar.",
+        "TranscriptionWording.attachCommandTitle": "A Book menu command that attaches a transcript file to an audiobook; it has no shortcut action and is reached from the menu bar.",
         "TranscriptCleanupWording.commandTitle": "A Book menu command that cleans up a transcript; it has no shortcut action and is reached from the menu bar.",
         "TranscriptionWording.deleteCommandTitle": "A Book menu command that deletes a book's transcript; it has no shortcut action and is reached from the menu bar.",
         "AudioEditorWording.editAudioCommand": "A Book menu command that opens the audio editor; it has no shortcut action and is reached from the menu bar.",

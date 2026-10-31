@@ -547,6 +547,22 @@ extension FocusedValues {
     }
 }
 
+/// Whether the book of the reader whose window is key is an audiobook that
+/// Attach Transcript… can give a transcript from a file (FMT23): one in a
+/// package of its own that no transcript is being attached to already
+/// (`TranscriptAttachments.canAttach`). The reader publishes it as a scene
+/// value (`ReaderBookCommandsSupport`).
+struct CanAttachBookTranscriptKey: FocusedValueKey {
+    typealias Value = Bool
+}
+
+extension FocusedValues {
+    var canAttachBookTranscript: Bool? {
+        get { self[CanAttachBookTranscriptKey.self] }
+        set { self[CanAttachBookTranscriptKey.self] = newValue }
+    }
+}
+
 /// Whether the book of the reader whose window is key is a transcribed
 /// audiobook whose transcript Delete Transcript… can delete (FR05). The
 /// reader publishes it as a scene value (`ReaderBookCommandsSupport`).
@@ -567,13 +583,16 @@ extension FocusedValues {
 /// decides for itself through `WindowCommandRouting`. The reader's Book
 /// menu opens its book's text in the user's own editor, and transcribes an
 /// audiobook's audio (Retranscribe Audio… once it has a transcript),
-/// cleans up its transcript, or deletes it, and Edit
+/// attaches a WebVTT or SubRip file as its transcript instead (Attach
+/// Transcript…, FMT23), cleans up its transcript, or deletes it, and Edit
 /// Audio… opens an audiobook in the audio editor (FR04);
 /// MenuVisibilityManager shows it only while a reader is in front. Edit
 /// Text is unavailable for an audiobook without a transcript, Edit Manifest
 /// for any book but an audiobook of tracks (FR17), Transcribe
-/// Audio… and Edit Audio… for a text book, and Clean Up Transcript
-/// (Experimental)… and Delete Transcript… for a book without a transcript.
+/// Audio… and Edit Audio… for a text book, Attach Transcript… for a text
+/// book and while a transcript is being attached to the book, and Clean Up
+/// Transcript (Experimental)… and Delete Transcript… for a book without a
+/// transcript.
 /// Move to Library… moves an episode or article out of its feed into a
 /// folder of the library (FR11, branch D), and is unavailable for any other
 /// book.
@@ -581,6 +600,7 @@ struct BookCommands: Commands {
     @FocusedValue(\.canEditBookText) var canEditBookText
     @FocusedValue(\.canEditBookManifest) var canEditBookManifest
     @FocusedValue(\.canTranscribeBookAudio) var canTranscribeBookAudio
+    @FocusedValue(\.canAttachBookTranscript) var canAttachBookTranscript
     @FocusedValue(\.canCleanUpBookTranscript) var canCleanUpBookTranscript
     @FocusedValue(\.canDeleteBookTranscript) var canDeleteBookTranscript
     @FocusedValue(\.canEditBookAudio) var canEditBookAudio
@@ -627,6 +647,14 @@ struct BookCommands: Commands {
                 NotificationCenter.default.post(name: .transcribeBookAudio, object: nil)
             }
             .disabled(canTranscribeBookAudio != true)
+
+            // A WebVTT or SubRip file as the audiobook's transcript, in
+            // place of transcribing it (FMT23); dimmed while one is being
+            // attached to the book.
+            Button(TranscriptionWording.attachCommandTitle) {
+                NotificationCenter.default.post(name: .attachBookTranscript, object: nil)
+            }
+            .disabled(canAttachBookTranscript != true)
 
             Button(TranscriptCleanupWording.commandTitle) {
                 NotificationCenter.default.post(name: .cleanUpBookTranscript, object: nil)
@@ -922,6 +950,9 @@ extension Notification.Name {
     /// Posted by Book > Transcribe Audio… (FR05): the key reader opens the
     /// Transcribe Audio sheet for its audiobook.
     static let transcribeBookAudio = Notification.Name("transcribeBookAudio")
+    /// Posted by Book > Attach Transcript… (FMT23): the key reader asks for
+    /// a WebVTT or SubRip file to make its audiobook's transcript.
+    static let attachBookTranscript = Notification.Name("attachBookTranscript")
     /// Posted by Book > Delete Transcript… (FR05): the key reader asks to
     /// delete its audiobook's transcript.
     static let deleteBookTranscript = Notification.Name("deleteBookTranscript")

@@ -133,6 +133,19 @@ final class TranscriptAttachTests: XCTestCase {
         XCTAssertEqual(publishes, 2)
     }
 
+    /// The reader's Book menu offers Attach Transcript… right after
+    /// Transcribe Audio…, the other way a book gets a transcript.
+    func testTheBookMenuOffersAttachTranscriptAfterTranscribeAudio() throws {
+        let menu = try XCTUnwrap(NSApp.mainMenu)
+        let bookMenu = try XCTUnwrap(menu.items.first { $0.title == "Book" }?.submenu)
+        let titles = bookMenu.items.map(\.title)
+        let transcribe = try XCTUnwrap(titles.firstIndex {
+            $0 == TranscriptionWording.transcribeCommandTitle || $0 == TranscriptionWording.retranscribeCommandTitle
+        })
+
+        XCTAssertEqual(titles.firstIndex(of: TranscriptionWording.attachCommandTitle), transcribe + 1, "\(titles)")
+    }
+
     // MARK: - The Open Panel
 
     /// The Open panel offers WebVTT and SubRip files, each by its extension.
