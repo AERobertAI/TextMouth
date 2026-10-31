@@ -421,6 +421,54 @@ final class FeedRefresherTests: XCTestCase {
         XCTAssertEqual(pass.requestedItemIDs, [], "the newest-N rule asked for a deleted episode")
     }
 
+    /// An episode deleted more than 90 days ago, which its feed has listed
+    /// all along, stays deleted through one read that lists nothing at all
+    /// (a server fault), however old the deletion: the 90 days count
+    /// deletions from a feed that went on listing its other items, and the
+    /// empty read must not let the next full read add the episode anew, as
+    /// a new, unplayed episode the newest-N rule downloads (data review,
+    /// finding 4).
+    func testAnOldDeletionSurvivesOneReadThatListsNothing() async throws {
+        let world = try FeedTestWorld(self, label: "FeedDeletedLongAgoEmptyRead")
+        let items = [FeedXML.Item(guid: "a", title: "A", published: world.day(-1)),
+                     FeedXML.Item(guid: "b", title: "B", published: world.day(-2)),
+                     FeedXML.Item(guid: "c", title: "C", published: world.day(-3))]
+        world.server.serve(
+            "/feed.xml",
+            .feed(FeedXML.rss(items: items)),
+            .feed(FeedXML.rss(title: "Again", items: items)),
+            .feed(FeedXML.rss(title: "Empty", items: [])),
+            .feed(FeedXML.rss(title: "Whole again", items: items))
+        )
+        let feed = try await world.subscribe("/feed.xml")
+        try world.center.deleteItem("guid:a", of: feed.id)
+        let deleted = world.clock.value
+        /// The deleted episode as the record keeps it now.
+        func deletedItem() -> FeedItem? {
+            world.center.store.record(of: feed.id)?.item("guid:a")
+        }
+
+        // The feed lists the episode 120 days after its deletion: still
+        // deleted, so the record keeps it.
+        world.advance(by: 120 * 86_400)
+        _ = await world.center.refresh(feed.id)
+        XCTAssertEqual(deletedItem()?.deletedDate, deleted)
+
+        // One read lists nothing, then the feed lists everything again.
+        world.advance(by: 3_600)
+        _ = await world.center.refresh(feed.id)
+        XCTAssertEqual(deletedItem()?.deletedDate, deleted, "an empty read forgot a deletion older than 90 days")
+        world.advance(by: 3_600)
+        let again = try await unwrap(world.center.refresh(feed.id))
+
+        XCTAssertEqual(again.newItemIDs, [], "the deleted episode came back as new")
+        XCTAssertEqual(deletedItem()?.deletedDate, deleted)
+        XCTAssertFalse(world.center.listedItems(of: feed.id).map(\.id).contains("guid:a"))
+        XCTAssertEqual(world.center.counts(of: feed.id).new, 0)
+        let pass = await world.center.applyItemPolicy(to: [feed.id])
+        XCTAssertFalse(pass.requestedItemIDs.contains("guid:a"), "the newest-N rule asked for a deleted episode")
+    }
+
     /// An item the listener deleted that the feed no longer lists stays in
     /// the record, deleted, until 90 days have passed since its deletion,
     /// and the first merge after that lets it go; one the feed still lists

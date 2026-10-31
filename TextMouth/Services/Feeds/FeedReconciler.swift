@@ -77,7 +77,8 @@ enum FeedReconciler {
 
     /// How long the record keeps an item the listener deleted once the feed
     /// no longer lists it, counted from its deletion
-    /// (`FeedItem.deletedDate`): 90 days. Long enough to outlast a
+    /// (`FeedItem.deletedDate`): 90 days, except that a read listing none
+    /// of the record's items forgets no deletion. Long enough to outlast a
     /// publisher's server that sends an empty or cut-short channel for a
     /// while, and a feed whose window of entries moves back to list older
     /// ones again, either of which would otherwise let the next full read
@@ -150,8 +151,15 @@ enum FeedReconciler {
         // The record's items the feed no longer lists: each one the listener
         // has not deleted, for the kept-entries rule, and each deleted one
         // for 90 days after its deletion, so a read that leaves it out once
-        // never lets the next one add it back as new.
-        candidates += matcher.unclaimed.filter { keepsUnlisted($0, at: now) }
+        // never lets the next one add it back as new. A read that lists none
+        // of the record's items at all (an empty or replaced channel, as a
+        // server fault sends) keeps every deleted one, however old its
+        // deletion: the 90 days count deletions from a feed that went on
+        // listing the others, and one empty read must not forget them.
+        let listsNoneOfTheRecord = !record.items.isEmpty && candidates.allSatisfy { addedIDs.contains($0.id) }
+        candidates += matcher.unclaimed.filter {
+            keepsUnlisted($0, at: now, keepingEveryDeletion: listsNoneOfTheRecord)
+        }
 
         // The kept-entries rule.
         var kept = Self.kept(
@@ -246,11 +254,17 @@ enum FeedReconciler {
     /// lists, among the candidates for the kept-entries rule: always when
     /// the listener has not deleted it; when deleted, only until
     /// `deletedItemRetention` has passed since its deletion, so a read that
-    /// leaves it out never brings it back later as new. A deletion dated
-    /// after `now`, as another Mac's clock running ahead may date it, is
-    /// kept.
-    static func keepsUnlisted(_ item: FeedItem, at now: Date) -> Bool {
-        guard let deleted = item.deletedDate else { return true }
+    /// leaves it out never brings it back later as new, and always while
+    /// the read lists none of the record's items (`keepingEveryDeletion`),
+    /// which says nothing of what the feed dropped. A deletion dated after
+    /// `now`, as another Mac's clock running ahead may date it, is kept.
+    ///
+    /// The retention counts from the deletion, not from when the feed last
+    /// listed the item, which would need a date stored in the feed index
+    /// (a follow-up): an item still listed for 120 days after its deletion,
+    /// then left out by a read that does list other items, goes at once.
+    static func keepsUnlisted(_ item: FeedItem, at now: Date, keepingEveryDeletion: Bool = false) -> Bool {
+        guard let deleted = item.deletedDate, !keepingEveryDeletion else { return true }
         return now.timeIntervalSince(deleted) < deletedItemRetention
     }
 
