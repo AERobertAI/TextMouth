@@ -3,11 +3,11 @@ import SwiftUI
 import XCTest
 @testable import TextMouth
 
-/// The Braille tab of Settings (FMT21): the tab itself, its three pop-ups
-/// (the language, the braille code, and its contraction; the language since
-/// October 20, 2026) with their labels and hints, what they show and store,
-/// this Mac's tables taken only once their check passes, and every sentence
-/// it speaks. Each test's settings live in a sandboxed preferences store and
+/// The Braille tab of Settings (FMT21): the tab itself, its four pop-ups
+/// (the language, the braille code, and its contraction, the language since
+/// October 20, 2026; and the braille file characters, braillecodes) with
+/// their labels and hints, what they show and store, this Mac's tables taken
+/// only once their check passes, and every sentence it speaks. Each test's settings live in a sandboxed preferences store and
 /// a config.json of the test's own; nothing touches the real ones. The
 /// hosted tests show the bundled codes unless they say otherwise, so their
 /// pop-ups list the same items on any Mac.
@@ -35,7 +35,10 @@ final class BrailleSettingsViewTests: XCTestCase {
 
     // MARK: - The Pop-ups
 
-    /// The three pop-ups are found by their labels, with their hints exactly.
+    /// The four pop-ups are found by their labels, with their hints exactly,
+    /// in reading order. The fourth, the braille file characters, says the
+    /// chosen code's name as its value: "North American Braille ASCII,
+    /// Braille file characters, pop-up button".
     func testThePopUpsAreLabelledAndHinted() throws {
         try skipUnlessHostedWindowsExposeAccessibility()
         try withBrailleTab(settings: makeSettings()) { hosting, _ in
@@ -48,6 +51,17 @@ final class BrailleSettingsViewTests: XCTestCase {
             XCTAssertEqual(
                 contraction.hint,
                 "Whether that code's braille is contracted. Contracted braille writes common words and letter groups in fewer cells."
+            )
+            let fileCode = try control(labelled: "Braille file characters", in: controls)
+            XCTAssertEqual(
+                fileCode.hint,
+                "How a BRF or BRL file writes each braille cell as a character. Most files use North American Braille ASCII."
+            )
+            XCTAssertEqual(fileCode.role, .popUpButton)
+            XCTAssertEqual(fileCode.element.accessibilityValue() as? String, "North American Braille ASCII")
+            XCTAssertEqual(
+                controls.filter { $0.role == .popUpButton }.map(\.label),
+                ["Language", "Braille code", "Contraction", "Braille file characters"]
             )
         }
     }
@@ -137,6 +151,51 @@ final class BrailleSettingsViewTests: XCTestCase {
         withHostedView(view, until: { _ in true }) { hosting in
             settleHostedView(hosting)
             XCTAssertTrue(descendants(of: hosting, as: NSPopUpButton.self).isEmpty)
+        }
+    }
+
+    // MARK: - The Braille File Characters (braillecodes)
+
+    /// The fourth pop-up lists every braille file code by its name, in the
+    /// catalog's order, with North American Braille ASCII chosen when
+    /// nothing is stored.
+    func testTheBrailleFileCharactersPopUpListsEveryCode() throws {
+        try withBrailleTab(settings: makeSettings()) { hosting, _ in
+            let fileCode = try fileCodePopUp(in: hosting)
+            XCTAssertEqual(fileCode.itemTitles, [northAmerican, eurobraille, "Unicode braille patterns"])
+            XCTAssertEqual(fileCode.titleOfSelectedItem, northAmerican)
+        }
+    }
+
+    /// Choosing Eurobraille stores its id, in the preferences store and in
+    /// config.json, and leaves the table alone.
+    func testChoosingEurobrailleStoresItsID() throws {
+        let defaults = try isolatedDefaults()
+        let url = try makeConfigFileURL()
+        let service = ConfigService(fileURL: url)
+        let settings = SettingsViewModel(
+            notificationCenter: NotificationCenter(), initializeServices: false, userDefaults: defaults, configService: service
+        )
+        XCTAssertEqual(settings.brailleFileCode, "ascii-na")
+        try withBrailleTab(settings: settings) { hosting, _ in
+            let fileCode = try fileCodePopUp(in: hosting)
+            let item = try XCTUnwrap(fileCode.itemTitles.firstIndex(of: eurobraille))
+            fileCode.menu?.performActionForItem(at: item)
+            XCTAssertTrue(waitUntil { settings.brailleFileCode == "ascii-eurobraille" }, "choosing the code kept \(settings.brailleFileCode)")
+            XCTAssertEqual(BraillePreferences.fileCode.read(from: defaults), "ascii-eurobraille")
+        }
+        XCTAssertEqual(settings.brailleTable, "en-ueb-g2.ctb")
+        service.flushScheduledSave()
+        let saved = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any]
+        XCTAssertEqual(saved?["brailleFileCode"] as? String, "ascii-eurobraille")
+    }
+
+    /// A stored Eurobraille shows chosen when the tab opens.
+    func testAStoredCodeShowsChosenWhenTheTabOpens() throws {
+        let defaults = try isolatedDefaults()
+        BraillePreferences.fileCode.write("ascii-eurobraille", to: defaults)
+        try withBrailleTab(settings: makeSettings(defaults: defaults)) { hosting, _ in
+            XCTAssertEqual(try fileCodePopUp(in: hosting).titleOfSelectedItem, eurobraille)
         }
     }
 
@@ -289,9 +348,14 @@ final class BrailleSettingsViewTests: XCTestCase {
             BrailleSettingsWording.contractionHint,
             "Whether that code's braille is contracted. Contracted braille writes common words and letter groups in fewer cells."
         )
+        XCTAssertEqual(BrailleSettingsWording.fileCodeLabel, "Braille file characters")
+        XCTAssertEqual(
+            BrailleSettingsWording.fileCodeHint,
+            "How a BRF or BRL file writes each braille cell as a character. Most files use North American Braille ASCII."
+        )
         XCTAssertEqual(
             BrailleSettingsWording.caption,
-            "TextMouth reads braille files (BRF, BRL, and PEF) with this code, and exports braille with it unless you choose another in the Export dialog. A book keeps the code it was imported with."
+            "TextMouth reads braille files (BRF, BRL, and PEF) with this code, and exports braille with it unless you choose another in the Export dialog. A book keeps the code it was imported with, and a BRF or BRL book keeps its braille file characters, which Book Information can change."
         )
         XCTAssertEqual(BrailleSettingsWording.noTables, "TextMouth found no braille tables in its bundle.")
     }
@@ -346,6 +410,11 @@ final class BrailleSettingsViewTests: XCTestCase {
     private var english: String { Locale.current.localizedString(forIdentifier: "en") ?? "en" }
     private var french: String { Locale.current.localizedString(forIdentifier: "fr") ?? "fr" }
 
+    /// Two braille file codes as the braille file characters pop-up names
+    /// them, pinned here rather than read from the catalog.
+    private let northAmerican = "North American Braille ASCII"
+    private let eurobraille = "Eurobraille, six-dot (German-speaking countries)"
+
     /// The bundled codes and a French code of this Mac's whose tables no Mac
     /// has: an uncontracted and a contracted one.
     private func codesWithAFixtureMacLanguage() -> [BrailleCode] {
@@ -373,7 +442,7 @@ final class BrailleSettingsViewTests: XCTestCase {
     }
 
     /// Hosts the tab, showing `codes`, at the Settings window's size, waits
-    /// until its three pop-ups are drawn, and passes the hosting view to
+    /// until its four pop-ups are drawn, and passes the hosting view to
     /// `body`. A Mac table chosen there is checked with verdicts of the
     /// test's own, in a working folder made in `checkRoot` (a sandbox folder
     /// of its own when nil), given through the environment, so neither
@@ -395,26 +464,41 @@ final class BrailleSettingsViewTests: XCTestCase {
         try withHostedView(
             view,
             size: NSSize(width: SettingsView.windowSize.width, height: SettingsView.windowSize.height),
-            until: { self.descendants(of: $0, as: NSPopUpButton.self).count == 3 }
+            until: { self.descendants(of: $0, as: NSPopUpButton.self).count == 4 }
         ) { hosting in
             try body(hosting, settings)
         }
     }
 
-    /// The language, code, and contraction pop-ups, in reading order.
+    /// The language, code, and contraction pop-ups: the first three of the
+    /// four, in reading order, by position (the fourth, the last, is the
+    /// braille file characters, `fileCodePopUp(in:)`).
     private func popUps(in hosting: NSView) throws -> (language: NSPopUpButton, code: NSPopUpButton, contraction: NSPopUpButton) {
-        let found = descendants(of: hosting, as: NSPopUpButton.self)
-        // A failure, not a skip: the tab must draw all three pop-ups.
-        XCTAssertEqual(found.count, 3, "expected three pop-ups")
-        return (try XCTUnwrap(found.first), try XCTUnwrap(found.dropFirst().first), try XCTUnwrap(found.last))
+        let found = drawnPopUps(in: hosting)
+        return (try XCTUnwrap(found.first), try XCTUnwrap(found.dropFirst().first), try XCTUnwrap(found.dropFirst(2).first))
     }
 
-    /// The same three pop-ups as `popUps(in:)`, or nil unless exactly three
-    /// are drawn, with no assertion: for a `waitUntil` condition, which is
-    /// asked again until it holds and must not record a failure on the way.
+    /// The braille file characters pop-up: the fourth in reading order,
+    /// after the language, code, and contraction.
+    private func fileCodePopUp(in hosting: NSView) throws -> NSPopUpButton {
+        try XCTUnwrap(drawnPopUps(in: hosting).dropFirst(3).first)
+    }
+
+    /// Every pop-up the tab drew, in reading order, failing the test unless
+    /// all four are drawn.
+    private func drawnPopUps(in hosting: NSView) -> [NSPopUpButton] {
+        let found = descendants(of: hosting, as: NSPopUpButton.self)
+        // A failure, not a skip: the tab must draw all four pop-ups.
+        XCTAssertEqual(found.count, 4, "expected four pop-ups")
+        return found
+    }
+
+    /// The same three pop-ups as `popUps(in:)`, or nil unless all four are
+    /// drawn, with no assertion: for a `waitUntil` condition, which is asked
+    /// again until it holds and must not record a failure on the way.
     private func popUpTriple(in hosting: NSView) -> (language: NSPopUpButton, code: NSPopUpButton, contraction: NSPopUpButton)? {
         let found = descendants(of: hosting, as: NSPopUpButton.self)
-        guard found.count == 3 else { return nil }
+        guard found.count == 4 else { return nil }
         return (found[0], found[1], found[2])
     }
 
