@@ -119,7 +119,14 @@ final class StorageGenerationMoveTests: XCTestCase {
         let save = HeldStatisticsSave(writing: saved, to: TextMouthPaths.readingStatsFile)
         addTeardownBlock { save.letGo() }
 
-        let outcome = await LibraryViewModel.$waitForQueuedStatisticsSaves.withValue({ save.waitForIt() }) {
+        // The stand-in waits for the real statistics queue too: every test
+        // shares the sandbox's data directory, so a save an earlier test
+        // queued could otherwise land during this move's copy, the very race
+        // this test pins.
+        let outcome = await LibraryViewModel.$waitForQueuedStatisticsSaves.withValue({
+            ReadingStatsService.waitForQueuedSaves()
+            save.waitForIt()
+        }) {
             await model.moveDataDirectoryReturningOutcome(to: destination)
         }
         // A move that did not wait for it left the save held until now.
