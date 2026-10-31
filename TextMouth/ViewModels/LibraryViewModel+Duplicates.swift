@@ -22,6 +22,14 @@ extension LibraryViewModel {
     /// waits for an answer, because that marker could not be removed.
     private static let keepFailureContext = "Could not keep both copies"
 
+    /// What Keep Both and Replace Existing say, keeping the question, when
+    /// the new copy's package is gone while its question waited: taken by
+    /// the launch of another Mac sharing the library, or in Finder. Cancel
+    /// settles the question then, and the file it came from, which an
+    /// unanswered copy never deletes, can be imported again.
+    private static let copyGoneSentence =
+        "The new copy's files are no longer in the library, so it can't be kept. Choose Cancel, then import the file again."
+
     // MARK: - Asking
 
     /// Asks `decision` once every question queued before it is settled. A
@@ -284,6 +292,11 @@ extension LibraryViewModel {
     /// preference for the new copy's original and opens the book when its
     /// import asked. Cancel discards the new copy, which leaves its original
     /// alone.
+    ///
+    /// Neither Replace nor Keep Both keeps a copy whose package is gone, as
+    /// another Mac's launch or Finder can take it while the question waits:
+    /// the question stays, saying so (`copyGoneSentence`), so no row names
+    /// files that are not there and the original is never deleted for them.
     private func settle(
         _ duplicate: ImportDecision.DuplicateBook,
         of decision: ImportDecision,
@@ -291,9 +304,9 @@ extension LibraryViewModel {
     ) -> OperationOutcome {
         switch answer {
         case .replaceExisting:
-            return replaceExisting(with: duplicate, of: decision)
+            return Self.refusalToKeep(duplicate) ?? replaceExisting(with: duplicate, of: decision)
         case .keepBoth:
-            return keep(duplicate, of: decision)
+            return Self.refusalToKeep(duplicate) ?? keep(duplicate, of: decision)
         case .cancel:
             do {
                 try FileImportService.deleteBookPackage(duplicate.book)
@@ -328,6 +341,16 @@ extension LibraryViewModel {
         save()
         finishKeeping(duplicate.book, from: duplicate, of: decision)
         return .success(nil)
+    }
+
+    /// The refusal of an answer that would keep `duplicate`'s new copy,
+    /// Replace or Keep Both, once its package is no longer a folder at its
+    /// place in the library (`copyGoneSentence`); nil while it is there.
+    private static func refusalToKeep(_ duplicate: ImportDecision.DuplicateBook) -> OperationOutcome? {
+        var isFolder: ObjCBool = false
+        let isThere = FileManager.default.fileExists(atPath: duplicate.book.tmbDirectory.path, isDirectory: &isFolder)
+            && isFolder.boolValue
+        return isThere ? nil : .failure(copyGoneSentence)
     }
 
     /// Finishes keeping `book`, the book a duplicate's answer left in the

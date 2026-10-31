@@ -1244,6 +1244,36 @@ final class ImportDecisionFlowTests: XCTestCase {
         XCTAssertEqual(scene.model.library.books.map(\.id), [existing.id, copy.id])
     }
 
+    /// A copy whose package is gone while its question waits, as another
+    /// Mac's launch or Finder can take it, is never kept: Keep Both and
+    /// Replace Existing each keep the question and say why, the library is
+    /// as it was, and the file the copy came from stays, though "After
+    /// Importing a Book" deletes the original of a book kept. Cancel then
+    /// settles the question.
+    func testACopyWhosePackageIsGoneIsNeverKept() throws {
+        let scene = try makeScene()
+        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        scene.model.library = Library(books: [atlas.existing])
+        useAfterImportingBehavior(.deleteAfterImport)
+        scene.model.importFiles(urls: [atlas.copy], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
+        try FileManager.default.removeItem(at: copy.tmbDirectory)
+        let gone = "The new copy's files are no longer in the library, so it can't be kept. "
+            + "Choose Cancel, then import the file again."
+
+        XCTAssertEqual(scene.model.answerCurrentImportDecision(.keepBoth).failureMessage, gone)
+        XCTAssertEqual(scene.model.answerCurrentImportDecision(.replaceExisting).failureMessage, gone)
+
+        XCTAssertEqual(scene.model.importDecisions.current?.duplicate?.book.id, copy.id)
+        XCTAssertEqual(scene.model.library.books, [atlas.existing])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: atlas.copy.path), "the original of a copy never kept is gone")
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.cancel).succeeded)
+        XCTAssertTrue(scene.model.importDecisions.isEmpty)
+        XCTAssertEqual(scene.model.library.books, [atlas.existing])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: atlas.copy.path))
+    }
+
     // MARK: - Fixtures
 
     /// The words a bookmark marks in both editions of a book.
