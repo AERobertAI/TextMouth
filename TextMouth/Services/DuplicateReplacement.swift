@@ -873,6 +873,10 @@ enum DuplicateReplacement {
         return keptText
     }
 
+    /// The tag of the debug log's lines naming what an undone replacement
+    /// could not put back in the new copy's package.
+    private static let undoneLogTag = "DUPLICATE_REPLACE_UNDONE"
+
     /// Puts the new package back as its import published it at
     /// `publishedAt`: moved back from `movedTo`, where it went, and holding
     /// only the names it held before (`namesBefore`), each other entry
@@ -887,7 +891,7 @@ enum DuplicateReplacement {
             } catch {
                 DiagnosticLog.event(
                     .storage,
-                    "DUPLICATE_REPLACE_UNDONE: the new copy's package \(publishedAt.lastPathComponent) could not move back "
+                    "\(undoneLogTag): the new copy's package \(publishedAt.lastPathComponent) could not move back "
                         + "to where it was imported: \(error.localizedDescription)"
                 )
             }
@@ -901,7 +905,7 @@ enum DuplicateReplacement {
             } catch {
                 DiagnosticLog.event(
                     .storage,
-                    "DUPLICATE_REPLACE_UNDONE: \(name) could not be removed from the new copy's package "
+                    "\(undoneLogTag): \(name) could not be removed from the new copy's package "
                         + "\(package.lastPathComponent): \(error.localizedDescription)"
                 )
             }
