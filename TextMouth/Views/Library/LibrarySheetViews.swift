@@ -63,7 +63,7 @@ struct LibraryBookInfoSheet: View {
                 // encodingchoice): VoiceOver reads "Windows-1251 (Cyrillic),
                 // guessed, Text Encoding, pop-up button".
                 if book.offersTextEncodingChoice {
-                    TextEncodingPopUp(model: encoding)
+                    BookRereadPopUp(model: encoding, label: TextEncodingWording.bookInfoLabel, hint: TextEncodingWording.popUpHint)
                 }
                 LabeledContent("Added") {
                     Text(book.dateAdded, style: .date)
@@ -121,7 +121,6 @@ struct LibraryBookInfoSheet: View {
         // few lines below the form.
         .frame(width: 400, height: book.offersTextEncodingChoice ? 470 : 350)
         .navigationTitle("Info: \(book.title)")
-        .textEncodingConfirmation(encoding)
         .task {
             // What the file is read in, worked out off the main actor, so the
             // sheet never waits on a large file.
@@ -155,21 +154,31 @@ struct LibraryBookInfoSheet: View {
     }
 }
 
-// MARK: - Text Encoding (encodingchoice)
+// MARK: - Re-read Pop-ups (encodingchoice, braillecodes)
 
-/// Book Information's Text Encoding row: a pop-up button of the options
-/// (`TextEncodingChoices`), with the encoding the book is read in now
-/// selected and named with what decided it, so the button shows, and
-/// VoiceOver reads, "Windows-1251 (Cyrillic), guessed, Text Encoding, pop-up
-/// button" (`TextEncodingChoiceModel.name(of:)`). Choosing another option asks
-/// first (`textEncodingConfirmation(_:)`); the pop-up is dimmed while the
-/// file is checked and while the book is read again.
-struct TextEncodingPopUp: View {
-    @ObservedObject var model: TextEncodingChoiceModel
+/// One of Book Information's rows that names what a book's file is read
+/// with and reads it again with another choice: a pop-up button of
+/// `model`'s items, with what the book is read with now selected and named,
+/// so the button shows, and VoiceOver reads, the value before `label`:
+/// "Windows-1251 (Cyrillic), guessed, Text Encoding, pop-up button"
+/// (`TextEncodingChoiceModel.name(of:)`), or "North American Braille ASCII,
+/// Braille File Characters, pop-up button"
+/// (`BrailleFileCodeChoiceModel.name(of:)`). Choosing another item asks
+/// first, in the alert this view carries, so each pop-up's alert hangs on
+/// its own view and no view carries two; the pop-up is dimmed while its
+/// model takes no choice (`BookRereadChoosing.isEnabled`), as while the
+/// book is read again.
+struct BookRereadPopUp<Model: BookRereadChoosing>: View {
+    /// What the pop-up lists, the choice, and the re-read.
+    @ObservedObject var model: Model
+    /// The pop-up's label, which VoiceOver speaks after its value.
+    let label: String
+    /// The pop-up's hint, which VoiceOver speaks after its label.
+    let hint: String
 
     var body: some View {
         Picker(
-            TextEncodingWording.bookInfoLabel,
+            label,
             selection: Binding(get: { model.selection }, set: { item in Task { await model.choose(item) } })
         ) {
             ForEach(model.items, id: \.self) { item in
@@ -179,21 +188,16 @@ struct TextEncodingPopUp: View {
         .pickerStyle(.menu)
         // The label is spoken from the control itself: a pop-up button takes
         // no label from the picker's title.
-        .accessibilityLabel(TextEncodingWording.bookInfoLabel)
-        .accessibilityHint(TextEncodingWording.popUpHint)
+        .accessibilityLabel(label)
+        .accessibilityHint(hint)
         .disabled(!model.isEnabled)
-    }
-}
-
-extension View {
-    /// The confirmation `model` asks before its book is read again in the
-    /// option chosen: its title names the book and the option ("Read “Ledger”
-    /// again as Shift JIS (Japanese)?"), its message says what changes (an
-    /// edit of the text kept, and Edit Text stopping, included), Read Again
-    /// (Return) reads it again, and Cancel (Escape) leaves everything, the
-    /// pop-up included, as it was.
-    func textEncodingConfirmation(_ model: TextEncodingChoiceModel) -> some View {
-        alert(
+        // The confirmation asked before the book is read again with the
+        // choice: its title names the book and the choice ("Read “Ledger”
+        // again as Shift JIS (Japanese)?"), its message says what changes
+        // (an edit of the text kept, and Edit Text stopping, included), Read
+        // Again (Return) reads it again, and Cancel (Escape) leaves
+        // everything, the pop-up included, as it was.
+        .alert(
             model.pending.map { model.confirmTitle(for: $0.option) } ?? "",
             isPresented: Binding(get: { model.pending != nil }, set: { if !$0 { model.cancel() } }),
             presenting: model.pending

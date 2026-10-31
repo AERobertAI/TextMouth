@@ -6,11 +6,12 @@ import SwiftUI
 /// (encodingchoice): what the book is read in now, worked out without making
 /// the sheet wait on a large file; the options, with that encoding selected;
 /// the confirmation a new option asks for; and the re-read, whose refusal
-/// the sheet shows and VoiceOver hears.
+/// the sheet shows and VoiceOver hears. The pop-up and its alert are the
+/// ones the Braille File Characters pop-up shows too (`BookRereadPopUp`).
 @MainActor
-final class TextEncodingChoiceModel: ObservableObject {
+final class TextEncodingChoiceModel: ObservableObject, BookRereadChoosing {
     /// One item of the pop-up.
-    enum Item: Hashable {
+    enum Item: Hashable, Sendable {
         /// One of the options (`TextEncodingChoices.options`).
         case option(TextEncodingOption)
         /// What the book is read in now, when no option names it (UTF-16, or
@@ -23,16 +24,7 @@ final class TextEncodingChoiceModel: ObservableObject {
     /// A choice the listener has not confirmed yet, with what its
     /// confirmation says of the book besides the new reading
     /// (`TextEncodingWording.confirmMessage(option:keepsText:stopsEditing:)`).
-    struct Confirmation: Equatable {
-        /// The option chosen.
-        let option: TextEncodingOption
-        /// Whether the book's content.md holds text TextMouth did not write,
-        /// which the re-read keeps beside the new reading as a copy: an edit
-        /// made with Edit Text, or a save no edit took.
-        let keepsText: Bool
-        /// Whether the book is being edited with Edit Text, which stops.
-        let stopsEditing: Bool
-    }
+    typealias Confirmation = RereadConfirmation<TextEncodingOption>
 
     /// What the row shows of the book's encoding.
     @Published private(set) var state: TextEncodingRowState
@@ -137,25 +129,20 @@ final class TextEncodingChoiceModel: ObservableObject {
     /// The listener chose `item` in the pop-up. Another option is asked
     /// about first (`pending`), with whether text TextMouth did not write
     /// will be kept beside the new reading, read from the book's content.md
-    /// off the main actor and never downloaded
-    /// (`LibraryViewModel.unwrittenText(of:access:)`), and whether Edit Text
-    /// stops. A book that can't be read again now is not asked about: the
-    /// sheet says why (`failureMessage`), and VoiceOver hears it. The item
-    /// already selected, and `.current`, change nothing.
+    /// off the main actor and never downloaded, and whether Edit Text stops
+    /// (`LibraryViewModel.rereadPreflight(of:access:)`). A book that can't
+    /// be read again now is not asked about: the sheet says why
+    /// (`failureMessage`), and VoiceOver hears it. The item already
+    /// selected, and `.current`, change nothing.
     func choose(_ item: Item) async {
         guard case .option(let option) = item, item != selection, isEnabled else { return }
         failureMessage = nil
-        guard let book = library.bookByID(bookID) else {
-            failureMessage = OperationFailureNotice.message(after: .failure(TextEncodingWording.bookGoneRefusal))
-            return
-        }
-        if let refusal = library.textEncodingChangeRefusal(of: book) {
+        switch await library.rereadPreflight(of: bookID, access: access) {
+        case .refused(let refusal):
             failureMessage = OperationFailureNotice.message(after: .failure(refusal))
-            return
+        case let .ready(keepsText, stopsEditing):
+            pending = Confirmation(option: option, keepsText: keepsText, stopsEditing: stopsEditing)
         }
-        let access = self.access
-        let keepsText = await OffMainWork.run { (try? LibraryViewModel.unwrittenText(of: book, access: access)) != nil }
-        pending = Confirmation(option: option, keepsText: keepsText, stopsEditing: library.textEditSessions.isEditing(bookID))
     }
 
     /// The confirmation's title for `option`, naming the book as the library

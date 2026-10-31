@@ -481,7 +481,7 @@ extension LibraryViewModel {
     /// there is no such text, or no content.md. Read through `access`, so a
     /// content.md only in the cloud is never downloaded for it; the
     /// confirmation asks it too, to say whether a copy will be kept
-    /// (`TextEncodingChoiceModel.choose(_:)`).
+    /// (`rereadPreflight(of:access:)`).
     /// - Throws: why content.md could not be read.
     nonisolated static func unwrittenText(of book: Book, access: MaintenanceFileAccess) throws -> Data? {
         let cacheURL = MarkdownCacheService.cacheURL(for: book)
