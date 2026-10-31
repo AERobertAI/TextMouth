@@ -252,8 +252,9 @@ extension FileImportService {
     /// reader will and its bookInfo.json written and read back where it is,
     /// and deleting the marker through
     /// `LibraryPersistenceService.reinstatePackage(of:)` is what publishes
-    /// it. A failure puts the record back as it was and leaves the marker,
-    /// so the package stays retired.
+    /// it. A failure puts the record and content.md back as they were and
+    /// leaves the marker, so the package stays retired, with any text the
+    /// user changed in it.
     ///
     /// The book's record is, by preference: the package's own bookInfo.json,
     /// when it still has a valid one, so its reading position, bookmarks,
@@ -277,25 +278,25 @@ extension FileImportService {
             return nil
         }
 
-        // The record's files as they are now, bookInfo.json and the content
-        // index beside it, put back should the reinstatement fail.
-        let previousRecord = [
+        // The files a reinstatement writes, as they are now: content.md,
+        // which reading the book's text may write again, and the record's
+        // files, bookInfo.json and the content index beside it. Each is put
+        // back should the reinstatement fail, at whatever step; one it did
+        // not change is left alone.
+        let previousFiles = [
+            TextMouthPaths.contentMarkdownPath(in: location),
             TextMouthPaths.bookInfoPath(in: location),
             TextMouthPaths.contentIndexPath(in: location),
-        ].map(RecordFileSnapshot.init(of:))
-        var wroteRecord = false
+        ].map(PackageFileSnapshot.init(of:))
         do {
             let content = try readableContent(of: &book, run: &run)
             try run.begin(.savingRecord, in: location)
-            wroteRecord = true
             try writeVerifiedRecord(of: book, contentIndex: content.index, into: location)
             try run.begin(.reinstating, in: location)
             try LibraryPersistenceService.reinstatePackage(of: book)
             return ImportedBook(book: book, report: content.report)
         } catch {
-            if wroteRecord {
-                previousRecord.forEach { $0.restore() }
-            }
+            previousFiles.forEach { $0.restore() }
             throw error
         }
     }
@@ -344,10 +345,10 @@ extension FileImportService {
         )
     }
 
-    /// One file of a retained package's record (bookInfo.json, or the
-    /// content index beside it) as it was before a reinstatement wrote over
-    /// it, so a failed reinstatement can put it back.
-    private struct RecordFileSnapshot {
+    /// One file of a retained package that a reinstatement writes (content.md,
+    /// bookInfo.json, or the content index beside it) as it was before, so a
+    /// failed reinstatement can put it back.
+    private struct PackageFileSnapshot {
         /// Where the file is.
         let url: URL
         /// Whether anything was there.
@@ -363,13 +364,15 @@ extension FileImportService {
         }
 
         /// Puts the file back as it was: its earlier bytes, or no file when
-        /// there was none. A file that existed but could not be read cannot
-        /// be put back, and is left as the failed reinstatement wrote it; the
-        /// removal marker keeps the package retired either way.
+        /// there was none. A file that still holds its earlier bytes is left
+        /// alone, so content.md keeps the date its fingerprints record. A
+        /// file that existed but could not be read cannot be put back, and
+        /// is left as the failed reinstatement wrote it; the removal marker
+        /// keeps the package retired either way.
         func restore() {
             if !existed {
                 try? FileManager.default.removeItem(at: url)
-            } else if let bytes {
+            } else if let bytes, (try? Data(contentsOf: url)) != bytes {
                 try? bytes.write(to: url, options: .atomic)
             }
         }
@@ -379,11 +382,13 @@ extension FileImportService {
 
     /// The book a retained package holds, rebuilt for a package whose
     /// bookInfo.json is gone, as Remove from Library Only deletes it. The
-    /// book keeps its ID, title, author, braille table, and text encoding from the removal marker; its
-    /// format and checksum come from its one content entry, and the rest of
-    /// its metadata is read from that file as an import reads it. Its
-    /// reading position, bookmarks, and per-book settings lived only in the
-    /// deleted record, so the book returns at its beginning.
+    /// book keeps its ID, title, author, braille table, and text encoding
+    /// from the removal marker, and, for a text book, the record of an edit
+    /// of its text (B12) with the fingerprints of its text cache; its format
+    /// and checksum come from its one content entry, and the rest of its
+    /// metadata is read from that file as an import reads it. Its reading
+    /// position, bookmarks, and per-book settings lived only in the deleted
+    /// record, so the book returns at its beginning.
     static func reconstructedBook(
         inPackage package: URL,
         marker: RemovedFromLibraryMarker,
@@ -424,6 +429,14 @@ extension FileImportService {
             epubLanguage: metadata?.epub?.language,
             epubIdentifier: metadata?.epub?.identifier,
             epubVersion: metadata?.epub?.epubVersion,
+            // The text the user changed with Edit Text stays in content.md,
+            // which the removal kept (B12): with the record of the edit, the
+            // book's file is not read over it, and with the fingerprints, a
+            // re-read that does replace content.md (Redo Text Extraction)
+            // keeps a copy of what it held. Only a text book's content.md is
+            // its text.
+            textCacheFingerprint: format.isAudio ? nil : marker.textCacheFingerprint,
+            editedText: format.isAudio ? nil : marker.editedText,
             // A braille book is read with the table it was imported with
             // (FMT21). The record that held it is gone, so the marker carries
             // it; without it the text would be read again with the default

@@ -374,6 +374,31 @@ final class OnDiskContractTests: XCTestCase {
         )
     }
 
+    /// The keys of the removal marker Remove from Library Only writes into a
+    /// package (removedFromLibrary.json), as it writes them, from a book with
+    /// every field set. The marker is all a book added back keeps of its
+    /// deleted bookInfo.json.
+    func testARemovalMarkerHoldsExactlyTheseKeys() throws {
+        let marker = RemovedFromLibraryMarker(book: Self.bookWithEveryFieldSet(), removedAt: Self.date)
+        let package = try makeSandboxDirectory("Removal Marker Keys")
+        try marker.write(into: package)
+        let written = try Self.object(from: Data(contentsOf: TextMouthPaths.removedFromLibraryMarkerPath(in: package)))
+        let expected: Set<String> = [
+            "bookID", "title", "author", "removedAt", "brailleTable", "brailleTableVersion", "textEncoding",
+            "textEncodingSource",
+            // B12: the record of an edit taken with Edit Text and the fingerprints of the text cache, so that a
+            // book added back keeps the text the user changed. Optional keys, read leniently; an older
+            // TextMouth ignores them, and reads the book's file over the edit as it always did.
+            "editedText", "textCacheFingerprint",
+        ]
+        XCTAssertEqual(
+            Set(written.keys),
+            expected,
+            Self.because("a removal marker's key", "a book added back from a marker written before loses that field")
+        )
+        XCTAssertEqual(Self.propertyNames(of: marker), expected, Self.unset("a marker field"))
+    }
+
     // MARK: - File and Folder Names
 
     /// The names of the files and folders in the data directory and in

@@ -287,6 +287,132 @@ final class RetainedPackageImportTests: XCTestCase {
         XCTAssertEqual(model.bookByID(book.id)?.folderPath, book.folderPath)
     }
 
+    // MARK: - Text the User Changed (B12)
+
+    /// A book whose text the user changed with Edit Text, taken out with
+    /// Remove from Library Only and added back by opening its package, keeps
+    /// the edit: the removal marker carries the record of the edit and the
+    /// fingerprints that describe it, so the book rebuilt from the marker
+    /// keeps content.md byte for byte and records the edit, in the book and
+    /// in its record, and no copy is kept, since nothing was replaced. Until
+    /// October 30, 2026 the marker left the edit out, and the book's file
+    /// was read over it with no copy kept.
+    @MainActor
+    func testATextEditSurvivesRemovingTheBookAndAddingItBack() throws {
+        let taken = try takingTextEdit(of: try makePackage(title: "Spoke Tension")) {
+            $0.replacingOccurrences(of: "Notes on", with: "Corrected notes on")
+        }
+        try removeFromLibraryOnly(taken.book)
+        XCTAssertFalse(exists(record(of: taken.book)), "the removal deletes the record")
+        let written = try RemovedFromLibraryMarker.read(in: taken.book.tmbDirectory)
+        XCTAssertEqual(written.editedText?.cacheDigest, taken.book.editedText?.cacheDigest)
+        XCTAssertEqual(written.textCacheFingerprint, taken.book.textCacheFingerprint)
+
+        let imported = try FileImportService.importTMBPackage(FileImportService.identifyTMBPackage(at: taken.book.tmbDirectory))
+
+        let book = imported.book
+        XCTAssertEqual(book.id, taken.book.id)
+        XCTAssertEqual(book.tmbDirectory.path, taken.book.tmbDirectory.path)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        XCTAssertEqual(try Data(contentsOf: cache), taken.edited, "the book's file was read over the edit")
+        let digest = FingerprintHasher.md5.digestOfData(taken.edited)
+        XCTAssertEqual(book.editedText?.cacheDigest, digest)
+        XCTAssertEqual(book.textCacheFingerprint?.cache.digest, digest)
+        let saved = try BookInfo.load(from: book.tmbDirectory)
+        XCTAssertEqual(saved.state.editedText?.cacheDigest, digest)
+        XCTAssertEqual(saved.state.textCacheFingerprint?.cache.digest, digest)
+        XCTAssertTrue(BookTextEditSessions.holdsTakenEdit(book, access: .live), "a later re-read would not keep the edit")
+        XCTAssertFalse(exists(marker(of: book)))
+        XCTAssertEqual(keptTextCopies(of: cache), [], "a copy was kept of text nothing replaced")
+    }
+
+    /// A marker written before it carried an edit (no editedText or
+    /// textCacheFingerprint key, written here by hand as an older TextMouth
+    /// wrote it) still decodes, with neither, and its package is reinstated
+    /// as before, its text read from the book's file.
+    @MainActor
+    func testAMarkerWrittenBeforeItCarriedAnEditStillReinstatesItsBook() throws {
+        let book = try makePackage(title: "Rim Brakes")
+        try removeFromLibraryOnly(book)
+        let older = """
+            {
+              "author" : "Test Fixture",
+              "bookID" : "\(book.id.uuidString)",
+              "removedAt" : "2026-09-01T12:00:00Z",
+              "title" : "Rim Brakes"
+            }
+            """
+        try Data(older.utf8).write(to: marker(of: book), options: .atomic)
+
+        let decoded = try RemovedFromLibraryMarker.read(in: book.tmbDirectory)
+        XCTAssertEqual(decoded.bookID, book.id)
+        XCTAssertEqual(decoded.title, "Rim Brakes")
+        XCTAssertNil(decoded.editedText)
+        XCTAssertNil(decoded.textCacheFingerprint)
+
+        let imported = try FileImportService.importTMBPackage(FileImportService.identifyTMBPackage(at: book.tmbDirectory))
+
+        XCTAssertEqual(imported.book.id, book.id)
+        XCTAssertEqual(imported.book.tmbDirectory.path, book.tmbDirectory.path)
+        XCTAssertNil(imported.book.editedText)
+        XCTAssertEqual(
+            try Data(contentsOf: MarkdownCacheService.cacheURL(for: imported.book)),
+            try MarkdownCacheService.extractedText(for: imported.book, includesPages: true)?.bytes
+        )
+        XCTAssertFalse(exists(marker(of: book)))
+    }
+
+    /// Text changed by hand while the book was out of the library, which no
+    /// record of an edit describes, is kept beside content.md when adding
+    /// the book back reads its file again: the marker's fingerprints say
+    /// what TextMouth last wrote there. Until October 30, 2026 the marker
+    /// had none, and the changed text was lost.
+    @MainActor
+    func testTextChangedWhileTheBookWasRemovedIsKeptBesideItWhenAddedBack() throws {
+        // Cached as an import caches it, so its record has fingerprints.
+        var cached = try makePackage(title: "Brake Pads")
+        let index = try XCTUnwrap(MarkdownCacheService.generateCacheAnalyzeAndStamp(for: &cached))
+        let book = try XCTUnwrap(LibraryPersistenceService.saveContentAnalysis(
+            for: cached, index: index, cacheFormatVersion: cached.cacheFormatVersion
+        ))
+        XCTAssertNotNil(book.textCacheFingerprint)
+        try removeFromLibraryOnly(book)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let changed = Data("<!-- chapter: Brake Pads -->\nToe the pads in slightly before tightening.\n".utf8)
+        try changed.write(to: cache, options: .atomic)
+
+        let imported = try FileImportService.importTMBPackage(FileImportService.identifyTMBPackage(at: book.tmbDirectory))
+
+        XCTAssertNil(imported.book.editedText)
+        XCTAssertEqual(keptTextCopies(of: cache).compactMap { try? Data(contentsOf: $0) }, [changed])
+    }
+
+    /// A reinstatement that fails after reading the book's text again puts
+    /// content.md back as it was: here text changed by hand that nothing
+    /// records, which the read replaced before the step that failed. The
+    /// package stays retired, as before.
+    @MainActor
+    func testAFailedReinstatementPutsTheTextBackAsItWas() throws {
+        let book = try makePackage(title: "Chain Lube")
+        try removeFromLibraryOnly(book)
+        let cache = MarkdownCacheService.cacheURL(for: book)
+        let changed = Data("<!-- chapter: Chain Lube -->\nWipe the chain before each coat.\n".utf8)
+        try changed.write(to: cache, options: .atomic)
+        let source = try FileImportService.identifyTMBPackage(at: book.tmbDirectory)
+
+        for failingStep in [ImportStep.savingRecord, .reinstating] {
+            XCTAssertThrowsError(try FileImportService.importTMBPackage(source, observer: { step, _ in
+                if step == failingStep { throw CocoaError(.fileWriteOutOfSpace) }
+            })) { error in
+                XCTAssertEqual((error as? ImportFailure)?.step, failingStep)
+            }
+
+            XCTAssertEqual(try Data(contentsOf: cache), changed, "\(failingStep)")
+            XCTAssertTrue(exists(marker(of: book)), "\(failingStep)")
+            XCTAssertFalse(exists(record(of: book)), "\(failingStep)")
+        }
+    }
+
     // MARK: - Fixtures
 
     /// A reading position at `offset` in the first chapter, last updated at
@@ -444,6 +570,12 @@ final class RetainedPackageImportTests: XCTestCase {
     /// The removal marker in `book`'s package.
     private func marker(of book: Book) -> URL {
         TextMouthPaths.removedFromLibraryMarkerPath(in: book.tmbDirectory)
+    }
+
+    /// The copies of the user's text kept beside the content.md at `cache`
+    /// (`TextMouthPaths.keptTextCopyMarker`).
+    private func keptTextCopies(of cache: URL) -> [URL] {
+        LibraryIndexQuarantine.existingCopies(of: cache, marker: TextMouthPaths.keptTextCopyMarker)
     }
 
     /// Whether anything exists at `url`.

@@ -50,6 +50,21 @@ struct RemovedFromLibraryMarker: Codable, Equatable, Sendable {
     /// value that cannot be read, as a later TextMouth's might be, is nil
     /// too, and never makes the marker unreadable.
     @LenientOptional var textEncodingSource: TextEncodingSource? = nil
+    /// The record of the edit the user took with Edit Text that the book's
+    /// content.md held when it was removed (`Book.editedText`, B12). The
+    /// removal leaves content.md in the package, so a book added back from
+    /// this marker keeps that text, which would otherwise be read again
+    /// from the book's file over the edit. Nil for a book whose text was not
+    /// edited, and for a marker written before it was kept; a value that
+    /// cannot be read is nil too, and never makes the marker unreadable.
+    @LenientOptional var editedText: EditedText? = nil
+    /// The fingerprints of the book's file and of its content.md when it was
+    /// removed (`Book.textCacheFingerprint`), which describe the text a book
+    /// added back from this marker finds: Redo Text Extraction keeps a copy
+    /// of an edit, and a re-read a copy of text changed by hand, only while
+    /// the book has them. Nil for a book without a text cache, and for a
+    /// marker written before it was kept; read as leniently as `editedText`.
+    @LenientOptional var textCacheFingerprint: TextCacheFingerprint? = nil
 
     /// The marker recording that `book` was removed at `removedAt`.
     init(book: Book, removedAt: Date = Date()) {
@@ -61,6 +76,8 @@ struct RemovedFromLibraryMarker: Codable, Equatable, Sendable {
         brailleTableVersion = book.brailleTableVersion
         textEncoding = book.textEncoding
         textEncodingSource = book.textEncodingSource
+        editedText = book.editedText
+        textCacheFingerprint = book.textCacheFingerprint
     }
 }
 
