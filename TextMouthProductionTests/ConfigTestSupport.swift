@@ -142,18 +142,6 @@ extension XCTestCase {
         return directory.appendingPathComponent("config.json")
     }
 
-    /// Lets a save that `ConfigService.scheduleSave()` left waiting happen
-    /// (PERF17), as it does a moment after a settings change: the main run
-    /// loop turns for twice the default save delay, which is all the test
-    /// waits for, since nothing is expected meanwhile.
-    func waitPastConfigSaveDelay() {
-        let quiet = expectation(description: "nothing is expected while a config.json save waits")
-        quiet.isInverted = true
-        let delay = ConfigService.defaultSaveDelay.components
-        let seconds = Double(delay.seconds) + Double(delay.attoseconds) / 1e18
-        wait(for: [quiet], timeout: seconds * 2)
-    }
-
     /// The debug log's lines that contain `text`, waiting first for every
     /// queued log write. Lines go to the data directory's Logs folder, or to
     /// this Mac's while the data directory can't take them, so both debug
