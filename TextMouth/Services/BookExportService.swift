@@ -5,9 +5,9 @@ import os
 
 /// A kind of thing a book can export, in the order the Export dialog lists
 /// them: the book's own content (an audiobook's audio, or a text book's own
-/// file and its text, as Voice Dream offered them), then the files a
-/// recording and a transcription keep beside it (the user's answer of
-/// October 4, 2026).
+/// file and its text, as Voice Dream offered them, and that text spoken into
+/// audio), then the files a recording and a transcription keep beside it
+/// (the user's answer of October 4, 2026).
 ///
 /// Export lists whatever files a book's package holds, by kind
 /// (`BookExportService.offer(for:access:)`), so a kind appears for every
@@ -29,6 +29,11 @@ enum BookExportKind: String, CaseIterable, Sendable {
     /// A text book's reading text, chapter by chapter, each under its
     /// title: the words TextMouth reads aloud, as plain text.
     case plainText
+    /// A text book's reading text, or a range of its headings, spoken by its
+    /// voice into one audio file with a chapter per heading (FMT43), made by
+    /// `SpeechExportJob`. It is never copied: a book offers it only with its
+    /// text cache.
+    case spokenAudio
     /// A recording's original take, kept beside the audio the book plays
     /// (`BookOrigin.originalTakeFileName`).
     case originalRecording
@@ -56,6 +61,11 @@ struct BookExportFile: Equatable, Sendable {
         /// The book's reading text, made from the text cache (content.md)
         /// at the URL (`BookExportService.plainText(of:)`).
         case readingText(fromMarkdown: URL)
+        /// The text cache (content.md) at the URL, which a speech export reads
+        /// (FMT43): what a book offers for "Text as spoken audio". It is a
+        /// placeholder, never written as it is: it has no bytes of its own
+        /// to write.
+        case spoken(fromMarkdown: URL)
         /// The file at `from`, made into another by the conversion `by`, for
         /// the book `book` (FMT18): a text book's content.md, walked and
         /// written by a text writer. (Every kind is written to a scratch file
@@ -66,7 +76,7 @@ struct BookExportFile: Equatable, Sendable {
         /// The package file whose bytes are read.
         var url: URL {
             switch self {
-            case .copy(let url), .readingText(let url), .converted(let url, _, _):
+            case .copy(let url), .readingText(let url), .spoken(let url), .converted(let url, _, _):
                 return url
             }
         }
@@ -79,7 +89,8 @@ struct BookExportFile: Equatable, Sendable {
     /// as in "Moby-Dick.md" or "OEBPS/chapter1.html".
     let path: String
     /// The file's size in bytes. For reading text, the size of the Markdown
-    /// it is made from, which the text comes close to.
+    /// it is made from, which the text comes close to; for spoken audio, 0,
+    /// as its size is not known before it is spoken.
     let byteCount: Int64
 }
 
@@ -261,7 +272,7 @@ enum BookExportConversion: Sendable, Equatable {
 /// Lists what a book can export and copies the chosen items to a folder
 /// (FR05): an audiobook's audio, a recording's original take, the original
 /// audio an edit kept, a transcript, and a text book's own file, its
-/// Markdown, and its reading text.
+/// Markdown, its reading text, and that text spoken into audio (FMT43).
 ///
 /// Both run off the main actor, since they read and copy files that can
 /// wait on a drive or the network. Neither ever downloads a file that is
@@ -336,6 +347,15 @@ enum BookExportService {
                 byteCount: byteCount(of: markdown)
             )
             items.append(standaloneItem(.plainText, files: [readingText], access: access))
+            // The same text spoken into audio (FMT43): a placeholder of the
+            // text cache, named as M4B, the dialog's first format. Its size
+            // is not known before it is spoken.
+            let spoken = BookExportFile(
+                source: .spoken(fromMarkdown: markdown),
+                path: "\(stem) - Audio.\(SpeechExportFormat.m4b.fileExtension)",
+                byteCount: 0
+            )
+            items.append(standaloneItem(.spokenAudio, files: [spoken], access: access))
         }
         return BookExportOffer(
             book: book,
@@ -707,6 +727,9 @@ enum BookExportService {
     /// Text.md" becoming "Moby-Dick - Text.html", and is then named uniquely
     /// like any other. A conversion given for a kind it cannot make
     /// (`BookExportConversion.applies(to:)`) is ignored.
+    ///
+    /// "Text as spoken audio" (FMT43) is never copied, so nothing is planned
+    /// for it, and that is no failure.
     static func plan(
         _ offers: [BookExportOffer],
         kinds: Set<BookExportKind>,
@@ -756,24 +779,31 @@ enum BookExportService {
     /// kind has a conversion in `conversions` that applies to it, when each
     /// copied or already converted file (the Markdown the offer lists, made
     /// from content.md) becomes one converted by it instead, named with the
-    /// conversion's extension (FMT18). Files made any other way are left as
-    /// they are.
+    /// conversion's extension (FMT18). Reading text is left as it is, and a
+    /// spoken placeholder is left out. "Text as spoken audio" is never
+    /// copied, so none of its files is.
     private static func files(
         of item: BookExportItem,
         for book: Book,
         conversions: [BookExportKind: BookExportConversion]
     ) -> [BookExportFile] {
+        if item.kind == .spokenAudio {
+            return []
+        }
         guard let conversion = conversions[item.kind], conversion.applies(to: item.kind) else {
             return item.files
         }
         let details = ExportBookDetails(book)
-        return item.files.map { file in
+        return item.files.compactMap { file -> BookExportFile? in
             let url: URL
             switch file.source {
             case .copy(let source), .converted(let source, _, _):
                 url = source
             case .readingText:
                 return file
+            case .spoken:
+                // A placeholder: no text conversion makes a spoken file.
+                return nil
             }
             // The name keeps any folders and swaps only the last extension.
             let path = (file.path as NSString).deletingPathExtension + "." + conversion.fileExtension
@@ -870,6 +900,11 @@ enum BookExportService {
                     let text = try plainText(fromMarkdown: bytes, at: markdown, title: planned.book.title)
                     try Data(text.utf8).write(to: scratch, options: .withoutOverwriting)
                 }
+            case .spoken:
+                // A placeholder with no bytes of its own, which no plan makes
+                // a file of: should one ever be planned as it is, it fails
+                // alone, named with the reason, and the export goes on.
+                throw CocoaError(.featureUnsupported)
             case .converted(let url, let book, let conversion):
                 try writeConverted(url, book: book, by: conversion, to: planned.target, access: access, cancellation: cancellation)
             }

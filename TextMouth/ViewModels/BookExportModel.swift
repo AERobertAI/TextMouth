@@ -66,9 +66,11 @@ struct BookExportChoice: Equatable, Identifiable {
     }
 
     /// The choices `offers` give: one for each kind any of their books
-    /// holds, in the dialog's order.
+    /// holds, in the dialog's order. Spoken audio (FMT43) is offered for one
+    /// book alone, since its range and sliders are that book's.
     static func choices(for offers: [BookExportOffer]) -> [BookExportChoice] {
         BookExportKind.allCases.compactMap { kind in
+            if kind == .spokenAudio && offers.count != 1 { return nil }
             let items = offers.compactMap { $0.item(kind) }
             return items.isEmpty ? nil : BookExportChoice(kind: kind, items: items, bookCount: offers.count)
         }
