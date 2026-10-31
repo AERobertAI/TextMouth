@@ -115,7 +115,7 @@ final class LibraryViewLocationTests: XCTestCase {
 
         var plain = epubs
         plain.filter?.conditions = [LibraryViewCondition(test: .format(.txt))]
-        XCTAssertEqual(model.displayedBooks(at: LibraryLocation(view: plain, folderPath: "")).map(\.title), ["Drafts"])
+        XCTAssertEqual(model.displayedBooks(at: LibraryLocation(view: plain, folderPath: "")).map(\.title), ["Bestiary", "Drafts"])
         XCTAssertEqual(model.listCache.derivationCount, derivations + 1)
 
         let index = try XCTUnwrap(model.library.books.firstIndex { $0.title == "Drafts" })

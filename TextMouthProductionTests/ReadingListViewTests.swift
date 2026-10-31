@@ -22,12 +22,13 @@ final class ReadingListViewTests: XCTestCase {
 
     // MARK: - The Category
 
-    /// The View picker's fifth segment reads "Reading List", under the
-    /// picker's own label; the window names the location the same way,
-    /// alone, since its one order is its own.
+    /// The View pop-up's fifth item reads "Reading List", under the
+    /// pop-up's own label, "Library view" since October 30, 2026 (it was
+    /// "Library category" while the picker was segmented); the window names
+    /// the location the same way, alone, since its one order is its own.
     @MainActor
     func testTheReadingListIsTheFifthSegmentAndNamesItsWindow() {
-        XCTAssertEqual(LibraryView.categoryPickerLabel, "Library category")
+        XCTAssertEqual(LibraryView.categoryPickerLabel, "Library view")
         XCTAssertEqual(LibraryCategory.allCases.last, .readingList)
         XCTAssertEqual(LibraryCategory.allCases.firstIndex(of: .readingList), 4)
         XCTAssertEqual(LibraryCategory.readingList.rawValue, "Reading List")

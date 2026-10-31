@@ -325,7 +325,7 @@ struct LibraryViewsSettingsView: View {
         if available {
             return LibraryViewsSettingsWording.restoreHint
         }
-        guard let view, !view.isBuiltIn else { return LibraryViewsSettingsWording.restoreCustomHint }
+        guard let view, view.isBuiltIn else { return LibraryViewsSettingsWording.restoreCustomHint }
         return LibraryViewsSettingsWording.restoreUnchangedHint
     }
 

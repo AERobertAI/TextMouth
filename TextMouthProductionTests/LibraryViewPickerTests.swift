@@ -130,7 +130,7 @@ final class LibraryViewPickerTests: XCTestCase {
         let store = LibraryViewDefinitionStore(preferences: makeSandboxedPreferences("library-view-picker"))
         let long = LibraryViewDefinition(
             id: .custom(UUID()),
-            name: String(repeating: "Long Name ", count: 6),
+            name: Array(repeating: "Long Name", count: 6).joined(separator: " "),
             visibility: .always,
             filter: LibraryViewFilter(lists: [.books])
         )

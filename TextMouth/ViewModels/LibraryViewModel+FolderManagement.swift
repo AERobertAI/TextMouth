@@ -401,7 +401,7 @@ extension LibraryViewModel {
         let context = filterContext(for: location)
         let unsearched = LibraryListCache.Key(location: location, sort: sort, search: "", feedID: feedID, context: context)
         let books = listCache.books(for: unsearched, in: library) {
-            let listed = books(listedAt: location, context: context)
+            let listed = self.books(listedAt: location, context: context)
             return location.keepsItsOwnOrder ? listed : sortedBooks(listed, by: sort)
         }
         guard !search.isEmpty else { return books }
