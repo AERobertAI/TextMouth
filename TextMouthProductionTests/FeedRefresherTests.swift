@@ -231,7 +231,8 @@ final class FeedRefresherTests: XCTestCase {
     }
 
     /// An item the listener deleted stays deleted while the feed lists it,
-    /// and is forgotten once the feed stops listing it.
+    /// and is forgotten once the feed no longer lists it and 90 days have
+    /// passed since its deletion.
     func testADeletedItemNeverComesBack() async throws {
         let world = try FeedTestWorld(self, label: "FeedDeletedItem")
         let items = [FeedXML.Item(guid: "a", title: "A", published: world.day(-1)),
@@ -249,8 +250,95 @@ final class FeedRefresherTests: XCTestCase {
         XCTAssertEqual(world.center.listedItems(of: feed.id).map(\.title), ["B"])
         XCTAssertNotNil(world.center.store.record(of: feed.id)?.item("guid:a")?.deletedDate)
 
+        // A read that no longer lists the item, past the 90 days the record
+        // keeps an unlisted deletion.
+        world.advance(by: 91 * 86_400)
         _ = await world.center.refresh(feed.id)
         XCTAssertNil(world.center.store.record(of: feed.id)?.item("guid:a"))
+    }
+
+    /// An item the listener deleted stays deleted through a read of its feed
+    /// that leaves it out, as a publisher's server sending a valid but empty
+    /// channel once: when the feed lists it again it is still deleted, with
+    /// its deletion's date, so it is neither listed nor new, and the
+    /// newest-N rule (FR11) does not ask for it, where it once came back as
+    /// a new episode to download again.
+    func testADeletedItemStaysDeletedThroughAReadThatLeavesItOut() async throws {
+        let world = try FeedTestWorld(self, label: "FeedDeletedItemLeftOut")
+        let old = FeedXML.Item(guid: "old", title: "Old", published: world.day(-1))
+        let fresh = FeedXML.Item(guid: "fresh", title: "Fresh", published: world.day(0.5))
+        let whole = StubResponse.feed(FeedXML.rss(items: [fresh, old]))
+        world.server.serve(
+            "/feed.xml",
+            .feed(FeedXML.rss(items: [old])),
+            whole,
+            .feed(FeedXML.rss(title: "Cut short", items: [])),
+            whole
+        )
+        let feed = try await world.subscribe("/feed.xml")
+        world.advance(by: 86_400)
+        let arrival = try await unwrap(world.center.refresh(feed.id))
+        XCTAssertEqual(arrival.newItemIDs, ["guid:fresh"])
+        // The listener deletes the new episode and plays the old one, which
+        // leaves only the deleted one for the rule to ask for.
+        try world.center.deleteItem("guid:fresh", of: feed.id)
+        world.center.markPlayed("guid:old", of: feed.id)
+        let deleted = world.clock.value
+        /// The deleted episode as the record keeps it now.
+        func freshItem() -> FeedItem? {
+            world.center.store.record(of: feed.id)?.item("guid:fresh")
+        }
+
+        world.advance(by: 3_600)
+        let cutShort = try await unwrap(world.center.refresh(feed.id))
+        XCTAssertEqual(cutShort.outcome, .updated(newItemIDs: []))
+        XCTAssertEqual(freshItem()?.deletedDate, deleted, "a read that left the item out forgot its deletion")
+
+        world.advance(by: 3_600)
+        let again = try await unwrap(world.center.refresh(feed.id))
+
+        XCTAssertEqual(again.outcome, .updated(newItemIDs: []))
+        XCTAssertEqual(freshItem()?.deletedDate, deleted)
+        XCTAssertEqual(world.center.listedItems(of: feed.id).map(\.id), ["guid:old"])
+        XCTAssertEqual(world.center.counts(of: feed.id).new, 0)
+        let pass = await world.center.applyItemPolicy(to: [feed.id])
+        XCTAssertEqual(pass.requestedItemIDs, [], "the newest-N rule asked for a deleted episode")
+    }
+
+    /// An item the listener deleted that the feed no longer lists stays in
+    /// the record, deleted, until 90 days have passed since its deletion,
+    /// and the first merge after that lets it go; one the feed still lists
+    /// stays deleted however long ago it was deleted.
+    func testAnUnlistedDeletedItemGoesNinetyDaysAfterItsDeletion() throws {
+        let now = Date(timeIntervalSince1970: 1_791_000_000)
+        let address = try XCTUnwrap(URL(string: "https://show.example/feed.xml"))
+        /// The feed listing `items`, as TextMouth reads it.
+        func parsed(_ items: [FeedXML.Item]) throws -> ParsedFeed {
+            try FeedParser.parse(Data(FeedXML.rss(items: items).utf8), baseURL: address)
+        }
+        let listed = FeedXML.Item(guid: "listed", title: "Deleted, still listed", published: now.addingTimeInterval(-86_400))
+        let leftOut = FeedXML.Item(guid: "left-out", title: "Deleted, left out", published: now.addingTimeInterval(-2 * 86_400))
+        let kept = FeedXML.Item(guid: "kept", title: "Kept", published: now.addingTimeInterval(-3 * 86_400))
+        var record = FeedRecord(feed: Feed(feedURL: address, folderID: UUID(), subscribedDate: now))
+        var texts = FeedTextCache()
+        FeedReconciler.merge(try parsed([listed, leftOut, kept]), into: &record, keepEntries: -1, now: now, texts: &texts)
+        for itemID in ["guid:listed", "guid:left-out"] {
+            let index = try XCTUnwrap(record.index(of: itemID))
+            record.items[index].deletedDate = now
+        }
+        let retention = FeedReconciler.deletedItemRetention
+        XCTAssertEqual(retention, 90 * 86_400)
+        let later = try parsed([listed, kept])
+
+        let within = FeedReconciler.merge(later, into: &record, keepEntries: -1, now: now.addingTimeInterval(retention - 1), texts: &texts)
+        XCTAssertEqual(within.removedItemIDs, [])
+        XCTAssertEqual(record.item("guid:left-out")?.deletedDate, now, "an unlisted deletion went within 90 days")
+
+        let after = FeedReconciler.merge(later, into: &record, keepEntries: -1, now: now.addingTimeInterval(retention), texts: &texts)
+        XCTAssertEqual(after.removedItemIDs, ["guid:left-out"])
+        XCTAssertNil(record.item("guid:left-out"))
+        XCTAssertEqual(record.item("guid:listed")?.deletedDate, now, "a deleted item the feed lists went")
+        XCTAssertEqual(record.listedItems.map(\.id), ["guid:kept"])
     }
 
     /// A feed that renumbers its guids keeps its items: each is found again
