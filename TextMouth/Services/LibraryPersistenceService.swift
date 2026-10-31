@@ -227,6 +227,16 @@ enum LibraryPersistenceService {
     /// (`booksWithCheckpointsAhead()`). The journal is noted before the
     /// record is written, so a crash between the two finds no record newer
     /// than library.json, and nothing to take.
+    ///
+    /// While an unreadable index is protected, library.json takes no
+    /// snapshot, but the record still takes the checkpoint, so the journal
+    /// names the book all the same. Only an index write clears the journal,
+    /// and none is made while the index is protected, so the book stays
+    /// named: the launch that reads the index again, once the user has put
+    /// it back, takes the newer position from the record, instead of opening
+    /// the book at the index's older one and saving that over it. While the
+    /// data directory is unavailable (FR02), the journal, which is kept
+    /// there, is neither read nor written.
     /// - Parameter delay: How long library.json may wait: tests pass a short
     ///   one.
     static func saveReadingCheckpoint(
@@ -236,6 +246,12 @@ enum LibraryPersistenceService {
     ) {
         saveQueue.async {
             if let hold = indexWriteHold() {
+                // The data directory is checked as well: when it becomes
+                // unavailable while the index is protected, the protected
+                // index is the hold named.
+                if hold == .unreadableIndex, !TextMouthPaths.isDataDirectoryUnavailable {
+                    ReadingCheckpointJournal.note(bookID)
+                }
                 noteSkippedIndexWrite(hold)
                 return
             }

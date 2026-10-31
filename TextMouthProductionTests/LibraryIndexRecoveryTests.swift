@@ -63,6 +63,88 @@ final class LibraryIndexRecoveryTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: sandbox.indexURL), damagedBytes)
     }
 
+    // MARK: - Reading Positions Saved While Recovering
+
+    /// A reading position saved while the index can't be read reaches the
+    /// book's record, and the checkpoint journal names the book, so the
+    /// launch after the user puts the index back takes the newer position
+    /// from the record. Without the journal the book would open at the
+    /// index's older position, and the reader's next save would write that
+    /// over the record's.
+    @MainActor
+    func testPositionsSavedWhileRecoveringReachTheNextLaunch() throws {
+        let book = try makePackage(
+            title: "Read While Recovering",
+            inFolder: uniqueFolderName("Recovery Shelf"),
+            position: ReadingPosition(characterOffset: 1)
+        )
+        let index = indexHolding(book)
+        try sandbox.stage(.truncated, of: index, at: sandbox.indexURL)
+        let model = LibraryViewModel(initializeServices: false)
+        model.loadLibraryIndex()
+        XCTAssertNotNil(model.indexRecovery)
+        var progress = ReadingPosition(characterOffset: 30)
+        progress.lastUpdated = Date().addingTimeInterval(60)
+
+        model.persistReadingPosition(bookID: book.id, position: progress)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).state.readingPosition?.characterOffset, 30)
+        XCTAssertTrue(
+            LibraryPersistenceService.booksWithCheckpointsAhead().contains(book.id),
+            "the checkpoint journal does not name the book"
+        )
+
+        // The user puts the good index back and opens TextMouth again, whose
+        // new process starts with index writes allowed.
+        try sandbox.stageValid(index, at: sandbox.indexURL)
+        LibraryPersistenceService.resumeIndexWrites()
+        let relaunched = LibraryViewModel(initializeServices: false)
+        relaunched.loadLibraryIndex()
+
+        XCTAssertNil(relaunched.indexRecovery)
+        XCTAssertEqual(relaunched.bookByID(book.id)?.readingPosition?.characterOffset, 30)
+        LibraryPersistenceService.flushPendingSave()
+        let written = try XCTUnwrap(LibraryPersistenceService.load().library)
+        XCTAssertEqual(written.books.first { $0.id == book.id }?.readingPosition?.characterOffset, 30)
+    }
+
+    /// While the data directory is unavailable (FR02), a reading checkpoint
+    /// writes no checkpoint journal into it: not while the index can be
+    /// read, nor while an unreadable index is protected, which is then the
+    /// hold named first. Once the data directory is back, the protected
+    /// index's checkpoints name their books again, which shows the journal
+    /// looked for is the one a checkpoint writes.
+    @MainActor
+    func testCheckpointsWriteNoJournalWhileTheDataDirectoryIsUnavailable() throws {
+        let root = try makeCurrentDataDirectory("CheckpointJournalAway")
+        let journal = TextMouthPaths.readingCheckpointsFile
+        let book = try makePackage(title: "Read While Away", inFolder: uniqueFolderName("Recovery Shelf"))
+        DataDirectoryGate.close(root)
+
+        LibraryPersistenceService.saveReadingCheckpoint(Library(books: [book]), of: book.id)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: journal.path), "a journal was written with the index readable")
+
+        DataDirectoryGate.open(root)
+        try LibraryIndexSandbox.damagedBytes(.truncated, of: indexHolding(book)).write(to: TextMouthPaths.libraryIndexFile)
+        let model = LibraryViewModel(initializeServices: false)
+        model.loadLibraryIndex()
+        XCTAssertNotNil(model.indexRecovery)
+        DataDirectoryGate.close(root)
+
+        LibraryPersistenceService.saveReadingCheckpoint(model.library, of: book.id)
+        LibraryPersistenceService.flushPendingSave()
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: journal.path), "a journal was written with the index protected")
+
+        DataDirectoryGate.open(root)
+        LibraryPersistenceService.saveReadingCheckpoint(model.library, of: book.id)
+
+        XCTAssertEqual(LibraryPersistenceService.booksWithCheckpointsAhead(), [book.id])
+    }
+
     // MARK: - Try Again
 
     /// Try Again after the index is readable again restores it, with its
