@@ -97,32 +97,61 @@ final class BrailleSampleGoldenTests: XCTestCase {
     // MARK: - Comparing
 
     /// Imports a copy of the sample at `path` with `table` as the Braille
-    /// setting's table and compares its three digests with those recorded.
-    /// A sample that cannot be imported, or has no record, fails by name with
-    /// what it found, and the others are still compared.
+    /// setting's table and North American Braille ASCII as its braille file
+    /// characters, both bound so no store's value can change the import,
+    /// and compares its three digests with those recorded. Then, as every
+    /// book already in a library is, with no code in its row or its record
+    /// (as an earlier TextMouth's save leaves it, review of October 30,
+    /// finding 9), it is rebuilt and compared with the same digests: the path
+    /// that records nothing and the import's explicit `ascii-na` must read
+    /// alike. A sample that cannot be imported, or has no record, fails by
+    /// name with what it found, and the others are still compared.
     private func compare(_ path: String, table: String) {
         do {
             let copy = try copyOfFormatSample(path)
-            let book = try BraillePreferences.$tableForImports.withValue(table) {
-                try importedForTest(copy).book
+            let book = try BraillePreferences.$fileCodeForImports.withValue(BrailleFileCode.northAmerican.id) {
+                try BraillePreferences.$tableForImports.withValue(table) {
+                    try importedForTest(copy).book
+                }
             }
-            let cache = TextPipelineFixtures.digest(try Data(contentsOf: MarkdownCacheService.cacheURL(for: book)))
-            let opened = try BookContentAnalysisService.load(book: book)
-            let reading = TextPipelineFixtures.digest(of: opened.content.chapters, index: opened.index)
-            let markdown = try XCTUnwrap(MarkdownCacheService.extractedMarkdown(for: book, includesPages: false), path)
-            let withoutPages = TextPipelineFixtures.digest(markdown)
-            guard let recordedCache = Self.recordedCaches[path],
-                  let recordedReading = Self.recordedReadings[path],
-                  let recordedWithoutPages = Self.recordedWithoutPages[path] else {
-                XCTFail("\(path) has no recorded output (content.md \(cache), reading \(reading), "
-                    + "without pages \(withoutPages))")
-                return
-            }
-            XCTAssertEqual(cache, recordedCache, "content.md of \(path)")
-            XCTAssertEqual(reading, recordedReading, "reading of \(path)")
-            XCTAssertEqual(withoutPages, recordedWithoutPages, "Markdown without pages of \(path)")
+            XCTAssertEqual(book.brailleFileCode, BrailleFileCode.northAmerican.id, path)
+            assertRecorded(try digests(of: book, path), path, pass: "the import")
+
+            var unrecorded = try droppingBrailleFileCode(of: book)
+            XCTAssertNotNil(
+                try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(for: &unrecorded, replacingEditedText: true), path
+            )
+            XCTAssertNil(unrecorded.brailleFileCode, "\(path) took a code it had not got")
+            assertRecorded(try digests(of: unrecorded, path), path, pass: "the rebuild with no code recorded")
         } catch {
             XCTFail("\(path) could not be imported and read, so it was not compared: \(error.localizedDescription)")
         }
+    }
+
+    /// The three digests of `book` as its package now holds it: content.md,
+    /// the reading the reader opens to, and the Markdown read without pages.
+    private func digests(of book: Book, _ path: String) throws -> (cache: String, reading: String, withoutPages: String) {
+        let cache = TextPipelineFixtures.digest(try Data(contentsOf: MarkdownCacheService.cacheURL(for: book)))
+        let opened = try BookContentAnalysisService.load(book: book)
+        let reading = TextPipelineFixtures.digest(of: opened.content.chapters, index: opened.index)
+        let markdown = try XCTUnwrap(MarkdownCacheService.extractedMarkdown(for: book, includesPages: false), path)
+        return (cache, reading, TextPipelineFixtures.digest(markdown))
+    }
+
+    /// Fails, naming the sample and `pass`, unless `found` are the digests
+    /// recorded for `path`; a sample with no record fails with what it found.
+    private func assertRecorded(
+        _ found: (cache: String, reading: String, withoutPages: String), _ path: String, pass: String
+    ) {
+        guard let recordedCache = Self.recordedCaches[path],
+              let recordedReading = Self.recordedReadings[path],
+              let recordedWithoutPages = Self.recordedWithoutPages[path] else {
+            XCTFail("\(path) has no recorded output (content.md \(found.cache), reading \(found.reading), "
+                + "without pages \(found.withoutPages))")
+            return
+        }
+        XCTAssertEqual(found.cache, recordedCache, "content.md of \(path), after \(pass)")
+        XCTAssertEqual(found.reading, recordedReading, "reading of \(path), after \(pass)")
+        XCTAssertEqual(found.withoutPages, recordedWithoutPages, "Markdown without pages of \(path), after \(pass)")
     }
 }
