@@ -201,7 +201,8 @@ struct BRFExportWriter: TextExportWriter {
     let fileExtension = "brf"
 
     /// The user's defaults: 40 cells by 25 lines, page numbers on, CR LF,
-    /// and the Braille setting's table.
+    /// and the Braille setting's table and braille file characters
+    /// (`BrailleExportOptions.standard()`).
     @MainActor func defaultOptions() -> BrailleExportOptions {
         BrailleExportOptions.standard()
     }
