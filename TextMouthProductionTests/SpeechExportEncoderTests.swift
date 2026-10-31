@@ -322,6 +322,56 @@ final class SpeechExportEncoderTests: XCTestCase {
         }
     }
 
+    /// A chapter's file whose header claims three days of sound, as only a
+    /// damaged file can, is refused as audio that couldn't be read, before
+    /// anything is written: its frames are never added to the others'.
+    func testAChapterFileClaimingDaysOfSoundIsRefused() async throws {
+        let (folder, destination) = try makeFolders(for: .m4b)
+        try writeChapterFile("0000.caf", seconds: 1, in: folder)
+        let threeDays = Int64(3 * 24 * 60 * 60 * Self.rate)
+        try Self.cafClaiming(frames: threeDays).write(to: folder.appendingPathComponent("0001.caf"))
+        let export = PreparedExport(
+            files: [
+                SpeechExportChapterFile(name: "0000.caf", title: "Harbour"),
+                SpeechExportChapterFile(name: "0001.caf", title: "Market"),
+            ],
+            folder: folder,
+            destination: destination
+        )
+
+        await assertRefused(export, with: .unreadableAudio)
+    }
+
+    /// The bytes of a CAF file of 16-bit mono linear PCM at the tests' rate
+    /// whose data chunk claims `frames` frames, though it holds one: the
+    /// file header, the audio description (`desc`), and the data chunk, its
+    /// size counting the edit count before the samples, every number
+    /// big-endian, as Apple's Core Audio Format specification lays them out.
+    private static func cafClaiming(frames: Int64) -> Data {
+        var bytes = Data()
+        /// Appends `value` big-endian.
+        func append<Value: FixedWidthInteger>(_ value: Value) {
+            withUnsafeBytes(of: value.bigEndian) { bytes.append(contentsOf: $0) }
+        }
+        bytes.append(contentsOf: Array("caff".utf8))
+        append(UInt16(1))
+        append(UInt16(0))
+        bytes.append(contentsOf: Array("desc".utf8))
+        append(Int64(32))
+        append(rate.bitPattern)
+        bytes.append(contentsOf: Array("lpcm".utf8))
+        append(UInt32(2)) // kCAFLinearPCMFormatFlagIsLittleEndian
+        append(UInt32(2)) // bytes per packet
+        append(UInt32(1)) // frames per packet
+        append(UInt32(1)) // channels
+        append(UInt32(16)) // bits per channel
+        bytes.append(contentsOf: Array("data".utf8))
+        append(Int64(4) + frames * 2)
+        append(UInt32(0)) // the edit count
+        bytes.append(contentsOf: [0, 0])
+        return bytes
+    }
+
     // MARK: - The Formats
 
     /// The formats the Export dialog offers, in its order, M4B first as its

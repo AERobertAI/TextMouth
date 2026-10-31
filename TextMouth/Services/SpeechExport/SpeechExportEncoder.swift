@@ -213,9 +213,33 @@ enum SpeechExportEncoder {
                   let file = try? AVAudioFile(forReading: url) else { // lint-ok: isNeverDecodedInApp refuses every format the import converts first
                 throw AudioEditError.unreadableAudio
             }
+            // A file's header is read as it is written, so a damaged one can
+            // claim any rate, channel count, or length; one out of bounds is
+            // no chapter of speech, and its frames, added to the others',
+            // could overflow the timeline's count.
+            let format = file.fileFormat
+            guard Self.sampleRates.contains(format.sampleRate),
+                  Self.channelCounts.contains(format.channelCount),
+                  file.length >= 0,
+                  Double(file.length) <= format.sampleRate * Self.longestSeconds else {
+                throw AudioEditError.unreadableAudio
+            }
             frames = file.length
-            sampleRate = file.fileFormat.sampleRate
-            channelCount = file.fileFormat.channelCount
+            sampleRate = format.sampleRate
+            channelCount = format.channelCount
         }
+
+        /// The sample rates a chapter's file may have: any a voice speaks
+        /// in, 8 kHz to 384 kHz.
+        static let sampleRates: ClosedRange<Double> = 8_000...384_000
+
+        /// The channel counts a chapter's file may have.
+        static let channelCounts: ClosedRange<AVAudioChannelCount> = 1...8
+
+        /// The longest a chapter's file may last: two days. A chapter spoken
+        /// from a book lasts minutes or hours, so a file claiming more is
+        /// damaged; at most 10,000 such files at 384 kHz stay far inside the
+        /// frames a timeline can count.
+        static let longestSeconds: Double = 48 * 60 * 60
     }
 }
