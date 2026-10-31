@@ -45,9 +45,10 @@ import Foundation
 ///    copy's ID; the new package's record keeps the import's own until the
 ///    library commits that row.
 /// 2. The library commits the new copy (`LibraryViewModel+Duplicates`): its
-///    record, then the index naming it, each on disk before the next step.
-///    A commit that fails undoes the first part (`Preparation.undo()`), and
-///    the question stays.
+///    record, then, once the marker saying it waits for this answer is off
+///    (`DuplicateQuestionMarker`), the index naming it, each on disk before
+///    the next step. A commit that fails undoes the first part
+///    (`Preparation.undo()`), and the question stays, its copy marked again.
 /// 3. The library removes the old copy's package
 ///    (`removeReplacedPackage(of:movesToTrash:)`). Nothing is undone then: a
 ///    package that cannot be removed stays, its record naming a listed
@@ -950,5 +951,80 @@ extension Book {
             }
         }
         markEditedByHand(Set(edited))
+    }
+}
+
+// MARK: - A New Copy Waiting for Its Answer
+
+/// The hidden file a duplicate's new copy holds in its package while the
+/// question about it ("Duplicate Book Found") waits for the listener's
+/// answer (`LibraryViewModel.addBookCheckingDuplicate`).
+///
+/// The question lives only in memory, in the library's queue of import
+/// questions, while the new copy's package is already published in its
+/// library folder. A quit, a logout, or a crash before the answer leaves
+/// that package behind, and every later launch would take it for one an
+/// interrupted import left: hidden for good while the library refuses a
+/// second book with the same content, back as a book once the listener
+/// deletes the copy it matched, or adopted at once, a Keep Both never
+/// chosen, when the two copies matched only by the file they came from. So
+/// the marker is written before the question is asked; every answer that
+/// keeps the copy removes it just before the library's index names the
+/// copy, so no package the library lists ever holds it; Cancel discards
+/// the package with it; and no adoption of orphaned packages ever adopts a
+/// package holding it (`FileImportService.adoptOrphanedTMBPackages`). The
+/// launch's repair discards each such package whose question no longer
+/// waits (`LibraryViewModel.adoptOrphanedPackages`).
+///
+/// Only the file's presence counts, so it is empty: unlike
+/// `RemovedFromLibraryMarker`, it is never read back, and nothing in it
+/// needs keeping, since a copy's original file is deleted only once the
+/// copy is kept, never while its question waits.
+enum DuplicateQuestionMarker {
+    /// The marker's file name, at the top of the new copy's package. It is
+    /// hidden, so nothing takes it for the book's own content
+    /// (`FileImportService.isPackageContentName`).
+    static let fileName = ".awaitingDuplicateAnswer"
+
+    /// Where the marker is, or would be, in the package `package`.
+    static func url(in package: URL) -> URL {
+        package.appendingPathComponent(fileName)
+    }
+
+    /// Whether the package `package` holds the marker.
+    static func isHeld(by package: URL) -> Bool {
+        FileManager.default.fileExists(atPath: url(in: package).path)
+    }
+
+    /// Writes the marker into the package `package`, replacing any earlier
+    /// one. The write is atomic, as `RemovedFromLibraryMarker`'s is, so the
+    /// marker is either absent or whole.
+    /// - Throws: why the marker could not be written.
+    static func write(into package: URL) throws {
+        try Data().write(to: url(in: package), options: .atomic)
+    }
+
+    /// Removes the marker from the package `package`, once an answer keeps
+    /// its copy. A package without one is left as it is.
+    /// - Throws: why a marker that is there could not be removed.
+    static func remove(from package: URL) throws {
+        let marker = url(in: package)
+        guard FileManager.default.fileExists(atPath: marker.path) else { return }
+        try FileManager.default.removeItem(at: marker)
+    }
+}
+
+/// The packages holding a `DuplicateQuestionMarker` that an adoption of
+/// orphaned packages passed over (`FileImportService.adoptOrphanedTMBPackages`),
+/// gathered for the launch's repair, which discards those whose questions
+/// no longer wait (`LibraryViewModel.adoptOrphanedPackages`). An adoption
+/// given none of these only passes such packages over.
+final class UnansweredDuplicates {
+    /// The packages passed over, in the order the adoption found them.
+    private(set) var packages: [URL] = []
+
+    /// Records the package at `package`.
+    func record(_ package: URL) {
+        packages.append(package)
     }
 }

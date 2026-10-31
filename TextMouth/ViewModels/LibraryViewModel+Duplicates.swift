@@ -18,6 +18,10 @@ extension LibraryViewModel {
     /// How a duplicate's new copy that cannot be discarded is reported.
     private static let discardFailureContext = "Could not discard duplicate import"
 
+    /// How Keep Both is reported when the new copy's package still says it
+    /// waits for an answer, because that marker could not be removed.
+    private static let keepFailureContext = "Could not keep both copies"
+
     // MARK: - Asking
 
     /// Asks `decision` once every question queued before it is settled. A
@@ -77,7 +81,9 @@ extension LibraryViewModel {
 
     /// Adds `book` to the library or, when the library already holds a copy
     /// of it, queues the question whether to replace that copy, keep both,
-    /// or discard the new one.
+    /// or discard the new one. The new copy's package, which its import has
+    /// already published, is marked first as waiting for that answer
+    /// (`DuplicateQuestionMarker`), since the question lives only in memory.
     ///
     /// - Parameters:
     ///   - originalURL: The file the book was imported from, which the
@@ -102,11 +108,36 @@ extension LibraryViewModel {
                 originalURL: originalURL,
                 warning: warning
             )
+            // Before the question is queued: a quit or a crash before its
+            // answer then leaves a package the next launch discards, rather
+            // than one it would take for an interrupted import's.
+            markAwaitingAnswer(book)
             ask(ImportDecision(kind: .duplicate(duplicate), request: request))
             return false
         }
         library.addBook(book)
         return true
+    }
+
+    /// Marks the package of `book`, a duplicate's new copy, as waiting for
+    /// the answer to its question (`DuplicateQuestionMarker`). A row naming
+    /// no package the library manages gets none, so no marker ever lands in
+    /// a library folder itself. A marker that cannot be written is logged,
+    /// and the question is asked all the same: only a quit before its answer
+    /// would then leave the copy behind, as before markers.
+    private func markAwaitingAnswer(_ book: Book) {
+        guard FileImportService.namesManagedPackage(book) else { return }
+        let package = book.tmbDirectory
+        do {
+            try DuplicateQuestionMarker.write(into: package)
+        } catch {
+            DiagnosticLog.event(
+                .storage,
+                "DUPLICATE_UNANSWERED: \(DiagnosticLog.loggablePath(package)): could not be marked as waiting for "
+                    + "the answer to its duplicate question, so a quit before the answer would leave it: "
+                    + error.localizedDescription
+            )
+        }
     }
 
     // MARK: - Once a Book Is in the Library
@@ -262,8 +293,7 @@ extension LibraryViewModel {
         case .replaceExisting:
             return replaceExisting(with: duplicate, of: decision)
         case .keepBoth:
-            keep(duplicate, of: decision)
-            return .success(nil)
+            return keep(duplicate, of: decision)
         case .cancel:
             do {
                 try FileImportService.deleteBookPackage(duplicate.book)
@@ -281,12 +311,23 @@ extension LibraryViewModel {
     /// Keeps a duplicate's new copy as a book of its own, beside the copy
     /// it matched, as Keep Both does, and as Replace does once no copy
     /// matches any more.
-    private func keep(_ duplicate: ImportDecision.DuplicateBook, of decision: ImportDecision) {
+    ///
+    /// The marker saying the copy waits for an answer goes first, before
+    /// the copy joins the library, so no package the library lists ever
+    /// holds it (`DuplicateQuestionMarker`). A marker that cannot be removed
+    /// keeps the copy out and the question asked, saying why.
+    private func keep(_ duplicate: ImportDecision.DuplicateBook, of decision: ImportDecision) -> OperationOutcome {
+        do {
+            try DuplicateQuestionMarker.remove(from: duplicate.book.tmbDirectory)
+        } catch {
+            return .failure(Self.keepFailureContext, error)
+        }
         // `Library.addBook` refuses a second copy of the same content, which
         // Keep Both asks for: the new copy joins directly.
         library.books.append(duplicate.book)
         save()
         finishKeeping(duplicate.book, from: duplicate, of: decision)
+        return .success(nil)
     }
 
     /// Finishes keeping `book`, the book a duplicate's answer left in the
@@ -338,13 +379,16 @@ extension LibraryViewModel {
     /// (`FileImportService.adoptOrphanedTMBPackages`). Once committed, the
     /// replacement stands: an old package that cannot be removed then is
     /// reported, and stays (`removeReplacedPackage(of:)`).
+    ///
+    /// The new copy's marker, saying it waits for this answer, comes off as
+    /// part of the commit (`commitReplacement(of:by:)`); a replacement that
+    /// is not committed leaves the copy marked again, as its question stays.
     private func replaceExisting(
         with duplicate: ImportDecision.DuplicateBook,
         of decision: ImportDecision
     ) -> OperationOutcome {
         guard let match = duplicateMatch(for: duplicate.book) else {
-            keep(duplicate, of: decision)
-            return .success(nil)
+            return keep(duplicate, of: decision)
         }
         if let refusal = replacementRefusal(of: match) {
             return .failure(refusal.sentence)
@@ -371,6 +415,9 @@ extension LibraryViewModel {
             // The new copy's record names the import's own ID again, should
             // the record have been written before the index failed.
             try? duplicate.book.saveBookInfoThrowing()
+            // The question stays, so the copy is marked again as waiting for
+            // its answer, should the commit have taken the marker off.
+            markAwaitingAnswer(duplicate.book)
             return .failure(Self.replaceFailureContext, error)
         }
         removeReplacedPackage(of: existing)
@@ -425,18 +472,25 @@ extension LibraryViewModel {
     /// Each step reaches the disk before the next: whatever waits to be
     /// written of the old copy goes into its own package, so nothing queued
     /// for the ID lands after the new record; then the new copy's record,
-    /// with the carried state under the kept ID; then the library's index
-    /// naming it (`LibraryPersistenceService.saveAndWait(_:)`). Only then
-    /// does the library hold the new row. A failed write leaves the library
-    /// as it was. The reading text this Mac kept for the old copy goes, and
-    /// a session editing its text or manifest ends: what it watches went
-    /// with the old copy.
-    /// - Throws: why the new copy's record, or the library's index, could
-    ///   not be written.
+    /// with the carried state under the kept ID; then the new copy's marker
+    /// saying it waits for this answer comes off (`DuplicateQuestionMarker`);
+    /// then the library's index naming it
+    /// (`LibraryPersistenceService.saveAndWait(_:)`). Only then does the
+    /// library hold the new row. A failed step leaves the library as it was.
+    /// The reading text this Mac kept for the old copy goes, and a session
+    /// editing its text or manifest ends: what it watches went with the old
+    /// copy.
+    ///
+    /// The marker comes off after the record and before the index: so the
+    /// index never names a package holding it, and a package a stop leaves
+    /// unmarked and unlisted names the listed book, which no launch adopts.
+    /// - Throws: why the new copy's record, its marker, or the library's
+    ///   index could not be written or removed.
     private func commitReplacement(of existing: Book, by preparation: DuplicateReplacement.Preparation) throws {
         let book = preparation.book
         LibraryPersistenceService.writePendingBookInfoNow(bookID: existing.id)
         try book.saveBookInfoThrowing()
+        try DuplicateQuestionMarker.remove(from: preparation.movedTo)
         var replaced = library
         if let index = replaced.books.firstIndex(where: { $0.id == existing.id }) {
             replaced.books[index] = book
@@ -587,6 +641,73 @@ extension LibraryViewModel {
             try FileImportService.deleteBookPackage(duplicate.book)
         } catch {
             presentFilesystemError(Self.discardFailureContext, error: error)
+        }
+    }
+
+    // MARK: - Questions a Quit Left Unanswered
+
+    /// The launch repair's adoption of the packages the library does not
+    /// list (`FileImportService.adoptOrphanedTMBPackages`), which then
+    /// discards each duplicate's new copy the adoption passed over whose
+    /// question this library is not asking: one that a quit, a logout, or a
+    /// crash left unanswered (`DuplicateQuestionMarker`). A copy whose
+    /// question still waits here, as when the repair runs again once the
+    /// data directory is back, stays for its answer. Only this repair
+    /// discards: every other walk only passes such copies over.
+    ///
+    /// - Parameters:
+    ///   - libraryDirectory: The folder walked: the library's, or a test's.
+    ///   - access: How the repair reaches the packages' files (FR02).
+    ///   - skips: The repair's tally of what it left in the cloud.
+    /// - Returns: How many books were adopted.
+    @discardableResult
+    func adoptOrphanedPackages(
+        libraryDirectory: URL = TextMouthPaths.libraryDir,
+        access: MaintenanceFileAccess = .live,
+        skips: CloudSkips? = nil
+    ) -> Int {
+        let unanswered = UnansweredDuplicates()
+        let adopted = FileImportService.adoptOrphanedTMBPackages(
+            library: &library,
+            libraryDirectory: libraryDirectory,
+            access: access,
+            skips: skips,
+            unanswered: unanswered
+        )
+        discardUnanswered(unanswered)
+        return adopted
+    }
+
+    /// Discards each package in `unanswered` whose question this library is
+    /// not asking, to the Trash or for good as "Move to Trash instead of
+    /// deleting" says, through the very removal Cancel's discard makes
+    /// (`FileImportService.removeItemRespectingTrashSetting`), with one log
+    /// line each, naming the package by its folder and name in the data
+    /// directory. Nothing is lost: a copy's original file is deleted only
+    /// once the copy is kept, never while its question waits. A package that
+    /// cannot be discarded stays as it is, still marked, so no walk adopts
+    /// it, and the next launch tries again.
+    private func discardUnanswered(_ unanswered: UnansweredDuplicates) {
+        // The copies this library is still asking about, by package name,
+        // which a data-directory move keeps.
+        let asked = Set(importDecisions.waiting.compactMap { decision -> String? in
+            guard case .duplicate(let duplicate) = decision.kind else { return nil }
+            return duplicate.book.tmbDirectoryName
+        })
+        let removal = removalPreferences.movesToTrash ? "moved to the Trash" : "deleted"
+        for package in unanswered.packages where !asked.contains(package.lastPathComponent) {
+            let named = "DUPLICATE_UNANSWERED: \(DiagnosticLog.loggablePath(package)): "
+                + "the duplicate question about this new copy was never answered"
+            do {
+                try FileImportService.removeItemRespectingTrashSetting(at: package)
+                DiagnosticLog.event(.storage, "\(named), so the copy was \(removal)")
+            } catch {
+                DiagnosticLog.event(
+                    .storage,
+                    "\(named), and the copy could not be \(removal), so the next launch tries again: "
+                        + error.localizedDescription
+                )
+            }
         }
     }
 

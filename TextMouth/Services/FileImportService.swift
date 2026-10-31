@@ -3189,6 +3189,18 @@ enum FileImportService {
     /// no orphan either: it is passed over before its record is read, so it
     /// is never adopted as a second book of the same package.
     ///
+    /// Nor is a duplicate's new copy whose question waits for the listener's
+    /// answer, or waited when a quit or a crash ended the session that asked
+    /// it: its package holds a `DuplicateQuestionMarker`. It is passed over
+    /// before its record is read, whoever runs the walk, so it never becomes
+    /// a book the listener did not choose to keep, and it is recorded in
+    /// `unanswered` when one is given: the launch's repair gives one, and
+    /// discards those no question waits for any more
+    /// (`LibraryViewModel.adoptOrphanedPackages`). A walk run while a question
+    /// waits (a rebuild, a recovery) gives none, and leaves every such
+    /// package as it is. A package the library lists, or a kept row owns, is
+    /// never looked at for the marker: it is a book.
+    ///
     /// An orphan whose record names a book the library already lists, under
     /// that book's ID, is another copy of it: the old copy Replace Existing
     /// sent to the Trash names its replacement's ID once Finder puts it
@@ -3209,14 +3221,18 @@ enum FileImportService {
     /// (FR02). A folder that cannot be listed without downloading is passed
     /// over, and a package whose folder, record, removal marker, or book file
     /// is in the cloud is neither adopted nor rewritten: it is counted in
-    /// `skips`, and adopted at a launch that finds it on this Mac. `access`
-    /// is how the repair reaches the packages' files.
+    /// `skips`, and adopted at a launch that finds it on this Mac. A package
+    /// holding a duplicate question's marker is likewise counted, and not
+    /// recorded in `unanswered`, while its folder or the marker is in the
+    /// cloud, where another Mac sharing the library may still be asking its
+    /// question. `access` is how the repair reaches the packages' files.
     @discardableResult
     static func adoptOrphanedTMBPackages(
         library: inout Library,
         libraryDirectory: URL = TextMouthPaths.libraryDir,
         access: MaintenanceFileAccess = .live,
-        skips: CloudSkips? = nil
+        skips: CloudSkips? = nil,
+        unanswered: UnansweredDuplicates? = nil
     ) -> Int {
         let fm = FileManager.default
         let libraryDir = libraryDirectory
@@ -3260,6 +3276,14 @@ enum FileImportService {
                     folderPath: libraryFolderPath(ofPackageAt: url, libraryDirectory: libraryDir),
                     tmbDirectoryName: url.lastPathComponent
                 ) { continue }
+
+                // Skip a duplicate's new copy whose question waits, or was
+                // never answered: adopting it would keep a copy the listener
+                // never chose to keep. The launch's repair discards it once no
+                // question waits for it; one in the cloud decides nothing.
+                if passesOverUnansweredDuplicate(at: url, access: access, skips: skips, unanswered: unanswered) {
+                    continue
+                }
 
                 let orphan: (book: Book, recordedFolderPath: String)
                 do {
@@ -3323,6 +3347,31 @@ enum FileImportService {
             }
             return adopted
         }
+    }
+
+    /// Whether the adoption passes over the package at `url` because it
+    /// holds a duplicate question's marker (`DuplicateQuestionMarker`): a
+    /// new copy whose question waits, or was never answered. Such a package
+    /// is recorded in `unanswered`, for the launch's repair to discard, only
+    /// when its folder and the marker are both on this Mac. When either is in
+    /// the cloud, another Mac sharing the library may still be asking that
+    /// question, so it is counted in `skips` instead and decided at a launch
+    /// that finds it here (FR02); a marker that cannot be looked for without
+    /// a download counts so too, as the record would.
+    private static func passesOverUnansweredDuplicate(
+        at url: URL,
+        access: MaintenanceFileAccess,
+        skips: CloudSkips?,
+        unanswered: UnansweredDuplicates?
+    ) -> Bool {
+        let marker = DuplicateQuestionMarker.url(in: url)
+        guard access.presence(of: marker) != .absent else { return false }
+        if access.isInCloud(url) || access.isInCloud(marker) {
+            skips?.record(package: url)
+        } else {
+            unanswered?.record(url)
+        }
+        return true
     }
 
     /// When the record in the package at `url` was last written, in

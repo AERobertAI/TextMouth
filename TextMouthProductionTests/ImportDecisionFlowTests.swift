@@ -1069,6 +1069,181 @@ final class ImportDecisionFlowTests: XCTestCase {
         recorder.announcements.map(\.message).filter { $0.contains("reading list") }
     }
 
+    // MARK: - A Question a Quit Leaves Unanswered
+
+    /// While its question waits, a duplicate's new copy, already in its
+    /// library folder, holds the marker that says so; Keep Both and Replace
+    /// Existing each take it off the package they keep, and a question still
+    /// waiting keeps its own.
+    func testAWaitingCopyIsMarkedUntilAnAnswerKeepsIt() throws {
+        let scene = try makeScene()
+        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        let bestiary = try existingBookAndCopy("Bestiary of Knots", in: scene)
+        scene.model.library = Library(books: [atlas.existing, bestiary.existing])
+        useAfterImportingBehavior(.keepOriginal)
+        scene.model.importFiles(urls: [atlas.copy, bestiary.copy], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+
+        let copies = scene.model.importDecisions.waiting.compactMap { $0.duplicate?.book }
+        XCTAssertEqual(copies.map(\.title), ["Atlas of Tides", "Bestiary of Knots"])
+        for copy in copies {
+            XCTAssertTrue(DuplicateQuestionMarker.isHeld(by: copy.tmbDirectory), "\(copy.title)'s copy is not marked as waiting")
+        }
+        let atlasCopy = try XCTUnwrap(copies.first)
+        let bestiaryCopy = try XCTUnwrap(copies.last)
+
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.keepBoth).succeeded)
+        XCTAssertTrue(scene.model.library.books.contains { $0.id == atlasCopy.id })
+        XCTAssertFalse(DuplicateQuestionMarker.isHeld(by: atlasCopy.tmbDirectory), "Keep Both left the marker")
+        XCTAssertTrue(DuplicateQuestionMarker.isHeld(by: bestiaryCopy.tmbDirectory), "the copy still asked about lost its marker")
+
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+        let replaced = try XCTUnwrap(scene.model.bookByID(bestiary.existing.id))
+        XCTAssertEqual(replaced.tmbDirectoryName, bestiaryCopy.tmbDirectoryName)
+        XCTAssertFalse(DuplicateQuestionMarker.isHeld(by: replaced.tmbDirectory), "Replace Existing left the marker")
+        XCTAssertTrue(scene.model.importDecisions.isEmpty)
+    }
+
+    /// A replacement the library cannot commit, as while an unreadable
+    /// index holds every write, takes the new copy's marker off on its way
+    /// and puts it back: the question stays, and so does the marker of the
+    /// copy it asks about, moved back from the old copy's folder.
+    func testAReplacementThatIsNotCommittedLeavesTheCopyMarked() throws {
+        let scene = try makeScene()
+        let shelf = makeIntegrationLibraryFolder("Import Decisions Shelf")
+        let copySource = try writeSource("Atlas of Tides", in: scene)
+        let earlier = scene.sources.appendingPathComponent("Earlier Atlas of Tides.txt")
+        try FileManager.default.copyItem(at: copySource, to: earlier)
+        let existing = try FileImportService.importFileWithReport(from: earlier, toFolder: shelf.path).book
+        scene.model.library = Library(books: [existing])
+        useAfterImportingBehavior(.keepOriginal)
+        scene.model.importFiles(urls: [copySource], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
+        try scene.index.stage(.truncated, at: scene.index.indexURL)
+        _ = LibraryPersistenceService.load()
+
+        XCTAssertFalse(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+
+        XCTAssertEqual(scene.model.importDecisions.current?.duplicate?.book.id, copy.id)
+        XCTAssertEqual(try scene.folder.entries(), [copy.tmbDirectoryName])
+        XCTAssertTrue(DuplicateQuestionMarker.isHeld(by: copy.tmbDirectory), "the copy whose question stays lost its marker")
+    }
+
+    /// Replace Existing moves the new copy into the folder of the copy it
+    /// replaces, which here is another folder: the marker comes off the
+    /// package where it lands, the one the library then lists.
+    func testAReplacementInAnotherFolderUnmarksTheCopyWhereItLands() throws {
+        let scene = try makeScene()
+        let shelf = makeIntegrationLibraryFolder("Import Decisions Shelf")
+        let copySource = try writeSource("Atlas of Tides", in: scene)
+        let earlier = scene.sources.appendingPathComponent("Earlier Atlas of Tides.txt")
+        try FileManager.default.copyItem(at: copySource, to: earlier)
+        let existing = try FileImportService.importFileWithReport(from: earlier, toFolder: shelf.path).book
+        scene.model.library = Library(books: [existing])
+        useAfterImportingBehavior(.keepOriginal)
+        scene.model.importFiles(urls: [copySource], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
+        XCTAssertTrue(DuplicateQuestionMarker.isHeld(by: copy.tmbDirectory), "the waiting copy is not marked")
+
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+
+        let replaced = try XCTUnwrap(scene.model.bookByID(existing.id))
+        XCTAssertEqual(replaced.folderPath, shelf.path)
+        XCTAssertEqual(try shelf.entries(), [copy.tmbDirectoryName])
+        XCTAssertFalse(DuplicateQuestionMarker.isHeld(by: replaced.tmbDirectory), "the copy kept its marker where it landed")
+    }
+
+    /// TextMouth quits while a duplicate's question waits. The next launch,
+    /// a library model of its own on the same data directory, reads the
+    /// index as it was and runs its repair: the copy no one answered for is
+    /// discarded (here for good, as the Trash is off), the library lists
+    /// only the book it matched, the debug log says what went and why, and
+    /// the file the copy came from stays. Once that book is deleted, the
+    /// next launch brings back nothing.
+    func testALaunchAfterAQuitDiscardsTheCopyWhoseQuestionWasNeverAnswered() throws {
+        let scene = try makeScene()
+        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        scene.model.library = Library(books: [atlas.existing])
+        useAfterImportingBehavior(.keepOriginal)
+        scene.model.importFiles(urls: [atlas.copy], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
+
+        let relaunched = LibraryViewModel(initializeServices: false)
+        relaunched.library = Library(books: [atlas.existing])
+        XCTAssertEqual(relaunched.adoptOrphanedPackages(libraryDirectory: scene.folder.url), 0)
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: copy.tmbDirectory.path), "the copy no one answered for stays")
+        XCTAssertEqual(relaunched.library.books.map(\.id), [atlas.existing.id])
+        let lines = debugLogLines(naming: copy.tmbDirectory).filter { $0.contains("DUPLICATE_UNANSWERED") }
+        XCTAssertEqual(lines.count, 1, "\(lines)")
+        XCTAssertTrue(
+            lines.first?.hasSuffix(
+                ": DUPLICATE_UNANSWERED: \(DiagnosticLog.loggablePath(copy.tmbDirectory)): "
+                    + "the duplicate question about this new copy was never answered, so the copy was deleted"
+            ) == true,
+            "\(lines)"
+        )
+        XCTAssertTrue(FileManager.default.fileExists(atPath: atlas.copy.path), "the file the copy came from is gone")
+
+        relaunched.library.removeBook(id: atlas.existing.id)
+        try FileImportService.deleteBookPackage(atlas.existing)
+        XCTAssertEqual(relaunched.adoptOrphanedPackages(libraryDirectory: scene.folder.url), 0)
+        XCTAssertEqual(relaunched.library.books, [])
+        XCTAssertEqual(try scene.folder.entries(), [])
+    }
+
+    /// The repair run by the library still asking a duplicate's question, as
+    /// when it runs again once the data directory comes back, keeps that
+    /// question's copy, unadopted and still marked, and logs nothing about
+    /// it; the question is then answered as usual.
+    func testTheRepairOfTheLibraryStillAskingKeepsItsWaitingCopy() throws {
+        let scene = try makeScene()
+        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        scene.model.library = Library(books: [atlas.existing])
+        useAfterImportingBehavior(.keepOriginal)
+        scene.model.importFiles(urls: [atlas.copy], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
+
+        XCTAssertEqual(scene.model.adoptOrphanedPackages(libraryDirectory: scene.folder.url), 0)
+
+        XCTAssertTrue(DuplicateQuestionMarker.isHeld(by: copy.tmbDirectory), "the copy whose question waits was discarded")
+        XCTAssertEqual(scene.model.library.books.map(\.id), [atlas.existing.id])
+        XCTAssertEqual(debugLogLines(naming: copy.tmbDirectory).filter { $0.contains("DUPLICATE_UNANSWERED") }, [])
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.keepBoth).succeeded)
+        XCTAssertEqual(scene.model.library.books.map(\.id), [atlas.existing.id, copy.id])
+        XCTAssertFalse(DuplicateQuestionMarker.isHeld(by: copy.tmbDirectory))
+    }
+
+    /// A walk of the library that discards nothing, as a rebuild of the
+    /// data directory runs while a question waits, never adopts that
+    /// question's copy, even one matched only by the file it came from,
+    /// whose content differs, which the library would otherwise take as a
+    /// second book: a Keep Both no one chose. The copy stays for its answer.
+    func testNoWalkAdoptsACopyWhoseQuestionWaits() throws {
+        let scene = try makeScene()
+        let source = try writeSource("Atlas of Tides", in: scene)
+        let existing = try FileImportService.importFileWithReport(from: source, toFolder: scene.folder.path).book
+        try Data("Notes kept for Atlas of Tides, revised: coil the line sunwise.".utf8).write(to: source)
+        scene.model.library = Library(books: [existing])
+        useAfterImportingBehavior(.keepOriginal)
+        scene.model.importFiles(urls: [source], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
+        XCTAssertNotEqual(copy.md5Hash, existing.md5Hash)
+
+        var walked = Library(books: [existing])
+        XCTAssertEqual(FileImportService.adoptOrphanedTMBPackages(library: &walked, libraryDirectory: scene.folder.url), 0)
+
+        XCTAssertEqual(walked.books.map(\.id), [existing.id])
+        XCTAssertTrue(DuplicateQuestionMarker.isHeld(by: copy.tmbDirectory), "a walk that discards nothing took the copy")
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.keepBoth).succeeded)
+        XCTAssertEqual(scene.model.library.books.map(\.id), [existing.id, copy.id])
+    }
+
     // MARK: - Fixtures
 
     /// The words a bookmark marks in both editions of a book.

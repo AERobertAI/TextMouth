@@ -106,8 +106,9 @@ extension LibraryViewModel {
         if relocated > 0 { needsSave = true }
 
         // Adopt any .tmb packages on disk that aren't tracked in library.json.
-        // This recovers books left behind by interrupted imports or crashes.
-        let adopted = FileImportService.adoptOrphanedTMBPackages(library: &library, access: access, skips: skips)
+        // This recovers books left behind by interrupted imports or crashes,
+        // and discards the duplicates' copies whose questions went unanswered.
+        let adopted = adoptOrphanedPackages(access: access, skips: skips)
         if adopted > 0 { needsSave = true }
 
         // Every folder a book lies in gets a row, and, in a library that
