@@ -79,20 +79,24 @@ extension LibraryViewModel {
     /// a pop-up keeps only because its window shows it never counts and a
     /// key always goes to the same view, and says the view's name and what
     /// it lists there, its books, episodes, and articles before a search
-    /// narrows them, and its feeds, "All Items, 743 books, 2 feeds"; or, with
-    /// fewer views offered, it goes nowhere and says "There is no view 7.
-    /// The View pop-up offers 6 views."
+    /// narrows them, and its feeds, "All Items, 743 books, 2 feeds", or, for
+    /// a filter view listing nothing, "New Episodes, nothing matches this
+    /// view now."; or, with fewer views to reach, it goes nowhere and says
+    /// "There is no view 7. Go to View reaches 6 views." (review of October
+    /// 31, 2026, finding 10).
     func goToView(numbered number: Int, in list: LibraryViewDefinitionList, folderPath: String, center: FeedCenter) -> GoToViewOutcome {
         let offered = offeredViews(in: list, current: nil, center: center)
         guard offered.indices.contains(number - 1) else {
-            return GoToViewOutcome(view: nil, announcement: LibraryViewPickerWording.noView(number: number, offered: offered.count))
+            return GoToViewOutcome(view: nil, announcement: LibraryViewPickerWording.noView(number: number, reached: offered.count))
         }
         let view = offered[number - 1]
         let location = LibraryLocation(view: view, folderPath: folderPath)
-        let counts = CountWording.listItems(
-            of: displayedBooks(at: location),
-            feeds: LibraryFeedsSectionRows.feeds(at: location, center: center).count
-        )
+        let books = displayedBooks(at: location)
+        let feeds = LibraryFeedsSectionRows.feeds(at: location, center: center).count
+        if view.kind == .filter, books.isEmpty, feeds == 0 {
+            return GoToViewOutcome(view: view, announcement: LibraryViewPickerWording.wentToEmptyView(name: view.name))
+        }
+        let counts = CountWording.listItems(of: books, feeds: feeds)
         return GoToViewOutcome(view: view, announcement: LibraryViewPickerWording.wentToView(name: view.name, counts: counts))
     }
 }

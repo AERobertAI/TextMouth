@@ -1807,12 +1807,15 @@ struct LibraryView: View {
         view.filter?.listsItems ?? true
     }
 
-    /// Whether a list of `view` shows the sentence that nothing matches: in
-    /// the Feeds view and the listener's views, while they list no book,
-    /// episode, or article (`listsBooks`) and no feed (`listsFeeds`); the
-    /// five categories' views look as they always have.
+    /// Whether a list of `view` shows the sentence that nothing matches,
+    /// while it lists no book, episode, or article (`listsBooks`) and no
+    /// feed (`listsFeeds`): in the Feeds view, the listener's views, and any
+    /// view without a Books section, such as Unopened changed to list feeds
+    /// alone, which would otherwise show nothing at all (review of October
+    /// 31, 2026, finding 11). The five categories' views as TextMouth ships
+    /// them look as they always have.
     nonisolated static func showsEmptySentence(for view: LibraryViewDefinition, listsBooks: Bool, listsFeeds: Bool) -> Bool {
-        view.id.category == nil && !listsBooks && !listsFeeds
+        (view.id.category == nil || !hasBooksSection(view)) && !listsBooks && !listsFeeds
     }
 
     /// The row saying that the view lists nothing now.

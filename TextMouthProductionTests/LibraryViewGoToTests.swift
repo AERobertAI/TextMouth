@@ -8,7 +8,8 @@ import XCTest
 /// LIBRARY-VIEWS-RESEARCH-2026-10-30.md, section 6): nine shortcut actions,
 /// Command-1 to Command-9 by default, in Library windows; the Library menu's
 /// Go to View submenu; and a Library window's choice of the view, with what
-/// it says. Every store here is on sandboxed preferences of the test's own,
+/// it says, a view deleted while the window shows it included. Every store
+/// here is on sandboxed preferences of the test's own,
 /// every model and shortcut manager the test's own, and no key is really
 /// pressed.
 ///
@@ -195,8 +196,11 @@ final class LibraryViewGoToTests: XCTestCase {
             LibraryViewPickerWording.wentToView(name: "Reading List", counts: CountWording.listItems(books: 1, episodes: 2)),
             "Reading List, 1 book, 2 episodes"
         )
-        XCTAssertEqual(LibraryViewPickerWording.noView(number: 7, offered: 6), "There is no view 7. The View pop-up offers 6 views.")
-        XCTAssertEqual(LibraryViewPickerWording.noView(number: 2, offered: 1), "There is no view 2. The View pop-up offers 1 view.")
+        // Changed on purpose by the review of October 31, 2026 (finding 10):
+        // the keys' own count, and a sentence for a view listing nothing.
+        XCTAssertEqual(LibraryViewPickerWording.noView(number: 7, reached: 6), "There is no view 7. Go to View reaches 6 views.")
+        XCTAssertEqual(LibraryViewPickerWording.noView(number: 2, reached: 1), "There is no view 2. Go to View reaches 1 view.")
+        XCTAssertEqual(LibraryViewPickerWording.wentToEmptyView(name: "New Episodes"), "New Episodes, nothing matches this view now.")
     }
 
     // MARK: - The View a Window Goes To
@@ -220,7 +224,7 @@ final class LibraryViewGoToTests: XCTestCase {
         XCTAssertEqual(goTo(1).view?.id, .category(.folders))
         XCTAssertEqual(goTo(1).announcement, "Folders, 0 books", "Folders at the window's folder, Essays, which is empty")
         XCTAssertEqual(goTo(4).view?.id, .category(.recent))
-        XCTAssertEqual(goTo(4).announcement, "Recently Opened, 0 books")
+        XCTAssertEqual(goTo(4).announcement, "Recently Opened, nothing matches this view now.")
         XCTAssertEqual(goTo(5).view?.id, .category(.readingList))
         XCTAssertEqual(goTo(5).announcement, "Reading List, 0 books")
         XCTAssertEqual(goTo(6), LibraryViewModel.GoToViewOutcome(view: views.epubs, announcement: "EPUBs, 1 book"))
@@ -228,10 +232,34 @@ final class LibraryViewGoToTests: XCTestCase {
         XCTAssertEqual(goTo(7), LibraryViewModel.GoToViewOutcome(view: views.textBooks, announcement: "Text Books, 1 book"))
         XCTAssertEqual(
             goTo(8),
-            LibraryViewModel.GoToViewOutcome(view: nil, announcement: "There is no view 8. The View pop-up offers 7 views.")
+            LibraryViewModel.GoToViewOutcome(view: nil, announcement: "There is no view 8. Go to View reaches 7 views.")
         )
         XCTAssertNil(goTo(0).view)
         XCTAssertNil(goTo(-1).view)
+    }
+
+    /// A view listing feeds alone, offered always, that lists nothing now
+    /// is said in the words its window shows, never as "0 books", a kind of
+    /// row it never lists (review of October 31, 2026, finding 10).
+    @MainActor
+    func testGoingToAnEmptyViewOfFeedsSaysNothingMatches() {
+        let model = Self.model()
+        let store = makeStore("library-view-goto-empty-feeds", adding: Self.FormatViews())
+        let quiet = LibraryViewDefinition(
+            id: .custom(UUID()),
+            name: "Quiet Feeds",
+            visibility: .always,
+            filter: LibraryViewFilter(
+                lists: [.feeds],
+                conditions: [LibraryViewCondition(test: .titleOrAuthorContains("a title no feed has, 7f3a"))]
+            )
+        )
+        XCTAssertTrue(store.update { $0.add(quiet, after: nil) })
+        // After the seven views offered in `makeStore`'s order.
+        XCTAssertEqual(
+            model.goToView(numbered: 8, in: store.list, folderPath: "", center: LibraryFeedFolders.shared.center),
+            LibraryViewModel.GoToViewOutcome(view: quiet, announcement: "Quiet Feeds, nothing matches this view now.")
+        )
     }
 
     /// A hidden view is never counted, even while a window shows it and
@@ -250,7 +278,7 @@ final class LibraryViewGoToTests: XCTestCase {
         XCTAssertEqual(model.goToView(numbered: 3, in: store.list, folderPath: "", center: center).view?.id, .category(.recent))
         XCTAssertEqual(
             model.goToView(numbered: 7, in: store.list, folderPath: "", center: center).announcement,
-            "There is no view 7. The View pop-up offers 6 views."
+            "There is no view 7. Go to View reaches 6 views."
         )
     }
 
@@ -307,7 +335,60 @@ final class LibraryViewGoToTests: XCTestCase {
         XCTAssertEqual(shown.id, views.epubs.id)
         XCTAssertEqual(
             recorder.announcements.map(\.message),
-            ["EPUBs, 1 book", "There is no view 8. The View pop-up offers 7 views."]
+            ["EPUBs, 1 book", "There is no view 8. Go to View reaches 7 views."]
+        )
+    }
+
+    /// A window showing a view that is deleted, in Settings or by a change
+    /// of config.json, gives way to Folders, the first view offered, and
+    /// says so; a view it does not show changes nothing there when deleted
+    /// (`LibraryViewNavigationSupport`; review of October 31, 2026, finding
+    /// 15).
+    @MainActor
+    func testAWindowShowingADeletedViewFallsBackToFolders() throws {
+        let model = Self.model()
+        let views = Self.FormatViews()
+        let store = makeStore("library-view-goto-deleted", adding: views)
+        let settings = SettingsViewModel(notificationCenter: NotificationCenter(), initializeServices: false)
+        let shown = ShownViewProbe(views.epubs.id)
+        let hosted = hostOffscreen(
+            LibraryView(
+                currentFolderPath: .constant(""),
+                shownViewID: shown.binding,
+                showFileImporter: .constant(false),
+                showTextInput: .constant(false),
+                onOpenBook: { _ in },
+                views: store
+            )
+            .environmentObject(model)
+            .environmentObject(settings)
+        )
+        defer { takeDown(hosted.window) }
+        XCTAssertTrue(
+            waitUntil(timeout: 2) {
+                hosted.hostingView.layoutSubtreeIfNeeded()
+                return !self.descendants(of: hosted.hostingView, as: NSPopUpButton.self).isEmpty
+            },
+            "the window was not drawn"
+        )
+
+        let recorder = recordingAnnouncements {
+            XCTAssertTrue(store.update { $0.delete(views.textBooks.id) })
+            settle(hosted.hostingView, seconds: 0.3)
+            XCTAssertEqual(shown.id, views.epubs.id, "deleting another view moved the window")
+
+            XCTAssertTrue(store.update { $0.delete(views.epubs.id) })
+            XCTAssertTrue(
+                waitUntil(timeout: 2) {
+                    hosted.hostingView.layoutSubtreeIfNeeded()
+                    return shown.id == .category(.folders)
+                },
+                "the window still shows the deleted view"
+            )
+        }
+        XCTAssertEqual(
+            recorder.announcements.map(\.message),
+            ["The view this window showed was deleted. It now shows Folders."]
         )
     }
 

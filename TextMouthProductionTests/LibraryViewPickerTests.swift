@@ -143,9 +143,11 @@ final class LibraryViewPickerTests: XCTestCase {
 
     // MARK: - A View Listing Feeds Alone
 
-    /// A view listing feeds alone has no Books section, and the Feeds view
-    /// and the listener's views say that nothing matches while they list
-    /// nothing at all; the five categories' views never do.
+    /// A view listing feeds alone has no Books section, and the Feeds view,
+    /// the listener's views, and any view without a Books section say that
+    /// nothing matches while they list nothing at all; the five categories'
+    /// views as TextMouth ships them never do (review of October 31, 2026,
+    /// finding 11).
     func testTheBooksSectionAndTheEmptySentence() throws {
         let feeds = try XCTUnwrap(LibraryViewDefinition.shipped(.feeds))
         let mine = LibraryViewDefinitionTests.custom("Mine")
@@ -162,6 +164,14 @@ final class LibraryViewPickerTests: XCTestCase {
         for category in LibraryCategory.allCases {
             XCTAssertFalse(LibraryView.showsEmptySentence(for: .shipped(category), listsBooks: false, listsFeeds: false), "\(category)")
         }
+
+        // Unopened, changed to list feeds alone, would otherwise show
+        // nothing at all.
+        var unopened = LibraryViewDefinition.shipped(.unopened)
+        unopened.filter?.lists = [.feeds]
+        XCTAssertFalse(LibraryView.hasBooksSection(unopened))
+        XCTAssertTrue(LibraryView.showsEmptySentence(for: unopened, listsBooks: false, listsFeeds: false))
+        XCTAssertFalse(LibraryView.showsEmptySentence(for: unopened, listsBooks: false, listsFeeds: true))
     }
 
     // MARK: - The Pop-up, Hosted

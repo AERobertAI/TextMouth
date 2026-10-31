@@ -12,8 +12,9 @@ enum LibraryViewPickerWording {
     /// host (the design's section 6).
     static let pickerWidthLimit: CGFloat = 320
 
-    /// The row a Feeds view or a view the listener made shows while it lists
-    /// nothing at all.
+    /// The row a view shows while it lists nothing at all: the Feeds view, a
+    /// view the listener made, and any view without a Books section
+    /// (`LibraryView.showsEmptySentence`).
     static let emptyView = "Nothing matches this view now."
 
     /// What a window announces when the view it showed was deleted, from
@@ -49,10 +50,19 @@ enum LibraryViewPickerWording {
         "\(name), \(counts)"
     }
 
-    /// What a window says when Go to View `number` has no view, its View
-    /// pop-up offering `offered` views, counted as the keys count them: "There
-    /// is no view 7. The View pop-up offers 6 views."
-    static func noView(number: Int, offered: Int) -> String {
-        "There is no view \(number). The View pop-up offers \(CountWording.phrase(offered, singular: "view", plural: "views"))."
+    /// What a window says on going to a filter view `name` that lists
+    /// nothing now: "New Episodes, nothing matches this view now.", in the
+    /// words of the row such a view shows (`emptyView`), rather than a count
+    /// of nothing (review of October 31, 2026, finding 10).
+    static func wentToEmptyView(name: String) -> String {
+        "\(name), \(emptyView.prefix(1).lowercased())\(emptyView.dropFirst())"
+    }
+
+    /// What a window says when Go to View `number` has no view, Go to View
+    /// reaching `reached` views, those its keys count: "There is no view 7.
+    /// Go to View reaches 6 views." A view a pop-up keeps only because its
+    /// window shows it is never counted (review finding 10).
+    static func noView(number: Int, reached: Int) -> String {
+        "There is no view \(number). Go to View reaches \(CountWording.phrase(reached, singular: "view", plural: "views"))."
     }
 }
