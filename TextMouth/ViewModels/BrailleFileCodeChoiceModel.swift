@@ -10,8 +10,9 @@ import Foundation
 /// another asks for; and the re-read, whose refusal the sheet shows and
 /// VoiceOver hears. It follows the Text Encoding pop-up's model
 /// (`TextEncodingChoiceModel`), whose view, alert, and checks it shares
-/// (`BookRereadChoosing`), but nothing is guessed, so the pop-up has no
-/// "Automatic" and names each code plainly.
+/// (`BookRereadChoosing`), and whose choice, confirmation, and re-read it
+/// runs in the same flow (`RereadChoiceFlow`), but nothing is guessed, so
+/// the pop-up has no "Automatic" and names each code plainly.
 @MainActor
 final class BrailleFileCodeChoiceModel: ObservableObject, BookRereadChoosing {
     /// One item of the pop-up.
@@ -63,31 +64,49 @@ final class BrailleFileCodeChoiceModel: ObservableObject, BookRereadChoosing {
     /// once, then, from `load()`, the one that stands between the row and
     /// the package record, which a row lagging behind a re-read needs.
     @Published private(set) var storedCode: String?
-    /// The choice the listener made and has not confirmed yet, while the
-    /// confirmation asks.
-    @Published private(set) var pending: Confirmation?
-    /// Whether a re-read is under way, which dims the pop-up and the sheet's
-    /// buttons, so it cannot start twice nor the sheet close halfway.
-    @Published private(set) var isWorking = false
-    /// Why the last choice changed nothing, which the sheet shows; nil when
-    /// there is nothing to say.
-    @Published private(set) var failureMessage: String?
 
-    /// The book whose braille file characters the pop-up shows.
-    let bookID: UUID
-    /// The library the book is in, which reads it again.
-    private let library: LibraryViewModel
-    /// How the book's files are reached: the app's, unless a test passes one
-    /// that pretends files are in the cloud.
-    private let access: MaintenanceFileAccess
+    /// The choice, its confirmation, and the re-read, as both re-read
+    /// pop-ups run them, with the book, its library, and how its files are
+    /// reached. Its changes are this model's, so the views observing the
+    /// model redraw (`flowChanges`).
+    let flow: RereadChoiceFlow<BrailleFileCode>
+    /// Forwards the flow's changes to this model's observers.
+    private var flowChanges: AnyCancellable?
 
     /// The pop-up of `book`, in `library`, showing the code the book's row
     /// stores until `load()` has read its record.
     init(book: Book, library: LibraryViewModel, access: MaintenanceFileAccess = .live) {
-        bookID = book.id
-        self.library = library
-        self.access = access
+        flow = RereadChoiceFlow(bookID: book.id, library: library, access: access)
         storedCode = book.brailleFileCode
+        flowChanges = flow.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }
+    }
+
+    // MARK: The Flow's State
+
+    /// The choice the listener made and has not confirmed yet, while the
+    /// confirmation asks (`RereadChoiceFlow.pending`).
+    var pending: Confirmation? {
+        flow.pending
+    }
+
+    /// Whether a re-read is under way, which dims the pop-up and the sheet's
+    /// buttons, so it cannot start twice nor the sheet close halfway
+    /// (`RereadChoiceFlow.isWorking`).
+    var isWorking: Bool {
+        flow.isWorking
+    }
+
+    /// Why the last choice changed nothing, which the sheet shows; nil when
+    /// there is nothing to say (`RereadChoiceFlow.failureMessage`).
+    var failureMessage: String? {
+        flow.failureMessage
+    }
+
+    /// The book whose braille file characters the pop-up shows.
+    var bookID: UUID {
+        flow.bookID
     }
 
     // MARK: The Pop-up
@@ -125,7 +144,7 @@ final class BrailleFileCodeChoiceModel: ObservableObject, BookRereadChoosing {
     /// one, which is never downloaded for it. A book gone from the library
     /// leaves the pop-up as it is.
     func load() async {
-        guard let book = library.bookByID(bookID) else { return }
+        guard let book = flow.library.bookByID(bookID) else { return }
         storedCode = await OffMainWork.run { book.recordedBrailleFileCode() }
     }
 
@@ -133,28 +152,21 @@ final class BrailleFileCodeChoiceModel: ObservableObject, BookRereadChoosing {
 
     /// The listener chose `item` in the pop-up. Another code is asked about
     /// first (`pending`), with whether text TextMouth did not write will be
-    /// kept beside the new reading, read from the book's content.md off the
-    /// main actor and never downloaded, and whether Edit Text stops
-    /// (`LibraryViewModel.rereadPreflight(of:access:)`). A book that can't be
-    /// read again now is not asked about: the sheet says why
-    /// (`failureMessage`), and VoiceOver hears it. The code already
-    /// selected, and an unknown id, change nothing.
+    /// kept beside the new reading and whether Edit Text stops, or refused,
+    /// with the reason shown and announced, for a book that can't be read
+    /// again now (`RereadChoiceFlow.choose(_:)`). The code already selected,
+    /// an unknown id, and a choice while the pop-up takes none change
+    /// nothing.
     func choose(_ item: Item) async {
         guard case .code(let code) = item, item != selection, isEnabled else { return }
-        failureMessage = nil
-        switch await library.rereadPreflight(of: bookID, access: access) {
-        case .refused(let refusal):
-            failureMessage = OperationFailureNotice.message(after: .failure(refusal))
-        case let .ready(keepsText, stopsEditing):
-            pending = Confirmation(option: code, keepsText: keepsText, stopsEditing: stopsEditing)
-        }
+        await flow.choose(code)
     }
 
     /// The confirmation's title for `code`, naming the book as the library
     /// knows it: "Read “Ledger” again as Eurobraille, six-dot
     /// (German-speaking countries)?".
     func confirmTitle(for code: BrailleFileCode) -> String {
-        BrailleFileCodeWording.confirmTitle(bookTitle: library.bookByID(bookID)?.title ?? "", code: code)
+        BrailleFileCodeWording.confirmTitle(bookTitle: flow.library.bookByID(bookID)?.title ?? "", code: code)
     }
 
     /// The confirmation's message for `confirmation`: whether anything
@@ -172,23 +184,17 @@ final class BrailleFileCodeChoiceModel: ObservableObject, BookRereadChoosing {
     }
 
     /// The listener confirmed `code`: the book is read again with it
-    /// (`LibraryViewModel.readTextAgain(bookID:choosing:access:)`), which
-    /// announces what it did; a refusal, such as a file holding a byte the
-    /// code has no cell for, is shown, and announced, and the pop-up shows
-    /// the code the book is read with afterwards.
+    /// (`RereadChoiceFlow.confirm(choosing:thenReload:)`), which announces
+    /// what it did; a refusal, such as a file holding a byte the code has no
+    /// cell for, is shown, and announced, and the pop-up shows the code the
+    /// book is read with afterwards (`load()`).
     func confirm(_ code: BrailleFileCode) async {
-        pending = nil
-        failureMessage = nil
-        isWorking = true
-        let outcome = await library.readTextAgain(bookID: bookID, choosing: .brailleFileCode(code), access: access)
-        failureMessage = OperationFailureNotice.message(after: outcome)
-        await load()
-        isWorking = false
+        await flow.confirm(choosing: .brailleFileCode(code)) { await self.load() }
     }
 
     /// The confirmation closed without the listener confirming: nothing
     /// changes, and the pop-up shows what it showed.
     func cancel() {
-        pending = nil
+        flow.cancel()
     }
 }
