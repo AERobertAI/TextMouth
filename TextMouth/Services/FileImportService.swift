@@ -916,6 +916,9 @@ enum FileImportService {
             // A braille book's table, read from the setting once, so the
             // version recorded with it is that table's (review R2).
             let brailleTable = format == .braille ? BraillePreferences.importTable() : nil
+            // And its braille file characters, decided once: those its bytes
+            // name for certain, else the setting's (braillecodes).
+            let brailleFileCode = format == .braille ? Self.brailleFileCode(ofImported: stagedFile) : nil
             let staged = Book(
                 id: bookID,
                 title: metadata.title,
@@ -951,8 +954,12 @@ enum FileImportService {
                 // Braille setting's, as it stands for this import. Every
                 // later reading of the book uses this one, and one of this
                 // Mac's tables keeps the Mac's liblouis version too (review R2).
+                // A BRF or BRL keeps the braille file characters it is read in
+                // the same way (braillecodes), by an explicit id, North
+                // American Braille ASCII's included; a PEF keeps none.
                 brailleTable: brailleTable,
-                brailleTableVersion: brailleTable.flatMap(BrailleTableCatalog.versionToRecord(forTable:))
+                brailleTableVersion: brailleTable.flatMap(BrailleTableCatalog.versionToRecord(forTable:)),
+                brailleFileCode: brailleFileCode
             )
             // The one import that guesses (FMT16): a file the user chose, whose
             // bytes may name no encoding, is read in the encoding the guesser
@@ -968,6 +975,24 @@ enum FileImportService {
             imported.isFromFolder = package != nil || isRTFDFolder(sourceURL)
             return imported
         }
+    }
+
+    /// The braille file characters the import of the braille book whose file
+    /// is staged at `url` records, by the code's id (braillecodes,
+    /// BRAILLE-CODES-RESEARCH-2026-10-25.md, sections 8.3 and 8.5). A PEF
+    /// records none (`BrailleBookReader.kind(of:)`): its rows are always
+    /// Unicode braille patterns. A BRF or BRL records Unicode braille
+    /// patterns when its bytes say so for certain
+    /// (`BrailleFileReader.certainCode(ofFileAt:)`), and the Braille
+    /// setting's code otherwise (`BraillePreferences.importFileCode()`). No
+    /// other code is ever guessed: the seven-bit codes write their cells with
+    /// the same printable characters, so no byte tells them apart for
+    /// certain. The id is explicit, North American Braille ASCII's included,
+    /// as the table is, so a later change of the setting never changes how
+    /// the book is read.
+    static func brailleFileCode(ofImported url: URL) -> String? {
+        guard BrailleBookReader.kind(of: url) != .pef else { return nil }
+        return BrailleFileReader.certainCode(ofFileAt: url)?.id ?? BraillePreferences.importFileCode()
     }
 
     // MARK: - Loose DAISY Packages

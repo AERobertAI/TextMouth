@@ -1219,8 +1219,11 @@ final class ConfigSyncTests: XCTestCase {
             // import.
             "transcriptionLocale": TranscriptFixtures.languageOtherThanTheDefault,
             "offerTranscriptionAfterImport": true,
-            // Braille: the table braille files are read and written with.
+            // Braille: the table braille files are read and written with, and
+            // the braille file characters an import reads a BRF or BRL file
+            // with (braillecodes).
             "brailleTable": "en-us-g1.ctb",
+            "brailleFileCode": "ascii-eurobraille",
         ]
     }
 

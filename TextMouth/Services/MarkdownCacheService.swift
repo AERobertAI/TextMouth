@@ -176,6 +176,12 @@ enum MarkdownCacheService {
     /// between the row and the record (`Book.recordedTextEncodingRecord()`),
     /// and a book that records none is read as it always was, so no rebuild
     /// or migration changes the text of a book already in the library.
+    /// Such a read also reads a braille book's file in the braille file
+    /// characters its row records (`Book.brailleFileCode`, braillecodes),
+    /// which an import sets on the row before the read, and so will a
+    /// re-read in other braille file characters; any other read goes by the
+    /// code that stands between the row and the record
+    /// (`Book.recordedBrailleFileCode()`).
     static func generateReportedCacheContent(
         for book: Book, adoptingDocumentNames: Bool = false, replacingEditedText: Bool = false,
         decidingEncoding: Bool = false
@@ -204,6 +210,21 @@ enum MarkdownCacheService {
         return book.textEncodingRecord.isEmpty ? .guess : book.textEncodingRecord.policy
     }
 
+    /// The braille file characters a braille book's file is read in, by the
+    /// code's id (braillecodes). A read `decidingEncoding` reads the code the
+    /// book's row names, as the row says it: an import of a file the user
+    /// chose sets it before the read, and so will a re-read in other braille
+    /// file characters from Book Information. Any other read takes the code
+    /// that stands between the row and the package record, the record's for
+    /// a row that lags behind a re-read or lost its own, and, for a BRF or
+    /// BRL that records none, Unicode braille patterns when its bytes say so
+    /// for certain (`Book.brailleFileCodeForReading()`, review finding 1).
+    /// Nil reads North American Braille ASCII; every format but braille
+    /// ignores it.
+    private static func brailleFileCode(of book: Book, decidingEncoding: Bool) -> String? {
+        decidingEncoding ? book.brailleFileCode : book.brailleFileCodeForReading()
+    }
+
     /// The work of `generateReportedCacheContent(for:)` for a book with a
     /// package, whose paths are in the current data directory: extracts the
     /// source, writes content.md, and indexes and fingerprints the result.
@@ -228,6 +249,7 @@ enum MarkdownCacheService {
             extracted = try extractCache(
                 from: fileURL, format: book.format, brailleTable: book.brailleTable,
                 brailleTableVersion: book.brailleTableVersion,
+                brailleFileCode: brailleFileCode(of: book, decidingEncoding: decidingEncoding),
                 encodingPolicy: encodingPolicy(of: book, decidingEncoding: decidingEncoding), includesPages: true
             )
         } catch EPUBParserError.noReadableChapters(let report) {
@@ -341,6 +363,7 @@ enum MarkdownCacheService {
             let extracted = try extractCache(
                 from: URL(fileURLWithPath: current.filePath), format: current.format,
                 brailleTable: current.brailleTable, brailleTableVersion: current.brailleTableVersion,
+                brailleFileCode: current.brailleFileCodeForReading(),
                 encodingPolicy: encodingPolicy(of: current), includesPages: includesPages
             )
             return ExtractedText(markdown: extracted.markdown, pageRunFailed: extracted.pageRunFailed)
@@ -441,6 +464,13 @@ enum MarkdownCacheService {
     /// takes the record's back, and one that lags behind a re-read takes its
     /// decision; the library row takes it with the analysis the caller
     /// commits (`ContentAnalysisSummary`).
+    /// A read `decidingEncoding` also reads a braille book's file in the
+    /// braille file characters its row records (`Book.brailleFileCode`,
+    /// braillecodes), which an import sets on the row before the read, and
+    /// so will a re-read in other braille file characters, and `book` keeps
+    /// that code. Without it, the file is read in the code that stands
+    /// between the row and the record (`Book.recordedBrailleFileCode()`),
+    /// which `book` takes, as it takes the encoding.
     /// - Returns: nil for a book with no text cache.
     /// - Throws: why no cache could be written; `book` is then unchanged.
     ///   `EditedTextKept` when content.md holds the user's edit and
@@ -469,6 +499,15 @@ enum MarkdownCacheService {
             // who decided it: its own, the record's for a row that lost its
             // own, or the record's decision for a row that lags behind it.
             book.textEncodingRecord = book.recordedTextEncodingRecord()
+        }
+        if !decidingEncoding {
+            // The book takes the braille file characters its file was just
+            // read in (braillecodes): the record's for a row that lags behind
+            // a re-read or lost its own, or Unicode braille patterns for a
+            // BRF or BRL that records none and whose bytes say so (review
+            // finding 1), which its next save records. Another format's row
+            // keeps its own.
+            book.brailleFileCode = book.brailleFileCodeForReading()
         }
         return generated
     }
@@ -598,10 +637,14 @@ enum MarkdownCacheService {
     /// A braille book (FMT20) is read through liblouis in the braille helper,
     /// which blocks the same way, with the table the book was imported with
     /// (`brailleTable`, `Book.brailleTable`; the default table for a book
-    /// that has none), so a rebuild of the cache never changes its text;
-    /// one of this Mac's tables must still have the liblouis version the
-    /// book was read with (`brailleTableVersion`, review R2), or the
-    /// rebuild fails by name and the old content.md stays.
+    /// that has none), and a BRF or BRL file in the braille file characters
+    /// the book records (`brailleFileCode`, braillecodes; North American
+    /// Braille ASCII for a book that records none), so a rebuild of the
+    /// cache never changes its text; one of this Mac's tables must still
+    /// have the liblouis version the book was read with
+    /// (`brailleTableVersion`, review R2), and the code must be one this
+    /// TextMouth knows, or the rebuild fails by name and the old content.md
+    /// stays.
     /// - Parameter encodingPolicy: What a plain-text, Markdown, or HTML file
     ///   is read as when its bytes name no encoding (FMT16): the book's
     ///   recorded encoding, a guess for the import of a new file, or the
@@ -611,7 +654,7 @@ enum MarkdownCacheService {
     ///   which PG09 compares against to find text changed by hand.
     private static func extractCache(
         from url: URL, format: BookFormat, brailleTable: String?, brailleTableVersion: String?,
-        encodingPolicy: TextFileDecoder.EncodingPolicy, includesPages: Bool
+        brailleFileCode: String?, encodingPolicy: TextFileDecoder.EncodingPolicy, includesPages: Bool
     ) throws -> ExtractedCache {
         let markdown: String
         var guessedEncoding: String?
@@ -653,7 +696,7 @@ enum MarkdownCacheService {
         case .braille:
             markdown = try BrailleBookReader.markdown(
                 of: url, table: brailleTable ?? BrailleTableCatalog.defaultTableID, recordedVersion: brailleTableVersion,
-                includesPages: includesPages
+                fileCode: brailleFileCode, includesPages: includesPages
             )
         case .daisy:
             markdown = try DAISYParser.extractMarkdown(from: url, includesPages: includesPages)

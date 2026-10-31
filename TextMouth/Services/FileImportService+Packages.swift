@@ -425,11 +425,14 @@ extension FileImportService {
             epubIdentifier: metadata?.epub?.identifier,
             epubVersion: metadata?.epub?.epubVersion,
             // A braille book is read with the table it was imported with
-            // (FMT21). The record that held it is gone, so the marker carries
-            // it; without it the text would be read again with the default
-            // table. Only a braille book has one.
+            // (FMT21), in the braille file characters it was last read in
+            // (braillecodes). The record that held both is gone, so the
+            // marker carries them; without them the text would be read again
+            // with the default table, as North American Braille ASCII. Only
+            // a braille book has either.
             brailleTable: format == .braille ? marker.brailleTable : nil,
             brailleTableVersion: format == .braille ? marker.brailleTableVersion : nil,
+            brailleFileCode: format == .braille ? marker.brailleFileCode : nil,
             // A text book is read in the encoding it was guessed to be in
             // (FMT16), or chosen in (encodingchoice), which the deleted
             // record held as well. Without it the book would be read by the

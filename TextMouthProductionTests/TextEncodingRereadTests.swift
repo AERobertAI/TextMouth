@@ -122,7 +122,7 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
         let previous = VoiceOverAnnouncer.poster
         VoiceOverAnnouncer.poster = { announcement, _ in announced.append(announcement.message) }
         defer { VoiceOverAnnouncer.poster = previous }
-        let outcome = await model.readTextAgain(bookID: book.id, as: option, access: access)
+        let outcome = await model.readTextAgain(bookID: book.id, choosing: .textEncoding(option), access: access)
         return (outcome, announced)
     }
 
@@ -145,7 +145,7 @@ final class TextEncodingRereadTests: CloudMaintenanceTestCase {
             _ = release.wait(timeout: .now() + 20)
         }
         defer { MarkdownCacheService.extractionObserver = nil }
-        let run = Task { await model.readTextAgain(bookID: bookID, as: option) }
+        let run = Task { await model.readTextAgain(bookID: bookID, choosing: .textEncoding(option)) }
         var held = false
         for _ in 0..<1_000 where !held {
             held = reached.withLock { $0 }

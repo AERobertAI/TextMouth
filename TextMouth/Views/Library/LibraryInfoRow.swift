@@ -165,6 +165,7 @@ extension BookInfoFacts {
             feedTitle: library.feedTitle(of: book),
             readingListPlace: ReadingListPlace(of: book.id, in: library.library),
             brailleCode: book.brailleCodeDescription,
+            brailleFileCharacters: book.brailleFileCodeDescription,
             textEncoding: book.textEncodingDescription
         )
     }

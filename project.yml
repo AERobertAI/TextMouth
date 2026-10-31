@@ -235,8 +235,14 @@ targets:
   # English tables TextMouth offers, with every table they include:
   # Unified English Braille uncontracted (en-ueb-g1.ctb) and contracted
   # (en-ueb-g2.ctb), and English Braille, American Edition, uncontracted
-  # (en-us-g1.ctb) and contracted (en_US.tbl), 17 files in all. Seven files
-  # (lou_translateString.c, lou_backTranslateString.c,
+  # (en-us-g1.ctb) and contracted (en_US.tbl), 17 files; and three display
+  # tables, which no translation table here includes and only the tests of
+  # braille file characters read (BrailleFileCodeTests compares TextMouth's
+  # own tables with them, 64 cells of 64): North American Braille ASCII
+  # (en-us-brf.dis) and Eurobraille, six-dot, in lowercase (de-eurobrl6.dis)
+  # and in capitals (de-eurobrl6u.dis), taken from that same tarball on
+  # October 30, 2026, once its SHA-256 matched the one above; 20 files in
+  # all. Seven files (lou_translateString.c, lou_backTranslateString.c,
   # compileTranslationTable.c, metadata.c, liblouis.h.in, en-ueb-g2.ctb, and
   # en_US.tbl) were compared with the same files at the v3.39.0 tag (commit
   # 2e775aca674cd2910e272eed7736acceb4c2e4a2) and are identical. Nothing of

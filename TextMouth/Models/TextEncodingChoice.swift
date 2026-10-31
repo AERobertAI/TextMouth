@@ -212,4 +212,14 @@ extension Book {
     var offersTextEncodingChoice: Bool {
         format.usesTextFileDecoder && !isFeedItem && (sourceFilePath != nil || !textEncodingRecord.isEmpty)
     }
+
+    /// Whether Book Information offers this book the choice of the braille
+    /// file characters its file is read with (braillecodes): a braille book
+    /// whose file is a BRF or a BRL (`BrailleBookReader.kind(of:)`), which
+    /// may write its cells in any braille file code (`BrailleFileCode`), and
+    /// whose seven-bit codes no byte tells apart. Not a PEF, whose rows are
+    /// always Unicode braille patterns, and never a feed's item.
+    var offersBrailleFileCodeChoice: Bool {
+        format == .braille && !isFeedItem && BrailleBookReader.kind(of: bookFileURL) != .pef
+    }
 }
