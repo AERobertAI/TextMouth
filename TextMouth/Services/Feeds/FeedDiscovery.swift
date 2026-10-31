@@ -33,7 +33,7 @@ enum FeedDiscovery {
     /// The feeds the page `html`, fetched from `pageURL`, names, each once,
     /// with relative addresses resolved from the page's base address.
     static func feedLinks(inPage html: String, pageURL: URL) -> [FeedLink] {
-        guard let document = try? SwiftSoup.parse(html, pageURL.absoluteString) else { return [] }
+        guard let document = try? HTMLNesting.parse(html, baseURI: pageURL.absoluteString) else { return [] }
         var links: [FeedLink] = []
         var seen = Set<String>()
         FeedHTMLWalk.visit(document) { element in

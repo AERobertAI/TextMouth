@@ -454,7 +454,7 @@ struct DAISYPackageInventory {
             // Read as the reader reads it first, so a copy cut short counts
             // as damaged here as well.
             _ = try DAISY202NCCParser(html: html, file: entryPath).parse()
-            navigation = try SwiftSoup.parse(html)
+            navigation = try HTMLNesting.parse(html)
         } catch {
             return error.localizedDescription
         }
@@ -502,7 +502,7 @@ struct DAISYPackageInventory {
             let textData = try Data(contentsOf: text)
             let document: SwiftSoup.Document
             do {
-                document = try SwiftSoup.parse(decodedText(textData))
+                document = try HTMLNesting.parse(decodedText(textData))
             } catch {
                 return error.localizedDescription
             }

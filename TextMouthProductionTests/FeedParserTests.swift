@@ -615,6 +615,17 @@ final class FeedParserTests: XCTestCase {
         XCTAssertEqual(plainText?.contains("Deep words"), true)
     }
 
+    /// An item whose text nests 5,000 lists closed level by level is read on
+    /// a worker thread's stack, keeping its words. SwiftSoup itself calls
+    /// itself once for every level above each `</li>` it reads, so its parse
+    /// overflowed that stack during a refresh; markup nested past
+    /// `HTMLNesting.deepestParsedLevel` is now read as its words alone.
+    func testItemTextOfListsClosedLevelByLevelIsReadOnAWorkerStack() {
+        let html = String(repeating: "<ol><li>", count: 5_000) + "Deep words" + String(repeating: "</li></ol>", count: 5_000)
+        let plainText = onWorkerSizedStack { FeedTextConverter.read(html: html)?.plainText ?? "" }
+        XCTAssertEqual(plainText, "Deep words")
+    }
+
     // MARK: - Helpers
 
     /// The fixture `name` in TestData/feeds, parsed as fetched from
