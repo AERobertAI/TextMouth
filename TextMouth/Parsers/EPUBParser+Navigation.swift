@@ -396,12 +396,10 @@ extension EPUBParser {
             }
         }
 
-        if let (path, doc) = readNCX(archive: archive, opfPath: opfPath, opfData: opfData),
-           let maps = try? doc.nodes(forXPath: "//*[local-name()='navMap']") {
-            for map in maps {
-                result += ncxTargets(in: map, relativeTo: path, level: 1)
-            }
-        }
+        result += withNCX(archive: archive, opfPath: opfPath, opfData: opfData) { (path, doc) -> [NavigationTarget] in
+            let maps = (try? doc.nodes(forXPath: "//*[local-name()='navMap']")) ?? []
+            return maps.flatMap { ncxTargets(in: $0, relativeTo: path, level: 1) }
+        } ?? []
 
         // Legacy guides can refer to a visible TOC that is not itself in the
         // reading order. Honor its fragment so unrelated page links stay out.
@@ -420,21 +418,23 @@ extension EPUBParser {
         return result
     }
 
-    /// The EPUB 2 NCX the package declares through the spine's `toc` attribute,
-    /// or else its first manifest item of an NCX media type, with its path
-    /// inside the archive; nil when there is none or it cannot be read.
-    private static func readNCX(
+    /// What `body` makes of the EPUB 2 NCX the package declares through the
+    /// spine's `toc` attribute, or else of its first manifest item of an NCX
+    /// media type, given its path inside the archive and its document, read
+    /// as every XML file of the book is (`readingXML(_:_:)`); nil when there
+    /// is none or it cannot be read.
+    private static func withNCX<Result>(
         archive: IndexedArchive,
         opfPath: String,
-        opfData: OPFData
-    ) -> (path: String, document: XMLDocument)? {
+        opfData: OPFData,
+        _ body: (_ path: String, _ document: XMLDocument) -> Result
+    ) -> Result? {
         let ncx = opfData.spineTOCID.flatMap { opfData.manifest[$0] }
             ?? opfData.manifest.sorted { $0.key < $1.key }.first(where: { $0.value.mediaType.contains("ncx") })?.value
         guard let ncx else { return nil }
         let path = ParserUtilities.resolvedPackagePath(ncx.href, relativeTo: opfPath, preserveFragment: false)
-        guard let xml = try? extractString(archive: archive, path: path),
-              let doc = try? XMLDocument(xmlString: xml) else { return nil }
-        return (path, doc)
+        guard let xml = try? extractString(archive: archive, path: path) else { return nil }
+        return try? readingXML(xml) { body(path, $0) }
     }
 
     // MARK: - Page Lists
@@ -467,23 +467,23 @@ extension EPUBParser {
         if !targets.isEmpty { return targets }
 
         // No EPUB 3 page list: the NCX's pageList, each pageTarget labelled by
-        // its navLabel, else its value.
-        entryCount = 0
-        guard let (path, doc) = readNCX(archive: archive, opfPath: opfPath, opfData: opfData),
-              let entries = try? doc.nodes(
+        // its navLabel, else its value, and numbered from 1 in list order.
+        return withNCX(archive: archive, opfPath: opfPath, opfData: opfData) { (path, doc) -> [PageTarget] in
+            let entries = (try? doc.nodes(
                 forXPath: "//*[local-name()='pageList']/*[local-name()='pageTarget']"
-              ) else { return [] }
-        for entry in entries.compactMap({ $0 as? XMLElement }) {
-            entryCount += 1
-            let text = (try? entry.nodes(forXPath: "*[local-name()='navLabel']/*[local-name()='text']"))?.first?.stringValue ?? ""
-            let label = text.contains(where: { !$0.isWhitespace }) ? text : (entry.attribute(forName: "value")?.stringValue ?? "")
-            let content = (try? entry.nodes(forXPath: "*[local-name()='content']"))?.first as? XMLElement
-            if let href = content?.attribute(forName: "src")?.stringValue,
-               let target = pageTarget(href: href, label: label, ordinal: entryCount, relativeTo: path) {
-                targets.append(target)
+            )) ?? []
+            var listed: [PageTarget] = []
+            for (index, entry) in entries.compactMap({ $0 as? XMLElement }).enumerated() {
+                let text = (try? entry.nodes(forXPath: "*[local-name()='navLabel']/*[local-name()='text']"))?.first?.stringValue ?? ""
+                let label = text.contains(where: { !$0.isWhitespace }) ? text : (entry.attribute(forName: "value")?.stringValue ?? "")
+                let content = (try? entry.nodes(forXPath: "*[local-name()='content']"))?.first as? XMLElement
+                if let href = content?.attribute(forName: "src")?.stringValue,
+                   let target = pageTarget(href: href, label: label, ordinal: index + 1, relativeTo: path) {
+                    listed.append(target)
+                }
             }
-        }
-        return targets
+            return listed
+        } ?? []
     }
 
     /// The page lists inside `node`, outermost only: a navigation typed
