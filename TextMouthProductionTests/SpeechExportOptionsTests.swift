@@ -358,4 +358,241 @@ final class SpeechExportOptionsTests: XCTestCase {
         XCTAssertEqual(accentedName, "Book - " + String(repeating: "\u{E9}", count: 86))
         XCTAssertEqual(accentedName.utf8.count, 179)
     }
+
+    // MARK: - Drawn
+
+    /// The window the drawn options are hosted in: the Export dialog's
+    /// narrowest width, and room for every option.
+    private let hostSize = NSSize(width: 460, height: 420)
+
+    /// Drawn for a book with three headings, the options show three pop-ups,
+    /// in reading order: the formats, From's items, and To's items, at M4B
+    /// and the whole book. And two sliders, the speed's and the pitch's,
+    /// each standing where the book's speed or pitch stands among the ones
+    /// Settings offers (SwiftUI may count a slider's values from 0 to 1, so
+    /// each is read by where it stands between its ends; the next test
+    /// moves each to its ends).
+    func testTheOptionsDrawThreePopUpsAndTwoSliders() throws {
+        let state = makeState()
+        try withOptionsView(state, popUps: 3) { hosting in
+            let popUps = descendants(of: hosting, as: NSPopUpButton.self)
+            guard popUps.count == 3 else { return XCTFail("the options drew \(popUps.count) pop-ups") }
+            let (format, from, through) = (popUps[0], popUps[1], popUps[2])
+            XCTAssertEqual(format.itemTitles, state.formats.map(\.title))
+            XCTAssertEqual(format.titleOfSelectedItem, SpeechExportFormat.m4b.title)
+            XCTAssertEqual(from.itemTitles, state.fromItems.map(\.title))
+            XCTAssertEqual(from.titleOfSelectedItem, SpeechExportWording.beginningOfBook)
+            XCTAssertEqual(through.itemTitles, state.throughItems.map(\.title))
+            XCTAssertEqual(through.titleOfSelectedItem, SpeechExportWording.endOfBook)
+
+            let sliders = descendants(of: hosting, as: NSSlider.self)
+            guard sliders.count == 2 else { return XCTFail("the options drew \(sliders.count) sliders") }
+            let (rate, pitch) = (sliders[0], sliders[1])
+            XCTAssertEqual(position(of: rate), position(of: 225, in: SettingsPolicy.wordsPerMinute.range), accuracy: 0.001)
+            XCTAssertEqual(position(of: pitch), position(of: 1.2, in: SettingsPolicy.pitchMultiplier.range), accuracy: 0.001)
+        }
+    }
+
+    /// Each slider runs over the speeds or pitches Settings offers: moved to
+    /// its maximum, as a drag would, it sets the fastest speed or the
+    /// highest pitch, and moved to its minimum, the slowest or the lowest.
+    func testTheSlidersRunOverTheSpeedsAndPitchesSettingsOffers() throws {
+        let state = makeState()
+        try withOptionsView(state, popUps: 3) { hosting in
+            let sliders = descendants(of: hosting, as: NSSlider.self)
+            guard sliders.count == 2 else { return XCTFail("the options drew \(sliders.count) sliders") }
+            let (rate, pitch) = (sliders[0], sliders[1])
+
+            move(rate, to: rate.maxValue)
+            move(pitch, to: pitch.maxValue)
+            XCTAssertTrue(
+                waitUntil { state.wordsPerMinute == 650 && abs(state.pitch - 2) < 0.000_1 },
+                "the speed is \(state.wordsPerMinute) and the pitch \(state.pitch)"
+            )
+
+            move(rate, to: rate.minValue)
+            move(pitch, to: pitch.minValue)
+            XCTAssertTrue(
+                waitUntil { state.wordsPerMinute == 50 && abs(state.pitch - 0.5) < 0.000_1 },
+                "the speed is \(state.wordsPerMinute) and the pitch \(state.pitch)"
+            )
+        }
+    }
+
+    /// Choosing in the pop-ups sets the options: a format; a From past the
+    /// To, the book's end, which leaves the To where it is; and a To before
+    /// the From, which moves the From to it. The pop-ups then show what was
+    /// chosen.
+    func testThePopUpsSetTheOptions() throws {
+        let state = makeState()
+        try withOptionsView(state, popUps: 3) { hosting in
+            // M4A, the second format.
+            choose(item: 1, inPopUp: 0, of: hosting)
+            XCTAssertTrue(waitUntil { state.format == .m4a }, "the format is \(state.format)")
+
+            // From the second chapter, From's last item, before the book's end.
+            choose(item: 3, inPopUp: 1, of: hosting)
+            XCTAssertTrue(waitUntil { state.fromHeadingID == self.chapterTwo.id }, "the range is \(state.choices.range)")
+            XCTAssertNil(state.throughHeadingID)
+
+            // To the first chapter, To's first item, before the From.
+            choose(item: 0, inPopUp: 2, of: hosting)
+            XCTAssertTrue(
+                waitUntil { state.throughHeadingID == self.chapterOne.id && state.fromHeadingID == self.chapterOne.id },
+                "the range is \(state.choices.range)"
+            )
+
+            let shown = [SpeechExportFormat.m4a.title, "Chapter 1 - level 1", "Chapter 1 - level 1"]
+            XCTAssertTrue(
+                waitUntil {
+                    hosting.layoutSubtreeIfNeeded()
+                    return self.shownTitles(in: hosting) == shown
+                },
+                "the pop-ups show \(shownTitles(in: hosting))"
+            )
+        }
+    }
+
+    /// Without headings, the options draw the Format pop-up alone, a line
+    /// saying the whole book is exported standing in for From and To, and
+    /// both sliders.
+    func testWithoutHeadingsTheOptionsDrawOnePopUp() throws {
+        let state = makeState([])
+        try withOptionsView(state, popUps: 1) { hosting in
+            let popUps = descendants(of: hosting, as: NSPopUpButton.self)
+            XCTAssertEqual(popUps.map(\.itemTitles), [state.formats.map(\.title)])
+            XCTAssertEqual(descendants(of: hosting, as: NSSlider.self).count, 2)
+        }
+    }
+
+    /// A heading of 300 characters, chosen as the From, leaves the options
+    /// no wider than the dialog holds them: the From and To pop-ups shorten
+    /// it, and the voice and licence lines wrap.
+    func testALongHeadingLeavesTheOptionsNarrow() {
+        let long = Heading(level: 1, text: String(repeating: "W", count: 300), chapterIndex: 0, characterOffset: 0)
+        let state = makeState([long, chapterTwo])
+        state.setFrom(long.id)
+        let size = NSHostingView(rootView: SpeechExportOptionsView(state: state)).fittingSize
+        XCTAssertLessThanOrEqual(size.width, 440)
+        XCTAssertGreaterThan(size.width, 0)
+        XCTAssertGreaterThan(size.height, 0)
+    }
+
+    /// VoiceOver hears each control's label, value, and hint: each pop-up
+    /// with the item chosen, each slider with its value in words; and no
+    /// label names the kind of control, which VoiceOver says itself.
+    ///
+    /// The controls sit in the options' group, an element SwiftUI builds
+    /// for an accessibility client but never for a test reading the window
+    /// in-process (`FeedDownloadProgressViewTests` meets the same), so the
+    /// AppKit pop-ups and sliders are read themselves where the group keeps
+    /// them out of the window's elements (`exposedControls(in:)`). Skipped
+    /// where the session exposes no hosted control to accessibility, or
+    /// where none of the controls shows any of its words.
+    func testVoiceOverHearsEachControlsLabelValueAndHint() throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
+        let state = makeState()
+        state.setFrom(notes.id)
+        try withOptionsView(state, popUps: 3) { hosting in
+            let labels = [
+                SpeechExportWording.formatLabel, SpeechExportWording.fromLabel, SpeechExportWording.throughLabel,
+                SpeechExportWording.rateLabel, SpeechExportWording.pitchLabel,
+            ]
+            _ = waitUntil { self.exposedControls(in: hosting).contains { labels.contains($0.label) } }
+            let controls = exposedControls(in: hosting)
+            guard controls.contains(where: { labels.contains($0.label) }) else {
+                throw XCTSkip("SwiftUI exposed none of the options' controls to a test reading the window in-process")
+            }
+
+            let format = try control(labelled: SpeechExportWording.formatLabel, in: controls)
+            XCTAssertEqual(format.element.accessibilityValue() as? String, SpeechExportFormat.m4b.title)
+            XCTAssertEqual(format.hint, SpeechExportWording.formatHint)
+            let from = try control(labelled: SpeechExportWording.fromLabel, in: controls)
+            XCTAssertEqual(from.element.accessibilityValue() as? String, "Notes - level 2")
+            XCTAssertEqual(from.hint, SpeechExportWording.fromHint)
+            let through = try control(labelled: SpeechExportWording.throughLabel, in: controls)
+            XCTAssertEqual(through.element.accessibilityValue() as? String, SpeechExportWording.endOfBook)
+            XCTAssertEqual(through.hint, SpeechExportWording.throughHint)
+
+            let rate = try control(labelled: SpeechExportWording.rateLabel, in: controls)
+            XCTAssertEqual(rate.role, .slider)
+            XCTAssertEqual(rate.valueDescription, "225 words per minute")
+            XCTAssertEqual(rate.hint, SpeechExportWording.rateHint)
+            let pitch = try control(labelled: SpeechExportWording.pitchLabel, in: controls)
+            XCTAssertEqual(pitch.role, .slider)
+            XCTAssertEqual(pitch.valueDescription, "1.2x")
+            XCTAssertEqual(pitch.hint, SpeechExportWording.pitchHint)
+
+            XCTAssertFalse(
+                controls.contains {
+                    $0.label.localizedCaseInsensitiveContains("slider") || $0.label.localizedCaseInsensitiveContains("pop-up")
+                },
+                "\(controls.map(\.label))"
+            )
+        }
+    }
+
+    // MARK: - Hosting
+
+    /// Hosts the options of `state` in a window of `hostSize`, inside a frame
+    /// of that size, as a hosted view must not outgrow its window
+    /// (`withHostedView`), until they have drawn `popUps` pop-ups and their
+    /// two sliders; then passes the hosting view to `body`.
+    private func withOptionsView(_ state: SpeechExportOptionsState, popUps: Int, _ body: (NSView) throws -> Void) throws {
+        let view = SpeechExportOptionsView(state: state).frame(width: hostSize.width, height: hostSize.height)
+        try withHostedView(view, size: hostSize, until: {
+            self.descendants(of: $0, as: NSPopUpButton.self).count == popUps
+                && self.descendants(of: $0, as: NSSlider.self).count == 2
+        }) { hosting in
+            try body(hosting)
+        }
+    }
+
+    /// The options' controls as VoiceOver reads them (`accessibleControls`):
+    /// those among the window's accessibility elements; or, where the
+    /// options' group keeps them out of those for a test reading in-process,
+    /// the AppKit pop-ups and sliders the options drew, read the same way.
+    private func exposedControls(in hosting: NSView) -> [AccessibleControl] {
+        let underTheWindow = accessibleControls(in: hosting)
+        guard underTheWindow.isEmpty else { return underTheWindow }
+        let popUps: [NSView] = descendants(of: hosting, as: NSPopUpButton.self)
+        let sliders: [NSView] = descendants(of: hosting, as: NSSlider.self)
+        return (popUps + sliders).flatMap { accessibleControls(in: $0) }
+    }
+
+    /// Where `slider` stands between its ends, from 0 at its minimum to 1 at
+    /// its maximum, whatever numbers the slider counts its values in.
+    private func position(of slider: NSSlider) -> Double {
+        (slider.doubleValue - slider.minValue) / (slider.maxValue - slider.minValue)
+    }
+
+    /// Where `value` stands between the ends of `range`, from 0 to 1.
+    private func position(of value: Double, in range: ClosedRange<Double>) -> Double {
+        (value - range.lowerBound) / (range.upperBound - range.lowerBound)
+    }
+
+    /// Moves `slider` to `value`, in its own numbers, and sends its action,
+    /// as a drag that ends there does.
+    private func move(_ slider: NSSlider, to value: Double) {
+        slider.doubleValue = value
+        slider.sendAction(slider.action, to: slider.target)
+    }
+
+    /// The titles of the items the pop-ups in `hosting` show, in order.
+    private func shownTitles(in hosting: NSView) -> [String?] {
+        descendants(of: hosting, as: NSPopUpButton.self).map(\.titleOfSelectedItem)
+    }
+
+    /// Chooses item `item` of pop-up number `number` (0 Format, 1 From,
+    /// 2 To) of the options in `hosting`, as a click in its menu does. The
+    /// pop-ups are found afresh, as SwiftUI may draw them anew after a
+    /// change; a pop-up or an item the options lack fails the test.
+    private func choose(item: Int, inPopUp number: Int, of hosting: NSView) {
+        hosting.layoutSubtreeIfNeeded()
+        let popUps = descendants(of: hosting, as: NSPopUpButton.self)
+        guard popUps.indices.contains(number), let menu = popUps[number].menu, item < menu.numberOfItems else {
+            return XCTFail("the options have no item \(item) in pop-up \(number): \(popUps.map(\.itemTitles))")
+        }
+        menu.performActionForItem(at: item)
+    }
 }
