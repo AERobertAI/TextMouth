@@ -204,6 +204,20 @@ final class EPUBMetadataTests: XCTestCase {
         XCTAssertNil(text.keptEPUBMetadata, "a book that is not an EPUB")
     }
 
+    // MARK: - Deep XML
+
+    /// A package document nested 5,000 elements deep, which XMLDocument
+    /// reads without complaint, is read and released on a worker thread's
+    /// 512 KiB stack, where an import reads it, and gives its title.
+    /// Foundation releases a tree one nested call per level, so such a
+    /// package once ended TextMouth as soon as it had been read.
+    func testAPackageDocumentNestedThousandsDeepIsReadOnAWorkerStack() {
+        let nesting = String(repeating: "<x>", count: 5_000) + String(repeating: "</x>", count: 5_000)
+        let opf = TextPipelineFixtures.packageDocument(metadata: "<dc:title>Deep Package</dc:title>\(nesting)")
+        let title = onWorkerSizedStack { (try? EPUBParser.parseOPF(opf))?.title ?? "" }
+        XCTAssertEqual(title, "Deep Package")
+    }
+
     // MARK: - External Entities (U01)
 
     /// The text of the file on this Mac that the crafted EPUB below names.

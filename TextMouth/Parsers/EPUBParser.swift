@@ -409,11 +409,40 @@ enum EPUBParser {
     /// author, or headings, from there into the library, and on Edit
     /// Metadata into the EPUB itself. Such an entity reads as nothing, as
     /// in the app's other XML readers (the feed and OPML readers).
+    ///
+    /// The document lasts only while `body` runs: then its tree is taken
+    /// apart (`takeApart(_:)`), so `body` finishes all its work with the
+    /// document, a write of it back into the book included, and returns
+    /// none of its nodes.
     /// - Throws: XMLDocument's error when `xml` is not well-formed, or what
     ///   `body` throws.
     static func readingXML<Result>(_ xml: String, _ body: (XMLDocument) throws -> Result) throws -> Result {
         let document = try XMLDocument(xmlString: xml, options: [.nodeLoadExternalEntitiesNever])
+        defer { takeApart(document) }
         return try body(document)
+    }
+
+    /// Take `document`'s tree apart, deepest nodes first, so that releasing
+    /// it never recurses. Foundation releases a tree one nested call per
+    /// level, about 280 bytes of stack each: an XML file nested 2,000 levels
+    /// deep, which XMLDocument reads without complaint, overflowed the
+    /// 512 KiB stack of the worker thread an import runs on when it was
+    /// released, ending TextMouth.
+    ///
+    /// Every node is gathered with an explicit stack, parents before their
+    /// children; in the reverse of that order each element comes after all
+    /// of its descendants, so emptying the elements in that order leaves
+    /// none holding another by the time the nodes are released.
+    private static func takeApart(_ document: XMLDocument) {
+        var nodes: [XMLNode] = []
+        var stack: [XMLNode] = [document]
+        while let node = stack.popLast() {
+            nodes.append(node)
+            stack += node.children ?? []
+        }
+        for node in nodes.reversed() {
+            (node as? XMLElement)?.setChildren(nil)
+        }
     }
 
     // MARK: - Container Parsing (shared with MarkdownCacheService)
