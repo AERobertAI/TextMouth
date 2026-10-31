@@ -293,6 +293,67 @@ final class BrailleFileCodeBookInfoTests: CloudMaintenanceTestCase {
         XCTAssertEqual(try recordedCode(of: book), "unicode")
     }
 
+    // MARK: - VoiceOver
+
+    /// The hosted sheet of a BRF book has a pop-up labelled "Braille File
+    /// Characters", its value (its selected item's title, which VoiceOver
+    /// speaks before the label) the book's code, its hint saying what it
+    /// does, and its items the codes by their names; it has no Text
+    /// Encoding pop-up.
+    func testThePopUpIsLabelledAndValuedForVoiceOver() throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
+        let book = try makeBrailleBook("Wharf", code: nil)
+        let sheet = LibraryBookInfoSheet(book: book, libraryViewModel: makeModel(with: [book]))
+            .frame(width: 400, height: 470)
+        try withHostedView(sheet, size: NSSize(width: 400, height: 470), until: { [self] in
+            accessibleControls(in: $0).contains { $0.label == BrailleFileCodeWording.bookInfoLabel }
+        }) { hosting in
+            let controls = accessibleControls(in: hosting)
+            let control = try control(labelled: "Braille File Characters", in: controls)
+            XCTAssertEqual(control.role, .popUpButton)
+            XCTAssertEqual(control.element.accessibilityValue() as? String, "North American Braille ASCII")
+            XCTAssertEqual(control.hint, "Choose other characters to read the book's file again with them.")
+            XCTAssertFalse(controls.contains { $0.label == TextEncodingWording.bookInfoLabel })
+            let popUps = descendants(of: hosting, as: NSPopUpButton.self)
+            XCTAssertEqual(popUps.count, 1, "the sheet shows one pop-up")
+            let popUp = try XCTUnwrap(popUps.first)
+            XCTAssertEqual(popUp.itemTitles, Self.codeNames)
+            XCTAssertEqual(popUp.titleOfSelectedItem, "North American Braille ASCII")
+        }
+    }
+
+    /// A PEF book's sheet, whose rows are always Unicode braille patterns,
+    /// has no Braille File Characters pop-up, nor any; a text book's has its
+    /// Text Encoding pop-up alone.
+    func testOnlyABRFOrBRLBooksSheetHasThePopUp() throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
+        let pef = try makeBrailleBook("Atlas", code: nil, fileExtension: "pef")
+        XCTAssertFalse(pef.offersBrailleFileCodeChoice)
+        let pefSheet = LibraryBookInfoSheet(book: pef, libraryViewModel: makeModel(with: [pef]))
+            .frame(width: 400, height: 350)
+        withHostedView(pefSheet, size: NSSize(width: 400, height: 350), until: { [self] in
+            accessibleControls(in: $0).contains { $0.role == .textField }
+        }) { hosting in
+            XCTAssertFalse(accessibleControls(in: hosting).contains { $0.label == BrailleFileCodeWording.bookInfoLabel })
+            XCTAssertTrue(descendants(of: hosting, as: NSPopUpButton.self).isEmpty)
+        }
+
+        let text = Book(
+            title: "Gazette", format: .txt, filePath: "/nowhere/Gazette.txt", md5Hash: "braille-file-code-sheet-text",
+            textEncoding: "windows-1251"
+        )
+        XCTAssertTrue(text.offersTextEncodingChoice, "the text book must have its own pop-up, or this proves less")
+        let textSheet = LibraryBookInfoSheet(book: text, libraryViewModel: makeModel(with: [text]))
+            .frame(width: 400, height: 470)
+        withHostedView(textSheet, size: NSSize(width: 400, height: 470), until: { [self] in
+            accessibleControls(in: $0).contains { $0.label == TextEncodingWording.bookInfoLabel }
+        }) { hosting in
+            XCTAssertTrue(accessibleControls(in: hosting).contains { $0.label == TextEncodingWording.bookInfoLabel })
+            XCTAssertFalse(accessibleControls(in: hosting).contains { $0.label == BrailleFileCodeWording.bookInfoLabel })
+            XCTAssertEqual(descendants(of: hosting, as: NSPopUpButton.self).count, 1)
+        }
+    }
+
     // MARK: - The Words
 
     /// Every sentence of the pop-up, its alert, and Speak Info, exactly: the
