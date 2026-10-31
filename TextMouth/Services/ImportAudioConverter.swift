@@ -188,9 +188,9 @@ enum ImportAudioConverter {
     /// `convertedExtensions`. This is the extension's answer alone: at import
     /// the content decides as well (`verdict(for:)`, `needsConversion(among:using:)`),
     /// since a file's extension may say .mp3 or .m4a of an MP2 or Ogg file.
-    /// It still answers where only a name is at hand (`metadataAsset`, which
-    /// refuses an asset before its content is read) and what `verdict(for:)`
-    /// counts first.
+    /// It still answers where the name settles a file at no cost
+    /// (`metadataAsset`, which asks it before it reads a file's first bytes
+    /// for the Ogg signature) and what `verdict(for:)` counts first.
     static func isConvertedAtImport(_ url: URL) -> Bool {
         convertedExtensions.contains(url.pathExtension.lowercased())
     }
