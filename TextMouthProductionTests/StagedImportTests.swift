@@ -506,6 +506,70 @@ final class StagedImportTests: XCTestCase {
         }
     }
 
+    // MARK: - A Book Named Like Its Text Cache
+
+    /// A Markdown book whose file is named like its package's text cache,
+    /// content.md, in any case, is copied into the package under a name of
+    /// its own, so the cache written beside it never replaces it: the book's
+    /// file keeps exactly the bytes it came with, CR LF line endings
+    /// included, beside a separate content.md, and its record names it.
+    /// (The Mac's volumes compare names without regard to case, so the
+    /// cache used to be written over a book named Content.md as well.)
+    func testABookNamedLikeItsTextCacheKeepsItsOwnBytesBesideTheCache() throws {
+        let bytes = Data("# Tide Tables\r\n\r\nHigh water at the north pier comes at six.\r\n".utf8)
+        for name in ["Content.md", "content.md"] {
+            // A folder for each name: on a volume that compares names
+            // without regard to case, the two would be one file.
+            let folder = sources.appendingPathComponent(UUID().uuidString, isDirectory: true)
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            let source = folder.appendingPathComponent(name)
+            try bytes.write(to: source)
+
+            let book = try FileImportService.importFileWithReport(from: source, toFolder: folderPath).book
+
+            let cache = TextMouthPaths.contentMarkdownPath(in: book.tmbDirectory)
+            XCTAssertEqual(book.bookFileURL.lastPathComponent, "content (book).md", name)
+            XCTAssertEqual(try Data(contentsOf: book.bookFileURL), bytes, "\(name): the book's own bytes")
+            XCTAssertTrue(FileManager.default.fileExists(atPath: cache.path), "\(name): the cache")
+            XCTAssertNotEqual(
+                FileIdentity(of: book.bookFileURL), FileIdentity(of: cache),
+                "\(name): the cache was written over the book's own file"
+            )
+            XCTAssertEqual(
+                try BookInfo.load(from: book.tmbDirectory).metadata.originalFileName, "content (book).md", name
+            )
+        }
+    }
+
+    /// Control: a Markdown book under any other name, notes.md here, is
+    /// copied into its package under its own name, as always.
+    func testABookUnderAnyOtherNameIsStagedUnderItsOwn() throws {
+        let source = try makeSource(named: "notes.md", bytes: Data("# Notes\n\nCoil the line before stowing it.\n".utf8))
+
+        let book = try FileImportService.importFileWithReport(from: source, toFolder: folderPath).book
+
+        XCTAssertEqual(book.filePath, book.tmbDirectory.appendingPathComponent("notes.md").path)
+    }
+
+    /// The name a source is staged under is its own, unless it is the text
+    /// cache's in any case, when it is "content (book)" with the source's
+    /// own extension, spelled as the source spells it.
+    func testTheStagedNameStepsAsideOnlyForTheTextCachesName() {
+        let cases: [(source: String, staged: String)] = [
+            ("content.md", "content (book).md"),
+            ("Content.md", "content (book).md"),
+            ("CONTENT.MD", "content (book).MD"),
+            ("notes.md", "notes.md"),
+            ("content.markdown", "content.markdown"),
+            ("content.txt", "content.txt"),
+            ("content (book).md", "content (book).md"),
+        ]
+        for (source, staged) in cases {
+            let url = URL(fileURLWithPath: "/Books/\(source)", isDirectory: false)
+            XCTAssertEqual(FileImportService.stagedFileName(for: url), staged, source)
+        }
+    }
+
     // MARK: - Hashing a Source
 
     /// A source of several mebibyte chunks, the last one partial, hashes to

@@ -1065,10 +1065,30 @@ enum FileImportService {
         return try DAISYPackageInventory.ofSource(source)
     }
 
+    /// The name the book's own file `source` is copied into its package
+    /// under: its own name, unless that is the name of the package's text
+    /// cache (`TextMouthPaths.contentMarkdownFileName`), compared without
+    /// regard to case as the Mac's volumes compare names, when it is
+    /// "content (book)" with the source's own extension, spelled as the
+    /// source spells it. Otherwise the cache, written beside the book's
+    /// file, would replace it, and with it the exact bytes (line endings,
+    /// encoding, anything the reading drops) that Redo Text Extraction or a
+    /// re-read in another encoding reads again. The book's record names the
+    /// file by the name it was staged under (`Book.filePath`), so nothing
+    /// else needs to know.
+    static func stagedFileName(for source: URL) -> String {
+        let name = source.lastPathComponent
+        let cacheName = TextMouthPaths.contentMarkdownFileName
+        guard name.caseInsensitiveCompare(cacheName) == .orderedSame else { return name }
+        let cacheBaseName = (cacheName as NSString).deletingPathExtension
+        return "\(cacheBaseName) (book).\(source.pathExtension)"
+    }
+
     /// Copies what an import of `source`, a book of `format`, reads into the
     /// staged package `directory`, and returns the book's own file there:
     /// every file of `package`, laid out as in its folder, when `source` is
-    /// a DAISY book kept as loose files; otherwise the source file itself.
+    /// a DAISY book kept as loose files; otherwise the source file itself,
+    /// under the name `stagedFileName(for:)` gives it.
     ///
     /// A text document that is a symbolic link is copied as what it points
     /// to, a real file or folder named as the link was: a link copied as a
@@ -1081,7 +1101,7 @@ enum FileImportService {
         in directory: URL
     ) throws -> URL {
         guard let package else {
-            let stagedFile = directory.appendingPathComponent(source.lastPathComponent)
+            let stagedFile = directory.appendingPathComponent(stagedFileName(for: source))
             let isText = format != .audio
             try FileManager.default.copyItem(at: isText ? source.resolvingSymlinksInPath() : source, to: stagedFile)
             if isText { try removeSymbolicLinks(in: stagedFile) }
