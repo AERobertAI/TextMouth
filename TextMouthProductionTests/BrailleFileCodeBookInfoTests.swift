@@ -159,7 +159,10 @@ final class BrailleFileCodeBookInfoTests: CloudMaintenanceTestCase {
         let pending = try XCTUnwrap(model.pending)
         XCTAssertEqual(pending, BrailleFileCodeChoiceModel.Confirmation(option: .eurobraille, keepsText: false, stopsEditing: false))
         XCTAssertEqual(model.confirmTitle(for: .eurobraille), "Read “Gulls” again as Eurobraille, six-dot (German-speaking countries)?")
-        XCTAssertEqual(model.confirmMessage(for: pending), BrailleFileCodeWording.confirmMessage(keepsText: false, stopsEditing: false))
+        XCTAssertEqual(
+            model.confirmMessage(for: pending),
+            BrailleFileCodeWording.confirmMessage(from: .northAmerican, to: .eurobraille, keepsText: false, stopsEditing: false)
+        )
         XCTAssertNil(model.failureMessage)
         XCTAssertEqual(model.selection, .code(.northAmerican), "the pop-up shows what it showed while it asks")
 
@@ -191,11 +194,49 @@ final class BrailleFileCodeBookInfoTests: CloudMaintenanceTestCase {
 
         let pending = try XCTUnwrap(model.pending)
         XCTAssertEqual(pending, BrailleFileCodeChoiceModel.Confirmation(option: .eurobraille, keepsText: true, stopsEditing: true))
-        XCTAssertEqual(model.confirmMessage(for: pending), BrailleFileCodeWording.confirmMessage(keepsText: true, stopsEditing: true))
+        XCTAssertEqual(
+            model.confirmMessage(for: pending),
+            BrailleFileCodeWording.confirmMessage(from: .northAmerican, to: .eurobraille, keepsText: true, stopsEditing: true)
+        )
         XCTAssertTrue(
             model.confirmMessage(for: pending).hasSuffix(TextEncodingWording.keptTextNote + " " + TextEncodingWording.stopsEditingNote),
             model.confirmMessage(for: pending)
         )
+    }
+
+    /// The confirmation's first sentence follows the code the book is read
+    /// with now, as its record keeps it: a Unicode book's choice of
+    /// Eurobraille, which the re-read checks byte by byte, says a file not
+    /// in Eurobraille is refused; a book whose code this TextMouth does not
+    /// know, choosing North American Braille ASCII, says nothing checks it
+    /// (review of October 30, finding 5).
+    func testTheConfirmationSaysWhetherTheChoiceIsChecked() async throws {
+        let unicode = try makeBrailleBook("Codex", code: "unicode")
+        let unicodeModel = BrailleFileCodeChoiceModel(book: unicode, library: makeModel(with: [unicode]))
+        await unicodeModel.choose(.code(.eurobraille))
+        let checked = try XCTUnwrap(unicodeModel.pending)
+        XCTAssertEqual(
+            unicodeModel.confirmMessage(for: checked),
+            BrailleFileCodeWording.confirmMessage(from: .unicode, to: .eurobraille, keepsText: false, stopsEditing: false)
+        )
+        XCTAssertTrue(
+            unicodeModel.confirmMessage(for: checked).hasPrefix(
+                "If the file is not written in Eurobraille, six-dot (German-speaking countries), "
+                    + "TextMouth refuses it, and nothing changes. "
+            ),
+            unicodeModel.confirmMessage(for: checked)
+        )
+        unicodeModel.cancel()
+
+        let unknown = try makeBrailleBook("Almanac", code: Self.unknownCode)
+        let unknownModel = BrailleFileCodeChoiceModel(book: unknown, library: makeModel(with: [unknown]))
+        await unknownModel.choose(.code(.northAmerican))
+        let unchecked = try XCTUnwrap(unknownModel.pending)
+        XCTAssertTrue(
+            unknownModel.confirmMessage(for: unchecked).hasPrefix(BrailleFileCodeWording.uncheckedNote + " "),
+            unknownModel.confirmMessage(for: unchecked)
+        )
+        unknownModel.cancel()
     }
 
     /// A busy book, and one gone from the library, are refused before the
@@ -494,16 +535,67 @@ final class BrailleFileCodeBookInfoTests: CloudMaintenanceTestCase {
         let stops = "Edit Text stops for this book; choose Edit Text again to edit the new reading."
         XCTAssertEqual(BrailleFileCodeWording.uncheckedNote, unchecked)
         XCTAssertEqual(BrailleFileCodeWording.placesNote, places)
-        XCTAssertEqual(BrailleFileCodeWording.confirmMessage(keepsText: false, stopsEditing: false), [unchecked, replaced, places].joined(separator: " "))
         XCTAssertEqual(
-            BrailleFileCodeWording.confirmMessage(keepsText: true, stopsEditing: false), [unchecked, replaced, places, kept].joined(separator: " ")
+            BrailleFileCodeWording.confirmMessage(from: .northAmerican, to: .eurobraille, keepsText: false, stopsEditing: false),
+            [unchecked, replaced, places].joined(separator: " ")
         )
         XCTAssertEqual(
-            BrailleFileCodeWording.confirmMessage(keepsText: false, stopsEditing: true), [unchecked, replaced, places, stops].joined(separator: " ")
+            BrailleFileCodeWording.confirmMessage(from: .northAmerican, to: .eurobraille, keepsText: true, stopsEditing: false),
+            [unchecked, replaced, places, kept].joined(separator: " ")
         )
         XCTAssertEqual(
-            BrailleFileCodeWording.confirmMessage(keepsText: true, stopsEditing: true),
+            BrailleFileCodeWording.confirmMessage(from: .northAmerican, to: .eurobraille, keepsText: false, stopsEditing: true),
+            [unchecked, replaced, places, stops].joined(separator: " ")
+        )
+        XCTAssertEqual(
+            BrailleFileCodeWording.confirmMessage(from: .northAmerican, to: .eurobraille, keepsText: true, stopsEditing: true),
             [unchecked, replaced, places, kept, stops].joined(separator: " ")
+        )
+    }
+
+    /// A choice to or from Unicode braille patterns, which the re-read
+    /// checks byte by byte before it changes anything, opens with the
+    /// checked sentence, naming the code chosen, exactly, and ends as every
+    /// confirmation does; only a choice between two seven-bit codes opens
+    /// with the unchecked one, a code this TextMouth does not know (nil)
+    /// counting as seven-bit (review of October 30, finding 5).
+    func testOnlyAChoiceBetweenSevenBitCodesIsSaidToBeUnchecked() {
+        let unchecked = "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another."
+        let toUnicode = "If the file is not written in Unicode braille patterns, TextMouth refuses it, and nothing changes."
+        let toEurobraille = "If the file is not written in Eurobraille, six-dot (German-speaking countries), "
+            + "TextMouth refuses it, and nothing changes."
+        let toNorthAmerican = "If the file is not written in North American Braille ASCII, TextMouth refuses it, and nothing changes."
+        let replaced = "Its text is replaced by the new reading."
+        let places = "Your place and bookmarks move with their words. "
+            + "Where none of their words are left, each goes to about the same point in its chapter, "
+            + "or to the nearest passage the two readings share."
+        let kept = "An edit of its text is kept beside the new reading, as a copy in the book's package."
+        let stops = "Edit Text stops for this book; choose Edit Text again to edit the new reading."
+        XCTAssertEqual(BrailleFileCodeWording.checkedNote(codeName: "Unicode braille patterns"), toUnicode)
+
+        XCTAssertEqual(
+            BrailleFileCodeWording.confirmMessage(from: .northAmerican, to: .unicode, keepsText: false, stopsEditing: false),
+            [toUnicode, replaced, places].joined(separator: " ")
+        )
+        XCTAssertEqual(
+            BrailleFileCodeWording.confirmMessage(from: .unicode, to: .eurobraille, keepsText: false, stopsEditing: false),
+            [toEurobraille, replaced, places].joined(separator: " ")
+        )
+        XCTAssertEqual(
+            BrailleFileCodeWording.confirmMessage(from: .northAmerican, to: .eurobraille, keepsText: false, stopsEditing: false),
+            [unchecked, replaced, places].joined(separator: " ")
+        )
+        XCTAssertEqual(
+            BrailleFileCodeWording.confirmMessage(from: .unicode, to: .northAmerican, keepsText: true, stopsEditing: true),
+            [toNorthAmerican, replaced, places, kept, stops].joined(separator: " ")
+        )
+        XCTAssertEqual(
+            BrailleFileCodeWording.confirmMessage(from: nil, to: .eurobraille, keepsText: false, stopsEditing: false),
+            [unchecked, replaced, places].joined(separator: " ")
+        )
+        XCTAssertEqual(
+            BrailleFileCodeWording.confirmMessage(from: nil, to: .unicode, keepsText: false, stopsEditing: false),
+            [toUnicode, replaced, places].joined(separator: " ")
         )
     }
 }

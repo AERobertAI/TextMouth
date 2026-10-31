@@ -174,27 +174,49 @@ enum BrailleFileCodeWording {
         TextEncodingWording.confirmTitle(bookTitle: bookTitle, readingName: code.name)
     }
 
-    /// What the alert says first: nothing can tell whether the choice is
-    /// right, since every printable ASCII byte is a cell in every seven-bit
-    /// code, so a wrong one reads with no error (research of October 25,
-    /// section 8.3).
+    /// What the alert says first of a choice between two seven-bit codes:
+    /// nothing can tell whether it is right, since every printable ASCII
+    /// byte is a cell in every seven-bit code, so a wrong one reads with no
+    /// error (research of October 25, section 8.3).
     static let uncheckedNote = "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another."
+
+    /// What the alert says first of a choice to or from Unicode braille
+    /// patterns, which the re-read checks byte by byte before it changes
+    /// anything (`BrailleBookReader.requireReadable(_:as:)`), so a wrong one
+    /// is refused at its first line (review of October 30, finding 5): a
+    /// file not written in the code named `codeName`, the one chosen, is
+    /// refused, and nothing changes. "If the file is not written in Unicode
+    /// braille patterns, TextMouth refuses it, and nothing changes."
+    static func checkedNote(codeName: String) -> String {
+        "If the file is not written in \(codeName), TextMouth refuses it, and nothing changes."
+    }
 
     /// What a re-read does to the book's places, in the encoding's sentence
     /// (`TextEncodingWording.placesSentence(example:)`) without its example
     /// of garbled letters becoming Cyrillic, which is no braille book's.
     static let placesNote = TextEncodingWording.placesSentence(example: nil)
 
-    /// The alert's message before a braille book is read again with other
-    /// braille file characters: that nothing checks the choice, that the
-    /// text is replaced, and what happens to the places; then, as the
-    /// encoding's alert ends, that an edit of the text is kept, when
+    /// The alert's message before a braille book read with `current`, the
+    /// code its stored id names (`BrailleFileCode.code(forStored:)`), is
+    /// read again with `chosen`: first whether the choice is checked, then
+    /// that the text is replaced, and what happens to the places; then, as
+    /// the encoding's alert ends, that an edit of the text is kept, when
     /// content.md holds one (`keepsText`), and that Edit Text stops, for a
     /// book being edited (`stopsEditing`), in the encoding's own sentences
     /// (`TextEncodingWording.confirmMessage(_:keepsText:stopsEditing:)`).
-    static func confirmMessage(keepsText: Bool, stopsEditing: Bool) -> String {
-        TextEncodingWording.confirmMessage(
-            [uncheckedNote, TextEncodingWording.replacedNote, placesNote], keepsText: keepsText, stopsEditing: stopsEditing
+    ///
+    /// Only a choice between two seven-bit codes goes unchecked
+    /// (`uncheckedNote`). One to or from Unicode braille patterns is refused
+    /// unless the file is written in the code chosen (`checkedNote(codeName:)`).
+    /// A `current` of nil, an id this TextMouth does not know, counts as
+    /// seven-bit: only the code chosen can then make the choice checked.
+    static func confirmMessage(
+        from current: BrailleFileCode?, to chosen: BrailleFileCode, keepsText: Bool, stopsEditing: Bool
+    ) -> String {
+        let isChecked = [current, chosen].contains { $0?.kind == .unicodePatterns }
+        let check = isChecked ? checkedNote(codeName: chosen.name) : uncheckedNote
+        return TextEncodingWording.confirmMessage(
+            [check, TextEncodingWording.replacedNote, placesNote], keepsText: keepsText, stopsEditing: stopsEditing
         )
     }
 
@@ -410,7 +432,7 @@ enum TextEncodingWording {
     /// does, then that an edit of the text is kept, when content.md holds
     /// one (`keepsText`), and that Edit Text stops, for a book being edited
     /// (`stopsEditing`), one space apart. The encoding's alert and the braille
-    /// file characters' (`BrailleFileCodeWording.confirmMessage(keepsText:stopsEditing:)`)
+    /// file characters' (`BrailleFileCodeWording.confirmMessage(from:to:keepsText:stopsEditing:)`)
     /// both end so.
     static func confirmMessage(_ notes: [String], keepsText: Bool, stopsEditing: Bool) -> String {
         var parts = notes

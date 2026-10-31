@@ -56,7 +56,7 @@ final class BrailleFileCodeChoiceModel: ObservableObject, BookRereadChoosing {
 
     /// A choice the listener has not confirmed yet, with what its
     /// confirmation says of the book besides the new reading
-    /// (`BrailleFileCodeWording.confirmMessage(keepsText:stopsEditing:)`).
+    /// (`BrailleFileCodeWording.confirmMessage(from:to:keepsText:stopsEditing:)`).
     typealias Confirmation = RereadConfirmation<BrailleFileCode>
 
     /// The book's code as stored, by its id, nil for none: the row's at
@@ -157,12 +157,18 @@ final class BrailleFileCodeChoiceModel: ObservableObject, BookRereadChoosing {
         BrailleFileCodeWording.confirmTitle(bookTitle: library.bookByID(bookID)?.title ?? "", code: code)
     }
 
-    /// The confirmation's message for `confirmation`: that nothing checks
-    /// the choice, and what the re-read changes, an edit of the text kept,
-    /// when one will be, and Edit Text stopping, for a book being edited,
-    /// included.
+    /// The confirmation's message for `confirmation`: whether anything
+    /// checks the choice, from the code the book is read with now
+    /// (`storedCode`) to the one chosen, and what the re-read changes, an
+    /// edit of the text kept, when one will be, and Edit Text stopping, for
+    /// a book being edited, included.
     func confirmMessage(for confirmation: Confirmation) -> String {
-        BrailleFileCodeWording.confirmMessage(keepsText: confirmation.keepsText, stopsEditing: confirmation.stopsEditing)
+        BrailleFileCodeWording.confirmMessage(
+            from: BrailleFileCode.code(forStored: storedCode),
+            to: confirmation.option,
+            keepsText: confirmation.keepsText,
+            stopsEditing: confirmation.stopsEditing
+        )
     }
 
     /// The listener confirmed `code`: the book is read again with it
