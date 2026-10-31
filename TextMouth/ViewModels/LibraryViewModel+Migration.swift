@@ -361,8 +361,8 @@ extension LibraryViewModel {
     /// with the reason. A migration with nothing to report shows nothing.
     private func showLegacyMigrationIssues(_ report: LegacyMigrationReport) {
         guard let summary = report.userSummary else { return }
-        errorMessage = summary
-        showError = true
+        // After the adoption's alert, if it raised one: both are heard.
+        presentLaunchNotice(titled: nil, summary)
     }
 
     /// Merges folder rows that older versions let share one directory

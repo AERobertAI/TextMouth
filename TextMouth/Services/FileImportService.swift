@@ -2264,15 +2264,21 @@ enum FileImportService {
         }
     }
 
+    /// Moves the item at `url` to the Trash, whatever the Trash setting says:
+    /// the removal for what no one chose to delete (a duplicate's new copy
+    /// whose question was never answered), and the default of
+    /// `removeItemRespectingTrashSetting`.
+    static func moveToTrash(_ url: URL) throws {
+        try FileManager.default.trashItem(at: url, resultingItemURL: nil)
+    }
+
     /// Remove an item from disk, using Trash if the setting is enabled.
     /// A Trash failure is surfaced to the caller and never converted into an
     /// unconfirmed permanent deletion.
     @MainActor
     static func removeItemRespectingTrashSetting(
         at url: URL,
-        trashItem: (URL) throws -> Void = { item in
-            try FileManager.default.trashItem(at: item, resultingItemURL: nil)
-        },
+        trashItem: (URL) throws -> Void = FileImportService.moveToTrash,
         removeItem: (URL) throws -> Void = { item in
             try FileManager.default.removeItem(at: item)
         }

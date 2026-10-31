@@ -671,23 +671,30 @@ extension LibraryViewModel {
 
     /// The launch repair's adoption of the packages the library does not
     /// list (`FileImportService.adoptOrphanedTMBPackages`), which then
-    /// discards each duplicate's new copy the adoption passed over whose
-    /// question this library is not asking: one that a quit, a logout, or a
-    /// crash left unanswered (`DuplicateQuestionMarker`). A copy whose
+    /// moves to the Trash each duplicate's new copy the adoption passed over
+    /// whose question this library is not asking: one that a quit, a logout,
+    /// or a crash left unanswered (`DuplicateQuestionMarker`). A copy whose
     /// question still waits here, as when the repair runs again once the
-    /// data directory is back, stays for its answer. Only this repair
-    /// discards: every other walk only passes such copies over.
+    /// data directory is back, stays for its answer, and so does one whose
+    /// question is less than a day old, which another Mac sharing the
+    /// library may be asking. Only this repair discards: every other walk
+    /// only passes such copies over.
     ///
     /// - Parameters:
     ///   - libraryDirectory: The folder walked: the library's, or a test's.
     ///   - access: How the repair reaches the packages' files (FR02).
     ///   - skips: The repair's tally of what it left in the cloud.
+    ///   - trashItem: Moves a copy to the Trash; tests replace it, so
+    ///     nothing they do reaches the real Trash.
+    ///   - now: The time the age of a question is measured at.
     /// - Returns: How many books were adopted.
     @discardableResult
     func adoptOrphanedPackages(
         libraryDirectory: URL = TextMouthPaths.libraryDir,
         access: MaintenanceFileAccess = .live,
-        skips: CloudSkips? = nil
+        skips: CloudSkips? = nil,
+        trashItem: (URL) throws -> Void = FileImportService.moveToTrash,
+        now: Date = Date()
     ) -> Int {
         let unanswered = UnansweredDuplicates()
         let adopted = FileImportService.adoptOrphanedTMBPackages(
@@ -697,40 +704,103 @@ extension LibraryViewModel {
             skips: skips,
             unanswered: unanswered
         )
-        discardUnanswered(unanswered)
+        let trashed = discardUnanswered(unanswered, trashItem: trashItem, now: now)
+        // Once, after the repair, so one alert covers every copy.
+        if !trashed.isEmpty {
+            presentLaunchNotice(
+                titled: DuplicateCopyWording.unansweredTrashedTitle,
+                DuplicateCopyWording.unansweredTrashed(titles: trashed)
+            )
+        }
         return adopted
     }
 
-    /// Discards each package in `unanswered` whose question this library is
-    /// not asking, to the Trash or for good as "Move to Trash instead of
-    /// deleting" says, through the very removal Cancel's discard makes
-    /// (`FileImportService.removeItemRespectingTrashSetting`), with one log
-    /// line each, naming the package by its folder and name in the data
-    /// directory. Nothing is lost: a copy's original file is deleted only
-    /// once the copy is kept, never while its question waits. A package that
-    /// cannot be discarded stays as it is, still marked, so no walk adopts
-    /// it, and the next launch tries again.
-    private func discardUnanswered(_ unanswered: UnansweredDuplicates) {
+    /// How long a duplicate's question must have stood unanswered before
+    /// the launch discards its copy: a day. A question another Mac sharing
+    /// the library is asking has a marker newer than that, and its copy is
+    /// there on this Mac too once the library is fully downloaded.
+    private static let unansweredQuestionGrace: TimeInterval = 24 * 60 * 60
+
+    /// Moves to the Trash each package in `unanswered` whose question this
+    /// library is not asking and whose marker is older than a day, whatever
+    /// "Move to Trash instead of deleting" says, since no one chose to
+    /// delete it (and, its original file possibly gone, it can be the only
+    /// copy of the new content). One log line each names the package by its
+    /// folder and name in the data directory. Nothing is lost: a copy's
+    /// original file is deleted only once the copy is kept, never while its
+    /// question waits. A package that cannot be moved stays as it is, still
+    /// marked, so no walk adopts it, and the next launch tries again.
+    /// - Returns: The titles of the copies moved, for the alert.
+    private func discardUnanswered(
+        _ unanswered: UnansweredDuplicates,
+        trashItem: (URL) throws -> Void,
+        now: Date
+    ) -> [String] {
         // The copies this library is still asking about, by package name,
         // which a data-directory move keeps.
         let asked = Set(importDecisions.waiting.compactMap { decision -> String? in
             guard case .duplicate(let duplicate) = decision.kind else { return nil }
             return duplicate.book.tmbDirectoryName
         })
-        let removal = removalPreferences.movesToTrash ? "moved to the Trash" : "deleted"
+        var trashed: [String] = []
         for package in unanswered.packages where !asked.contains(package.lastPathComponent) {
             let named = "DUPLICATE_UNANSWERED: \(DiagnosticLog.loggablePath(package)): "
                 + "the duplicate question about this new copy was never answered"
+            guard Self.questionIsOlderThanGrace(of: package, now: now) else {
+                DiagnosticLog.event(
+                    .storage,
+                    "\(named), but it is less than a day old, so another Mac may be asking it and the copy stays"
+                )
+                continue
+            }
+            // Read before the package goes: the title is in its record.
+            let title = Self.title(ofUnansweredCopy: package)
             do {
-                try FileImportService.removeItemRespectingTrashSetting(at: package)
-                DiagnosticLog.event(.storage, "\(named), so the copy was \(removal)")
+                try trashItem(package)
+                trashed.append(title)
+                DiagnosticLog.event(.storage, "\(named), so the copy was moved to the Trash")
             } catch {
                 DiagnosticLog.event(
                     .storage,
-                    "\(named), and the copy could not be \(removal), so the next launch tries again: "
+                    "\(named), and the copy could not be moved to the Trash, so the next launch tries again: "
                         + error.localizedDescription
                 )
             }
+        }
+        return trashed
+    }
+
+    /// Whether the duplicate question about the copy in `package` has stood
+    /// for more than a day at `now`, by when its marker was written. A
+    /// marker whose date cannot be read counts as new: leaving a copy for
+    /// the next launch loses nothing.
+    private static func questionIsOlderThanGrace(of package: URL, now: Date) -> Bool {
+        let marker = DuplicateQuestionMarker.url(in: package)
+        guard let written = (try? FileManager.default.attributesOfItem(atPath: marker.path))?[.modificationDate] as? Date
+        else { return false }
+        return now.timeIntervalSince(written) > unansweredQuestionGrace
+    }
+
+    /// The title of the new copy in `package`, from its record, or the
+    /// package's name without ".tmb" when the record cannot be read.
+    private static func title(ofUnansweredCopy package: URL) -> String {
+        if let title = (try? BookInfo.load(from: package))?.metadata.title, !title.isEmpty {
+            return title
+        }
+        return package.deletingPathExtension().lastPathComponent
+    }
+
+    /// Shows the library alert `message`, titled `title`, at a launch. A
+    /// message already showing is kept, and `message` follows it in the
+    /// same alert, so two repairs that each have something to say are both
+    /// heard.
+    func presentLaunchNotice(titled title: String?, _ message: String) {
+        if showError, let shown = errorMessage {
+            errorMessage = "\(shown) \(message)"
+        } else {
+            errorTitle = title
+            errorMessage = message
+            showError = true
         }
     }
 

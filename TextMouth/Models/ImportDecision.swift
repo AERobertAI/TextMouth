@@ -391,3 +391,38 @@ struct ImportDecisionWording: Equatable {
         return text + "."
     }
 }
+
+/// What the library says about the new copies of duplicates, apart from the
+/// question itself (`ImportDecisionWording`): the launch's discard of a copy
+/// whose question was never answered, and the refusals of an answer that
+/// cannot keep a copy. Every sentence names the book, so several in a row
+/// are told apart, and none names a file the listener has never seen.
+enum DuplicateCopyWording {
+    /// The title of the alert that tells of copies the launch moved to the
+    /// Trash.
+    static let unansweredTrashedTitle = "Duplicate Copies Moved to the Trash"
+
+    /// What the launch says once it has moved the new copies of `titles`
+    /// to the Trash, because the question whether to keep each as a
+    /// duplicate was never answered: "TextMouth moved the new copy of Atlas
+    /// to the Trash, because the question whether to keep it as a duplicate
+    /// was never answered before TextMouth closed. To get it back, open the
+    /// Trash and choose Put Back." Up to three books are named; more are
+    /// counted.
+    static func unansweredTrashed(titles: [String]) -> String {
+        let one = titles.count == 1
+        let subject: String
+        switch titles.count {
+        case 1:
+            subject = "the new copy of “\(titles[0])”"
+        case 2...3:
+            subject = "the new copies of \(CountWording.list(titles.map { "“\($0)”" }))"
+        default:
+            subject = "\(titles.count) new copies of duplicate books"
+        }
+        return "TextMouth moved \(subject) to the Trash, because the \(one ? "question" : "questions") "
+            + "whether to keep \(one ? "it" : "them") as \(one ? "a duplicate" : "duplicates") "
+            + "\(one ? "was" : "were") never answered before TextMouth closed. "
+            + "To get \(one ? "it" : "them") back, open the Trash and choose Put Back."
+    }
+}
