@@ -391,7 +391,12 @@ struct Book: Identifiable, Codable, Hashable {
     /// the new text, and the row takes it afterwards, so the record's code
     /// stands over the row's when it names one
     /// (`BrailleFileCodeRecord.standing(row:recorded:)`). An older TextMouth
-    /// ignores the key, and drops it at its next write. Kept in the row, the
+    /// ignores the key, and drops it from both the row and the record at its
+    /// next write: a Unicode book then heals at its next rebuild here, its
+    /// bytes recognized (`brailleFileCodeForReading()`), but a Eurobraille
+    /// book is read as North American Braille ASCII, which is why the
+    /// changelog asks that such a library not be opened in an earlier
+    /// TextMouth (the review of October 30, finding 1). Kept in the row, the
     /// record, and the removal marker.
     var brailleFileCode: String?
 
