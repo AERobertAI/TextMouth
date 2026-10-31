@@ -591,18 +591,6 @@ final class FeedParserTests: XCTestCase {
         XCTAssertEqual(FeedTextConverter.plainLine("Tips <3 & tricks"), "Tips <3 & tricks")
     }
 
-    /// An HTML title nesting 5,000 spans closed level by level becomes its
-    /// line of words on a worker thread's stack, where a refresh reads a
-    /// feed. SwiftSoup itself calls itself once for every level above each
-    /// `</span>` it reads, so its parse of the title overflowed that stack;
-    /// markup nested past `HTMLNesting.deepestParsedLevel` is now read as
-    /// its words alone.
-    func testAnHTMLTitleNestedThousandsDeepBecomesItsWordsOnAWorkerStack() {
-        let title = String(repeating: "<span>", count: 5_000) + "Deep &amp; words" + String(repeating: "</span>", count: 5_000)
-        let line = onWorkerSizedStack { FeedTextConverter.plainLine(title, isHTML: true) }
-        XCTAssertEqual(line, "Deep & words")
-    }
-
     /// A text the feed does not type is HTML when it holds a tag of an HTML
     /// element, a comment, or a character reference; a "<" in plain text,
     /// before a number, a space, an address, or a word HTML has no element

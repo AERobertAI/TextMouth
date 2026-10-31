@@ -76,12 +76,12 @@ enum FeedTextConverter {
         var line = text
         if isHTML {
             // SwiftSoup reads a fragment's text with references undone.
-            line = (try? HTMLNesting.parseBodyFragment(text).text()) ?? text
+            line = (try? SwiftSoup.parseBodyFragment(text).text()) ?? text
         } else if text.contains("&") {
             // Escaping every "<" first keeps plain text from being read as
             // tags, so only the references are undone.
             let escapedTags = text.replacingOccurrences(of: "<", with: "&lt;")
-            line = (try? HTMLNesting.parseBodyFragment(escapedTags).text()) ?? text
+            line = (try? SwiftSoup.parseBodyFragment(escapedTags).text()) ?? text
         }
         return line
             .split(whereSeparator: { $0.isWhitespace })
