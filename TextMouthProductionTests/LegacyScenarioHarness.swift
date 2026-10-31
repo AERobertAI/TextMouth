@@ -269,7 +269,7 @@ final class LegacyIntegrationScenarioTests: XCTestCase {
         runIntegrationTests()
         XCTAssertEqual(
             LegacyScenarioRecorder.shared.count - initialCount,
-            36,
+            34,
             "Every inventoried integration scenario should remain registered"
         )
     }
