@@ -300,6 +300,14 @@ struct LibraryViewDefinition: Equatable, Identifiable, Sendable {
     /// such as one a later TextMouth added, kept to be written back as they
     /// were.
     var extraFields: [String: JSONValue] = [:]
+    /// The members of its config.json entry ("name", "visibility",
+    /// "filter") that reading repaired only for showing, as they were read
+    /// (nil: absent), written back exactly so until the listener changes
+    /// that member here (review of October 31, 2026, findings 2 and 3): a
+    /// visibility this TextMouth does not know, a name or filter on Folders
+    /// or the Reading List, a built-in view's filter it cannot read, and a
+    /// name it trimmed, cut, or numbered apart from another view's.
+    var keptAsRead: [String: JSONValue?] = [:]
 
     /// The most characters a view's name has.
     static let nameLimit = 60
@@ -422,7 +430,9 @@ extension LibraryViewDefinition {
     /// identity and visibility, and its name and filter, which a built-in
     /// view writes only once the listener changed them, so a later
     /// TextMouth can improve the shipped views. Unknown keys it was read
-    /// with are written back beside them.
+    /// with are written back beside them, and the members it showed
+    /// repaired are written back as they were read (`keptAsRead`), so an
+    /// entry this TextMouth only read is written back exactly as it was.
     var fileEntry: JSONValue {
         var members = extraFields
         members["id"] = .string(id.storedValue)
@@ -434,7 +444,21 @@ extension LibraryViewDefinition {
         if let filter, filter != shipped?.filter {
             members["filter"] = filter.fileValue
         }
+        for (key, value) in keptAsRead {
+            // Nil removes the member, which the entry did not hold.
+            members[key] = value
+        }
         return .object(members)
+    }
+
+    /// The members whose shown value reading may repair, and whose read
+    /// value `keptAsRead` keeps.
+    static let repairableKeys = ["name", "visibility", "filter"]
+
+    /// Forgets the read value of `key`, which the listener changed here, so
+    /// the entry writes the view's own value from now on.
+    mutating func forgetReadValue(of key: String) {
+        keptAsRead[key] = nil
     }
 }
 
@@ -596,8 +620,16 @@ extension LibraryViewDefinition {
             }
         default:
             if let value = members["filter"] {
-                guard let read = LibraryViewFilter(fileValue: value, reading: reading.member("filter")) else { return nil }
-                filter = read
+                if let read = LibraryViewFilter(fileValue: value, reading: reading.member("filter")) {
+                    filter = read
+                } else if let shipped {
+                    // A built-in view keeps its place and shows its own
+                    // filter; the one read is written back as it was.
+                    filter = shipped.filter
+                    reading.logRepair(of: "filter", "showed the built-in view's own filter in place of one this TextMouth cannot read")
+                } else {
+                    return nil
+                }
             } else if let shipped {
                 filter = shipped.filter
             } else {
@@ -612,6 +644,14 @@ extension LibraryViewDefinition {
             filter: filter,
             extraFields: members.filter { !Self.fileKeys.contains($0.key) }
         )
+        // Every member shown otherwise than it was read is kept as read, to
+        // be written back exactly so (review of October 31, 2026, finding 2).
+        // `self.` names the entry the view writes; plain `fileEntry` is the
+        // parameter, the entry as read.
+        let written = self.fileEntry
+        for key in Self.repairableKeys where written[key] != members[key] {
+            keptAsRead.updateValue(members[key], forKey: key)
+        }
     }
 
     /// The name an entry gives, trimmed and cut to `nameLimit`: a custom

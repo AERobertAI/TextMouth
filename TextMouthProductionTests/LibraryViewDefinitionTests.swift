@@ -316,7 +316,6 @@ final class LibraryViewDefinitionTests: XCTestCase {
             #"{"id": "\#(custom)", "name": "Mine", "filter": {"lists": ["books"], "limit": 10}}"#,
             #"{"id": "\#(custom)", "name": "Mine", "filter": {"lists": ["books"], "limit": {"count": 10, "chosenBy": "title"}}}"#,
             #"{"id": "\#(custom)", "name": "Mine", "filter": {"lists": ["books"], "limit": {"count": 10}}}"#,
-            #"{"id": "Unopened", "filter": {"lists": ["books"], "conditions": [{"test": "rating"}]}}"#,
         ]
         for text in unreadable {
             XCTAssertNil(Self.read(try Self.json(text)), text)
@@ -353,13 +352,20 @@ final class LibraryViewDefinitionTests: XCTestCase {
         ])
         XCTAssertEqual(repaired.filter?.limit, LibraryViewLimit(count: 9_999, chosenBy: .viewSort))
 
-        let feeds = try XCTUnwrap(Self.read(try Self.json(#"{"id": "Feeds", "name": "", "visibility": 3}"#)))
-        XCTAssertEqual(feeds, LibraryViewDefinition.shipped(LibraryViewID.feeds))
+        // Shown repaired, written back as read (review finding 2).
+        let feedsEntry = try Self.json(#"{"id": "Feeds", "name": "", "visibility": 3}"#)
+        let feeds = try XCTUnwrap(Self.read(feedsEntry))
+        XCTAssertEqual(feeds.name, "Feeds")
+        XCTAssertEqual(feeds.visibility, .whenApplicable)
+        XCTAssertEqual(feeds.filter, LibraryViewDefinition.shipped(LibraryViewID.feeds)?.filter)
+        XCTAssertEqual(feeds.fileEntry, feedsEntry)
 
-        let folders = try XCTUnwrap(Self.read(try Self.json(
-            #"{"id": "Folders", "name": "Shelves", "visibility": "hidden", "filter": {"lists": ["books"]}}"#
-        )))
-        XCTAssertEqual(folders, LibraryViewDefinition.shipped(.folders))
+        let foldersEntry = try Self.json(#"{"id": "Folders", "name": "Shelves", "visibility": "hidden", "filter": {"lists": ["books"]}}"#)
+        let folders = try XCTUnwrap(Self.read(foldersEntry))
+        XCTAssertEqual(folders.name, "Folders")
+        XCTAssertEqual(folders.visibility, .always)
+        XCTAssertNil(folders.filter)
+        XCTAssertEqual(folders.fileEntry, foldersEntry)
 
         let readingList = try XCTUnwrap(Self.read(try Self.json(
             #"{"id": "Reading List", "name": "Up Next", "visibility": "whenApplicable", "filter": {"lists": ["books"]}}"#
@@ -376,6 +382,81 @@ final class LibraryViewDefinitionTests: XCTestCase {
 
         let noLimit = try XCTUnwrap(Self.read(try Self.json(#"{"id": "\#(custom)", "name": "Mine", "filter": {"lists": ["feeds"], "limit": null}}"#)))
         XCTAssertNil(noLimit.filter?.limit)
+    }
+
+    /// A visibility this TextMouth does not know, and a name on the Reading
+    /// List, are shown repaired and written back exactly as read, so what a
+    /// later TextMouth wrote survives this one (review of October 31, 2026,
+    /// finding 2); once the listener changes the visibility here, the entry
+    /// writes the new one.
+    func testRepairsMadeOnlyForShowingAreNeverWrittenBack() throws {
+        let pinned = try Self.json(#"{"id": "Feeds", "visibility": "pinned"}"#)
+        let queue = try Self.json(#"{"id": "Reading List", "name": "Queue", "visibility": "always"}"#)
+        let list = LibraryViewDefinitionList(fileEntries: [pinned, queue])
+        XCTAssertEqual(list.view(.feeds)?.visibility, .whenApplicable)
+        XCTAssertEqual(list.view(.category(.readingList))?.name, "Reading List")
+        XCTAssertEqual(Array(list.fileEntries.prefix(2)), [pinned, queue])
+
+        var changed = list
+        XCTAssertTrue(changed.setVisibility(.hidden, of: .feeds))
+        XCTAssertEqual(changed.fileEntries.first, try Self.json(#"{"id": "Feeds", "visibility": "hidden"}"#))
+        XCTAssertEqual(changed.fileEntries.dropFirst().first, queue)
+    }
+
+    /// An entry of a built-in view whose filter this TextMouth cannot read
+    /// keeps the view's place, shows its shipped filter, and is written back
+    /// as read; fixing it, with a plain copy of the view at the end, leaves
+    /// nothing unread (review finding 3).
+    func testAnUnreadableBuiltInEntryKeepsItsPlace() throws {
+        let shipped = LibraryViewDefinitionList.shipped.fileEntries
+        let broken = try Self.json(#"{"id": "All Items", "visibility": "always", "filter": {"lists": ["book"]}}"#)
+        let file = Array(shipped.prefix(1)) + [broken] + Array(shipped.dropFirst(2))
+        let list = LibraryViewDefinitionList(fileEntries: file)
+        XCTAssertEqual(list.views.map(\.id), LibraryViewID.builtIns)
+        XCTAssertEqual(list.view(.category(.allItems))?.filter, LibraryViewDefinition.shipped(.allItems).filter)
+        XCTAssertEqual(list.fileEntries, file)
+        XCTAssertEqual(list.unreadableCount, 0)
+
+        let fixed = LibraryViewDefinitionList(fileEntries: shipped + [try Self.json(#"{"id": "All Items", "visibility": "always"}"#)])
+        XCTAssertEqual(fixed.unreadableCount, 0)
+        XCTAssertEqual(fixed.views.map(\.id), LibraryViewID.builtIns)
+    }
+
+    /// A view whose name an earlier view has, or Folders or the Reading
+    /// List, is shown numbered apart and written back as read, a built-in
+    /// view added at the end included (review finding 5).
+    func testASecondViewOfOneNameIsNumberedApart() throws {
+        let custom = UUID().uuidString
+        let mine = try Self.json(#"{"id": "\#(custom)", "name": "feeds", "visibility": "always", "filter": {"lists": ["feeds"]}}"#)
+        let shipped = LibraryViewDefinitionList.shipped.fileEntries
+        let list = LibraryViewDefinitionList(fileEntries: shipped + [mine])
+        XCTAssertEqual(list.views.last?.name, "feeds 2")
+        XCTAssertEqual(list.fileEntries.last, mine)
+        XCTAssertFalse(list.isNameTaken("feeds 3", except: nil))
+
+        // Folders and the Reading List keep their names, so a view of one
+        // of them is numbered even before them.
+        let early = try Self.json(#"{"id": "\#(UUID().uuidString)", "name": "Reading List", "visibility": "always", "filter": {"lists": ["books"]}}"#)
+        let before = LibraryViewDefinitionList(fileEntries: [early] + shipped)
+        XCTAssertEqual(before.views.first?.name, "Reading List 2")
+        XCTAssertEqual(before.view(.category(.readingList))?.name, "Reading List")
+        XCTAssertEqual(before.fileEntries, [early] + shipped)
+
+        // A built-in view added at the end, missing from the file, is
+        // numbered apart from a view with its name, written as shipped, and
+        // cannot be restored while that view keeps the name.
+        let named = try Self.json(#"{"id": "\#(UUID().uuidString)", "name": "Feeds", "visibility": "always", "filter": {"lists": ["books"]}}"#)
+        let withoutFeeds = Array(shipped.dropLast()) + [named]
+        var added = LibraryViewDefinitionList(fileEntries: withoutFeeds)
+        XCTAssertEqual(Array(added.views.map(\.name).suffix(2)), ["Feeds", "Feeds 2"])
+        XCTAssertEqual(added.fileEntries, withoutFeeds + [try XCTUnwrap(shipped.last)])
+        XCTAssertFalse(added.restoreDefault(.feeds))
+
+        // A number never takes the name of a view after it.
+        let numbered = try Self.json(#"{"id": "\#(UUID().uuidString)", "name": "Feeds 2", "visibility": "always", "filter": {"lists": ["books"]}}"#)
+        let three = LibraryViewDefinitionList(fileEntries: shipped + [named, numbered])
+        XCTAssertEqual(Array(three.views.map(\.name).suffix(3)), ["Feeds", "Feeds 3", "Feeds 2"])
+        XCTAssertEqual(three.fileEntries, shipped + [named, numbered])
     }
 
     /// Keys of an entry this TextMouth does not know are kept and written

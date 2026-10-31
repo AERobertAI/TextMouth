@@ -44,17 +44,28 @@ final class LibraryViewDefinitionListTests: XCTestCase {
         let file = Array(entries.prefix(2)) + [unknown] + Array(entries.dropFirst(2)) + [second]
         let list = LibraryViewDefinitionList(fileEntries: file)
         XCTAssertEqual(list.views.map(\.id), LibraryViewID.builtIns)
-        XCTAssertEqual(list.unreadableCount, 2)
+        // The second, plain Unopened entry adds nothing and is dropped
+        // (review of October 31, 2026, finding 3); the unknown one is kept.
+        XCTAssertEqual(list.unreadableCount, 1)
         XCTAssertEqual(list.view(.category(.unopened))?.visibility, .always)
-        XCTAssertEqual(list.fileEntries, file)
+        XCTAssertEqual(list.fileEntries, Array(file.dropLast()))
     }
 
-    /// At most 200 entries are read from a file, which is untrusted.
-    func testAtMostTwoHundredEntriesAreRead() {
+    /// At most 206 entries are read from a file, which is untrusted: the
+    /// limit of 200 and room for the built-in views, so a list this
+    /// TextMouth writes reads back whole; `add` refuses a view past 200
+    /// (review of October 31, 2026, finding 1).
+    func testTheListsLimits() {
+        XCTAssertEqual(LibraryViewDefinitionList.readLimit, 206)
         let customs = (0..<250).map { LibraryViewDefinitionTests.custom("View \($0)").fileEntry }
         let list = LibraryViewDefinitionList(fileEntries: customs)
-        XCTAssertEqual(list.views.count, 200 + LibraryViewID.builtIns.count)
+        XCTAssertEqual(list.views.count, 206 + LibraryViewID.builtIns.count)
         XCTAssertEqual(list.views.last?.id, .feeds)
+        XCTAssertFalse(list.canAdd)
+        var full = list
+        XCTAssertFalse(full.add(LibraryViewDefinitionTests.custom("One Too Many"), after: nil))
+        XCTAssertEqual(full, list)
+        XCTAssertEqual(LibraryViewDefinitionList(fileEntries: list.fileEntries), list)
     }
 
     /// Folders is always offered: a file cannot hide it, nor can the list,
@@ -71,7 +82,10 @@ final class LibraryViewDefinitionListTests: XCTestCase {
         renamed.name = "Shelves"
         renamed.visibility = .hidden
         XCTAssertFalse(list.replace(renamed))
-        XCTAssertEqual(list.view(.category(.folders)), LibraryViewDefinition.shipped(.folders))
+        XCTAssertEqual(list.view(.category(.folders))?.name, "Folders")
+        XCTAssertEqual(list.view(.category(.folders))?.visibility, .always)
+        // The visibility read is written back as it was (review finding 2).
+        XCTAssertEqual(list.fileEntries.first, try LibraryViewDefinitionTests.json(#"{"id": "Folders", "visibility": "hidden"}"#))
     }
 
     // MARK: - The Views Offered
