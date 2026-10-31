@@ -185,7 +185,9 @@ private enum BrailleExportWriting {
     }
 }
 
-/// Writes a text book as a BRF file (FMT22): pages of braille ASCII, for
+/// Writes a text book as a BRF file (FMT22): pages of braille, each cell a
+/// character of the braille file characters the options choose (North
+/// American Braille ASCII unless another is chosen, braillecodes), for
 /// braille displays and embossers. The text is translated with the options'
 /// table, its emphasis written as the table's indicators where liblouis
 /// reads them back exactly, and laid out as BANA's Braille Formats says
@@ -193,7 +195,9 @@ private enum BrailleExportWriting {
 struct BRFExportWriter: TextExportWriter {
     let id = "brf"
     let name = "BRF"
-    let hint = "Braille Ready Format: pages of braille ASCII, for braille displays and embossers."
+    /// The picker's hint. It says "braille", not "braille ASCII": the options
+    /// may write a BRF in Eurobraille or in Unicode braille patterns.
+    let hint = "Braille Ready Format: pages of braille, for braille displays and embossers."
     let fileExtension = "brf"
 
     /// The user's defaults: 40 cells by 25 lines, page numbers on, CR LF,

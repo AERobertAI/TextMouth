@@ -315,7 +315,9 @@ final class BrailleExportWriterTests: XCTestCase {
         let pef = try XCTUnwrap(TextExportWriters.writer(id: "pef"))
         XCTAssertEqual([brf.name, pef.name], ["BRF", "PEF"])
         XCTAssertEqual([brf.fileExtension, pef.fileExtension], ["brf", "pef"])
-        XCTAssertEqual(brf.hint, "Braille Ready Format: pages of braille ASCII, for braille displays and embossers.")
+        // "braille", not "braille ASCII": a BRF may be written in other
+        // braille file characters (braillecodes).
+        XCTAssertEqual(brf.hint, "Braille Ready Format: pages of braille, for braille displays and embossers.")
         XCTAssertEqual(pef.hint, "Portable Embosser Format: pages of Unicode braille in XML, for embossers.")
         // Both take braille options, which the dialog keeps and draws.
         XCTAssertTrue(TextExportWriters.optionsState(for: brf).hasOptions)
