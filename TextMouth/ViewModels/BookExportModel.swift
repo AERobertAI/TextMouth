@@ -51,8 +51,13 @@ struct BookExportChoice: Equatable, Identifiable {
     }
 
     /// The checkbox's label while its text is converted to the writer named
-    /// `conversionName` (nil: as it is), as in "Text as HTML, about 12 KB".
-    func label(convertedTo conversionName: String?) -> String {
+    /// `conversionName` (nil: as it is), as in "Text as HTML, about 12 KB",
+    /// or while its transcript is written as captions in `transcriptFormat`
+    /// (FMT23; nil: as TextMouth keeps it), as in "Transcript as WebVTT".
+    func label(
+        convertedTo conversionName: String?,
+        transcriptAs transcriptFormat: TranscriptExportFormat? = nil
+    ) -> String {
         let available = availableItems
         return BookExportWording.choiceLabel(
             kind: kind,
@@ -61,7 +66,8 @@ struct BookExportChoice: Equatable, Identifiable {
             fileCount: available.reduce(0) { $0 + $1.files.count },
             byteCount: available.reduce(0) { $0 + $1.byteCount },
             inCloudCount: inCloudCount,
-            convertedTo: conversionName
+            convertedTo: conversionName,
+            transcriptAs: transcriptFormat
         )
     }
 
@@ -78,9 +84,13 @@ struct BookExportChoice: Equatable, Identifiable {
 // MARK: - One Choice of the Convert To Picker
 
 /// One choice of the Convert to picker (FMT18): Markdown, the export without
-/// a conversion, or a text writer.
+/// a conversion, or a text writer. Beside the Transcript checkbox (FMT23):
+/// JSON and Markdown, the export without a conversion, or a format of
+/// captions.
 struct BookExportConversionChoice: Identifiable, Equatable {
-    /// The writer's `id`, or `TextExportWriters.markdownID` for Markdown.
+    /// The writer's `id`, or `TextExportWriters.markdownID` for Markdown;
+    /// beside Transcript, `TranscriptExportFormat.jsonAndMarkdownChoiceID`
+    /// or a format's `choiceID`.
     let id: String
     /// The choice's name, as the picker lists it and VoiceOver speaks it.
     let name: String
@@ -132,7 +142,8 @@ final class BookExportModel: ObservableObject, Identifiable {
     @Published private(set) var summary: String?
     /// The Convert to picker's choice for each kind that has one: a writer's
     /// `id`. A kind not here is on Markdown, so a dialog nobody touched
-    /// exports as it always has.
+    /// exports as it always has. The transcript's picker (FMT23) keeps its
+    /// choice here too, and is on JSON and Markdown until one is made.
     @Published private(set) var conversionIDs: [BookExportKind: String] = [:]
 
     /// How files are checked and read without downloading (FR02).
@@ -270,8 +281,13 @@ final class BookExportModel: ObservableObject, Identifiable {
 
     /// The choices of the Convert to picker beside the checkbox of `kind`:
     /// Markdown, then each text writer in order, for a kind whose text a
-    /// writer can convert; none for any other kind.
+    /// writer can convert; JSON and Markdown, then each format of captions,
+    /// for the transcript (FMT23, `transcriptConversionChoices`); none for
+    /// any other kind.
     func conversionChoices(for kind: BookExportKind) -> [BookExportConversionChoice] {
+        if kind == .transcript {
+            return Self.transcriptConversionChoices
+        }
         guard kind.convertsText else { return [] }
         let markdown = BookExportConversionChoice(
             id: TextExportWriters.markdownID,
@@ -283,16 +299,36 @@ final class BookExportModel: ObservableObject, Identifiable {
         }
     }
 
+    /// The choices of the Convert transcript to picker beside the Transcript
+    /// checkbox (FMT23): JSON and Markdown, the transcript as TextMouth keeps
+    /// it (the default, today's export), then each format of captions.
+    private static var transcriptConversionChoices: [BookExportConversionChoice] {
+        let asKept = BookExportConversionChoice(
+            id: TranscriptExportFormat.jsonAndMarkdownChoiceID,
+            name: BookExportWording.transcriptJSONChoiceName,
+            hint: BookExportWording.transcriptJSONChoiceHint
+        )
+        return [asKept] + TranscriptExportFormat.allCases.map { format in
+            BookExportConversionChoice(
+                id: format.choiceID,
+                name: format.name,
+                hint: BookExportWording.transcriptChoiceHint(for: format)
+            )
+        }
+    }
+
     /// The writer whose `id` is `id` among the picker's writers; nil for
     /// Markdown and for an unknown `id`.
     private func writer(id: String) -> (any TextExportWriter)? {
         writers.first { $0.id == id }
     }
 
-    /// The `id` of the picker's choice for `kind`: Markdown until another is
-    /// chosen.
+    /// The `id` of the picker's choice for `kind`: its first choice until
+    /// another is chosen, which is Markdown, or JSON and Markdown beside
+    /// Transcript (FMT23). A kind with no picker gives Markdown's `id`, as it
+    /// always did.
     func conversionID(for kind: BookExportKind) -> String {
-        conversionIDs[kind] ?? TextExportWriters.markdownID
+        conversionIDs[kind] ?? conversionChoices(for: kind).first?.id ?? TextExportWriters.markdownID
     }
 
     /// Chooses `id` in the picker beside the checkbox of `kind`. A kind with
@@ -321,14 +357,25 @@ final class BookExportModel: ObservableObject, Identifiable {
         return writer(id: conversionID(for: kind))?.name
     }
 
+    /// The format of captions the transcript is written in (FMT23): the one
+    /// chosen beside the Transcript checkbox; nil on JSON and Markdown, and
+    /// for every other kind.
+    private func transcriptFormat(for kind: BookExportKind) -> TranscriptExportFormat? {
+        guard kind == .transcript else { return nil }
+        return TranscriptExportFormat(choiceID: conversionID(for: kind))
+    }
+
     /// The label of `choice`'s checkbox, saying the conversion chosen.
     func label(for choice: BookExportChoice) -> String {
-        choice.label(convertedTo: conversionName(for: choice.kind))
+        choice.label(convertedTo: conversionName(for: choice.kind), transcriptAs: transcriptFormat(for: choice.kind))
     }
 
     /// The hint of the checkbox of `kind`, saying the conversion chosen.
     func hint(for kind: BookExportKind) -> String {
-        BookExportWording.hint(for: kind, convertedTo: conversionName(for: kind))
+        if let format = transcriptFormat(for: kind) {
+            return BookExportWording.transcriptHint(as: format)
+        }
+        return BookExportWording.hint(for: kind, convertedTo: conversionName(for: kind))
     }
 
     /// The options view of the writer chosen for `kind`, to show under the
@@ -345,11 +392,16 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// writer, that writer with its options as they are. Markdown has no
     /// options state, so a kind on Markdown has no conversion here: its
     /// files stay as the offer lists them, the Markdown the offer writes.
+    /// The transcript, checked and on a format of captions, is written as
+    /// captions (FMT23); on JSON and Markdown, it has no conversion either.
     var conversions: [BookExportKind: BookExportConversion] {
         var made: [BookExportKind: BookExportConversion] = [:]
         for kind in checked {
             if let state = optionsStates[conversionID(for: kind)] {
                 made[kind] = .text(state.conversion())
+            }
+            if let format = transcriptFormat(for: kind) {
+                made[kind] = .timedText(format)
             }
         }
         return made

@@ -4,11 +4,15 @@ import XCTest
 
 /// Export of a transcript as captions (FMT23): the WebVTT and SubRip
 /// writers' exact output, a transcript laid on the book's timeline, the
-/// conversion that makes captions, and real exports of an audiobook of
-/// two tracks through the service.
+/// Transcript checkbox's Convert transcript to picker and the words it
+/// changes, and real exports of an audiobook of two tracks, through the
+/// service and through the dialog.
 ///
-/// Every export goes to a sandbox folder, never the user's Documents, and
-/// no test reads or writes the live library.
+/// SwiftUI builds the spoken labels of its own checkboxes only for a
+/// connected assistive app, so the checkbox's and the picker's words are
+/// pinned through `BookExportWording` and the model, where they come from.
+/// Every export goes to a sandbox folder, never the user's Documents, and no
+/// test reads or writes the live library.
 @MainActor
 final class TranscriptExportTests: XCTestCase {
 
@@ -260,6 +264,188 @@ final class TranscriptExportTests: XCTestCase {
         )
     }
 
+    // MARK: - The Picker
+
+    /// The Transcript checkbox's picker offers JSON and Markdown, then WebVTT,
+    /// then SubRip, with the hints the user hears; Text as Markdown's picker
+    /// still begins with Markdown.
+    func testTheTranscriptsChoicesAreJSONAndMarkdownThenWebVTTThenSubRip() {
+        let model = BookExportModel(books: [])
+        XCTAssertEqual(
+            model.conversionChoices(for: .transcript),
+            [
+                BookExportConversionChoice(
+                    id: "transcript-json",
+                    name: "JSON and Markdown",
+                    hint: "The transcript as TextMouth keeps it, in JSON, with its text as Markdown."
+                ),
+                BookExportConversionChoice(
+                    id: "transcript-webvtt",
+                    name: "WebVTT",
+                    hint: "Captions in WebVTT, which web browsers and most players read: "
+                        + "one file for the book, timed from the start of its audio."
+                ),
+                BookExportConversionChoice(
+                    id: "transcript-srt",
+                    name: "SubRip",
+                    hint: "Captions in SubRip (.srt), which nearly every player reads: "
+                        + "one file for the book, timed from the start of its audio."
+                ),
+            ]
+        )
+        XCTAssertEqual(model.conversionChoices(for: .markdown).first?.id, "markdown")
+    }
+
+    /// The picker beside Transcript is called "Convert transcript to", and
+    /// every other, Text as Markdown's included, keeps "Convert to", so the
+    /// two never sound alike when one export shows both.
+    func testThePickersLabels() {
+        XCTAssertEqual(BookExportWording.convertToLabel(for: .transcript), "Convert transcript to")
+        XCTAssertEqual(BookExportWording.convertToLabel(for: .markdown), "Convert to")
+        for kind in BookExportKind.allCases where kind != .transcript {
+            XCTAssertEqual(BookExportWording.convertToLabel(for: kind), BookExportWording.convertToLabel, "\(kind)")
+        }
+        XCTAssertEqual(BookExportWording.convertToLabel, "Convert to")
+    }
+
+    /// A new dialog's transcript is on JSON and Markdown, which makes no
+    /// conversion: today's export. While the transcript is checked, WebVTT or
+    /// SubRip makes it captions; unchecking it takes the conversion away and
+    /// keeps the choice, checking it again brings the conversion back, and
+    /// JSON and Markdown takes it away again.
+    func testTheTranscriptsConversionFollowsItsChoiceWhileChecked() {
+        let model = BookExportModel(books: [])
+        XCTAssertEqual(model.conversionID(for: .transcript), "transcript-json")
+        XCTAssertEqual(model.conversionChoice(for: .transcript)?.name, "JSON and Markdown")
+        model.setChecked(true, for: .transcript)
+        XCTAssertEqual(model.conversions, [:], "JSON and Markdown is today's export")
+
+        model.setConversionID("transcript-webvtt", for: .transcript)
+        XCTAssertEqual(model.conversions, [.transcript: .timedText(.webVTT)])
+        model.setConversionID("transcript-srt", for: .transcript)
+        XCTAssertEqual(model.conversions, [.transcript: .timedText(.subRip)])
+        XCTAssertNil(model.optionsView(for: .transcript), "captions take no options")
+
+        model.setChecked(false, for: .transcript)
+        XCTAssertEqual(model.conversions, [:], "an unchecked transcript passes no conversion")
+        XCTAssertEqual(model.conversionID(for: .transcript), "transcript-srt", "the choice outlives the checkbox")
+
+        model.setChecked(true, for: .transcript)
+        XCTAssertEqual(model.conversions, [.transcript: .timedText(.subRip)])
+        model.setConversionID("transcript-json", for: .transcript)
+        XCTAssertEqual(model.conversions, [:])
+    }
+
+    /// An id the transcript's picker does not list changes nothing, and
+    /// neither does a transcript's id beside Text as Markdown or beside a
+    /// kind with no picker.
+    func testAnIdThePickerDoesNotListChangesNothing() {
+        let model = BookExportModel(books: [])
+        model.setChecked(true, for: .transcript)
+        model.setChecked(true, for: .markdown)
+        model.setConversionID("transcript-webvtt", for: .transcript)
+
+        for id in ["html", "markdown", "transcript", "vtt", ""] {
+            model.setConversionID(id, for: .transcript)
+        }
+        model.setConversionID("transcript-srt", for: .markdown)
+        model.setConversionID("transcript-srt", for: .audio)
+
+        XCTAssertEqual(model.conversionID(for: .transcript), "transcript-webvtt")
+        XCTAssertEqual(model.conversionID(for: .markdown), "markdown")
+        XCTAssertEqual(model.conversionID(for: .audio), "markdown", "a kind without a picker stays as it was")
+        XCTAssertEqual(model.conversions, [.transcript: .timedText(.webVTT)])
+    }
+
+    // MARK: - The Checkbox's Words
+
+    /// With one book: on JSON and Markdown, the checkbox says today's words;
+    /// on WebVTT or SubRip, its label names the format with no count of
+    /// files and no size (one file is written, of a size unknown until it
+    /// is), and its hint says what the captions are.
+    func testTheCheckboxWordsForEachChoiceWithOneBook() throws {
+        let model = BookExportModel(books: [])
+        let choice = BookExportChoice(kind: .transcript, items: [try transcriptItem(inCloud: false)], bookCount: 1)
+        let size = ByteCountFormatter.string(fromByteCount: 3_000, countStyle: .file)
+
+        XCTAssertEqual(model.label(for: choice), "Transcript, 2 files, \(size)")
+        XCTAssertEqual(model.label(for: choice), choice.label, "today's label")
+        XCTAssertEqual(model.hint(for: .transcript), BookExportWording.hint(for: .transcript), "today's hint")
+
+        model.setConversionID("transcript-webvtt", for: .transcript)
+        XCTAssertEqual(model.label(for: choice), "Transcript as WebVTT")
+        XCTAssertEqual(
+            model.hint(for: .transcript),
+            "The transcript as WebVTT captions, one file for the book, timed from the start of its audio."
+        )
+
+        model.setConversionID("transcript-srt", for: .transcript)
+        XCTAssertEqual(model.label(for: choice), "Transcript as SubRip")
+        XCTAssertEqual(
+            model.hint(for: .transcript),
+            "The transcript as SubRip captions, one file for the book, timed from the start of its audio."
+        )
+
+        model.setConversionID("transcript-json", for: .transcript)
+        XCTAssertEqual(model.label(for: choice), choice.label, "today's label again")
+        XCTAssertEqual(model.hint(for: .transcript), BookExportWording.hint(for: .transcript), "today's hint again")
+    }
+
+    /// With several books: on a format, the label names it, then how many
+    /// books hold the transcript on this Mac and how many only in the cloud,
+    /// with no size; on JSON and Markdown, today's label, size included.
+    func testTheCheckboxWordsForEachChoiceWithSeveralBooks() throws {
+        let model = BookExportModel(books: [])
+        let onThisMac = try transcriptItem(inCloud: false)
+        let choice = BookExportChoice(
+            kind: .transcript,
+            items: [onThisMac, onThisMac, try transcriptItem(inCloud: true)],
+            bookCount: 3
+        )
+        let size = ByteCountFormatter.string(fromByteCount: 6_000, countStyle: .file)
+
+        XCTAssertEqual(model.label(for: choice), "Transcript, 2 books, \(size), 1 book in the cloud")
+
+        model.setConversionID("transcript-webvtt", for: .transcript)
+        XCTAssertEqual(model.label(for: choice), "Transcript as WebVTT, 2 books, 1 book in the cloud")
+        model.setConversionID("transcript-srt", for: .transcript)
+        XCTAssertEqual(model.label(for: choice), "Transcript as SubRip, 2 books, 1 book in the cloud")
+        XCTAssertEqual(
+            model.hint(for: .transcript),
+            "The transcript as SubRip captions, one file for the book, timed from the start of its audio."
+        )
+
+        model.setConversionID("transcript-json", for: .transcript)
+        XCTAssertEqual(model.label(for: choice), choice.label)
+    }
+
+    /// Only the transcript's label names captions: every other kind ignores a
+    /// format, and a transcript only in the cloud says so after the format.
+    func testOnlyTheTranscriptsLabelNamesCaptions() {
+        for kind in BookExportKind.allCases where kind != .transcript {
+            XCTAssertEqual(
+                BookExportWording.choiceLabel(
+                    kind: kind, bookCount: 1, availableItemCount: 1, fileCount: 2, byteCount: 1_200_000,
+                    inCloudCount: 0, transcriptAs: .webVTT
+                ),
+                BookExportWording.choiceLabel(
+                    kind: kind, bookCount: 1, availableItemCount: 1, fileCount: 2, byteCount: 1_200_000,
+                    inCloudCount: 0
+                ),
+                "\(kind)"
+            )
+        }
+        XCTAssertEqual(
+            BookExportWording.choiceLabel(
+                kind: .transcript, bookCount: 1, availableItemCount: 0, fileCount: 0, byteCount: 0,
+                inCloudCount: 1, transcriptAs: .subRip
+            ),
+            "Transcript as SubRip, in the cloud"
+        )
+        XCTAssertEqual(BookExportWording.transcriptName(as: .webVTT), "Transcript as WebVTT")
+        XCTAssertEqual(BookExportWording.transcriptName(as: .subRip), "Transcript as SubRip")
+    }
+
     // MARK: - Exporting
 
     /// The plan of a transcript written as SubRip: one file,
@@ -388,6 +574,42 @@ final class TranscriptExportTests: XCTestCase {
         }
     }
 
+    // MARK: - Through the Dialog
+
+    /// Through the dialog: checking the transcript alone and choosing WebVTT
+    /// exports exactly the book's .vtt, announces it, and leaves the dialog
+    /// nothing to say, so it closes.
+    func testTheDialogExportsTheTranscriptAsWebVTT() async throws {
+        let world = try makeIntegrationWorld("Transcript Export Dialog")
+        let book = try makeTranscribedBook(in: world)
+        let stem = BookExportService.fileNameStem(for: book.title)
+        let folder = try makeSandboxDirectory("Transcript Export Dialog Folder")
+        let model = BookExportModel(books: [book], library: world.library, destination: folder)
+        await model.load()
+        for kind in model.checked {
+            model.setChecked(false, for: kind)
+        }
+        model.setChecked(true, for: .transcript)
+        model.setConversionID("transcript-webvtt", for: .transcript)
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+
+        let exported = await model.export()
+        let outcome = try XCTUnwrap(exported)
+
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), ["\(stem) - Transcript.vtt"])
+        XCTAssertEqual(
+            try String(contentsOf: folder.appendingPathComponent("\(stem) - Transcript.vtt"), encoding: .utf8),
+            Self.harbourWebVTT
+        )
+        XCTAssertTrue(BookExportModel.didEverything(outcome), "the dialog closes")
+        XCTAssertNil(model.summary, "the dialog has nothing to say")
+        XCTAssertEqual(
+            announcements.messages,
+            ["Exported 1 item to \(BookExportWording.folderName(of: folder))."]
+        )
+    }
+
     // MARK: - Support
 
     /// What is heard in the two tracks of "Harbour Captions": two sentences
@@ -448,5 +670,26 @@ final class TranscriptExportTests: XCTestCase {
         )
         try TranscriptStore.install(transcript, for: book)
         return book
+    }
+
+    /// A transcript item as a transcribed audiobook's offer lists it: its
+    /// transcript.json and the Markdown written from it, of 2,000 and 1,000
+    /// bytes, only in the cloud when `inCloud`. Its files are never read.
+    private func transcriptItem(inCloud: Bool) throws -> BookExportItem {
+        let package = try makeSandboxDirectory("Transcript Export Item")
+        let transcript = TextMouthPaths.transcriptPath(in: package)
+        return BookExportItem(
+            kind: .transcript,
+            folderName: nil,
+            files: [
+                BookExportFile(source: .copy(transcript), path: "Harbour Captions - Transcript.json", byteCount: 2_000),
+                BookExportFile(
+                    source: .copy(package.appendingPathComponent("content.md")),
+                    path: "Harbour Captions - Transcript.md",
+                    byteCount: 1_000
+                ),
+            ],
+            fileInCloud: inCloud ? transcript : nil
+        )
     }
 }

@@ -111,9 +111,11 @@ struct BookExportSheet: View {
 
     /// The Convert to picker of `kind`: a pop-up menu of Markdown and the
     /// writers, spoken as "Convert to", with the choice made as its value and
-    /// what that choice exports as its hint.
+    /// what that choice exports as its hint. Beside Transcript (FMT23), a
+    /// menu of JSON and Markdown and the formats of captions, spoken as
+    /// "Convert transcript to" (`BookExportWording.convertToLabel(for:)`).
     private func conversionPicker(for kind: BookExportKind) -> some View {
-        Picker(BookExportWording.convertToLabel, selection: conversionBinding(for: kind)) {
+        Picker(BookExportWording.convertToLabel(for: kind), selection: conversionBinding(for: kind)) {
             ForEach(model.conversionChoices(for: kind)) { option in
                 Text(option.name).tag(option.id)
             }
@@ -121,7 +123,7 @@ struct BookExportSheet: View {
         .pickerStyle(.menu)
         .fixedSize()
         .disabled(model.isExporting)
-        .accessibilityLabel(BookExportWording.convertToLabel)
+        .accessibilityLabel(BookExportWording.convertToLabel(for: kind))
         .accessibilityValue(model.conversionChoice(for: kind)?.name ?? "")
         .accessibilityHint(model.conversionChoice(for: kind)?.hint ?? "")
     }
