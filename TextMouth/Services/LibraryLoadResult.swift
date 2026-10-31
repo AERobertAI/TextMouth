@@ -112,8 +112,9 @@ enum LibraryIndexRecoveryError: LocalizedError {
             return "TextMouth could not save a copy of \(url.path), so it left that file unchanged. "
                 + "Make sure its folder can be written to, then try again."
         case .indexReadableAgain:
-            return "The library index can be read again, so TextMouth did not rebuild it. "
-                + "Choose Try Again to use it."
+            // Said after "The library index was not rebuilt." (the recovery
+            // sheet's outcome), so it names the index once.
+            return "It can be read again now. Choose Try Again to use it."
         }
     }
 }

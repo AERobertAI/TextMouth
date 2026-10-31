@@ -319,13 +319,12 @@ final class LibraryIndexRecoveryTests: XCTestCase {
         XCTAssertEqual(
             outcome,
             .rebuildFailed(
-                reason: "The library index can be read again, so TextMouth did not rebuild it. Choose Try Again to use it."
+                reason: "It can be read again now. Choose Try Again to use it."
             )
         )
         XCTAssertEqual(
             outcome.message,
-            "The library index was not rebuilt. The library index can be read again, so TextMouth did not "
-                + "rebuild it. Choose Try Again to use it."
+            "The library index was not rebuilt. It can be read again now. Choose Try Again to use it."
         )
         XCTAssertEqual(model.indexRecovery?.lastAttempt, outcome)
         XCTAssertTrue(LibraryPersistenceService.areIndexWritesSuspended)
