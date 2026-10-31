@@ -7,8 +7,9 @@ import XCTest
 /// (the language, the braille code, and its contraction, the language since
 /// October 20, 2026; and the braille file characters, braillecodes) with
 /// their labels and hints, what they show and store, this Mac's tables taken
-/// only once their check passes, and every sentence it speaks. Each test's settings live in a sandboxed preferences store and
-/// a config.json of the test's own; nothing touches the real ones. The
+/// only once their check passes, and every sentence it speaks. Each test's
+/// settings live in a sandboxed preferences store and a config.json of the
+/// test's own; nothing touches the real ones. The
 /// hosted tests show the bundled codes unless they say otherwise, so their
 /// pop-ups list the same items on any Mac.
 @MainActor
