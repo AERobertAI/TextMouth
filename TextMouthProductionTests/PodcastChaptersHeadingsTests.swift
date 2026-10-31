@@ -94,6 +94,29 @@ final class PodcastChaptersHeadingsTests: XCTestCase {
         }
     }
 
+    /// How a log line names `error`: by its code and domain, never in its
+    /// own words, which can name a folder by its absolute path.
+    private func loggedName(of error: Error) -> String {
+        let failure = error as NSError
+        return "error \(failure.code) in \(failure.domain)"
+    }
+
+    /// The error `operation` throws, as the test expects it to; nil, with
+    /// the test failed, when it throws none.
+    private func thrownError(
+        by operation: () throws -> Void,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> Error? {
+        do {
+            try operation()
+        } catch {
+            return error
+        }
+        XCTFail("nothing was thrown", file: file, line: line)
+        return nil
+    }
+
     /// `json` followed by spaces, which JSON allows after its value, to
     /// `count` bytes in all.
     private func padded(_ json: Data, to count: Int) -> Data {
@@ -238,6 +261,34 @@ final class PodcastChaptersHeadingsTests: XCTestCase {
         XCTAssertEqual(
             loggedLines(from: "PODCAST_CHAPTERS_UNUSED: \(title): "),
             ["PODCAST_CHAPTERS_UNUSED: \(title): not a chapters file"]
+        )
+    }
+
+    /// A kept file that cannot be read leaves the episode one chapter, and
+    /// the debug log says why, naming the error by its code and domain.
+    func testAKeptFileThatCannotBeReadLeavesOneChapterAndSaysWhy() throws {
+        let world = try makeIntegrationWorld("Podcast Chapters Unreadable File")
+        let title = uniqueTitle("Ferry Bulletin")
+        let chapters = try sampleChaptersFile()
+
+        let book = try world.makeOneFileAudioBook(title: title, fileName: "\(title).wav") { file in
+            try AudioTestFixtures.writeSilence(to: file, duration: 2)
+            let kept = TextMouthPaths.podcastChaptersPath(in: file.deletingLastPathComponent())
+            try chapters.write(to: kept)
+            // No one may read the file; its folder, still writable, lets the
+            // world's tear-down remove it.
+            try FileManager.default.setAttributes([.posixPermissions: 0o000], ofItemAtPath: kept.path)
+        }
+        let kept = TextMouthPaths.podcastChaptersPath(in: book.tmbDirectory)
+        addTeardownBlock {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: kept.path)
+        }
+        let failure = try XCTUnwrap(thrownError(by: { _ = try FileHandle(forReadingFrom: kept) }))
+
+        XCTAssertEqual(try indexedHeadings(of: book), [title])
+        XCTAssertEqual(
+            loggedLines(from: "PODCAST_CHAPTERS_UNUSED: \(title): "),
+            ["PODCAST_CHAPTERS_UNUSED: \(title): the file could not be read: \(loggedName(of: failure))"]
         )
     }
 
@@ -407,7 +458,8 @@ final class PodcastChaptersHeadingsTests: XCTestCase {
     }
 
     /// Chapters that cannot be removed after an edit stay, with one line
-    /// saying so, and the save goes on.
+    /// saying so, which names the error by its code and domain, and the
+    /// save goes on.
     func testChaptersThatCannotBeDroppedAreLeftWithALine() throws {
         let package = try makeSandboxDirectory("PodcastChaptersLocked")
         let kept = TextMouthPaths.podcastChaptersPath(in: package)
@@ -418,16 +470,20 @@ final class PodcastChaptersHeadingsTests: XCTestCase {
         addTeardownBlock {
             try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: package.path)
         }
+        let failure = try XCTUnwrap(thrownError(by: { try FileManager.default.removeItem(at: kept) }))
         let title = uniqueTitle("Canal Survey")
         let book = Book(title: title, format: .audio, filePath: package.appendingPathComponent("\(title).wav").path, md5Hash: UUID().uuidString)
 
         LibraryViewModel.dropPodcastChapters(of: book, in: package)
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: kept.path))
-        let lines = loggedLines(from: "PODCAST_CHAPTERS_LEFT: \(title): ")
-        XCTAssertEqual(lines.count, 1, "\(lines)")
-        let expectedStart = "PODCAST_CHAPTERS_LEFT: \(title): the audio was edited, but the podcast's chapters could not be removed: "
-        XCTAssertTrue(lines.allSatisfy { $0.hasPrefix(expectedStart) }, "\(lines)")
+        XCTAssertEqual(
+            loggedLines(from: "PODCAST_CHAPTERS_LEFT: \(title): "),
+            [
+                "PODCAST_CHAPTERS_LEFT: \(title): the audio was edited, but the podcast's chapters could not be removed: "
+                    + loggedName(of: failure),
+            ]
+        )
         XCTAssertEqual(loggedLines(from: "PODCAST_CHAPTERS_DROPPED: \(title): "), [])
     }
 }

@@ -311,10 +311,13 @@ extension LibraryViewModel {
         } catch where BookCloudStorageService.isMissingItem(error) {
             return
         } catch {
+            // Named by its domain and code: its own words can name the
+            // package's folder by its absolute path.
+            let failure = error as NSError
             DiagnosticLog.event(
                 .storage,
                 "PODCAST_CHAPTERS_LEFT: \(book.title): the audio was edited, but the podcast's chapters "
-                    + "could not be removed: \(error.localizedDescription)"
+                    + "could not be removed: error \(failure.code) in \(failure.domain)"
             )
         }
     }

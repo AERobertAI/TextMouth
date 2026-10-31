@@ -618,29 +618,36 @@ enum BookContentAnalysisService {
     private static func keptPodcastChapters(of book: Book) -> PodcastChapters? {
         guard !book.tmbDirectoryName.isEmpty else { return nil }
         let limit = TimedTextLimits.podcastChaptersBytes
-        let read = SavedFile.read(TextMouthPaths.podcastChaptersPath(in: book.tmbDirectory)) { file in
-            try DatalessFiles.withoutDownloading { try leadingBytes(of: file, count: limit + 1) }
-        }
-        switch read {
-        case .missing:
-            return nil
-        case .inCloud:
-            reportUnusedPodcastChapters(of: book, "the file is only in the cloud")
-        case .unreadable(let reason):
-            reportUnusedPodcastChapters(of: book, "the file could not be read: \(reason)")
-        case .contents(let bytes) where bytes.count > limit:
-            reportUnusedPodcastChapters(of: book, "the file is larger than the \(limit / 1_048_576) MB TextMouth reads")
-        case .contents(let bytes):
-            do {
-                return try PodcastChapters.read(bytes)
-            } catch {
-                // `PodcastChapters.read` throws only its own errors, each
-                // worded for the log without quoting the file.
-                let reason = (error as? PodcastChaptersError)?.description ?? "not a chapters file"
-                reportUnusedPodcastChapters(of: book, reason)
+        let bytes: Data
+        do {
+            bytes = try DatalessFiles.withoutDownloading {
+                try leadingBytes(of: TextMouthPaths.podcastChaptersPath(in: book.tmbDirectory), count: limit + 1)
             }
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            reportUnusedPodcastChapters(of: book, "the file is only in the cloud")
+            return nil
+        } catch where BookCloudStorageService.isMissingItem(error) {
+            return nil
+        } catch {
+            // Named by its domain and code: its own words can name the
+            // package's folder by its absolute path.
+            let failure = error as NSError
+            reportUnusedPodcastChapters(of: book, "the file could not be read: error \(failure.code) in \(failure.domain)")
+            return nil
         }
-        return nil
+        guard bytes.count <= limit else {
+            reportUnusedPodcastChapters(of: book, "the file is larger than the \(limit / 1_048_576) MB TextMouth reads")
+            return nil
+        }
+        do {
+            return try PodcastChapters.read(bytes)
+        } catch {
+            // `PodcastChapters.read` throws only its own errors, each worded
+            // for the log without quoting the file.
+            let reason = (error as? PodcastChaptersError)?.description ?? "not a chapters file"
+            reportUnusedPodcastChapters(of: book, reason)
+            return nil
+        }
     }
 
     /// The first `count` bytes of the file at `url`, or all of it when it
