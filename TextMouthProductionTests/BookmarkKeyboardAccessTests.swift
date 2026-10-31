@@ -250,6 +250,9 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
         try skipUnlessSwiftUIExposesItsOwnElements()
         let reader = makeReader(bookmarks: makeBookmarks(count: 3))
         defer { reader.close() }
+        // The loop below checks one row per bookmark, so without all three
+        // it would pass having checked fewer, or none (V14).
+        XCTAssertEqual(reader.bookmarks.count, 3)
 
         try withRenderedPanel(for: reader) { hostingView in
             let buttonLabels = accessibleControls(in: hostingView)
