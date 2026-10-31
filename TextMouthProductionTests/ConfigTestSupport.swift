@@ -88,6 +88,9 @@ extension ConfigService.AppConfig {
         config.transcriptionLocale = TranscriptFixtures.languageOtherThanTheDefault
         config.offerTranscriptionAfterImport = true
         config.brailleTable = "en-us-g1.ctb"
+        // The braille file characters (braillecodes), unlike the default,
+        // North American Braille ASCII.
+        config.brailleFileCode = "ascii-eurobraille"
         return config
     }
 }

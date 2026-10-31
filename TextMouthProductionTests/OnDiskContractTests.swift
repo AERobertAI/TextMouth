@@ -239,7 +239,7 @@ final class OnDiskContractTests: XCTestCase {
             "audioEditorPlaysAfterMoves", "keyboardShortcuts", "shortcutDoublePressSeconds", "feedRefreshAtLaunch",
             "feedRefreshIntervalHours", "feedItems", "feedNewestCount", "feedDeleteDownloadsDaysAfterPlayed",
             "feedRefreshAlert", "feedNotifications", "logLocation", "transcriptionLocale",
-            "offerTranscriptionAfterImport", "brailleTable",
+            "offerTranscriptionAfterImport", "brailleTable", "brailleFileCode",
         ]
         XCTAssertEqual(
             Set(object.keys),

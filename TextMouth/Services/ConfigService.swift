@@ -429,6 +429,12 @@ final class ConfigService: ObservableObject {
         /// checked before its first use, as one chosen in Settings is
         /// (`MacBrailleTableCheck`), or refused by name if this Mac lacks it.
         var brailleTable: String = ""
+        /// The braille file characters TextMouth imports a BRF or BRL file
+        /// with (`BraillePreferences.fileCode`), by the code's id:
+        /// "ascii-na" (North American Braille ASCII), "ascii-eurobraille",
+        /// or "unicode". Empty keeps the current choice, as does an id this
+        /// TextMouth lacks.
+        var brailleFileCode: String = ""
 
         /// Decodes config.json one field at a time, because people edit it
         /// by hand. A missing field keeps its default (older files lack newer
@@ -562,6 +568,11 @@ final class ConfigService: ObservableObject {
             brailleTable = fields.value(.brailleTable, default: fallback.brailleTable) {
                 BrailleTableCatalog.storableValue($0) ?? ""
             }
+            // An id this TextMouth lacks is repaired to empty, and logged, so
+            // it leaves the current braille file characters alone.
+            brailleFileCode = fields.value(.brailleFileCode, default: fallback.brailleFileCode) {
+                BrailleFileCode.code(withID: $0) == nil ? "" : $0
+            }
         }
 
         init() {}
@@ -646,7 +657,8 @@ final class ConfigService: ObservableObject {
                 // after an import (FR05).
                 mirrored += sameNames(["transcriptionLocale", "offerTranscriptionAfterImport"])
                 // Braille (FMT21): the table braille files are read and written with.
-                mirrored += sameNames(["brailleTable"])
+                // And the braille file characters a BRF or BRL file is imported in (braillecodes).
+                mirrored += sameNames(["brailleTable", "brailleFileCode"])
                 return mirrored
             }()
 
