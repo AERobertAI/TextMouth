@@ -93,6 +93,13 @@ final class LibraryViewsSettingsTests: XCTestCase {
         XCTAssertEqual(W.restored(name: "Unopened"), "Restored Unopened.")
         XCTAssertEqual(W.unreadableCaption(count: 1), "1 view needs a newer TextMouth. It is kept as it is, and not offered.")
         XCTAssertEqual(W.unreadableCaption(count: 3), "3 views need a newer TextMouth. They are kept as they are, and not offered.")
+        // Added by the review of October 31, 2026.
+        XCTAssertEqual(W.viewLimit, "The Library holds at most 200 views.")
+        XCTAssertEqual(W.restoreNameTaken(name: "Feeds"), "Another view is named Feeds. Rename it first, then restore this view.")
+        XCTAssertEqual(W.visibilityChanged(name: "Feeds", to: .hidden), "Feeds, hidden")
+        XCTAssertEqual(W.visibilityChanged(name: "Feeds", to: .always), "Feeds, shown always")
+        XCTAssertEqual(W.visibilityChanged(name: "Feeds", to: .whenApplicable), "Feeds, shown when applicable")
+        XCTAssertEqual(W.deleted(name: "Mine", selected: "Feeds", number: 6, count: 6), "Deleted Mine. Feeds selected, 6 of 6.")
     }
 
     /// The tab's row hints and Restore Default's hint, by view.
@@ -129,18 +136,18 @@ final class LibraryViewsSettingsTests: XCTestCase {
         var list = LibraryViewDefinitionList.shipped
         let mine = LibraryViewDefinitionTests.custom("Mine")
         list.add(mine, after: nil)
-        func commands(_ id: LibraryViewID, sortIsSaved: Bool = false) -> [LibraryViewsSettingsCommand] {
+        func commands(_ id: LibraryViewID, sortDiffers: Bool = false) -> [LibraryViewsSettingsCommand] {
             guard let view = list.view(id) else { return [] }
-            return LibraryViewsSettingsCommand.available(for: view, in: list, sortIsSaved: sortIsSaved)
+            return LibraryViewsSettingsCommand.available(for: view, in: list, sortDiffers: sortDiffers)
         }
         XCTAssertEqual(commands(.category(.folders)), [.moveDown])
         XCTAssertEqual(commands(.category(.allItems)), [.edit, .moveUp, .moveDown, .show(.whenApplicable), .show(.hidden), .duplicate])
         XCTAssertEqual(
-            commands(.category(.allItems), sortIsSaved: true),
+            commands(.category(.allItems), sortDiffers: true),
             [.edit, .moveUp, .moveDown, .show(.whenApplicable), .show(.hidden), .duplicate, .restoreDefault]
         )
         XCTAssertEqual(commands(.category(.readingList)), [.moveUp, .moveDown, .show(.whenApplicable), .show(.hidden)])
-        XCTAssertEqual(commands(.category(.readingList), sortIsSaved: true), [.moveUp, .moveDown, .show(.whenApplicable), .show(.hidden)])
+        XCTAssertEqual(commands(.category(.readingList), sortDiffers: true), [.moveUp, .moveDown, .show(.whenApplicable), .show(.hidden)])
         XCTAssertEqual(commands(.feeds), [.edit, .moveUp, .moveDown, .show(.always), .show(.hidden), .duplicate])
         XCTAssertEqual(commands(mine.id), [.edit, .moveUp, .show(.whenApplicable), .show(.hidden), .duplicate, .delete])
 
@@ -216,20 +223,24 @@ final class LibraryViewsSettingsTests: XCTestCase {
         actions.library.setFolderSortSetting(FolderSortSetting(sortField: .dateAdded, sortAscending: false), for: key)
 
         let deleted = try XCTUnwrap(actions.delete(first))
-        XCTAssertEqual(deleted.announcement, "Deleted First.")
+        // The view selected now, and its place (review finding 13).
+        XCTAssertEqual(deleted.announcement, "Deleted First. Second selected, 7 of 7.")
         XCTAssertEqual(deleted.nextSelection, second.id)
         XCTAssertNil(actions.store.list.view(first.id))
         XCTAssertNil(actions.library.library.folderSortSettings[key])
 
         let last = try XCTUnwrap(actions.delete(second))
         XCTAssertEqual(last.nextSelection, .feeds)
+        XCTAssertEqual(last.announcement, "Deleted Second. Feeds selected, 6 of 6.")
         XCTAssertNil(actions.delete(.shipped(.unopened)))
         XCTAssertEqual(actions.store.list, .shipped)
     }
 
-    /// Restore Default gives a built-in view its own name and filter back,
-    /// keeping its place and visibility, removes its saved sort, and names
-    /// it by its own name; it does nothing to a view as TextMouth made it.
+    /// Restore Default gives a built-in view its own name, filter, and sort
+    /// back, keeping its place and visibility, and names it by its own name;
+    /// it does nothing to a view as TextMouth made it. Unopened's shipped
+    /// sort is written under its key (review finding 9); another view's
+    /// saved sort is removed.
     @MainActor
     func testRestoringABuiltInView() throws {
         let actions = makeActions("restore")
@@ -240,19 +251,109 @@ final class LibraryViewsSettingsTests: XCTestCase {
         unopened.visibility = .whenApplicable
         actions.store.update { $0.replace(unopened) }
         actions.library.setFolderSortSetting(FolderSortSetting(sortField: .title, sortAscending: true), for: "__unopened__")
-        XCTAssertTrue(actions.sortIsSaved(for: unopened))
+        XCTAssertTrue(actions.sortDiffers(for: unopened))
 
         XCTAssertEqual(actions.restoreDefault(unopened), "Restored Unopened.")
         var expected = LibraryViewDefinition.shipped(.unopened)
         expected.visibility = .whenApplicable
         XCTAssertEqual(actions.store.list.view(.category(.unopened)), expected)
-        XCTAssertNil(actions.library.library.folderSortSettings["__unopened__"])
-        XCTAssertFalse(actions.sortIsSaved(for: expected))
+        XCTAssertEqual(actions.library.library.folderSortSettings["__unopened__"], .unopenedDefault)
+        XCTAssertFalse(actions.sortDiffers(for: expected))
 
         // A sort saved alone is reason enough, and is removed.
         actions.library.setFolderSortSetting(FolderSortSetting(sortField: .author, sortAscending: true), for: "__allItems__")
         XCTAssertEqual(actions.restoreDefault(.shipped(.allItems)), "Restored All Items.")
         XCTAssertNil(actions.library.library.folderSortSettings["__allItems__"])
+    }
+
+    // MARK: - The Review of October 31, 2026
+
+    /// At the list's limit, Duplicate makes nothing and offers itself no
+    /// more, Save of a new view reports the limit, and the list is
+    /// unchanged, its last view included (finding 1).
+    @MainActor
+    func testTheListsLimitRefusesNewViews() throws {
+        let actions = makeActions("limit")
+        actions.store.update { list in
+            while list.canAdd {
+                list.add(LibraryViewDefinitionTests.custom("View \(list.views.count)"), after: nil)
+            }
+        }
+        let full = actions.store.list
+        XCTAssertEqual(full.entries.count, LibraryViewDefinitionList.entryLimit)
+        let last = try XCTUnwrap(full.views.last)
+
+        XCTAssertNil(actions.duplicate(.shipped(.unopened)))
+        XCTAssertFalse(actions.commands(for: .shipped(.unopened)).contains(.duplicate))
+        let model = LibraryViewEditorModel()
+        model.name = "One Too Many"
+        XCTAssertEqual(actions.save(model), .problem("The Library holds at most 200 views."))
+        XCTAssertEqual(actions.store.list, full)
+        XCTAssertEqual(actions.store.list.views.last, last)
+        XCTAssertEqual(
+            LibraryViewsSettingsView.duplicateHint(of: .shipped(.unopened), available: false, canAdd: false),
+            "The Library holds at most 200 views."
+        )
+    }
+
+    /// Restore Default refuses, changing nothing, when another view has the
+    /// shipped name, and says which name (finding 5).
+    @MainActor
+    func testRestoreDefaultRefusesAShippedNameAnotherViewHas() throws {
+        let actions = makeActions("restore-name")
+        var feeds = try XCTUnwrap(LibraryViewDefinition.shipped(LibraryViewID.feeds))
+        feeds.name = "Podcasts"
+        actions.store.update { $0.replace(feeds) }
+        var allItems = LibraryViewDefinition.shipped(.allItems)
+        allItems.name = "Feeds"
+        actions.store.update { $0.replace(allItems) }
+        let before = actions.store.list
+
+        XCTAssertEqual(
+            actions.restoreDefault(feeds),
+            "Another view is named Feeds. Rename it first, then restore this view."
+        )
+        XCTAssertEqual(actions.store.list, before)
+        var list = before
+        XCTAssertFalse(list.restoreDefault(.feeds))
+    }
+
+    /// Restoring Unopened, whose library still holds a sort chosen for the
+    /// former No Folder, shows its shipped sort, not that one, and then
+    /// offers Restore Default no more (finding 9).
+    @MainActor
+    func testRestoringUnopenedLeavesTheNoFolderSortBehind() throws {
+        let actions = makeActions("restore-unopened")
+        actions.library.setFolderSortSetting(FolderSortSetting(sortField: .title, sortAscending: true), for: "__noFolder__")
+        actions.library.setFolderSortSetting(FolderSortSetting(sortField: .author, sortAscending: true), for: "__unopened__")
+        let unopened = LibraryViewDefinition.shipped(.unopened)
+        XCTAssertTrue(actions.commands(for: unopened).contains(.restoreDefault))
+
+        XCTAssertEqual(actions.restoreDefault(unopened), "Restored Unopened.")
+        let shown = actions.shownSortSetting(of: unopened)
+        XCTAssertEqual(shown.sortField, .dateAdded)
+        XCTAssertFalse(shown.sortAscending)
+        XCTAssertFalse(actions.sortDiffers(for: unopened))
+        XCTAssertFalse(actions.commands(for: unopened).contains(.restoreDefault))
+
+        // Before any restore, the carried-over sort alone already differs.
+        let other = makeActions("restore-unopened-carried")
+        other.library.setFolderSortSetting(FolderSortSetting(sortField: .title, sortAscending: true), for: "__noFolder__")
+        XCTAssertTrue(other.sortDiffers(for: unopened))
+    }
+
+    /// A visibility chosen from a row's action or the context menu is said:
+    /// the view and how it is offered now; nothing when nothing changed
+    /// (finding 12).
+    @MainActor
+    func testAVisibilityChosenFromARowIsSaid() throws {
+        let actions = makeActions("visibility-said")
+        let feeds = try XCTUnwrap(LibraryViewDefinition.shipped(LibraryViewID.feeds))
+        XCTAssertEqual(actions.setVisibilitySaying(.hidden, of: feeds), "Feeds, hidden")
+        XCTAssertNil(actions.setVisibilitySaying(.hidden, of: feeds))
+        XCTAssertEqual(actions.setVisibilitySaying(.always, of: feeds), "Feeds, shown always")
+        XCTAssertEqual(actions.setVisibilitySaying(.whenApplicable, of: feeds), "Feeds, shown when applicable")
+        XCTAssertNil(actions.setVisibilitySaying(.hidden, of: .shipped(.folders)))
     }
 
     // MARK: - Fixtures

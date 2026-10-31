@@ -25,6 +25,10 @@ struct LibraryViewsSettingsView: View {
     @State private var pendingRestore: LibraryViewDefinition?
     /// The editor's draft while its sheet shows, or nil.
     @State private var editor: LibraryViewEditorModel?
+    /// Whether the list holds the keyboard's and VoiceOver's focus, set
+    /// once a deletion's question has gone, so focus never stays on a
+    /// dimmed button (review of October 31, 2026, finding 13).
+    @FocusState private var listIsFocused: Bool
 
     /// The tab on `store`, the app's views unless a test gives its own.
     init(store: LibraryViewDefinitionStore = .shared) {
@@ -115,6 +119,7 @@ struct LibraryViewsSettingsView: View {
             }
         }
         .accessibilityLabel(Wording.listLabel)
+        .focused($listIsFocused)
         .contextMenu(forSelectionType: LibraryViewID.self) { ids in
             if let id = ids.first, let view = store.list.view(id) {
                 ForEach(actions.commands(for: view), id: \.self) { command in
@@ -190,11 +195,14 @@ struct LibraryViewsSettingsView: View {
                 )
             }
             HStack(spacing: 12) {
+                // Dimmed at the list's limit, its hint saying so (review of
+                // October 31, 2026, finding 1).
                 Button(LibraryViewEditorWording.newViewButton) {
                     editor = LibraryViewEditorModel()
                 }
-                .accessibilityHint(LibraryViewEditorWording.newViewHint)
-                .help(LibraryViewEditorWording.newViewHint)
+                .disabled(!store.list.canAdd)
+                .accessibilityHint(store.list.canAdd ? LibraryViewEditorWording.newViewHint : Wording.viewLimit)
+                .help(store.list.canAdd ? LibraryViewEditorWording.newViewHint : Wording.viewLimit)
                 commandButton(
                     LibraryViewEditorWording.editButton,
                     label: LibraryViewEditorWording.editButton,
@@ -205,7 +213,7 @@ struct LibraryViewsSettingsView: View {
                 commandButton(
                     Wording.duplicateAction,
                     label: Wording.duplicateAction,
-                    hint: commands.contains(.duplicate) ? Wording.duplicateHint : Wording.duplicateUnavailableHint,
+                    hint: Self.duplicateHint(of: view, available: commands.contains(.duplicate), canAdd: store.list.canAdd),
                     command: .duplicate,
                     available: commands
                 )
@@ -319,6 +327,19 @@ struct LibraryViewsSettingsView: View {
         return LibraryViewsSettingsWording.restoreUnchangedHint
     }
 
+    /// Duplicate's hint for `view`: what it does when it applies, or why
+    /// it is dimmed: Folders and the Reading List have no conditions, and a
+    /// full list has no room (review of October 31, 2026, finding 1).
+    static func duplicateHint(of view: LibraryViewDefinition?, available: Bool, canAdd: Bool) -> String {
+        if available {
+            return LibraryViewsSettingsWording.duplicateHint
+        }
+        if view?.kind == .filter, !canAdd {
+            return LibraryViewsSettingsWording.viewLimit
+        }
+        return LibraryViewsSettingsWording.duplicateUnavailableHint
+    }
+
     // MARK: - Commands
 
     /// Runs `command` on `view`: moves and visibilities at once, the others
@@ -333,7 +354,11 @@ struct LibraryViewsSettingsView: View {
                 VoiceOverAnnouncer.announce(announcement)
             }
         case .show(let visibility):
-            actions.setVisibility(visibility, of: view)
+            // A row's action and the context menu say nothing themselves
+            // (review of October 31, 2026, finding 12).
+            if let announcement = actions.setVisibilitySaying(visibility, of: view) {
+                VoiceOverAnnouncer.announce(announcement)
+            }
         case .duplicate:
             if let made = actions.duplicate(view) {
                 selection = made.id
@@ -342,17 +367,27 @@ struct LibraryViewsSettingsView: View {
         case .delete:
             pendingDelete = view
         case .restoreDefault:
-            pendingRestore = view
+            // When another view has the shipped name, say so at once and
+            // ask nothing (review of October 31, 2026, finding 5).
+            if let shipped = LibraryViewDefinition.shipped(view.id), store.list.isNameTaken(shipped.name, except: view.id) {
+                VoiceOverAnnouncer.announce(Wording.restoreNameTaken(name: shipped.name))
+            } else {
+                pendingRestore = view
+            }
         }
     }
 
     /// Deletes `view` once its question is answered, selects its neighbour,
-    /// and says so once the question has gone.
+    /// and, once the question has gone, puts focus on the list and says
+    /// which view is selected now (review of October 31, 2026, finding 13).
     private func delete(_ view: LibraryViewDefinition) {
         pendingDelete = nil
         guard let deleted = actions.delete(view) else { return }
         selection = deleted.nextSelection
-        VoiceOverAnnouncer.announceAfterSheetCloses(deleted.announcement, from: nil)
+        VoiceOverAnnouncer.afterSheetCloses {
+            listIsFocused = true
+            VoiceOverAnnouncer.announce(deleted.announcement)
+        }
     }
 
     /// Restores `view` once its question is answered, and says so once the

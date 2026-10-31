@@ -228,6 +228,11 @@ final class LibraryViewEditorModel: ObservableObject, Identifiable {
     /// controls, or nil: no name, a name too long or another view's, no
     /// kind listed, or a Title or Author condition looking for nothing.
     func firstProblem(in list: LibraryViewDefinitionList) -> String? {
+        // A new view needs room in the list (review of October 31, 2026,
+        // finding 1).
+        if original == nil, !list.canAdd {
+            return LibraryViewsSettingsWording.viewLimit
+        }
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty {
             return LibraryViewEditorWording.nameMissing

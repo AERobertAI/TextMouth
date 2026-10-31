@@ -175,6 +175,37 @@ enum LibraryViewsSettingsWording {
         "Restored \(name)."
     }
 
+    // MARK: - Added October 31, 2026 (the review of team/views)
+
+    /// New View… and Duplicate's hint at the limit, when they are dimmed,
+    /// and Save's problem there (finding 1).
+    static let viewLimit = "The Library holds at most \(LibraryViewDefinitionList.entryLimit) views."
+
+    /// What Restore Default says, changing nothing, when another view has
+    /// the shipped name `name` (finding 5).
+    static func restoreNameTaken(name: String) -> String {
+        "Another view is named \(name). Rename it first, then restore this view."
+    }
+
+    /// What VoiceOver says after a row's action or the context menu gives
+    /// the view `name` a visibility (finding 12): "Feeds, hidden", "Feeds,
+    /// shown always", "Feeds, shown when applicable". The pop-up says its
+    /// own new value.
+    static func visibilityChanged(name: String, to visibility: LibraryViewVisibility) -> String {
+        switch visibility {
+        case .always: return "\(name), shown always"
+        case .whenApplicable: return "\(name), shown when applicable"
+        case .hidden: return "\(name), hidden"
+        }
+    }
+
+    /// What VoiceOver says once a view is deleted, naming the view selected
+    /// now and its place (finding 13): "Deleted Mine. Feeds selected, 6 of
+    /// 6."
+    static func deleted(name: String, selected: String, number: Int, count: Int) -> String {
+        "Deleted \(name). \(selected) selected, \(number) of \(count)."
+    }
+
     // MARK: - Views a Later TextMouth Wrote
 
     /// What the tab says of entries this TextMouth cannot read: "1 view

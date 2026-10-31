@@ -4,7 +4,7 @@ import Foundation
 
 /// A command of the Library tab for one view (design section 7). A row's
 /// VoiceOver actions, the list's context menu, and the buttons under the
-/// list all ask `available(for:in:sortIsSaved:)`, so the three never offer
+/// list all ask `available(for:in:sortDiffers:)`, so the three never offer
 /// different commands.
 enum LibraryViewsSettingsCommand: Hashable {
     /// Opens the editor on a filter view.
@@ -29,11 +29,12 @@ enum LibraryViewsSettingsCommand: Hashable {
     /// have (none for Folders, which is always offered), Duplicate for a
     /// filter view, Delete… for a custom one, and Restore Default… for a
     /// built-in filter view that differs from TextMouth's own, or whose sort
-    /// is saved (`sortIsSaved`).
+    /// shown is not its shipped one (`sortDiffers`). Duplicate is left out
+    /// while the list has no room (`LibraryViewDefinitionList.canAdd`).
     static func available(
         for view: LibraryViewDefinition,
         in list: LibraryViewDefinitionList,
-        sortIsSaved: Bool
+        sortDiffers: Bool
     ) -> [LibraryViewsSettingsCommand] {
         var commands: [LibraryViewsSettingsCommand] = []
         if view.kind == .filter {
@@ -46,22 +47,23 @@ enum LibraryViewsSettingsCommand: Hashable {
         if view.id != .category(.folders) {
             commands += LibraryViewVisibility.allCases.filter { $0 != view.visibility }.map { LibraryViewsSettingsCommand.show($0) }
         }
-        if view.kind == .filter {
+        if view.kind == .filter, list.canAdd {
             commands.append(.duplicate)
         }
         if !view.isBuiltIn {
             commands.append(.delete)
         }
-        if canRestore(view, sortIsSaved: sortIsSaved) {
+        if canRestore(view, sortDiffers: sortDiffers) {
             commands.append(.restoreDefault)
         }
         return commands
     }
 
     /// Whether Restore Default applies to `view`: a built-in filter view
-    /// that differs from TextMouth's own, or has a sort saved.
-    static func canRestore(_ view: LibraryViewDefinition, sortIsSaved: Bool) -> Bool {
-        view.isBuiltIn && view.kind == .filter && (view.differsFromShipped || sortIsSaved)
+    /// that differs from TextMouth's own, or shows a sort other than its
+    /// shipped one (review of October 31, 2026, finding 9).
+    static func canRestore(_ view: LibraryViewDefinition, sortDiffers: Bool) -> Bool {
+        view.isBuiltIn && view.kind == .filter && (view.differsFromShipped || sortDiffers)
     }
 
     /// The command's name, as a VoiceOver action and a menu item.
@@ -92,10 +94,14 @@ struct LibraryViewsSettingsActions {
     /// The library, whose index keeps the views' sorts.
     let library: LibraryViewModel
 
-    /// Whether a sort is saved for `view`, which Restore Default removes.
-    func sortIsSaved(for view: LibraryViewDefinition) -> Bool {
-        guard let key = view.sortSettingsKey else { return false }
-        return library.library.folderSortSettings[key] != nil
+    /// Whether `view` shows a sort other than the one TextMouth ships for
+    /// it, by field and direction, which Restore Default gives back: so
+    /// Unopened showing the sort carried over from No Folder differs too
+    /// (review of October 31, 2026, finding 9).
+    func sortDiffers(for view: LibraryViewDefinition) -> Bool {
+        let shown = shownSortSetting(of: view)
+        let shipped = view.defaultSortSetting.normalized
+        return shown.sortField != shipped.sortField || shown.sortAscending != shipped.sortAscending
     }
 
     /// The sort `view` shows, as the Library window restores it, by the one
@@ -108,7 +114,7 @@ struct LibraryViewsSettingsActions {
 
     /// The commands that apply to `view` now.
     func commands(for view: LibraryViewDefinition) -> [LibraryViewsSettingsCommand] {
-        LibraryViewsSettingsCommand.available(for: view, in: store.list, sortIsSaved: sortIsSaved(for: view))
+        LibraryViewsSettingsCommand.available(for: view, in: store.list, sortDiffers: sortDiffers(for: view))
     }
 
     /// Moves `view` one place up (-1) or down (+1), returning its new place
@@ -118,18 +124,27 @@ struct LibraryViewsSettingsActions {
         return LibraryViewsSettingsWording.placeAnnouncement(name: view.name, number: place.number, count: place.count)
     }
 
-    /// Gives `view` `visibility`. Returns whether it changed; the pop-up or
-    /// the action's name says the rest.
+    /// Gives `view` `visibility`. Returns whether it changed; the pop-up
+    /// says its new value itself.
     @discardableResult
     func setVisibility(_ visibility: LibraryViewVisibility, of view: LibraryViewDefinition) -> Bool {
         store.update { $0.setVisibility(visibility, of: view.id) }
+    }
+
+    /// Gives `view` `visibility` from a row's action or the context menu,
+    /// which say nothing themselves: returns what to announce, "Feeds,
+    /// hidden", or nil when nothing changed (review of October 31, 2026,
+    /// finding 12).
+    func setVisibilitySaying(_ visibility: LibraryViewVisibility, of view: LibraryViewDefinition) -> String? {
+        guard setVisibility(visibility, of: view) else { return nil }
+        return LibraryViewsSettingsWording.visibilityChanged(name: view.name, to: visibility)
     }
 
     /// Makes a custom copy of the filter view `view` right after it, always
     /// offered, with its filter and the sort it shows saved under the copy's
     /// key. Returns the copy's identity, to select it, and what to announce.
     func duplicate(_ view: LibraryViewDefinition) -> (id: LibraryViewID, announcement: String)? {
-        guard view.kind == .filter, let filter = view.filter else { return nil }
+        guard view.kind == .filter, let filter = view.filter, store.list.canAdd else { return nil }
         let copy = LibraryViewDefinition(
             id: .custom(UUID()),
             name: store.list.copyName(for: view.name),
@@ -157,8 +172,18 @@ struct LibraryViewsSettingsActions {
             library.removeSortSetting(for: key)
         }
         let after = store.list.views
-        let next = after.indices.contains(index) ? after[index].id : after.last?.id
-        return (next, LibraryViewsSettingsWording.deleted(name: view.name))
+        guard let next = after.indices.contains(index) ? Optional(after[index]) : after.last,
+              let place = store.list.place(of: next.id) else {
+            return (nil, LibraryViewsSettingsWording.deleted(name: view.name))
+        }
+        // The view now selected, which the controls under the list act on,
+        // and its place (review of October 31, 2026, finding 13).
+        return (next.id, LibraryViewsSettingsWording.deleted(
+            name: view.name,
+            selected: next.name,
+            number: place.number,
+            count: place.count
+        ))
     }
 
     /// What Save in the editor did: found a problem, which the sheet shows
@@ -209,14 +234,28 @@ struct LibraryViewsSettingsActions {
         return .saved(id: view.id, announcement: LibraryViewEditorWording.added(view.name, number: place.number, count: place.count))
     }
 
-    /// Gives the built-in filter view `view` back its own name and filter,
-    /// and removes the sort saved for it. Returns what to announce, naming
-    /// the view by its restored name.
+    /// Gives the built-in filter view `view` back its own name, filter, and
+    /// sort. Returns what to announce: the view by its restored name, or,
+    /// changing nothing, that another view has its shipped name (review of
+    /// October 31, 2026, finding 5). Unopened's shipped sort is written
+    /// under its key, so a sort chosen for the former No Folder cannot come
+    /// back in its place (finding 9); any other view's saved sort is
+    /// removed, which shows its shipped one.
     func restoreDefault(_ view: LibraryViewDefinition) -> String? {
-        guard LibraryViewsSettingsCommand.canRestore(view, sortIsSaved: sortIsSaved(for: view)) else { return nil }
+        guard LibraryViewsSettingsCommand.canRestore(view, sortDiffers: sortDiffers(for: view)),
+              let shipped = LibraryViewDefinition.shipped(view.id) else {
+            return nil
+        }
+        if store.list.isNameTaken(shipped.name, except: view.id) {
+            return LibraryViewsSettingsWording.restoreNameTaken(name: shipped.name)
+        }
         store.update { $0.restoreDefault(view.id) }
         if let key = view.sortSettingsKey {
-            library.removeSortSetting(for: key)
+            if view.id == .category(.unopened) {
+                library.setFolderSortSetting(view.defaultSortSetting, for: key)
+            } else {
+                library.removeSortSetting(for: key)
+            }
         }
         let name = store.list.view(view.id)?.name ?? view.name
         return LibraryViewsSettingsWording.restored(name: name)
