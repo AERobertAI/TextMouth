@@ -227,6 +227,14 @@ protocol MemoryGuardedReader: AnyObject {
     func stopPlaybackForMemoryRunaway(footprint: UInt64)
     /// Save the reader's place now.
     func savePosition()
+    /// Save the reader's place now, but only if it moved since its last
+    /// durable save. A reader that cannot tell saves it regardless.
+    func savePositionIfMoved()
+}
+
+extension MemoryGuardedReader {
+    /// A reader that does not track its last saved place saves every time.
+    func savePositionIfMoved() { savePosition() }
 }
 
 // MARK: - The Guard
@@ -382,10 +390,14 @@ final class PlaybackMemoryGuard {
     /// TextMouth quits, so without this the next launch could open a book
     /// up to thirty seconds back. Every reader reports to the guard as it
     /// opens, whether or not the guard `isEnabled`, so this finds them all;
-    /// a closed reader saved its place as it closed, and is skipped.
+    /// a closed reader saved its place as it closed, and is skipped. A
+    /// reader at rest, whose place has not moved since it was last saved,
+    /// writes nothing (`savePositionIfMoved()`): saving it would date its
+    /// place anew and write this Mac's library index over a newer one that
+    /// another Mac on a shared library saved.
     func saveEveryOpenReaderPosition() {
         for reader in openReaders(playingOnly: false) {
-            reader.savePosition()
+            reader.savePositionIfMoved()
         }
     }
 
