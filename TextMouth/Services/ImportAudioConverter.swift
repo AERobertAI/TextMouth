@@ -412,8 +412,10 @@ enum ImportAudioConverter {
     /// Apple audio API opens the file in this process, so neither AudioFile's
     /// demuxer nor Apple's Vorbis decoder ever runs in TextMouth. Nil when
     /// the file isn't there, is only in the cloud, or can't be read as audio.
+    /// - Parameter afinfo: what runs afinfo: Apple's tool in a watched
+    ///   child, unless a test of a lying header stands in for it.
     /// - Throws: `CancellationError` only.
-    static func inspect(_ url: URL) async throws -> SourceInfo? {
+    static func inspect(_ url: URL, using afinfo: AudioFileInfo.Tool = .afinfo) async throws -> SourceInfo? {
         guard FileManager.default.fileExists(atPath: url.path), !DatalessFiles.isDataless(url) else { return nil }
         if isOgg(url) { // lint-ok: Ogg alone is read from its own bytes; every other format by afinfo
             guard let header = OggHeaderReader.read(at: url) else { return nil }
@@ -424,7 +426,7 @@ enum ImportAudioConverter {
                 isLossless: header.codec == .flac
             )
         }
-        guard let facts = try await AudioFileInfo.read(url) else { return nil }
+        guard let facts = try await AudioFileInfo.read(url, using: afinfo) else { return nil }
         return SourceInfo(
             sampleRate: facts.sampleRate, channels: facts.channels, duration: facts.duration,
             formatID: facts.formatID, bitsPerSample: facts.bitsPerSample, isLossless: facts.isLossless,
@@ -563,9 +565,11 @@ enum ImportAudioConverter {
     /// written as `target`, needs on the volume: the stereo PCM file of
     /// step 1 (duration × sample rate × two channels × bytes a sample,
     /// uncompressed, so a long track's file is large) and the reserve
-    /// (`downmixReserveBytes`).
+    /// (`downmixReserveBytes`). The length and the rate are capped as an
+    /// output cap's are (`cappedSeconds(_:)`, `cappedSampleRate(_:)`), so
+    /// no header can overflow the count.
     static func downmixBytesNeeded(duration: TimeInterval, target: Target) -> Int64 {
-        let frames = Int64((duration * target.sampleRate).rounded())
+        let frames = Int64((cappedSeconds(duration) * cappedSampleRate(target.sampleRate)).rounded())
         return frames * Int64(maximumChannels) * Int64(downmixBitDepth(for: target) / 8) + downmixReserveBytes
     }
 
@@ -582,12 +586,27 @@ enum ImportAudioConverter {
     /// (`Target.bitRate` is nil): 320,000 bits a second, the most it writes.
     static let encoderChosenBitRate = 320_000
 
-    /// A cap never counts a track longer than this many seconds or a sample
-    /// rate above `maximumCappedSampleRate`, so a lying header cannot
-    /// overflow the arithmetic (`AudioFileInfo` already refuses lengths over
-    /// a year).
+    /// A cap, or the free space a downmix needs, never counts a track
+    /// longer than this many seconds or a sample rate above
+    /// `maximumCappedSampleRate`, so a lying header cannot overflow the
+    /// arithmetic (`AudioFileInfo` already refuses lengths over a year, and
+    /// `convert` refuses a rate above `maximumCappedSampleRate`).
     private static let maximumCappedSeconds: Double = 366 * 24 * 3_600
     private static let maximumCappedSampleRate: Double = 10_000_000
+
+    /// `duration` as the size arithmetic (an output cap, a downmix's free
+    /// space) counts it: from 0 to `maximumCappedSeconds`, and 0 when it is
+    /// not a finite number.
+    private static func cappedSeconds(_ duration: TimeInterval) -> Double {
+        duration.isFinite ? min(max(duration, 0), maximumCappedSeconds) : 0
+    }
+
+    /// `sampleRate` as the size arithmetic (an output cap, a downmix's free
+    /// space) counts it: from 0 to `maximumCappedSampleRate`, and 0 when it
+    /// is not a finite number.
+    private static func cappedSampleRate(_ sampleRate: Double) -> Double {
+        sampleRate.isFinite ? min(max(sampleRate, 0), maximumCappedSampleRate) : 0
+    }
 
     /// How many bytes `step` is expected to write for a track lasting
     /// `duration` seconds, converted as `target`: AAC, duration × bit rate ÷
@@ -596,8 +615,8 @@ enum ImportAudioConverter {
     /// (`downmixBitDepth(for:)`; two channels for the PCM). Uncompressed
     /// size is the most Apple Lossless can take.
     static func expectedOutputBytes(of step: Step, duration: TimeInterval, target: Target) -> Int64 {
-        let seconds = duration.isFinite ? min(max(duration, 0), maximumCappedSeconds) : 0
-        let rate = target.sampleRate.isFinite ? min(max(target.sampleRate, 0), maximumCappedSampleRate) : 0
+        let seconds = cappedSeconds(duration)
+        let rate = cappedSampleRate(target.sampleRate)
         let bytesPerSample = Double(downmixBitDepth(for: target) / 8)
         switch step {
         case .downmix:
@@ -675,6 +694,11 @@ enum ImportAudioConverter {
         /// when unknown (the conversion then goes on). The real reading by
         /// default; a test replaces it.
         var availableBytes: @Sendable (_ folder: URL) -> Int64? = { ImportAudioConverter.availableBytes(on: $0) }
+        /// What reads the facts of a source that is not Ogg before it is
+        /// converted (`inspect(_:using:)`): afinfo in a watched child by
+        /// default. It is here for tests of lying headers, whose stand-in
+        /// prints the facts such a header states.
+        var info: AudioFileInfo.Tool = .afinfo
         /// What the watchdog allows a conversion of a track lasting the
         /// given seconds.
         var limits: @Sendable (_ duration: TimeInterval) -> WatchedProcess.Limits
@@ -730,7 +754,10 @@ enum ImportAudioConverter {
     /// converted in two steps through a hidden stereo PCM file
     /// (`write(_:to:info:target:using:)`). The source is never changed, and
     /// nothing is left behind by a failure. Nothing is downloaded: a file only in
-    /// the cloud is refused. The conversion runs in a child process the
+    /// the cloud is refused. A source whose header cannot be read, or states
+    /// a sample rate that is no finite number or is above
+    /// `maximumCappedSampleRate`, is refused as unreadable before anything
+    /// runs. The conversion runs in a child process the
     /// watchdog of `tool` kills when it hangs (`AUDIO_CONVERSION_KILLED` in the
     /// debug log).
     /// - Throws: `Failure`, or `CancellationError` when the task is
@@ -738,7 +765,15 @@ enum ImportAudioConverter {
     static func convert(_ source: URL, naming: Bool = true, using tool: Tool = .afconvert) async throws -> Conversion {
         let started = Date()
         let name = source.lastPathComponent
-        guard let info = try await inspect(source) else { throw Failure.unreadable(fileName: name) }
+        guard let info = try await inspect(source, using: tool.info) else { throw Failure.unreadable(fileName: name) }
+        // A header can state any sample rate. One that is no number, or past
+        // the most a cap counts, is a damaged header, refused as an
+        // unreadable one is before the target is worked out from it: a
+        // lossless target keeps the source's rate, and the downmix's
+        // arguments turn it into whole hertz (`Int(_:)`), which traps there.
+        guard info.sampleRate.isFinite, info.sampleRate <= maximumCappedSampleRate else {
+            throw Failure.unreadable(fileName: name)
+        }
         // Without a layout afconvert keeps the first two channels, and the speech is often the third.
         if needsDownmix(info), !info.hasChannelLayout {
             throw Failure.unlabelledChannels(fileName: name, channels: info.channels)
