@@ -108,6 +108,9 @@ enum PDFTextParser {
         guard let document = PDFDocument(url: url) else {
             throw PDFParserError.cannotOpenPDF
         }
+        // However the extraction ends, the outline it read is taken apart
+        // before the document is released (`takeApartOutline(of:)`).
+        defer { takeApartOutline(of: document) }
 
         // Try outline-based chapter extraction first
         let outline = extractOutline(from: document)
@@ -717,7 +720,10 @@ enum PDFTextParser {
         var pageIndex: Int // zero-based page index
     }
 
-    /// Extract the table of contents from a PDF's outline/bookmarks
+    /// Extract the table of contents from a PDF's outline/bookmarks.
+    /// Reading every entry leaves PDFKit holding them all, which
+    /// `extract(from:)` takes apart before it releases the document
+    /// (`takeApartOutline(of:)`).
     static func extractOutline(from document: PDFDocument) -> [OutlineEntry] {
         guard let root = document.outlineRoot else { return [] }
 
@@ -762,6 +768,32 @@ enum PDFTextParser {
             }
 
             stack += pending(under: child, depth: childDepth + 1)
+        }
+    }
+
+    /// Take `document`'s outline apart, deepest entries first, so that
+    /// releasing the document never recurses. PDFKit makes an outline's
+    /// entries as they are read, and `extractOutline(from:)` reads them all;
+    /// it then releases them one nested call per level, about 480 bytes of
+    /// stack each, so a PDF whose outline nests some 1,100 levels deep
+    /// overflowed the 512 KiB stack of the worker thread an import runs on
+    /// when the document was released, ending TextMouth. The file is never
+    /// written, so it keeps its outline.
+    ///
+    /// Every entry is gathered with an explicit stack, parents before their
+    /// children; in the reverse of that order each entry comes after all of
+    /// its descendants, so removing the entries from their parents in that
+    /// order leaves none holding another by the time they are released.
+    private static func takeApartOutline(of document: PDFDocument) {
+        guard let root = document.outlineRoot else { return }
+        var entries: [PDFOutline] = []
+        var stack = [root]
+        while let entry = stack.popLast() {
+            entries.append(entry)
+            stack += (0..<entry.numberOfChildren).compactMap { entry.child(at: $0) }
+        }
+        for entry in entries.reversed() where entry !== root {
+            entry.removeFromParent()
         }
     }
 

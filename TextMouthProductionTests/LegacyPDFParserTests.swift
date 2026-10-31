@@ -209,6 +209,27 @@ final class LegacyPDFParserTests: XCTestCase {
         withExtendedLifetime(document) {}
     }
 
+    /// A PDF file whose outline nests 5,000 entries is read on a worker
+    /// thread's 512 KiB stack, where an import reads it, with every entry a
+    /// heading, the deepest at the deepest heading level. PDFKit releases an
+    /// outline one nested call per level once its entries have been read,
+    /// so until the extraction took the outline apart, releasing the
+    /// document overflowed that stack and ended TextMouth.
+    func testAPDFWithAnOutlineNestedThousandsDeepIsReadOnAWorkerStack() throws {
+        let depth = 5_000
+        let source = try XCTUnwrap(PDFDocument(url: fixture("test_formatted.pdf")))
+        let firstPage = try XCTUnwrap(source.page(at: 0))
+        source.outlineRoot = Self.nestedOutline(depth: depth, on: firstPage)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID()).pdf")
+        addTeardownBlock { try? FileManager.default.removeItem(at: url) }
+        XCTAssertTrue(source.write(to: url))
+
+        let markdown = onWorkerSizedStack { (try? PDFTextParser.extract(from: url, recognizer: nil))?.markdown ?? "" }
+
+        XCTAssertEqual(markdown?.contains("# Level 0\n"), true)
+        XCTAssertEqual(markdown?.contains("###### Level \(depth - 1)\n"), true)
+    }
+
     /// Each outline entry as "level title p<page index>".
     private static func describe(_ entries: [PDFTextParser.OutlineEntry]) -> [String] {
         entries.map { "\($0.level) \($0.title) p\($0.pageIndex)" }
