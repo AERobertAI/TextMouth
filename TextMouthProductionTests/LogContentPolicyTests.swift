@@ -349,6 +349,8 @@ final class LogContentPolicyTests: XCTestCase {
         "BOOK_EXPORT", "BOOK_EXPORT_FAILED",
         "TEXT_EDIT_ADOPTED", "TEXT_EDIT_FAILED", "TEXT_EDIT_REFUSED", "TEXT_EDIT_SOURCE_CHANGED",
         "TEXT_EDIT_HELD", "TEXT_EDIT_KEPT",
+        // A text book spoken into one audio file (FMT43): how the export ended, with its chapters and seconds.
+        "SPEECH_EXPORT",
         // The Move to Folder… and Move to Library… sheet appearing, with the places and items it lists.
         "MOVE_SHEET_SHOWN",
         // A reader's load that could not read its book's files because the library moved them
