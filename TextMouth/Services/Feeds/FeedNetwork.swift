@@ -457,3 +457,64 @@ private final class FeedDataTaskDelegate: NSObject, URLSessionDataDelegate {
         }
     }
 }
+
+// MARK: - Starting a Task Whose Awaiter May Be Cancelled (board #4438)
+
+/// The wait for a URLSession task, resumed once at most, by whichever
+/// resumes it first: the task's delegate, as the task ends, or the transfer
+/// awaiting it, ending itself as cancelled before the task could report to
+/// that delegate (`URLSessionTask.resumeUnlessCancelled(otherwise:)`). A
+/// `CheckedContinuation` resumed twice traps, so every later resume is
+/// dropped.
+final class FeedOnceContinuation<Value: Sendable>: Sendable {
+    /// The wait.
+    private let continuation: CheckedContinuation<Value, Error>
+    /// Whether the wait was resumed, guarded by its lock, since a task's
+    /// delegate hears it end on URLSession's queue.
+    private let isResumed = OSAllocatedUnfairLock(initialState: false)
+
+    /// The wait `continuation`, resumed once at most.
+    init(_ continuation: CheckedContinuation<Value, Error>) {
+        self.continuation = continuation
+    }
+
+    /// Resumes the wait returning `value`, unless it was resumed already.
+    func resume(returning value: Value) {
+        resume(with: .success(value))
+    }
+
+    /// Resumes the wait throwing `error`, unless it was resumed already.
+    func resume(throwing error: Error) {
+        resume(with: .failure(error))
+    }
+
+    /// Resumes the wait with `outcome`, unless it was resumed already.
+    private func resume(with outcome: Result<Value, Error>) {
+        let isFirst = isResumed.withLock { isResumed -> Bool in
+            defer { isResumed = true }
+            return !isResumed
+        }
+        if isFirst {
+            continuation.resume(with: outcome)
+        }
+    }
+}
+
+extension URLSessionTask {
+    /// Resumes this task, once it has its delegate, unless the Swift task
+    /// awaiting it was cancelled meanwhile. That task's cancellation handler
+    /// may then have cancelled this one before it had its delegate, and
+    /// URLSession can report such a task's end to no one, leaving the wait
+    /// for good. So this task is cancelled instead, never resumed, and
+    /// `endCancelled` ends the wait as cancelled in its delegate's place;
+    /// should its end reach its delegate too, the wait is resumed once
+    /// (`FeedOnceContinuation`).
+    func resumeUnlessCancelled(otherwise endCancelled: () -> Void) {
+        if Task.isCancelled {
+            cancel()
+            endCancelled()
+        } else {
+            resume()
+        }
+    }
+}

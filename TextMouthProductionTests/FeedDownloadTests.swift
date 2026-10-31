@@ -618,31 +618,69 @@ final class FeedDownloadTests: XCTestCase {
     }
 
     /// A download Cancel Download stopped that ends otherwise than as
-    /// cancelled, as the newest-N rule's that finds this Mac offline before
-    /// it heeds the cancel, leaves its item to the ask that came meanwhile:
-    /// it is neither put off for a network nor said to wait, and the item
-    /// ends as the new ask does, here failing for want of a network.
-    func testADownloadAskedForAgainAsItStopsIsNotPutOffByTheStoppedOne() async throws {
-        let world = try FeedTestWorld(self, label: "FeedCancelThenOffline")
-        let feed = try await subscribe(world, enclosure: "/audio/1.m4a", type: "audio/mp4")
-        world.online.value = false
+    /// cancelled, as the newest-N rule's that finds too little room for its
+    /// file before it heeds the cancel, leaves its item to the ask that came
+    /// meanwhile: the item is never said to wait, and ends as the new ask
+    /// does, here failing for want of room.
+    func testADownloadAskedForAgainAsItStopsLeavesTheItemToTheNewAsk() async throws {
+        let world = try FeedTestWorld(self, label: "FeedCancelThenNoRoom")
+        world.freeSpace.value = 1_500_000_000
+        let big = FeedXML.Item(guid: "big", title: "Big", published: world.day(-1),
+                               enclosure: world.server.url("/audio/big.mp3").absoluteString, enclosureLength: 600_000_000)
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [big])))
+        let feed = try await world.subscribe("/feed.xml")
         let log = StateLog()
-        let watcher = watchStates(of: "guid:ep-1", in: feed, of: world, into: log)
+        let watcher = watchStates(of: "guid:big", in: feed, of: world, into: log)
         defer { watcher.cancel() }
 
         // Asked for, stopped, and asked for again, all before the stopped
         // download has even begun.
-        world.center.downloads.download("guid:ep-1", of: feed.id, origin: .window)
-        world.center.cancelDownload("guid:ep-1", of: feed.id)
-        world.center.download("guid:ep-1", of: feed.id)
+        world.center.downloads.download("guid:big", of: feed.id, origin: .window)
+        world.center.cancelDownload("guid:big", of: feed.id)
+        world.center.download("guid:big", of: feed.id)
         await waitFor("both downloads end") {
             world.center.downloads.current == nil && world.center.downloads.queue.isEmpty
         }
 
-        XCTAssertEqual(world.center.downloads.putOff, [], "the stopped download was put off for a network")
-        XCTAssertEqual(log.states, [
-            .notDownloaded, .downloading, .failed(FeedFetchError.offline.downloadMessage(about: "Episode One")),
-        ], "the item read otherwise meanwhile")
+        let noRoom = FeedDownloadError.notEnoughSpace(bytes: 600_000_000).message(about: "Big")
+        XCTAssertEqual(log.states, [.notDownloaded, .downloading, .failed(noRoom)], "the item read otherwise meanwhile")
+        XCTAssertEqual(world.server.requests(to: "/audio/big.mp3"), [])
+    }
+
+    // MARK: - A Transfer Cancelled Before It Begins (board #4438)
+
+    /// A transfer whose task is cancelled before it first suspends, as
+    /// Cancel Download can cancel a download's task before it first runs,
+    /// fails as cancelled at once, never waiting for good, and fetches
+    /// nothing; being cancelled comes first, so it does so offline too.
+    func testATransferCancelledBeforeItBeginsFailsAsCancelledAtOnce() async throws {
+        let world = try FeedTestWorld(self, label: "FeedTransferCancelledFirst")
+        world.server.serve("/audio/1.m4a", FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(), mimeType: "audio/mp4"))
+        let transfer = downloading("/audio/1.m4a", in: world, through: world.environment.network)
+
+        let online = await ending(of: transfer, cancelledFirst: true)
+        world.online.value = false
+        let offline = await ending(of: transfer, cancelledFirst: true)
+
+        XCTAssertEqual(online, .cancelled)
+        XCTAssertEqual(offline, .cancelled, "a transfer cancelled before it began failed for this Mac being offline")
+        XCTAssertEqual(world.server.requests(to: "/audio/1.m4a"), [], "a cancelled transfer was fetched")
+    }
+
+    /// A transfer whose task is cancelled once it has begun but before its
+    /// URLSession task has a delegate, as Cancel Download on the main
+    /// thread can cancel it while it begins on another, fails as cancelled
+    /// at once too: the transfer ends itself as cancelled, once, however
+    /// URLSession then reports the end of the task cancelled meanwhile.
+    func testATransferCancelledAsItBeginsFailsAsCancelledOnce() async throws {
+        let world = try FeedTestWorld(self, label: "FeedTransferCancelledAsItBegins")
+        world.server.serve("/audio/1.m4a", FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(), mimeType: "audio/mp4"))
+        let transfer = downloading("/audio/1.m4a", in: world, through: networkCancellingAsItBegins())
+
+        let ended = await ending(of: transfer, cancelledFirst: false)
+
+        XCTAssertEqual(ended, .cancelled)
+        XCTAssertEqual(world.server.requests(to: "/audio/1.m4a"), [], "a cancelled transfer was fetched")
     }
 
     // MARK: - The Cancelled Event (REV18a finding 6)
@@ -1164,5 +1202,56 @@ final class FeedDownloadTests: XCTestCase {
         askAgain(feed)
         let book = try await downloadedBook(world, feed: feed, item: "guid:ep-1")
         return AskedAgain(book: book, states: states.states, cancelled: cancelled.itemIDs)
+    }
+
+    /// A download's transfer of `path` from `world`'s server through
+    /// `network`, into a file of its own, for `ending(of:cancelledFirst:)`.
+    private func downloading(_ path: String, in world: FeedTestWorld, through network: FeedNetwork) -> @Sendable () async throws -> Void {
+        let url = world.server.url(path)
+        let destination = world.downloadsFolder.appendingPathComponent("\(UUID().uuidString).download")
+        return {
+            _ = try await network.download(url, resumingFrom: nil, to: destination, discretionary: false) { _, _ in }
+        }
+    }
+
+    /// A network answering from the stub servers that cancels the task
+    /// asking it whether this Mac is online: a transfer's own task, after
+    /// the transfer's first check of being cancelled, before its URLSession
+    /// task exists.
+    private func networkCancellingAsItBegins() -> FeedNetwork {
+        FeedNetwork.stubbed(protocolClasses: [FeedStubProtocol.self], reachability: NetworkReachability {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return true
+        })
+    }
+
+    /// How `transfer` ended, run in a task of its own, cancelled before it
+    /// first suspends when `cancelledFirst`: nil when it went through,
+    /// otherwise why it failed, whether it threw a download's
+    /// `FeedTransferFailure` or a fetch's `FeedFetchError`. Waits a few
+    /// seconds at most, failing the test rather than waiting for good for a
+    /// transfer that never ends (board #4438).
+    private func ending(of transfer: @escaping @Sendable () async throws -> Void, cancelledFirst: Bool) async -> FeedFetchError? {
+        let ended = LockedValue(false)
+        let failure = LockedValue<FeedFetchError?>(nil)
+        let running = Task { @MainActor in
+            defer { ended.value = true }
+            do {
+                try await transfer()
+            } catch let stopped as FeedTransferFailure {
+                failure.value = stopped.error
+            } catch let stopped as FeedFetchError {
+                failure.value = stopped
+            } catch {
+                XCTFail("the transfer threw \(error), neither a FeedTransferFailure nor a FeedFetchError")
+            }
+        }
+        if cancelledFirst {
+            // Before the task first runs: it begins on the main actor, which
+            // this test holds until it waits below.
+            running.cancel()
+        }
+        await waitFor("the transfer ends", timeout: 5) { ended.value }
+        return failure.value
     }
 }
