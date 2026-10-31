@@ -147,12 +147,56 @@ enum AudioBookParser {
         return String(file.resolvingSymlinksInPath().path.dropFirst(basePath.count + 1))
     }
 
-    /// Parse a single audio file. Extracts chapters from M4B metadata if available.
-    /// - Parameter prober: checks that the file plays and measures it; the
-    ///   app's AVFoundation probe unless a test stands in for it.
+    /// Where the chapters of a book of one audio file came from
+    /// (`parseFile(url:prober:fallbackChapters:)`).
+    enum ChapterSource: Equatable, Sendable {
+        /// The file's own chapter markers, which always win.
+        case file
+        /// A podcast episode's chapters kept beside the file (FMT25), taken
+        /// because the file has none of its own.
+        case podcastChapters
+        /// None: the book is one chapter, the whole file. Any podcast's
+        /// chapters given for it begin past its end.
+        case wholeFile
+    }
+
+    /// Parse a single audio file. Extracts chapters from M4B metadata if
+    /// available, or takes a podcast's chapters kept beside it
+    /// (`parseFile(url:prober:fallbackChapters:)`).
+    /// - Parameters:
+    ///   - prober: checks that the file plays and measures it; the app's
+    ///     AVFoundation probe unless a test stands in for it.
+    ///   - fallbackChapters: a podcast episode's chapters, kept beside its
+    ///     audio (FMT25), for a file without chapters of its own.
     /// - Throws: `AudioParseError.unplayableFile` naming the file when it
     ///   cannot be played (see `AudioMediaProbe`).
-    static func parse(url: URL, prober: AudioMediaProber = .avFoundation) async throws -> DocumentContent {
+    static func parse(
+        url: URL,
+        prober: AudioMediaProber = .avFoundation,
+        fallbackChapters: PodcastChapters? = nil
+    ) async throws -> DocumentContent {
+        try await parseFile(url: url, prober: prober, fallbackChapters: fallbackChapters).content
+    }
+
+    /// Parse a single audio file, saying where its chapters came from.
+    /// Extracts chapters from M4B metadata if available. A file without
+    /// any takes `fallbackChapters`, a podcast episode's chapters kept
+    /// beside it (FMT25), when they fit it
+    /// (`PodcastChapters.bookChapters(fileDuration:)`): each is a chapter
+    /// with one heading, as each of the file's own is. The file's own
+    /// chapters always win.
+    /// - Parameters:
+    ///   - prober: checks that the file plays and measures it; the app's
+    ///     AVFoundation probe unless a test stands in for it.
+    ///   - fallbackChapters: a podcast episode's chapters, kept beside its
+    ///     audio, for a file without chapters of its own; nil for none.
+    /// - Throws: `AudioParseError.unplayableFile` naming the file when it
+    ///   cannot be played (see `AudioMediaProbe`).
+    static func parseFile(
+        url: URL,
+        prober: AudioMediaProber = .avFoundation,
+        fallbackChapters: PodcastChapters? = nil
+    ) async throws -> (content: DocumentContent, chapterSource: ChapterSource) {
         // One file in, one duration out.
         let totalSeconds = try await playableDurations(
             of: [(name: url.lastPathComponent, url: url)],
@@ -164,8 +208,8 @@ enum AudioBookParser {
         let title = metadata.title ?? url.deletingPathExtension().lastPathComponent
         let author = metadata.artist ?? Book.unknownAuthor
 
-        // Try to extract chapter markers
-        let chapters = await AudioPlaybackService.extractChapters(from: url)
+        // Try to extract chapter markers, or take a podcast's chapters
+        let (chapters, source) = await markers(of: url, lasting: totalSeconds, fallback: fallbackChapters)
 
         if chapters.isEmpty {
             // Single chapter for the whole file
@@ -178,9 +222,9 @@ enum AudioBookParser {
                 text: placeholderText,
                 headings: [Heading(level: 1, text: title, chapterIndex: 0, characterOffset: 0)]
             )
-            return DocumentContent(title: title, author: author, chapters: [chapter])
+            return (DocumentContent(title: title, author: author, chapters: [chapter]), source)
         } else {
-            // Multiple chapters from metadata
+            // Multiple chapters, from metadata or from a podcast's chapters
             var parsedChapters: [Chapter] = []
             for (index, ch) in chapters.enumerated() {
                 let chDuration = ch.duration > 0 ? ch.duration : 1
@@ -194,8 +238,26 @@ enum AudioBookParser {
                     headings: [heading]
                 ))
             }
-            return DocumentContent(title: title, author: author, chapters: parsedChapters)
+            return (DocumentContent(title: title, author: author, chapters: parsedChapters), source)
         }
+    }
+
+    /// The chapters of the one audio file at `url`, lasting `fileDuration`
+    /// seconds, and where they came from: the file's own chapter markers,
+    /// which always win; without any, those of `fallback`, a podcast's
+    /// chapters, that fit the file (`PodcastChapters.bookChapters(fileDuration:)`);
+    /// and none when neither gives any.
+    private static func markers(
+        of url: URL,
+        lasting fileDuration: TimeInterval,
+        fallback: PodcastChapters?
+    ) async -> (chapters: [(title: String, startTime: TimeInterval, duration: TimeInterval)], source: ChapterSource) {
+        let own = await AudioPlaybackService.extractChapters(from: url)
+        if !own.isEmpty {
+            return (own, .file)
+        }
+        let podcast = fallback?.bookChapters(fileDuration: fileDuration) ?? []
+        return (podcast, podcast.isEmpty ? .wholeFile : .podcastChapters)
     }
 
     /// Parse a directory of audio files as a multi-chapter audio book.
