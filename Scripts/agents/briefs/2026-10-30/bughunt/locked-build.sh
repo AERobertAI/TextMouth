@@ -13,11 +13,10 @@
 # run-area.py's status, or 3 when the disk stayed too full for an hour (tell
 # bughunt-lead, and do not build).
 #
-# The disk is short tonight (the orchestrator, October 30, 19:40): a build in
-# an existing folder needs 4 GB free, a new folder 5 GB, and the team's
-# folder is deleted whenever no other member waits to build next. So once
-# the build ends and nobody waits, this script unregisters the folder's app
-# and deletes the folder itself. Never delete it yourself, and never pass
+# The disk is short tonight (the orchestrator, October 30, 19:40 and 23:13):
+# a build needs 4 GB free, and the team's folder is deleted right after each
+# run. So once the build ends, this script unregisters the folder's app and
+# deletes the folder itself. Never delete it yourself, and never pass
 # --clean.
 set -u
 
@@ -30,13 +29,11 @@ data=/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-bugh
 log="/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/bughunt-$slug.log"
 lsregister=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
 
-# Deletes the team's build folder when no member waits to build next:
-# unregisters the test host app first, as every build folder's removal does.
-delete_folder_unless_awaited() {
-    if [ -n "$(ls -A "$waiting" 2>/dev/null)" ]; then
-        echo "$slug: the build folder stays: $(ls "$waiting" | tr '\n' ' ')waits to build"
-        return
-    fi
+# Deletes the team's build folder once a build has run, as the orchestrator
+# asked at 23:13 ("Delete a folder right after its run"): unregisters the
+# test host app first, as every build folder's removal does. The next
+# member's build makes the folder again.
+delete_folder() {
     case "$data" in
         */TextMouth-DerivedData-bughunt) ;;
         *) return ;;
@@ -44,20 +41,20 @@ delete_folder_unless_awaited() {
     if [ -d "$data" ]; then
         "$lsregister" -u "$data/Build/Products/Debug/TextMouth.app" 2>/dev/null
         rm -rf "$data"
-        echo "$slug: deleted the team's build folder (nobody waits to build)"
+        echo "$slug: deleted the team's build folder after its run"
     fi
 }
 
-# Frees the lock, and the folder too when nobody waits: called on every way
-# out once the lock is held.
+# Frees the lock and deletes the folder: called on every way out once the
+# lock is held.
 release() {
-    delete_folder_unless_awaited
+    delete_folder
     rm -f "$lock/holder"
     rmdir "$lock" 2>/dev/null
 }
 
-# Wait for the lock, saying so in the waiting folder, so the build before
-# this one keeps the folder for it.
+# Wait for the lock, saying so in the waiting folder, which shows the lead
+# who is queued.
 mkdir -p "$waiting"
 touch "$waiting/$slug"
 until mkdir "$lock" 2>/dev/null; do
@@ -67,13 +64,10 @@ rm -f "$waiting/$slug"
 echo "$slug since $(date '+%H:%M:%S')" > "$lock/holder"
 trap release EXIT
 
-# A new build folder needs 5 GB free, an existing one 4 GB. No member of the
+# A build needs 4 GB free (the orchestrator, 23:13). No member of the
 # team can build while the disk is short, so the lock is held while this
 # waits for room, checking each minute, for an hour at most.
-need=5
-if [ -d "$data" ]; then
-    need=4
-fi
+need=4
 for minute in $(seq 1 60); do
     avail=$(df -g /System/Volumes/Data | awk 'NR==2 {print $4}')
     if [ "$avail" -ge "$need" ]; then
