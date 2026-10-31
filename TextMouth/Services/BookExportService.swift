@@ -249,10 +249,12 @@ enum BookExportConversion: Sendable, Equatable {
     /// Whether the conversion can make the files of `kind`: a text
     /// conversion makes those of a kind whose `convertsText` is true, and
     /// is ignored for any other.
+    /// A text conversion also writes a transcript's text, its Markdown
+    /// (TODO 3984); captions are a transcript's alone (FMT23).
     func applies(to kind: BookExportKind) -> Bool {
         switch self {
         case .text:
-            return kind.convertsText
+            return kind.convertsText || kind == .transcript
         case .timedText:
             // Captions are made of a transcript alone.
             return kind == .transcript
@@ -774,7 +776,10 @@ enum BookExportService {
     /// they are.
     /// Captions (FMT23) are made of the transcript's transcript.json alone,
     /// "Moby-Dick - Transcript.json" becoming "Moby-Dick - Transcript.vtt":
-    /// the Markdown written from it is not exported with them.
+    /// the Markdown written from it is not exported with them. A text
+    /// writer, the other way about, writes the transcript's text alone (TODO
+    /// 3984), "Moby-Dick - Transcript.md" becoming "Moby-Dick -
+    /// Transcript.html", and its transcript.json is not exported.
     private static func files(
         of item: BookExportItem,
         for book: Book,
@@ -787,7 +792,11 @@ enum BookExportService {
         var toConvert = item.files
         // Captions are made of the transcript.json alone (FMT23).
         if case .timedText = conversion {
-            toConvert = item.files.filter { $0.source.url.lastPathComponent == TextMouthPaths.transcriptFileName }
+            toConvert = item.files.filter(isTranscriptFile)
+        }
+        // A text writer writes the transcript's text alone (TODO 3984).
+        if case .text = conversion, item.kind == .transcript {
+            toConvert = item.files.filter { !isTranscriptFile($0) }
         }
         return toConvert.map { file in
             let url: URL
@@ -805,6 +814,12 @@ enum BookExportService {
                 byteCount: file.byteCount
             )
         }
+    }
+
+    /// Whether `file` is made from a transcript's transcript.json, which
+    /// captions are made of and a text writer leaves out (FMT23).
+    private static func isTranscriptFile(_ file: BookExportFile) -> Bool {
+        file.source.url.lastPathComponent == TextMouthPaths.transcriptFileName
     }
 
     /// Exports the `kinds` chosen of `offers` into `destination`, as `plan`
