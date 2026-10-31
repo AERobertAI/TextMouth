@@ -1737,11 +1737,18 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     }
 
     /// `seconds` as the library shows a length: `h:mm:ss` from an hour on,
-    /// else `m:ss`. Shared by every format's metadata reader.
-    private static func durationString(_ seconds: TimeInterval) -> String {
-        let hours = Int(seconds) / 3600
-        let minutes = (Int(seconds) % 3600) / 60
-        let secs = Int(seconds) % 60
+    /// else `m:ss`. Shared by every format's metadata reader. A header can
+    /// claim any length, so the seconds are bounded before they become
+    /// whole seconds (`Int(_:)` traps on infinity, NaN, and from about
+    /// 9.2e18 on): a value that is not a finite number shows as `0:00`, as
+    /// does a negative one, and one past `OggHeaderReader.maximumDuration`
+    /// (a year, the longest length TextMouth believes) shows as that year.
+    static func durationString(_ seconds: TimeInterval) -> String {
+        let bounded = seconds.isFinite ? min(max(seconds, 0), OggHeaderReader.maximumDuration) : 0
+        let wholeSeconds = Int(bounded)
+        let hours = wholeSeconds / 3600
+        let minutes = (wholeSeconds % 3600) / 60
+        let secs = wholeSeconds % 60
         return hours > 0
             ? String(format: "%d:%02d:%02d", hours, minutes, secs)
             : String(format: "%d:%02d", minutes, secs)
