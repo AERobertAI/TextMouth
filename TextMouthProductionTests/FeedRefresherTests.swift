@@ -165,6 +165,122 @@ final class FeedRefresherTests: XCTestCase {
         XCTAssertEqual(world.center.store.record(of: feed.id), before)
     }
 
+    /// A merge whose record never reached disk, its write waiting while the
+    /// data directory was unavailable when TextMouth quit, is made again by
+    /// the next launch's check, though the feed sends the same bytes: this
+    /// Mac's fetch details, written at once, noted the record's date after
+    /// the merge, the record the next launch loads has an older one, and so
+    /// the feed is read whole, without validators, and the episode the lost
+    /// merge brought is listed and announced. Once that merge is written,
+    /// the same body is unchanged again, asked for with its validators.
+    func testAMergeThatNeverReachedDiskIsMadeAgainAtTheNextLaunch() async throws {
+        let world = try FeedTestWorld(self, label: "FeedMergeUnsaved")
+        // Downloads by hand keep the newest-N rule (FR11) out of this test
+        // of refreshing, and the next launch checks only when asked.
+        FeedSettings.itemsPreference.write(.everyListedDownloadsByHand, to: world.preferences)
+        FeedSettings.refreshAtLaunchPreference.write(false, to: world.preferences)
+        FeedSettings.refreshIntervalHoursPreference.write(0, to: world.preferences)
+        let two = (1...2).map { number in
+            FeedXML.Item(guid: "ep-\(number)", title: "Episode \(number)", published: world.day(-Double(number)))
+        }
+        let three = [FeedXML.Item(guid: "ep-3", title: "Episode 3", published: world.day(0.5))] + two
+        world.server.serve(
+            "/feed.xml",
+            .feed(FeedXML.rss(items: two), headers: ["ETag": "\"v1\""]),
+            .feed(FeedXML.rss(items: three), headers: ["ETag": "\"v2\""])
+        )
+        // This launch's engine, on the world's folders, whose data directory
+        // goes away as the volume holding it would.
+        let unavailable = LockedValue(false)
+        let recordsFolder = world.recordsFolder
+        var environment = world.environment
+        environment.records = FeedStore.Location(
+            currentFolder: { recordsFolder },
+            folder: { _ in recordsFolder },
+            boundary: .shared,
+            isUnavailable: { unavailable.value }
+        )
+        // Nothing below throws once this engine has a write to wait for, so
+        // it always reaches the quit that stops it and lands its writes.
+        let first = FeedCenter(environment: environment)
+        await first.start(library: world.library)?.value
+        let outcome = try await first.subscribe(to: world.server.url("/feed.xml").absoluteString, folderID: world.bookFolder.id)
+        guard case .subscribed(let feed) = outcome else { return XCTFail("subscribing ended with \(outcome)") }
+        await first.store.flush()
+
+        unavailable.value = true
+        world.advance(by: 86_400)
+        let lost = await first.refresh(feed.id)
+        XCTAssertEqual(lost?.outcome, .updated(newItemIDs: ["guid:ep-3"]))
+        XCTAssertEqual(first.store.unsavedFeedIDs, [feed.id], "the record was written while its data directory was away")
+        // TextMouth quits with the data directory still away: the engine
+        // stops, and every write it asked for lands but the record's.
+        await FeedTestWorld.finish(first)
+
+        let next = await world.relaunch(self)
+        XCTAssertEqual(next.store.record(of: feed.id)?.items.map(\.id), ["guid:ep-1", "guid:ep-2"])
+        world.advance(by: 3_600)
+        let again = try await unwrap(next.refresh(feed.id))
+
+        XCTAssertEqual(again.outcome, .updated(newItemIDs: ["guid:ep-3"]))
+        XCTAssertEqual(next.listedItems(of: feed.id).map(\.id), ["guid:ep-3", "guid:ep-1", "guid:ep-2"])
+        let whole = try XCTUnwrap(world.server.requests(to: "/feed.xml").last)
+        XCTAssertNil(whole.value(forHTTPHeaderField: "If-None-Match"), "the validators of a body the record never took were sent")
+
+        await next.store.flush()
+        let unchanged = try await unwrap(next.refresh(feed.id))
+        XCTAssertEqual(unchanged.outcome, .unchanged)
+        let conditional = try XCTUnwrap(world.server.requests(to: "/feed.xml").last)
+        XCTAssertEqual(conditional.value(forHTTPHeaderField: "If-None-Match"), "\"v2\"")
+    }
+
+    /// The last body read counts only while the record holds its merge. A
+    /// merge notes the body's validators and digest, the listing's number,
+    /// and the record's date; the date matches the record's to the whole
+    /// second, as the files store dates, so either one read back from its
+    /// file still matches the other in memory. A record with an older date,
+    /// or none, does not hold the merge, and neither does a state written
+    /// before TextMouth noted the date, which still reads with every other
+    /// detail it holds.
+    func testTheLastBodyCountsOnlyWhileTheRecordHoldsItsMerge() throws {
+        let merged = Date(timeIntervalSince1970: 1_791_000_000.75)
+        let address = try XCTUnwrap(URL(string: "https://show.example/feed.xml"))
+        var record = FeedRecord(feed: Feed(feedURL: address, folderID: UUID(), subscribedDate: merged))
+        record.feed.updatedDate = merged
+        let body = FeedFetchedBody(data: Data("<rss/>".utf8), finalURL: address, etag: "\"v2\"", lastModified: "Wed, 01 Oct 2026 10:00:00 GMT")
+        var state = FeedFetchState()
+
+        state.noteBodyMerged(body, keptEntries: 5, into: record)
+
+        XCTAssertEqual(state.etag, "\"v2\"")
+        XCTAssertEqual(state.lastModified, "Wed, 01 Oct 2026 10:00:00 GMT")
+        XCTAssertEqual(state.bodyDigest, body.digest)
+        XCTAssertEqual(state.keptEntriesOfLastBody, 5)
+        XCTAssertEqual(state.recordUpdatedDateOfLastBody, merged)
+        XCTAssertTrue(state.lastBodyIsMerged(into: record))
+        let storedState = try FeedRecordCoding.decoder().decode(FeedFetchState.self, from: FeedRecordCoding.encoder().encode(state))
+        let storedRecord = try FeedRecordCoding.decoder().decode(FeedRecord.self, from: FeedRecordCoding.encoder().encode(record))
+        XCTAssertNotEqual(storedState.recordUpdatedDateOfLastBody, merged, "the file kept a fraction of a second")
+        XCTAssertTrue(storedState.lastBodyIsMerged(into: record), "a state read back from its file")
+        XCTAssertTrue(state.lastBodyIsMerged(into: storedRecord), "a record read back from its file")
+
+        record.feed.updatedDate = merged.addingTimeInterval(-86_400)
+        XCTAssertFalse(state.lastBodyIsMerged(into: record), "a record that never took the merge")
+        record.feed.updatedDate = nil
+        XCTAssertFalse(state.lastBodyIsMerged(into: record), "a record never merged")
+
+        record.feed.updatedDate = merged
+        let older = try FeedRecordCoding.decoder().decode(
+            FeedFetchState.self,
+            from: Data(#"{"bodyDigest":"00ff","etag":"\"v1\"","keptEntriesOfLastBody":-1}"#.utf8)
+        )
+        XCTAssertEqual(older.bodyDigest, "00ff")
+        XCTAssertEqual(older.etag, "\"v1\"")
+        XCTAssertEqual(older.keptEntriesOfLastBody, -1)
+        XCTAssertNil(older.recordUpdatedDateOfLastBody)
+        XCTAssertFalse(older.lastBodyIsMerged(into: record), "a state written before the date was noted")
+    }
+
     // MARK: - Changed Feeds
 
     /// A changed feed adds its new items, announcing those published since

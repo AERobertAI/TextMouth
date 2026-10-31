@@ -716,10 +716,10 @@ final class FeedCenter: ObservableObject {
             record.feed.folderID = try folderID(for: record.feed, choice: choice)
             store.add(record)
             fetchStates.update(record.feed.id) { state in
-                state.etag = body.etag
-                state.lastModified = body.lastModified
-                state.bodyDigest = body.digest
-                state.keptEntriesOfLastBody = keepEntries
+                // The body with the record's date, as a refresh notes them,
+                // so the next refresh skips this body as unchanged only
+                // while the record it loads holds this merge.
+                state.noteBodyMerged(body, keptEntries: keepEntries, into: record)
                 state.lastCheck = now
                 state.lastSuccess = now
             }
