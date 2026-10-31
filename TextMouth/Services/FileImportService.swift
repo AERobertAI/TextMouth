@@ -3280,12 +3280,24 @@ enum FileImportService {
         return (book, info.metadata.folderPath)
     }
 
-    /// Recreates folder rows for the folders on disk and for every folder a
-    /// book lives in. Only the library index records folder rows, so when it
-    /// cannot be read, the directories under the library directory are the
+    /// Recreates folder rows for every folder a book lives in, its ancestors
+    /// included, and, when `includingFoldersOnDisk`, for the folders on disk
+    /// as well. Only the library index records folder rows, so when it holds
+    /// none to go by, the directories under the library directory are the
     /// best remaining evidence of the user's folders. Without rows, books in
     /// folders would be unreachable from the Folders view, and Rebuild Library
     /// Index would save a library whose folders had vanished.
+    ///
+    /// Which folders count is the caller's choice:
+    /// - The folders on disk too (the default), when there is no index to go
+    ///   by: the provisional library shown while the index cannot be read
+    ///   (`LibraryViewModel.buildProvisionalLibrary()`), and the startup
+    ///   repair of a library that began with no books and no folders, its
+    ///   library.json missing or empty.
+    /// - Only the folders books name, for the startup repair of every other
+    ///   library, whose index records the user's folders: a book never lies
+    ///   in a folder with no row, while a directory with no row, such as one
+    ///   a deleted folder left behind, stays out. The disk is not walked.
     ///
     /// Package directories, their contents, and hidden entries are skipped.
     /// Paths deeper than `BookFolder.maxDepth`, names folder creation refuses,
@@ -3294,9 +3306,10 @@ enum FileImportService {
     @discardableResult
     static func adoptLibraryFolders(
         library: inout Library,
-        libraryDirectory: URL = TextMouthPaths.libraryDir
+        libraryDirectory: URL = TextMouthPaths.libraryDir,
+        includingFoldersOnDisk: Bool = true
     ) -> Int {
-        var paths = folderDirectoryPaths(in: libraryDirectory)
+        var paths = includingFoldersOnDisk ? folderDirectoryPaths(in: libraryDirectory) : []
         for book in library.books where !book.folderPath.isEmpty {
             let components = book.folderPath.components(separatedBy: "/")
             for depth in 1...components.count {
