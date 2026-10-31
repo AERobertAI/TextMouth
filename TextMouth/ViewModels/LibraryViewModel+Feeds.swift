@@ -49,6 +49,17 @@ extension LibraryViewModel: FeedLibraryHost {
         library.folders.first { $0.id == folderID }?.fullPath
     }
 
+    /// Each feed's folder path, by feed ID, for the folder conditions of a
+    /// Library view that lists episodes or articles, which are in their
+    /// feeds' folders: every feed whose folder is in the library, the first
+    /// kept should two share an ID.
+    func feedFolderPathsByFeedID() -> [UUID: String] {
+        let pairs = feeds.feeds.compactMap { feed in
+            feedFolderPath(forFolderID: feed.folderID).map { (feed.id, $0) }
+        }
+        return Dictionary(pairs, uniquingKeysWith: { first, _ in first })
+    }
+
     /// The book `bookID`, when the library lists it: found through the
     /// library's books by ID, worked out once for each change of the
     /// library, rather than by a scan of every book (FR11, branch A2).

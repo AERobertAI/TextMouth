@@ -140,6 +140,15 @@ final class OnDiskContractTests: XCTestCase {
                 "Add to Reading List",
                 "Remove from Reading List",
                 "Folder or Feed Settings",
+                "Go to View 1",
+                "Go to View 2",
+                "Go to View 3",
+                "Go to View 4",
+                "Go to View 5",
+                "Go to View 6",
+                "Go to View 7",
+                "Go to View 8",
+                "Go to View 9",
                 "Import Folder…",
                 "Add Feed…",
                 "Open Book…",
@@ -236,6 +245,7 @@ final class OnDiskContractTests: XCTestCase {
             "repeatedSymbolStyle", "repeatedSymbolThreshold", "repeatedSymbolSet", "recordingInputDeviceID",
             "recordingAnnouncesLevel", "recordingLevelAnnouncementSeconds", "recordingOriginalPolicy",
             "recordingOriginalDays", "useInstalledFFmpeg", "audioEditorPreviewsFilters",
+            "libraryViews",
             "audioEditorPlaysAfterMoves", "keyboardShortcuts", "shortcutDoublePressSeconds", "feedRefreshAtLaunch",
             "feedRefreshIntervalHours", "feedItems", "feedNewestCount", "feedDeleteDownloadsDaysAfterPlayed",
             "feedRefreshAlert", "feedNotifications", "logLocation", "transcriptionLocale",
@@ -580,6 +590,7 @@ final class OnDiskContractTests: XCTestCase {
         config.feedRefreshAlert = true
         config.feedNotifications = true
         config.offerTranscriptionAfterImport = true
+        config.libraryViews = LibraryViewDefinitionList.shipped.fileEntries
         return config
     }
 

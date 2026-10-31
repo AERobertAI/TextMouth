@@ -235,6 +235,16 @@ extension LibraryViewModel {
         save()
     }
 
+    /// Removes the sort saved under `key`, such as a deleted Library view's
+    /// ("/views/" and its identity), or a built-in view's that Restore
+    /// Default gives back its own, which then shows the sort it shows until
+    /// one is chosen. Saves only when a sort was there.
+    func removeSortSetting(for key: String) {
+        guard library.folderSortSettings[key] != nil else { return }
+        library.folderSortSettings[key] = nil
+        save()
+    }
+
     /// Apply a sort setting to a folder and all its subfolders, then persist.
     func applySortToSubfolders(_ setting: FolderSortSetting, from folderPath: String) {
         library.applySortToSubfolders(setting, from: folderPath)

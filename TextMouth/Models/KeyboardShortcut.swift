@@ -105,6 +105,24 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// toolbar's Feed Settings or Folder Settings button does. It has no key
     /// until the user gives it one in Settings.
     case folderOrFeedSettings = "Folder or Feed Settings"
+    // Go to View 1 to Go to View 9 (the design of October 30, 2026,
+    // LIBRARY-VIEWS-RESEARCH-2026-10-30.md, section 6), Command-1 to
+    // Command-9 by default, in Library windows: the window shows the first
+    // to the ninth view its View pop-up offers, counting those offered always
+    // and when applicable, never one kept there only because the window
+    // shows it, so a key always goes to the same view; and it says the
+    // view's name and what it lists, or, for a key with no view, that there
+    // is none. The Library menu's Go to View submenu shows each key beside
+    // its view.
+    case goToView1 = "Go to View 1"
+    case goToView2 = "Go to View 2"
+    case goToView3 = "Go to View 3"
+    case goToView4 = "Go to View 4"
+    case goToView5 = "Go to View 5"
+    case goToView6 = "Go to View 6"
+    case goToView7 = "Go to View 7"
+    case goToView8 = "Go to View 8"
+    case goToView9 = "Go to View 9"
     /// Library > Import Folder…, a menu command whose key is its menu item's
     /// key equivalent (FR12's branch D), for DAISY books and folders of audio
     /// tracks (FR17). It was Import DAISY Folder… until October 14, 2026,
@@ -243,8 +261,10 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// though their groups' work in every window (FR12's branch E): New from
     /// Text in Library windows and Show Sleep Timer in reader windows, as the
     /// user chose on October 7, so Shift-Command-T is each's in its own kind
-    /// of window (#1451); and the Library and Playback menus' commands where
-    /// their menus show, as their keys always worked.
+    /// of window (#1451); the Library and Playback menus' commands where
+    /// their menus show, as their keys always worked; and Go to View 1 to Go
+    /// to View 9 in Library windows, whose views they show, so Command-1 to
+    /// Command-9 stay free in every other window (October 30, 2026).
     static let defaultScopesOfTheirOwn: [ShortcutAction: ShortcutScope] = [
         .newFromText: .library,
         .showSleepTimer: .reader,
@@ -252,7 +272,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         .addFeed: .library,
         .copyReadingPosition: .reader,
         .searchInBook: .reader,
-    ]
+    ].merging(goToViewActions.map { ($0, ShortcutScope.library) }) { own, _ in own }
 
     /// The notification to post when this action is triggered. A key
     /// equivalent's action (`isKeyEquivalent`) is never posted by the
@@ -308,6 +328,11 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .addToReadingList: return .addToReadingList
         case .removeFromReadingList: return .removeFromReadingList
         case .folderOrFeedSettings: return .showFolderOrFeedSettings
+        // Go to View's nine actions post one name, carrying the action in
+        // their user info, from which the Library window reads the number.
+        case .goToView1, .goToView2, .goToView3, .goToView4, .goToView5,
+             .goToView6, .goToView7, .goToView8, .goToView9:
+            return .goToLibraryView
         case .importDAISYFolder: return .importDAISYFolder
         case .addFeed: return .addFeed
         case .openBook: return .openBookFile
@@ -349,7 +374,9 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .whereAmI, .whereAmIFull, .speakInfo, .speakFullInfo, .speakImportProgress, .speakDownloadProgress:
             return "Information"
         case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .moveToLibrary, .selectAll, .toggleEditMode,
-             .moveBookUp, .moveBookDown, .addToReadingList, .removeFromReadingList, .folderOrFeedSettings, .importDAISYFolder, .addFeed:
+             .moveBookUp, .moveBookDown, .addToReadingList, .removeFromReadingList, .folderOrFeedSettings,
+             .goToView1, .goToView2, .goToView3, .goToView4, .goToView5, .goToView6, .goToView7, .goToView8, .goToView9,
+             .importDAISYFolder, .addFeed:
             return "Library"
         case .openBook, .newFromText, .newRecording:
             return Self.fileCategory
@@ -529,11 +556,62 @@ extension Notification.Name {
     /// value under "action" in its user info, and the window it was pressed
     /// in under "sourceWindow": that window's editor performs it.
     static let audioEditorShortcut = Notification.Name("audioEditorShortcut")
+    /// Posted by Go to View 1 to Go to View 9's keys and by the Library
+    /// menu's Go to View submenu (October 30, 2026): the Library window that
+    /// takes it shows the view its user info numbers
+    /// (`ShortcutAction.goToViewNumber(in:)`), and says so.
+    static let goToLibraryView = Notification.Name("goToLibraryView")
     /// Never posted: the notification name of the actions whose command acts
     /// directly, with no notification of its own, File > New Recording… and
     /// the Record window's buttons (FR12's branch D). The shortcut manager
     /// posts no key equivalent's action, so nothing listens for this.
     static let actsWithoutNotification = Notification.Name("actsWithoutNotification")
+}
+
+// MARK: - Go to View (October 30, 2026)
+
+extension ShortcutAction {
+    /// Go to View 1 to Go to View 9, in order: the Nth goes to the Nth view
+    /// a Library window offers.
+    static let goToViewActions: [ShortcutAction] = [
+        .goToView1, .goToView2, .goToView3, .goToView4, .goToView5,
+        .goToView6, .goToView7, .goToView8, .goToView9,
+    ]
+
+    /// The number of the view this action goes to, 1 to 9, or nil for any
+    /// action but Go to View's.
+    var goToViewNumber: Int? {
+        Self.goToViewActions.firstIndex(of: self).map { $0 + 1 }
+    }
+
+    /// The action going to the `number`th view, Go to View 1 to Go to View
+    /// 9, or nil for any other number, which no action goes to.
+    static func goToView(number: Int) -> ShortcutAction? {
+        goToViewActions.indices.contains(number - 1) ? goToViewActions[number - 1] : nil
+    }
+
+    /// The user info key under which the Go to View submenu's item for a
+    /// view past the ninth gives that view's number, as no action does.
+    static let goToViewNumberKey = "viewNumber"
+
+    /// The user info with which the Go to View submenu's item for the
+    /// `number`th view posts `.goToLibraryView`: the action's raw value under
+    /// "action" for the first nine, as their keys post it, and the number
+    /// under `goToViewNumberKey` past them.
+    static func goToViewUserInfo(number: Int) -> [String: Any] {
+        guard let action = goToView(number: number) else {
+            return [goToViewNumberKey: number]
+        }
+        return ["action": action.rawValue]
+    }
+
+    /// The number of the view a `.goToLibraryView` notification's
+    /// `userInfo` asks for: its action's (`goToViewNumber`), or else the
+    /// number under `goToViewNumberKey`; nil for neither.
+    static func goToViewNumber(in userInfo: [AnyHashable: Any]?) -> Int? {
+        let action = (userInfo?["action"] as? String).flatMap(ShortcutAction.init(rawValue:))
+        return action?.goToViewNumber ?? (userInfo?[goToViewNumberKey] as? Int)
+    }
 }
 
 // MARK: - Key Equivalents (FR12's Branch D)
@@ -1659,6 +1737,17 @@ extension ShortcutAction {
             // No key by default (FR19), as the reading-list commands have
             // none: the user gives it one of their choosing in Settings.
             .folderOrFeedSettings: [],
+            // Command-1 to Command-9, which no other default uses: the first
+            // to the ninth view a Library window offers (October 30, 2026).
+            .goToView1: [KeyBinding(key: "1", command: true)],
+            .goToView2: [KeyBinding(key: "2", command: true)],
+            .goToView3: [KeyBinding(key: "3", command: true)],
+            .goToView4: [KeyBinding(key: "4", command: true)],
+            .goToView5: [KeyBinding(key: "5", command: true)],
+            .goToView6: [KeyBinding(key: "6", command: true)],
+            .goToView7: [KeyBinding(key: "7", command: true)],
+            .goToView8: [KeyBinding(key: "8", command: true)],
+            .goToView9: [KeyBinding(key: "9", command: true)],
             .importDAISYFolder: [KeyBinding(key: "o", command: true, shift: true)],
             // Shift-Command-F: Command-F alone searches a book.
             .addFeed: [KeyBinding(key: "f", command: true, shift: true)],

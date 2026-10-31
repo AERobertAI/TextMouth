@@ -59,6 +59,8 @@ final class KeyboardReachabilityTests: XCTestCase {
         "TranscriptCleanupWording.commandTitle": "A Book menu command that cleans up a transcript; it has no shortcut action and is reached from the menu bar.",
         "TranscriptionWording.deleteCommandTitle": "A Book menu command that deletes a book's transcript; it has no shortcut action and is reached from the menu bar.",
         "AudioEditorWording.editAudioCommand": "A Book menu command that opens the audio editor; it has no shortcut action and is reached from the menu bar.",
+        "viewName": "The Library menu's Go to View items, one for each view the key Library window offers, titled by the view's name; the first nine are Go to View 1 to Go to View 9, whose keys they show.",
+        "LibraryViewPickerWording.noLibraryWindow": "The Go to View submenu's one dimmed item while no Library window is in front; it does nothing.",
     ]
 
     /// The actions whose default key is the key of one of macOS's own

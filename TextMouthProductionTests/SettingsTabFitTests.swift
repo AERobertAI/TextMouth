@@ -29,19 +29,20 @@ final class SettingsTabFitTests: XCTestCase {
 
     // MARK: - The Tabs
 
-    /// The window offers its ten tabs in the order they have always had
-    /// (Braille, added with FMT21, after Text), each with a symbol that
-    /// exists, and only Text, whose rule list scrolls by itself, does not
-    /// scroll as a whole.
-    func testTheWindowOffersItsTenTabsInTheirOrder() {
+    /// The window offers its eleven tabs in the order they have always had
+    /// (Braille, added with FMT21, after Text, and Library, added on October
+    /// 30, 2026, after Stats), each with a symbol that exists, and only Text
+    /// and Library, whose lists scroll by themselves, do not scroll as a
+    /// whole.
+    func testTheWindowOffersItsElevenTabsInTheirOrder() {
         XCTAssertEqual(
             SettingsTab.allCases.map(\.title),
-            ["Voice", "Playback", "Shortcuts", "Text", "Braille", "Sounds", "Stats", "Feeds", "Storage", "Miscellaneous"]
+            ["Voice", "Playback", "Shortcuts", "Text", "Braille", "Sounds", "Stats", "Library", "Feeds", "Storage", "Miscellaneous"]
         )
         for tab in SettingsTab.allCases {
             XCTAssertNotNil(NSImage(systemSymbolName: tab.systemImage, accessibilityDescription: nil), tab.title)
         }
-        XCTAssertEqual(SettingsTab.allCases.filter { !$0.scrollsAsAWhole }, [.text])
+        XCTAssertEqual(SettingsTab.allCases.filter { !$0.scrollsAsAWhole }, [.text, .library])
     }
 
     // MARK: - Fitting the Window
@@ -138,6 +139,24 @@ final class SettingsTabFitTests: XCTestCase {
         }
     }
 
+    /// The Library tab, which does not scroll as a whole, leaves its list of
+    /// views at least a third of the window, with every control around it
+    /// within the window.
+    func testTheLibraryTabLeavesItsListRoom() throws {
+        let environment = try makeEnvironment()
+        let store = LibraryViewDefinitionStore(preferences: makeSandboxedPreferences("settings-tab-fit-views"))
+        withSettingsPage(environment.apply(to: LibraryViewsSettingsView(store: store))) { page in
+            let list = descendants(of: page, as: NSTableView.self).first
+            XCTAssertNotNil(list, "the list of views was not drawn")
+            let listHeight = list?.enclosingScrollView?.frame.height ?? 0
+            XCTAssertGreaterThanOrEqual(listHeight, windowSize.height / 3, "the list of views is \(Int(listHeight)) points tall")
+            XCTAssertEqual(
+                visibleControls(in: page).filter { !isReachable($0, in: page) }.map { describe($0, in: page) },
+                []
+            )
+        }
+    }
+
     // MARK: - Hosting and Measuring
 
     /// Hosts `view` offscreen in a frame of the window's fixed size, waits
@@ -155,42 +174,9 @@ final class SettingsTabFitTests: XCTestCase {
         try body(hosted.hostingView)
     }
 
-    /// The AppKit controls SwiftUI drew in `page` that a person could use:
-    /// shown, with a size, and not a scroll bar.
-    private func visibleControls(in page: NSView) -> [NSControl] {
-        descendants(of: page, as: NSControl.self).filter {
-            !($0 is NSScroller) && !$0.isHiddenOrHasHiddenAncestor && $0.frame.width > 0 && $0.frame.height > 0
-        }
-    }
-
-    /// Whether `view` lies where `page` shows it: within its nearest scroll
-    /// view's reach, that scroll view lying where `page` shows it, or, with
-    /// no scroll view around it, within `page`. A scroll view reaches the
-    /// whole height of its document, but only its own width of it unless it
-    /// scrolls sideways. Half a point is allowed for rounding.
-    private func isReachable(_ view: NSView, in page: NSView) -> Bool {
-        let rounding: CGFloat = 0.5
-        guard let scrollView = view.enclosingScrollView, scrollView.isDescendant(of: page),
-              let document = scrollView.documentView else {
-            return page.bounds.insetBy(dx: -rounding, dy: -rounding).contains(view.convert(view.bounds, to: page))
-        }
-        guard view !== document else { return isReachable(scrollView, in: page) }
-        let visible = scrollView.documentVisibleRect
-        let reach = NSRect(
-            x: scrollView.hasHorizontalScroller ? document.bounds.minX : visible.minX,
-            y: document.bounds.minY,
-            width: scrollView.hasHorizontalScroller ? document.bounds.width : visible.width,
-            height: document.bounds.height
-        )
-        return reach.insetBy(dx: -rounding, dy: -rounding).contains(view.convert(view.bounds, to: document))
-            && isReachable(scrollView, in: page)
-    }
-
-    /// `control` as a failure names it: its kind, its label, and where it
-    /// lies in `page`.
-    private func describe(_ control: NSControl, in page: NSView) -> String {
-        "\(type(of: control)) '\(control.accessibilityLabel() ?? "")' at \(control.convert(control.bounds, to: page))"
-    }
+    // `visibleControls(in:)`, `isReachable(_:in:)`, and `describe(_:in:)`
+    // are shared with the view editor's fit test
+    // (HostedControlReachSupport.swift).
 
     /// How tall each scroll view's document is, against the scroll view's
     /// own height, as in "5375 in 508".

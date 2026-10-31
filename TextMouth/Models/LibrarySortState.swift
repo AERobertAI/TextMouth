@@ -2,45 +2,68 @@ import Foundation
 
 // MARK: - Where a Library Window Is
 
-/// Where a library window is: a category and, in the Folders category, the
-/// folder it shows (TODO A06). This is a place in the library, not the data
-/// directory's location on disk.
+/// Where a library window is: the view it shows and, in Folders, the folder
+/// it shows (TODO A06; views since October 30, 2026,
+/// LIBRARY-VIEWS-RESEARCH-2026-10-30.md). This is a place in the library,
+/// not the data directory's location on disk.
 ///
 /// Everything that follows from the place alone is decided here: the key its
 /// sort setting is saved under, the sort it shows until the user chooses one,
 /// its name in the window title, and the folder whose manual order it can
 /// rearrange. The window, its Sort menu, and the tests share these rules.
 struct LibraryLocation: Equatable {
-    /// The category shown.
-    var category: LibraryCategory
-    /// The folder shown in the Folders category; "" is the root. The other
-    /// categories keep the folder last shown in Folders and ignore it.
+    /// The view shown, as its definition stood when the location was made.
+    var view: LibraryViewDefinition
+    /// The folder shown in Folders; "" is the root. The other views keep the
+    /// folder last shown in Folders and ignore it.
     var folderPath: String
 
+    /// The location of `view`, at `folderPath` when it is Folders.
+    init(view: LibraryViewDefinition, folderPath: String) {
+        self.view = view
+        self.folderPath = folderPath
+    }
+
+    /// The location of one of the five categories' views as TextMouth ships
+    /// it (`LibraryViewDefinition.shipped(_:)`), at `folderPath` in Folders.
+    init(category: LibraryCategory, folderPath: String) {
+        self.init(view: .shipped(category), folderPath: folderPath)
+    }
+
+    /// The category whose rules the location follows: its view's own, for
+    /// the five categories' views, and All Items' for the Feeds view and
+    /// every view the listener makes, which, like All Items, list rows from
+    /// every folder in an order no one arranges. It serves the callers that
+    /// take a category (`ReadingListOpenRequests`,
+    /// `LibraryFolderSettingsTarget`, `LibraryFeedFolders.folderRows`),
+    /// which tell Folders and the Reading List from the rest, and the tests;
+    /// new code asks `view.kind` and `view.id`.
+    var category: LibraryCategory {
+        view.id.category ?? .allItems
+    }
+
     /// The key the location's sort setting is saved under in
-    /// `Library.folderSortSettings`: the folder path in Folders, and in every
-    /// other category a reserved key that no folder path can match.
+    /// `Library.folderSortSettings`: the folder path in Folders, a category's
+    /// reserved key in the other four categories' views, and, for Feeds and
+    /// the listener's views, a key beginning with "/", which no folder path
+    /// can match (`LibraryViewDefinition.sortSettingsKey`).
     var sortSettingsKey: String {
-        category.sortSettingsKey ?? folderPath
+        view.sortSettingsKey ?? folderPath
     }
 
     /// The sort the location shows until the user chooses one.
     var defaultSortSetting: FolderSortSetting {
-        category.defaultSortSetting
+        view.defaultSortSetting
     }
 
     /// The location's name in the window title: the folder's own name, or
-    /// "All Folders" at the root, or the category's name.
+    /// "All Folders" at the root, in Folders; the view's name elsewhere,
+    /// the same words the View pop-up shows.
     var name: String {
-        switch category {
-        case .folders:
-            return folderPath.isEmpty
-                ? "All Folders"
-                : folderPath.components(separatedBy: "/").last ?? "All Folders"
-        case .allItems, .unopened, .recent, .readingList:
-            // The same words the category picker shows.
-            return category.rawValue
-        }
+        guard view.kind == .folders else { return view.name }
+        return folderPath.isEmpty
+            ? "All Folders"
+            : folderPath.components(separatedBy: "/").last ?? "All Folders"
     }
 
     /// Whether the location shows its books in an order of its own, which
@@ -48,20 +71,23 @@ struct LibraryLocation: Equatable {
     /// (FR09). Its Sort menu names that order and offers no other, and no
     /// sort is ever saved for it.
     var keepsItsOwnOrder: Bool {
-        category == .readingList
+        view.kind == .readingList
+    }
+
+    /// Whether the location's view lists feeds and nothing else, so it has
+    /// no sort: feeds are always listed by title, its Sort menu names that
+    /// order, and its window title names no sort.
+    var listsOnlyFeeds: Bool {
+        view.filter?.listsOnlyFeeds ?? false
     }
 
     /// The folder whose manual order the location shows: the folder shown in
-    /// Folders, the root included. All Items, Unopened, and Recent mix books
-    /// from many folders, which share no one order, so they have none; the
-    /// Reading List has an order of its own, which is no folder's.
+    /// Folders, the root included. Filter views (All Items, Unopened,
+    /// Recently Opened, Feeds, and the listener's) mix books from many
+    /// folders, which share no one order, so they have none; the Reading
+    /// List has an order of its own, which is no folder's.
     var manualOrderFolder: String? {
-        switch category {
-        case .folders:
-            return folderPath
-        case .allItems, .unopened, .recent, .readingList:
-            return nil
-        }
+        view.kind == .folders ? folderPath : nil
     }
 
     /// The folder whose books the user can rearrange here while `sort` is
@@ -87,10 +113,12 @@ struct LibraryLocation: Equatable {
 
     /// The library window's title, naming the location and its sort:
     /// "Library: Fiction (Author Descending)", or "Library: Recently Opened
-    /// (Manual Order)" for manual order, which has no direction. The Reading List,
-    /// whose one order is its own, is named alone: "Library: Reading List".
+    /// (Manual Order)" for manual order, which has no direction. The Reading
+    /// List, whose one order is its own, and a view listing only feeds,
+    /// always by title, are named alone: "Library: Reading List", "Library:
+    /// Feeds".
     func windowTitle(sortedBy sort: LibrarySortState) -> String {
-        keepsItsOwnOrder ? "Library: \(name)" : "Library: \(name) (\(sort.titleFragment))"
+        keepsItsOwnOrder || listsOnlyFeeds ? "Library: \(name)" : "Library: \(name) (\(sort.titleFragment))"
     }
 }
 
@@ -257,10 +285,14 @@ extension LibrarySortState {
         hasDirection
     }
 
+    /// Why manual order offers no direction: the direction command's hint,
+    /// and the view editor's Order pop-up's, while it is dimmed.
+    static let manualOrderHasNoDirection = "Manual order has no direction"
+
     /// The direction command's hint, which VoiceOver speaks and the pointer
     /// shows as a tooltip. In manual order it says why the command is off.
     var directionCommandHint: String {
-        hasDirection ? "Reverses the order of the books" : "Manual order has no direction"
+        hasDirection ? "Reverses the order of the books" : Self.manualOrderHasNoDirection
     }
 
     /// The Sort button's spoken label: "Sort books by Title, ascending", or

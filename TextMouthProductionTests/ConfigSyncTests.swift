@@ -1219,6 +1219,9 @@ final class ConfigSyncTests: XCTestCase {
             // import.
             "transcriptionLocale": TranscriptFixtures.languageOtherThanTheDefault,
             "offerTranscriptionAfterImport": true,
+            // Library: the Library window's views, as the views store keeps
+            // them, a JSON array in data.
+            LibraryViewDefinitionList.fileKey: try JSONEncoder().encode(ConfigService.AppConfig.customizedLibraryViews),
             // Braille: the table braille files are read and written with, and
             // the braille file characters an import reads a BRF or BRL file
             // with (braillecodes).

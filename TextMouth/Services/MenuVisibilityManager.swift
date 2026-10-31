@@ -220,7 +220,7 @@ final class MenuVisibilityManager {
         // --- Reader windows ---
         // Opened via WindowGroup("Book Reader", id: "book-reader", ...) in
         // TextMouthApp.swift. SwiftUI includes "book-reader" in the identifier.
-        if identifier.contains("book-reader") {
+        if identifier.contains(BookReaderWindowView.windowID) {
             return .reader
         }
 

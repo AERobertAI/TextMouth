@@ -29,9 +29,10 @@ final class BrailleSettingsViewTests: XCTestCase {
         XCTAssertTrue(SettingsTab.braille.scrollsAsAWhole)
     }
 
-    /// The window is wide enough for ten tabs: 780 points.
-    func testTheWindowIsWideEnoughForTenTabs() {
-        XCTAssertEqual(SettingsView.windowSize.width, 780)
+    /// The window is wide enough for eleven tabs: 860 points, since the
+    /// Library tab joined the ten on October 30, 2026 (780 until then).
+    func testTheWindowIsWideEnoughForElevenTabs() {
+        XCTAssertEqual(SettingsView.windowSize.width, 860)
     }
 
     // MARK: - The Pop-ups

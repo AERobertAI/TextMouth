@@ -201,22 +201,29 @@ struct LibraryView: View {
     @EnvironmentObject var libraryViewModel: LibraryViewModel
     @EnvironmentObject var settingsViewModel: SettingsViewModel
     @Binding var currentFolderPath: String
-    @Binding var category: LibraryCategory
+    /// The view this window shows (October 30, 2026), by its identity: one
+    /// of the Library's views (`LibraryViewDefinitionStore`).
+    @Binding var shownViewID: LibraryViewID
     @Binding var showFileImporter: Bool
     /// Presents the New from Text sheet. The Library window owns it, so
     /// File > New from Text... can present the sheet through the router
     /// whichever window is key (TODO A05).
     @Binding var showTextInput: Bool
     let onOpenBook: (Book) -> Void
-    /// What VoiceOver calls the category picker, whose segments read the
-    /// categories' names (`LibraryCategory.rawValue`): Folders, All Items,
-    /// Unopened, Recently Opened, Reading List.
-    static let categoryPickerLabel = "Library category"
+    /// What VoiceOver calls the View pop-up, whose items are the names of
+    /// the views it offers. Until October 30, 2026 it was a segmented picker
+    /// of the five categories, called "Library category"; the constant keeps
+    /// the name the tests have always used.
+    static let categoryPickerLabel = "Library view"
     /// Which library folders hold feeds, and the feed engine they follow
     /// (FR03): the app's, unless a test shows its own. Observed, as it
     /// publishes only when a feed's folder changes; the views showing a
     /// feed's items and counts observe the engine themselves.
     @ObservedObject var feedFolders: LibraryFeedFolders = .shared
+    /// The Library's views, the app's unless a test gives its own, observed
+    /// so the View pop-up and the view shown follow a change made in
+    /// Settings or config.json (October 30, 2026).
+    @ObservedObject var views: LibraryViewDefinitionStore = .shared
 
     /// What this window shows for the feeds: the Add Feed sheet and the
     /// notices after its commands (FR03). Kept, not observed: its sheets'
@@ -334,6 +341,26 @@ struct LibraryView: View {
         // the model again.
         let allBooks = displayedBooks
         let books = filteredBooks
+        // Which views shown when applicable list something, asked once for
+        // the body, and shared by the View pop-up and Go to View (review of
+        // October 31, 2026, finding 4).
+        let applicable = libraryViewModel.applicableViews(in: views.list, center: feedFolders.center)
+        // The views the View pop-up offers.
+        let offered = libraryViewModel.offeredViews(
+            in: views.list,
+            current: shownViewID,
+            center: feedFolders.center,
+            applicable: applicable
+        )
+        // The names of the views Go to View counts, those offered to a
+        // window showing none, which the Library menu's Go to View submenu
+        // lists (design section 6).
+        let goToViewNames = libraryViewModel.offeredViews(
+            in: views.list,
+            current: nil,
+            center: feedFolders.center,
+            applicable: applicable
+        ).map(\.name)
         let folders = libraryViewModel.subfoldersOf(currentFolderPath)
         // The Folders section's rows and the Folders rotor's entries: none
         // outside Folders, and no row for a feed's folder where the Feeds
@@ -363,23 +390,14 @@ struct LibraryView: View {
             // they succeed or are dismissed (TODO S09).
             PersistenceFailureBanner(center: libraryViewModel.failureCenter)
 
-            // The category picker: a segment per category, each reading its
-            // name, under the label VoiceOver says for the picker itself.
-            Picker("View", selection: $category) {
-                ForEach(LibraryCategory.allCases, id: \.self) { cat in
-                    Text(cat.rawValue).tag(cat)
-                }
-            }
-            .pickerStyle(.segmented)
-            .padding(.horizontal)
-            .padding(.top, 8)
-            .accessibilityLabel(Self.categoryPickerLabel)
+            // The View pop-up: the views offered, each by its name.
+            viewPicker(offering: offered)
 
             // The Reading List's options, there alone (FR09).
             readingListOptions
 
             // Breadcrumb navigation (only in folders mode)
-            if category == .folders && !currentFolderPath.isEmpty {
+            if showsFolders && !currentFolderPath.isEmpty {
                 BreadcrumbBar(
                     path: currentFolderPath,
                     onNavigate: { currentFolderPath = $0 },
@@ -448,8 +466,8 @@ struct LibraryView: View {
 
             // Main list with native selection
             List(selection: $selectedBookIDs) {
-                // Folders section (only in folders category)
-                if category == .folders && !subfolders.isEmpty {
+                // Folders section (only in Folders)
+                if showsFolders && !subfolders.isEmpty {
                     foldersSection(subfolders)
                 }
 
@@ -465,8 +483,16 @@ struct LibraryView: View {
                 }
 
                 // Books section; in a feed's folder, the feed's items with
-                // the downloaded ones as their books (FR03)
-                booksSection(books, orderedBy: allBooks, feedID: feedID)
+                // the downloaded ones as their books (FR03). A view listing
+                // no books, episodes, or articles, such as Feeds, has none,
+                // and says so when it lists nothing at all (October 30, 2026).
+                if listsItems {
+                    booksSection(books, orderedBy: allBooks, feedID: feedID)
+                } else if showsEmptySentence(allBooks: allBooks) {
+                    Section {
+                        emptyViewRow
+                    }
+                }
             }
             .searchable(text: $searchText, prompt: "Search books")
             .accessibilityRotor("Books") {
@@ -495,15 +521,15 @@ struct LibraryView: View {
                 editSelection = []
                 selectedBookIDs = []
             }
-            .onChange(of: category) { _, _ in
-                // Clear selections when switching library categories
+            .onChange(of: shownViewID) { _, _ in
+                // Clear selections when switching views
                 editSelection = []
                 selectedBookIDs = []
             }
         }
         .toolbar {
             ToolbarItemGroup {
-                if category == .folders && !currentFolderPath.isEmpty {
+                if showsFolders && !currentFolderPath.isEmpty {
                     Button {
                         navigateUp()
                     } label: {
@@ -527,7 +553,7 @@ struct LibraryView: View {
                 .accessibilityLabel(isEditMode ? "Exit edit mode" : "Enter edit mode")
                 .accessibilityHint(Self.editModeButtonHint(isEditMode: isEditMode, selectedCount: selectedBooks.count))
 
-                if category == .folders {
+                if showsFolders {
                     Button {
                         newFolderParentPath = currentFolderPath
                         showNewFolderSheet = true
@@ -613,6 +639,16 @@ struct LibraryView: View {
             \.libraryRemovalSelection,
             LibraryRemovalSelection(LibrarySelectionPolicy.selected(in: books, native: selectedBookIDs, edit: editSelection))
         )
+        // Go to View's keys and submenu, and a view deleted while shown
+        // (design sections 5 and 6), in a modifier of their own, which keeps
+        // this chain within the type checker's time.
+        .modifier(LibraryViewNavigationSupport(
+            offeredNames: goToViewNames,
+            list: views.list,
+            takesCommand: takesCommand,
+            goToView: { goToView(numbered: $0) },
+            followDeletedView: followDeletedView
+        ))
         // Keeps the books' cloud states refreshed while the window is
         // visible, shows Remove Download's refusals (FR02), and takes the
         // Library menu's Keep on This Mac and Stop Keeping on This Mac.
@@ -640,7 +676,7 @@ struct LibraryView: View {
             feedFolders: feedFolders,
             library: libraryViewModel,
             hostWindow: hostWindow,
-            shownFolderPath: category == .folders ? currentFolderPath : nil,
+            shownFolderPath: showsFolders ? currentFolderPath : nil,
             takesCommand: takesCommand,
             // Move to Library…'s key acts on the selection (FR11, branch D).
             selectedBooks: { selectedBooks }
@@ -771,7 +807,7 @@ struct LibraryView: View {
                         text: text,
                         toFolder: currentFolderPath,
                         from: ImportOrigin(window: hostWindow),
-                        addingToReadingList: category == .readingList
+                        addingToReadingList: showsReadingList
                     )
                     showTextInput = false
                 },
@@ -884,13 +920,37 @@ struct LibraryView: View {
         Menu {
             if location.keepsItsOwnOrder {
                 readingListSortItem
+            } else if location.listsOnlyFeeds {
+                feedsSortItem
             } else {
                 sortItems(hasSubfolders: hasSubfolders)
             }
         } label: {
             Label("Sort", systemImage: "arrow.up.arrow.down")
         }
-        .accessibilityLabel(location.keepsItsOwnOrder ? ReadingListWording.sortMenuLabel : sort.menuAccessibilityLabel)
+        .accessibilityLabel(sortMenuLabel)
+    }
+
+    /// The Sort button's spoken label: the Reading List's one order, the
+    /// feeds' order in a view listing only feeds, or the sort shown.
+    private var sortMenuLabel: String {
+        if location.keepsItsOwnOrder {
+            return ReadingListWording.sortMenuLabel
+        }
+        return location.listsOnlyFeeds ? LibraryViewPickerWording.feedsSortMenuLabel : sort.menuAccessibilityLabel
+    }
+
+    /// The Sort menu's one item in a view listing only feeds, which are
+    /// always listed by title (October 30, 2026): that order, checked, whose
+    /// hint says so; choosing it says the order, as choosing a sort
+    /// elsewhere says the sort now shown.
+    private var feedsSortItem: some View {
+        Toggle(LibraryViewPickerWording.feedsOrderName, isOn: Binding(
+            get: { true },
+            set: { _ in announceToVoiceOver(LibraryViewPickerWording.feedsOrderAnnouncement) }
+        ))
+        .help(LibraryViewPickerWording.feedsOrderHint)
+        .accessibilityHint(LibraryViewPickerWording.feedsOrderHint)
     }
 
     /// The Sort menu's items where the user sorts the books: a field each,
@@ -917,7 +977,7 @@ struct LibraryView: View {
         .help(sort.directionCommandHint)
         .accessibilityHint(sort.directionCommandHint)
         // Only show "Apply to Subfolders" when in folders mode and subfolders exist
-        if category == .folders && hasSubfolders {
+        if showsFolders && hasSubfolders {
             Divider()
             Button {
                 libraryViewModel.applySortToSubfolders(sort.setting, from: currentFolderPath)
@@ -947,7 +1007,7 @@ struct LibraryView: View {
     /// other category.
     @ViewBuilder
     private var readingListOptions: some View {
-        if category == .readingList {
+        if showsReadingList {
             let list = libraryViewModel.readingList
             ReadingListOptionsBar(
                 continuation: list.continuation,
@@ -1149,7 +1209,7 @@ struct LibraryView: View {
             // The item's commands act on the row's own book alone.
             feedActions: isSelectionRow ? [] : feedActions,
             // Said in every view but the Reading List, where every book is in it.
-            isInReadingList: category != .readingList && context.readingListIDs.contains(book.id),
+            isInReadingList: !showsReadingList && context.readingListIDs.contains(book.id),
             // Add to or Remove from Reading List, by membership (FR09).
             readingListCommands: isSelectionRow
                 ? context.selectionReadingListCommands
@@ -1268,9 +1328,11 @@ struct LibraryView: View {
                 // An empty reading list says so, and how a book joins it
                 // (FR09); a search that matches nothing leaves the list as
                 // it is.
-                if category == .readingList && allBooks.isEmpty {
+                if showsReadingList && allBooks.isEmpty {
                     Text(ReadingListWording.emptyList)
                         .foregroundColor(.secondary)
+                } else if showsEmptySentence(allBooks: allBooks) {
+                    emptyViewRow
                 }
                 bookRows(books, orderedBy: allBooks)
             } header: {
@@ -1298,7 +1360,7 @@ struct LibraryView: View {
 
     /// The feed whose folder the list shows, when it shows one (FR03).
     private var shownFeedID: UUID? {
-        guard category == .folders, !currentFolderPath.isEmpty,
+        guard showsFolders, !currentFolderPath.isEmpty,
               let folder = libraryViewModel.library.folders.first(where: { $0.fullPath == currentFolderPath }) else {
             return nil
         }
@@ -1316,7 +1378,7 @@ struct LibraryView: View {
             performFeedAction(FeedAction(command: .feedInfo, feedID: row.id, title: FeedWording.feedInfoTitle))
             return
         }
-        category = .folders
+        shownViewID = .category(.folders)
         currentFolderPath = path
     }
 
@@ -1367,7 +1429,7 @@ struct LibraryView: View {
     private func openBook(_ book: Book) {
         ReadingListOpenRequests.shared.open(
             book,
-            shownIn: category,
+            shownIn: location.category,
             libraryIsMoving: libraryViewModel.dataDirectoryMove != nil,
             with: onOpenBook
         )
@@ -1443,7 +1505,7 @@ struct LibraryView: View {
         ReadingListCommand.editBarCommands(
             for: selectedBooks,
             inList: Set(libraryViewModel.readingList.bookIDs),
-            atReadingList: category == .readingList
+            atReadingList: showsReadingList
         )
     }
 
@@ -1459,7 +1521,7 @@ struct LibraryView: View {
             libraryViewModel.addToReadingList(books, announcingFrom: hostWindow)
         case .remove:
             libraryViewModel.removeFromReadingList(books, announcingFrom: hostWindow)
-            if category == .readingList {
+            if showsReadingList {
                 let gone = Set(books.map(\.id)).subtracting(libraryViewModel.readingList.bookIDs)
                 editSelection.subtract(gone)
                 selectedBookIDs.subtract(gone)
@@ -1661,7 +1723,7 @@ struct LibraryView: View {
     /// folder this window shows, nil where it shows none (FR19).
     private var folderSettingsTarget: LibraryFolderSettingsTarget? {
         LibraryFolderSettingsTarget.of(
-            category: category,
+            category: location.category,
             folderPath: currentFolderPath,
             folders: libraryViewModel.library.folders,
             feedID: { feedFolders.feedID(inFolder: $0) },
@@ -1699,9 +1761,109 @@ struct LibraryView: View {
         )
     }
 
-    /// Where this list is: its category and, in Folders, its folder.
+    /// Where this list is: its view and, in Folders, its folder.
     private var location: LibraryLocation {
-        LibraryLocation(category: category, folderPath: currentFolderPath)
+        LibraryLocation(view: shownView, folderPath: currentFolderPath)
+    }
+
+    /// The view this window shows: the one `shownViewID` names, or, once it
+    /// is deleted, the first view offered, until `followDeletedView` moves
+    /// there (October 30, 2026).
+    private var shownView: LibraryViewDefinition {
+        libraryViewModel.shownView(shownViewID, in: views.list, center: feedFolders.center).view
+    }
+
+    /// Whether this window shows Folders: one folder at a time, with its
+    /// breadcrumbs, its subfolders, and its own commands.
+    private var showsFolders: Bool {
+        location.view.kind == .folders
+    }
+
+    /// Whether this window shows the Reading List (FR09), in its own order.
+    private var showsReadingList: Bool {
+        location.keepsItsOwnOrder
+    }
+
+    /// Whether the view shown lists books, episodes, or articles, so the
+    /// list has a Books section (`hasBooksSection(_:)`).
+    private var listsItems: Bool {
+        Self.hasBooksSection(location.view)
+    }
+
+    /// Whether the list shows the sentence that nothing matches
+    /// (`showsEmptySentence(for:listsBooks:listsFeeds:)`), `allBooks` being
+    /// its books before a search narrows them.
+    private func showsEmptySentence(allBooks: [Book]) -> Bool {
+        Self.showsEmptySentence(
+            for: location.view,
+            listsBooks: !allBooks.isEmpty,
+            listsFeeds: !LibraryFeedsSectionRows.feeds(at: location, center: feedFolders.center).isEmpty
+        )
+    }
+
+    /// Whether a list of `view` has a Books section: every view but one
+    /// listing feeds alone, such as Feeds, which would show only "Books (0)".
+    nonisolated static func hasBooksSection(_ view: LibraryViewDefinition) -> Bool {
+        view.filter?.listsItems ?? true
+    }
+
+    /// Whether a list of `view` shows the sentence that nothing matches,
+    /// while it lists no book, episode, or article (`listsBooks`) and no
+    /// feed (`listsFeeds`): in the Feeds view, the listener's views, and any
+    /// view without a Books section, such as Unopened changed to list feeds
+    /// alone, which would otherwise show nothing at all (review of October
+    /// 31, 2026, finding 11). The five categories' views as TextMouth ships
+    /// them look as they always have.
+    nonisolated static func showsEmptySentence(for view: LibraryViewDefinition, listsBooks: Bool, listsFeeds: Bool) -> Bool {
+        (view.id.category == nil || !hasBooksSection(view)) && !listsBooks && !listsFeeds
+    }
+
+    /// The row saying that the view lists nothing now.
+    private var emptyViewRow: some View {
+        Text(LibraryViewPickerWording.emptyView)
+            .foregroundColor(.secondary)
+    }
+
+    /// Moves to the first view offered when the view this window showed was
+    /// deleted, from Settings or by a change of config.json, and says so, so
+    /// the listener is never left somewhere silently (design section 5).
+    private func followDeletedView() {
+        let shown = libraryViewModel.shownView(shownViewID, in: views.list, center: feedFolders.center)
+        guard shown.fellBack else { return }
+        shownViewID = shown.view.id
+        announceToVoiceOver(LibraryViewPickerWording.deletedView(nowShowing: shown.view.name))
+    }
+
+    /// Goes to the `number`th view Go to View counts and says its name and
+    /// what it lists, or says that there is no such view, as the model
+    /// decides (`LibraryViewModel.goToView(numbered:in:folderPath:center:)`,
+    /// design section 6).
+    private func goToView(numbered number: Int) {
+        let outcome = libraryViewModel.goToView(numbered: number, in: views.list, folderPath: currentFolderPath, center: feedFolders.center)
+        if let view = outcome.view {
+            shownViewID = view.id
+        }
+        announceToVoiceOver(outcome.announcement)
+    }
+
+    /// The View pop-up (October 30, 2026): the views `offered`, each by its
+    /// name, choosing the view shown, spoken "Library view" with its value
+    /// first, and no wider than `LibraryViewPickerWording.pickerWidthLimit`,
+    /// so a long name never makes the window's content wider than the window.
+    private func viewPicker(offering offered: [LibraryViewDefinition]) -> some View {
+        HStack(spacing: 0) {
+            Picker("View", selection: $shownViewID) {
+                ForEach(offered) { view in
+                    Text(view.name).tag(view.id)
+                }
+            }
+            .pickerStyle(.menu)
+            .frame(maxWidth: LibraryViewPickerWording.pickerWidthLimit, alignment: .leading)
+            .accessibilityLabel(Self.categoryPickerLabel)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal)
+        .padding(.top, 8)
     }
 
     /// The sort the list shows, restored from the setting saved for its
@@ -2029,6 +2191,44 @@ private struct LibraryOrderCommandsSupport: ViewModifier {
     }
 }
 
+// MARK: - Moving Between Views (October 30, 2026)
+
+/// A Library window's part in moving between the Library's views (design
+/// sections 5 and 6, LIBRARY-VIEWS-RESEARCH-2026-10-30.md): it gives the
+/// Library menu's Go to View submenu the names of the views it offers, goes
+/// to a view by Go to View's keys and the submenu's items when it takes the
+/// command, and follows a view deleted while it shows it. Only the window
+/// that takes a command acts on it.
+private struct LibraryViewNavigationSupport: ViewModifier {
+    /// The names of the views Go to View counts, which the submenu lists.
+    let offeredNames: [String]
+    /// The Library's views, whose changes the window follows.
+    let list: LibraryViewDefinitionList
+    /// Whether this window takes the command a notification carries.
+    let takesCommand: (Notification) -> Bool
+    /// Goes to the view numbered, 1 for the first.
+    let goToView: (Int) -> Void
+    /// Moves to the first view offered when the view shown was deleted.
+    let followDeletedView: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .focusedSceneValue(\.libraryOfferedViewNames, offeredNames)
+            // Go to View 1 to Go to View 9, Command-1 to Command-9 unless
+            // changed, and the submenu: the view numbered, said with what it
+            // lists.
+            .onReceive(NotificationCenter.default.publisher(for: .goToLibraryView)) { notification in
+                guard takesCommand(notification), let number = ShortcutAction.goToViewNumber(in: notification.userInfo) else { return }
+                goToView(number)
+            }
+            // A view deleted while this window shows it gives way to the
+            // first view offered, which is said.
+            .onChange(of: list) { _, _ in
+                followDeletedView()
+            }
+    }
+}
+
 // MARK: - Folder Settings Support (FR19)
 
 /// A Library window's part in the settings of the folder it shows (FR19): it
@@ -2111,3 +2311,37 @@ private struct LibraryCloudWindowSupport: ViewModifier {
 }
 
 // Make Book conform to Identifiable for .sheet(item:) usage (already conforms via existing `id` property)
+
+// MARK: - A Category's View
+
+extension LibraryView {
+    /// A Library window's list showing one of the five categories' views, as
+    /// the hosted tests show them: `category` stands for the view's identity,
+    /// read as `.category(category)`, and set whenever the view chosen is a
+    /// category's. An initializer in an extension, so the memberwise one,
+    /// which the window uses, is kept.
+    init(
+        currentFolderPath: Binding<String>,
+        category: Binding<LibraryCategory>,
+        showFileImporter: Binding<Bool>,
+        showTextInput: Binding<Bool>,
+        onOpenBook: @escaping (Book) -> Void,
+        feedFolders: LibraryFeedFolders = .shared
+    ) {
+        self.init(
+            currentFolderPath: currentFolderPath,
+            shownViewID: Binding(
+                get: { .category(category.wrappedValue) },
+                set: { id in
+                    if let chosen = id.category {
+                        category.wrappedValue = chosen
+                    }
+                }
+            ),
+            showFileImporter: showFileImporter,
+            showTextInput: showTextInput,
+            onOpenBook: onOpenBook,
+            feedFolders: feedFolders
+        )
+    }
+}

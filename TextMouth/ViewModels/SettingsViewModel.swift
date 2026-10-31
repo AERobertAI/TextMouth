@@ -872,7 +872,9 @@ final class SettingsViewModel: ObservableObject {
             + [KeyboardShortcutManager.editsPreference.key, LogLocation.preference.key]
             + [KeyboardShortcutManager.doublePressTimePreference.key]
             + [TranscriptionLanguage.preference.key, TranscriptionPreferences.offerAfterImport.key]
-            + [BookExportPreferences.showInReaderToolbar.key]
+            // The Library window's views share the Export button's array: one
+            // more sum here takes the type checker past its time limit.
+            + [BookExportPreferences.showInReaderToolbar.key, LibraryViewDefinitionStore.preference.key]
         return earlier + [BraillePreferences.table.key]
             + [BraillePreferences.fileCode.key]
     }
@@ -1052,6 +1054,8 @@ final class SettingsViewModel: ObservableObject {
         config.logLocation = LogLocation.preference.read(from: preferences).rawValue
         config.transcriptionLocale = TranscriptionLanguage.preference.read(from: preferences)
         config.offerTranscriptionAfterImport = TranscriptionPreferences.offerAfterImport.read(from: preferences)
+        // The Library window's views, every one, as the views store keeps them.
+        config.libraryViews = LibraryViewDefinitionStore.preference.read(from: preferences).fileEntries
         config.brailleTable = BraillePreferences.table.read(from: preferences)
         config.brailleFileCode = BraillePreferences.fileCode.read(from: preferences)
     }
@@ -1133,6 +1137,15 @@ final class SettingsViewModel: ObservableObject {
         // So does an empty language, or one that cannot be an identifier.
         adopt(TranscriptionLanguage.validated(config.transcriptionLocale), into: TranscriptionLanguage.preference)
         adopt(config.offerTranscriptionAfterImport, into: TranscriptionPreferences.offerAfterImport)
+        // The Library window's views: the list reads each entry on its own,
+        // keeps the ones it cannot read as they are, and logs its repairs as
+        // config.json's; no key, or an empty list, leaves the views alone.
+        adopt(
+            config.libraryViews.flatMap { entries in
+                entries.isEmpty ? nil : LibraryViewDefinitionList(fileEntries: entries, logRepairsAs: "config.json")
+            },
+            into: LibraryViewDefinitionStore.preference
+        )
         // An empty or unknown table name leaves the current table alone; a
         // Mac table's value is taken without reading this Mac's tables
         // (review R3), and refused by name when it is used if the Mac lacks it.

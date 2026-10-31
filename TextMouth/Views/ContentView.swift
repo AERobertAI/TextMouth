@@ -9,7 +9,14 @@ struct LibraryWindowView: View {
     @Environment(\.openWindow) private var openWindow
 
     @State private var currentFolderPath = ""
-    @State private var category: LibraryCategory = .folders
+    /// The view this window shows (October 30, 2026): nil until the window
+    /// first appears, when it takes the first view the View pop-up offers
+    /// and keeps it, however the list of views changes, until the listener
+    /// chooses another (or it is deleted).
+    @State private var viewID: LibraryViewID?
+    /// The Library's views, observed so the title and the view shown follow
+    /// a change made in Settings or config.json.
+    @ObservedObject private var views = LibraryViewDefinitionStore.shared
     @State private var showFileImporter = false
     /// Presents the New from Text sheet, from the toolbar or through the
     /// router for File > New from Text....
@@ -41,13 +48,13 @@ struct LibraryWindowView: View {
             } else {
                 LibraryView(
                     currentFolderPath: $currentFolderPath,
-                    category: $category,
+                    shownViewID: shownViewID,
                     showFileImporter: $showFileImporter,
                     showTextInput: $showTextInput,
                     onOpenBook: { book in
                         // No book opens while the library moves (FR02).
                         guard !refuseWhileTheLibraryMoves(.openBookWindow(book.id)) else { return }
-                        openWindow(id: "book-reader", value: book.id)
+                        openWindow(id: BookReaderWindowView.windowID, value: book.id)
                     }
                 )
                 // The feed downloads section, below the list while feed
@@ -114,6 +121,10 @@ struct LibraryWindowView: View {
         .handlesExternalEvents(preferring: [], allowing: ["*"])
         .focusedValue(\.activeWindowType, .library)
         .onAppear {
+            // A new window keeps the view it opens at, the first one offered.
+            if viewID == nil {
+                viewID = shownView.id
+            }
             // SwiftUI shows a closed Library window again, rather than open
             // a new one, for a book opened from Finder; the window takes
             // app-wide actions again from then on. A window appearing for
@@ -143,7 +154,7 @@ struct LibraryWindowView: View {
                     urls: urls,
                     toFolder: currentFolderPath,
                     from: ImportOrigin(window: hostWindow),
-                    addingToReadingList: category == .readingList
+                    addingToReadingList: shownView.kind == .readingList
                 )
             case .failure(let error):
                 libraryViewModel.errorMessage = error.localizedDescription
@@ -248,8 +259,24 @@ struct LibraryWindowView: View {
         guard libraryViewModel.dataDirectoryUnavailability == nil else {
             return DataDirectoryUnavailableText.title
         }
-        let location = LibraryLocation(category: category, folderPath: currentFolderPath)
+        let location = LibraryLocation(view: shownView, folderPath: currentFolderPath)
         return location.windowTitle(sortedBy: libraryViewModel.sortState(at: location))
+    }
+
+    /// The view this window shows: the one it keeps, or, before it first
+    /// appears, or once the one it kept is deleted, the first view its
+    /// pop-up offers (`LibraryViewModel.shownView`).
+    private var shownView: LibraryViewDefinition {
+        libraryViewModel.shownView(viewID, in: views.list, center: LibraryFeedFolders.shared.center).view
+    }
+
+    /// The binding the window's list shows its view through, set by the View
+    /// pop-up and a feed row's open: the view this window keeps, even once
+    /// it is deleted, so the list notices, moves to the first view offered,
+    /// and says so (`LibraryView.followDeletedView`); before the window first
+    /// appears, the first view offered.
+    private var shownViewID: Binding<LibraryViewID> {
+        Binding(get: { viewID ?? shownView.id }, set: { viewID = $0 })
     }
 
     /// Announce the new folder name and book count to VoiceOver when
@@ -261,16 +288,10 @@ struct LibraryWindowView: View {
             library: libraryViewModel.library,
             feedFolders: .shared
         )
-
-        guard let window = hostWindow ?? NSApp.keyWindow ?? NSApp.mainWindow else { return }
-        NSAccessibility.post(
-            element: window,
-            notification: .announcementRequested,
-            userInfo: [
-                .announcement: message,
-                .priority: NSAccessibilityPriorityLevel.high.rawValue
-            ]
-        )
+        // Through the announcer, which picks the window when this one isn't
+        // known yet and records rather than posts under hosted tests (TODO
+        // 3645).
+        VoiceOverAnnouncer.announce(message, from: hostWindow)
     }
 
     /// True when this library window is the current key (focused) window.
@@ -386,7 +407,7 @@ struct LibraryWindowView: View {
         let panel = LibraryViewModel.makeDAISYFolderPanel()
         let destination = currentFolderPath
         let origin = ImportOrigin(window: hostWindow)
-        let addsToReadingList = category == .readingList
+        let addsToReadingList = shownView.kind == .readingList
         let viewModel = libraryViewModel
         let importChosenFolders: (NSApplication.ModalResponse) -> Void = { response in
             guard response == .OK else { return }

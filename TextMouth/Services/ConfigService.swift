@@ -419,6 +419,14 @@ final class ConfigService: ObservableObject {
         /// Whether TextMouth offers to transcribe each audiobook just
         /// imported (`TranscriptionPreferences.offerAfterImport`).
         var offerTranscriptionAfterImport: Bool?
+        /// The Library window's views, in order (October 30, 2026,
+        /// `LibraryViewDefinitionList`): an array of objects, one per view,
+        /// each with its "id" and "visibility", and, for a view the listener
+        /// made or a built-in view they changed, its "name" and "filter".
+        /// Each entry is read on its own: one this TextMouth cannot read is
+        /// kept as it is and never offered, and a value out of range is
+        /// repaired. Nil, or an empty array, leaves the views as they are.
+        var libraryViews: [JSONValue]?
         /// The braille table TextMouth reads and writes braille with
         /// (`BraillePreferences`), by its stored value: a bundled table's
         /// file name, such as "en-ueb-g2.ctb", or "mac:" and the file name of
@@ -564,6 +572,12 @@ final class ConfigService: ObservableObject {
                 TranscriptionLanguage.validated($0) ?? ""
             }
             offerTranscriptionAfterImport = fields.optionalFlag(.offerTranscriptionAfterImport)
+            // Any array of values: the list reads each entry on its own, with
+            // its own bounds, when the settings model applies the file. An
+            // empty array is no request, as an empty text is.
+            libraryViews = fields.optionalValue(.libraryViews) { (entries: [JSONValue]) in
+                entries.isEmpty ? nil : entries
+            }
             // Without reading this Mac's tables (review R3): decoding runs on
             // the main thread at every launch.
             brailleTable = fields.value(.brailleTable, default: fallback.brailleTable) {
@@ -657,6 +671,9 @@ final class ConfigService: ObservableObject {
                 // TranscriptionLanguage keeps, and whether it is offered
                 // after an import (FR05).
                 mirrored += sameNames(["transcriptionLocale", "offerTranscriptionAfterImport"])
+                // Library (October 30, 2026): the Library window's views,
+                // which the views store keeps (`LibraryViewDefinitionStore`).
+                mirrored += sameNames([LibraryViewDefinitionList.fileKey])
                 // Braille (FMT21): the table braille files are read and written with.
                 // And the braille file characters a BRF or BRL file is imported in (braillecodes).
                 mirrored += sameNames(["brailleTable", "brailleFileCode"])
