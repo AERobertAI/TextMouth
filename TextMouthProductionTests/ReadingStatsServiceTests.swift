@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import XCTest
 @testable import TextMouth
@@ -370,6 +371,184 @@ final class ReadingStatsServiceTests: XCTestCase {
         XCTAssertEqual(makeService().stats.totalListeningSeconds, 100)
     }
 
+    // MARK: - The Mac's sleep
+
+    // A book left playing as the Mac sleeps credits only the time the Mac
+    // is awake. Each test's service reads an awake clock the test sets,
+    // which stands still while the Mac sleeps, as the system's does, and
+    // hears the Mac's notices only on a center of the test's own.
+
+    /// A night asleep: eight hours.
+    private static let night: TimeInterval = 8 * 3_600
+
+    /// A minute heard, eight hours asleep, half a minute heard after the
+    /// wake: 90 seconds in all, in the book's total, Today, and All Time,
+    /// and on disk. The session stays open across the night.
+    @MainActor
+    func testTheTimeTheMacSleepsIsNeverCredited() {
+        var awake: TimeInterval = 1_000
+        let service = makeService(awakeClock: { awake }, workspace: NotificationCenter())
+        let book = UUID()
+        service.startSession(bookID: book, at: noon)
+        awake += interval
+        service.checkpointActiveSession(at: noon + interval)
+        service.noteSystemWillSleep(at: noon + interval)
+
+        // Eight hours asleep: the awake clock stands still.
+        service.noteSystemDidWake(at: noon + Self.night)
+        XCTAssertTrue(service.hasActiveSession, "The wake ended the session")
+        awake += 30
+        service.endSession(at: noon + Self.night + 30)
+
+        assertCredited(interval + 30, to: book, by: service, at: noon + Self.night + 30)
+    }
+
+    /// The checkpoint timer's first tick after the wake can come before the
+    /// wake's notice, its clock having stopped in the sleep as well: the
+    /// tick credits only the ten seconds since the wake, and the notice
+    /// that follows loses none of what was heard after the tick.
+    @MainActor
+    func testATickBeforeTheWakesNoticeStillLeavesTheNightOut() {
+        var awake: TimeInterval = 1_000
+        let service = makeService(awakeClock: { awake }, workspace: NotificationCenter())
+        let book = UUID()
+        let wake = noon + Self.night
+        service.startSession(bookID: book, at: noon)
+        awake += interval
+        service.checkpointActiveSession(at: noon + interval)
+        service.noteSystemWillSleep(at: noon + interval)
+
+        awake += 10
+        service.checkpointActiveSession(at: wake + 10)
+        XCTAssertEqual(service.stats.totalListeningSeconds, interval + 10, "The tick credited the night")
+        awake += 2
+        service.noteSystemDidWake(at: wake + 12)
+        awake += 18
+        service.endSession(at: wake + 30)
+
+        assertCredited(interval + 30, to: book, by: service, at: wake + 30)
+    }
+
+    /// Should the wake's notice never come, as an app can miss it, the
+    /// awake clock leaves the night out all the same: of Today and the
+    /// session's uncredited time read after the wake, of the timer's next
+    /// tick, and of the session's end. A later session is credited in
+    /// full: the note, outliving its night, never reaches back into it.
+    @MainActor
+    func testTheNightIsLeftOutWhenTheWakesNoticeNeverComes() {
+        var awake: TimeInterval = 1_000
+        let service = makeService(awakeClock: { awake }, workspace: NotificationCenter())
+        let book = UUID()
+        let wake = noon + Self.night
+        service.startSession(bookID: book, at: noon)
+        awake += interval
+        service.checkpointActiveSession(at: noon + interval)
+        service.noteSystemWillSleep(at: noon + interval)
+
+        awake += 15
+        XCTAssertEqual(service.uncreditedSessionTime(at: wake + 15), 15)
+        XCTAssertEqual(service.todayListeningTime(at: wake + 15), interval + 15)
+        service.checkpointActiveSession(at: wake + 15)
+        awake += 15
+        service.endSession(at: wake + 30)
+        XCTAssertEqual(service.stats.totalListeningSeconds, interval + 30)
+
+        awake += 70
+        service.startSession(bookID: book, at: wake + 100)
+        awake += 60
+        service.endSession(at: wake + 160)
+
+        assertCredited(interval + 30 + 60, to: book, by: service, at: wake + 160)
+    }
+
+    /// A night asleep across midnight is credited to neither day: the
+    /// evening's minute and a half goes to its day, the morning's to the
+    /// next, and Today, This Week, and the streak count only those.
+    @MainActor
+    func testANightAsleepAcrossMidnightCreditsNeitherDay() {
+        var awake: TimeInterval = 1_000
+        let service = makeService(awakeClock: { awake }, workspace: NotificationCenter())
+        let book = UUID()
+        let midnight = Calendar.current.startOfDay(for: noon)
+        let lidClosed = midnight - 3_600
+        let wake = midnight + 7 * 3_600
+        service.startSession(bookID: book, at: lidClosed - 90)
+        awake += 60
+        service.checkpointActiveSession(at: lidClosed - 30)
+        awake += 30
+        service.noteSystemWillSleep(at: lidClosed)
+
+        service.noteSystemDidWake(at: wake)
+        awake += 90
+        service.endSession(at: wake + 90)
+
+        XCTAssertEqual(service.stats.dailyListeningSeconds, [
+            ReadingStatsService.dateKey(lidClosed): 90,
+            ReadingStatsService.dateKey(wake): 90,
+        ])
+        XCTAssertEqual(service.stats.bookListeningSeconds, [book.uuidString: 180])
+        XCTAssertEqual(service.todayListeningTime(at: wake + 90), 90)
+        XCTAssertEqual(service.thisWeekListeningTime(at: wake + 90), 180)
+        XCTAssertEqual(service.currentStreak(at: wake + 90), 2)
+    }
+
+    /// A wake with no session open changes nothing, whether or not the Mac
+    /// said it was going to sleep, and the next session is credited in full.
+    @MainActor
+    func testAWakeWithNoSessionOpenChangesNothing() {
+        var awake: TimeInterval = 1_000
+        let service = makeService(awakeClock: { awake }, workspace: NotificationCenter())
+        let book = UUID()
+        service.startSession(bookID: book, at: noon)
+        awake += 90
+        service.endSession(at: noon + 90)
+
+        service.noteSystemDidWake(at: noon + 120)
+        service.noteSystemWillSleep(at: noon + 180)
+        service.noteSystemDidWake(at: noon + Self.night)
+
+        XCTAssertFalse(service.hasActiveSession, "A wake opened a session")
+        XCTAssertEqual(service.stats.totalListeningSeconds, 90)
+        XCTAssertEqual(service.stats.dailyListeningSeconds, [ReadingStatsService.dateKey(noon): 90])
+        awake += 60
+        service.startSession(bookID: book, at: noon + Self.night + 60)
+        awake += 45
+        service.endSession(at: noon + Self.night + 105)
+        assertCredited(90 + 45, to: book, by: service, at: noon + Self.night + 105)
+    }
+
+    /// The service hears the Mac say it is going to sleep, on the center
+    /// it was given: the open session is credited so far and stays open,
+    /// and a night later by the wall clock, the awake clock unmoved, there
+    /// is nothing more to credit.
+    @MainActor
+    func testTheServiceHearsTheMacGoToSleep() {
+        let workspace = NotificationCenter()
+        let service = makeService(awakeClock: { 1_000 }, workspace: workspace)
+        service.startSession(bookID: UUID(), at: Date().addingTimeInterval(-30))
+
+        workspace.post(name: NSWorkspace.willSleepNotification, object: nil)
+
+        XCTAssertTrue(service.hasActiveSession)
+        XCTAssertGreaterThan(service.stats.totalListeningSeconds, 29, "Going to sleep credited nothing")
+        XCTAssertEqual(service.uncreditedSessionTime(at: Date() + Self.night), 0, "The night asleep counted")
+    }
+
+    /// The service hears the Mac say it woke, on the center it was given:
+    /// without word of the sleep first, the open session's credit moves up
+    /// to the wake, since the time before it may have been asleep.
+    @MainActor
+    func testTheServiceHearsTheMacWake() {
+        let workspace = NotificationCenter()
+        let service = makeService(awakeClock: { 1_000 }, workspace: workspace)
+        service.startSession(bookID: UUID(), at: Date().addingTimeInterval(-30))
+
+        workspace.post(name: NSWorkspace.didWakeNotification, object: nil)
+
+        XCTAssertTrue(service.hasActiveSession)
+        XCTAssertLessThan(service.uncreditedSessionTime(at: Date()), 1, "The time before the wake counted")
+    }
+
     // MARK: - Displayed totals
 
     /// Today and This Week add only the open session's time since its last
@@ -469,10 +648,6 @@ final class ReadingStatsServiceTests: XCTestCase {
         XCTAssertEqual(service.booksFinishedThisYear(at: sameDayLastYear), 1)
     }
 
-    // MARK: - Helpers
-
-    /// A service over this test's file, checkpointing every
-    /// `checkpointInterval`. Its timer stops when the test ends.
     // MARK: - Books Finished by Kind
 
     /// A finished book is saved with the kind the library tells as it
@@ -537,11 +712,25 @@ final class ReadingStatsServiceTests: XCTestCase {
         XCTAssertEqual(FinishedBookKind.of(format: .epub, isFeedDownload: false), .text)
     }
 
+    // MARK: - Helpers
+
+    /// A service over this test's file, checkpointing every
+    /// `checkpointInterval`, reading the awake clock `awakeClock`, and
+    /// hearing the Mac go to sleep and wake on `workspace`: the system's
+    /// clock and the shared workspace's center unless a test gives its own.
+    /// Its timer stops when the test ends.
     @MainActor
     private func makeService(
-        checkpointInterval: TimeInterval = ReadingStatsService.defaultCheckpointInterval
+        checkpointInterval: TimeInterval = ReadingStatsService.defaultCheckpointInterval,
+        awakeClock: @escaping () -> TimeInterval = ReadingStatsService.systemAwakeTime,
+        workspace: NotificationCenter = NSWorkspace.shared.notificationCenter
     ) -> ReadingStatsService {
-        let service = ReadingStatsService(fileURL: fileURL, checkpointInterval: checkpointInterval)
+        let service = ReadingStatsService(
+            fileURL: fileURL,
+            checkpointInterval: checkpointInterval,
+            awakeClock: awakeClock,
+            workspaceNotifications: workspace
+        )
         addTeardownBlock { @MainActor in service.shutdown() }
         return service
     }
@@ -552,6 +741,25 @@ final class ReadingStatsServiceTests: XCTestCase {
     private func relaunchedService() -> ReadingStatsService {
         ReadingStatsService.waitForQueuedSaves()
         return makeService()
+    }
+
+    /// Checks that `service`, whose sessions of `book` have ended by `now`,
+    /// credited `seconds` in all, every one of them on the day of `now`: in
+    /// All Time, the book's total, and Today, and in the file the next
+    /// launch reads.
+    @MainActor
+    private func assertCredited(
+        _ seconds: TimeInterval,
+        to book: UUID,
+        by service: ReadingStatsService,
+        at now: Date,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertEqual(service.allTimeListeningTime(at: now), seconds, "All Time", file: file, line: line)
+        XCTAssertEqual(service.stats.bookListeningSeconds[book.uuidString], seconds, "The book's total", file: file, line: line)
+        XCTAssertEqual(service.todayListeningTime(at: now), seconds, "Today", file: file, line: line)
+        XCTAssertEqual(relaunchedService().stats.totalListeningSeconds, seconds, "On disk", file: file, line: line)
     }
 
     /// Checks that the daily and the per-book totals each add up to the

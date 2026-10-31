@@ -157,6 +157,13 @@ extension FileImportService {
             )
         }
         try RemovedFromLibraryMarker.remove(from: staging.directory)
+        // A copy of a duplicate's package that a Cancel, or the launch's
+        // discard, sent to the Trash still holds the marker saying it waits
+        // for an answer (`DuplicateQuestionMarker`). Imported, it is a book
+        // of the library like any other: kept with the marker, a provisional
+        // library would pass it over while the index cannot be read, and the
+        // next launch would discard it.
+        try DuplicateQuestionMarker.remove(from: staging.directory)
         return try publishReadableBook(staged, from: staging, run: &run)
     }
 
@@ -252,8 +259,9 @@ extension FileImportService {
     /// reader will and its bookInfo.json written and read back where it is,
     /// and deleting the marker through
     /// `LibraryPersistenceService.reinstatePackage(of:)` is what publishes
-    /// it. A failure puts the record back as it was and leaves the marker,
-    /// so the package stays retired.
+    /// it. A failure puts the record and content.md back as they were and
+    /// leaves the marker, so the package stays retired, with any text the
+    /// user changed in it.
     ///
     /// The book's record is, by preference: the package's own bookInfo.json,
     /// when it still has a valid one, so its reading position, bookmarks,
@@ -277,27 +285,60 @@ extension FileImportService {
             return nil
         }
 
-        // The record's files as they are now, bookInfo.json and the content
-        // index beside it, put back should the reinstatement fail.
-        let previousRecord = [
+        // The files a reinstatement writes, as they are now: content.md,
+        // which reading the book's text may write again, and the record's
+        // files, bookInfo.json and the content index beside it. Each is put
+        // back should the reinstatement fail, at whatever step; one it did
+        // not change is left alone.
+        let previousText = PackageFileSnapshot(of: TextMouthPaths.contentMarkdownPath(in: location))
+        let previousFiles = [previousText] + [
             TextMouthPaths.bookInfoPath(in: location),
             TextMouthPaths.contentIndexPath(in: location),
-        ].map(RecordFileSnapshot.init(of:))
-        var wroteRecord = false
+        ].map(PackageFileSnapshot.init(of:))
+        // A book recording no fingerprint of its text (the marker of a book
+        // removed before markers carried an edit, with no record to say)
+        // cannot tell whether content.md holds an edit, so what content.md
+        // holds is kept below should reading the book's file replace it.
+        let textIsUnrecorded = !book.format.isAudio && book.textCacheFingerprint == nil
         do {
             let content = try readableContent(of: &book, run: &run)
+            let keptNotice = try keepingUnrecordedText(of: book, held: textIsUnrecorded ? previousText : nil)
             try run.begin(.savingRecord, in: location)
-            wroteRecord = true
             try writeVerifiedRecord(of: book, contentIndex: content.index, into: location)
             try run.begin(.reinstating, in: location)
             try LibraryPersistenceService.reinstatePackage(of: book)
-            return ImportedBook(book: book, report: content.report)
+            var imported = ImportedBook(book: book, report: content.report)
+            imported.notice = keptNotice
+            return imported
         } catch {
-            if wroteRecord {
-                previousRecord.forEach { $0.restore() }
-            }
+            previousFiles.forEach { $0.restore() }
             throw error
         }
+    }
+
+    /// Keeps the text content.md held before a reinstatement read the book's
+    /// file, as a `content.md.edited-` copy, when reading it wrote other
+    /// text there. This is the second safeguard for a book whose marker
+    /// records no fingerprint (`reinstate`): an edit saved with Edit Text
+    /// before this build's markers carried one would otherwise be lost
+    /// without a word.
+    /// - Parameters:
+    ///   - book: The book reinstated, its text now read.
+    ///   - held: content.md as it was before the read, or nil when the book
+    ///     records a fingerprint, so the read's own safeguards apply.
+    /// - Returns: What to tell the listener (`BookTextEditWording.replaced`),
+    ///   or nil when nothing was replaced.
+    /// - Throws: `FileImportError.importFailed` when the copy could not be
+    ///   kept, so the reinstatement puts content.md back and the package
+    ///   stays retired.
+    private static func keepingUnrecordedText(of book: Book, held: PackageFileSnapshot?) throws -> String? {
+        guard let held, let before = held.bytes,
+              let now = try? Data(contentsOf: held.url), now != before else { return nil }
+        guard let copy = BookTextEditSessions.keepCopy(of: held.url, bytes: before) else {
+            throw FileImportError.importFailed(BookTextEditWording.addBackNoCopyKept(bookTitle: book.title))
+        }
+        BookTextEditSessions.logAddBackKeptText(of: book, copy: copy)
+        return BookTextEditWording.replaced(bookTitle: book.title, keptCopy: copy)
     }
 
     /// The book a retained package is reinstated as (see `reinstate`), or
@@ -344,10 +385,10 @@ extension FileImportService {
         )
     }
 
-    /// One file of a retained package's record (bookInfo.json, or the
-    /// content index beside it) as it was before a reinstatement wrote over
-    /// it, so a failed reinstatement can put it back.
-    private struct RecordFileSnapshot {
+    /// One file of a retained package that a reinstatement writes (content.md,
+    /// bookInfo.json, or the content index beside it) as it was before, so a
+    /// failed reinstatement can put it back.
+    private struct PackageFileSnapshot {
         /// Where the file is.
         let url: URL
         /// Whether anything was there.
@@ -363,13 +404,15 @@ extension FileImportService {
         }
 
         /// Puts the file back as it was: its earlier bytes, or no file when
-        /// there was none. A file that existed but could not be read cannot
-        /// be put back, and is left as the failed reinstatement wrote it; the
-        /// removal marker keeps the package retired either way.
+        /// there was none. A file that still holds its earlier bytes is left
+        /// alone, so content.md keeps the date its fingerprints record. A
+        /// file that existed but could not be read cannot be put back, and
+        /// is left as the failed reinstatement wrote it; the removal marker
+        /// keeps the package retired either way.
         func restore() {
             if !existed {
                 try? FileManager.default.removeItem(at: url)
-            } else if let bytes {
+            } else if let bytes, (try? Data(contentsOf: url)) != bytes {
                 try? bytes.write(to: url, options: .atomic)
             }
         }
@@ -379,11 +422,13 @@ extension FileImportService {
 
     /// The book a retained package holds, rebuilt for a package whose
     /// bookInfo.json is gone, as Remove from Library Only deletes it. The
-    /// book keeps its ID, title, author, braille table, and text encoding from the removal marker; its
-    /// format and checksum come from its one content entry, and the rest of
-    /// its metadata is read from that file as an import reads it. Its
-    /// reading position, bookmarks, and per-book settings lived only in the
-    /// deleted record, so the book returns at its beginning.
+    /// book keeps its ID, title, author, braille table, and text encoding
+    /// from the removal marker, and, for a text book, the record of an edit
+    /// of its text (B12) with the fingerprints of its text cache; its format
+    /// and checksum come from its one content entry, and the rest of its
+    /// metadata is read from that file as an import reads it. Its reading
+    /// position, bookmarks, and per-book settings lived only in the deleted
+    /// record, so the book returns at its beginning.
     static func reconstructedBook(
         inPackage package: URL,
         marker: RemovedFromLibraryMarker,
@@ -424,6 +469,14 @@ extension FileImportService {
             epubLanguage: metadata?.epub?.language,
             epubIdentifier: metadata?.epub?.identifier,
             epubVersion: metadata?.epub?.epubVersion,
+            // The text the user changed with Edit Text stays in content.md,
+            // which the removal kept (B12): with the record of the edit, the
+            // book's file is not read over it, and with the fingerprints, a
+            // re-read that does replace content.md (Redo Text Extraction)
+            // keeps a copy of what it held. Only a text book's content.md is
+            // its text.
+            textCacheFingerprint: format.isAudio ? nil : marker.textCacheFingerprint,
+            editedText: format.isAudio ? nil : marker.editedText,
             // A braille book is read with the table it was imported with
             // (FMT21), in the braille file characters it was last read in
             // (braillecodes). The record that held both is gone, so the
@@ -516,8 +569,11 @@ extension FileImportService {
     }
 
     /// Whether `first` and `second` name the same item, however their paths
-    /// are spelled.
-    private static func isSameItem(_ first: URL, _ second: URL) -> Bool {
+    /// are spelled. Resolving an existing item's path also gives each part
+    /// the capitals it has on disk, so two spellings of one item on a volume
+    /// that ignores case agree. Internal so the library's check of a package
+    /// it opens compares as an import does (`LibraryViewModel.listedBookID(for:)`).
+    static func isSameItem(_ first: URL, _ second: URL) -> Bool {
         first.standardizedFileURL.resolvingSymlinksInPath().path
             == second.standardizedFileURL.resolvingSymlinksInPath().path
     }

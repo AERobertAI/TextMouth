@@ -366,7 +366,7 @@ final class LogContentPolicyTests: XCTestCase {
         "MIGRATION_STAGING_REMOVED", "ORIGINAL_KEPT", "PERSISTENCE_FAILURE",
         "PERSISTENCE_RECOVERED", "PERSISTENCE_WITHDRAWN", "PLAYBACK_RESUME_REJECTED", "SPEECH_PLAYER_EXCEPTION",
         "AUDIO_ENGINE_START_FAILED",
-        "READING_TEXT_CACHE_REJECTED", "READING_TEXT_CACHE_SWEPT", "TMB_RECONCILE", "TRACE_SUPPRESSED",
+        "READING_TEXT_CACHE_REJECTED", "READING_TEXT_CACHE_SWEPT", "TMB_ID_LISTED", "TMB_RECONCILE", "TRACE_SUPPRESSED",
         // Transcripts of audiobooks (FR05): a transcript.json that cannot be used, preserved beside itself;
         // a transcript whose audio changed since; and a transcript text written again from its transcript.
         "TRANSCRIPT_FILE", "TRANSCRIPT_STALE", "TRANSCRIPT_TEXT_REBUILT",
@@ -383,6 +383,12 @@ final class LogContentPolicyTests: XCTestCase {
         // Replace Existing (ST04): a duplicate's new copy taking the old copy's place under its ID, and what an
         // undone replacement could not put back in the new copy's package.
         "DUPLICATE_REPLACED", "DUPLICATE_REPLACE_UNDONE",
+        // A duplicate's new copy whose question was never answered (TODO 3780): discarded by the launch's repair,
+        // or not discarded, or not marked as waiting, and why.
+        "DUPLICATE_UNANSWERED",
+        // Keep Both refused because the mark that a new copy awaits its answer could not be taken off it; the
+        // system's reason goes here, not into the sentence the listener hears.
+        "DUPLICATE_KEEP_FAILED",
         // A package left unadopted because its record names a book the library lists in another package.
         "ORPHAN_ID_LISTED",
     ]

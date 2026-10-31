@@ -237,6 +237,83 @@ final class AudioMediaValidationTests: XCTestCase {
         XCTAssertEqual(outcome, .failure(.endsEarly))
     }
 
+    // MARK: - Lengths a Header Makes Up
+
+    /// The probe believes a length only when it is a finite number of
+    /// seconds above zero and at most a year, the longest length any of
+    /// TextMouth's readers believes; for any other, such as the 1e18
+    /// seconds an MPEG-4 movie header can claim over an audio track of
+    /// two, it refuses the file as holding no audio that can be played.
+    func testTheProbeBelievesALengthOfAtMostAYear() {
+        XCTAssertTrue(AudioMediaProbe.isPlayableLength(2))
+        XCTAssertTrue(AudioMediaProbe.isPlayableLength(OggHeaderReader.maximumDuration))
+        XCTAssertFalse(AudioMediaProbe.isPlayableLength(OggHeaderReader.maximumDuration + 1))
+        XCTAssertFalse(AudioMediaProbe.isPlayableLength(1e18))
+        XCTAssertFalse(AudioMediaProbe.isPlayableLength(0))
+        XCTAssertFalse(AudioMediaProbe.isPlayableLength(-2))
+        XCTAssertFalse(AudioMediaProbe.isPlayableLength(.infinity))
+        XCTAssertFalse(AudioMediaProbe.isPlayableLength(.nan))
+    }
+
+    /// A file whose length is measured as 1e18 seconds neither traps nor
+    /// builds a placeholder longer than the content index accepts: the
+    /// book parses as one section of exactly that many characters. (Before
+    /// the bound, `Int(_:)` trapped on this length.)
+    func testAnAbsurdLengthParsesToTheLongestPlaceholderTheIndexAccepts() async throws {
+        let file = folder.appendingPathComponent("Harbor Soundings.wav")
+        try AudioTestFixtures.writeSilence(to: file, duration: 2)
+        let absurd = AudioMediaProber { _ in .success(1e18) }
+
+        let content = try await AudioBookParser.parse(url: file, prober: absurd)
+
+        XCTAssertEqual(content.chapters.map(\.title), ["Harbor Soundings"])
+        XCTAssertEqual(content.chapters.map(\.text.utf16.count), [BookContentIndex.maximumCharacterCount])
+    }
+
+    /// A length that is not a finite number above zero gets a placeholder
+    /// of one character, and an absurd one the longest the index accepts;
+    /// none traps. (Before the bound, infinity, NaN, and 1e18 trapped.)
+    func testNoLengthAndAnAbsurdLengthGetBoundedPlaceholders() {
+        XCTAssertEqual(AudioBookParser.placeholderLength(for: .infinity), 1)
+        XCTAssertEqual(AudioBookParser.placeholderLength(for: -.infinity), 1)
+        XCTAssertEqual(AudioBookParser.placeholderLength(for: .nan), 1)
+        XCTAssertEqual(AudioBookParser.placeholderLength(for: -5), 1)
+        XCTAssertEqual(AudioBookParser.placeholderLength(for: 1e18), BookContentIndex.maximumCharacterCount)
+    }
+
+    /// A year, the longest length the probe believes, is past the index's
+    /// limit at ten characters a second, so its placeholder is that limit,
+    /// while a 200-hour book keeps its ten characters a second and a
+    /// moment of audio its one character. This changes at the bound
+    /// without trapping either way.
+    func testAYearOfAudioGetsTheLongestPlaceholderAndRealLengthsKeepTheirs() {
+        XCTAssertEqual(
+            AudioBookParser.placeholderLength(for: OggHeaderReader.maximumDuration),
+            BookContentIndex.maximumCharacterCount
+        )
+        XCTAssertEqual(AudioBookParser.placeholderLength(for: 200 * 3_600), 7_200_000)
+        XCTAssertEqual(AudioBookParser.placeholderLength(for: 0.05), 1)
+    }
+
+    /// A length the library shows never traps, however a header states
+    /// it: no number shows as 0:00, and an absurd one as a year; real
+    /// lengths show as before. (Before the bound, NaN, infinity, and 1e19
+    /// trapped.)
+    func testALengthTheLibraryShowsNeverTraps() {
+        XCTAssertEqual(AudioPlaybackService.durationString(.nan), "0:00")
+        XCTAssertEqual(AudioPlaybackService.durationString(.infinity), "0:00")
+        XCTAssertEqual(AudioPlaybackService.durationString(-.infinity), "0:00")
+        XCTAssertEqual(AudioPlaybackService.durationString(1e19), "8760:00:00")
+        XCTAssertEqual(AudioPlaybackService.durationString(3_661), "1:01:01")
+        XCTAssertEqual(AudioPlaybackService.durationString(75), "1:15")
+    }
+
+    /// A negative length shows as 0:00, not as "0:-5". This changes at the
+    /// bound without trapping either way.
+    func testANegativeLengthShowsAsNoTime() {
+        XCTAssertEqual(AudioPlaybackService.durationString(-5), "0:00")
+    }
+
     // MARK: - Damaged Files Fail By Name
 
     /// Text named as a track fails the book, naming the file by its path in

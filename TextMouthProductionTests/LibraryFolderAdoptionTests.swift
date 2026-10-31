@@ -61,6 +61,27 @@ final class LibraryFolderAdoptionTests: XCTestCase {
         XCTAssertEqual(library.folders.map(\.fullPath), ["Archive", "Archive/Letters"])
     }
 
+    /// Left to the folders books name, as the startup repair of a library
+    /// whose index records its folders asks, a book's folder gets a row with
+    /// its ancestors, while the folder directories no book is in, at the top
+    /// of the library or below the book's folder, stay out.
+    func testOnlyTheFoldersBooksNameGetRowsWhenTheFoldersOnDiskDoNotCount() throws {
+        try makeDirectories(["Deleted Shelf", "Archive/Letters/Drafts"])
+        var library = Library(books: [
+            Book(title: "Nested", format: .txt, filePath: "/nonexistent/nested.txt",
+                 md5Hash: "nested", folderPath: "Archive/Letters")
+        ])
+
+        let added = FileImportService.adoptLibraryFolders(
+            library: &library,
+            libraryDirectory: libraryDirectory,
+            includingFoldersOnDisk: false
+        )
+
+        XCTAssertEqual(library.folders.map(\.fullPath), ["Archive", "Archive/Letters"])
+        XCTAssertEqual(added, 2)
+    }
+
     /// Existing rows keep their identity, and a second run adds nothing.
     func testExistingRowsAreKeptAndASecondRunAddsNothing() throws {
         try makeDirectories(["Fiction/Space Opera"])

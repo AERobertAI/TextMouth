@@ -143,6 +143,8 @@ final class FeedItemIndexFileTests: FeedItemIndexTestCase {
 
     /// Rebuild Library Index's write splits the library as every write does.
     func testReplacingAnUnreadableIndexWritesTheFeedsRowsToItsIndex() throws {
+        // Rebuild replaces only an index that can't be read, as this one can't.
+        try Data("{ damaged".utf8).write(to: TextMouthPaths.libraryIndexFile)
         let item = try makeFeedItem(title: "Rebuilt Into Its Index")
         let plain = try makePackagedBook(title: "Rebuilt Into library.json")
 

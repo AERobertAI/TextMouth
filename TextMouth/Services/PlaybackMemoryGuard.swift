@@ -227,6 +227,14 @@ protocol MemoryGuardedReader: AnyObject {
     func stopPlaybackForMemoryRunaway(footprint: UInt64)
     /// Save the reader's place now.
     func savePosition()
+    /// Save the reader's place now, but only if it moved since its last
+    /// durable save. A reader that cannot tell saves it regardless.
+    func savePositionIfMoved()
+}
+
+extension MemoryGuardedReader {
+    /// A reader that does not track its last saved place saves every time.
+    func savePositionIfMoved() { savePosition() }
 }
 
 // MARK: - The Guard
@@ -363,14 +371,34 @@ final class PlaybackMemoryGuard {
     }
 
     /// Save every open reader's place and every pending write, then quit,
-    /// asking nothing.
+    /// asking nothing. The app's pending writes are the quit's own flush,
+    /// which saves the same places again; the guard saves them itself all
+    /// the same, so a guard whose writes a test replaces saves them too.
     fileprivate func saveEverythingAndQuit(_ environment: Environment) {
         isQuittingToProtectTheMac = true
-        for reader in openReaders(playingOnly: false) {
-            reader.savePosition()
-        }
+        saveEveryOpenReaderPosition()
         environment.savePendingWrites()
         environment.quit()
+    }
+
+    /// Save the place of every open reader, playing or not, as TextMouth
+    /// quits: the guard's own quit does, and so does every other quit,
+    /// whose flush calls this first
+    /// (`UnsavedChangesTerminationGuard.flushPendingWrites()`). A playing
+    /// reader saves its place only every thirty seconds
+    /// (`PlaybackCheckpointPolicy`), and SwiftUI closes no reader window as
+    /// TextMouth quits, so without this the next launch could open a book
+    /// up to thirty seconds back. Every reader reports to the guard as it
+    /// opens, whether or not the guard `isEnabled`, so this finds them all;
+    /// a closed reader saved its place as it closed, and is skipped. A
+    /// reader at rest, whose place has not moved since it was last saved,
+    /// writes nothing (`savePositionIfMoved()`): saving it would date its
+    /// place anew and write this Mac's library index over a newer one that
+    /// another Mac on a shared library saved.
+    func saveEveryOpenReaderPosition() {
+        for reader in openReaders(playingOnly: false) {
+            reader.savePositionIfMoved()
+        }
     }
 
     /// The readers still open: those that last said they play, when
@@ -404,9 +432,9 @@ final class PlaybackMemoryGuard {
 
     // MARK: The App's Actions
 
-    /// Save what the termination path saves: the library index and every
-    /// queued book record, then the statistics, whose listening session is
-    /// credited so far.
+    /// Save what the termination path saves: every open reader's place,
+    /// then the library index and every queued book record, then the
+    /// statistics, whose listening session is credited so far.
     static func savePendingWrites() {
         UnsavedChangesTerminationGuard.flushPendingWrites()
         TextMouthPaths.flushLogs()

@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import AppKit
 
 /// Tracks reading/listening statistics.
 ///
@@ -7,8 +8,10 @@ import Combine
 /// every `checkpointInterval` a timer adds the open session's time since the
 /// previous checkpoint to the totals and saves them, so a crash or force quit
 /// loses at most one interval. `ActiveSession` states the rule that keeps any
-/// second from being counted twice, and `ListeningDays` the rules for the
-/// local day each second is credited to and the key that day is saved under.
+/// second from being counted twice, `SleepNote` the one that keeps the time
+/// the Mac sleeps from being counted at all, and `ListeningDays` the rules
+/// for the local day each second is credited to and the key that day is
+/// saved under.
 @MainActor
 final class ReadingStatsService: ObservableObject {
     static let shared = ReadingStatsService()
@@ -101,17 +104,26 @@ final class ReadingStatsService: ObservableObject {
         return calendar
     }
 
+    /// The system's awake clock: how long the Mac has been awake since it
+    /// started, in seconds. It stops while the Mac sleeps, as the wall
+    /// clock does not (`SleepNote`).
+    nonisolated static func systemAwakeTime() -> TimeInterval {
+        ProcessInfo.processInfo.systemUptime
+    }
+
     /// A listening session in progress, and how much of it the totals
     /// already include.
     ///
     /// The rule that keeps any second from being counted twice: the totals
-    /// include `start..<creditedThrough` exactly once, in the grand total, in
-    /// `bookID`'s total, and in the daily totals, where each second is in
-    /// the total of the local day it fell on, and include nothing after
-    /// `creditedThrough`. Crediting, which each checkpoint and the final
-    /// `endSession` do, adds only `creditedThrough..<time` and then moves
-    /// `creditedThrough` up to `time`. It never moves backwards, so a clock
-    /// set back cannot credit the same time again either.
+    /// include `start..<creditedThrough` exactly once, less the time the Mac
+    /// slept (`SleepNote`), in the grand total, in `bookID`'s total, and in
+    /// the daily totals, where each second is in the total of the local day
+    /// it fell on, and include nothing after `creditedThrough`. Crediting,
+    /// which each checkpoint and the final `endSession` do, adds only
+    /// `creditedThrough..<time`, from the wake on should the Mac have slept
+    /// in it, and then moves `creditedThrough` up to `time`. It never moves
+    /// backwards, so a clock set back cannot credit the same time again
+    /// either.
     private struct ActiveSession {
         /// The book being listened to.
         let bookID: UUID
@@ -127,6 +139,53 @@ final class ReadingStatsService: ObservableObject {
     /// Fires every `checkpointInterval` to checkpoint the open session.
     private var checkpointTimer: Timer?
 
+    /// When the Mac said it was going to sleep, by the wall clock and by the
+    /// awake clock (`awakeClock`), which stops while the Mac sleeps, so the
+    /// wall clock runs ahead of it by exactly the time asleep. No second of
+    /// that time is credited: a book left playing as the lid closes for a
+    /// night is not a night of listening.
+    ///
+    /// The awake clock is why the rule holds whatever order the wake's
+    /// events come in. The Mac's notices alone would not do: the checkpoint
+    /// timer runs on a clock that stops in sleep too, so its first tick
+    /// after a wake can come before AppKit delivers the wake's notice, and
+    /// so can a reader ending its session as the audio comes back; and an
+    /// app can miss either notice altogether. Every credit made while a
+    /// note is kept finds the wake by the awake clock instead
+    /// (`creditStart(of:at:)`), from the timer, a session's end, or the
+    /// wake's notice alike.
+    private struct SleepNote {
+        /// When the Mac said it was going to sleep.
+        let date: Date
+        /// The awake clock's reading then, in seconds.
+        let awakeTime: TimeInterval
+
+        /// When the Mac woke, as found at `now`, while the awake clock reads
+        /// `awakeNow`: the note's date moved on by every second the Mac has
+        /// slept since, which the wall clock counted and the awake clock
+        /// did not. What follows it up to `now` is exactly as long as the
+        /// Mac has been awake since the note. It is the note's own date
+        /// when the Mac never slept, as when a sleep was cancelled.
+        func wake(seenAt now: Date, awakeNow: TimeInterval) -> Date {
+            let asleep = now.timeIntervalSince(date) - (awakeNow - awakeTime)
+            return date.addingTimeInterval(max(0, asleep))
+        }
+    }
+
+    /// The Mac's last word that it was going to sleep, kept until it says it
+    /// woke (`noteSystemDidWake(at:)`) or that it goes to sleep again; nil
+    /// otherwise.
+    private var sleepNote: SleepNote?
+
+    /// Reads the awake clock: how long the Mac has been awake since it
+    /// started, in seconds, a clock that stops while the Mac sleeps.
+    private let awakeClock: () -> TimeInterval
+
+    /// Hears the Mac say it is going to sleep.
+    private var sleepSubscription: AnyCancellable?
+    /// Hears the Mac say it woke.
+    private var wakeSubscription: AnyCancellable?
+
     /// Creates a service, loads its statistics file, and starts its
     /// checkpoint timer before returning.
     ///
@@ -141,17 +200,34 @@ final class ReadingStatsService: ObservableObject {
     ///     stands in another calendar system or time zone.
     ///   - readFile: How the statistics file is read: with dataless files
     ///     left in the cloud, unless a test reads it otherwise.
+    ///   - awakeClock: Reads the awake clock, which stops while the Mac
+    ///     sleeps: the system's unless a test stands in its own.
+    ///   - workspaceNotifications: Where the Mac says it is going to sleep
+    ///     and that it woke: the shared workspace's notification center, the
+    ///     only one AppKit posts them to, unless a test posts its own.
     init(
         fileURL: URL? = nil,
         checkpointInterval: TimeInterval = defaultCheckpointInterval,
         userCalendar: @escaping () -> Calendar = ReadingStatsService.systemCalendar,
-        readFile: @escaping SavedFile.Reader = SavedFile.readWithoutDownloading
+        readFile: @escaping SavedFile.Reader = SavedFile.readWithoutDownloading,
+        awakeClock: @escaping () -> TimeInterval = ReadingStatsService.systemAwakeTime,
+        workspaceNotifications: NotificationCenter = NSWorkspace.shared.notificationCenter
     ) {
         precondition(checkpointInterval > 0, "The checkpoint interval must be positive")
         customFileURL = fileURL
         self.checkpointInterval = checkpointInterval
         self.userCalendar = userCalendar
         self.readFile = readFile
+        self.awakeClock = awakeClock
+        // The time the Mac sleeps is never listening (`SleepNote`). AppKit
+        // posts both notices on the main thread, the first before the Mac
+        // sleeps, so its checkpoint is made while the app still runs.
+        sleepSubscription = workspaceNotifications
+            .publisher(for: NSWorkspace.willSleepNotification)
+            .sink { [weak self] _ in self?.noteSystemWillSleep(at: Date()) }
+        wakeSubscription = workspaceNotifications
+            .publisher(for: NSWorkspace.didWakeNotification)
+            .sink { [weak self] _ in self?.noteSystemDidWake(at: Date()) }
         if fileURL == nil {
             // Nothing is read from a data directory the library model found
             // unavailable (FR02): fresh statistics stand in until it is back.
@@ -360,16 +436,17 @@ final class ReadingStatsService: ObservableObject {
 
     /// Credits the open session's time since its last checkpoint and saves,
     /// leaving the session open, so a crash afterwards loses only what
-    /// follows. The slice is split at every local midnight it crosses, in
-    /// the time zone current now, so each day gets exactly the seconds
-    /// heard on it (`ListeningDays.split`). Does nothing without an open
-    /// session or while it is too short to count.
+    /// follows. Time the Mac slept since is left out (`SleepNote`). The
+    /// slice is split at every local midnight it crosses, in the time zone
+    /// current now, so each day gets exactly the seconds heard on it
+    /// (`ListeningDays.split`). Does nothing without an open session or
+    /// while it is too short to count.
     func checkpointActiveSession(at time: Date = Date()) {
         guard let session = activeSession, uncreditedSessionTime(at: time) > 0 else { return }
         // Credit every piece to a copy and publish the result once, so no
         // observer ever sees a slice half credited.
         var credited = stats
-        for piece in listeningDays.split(from: session.creditedThrough, to: time) {
+        for piece in listeningDays.split(from: creditStart(of: session, at: time), to: time) {
             credited.addListening(piece.seconds, bookID: session.bookID, dayKey: piece.dayKey)
         }
         stats = credited
@@ -380,12 +457,13 @@ final class ReadingStatsService: ObservableObject {
     /// The open session's time that the totals do not include yet: what
     /// ending it at `time` would add. Zero without an open session, while the
     /// session is too short to count, and when `time` is not after its last
-    /// checkpoint because the clock was set back.
+    /// checkpoint because the clock was set back. Time the Mac slept since
+    /// that checkpoint is not counted (`SleepNote`).
     func uncreditedSessionTime(at time: Date) -> TimeInterval {
         guard let session = activeSession,
               time.timeIntervalSince(session.start) > Self.longestIgnoredSession
         else { return 0 }
-        return max(0, time.timeIntervalSince(session.creditedThrough))
+        return max(0, time.timeIntervalSince(creditStart(of: session, at: time)))
     }
 
     /// The part of the open session's uncredited time from `start` on: what
@@ -394,7 +472,18 @@ final class ReadingStatsService: ObservableObject {
     /// `uncreditedSessionTime(at:)` is.
     private func uncreditedSessionTime(at now: Date, since start: Date) -> TimeInterval {
         guard let session = activeSession, uncreditedSessionTime(at: now) > 0 else { return 0 }
-        return max(0, now.timeIntervalSince(max(session.creditedThrough, start)))
+        return max(0, now.timeIntervalSince(max(creditStart(of: session, at: now), start)))
+    }
+
+    /// Where crediting `session` at `time` begins: the end of what the
+    /// totals include, or, should the Mac have slept since it last said it
+    /// would (`sleepNote`), the moment it woke, found by the awake clock,
+    /// whichever is later. Every credit and every total read goes through
+    /// here, so none counts a second of the sleep, whatever order the
+    /// wake's events come in.
+    private func creditStart(of session: ActiveSession, at time: Date) -> Date {
+        guard let sleepNote else { return session.creditedThrough }
+        return max(session.creditedThrough, sleepNote.wake(seenAt: time, awakeNow: awakeClock()))
     }
 
     /// Whether a listening session is open.
@@ -443,6 +532,35 @@ final class ReadingStatsService: ObservableObject {
 
     /// The key of the finished book's ID in a `.bookDidFinish` notification.
     nonisolated static let finishedBookIDKey = "bookID"
+
+    // MARK: - The Mac's Sleep
+
+    /// The Mac is going to sleep, as it said at `time`: everything heard so
+    /// far is credited and its save begun, and the moment is noted with the
+    /// awake clock's reading (`SleepNote`), so that no credit after it
+    /// counts the time asleep. The session stays open, since playback may
+    /// go on after the wake.
+    func noteSystemWillSleep(at time: Date) {
+        checkpointActiveSession(at: time)
+        sleepNote = SleepNote(date: time, awakeTime: awakeClock())
+    }
+
+    /// The Mac woke, as it said at `time`: the open session goes on, its
+    /// credit beginning no earlier than the wake, never moving backwards,
+    /// and the note of the sleep is done with. When the Mac said beforehand
+    /// that it was going to sleep, the wake is the one the awake clock
+    /// finds, so a credit made before this notice, which already left the
+    /// sleep out, loses nothing. When it said nothing, the wake is `time`:
+    /// the sleep is left out all the same, at the cost of what was heard
+    /// between the last checkpoint and the sleep. With no open session
+    /// there is nothing to move.
+    func noteSystemDidWake(at time: Date) {
+        if let session = activeSession {
+            let wake = sleepNote?.wake(seenAt: time, awakeNow: awakeClock()) ?? time
+            activeSession?.creditedThrough = max(session.creditedThrough, wake)
+        }
+        sleepNote = nil
+    }
 
     // MARK: - Computed Stats
 

@@ -5,8 +5,19 @@ import Foundation
 /// For multi-file audio books (from ZIP): each file becomes a chapter.
 enum AudioBookParser {
 
+    /// How many placeholder characters stand for `duration` seconds of
+    /// audio: `ReaderViewModel.audioCharsPerSecond` a second, at least 1,
+    /// and at most `BookContentIndex.maximumCharacterCount`, the most the
+    /// index accepts on every reopen. A file's header can claim any length,
+    /// so the count is worked out and bounded as a `Double` before it
+    /// becomes an `Int`: no length traps (`Int(_:)` does on infinity, NaN,
+    /// and from about 9.2e17 seconds on), and none builds a placeholder
+    /// gigabytes long. A length that is not a finite number above zero
+    /// gets 1.
     static func placeholderLength(for duration: TimeInterval) -> Int {
-        max(1, Int(duration * ReaderViewModel.audioCharsPerSecond))
+        guard duration.isFinite, duration > 0 else { return 1 }
+        let characters = duration * ReaderViewModel.audioCharsPerSecond
+        return max(1, Int(min(characters, Double(BookContentIndex.maximumCharacterCount))))
     }
 
     static func time(forCharacterOffset offset: Int) -> TimeInterval {

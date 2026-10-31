@@ -396,12 +396,10 @@ extension EPUBParser {
             }
         }
 
-        if let (path, doc) = readNCX(archive: archive, opfPath: opfPath, opfData: opfData),
-           let maps = try? doc.nodes(forXPath: "//*[local-name()='navMap']") {
-            for map in maps {
-                result += ncxTargets(in: map, relativeTo: path, level: 1)
-            }
-        }
+        result += withNCX(archive: archive, opfPath: opfPath, opfData: opfData) { (path, doc) -> [NavigationTarget] in
+            let maps = (try? doc.nodes(forXPath: "//*[local-name()='navMap']")) ?? []
+            return maps.flatMap { ncxTargets(in: $0, relativeTo: path, level: 1) }
+        } ?? []
 
         // Legacy guides can refer to a visible TOC that is not itself in the
         // reading order. Honor its fragment so unrelated page links stay out.
@@ -420,21 +418,23 @@ extension EPUBParser {
         return result
     }
 
-    /// The EPUB 2 NCX the package declares through the spine's `toc` attribute,
-    /// or else its first manifest item of an NCX media type, with its path
-    /// inside the archive; nil when there is none or it cannot be read.
-    private static func readNCX(
+    /// What `body` makes of the EPUB 2 NCX the package declares through the
+    /// spine's `toc` attribute, or else of its first manifest item of an NCX
+    /// media type, given its path inside the archive and its document, read
+    /// as every XML file of the book is (`readingXML(_:_:)`); nil when there
+    /// is none or it cannot be read.
+    private static func withNCX<Result>(
         archive: IndexedArchive,
         opfPath: String,
-        opfData: OPFData
-    ) -> (path: String, document: XMLDocument)? {
+        opfData: OPFData,
+        _ body: (_ path: String, _ document: XMLDocument) -> Result
+    ) -> Result? {
         let ncx = opfData.spineTOCID.flatMap { opfData.manifest[$0] }
             ?? opfData.manifest.sorted { $0.key < $1.key }.first(where: { $0.value.mediaType.contains("ncx") })?.value
         guard let ncx else { return nil }
         let path = ParserUtilities.resolvedPackagePath(ncx.href, relativeTo: opfPath, preserveFragment: false)
-        guard let xml = try? extractString(archive: archive, path: path),
-              let doc = try? XMLDocument(xmlString: xml) else { return nil }
-        return (path, doc)
+        guard let xml = try? extractString(archive: archive, path: path) else { return nil }
+        return try? readingXML(xml) { body(path, $0) }
     }
 
     // MARK: - Page Lists
@@ -467,35 +467,42 @@ extension EPUBParser {
         if !targets.isEmpty { return targets }
 
         // No EPUB 3 page list: the NCX's pageList, each pageTarget labelled by
-        // its navLabel, else its value.
-        entryCount = 0
-        guard let (path, doc) = readNCX(archive: archive, opfPath: opfPath, opfData: opfData),
-              let entries = try? doc.nodes(
+        // its navLabel, else its value, and numbered from 1 in list order.
+        return withNCX(archive: archive, opfPath: opfPath, opfData: opfData) { (path, doc) -> [PageTarget] in
+            let entries = (try? doc.nodes(
                 forXPath: "//*[local-name()='pageList']/*[local-name()='pageTarget']"
-              ) else { return [] }
-        for entry in entries.compactMap({ $0 as? XMLElement }) {
-            entryCount += 1
-            let text = (try? entry.nodes(forXPath: "*[local-name()='navLabel']/*[local-name()='text']"))?.first?.stringValue ?? ""
-            let label = text.contains(where: { !$0.isWhitespace }) ? text : (entry.attribute(forName: "value")?.stringValue ?? "")
-            let content = (try? entry.nodes(forXPath: "*[local-name()='content']"))?.first as? XMLElement
-            if let href = content?.attribute(forName: "src")?.stringValue,
-               let target = pageTarget(href: href, label: label, ordinal: entryCount, relativeTo: path) {
-                targets.append(target)
+            )) ?? []
+            var listed: [PageTarget] = []
+            for (index, entry) in entries.compactMap({ $0 as? XMLElement }).enumerated() {
+                let text = (try? entry.nodes(forXPath: "*[local-name()='navLabel']/*[local-name()='text']"))?.first?.stringValue ?? ""
+                let label = text.contains(where: { !$0.isWhitespace }) ? text : (entry.attribute(forName: "value")?.stringValue ?? "")
+                let content = (try? entry.nodes(forXPath: "*[local-name()='content']"))?.first as? XMLElement
+                if let href = content?.attribute(forName: "src")?.stringValue,
+                   let target = pageTarget(href: href, label: label, ordinal: index + 1, relativeTo: path) {
+                    listed.append(target)
+                }
             }
-        }
-        return targets
+            return listed
+        } ?? []
     }
 
     /// The page lists inside `node`, outermost only: a navigation typed
     /// `page-list` is collected whole, so a list nested inside another is
     /// not read twice.
+    ///
+    /// The walk keeps its own stack of the elements still to visit rather
+    /// than calling itself for every element: SwiftSoup reads markup nested
+    /// thousands deep, and imports run on a worker thread's 512 KiB stack,
+    /// which such a call chain overflowed. Children are pushed last first,
+    /// so the lists come out in document order.
     private static func pageListContainers(in node: Node) -> [Element] {
         var lists: [Element] = []
-        for element in node.getChildNodes().compactMap({ $0 as? Element }) {
+        var stack = childElementsLastFirst(of: node)
+        while let element = stack.popLast() {
             if PublicationSemantics.isPageList(element) {
                 lists.append(element)
             } else {
-                lists += pageListContainers(in: element)
+                stack += childElementsLastFirst(of: element)
             }
         }
         return lists
@@ -565,17 +572,34 @@ extension EPUBParser {
     }
 
     /// Traverse NCX children directly so labels stay with their own parent and
-    /// nested sections keep their source order instead of being flattened.
+    /// nested sections keep their source order instead of being flattened:
+    /// the `navPoint`s directly inside `node` are at `level`, and each nested
+    /// `navPoint` a level below its parent.
+    ///
+    /// The walk keeps its own stack of the `navPoint`s still to visit, each
+    /// with its level, rather than calling itself for every level: XMLDocument
+    /// reads an NCX nested thousands deep, and imports run on a worker
+    /// thread's 512 KiB stack, which such a call chain overflowed. Children
+    /// are pushed last first, so they are visited in document order.
     private static func ncxTargets(in node: XMLNode, relativeTo path: String, level: Int) -> [NavigationTarget] {
+        /// The `navPoint` elements among `parent`'s children, last first,
+        /// each with `level`, the level they are at.
+        func pending(under parent: XMLNode, level: Int) -> [(navPoint: XMLElement, level: Int)] {
+            (parent.children ?? []).reversed().compactMap { child in
+                guard let element = child as? XMLElement, element.localName == "navPoint" else { return nil }
+                return (element, level)
+            }
+        }
         var result: [NavigationTarget] = []
-        for element in (node.children ?? []).compactMap({ $0 as? XMLElement }) where element.localName == "navPoint" {
-            let label = (try? element.nodes(forXPath: "*[local-name()='navLabel']/*[local-name()='text']"))?.first?.stringValue ?? ""
-            let content = (try? element.nodes(forXPath: "*[local-name()='content']"))?.first as? XMLElement
+        var stack = pending(under: node, level: level)
+        while let (navPoint, navPointLevel) = stack.popLast() {
+            let label = (try? navPoint.nodes(forXPath: "*[local-name()='navLabel']/*[local-name()='text']"))?.first?.stringValue ?? ""
+            let content = (try? navPoint.nodes(forXPath: "*[local-name()='content']"))?.first as? XMLElement
             if let href = content?.attribute(forName: "src")?.stringValue,
-               let target = navigationTarget(href: href, label: label, level: level, relativeTo: path) {
+               let target = navigationTarget(href: href, label: label, level: navPointLevel, relativeTo: path) {
                 result.append(target)
             }
-            result += ncxTargets(in: element, relativeTo: path, level: level + 1)
+            stack += pending(under: navPoint, level: navPointLevel + 1)
         }
         return result
     }
@@ -583,6 +607,13 @@ extension EPUBParser {
     /// Follow a TOC's linked labels in DOM order, retaining nested list levels.
     /// Page lists and landmarks are never entered. Hidden subtrees are skipped
     /// unless they belong to a semantic TOC (see `tocTargets`).
+    ///
+    /// The walk keeps its own stack of the elements still to visit, each with
+    /// the list level and TOC membership its parent passes down, rather than
+    /// calling itself for every element: SwiftSoup reads markup nested
+    /// thousands deep, and imports run on a worker thread's 512 KiB stack,
+    /// which such a call chain overflowed. Children are pushed last first, so
+    /// they are visited in document order.
     private static func linkedTargets(
         in node: Node,
         relativeTo path: String,
@@ -590,23 +621,28 @@ extension EPUBParser {
         insideTOC: Bool,
         readingFlow: PublicationSemantics.ReadingFlow
     ) -> [NavigationTarget] {
+        /// The elements among `parent`'s children, last first, each with the
+        /// list level and TOC membership `parent` passes down.
+        func pending(under parent: Node, level: Int, insideTOC: Bool) -> [(element: Element, level: Int, insideTOC: Bool)] {
+            childElementsLastFirst(of: parent).map { ($0, level, insideTOC) }
+        }
         var result: [NavigationTarget] = []
-        for element in node.getChildNodes().compactMap({ $0 as? Element }) {
-            let withinTOC = insideTOC || PublicationSemantics.isTableOfContents(element)
+        var stack = pending(under: node, level: level, insideTOC: insideTOC)
+        while let (element, listLevel, parentInsideTOC) = stack.popLast() {
+            let withinTOC = parentInsideTOC || PublicationSemantics.isTableOfContents(element)
+            // A skipped element is skipped together with everything inside it.
             guard !PublicationSemantics.isSupplementaryNavigation(element),
                   withinTOC || !readingFlow.isHidden(element) else { continue }
             let tag = element.tagName()
             if tag == "a", let href = try? element.attr("href"),
                let label = try? element.text(),
-               let target = navigationTarget(href: href, label: label, level: max(1, level), relativeTo: path) {
+               let target = navigationTarget(href: href, label: label, level: max(1, listLevel), relativeTo: path) {
                 result.append(target)
             }
-            result += linkedTargets(
-                in: element,
-                relativeTo: path,
-                level: level + (tag == "ol" || tag == "ul" ? 1 : 0),
-                insideTOC: withinTOC,
-                readingFlow: readingFlow
+            stack += pending(
+                under: element,
+                level: listLevel + (tag == "ol" || tag == "ul" ? 1 : 0),
+                insideTOC: withinTOC
             )
         }
         return result
@@ -648,6 +684,13 @@ extension EPUBParser {
         if PublicationSemantics.isTableOfContents(element) { return true }
         let id = ((try? element.attr("id")) ?? "").lowercased()
         return ["toc", "contents", "table-of-contents"].contains(id) || id.hasSuffix("-toc")
+    }
+
+    /// The elements among `node`'s children, last first: pushed onto a
+    /// walk's stack of the elements still to visit, they are visited in
+    /// document order.
+    private static func childElementsLastFirst(of node: Node) -> [Element] {
+        node.getChildNodes().reversed().compactMap { $0 as? Element }
     }
 
     /// Walk without selector caches, releasing each temporary document after

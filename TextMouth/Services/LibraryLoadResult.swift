@@ -98,6 +98,10 @@ enum LibraryIndexRecoveryError: LocalizedError {
     /// Rebuild Library Index would have replaced a file it could not preserve
     /// first, so it replaced nothing.
     case couldNotPreserve(URL)
+    /// Rebuild Library Index found that the index a load would read now can
+    /// be read again, as when the user restored it from a backup, so it
+    /// replaced nothing: Try Again uses that index.
+    case indexReadableAgain
 
     var errorDescription: String? {
         switch self {
@@ -107,6 +111,10 @@ enum LibraryIndexRecoveryError: LocalizedError {
         case .couldNotPreserve(let url):
             return "TextMouth could not save a copy of \(url.path), so it left that file unchanged. "
                 + "Make sure its folder can be written to, then try again."
+        case .indexReadableAgain:
+            // Said after "The library index was not rebuilt." (the recovery
+            // sheet's outcome), so it names the index once.
+            return "It can be read again now. Choose Try Again to use it."
         }
     }
 }

@@ -283,13 +283,20 @@ extension LibraryFeedsPresenter {
             center.download(item.id, of: record.feed.id)
             announce(FeedWording.downloading(title: item.title), context.window)
         case .cancelDownload:
-            center.cancelDownload(item.id, of: record.feed.id)
-            // A download the newest-N rule put off was waiting, not under
-            // way (FR11): say that it waits no more.
-            let cancelled = state.waitingReason == nil
-                ? FeedWording.downloadCancelled(title: item.title)
-                : FeedWording.waitingDownloadCancelled(title: item.title)
-            announce(cancelled, context.window)
+            let said: String
+            switch center.cancelDownload(item.id, of: record.feed.id) {
+            case .finishing:
+                // Too late: its book is already being added to the library,
+                // and arrives all the same.
+                said = FeedWording.alreadyBeingAdded(title: item.title)
+            case .stopped:
+                // A download the newest-N rule put off was waiting, not under
+                // way (FR11): say that it waits no more.
+                said = state.waitingReason == nil
+                    ? FeedWording.downloadCancelled(title: item.title)
+                    : FeedWording.waitingDownloadCancelled(title: item.title)
+            }
+            announce(said, context.window)
         case .deleteDownload:
             do {
                 try center.deleteDownload(item.id, of: record.feed.id)

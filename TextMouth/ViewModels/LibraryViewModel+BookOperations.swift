@@ -524,13 +524,18 @@ extension LibraryViewModel {
     /// transition's own changes made to it: each moved book's place (its
     /// folder, package, and file paths), and the folders and folder sort
     /// settings the transition added, changed, or removed. A book removed
-    /// meanwhile stays removed, and one added meanwhile stays.
+    /// meanwhile stays removed, and one added meanwhile stays; so does any
+    /// other change, such as a book added to the reading list in another
+    /// window or a feed's rows on the feed shelf.
     nonisolated static func library(after plan: LibraryTransitionPlan, current: Library) -> Library {
         let original = plan.original
-        let unchanged = current.books == original.books
-            && current.folders == original.folders
-            && current.folderSortSettings == original.folderSortSettings
-        guard !unchanged else { return plan.proposed }
+        // The proposed library holds every part of the library as the plan
+        // found it, so it stands in only for a library unchanged in every
+        // stored field (`Library`'s synthesized `==`). Any change meanwhile,
+        // to the reading list, the feed shelf, or the kept rows as much as to
+        // the books, folders, or sort settings, goes through the merge below,
+        // which starts from `current` and so keeps it.
+        guard current != original else { return plan.proposed }
 
         var merged = current
         let places = Dictionary(

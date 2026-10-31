@@ -126,10 +126,14 @@ struct FeedRefreshSummary: Equatable, Sendable {
 /// list bringing back the entries a short one let go. A record that does
 /// not know its feed's size (`Feed.entryTotal`),
 /// written before TextMouth recorded it, reads its feed whole once too, so
-/// the size is known from that check on. A feed that moved for good, by a
-/// permanent redirect or its own `itunes:new-feed-url`, is fetched from its
-/// new address from then on. A refresh that ends after its feed was
-/// unsubscribed changes nothing.
+/// the size is known from that check on; so does a record that does not
+/// hold the merge of the last body read, its write having waited for the
+/// data directory or failed before TextMouth quit
+/// (`FeedFetchState.lastBodyIsMerged(into:)`), so the next launch's check
+/// merges that body again rather than hiding its new items. A feed that
+/// moved for good, by a permanent redirect or its own
+/// `itunes:new-feed-url`, is fetched from its new address from then on. A
+/// refresh that ends after its feed was unsubscribed changes nothing.
 ///
 /// Everything slow happens off the main actor: the fetch, and the parse and
 /// first merge, which read the items' texts. The main actor then merges the
@@ -342,12 +346,15 @@ final class FeedRefresher {
                     keepingRecordsOf: keptRecords(feedID)
                 )
             }
+            // The record as the store holds it after the merge, written or
+            // not: its write may wait for the data directory, or fail, while
+            // these details are written to this Mac's Caches at once, so they
+            // note the record's date, which a later check compares with the
+            // record it loads (`fetchAndRead`).
+            let mergedRecord = store.record(of: feedID)
             fetchStates.update(feedID) { state in
                 state.recordSuccess(at: started)
-                state.etag = body.etag
-                state.lastModified = body.lastModified
-                state.bodyDigest = body.digest
-                state.keptEntriesOfLastBody = keptEntries
+                state.noteBodyMerged(body, keptEntries: keptEntries, into: mergedRecord)
             }
             let title = store.record(of: feedID)?.feed.title ?? record.feed.title
             if let repair = feed.repair {
@@ -413,9 +420,11 @@ final class FeedRefresher {
     /// Fetches `record`'s feed through `network` with the validators of
     /// `fetchState`, and, when it changed, `keepEntries` (the number of
     /// newest entries the feed's listing keeps, -1 for every one) differs
-    /// from the number its last body was merged with, or the record does not
-    /// know the feed's size, reads it and merges it into a copy of `record`,
-    /// off the main actor, keeping the texts that merge read.
+    /// from the number its last body was merged with, the record does not
+    /// know the feed's size, or the record does not hold the merge of the
+    /// last body read (`FeedFetchState.lastBodyIsMerged(into:)`), reads it
+    /// and merges it into a copy of `record`, off the main actor, keeping
+    /// the texts that merge read.
     nonisolated static func fetchAndRead(
         _ record: FeedRecord,
         fetchState: FeedFetchState,
@@ -426,11 +435,18 @@ final class FeedRefresher {
         now: Date
     ) async -> Work {
         // The last body counts only when it was merged keeping as many
-        // entries as the record keeps now, and the record knows the feed's
+        // entries as the record keeps now, the record knows the feed's
         // size, which a record written before TextMouth recorded it does
-        // not. Validators mean something only beside the digest of the body
-        // they came with, which is what decides that nothing changed.
-        let lastBodyCounts = fetchState.keptEntriesOfLastBody == keepEntries && record.feed.entryTotal != nil
+        // not, and the record holds that merge: one whose write waited or
+        // failed, and never reached disk before TextMouth quit, was loaded
+        // with an older date, and skipping the same bytes (or a 304) would
+        // hide the merge's new items until the feed changed, which a
+        // finished show never does. Validators mean something only beside
+        // the digest of the body they came with, which is what decides that
+        // nothing changed.
+        let lastBodyCounts = fetchState.keptEntriesOfLastBody == keepEntries
+            && record.feed.entryTotal != nil
+            && fetchState.lastBodyIsMerged(into: record)
         let lastDigest = lastBodyCounts ? fetchState.bodyDigest : nil
         let fetched: FeedFetchResult
         do {

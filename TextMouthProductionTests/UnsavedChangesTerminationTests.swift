@@ -6,7 +6,8 @@ import XCTest
 /// prompt naming them, and Retry, Quit Anyway, and Cancel do what they say
 /// (TODO S09). The decision is a pure function. The guard is driven with a
 /// center of the test's own and stand-ins for the flush, the prompt, and
-/// the request to quit, so nothing is shown and nothing quits.
+/// the request to quit, so nothing is shown and nothing quits. The flush
+/// itself runs for real on a reader in an integration world of its own.
 @MainActor
 final class UnsavedChangesTerminationTests: XCTestCase {
     /// This test's center.
@@ -132,6 +133,60 @@ final class UnsavedChangesTerminationTests: XCTestCase {
         let harness = Harness(center: center, answer: .cancel)
 
         XCTAssertEqual(harness.terminationGuard.reply(), .terminateNow)
+    }
+
+    // MARK: - The Flush
+
+    /// The flush saves every open reader's place first, so a book heard on
+    /// since its last checkpoint (a playing reader saves one only every
+    /// thirty seconds, and no reader window closes as TextMouth quits) opens
+    /// at the next launch where it was left: by the time the flush returns,
+    /// the library's row holds the place and the book's record has it on
+    /// disk. The reader stays open, should the quit then be cancelled.
+    func testTheFlushSavesEveryOpenReadersPlaceFirst() throws {
+        let world = try makeIntegrationWorld("Quit Saves Places")
+        let book = try world.makeSilentAudioBook(title: "Harbour Dues", trackDurations: [10])
+        let reader = world.openReader(for: book)
+        reader.soundEffectService = RecordedSoundEffects()
+        waitForReaderToLoad(reader)
+        // Seven seconds in, at ten offsets a second, with no checkpoint made.
+        reader.currentCharacterOffset = 70
+        XCTAssertNotEqual(world.library.bookByID(book.id)?.readingPosition?.characterOffset, 70, "The place was saved before the quit")
+
+        UnsavedChangesTerminationGuard.flushPendingWrites()
+
+        XCTAssertEqual(world.library.bookByID(book.id)?.readingPosition?.characterOffset, 70, "The library's row")
+        XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).state.readingPosition?.characterOffset, 70, "The book's record")
+        XCTAssertFalse(reader.hasClosed, "The flush closed the reader")
+    }
+
+    /// A reader at rest, whose place has not moved since it was saved, is not
+    /// saved again by the flush: saving it would date its place and its
+    /// opening anew, and write this Mac's library index over a newer one
+    /// that another Mac on a shared library had saved since (data review,
+    /// finding 1). The row's place date, its last opening, and library.json
+    /// are all left as they were.
+    func testTheFlushWritesNothingForAReaderWhosePlaceHasNotMoved() throws {
+        let world = try makeIntegrationWorld("Quit Leaves Rest")
+        let book = try world.makeSilentAudioBook(title: "Tide Tables", trackDurations: [10])
+        let reader = world.openReader(for: book)
+        reader.soundEffectService = RecordedSoundEffects()
+        waitForReaderToLoad(reader)
+        // The load saved the place once: let that write reach the disk.
+        LibraryPersistenceService.flushPendingSave()
+        let row = try XCTUnwrap(world.library.bookByID(book.id))
+        let placeDate = try XCTUnwrap(row.readingPosition?.lastUpdated)
+        let openedDate = row.lastOpened
+        let indexBytes = try Data(contentsOf: TextMouthPaths.libraryIndexFile)
+        // Let the clock tick past the second the library's JSON stores.
+        Thread.sleep(forTimeInterval: 1.1)
+
+        UnsavedChangesTerminationGuard.flushPendingWrites()
+
+        let after = try XCTUnwrap(world.library.bookByID(book.id))
+        XCTAssertEqual(after.readingPosition?.lastUpdated, placeDate, "The quit dated the place anew")
+        XCTAssertEqual(after.lastOpened, openedDate, "The quit dated the opening anew")
+        XCTAssertEqual(try Data(contentsOf: TextMouthPaths.libraryIndexFile), indexBytes, "The quit rewrote library.json")
     }
 
     // MARK: - The Prompt

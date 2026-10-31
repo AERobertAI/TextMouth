@@ -24,11 +24,15 @@ import Foundation
 /// `keepEntries` of the others, by publication date (by
 /// first sight for an item the feed dates nowhere, and by its place in the
 /// feed between items of the same date, an item the feed lists before one
-/// it no longer lists), or all of them when `keepEntries` is -1. An item the listener deleted stays, out of every list, while the
-/// feed still lists it, so no refresh brings it back; once the feed stops
-/// listing it, it goes. Items the feed no longer lists count among the
-/// newest like any other, so a feed that lists only its last few episodes
-/// still keeps the ones before them.
+/// it no longer lists), or all of them when `keepEntries` is -1. An item
+/// the listener deleted stays, out of every list, so no refresh brings it
+/// back: while the feed lists it, and, once the feed stops listing it, for
+/// 90 days after its deletion (`deletedItemRetention`), so a read that
+/// leaves it out (a publisher's server sending an empty or cut-short
+/// channel once, a feed's window moving) never lets a later read add it
+/// again as a new episode; then it goes. Items the feed no longer lists
+/// count among the newest like any other, so a feed that lists only its
+/// last few episodes still keeps the ones before them.
 ///
 /// An item is new, and announced, when it was not in the record and was
 /// published after the newest date the feed had given before
@@ -70,6 +74,18 @@ enum FeedReconciler {
     /// toward the newest date a feed has given: a feed that dates an item
     /// years ahead would otherwise keep every later item from being new.
     static let futureDateTolerance: TimeInterval = 2 * 86_400
+
+    /// How long the record keeps an item the listener deleted once the feed
+    /// no longer lists it, counted from its deletion
+    /// (`FeedItem.deletedDate`): 90 days, except that a read listing none
+    /// of the record's items forgets no deletion. Long enough to outlast a
+    /// publisher's server that sends an empty or cut-short channel for a
+    /// while, and a feed whose window of entries moves back to list older
+    /// ones again, either of which would otherwise let the next full read
+    /// add the deleted episode anew: unplayed, new, and downloaded again by
+    /// the newest-N rule. Short enough that a long-running show's record
+    /// does not keep every deletion for ever.
+    static let deletedItemRetention: TimeInterval = 90 * 86_400
 
     /// Merges `feed`, read at `now`, into `record`, keeping `keepEntries` of
     /// its newest entries besides its downloads, its played items, and the
@@ -132,9 +148,18 @@ enum FeedReconciler {
                 candidates[index].firstSeen = oldestKnown
             }
         }
-        // The record's items the feed no longer lists, except deleted ones,
-        // which go once nothing can bring them back.
-        candidates += matcher.unclaimed.filter { $0.deletedDate == nil }
+        // The record's items the feed no longer lists: each one the listener
+        // has not deleted, for the kept-entries rule, and each deleted one
+        // for 90 days after its deletion, so a read that leaves it out once
+        // never lets the next one add it back as new. A read that lists none
+        // of the record's items at all (an empty or replaced channel, as a
+        // server fault sends) keeps every deleted one, however old its
+        // deletion: the 90 days count deletions from a feed that went on
+        // listing the others, and one empty read must not forget them.
+        let listsNoneOfTheRecord = !record.items.isEmpty && candidates.allSatisfy { addedIDs.contains($0.id) }
+        candidates += matcher.unclaimed.filter {
+            keepsUnlisted($0, at: now, keepingEveryDeletion: listsNoneOfTheRecord)
+        }
 
         // The kept-entries rule.
         var kept = Self.kept(
@@ -196,8 +221,9 @@ enum FeedReconciler {
     /// played date is never lost (board #1412), and every item `keptRecords`
     /// names, whose package was kept with the listener's place after its
     /// file went (FR11, branch A2), each listed as a downloaded item is;
-    /// every item the listener deleted (`merge` passes only those the feed
-    /// still lists); and the newest `keepEntries` of the rest, or all when
+    /// every item the listener deleted (`merge` passes those the feed still
+    /// lists, and those it no longer lists that `keepsUnlisted(_:at:)`
+    /// keeps); and the newest `keepEntries` of the rest, or all when
     /// `keepEntries` is -1.
     static func kept(
         _ candidates: [FeedItem],
@@ -222,6 +248,24 @@ enum FeedReconciler {
             listedKept += 1
         }
         return kept
+    }
+
+    /// Whether a merge at `now` keeps `item`, which the feed no longer
+    /// lists, among the candidates for the kept-entries rule: always when
+    /// the listener has not deleted it; when deleted, only until
+    /// `deletedItemRetention` has passed since its deletion, so a read that
+    /// leaves it out never brings it back later as new, and always while
+    /// the read lists none of the record's items (`keepingEveryDeletion`),
+    /// which says nothing of what the feed dropped. A deletion dated after
+    /// `now`, as another Mac's clock running ahead may date it, is kept.
+    ///
+    /// The retention counts from the deletion, not from when the feed last
+    /// listed the item, which would need a date stored in the feed index
+    /// (a follow-up): an item still listed for 120 days after its deletion,
+    /// then left out by a read that does list other items, goes at once.
+    static func keepsUnlisted(_ item: FeedItem, at now: Date, keepingEveryDeletion: Bool = false) -> Bool {
+        guard let deleted = item.deletedDate, !keepingEveryDeletion else { return true }
+        return now.timeIntervalSince(deleted) < deletedItemRetention
     }
 
     /// Whether `item` sorts before `other`, newest first: by date; between

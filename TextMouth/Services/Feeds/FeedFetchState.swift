@@ -3,8 +3,9 @@ import Foundation
 // MARK: - How This Mac Last Fetched a Feed (FR03)
 
 /// How this Mac last fetched one feed (FR03): the validators and digest that
-/// let the next refresh skip an unchanged feed, when it last checked, and
-/// how the last check ended.
+/// let the next refresh skip an unchanged feed, while the record holds the
+/// merge of the body they came with, when it last checked, and how the last
+/// check ended.
 ///
 /// Kept in this Mac's own Caches folder (`MachineLocalPaths.feedCaches`),
 /// never in the feed's record: a refresh changes these every time, and
@@ -30,6 +31,18 @@ struct FeedFetchState: Codable, Equatable, Sendable {
     /// sending no validators, so a changed choice or number applies even to
     /// a feed that has not changed.
     var keptEntriesOfLastBody: Int?
+    /// When the feed's record said its items last changed
+    /// (`Feed.updatedDate`) once the body last read was merged into it: how
+    /// the next refresh tells whether the record it loaded holds that merge
+    /// (`lastBodyIsMerged(into:)`). This state is written to this Mac's
+    /// Caches at once, while the record's write may wait (the data
+    /// directory unavailable) or fail, and TextMouth may quit or crash
+    /// before it lands; a record without the merge has an older date, so
+    /// its feed is read whole and merged again rather than skipped as
+    /// unchanged, which would hide its new items until the feed changed.
+    /// Nil in a state written before TextMouth recorded it, which counts as
+    /// not merged: such a feed is read whole once.
+    var recordUpdatedDateOfLastBody: Date?
     /// When this Mac last checked the feed, however the check ended.
     var lastCheck: Date?
     /// When a check last succeeded.
@@ -52,10 +65,46 @@ struct FeedFetchState: Codable, Equatable, Sendable {
         lastModified = try? container.decodeIfPresent(String.self, forKey: .lastModified)
         bodyDigest = try? container.decodeIfPresent(String.self, forKey: .bodyDigest)
         keptEntriesOfLastBody = try? container.decodeIfPresent(Int.self, forKey: .keptEntriesOfLastBody)
+        recordUpdatedDateOfLastBody = try? container.decodeIfPresent(Date.self, forKey: .recordUpdatedDateOfLastBody)
         lastCheck = try? container.decodeIfPresent(Date.self, forKey: .lastCheck)
         lastSuccess = try? container.decodeIfPresent(Date.self, forKey: .lastSuccess)
         lastError = try? container.decodeIfPresent(FeedRefreshFailure.self, forKey: .lastError)
         isGone = (try? container.decodeIfPresent(Bool.self, forKey: .isGone)) ?? false
+    }
+
+    /// Notes `body` as the body last read, merged keeping `keptEntries` of
+    /// the feed's newest entries (-1 for every one) into `record`, the
+    /// feed's record as the store holds it after the merge, whether or not
+    /// its write has reached disk yet: the body's validators and digest,
+    /// which let the next refresh skip it unchanged, and the record's date
+    /// beside them (`recordUpdatedDateOfLastBody`), which lets that refresh
+    /// tell whether the record it loaded took the merge.
+    mutating func noteBodyMerged(_ body: FeedFetchedBody, keptEntries: Int, into record: FeedRecord?) {
+        etag = body.etag
+        lastModified = body.lastModified
+        bodyDigest = body.digest
+        keptEntriesOfLastBody = keptEntries
+        recordUpdatedDateOfLastBody = record?.feed.updatedDate
+    }
+
+    /// Whether `record`, as a refresh loaded it, holds the merge of the
+    /// body last read: its items last changed when that merge left them
+    /// (`recordUpdatedDateOfLastBody`), to the whole second, rounded down
+    /// on both sides, as the record's file and this state's file store
+    /// dates (ISO 8601), so a date read back from either file still matches
+    /// one held in memory. A merge that changed none of the record's items
+    /// leaves its date as it was, so an unchanged feed's last body still
+    /// counts. A state that noted no date, written before TextMouth noted
+    /// it, counts as not merged, as does a record never merged.
+    func lastBodyIsMerged(into record: FeedRecord) -> Bool {
+        guard let merged = recordUpdatedDateOfLastBody, let updated = record.feed.updatedDate else { return false }
+        return Self.storedSecond(of: merged) == Self.storedSecond(of: updated)
+    }
+
+    /// `date` as the feed files store it: to the whole second, rounded
+    /// down (ISO 8601 without fractional seconds).
+    private static func storedSecond(of date: Date) -> TimeInterval {
+        date.timeIntervalSince1970.rounded(.down)
     }
 }
 

@@ -460,32 +460,35 @@ extension ReaderViewModel {
     /// A Where Am I announcement ends with the book
     /// (`endWhereAmIAsTheBookStops()`), as a pause ends it, so that its end
     /// neither resumes the stopped book nor tells Now Playing that it plays.
-    /// Audio set aside while the library moves the book's package is let go
-    /// (`letGoOfAudioSetAsideForMove(because:)`), so that the move's end
-    /// leaves the stopped book stopped; so is the start of a chapter
-    /// waiting out the pause before it (`stopWaitingOutChapterPause(because:)`),
-    /// which closing the reader, through this stop, cancels too.
+    /// An audiobook waiting to play lets go of what it waits for, as a
+    /// pause does (`stopAudioWaitingToPlay(because:)`): a chapter whose
+    /// files download, so that their arrival leaves the stopped book
+    /// stopped and Play is heard at once; audio set aside while the library
+    /// moves the book's package, so that the move's end leaves the stopped
+    /// book stopped; and the start of a chapter waiting out the pause
+    /// before it, which closing the reader, through this stop, cancels too.
+    /// A stop once left a chapter's download waiting, which kept playback
+    /// under way: Play did nothing until the download ended, and then
+    /// nothing played.
+    ///
+    /// This reader's minutes sleep timer's countdown halts until Play, as at
+    /// a pause (`finishStopping(wasActive:wasSleepTimerFading:)`).
     func stop() {
+        // What was under way counts, as for `pause()`: playback playing or
+        // paused, or waiting to play (`isPlaybackUnderWay`): for a chapter's
+        // files to download or a Where Am I announcement to end, for a move
+        // of the book's package to end, out the pause before a chapter, or
+        // for a chapter's speech. Read before anything below lets it go.
+        let wasPaused = isAudioBook ? audioPlaybackService.isPaused : speechService.isPaused
+        let wasActive = isPlaybackUnderWay || wasPaused
         endWhereAmIAsTheBookStops()
-        let wasActive: Bool
-        if isAudioBook {
-            // Audio set aside for a move counts, as it does for `pause()`,
-            // and so does a chapter waiting out the pause before it.
-            wasActive = audioPlaybackService.isPlaying || audioPlaybackService.isPaused || audioPausedForMove != nil
-                || isWaitingOutChapterPause
-        } else {
-            // A play waiting for its chapter's speech counts, as it does
-            // for `pause()`.
-            wasActive = speechService.isSpeaking || speechService.isPaused || isWaitingForChapterSpeech
-        }
 
         let wasSleepTimerFading = isOwnSleepTimerFading
         // Stop audio FIRST, then restore volume. Restoring volume
         // while audio is still playing causes a brief pop of
         // full-volume audio (same fix pattern as pause()).
         if isAudioBook {
-            stopWaitingOutChapterPause(because: "playback stopped")
-            letGoOfAudioSetAsideForMove(because: "playback stopped")
+            stopAudioWaitingToPlay(because: "playback stopped")
             audioPlaybackService.stop()
         } else {
             stopWaitingForChapterSpeech()
@@ -509,10 +512,18 @@ extension ReaderViewModel {
     }
 
     /// Everything stopping does once the playback backend is silent:
-    /// restore full volume, show the stopped state, end a sleep-timer fade,
-    /// close this book's listening session, clear Now Playing, and, when
-    /// something was playing or paused, record the stop and save the
-    /// position.
+    /// restore full volume, show the stopped state, end a sleep-timer fade
+    /// or else halt this reader's minutes timer's countdown until Play, as a
+    /// pause does, close this book's listening session, clear Now Playing,
+    /// and, when something was playing or paused, record the stop and save
+    /// the position.
+    ///
+    /// Every stop comes here: `stop()`, which a chapter's failed download,
+    /// the Ogg refusal, Release Media Controls, Edit Text over a playing
+    /// book, and closing the reader all call, and an audio failure. The
+    /// countdown of a 30-minute timer once ran on through such a stop, so a
+    /// listener who played again 12 minutes later had 18 minutes left, or
+    /// heard the timer expire with nothing playing.
     ///
     /// - Parameters:
     ///   - wasActive: Whether playback was playing or paused before it was
@@ -533,6 +544,13 @@ extension ReaderViewModel {
         // speech that this stop operation would immediately halt again.
         if wasSleepTimerFading {
             sleepTimerService.stop()
+        } else {
+            // A minutes timer keeps the time it has left until Play resumes
+            // its countdown (`play()`), so none is spent while nothing
+            // plays. The service leaves alone a timer another reader owns
+            // and one waiting for the end of a heading or of the book;
+            // closing the reader stops the timer it owns afterwards.
+            sleepTimerService.pauseCountdown(by: readerID)
         }
         readingStatsService.endSession(bookID: book.id)
         // A stopped reader rests wherever it is with no media session, so
@@ -1869,6 +1887,36 @@ extension ReaderViewModel {
             }
         }
 
+        /// Where the chapter at `chapterIndex` stops playing, on the time
+        /// line the audio service reports, or nil when it plays to its
+        /// file's own end: in one file of chapters, every chapter but the
+        /// last ends where the next one starts, so playback finishes it
+        /// there and moves on, as a chapter of its own file simply ends; the
+        /// last chapter, and every chapter of every other layout, ends with
+        /// its file.
+        ///
+        /// The last chapter ends with the file because a chapter's length is
+        /// its duration in whole tenths of a second, the fraction dropped
+        /// (`AudioBookParser.placeholderLength(for:)`), so the chapters'
+        /// summed lengths fall short of the file by up to a tenth of a second
+        /// per chapter (about 1.4 seconds in 30 chapters, 5 in 100). Between
+        /// chapters that loses nothing: a chapter ends exactly where the next
+        /// one is taken to start. A clip end at the last chapter's summed
+        /// end, though, finished the book that far before its file did, with
+        /// its last seconds unplayed, while the file's own end finishes it
+        /// the same way (`AudioPlaybackService.onPlaybackFinished`) once
+        /// everything has played.
+        func clipEnd(ofChapter chapterIndex: Int, chapterUTF16Lengths: [Int]) -> TimeInterval? {
+            switch self {
+            case .multiFile, .segmented, .singleFile:
+                return nil
+            case .chaptersInOneFile:
+                let nextChapterIndex = chapterIndex + 1
+                guard chapterIndex >= 0, nextChapterIndex < chapterUTF16Lengths.count else { return nil }
+                return chapterStartTime(chapterIndex: nextChapterIndex, chapterUTF16Lengths: chapterUTF16Lengths)
+            }
+        }
+
         /// The chapter-relative character offset of `playerTime`, a time on
         /// the line the audio service reports, for a chapter starting at
         /// `chapterStartTime` on it.
@@ -1918,13 +1966,14 @@ extension ReaderViewModel {
     /// preceding chapter placeholder lengths converted from chars to
     /// seconds.
     func chapterStartTime(_ chapterIndex: Int) -> TimeInterval {
-        guard let content = content,
-              chapterIndex >= 0,
-              chapterIndex < content.chapters.count else { return 0 }
-        return audioLayout.chapterStartTime(
-            chapterIndex: chapterIndex,
-            chapterUTF16Lengths: content.chapters.map { $0.text.utf16Length }
-        )
+        audioLayout.chapterStartTime(chapterIndex: chapterIndex, chapterUTF16Lengths: chapterUTF16Lengths)
+    }
+
+    /// Each chapter's length in UTF-16 units, in order, which for an
+    /// audiobook stand for its chapters' durations
+    /// (`audioCharsPerSecond`); empty with no content loaded.
+    private var chapterUTF16Lengths: [Int] {
+        content?.chapters.map { $0.text.utf16Length } ?? []
     }
 
     /// The clips segmented chapter `chapterIndex` plays, as the audio
@@ -2085,7 +2134,7 @@ extension ReaderViewModel {
             return
         }
         // Audio that cannot be played claims no Playing state.
-        guard startCurrentChapterAudio(in: content) else { return }
+        guard startCurrentChapterAudio() else { return }
         // The chapter starts at the volume its place calls for: full, or
         // already fading toward the end where this reader's sleep timer
         // stops playback (TODO P01).
@@ -2112,7 +2161,7 @@ extension ReaderViewModel {
     ///   refused before playing, after its failure handler has already
     ///   stopped the reader and told the listener, and an item that has
     ///   already failed is reported through the same handler.
-    private func startCurrentChapterAudio(in content: DocumentContent) -> Bool {
+    private func startCurrentChapterAudio() -> Bool {
         let audioURL: URL
         switch chapterAudioSource(forChapterAt: currentChapterIndex) {
         case .clips(let chain):
@@ -2146,22 +2195,16 @@ extension ReaderViewModel {
         // and never auto-advance currentChapterIndex via the
         // playback-finished path. (The position observer also
         // advances it, so this is a defense-in-depth — the clip-end
-        // callback is the canonical "chapter done" signal.)
-        switch audioLayout {
-        case .chaptersInOneFile:
-            // Clip end = this chapter's absolute end time.
-            let chapterChars = content.chapters[currentChapterIndex].text.utf16Length
-            let clipEnd = chapterStartTime(currentChapterIndex)
-                + Double(chapterChars) / Self.audioCharsPerSecond
-            audioPlaybackService.setClipEndTime(clipEnd)
-        case .multiFile, .segmented, .singleFile:
-            // No clip end — the file's natural end IS the chapter's end
-            // (or the whole book's end). Clear any clip end inherited
-            // from a previous load() call so it doesn't stale-trigger. A
-            // segmented book reaches here only for a chapter without a
-            // segment, which plays its file whole.
-            audioPlaybackService.setClipEndTime(nil)
-        }
+        // callback is the canonical "chapter done" signal.) The m4b's
+        // last chapter, and every chapter of every other layout, has no
+        // clip end: the file's natural end is the chapter's end, or the
+        // whole book's (`AudioLayout.clipEnd(ofChapter:chapterUTF16Lengths:)`).
+        // Nil also clears any clip end inherited from a previous load()
+        // call so it doesn't stale-trigger. A segmented book reaches here
+        // only for a chapter without a segment, which plays its file whole.
+        audioPlaybackService.setClipEndTime(
+            audioLayout.clipEnd(ofChapter: currentChapterIndex, chapterUTF16Lengths: chapterUTF16Lengths)
+        )
 
         // Play refuses an item it finds has already failed, and reports it
         // through the same failure handler.
@@ -2335,9 +2378,9 @@ extension ReaderViewModel {
 
         // The service has already halted and released its player. A
         // failure only ever comes from a file the reader loaded to play,
-        // so playback was active and its stop is recorded.
+        // so playback was active and its stop is recorded; the sleep
+        // timer's countdown halts with it, as with every stop.
         finishStopping(wasActive: true, wasSleepTimerFading: isOwnSleepTimerFading)
-        sleepTimerService.pauseCountdown(by: readerID)
         // A Where Am I announcement ends with the book, as `stop()` ends it:
         // it has nothing left to resume.
         endWhereAmIAsTheBookStops()
@@ -2375,16 +2418,16 @@ extension ReaderViewModel {
     /// An audiobook stops through the failure path every audio failure
     /// takes (`handleAudioPlaybackFailure(_:)`), its player let go of off
     /// the main thread. Speech, or an audiobook waiting for its chapter with
-    /// no player, stops as Stop stops it, its sleep timer's countdown halted
-    /// as a failure halts it. A reader that is closed, or not playing, is
-    /// left alone.
+    /// no player, stops as Stop stops it. Either way its sleep timer's
+    /// countdown halts until Play, as every stop halts it
+    /// (`finishStopping(wasActive:wasSleepTimerFading:)`). A reader that is
+    /// closed, or not playing, is left alone.
     func stopPlaybackForMemoryRunaway(footprint: UInt64) {
         guard !hasClosed, isPlaybackUnderWay else { return }
         if isAudioBook, audioPlaybackService.stopForMemoryRunaway(footprint: footprint) {
             return
         }
         stop()
-        sleepTimerService.pauseCountdown(by: readerID)
         let message = Self.memoryRunawayMessage(footprint: footprint)
         errorMessage = message
         announceToVoiceOver(message)
@@ -3302,8 +3345,9 @@ extension ReaderViewModel {
     /// chapter waiting out the pause before it
     /// (`stopWaitingOutChapterPause(because:)`), and audio set aside while
     /// the library moves the book's package
-    /// (`letGoOfAudioSetAsideForMove(because:)`). Playback was paused, or
-    /// this reader's sleep timer stopped it.
+    /// (`letGoOfAudioSetAsideForMove(because:)`). Playback was paused or
+    /// stopped (`pause()`, `stop()`), or this reader's sleep timer stopped
+    /// it.
     ///
     /// - Parameter reason: Why, for the log lines.
     private func stopAudioWaitingToPlay(because reason: String) {

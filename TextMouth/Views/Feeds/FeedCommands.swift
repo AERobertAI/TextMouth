@@ -347,6 +347,15 @@ extension FeedWording {
         "Stopped downloading “\(title)”."
     }
 
+    /// What VoiceOver hears when Cancel Download comes too late, the book
+    /// already being added to the library, which finishes all the same, as
+    /// an import is never stopped partway; the feed downloads section's
+    /// Cancel says it too of such a download
+    /// (`FeedDownloadProgressWording.cancelled(stopped:finishing:comingBack:)`).
+    static func alreadyBeingAdded(title: String) -> String {
+        "“\(title)” is already being added to the library."
+    }
+
     /// What VoiceOver hears once Cancel Download took back a download the
     /// newest-N rule had put off (FR11): it waits no more, and downloads
     /// only when the listener asks.

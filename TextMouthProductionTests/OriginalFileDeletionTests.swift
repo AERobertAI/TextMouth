@@ -7,7 +7,9 @@ import XCTest
 /// the mode in force, and with a retry (TODO S09). A file left behind is
 /// not an unsaved change. Tests that let the real deletion run turn the
 /// Trash off; with it on, the deletion is injected, so nothing reaches the
-/// real Trash.
+/// real Trash. An original a test means to delete lies outside the data
+/// directory, in the sandbox's scratch folder, as a real one does: one
+/// inside the data directory, or inside a book package, is never deleted.
 @MainActor
 final class OriginalFileDeletionTests: XCTestCase {
     // MARK: - Failures
@@ -252,9 +254,10 @@ final class OriginalFileDeletionTests: XCTestCase {
     }
 
     /// Controls: a plain file is still removed, and a path that is already
-    /// gone counts as removed without a throw.
+    /// gone counts as removed without a throw. The file lies outside the
+    /// data directory, as a real original does: one inside it is kept.
     func testAFileIsStillRemovedAndAMissingPathDoesNotThrow() throws {
-        let directory = try makeTestDirectory("ControlOriginals")
+        let directory = try makeSandboxDirectory("ControlOriginals")
         let file = directory.appendingPathComponent("Plain.epub")
         try Data("original".utf8).write(to: file)
 
@@ -282,13 +285,104 @@ final class OriginalFileDeletionTests: XCTestCase {
         XCTAssertTrue(center.outstandingFailures().isEmpty)
     }
 
+    // MARK: - What Lies Inside a Book or the Data Directory Is Never Deleted
+
+    /// A file inside a book package, as a track or a book's own file is when
+    /// opened from inside another book's package in Finder (Show Package
+    /// Contents): the service removes nothing, throws nothing, and logs the
+    /// file by its name alone, once. The package lies outside the data
+    /// directory, so the package alone keeps the file. Runs with the Trash
+    /// off, so a missing guard would delete the test's own file for good
+    /// and never reach the user's real Trash.
+    func testAFileInsideABookPackageIsNeverDeletedAsAnOriginal() throws {
+        let package = try makeSandboxDirectory("KeptPackageFile")
+            .appendingPathComponent("Harbor Lectures.tmb", isDirectory: true)
+        let track = try writeOriginal(
+            named: "03 Breakwaters \(UUID().uuidString).mp3",
+            in: package.appendingPathComponent("audio", isDirectory: true)
+        )
+
+        try withTrashPreference(movesToTrash: false) {
+            XCTAssertNoThrow(try FileImportService.deleteOriginalFile(at: track))
+        }
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: track.path), "the file stays in its package")
+        assertKeptOnce(track, because: "is inside a book package, whose files an import never deletes")
+    }
+
+    /// A file inside the data directory, which holds the library: kept, with
+    /// one line saying why. The test's folder is one of the data
+    /// directory's own (`makeTestDirectory`), outside any package.
+    func testAFileInsideTheDataDirectoryIsNeverDeletedAsAnOriginal() throws {
+        let file = try writeOriginal(
+            named: "Tide Tables \(UUID().uuidString).txt",
+            in: try makeTestDirectory("KeptDataFile")
+        )
+
+        try withTrashPreference(movesToTrash: false) {
+            XCTAssertNoThrow(try FileImportService.deleteOriginalFile(at: file))
+        }
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: file.path), "the file stays in the data directory")
+        assertKeptOnce(file, because: "is inside the data directory, whose files an import never deletes")
+    }
+
+    /// Where an original lies is read folder by folder, with symbolic links
+    /// resolved on both sides: a file in Library2, beside a data directory
+    /// named Library, is not inside it and may be deleted, while a file in
+    /// Library is inside it, whether the file or the data directory is
+    /// reached through a symbolic link.
+    func testOnlyWhatReallyLiesInsideTheDataDirectoryIsKept() throws {
+        let parent = try makeSandboxDirectory("DataDirectoryNeighbors")
+        let library = parent.appendingPathComponent("Library", isDirectory: true)
+        let inside = try writeOriginal(named: "notes.txt", in: library)
+        let beside = try writeOriginal(named: "notes.txt", in: parent.appendingPathComponent("Library2", isDirectory: true))
+        let link = parent.appendingPathComponent("Library Link")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: library)
+        let kept = "is inside the data directory, whose files an import never deletes"
+
+        XCTAssertNil(FileImportService.reasonToKeepOriginal(at: beside, dataDirectory: library))
+        XCTAssertEqual(FileImportService.reasonToKeepOriginal(at: inside, dataDirectory: library), kept)
+        XCTAssertEqual(FileImportService.reasonToKeepOriginal(at: inside, dataDirectory: link), kept)
+        XCTAssertEqual(
+            FileImportService.reasonToKeepOriginal(at: link.appendingPathComponent("notes.txt"), dataDirectory: library),
+            kept
+        )
+    }
+
     // MARK: - Helpers
+
+    /// Writes a small file named `name` into `folder`, making the folder
+    /// first, and returns the file.
+    private func writeOriginal(named name: String, in folder: URL) throws -> URL {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let file = folder.appendingPathComponent(name)
+        try Data("original".utf8).write(to: file)
+        return file
+    }
+
+    /// Asserts that the debug log holds exactly one line keeping `original`,
+    /// naming it by its name, never its path, and saying `reason`.
+    private func assertKeptOnce(
+        _ original: URL,
+        because reason: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let lines = debugLogLines(containing: "ORIGINAL_KEPT: \(original.lastPathComponent): ")
+        XCTAssertEqual(lines.count, 1, "one event line: \(lines)", file: file, line: line)
+        XCTAssertTrue(lines.first?.hasSuffix(reason) ?? false, "\(lines)", file: file, line: line)
+        XCTAssertEqual(debugLogLines(containing: original.path), [], "the file is named, never its path", file: file, line: line)
+    }
 
     /// A file named `name` in a folder of the test's own made read-only, so
     /// the file cannot be deleted until the returned function gives back
-    /// write permission.
+    /// write permission. The folder lies outside the data directory, as a
+    /// real original does: one inside it is kept, never deleted.
+    /// (`makeReadOnly` gives back the permission before the folder is
+    /// removed: teardown blocks run last registered first.)
     private func lockedOriginal(_ name: String) throws -> (URL, @Sendable () -> Void) {
-        let directory = try makeTestDirectory("LockedOriginal")
+        let directory = try makeSandboxDirectory("LockedOriginal")
         let original = directory.appendingPathComponent(name)
         try Data("original".utf8).write(to: original)
         return (original, makeReadOnly(directory))

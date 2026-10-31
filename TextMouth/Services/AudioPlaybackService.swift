@@ -1602,8 +1602,12 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// player plays (stable020 review, finding 5).
     /// Returns nil for a file of a format the import converts (by extension,
     /// any case; CAF too, since an import runs this on a source before
-    /// converting it, so `isConvertedAtImport` and not `isNeverDecodedInApp`):
-    /// since October 14, 2026 such audio never reaches Apple's decoders or
+    /// converting it, so `isConvertedAtImport` and not `isNeverDecodedInApp`),
+    /// and for a file whose bytes start with "OggS" whatever its name
+    /// (`AudioContentSniffer.isOgg(at:)`), which closes the case the
+    /// extension leaves open: an Ogg file named "episode.mp3" or ".m4a",
+    /// whose tags an import reads before it converts the file. Since
+    /// October 14, 2026 such audio never reaches Apple's decoders or
     /// AVFoundation's probing in the app's process, where a spinning Ogg
     /// demuxer hung the Mac. A time limit does not make that safe:
     /// `AsyncBridge.waitForResult` stops waiting at its limit (ST07), but it
@@ -1615,15 +1619,20 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// a watchdog, reads such audio; an Ogg file's tags and length come from
     /// `OggHeaderReader` instead.
     static func metadataAsset(for url: URL) -> AVURLAsset? {
-        metadataAssetOptions(for: url).map { AVURLAsset(url: url, options: $0) } // lint-ok: refuses every converted format by extension
+        metadataAssetOptions(for: url).map { AVURLAsset(url: url, options: $0) } // lint-ok: refuses every converted format by extension, and Ogg by its content
     }
 
     /// The options `metadataAsset(for:)` opens the file at `url` with: the
     /// player's (`playerAssetOptions(for:)`, ST06), so the chapter-marker
     /// reader and the length readers read the times the player plays; nil
-    /// for a file of a format the import converts, which it never opens.
+    /// for a file it never opens: one of a format the import converts, by
+    /// its extension, or one whose bytes start with "OggS", whatever its
+    /// name. The extension is asked first, since it reads nothing; the
+    /// content check costs one open and four bytes.
     static func metadataAssetOptions(for url: URL) -> [String: Any]? {
-        ImportAudioConverter.isConvertedAtImport(url) ? nil : playerAssetOptions(for: url)
+        if ImportAudioConverter.isConvertedAtImport(url) { return nil }
+        if AudioContentSniffer.isOgg(at: url) { return nil } // lint-ok: the line above refuses every converted format by extension; this adds Ogg under any other name
+        return playerAssetOptions(for: url)
     }
 
     /// Extract chapter markers from an audio file (M4B, M4A with chapters).
@@ -1737,11 +1746,18 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     }
 
     /// `seconds` as the library shows a length: `h:mm:ss` from an hour on,
-    /// else `m:ss`. Shared by every format's metadata reader.
-    private static func durationString(_ seconds: TimeInterval) -> String {
-        let hours = Int(seconds) / 3600
-        let minutes = (Int(seconds) % 3600) / 60
-        let secs = Int(seconds) % 60
+    /// else `m:ss`. Shared by every format's metadata reader. A header can
+    /// claim any length, so the seconds are bounded before they become
+    /// whole seconds (`Int(_:)` traps on infinity, NaN, and from about
+    /// 9.2e18 on): a value that is not a finite number shows as `0:00`, as
+    /// does a negative one, and one past `OggHeaderReader.maximumDuration`
+    /// (a year, the longest length TextMouth believes) shows as that year.
+    static func durationString(_ seconds: TimeInterval) -> String {
+        let bounded = seconds.isFinite ? min(max(seconds, 0), OggHeaderReader.maximumDuration) : 0
+        let wholeSeconds = Int(bounded)
+        let hours = wholeSeconds / 3600
+        let minutes = (wholeSeconds % 3600) / 60
+        let secs = wholeSeconds % 60
         return hours > 0
             ? String(format: "%d:%02d:%02d", hours, minutes, secs)
             : String(format: "%d:%02d", minutes, secs)

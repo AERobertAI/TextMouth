@@ -280,6 +280,143 @@ final class DAISYPackageImportTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: packageFolder.appendingPathComponent("notes.txt").path))
     }
 
+    /// What the reader is told when the preference would have deleted the
+    /// archive a DAISY book's audio was imported from, or asked about it.
+    private static func talkingBookKeptNotice(archive: URL) -> String {
+        "The original file was kept: TextMouth imported the audio of “Ferry Timetables of the Outer Sound” "
+            + "from the archive “\(archive.lastPathComponent)”, and the archive is the only copy of its text."
+    }
+
+    /// An archive holding a DAISY book with audio imports as its audio
+    /// alone: its text, the DTBook a braille reader reads, stays in the
+    /// archive, which is then its only copy. So the archive is never
+    /// deleted after the import, nor offered for deletion, whatever the
+    /// "After Importing a Book" preference says; when the preference would
+    /// have deleted it or asked, the reader is told it was kept, and why,
+    /// and with the preference to keep, nothing is said. The deletion runs
+    /// with the Trash off, so a regression removes only this test's file.
+    @MainActor
+    func testADAISYArchiveWhoseAudioIsImportedIsNeverDeleted() throws {
+        keepDeletionsOutOfTheTrash()
+        for (behavior, says) in [
+            (ImportDeleteBehavior.deleteAfterImport, true), (.askEachTime, true), (.keepOriginal, false)
+        ] {
+            let label = "\(behavior)"
+            let archive = try makeArchive(Self.talkingBookEntries())
+            XCTAssertTrue(DAISYParser.isDAISYZip(url: archive), label)
+            let model = LibraryViewModel(initializeServices: false)
+            model.library = Library()
+            // Only a question about the original may wait here, never an
+            // offer to transcribe the audiobook, whatever this Mac offers.
+            model.offersTranscription = { _ in false }
+
+            let imported = try FileImportService.importDAISYAudioZipWithReport(from: archive, toFolder: folderPath)
+            XCTAssertTrue(imported.tookOnlyPartOfOriginal, label)
+            XCTAssertFalse(imported.mayDeleteOriginal, label)
+            XCTAssertEqual(imported.originalKeptNotice, Self.talkingBookKeptNotice(archive: archive), label)
+            withImportDeleteBehavior(behavior) {
+                model.completeSingleImportedBook(imported, originalURL: archive)
+            }
+
+            XCTAssertTrue(FileManager.default.fileExists(atPath: archive.path), "\(label): the archive is kept")
+            XCTAssertTrue(model.library.books.contains { $0.id == imported.book.id }, label)
+            XCTAssertTrue(model.importDecisions.isEmpty, "\(label): no question about the archive")
+            XCTAssertEqual(model.errorMessage, says ? Self.talkingBookKeptNotice(archive: archive) : nil, label)
+            // The book was added, so the alert is no error.
+            XCTAssertEqual(model.errorTitle, says ? "Book Imported" : nil, label)
+        }
+    }
+
+    /// A talking book of audio and navigation only, the common kind, in an
+    /// archive of its own, leaves no text behind in the archive: the
+    /// "After Importing a Book" preference stands, so Delete After Import
+    /// deletes the archive, and no sentence says it was kept (data review,
+    /// finding 5). The deletion runs with the Trash off, so a regression
+    /// removes only this test's file.
+    @MainActor
+    func testAnAudioOnlyTalkingBookArchiveIsDeletedLikeAnyOther() throws {
+        keepDeletionsOutOfTheTrash()
+        var entries = try Self.talkingBookEntries()
+        // No DTBook: the SMIL files' text elements name a file that is not there.
+        entries["content/timetables.xml"] = nil
+        let archive = try makeArchive(entries)
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+        model.offersTranscription = { _ in false }
+
+        let imported = try FileImportService.importDAISYAudioZipWithReport(from: archive, toFolder: folderPath)
+
+        XCTAssertFalse(imported.tookOnlyPartOfOriginal)
+        XCTAssertTrue(imported.mayDeleteOriginal)
+        XCTAssertNil(imported.originalKeptNotice)
+        withImportDeleteBehavior(.deleteAfterImport) {
+            model.completeSingleImportedBook(imported, originalURL: archive)
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: archive.path), "the archive of an audio-only book was kept")
+        XCTAssertNil(model.errorMessage)
+    }
+
+    /// An archive holding a DAISY book with text beside two other books (an
+    /// EPUB and a PDF) keeps its archive, and the sentence names the book
+    /// and the archive and says how many books were not imported and that
+    /// unzipping the archive lets them be imported (data review, finding 5).
+    @MainActor
+    func testAnArchiveWithOtherBooksBesideTheDAISYFolderSaysHowManyWereNotImported() throws {
+        var entries: [String: Data] = [:]
+        for (path, data) in try Self.talkingBookEntries() { entries["Ferry/\(path)"] = data }
+        entries["reader.epub"] = Data("not really an EPUB".utf8)
+        entries["extras/handout.pdf"] = Data("not really a PDF".utf8)
+        entries["extras/cover.jpg"] = Data("not a book".utf8)
+        let archive = try makeArchive(entries)
+        XCTAssertTrue(DAISYParser.isDAISYZip(url: archive))
+
+        let imported = try FileImportService.importDAISYAudioZipWithReport(from: archive, toFolder: folderPath)
+
+        XCTAssertTrue(imported.tookOnlyPartOfOriginal)
+        XCTAssertEqual(
+            imported.originalKeptNotice,
+            "The original file was kept: TextMouth imported the audio of “Ferry Timetables of the Outer Sound” "
+                + "from the archive “\(archive.lastPathComponent)”, and the archive is the only copy of its text. "
+                + "The archive also holds 2 other books that were not imported; unzip it to import them."
+        )
+    }
+
+    /// An audio-only DAISY book beside one other book keeps its archive too,
+    /// since deleting it would lose the other book, and the sentence says so
+    /// in the words of a book with no text of its own to keep.
+    @MainActor
+    func testAnAudioOnlyTalkingBookBesideAnotherBookKeepsItsArchive() throws {
+        var entries: [String: Data] = [:]
+        for (path, data) in try Self.talkingBookEntries() where path != "content/timetables.xml" {
+            entries["Ferry/\(path)"] = data
+        }
+        entries["reader.epub"] = Data("not really an EPUB".utf8)
+        let archive = try makeArchive(entries)
+
+        let imported = try FileImportService.importDAISYAudioZipWithReport(from: archive, toFolder: folderPath)
+
+        XCTAssertFalse(imported.mayDeleteOriginal)
+        XCTAssertEqual(
+            imported.originalKeptNotice,
+            "The original file was kept: TextMouth imported only the DAISY book “Ferry Timetables of the Outer Sound” "
+                + "from the archive “\(archive.lastPathComponent)”. "
+                + "The archive also holds 1 other book that was not imported; unzip it to import it."
+        )
+    }
+
+    /// An archive holding a DAISY book without audio is imported whole, the
+    /// archive copied into the book's package, so its original may still be
+    /// deleted, as before, and nothing is said about keeping it.
+    func testADAISYArchiveWithoutAudioMayStillBeDeleted() throws {
+        let archive = try makeArchive(Fixtures.packageBook.mapValues { Data($0.utf8) })
+
+        let imported = try FileImportService.importFileWithReport(from: archive, toFolder: folderPath)
+
+        XCTAssertFalse(imported.tookOnlyPartOfOriginal)
+        XCTAssertTrue(imported.mayDeleteOriginal)
+        XCTAssertNil(imported.originalKeptNotice)
+    }
+
     // MARK: - Folders of Tracks
 
     /// The files `makeNightFerries(in:)` writes, as paths inside the folder.
@@ -925,6 +1062,31 @@ final class DAISYPackageImportTests: XCTestCase {
                 "__MACOSX/Rope Splicing/._ncc.html": appleDouble,
                 "__MACOSX/Novels/._Alice.epub": appleDouble
             ]) { first, _ in first }
+    }
+
+    /// The entries of an archive holding the package book (DAISY 3) read
+    /// aloud: its SMIL file plays each of its two sections from one silent
+    /// two-second WAVE file beside it, a second for each, so the book has
+    /// audio as well as its DTBook text.
+    private static func talkingBookEntries() throws -> [String: Data] {
+        let smil = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <smil xmlns="http://www.w3.org/2001/SMIL20/"><body><seq>
+        <par id="s1"><text src="timetables.xml#c1"/>\
+        <audio src="timetables.wav" clipBegin="0:00:00.000" clipEnd="0:00:01.000"/></par>
+        <par id="s2"><text src="timetables.xml#c2"/>\
+        <audio src="timetables.wav" clipBegin="0:00:01.000" clipEnd="0:00:02.000"/></par>
+        </seq></body></smil>
+        """
+        // The WAVE file is written in a folder of its own, then read in.
+        let folder = try AudioTestFixtures.makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let wave = folder.appendingPathComponent("timetables.wav")
+        try AudioTestFixtures.writeSilence(to: wave, duration: 2)
+        var entries = Fixtures.files(Fixtures.packageBook, changing: ["content/timetables.smil": smil])
+            .mapValues { Data($0.utf8) }
+        entries["content/timetables.wav"] = try Data(contentsOf: wave)
+        return entries
     }
 
     /// `files` as an archive's entries, each path moved into `folder`.
