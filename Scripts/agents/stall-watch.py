@@ -41,6 +41,10 @@ def pending_call(path):
     calls, answered = {}, set()
     # Some rows carry no timestamp; such a row takes the last one seen.
     last_stamp = ""
+    # When the transcript last received a tool result: a call made before it
+    # and never answered was orphaned (a restart of the Mac or of Claude Code
+    # killed it, as on October 31, 2026), since the agent has moved on since.
+    last_result_stamp = ""
     for line in tail:
         try:
             obj = json.loads(line)
@@ -63,7 +67,9 @@ def pending_call(path):
                 calls[part.get("id")] = (last_stamp, part.get("name"), str(what)[:160], part.get("id"))
             elif part.get("type") == "tool_result":
                 answered.add(part.get("tool_use_id"))
-    waiting = [c for i, c in calls.items() if i not in answered and c[1] not in LONG_TOOLS]
+                last_result_stamp = max(last_result_stamp, last_stamp)
+    waiting = [c for i, c in calls.items()
+               if i not in answered and c[1] not in LONG_TOOLS and c[0] >= last_result_stamp]
     return max(waiting) if waiting else None
 
 
