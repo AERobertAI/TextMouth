@@ -375,6 +375,34 @@ final class TMBPackageImportTests: XCTestCase {
         XCTAssertFalse(model.showError)
     }
 
+    // MARK: - Choosing a Package in Open Book…
+
+    /// A package chosen in the Open Book… panel, which offers packages, is
+    /// opened as the book it holds, as from Finder, instead of refused as
+    /// an unsupported format ("Unsupported file format: .tmb"): the library
+    /// lists its book, no error is set, and the book opens (recorded here in
+    /// place of a reader window).
+    @MainActor
+    func testAPackageChosenInOpenBookIsOpenedAsItsBook() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        defer { sandbox.restore() }
+        let package = try makeStatefulPackage()
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = Library()
+        let opened = OpenedBooks(recordingFor: model)
+
+        model.importFiles(urls: [package.url], toFolder: "")
+        drainImports(of: model)
+
+        let book = try XCTUnwrap(model.library.books.first, model.errorMessage ?? "no book was added")
+        // The copy the import made in the library goes when the test ends.
+        defer { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+        XCTAssertEqual(model.library.books.map(\.id), [package.bookID])
+        XCTAssertNil(model.errorMessage)
+        XCTAssertFalse(model.showError)
+        XCTAssertEqual(opened.ids, [package.bookID])
+    }
+
     // MARK: - The Book a Package Record Describes
 
     /// A book built from a package's record keeps every field the record
@@ -566,6 +594,22 @@ final class TMBPackageImportTests: XCTestCase {
             files[name] = try Data(contentsOf: package.appendingPathComponent(name))
         }
         return files
+    }
+
+    /// Waits until every import `model` has queued so far has run, then
+    /// until the main queue has run the work those imports sent it. Each
+    /// expectation is fulfilled once; a second fulfilment, were one ever to
+    /// come, is let pass rather than abort the test host.
+    @MainActor
+    private func drainImports(of model: LibraryViewModel) {
+        let imported = expectation(description: "the import queue ran everything queued before")
+        imported.assertForOverFulfill = false
+        model.importOperationQueue.enqueue { imported.fulfill() }
+        wait(for: [imported], timeout: 60)
+        let mainQueue = expectation(description: "the main queue ran what the imports sent it")
+        mainQueue.assertForOverFulfill = false
+        DispatchQueue.main.async { mainQueue.fulfill() }
+        wait(for: [mainQueue], timeout: 10)
     }
 
     /// The staged package names in the library's top level.

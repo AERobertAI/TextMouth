@@ -136,7 +136,7 @@ extension LibraryViewModel {
         for url in urls {
             let ext = url.pathExtension.lowercased()
 
-            if ext == "tmb" {
+            if FileImportService.isBookPackage(url) {
                 openTMBPackage(from: url)
             } else if ext == "zip" {
                 importZipAsync(from: url, toFolder: "", origin: origin)
@@ -782,6 +782,12 @@ extension LibraryViewModel {
     /// (TODO I01). With `addingToReadingList`, as for files chosen at the
     /// Reading List, the books join the end of the reading list in the order
     /// they reach the library (FR09).
+    ///
+    /// A TextMouth package, which the Open Book… panel offers, is opened as
+    /// the book it holds, exactly as when it is opened from Finder
+    /// (`openTMBPackage(from:)`, which decides where its book is in the
+    /// library: a book the library lists opens where it is). So neither
+    /// `folderPath` nor `addingToReadingList` applies to a package.
     func importFiles(
         urls: [URL],
         toFolder folderPath: String = "",
@@ -790,7 +796,9 @@ extension LibraryViewModel {
     ) {
         for url in urls {
             let ext = url.pathExtension.lowercased()
-            if ext == "zip" {
+            if FileImportService.isBookPackage(url) {
+                openTMBPackage(from: url)
+            } else if ext == "zip" {
                 importZipAsync(from: url, toFolder: folderPath, origin: origin, addingToReadingList: addingToReadingList)
             } else {
                 importBooks(in: url, toFolder: folderPath, origin: origin, addingToReadingList: addingToReadingList)
