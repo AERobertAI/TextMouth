@@ -85,6 +85,46 @@ final class ArchiveBudgetTests: XCTestCase {
         XCTAssertEqual(ArchiveInspection.saturatingSum(.max - 1, 1), .max)
     }
 
+    /// An archive whose entries each declare 0xFFFFFFFF bytes, the most a
+    /// ZIP size field holds without ZIP64 (written into its headers, as a
+    /// crafted archive declares it), is refused by the standard size limit
+    /// with the total and the limit, before anything is extracted.
+    func testEntriesDeclaringTheLargestPlainSizeAreRefusedBeforeExtraction() throws {
+        let names = ["Ferry/timetable.txt", "Ferry/fares.txt", "notes.txt"]
+        let made = try makeTemporaryZip(
+            prefix: "ArchiveBudgetTests", orderedEntries: names.map { TestZIPEntry($0, Data(count: 10)) }
+        )
+        addTeardownBlock { try? FileManager.default.removeItem(at: made) }
+        let sandbox = try makeSandboxDirectory("archive-budget-largest-size")
+        let zip = sandbox.appendingPathComponent("Ferry Papers.zip")
+        try FileManager.default.moveItem(at: made, to: zip)
+        for name in names {
+            try setRecordedSize(of: name, in: zip, to: 0xFFFF_FFFF)
+        }
+        let declared = Int64(names.count) * 0xFFFF_FFFF
+        let limit = ArchiveLimits.standard.otherArchiveExpansion
+        XCTAssertEqual(
+            ArchiveInspection(of: try Archive(url: zip, accessMode: .read)),
+            ArchiveInspection(entryCount: names.count, declaredSize: declared, holdsAudioOrArchives: false)
+        )
+        let destination = sandbox.appendingPathComponent("Extracted", isDirectory: true)
+
+        XCTAssertThrowsError(
+            try ArchiveExtractor.extract(archiveAt: zip, into: destination, budget: ArchiveBudget(limits: .standard))
+        ) { error in
+            XCTAssertEqual(
+                error as? ArchiveBudgetError,
+                .expandsPastLimit(declared: declared, limit: limit, holdsAudioOrArchives: false, withNestedArchives: false)
+            )
+            XCTAssertEqual(
+                error.localizedDescription,
+                "The archive expands to \(ArchiveFigures.size(declared)), more than the "
+                    + "\(ArchiveFigures.size(limit)) TextMouth extracts from archives without audio."
+            )
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path), "nothing may be extracted")
+    }
+
     // MARK: - Admission
 
     /// An archive within every limit is admitted, and its figures counted.
