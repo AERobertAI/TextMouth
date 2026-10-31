@@ -44,6 +44,62 @@ final class PodcastChaptersHeadingsTests: XCTestCase {
         }
     }
 
+    /// `title` made unique, so a test reads only its own lines of the debug
+    /// log, which every test of the run writes to.
+    private func uniqueTitle(_ title: String) -> String {
+        "\(title) \(UUID().uuidString.prefix(8))"
+    }
+
+    /// An audiobook of one file, named `fileName` and written by
+    /// `writeAudio`, titled `title`, in `world`, with `chapters`, the bytes
+    /// of a chapters file, beside its audio as podcastChapters.json, as an
+    /// episode's download keeps them; indexed as an import indexes it.
+    private func makeEpisode(
+        in world: IntegrationWorld,
+        title: String,
+        fileName: String,
+        keeping chapters: Data,
+        writingAudio writeAudio: (URL) throws -> Void
+    ) throws -> Book {
+        try world.makeOneFileAudioBook(title: title, fileName: fileName) { file in
+            try writeAudio(file)
+            try chapters.write(to: TextMouthPaths.podcastChaptersPath(in: file.deletingLastPathComponent()))
+        }
+    }
+
+    /// `makeEpisode` with a silent WAV file lasting `duration` seconds,
+    /// named after the title.
+    private func makeSilentEpisode(
+        in world: IntegrationWorld,
+        title: String,
+        duration: TimeInterval,
+        keeping chapters: Data
+    ) throws -> Book {
+        try makeEpisode(in: world, title: title, fileName: "\(title).wav", keeping: chapters) { file in
+            try AudioTestFixtures.writeSilence(to: file, duration: duration)
+        }
+    }
+
+    /// The text of each heading of `book`'s index, read as the reader reads
+    /// it (`BookContentAnalysisService.load`).
+    private func indexedHeadings(of book: Book) throws -> [String] {
+        try BookContentAnalysisService.load(book: book).index.allHeadings.map(\.text)
+    }
+
+    /// The debug log's lines holding `text`, each from `text` on, without
+    /// the time that begins it.
+    private func loggedLines(from text: String) -> [String] {
+        debugLogLines(containing: text).compactMap { line in
+            line.range(of: text).map { String(line[$0.lowerBound...]) }
+        }
+    }
+
+    /// `json` followed by spaces, which JSON allows after its value, to
+    /// `count` bytes in all.
+    private func padded(_ json: Data, to count: Int) -> Data {
+        json + Data(repeating: UInt8(ascii: " "), count: max(0, count - json.count))
+    }
+
     /// Two chapters, the second beginning `lastStart` milliseconds in.
     private func twoChapters(lastBeginningAt lastStart: Int) -> PodcastChapters {
         PodcastChapters(chapters: [
@@ -151,6 +207,115 @@ final class PodcastChaptersHeadingsTests: XCTestCase {
         XCTAssertEqual(content.chapters.map(\.text.count), [40])
         let parsed = try await AudioBookParser.parseFile(url: file)
         XCTAssertEqual(parsed.chapterSource, .wholeFile)
+    }
+
+    // MARK: - The Analysis
+
+    /// An episode's chapters kept beside its audio become its chapters and
+    /// headings when its audio is indexed, and the index made of them is
+    /// trusted when the book is read again; nothing is logged about them.
+    func testKeptChaptersBecomeTheEpisodesHeadingsWhenItsAudioIsIndexed() throws {
+        let world = try makeIntegrationWorld("Podcast Chapters")
+        let title = uniqueTitle("Four Tones")
+        let book = try makeSilentEpisode(in: world, title: title, duration: 4, keeping: sampleChaptersFile())
+
+        let analysis = try BookContentAnalysisService.load(book: book)
+
+        XCTAssertTrue(analysis.usedPersistedIndex, "the index the import saved was set aside")
+        XCTAssertEqual(analysis.index.allHeadings.map(\.text), Self.sampleTitles)
+        XCTAssertEqual(analysis.content.chapters.map(\.title), Self.sampleTitles)
+        XCTAssertEqual(loggedLines(from: "PODCAST_CHAPTERS_UNUSED: \(title): "), [])
+    }
+
+    /// A kept file that is not a chapters file leaves the episode one
+    /// chapter, and the debug log says why, naming the book.
+    func testAKeptFileThatIsNotChaptersLeavesOneChapterAndSaysWhy() throws {
+        let world = try makeIntegrationWorld("Podcast Chapters Unreadable")
+        let title = uniqueTitle("Ferry Bulletin")
+        let book = try makeSilentEpisode(in: world, title: title, duration: 2, keeping: Data("{\"chapters\": [".utf8))
+
+        XCTAssertEqual(try indexedHeadings(of: book), [title])
+        XCTAssertEqual(
+            loggedLines(from: "PODCAST_CHAPTERS_UNUSED: \(title): "),
+            ["PODCAST_CHAPTERS_UNUSED: \(title): not a chapters file"]
+        )
+    }
+
+    /// A kept file larger than 1 MB is refused, though it holds chapters
+    /// that fit: the episode is one chapter, and the log says why. A file
+    /// of exactly 1 MB is read.
+    func testAKeptFileLargerThanTheLimitIsRefused() throws {
+        let world = try makeIntegrationWorld("Podcast Chapters Too Large")
+        let chapters = try sampleChaptersFile()
+        let limit = TimedTextLimits.podcastChaptersBytes
+        let tooLarge = uniqueTitle("Tide Report")
+        let atTheLimit = uniqueTitle("Tide Report")
+
+        let refused = try makeSilentEpisode(in: world, title: tooLarge, duration: 4, keeping: padded(chapters, to: limit + 1))
+        let read = try makeSilentEpisode(in: world, title: atTheLimit, duration: 4, keeping: padded(chapters, to: limit))
+
+        XCTAssertEqual(try indexedHeadings(of: refused), [tooLarge])
+        XCTAssertEqual(
+            loggedLines(from: "PODCAST_CHAPTERS_UNUSED: \(tooLarge): "),
+            ["PODCAST_CHAPTERS_UNUSED: \(tooLarge): the file is larger than the 1 MB TextMouth reads"]
+        )
+        XCTAssertEqual(try indexedHeadings(of: read), Self.sampleTitles)
+        XCTAssertEqual(loggedLines(from: "PODCAST_CHAPTERS_UNUSED: \(atTheLimit): "), [])
+    }
+
+    /// Kept chapters whose last begins more than 5 seconds past the end of
+    /// the audio were made for another edition of the episode: it is one
+    /// chapter, and the log says why.
+    func testKeptChaptersThatDoNotFitTheAudioLeaveOneChapterAndSaySo() throws {
+        let world = try makeIntegrationWorld("Podcast Chapters Past the End")
+        let title = uniqueTitle("Four Tones")
+        let book = try makeSilentEpisode(
+            in: world, title: title, duration: 4, keeping: twoChapters(lastBeginningAt: 60_000).normalizedJSON()
+        )
+
+        XCTAssertEqual(try indexedHeadings(of: book), [title])
+        XCTAssertEqual(
+            loggedLines(from: "PODCAST_CHAPTERS_UNUSED: \(title): "),
+            ["PODCAST_CHAPTERS_UNUSED: \(title): its last chapter begins past the end of the audio"]
+        )
+    }
+
+    /// An episode whose audio has chapters of its own keeps them; the
+    /// podcast's chapters kept beside it go unused, and the log says why.
+    func testAnEpisodeWithChaptersOfItsOwnKeepsThemAndSaysWhy() async throws {
+        let world = try makeIntegrationWorld("Podcast Chapters Own")
+        let chaptered = try makeSandboxDirectory("PodcastChaptersAudio").appendingPathComponent("Chaptered.m4a")
+        try await AudioTestFixtures.writeChapteredAAC(to: chaptered, duration: 3, chapters: Self.ownMarkers)
+        let title = uniqueTitle("Harbor Lectures")
+
+        let book = try makeEpisode(in: world, title: title, fileName: "\(title).m4a", keeping: sampleChaptersFile()) { file in
+            try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try FileManager.default.copyItem(at: chaptered, to: file)
+        }
+
+        XCTAssertEqual(try indexedHeadings(of: book), ["Harbor Approach", "Breakwater Survey"])
+        XCTAssertEqual(
+            loggedLines(from: "PODCAST_CHAPTERS_UNUSED: \(title): "),
+            ["PODCAST_CHAPTERS_UNUSED: \(title): the audio has chapters of its own"]
+        )
+    }
+
+    /// A book without a package of its own, as only the earliest books
+    /// are, takes no chapters from the folder its file lies in, which is
+    /// where its package would be.
+    func testABookWithoutAPackageOfItsOwnTakesNoKeptChapters() throws {
+        let folderPath = "Podcast Chapters \(UUID().uuidString.prefix(8))"
+        let folder = TextMouthPaths.libraryDir.appendingPathComponent(folderPath, isDirectory: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
+        let file = folder.appendingPathComponent("Four Tones.wav")
+        try AudioTestFixtures.writeSilence(to: file, duration: 4)
+        try sampleChaptersFile().write(to: TextMouthPaths.podcastChaptersPath(in: folder))
+        let book = Book(title: "Four Tones", format: .audio, filePath: file.path, md5Hash: UUID().uuidString, folderPath: folderPath)
+        XCTAssertEqual(book.tmbDirectory.path, folder.path)
+
+        let analysis = try BookContentAnalysisService.analyzeAudio(book: book, url: file)
+
+        XCTAssertEqual(analysis.index.allHeadings.map(\.text), ["Four Tones"])
     }
 
     // MARK: - The Episode's Download Deleted
