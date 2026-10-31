@@ -406,6 +406,10 @@ final class OnDiskContractTests: XCTestCase {
             // book added back keeps the text the user changed. Optional keys, read leniently; an older
             // TextMouth ignores them, and reads the book's file over the edit as it always did.
             "editedText", "textCacheFingerprint",
+            // The braille file characters a BRF or BRL is read in (braillecodes), so that a book added back
+            // reads in the code it was read in. An optional key; an older TextMouth ignores it, and reads the
+            // file as North American Braille ASCII, as it always did.
+            "brailleFileCode",
         ]
         XCTAssertEqual(
             Set(written.keys),
