@@ -408,24 +408,29 @@ test("Nudge result is exactly threshold+1 from conflict") {
 // ====================================================================
 print("\n--- Bookmark Toggle Round-Trip Tests ---")
 
-test("Toggle at empty position adds, toggle again at same position removes") {
-    var bookmarks: [TestBookmark] = []
+test("nearbyBookmark finds a bookmark at the position and none once it is gone") {
     let pos = 100
     let threshold = 10
+    // A bookmark at the same offset in another chapter stays throughout, so
+    // each lookup that must find nothing has a bookmark to pass over: a
+    // lookup that ignored the chapter would find it.
+    var bookmarks = [TestBookmark(id: UUID(), chapterIndex: 1, characterOffset: pos)]
 
     // Toggle 1: no nearby bookmark → add
     let nearby1 = nearbyBookmark(bookmarks: bookmarks, chapterIndex: 0, characterOffset: pos, threshold: threshold)
     try assertTrue(nearby1 == nil, "First toggle should not find a bookmark")
     // Simulate adding
     bookmarks.append(TestBookmark(id: UUID(), chapterIndex: 0, characterOffset: pos))
-    try assertEqual(bookmarks.count, 1)
 
     // Toggle 2: nearby bookmark exists → remove
     let nearby2 = nearbyBookmark(bookmarks: bookmarks, chapterIndex: 0, characterOffset: pos, threshold: threshold)
     try assertTrue(nearby2 != nil, "Second toggle should find the bookmark")
-    // Simulate removing
-    bookmarks.removeAll { $0.characterOffset == nearby2!.characterOffset && $0.chapterIndex == 0 }
-    try assertEqual(bookmarks.count, 0, "Bookmark should be removed")
+    // Simulate removing the very bookmark the lookup found
+    bookmarks.removeAll { $0.id == nearby2?.id }
+
+    // Toggle 3: the bookmark is gone, so nothing is near the position again
+    let nearby3 = nearbyBookmark(bookmarks: bookmarks, chapterIndex: 0, characterOffset: pos, threshold: threshold)
+    try assertTrue(nearby3 == nil, "Once removed, the bookmark should not be found")
 }
 
 test("Toggle near existing bookmark removes it, not a new one") {

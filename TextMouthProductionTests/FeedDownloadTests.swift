@@ -162,18 +162,31 @@ final class FeedDownloadTests: XCTestCase {
 
     /// A download that stops partway keeps its resume data in this Mac's
     /// folder and fails with its reason; the next download goes on from where
-    /// it stopped, asking only for the rest, and the resume data goes.
+    /// it stopped, asking only for the rest, and the resume data goes. The
+    /// stub drops the connection only once the first half is written, as a
+    /// real connection's bytes arrive before it drops.
     func testADownloadThatStopsPartwayGoesOnFromWhereItStopped() async throws {
         let world = try FeedTestWorld(self, label: "FeedResume")
         let audio = try FeedMediaFixtures.silentAAC(duration: 2)
+        let dropsTheConnection = WorkGate()
+        dropsTheConnection.arm()
+        // Never leave the stub's thread waiting at the gate, whatever fails below.
+        addTeardownBlock { dropsTheConnection.release() }
         var broken = FeedMediaFixtures.file(audio, mimeType: "audio/mp4")
         broken.chunkSize = audio.count / 2
         broken.failAfterBytes = audio.count / 2
+        broken.failureGate = dropsTheConnection
         world.server.serve("/audio/1.m4a", broken, FeedMediaFixtures.file(audio, mimeType: "audio/mp4"))
         let feed = try await subscribe(world, enclosure: "/audio/1.m4a", type: "audio/mp4")
         let resumeFile = world.center.downloads.resumeDataFile(for: "guid:ep-1", of: feed.id)
 
         world.center.download("guid:ep-1", of: feed.id)
+        // The bytes the session reports written are in its file, so the
+        // resume data the failure leaves holds them.
+        await waitFor("the first half was written") {
+            (world.center.downloads.progress.state.download?.transfer?.completedBytes ?? 0) >= Int64(audio.count / 2)
+        }
+        dropsTheConnection.release()
         await waitFor("the download fails") {
             world.center.store.record(of: feed.id)?.item("guid:ep-1")?.state.failureReason != nil
         }

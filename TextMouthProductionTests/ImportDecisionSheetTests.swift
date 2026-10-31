@@ -53,6 +53,7 @@ final class ImportDecisionSheetTests: XCTestCase {
     /// Existing and Cancel, each with its label and hint, and pressing a
     /// button through accessibility answers with its choice.
     func testTheDuplicateSheetLabelsItsChoicesAndAnswersWithThem() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let answers = CallLog<ImportDecisionAnswer>()
         let sheet = makeSheet(for: Self.duplicateQuestion(), answers: answers)
 

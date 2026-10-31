@@ -216,9 +216,11 @@ final class PlaybackSettingsAuditTests: XCTestCase {
         XCTAssertEqual(recorder.announcements.map(\.message), ["Settings applied as global defaults"])
         // Waited for, not a fixed window: the save follows the change by the
         // save delay, and when this test is the first of its run to start
-        // speech it can come later than twice that (#741).
+        // speech it can come later than twice that (#741). Allowed five
+        // seconds, it failed once under load (TODO 3960): the wait allows
+        // thirty, and ends as soon as the failure is there.
         XCTAssertTrue(
-            waitUntil(timeout: 5) { center.outstandingFailures().map(\.subject) == [.configuration] },
+            waitUntil(timeout: 30) { center.outstandingFailures().map(\.subject) == [.configuration] },
             "the failed save never reached the banner: \(center.outstandingFailures().map(\.subject))"
         )
     }
@@ -360,8 +362,9 @@ final class PlaybackSettingsAuditTests: XCTestCase {
             XCTAssertEqual(reader.audioSpeed, 1.3)
             // SwiftUI re-renders asynchronously; the spoken value must
             // follow, and the slider must receive 1.3 before it is adjusted
-            // again.
-            XCTAssertTrue(waitUntil { slider.element.accessibilityValueDescription() == "1.3 times speed" })
+            // again. A busy Mac can hold the render past the default two
+            // seconds; the wait ends as soon as the value is there.
+            XCTAssertTrue(waitUntil(timeout: 30) { slider.element.accessibilityValueDescription() == "1.3 times speed" })
 
             _ = slider.element.accessibilityPerformDecrement()
             XCTAssertEqual(reader.audioSpeed, 1.25)

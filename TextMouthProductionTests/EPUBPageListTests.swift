@@ -214,9 +214,14 @@ final class EPUBPageListTests: XCTestCase {
     }
 
     /// The other samples have no pages and no markers without them either.
+    /// Each still reads as every chapter it has with pages: a parse that
+    /// read no chapter would hold no page and no marker either.
     func testNoSampleHasPagesWhenTheyAreNotIncluded() throws {
         for sample in ["epub3-pages/pagebreaks-only.epub", "epub2-pages/pagelist.epub"] {
-            for item in try chaptersOf(sample, includesPages: false) {
+            let items = try chaptersOf(sample, includesPages: false)
+            XCTAssertFalse(items.isEmpty, sample)
+            XCTAssertEqual(items.count, try chaptersOf(sample).count, sample)
+            for item in items {
                 XCTAssertTrue(item.chapter.pages.isEmpty, sample)
                 XCTAssertFalse(item.markdown.contains("<!-- page:"), sample)
             }

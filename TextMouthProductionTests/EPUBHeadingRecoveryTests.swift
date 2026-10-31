@@ -990,6 +990,37 @@ final class EPUBHeadingRecoveryTests: XCTestCase {
         XCTAssertTrue(current.chapters[17].title.contains("Death of a Grandfather"))
     }
 
+    /// The check above of chapter 18, and the guard that stops it rather
+    /// than trap on a shorter book, run only with the copied Helliconia
+    /// package. This is the smallest book that needs them, in every run: 18
+    /// chapters behind a contents list naming only the first, as in the
+    /// reported book, so chapter 18's only name is its own heading. The
+    /// cache and the direct reader both find all 18 chapters and title the
+    /// last by that heading.
+    func testChapter18OutsideAnIncompleteContentsListIsTitledByItsHeading() throws {
+        let chapters: [(String, String)] = (1...18).map { number in
+            let body = number == 18
+                ? "<h1>Death of a Grandfather</h1><p>The village walked out onto the ice.</p>"
+                : "<p>Body \(number).</p>"
+            return ("Text/chapter\(number).xhtml", fixturePage(body))
+        }
+        let book = try makeBook(chapters: chapters, extraFiles: ["Navigation/nav.xhtml": """
+        <nav xmlns:epub="http://www.idpf.org/2007/ops" epub:type="toc"><ol>
+        <li><a href="../Text/chapter1.xhtml">Opening</a></li></ol></nav>
+        """], manifest: "<item id='nav' href='../Navigation/nav.xhtml' media-type='application/xhtml+xml' properties='nav'/>")
+        let cached = try MarkdownCacheService.loadFromCache(for: book)
+        let direct = try EPUBParser.parse(url: URL(fileURLWithPath: book.filePath))
+
+        for content in [cached, direct] {
+            XCTAssertEqual(content.chapters.count, 18)
+            // Stop here, rather than trap, if the book has fewer than 18 chapters.
+            _ = try XCTUnwrap(content.chapters[safe: 17], "the book has no chapter 18")
+            XCTAssertEqual(content.chapters[17].title, "Death of a Grandfather")
+            XCTAssertEqual(content.chapters[17].headings.map(\.text), ["Death of a Grandfather"])
+        }
+        XCTAssertEqual(cached.allHeadings, direct.allHeadings)
+    }
+
     /// Create a sparse-navigation book with a conventional in-body contents
     /// section, matching the structure observed in the reported EPUB.
     private func makeSparseBook() throws -> Book {

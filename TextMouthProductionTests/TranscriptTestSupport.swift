@@ -139,11 +139,168 @@ extension XCTestCase {
         return locale
     }
 
-    /// The TestData archive `name`, skipping the test when this checkout
-    /// does not keep it (git ignores the DAISY audio archives).
+    /// The TestData archive `name`, found in this checkout's TestData or,
+    /// from a linked worktree, in the main checkout's
+    /// (`testDataArchiveIfPresent(_:)`). The test is skipped only when
+    /// neither has it. The tests extract what they need into their own
+    /// sandbox.
     func optionalTestDataArchive(_ name: String) throws -> URL {
-        let url = URL(fileURLWithPath: testFilePath(name))
-        try XCTSkipUnless(FileManager.default.fileExists(atPath: url.path), "\(name) is not in this checkout's TestData")
+        guard let url = testDataArchiveIfPresent(name) else {
+            throw XCTSkip("\(name) is not in this checkout's TestData")
+        }
         return url
+    }
+}
+
+// MARK: - TestData from a Linked Worktree
+
+/// The TestData archive `name`, from this checkout's TestData or, from a
+/// linked worktree, the main checkout's, which keeps the archives git
+/// ignores (the DAISY audio books, downloaded separately); nil when
+/// neither has it. The archive is only ever read.
+func testDataArchiveIfPresent(_ name: String) -> URL? {
+    let ownCopy = URL(fileURLWithPath: testFilePath(name))
+    let mainCheckoutCopy = mainCheckoutRoot(of: thisCheckoutRoot).map {
+        $0.appendingPathComponent("TestData", isDirectory: true).appendingPathComponent(name)
+    }
+    // This checkout's own copy first, so a checkout that keeps the archive
+    // always reads its own.
+    return [ownCopy, mainCheckoutCopy].compactMap { $0 }.first { FileManager.default.fileExists(atPath: $0.path) }
+}
+
+/// The root of the checkout this file was compiled in: the folder two
+/// levels above this source file, where `testFileURL` in
+/// LegacyScenarioHarness.swift finds TestData.
+private let thisCheckoutRoot = URL(fileURLWithPath: #filePath)
+    .deletingLastPathComponent()
+    .deletingLastPathComponent()
+
+/// The repository's main checkout, when the checkout at `root` is a linked
+/// worktree: its `.git` is a file whose `gitdir:` line names
+/// `<main>/.git/worktrees/<name>`. Nil for the main checkout itself, or for
+/// anything else.
+///
+/// Git writes the line as `gitdir: ` and the path, ending in a newline. The
+/// path is absolute unless the worktree was made with relative paths (Git
+/// 2.48's `worktree.useRelativePaths`), when it is relative to `root`. Only
+/// a path whose last component's two parents are `worktrees` and `.git`
+/// counts: a submodule's `.git` file names `.git/modules/<name>`, which is
+/// not another checkout of this repository.
+fileprivate func mainCheckoutRoot(of root: URL) -> URL? {
+    // A `.git` folder, as the main checkout has, or a missing or unreadable
+    // file, reads as no text.
+    let prefix = "gitdir: "
+    guard let text = try? String(contentsOf: root.appendingPathComponent(".git"), encoding: .utf8),
+          text.hasPrefix(prefix) else { return nil }
+    let path = text.dropFirst(prefix.count).trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !path.isEmpty else { return nil }
+    let gitDirectory = (path.hasPrefix("/") ? URL(fileURLWithPath: path) : root.appendingPathComponent(path))
+        .standardizedFileURL
+    let worktrees = gitDirectory.deletingLastPathComponent()
+    let repository = worktrees.deletingLastPathComponent()
+    guard worktrees.lastPathComponent == "worktrees", repository.lastPathComponent == ".git" else { return nil }
+    return repository.deletingLastPathComponent()
+}
+
+// MARK: - Finding the Main Checkout, Tested
+
+/// `mainCheckoutRoot(of:)` on checkouts made in each test's own sandbox:
+/// a linked worktree's `.git` file, as git writes it, leads to the main
+/// checkout, and nothing else does.
+final class TranscriptFixtureLookupTests: XCTestCase {
+
+    /// A linked worktree's `.git` file names the main checkout: the folder
+    /// holding the `.git` whose `worktrees` folder the line names.
+    func testAWorktreesGitFileGivesTheMainCheckout() throws {
+        let sandbox = try makeSandboxDirectory("fixture-lookup")
+        let worktree = try makeCheckout(in: sandbox, gitFile: "gitdir: \(mainCheckout(in: sandbox).path)/.git/worktrees/agent-feature")
+
+        XCTAssertEqual(mainCheckoutRoot(of: worktree)?.path, mainCheckout(in: sandbox).path)
+    }
+
+    /// The newline that ends git's line is trimmed, and so is any other
+    /// white space after the path.
+    func testATrailingNewlineIsTrimmed() throws {
+        let sandbox = try makeSandboxDirectory("fixture-lookup")
+        let line = "gitdir: \(mainCheckout(in: sandbox).path)/.git/worktrees/agent-feature"
+
+        for ending in ["\n", "\r\n", " \t\n\n"] {
+            let worktree = try makeCheckout(in: sandbox, gitFile: line + ending)
+            XCTAssertEqual(mainCheckoutRoot(of: worktree)?.path, mainCheckout(in: sandbox).path, "ending \(ending.debugDescription)")
+        }
+    }
+
+    /// A worktree made with relative paths (Git 2.48's
+    /// `worktree.useRelativePaths`) names its gitdir from its own folder.
+    func testARelativeGitdirIsReadFromTheWorktreesOwnFolder() throws {
+        let sandbox = try makeSandboxDirectory("fixture-lookup")
+        let worktree = try makeCheckout(in: sandbox, gitFile: "gitdir: ../Main Checkout/.git/worktrees/agent-feature\n")
+
+        XCTAssertEqual(mainCheckoutRoot(of: worktree)?.path, mainCheckout(in: sandbox).path)
+    }
+
+    /// The main checkout's `.git` is a folder, worktrees and all, and a
+    /// folder with no `.git` is no checkout: neither leads anywhere.
+    func testAGitFolderOrNoGitGivesNothing() throws {
+        let sandbox = try makeSandboxDirectory("fixture-lookup")
+        let main = mainCheckout(in: sandbox)
+        try FileManager.default.createDirectory(
+            at: main.appendingPathComponent(".git/worktrees/agent-feature", isDirectory: true),
+            withIntermediateDirectories: true
+        )
+        let plainFolder = sandbox.appendingPathComponent("Plain Folder", isDirectory: true)
+        try FileManager.default.createDirectory(at: plainFolder, withIntermediateDirectories: true)
+
+        XCTAssertNil(mainCheckoutRoot(of: main))
+        XCTAssertNil(mainCheckoutRoot(of: plainFolder))
+    }
+
+    /// A `.git` file whose text does not start with `gitdir: ` exactly
+    /// gives nothing.
+    func testAGitFileWithoutGitdirGivesNothing() throws {
+        let sandbox = try makeSandboxDirectory("fixture-lookup")
+        let gitDirectory = "\(mainCheckout(in: sandbox).path)/.git/worktrees/agent-feature"
+
+        for text in ["", "gitdir: \n", gitDirectory, "gitdir:\(gitDirectory)", " gitdir: \(gitDirectory)", "GITDIR: \(gitDirectory)"] {
+            let worktree = try makeCheckout(in: sandbox, gitFile: text + "\n")
+            XCTAssertNil(mainCheckoutRoot(of: worktree), text.debugDescription)
+        }
+    }
+
+    /// A gitdir that does not end in `.git/worktrees/<name>` names no main
+    /// checkout: a submodule's, the repository itself, `worktrees` with no
+    /// name after it, folders named otherwise, or a name of two components.
+    func testAGitdirOutsideGitWorktreesGivesNothing() throws {
+        let sandbox = try makeSandboxDirectory("fixture-lookup")
+        let main = mainCheckout(in: sandbox).path
+
+        for gitDirectory in [
+            "\(main)/.git/modules/library",
+            "\(main)/.git",
+            "\(main)/.git/worktrees",
+            "\(main)/git/worktrees/agent-feature",
+            "\(main)/.git/trees/agent-feature",
+            "\(main)/.git/worktrees/agent-feature/extra",
+        ] {
+            let worktree = try makeCheckout(in: sandbox, gitFile: "gitdir: \(gitDirectory)\n")
+            XCTAssertNil(mainCheckoutRoot(of: worktree), gitDirectory)
+        }
+    }
+
+    // MARK: - Helpers
+
+    /// Where the main checkout lies in `sandbox` for these tests. Nothing
+    /// is made there unless a test makes it.
+    private func mainCheckout(in sandbox: URL) -> URL {
+        sandbox.appendingPathComponent("Main Checkout", isDirectory: true)
+    }
+
+    /// A checkout folder in `sandbox`, made on first use, whose `.git` is a
+    /// file holding `gitFile`, replacing the one a test wrote before.
+    private func makeCheckout(in sandbox: URL, gitFile: String) throws -> URL {
+        let checkout = sandbox.appendingPathComponent("Linked Worktree", isDirectory: true)
+        try FileManager.default.createDirectory(at: checkout, withIntermediateDirectories: true)
+        try Data(gitFile.utf8).write(to: checkout.appendingPathComponent(".git"))
+        return checkout
     }
 }

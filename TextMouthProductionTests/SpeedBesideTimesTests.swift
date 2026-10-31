@@ -53,6 +53,7 @@ final class SpeedBesideTimesTests: XCTestCase {
     /// assistive app, so where none is exposed the test is skipped; its
     /// words are pinned without a window above.
     func testTheSettingsCheckboxIsInPlaybackSettings() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         try skipUnlessHostedWindowsExposeAccessibility()
         let settings = makeSettings("recordingtime-speed-tab")
         let size = NSSize(width: 600, height: 1800)

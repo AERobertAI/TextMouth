@@ -174,6 +174,16 @@ enum WatchedProcess {
     /// How many children are running now (for tests).
     static var runningChildCount: Int { registry.withLockUnchecked { $0.count } }
 
+    /// How many children have been launched in this process (for tests).
+    /// It only ever grows, so a test can tell that no child started at all,
+    /// which `runningChildCount` cannot: a child started and killed at once
+    /// leaves it as it was.
+    static var launchCount: Int { launches.withLock { $0 } }
+
+    /// Backs `launchCount`: each child is counted as it is registered. An
+    /// `Int` is `Sendable`, so the lock is the checked kind.
+    private static let launches = OSAllocatedUnfairLock(initialState: 0)
+
     /// Kills every running child with SIGKILL, checking first that it still
     /// runs. Callable from any thread; takes only a short lock and never
     /// waits for a child: the app's termination calls it.
@@ -409,8 +419,10 @@ enum WatchedProcess {
         }
         let pid = process.processIdentifier
         // Registered and published together: a cancellation that came first
-        // kills the child now, one that comes later finds the pid.
+        // kills the child now, one that comes later finds the pid. It is
+        // counted as it is registered (`launchCount`).
         registry.withLockUnchecked { $0[pid] = process }
+        launches.withLock { $0 += 1 }
         gate.publish(pid)
         // The reaper kills the child if TextMouth dies before this watch ends.
         let reaper = startReaper(watching: pid)

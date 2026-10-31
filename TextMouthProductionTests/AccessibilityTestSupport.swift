@@ -402,6 +402,96 @@ extension XCTestCase {
     }
 }
 
+// MARK: - SwiftUI's own elements, read in-process
+
+/// Whether SwiftUI exposes the accessibility elements of its own texts and
+/// buttons to a test that reads a hosted view in-process, through
+/// `accessibilityElements(labelled:in:)` or `accessibleControls(in:)`, as
+/// every check that reads them that way needs it to.
+///
+/// The development Mac does not: SwiftUI builds those elements only for a
+/// request that comes from an accessibility client through the
+/// accessibility server, as VoiceOver's requests do, and never for an
+/// in-process read, whatever switch is tried (measured October 30, 2026).
+/// A check that reads them would wait out `withHostedView`'s five seconds
+/// and then skip, on every run, so it is skipped up front instead, before
+/// anything is hosted, with the one message below. The answer is measured
+/// once per run on a probe button of its own, never on a view under test.
+/// The button stands for SwiftUI's texts, toggles, and pop-ups as well,
+/// none of which an in-process read finds here either; where SwiftUI
+/// exposes some of them and not others, each test's own skip still guards
+/// what it reads.
+@MainActor
+enum SwiftUIElementExposure {
+    /// The one message every test skipped for want of the exposure gives.
+    nonisolated static let unavailableMessage =
+        "SwiftUI exposes the accessibility elements of its own texts and buttons only to an accessibility client, never to a test reading them in-process"
+
+    /// The label of the probe button whose element the measurement looks
+    /// for.
+    nonisolated static let probeLabel = "SwiftUI exposure probe"
+
+    /// This run's answer: nil until first asked, then the measured one,
+    /// unless `assuming(_:_:)` has put another in its place for a while.
+    fileprivate static var verdict: Bool?
+
+    /// Run `body` as though this run's answer were `exposed`, then put back
+    /// the answer it had, measured or not yet, even when `body` throws: for
+    /// the tests of the skip itself, which must see both answers on every
+    /// Mac.
+    static func assuming(_ exposed: Bool, _ body: () throws -> Void) rethrows {
+        let saved = verdict
+        verdict = exposed
+        defer { verdict = saved }
+        try body()
+    }
+}
+
+extension XCTestCase {
+    /// Whether SwiftUI exposes its own elements to an in-process read in
+    /// this run (see `SwiftUIElementExposure`). The first call measures it:
+    /// it hosts a SwiftUI button labelled as the probe, as `withHostedView`
+    /// hosts a view under test, and waits at most 2 seconds for an element
+    /// with that label among the hosting view's accessibility elements.
+    /// Later calls return that answer.
+    @MainActor
+    func swiftUIExposesItsOwnElements() -> Bool {
+        if let verdict = SwiftUIElementExposure.verdict {
+            return verdict
+        }
+        let label = SwiftUIElementExposure.probeLabel
+        var exposed = false
+        withHostedView(Button(label) {}.accessibilityLabel(label), until: { _ in true }) { hostingView in
+            exposed = waitUntil(timeout: 2) {
+                hostingView.layoutSubtreeIfNeeded()
+                return !self.accessibilityElements(labelled: label, in: hostingView).isEmpty
+            }
+            if !exposed {
+                // Say once, in the run's log, why the tests that read
+                // SwiftUI's own elements in-process are skipped.
+                print(
+                    "SWIFTUI_ELEMENTS_UNEXPOSED: a hosted SwiftUI button was not among the hosting view's "
+                        + "accessibility elements within 2 seconds; tests that read SwiftUI's own elements in-process are skipped"
+                )
+            }
+        }
+        SwiftUIElementExposure.verdict = exposed
+        return exposed
+    }
+
+    /// Skip the running test, with the one message saying why, unless
+    /// SwiftUI exposes its own elements to an in-process read in this run.
+    /// Every test that reads SwiftUI's own texts or buttons in-process calls
+    /// this before it hosts anything; a test that first checks what needs no
+    /// window, or what AppKit draws, calls it once those checks are made.
+    @MainActor
+    func skipUnlessSwiftUIExposesItsOwnElements() throws {
+        guard swiftUIExposesItsOwnElements() else {
+            throw XCTSkip(SwiftUIElementExposure.unavailableMessage)
+        }
+    }
+}
+
 // MARK: - Hosted jump panels
 
 extension XCTestCase {

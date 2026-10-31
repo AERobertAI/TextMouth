@@ -533,6 +533,7 @@ final class TranscriptCleanupSheetTests: XCTestCase {
     /// The ready sheet's buttons are Edit Rules…, Cancel, and Apply, each
     /// labelled and hinted, in that order.
     func testTheReadySheetLabelsItsButtons() async throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let world = try makeIntegrationWorld("Transcript Cleanup Buttons")
         let book = try transcribedBook(in: world)
         let model = TranscriptCleanupSheetModel(book: book, library: world.library, services: makeCleanupServices())

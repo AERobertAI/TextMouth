@@ -37,13 +37,13 @@ final class LegacyWhereAmIProductionTests: XCTestCase {
         XCTAssertLessThanOrEqual(percent, 100)
         XCTAssertGreaterThanOrEqual(remaining, 0)
         // The position is numbered among the book's headings, not its
-        // content units, and the containing heading is named.
+        // content units, and the containing heading is named: the place
+        // chosen, in chapter 3, is under a heading.
         XCTAssertEqual(position.count, content.allHeadings.count)
         XCTAssertFalse(position.label.isEmpty)
         XCTAssertTrue(summary.contains(position.label))
-        if let headingText = position.headingText {
-            XCTAssertTrue(summary.contains(headingText))
-        }
+        let headingText = try XCTUnwrap(position.headingText, "the position has a heading")
+        XCTAssertTrue(summary.contains(headingText), summary)
         XCTAssertTrue(summary.contains("percent"))
         XCTAssertTrue(summary.contains("remaining"))
     }

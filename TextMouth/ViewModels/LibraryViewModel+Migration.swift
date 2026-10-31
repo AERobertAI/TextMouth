@@ -1721,6 +1721,18 @@ extension LibraryViewModel {
         }
     }
 
+    /// Waits until the listening statistics' saves queued so far are
+    /// written, as an operation holding the storage work does before it
+    /// changes anything (`withStorageWorkHeld`), so a move's copy holds
+    /// them, and no save is still writing its temporary file beside
+    /// reading_stats.json while the copy lists the data directory. In the
+    /// app it waits for the statistics service's save queue
+    /// (`ReadingStatsService.waitForQueuedSaves()`); a test binds a queue of
+    /// its own, holding a save the move must wait for.
+    @TaskLocal static var waitForQueuedStatisticsSaves: @Sendable () -> Void = {
+        ReadingStatsService.waitForQueuedSaves()
+    }
+
     /// Runs a data-directory operation with no other storage work under way
     /// (TODO S04): first, when `move` asks for one, the move of the data
     /// directory, then `body`, and returns what `body` returns.
@@ -1734,8 +1746,12 @@ extension LibraryViewModel {
     /// move's progress and `waiting` each kind it waits for, an import
     /// first, and `waiting` nil once it waits for nothing more. The writes
     /// still queued are then made, in the data directory about to be
-    /// copied, so the copy holds them and none is written after the
-    /// publication. The move copies and publishes off the main actor
+    /// copied: the library's and its books' records, config.json, the
+    /// listening statistics (`waitForQueuedStatisticsSaves`), and the logs.
+    /// So the copy holds them, none is written after the publication, and
+    /// none is still writing its temporary file as the copy lists the data
+    /// directory, which would vanish before the copy reached it and fail
+    /// the move. The move copies and publishes off the main actor
     /// (`copyAndPublish`). The held work goes on once `body` returns or
     /// throws, under whichever generation is current then.
     ///
@@ -1779,6 +1795,7 @@ extension LibraryViewModel {
         }
         LibraryPersistenceService.flushPendingSave()
         configService.flushScheduledSave()
+        Self.waitForQueuedStatisticsSaves()
         TextMouthPaths.flushLogs()
         if let move, let progress {
             try await copyAndPublish(move, showing: progress)

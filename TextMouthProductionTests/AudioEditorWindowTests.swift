@@ -218,6 +218,9 @@ final class AudioEditorWindowTests: XCTestCase {
         XCTAssertEqual(AudioEditorWording.rowButton(AudioEditorWording.deleteButton, AudioEditorWording.markerSubject(1)), "Delete Marker 1")
         XCTAssertEqual(AudioEditorWording.rowButton(AudioEditorWording.removeButton, AudioEditorWording.chapterSubject(1)), "Remove Chapter 1")
         XCTAssertEqual(AudioEditorWording.rowButton(AudioEditorWording.selectButton, AudioEditorWording.pauseSubject(1)), "Select Pause 1")
+        // The words above are checked without a window; what follows reads
+        // SwiftUI's own elements in-process.
+        try skipUnlessSwiftUIExposesItsOwnElements()
 
         let model = try await openRamp(seconds: 12, loadsPreview: false).model
         model.move(to: 3)

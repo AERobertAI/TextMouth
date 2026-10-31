@@ -160,7 +160,9 @@ final class JumpToTimeTests: XCTestCase {
     }
 
     /// Every heading's time as the Headings sheet shows it, typed into Go to
-    /// Time at 2x, lands exactly on that heading, for every layout.
+    /// Time at 2x, lands exactly on that heading, for every layout. The
+    /// sheet shows a row for every heading, and every layout has headings:
+    /// a sheet that showed no row would leave nothing to check.
     func testEveryHeadingsSheetTimeLandsOnItsHeading() throws {
         for layout in Fixtures.Layout.allCases {
             let reader = Fixtures.makeReader(format: .audio)
@@ -168,7 +170,10 @@ final class JumpToTimeTests: XCTestCase {
             reader.content = try Fixtures.audioContent(layout)
             reader.audioSpeed = 2
 
-            for row in timeInRows(of: reader) {
+            let rows = timeInRows(of: reader)
+            XCTAssertFalse(rows.isEmpty, "\(layout)")
+            XCTAssertEqual(rows.count, reader.content?.allHeadings.count, "\(layout)")
+            for row in rows {
                 XCTAssertNil(reader.goToTime(typed: row.infoText), "\(layout): \(row.infoText)")
                 XCTAssertEqual(reader.currentChapterIndex, row.heading.chapterIndex, "\(layout): \(row.heading.text) at \(row.infoText)")
                 XCTAssertEqual(reader.currentCharacterOffset, row.heading.characterOffset, "\(layout): \(row.heading.text)")

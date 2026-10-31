@@ -15,7 +15,8 @@ enum AudioFilterRunner {
     /// both CAF files of 32-bit float samples, the passes between them in
     /// `scratch`.
     /// - Throws: `AudioFilterError.badValue` for a value that doesn't fit the
-    ///   audio (a frequency above half its sample rate), `CancellationError`
+    ///   audio (a frequency above half its sample rate, or a biquad's width
+    ///   too wide to make a filter at its frequency), `CancellationError`
     ///   when the task running it is cancelled, or AVFoundation's errors.
     static func run(_ filters: [AudioBuiltInFilter], input: URL, output: URL, scratch: URL) throws {
         var current = input
@@ -111,22 +112,23 @@ enum AudioFilterRunner {
     /// computes them (after the Audio EQ Cookbook).
     struct BiquadCoefficients: Equatable, Sendable {
         let b0, b1, b2, a1, a2: Double
+
+        /// Whether every coefficient is a number, neither NaN nor infinite.
+        var isFinite: Bool {
+            [b0, b1, b2, a1, a2].allSatisfy(\.isFinite)
+        }
     }
 
     /// The coefficients of `parameters` at `sampleRate`.
     /// - Throws: `AudioFilterError.badValue` for a frequency at or above half
-    ///   the sample rate, which no biquad can reach.
+    ///   the sample rate, which no biquad can reach, or for a width that
+    ///   makes no usable filter at the frequency: one whose coefficients
+    ///   aren't all finite, which would render NaN into every sample.
     static func coefficients(_ parameters: AudioBuiltInFilter.Biquad, sampleRate: Double) throws -> BiquadCoefficients {
         let frequency = parameters.frequency
         guard frequency < sampleRate / 2 else {
-            let name: String
-            switch parameters.kind {
-            case .highpass: name = "highpass"
-            case .lowpass: name = "lowpass"
-            case .peaking: name = "equalizer"
-            }
             throw AudioFilterError.badValue(
-                filter: name, option: "frequency", value: String(frequency),
+                filter: filterName(parameters.kind), option: "frequency", value: String(frequency),
                 expected: "give a frequency below half the audio's sample rate, \(Int(sampleRate / 2)) Hz"
             )
         }
@@ -158,7 +160,29 @@ enum AudioFilterRunner {
             a0 = 1 + alpha / amplitude; a1 = -2 * cosine; a2 = 1 - alpha / amplitude
             b0 = 1 + alpha * amplitude; b1 = -2 * cosine; b2 = 1 - alpha * amplitude
         }
-        return BiquadCoefficients(b0: b0 / a0, b1: b1 / a0, b2: b2 / a0, a1: a1 / a0, a2: a2 / a0)
+        let normalized = BiquadCoefficients(b0: b0 / a0, b1: b1 / a0, b2: b2 / a0, a1: a1 / a0, a2: a2 / a0)
+        // A width can be too wide for its frequency. In octaves, the sinh of
+        // ffmpeg's formula overflows to infinity past about 2,000 octaves, and
+        // near half the sample rate, where sin(w0) is tiny, past one, so
+        // alpha is infinite and the coefficients NaN: refused here, before a
+        // render fills every sample with NaN and is saved over the book.
+        guard normalized.isFinite else {
+            throw AudioFilterError.badValue(
+                filter: filterName(parameters.kind), option: "width", value: AudioBuiltInFilter.written(parameters.width),
+                expected: "give a narrower width, since this one makes no usable filter at \(AudioBuiltInFilter.written(frequency)) Hz"
+            )
+        }
+        return normalized
+    }
+
+    /// The name of the filter that makes a biquad of `kind`, as a chain
+    /// writes it, for a refusal to name.
+    private static func filterName(_ kind: AudioBuiltInFilter.Biquad.Kind) -> String {
+        switch kind {
+        case .highpass: return "highpass"
+        case .lowpass: return "lowpass"
+        case .peaking: return "equalizer"
+        }
     }
 
     /// One channel's biquad state.

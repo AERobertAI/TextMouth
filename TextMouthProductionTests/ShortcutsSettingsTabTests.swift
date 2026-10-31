@@ -525,6 +525,7 @@ final class ShortcutsSettingsTabTests: XCTestCase {
     /// SwiftUI builds these elements only for an assistive app, so without
     /// one the test is skipped; the wording above holds either way.
     func testAnEditedRowOffersResetToDefaultToVoiceOver() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let manager = KeyboardShortcutManager(userDefaults: makeSandboxedPreferences("shortcut-tab-row"), installsEventMonitor: false)
         manager.updateBindings(for: .releaseMediaControls, to: [KeyBinding(key: "r", shift: true)])
         let editedLabel = "Release Media Controls: Shift + R. Edited."

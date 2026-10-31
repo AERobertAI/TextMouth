@@ -14,11 +14,46 @@ final class LegacyLibraryModelTests: XCTestCase {
         XCTAssertEqual(BookFolder.maxDepth, 4)
     }
 
-    func testBookmarkStoresNumberAndPosition() {
-        let bookmark = Bookmark(number: 2, chapterIndex: 3, characterOffset: 500, label: "Middle")
-        XCTAssertEqual(bookmark.number, 2)
-        XCTAssertEqual(bookmark.chapterIndex, 3)
-        XCTAssertEqual(bookmark.characterOffset, 500)
+    /// A saved bookmark at a place no bookmark can have (a negative chapter
+    /// or offset, or one too large for an `Int`, as a hand edit of
+    /// library.json can leave) decodes with that number repaired to 0,
+    /// rather than failing its book, and keeps its identity, number, note,
+    /// and date (`Bookmark.init(from:)`, `LenientFields.position`).
+    func testADecodedBookmarkWithAnImpossibleLocationIsRepaired() throws {
+        let id = try XCTUnwrap(UUID(uuidString: "6F1C2A4E-0B7D-4C11-9E55-3A2B1C0D9E8F"))
+        let created = "2026-10-09T14:30:00Z"
+        // Read as library.json is read: its dates are ISO 8601.
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        /// The bookmark saved with `chapterIndex` and `characterOffset`, each
+        /// written into the JSON as given.
+        func decoded(chapterIndex: String, characterOffset: String) throws -> Bookmark {
+            let json = """
+                {"id": "\(id.uuidString)", "number": 7, "chapterIndex": \(chapterIndex), \
+                "characterOffset": \(characterOffset), "label": "Margin note", "dateCreated": "\(created)"}
+                """
+            return try decoder.decode(Bookmark.self, from: Data(json.utf8))
+        }
+
+        let negativeOffset = try decoded(chapterIndex: "3", characterOffset: "-5")
+        XCTAssertEqual(negativeOffset.chapterIndex, 3)
+        XCTAssertEqual(negativeOffset.characterOffset, 0)
+
+        let negativeChapter = try decoded(chapterIndex: "-1", characterOffset: "500")
+        XCTAssertEqual(negativeChapter.chapterIndex, 0)
+        XCTAssertEqual(negativeChapter.characterOffset, 500)
+
+        let tooLarge = try decoded(chapterIndex: "2", characterOffset: "99999999999999999999")
+        XCTAssertEqual(tooLarge.chapterIndex, 2)
+        XCTAssertEqual(tooLarge.characterOffset, 0)
+
+        let date = try XCTUnwrap(ISO8601DateFormatter().date(from: created))
+        for bookmark in [negativeOffset, negativeChapter, tooLarge] {
+            XCTAssertEqual(bookmark.id, id)
+            XCTAssertEqual(bookmark.number, 7)
+            XCTAssertEqual(bookmark.label, "Margin note")
+            XCTAssertEqual(bookmark.dateCreated, date)
+        }
     }
 
     func testTimeBasedSkipUnitsCalculateWordCounts() {

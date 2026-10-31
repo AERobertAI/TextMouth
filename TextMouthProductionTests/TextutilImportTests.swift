@@ -489,12 +489,15 @@ final class TextutilImportTests: XCTestCase {
     /// for, within a second or two: the import ends as a cancelled import
     /// does (`ImportCancelled`, no failure), nothing is left in the library
     /// or the staging folder, no child runs, and a conversion made outside
-    /// an import afterwards is not stopped.
+    /// an import afterwards is not stopped. The child is counted as launched
+    /// (`WatchedProcess.launchCount`), the count by which the next test
+    /// sees that a cancelled import started none.
     func testCancellingTheQueueStopsARunningTextutilAndLeavesNothing() throws {
         let copy = try copyOfFormatSample("rtf/headings.rtf")
         let recorder = TextutilToolRecorder()
         let queue = SerialImportQueue()
         let childrenBefore = WatchedProcess.runningChildCount
+        let launchesBefore = WatchedProcess.launchCount
 
         try assertLeavesNoTextutilFiles {
             let ended = queueImport(of: copy, on: queue, using: recorder.hangingTool())
@@ -503,6 +506,7 @@ final class TextutilImportTests: XCTestCase {
                 Thread.sleep(forTimeInterval: 0.02)
             }
             XCTAssertGreaterThan(WatchedProcess.runningChildCount, childrenBefore, "The child never started")
+            XCTAssertGreaterThan(WatchedProcess.launchCount, launchesBefore, "the running child was not counted as launched")
 
             let cancelledAt = Date()
             queue.cancelEnqueued()
@@ -522,12 +526,16 @@ final class TextutilImportTests: XCTestCase {
     }
 
     /// An import cancelled while it waits behind another never starts its
-    /// child: it ends cancelled as soon as its turn comes.
+    /// child: it ends cancelled as soon as its turn comes. No child is
+    /// launched at all (`WatchedProcess.launchCount`): the count of children
+    /// running, and the files left, are the same after a child started and
+    /// killed at once.
     func testAnImportCancelledWhileItWaitsStartsNoChild() throws {
         let copy = try copyOfFormatSample("rtf/headings.rtf")
         let recorder = TextutilToolRecorder()
         let queue = SerialImportQueue()
         let childrenBefore = WatchedProcess.runningChildCount
+        let launchesBefore = WatchedProcess.launchCount
 
         // A first import holds the queue until the test lets it go.
         let gate = DispatchSemaphore(value: 0)
@@ -543,6 +551,7 @@ final class TextutilImportTests: XCTestCase {
 
         XCTAssertTrue(thrown.value is ImportCancelled, "\(String(describing: thrown.value))")
         XCTAssertEqual(WatchedProcess.runningChildCount, childrenBefore)
+        XCTAssertEqual(WatchedProcess.launchCount, launchesBefore, "a cancelled import started textutil")
         XCTAssertEqual(try folderEntries(), [])
     }
 

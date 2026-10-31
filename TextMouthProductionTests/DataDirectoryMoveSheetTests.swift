@@ -59,6 +59,7 @@ final class DataDirectoryMoveSheetTests: XCTestCase {
     /// Cancel is labelled and hinted, and pressing it through accessibility
     /// cancels the move.
     func testTheCancelButtonIsLabelledAndCancelsTheMove() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let move = makeMove(copiedPercent: 40)
 
         try withHostedControls(DataDirectoryMoveSheet(move: move)) { controls in
@@ -99,6 +100,7 @@ final class DataDirectoryMoveSheetTests: XCTestCase {
     /// Once the copy is complete, Cancel is unavailable, which VoiceOver
     /// says, as the move can only finish.
     func testCancelIsUnavailableOnceTheCopyIsComplete() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let move = makeMove(copiedPercent: 40)
         move.receive(DataDirectoryCopyProgress(copiedBytes: 100, totalBytes: 100, copiedItems: 4, totalItems: 4))
 

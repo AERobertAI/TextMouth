@@ -8,11 +8,13 @@ import XCTest
 ///
 /// Safety: a move that went through would record the new data directory in
 /// the preferences, which every test in the process shares (they are the
-/// sandbox's, never the user's; see `TextMouthRuntime`). Every move here is
-/// refused before anything is copied, at least twice over, and the
-/// preferences are put back as each test found them regardless. Reset to
-/// Default is never driven; its wording is checked through the shared
-/// outcome rule.
+/// sandbox's, never the user's; see `TextMouthRuntime`). Every move here but
+/// one is refused before anything is copied, at least twice over, and the
+/// preferences are put back as each test found them regardless. The one
+/// that goes through, a Reset to Default, moves the sandbox's own data
+/// directory to a folder of the test's own and back to the default
+/// location, which in this process is inside the sandbox; the data
+/// directory, its setting, and config.json are put back when it ends.
 @MainActor
 final class StorageOperationOutcomeTests: XCTestCase {
     // MARK: - Refused While the Index Is Unreadable
@@ -59,6 +61,35 @@ final class StorageOperationOutcomeTests: XCTestCase {
         XCTAssertEqual(TextMouthPaths.root, rootBefore)
     }
 
+    /// Reset to Default while the library index cannot be read is refused
+    /// by the guard it shares with Change Location
+    /// (`ensureLibraryIndexIsReadable`), word for word, before anything is
+    /// moved or rebuilt: recovery goes on, the damaged index and the data
+    /// directory stay as they were, and no alert is raised in the Library
+    /// window behind Settings.
+    func testResetToDefaultWhileTheIndexIsUnreadableReturnsTheRefusal() async throws {
+        protectDataDirectoryPreferences()
+        let sandbox = try captureIndexSandbox()
+        let damagedBytes = try sandbox.stage(.truncated, at: sandbox.indexURL)
+        let model = LibraryViewModel(initializeServices: false)
+        model.loadLibraryIndex()
+        let rootBefore = TextMouthPaths.root
+
+        let outcome = await model.rebuildToDefaultReturningOutcome()
+
+        XCTAssertEqual(
+            outcome,
+            .failure(
+                "Failed to rebuild to default: The library index can't be read. "
+                    + "Choose Try Again or Rebuild Library Index in the Library window first."
+            )
+        )
+        XCTAssertFalse(model.showError, "the status line reports it, not an alert behind Settings")
+        XCTAssertNotNil(model.indexRecovery, "recovery ended")
+        XCTAssertEqual(TextMouthPaths.root, rootBefore)
+        XCTAssertEqual(try Data(contentsOf: sandbox.indexURL), damagedBytes)
+    }
+
     // MARK: - Blocked Move
 
     /// A move into a folder that already holds files is blocked: the outcome
@@ -90,6 +121,51 @@ final class StorageOperationOutcomeTests: XCTestCase {
 
         XCTAssertTrue(model.showError)
         XCTAssertEqual(model.errorMessage, expected)
+    }
+
+    // MARK: - Reset to Default
+
+    /// Reset to Default, run once the library has moved elsewhere, moves it
+    /// back to the default location, which in this process is inside the
+    /// test sandbox. It says where the data is now, word for word; the data
+    /// directory in use is the default location again, with the book and
+    /// the library index there; and neither config.json nor the preferences
+    /// name a location any more.
+    func testResetToDefaultMovesTheLibraryBackToTheDefaultLocation() async throws {
+        let world = try makeIntegrationWorld("Reset To Default")
+        let model = world.library
+        let source = try makeSandboxDirectory("ResetSource").appendingPathComponent("Quay Ledger.txt")
+        try Data("Quay Ledger\n\nThe pilot boat leaves the quay at the turn of the tide.\n".utf8).write(to: source)
+        let book = try world.importBook(from: source)
+        let defaultRoot = TextMouthPaths.defaultRoot
+        guard defaultRoot.path.hasPrefix(HostedTestSandbox.home.path + "/") else {
+            return XCTFail("The default location is outside the test sandbox: \(defaultRoot.path)")
+        }
+        let elsewhere = try makeDataDirectoryMoveDestination("ResetToDefault")
+        let moved = await model.moveDataDirectoryReturningOutcome(to: elsewhere)
+        guard moved.succeeded, TextMouthPaths.root.path == elsewhere.path else {
+            return XCTFail("The library did not move away from the default location: \(moved)")
+        }
+        try setDefaultLocationAside(defaultRoot)
+        // After a move the app's config.json names the new location. This
+        // process keeps its data directory in its sandbox and writes none
+        // there (`AppConfig.currentDataDirectoryPath`), so it is named here.
+        ConfigService.shared.config.dataDirectoryPath = elsewhere.path
+        let preferences = TextMouthRuntime.current.preferences
+        XCTAssertEqual(DataDirectoryPreferences.customPath.read(from: preferences), elsewhere.path)
+
+        let outcome = await model.rebuildToDefaultReturningOutcome()
+
+        XCTAssertEqual(outcome, .success("Done. Data is now at \(defaultRoot.path)."))
+        XCTAssertEqual(TextMouthPaths.root.path, defaultRoot.path, "the data directory in use is not the default location")
+        let returned = try XCTUnwrap(model.bookByID(book.id), "the book left the library")
+        XCTAssertTrue(returned.filePath.hasPrefix(defaultRoot.path + "/"), returned.filePath)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: returned.filePath), "the book's file is not there")
+        LibraryPersistenceService.flushPendingSave()
+        let index = try XCTUnwrap(LibraryPersistenceService.load().library, "the library index there can't be read")
+        XCTAssertEqual(index.books.first { $0.id == book.id }?.filePath, returned.filePath, "the index does not list the book there")
+        XCTAssertEqual(ConfigService.shared.config.dataDirectoryPath, "", "config.json still names a location")
+        XCTAssertNil(DataDirectoryPreferences.customPath.read(from: preferences), "the preferences still name a location")
     }
 
     // MARK: - Status Line
@@ -346,6 +422,29 @@ final class StorageOperationOutcomeTests: XCTestCase {
                 config.config.dataDirectoryPath = savedConfigPath
                 config.saveToDisk()
             }
+        }
+    }
+
+    /// Moves the folder at the default location, `defaultRoot`, aside into a
+    /// scratch folder of the test's own, so Reset to Default finds the
+    /// default location empty, as it is once the folder a library moved
+    /// away from is deleted. The data directory in use is never set aside.
+    ///
+    /// When the test ends, before the data directory is put back where it
+    /// was, the folder returns, unless the reset published its copy there:
+    /// then the copy, which holds the same library, stays, and the folder
+    /// set aside goes with its scratch folder. Either way nothing is
+    /// removed from the default location while it is the data directory.
+    private func setDefaultLocationAside(_ defaultRoot: URL) throws {
+        guard TextMouthPaths.root.path != defaultRoot.path else {
+            return XCTFail("The default location is the data directory in use; it is never set aside")
+        }
+        let aside = try makeSandboxDirectory("DefaultLocationAside").appendingPathComponent("Default", isDirectory: true)
+        try FileManager.default.moveItem(at: defaultRoot, to: aside)
+        // Registered after the scratch folder's removal, so it runs first.
+        addTeardownBlock {
+            guard !FileManager.default.fileExists(atPath: defaultRoot.path) else { return }
+            try? FileManager.default.moveItem(at: aside, to: defaultRoot)
         }
     }
 

@@ -18,6 +18,7 @@ final class BookInfoSheetTests: XCTestCase {
     /// Among the sheet's buttons are one Cancel and the Save button, and no
     /// Close.
     func testTheSheetOffersOneWayToCloseWithoutSaving() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
         let metadata = EPUBMetadata(
             title: "Ferry Timetable", author: "Harbour Board", publisher: "", publicationDate: "",
             isbn: "", language: "en", identifier: "", epubVersion: "3.0"
