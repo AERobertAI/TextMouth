@@ -610,6 +610,45 @@ final class TranscriptExportTests: XCTestCase {
         )
     }
 
+    /// The dialog draws a picker beside Transcript only while it is checked:
+    /// on JSON and Markdown at first, listing the three choices, and showing
+    /// the format chosen.
+    func testTheDialogDrawsTheTranscriptsPickerWhileItIsChecked() throws {
+        let world = try makeIntegrationWorld("Transcript Export Drawn")
+        let book = try makeTranscribedBook(in: world)
+        let model = BookExportModel(books: [book], destination: try makeSandboxDirectory("Transcript Export Drawn Folder"))
+
+        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 2 }) { hostingView in
+            XCTAssertEqual(
+                checkboxes(in: hostingView).count,
+                2,
+                "Audio and Transcript; the dialog is \(model.phase), listing \(model.choices.map(\.kind))"
+            )
+            XCTAssertFalse(model.isChecked(.transcript))
+            XCTAssertEqual(popUps(in: hostingView).count, 0, "Transcript is unchecked: no picker")
+
+            model.setChecked(true, for: .transcript)
+            XCTAssertTrue(waitUntil(timeout: 5) {
+                hostingView.layoutSubtreeIfNeeded()
+                return self.popUps(in: hostingView).count == 1
+            }, "checking the transcript draws its picker")
+            XCTAssertEqual(popUps(in: hostingView).first?.titleOfSelectedItem, "JSON and Markdown")
+            XCTAssertEqual(popUps(in: hostingView).first?.itemTitles, ["JSON and Markdown", "WebVTT", "SubRip"])
+
+            model.setConversionID("transcript-srt", for: .transcript)
+            XCTAssertTrue(waitUntil(timeout: 5) {
+                hostingView.layoutSubtreeIfNeeded()
+                return self.popUps(in: hostingView).first?.titleOfSelectedItem == "SubRip"
+            }, "the picker shows the format chosen")
+
+            model.setChecked(false, for: .transcript)
+            XCTAssertTrue(waitUntil(timeout: 5) {
+                hostingView.layoutSubtreeIfNeeded()
+                return self.popUps(in: hostingView).isEmpty
+            }, "unchecking the transcript takes its picker away")
+        }
+    }
+
     // MARK: - Support
 
     /// What is heard in the two tracks of "Harbour Captions": two sentences
@@ -691,5 +730,16 @@ final class TranscriptExportTests: XCTestCase {
             ],
             fileInCloud: inCloud ? transcript : nil
         )
+    }
+
+    /// The checkboxes SwiftUI drew inside `view`: the untitled AppKit
+    /// buttons, leaving out the pickers' pop-up buttons.
+    private func checkboxes(in view: NSView) -> [NSButton] {
+        descendants(of: view, as: NSButton.self).filter { !($0 is NSPopUpButton) && $0.title.isEmpty }
+    }
+
+    /// The pop-up buttons SwiftUI drew inside `view`: the Convert to pickers.
+    private func popUps(in view: NSView) -> [NSPopUpButton] {
+        descendants(of: view, as: NSPopUpButton.self)
     }
 }
