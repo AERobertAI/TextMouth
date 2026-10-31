@@ -1869,6 +1869,36 @@ extension ReaderViewModel {
             }
         }
 
+        /// Where the chapter at `chapterIndex` stops playing, on the time
+        /// line the audio service reports, or nil when it plays to its
+        /// file's own end: in one file of chapters, every chapter but the
+        /// last ends where the next one starts, so playback finishes it
+        /// there and moves on, as a chapter of its own file simply ends; the
+        /// last chapter, and every chapter of every other layout, ends with
+        /// its file.
+        ///
+        /// The last chapter ends with the file because a chapter's length is
+        /// its duration in whole tenths of a second, the fraction dropped
+        /// (`AudioBookParser.placeholderLength(for:)`), so the chapters'
+        /// summed lengths fall short of the file by up to a tenth of a second
+        /// per chapter (about 1.4 seconds in 30 chapters, 5 in 100). Between
+        /// chapters that loses nothing: a chapter ends exactly where the next
+        /// one is taken to start. A clip end at the last chapter's summed
+        /// end, though, finished the book that far before its file did, with
+        /// its last seconds unplayed, while the file's own end finishes it
+        /// the same way (`AudioPlaybackService.onPlaybackFinished`) once
+        /// everything has played.
+        func clipEnd(ofChapter chapterIndex: Int, chapterUTF16Lengths: [Int]) -> TimeInterval? {
+            switch self {
+            case .multiFile, .segmented, .singleFile:
+                return nil
+            case .chaptersInOneFile:
+                let nextChapterIndex = chapterIndex + 1
+                guard chapterIndex >= 0, nextChapterIndex < chapterUTF16Lengths.count else { return nil }
+                return chapterStartTime(chapterIndex: nextChapterIndex, chapterUTF16Lengths: chapterUTF16Lengths)
+            }
+        }
+
         /// The chapter-relative character offset of `playerTime`, a time on
         /// the line the audio service reports, for a chapter starting at
         /// `chapterStartTime` on it.
@@ -1918,13 +1948,14 @@ extension ReaderViewModel {
     /// preceding chapter placeholder lengths converted from chars to
     /// seconds.
     func chapterStartTime(_ chapterIndex: Int) -> TimeInterval {
-        guard let content = content,
-              chapterIndex >= 0,
-              chapterIndex < content.chapters.count else { return 0 }
-        return audioLayout.chapterStartTime(
-            chapterIndex: chapterIndex,
-            chapterUTF16Lengths: content.chapters.map { $0.text.utf16Length }
-        )
+        audioLayout.chapterStartTime(chapterIndex: chapterIndex, chapterUTF16Lengths: chapterUTF16Lengths)
+    }
+
+    /// Each chapter's length in UTF-16 units, in order, which for an
+    /// audiobook stand for its chapters' durations
+    /// (`audioCharsPerSecond`); empty with no content loaded.
+    private var chapterUTF16Lengths: [Int] {
+        content?.chapters.map { $0.text.utf16Length } ?? []
     }
 
     /// The clips segmented chapter `chapterIndex` plays, as the audio
@@ -2085,7 +2116,7 @@ extension ReaderViewModel {
             return
         }
         // Audio that cannot be played claims no Playing state.
-        guard startCurrentChapterAudio(in: content) else { return }
+        guard startCurrentChapterAudio() else { return }
         // The chapter starts at the volume its place calls for: full, or
         // already fading toward the end where this reader's sleep timer
         // stops playback (TODO P01).
@@ -2112,7 +2143,7 @@ extension ReaderViewModel {
     ///   refused before playing, after its failure handler has already
     ///   stopped the reader and told the listener, and an item that has
     ///   already failed is reported through the same handler.
-    private func startCurrentChapterAudio(in content: DocumentContent) -> Bool {
+    private func startCurrentChapterAudio() -> Bool {
         let audioURL: URL
         switch chapterAudioSource(forChapterAt: currentChapterIndex) {
         case .clips(let chain):
@@ -2146,22 +2177,16 @@ extension ReaderViewModel {
         // and never auto-advance currentChapterIndex via the
         // playback-finished path. (The position observer also
         // advances it, so this is a defense-in-depth — the clip-end
-        // callback is the canonical "chapter done" signal.)
-        switch audioLayout {
-        case .chaptersInOneFile:
-            // Clip end = this chapter's absolute end time.
-            let chapterChars = content.chapters[currentChapterIndex].text.utf16Length
-            let clipEnd = chapterStartTime(currentChapterIndex)
-                + Double(chapterChars) / Self.audioCharsPerSecond
-            audioPlaybackService.setClipEndTime(clipEnd)
-        case .multiFile, .segmented, .singleFile:
-            // No clip end — the file's natural end IS the chapter's end
-            // (or the whole book's end). Clear any clip end inherited
-            // from a previous load() call so it doesn't stale-trigger. A
-            // segmented book reaches here only for a chapter without a
-            // segment, which plays its file whole.
-            audioPlaybackService.setClipEndTime(nil)
-        }
+        // callback is the canonical "chapter done" signal.) The m4b's
+        // last chapter, and every chapter of every other layout, has no
+        // clip end: the file's natural end is the chapter's end, or the
+        // whole book's (`AudioLayout.clipEnd(ofChapter:chapterUTF16Lengths:)`).
+        // Nil also clears any clip end inherited from a previous load()
+        // call so it doesn't stale-trigger. A segmented book reaches here
+        // only for a chapter without a segment, which plays its file whole.
+        audioPlaybackService.setClipEndTime(
+            audioLayout.clipEnd(ofChapter: currentChapterIndex, chapterUTF16Lengths: chapterUTF16Lengths)
+        )
 
         // Play refuses an item it finds has already failed, and reports it
         // through the same failure handler.
