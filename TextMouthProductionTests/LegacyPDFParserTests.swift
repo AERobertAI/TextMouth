@@ -156,6 +156,98 @@ final class LegacyPDFParserTests: XCTestCase {
         XCTAssertEqual(try PDFTextParser.extractMarkdown(from: fixture("test_with_outline.pdf")), Self.outlinedMarkdown)
     }
 
+    // MARK: - Outline Order and Depth
+
+    /// The outline's entries come in document order with their depths as
+    /// levels, however they nest: each entry before those nested in it,
+    /// which come before its next sibling. An entry without a label or a
+    /// destination is left out, and the entries nested in it are still read.
+    func testOutlineEntriesKeepTheirOrderAndLevelsHoweverTheyNest() {
+        let document = PDFDocument()
+        let firstPage = PDFPage()
+        let secondPage = PDFPage()
+        document.insert(firstPage, at: 0)
+        document.insert(secondPage, at: 1)
+        let root = PDFOutline()
+        let partOne = Self.outlineEntry("Part One", on: firstPage, under: root)
+        let chapterOne = Self.outlineEntry("Chapter One", on: firstPage, under: partOne)
+        Self.outlineEntry("Section 1.1", on: secondPage, under: chapterOne)
+        let unlabelled = Self.outlineEntry("   ", on: secondPage, under: partOne)
+        Self.outlineEntry("Section 2.1", on: secondPage, under: unlabelled)
+        let unplaced = Self.outlineEntry("No destination", on: nil, under: root)
+        Self.outlineEntry("Appendix", on: secondPage, under: unplaced)
+        Self.outlineEntry("Part Two", on: secondPage, under: root)
+        document.outlineRoot = root
+
+        XCTAssertEqual(Self.describe(PDFTextParser.extractOutline(from: document)), [
+            "0 Part One p0", "1 Chapter One p0", "2 Section 1.1 p1", "2 Section 2.1 p1", "1 Appendix p1", "0 Part Two p1"
+        ])
+    }
+
+    /// An outline nesting 5,000 entries, each the only child of the one
+    /// before, is read on a worker thread's 512 KiB stack, where an import
+    /// reads it, giving every entry in order at its depth. The walk once
+    /// called itself for every level, which overflowed that stack and ended
+    /// TextMouth. Only the test holds the document, so it is released on the
+    /// test's own thread, never on the small stack.
+    func testOutlineNestedThousandsDeepIsReadOnAWorkerStack() {
+        let depth = 5_000
+        let document = Self.documentWithNestedOutline(depth: depth)
+        let lent = LentPDFDocument(document)
+
+        let entries = onWorkerSizedStack {
+            autoreleasepool {
+                lent.document.map { LegacyPDFParserTests.describe(PDFTextParser.extractOutline(from: $0)) } ?? []
+            }
+        }
+
+        XCTAssertEqual(entries?.count, depth)
+        XCTAssertTrue(
+            entries == (0..<depth).map { "\($0) Level \($0) p0" },
+            "the entries are not Level 0 to Level \(depth - 1), in order, each at its depth"
+        )
+        withExtendedLifetime(document) {}
+    }
+
+    /// Each outline entry as "level title p<page index>".
+    private static func describe(_ entries: [PDFTextParser.OutlineEntry]) -> [String] {
+        entries.map { "\($0.level) \($0.title) p\($0.pageIndex)" }
+    }
+
+    /// A new outline entry labelled `label`, naming the top of `page`, or
+    /// nothing when it is nil, added after the other children of `parent`.
+    @discardableResult
+    private static func outlineEntry(_ label: String, on page: PDFPage?, under parent: PDFOutline) -> PDFOutline {
+        let entry = PDFOutline()
+        entry.label = label
+        if let page {
+            entry.destination = PDFDestination(page: page, at: .zero)
+        }
+        parent.insertChild(entry, at: parent.numberOfChildren)
+        return entry
+    }
+
+    /// An outline root holding `depth` entries, each the only child of the
+    /// one before, labelled "Level 0" on down, each naming the top of `page`.
+    private static func nestedOutline(depth: Int, on page: PDFPage) -> PDFOutline {
+        let root = PDFOutline()
+        var parent = root
+        for level in 0..<depth {
+            parent = outlineEntry("Level \(level)", on: page, under: parent)
+        }
+        return root
+    }
+
+    /// A one-page document whose outline nests `depth` entries
+    /// (`nestedOutline(depth:on:)`).
+    private static func documentWithNestedOutline(depth: Int) -> PDFDocument {
+        let document = PDFDocument()
+        let page = PDFPage()
+        document.insert(page, at: 0)
+        document.outlineRoot = nestedOutline(depth: depth, on: page)
+        return document
+    }
+
     /// The Markdown `test_formatted.pdf` has always been read as.
     private static let formattedMarkdown = """
         # The Seasonal Almanac
@@ -274,5 +366,20 @@ final class LegacyPDFParserTests: XCTestCase {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID()).pdf")
         XCTAssertTrue(document.write(to: url))
         return url
+    }
+}
+
+/// A PDF document a test lends to a worker thread without handing it a
+/// reference: the test keeps the only one, so the document is never
+/// released on the worker's small stack, however the threads' endings fall.
+/// `@unchecked Sendable`: the test's thread waits while the worker thread
+/// reads the document, so only one thread uses it at a time.
+private final class LentPDFDocument: @unchecked Sendable {
+    /// The document, while the test holds it.
+    private(set) weak var document: PDFDocument?
+
+    /// Lends `document`, which the caller keeps.
+    init(_ document: PDFDocument) {
+        self.document = document
     }
 }

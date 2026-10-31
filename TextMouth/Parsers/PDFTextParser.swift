@@ -726,27 +726,42 @@ enum PDFTextParser {
         return entries
     }
 
-    /// Recursively traverse the PDF outline tree
+    /// Append the entries below `outline`, whose own depth is `depth` (the
+    /// root's is -1), to `entries` in document order: each labelled entry
+    /// with a destination, at its depth.
+    ///
+    /// The walk keeps its own stack of the entries still to visit, each with
+    /// its depth, rather than calling itself for every level: PDFKit serves
+    /// an outline of any depth, and imports run on a worker thread's 512 KiB
+    /// stack, which such a call chain overflowed. Children are pushed last
+    /// first, so they are visited in document order.
     private static func traverseOutline(
         _ outline: PDFOutline,
         depth: Int,
         document: PDFDocument,
         entries: inout [OutlineEntry]
     ) {
-        for i in 0..<outline.numberOfChildren {
-            guard let child = outline.child(at: i) else { continue }
+        /// The entries directly below `parent`, last first, each with
+        /// `depth`, the depth they are at.
+        func pending(under parent: PDFOutline, depth: Int) -> [(outline: PDFOutline, depth: Int)] {
+            (0..<parent.numberOfChildren).reversed().compactMap { index in
+                parent.child(at: index).map { ($0, depth) }
+            }
+        }
+        var stack = pending(under: outline, depth: depth + 1)
+        while let (child, childDepth) = stack.popLast() {
             let label = child.label?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
             if !label.isEmpty, let page = child.destination?.page {
                 let pageIndex = document.index(for: page)
                 entries.append(OutlineEntry(
                     title: label,
-                    level: max(0, depth + 1),
+                    level: max(0, childDepth),
                     pageIndex: pageIndex
                 ))
             }
 
-            traverseOutline(child, depth: depth + 1, document: document, entries: &entries)
+            stack += pending(under: child, depth: childDepth + 1)
         }
     }
 
