@@ -157,11 +157,14 @@ test("AudioManifest encodes and decodes segments") {
 test("Text-only DAISY does not have audio") {
     let url = try requireFile("hyperion_daisy.zip")
     let archive = try Archive(url: url, accessMode: .read)
+    // The fixture itself holds no audio file, so the app's check below
+    // must find none.
     let hasAudio = archive.contains { entry in
         let ext = (entry.path as NSString).pathExtension.lowercased()
         return ext == "mp3" || ext == "wav" || ext == "aac"
     }
     try assertTrue(!hasAudio, "Hyperion (text-only) should not have audio files")
+    try assertTrue(!DAISYAudioConverter.hasAudio(in: ArchiveFileProvider(archive: archive)), "Hyperion is a text-only DAISY book")
 }
 
 test("DAISY sections compare resolved audio paths, not basenames") {
