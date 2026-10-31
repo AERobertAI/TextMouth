@@ -98,12 +98,12 @@ extension Book {
     /// Nil for a book that offers no such choice
     /// (`offersBrailleFileCodeChoice`): a PEF, whose rows are always Unicode
     /// braille patterns, a feed's item, and every book of another format.
-    /// Speak Info says it, in the words Book Information's pop-up lists the
-    /// code by (`BrailleFileCodeChoiceModel.Item.name`), so the two never
-    /// differ.
+    /// Speak Info says it in the words Book Information's pop-up lists the
+    /// code by, both from `BrailleFileCodeWording.name(ofStored:)`, so the
+    /// two never differ.
     var brailleFileCodeDescription: String? {
         guard offersBrailleFileCodeChoice else { return nil }
-        return BrailleFileCodeChoiceModel.Item(stored: brailleFileCode).name
+        return BrailleFileCodeWording.name(ofStored: brailleFileCode)
     }
 }
 
@@ -142,6 +142,18 @@ enum BrailleFileCodeWording {
     /// TextMouth can't read".
     static func unknownValue(_ id: String) -> String {
         "“\(id)”, which this version of TextMouth can't read"
+    }
+
+    /// The braille file characters a book's stored code
+    /// (`Book.brailleFileCode`) names, in words: the code's own name for a
+    /// known id, plainly, since nothing is guessed; North American Braille
+    /// ASCII's for none (nil or empty); and `unknownValue(_:)` for an id this
+    /// TextMouth does not know. The one place a stored code becomes words:
+    /// Book Information's pop-up lists its items by it
+    /// (`BrailleFileCodeChoiceModel.Item.name`), and Speak Info says the
+    /// book's (`Book.brailleFileCodeDescription`), so the two never differ.
+    static func name(ofStored stored: String?) -> String {
+        BrailleFileCode.code(forStored: stored)?.name ?? unknownValue(stored ?? "")
     }
 
     /// Speak Info's sentence for braille file characters described as

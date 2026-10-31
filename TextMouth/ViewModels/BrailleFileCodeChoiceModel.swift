@@ -42,14 +42,14 @@ final class BrailleFileCodeChoiceModel: ObservableObject, BookRereadChoosing {
         /// "Unicode braille patterns", which an import picks by the file's
         /// bytes, alike); an unknown id as
         /// `BrailleFileCodeWording.unknownValue(_:)` says it. The pop-up
-        /// lists the item by them, and Speak Info says the book's
-        /// (`Book.brailleFileCodeDescription`), so the two never differ.
+        /// lists the item by them, and Speak Info says the book's in the
+        /// same words, both from `BrailleFileCodeWording.name(ofStored:)`.
         var name: String {
             switch self {
             case .code(let code):
-                return code.name
+                return BrailleFileCodeWording.name(ofStored: code.id)
             case .unknown(let id):
-                return BrailleFileCodeWording.unknownValue(id)
+                return BrailleFileCodeWording.name(ofStored: id)
             }
         }
     }
