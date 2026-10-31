@@ -250,11 +250,12 @@ final class BrailleFileReaderTests: XCTestCase {
         XCTAssertEqual(control?.errorDescription,
                        "Line 1 holds the control character U+0007, which is not braille ASCII.")
 
-        // A lone Latin-1 é is no valid UTF-8: eight-bit computer braille.
+        // A lone Latin-1 é is no valid UTF-8: maybe eight-bit computer
+        // braille, named with its line and byte, so a stray one can be found.
         let byte = refusal(of: [0x41, 0x0A, 0x41, 0xE9])
-        XCTAssertEqual(byte, .eightBitBraille)
+        XCTAssertEqual(byte, .eightBitBraille(byte: 0xE9, line: 2))
         XCTAssertEqual(byte?.errorDescription,
-                       "This file looks like eight-bit computer braille, which TextMouth does not read.")
+                       "Line 2 holds the byte 0xE9. This file may be eight-bit computer braille, which TextMouth does not read.")
 
         // A control character past four digits keeps them all, and the DEL
         // character is a control character too.
@@ -264,7 +265,7 @@ final class BrailleFileReaderTests: XCTestCase {
                        "Line 1 holds the control character U+0085, which is not braille ASCII.")
         // A UTF-8 sequence cut short at the end of the file is a byte that
         // begins no character: eight-bit computer braille too.
-        XCTAssertEqual(refusal(of: [0x41, 0xC3]), .eightBitBraille)
+        XCTAssertEqual(refusal(of: [0x41, 0xC3]), .eightBitBraille(byte: 0xC3, line: 1))
     }
 
     /// White space, format characters, and combining marks are named by
@@ -557,8 +558,10 @@ final class BrailleFileReaderTests: XCTestCase {
         XCTAssertEqual(BrailleFileError.notInFileCode(.character("é"), line: 3, characters: "Eurobraille")
                         .errorDescription,
                        "Line 3 holds “é”, which is not Eurobraille.")
-        XCTAssertEqual(BrailleFileError.eightBitBraille.errorDescription,
-                       "This file looks like eight-bit computer braille, which TextMouth does not read.")
+        XCTAssertEqual(BrailleFileError.eightBitBraille(byte: 0xE9, line: 12).errorDescription,
+                       "Line 12 holds the byte 0xE9. This file may be eight-bit computer braille, which TextMouth does not read.")
+        XCTAssertEqual(BrailleFileError.utf16Text.errorDescription,
+                       "This file is in UTF-16, which TextMouth does not read as braille. Save it in UTF-8 to read it.")
         XCTAssertEqual(BrailleFileError.unknownFileCode("x-code").errorDescription,
                        "TextMouth has no braille file characters named “x-code”.")
     }
@@ -615,15 +618,26 @@ final class BrailleFileReaderTests: XCTestCase {
         XCTAssertEqual(letter?.errorDescription, "Line 3 holds “é”, which is not Eurobraille.")
     }
 
-    /// A byte above 0x7F that begins no UTF-8 character is eight-bit
-    /// computer braille in either seven-bit code, refused with that sentence.
+    /// A byte above 0x7F that begins no UTF-8 character may be eight-bit
+    /// computer braille in either seven-bit code, refused with that sentence,
+    /// which names the byte and its line (the review of October 30, finding
+    /// 6): "A\nB" then 0xE9 names line 2.
     func testAByteThatBeginsNoUTF8IsEightBitBrailleInASevenBitCode() {
         for code in [BrailleFileCode.northAmerican, .eurobraille] {
-            let refused = refusal(of: [0xE9], in: code)
-            XCTAssertEqual(refused, .eightBitBraille, code.id)
+            let refused = refusal(of: Array("A\nB".utf8) + [0xE9], in: code)
+            XCTAssertEqual(refused, .eightBitBraille(byte: 0xE9, line: 2), code.id)
             XCTAssertEqual(refused?.errorDescription,
-                           "This file looks like eight-bit computer braille, which TextMouth does not read.",
+                           "Line 2 holds the byte 0xE9. This file may be eight-bit computer braille, which TextMouth does not read.",
                            code.id)
+        }
+    }
+
+    /// A file that begins with a UTF-16 byte order mark, either way round, is
+    /// refused as UTF-16 text in every code, never as eight-bit braille.
+    func testAUTF16ByteOrderMarkIsRefusedAsUTF16() {
+        for code in BrailleFileCode.all {
+            XCTAssertEqual(refusal(of: [0xFF, 0xFE, 0x2C, 0x00], in: code), .utf16Text, code.id)
+            XCTAssertEqual(refusal(of: [0xFE, 0xFF, 0x00, 0x2C], in: code), .utf16Text, code.id)
         }
     }
 

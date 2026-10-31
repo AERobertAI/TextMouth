@@ -214,11 +214,17 @@ enum BrailleFileError: LocalizedError, Equatable {
     /// `characters` is what the code's characters are called
     /// (`BrailleFileCode.characterName`), such as "Eurobraille".
     case notInFileCode(Found, line: Int, characters: String)
-    /// A BRF or BRL file read in a seven-bit code holds a byte above 0x7F
-    /// that begins no UTF-8 character: eight-bit computer braille, in a code
-    /// page TextMouth cannot read (BRAILLE-CODES-RESEARCH-2026-10-25.md,
-    /// section 8.5).
-    case eightBitBraille
+    /// A BRF or BRL file read in a seven-bit code holds `byte`, above 0x7F
+    /// and beginning no UTF-8 character, first on `line`, counted from 1:
+    /// the file may be eight-bit computer braille, in a code page TextMouth
+    /// cannot read (BRAILLE-CODES-RESEARCH-2026-10-25.md, section 8.5), or a
+    /// braille ASCII file with one stray byte, which the line and the byte
+    /// let the listener find (the review of October 30, finding 6).
+    case eightBitBraille(byte: UInt8, line: Int)
+    /// A BRF or BRL file that begins with a UTF-16 byte order mark (FF FE or
+    /// FE FF): text in UTF-16, which TextMouth does not read as braille, and
+    /// which would otherwise be refused as eight-bit braille.
+    case utf16Text
     /// A braille book records a braille file code, by the id given, that
     /// this TextMouth does not know, such as a later TextMouth's: the book is
     /// refused by name, never read as another code, which would give wrong
@@ -245,8 +251,11 @@ enum BrailleFileError: LocalizedError, Equatable {
             return Self.sentence(found, line: line, isNot: BrailleFileCode.northAmerican.characterName)
         case let .notInFileCode(found, line, characters):
             return Self.sentence(found, line: line, isNot: characters)
-        case .eightBitBraille:
-            return "This file looks like eight-bit computer braille, which TextMouth does not read."
+        case let .eightBitBraille(byte, line):
+            return "Line \(line) holds \(Self.words(for: .byte(byte))). "
+                + "This file may be eight-bit computer braille, which TextMouth does not read."
+        case .utf16Text:
+            return "This file is in UTF-16, which TextMouth does not read as braille. Save it in UTF-8 to read it."
         case let .unknownFileCode(id):
             return "TextMouth has no braille file characters named “\(id)”."
         case .damagedPEF:
@@ -312,6 +321,10 @@ enum BrailleFileReader {
     static let detectionByteCount = 65_536
     /// The bytes of a UTF-8 byte order mark (U+FEFF).
     private static let utf8ByteOrderMark: [UInt8] = [0xEF, 0xBB, 0xBF]
+    /// The bytes of a UTF-16 byte order mark, big-endian and little-endian
+    /// (a UTF-32 little-endian mark begins with the latter too).
+    private static let utf16BigEndianMark: [UInt8] = [0xFE, 0xFF]
+    private static let utf16LittleEndianMark: [UInt8] = [0xFF, 0xFE]
 
     /// The pages of the braille file at `url`, read as `kind`: a BRF or BRL
     /// in the braille file code `code`, North American Braille ASCII when
@@ -349,8 +362,10 @@ enum BrailleFileReader {
     /// The pages of a BRF or BRL file's `data`, whose cells are written in
     /// the braille file code `code`. A `.pef` kind is read as a PEF, so a
     /// caller cannot misuse this function into a trap.
-    /// - Throws: for the first thing that is neither a cell of `code` nor a
-    ///   line end, form feed, or tab: `BrailleFileError.eightBitBraille` for
+    /// - Throws: `BrailleFileError.utf16Text` for a file that begins with a
+    ///   UTF-16 byte order mark; then, for the first thing that is neither a
+    ///   cell of `code` nor a line end, form feed, or tab:
+    ///   `.eightBitBraille`, with the byte and its line, for
     ///   a seven-bit code's byte above 0x7F that begins no UTF-8 character,
     ///   `.eightDotBraille` for a Unicode braille pattern with dot 7 or 8,
     ///   and otherwise `.notBrailleASCII` (North American Braille ASCII) or
@@ -367,6 +382,12 @@ enum BrailleFileReader {
         // The bytes are scanned where they are, with no copy of them.
         try data.withUnsafeBytes { (raw: UnsafeRawBufferPointer) in
             var bytes = raw.bindMemory(to: UInt8.self)
+            // A UTF-16 byte order mark, either way round, says the file is
+            // UTF-16 text: refused by name, in every code, rather than as
+            // eight-bit braille at its first byte.
+            if bytes.starts(with: utf16BigEndianMark) || bytes.starts(with: utf16LittleEndianMark) {
+                throw BrailleFileError.utf16Text
+            }
             // A UTF-8 byte order mark at the very start is dropped, as
             // TextMouth's text decoder drops it; it is no braille either.
             if bytes.starts(with: utf8ByteOrderMark) { bytes = UnsafeBufferPointer(rebasing: bytes[utf8ByteOrderMark.count...]) }
@@ -520,10 +541,13 @@ enum BrailleFileReader {
         private func refusal(at index: Int, in bytes: UnsafeBufferPointer<UInt8>) -> BrailleFileError {
             let found = Self.found(at: index, in: bytes)
             // A byte above 0x7F that begins no UTF-8 character is no text in
-            // a seven-bit code: the file is eight-bit computer braille, in a
-            // code page TextMouth cannot read. Unicode braille patterns are
-            // UTF-8, so there the byte itself is named.
-            if table != nil, case .byte = found { return .eightBitBraille }
+            // a seven-bit code: the file may be eight-bit computer braille, in
+            // a code page TextMouth cannot read, and the line and the byte say
+            // where. Unicode braille patterns are UTF-8, so there the byte is
+            // named as any other character is.
+            if table != nil, case let .byte(byte) = found {
+                return .eightBitBraille(byte: byte, line: lineNumber)
+            }
             // North American Braille ASCII keeps its own refusal; any other
             // code's refusal names what that code's characters are called.
             guard code != .northAmerican else { return .notBrailleASCII(found, line: lineNumber) }
