@@ -465,6 +465,9 @@ extension ReaderViewModel {
     /// leaves the stopped book stopped; so is the start of a chapter
     /// waiting out the pause before it (`stopWaitingOutChapterPause(because:)`),
     /// which closing the reader, through this stop, cancels too.
+    ///
+    /// This reader's minutes sleep timer's countdown halts until Play, as at
+    /// a pause (`finishStopping(wasActive:wasSleepTimerFading:)`).
     func stop() {
         endWhereAmIAsTheBookStops()
         let wasActive: Bool
@@ -509,10 +512,18 @@ extension ReaderViewModel {
     }
 
     /// Everything stopping does once the playback backend is silent:
-    /// restore full volume, show the stopped state, end a sleep-timer fade,
-    /// close this book's listening session, clear Now Playing, and, when
-    /// something was playing or paused, record the stop and save the
-    /// position.
+    /// restore full volume, show the stopped state, end a sleep-timer fade
+    /// or else halt this reader's minutes timer's countdown until Play, as a
+    /// pause does, close this book's listening session, clear Now Playing,
+    /// and, when something was playing or paused, record the stop and save
+    /// the position.
+    ///
+    /// Every stop comes here: `stop()`, which a chapter's failed download,
+    /// the Ogg refusal, Release Media Controls, Edit Text over a playing
+    /// book, and closing the reader all call, and an audio failure. The
+    /// countdown of a 30-minute timer once ran on through such a stop, so a
+    /// listener who played again 12 minutes later had 18 minutes left, or
+    /// heard the timer expire with nothing playing.
     ///
     /// - Parameters:
     ///   - wasActive: Whether playback was playing or paused before it was
@@ -533,6 +544,13 @@ extension ReaderViewModel {
         // speech that this stop operation would immediately halt again.
         if wasSleepTimerFading {
             sleepTimerService.stop()
+        } else {
+            // A minutes timer keeps the time it has left until Play resumes
+            // its countdown (`play()`), so none is spent while nothing
+            // plays. The service leaves alone a timer another reader owns
+            // and one waiting for the end of a heading or of the book;
+            // closing the reader stops the timer it owns afterwards.
+            sleepTimerService.pauseCountdown(by: readerID)
         }
         readingStatsService.endSession(bookID: book.id)
         // A stopped reader rests wherever it is with no media session, so
@@ -2360,9 +2378,9 @@ extension ReaderViewModel {
 
         // The service has already halted and released its player. A
         // failure only ever comes from a file the reader loaded to play,
-        // so playback was active and its stop is recorded.
+        // so playback was active and its stop is recorded; the sleep
+        // timer's countdown halts with it, as with every stop.
         finishStopping(wasActive: true, wasSleepTimerFading: isOwnSleepTimerFading)
-        sleepTimerService.pauseCountdown(by: readerID)
         // A Where Am I announcement ends with the book, as `stop()` ends it:
         // it has nothing left to resume.
         endWhereAmIAsTheBookStops()
@@ -2400,16 +2418,16 @@ extension ReaderViewModel {
     /// An audiobook stops through the failure path every audio failure
     /// takes (`handleAudioPlaybackFailure(_:)`), its player let go of off
     /// the main thread. Speech, or an audiobook waiting for its chapter with
-    /// no player, stops as Stop stops it, its sleep timer's countdown halted
-    /// as a failure halts it. A reader that is closed, or not playing, is
-    /// left alone.
+    /// no player, stops as Stop stops it. Either way its sleep timer's
+    /// countdown halts until Play, as every stop halts it
+    /// (`finishStopping(wasActive:wasSleepTimerFading:)`). A reader that is
+    /// closed, or not playing, is left alone.
     func stopPlaybackForMemoryRunaway(footprint: UInt64) {
         guard !hasClosed, isPlaybackUnderWay else { return }
         if isAudioBook, audioPlaybackService.stopForMemoryRunaway(footprint: footprint) {
             return
         }
         stop()
-        sleepTimerService.pauseCountdown(by: readerID)
         let message = Self.memoryRunawayMessage(footprint: footprint)
         errorMessage = message
         announceToVoiceOver(message)
