@@ -638,6 +638,12 @@ enum LibraryPersistenceService {
     /// between the latest state and the record
     /// (`BrailleFileCodeRecord.standing(row:recorded:)`).
     ///
+    /// The book returned holds what the record now holds of both decisions,
+    /// the encoding and the braille file code, even when the latest state it
+    /// was merged into (a waiting snapshot, a lagging row) held others, so
+    /// the row that takes it catches up (the review of October 30, finding
+    /// 2).
+    ///
     /// A result is dropped, with one CONTENT_ANALYSIS_DROPPED line in the
     /// debug log, when the latest state describes other content than was
     /// analyzed (`contentChange(from:to:)`), or when it would have to be
@@ -701,7 +707,7 @@ enum LibraryPersistenceService {
             if let movedPlaces {
                 merged.takeMovedPlaces(original: movedPlaces.original, moved: movedPlaces.moved)
             }
-            guard try writeMerged(
+            guard let written = try writeMerged(
                 merged,
                 contentIndex: index,
                 state: state,
@@ -710,7 +716,7 @@ enum LibraryPersistenceService {
             ) else { return nil }
             // The record holds the moved places now: the copy is no longer needed.
             movedPlaces?.discardSnapshot()
-            return merged
+            return takingDecisions(of: written, into: merged)
         }
     }
 
@@ -761,9 +767,11 @@ enum LibraryPersistenceService {
             }
             // A waiting snapshot keeps the content index it carries; with
             // none, the package keeps its own (a nil index is not written).
-            guard try writeMerged(merged, contentIndex: state.pendingContentIndex, state: state) else { return nil }
+            guard let written = try writeMerged(merged, contentIndex: state.pendingContentIndex, state: state) else {
+                return nil
+            }
             movedPlaces.discardSnapshot()
-            return merged
+            return takingDecisions(of: written, into: merged)
         }
     }
 
@@ -831,7 +839,8 @@ enum LibraryPersistenceService {
     }
 
     /// Writes `merged`, a merge into `state`, and settles what the write
-    /// replaces; reports whether it was written. A failed write throws here,
+    /// replaces; returns the metadata of the record written, nil when
+    /// nothing was (`writeBookInfo`). A failed write throws here,
     /// leaving any waiting snapshot to its own debounce, so the newer user
     /// state outlives the lost result. `decidingTextEncoding` and
     /// `decidingBrailleFileCode` are passed on to the record
@@ -844,14 +853,14 @@ enum LibraryPersistenceService {
         state: LatestDurableState,
         decidingTextEncoding: Bool = false,
         decidingBrailleFileCode: Bool = false
-    ) throws -> Bool {
-        guard try writeBookInfo(
+    ) throws -> BookMetadata? {
+        guard let written = try writeBookInfo(
             merged,
             contentIndex: contentIndex,
             stored: state.stored,
             decidingTextEncoding: decidingTextEncoding,
             decidingBrailleFileCode: decidingBrailleFileCode
-        ) else { return false }
+        ) else { return nil }
         // The waiting snapshot is on disk now, merged: forget it, so its
         // debounce does not write it a second time.
         cancelQueuedWrites(for: state.book)
@@ -861,7 +870,21 @@ enum LibraryPersistenceService {
         if state.snapshotWaited {
             failureCenter.recordSuccess(.book(state.book.id))
         }
-        return true
+        return written
+    }
+
+    /// `book` with the decisions the record just written holds, its text
+    /// encoding and who decided it, and its braille file code, which a
+    /// merge into a lagging row or a waiting snapshot may not hold: the
+    /// record keeps the one that stands (`Book.bookInfo(replacing:...)`),
+    /// and a book returned to the library must say what was written, so
+    /// a rebuild's summary brings the row up to date (the review of
+    /// October 30, finding 2).
+    private static func takingDecisions(of written: BookMetadata, into book: Book) -> Book {
+        var book = book
+        book.textEncodingRecord = written.textEncodingRecord
+        book.brailleFileCode = written.brailleFileCode
+        return book
     }
 
     /// What changed about the content of `analyzed` by the time its analysis
@@ -941,7 +964,7 @@ enum LibraryPersistenceService {
     /// bookInfoSaveQueue.
     private static func writeQueuedBookInfo(_ book: Book, contentIndex: BookContentIndex?) {
         do {
-            guard try writeBookInfo(book, contentIndex: contentIndex) else { return }
+            guard try writeBookInfo(book, contentIndex: contentIndex) != nil else { return }
             failureCenter.recordSuccess(.book(book.id))
         } catch {
             guard !packageWasMovedOrRemoved(book) else {
@@ -1007,8 +1030,10 @@ enum LibraryPersistenceService {
     }
 
     /// Writes one package's metadata unless Remove from Library Only retired
-    /// the package, or the record is only in the cloud (FR02), and reports
-    /// whether it was written. Debounced saves, the termination flush, and
+    /// the package, or the record is only in the cloud (FR02), and returns
+    /// the metadata of the record written, which holds the decisions that
+    /// stand, or nil when nothing was written. Debounced saves, the
+    /// termination flush, and
     /// analysis results all end here. Each write stores the next revision,
     /// and never one below the highest this process has written for the
     /// book, even when the stored record has lost its own. `stored` is the
@@ -1033,7 +1058,7 @@ enum LibraryPersistenceService {
         stored: StoredBookRecord? = nil,
         decidingTextEncoding: Bool = false,
         decidingBrailleFileCode: Bool = false
-    ) throws -> Bool {
+    ) throws -> BookMetadata? {
         let replaced: StoredBookRecord?
         if let stored {
             replaced = stored
@@ -1045,12 +1070,12 @@ enum LibraryPersistenceService {
                 // book's state at once rather than at a checkpoint's
                 // deadline (PERF15).
                 writePendingIndexSoon()
-                return false
+                return nil
             case .readable(let record):
                 replaced = record
             }
         }
-        guard !isRetired(book) else { return false }
+        guard !isRetired(book) else { return nil }
         let record = book.bookInfo(
             replacing: replaced,
             contentIndex: contentIndex,
@@ -1061,7 +1086,7 @@ enum LibraryPersistenceService {
         try record.saveRecord(to: book.tmbDirectory)
         bookInfoRevisions[book.id] = record.state.revision
         booksWithRecordsInCloud.remove(book.id)
-        return true
+        return record.metadata
     }
 
     // MARK: - Records Only in the Cloud (FR02)
@@ -1225,8 +1250,16 @@ enum LibraryPersistenceService {
                 return PackageRetirement(isPackageMarked: false, recordDeletionError: nil)
             }
             let package = book.tmbDirectory
+            // The marker keeps the braille file code and the text encoding
+            // that stand between the row and the record about to be deleted,
+            // not the row's alone, which may lag behind a re-read or have
+            // lost them to an earlier TextMouth (the review of October 30,
+            // finding 2); both are read without downloading anything.
+            var standing = book
+            standing.brailleFileCode = book.recordedBrailleFileCode()
+            standing.textEncodingRecord = book.recordedTextEncodingRecord()
             do {
-                try RemovedFromLibraryMarker(book: book, removedAt: removedAt).write(into: package)
+                try RemovedFromLibraryMarker(book: standing, removedAt: removedAt).write(into: package)
             } catch {
                 RemovedFromLibraryMarker.log(
                     "stays in the library: could not write the removal marker in \(package.path): \(error)",

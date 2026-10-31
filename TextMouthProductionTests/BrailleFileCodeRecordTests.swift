@@ -445,6 +445,65 @@ final class BrailleFileCodeRecordTests: XCTestCase {
         }
     }
 
+    /// Remove from Library Only writes into the marker the code that stands,
+    /// the record's, not a row's that lags behind it or lost it to an earlier
+    /// TextMouth (review of October 30, finding 2), so the book added back
+    /// is read in it: a row holding none, and one holding North American
+    /// Braille ASCII, over a record holding Eurobraille.
+    func testRemovalKeepsTheCodeThatStandsInTheMarker() throws {
+        for rowCode in [nil, "ascii-na"] as [String?] {
+            let label = String(describing: rowCode)
+            let row = try makePackagedBook(code: rowCode)
+            try book(row, withCode: "ascii-eurobraille").makeBookInfo().save(to: row.tmbDirectory)
+
+            let retirement = try LibraryPersistenceService.retirePackage(of: row)
+            XCTAssertTrue(retirement.isPackageMarked, label)
+            let marker = try RemovedFromLibraryMarker.read(in: row.tmbDirectory)
+            XCTAssertEqual(marker.brailleFileCode, "ascii-eurobraille", label)
+
+            let rebuilt = try FileImportService.reconstructedBook(
+                inPackage: row.tmbDirectory, marker: marker, folderPath: row.folderPath, dateAdded: Self.added
+            )
+            XCTAssertEqual(rebuilt.brailleFileCode, "ascii-eurobraille", label)
+        }
+    }
+
+    /// The marker keeps the text encoding that stands the same way: a text
+    /// book whose row records none, over a record holding a chosen one,
+    /// leaves the record's in its marker (review of October 30, finding 2).
+    func testRemovalKeepsTheTextEncodingThatStandsInTheMarker() throws {
+        let row = try makePackagedBook(code: nil, format: .txt)
+        var recorded = row
+        recorded.textEncodingRecord = TextEncodingRecord(identifier: "koi8-r", source: .chosen)
+        try recorded.makeBookInfo().save(to: row.tmbDirectory)
+
+        XCTAssertTrue(try LibraryPersistenceService.retirePackage(of: row).isPackageMarked)
+        let marker = try RemovedFromLibraryMarker.read(in: row.tmbDirectory)
+        XCTAssertEqual(marker.textEncoding, "koi8-r")
+        XCTAssertEqual(marker.textEncodingSource, .chosen)
+    }
+
+    /// An analysis saved over a reading checkpoint that waits to be written,
+    /// whose row lags behind the record's code, returns the code the record
+    /// holds, not the snapshot's (review of October 30, finding 2), so the
+    /// row that takes the analysis catches up.
+    func testAnAnalysisSavedOverAWaitingSnapshotReturnsTheRecordsCode() throws {
+        let row = try makePackagedBook(code: "ascii-na")
+        try book(row, withCode: "ascii-eurobraille").makeBookInfo().save(to: row.tmbDirectory)
+        // A save of the lagging row waits on the metadata queue.
+        LibraryPersistenceService.saveBookInfo(for: row)
+        let index = BookContentIndex.build(
+            fromChapters: [Chapter(title: "Tide Tables", text: "High water at noon.")], format: .braille
+        )
+
+        let committed = try XCTUnwrap(LibraryPersistenceService.saveContentAnalysis(
+            for: row, index: index, cacheFormatVersion: MarkdownCacheService.currentCacheVersion
+        ))
+
+        XCTAssertEqual(committed.brailleFileCode, "ascii-eurobraille")
+        XCTAssertEqual(try recordedCode(of: row), "ascii-eurobraille")
+    }
+
     // MARK: - A Re-read's Save
 
     /// A re-read's analysis saved with its code writes the code into the
