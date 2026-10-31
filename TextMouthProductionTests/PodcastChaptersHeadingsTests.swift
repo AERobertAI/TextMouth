@@ -362,7 +362,9 @@ final class PodcastChaptersHeadingsTests: XCTestCase {
         try AudioTestFixtures.writeSilence(to: file, duration: 4)
         try sampleChaptersFile().write(to: TextMouthPaths.podcastChaptersPath(in: folder))
         let book = Book(title: "Four Tones", format: .audio, filePath: file.path, md5Hash: UUID().uuidString, folderPath: folderPath)
-        XCTAssertEqual(book.tmbDirectory.path, folder.path)
+        // The chapters lie where the book's package would keep them, so only
+        // the check for a package of its own keeps the analysis from them.
+        XCTAssertTrue(FileManager.default.fileExists(atPath: TextMouthPaths.podcastChaptersPath(in: book.tmbDirectory).path))
 
         let analysis = try BookContentAnalysisService.analyzeAudio(book: book, url: file)
 
