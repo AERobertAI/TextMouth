@@ -83,14 +83,29 @@ final class ViewsAndWindowsReaderSheetTests: XCTestCase {
 
     /// No sheet draws again for a publish of the reader that changes nothing
     /// it shows, as the playback cursor's publishes are within a heading.
+    /// Each sheet is counted once its own opening work is done and SwiftUI
+    /// compares it by its `==`, however long a loaded Mac makes that take.
     func testSheetsDoNotDrawAgainForPublishesThatChangeNothingTheyShow() throws {
         let reader = try makeLoadedReader()
         defer { reader.close() }
-        let sheets: [(String, AnyView)] = [
-            ("HeadingNavigatorView", AnyView(ReaderSheetHost(reader: reader) { HeadingNavigatorView(viewModel: $0) })),
-            ("BookVoicePickerView", AnyView(ReaderSheetHost(reader: reader) { BookVoicePickerView(viewModel: $0) })),
-            ("BookmarkPanelView", AnyView(ReaderSheetHost(reader: reader) { BookmarkPanelView(viewModel: $0) })),
-            ("SleepTimerView", AnyView(ReaderSheetHost(reader: reader) {
+        // The voice sheet draws again when the installed voices are listed,
+        // which happens once for the app: list them before it opens.
+        VoiceCatalog.shared.loadIfNeeded()
+        XCTAssertTrue(waitUntil(timeout: 15) { VoiceCatalog.shared.isLoaded }, "The installed voices were never listed")
+        // Each sheet, with the longest delay of its own opening work: the
+        // current heading's row moves VoiceOver to it after 0.2 seconds;
+        // the voice sheet waits for nothing more; the bookmark panel moves
+        // VoiceOver into itself after 1.2 seconds, and keyboard focus after
+        // 0.15; the sleep timer sheet drops its first focus request after
+        // 2 seconds.
+        let sheets: [(name: String, ownDelay: TimeInterval, view: AnyView)] = [
+            ("HeadingNavigatorView", Self.headingsSheetOwnDelay,
+             AnyView(ReaderSheetHost(reader: reader) { HeadingNavigatorView(viewModel: $0) })),
+            ("BookVoicePickerView", 0,
+             AnyView(ReaderSheetHost(reader: reader) { BookVoicePickerView(viewModel: $0) })),
+            ("BookmarkPanelView", BookmarkPanelView.openingVoiceOverDelay,
+             AnyView(ReaderSheetHost(reader: reader) { BookmarkPanelView(viewModel: $0) })),
+            ("SleepTimerView", Self.sleepTimerSheetOwnDelay, AnyView(ReaderSheetHost(reader: reader) {
                 SleepTimerView(
                     viewModel: $0,
                     sleepTimerService: $0.sleepTimerService,
@@ -100,21 +115,22 @@ final class ViewsAndWindowsReaderSheetTests: XCTestCase {
                 )
             })),
         ]
-        for (name, sheet) in sheets {
+        for (name, ownDelay, sheet) in sheets {
             let hosted = hostOffscreen(sheet, size: NSSize(width: 600, height: 700))
-            settle(hosted.hostingView, seconds: 0.4)
+            let watched = [name, "HeadingNavigatorRow"]
+            readyForCounting(hosted.hostingView, watching: watched, ownDelay: ownDelay, reader: reader)
             XCTAssertGreaterThan(ViewBodyCounter.count(of: name), 0, "\(name) never drew")
 
             let publishes = 20
-            let runs = bodyRuns(of: [name, "HeadingNavigatorRow"], in: hosted.hostingView, publishing: publishes) { _ in
+            let runs = bodyRuns(of: watched, in: hosted.hostingView, publishing: publishes, warmUps: 0) { _ in
                 reader.objectWillChange.send()
             }
 
             // A sheet the reader's publishes redraw draws once for each of
             // them. One draw is allowed for an update that is not one of
-            // them landing meanwhile: the sheet's own, such as the sleep
-            // timer sheet dropping its first focus request two seconds after
-            // it opens, or one of the timer every reader shares.
+            // them landing meanwhile, such as one of the timer every reader
+            // shares, or the sheet's own opening work later than its delay
+            // on a loaded Mac.
             let drawn = runs[name, default: 0]
             XCTAssertLessThanOrEqual(drawn, 1, "\(name) drew \(drawn) times for \(publishes) publishes that changed nothing it shows")
             XCTAssertEqual(runs["HeadingNavigatorRow"], 0, "\(name): heading rows drew again")
@@ -236,6 +252,34 @@ final class ViewsAndWindowsReaderSheetTests: XCTestCase {
         }
 
         XCTAssertGreaterThanOrEqual(runs["BookVoicePickerView", default: 0], 1, "The sheet did not draw the new speed")
+    }
+
+    // MARK: - Readying a Sheet for Counting
+
+    /// How long the headings sheet's own opening work waits: the current
+    /// heading's row asks VoiceOver to move to it 0.2 seconds after it
+    /// draws (`HeadingNavigatorRow`).
+    private static let headingsSheetOwnDelay: TimeInterval = 0.2
+
+    /// How long the sleep timer sheet's own opening work waits: it drops
+    /// its first focus request two seconds after it opens
+    /// (`SleepTimerView`).
+    private static let sleepTimerSheetOwnDelay: TimeInterval = 2
+
+    /// Readies a hosted sheet for counting what the test does to it. First
+    /// the sheet finishes its own opening work, which draws it again
+    /// whatever the reader does, and which waits at most `ownDelay`. Then
+    /// `reader` publishes, uncounted, until SwiftUI compares the sheet the
+    /// parent makes again by the sheet's `==`; until it does, every draw of
+    /// the parent draws the sheet too (`publishUntilNoneDraws` says why).
+    private func readyForCounting(
+        _ view: NSView,
+        watching names: [String],
+        ownDelay: TimeInterval,
+        reader: ReaderViewModel
+    ) {
+        settleUntilQuiet(view, watching: names, longerThan: ownDelay)
+        publishUntilNoneDraws(of: names, in: view) { reader.objectWillChange.send() }
     }
 
     // MARK: - Readers

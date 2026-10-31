@@ -106,6 +106,76 @@ extension XCTestCase {
         }
         return runs
     }
+
+    /// Spins the main run loop, laying `view` out each turn, until none of
+    /// the views in `names` has drawn for longer than `delay` plus `margin`,
+    /// or `timeout` passes; returns whether they went quiet.
+    ///
+    /// For letting views finish their own opening work, which draws them
+    /// again whatever else happens (a keyboard focus request, a VoiceOver
+    /// move, a timer), before counting what something else draws: pass the
+    /// longest delay that work waits. The margin allows for a timer that
+    /// fires late on a loaded Mac.
+    @MainActor
+    @discardableResult
+    func settleUntilQuiet(
+        _ view: NSView?,
+        watching names: [String],
+        longerThan delay: TimeInterval,
+        margin: TimeInterval = 0.3,
+        timeout: TimeInterval = 15
+    ) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        var counts = names.map { ViewBodyCounter.count(of: $0) }
+        var lastDraw = Date()
+        while Date() < deadline {
+            settle(view, seconds: 0.02)
+            let latest = names.map { ViewBodyCounter.count(of: $0) }
+            if latest != counts {
+                // A draw: the quiet starts again from here.
+                counts = latest
+                lastDraw = Date()
+            } else if Date().timeIntervalSince(lastDraw) > delay + margin {
+                return true
+            }
+        }
+        return false
+    }
+
+    /// Calls `publish`, each call followed by a flush of `view` and none of
+    /// them counted, until `inARow` calls in a row draw none of the views in
+    /// `names`, or `timeout` passes; returns whether they did. For
+    /// publishes that change nothing those views show, before `bodyRuns`
+    /// counts what such publishes draw.
+    ///
+    /// A parent that draws again makes its child views again, and SwiftUI
+    /// compares each new child with the one it replaces by the child's own
+    /// `==` only once AttributeGraph has worked out how to compare that
+    /// view's type. It works that out off the main thread, from the type's
+    /// first comparison in the process. Until then it compares the two bit
+    /// by bit, finds them different, and draws the child again for every
+    /// publish: for a few milliseconds, or for seconds on a loaded Mac,
+    /// where the three warm-ups of `bodyRuns` were too few (a reader's
+    /// sheets drew 11 and 20 times for 20 publishes on October 30). A view
+    /// that such publishes really draw never has `inARow` quiet publishes
+    /// in a row, so the wait runs out and the count after it fails.
+    @MainActor
+    @discardableResult
+    func publishUntilNoneDraws(
+        of names: [String],
+        in view: NSView?,
+        inARow: Int = 3,
+        timeout: TimeInterval = 15,
+        _ publish: () -> Void
+    ) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        var quietInARow = 0
+        while quietInARow < inARow, Date() < deadline {
+            let runs = bodyRuns(of: names, in: view, publishing: 1, warmUps: 0) { _ in publish() }
+            quietInARow = runs.values.allSatisfy { $0 == 0 } ? quietInARow + 1 : 0
+        }
+        return quietInARow >= inARow
+    }
 }
 
 /// Presents a reader's sheet as ReaderView presents it: a parent that
