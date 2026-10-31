@@ -160,35 +160,6 @@ final class LibraryFolderPickerTests: XCTestCase {
         }
     }
 
-    /// An owner that kept Escape for a button of its own while the fields
-    /// are shown would still have Escape close the fields first: the
-    /// picker's Cancel New Folder comes before the owner's buttons, and the
-    /// first button in view order with a key takes it. Then the owner's
-    /// button takes it. No owner keeps it now: Feed Info's Done, like the
-    /// Cancel of the Move sheet, Add Feed, and Import OPML, gives Escape up
-    /// while the fields are shown (REV13 app 5), which
-    /// `FeedUICommandsTests` tests on Feed Info itself.
-    func testEscapeClosesTheFieldsBeforeAnOwnersOwnEscapeButton() throws {
-        let dones = CallLog<String>()
-        let owner = PickerOwnerKeepingEscape(library: makeLibrary(withFolders: ["Reports"]), onDone: { dones.record("Done") })
-
-        try withHostedView(owner, until: { !self.newFolderNameFields(in: $0).isEmpty }) { hostingView in
-            try typeNewFolderName("Charts", in: hostingView)
-            guard pressKey(.escape, in: hostingView) else {
-                throw XCTSkip("This macOS hands an offscreen window no key equivalents")
-            }
-            XCTAssertTrue(waitUntil {
-                hostingView.layoutSubtreeIfNeeded()
-                return self.newFolderNameFields(in: hostingView).isEmpty
-            }, "Escape left the fields open")
-            XCTAssertEqual(dones.calls, [], "the owner's button took Escape while the fields were shown")
-
-            settleHostedView(hostingView)
-            XCTAssertTrue(pressKey(.escape, in: hostingView), "nothing took the second Escape")
-            XCTAssertEqual(dones.calls, ["Done"])
-        }
-    }
-
     /// What VoiceOver hears as the fields close without a folder made: that
     /// New Folder was cancelled, then the pop-up by its spoken label with
     /// the folder still chosen in it, or the cancel alone when no folder
@@ -355,40 +326,5 @@ final class LibraryFolderPickerTests: XCTestCase {
         var library = Library()
         library.folders = names.map { BookFolder(name: $0) }
         return library
-    }
-}
-
-/// A folder picker with its New Folder fields shown from the start, above a
-/// Done button that keeps Escape while they are shown, as Feed Info's Done
-/// kept it until REV13 app 5.
-private struct PickerOwnerKeepingEscape: View {
-    /// The library whose folders the picker offers.
-    let library: Library
-    /// Done's action.
-    let onDone: () -> Void
-
-    /// The place chosen, the top level at first.
-    @State private var selection = ""
-    /// Why a folder could not be made; none here.
-    @State private var failure: String?
-    /// Whether the picker's fields are shown, which they are at first.
-    @State private var isMakingFolder = true
-
-    var body: some View {
-        VStack {
-            LibraryFolderPicker(
-                options: LibraryFolderOption.options(in: library),
-                newFolderParents: LibraryFolderOption.options(in: library),
-                selection: $selection,
-                caption: "Folder",
-                accessibilityLabel: "Folder",
-                onCreateFolder: { _, _ in .success(nil) },
-                failureMessage: $failure,
-                isMakingFolder: $isMakingFolder
-            )
-            Button("Done", action: onDone)
-                .keyboardShortcut(.cancelAction)
-        }
-        .padding()
     }
 }
