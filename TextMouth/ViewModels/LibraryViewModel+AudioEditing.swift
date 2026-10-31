@@ -276,6 +276,11 @@ extension LibraryViewModel {
                 bookID: book.id
             )
         }
+        if isOneFile {
+            // The podcast's chapters kept beside the file were timed to the
+            // audio before the edit, so the analysis must not take them.
+            dropPodcastChapters(of: book, in: request.package)
+        }
         var analyzed = book
         analyzed.filePath = bookURL.path
         let analysis = try BookContentAnalysisService.analyzeAudio(book: analyzed, url: bookURL)
@@ -286,6 +291,32 @@ extension LibraryViewModel {
             bookFilePath: bookURL.path,
             hash: isOneFile ? try FileImportService.md5Hash(of: bookURL) : nil
         )
+    }
+
+    /// Removes the podcast episode's chapters kept in `package` beside the
+    /// audio of `book`, a book of one file whose audio an edit has just
+    /// replaced (FMT25): they were timed to the audio before the edit, so
+    /// they no longer fit it. A file not there is no error. A file removed
+    /// is said in one `PODCAST_CHAPTERS_DROPPED` line; one that cannot be
+    /// removed, in one `PODCAST_CHAPTERS_LEFT` line, and the save goes on.
+    nonisolated static func dropPodcastChapters(of book: Book, in package: URL) {
+        do {
+            try DatalessFiles.withoutDownloading {
+                try FileManager.default.removeItem(at: TextMouthPaths.podcastChaptersPath(in: package))
+            }
+            DiagnosticLog.event(
+                .storage,
+                "PODCAST_CHAPTERS_DROPPED: \(book.title): the audio was edited, so the podcast's chapters no longer fit it"
+            )
+        } catch where BookCloudStorageService.isMissingItem(error) {
+            return
+        } catch {
+            DiagnosticLog.event(
+                .storage,
+                "PODCAST_CHAPTERS_LEFT: \(book.title): the audio was edited, but the podcast's chapters "
+                    + "could not be removed: \(error.localizedDescription)"
+            )
+        }
     }
 
     // MARK: The Book's Places
