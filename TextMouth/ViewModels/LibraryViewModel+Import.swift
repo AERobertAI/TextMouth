@@ -599,10 +599,11 @@ extension LibraryViewModel {
     /// The original of a book copied from a folder of files, a DAISY book or
     /// a folder of tracks, is never deleted or offered for deletion either
     /// (`ImportedBook.mayDeleteOriginal`): the folder holds files the import
-    /// did not copy. An RTFD's original, a folder, is never deleted either,
-    /// and when the preference would have deleted it or asked, the reader is
-    /// told once that it was kept (`rtfdOriginalKeptNotice`), as a book with
-    /// chapters left out is told.
+    /// did not copy. Nor is an RTFD's original, a folder, or the archive a
+    /// DAISY book's audio was taken from, the only copy of the book's text;
+    /// when the preference would have deleted either or asked, the reader
+    /// is told once that it was kept and why (`originalKeptNotice`), as a
+    /// book with chapters left out is told.
     func completeSingleImportedBook(
         _ imported: ImportedBook,
         originalURL: URL,
@@ -614,9 +615,9 @@ extension LibraryViewModel {
         // Without an original to offer, a later duplicate answer cannot
         // delete it either.
         let deletableOriginal = imported.mayDeleteOriginal ? originalURL : nil
-        // What the import has to tell (what is missing, an RTFD's kept
-        // original, what a playlist skipped) is presented in an alert, so
-        // the book is not opened over it.
+        // What the import has to tell (what is missing, an original kept
+        // that the preference would have deleted, what a playlist skipped)
+        // is presented in an alert, so the book is not opened over it.
         let announcement = imported.announcement(warning: importWarning(for: imported))
         var request = request
         if announcement != nil {
@@ -637,12 +638,14 @@ extension LibraryViewModel {
 
     /// What an import of `imported` tells the reader once: its warning when
     /// it left chapters or pages out, or, when the "After Importing a Book"
-    /// preference would have deleted or asked about the original of an RTFD,
-    /// that the original was kept. Nil when there is nothing to tell.
+    /// preference would have deleted or asked about an original that may not
+    /// be deleted (an RTFD's, or the archive a DAISY book's audio was taken
+    /// from), that the original was kept and why
+    /// (`ImportedBook.originalKeptNotice`). Nil when there is nothing to tell.
     private func importWarning(for imported: ImportedBook) -> String? {
         if let warning = imported.warning { return warning }
         guard configService.config.importDeleteBehavior != .keepOriginal else { return nil }
-        return imported.rtfdOriginalKeptNotice
+        return imported.originalKeptNotice
     }
 
     /// Publish a batch result while retaining an archive that still contains

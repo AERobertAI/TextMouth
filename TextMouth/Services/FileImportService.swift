@@ -87,6 +87,13 @@ struct ImportedBook {
     /// `deleteOriginalFile(at:)` refuses a folder too, whatever its caller
     /// decided.
     var isFromFolder = false
+    /// Whether the import took only part of its original into the library,
+    /// so the original is the only copy of the rest: a DAISY audio ZIP,
+    /// whose audio becomes the book while its text (the DTBook a braille
+    /// reader uses), its images, and anything else the archive holds stay
+    /// in the archive. Such an original is never deleted or offered for
+    /// deletion.
+    var tookOnlyPartOfOriginal = false
     /// What the import tells the listener once the book is in the library,
     /// besides what is missing from it (`warning`): the entries a playlist
     /// import skipped (FMT10). Nil when there is nothing to tell. It does
@@ -99,22 +106,33 @@ struct ImportedBook {
     var keepsOriginal: Bool { !report.isComplete }
 
     /// Whether the "After Importing a Book" preference may delete the
-    /// original, or offer to: only for a complete book copied from a single
-    /// file. A DAISY book's or a folder of tracks' original is a folder of
-    /// files, some of which may belong to other books or to nothing the
-    /// import copied, so it is never deleted (TODO I02, FR17).
-    var mayDeleteOriginal: Bool { !keepsOriginal && !isFromFolder }
+    /// original, or offer to: only for a complete book copied whole from a
+    /// single file. A DAISY book's or a folder of tracks' original is a
+    /// folder of files, some of which may belong to other books or to
+    /// nothing the import copied, so it is never deleted (TODO I02, FR17);
+    /// nor is an original the import took only part of
+    /// (`tookOnlyPartOfOriginal`), which holds the rest of the book.
+    var mayDeleteOriginal: Bool { !keepsOriginal && !isFromFolder && !tookOnlyPartOfOriginal }
 
     /// What the reader is told when "After Importing a Book" would have
-    /// deleted this book's original, or asked about it, but cannot, because
-    /// the original is an RTFD: a folder, which an import never deletes. It
-    /// is the words of every kept original, then why. Nil for any other
-    /// import, whose original is deleted, offered, or kept without a word
-    /// (a DAISY folder or a folder of tracks is kept silently, as it
+    /// deleted this book's original, or asked about it, but cannot: the
+    /// words of every kept original, then why. An RTFD's original is a
+    /// folder, which an import never deletes; an original the import took
+    /// only part of is the only copy of the rest, and the only import that
+    /// does that is a DAISY audio ZIP's, so the words name it. Nil for any
+    /// other import, whose original is deleted, offered, or kept without a
+    /// word (a DAISY folder or a folder of tracks is kept silently, as it
     /// always was).
-    var rtfdOriginalKeptNotice: String? {
-        guard isFromFolder, book.format == .rtfd else { return nil }
-        return "The original file was kept: it is a folder, and an import never deletes a folder."
+    var originalKeptNotice: String? {
+        let reason: String
+        if tookOnlyPartOfOriginal {
+            reason = "TextMouth imported this DAISY book's audio, and the archive is the only copy of its text"
+        } else if isFromFolder, book.format == .rtfd {
+            reason = "it is a folder, and an import never deletes a folder"
+        } else {
+            return nil
+        }
+        return "The original file was kept: \(reason)."
     }
 
     /// The warning an import that left chapters or pages out presents once:
@@ -2242,7 +2260,10 @@ enum FileImportService {
     /// Import a DAISY audio ZIP as a multi-chapter audio book, staged like
     /// every import: the audio is converted into a hidden package and read
     /// as the reader will, and the package is published only once its
-    /// bookInfo.json is on disk.
+    /// bookInfo.json is on disk. The book is its audio alone, so what this
+    /// returns says the import took only part of its original
+    /// (`ImportedBook.tookOnlyPartOfOriginal`): the archive, the only copy
+    /// of the book's text, is never deleted after the import.
     ///
     /// The archive is admitted to a budget (`ArchiveLimits`, TODO I05) before
     /// any audio is converted, and every file the converter reads is held to
@@ -2308,7 +2329,12 @@ enum FileImportService {
                 staging: staging,
                 source: zipURL
             )
-            return try publishReadableBook(staged, from: staging, run: &run)
+            var imported = try publishReadableBook(staged, from: staging, run: &run)
+            // Only the audio and its manifest were staged: the book's text,
+            // its images, and the rest of the archive stay in the archive,
+            // which is then their only copy, so it is never deleted.
+            imported.tookOnlyPartOfOriginal = true
+            return imported
         }
     }
 
