@@ -1803,11 +1803,15 @@ extension LibraryViewModel {
     /// was copied, which nothing should do; then the library as it is now,
     /// with its books' paths moved into the new data directory as the
     /// copy's were, so no change is lost, and a log line saying so.
-    private static func library(afterMoving migrated: Library, from snapshot: Library, current: Library) -> Library {
-        let unchanged = current.books == snapshot.books
-            && current.folders == snapshot.folders
-            && current.folderSortSettings == snapshot.folderSortSettings
-        guard !unchanged else { return migrated }
+    ///
+    /// Internal rather than private only so that tests can call it.
+    static func library(afterMoving migrated: Library, from snapshot: Library, current: Library) -> Library {
+        // `migrated` holds every part of the library as `snapshot` had it,
+        // only its books' and feed rows' paths moved, so it stands in only
+        // for a library unchanged in every stored field (`Library`'s
+        // synthesized `==`): a book added to the reading list meanwhile, or
+        // a feed's rows changed, is kept below, as a changed book is.
+        guard current != snapshot else { return migrated }
         var kept = current
         let moved = StorageBoundary.shared.rebaseToCurrent(&kept)
         // The feed shelf's rows move with the books' (FR11).

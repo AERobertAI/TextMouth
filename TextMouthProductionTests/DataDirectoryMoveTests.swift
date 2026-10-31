@@ -223,6 +223,43 @@ final class DataDirectoryMoveTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: kept.filePath))
     }
 
+    /// A change made while the library is copied to a part the copy does
+    /// not rewrite, a book added to the Reading List or a feed item's row
+    /// put on the feed shelf, is kept too: the copy's library holds those
+    /// parts as the snapshot it was made from did, so it is taken whole only
+    /// when nothing at all changed meanwhile.
+    func testAReadingListOrFeedShelfChangeMadeWhileTheLibraryIsCopiedIsKept() {
+        let book = Book(title: "Buoy Inventory", format: .txt, filePath: "/old/b.tmb/b.txt", md5Hash: "b", tmbDirectoryName: "b.tmb")
+        let snapshot = Library(books: [book])
+        var copied = book
+        copied.filePath = "/new/b.tmb/b.txt"
+        let migrated = Library(books: [copied])
+        var item = Book(title: "Harbour Log", format: .txt, filePath: "/old/feed/h.tmb/h.txt", md5Hash: "h", tmbDirectoryName: "h.tmb")
+        item.feedLink = FeedBookLink(feedID: UUID(), itemID: "guid:harbour-log")
+
+        XCTAssertEqual(
+            LibraryViewModel.library(afterMoving: migrated, from: snapshot, current: snapshot),
+            migrated,
+            "nothing changed, yet the copy's library was not taken whole"
+        )
+
+        var listed = snapshot
+        listed.readingList.append([book.id])
+        XCTAssertEqual(
+            LibraryViewModel.library(afterMoving: migrated, from: snapshot, current: listed).readingList.bookIDs,
+            [book.id],
+            "the book added to the Reading List during the copy was dropped"
+        )
+
+        var shelved = snapshot
+        shelved.feedShelf.put(item)
+        XCTAssertEqual(
+            LibraryViewModel.library(afterMoving: migrated, from: snapshot, current: shelved).feedShelf.rows.map(\.id),
+            [item.id],
+            "the feed item's row put on the shelf during the copy was dropped"
+        )
+    }
+
     // MARK: - Quitting
 
     /// Asked to quit during a move, TextMouth presses Cancel and quits once

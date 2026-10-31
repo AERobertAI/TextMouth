@@ -248,7 +248,19 @@ struct KeptRowPackages: Equatable, Sendable {
     }
 }
 
-struct Library: Codable {
+/// The library model: its books, folders, sort settings, reading list, feed
+/// shelf, and the rows of library.json this TextMouth could not read, kept
+/// as they are.
+///
+/// Its `==` is the one Swift synthesizes, which compares every stored field
+/// (`books`, `folders`, `folderSortSettings`, `readingList`, `feedShelf`,
+/// and `unreadableRows`), each with its own synthesized `==`; a field added
+/// later is compared too, or the build fails until it can be. Work that runs
+/// off the main actor and then publishes a library it made from a snapshot
+/// (`LibraryViewModel.library(after:current:)` and
+/// `library(afterMoving:from:current:)`) asks this whether anything changed
+/// meanwhile, so no change to any part is undone.
+struct Library: Codable, Equatable {
     /// The rows of the library model's books: every book of the library's
     /// own, and, while TextMouth runs, the rows of feed items whose files
     /// are here (FR11), which the library's lists and counts leave out
