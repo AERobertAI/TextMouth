@@ -19,6 +19,206 @@ import ZIPFoundation
 @MainActor
 final class TranscriptPairingTests: XCTestCase {
 
+    // MARK: - Beside the One File Imported
+
+    /// The WebVTT sample beside its tone becomes the tone's transcript: the
+    /// package holds a transcript.json recording the file it came from, its
+    /// sentences read with their voices named, no notice is given, no
+    /// transcription is offered, and the book shows the transcript's text as
+    /// it opens.
+    func testAWebVTTFileBesideTheOneFileBecomesItsTranscript() throws {
+        preservePreferences([TranscriptionPreferences.offerAfterImport.key])
+        TranscriptionPreferences.offerAfterImport.write(true, to: TextMouthRuntime.current.preferences)
+        let folder = try copyOfFormatSample("vtt")
+
+        let imported = try importedForTest(folder.appendingPathComponent("tone4.wav"))
+
+        let transcript = try storedTranscript(of: imported.book)
+        XCTAssertEqual(transcript.source, TranscriptSource(origin: .imported, format: .webVTT, fileName: "tone4.vtt"))
+        XCTAssertEqual(transcript.files.count, 1)
+        XCTAssertEqual(transcript.files.first?.sentences.count, 4)
+        XCTAssertEqual(transcript.files.first?.sentences.first?.text, "Ana: First tone, 440 hertz.")
+        XCTAssertNil(imported.notice)
+        XCTAssertTrue(TranscriptStore.hasTranscript(of: imported.book))
+        XCTAssertFalse(TranscriptionOffers.offersTranscription(of: imported.book))
+        let load = TranscriptTextLoader.load(for: imported.book, audioIndex: try savedIndex(of: imported.book))
+        XCTAssertNil(load.withheld)
+        let text = try XCTUnwrap(load.text?.chapterText(0))
+        XCTAssertTrue(text.contains("Ana: First tone, 440 hertz."), text)
+        XCTAssertTrue(text.contains("The fourth, 880 hertz, with no speaker."), text)
+    }
+
+    /// The SubRip sample beside its tone becomes the tone's transcript as
+    /// WebVTT does.
+    func testASubRipFileBesideTheOneFileBecomesItsTranscript() throws {
+        let folder = try copyOfFormatSample("srt")
+
+        let imported = try importedForTest(folder.appendingPathComponent("tone4.wav"))
+
+        let transcript = try storedTranscript(of: imported.book)
+        XCTAssertEqual(transcript.source, TranscriptSource(origin: .imported, format: .subRip, fileName: "tone4.srt"))
+        XCTAssertEqual(transcript.files.first?.sentences.first?.text, "This sentence belongs to the first tone, 440 hertz.")
+        XCTAssertNil(imported.notice)
+    }
+
+    /// With a WebVTT file and a SubRip file both beside the one file, the
+    /// WebVTT file becomes its transcript.
+    func testWebVTTIsPreferredToSubRipBesideTheOneFile() throws {
+        let folder = try copyOfFormatSample("vtt")
+        try FileManager.default.copyItem(
+            at: try formatSampleURL("srt/tone4.srt"),
+            to: folder.appendingPathComponent("tone4.srt")
+        )
+
+        let imported = try importedForTest(folder.appendingPathComponent("tone4.wav"))
+
+        XCTAssertEqual(
+            try storedTranscript(of: imported.book).source,
+            TranscriptSource(origin: .imported, format: .webVTT, fileName: "tone4.vtt")
+        )
+        XCTAssertNil(imported.notice)
+    }
+
+    /// A file with no transcript beside it imports as before: no
+    /// transcript.json, no notice, no line in the debug log, and the offer to
+    /// transcribe it is made as for any audiobook on a Mac that can
+    /// transcribe.
+    func testAFileWithNoTranscriptBesideItImportsAsBefore() throws {
+        preservePreferences([TranscriptionPreferences.offerAfterImport.key])
+        TranscriptionPreferences.offerAfterImport.write(true, to: TextMouthRuntime.current.preferences)
+        let tone = try uniquelyNamedTone()
+
+        let imported = try importedForTest(tone)
+
+        XCTAssertEqual(TranscriptStore.read(from: imported.book.tmbDirectory), .missing)
+        XCTAssertNil(imported.notice)
+        XCTAssertEqual(
+            TranscriptionOffers.offersTranscription(of: imported.book),
+            TranscriptionAvailability.systemSupport == .available
+        )
+        XCTAssertEqual(debugLogLines(containing: "TRANSCRIPT_FOUND_AT_IMPORT: \(imported.book.title):"), [])
+        XCTAssertEqual(refusals(of: imported.book.title), [])
+    }
+
+    /// A WebVTT file whose last cue ends at 20 seconds, beside a tone of 4,
+    /// was made for other audio: it is not attached, the import goes on, and
+    /// the notice names it with the reason, which the debug log gives too.
+    func testATranscriptRunningPastTheEndIsNamedAndNotAttached() throws {
+        let tone = try makeTone(besideTranscript: "WEBVTT\n\n00:00.000 --> 00:20.000\nThe ferry leaves at nine.\n", ofExtension: "vtt")
+
+        let imported = try importedForTest(tone.audio)
+
+        XCTAssertEqual(TranscriptStore.read(from: imported.book.tmbDirectory), .missing)
+        let reason = OutsideTranscriptError.runsPastTheEnd(transcriptEnd: 20_000, audioEnd: 4_000).localizedDescription
+        XCTAssertEqual(imported.notice, TranscriptionWording.transcriptNotAttached(fileName: tone.transcriptName, reason: reason))
+        XCTAssertEqual(
+            imported.notice,
+            "“\(tone.transcriptName)” was beside the audio but wasn't attached as the book's transcript: "
+                + "The transcript runs to 20 seconds, past the end of the audio at 4 seconds, so it was made for other audio."
+        )
+        XCTAssertEqual(refusals(of: imported.book.title), ["\(tone.transcriptName): \(reason)"])
+    }
+
+    /// A .vtt file that is no WebVTT file is named with the reader's reason,
+    /// and neither the notice nor the debug log quotes what it holds.
+    func testAFileThatIsNoWebVTTIsNamedAndNotAttached() throws {
+        let tone = try makeTone(besideTranscript: "Minutes of the Quayside Rowing Club, typed by hand.\n", ofExtension: "vtt")
+
+        let imported = try importedForTest(tone.audio)
+
+        XCTAssertEqual(TranscriptStore.read(from: imported.book.tmbDirectory), .missing)
+        let reason = TimedTextError.notTimedText(.webVTT).localizedDescription
+        XCTAssertEqual(imported.notice, TranscriptionWording.transcriptNotAttached(fileName: tone.transcriptName, reason: reason))
+        XCTAssertEqual(refusals(of: imported.book.title), ["\(tone.transcriptName): \(reason)"])
+        XCTAssertEqual(debugLogLines(containing: "Quayside Rowing Club"), [])
+    }
+
+    // MARK: - Beside a Track of Several
+
+    /// In a folder of two tracks, 01.vtt beside 01.wav times that track: the
+    /// transcript holds its sentence for 01.wav and none for 02.wav, names
+    /// 01.vtt, the one file it came from, and the debug log says one of two
+    /// tracks' transcripts was attached.
+    func testATranscriptBesideOneTrackOfAFolderTimesThatTrack() throws {
+        let tracks = try makeTracks(["01.wav", "02.wav"], inFolderNamed: "Ferry Talks")
+        try write(Self.oneWebVTTCue, to: tracks.appendingPathComponent("01.vtt"))
+        let library = makeIntegrationLibraryFolder("Transcript Pairing")
+
+        let imported = try FileImportService.importAudioFolderWithReport(from: tracks, toFolder: library.path)
+
+        let transcript = try storedTranscript(of: imported.book)
+        XCTAssertEqual(sentences(in: transcript), ["01.wav": [Self.ferrySentence], "02.wav": []])
+        XCTAssertEqual(transcript.source, TranscriptSource(origin: .imported, format: .webVTT, fileName: "01.vtt"))
+        XCTAssertNil(imported.notice)
+        XCTAssertEqual(
+            debugLogLines(containing: "TRANSCRIPT_FOUND_AT_IMPORT: \(imported.book.title): 1 of 2 tracks' transcripts attached").count,
+            1
+        )
+    }
+
+    /// An audio ZIP made as Finder's Compress makes one, its tracks and
+    /// 02.srt inside one folder, imports with 02.srt timing 02.wav.
+    func testASubRipFileInAnAudioZIPTimesItsTrack() throws {
+        let tracks = try makeTracks(["01.wav", "02.wav"], inFolderNamed: "Ferry Talks")
+        try write(Self.oneSubRipCue, to: tracks.appendingPathComponent("02.srt"))
+        let archive = tracks.deletingLastPathComponent().appendingPathComponent("\(tracks.lastPathComponent).zip")
+        try FileManager.default.zipItem(at: tracks, to: archive, shouldKeepParent: true)
+        let library = makeIntegrationLibraryFolder("Transcript Pairing")
+
+        let imported = try FileImportService.importAudioZipWithReport(from: archive, toFolder: library.path)
+
+        let transcript = try storedTranscript(of: imported.book)
+        let folder = tracks.lastPathComponent
+        XCTAssertEqual(sentences(in: transcript), ["\(folder)/01.wav": [], "\(folder)/02.wav": [Self.ferrySentence]])
+        XCTAssertEqual(transcript.source, TranscriptSource(origin: .imported, format: .subRip, fileName: "02.srt"))
+        XCTAssertNil(imported.notice)
+    }
+
+    /// A track in a subfolder is paired with the file beside it there; a
+    /// file set aside in another subfolder is named with its folder, so the
+    /// listener can tell two discs' files of the same name apart, while the
+    /// transcript of the file kept names that file alone.
+    func testTracksInSubfoldersArePairedThereAndAFileSetAsideIsNamedWithItsFolder() throws {
+        let tracks = try makeTracks(["Disc 1/01.wav", "Disc 2/01.wav"], inFolderNamed: "Ferry Talks")
+        try write("Minutes of the Quayside Rowing Club.\n", to: tracks.appendingPathComponent("Disc 1/01.vtt"))
+        try write(Self.oneWebVTTCue, to: tracks.appendingPathComponent("Disc 2/01.vtt"))
+        let library = makeIntegrationLibraryFolder("Transcript Pairing")
+
+        let imported = try FileImportService.importAudioFolderWithReport(from: tracks, toFolder: library.path)
+
+        let transcript = try storedTranscript(of: imported.book)
+        XCTAssertEqual(sentences(in: transcript), ["Disc 1/01.wav": [], "Disc 2/01.wav": [Self.ferrySentence]])
+        XCTAssertEqual(transcript.source, TranscriptSource(origin: .imported, format: .webVTT, fileName: "01.vtt"))
+        XCTAssertEqual(
+            imported.notice,
+            "“Disc 1/01.vtt” was beside the audio but wasn't attached as the book's transcript: "
+                + "The file isn't a WebVTT transcript TextMouth can read."
+        )
+    }
+
+    /// Two files set aside are named together, in the order of their
+    /// tracks, the debug log saying why for each without quoting either,
+    /// and the book has no transcript.
+    func testTwoFilesSetAsideAreNamedTogetherAndTheLogSaysWhy() throws {
+        let tracks = try makeTracks(["01.wav", "02.wav"], inFolderNamed: "Ferry Talks")
+        try write("Minutes of the Quayside Rowing Club.\n", to: tracks.appendingPathComponent("01.vtt"))
+        try write("1\n00:00:00,000 --> 00:00:30,000\nThe ferry leaves at nine.\n", to: tracks.appendingPathComponent("02.srt"))
+        let library = makeIntegrationLibraryFolder("Transcript Pairing")
+
+        let imported = try FileImportService.importAudioFolderWithReport(from: tracks, toFolder: library.path)
+
+        XCTAssertEqual(
+            imported.notice,
+            "These transcript files were beside the audio but weren't attached: “01.vtt” and “02.srt”. The debug log says why."
+        )
+        XCTAssertEqual(TranscriptStore.read(from: imported.book.tmbDirectory), .missing)
+        XCTAssertEqual(refusals(of: imported.book.title), [
+            "01.vtt: \(TimedTextError.notTimedText(.webVTT).localizedDescription)",
+            "02.srt: \(OutsideTranscriptError.runsPastTheEnd(transcriptEnd: 30_000, audioEnd: 2_000).localizedDescription)",
+        ])
+        XCTAssertEqual(debugLogLines(containing: "Quayside Rowing Club"), [])
+    }
+
     // MARK: - Failures Once a File Is Found
 
     /// The tracks are looked through before any is measured: with no
@@ -71,6 +271,42 @@ final class TranscriptPairingTests: XCTestCase {
         XCTAssertEqual(TranscriptStore.read(from: package), .missing)
         XCTAssertEqual(refusals(of: book.title), ["01.vtt: \(reason)"])
         XCTAssertEqual(debugLogLines(containing: "TRANSCRIPT_FOUND_AT_IMPORT: \(book.title):"), [])
+    }
+
+    // MARK: - A Playlist
+
+    /// A playlist of the two tracks, with 01.vtt beside the first in the
+    /// playlist's folder, imports with 01.vtt timing that track.
+    func testATranscriptBesideAPlaylistsTrackTimesThatTrack() throws {
+        let tracks = try makeTracks(["01.wav", "02.wav"], inFolderNamed: "Ferry Talks")
+        try write(Self.oneWebVTTCue, to: tracks.appendingPathComponent("01.vtt"))
+        let playlist = try write("01.wav\n02.wav\n", to: tracks.appendingPathComponent("talks.m3u"))
+        let library = makeIntegrationLibraryFolder("Transcript Pairing")
+
+        let imported = try FileImportService.importPlaylistWithReport(from: playlist, toFolder: library.path)
+
+        XCTAssertEqual(sentences(in: try storedTranscript(of: imported.book)), ["01.wav": [Self.ferrySentence], "02.wav": []])
+        XCTAssertNil(imported.notice)
+    }
+
+    /// A playlist's notice of the entries it skipped is still said after the
+    /// notice of a transcript not attached, as one message, the pairing's
+    /// first.
+    func testAPlaylistsSkippedEntriesAreToldAfterTheTranscriptNotAttached() throws {
+        let tracks = try makeTracks(["01.wav", "02.wav"], inFolderNamed: "Ferry Talks")
+        try write("Minutes of the Quayside Rowing Club.\n", to: tracks.appendingPathComponent("02.vtt"))
+        let playlist = try write("01.wav\nmissing.wav\n02.wav\n", to: tracks.appendingPathComponent("talks.m3u"))
+        let library = makeIntegrationLibraryFolder("Transcript Pairing")
+
+        let imported = try FileImportService.importPlaylistWithReport(from: playlist, toFolder: library.path)
+
+        XCTAssertEqual(
+            imported.notice,
+            "“02.vtt” was beside the audio but wasn't attached as the book's transcript: "
+                + "The file isn't a WebVTT transcript TextMouth can read. "
+                + "TextMouth skipped 1 entry of “talks.m3u”: “missing.wav” (not found)."
+        )
+        XCTAssertEqual(TranscriptStore.read(from: imported.book.tmbDirectory), .missing)
     }
 
     // MARK: - Where a Transcript File Is Looked For
