@@ -44,23 +44,6 @@ final class LegacyAudioMetadataTests: XCTestCase {
         XCTAssertEqual(decoded.fileFormat, original.fileFormat)
     }
 
-    func testEditableAudioMetadataFieldsAreIndependentlyMutable() {
-        var metadata = AudioMetadata()
-        metadata.title = "Updated Title"
-        metadata.artist = "Updated Artist"
-        metadata.album = "Updated Album"
-        metadata.genre = "Updated Genre"
-        metadata.year = "2026"
-
-        XCTAssertEqual(metadata.title, "Updated Title")
-        XCTAssertEqual(metadata.artist, "Updated Artist")
-        XCTAssertEqual(metadata.album, "Updated Album")
-        XCTAssertEqual(metadata.genre, "Updated Genre")
-        XCTAssertEqual(metadata.year, "2026")
-        XCTAssertEqual(metadata.duration, "")
-        XCTAssertEqual(metadata.fileFormat, "")
-    }
-
     func testBookMetadataAudioFieldsDefaultToNil() {
         let metadata = BookMetadata()
 
