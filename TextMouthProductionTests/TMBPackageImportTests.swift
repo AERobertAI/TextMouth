@@ -283,6 +283,23 @@ final class TMBPackageImportTests: XCTestCase {
         XCTAssertEqual(try RemovedFromLibraryMarker.read(in: external.url).bookID, external.bookID)
     }
 
+    /// A copy of a duplicate's package, sent to the Trash by Cancel or by
+    /// the launch's discard while its question waited, still holds the
+    /// marker saying it waits for an answer (`DuplicateQuestionMarker`).
+    /// Imported again, the published package holds no marker, so no
+    /// adoption passes it over and no launch discards it; the source keeps
+    /// its own.
+    func testDuplicateQuestionMarkerTheSourceCarriesIsClearedBeforePublishing() throws {
+        let external = try makeStatefulPackage()
+        try DuplicateQuestionMarker.write(into: external.url)
+
+        let book = try FileImportService.importTMBPackageWithReport(from: external.url).book
+        addTeardownBlock { try? FileManager.default.removeItem(at: book.tmbDirectory) }
+
+        XCTAssertFalse(DuplicateQuestionMarker.isHeld(by: book.tmbDirectory))
+        XCTAssertTrue(DuplicateQuestionMarker.isHeld(by: external.url))
+    }
+
     /// A package whose document cannot be read fails while reading its
     /// text: nothing is published or left staged, and the source package is
     /// exactly as it was.
