@@ -1317,7 +1317,7 @@ final class ImportDecisionFlowTests: XCTestCase {
         drainImports(of: scene.model)
         let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
         try FileManager.default.removeItem(at: copy.tmbDirectory)
-        let gone = "The new copy's files are no longer in the library, so it can't be kept. "
+        let gone = "The files of the new copy of “Atlas of Tides” are no longer in the library, so it can't be kept. "
             + "Choose Cancel, then import the file again."
 
         XCTAssertEqual(scene.model.answerCurrentImportDecision(.keepBoth).failureMessage, gone)
@@ -1330,6 +1330,65 @@ final class ImportDecisionFlowTests: XCTestCase {
         XCTAssertTrue(scene.model.importDecisions.isEmpty)
         XCTAssertEqual(scene.model.library.books, [atlas.existing])
         XCTAssertTrue(FileManager.default.fileExists(atPath: atlas.copy.path))
+    }
+
+    /// While the library can't be reached (its drive dropped off while the
+    /// question waited) the new copy is intact, though it cannot be found
+    /// there: Keep Both and Replace Existing keep the question and say the
+    /// library can't be reached and to answer once it is back, naming the
+    /// book, and not that the copy's files are gone, which would send the
+    /// listener to Cancel an intact copy (data review, finding 6).
+    func testWhileTheLibraryCannotBeReachedTheQuestionStaysAndSaysSo() throws {
+        let scene = try makeScene()
+        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        scene.model.library = Library(books: [atlas.existing])
+        useAfterImportingBehavior(.keepOriginal)
+        scene.model.importFiles(urls: [atlas.copy], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
+        // The drive drops off: the copy cannot be found where it was.
+        scene.model.noteDataDirectoryUnavailable(.driveNotConnected(volume: "Spare Disk", folder: "/Volumes/Spare Disk/TextMouth"))
+        let unreachable = "The library can't be reached right now, so TextMouth can't keep the new copy of “Atlas of Tides”. "
+            + "Answer again once the library is back."
+
+        XCTAssertEqual(scene.model.answerCurrentImportDecision(.keepBoth).failureMessage, unreachable)
+        XCTAssertEqual(scene.model.answerCurrentImportDecision(.replaceExisting).failureMessage, unreachable)
+
+        XCTAssertEqual(scene.model.importDecisions.current?.duplicate?.book.id, copy.id, "the question did not stay")
+        XCTAssertTrue(DuplicateQuestionMarker.isHeld(by: copy.tmbDirectory), "the copy was touched")
+        XCTAssertEqual(scene.model.library.books, [atlas.existing])
+    }
+
+    /// A marker that won't come off keeps the copy out and the question
+    /// asked, and the sentence names the book, says TextMouth could not keep
+    /// the copy, and that Cancel discards it, without the hidden file's name
+    /// the system's reason holds (data review, finding 6). Cancel then
+    /// discards the copy.
+    func testAMarkerThatWontComeOffSaysTheCopyCouldNotBeKept() throws {
+        let scene = try makeScene()
+        let atlas = try existingBookAndCopy("Atlas of Tides", in: scene)
+        scene.model.library = Library(books: [atlas.existing])
+        useAfterImportingBehavior(.keepOriginal)
+        scene.model.importFiles(urls: [atlas.copy], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
+        // A package that can't be written to keeps its marker from coming off.
+        let package = copy.tmbDirectory
+        try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: package.path)
+        addTeardownBlock { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: package.path) }
+
+        let outcome = scene.model.answerCurrentImportDecision(.keepBoth)
+
+        XCTAssertEqual(
+            outcome.failureMessage,
+            "TextMouth could not keep the new copy of “Atlas of Tides”. "
+                + "Choose Cancel to discard the copy, then import the file again."
+        )
+        XCTAssertEqual(scene.model.importDecisions.current?.duplicate?.book.id, copy.id, "the question did not stay")
+        XCTAssertEqual(scene.model.library.books, [atlas.existing])
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: package.path)
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.cancel).succeeded)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: package.path), "Cancel left the copy")
     }
 
     // MARK: - Fixtures

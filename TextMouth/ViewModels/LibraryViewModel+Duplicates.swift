@@ -18,18 +18,6 @@ extension LibraryViewModel {
     /// How a duplicate's new copy that cannot be discarded is reported.
     private static let discardFailureContext = "Could not discard duplicate import"
 
-    /// How Keep Both is reported when the new copy's package still says it
-    /// waits for an answer, because that marker could not be removed.
-    private static let keepFailureContext = "Could not keep both copies"
-
-    /// What Keep Both and Replace Existing say, keeping the question, when
-    /// the new copy's package is gone while its question waited: taken by
-    /// the launch of another Mac sharing the library, or in Finder. Cancel
-    /// settles the question then, and the file it came from, which an
-    /// unanswered copy never deletes, can be imported again.
-    private static let copyGoneSentence =
-        "The new copy's files are no longer in the library, so it can't be kept. Choose Cancel, then import the file again."
-
     // MARK: - Asking
 
     /// Asks `decision` once every question queued before it is settled. A
@@ -295,8 +283,11 @@ extension LibraryViewModel {
     ///
     /// Neither Replace nor Keep Both keeps a copy whose package is gone, as
     /// another Mac's launch or Finder can take it while the question waits:
-    /// the question stays, saying so (`copyGoneSentence`), so no row names
-    /// files that are not there and the original is never deleted for them.
+    /// the question stays, saying so (`DuplicateCopyWording.copyGone`), so no
+    /// row names files that are not there and the original is never deleted
+    /// for them. While the library can't be reached (its drive dropped off
+    /// while the question waited) the question stays too, saying that
+    /// instead (`refusalToKeep`), since the copy is intact.
     private func settle(
         _ duplicate: ImportDecision.DuplicateBook,
         of decision: ImportDecision,
@@ -304,9 +295,9 @@ extension LibraryViewModel {
     ) -> OperationOutcome {
         switch answer {
         case .replaceExisting:
-            return Self.refusalToKeep(duplicate) ?? replaceExisting(with: duplicate, of: decision)
+            return refusalToKeep(duplicate) ?? replaceExisting(with: duplicate, of: decision)
         case .keepBoth:
-            return Self.refusalToKeep(duplicate) ?? keep(duplicate, of: decision)
+            return refusalToKeep(duplicate) ?? keep(duplicate, of: decision)
         case .cancel:
             do {
                 try FileImportService.deleteBookPackage(duplicate.book)
@@ -328,12 +319,20 @@ extension LibraryViewModel {
     /// The marker saying the copy waits for an answer goes first, before
     /// the copy joins the library, so no package the library lists ever
     /// holds it (`DuplicateQuestionMarker`). A marker that cannot be removed
-    /// keeps the copy out and the question asked, saying why.
+    /// keeps the copy out and the question asked, saying that TextMouth
+    /// could not keep the copy and that Cancel discards it
+    /// (`DuplicateCopyWording.markerStays`); the system's reason, which
+    /// names a hidden file, goes to the debug log.
     private func keep(_ duplicate: ImportDecision.DuplicateBook, of decision: ImportDecision) -> OperationOutcome {
         do {
             try DuplicateQuestionMarker.remove(from: duplicate.book.tmbDirectory)
         } catch {
-            return .failure(Self.keepFailureContext, error)
+            DiagnosticLog.event(
+                .storage,
+                "DUPLICATE_KEEP_FAILED: the marker of a new copy awaiting its answer could not be removed: "
+                    + error.localizedDescription
+            )
+            return .failure(DuplicateCopyWording.markerStays(bookTitle: duplicate.book.title))
         }
         // `Library.addBook` refuses a second copy of the same content, which
         // Keep Both asks for: the new copy joins directly.
@@ -344,13 +343,20 @@ extension LibraryViewModel {
     }
 
     /// The refusal of an answer that would keep `duplicate`'s new copy,
-    /// Replace or Keep Both, once its package is no longer a folder at its
-    /// place in the library (`copyGoneSentence`); nil while it is there.
-    private static func refusalToKeep(_ duplicate: ImportDecision.DuplicateBook) -> OperationOutcome? {
+    /// Replace or Keep Both, while the library can't be reached, which is
+    /// checked first (a copy that cannot be found then is not gone: its
+    /// files are intact where the library is out of reach), and once the
+    /// copy's package is no longer a folder at its place in the library;
+    /// nil while it is there. Each sentence names the book.
+    private func refusalToKeep(_ duplicate: ImportDecision.DuplicateBook) -> OperationOutcome? {
+        let title = duplicate.book.title
+        guard dataDirectoryUnavailability == nil else {
+            return .failure(DuplicateCopyWording.libraryUnreachable(bookTitle: title))
+        }
         var isFolder: ObjCBool = false
         let isThere = FileManager.default.fileExists(atPath: duplicate.book.tmbDirectory.path, isDirectory: &isFolder)
             && isFolder.boolValue
-        return isThere ? nil : .failure(copyGoneSentence)
+        return isThere ? nil : .failure(DuplicateCopyWording.copyGone(bookTitle: title))
     }
 
     /// Finishes keeping `book`, the book a duplicate's answer left in the

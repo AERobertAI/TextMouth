@@ -398,6 +398,36 @@ struct ImportDecisionWording: Equatable {
 /// cannot keep a copy. Every sentence names the book, so several in a row
 /// are told apart, and none names a file the listener has never seen.
 enum DuplicateCopyWording {
+    /// What Keep Both and Replace Existing say, keeping the question, while
+    /// the library can't be reached (its drive dropped off while the question
+    /// waited): "The library can't be reached right now, so TextMouth can't
+    /// keep the new copy of “Atlas of Tides”. Answer again once the library
+    /// is back." The copy is intact, so Cancel is not offered.
+    static func libraryUnreachable(bookTitle: String) -> String {
+        "The library can't be reached right now, so TextMouth can't keep the new copy of “\(bookTitle)”. "
+            + "Answer again once the library is back."
+    }
+
+    /// What they say when the new copy's package is gone while its question
+    /// waited (taken by the launch of another Mac sharing the library, or in
+    /// Finder): "The files of the new copy of “Atlas of Tides” are no longer
+    /// in the library, so it can't be kept. Choose Cancel, then import the
+    /// file again." The file the copy came from, which an unanswered copy
+    /// never deletes, can be imported again.
+    static func copyGone(bookTitle: String) -> String {
+        "The files of the new copy of “\(bookTitle)” are no longer in the library, so it can't be kept. "
+            + "Choose Cancel, then import the file again."
+    }
+
+    /// What Keep Both says when the mark that the copy waits for an answer
+    /// could not be taken off it: "TextMouth could not keep the new copy of
+    /// “Atlas of Tides”. Choose Cancel to discard the copy, then import the
+    /// file again."
+    static func markerStays(bookTitle: String) -> String {
+        "TextMouth could not keep the new copy of “\(bookTitle)”. "
+            + "Choose Cancel to discard the copy, then import the file again."
+    }
+
     /// The title of the alert that tells of copies the launch moved to the
     /// Trash.
     static let unansweredTrashedTitle = "Duplicate Copies Moved to the Trash"
