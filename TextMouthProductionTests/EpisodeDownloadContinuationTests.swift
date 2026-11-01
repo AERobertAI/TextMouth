@@ -1263,12 +1263,21 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         world.center.setListeningOptions(options, of: feed.id)
 
         let configFile = try makeSandboxDirectory("EpisodeDownloadConfig").appendingPathComponent("config.json")
+        let configService = ConfigService(fileURL: configFile)
+        // A reader can outlive its test for a moment: a move asks for its
+        // book half a second after saying so, and holds the reader, with
+        // these settings, until then. A settings save still waiting when a
+        // short test ends would then run after the sandbox above is gone,
+        // fail, and be announced in the next test. Teardown blocks run
+        // last-added first, so this one writes the save before the sandbox
+        // goes.
+        addTeardownBlock { @MainActor in configService.flushScheduledSave() }
         let notifications = NotificationCenter()
         let settings = SettingsViewModel(
             notificationCenter: notifications,
             initializeServices: false,
             userDefaults: makeSandboxedPreferences("EpisodeDownloadSettings"),
-            configService: ConfigService(fileURL: configFile)
+            configService: configService
         )
         settings.endOfBookBehavior = global
         return Setup(world: world, settings: settings, notifications: notifications, feedID: feed.id, middle: middle)
