@@ -74,10 +74,34 @@ final class FolderSettingsModel: ObservableObject, Identifiable {
         }
     }
 
+    /// Where the next book opens when listening goes on from one of the
+    /// folder's books to another; nil is "Use the global setting" (0.2.5).
+    /// A choice is saved at once.
+    var nextBookWindow: NextBookWindow? {
+        get { options.nextBookWindow }
+        set {
+            var changed = options
+            changed.nextBookWindow = newValue
+            library.setListeningOptions(changed, ofFolder: folderID)
+        }
+    }
+
+    /// The global "Open the next book in" setting, which "Use the global
+    /// setting" follows and names.
+    var globalNextBookWindow: NextBookWindow {
+        SettingsPolicy.nextBookWindow.storedValue(in: defaults)
+    }
+
     /// The global "When book ends" setting, which "Use the global setting"
     /// follows and names.
     var globalEndOfBookBehavior: EndOfBookBehavior {
         SettingsPolicy.endOfBookBehavior.storedValue(in: defaults)
+    }
+
+    /// Whether listening would go on from one of the folder's books to
+    /// another, which is when the choice of window can matter.
+    var continuesToAnotherBook: Bool {
+        options.goesOn(under: globalEndOfBookBehavior)
     }
 }
 
@@ -174,6 +198,15 @@ struct FolderSettingsSheet: View {
             .help(hint)
             .accessibilityLabel(label)
             .accessibilityHint(hint)
+
+            // Where the next book opens (0.2.5), dimmed while listening does
+            // not go on from one book to another.
+            NextBookWindowPicker(
+                noun: noun,
+                selection: Binding(get: { model.nextBookWindow }, set: { model.nextBookWindow = $0 }),
+                global: model.globalNextBookWindow,
+                isAvailable: model.continuesToAnotherBook
+            )
 
             let skipLabel = ListeningOptionsWording.skipFinishedLabel(noun)
             let skipHint = ListeningOptionsWording.skipFinishedHint(noun)

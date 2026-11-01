@@ -676,6 +676,7 @@
 		8E9FB70D1AA91CF7091E82DC /* DiagnosticLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A6681D3B9E45F03A54B2B7C /* DiagnosticLog.swift */; };
 		8EA5AD6D2F9765A8329D0222 /* TextPlausibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD843A66FB1C52F062F57BE6 /* TextPlausibility.swift */; };
 		8EA8E2293F356C1994378979 /* BrailleBookReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E0159E46F4899BFEDF262E8 /* BrailleBookReader.swift */; };
+		8ED745D71966114BDE0E5021 /* NextBookWindowPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7E6538839684B14C66ACEDD /* NextBookWindowPicker.swift */; };
 		8F019E3452F9E49B2E36FCFD /* ImportStagingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B41D7244F8A43D453E23A24C /* ImportStagingTests.swift */; };
 		8F33B020ECDF576682FDABD2 /* TMBPackageImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEE8BFA9593EDF50AE982521 /* TMBPackageImportTests.swift */; };
 		8F52DB119B313211CEFAAC70 /* LibraryViewDefinition.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30033D99C49EF14FE4B4758 /* LibraryViewDefinition.swift */; };
@@ -1266,22 +1267,21 @@
 		9279BF2ABA7F3526AB66874A /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/liblouis;
+			dstPath = Licenses/LAME;
 			dstSubfolderSpec = 7;
 			files = (
-				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
-				41F911ECAF492222AF723C10 /* README in CopyFiles */,
+				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
+				943853340D2809882740233D /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		BF489798E33F1F27D1434BD7 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/LAME;
+			dstPath = liblouis;
 			dstSubfolderSpec = 7;
 			files = (
-				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
-				943853340D2809882740233D /* LICENSE in CopyFiles */,
+				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1299,10 +1299,11 @@
 		C4DD7093AEE01EB21DD71ECD /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = liblouis;
+			dstPath = Licenses/liblouis;
 			dstSubfolderSpec = 7;
 			files = (
-				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
+				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
+				41F911ECAF492222AF723C10 /* README in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2212,6 +2213,7 @@
 		B7193BE2578C776548134DB0 /* AudioPlaybackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlaybackService.swift; sourceTree = "<group>"; };
 		B743126FEBD88AB20BB92DC3 /* FeedNetwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedNetwork.swift; sourceTree = "<group>"; };
 		B754B089A26BF9B1A233D628 /* COPYING */ = {isa = PBXFileReference; path = COPYING; sourceTree = "<group>"; };
+		B7E6538839684B14C66ACEDD /* NextBookWindowPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextBookWindowPicker.swift; sourceTree = "<group>"; };
 		B7E9855BCF0C1D3A7E129BE1 /* RemovalWordingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemovalWordingTests.swift; sourceTree = "<group>"; };
 		B8242C2F692806F62CA41FF6 /* BookPages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookPages.swift; sourceTree = "<group>"; };
 		B84D4D0381F8922E081AC1AC /* KeptBooks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeptBooks.swift; sourceTree = "<group>"; };
@@ -3931,6 +3933,7 @@
 			children = (
 				C67F22AA3696E45373BC65B0 /* ContentView.swift */,
 				1609B3476551EADF8A1A212C /* LogsInFinder.swift */,
+				B7E6538839684B14C66ACEDD /* NextBookWindowPicker.swift */,
 				F9DF8F174372EB9DFDD6F64B /* ReadOnlyTextArea.swift */,
 				F955CAB4B570E631E0AB2E22 /* SilentKeyEquivalent.swift */,
 				E914A0A7A4E824914D756517 /* ViewBodyCounter.swift */,
@@ -5295,6 +5298,7 @@
 				7095148DC9AEB2C62A95F862 /* NeroChapterReader.swift in Sources */,
 				3CB123670FD34FAB38561317 /* NetworkReachability.swift in Sources */,
 				3094B988964112BD8298A322 /* NextBookWindow.swift in Sources */,
+				8ED745D71966114BDE0E5021 /* NextBookWindowPicker.swift in Sources */,
 				5E41506D5916EE738A08867B /* NowPlayingService.swift in Sources */,
 				D6E8C1A53CA721B7BCDE033F /* OPMLImportSheet.swift in Sources */,
 				C61A5C62122C4BC9157D05A0 /* ObjCException.swift in Sources */,
