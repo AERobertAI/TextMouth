@@ -771,10 +771,10 @@ final class ReaderViewModel: ObservableObject {
         self.loadQueue = loadQueue ?? .global(qos: .userInitiated)
         self.bookmarks = book.bookmarks
 
-        libraryViewModel.registerOpenBook(book.id)
         // A timer held for this book is this reader's to take, or to release
-        // on every way it can fail, for as long as it exists.
-        sleepTimerService.noteReaderExists(forBook: book.id)
+        // on every way it can fail, for as long as it is open: the library's
+        // registry says so (`bookIsOpenCheck`).
+        libraryViewModel.registerOpenBook(book.id)
 
         // Restore reading position
         if let pos = book.readingPosition {
@@ -2277,17 +2277,20 @@ final class ReaderViewModel: ObservableObject {
         if sleepTimerService.ownerID == readerID, !sleepTimerService.isHeld(from: readerID) {
             sleepTimerService.stop()
         }
-        // A timer held for this reader's book, which it never took because its
-        // window closed while the book loaded, is stopped without a word, as
-        // closing the window a timer belongs to stops it: nothing will play it.
-        cancelSleepTimerHeld(forBook: book.id)
-        sleepTimerService.noteReaderGone(forBook: book.id)
         sleepTimerService.forgetLastOwner(readerID)
         // Playback has stopped, so nothing reads the working copy any more
         // (FR02).
         removeWorkingCopy()
         libraryViewModel.bookUpdates.unwatch(book.id)
         libraryViewModel.unregisterOpenBook(book.id)
+        // A timer held for this reader's book, which it never took because its
+        // window closed while the book loaded, is stopped without a word, as
+        // closing the window a timer belongs to stops it: nothing will play it.
+        // Only when no reader of the book is left: another window of the same
+        // book takes the timer (W6).
+        if !libraryViewModel.openBookIDs.contains(book.id) {
+            sleepTimerService.cancelHeld(forBook: book.id)
+        }
         // Last, once nothing above needs the book's text.
         releaseWhatGrowsWithTheBook()
     }

@@ -112,12 +112,14 @@ final class SleepTimerService: ObservableObject {
     private var heldFromOwnerID: UUID?
     /// Counts holds, so a deadline made for an earlier one does nothing.
     private var holdGeneration = 0
-    /// How many readers exist for each book, from the reader's making to its
-    /// close: a reader that exists for a book a timer is held for is the one
-    /// opening it, and is responsible for the timer, which it releases on
-    /// every way it can fail (`noteReaderExists(forBook:)`). The deadline acts
-    /// only when no reader is opening the book.
-    private var readersByBook: [UUID: Int] = [:]
+    /// Asks whether a reader is open for a book, which the reader that made
+    /// the hold gave (`hold(forBook:from:deadline:isBookOpen:)`): the library's
+    /// registry of open readers, which this service does not know. A reader
+    /// open for the book the timer is held for is the one opening it, and is
+    /// responsible for the timer, which it releases on every way it can fail,
+    /// so the deadline acts only when no reader is open for the book. Cleared
+    /// with the hold; a hold made with no check has no reader to wait for.
+    private var heldBookIsOpen: ((UUID) -> Bool)?
     /// The book a held timer ran out for before its reader took it: that
     /// reader must not start the book (`consumeExpiredWhileHeld(forBook:)`).
     private(set) var expiredWhileHeldBookID: UUID?
@@ -486,16 +488,21 @@ final class SleepTimerService: ObservableObject {
     /// (`isHeld(from:)`). A deadline stops it, as a last resort, if no reader
     /// ever takes it (`heldTimerDeadline`). A new hold replaces an earlier one.
     ///
-    /// - Parameter deadline: Seconds before the last resort; a test shortens it.
+    /// - Parameters:
+    ///   - deadline: Seconds before the last resort; a test shortens it.
+    ///   - isBookOpen: Whether a reader is open for a book, as the library
+    ///     registers its readers: while one is open for `bookID` the deadline
+    ///     leaves the hold alone.
     /// - Returns: Whether `owner` owns a timer that can be held.
     @discardableResult
     func hold(
         forBook bookID: UUID,
         from owner: UUID,
-        deadline: TimeInterval = SleepTimerService.heldTimerDeadline
+        deadline: TimeInterval = SleepTimerService.heldTimerDeadline,
+        isBookOpen: ((UUID) -> Bool)? = nil
     ) -> Bool {
         guard isCarriable(by: owner) else { return false }
-        setHold(forBook: bookID, from: owner, deadline: deadline)
+        setHold(forBook: bookID, from: owner, deadline: deadline, isBookOpen: isBookOpen)
         return true
     }
 
@@ -508,18 +515,25 @@ final class SleepTimerService: ObservableObject {
     func passOnHold(
         fromBook bookID: UUID,
         toBook nextBookID: UUID,
-        deadline: TimeInterval = SleepTimerService.heldTimerDeadline
+        deadline: TimeInterval = SleepTimerService.heldTimerDeadline,
+        isBookOpen: ((UUID) -> Bool)? = nil
     ) -> Bool {
         guard heldForBookID == bookID, let owner = heldFromOwnerID, isCarriable(by: owner) else { return false }
-        setHold(forBook: nextBookID, from: owner, deadline: deadline)
+        setHold(forBook: nextBookID, from: owner, deadline: deadline, isBookOpen: isBookOpen)
         return true
     }
 
-    private func setHold(forBook bookID: UUID, from owner: UUID, deadline: TimeInterval) {
+    private func setHold(
+        forBook bookID: UUID,
+        from owner: UUID,
+        deadline: TimeInterval,
+        isBookOpen: ((UUID) -> Bool)?
+    ) {
         holdGeneration += 1
         let generation = holdGeneration
         heldForBookID = bookID
         heldFromOwnerID = owner
+        heldBookIsOpen = isBookOpen
         askedBookID = nil
         expiredWhileHeldBookID = nil
         timerLog(.event, "HELD for=\(Self.ownerToken(bookID)) from=\(Self.ownerToken(owner))")
@@ -527,33 +541,20 @@ final class SleepTimerService: ObservableObject {
     }
 
     /// Arms the last-resort deadline of the hold made as `generation`. It acts
-    /// only when no reader exists for the book: a reader opening it, in a
-    /// download that takes longer than the deadline or a load held up, keeps
-    /// the hold alive, as a download keeps its autoplay request
+    /// only when no reader is open for the book (`heldBookIsOpen`): a reader
+    /// opening it, in a download that takes longer than the deadline or a load
+    /// held up, keeps the hold alive, as a download keeps its autoplay request
     /// (`ReaderAutoplayRequests.hold(for:)`), and the deadline looks again a
     /// deadline later.
     private func armHoldDeadline(forBook bookID: UUID, generation: Int, after delay: TimeInterval) {
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
             guard let self, self.holdGeneration == generation else { return }
-            if self.readersByBook[bookID, default: 0] > 0 {
+            if self.heldBookIsOpen?(bookID) == true {
                 self.armHoldDeadline(forBook: bookID, generation: generation, after: delay)
                 return
             }
             self.releaseHeld(forBook: bookID, reason: "no reader took it before the deadline")
         }
-    }
-
-    /// Notes that a reader exists for the book `bookID`, which opens it: a
-    /// timer held for the book is that reader's to release, and the deadline
-    /// leaves it alone while the reader exists.
-    func noteReaderExists(forBook bookID: UUID) {
-        readersByBook[bookID, default: 0] += 1
-    }
-
-    /// Notes that a reader of the book `bookID` has closed.
-    func noteReaderGone(forBook bookID: UUID) {
-        guard let count = readersByBook[bookID] else { return }
-        readersByBook[bookID] = count > 1 ? count - 1 : nil
     }
 
     /// Says that the book `bookID`, which the timer is held for, has been
@@ -576,6 +577,7 @@ final class SleepTimerService: ObservableObject {
         holdGeneration += 1
         heldForBookID = nil
         heldFromOwnerID = nil
+        heldBookIsOpen = nil
         askedBookID = nil
     }
 
@@ -585,17 +587,38 @@ final class SleepTimerService: ObservableObject {
     /// owner are kept. Nothing is resumed: the book the timer is held for
     /// plays or only opens, as its move said, and takes the timer as it is.
     ///
-    /// - Returns: Whether the timer is held and the restart was this one's; a
-    ///   timer fading out is not (it ends listening), and the restart then goes
-    ///   on as for any timer.
+    /// A restart while the held timer fades out is the listener saying they
+    /// are awake (W3): the fade is cancelled, the owner's volume restored
+    /// (`onFadeCancelled`), and the countdown starts again at its full
+    /// duration, halted until the book that takes the timer plays
+    /// (`resumeCountdown(by:)`), as any held countdown is. A fade that began
+    /// is not ended by the hold: it ends listening only if nobody restarts it.
+    ///
+    /// - Returns: Whether the timer is held and the restart was this one's.
     @discardableResult
     func restartHeld() -> Bool {
-        guard heldForBookID != nil, isActive, !isFadingOut else { return false }
+        guard heldForBookID != nil, isActive else { return false }
+        if isFadingOut { cancelFadeForRestart() }
         if case .minutes(let minutes) = duration {
             remainingSeconds = minutes * 60
         }
         timerLog(.event, "RESTART_HELD kind=\(duration?.displayName ?? "none")")
         return true
+    }
+
+    /// Cancels the fade the held timer is in, leaving the timer active and
+    /// held: a countdown it ran out of is halted, to run when its next book
+    /// plays.
+    private func cancelFadeForRestart() {
+        let fadeCancellation = onFadeCancelled
+        generation += 1
+        fadeTimer?.invalidate()
+        fadeTimer = nil
+        isFadingOut = false
+        pendingFadeCompletion = false
+        if case .minutes = duration { isCountdownPausedByPlayback = true }
+        timerLog(.event, "FADE_CANCELLED_BY_RESTART")
+        fadeCancellation?()
     }
 
     /// Whether the timer is held for any book.
@@ -654,22 +677,11 @@ final class SleepTimerService: ObservableObject {
         reason: String = "the book could not be opened",
         announcingAfter delay: TimeInterval = 0
     ) -> Bool {
-        // The mark that the timer ran out for this book never outlives the
-        // move it was made for: a later move to the book, with no timer
-        // started since, must not find it.
-        if expiredWhileHeldBookID == bookID { expiredWhileHeldBookID = nil }
-        guard heldForBookID == bookID else { return false }
-        stop(reason: "held for a book that took no timer: \(reason)")
-        // The timer is stopped at once, so it is true; the listener hears of it
-        // after `delay`, when the reason the book did not open has been read.
-        if delay > 0 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                VoiceOverAnnouncer.announce(SleepTimerHandOverWording.noBook, priority: .medium)
-            }
-        } else {
-            VoiceOverAnnouncer.announce(SleepTimerHandOverWording.noBook, priority: .medium)
-        }
-        return true
+        stopHeld(
+            forBook: bookID,
+            reason: "held for a book that took no timer: \(reason)",
+            announcingAfter: delay
+        )
     }
 
     /// Stops the timer held for the book `bookID`, and says nothing: the
@@ -677,9 +689,46 @@ final class SleepTimerService: ObservableObject {
     /// window a timer belongs to stops the timer. Forgets that the timer ran
     /// out for the book, too.
     func cancelHeld(forBook bookID: UUID) {
+        stopHeld(forBook: bookID, reason: "the window of the book it was held for closed", announcingAfter: nil)
+    }
+
+    /// The one stop `releaseHeld` and `cancelHeld` share, with the one
+    /// announcement: forgets that the timer ran out for `bookID`, which never
+    /// outlives the move it was made for (a later move to the book, with no
+    /// timer started since, must not find it), stops the timer held for it,
+    /// and, when `delay` is given, says that it was stopped. The sentence is
+    /// said after `delay`, when the reason the book did not open has been
+    /// read, and only if nothing has started or held a timer since: a timer the
+    /// listener started meanwhile is running, and the sentence would be false
+    /// (W4).
+    ///
+    /// - Parameter delay: Seconds before the listener is told, or nil to say
+    ///   nothing.
+    /// - Returns: Whether the timer was held for that book.
+    @discardableResult
+    private func stopHeld(forBook bookID: UUID, reason: String, announcingAfter delay: TimeInterval?) -> Bool {
         if expiredWhileHeldBookID == bookID { expiredWhileHeldBookID = nil }
-        guard heldForBookID == bookID else { return }
-        stop(reason: "the window of the book it was held for closed")
+        guard heldForBookID == bookID else { return false }
+        stop(reason: reason)
+        guard let delay else { return true }
+        // The stop counted the hold: any timer started or held later counts it again.
+        let stoppedAt = holdGeneration
+        if delay > 0 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                self?.announceNoBook(ifNothingHeldSince: stoppedAt)
+            }
+        } else {
+            announceNoBook(ifNothingHeldSince: stoppedAt)
+        }
+        return true
+    }
+
+    /// Says that the timer was cancelled because the next book could not be
+    /// opened, unless a timer has been started or held since the stop made as
+    /// `holdGeneration` was `stoppedAt` (W4).
+    private func announceNoBook(ifNothingHeldSince stoppedAt: Int) {
+        guard holdGeneration == stoppedAt, !isActive else { return }
+        VoiceOverAnnouncer.announce(SleepTimerHandOverWording.noBook, priority: .medium)
     }
 
     /// Whether the timer ran out while held for the book `bookID`, so that

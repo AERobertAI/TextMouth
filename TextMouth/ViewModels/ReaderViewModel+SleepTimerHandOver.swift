@@ -72,15 +72,22 @@ extension ReaderViewModel {
         let service = sleepTimerService
         guard !service.isHeld(forBook: nextBookID) else { return }
         if service.isCarriable(by: readerID) {
-            if service.hold(forBook: nextBookID, from: readerID) {
+            if service.hold(forBook: nextBookID, from: readerID, isBookOpen: bookIsOpenCheck) {
                 pendingMoveHold = .ownTimer(target: nextBookID)
             }
         } else {
             let wasAsked = service.isAsked(forBook: book.id)
-            if service.passOnHold(fromBook: book.id, toBook: nextBookID) {
+            if service.passOnHold(fromBook: book.id, toBook: nextBookID, isBookOpen: bookIsOpenCheck) {
                 pendingMoveHold = .passedOn(target: nextBookID, wasAsked: wasAsked)
             }
         }
+    }
+
+    /// Asks the library's registry of open readers whether a reader is open for
+    /// a book, which a hold gives the service for its deadline: the one
+    /// registry, so no second count is kept of the readers there are.
+    var bookIsOpenCheck: (UUID) -> Bool {
+        { [weak library = libraryViewModel] bookID in library?.openBookIDs.contains(bookID) ?? false }
     }
 
     /// Undoes the hold the move announced last made, if it is still in place
@@ -103,7 +110,7 @@ extension ReaderViewModel {
             }
         case .passedOn(let target, let wasAsked)?:
             if service.isHeld(forBook: target), !service.isAsked(forBook: target),
-               service.passOnHold(fromBook: target, toBook: book.id), wasAsked {
+               service.passOnHold(fromBook: target, toBook: book.id, isBookOpen: bookIsOpenCheck), wasAsked {
                 service.markAsked(forBook: book.id)
             }
         case nil:
@@ -195,12 +202,5 @@ extension ReaderViewModel {
         if sleepTimerService.releaseHeld(forBook: bookID, announcingAfter: delay) {
             DiagnosticLog.trace(.playback, "next book: no reader took the sleep timer; stopped it")
         }
-    }
-
-    /// Stops the sleep timer held for the book `bookID` without a word: this
-    /// reader's window is closing while its book loads
-    /// (`SleepTimerService.cancelHeld(forBook:)`).
-    func cancelSleepTimerHeld(forBook bookID: UUID) {
-        sleepTimerService.cancelHeld(forBook: bookID)
     }
 }
