@@ -134,9 +134,12 @@ extension ReaderViewModel {
         moveCarriesSleepTimer = false
         moveAnnouncedAt = nil
         // A running timer goes on with the book, wherever it shows: held for it
-        // since the move was announced, and held again here for a caller that
-        // announced nothing.
-        holdSleepTimer(forBook: nextBookID)
+        // since the move was announced. Held here only when nothing is held, for
+        // a caller that announced nothing: never in place of a hold made for
+        // another book by a later move.
+        if !sleepTimerService.isHolding {
+            holdSleepTimer(forBook: nextBookID)
+        }
         // Asked for now, with the other requests, before the notification or
         // the switch: a reader open for the book takes the timer before it
         // plays, and one the ask opens takes it as its load ends.

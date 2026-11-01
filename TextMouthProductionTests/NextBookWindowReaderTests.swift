@@ -471,6 +471,48 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertEqual(finished.sleepTimerNextHeading?.chapterIndex, 1, "the timer still waits for the book's end")
     }
 
+    /// A command pressed in the half second after a book's end cancels the
+    /// end's hand-over: the book that ended counts as playing, one ask is made,
+    /// for the book the command went to, and the timer is held for that book
+    /// and not for the one the end announced.
+    func testACommandAfterTheEndOfABookCancelsTheHandOver() throws {
+        preserveSharedSleepTimer()
+        let folder = try makeFolderWorld("CommandAfterEnd")
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let reader = makeReader(for: folder.second, in: folder.world, switcher: switcher)
+        let timer = SleepTimerService.shared
+        timer.start(duration: .minutes(30), ownerID: reader.readerID, onExpire: {})
+
+        let recorder = recordingAnnouncements {
+            reader.handleEndOfBook()
+            reader.goThroughFolder(.up)
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 3)
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: C Volume", "Starting: A Volume"])
+        XCTAssertEqual(switcher.shown, [folder.first.id], "The end's hand-over asked as well as the command")
+        XCTAssertFalse(folder.world.autoplayRequests.hasRequest(for: folder.third.id), "The cancelled hand-over left a request")
+        XCTAssertTrue(timer.isHeld(forBook: folder.first.id), "The timer is not held for the book the command went to")
+        XCTAssertFalse(timer.isHeld(forBook: folder.third.id))
+    }
+
+    /// A timer held for a book is never replaced by a hold the ask of another
+    /// book makes: the later move's hold stands.
+    func testTheAskOfAnEarlierBookDoesNotReplaceAHoldMadeForALaterOne() throws {
+        preserveSharedSleepTimer()
+        let folder = try makeFolderWorld("AskKeepsLaterHold")
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let reader = makeReader(for: folder.first, in: folder.world, switcher: switcher)
+        let timer = SleepTimerService.shared
+        timer.start(duration: .minutes(30), ownerID: reader.readerID, onExpire: {})
+        XCTAssertTrue(timer.hold(forBook: folder.third.id, from: reader.readerID))
+
+        reader.showNextBook(folder.second.id, under: .newWindow) {}
+
+        XCTAssertTrue(timer.isHeld(forBook: folder.third.id), "A hold made for another book was replaced")
+        XCTAssertFalse(timer.isHeld(forBook: folder.second.id))
+    }
+
     /// A timer held for a book that nothing ever takes is stopped at the
     /// deadline, as a last resort, and the listener is told after current
     /// speech.

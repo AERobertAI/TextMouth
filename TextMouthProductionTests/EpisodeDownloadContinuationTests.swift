@@ -918,6 +918,89 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         XCTAssertTrue(SleepTimerService.shared.isHeld(forBook: bottom.id))
     }
 
+    /// A command pressed after one that went to a book here, within the half
+    /// second, cancels that book's ask: the episode that must download is the
+    /// one that plays, once it arrives, and the first book is never asked for.
+    func testACommandCancelsAnEarlierCommandsAskBeforeItDownloads() async throws {
+        let setup = try await makeFeed(options: nil, global: .stop, bottomIsDownloaded: true)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+        reader.isWhereAmIResumePending = true
+
+        reader.goThroughFolder(.down)
+        reader.goThroughFolder(.up)
+        await waitFor("the episode above asks to start") { !heard.asked.isEmpty }
+        try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 2))
+
+        let top = try XCTUnwrap(book(of: "guid:ep-3", in: setup))
+        XCTAssertEqual(heard.asked, [top.id], "The first command's book was asked for, or the episode did not play")
+        XCTAssertEqual(heard.opened, [])
+        XCTAssertEqual(heard.downloadsStarted, ["guid:ep-3"])
+    }
+
+    /// The same command pressed again during the download counts the book as
+    /// playing, since the first press paused it: the episode starts when it
+    /// arrives, and is not only opened.
+    func testASecondPressDuringTheDownloadStillPlaysTheEpisode() async throws {
+        let setup = try await makeFeed(options: nil, global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+        reader.isWhereAmIResumePending = true
+
+        reader.goThroughFolder(.down)
+        reader.goThroughFolder(.down)
+        await waitFor("the episode asks to start") { !heard.asked.isEmpty }
+
+        let bottom = try XCTUnwrap(book(of: "guid:ep-1", in: setup))
+        XCTAssertEqual(heard.announced.last, "Starting: Bottom part")
+        XCTAssertEqual(heard.asked, [bottom.id])
+        XCTAssertEqual(heard.opened, [])
+    }
+
+    /// A command that goes to an episode that must download says that it ended
+    /// a fading sleep timer, as the others do, after current speech.
+    func testTheDownloadBranchSaysTheFadeEndedByTheMove() async throws {
+        let setup = try await makeFeed(options: nil, global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+        startSharedSleepTimer(.minutes(1), ownedBy: reader.readerID)
+        SleepTimerService.shared.start(duration: .minutes(1), ownerID: reader.readerID, onExpire: {}, fadeOutDuration: 5)
+        SleepTimerService.shared._expireForTesting()
+        XCTAssertTrue(SleepTimerService.shared.isFadingOut)
+        reader.isWhereAmIResumePending = true
+
+        reader.goThroughFolder(.down)
+
+        XCTAssertEqual(heard.announced, [
+            "Downloading the next episode: Bottom part",
+            SleepTimerHandOverWording.fadeEndedByTheMove,
+        ])
+        XCTAssertFalse(SleepTimerService.shared.isActive, "The fade went on after the move")
+    }
+
+    /// Any move ends the wait for an episode that a folder command began, and
+    /// counts the book as playing when that wait was to play its episode: the
+    /// start every move shares, Next in Reading List's included.
+    func testAnyMoveEndsTheWaitForAnEpisodeAndCountsItAsPlaying() async throws {
+        let setup = try await makeFeed(options: nil, global: .stop)
+        _ = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+        reader.isWhereAmIResumePending = true
+        reader.goThroughFolder(.down)
+        XCTAssertNotNil(reader.nextEpisodeWait, "No wait began")
+        XCTAssertTrue(reader.episodeWaitPlays)
+
+        let start = reader.beginMoveToAnotherBook()
+
+        XCTAssertTrue(start.wasPlaying, "The wait was to play its episode")
+        XCTAssertNil(reader.nextEpisodeWait, "The move left the wait")
+        XCTAssertFalse(reader.episodeWaitPlays)
+    }
+
     /// The words of a folder move's download failing or being cancelled, for
     /// both directions, both kinds of item, and with or without playback.
     func testTheFolderMoveDownloadWords() {

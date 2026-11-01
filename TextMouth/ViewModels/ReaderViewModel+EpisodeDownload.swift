@@ -17,6 +17,15 @@ enum NextEpisodeCause: Equatable, Sendable {
     ///   with the episode either way (`handOverSleepTimer(to:)`).
     case folderMove(direction: ReadingList.Direction, wasPlaying: Bool)
 
+    /// Whether the episode plays once it arrives: after the end of a book it
+    /// does, and after a command when the book was playing.
+    var playsItsEpisode: Bool {
+        switch self {
+        case .endOfBook: return true
+        case .folderMove(_, let wasPlaying): return wasPlaying
+        }
+    }
+
     /// Whether this is the end of a book's.
     var isEndOfBook: Bool {
         if case .endOfBook = self { return true }
@@ -66,6 +75,7 @@ extension ReaderViewModel {
         nextEpisodeWait = feeds.events.sink { [weak self] event in
             self?.nextEpisodeEventArrived(event, during: wait)
         }
+        episodeWaitPlays = cause.playsItsEpisode
         // The listener waits for this episode, so it goes ahead of the
         // downloads queued before it (it opens nothing: the wait hands over).
         feeds.download(item.id, of: feedID, startingNext: true)

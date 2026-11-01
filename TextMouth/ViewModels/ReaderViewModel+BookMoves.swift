@@ -57,16 +57,43 @@ extension ReaderViewModel {
     /// since the listener has moved on from it.
     func beginMoveToAnotherBook() -> BookMoveStart {
         let startPending = autoplayRequests.hasRequest(for: book.id)
+        // A move cancelled by this one, or a wait for an episode it ends, was
+        // to play its book: this book counts as playing then.
         let wasPlaying = isPlaybackUnderWay || whereAmIWillPlayBook || pendingMovePlays || startPending
+            || episodeWaitPlays || nextBookHandOver?.isPendingAsk == true
         if startPending {
             autoplayRequests.discard(for: book.id)
         }
+        // A reader has one move pending, however it began: this move cancels an
+        // earlier one that has not asked yet (an announced command or the end
+        // of a book's hand-over) and ends the wait for an episode.
+        cancelPendingMoves()
+        nextEpisodeWait = nil
         let pauses = wasPlaying || isWhereAmIUnderWay
         let fadeEnds = pauses && sleepTimerIsFadingOutHere
         if pauses {
             pause(playingPauseSound: false)
         }
         return BookMoveStart(wasPlaying: wasPlaying, timerFadeEnded: fadeEnds)
+    }
+
+    /// Cancels a move this reader announced and has not asked for yet: a
+    /// command's pending ask (`announceMove`) and the end of a book's
+    /// hand-over (`handOverToNextBook`). The sleep timer held for the cancelled
+    /// move's book is held again by the move that cancels it.
+    func cancelPendingMoves() {
+        pendingMoveGeneration += 1
+        pendingMovePlays = false
+        nextBookHandOver?.cancel()
+    }
+
+    /// Says, after current speech, that the move ended a sleep timer fading out
+    /// (`BookMoveStart.timerFadeEnded`): the listener did not ask to cancel it.
+    /// Every move says it, the download branch of the folder commands included.
+    func announceTimerFadeEndedIfNeeded(by start: BookMoveStart) {
+        if start.timerFadeEnded {
+            announceToVoiceOverAfterCurrentSpeech(SleepTimerHandOverWording.fadeEndedByTheMove)
+        }
     }
 
     /// Says that the book `bookID`, titled `title`, is starting or opening,
@@ -92,9 +119,7 @@ extension ReaderViewModel {
         )
         // Said after "Starting", and after current speech: the listener did
         // not ask to cancel the timer the move's pause ended.
-        if start.timerFadeEnded {
-            announceToVoiceOverAfterCurrentSpeech(SleepTimerHandOverWording.fadeEndedByTheMove)
-        }
+        announceTimerFadeEndedIfNeeded(by: start)
         noteMoveAnnounced(to: bookID)
         pendingMoveGeneration += 1
         let generation = pendingMoveGeneration

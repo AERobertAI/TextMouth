@@ -51,9 +51,6 @@ extension ReaderViewModel {
             announceToVoiceOver(FolderNavigationWording.nothingThatWay(note))
             return
         }
-        // This decision supersedes a wait for an episode that an earlier
-        // one began.
-        nextEpisodeWait = nil
         // The pause, the sleep timer's rule, the announcement, and the
         // moment before the item is asked for are the reading list's too
         // (`beginMoveToAnotherBook()`, `announceMove(to:titled:start:through:)`).
@@ -69,6 +66,7 @@ extension ReaderViewModel {
 
         case .episodeToDownload(let feedID, let item):
             announceToVoiceOver(FolderNavigationWording.downloading(item, going: direction))
+            announceTimerFadeEndedIfNeeded(by: start)
             DiagnosticLog.trace(.playback, "folder: the episode \(looking == .down ? "below" : "above") is not here; downloading it")
             let cause = NextEpisodeCause.folderMove(direction: direction, wasPlaying: start.wasPlaying)
             let plays = start.plays

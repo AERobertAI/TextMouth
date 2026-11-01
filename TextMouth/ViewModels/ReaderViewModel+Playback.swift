@@ -485,7 +485,7 @@ extension ReaderViewModel {
         let wasActive = isPlaybackUnderWay || wasPaused
         endWhereAmIAsTheBookStops()
 
-        let wasSleepTimerFading = isOwnSleepTimerFading
+        let wasSleepTimerFading = sleepTimerIsFadingOutHere
         // Stop audio FIRST, then restore volume. Restoring volume
         // while audio is still playing causes a brief pop of
         // full-volume audio (same fix pattern as pause()).
@@ -506,11 +506,6 @@ extension ReaderViewModel {
             chapterSpeechCache.removeAll()
         }
         finishStopping(wasActive: wasActive, wasSleepTimerFading: wasSleepTimerFading)
-    }
-
-    /// Whether this reader's sleep timer is fading playback out right now.
-    private var isOwnSleepTimerFading: Bool {
-        sleepTimerService.ownerID == readerID && sleepTimerService.isFadingOut
     }
 
     /// Everything stopping does once the playback backend is silent:
@@ -1172,7 +1167,7 @@ extension ReaderViewModel {
         guard isAudioBook else { return }
         if let volume = sleepTimerFadeVolumeBeforeStop {
             audioPlaybackService.setVolume(volume)
-        } else if audioPlaybackService.intendedVolume < 1, !isOwnSleepTimerFading {
+        } else if audioPlaybackService.intendedVolume < 1, !sleepTimerIsFadingOutHere {
             audioPlaybackService.restoreVolume()
         }
     }
@@ -2382,7 +2377,7 @@ extension ReaderViewModel {
         // failure only ever comes from a file the reader loaded to play,
         // so playback was active and its stop is recorded; the sleep
         // timer's countdown halts with it, as with every stop.
-        finishStopping(wasActive: true, wasSleepTimerFading: isOwnSleepTimerFading)
+        finishStopping(wasActive: true, wasSleepTimerFading: sleepTimerIsFadingOutHere)
         // A Where Am I announcement ends with the book, as `stop()` ends it:
         // it has nothing left to resume.
         endWhereAmIAsTheBookStops()
@@ -2916,6 +2911,9 @@ extension ReaderViewModel {
         titled title: String,
         askingWith askForNextBook: @escaping () -> Void
     ) {
+        // One move at a time: a move announced and not yet asked for is
+        // cancelled, as is an earlier hand-over.
+        cancelPendingMoves()
         hasFinishedBook = false
         nowPlayingService.updateNowPlayingInfo(
             title: book.title, author: book.author, isPlaying: false
@@ -3733,6 +3731,19 @@ final class NextBookHandOver {
     /// Whether the next book has been asked for.
     var hasAskedForNextBook: Bool {
         askForNextBook == nil
+    }
+
+    /// Whether the next book is still to be asked for: announced, and not
+    /// cancelled or asked.
+    var isPendingAsk: Bool {
+        askForNextBook != nil
+    }
+
+    /// Cancels the ask, because another move took the book's place before it
+    /// was made: nothing more is asked for, and the hand-over is no longer
+    /// under way.
+    func cancel() {
+        askForNextBook = nil
     }
 
     /// Whether the hand-over is still under way: the next book not yet

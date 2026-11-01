@@ -572,6 +572,11 @@ final class SleepTimerService: ObservableObject {
         askedBookID = nil
     }
 
+    /// Whether the timer is held for any book.
+    var isHolding: Bool {
+        heldForBookID != nil
+    }
+
     /// Whether the timer is held for the book `bookID`.
     func isHeld(forBook bookID: UUID) -> Bool {
         heldForBookID == bookID

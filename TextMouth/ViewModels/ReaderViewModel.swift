@@ -490,7 +490,15 @@ final class ReaderViewModel: ObservableObject {
     /// when no wait is under way; a new wait replaces an earlier one, and
     /// closing the reader ends it. Held here because an extension cannot
     /// hold a stored property; used by `ReaderViewModel+EpisodeDownload`.
-    var nextEpisodeWait: AnyCancellable?
+    var nextEpisodeWait: AnyCancellable? {
+        didSet {
+            if nextEpisodeWait == nil { episodeWaitPlays = false }
+        }
+    }
+    /// Whether the wait for a next episode under way is to play the episode
+    /// when it arrives: a later move that ends the wait counts the book as
+    /// playing then (`beginMoveToAnotherBook()`). False with no wait.
+    var episodeWaitPlays = false
     /// Whether the play under way replays a finished book's end, as a
     /// backward skip after the end starts it (`performSkip(unit:forward:)`):
     /// the end it plays on to is no new finish (TODO P07; the user,
