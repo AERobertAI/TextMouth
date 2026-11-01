@@ -79,9 +79,11 @@ extension ReaderViewModel {
 
     /// Cancels a move this reader announced and has not asked for yet: a
     /// command's pending ask (`announceMove`) and the end of a book's
-    /// hand-over (`handOverToNextBook`). The sleep timer held for the cancelled
-    /// move's book is held again by the move that cancels it.
+    /// hand-over (`handOverToNextBook`). The hold the cancelled move made is
+    /// undone (`undoPendingMoveHold()`): a cancelled move leaves no trace, and
+    /// the move that cancels it holds the timer as any move does.
     func cancelPendingMoves() {
+        undoPendingMoveHold()
         pendingMoveGeneration += 1
         pendingMovePlays = false
         nextBookHandOver?.cancel()

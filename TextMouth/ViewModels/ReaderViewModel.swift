@@ -264,12 +264,16 @@ final class ReaderViewModel: ObservableObject {
     /// store, unless the reader was created with its own.
     let windowSwitchRequests: WindowSwitchRequests
     /// Whether a move to another book that this reader announced carries a
-    /// running sleep timer (`carriesSleepTimerOnAMove`), and when it was
-    /// announced: set as the move is announced, read as the book is asked
-    /// for, so a timer that ran out or began to fade out in between ends
-    /// listening, and the book is not started (`showNextBook`). Accessed from
-    /// the NextBookWindow and SleepTimerHandOver extensions.
+    /// running sleep timer (`carriesSleepTimerOnAMove`): set as the move is
+    /// announced, read as the book is asked for, so a timer that began to fade
+    /// out in between ends listening, and the book is not started
+    /// (`showNextBook`). Accessed from the NextBookWindow and
+    /// SleepTimerHandOver extensions.
     var moveCarriesSleepTimer = false
+    /// The hold the move announced last made for its book, while the move has
+    /// not asked yet: a cancelling move undoes it, so a cancelled move leaves
+    /// no trace (`cancelPendingMoves()`).
+    var pendingMoveHold: PendingMoveHold?
     /// The sleep timer's expiry count as a move that carries a timer was
     /// announced (`SleepTimerService.expiryCount`), nil for a move that carries
     /// none: the ask drops the move if the timer ran out since.

@@ -2,6 +2,18 @@ import Foundation
 
 // MARK: - A Sleep Timer Going on with the Next Book (0.2.5)
 
+/// What a move announced and not yet asked for did to the sleep timer's hold,
+/// which a move that cancels it undoes (`ReaderViewModel.cancelPendingMoves()`).
+enum PendingMoveHold: Equatable {
+    /// The move held this reader's own timer for `target`: undoing it makes
+    /// the timer this reader's own again, not held.
+    case ownTimer(target: UUID)
+    /// The move passed on a hold for this reader's own book, whose reader was
+    /// still loading, to `target`: undoing it holds the timer for this
+    /// reader's book again, asked as it was.
+    case passedOn(target: UUID, wasAsked: Bool)
+}
+
 /// The user's decision on November 1, 2026: "the sleeping timer in particular
 /// I would like to move still running to the new book without a new window
 /// opening". When listening goes on from this book to another, a running
@@ -60,9 +72,42 @@ extension ReaderViewModel {
         let service = sleepTimerService
         guard !service.isHeld(forBook: nextBookID) else { return }
         if service.isCarriable(by: readerID) {
-            service.hold(forBook: nextBookID, from: readerID)
+            if service.hold(forBook: nextBookID, from: readerID) {
+                pendingMoveHold = .ownTimer(target: nextBookID)
+            }
         } else {
-            service.passOnHold(fromBook: book.id, toBook: nextBookID)
+            let wasAsked = service.isAsked(forBook: book.id)
+            if service.passOnHold(fromBook: book.id, toBook: nextBookID) {
+                pendingMoveHold = .passedOn(target: nextBookID, wasAsked: wasAsked)
+            }
+        }
+    }
+
+    /// Undoes the hold the move announced last made, if it is still in place
+    /// and not asked for, and returns the timer to how it was before the move:
+    /// this reader's own again, or held for this reader's own book again, asked
+    /// as before. It also forgets the move's notes. A move that cancels it then
+    /// holds the timer as any move does; the folder commands' download branch
+    /// holds none, and the wait's own move carries the timer when the episode
+    /// arrives.
+    func undoPendingMoveHold() {
+        let service = sleepTimerService
+        let undoing = pendingMoveHold
+        pendingMoveHold = nil
+        moveCarriesSleepTimer = false
+        moveExpiryMark = nil
+        switch undoing {
+        case .ownTimer(let target)?:
+            if service.isHeld(forBook: target), !service.isAsked(forBook: target) {
+                service.dropHold(forBook: target)
+            }
+        case .passedOn(let target, let wasAsked)?:
+            if service.isHeld(forBook: target), !service.isAsked(forBook: target),
+               service.passOnHold(fromBook: target, toBook: book.id), wasAsked {
+                service.markAsked(forBook: book.id)
+            }
+        case nil:
+            break
         }
     }
 

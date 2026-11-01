@@ -1001,6 +1001,75 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         XCTAssertFalse(reader.episodeWaitPlays)
     }
 
+    /// Next, then within the half second Previous onto an episode that must
+    /// download: the cancelled move leaves no trace. The timer is the reader's
+    /// own again, not held, and still active; VoiceOver is never told a book
+    /// could not be opened.
+    func testACancelledMoveLeavesTheTimerTheReadersOwnWhenTheNextMustDownload() async throws {
+        let setup = try await makeFeed(options: nil, global: .stop, bottomIsDownloaded: true)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+        startSharedSleepTimer(.minutes(30), ownedBy: reader.readerID)
+        let timer = SleepTimerService.shared
+        let bottom = try XCTUnwrap(book(of: "guid:ep-1", in: setup))
+        reader.isWhereAmIResumePending = true
+
+        reader.goThroughFolder(.down)
+        XCTAssertTrue(timer.isHeld(forBook: bottom.id), "The first move did not hold the timer")
+        reader.goThroughFolder(.up)
+
+        XCTAssertFalse(timer.isHolding, "The cancelled move left its hold")
+        XCTAssertTrue(timer.isActive)
+        XCTAssertEqual(timer.ownerID, reader.readerID)
+        XCTAssertNil(timer.expiredWhileHeldBookID)
+        XCTAssertTrue(timer.isCarriable(by: reader.readerID), "The timer is not the reader's own to carry again")
+        XCTAssertFalse(heard.announced.contains(SleepTimerHandOverWording.noBook))
+    }
+
+    /// The same, and the download fails and the reader closes: the timer stops,
+    /// since the reader owned it, with no hold left to keep it alive.
+    func testAFailedDownloadAfterACancelledMoveThenCloseStopsTheReadersTimer() async throws {
+        let setup = try await makeFeed(
+            options: nil, global: .stop, topAnswer: StubResponse(status: 404), bottomIsDownloaded: true
+        )
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+        startSharedSleepTimer(.minutes(30), ownedBy: reader.readerID)
+        reader.isWhereAmIResumePending = true
+
+        reader.goThroughFolder(.down)
+        reader.goThroughFolder(.up)
+        await waitFor("the failure is said") { heard.announced.contains { $0.contains("could not be downloaded") } }
+        reader.close()
+
+        XCTAssertFalse(SleepTimerService.shared.isActive, "A timer nobody runs was left active")
+        XCTAssertFalse(SleepTimerService.shared.isHolding)
+    }
+
+    /// The same, and the timer runs out during the wait: no run-out mark is
+    /// left for the first book, and a later move to it plays.
+    func testATimerThatRunsOutDuringTheWaitLeavesNoMarkForTheCancelledBook() async throws {
+        let setup = try await makeFeed(options: nil, global: .stop, bottomIsDownloaded: true)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+        startSharedSleepTimer(.minutes(30), ownedBy: reader.readerID)
+        reader.startSleepTimer(duration: .minutes(30))
+        let bottom = try XCTUnwrap(book(of: "guid:ep-1", in: setup))
+        reader.isWhereAmIResumePending = true
+
+        reader.goThroughFolder(.down)
+        reader.goThroughFolder(.up)
+        SleepTimerService.shared._expireForTesting()
+
+        XCTAssertNil(SleepTimerService.shared.expiredWhileHeldBookID, "The cancelled move left a mark for its book")
+        reader.isWhereAmIResumePending = true
+        reader.goThroughFolder(.down)
+        await waitFor("a later move to the first book asks for it") { heard.asked.contains(bottom.id) }
+    }
+
     /// The words of a folder move's download failing or being cancelled, for
     /// both directions, both kinds of item, and with or without playback.
     func testTheFolderMoveDownloadWords() {

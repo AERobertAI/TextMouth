@@ -124,6 +124,7 @@ extension ReaderViewModel {
         if timerRanOut || (moveCarriesSleepTimer && sleepTimerIsFadingOutHere) {
             moveCarriesSleepTimer = false
             moveExpiryMark = nil
+            pendingMoveHold = nil
             DiagnosticLog.trace(.playback, "next book: the sleep timer ended listening before the book was asked for; not starting it")
             autoplayRequests.discard(for: nextBookID)
             readingListRequests.discard(for: nextBookID)
@@ -144,6 +145,8 @@ extension ReaderViewModel {
         // the switch: a reader open for the book takes the timer before it
         // plays, and one the ask opens takes it as its load ends.
         sleepTimerService.markAsked(forBook: nextBookID)
+        // The move has asked: its hold is no longer one a cancelling move undoes.
+        pendingMoveHold = nil
         let action = NextBookWindowRule.action(
             choice: choice,
             isBusy: switchingTheWindowCouldLoseWork,

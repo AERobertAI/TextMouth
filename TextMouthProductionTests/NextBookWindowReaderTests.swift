@@ -613,6 +613,35 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertTrue(eventually(within: 15) { later.isCurrentlyPlaying }, "A later move to the book did not play it")
     }
 
+    /// A target still loading passes the hold on with a move, and a move that
+    /// cancels it returns the timer to how it was: held for the target again,
+    /// asked as before, and the target takes it when its load ends.
+    func testACancelledMoveFromALoadingTargetHoldsTheTimerForItAgain() throws {
+        preserveSharedSleepTimer()
+        let folder = try makeFolderWorld("PassedOnThenCancelled")
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
+        let timer = SleepTimerService.shared
+        timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
+        XCTAssertTrue(timer.hold(forBook: folder.second.id, from: old.readerID))
+        timer.markAsked(forBook: folder.second.id)
+        _ = folder.world.autoplayRequests.request(for: folder.second.id, from: folder.first.id)
+        let target = makeLoadingReader(for: folder.second, in: folder.world, switcher: switcher)
+
+        // The move announces itself, as `showNextBook`'s half second does.
+        target.noteMoveAnnounced(to: folder.third.id)
+        XCTAssertTrue(timer.isHeld(forBook: folder.third.id), "The loading target did not pass the hold on")
+        XCTAssertFalse(timer.isHeld(forBook: folder.second.id))
+        target.cancelPendingMoves()
+
+        XCTAssertTrue(timer.isHeld(forBook: folder.second.id), "The cancelled move left the hold for its own book undone")
+        XCTAssertTrue(timer.isAsked(forBook: folder.second.id), "The hold is not asked as it was")
+        XCTAssertFalse(timer.isHeld(forBook: folder.third.id))
+        heldLoadQueue?.activate()
+        waitForReaderToLoad(target)
+        XCTAssertEqual(timer.ownerID, target.readerID, "The target did not take the timer when it loaded")
+    }
+
     /// A timer held for a book that nothing ever takes is stopped at the
     /// deadline, as a last resort, and the listener is told after current
     /// speech.
