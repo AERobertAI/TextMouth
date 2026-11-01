@@ -126,18 +126,6 @@ extension ReaderViewModel {
         DiagnosticLog.trace(.playback, "next book: took over the running sleep timer")
     }
 
-    /// Listens for a request to take over the sleep timer made while this
-    /// reader is open already, as the book's window comes forward for it, and
-    /// claims it at once; one made before this reader existed is claimed as
-    /// its load ends.
-    func observeSleepTimerHandOvers() {
-        let bookID = book.id
-        sleepTimerHandOvers.requestsMade
-            .filter { $0 == bookID }
-            .sink { [weak self] _ in self?.claimSleepTimerHandOver() }
-            .store(in: &cancellables)
-    }
-
     /// Lets go of a request to take over the sleep timer that this reader
     /// cannot take, because its book could not be opened or its window
     /// closed first, and stops the timer: it would count toward pausing a

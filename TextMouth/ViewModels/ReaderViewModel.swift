@@ -849,6 +849,18 @@ final class ReaderViewModel: ObservableObject {
         claimReadingListRequest()
     }
 
+    /// Listens for a request to take over the sleep timer made while this
+    /// reader is open already, as the book's window comes forward for it, and
+    /// claims it at once (`claimSleepTimerHandOver()`); one made before this
+    /// reader existed is claimed as its load ends.
+    private func observeSleepTimerHandOvers() {
+        let bookID = book.id
+        sleepTimerHandOvers.requestsMade
+            .filter { $0 == bookID }
+            .sink { [weak self] _ in self?.claimSleepTimerHandOver() }
+            .store(in: &cancellables)
+    }
+
     /// Forward speechService @Published state to our own @Published properties
     /// so SwiftUI views that observe this ViewModel get updated.
     private func forwardSpeechState() {
