@@ -757,6 +757,9 @@ final class ReaderViewModel: ObservableObject {
         self.bookmarks = book.bookmarks
 
         libraryViewModel.registerOpenBook(book.id)
+        // A timer held for this book is this reader's to take, or to release
+        // on every way it can fail, for as long as it exists.
+        sleepTimerService.noteReaderExists(forBook: book.id)
 
         // Restore reading position
         if let pos = book.readingPosition {
@@ -2262,6 +2265,7 @@ final class ReaderViewModel: ObservableObject {
         // window closed while the book loaded, is stopped and said so:
         // nothing will play it.
         releaseSleepTimerHeld(forBook: book.id)
+        sleepTimerService.noteReaderGone(forBook: book.id)
         sleepTimerService.forgetLastOwner(readerID)
         // Playback has stopped, so nothing reads the working copy any more
         // (FR02).

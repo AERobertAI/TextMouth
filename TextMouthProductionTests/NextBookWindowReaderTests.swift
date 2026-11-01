@@ -381,6 +381,71 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertTrue(timer.isActive)
     }
 
+    /// A timer held for a book whose reader is still opening it, in a download
+    /// or a load that outlasts the deadline, stays held: the reader exists and
+    /// is responsible for it. The deadline does not stop it, VoiceOver is not
+    /// told the book could not be opened, and when the load ends the reader
+    /// owns the timer and plays.
+    func testAHeldTimerIsKeptWhileItsBooksReaderIsOpeningIt() throws {
+        preserveSharedSleepTimer()
+        let folder = try makeFolderWorld("DeadlineWhileOpening")
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
+        let timer = SleepTimerService.shared
+        timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
+        let opening = makeLoadingReader(for: folder.second, in: folder.world, switcher: switcher)
+        _ = folder.world.autoplayRequests.request(for: folder.second.id, from: folder.first.id)
+        XCTAssertTrue(timer.hold(forBook: folder.second.id, from: old.readerID, deadline: 0.2))
+        timer.markAsked(forBook: folder.second.id)
+
+        let recorder = recordingAnnouncements {
+            spinMainRunLoop(for: 1.0)
+        }
+
+        XCTAssertTrue(timer.isActive, "The deadline stopped a timer held for a book that is still opening")
+        XCTAssertTrue(timer.isHeld(forBook: folder.second.id))
+        XCTAssertFalse(
+            recorder.announcements.contains { $0.message == SleepTimerHandOverWording.noBook },
+            "VoiceOver said the book could not be opened"
+        )
+
+        heldLoadQueue?.activate()
+        waitForReaderToLoad(opening)
+        XCTAssertEqual(timer.ownerID, opening.readerID, "The reader that opened the book did not take the timer")
+        XCTAssertTrue(eventually(within: 15) { opening.isCurrentlyPlaying }, "The book never played")
+        XCTAssertFalse(recorder.announcements.contains { $0.message == SleepTimerHandOverWording.noBook })
+    }
+
+    /// N1's slow load through a reader: the book takes longer to open than a
+    /// request to a reader lives (30 seconds, on a clock the test sets), its
+    /// request to play held as an opening download holds it, and the reader
+    /// still takes the timer and plays.
+    func testASlowLoadPastTheRequestLifetimeStillTakesTheTimer() throws {
+        preserveSharedSleepTimer()
+        let folder = try makeFolderWorld("SlowLoad")
+        let clock = RequestClock()
+        let requests = ReaderAutoplayRequests(now: { clock.now })
+        let switcher = SwitchRecorder(requests: requests)
+        let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
+        let timer = SleepTimerService.shared
+        timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
+        let slow = makeLoadingReader(for: folder.second, in: folder.world, switcher: switcher, autoplayRequests: requests)
+        _ = requests.request(for: folder.second.id, from: folder.first.id)
+        requests.hold(for: folder.second.id)
+        old.holdSleepTimer(forBook: folder.second.id)
+        timer.markAsked(forBook: folder.second.id)
+        old.close()
+
+        clock.advance(by: ReaderRequestStore<ReaderAutoplayRequest>.lifetime + 30)
+        XCTAssertTrue(timer.isHeld(forBook: folder.second.id), "The hold lapsed with the requests' lifetime")
+        heldLoadQueue?.activate()
+        waitForReaderToLoad(slow)
+
+        XCTAssertEqual(timer.ownerID, slow.readerID, "The slow book did not take the timer")
+        XCTAssertTrue(timer.isActive)
+        XCTAssertTrue(eventually(within: 15) { slow.isCurrentlyPlaying }, "The slow book never played")
+    }
+
     /// An End of heading timer taken by a finished book that starts over waits
     /// for the heading after its beginning, not for the end of the book: the
     /// heading looked for at its end found none.
@@ -1070,24 +1135,35 @@ final class NextBookWindowReaderTests: XCTestCase {
         return reader
     }
 
+    /// The queue holding the load of the reader `makeLoadingReader` made last:
+    /// a test lets the load go with `activate()`, which a second activation
+    /// leaves alone.
+    private var heldLoadQueue: DispatchQueue?
+
     /// A reader for `book` in `world` whose load is held, as a book that takes
     /// a long time to open is: it has not loaded, so it has taken no sleep
     /// timer. `switcher` is its window and its window is on screen. Its load
-    /// is let go, and it is closed, when the test ends.
+    /// is let go (`heldLoadQueue`), and it is closed, when the test ends.
+    ///
+    /// - Parameter autoplayRequests: The requests it claims from, the world's
+    ///   unless a test gives it a store with a clock of its own.
     private func makeLoadingReader(
         for book: Book,
         in world: IntegrationWorld,
-        switcher: SwitchRecorder
+        switcher: SwitchRecorder,
+        autoplayRequests: ReaderAutoplayRequests? = nil
     ) -> ReaderViewModel {
-        let held = DispatchQueue(label: "nextbook-held-load")
-        held.suspend()
-        addTeardownBlock { held.resume() }
+        // Inactive until activated, which a second activation leaves alone, so
+        // the load is let go however the test ends.
+        let held = DispatchQueue(label: "nextbook-held-load", attributes: .initiallyInactive)
+        heldLoadQueue = held
+        addTeardownBlock { held.activate() }
         let reader = ReaderViewModel(
             book: book,
             libraryViewModel: world.library,
             settingsViewModel: world.settings,
             substitutionService: TextSubstitutionService(rules: []),
-            autoplayRequests: world.autoplayRequests,
+            autoplayRequests: autoplayRequests ?? world.autoplayRequests,
             windowSwitchRequests: WindowSwitchRequests(),
             notificationCenter: world.notifications,
             loadQueue: held
@@ -1142,5 +1218,16 @@ private final class SwitchRecorder {
         requestWaitingAtTheSwitch.append(requests.hasRequest(for: bookID))
         readingListRequestWaitingAtTheSwitch.append(readingListRequests?.hasRequest(for: bookID) ?? false)
         windowClaimWaitingAtTheSwitch.append(windowSwitchRequests?.hasRequest(for: bookID) ?? false)
+    }
+}
+
+/// A clock a test moves, for the stores whose requests age.
+@MainActor
+private final class RequestClock {
+    private(set) var now = Date()
+
+    /// Moves the clock on by `seconds`.
+    func advance(by seconds: TimeInterval) {
+        now = now.addingTimeInterval(seconds)
     }
 }

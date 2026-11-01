@@ -106,6 +106,12 @@ final class SleepTimerService: ObservableObject {
     private var heldFromOwnerID: UUID?
     /// Counts holds, so a deadline made for an earlier one does nothing.
     private var holdGeneration = 0
+    /// How many readers exist for each book, from the reader's making to its
+    /// close: a reader that exists for a book a timer is held for is the one
+    /// opening it, and is responsible for the timer, which it releases on
+    /// every way it can fail (`noteReaderExists(forBook:)`). The deadline acts
+    /// only when no reader is opening the book.
+    private var readersByBook: [UUID: Int] = [:]
     /// The book a held timer ran out for before its reader took it: that
     /// reader must not start the book (`consumeExpiredWhileHeld(forBook:)`).
     private(set) var expiredWhileHeldBookID: UUID?
@@ -510,10 +516,37 @@ final class SleepTimerService: ObservableObject {
         askedBookID = nil
         expiredWhileHeldBookID = nil
         timerLog(.event, "HELD for=\(Self.ownerToken(bookID)) from=\(Self.ownerToken(owner))")
-        DispatchQueue.main.asyncAfter(deadline: .now() + deadline) { [weak self] in
+        armHoldDeadline(forBook: bookID, generation: generation, after: deadline)
+    }
+
+    /// Arms the last-resort deadline of the hold made as `generation`. It acts
+    /// only when no reader exists for the book: a reader opening it, in a
+    /// download that takes longer than the deadline or a load held up, keeps
+    /// the hold alive, as a download keeps its autoplay request
+    /// (`ReaderAutoplayRequests.hold(for:)`), and the deadline looks again a
+    /// deadline later.
+    private func armHoldDeadline(forBook bookID: UUID, generation: Int, after delay: TimeInterval) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
             guard let self, self.holdGeneration == generation else { return }
+            if self.readersByBook[bookID, default: 0] > 0 {
+                self.armHoldDeadline(forBook: bookID, generation: generation, after: delay)
+                return
+            }
             self.releaseHeld(forBook: bookID, reason: "no reader took it before the deadline")
         }
+    }
+
+    /// Notes that a reader exists for the book `bookID`, which opens it: a
+    /// timer held for the book is that reader's to release, and the deadline
+    /// leaves it alone while the reader exists.
+    func noteReaderExists(forBook bookID: UUID) {
+        readersByBook[bookID, default: 0] += 1
+    }
+
+    /// Notes that a reader of the book `bookID` has closed.
+    func noteReaderGone(forBook bookID: UUID) {
+        guard let count = readersByBook[bookID] else { return }
+        readersByBook[bookID] = count > 1 ? count - 1 : nil
     }
 
     /// Says that the book `bookID`, which the timer is held for, has been
