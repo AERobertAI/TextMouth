@@ -572,6 +572,25 @@ final class SleepTimerService: ObservableObject {
         askedBookID = nil
     }
 
+    /// Restarts the held timer, as Restart Sleep Timer asks, whichever reader
+    /// the restart reaches: a timer counting minutes starts again at its full
+    /// duration, one waiting for a place stays as it is, and the hold and the
+    /// owner are kept. Nothing is resumed: the book the timer is held for
+    /// plays or only opens, as its move said, and takes the timer as it is.
+    ///
+    /// - Returns: Whether the timer is held and the restart was this one's; a
+    ///   timer fading out is not (it ends listening), and the restart then goes
+    ///   on as for any timer.
+    @discardableResult
+    func restartHeld() -> Bool {
+        guard heldForBookID != nil, isActive, !isFadingOut else { return false }
+        if case .minutes(let minutes) = duration {
+            remainingSeconds = minutes * 60
+        }
+        timerLog(.event, "RESTART_HELD kind=\(duration?.displayName ?? "none")")
+        return true
+    }
+
     /// Whether the timer is held for any book.
     var isHolding: Bool {
         heldForBookID != nil

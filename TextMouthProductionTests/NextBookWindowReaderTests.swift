@@ -513,6 +513,58 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertFalse(timer.isHeld(forBook: folder.second.id))
     }
 
+    /// Restart Sleep Timer during a hold, from any reader, restarts the held
+    /// countdown at its full duration and keeps the hold and its owner: the
+    /// book the timer is held for takes it at that duration, and no reader is
+    /// given it back.
+    func testRestartSleepTimerDuringAHoldKeepsTheHoldAndTheOwner() throws {
+        preserveSharedSleepTimer()
+        let folder = try makeFolderWorld("RestartHeld")
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
+        let other = makeReader(for: folder.third, in: folder.world, switcher: switcher)
+        let timer = SleepTimerService.shared
+        timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
+        for _ in 0..<90 { timer._advanceCountdownForTesting() }
+        XCTAssertEqual(timer.remainingSeconds, 30 * 60 - 90)
+        XCTAssertTrue(timer.hold(forBook: folder.second.id, from: old.readerID))
+
+        // The gesture reaches a reader that is not the owner, then the owner.
+        other.restartOrStartLastSleepTimer()
+        XCTAssertEqual(timer.remainingSeconds, 30 * 60, "The held countdown was not restarted")
+        old.restartOrStartLastSleepTimer()
+
+        XCTAssertTrue(timer.isHeld(forBook: folder.second.id), "The restart ended the hold")
+        XCTAssertEqual(timer.ownerID, old.readerID, "The restart changed the owner")
+        XCTAssertFalse(other.isPlaybackUnderWay, "The restart resumed a reader")
+        timer.markAsked(forBook: folder.second.id)
+        let taker = makeReader(for: folder.second, in: folder.world, switcher: switcher)
+        XCTAssertEqual(timer.ownerID, taker.readerID)
+        XCTAssertGreaterThan(timer.remainingSeconds, 30 * 60 - 60, "The book took a timer that was not restarted")
+    }
+
+    /// A restart after a mid-book Next does not resume the book that moved on:
+    /// it stays paused, and the timer's countdown is not resumed for it.
+    func testRestartSleepTimerAfterANextDoesNotResumeTheBookThatMovedOn() throws {
+        preserveSharedSleepTimer()
+        let folder = try makeFolderWorld("RestartAfterNext")
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
+        let timer = SleepTimerService.shared
+        timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
+        old.isWhereAmIResumePending = true
+        old.goThroughFolder(.down)
+        XCTAssertTrue(timer.isHeld(forBook: folder.second.id))
+
+        old.restartOrStartLastSleepTimer()
+
+        XCTAssertFalse(old.isPlaybackUnderWay, "The restart resumed the book that moved on")
+        XCTAssertFalse(old.isWhereAmIUnderWay)
+        XCTAssertTrue(timer.isHeld(forBook: folder.second.id))
+        XCTAssertEqual(timer.remainingSeconds, 30 * 60)
+        XCTAssertEqual(timer.ownerID, old.readerID)
+    }
+
     /// A timer held for a book that nothing ever takes is stopped at the
     /// deadline, as a last resort, and the listener is told after current
     /// speech.

@@ -3227,6 +3227,11 @@ extension ReaderViewModel {
     /// the sleep timer sheet.
     func restartSleepTimer(startPlaybackIfNeeded: Bool = false) {
         guard let duration = sleepTimerService.duration else { return }
+        // A timer held for the next book restarts where it is, whichever
+        // reader the restart reaches: its owner and hold are kept, and no
+        // reader is resumed, as a restart here would resume this one, which
+        // has moved on (`SleepTimerService.restartHeld()`).
+        if sleepTimerService.restartHeld() { return }
         // Rebuild every callback rather than asking the service to retain the
         // old closures. The direct-speech callback captures the effective fade
         // duration, so retaining it after a settings change would arm the new
