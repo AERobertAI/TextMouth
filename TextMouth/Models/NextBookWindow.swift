@@ -181,6 +181,7 @@ enum NextBookWindowWording {
         guard enabled else {
             return "Available only while \(noun.owner) \(noun.plural) go on to another \(noun.singular) when one ends"
         }
-        return "Where the next \(noun.singular) opens when listening goes on from one of \(noun.owner) \(noun.plural):"
+        return "Where the next \(noun.singular) opens when listening goes on from one of \(noun.owner) \(noun.plural): "
             + "in this window, in a new window, or as the global setting says"
-    }}
+    }
+}
