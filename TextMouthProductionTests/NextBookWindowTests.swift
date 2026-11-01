@@ -277,6 +277,20 @@ final class NextBookWindowTests: XCTestCase {
         XCTAssertLessThan(caption, window, "the new pop-up splits When book ends from its caption")
     }
 
+    /// A window no trigger has posted in has a post count of zero, and a
+    /// window with no marked element has nothing for a switched window's check
+    /// to place focus on: it does nothing.
+    func testAWindowNoTriggerPostedInHasNoPostsAndNoMarkedElement() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 100, height: 100),
+            styleMask: [.titled], backing: .buffered, defer: true
+        )
+        window.isReleasedWhenClosed = false
+        XCTAssertEqual(StandardVoiceOverFocusTriggerView.focusPostCount(of: window), 0)
+        XCTAssertNil(StandardVoiceOverFocusTriggerView().findMarkedElement(in: window))
+        XCTAssertEqual(SwitchedWindowFocus.checkDelay, 1.6)
+    }
+
     // MARK: - The Words
 
     /// Every string of the controls, word for word.
