@@ -2556,8 +2556,8 @@ extension ReaderViewModel {
     /// finished: it plays again, or waits at its beginning. Nor is a book
     /// that hands over to the next one, in its folder or in the reading
     /// list (`handOverToNextBook(to:titled:askingWith:)`): the next book takes
-    /// the media controls. A book whose sleep timer keeps the next one from
-    /// starting, or with no next book, rests finished.
+    /// the media controls. A book whose sleep timer ends listening there, or
+    /// with no next book, rests finished.
     ///
     /// Every end but a loop's saves the book exactly at its end, its last
     /// chapter at its full length (`finishAtTheEnd(replayingAFinishedEnd:)`,
@@ -2587,7 +2587,8 @@ extension ReaderViewModel {
         // is neither counted nor told, and does all else an end does.
         let replayedFinishedEnd = replaysFinishedEnd
         replaysFinishedEnd = false
-        // Whether this reader's sleep timer keeps the next book from starting,
+        // Whether this reader's sleep timer ends listening here, which keeps
+        // the next book from starting (a timer counting minutes goes on with it),
         // decided before a timer that stops playback here ends just below.
         let sleepTimerEndsListening = sleepTimerEndsListeningHere
         let sleepTimerStoppedHere = expireSleepTimerAtChapterEnd(beforeChapter: nil)
@@ -2656,8 +2657,9 @@ extension ReaderViewModel {
     /// the rule skips them
     /// (`LibraryViewModel.nextBook(after:going:skippingFinished:)`), takes
     /// listening over (`handOverToNextBook(to:titled:askingWith:)`), unless
-    /// this reader's sleep timer is in effect, which could never pause it,
-    /// or no book, or only finished books, follow. Then `say` says that the
+    /// this reader's sleep timer ends listening here (it fades out, or waits
+    /// for a place this end spends), or no book, or only finished books,
+    /// follow. Then `say` says that the
     /// book finished and why nothing follows: "No more books in folder", or
     /// "Every book after it in the folder is finished" ("before it" going
     /// up).

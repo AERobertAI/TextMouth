@@ -78,9 +78,10 @@ extension ReaderViewModel {
     /// book stops resting finished as it says so
     /// (`handOverToNextBook(to:titled:askingWith:)`). Nothing follows for Stop,
     /// at that end of the list, or past only finished books, and the book
-    /// says which, and rests finished. The sleep timer keeps its rules: this
-    /// reader's timer in effect starts nothing, since it could never pause
-    /// the next book, and a timer that stopped playback here says so last.
+    /// says which, and rests finished. A running sleep timer of this reader's
+    /// goes on with the next book; one that ends listening here (it fades
+    /// out, or waits for a place this end spends) starts nothing, and a timer
+    /// that stopped playback here says so last.
     ///
     /// - Parameters:
     ///   - sleepTimerEndsListening: Whether this reader's sleep timer was in
@@ -108,8 +109,9 @@ extension ReaderViewModel {
     /// Play on a book resting at its end, `playFromTheEnd()`): the book
     /// below or above it, passing over finished books while the list says
     /// so, takes listening over (`handOverToNextBook(to:titled:askingWith:)`),
-    /// unless this reader's sleep timer is in effect, which could never
-    /// pause it, or nothing follows: Stop, that end of the list, or only
+    /// unless this reader's sleep timer ends listening here (it fades out, or
+    /// waits for a place this end spends), or nothing follows: Stop, that end
+    /// of the list, or only
     /// finished books beyond. Then `say` says that the book finished and
     /// why nothing follows.
     ///
@@ -182,9 +184,8 @@ extension ReaderViewModel {
     /// begin: "Starting: <title>" for one that plays, which continues as a
     /// finished book continues through the list
     /// (`continueThroughReadingList(to:)`); "Opening: <title>" for one that
-    /// does not (`openFromReadingList(_:)`). This reader's sleep timer in
-    /// effect keeps the book from starting, since it could never pause it,
-    /// and the announcement says so.
+    /// does not (`openFromReadingList(_:)`). This reader's running sleep timer
+    /// goes on with the book (`noteMoveAnnounced(to:)`).
     ///
     /// With no book that way it says so, and why when only finished books
     /// lie there. A reader not reading its book from the list says that

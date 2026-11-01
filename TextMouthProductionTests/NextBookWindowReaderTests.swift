@@ -256,6 +256,45 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertTrue(timer.endedListening(ownedBy: old.readerID))
     }
 
+    /// A command pressed while the timer fades out ends the fade and the timer,
+    /// as a Pause does, and the book moved to starts; the listener did not ask
+    /// to cancel the timer, so it is said after "Starting: <title>", and after
+    /// current speech.
+    func testACommandWhileTheTimerFadesOutSaysTheTimerWasCancelled() throws {
+        preserveSharedSleepTimer()
+        let folder = try makeFolderWorld("CommandDuringFade")
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let reader = makeReader(for: folder.first, in: folder.world, switcher: switcher)
+        let timer = SleepTimerService.shared
+        timer.start(duration: .minutes(1), ownerID: reader.readerID, onExpire: {}, fadeOutDuration: 5)
+        timer._expireForTesting()
+        XCTAssertTrue(timer.isFadingOut)
+        reader.isWhereAmIResumePending = true
+
+        let recorder = recordingAnnouncements {
+            reader.goThroughFolder(.down)
+            XCTAssertTrue(eventually { !switcher.shown.isEmpty }, "The book moved to never started")
+        }
+
+        XCTAssertEqual(
+            recorder.announcements,
+            [
+                VoiceOverAnnouncement(message: "Starting: B Volume", priority: .high),
+                VoiceOverAnnouncement(message: SleepTimerHandOverWording.fadeEndedByTheMove, priority: .medium),
+            ]
+        )
+        XCTAssertFalse(timer.isActive, "The fade went on after the move")
+        XCTAssertEqual(switcher.shown, [folder.second.id])
+        XCTAssertEqual(
+            SleepTimerHandOverWording.fadeEndedByTheMove,
+            "Sleep timer cancelled, because you moved to another book while it faded out."
+        )
+        XCTAssertEqual(
+            SleepTimerHandOverWording.noBook,
+            "Sleep timer cancelled, because the next book could not be opened."
+        )
+    }
+
     /// Command-W in the half second between "Starting" and the ask does not
     /// stop the timer: it is held for the next book, which is opened in a new
     /// window as announced, and takes it.

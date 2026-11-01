@@ -4,10 +4,9 @@ import Foundation
 
 extension ReaderViewModel {
 
-    /// Next in Folder (going down) and Previous in Folder (going up): goes
-    /// to the item below or above this book in its folder, or in its feed,
-    /// and plays it when this book was playing, as Next in Reading List does
-    /// for the list. The user asked on November 1, 2026 for "go to
+    /// Next in Folder and Previous in Folder: goes to the next or the
+    /// previous item of this book's folder, or of its feed, and plays it when
+    /// this book was playing, as Next in Reading List does for the list. The user asked on November 1, 2026 for "go to
     /// next/previous episodes in feeds or normal folders".
     ///
     /// The item is the one the end of a book would go on to in that
@@ -24,10 +23,9 @@ extension ReaderViewModel {
     /// then asked for after the moment Continue to Next Book gives VoiceOver
     /// to begin: "Starting: <title>" for one that plays
     /// (`continueToNextBook(_:under:)`), "Opening: <title>" for one that does
-    /// not (`openInFolder(_:)`). This reader's sleep timer in effect keeps the
-    /// item from starting, since it could never pause it, and the
-    /// announcement says so. With no item that way it says so, and why when
-    /// only finished items lie there, and changes nothing.
+    /// not (`openInFolder(_:)`). This reader's running sleep timer goes on with
+    /// the item (`noteMoveAnnounced(to:)`). With no item that way it says so,
+    /// and why when only finished items lie there, and changes nothing.
     ///
     /// Where the item shows, in this window or a new one, follows the feed's
     /// or folder's own choice, else the global one (`folderMoveWindowChoice`),
@@ -66,12 +64,12 @@ extension ReaderViewModel {
             return
 
         case .book(let neighbor):
-            DiagnosticLog.trace(.playback, "folder: going \(direction == .down ? "down" : "up") to a book; plays: \(start.plays)")
+            DiagnosticLog.trace(.playback, "folder: going \(looking == .down ? "down" : "up") to a book; plays: \(start.plays)")
             announceMove(to: neighbor.id, titled: neighbor.title, start: start, through: .folder)
 
         case .episodeToDownload(let feedID, let item):
             announceToVoiceOver(FolderNavigationWording.downloading(item, going: direction))
-            DiagnosticLog.trace(.playback, "folder: the episode \(direction == .down ? "below" : "above") is not here; downloading it")
+            DiagnosticLog.trace(.playback, "folder: the episode \(looking == .down ? "below" : "above") is not here; downloading it")
             let cause = NextEpisodeCause.folderMove(direction: direction, wasPlaying: start.wasPlaying)
             let plays = start.plays
             waitForNextEpisode(item, of: feedID, cause: cause) { bookID in

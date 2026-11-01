@@ -126,7 +126,7 @@ enum EndOfBookWording {
     }
 
     /// "article" or "episode".
-    private static func kind(isArticle: Bool) -> String {
+    static func kind(isArticle: Bool) -> String {
         isArticle ? "article" : "episode"
     }
 

@@ -35,7 +35,7 @@ enum FolderNavigationWording {
         going direction: ReadingList.Direction,
         playbackStopped: Bool
     ) -> String {
-        let what = "The \(side(direction)) \(kind(isArticle))"
+        let what = "The \(side(direction)) \(EndOfBookWording.kind(isArticle: isArticle))"
         return "\(what) could not be downloaded\(playbackStopped ? ", so playback stopped" : ""). \(reason)"
     }
 
@@ -48,7 +48,7 @@ enum FolderNavigationWording {
         going direction: ReadingList.Direction,
         playbackStopped: Bool
     ) -> String {
-        "Download of the \(side(direction)) \(kind(isArticle)) cancelled\(playbackStopped ? ", so playback stopped" : "")."
+        "Download of the \(side(direction)) \(EndOfBookWording.kind(isArticle: isArticle)) cancelled\(playbackStopped ? ", so playback stopped" : "")."
     }
 
     /// "next" going down, "previous" going up.
@@ -56,8 +56,4 @@ enum FolderNavigationWording {
         direction == .down ? "next" : "previous"
     }
 
-    /// "article" or "episode".
-    private static func kind(_ isArticle: Bool) -> String {
-        isArticle ? "article" : "episode"
-    }
 }
