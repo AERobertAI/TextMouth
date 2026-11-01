@@ -19,7 +19,7 @@ struct BookReaderWindowView: View {
         bookID: UUID,
         libraryViewModel: LibraryViewModel,
         settingsViewModel: SettingsViewModel,
-        showBook: @escaping (UUID) -> Void = { _ in }
+        showBook: ((UUID) -> Void)? = nil
     ) {
         self.bookID = bookID
         // Create the ReaderViewModel as a StateObject
@@ -42,14 +42,14 @@ struct BookReaderWindowView: View {
     /// book the window's scene presents, which makes a new view, and a new
     /// reader, in the same window (`TextMouthApp`).
     ///
-    /// - Parameter showBook: Sets the window's book; the default, for a
-    ///   view with no scene to set it in, does nothing, and the reader then
+    /// - Parameter showBook: Sets the window's book; nil, for a view with no
+    ///   scene to set it in, leaves the reader unable to switch, and it then
     ///   opens a new window as before.
     static func makeReader(
         book: Book,
         libraryViewModel: LibraryViewModel,
         settingsViewModel: SettingsViewModel,
-        showBook: @escaping (UUID) -> Void
+        showBook: ((UUID) -> Void)?
     ) -> ReaderViewModel {
         let reader = ReaderViewModel(
             book: book,

@@ -72,8 +72,9 @@ extension ReaderViewModel {
             DiagnosticLog.trace(.playback, "folder: going \(direction == .down ? "down" : "up") to a book; plays: \(plays)")
             // Asked for once VoiceOver has begun the announcement, as
             // Continue to Next Book asks for its book.
+            let neighborID = neighbor.id
             DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
-                self.askForFolderItem(neighbor.id, plays: plays)
+                self.askForFolderItem(neighborID, plays: plays)
             }
 
         case .episodeToDownload(let feedID, let item):

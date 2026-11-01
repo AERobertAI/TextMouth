@@ -153,11 +153,13 @@ extension ReaderViewModel {
         }
         // An episode that does not play, as when Next in Folder was pressed
         // for a book not playing, only opens: "Opening: <title>", and then
-        // the window, as Next in Reading List opens one.
+        // its window, as that command opens a book that is here
+        // (`openInFolder(_:)`, which only those commands wait for: no other
+        // wait is made not to play).
         guard wait.plays else {
             announceToVoiceOver(ReadingListReaderWording.opening(wait.item.title, sleepTimerKeptItFromStarting: false))
             DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
-                wait.start(bookID)
+                self.openInFolder(bookID)
             }
             return
         }
