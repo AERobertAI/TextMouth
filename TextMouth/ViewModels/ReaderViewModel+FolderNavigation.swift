@@ -32,14 +32,24 @@ extension ReaderViewModel {
     /// Where the item shows, in this window or a new one, follows the feed's
     /// or folder's own choice, else the global one (`folderMoveWindowChoice`),
     /// read as the item is asked for.
+    ///
+    /// - Parameter direction: The command: down is Next in Folder, up is
+    ///   Previous in Folder. The way the item is looked for is the way the
+    ///   end of this book would go on (`EndOfBookRule.direction`: up for a
+    ///   feed or folder that plays the one above, down for any other, Stop
+    ///   included), for Next, and the other way for Previous. What is spoken
+    ///   follows the command ("next", "previous"), and what lies that way
+    ///   follows the way looked, as the end of a book says it.
     func goThroughFolder(_ direction: ReadingList.Direction) {
+        let rule = endOfBookRule
+        let looking = direction == .down ? rule.direction : rule.direction.opposite
         let succession = libraryViewModel.succession(
-            after: book, going: direction, skippingFinished: endOfBookRule.skipsFinished
+            after: book, going: looking, skippingFinished: rule.skipsFinished
         )
         // Nothing that way: say why, and leave this book as it is, playing
         // or not.
         if case .nothing(let note) = succession {
-            DiagnosticLog.trace(.playback, "folder: nothing \(direction == .down ? "below" : "above") this book (\(note))")
+            DiagnosticLog.trace(.playback, "folder: nothing \(looking == .down ? "below" : "above") this book (\(note))")
             announceToVoiceOver(FolderNavigationWording.nothingThatWay(note))
             return
         }

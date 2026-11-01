@@ -440,6 +440,64 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertTrue(eventually { !switcher.shown.isEmpty }, "A dimmed choice was followed")
     }
 
+    /// Returns `book` with no end behavior of its own, so its feed's or
+    /// folder's options decide how its end goes on (the folder world's books
+    /// each end with Continue to Next Book of their own, which goes down).
+    private func followingItsFolder(_ book: Book) -> Book {
+        var copy = book
+        copy.localEndOfBookBehavior = nil
+        return copy
+    }
+
+    /// Next in Folder goes the way the end of the book would go on: up in a
+    /// folder that plays the book above, down otherwise, Stop included;
+    /// Previous in Folder goes the other way.
+    func testNextInFolderFollowsTheListeningDirection() throws {
+        let folder = try makeFolderWorld("FolderDirection", options: ListeningOptions(continuation: .playBookAbove))
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let reader = makeReader(for: followingItsFolder(folder.second), in: folder.world, switcher: switcher)
+
+        reader.goThroughFolder(.down)
+        XCTAssertTrue(eventually { switcher.shown.count == 1 }, "Next never switched")
+        reader.goThroughFolder(.up)
+        XCTAssertTrue(eventually { switcher.shown.count == 2 }, "Previous never switched")
+
+        XCTAssertEqual(switcher.shown, [folder.first.id, folder.third.id], "Next went up, Previous went down")
+    }
+
+    /// With Stop, or the folder's options playing the book below, Next goes
+    /// down and Previous up, as before.
+    func testNextInFolderGoesDownWhenTheEndStopsOrPlaysBelow() throws {
+        for continuation in [ReadingList.Continuation.stop, .playBookBelow] {
+            let folder = try makeFolderWorld("FolderDown \(continuation)", options: ListeningOptions(continuation: continuation))
+            let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+            let reader = makeReader(for: followingItsFolder(folder.second), in: folder.world, switcher: switcher)
+
+            reader.goThroughFolder(.down)
+            XCTAssertTrue(eventually { switcher.shown.count == 1 }, "Next never switched: \(continuation)")
+            reader.goThroughFolder(.up)
+            XCTAssertTrue(eventually { switcher.shown.count == 2 }, "Previous never switched: \(continuation)")
+
+            XCTAssertEqual(switcher.shown, [folder.third.id, folder.first.id], "\(continuation)")
+        }
+    }
+
+    /// What lies that way is said for the way looked: Next in a folder that
+    /// plays the book above finds only finished books above, and says
+    /// "before it", as the end of a book would.
+    func testTheNoteFollowsTheWayLooked() throws {
+        let folder = try makeFolderWorld("FolderDirectionNote", options: ListeningOptions(continuation: .playBookAbove))
+        markFinished(folder.first, in: folder.world)
+        markFinished(folder.second, in: folder.world)
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let reader = makeReader(for: followingItsFolder(folder.third), in: folder.world, switcher: switcher)
+
+        let said = recordingAnnouncements { reader.goThroughFolder(.down) }
+
+        XCTAssertEqual(said.announcements.map(\.message), ["Every book before it in the folder is finished."])
+        XCTAssertTrue(switcher.shown.isEmpty)
+    }
+
     // MARK: - The Commands
 
     /// The two commands are listed under Navigation with no keys until the
