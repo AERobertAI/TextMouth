@@ -114,10 +114,23 @@ final class ReaderRequestStore<Request: ReaderRequest> {
         return waiting.removeValue(forKey: bookID)
     }
 
-    /// Whether a usable request is waiting for `bookID`. Unlike
-    /// `consume(for:)`, this leaves the request waiting.
-    func hasRequest(for bookID: UUID) -> Bool {
-        waiting[bookID].map { isUsable($0, at: now()) } ?? false
+    /// The usable request waiting for `bookID`, read without claiming it:
+    /// unlike `consume(for:)`, this leaves it waiting.
+    func waitingRequest(for bookID: UUID) -> Request? {
+        waiting[bookID].flatMap { isUsable($0, at: now()) ? $0 : nil }
+    }
+
+    /// Whether a usable request is waiting for `bookID`: the one meaning of
+    /// "the request still waits", which a hand-over and a move asked for both
+    /// use to tell that their book has not started. Unlike `consume(for:)`,
+    /// this leaves the request waiting.
+    ///
+    /// - Parameter madeAt: When the request in question was made, when a caller
+    ///   means one request and no other for the same book: a request made
+    ///   later, by another move, is not it.
+    func hasRequest(for bookID: UUID, madeAt: Date? = nil) -> Bool {
+        guard let request = waitingRequest(for: bookID) else { return false }
+        return madeAt.map { request.createdAt == $0 } ?? true
     }
 
     /// Throws away the request waiting for `bookID`, if any, whatever its

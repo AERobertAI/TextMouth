@@ -12,6 +12,14 @@ enum PendingMoveHold: Equatable {
     /// still loading, to `target`: undoing it holds the timer for this
     /// reader's book again, asked as it was.
     case passedOn(target: UUID, wasAsked: Bool)
+
+    /// The book the move held the timer for.
+    var target: UUID {
+        switch self {
+        case .ownTimer(let target): return target
+        case .passedOn(let target, _): return target
+        }
+    }
 }
 
 /// A move that has asked for its book, whose request to play it that book's
@@ -23,6 +31,10 @@ struct AskedMove: Equatable {
     let target: UUID
     /// What the move did to the sleep timer's hold, to be undone with it.
     let hold: PendingMoveHold?
+    /// When the request to play the book was made, or nil when the move made
+    /// none (a book only opened): the request that is this move's, which a
+    /// request made later for the same book, by another move, is not (Y2).
+    let requestMadeAt: Date?
 }
 
 /// The user's decision on November 1, 2026: "the sleeping timer in particular
@@ -118,12 +130,16 @@ extension ReaderViewModel {
 
     /// The move this reader asked for last, if its book's reader has not
     /// claimed the request to play it: the span in which a later move cancels
-    /// it (`NextBookHandOver.isUnderWay` is the same span for a book's end).
-    /// A move whose request has been claimed, dropped, or has lapsed is no
-    /// longer one, and is forgotten.
+    /// it (`NextBookHandOver.isUnderWay` is the same span for a book's end),
+    /// by the one meaning of the request still waiting
+    /// (`ReaderRequestStore.hasRequest(for:madeAt:)`). It is the move's own
+    /// request that must wait: a move whose request has been claimed, dropped,
+    /// or has lapsed is forgotten, and a request made later for the same book
+    /// never revives it (Y2).
     func underWayAskedMove() -> AskedMove? {
         guard let move = askedMove else { return nil }
-        guard autoplayRequests.hasRequest(for: move.target) else {
+        guard let madeAt = move.requestMadeAt,
+              autoplayRequests.hasRequest(for: move.target, madeAt: madeAt) else {
             askedMove = nil
             return nil
         }
@@ -156,16 +172,16 @@ extension ReaderViewModel {
     private func undo(_ hold: PendingMoveHold?, evenIfAsked: Bool) {
         guard let hold else { return }
         let service = sleepTimerService
-        let target: UUID
-        switch hold {
-        case .ownTimer(let held): target = held
-        case .passedOn(let held, _): target = held
-        }
+        let target = hold.target
         _ = service.consumeExpiredWhileHeld(forBook: target)
         guard service.isHeld(forBook: target), evenIfAsked || !service.isAsked(forBook: target) else { return }
         switch hold {
         case .ownTimer:
-            service.dropHold(forBook: target)
+            // Only a hold that is still this reader's: another reader's hold
+            // for the same book is not this move's to undo (Y2).
+            if service.isHeld(from: readerID) {
+                service.dropHold(forBook: target)
+            }
         case .passedOn(_, let wasAsked):
             if service.passOnHold(
                 fromBook: target, toBook: book.id, isBookOpen: bookIsOpenCheck, returning: true

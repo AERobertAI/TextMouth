@@ -148,7 +148,11 @@ extension ReaderViewModel {
         // The move has asked: its hold is no longer a pending move's, but the
         // asked move's, which a later move from this reader still cancels until
         // the book's reader has claimed the request to play it (X1).
-        askedMove = AskedMove(target: nextBookID, hold: pendingMoveHold)
+        askedMove = AskedMove(
+            target: nextBookID,
+            hold: pendingMoveHold,
+            requestMadeAt: autoplayRequests.waitingRequest(for: nextBookID)?.createdAt
+        )
         pendingMoveHold = nil
         let action = NextBookWindowRule.action(
             choice: choice,

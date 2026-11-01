@@ -3192,8 +3192,12 @@ extension ReaderViewModel {
     /// that never took it. Said once, here, whether the reader is gone or not.
     static func sleepTimerRanOut(for reader: ReaderViewModel?) {
         reader?.pauseForSleepTimerExpiry()
-        reader?.lastAnnouncement = sleepTimerExpiredAnnouncement
-        VoiceOverAnnouncer.announce(sleepTimerExpiredAnnouncement, priority: .high)
+        if let reader {
+            reader.announceToVoiceOver(sleepTimerExpiredAnnouncement)
+        } else {
+            // Only a reader that is gone has no call of its own to say it.
+            VoiceOverAnnouncer.announce(sleepTimerExpiredAnnouncement, priority: .high)
+        }
     }
 
     /// Pauses this reader's book as its timer runs out, logging the state
