@@ -106,7 +106,9 @@ extension ReaderViewModel {
             discardAutoplayRequest()
             return
         }
-        guard service.isHeld(forBook: book.id) else { return }
+        // Held for this book and asked for: a timer only held, for a move still
+        // waiting out the half second, is the old reader's until it asks.
+        guard service.isAsked(forBook: book.id) else { return }
         // A fade begun before the take is putting the listener to sleep: it
         // ends listening, and the book is not started.
         if service.isFadingOut {

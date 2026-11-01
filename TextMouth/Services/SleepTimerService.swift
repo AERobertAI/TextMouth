@@ -109,9 +109,15 @@ final class SleepTimerService: ObservableObject {
     /// The book a held timer ran out for before its reader took it: that
     /// reader must not start the book (`consumeExpiredWhileHeld(forBook:)`).
     private(set) var expiredWhileHeldBookID: UUID?
-    /// Tells, with the book's ID, each time a timer is held for a book, so a
-    /// reader already open for it takes the timer at once.
-    let holdsMade = PassthroughSubject<UUID, Never>()
+    /// The book the held timer has been asked for: the move's announcement
+    /// holds the timer, and the ask, half a second later, lets the reader take
+    /// it (`markAsked(forBook:)`). Until then a timer that runs out ends
+    /// listening before the book starts, which only the old reader, still its
+    /// owner, can tell.
+    private(set) var askedBookID: UUID?
+    /// Tells, with the book's ID, each time the held timer is asked for, so a
+    /// reader already open for it takes the timer before it plays.
+    let asksMade = PassthroughSubject<UUID, Never>()
 
     private static let lastUsedDurationKey = "sleepTimer.lastUsedDuration"
 
@@ -501,13 +507,28 @@ final class SleepTimerService: ObservableObject {
         let generation = holdGeneration
         heldForBookID = bookID
         heldFromOwnerID = owner
+        askedBookID = nil
         expiredWhileHeldBookID = nil
         timerLog(.event, "HELD for=\(Self.ownerToken(bookID)) from=\(Self.ownerToken(owner))")
         DispatchQueue.main.asyncAfter(deadline: .now() + deadline) { [weak self] in
             guard let self, self.holdGeneration == generation else { return }
             self.releaseHeld(forBook: bookID, reason: "no reader took it before the deadline")
         }
-        holdsMade.send(bookID)
+    }
+
+    /// Says that the book `bookID`, which the timer is held for, has been
+    /// asked for, so its reader may take the timer: a reader open already
+    /// takes it now (`asksMade`), one the ask opens takes it once it has
+    /// loaded.
+    func markAsked(forBook bookID: UUID) {
+        guard heldForBookID == bookID else { return }
+        askedBookID = bookID
+        asksMade.send(bookID)
+    }
+
+    /// Whether the book `bookID` has been asked for while the timer is held for it.
+    func isAsked(forBook bookID: UUID) -> Bool {
+        heldForBookID == bookID && askedBookID == bookID
     }
 
     /// Ends the hold without stopping the timer.
@@ -515,6 +536,7 @@ final class SleepTimerService: ObservableObject {
         holdGeneration += 1
         heldForBookID = nil
         heldFromOwnerID = nil
+        askedBookID = nil
     }
 
     /// Whether the timer is held for the book `bookID`.
@@ -528,8 +550,9 @@ final class SleepTimerService: ObservableObject {
         heldForBookID != nil && heldFromOwnerID == ownerID
     }
 
-    /// Gives the timer held for the book `bookID` to the reader `newOwnerID`
-    /// that opened it, and ends the hold: owner and callbacks change, the
+    /// Gives the timer held for the book `bookID`, once it has been asked for
+    /// (`markAsked(forBook:)`), to the reader `newOwnerID` that opened it, and
+    /// ends the hold: owner and callbacks change, the
     /// countdown does not (`transferOwnership`).
     ///
     /// - Returns: Whether the timer changed hands.
@@ -541,7 +564,7 @@ final class SleepTimerService: ObservableObject {
         onFadeStep: ((Float) -> Void)? = nil,
         onFadeCancelled: (() -> Void)? = nil
     ) -> Bool {
-        guard heldForBookID == bookID, let previous = heldFromOwnerID else { return false }
+        guard isAsked(forBook: bookID), let previous = heldFromOwnerID else { return false }
         clearHold()
         return transferOwnership(
             from: previous, to: newOwnerID, onExpire: onExpire, onFadeStep: onFadeStep, onFadeCancelled: onFadeCancelled

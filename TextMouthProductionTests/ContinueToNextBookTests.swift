@@ -654,6 +654,7 @@ final class ContinueToNextBookTests: XCTestCase {
         // The ask: a request for the next book to take the timer, as a switch
         // makes it before the next reader exists.
         finishedReader.holdSleepTimer(forBook: next.id)
+        SleepTimerService.shared.markAsked(forBook: next.id)
         finishedReader.close()
         let timer = SleepTimerService.shared
         XCTAssertTrue(timer.isActive, "Closing the reader stopped a timer it handed over")

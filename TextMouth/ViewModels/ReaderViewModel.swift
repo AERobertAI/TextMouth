@@ -852,13 +852,13 @@ final class ReaderViewModel: ObservableObject {
         claimReadingListRequest()
     }
 
-    /// Listens for the sleep timer being held for this book while this reader
+    /// Listens for the sleep timer being asked for this book while this reader
     /// is open already, as the book's window comes forward for it, and takes
-    /// it at once (`claimSleepTimerHandOver()`); one held before this reader
-    /// existed is taken as its load ends.
+    /// it at once (`claimSleepTimerHandOver()`); one asked for before this
+    /// reader existed is taken as its load ends.
     private func observeSleepTimerHandOvers() {
         let bookID = book.id
-        sleepTimerService.holdsMade
+        sleepTimerService.asksMade
             .filter { $0 == bookID }
             .sink { [weak self] _ in self?.claimSleepTimerHandOver() }
             .store(in: &cancellables)

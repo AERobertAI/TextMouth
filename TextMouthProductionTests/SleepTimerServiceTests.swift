@@ -933,6 +933,11 @@ final class SleepTimerServiceTests: XCTestCase {
         XCTAssertFalse(
             service.adoptHeld(forBook: first, as: taker, onExpire: {}), "a book it is not held for took it"
         )
+        XCTAssertFalse(
+            service.adoptHeld(forBook: second, as: taker, onExpire: {}), "a book took the timer before it was asked for"
+        )
+        service.markAsked(forBook: second)
+        XCTAssertTrue(service.isAsked(forBook: second))
         XCTAssertTrue(service.adoptHeld(forBook: second, as: taker, onExpire: {}))
         XCTAssertEqual(service.ownerID, taker)
         XCTAssertFalse(service.isHeld(forBook: second), "the hold outlived the take")
