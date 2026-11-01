@@ -1,6 +1,31 @@
 import Combine
 import Foundation
 
+/// Why a reader awaits a feed's episode that is being downloaded, which
+/// decides what it speaks of the episode.
+enum NextEpisodeCause: Equatable, Sendable {
+    /// This book ended, and the episode is the next one (FR19): the end of a
+    /// book's own sentences are spoken, and the wait ends once the book no
+    /// longer rests finished.
+    case endOfBook
+    /// Next in Folder or Previous in Folder went to the episode (0.2.5),
+    /// leaving this book where it is.
+    /// - direction: Which way the command went, named in what is spoken.
+    /// - wasPlaying: Whether this book was playing when the command was
+    ///   pressed, so the episode plays once it arrives, and "playback
+    ///   stopped" is said when it never does.
+    /// - sleepTimerKeptItFromStarting: Whether this reader's sleep timer
+    ///   was in effect at the press, so the episode only opens, and the
+    ///   announcement says why.
+    case folderMove(direction: ReadingList.Direction, wasPlaying: Bool, sleepTimerKeptItFromStarting: Bool)
+
+    /// Whether this is the end of a book's.
+    var isEndOfBook: Bool {
+        if case .endOfBook = self { return true }
+        return false
+    }
+}
+
 /// The wait for a feed's next episode to download (FR19, task B3): when an
 /// episode ends and the one that follows it is listed but its file is not
 /// here, the reader asks for the download and hands listening over once the
@@ -24,17 +49,13 @@ extension ReaderViewModel {
     ///   - feedID: The feed it belongs to.
     ///   - start: Opens the book with the given ID, after the announcement
     ///     that it is starting, or opening (as for any next book).
-    ///   - fromFinishedBook: Whether this book ended, as at the end of a
-    ///     book, so the wait ends once it no longer rests finished. False
-    ///     for Next in Folder and Previous in Folder, which leave this book
-    ///     where it is.
-    ///   - plays: Whether the episode plays once it arrives, "Starting:
-    ///     <title>"; false opens it only, "Opening: <title>".
+    ///   - cause: Why the episode is awaited: this book ended, as at the end
+    ///     of a book, or Next in Folder or Previous in Folder went to it
+    ///     (`NextEpisodeCause`), which says what to speak of it.
     func waitForNextEpisode(
         _ item: FeedItem,
         of feedID: UUID,
-        fromFinishedBook: Bool = true,
-        plays: Bool = true,
+        cause: NextEpisodeCause = .endOfBook,
         startingWith start: @escaping (UUID) -> Void
     ) {
         let feeds = libraryViewModel.feeds
@@ -42,7 +63,7 @@ extension ReaderViewModel {
         // ends if another reader takes them (see `listenerHasMovedOn`).
         let wait = NextEpisodeWait(
             item: item, feedID: feedID, start: start, controlsOwner: nowPlayingService.activeOwnerID,
-            fromFinishedBook: fromFinishedBook, plays: plays
+            cause: cause
         )
         nextEpisodeWait = feeds.events.sink { [weak self] event in
             self?.nextEpisodeEventArrived(event, during: wait)
@@ -64,9 +85,7 @@ extension ReaderViewModel {
         default:
             nextEpisodeWait = nil
             DiagnosticLog.trace(.playback, "end of book: the engine did not start the download of the next episode")
-            announceToVoiceOver(EndOfBookWording.nextEpisodeNotDownloaded(
-                reason: EndOfBookWording.downloadNotStartedReason, isArticle: item.isArticle
-            ))
+            announceDownloadFailed(reason: EndOfBookWording.downloadNotStartedReason, during: wait)
         }
     }
 
@@ -82,12 +101,36 @@ extension ReaderViewModel {
         /// The reader that owned TextMouth's media controls as the wait
         /// began: nil, this reader, or another one.
         let controlsOwner: UUID?
-        /// Whether this book ended (it rests finished), as at the end of a
-        /// book, rather than moved from by Next in Folder or Previous in
-        /// Folder.
-        let fromFinishedBook: Bool
-        /// Whether the episode plays once it arrives.
-        let plays: Bool
+        /// Why the episode is awaited, which decides what is spoken of it.
+        let cause: NextEpisodeCause
+    }
+
+    /// Says that the awaited episode could not be downloaded, in the words
+    /// of the wait's cause: the end of a book's own, or Next in Folder's or
+    /// Previous in Folder's, which name the direction and say that playback
+    /// stopped only when something was playing.
+    private func announceDownloadFailed(reason: String, during wait: NextEpisodeWait) {
+        switch wait.cause {
+        case .endOfBook:
+            announceToVoiceOver(EndOfBookWording.nextEpisodeNotDownloaded(reason: reason, isArticle: wait.item.isArticle))
+        case .folderMove(let direction, let wasPlaying, _):
+            announceToVoiceOver(FolderNavigationWording.episodeNotDownloaded(
+                reason: reason, isArticle: wait.item.isArticle, going: direction, playbackStopped: wasPlaying
+            ))
+        }
+    }
+
+    /// Says that the listener cancelled the awaited episode's download, as
+    /// `announceDownloadFailed(reason:during:)` says that it failed.
+    private func announceDownloadCancelled(during wait: NextEpisodeWait) {
+        switch wait.cause {
+        case .endOfBook:
+            announceToVoiceOver(EndOfBookWording.nextEpisodeDownloadCancelled)
+        case .folderMove(let direction, let wasPlaying, _):
+            announceToVoiceOver(FolderNavigationWording.downloadCancelled(
+                isArticle: wait.item.isArticle, going: direction, playbackStopped: wasPlaying
+            ))
+        }
     }
 
     /// Whether the listener has moved on from the finished book, so that the
@@ -98,7 +141,7 @@ extension ReaderViewModel {
     /// returning to this reader, or staying with the reader that held them,
     /// is no move.
     private func listenerHasMovedOn(_ wait: NextEpisodeWait) -> Bool {
-        guard !hasClosed, !isPlaybackUnderWay, hasFinishedBook || !wait.fromFinishedBook else { return true }
+        guard !hasClosed, !isPlaybackUnderWay, hasFinishedBook || !wait.cause.isEndOfBook else { return true }
         guard let owner = nowPlayingService.activeOwnerID else { return false }
         return owner != wait.controlsOwner && owner != readerID
     }
@@ -120,7 +163,7 @@ extension ReaderViewModel {
                 DiagnosticLog.trace(.playback, "end of book: the next episode failed, but the listener had moved on")
                 return
             }
-            announceToVoiceOver(EndOfBookWording.nextEpisodeNotDownloaded(reason: reason, isArticle: wait.item.isArticle))
+            announceDownloadFailed(reason: reason, during: wait)
 
         case .downloadCancelled(let eventFeedID, let itemID)
             where eventFeedID == wait.feedID && itemID == wait.item.id:
@@ -131,7 +174,7 @@ extension ReaderViewModel {
                 DiagnosticLog.trace(.playback, "end of book: the next episode's download was cancelled, but the listener had moved on")
                 return
             }
-            announceToVoiceOver(EndOfBookWording.nextEpisodeDownloadCancelled)
+            announceDownloadCancelled(during: wait)
 
         default:
             break
@@ -151,15 +194,25 @@ extension ReaderViewModel {
             DiagnosticLog.trace(.playback, "end of book: the next episode arrived, but the listener had moved on")
             return
         }
-        // An episode that does not play, as when Next in Folder was pressed
-        // for a book not playing, only opens: "Opening: <title>", and then
-        // its window, as that command opens a book that is here
-        // (`openInFolder(_:)`, which only those commands wait for: no other
-        // wait is made not to play).
-        guard wait.plays else {
-            announceToVoiceOver(ReadingListReaderWording.opening(wait.item.title, sleepTimerKeptItFromStarting: false))
-            DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
-                self.openInFolder(bookID)
+        // Next in Folder or Previous in Folder went to the episode. It plays
+        // when the book was playing and no sleep timer keeps it from
+        // starting, as at the press or since (a timer of this reader's, set
+        // meanwhile, would be played past); any other episode only opens:
+        // "Opening: <title>", and then its window (`openInFolder(_:)`, which
+        // only those commands wait for), as a book that is here opens.
+        if case .folderMove(_, let wasPlaying, let timerKeptItFromStarting) = wait.cause {
+            let timerKeepsItNow = timerKeptItFromStarting || (wasPlaying && sleepTimerEndsListeningHere)
+            guard wasPlaying, !timerKeepsItNow else {
+                announceToVoiceOver(ReadingListReaderWording.opening(
+                    wait.item.title, sleepTimerKeptItFromStarting: timerKeepsItNow
+                ))
+                DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
+                    self.openInFolder(bookID)
+                }
+                return
+            }
+            handOverToNextBook(to: bookID, titled: wait.item.title) {
+                wait.start(bookID)
             }
             return
         }

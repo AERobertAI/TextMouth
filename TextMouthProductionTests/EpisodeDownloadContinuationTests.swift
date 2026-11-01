@@ -713,6 +713,132 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         XCTAssertNil(reader.nextEpisodeWait)
     }
 
+    /// Going up with nothing playing, a failed download names "previous" and
+    /// does not say that playback stopped, since none was playing.
+    func testPreviousInFolderFailedDownloadNamesPreviousAndNoStoppedPlayback() async throws {
+        let setup = try await makeFeed(options: nil, global: .stop, topAnswer: StubResponse(status: 404))
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.goThroughFolder(.up)
+        await waitFor("the failure is announced") { heard.announced.count == 2 }
+
+        XCTAssertEqual(heard.announced, [
+            "Downloading the previous episode: Top part",
+            "The previous episode could not be downloaded. The server says the file is gone.",
+        ])
+        XCTAssertEqual(heard.opened, [])
+        XCTAssertNil(reader.nextEpisodeWait, "The wait outlived the failure")
+    }
+
+    /// Going up with nothing playing, a cancelled download names "previous"
+    /// too, once.
+    func testPreviousInFolderCancelledDownloadNamesPrevious() async throws {
+        let setup = try await makeFeed(options: nil, global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.goThroughFolder(.up)
+        setup.world.center.cancelDownload("guid:ep-3", of: setup.feedID)
+        try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 2))
+
+        XCTAssertEqual(heard.announced, [
+            "Downloading the previous episode: Top part",
+            "Download of the previous episode cancelled.",
+        ])
+        XCTAssertEqual(heard.opened, [])
+    }
+
+    /// Going down from a book that counts as playing (a Where Am I?
+    /// announcement that will play it again, so no sound is made), a failed
+    /// download says that playback stopped, and a cancelled one says so too.
+    func testNextInFolderFromAPlayingBookSaysThatPlaybackStopped() async throws {
+        let setup = try await makeFeed(options: nil, global: .stop, bottomAnswer: StubResponse(status: 404))
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+        reader.isWhereAmIResumePending = true
+
+        reader.goThroughFolder(.down)
+        await waitFor("the failure is announced") { heard.announced.count == 2 }
+
+        XCTAssertEqual(heard.announced, [
+            "Downloading the next episode: Bottom part",
+            "The next episode could not be downloaded, so playback stopped. The server says the file is gone.",
+        ])
+        XCTAssertEqual(heard.asked, [])
+        XCTAssertEqual(
+            FolderNavigationWording.downloadCancelled(isArticle: false, going: .down, playbackStopped: true),
+            "Download of the next episode cancelled, so playback stopped."
+        )
+    }
+
+    /// Going down from a book that counts as playing, an episode that
+    /// arrives starts: "Starting: <title>", asked for to play, and not
+    /// opened.
+    func testNextInFolderFromAPlayingBookStartsTheEpisodeOnceItArrives() async throws {
+        let setup = try await makeFeed(options: nil, global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+        reader.isWhereAmIResumePending = true
+
+        reader.goThroughFolder(.down)
+        await waitFor("the episode asks to start") { !heard.asked.isEmpty }
+
+        let bottom = try XCTUnwrap(book(of: "guid:ep-1", in: setup))
+        XCTAssertEqual(heard.announced, ["Downloading the next episode: Bottom part", "Starting: Bottom part"])
+        XCTAssertEqual(heard.asked, [bottom.id])
+        XCTAssertEqual(heard.opened, [])
+    }
+
+    /// With this reader's sleep timer in effect at the press, the episode
+    /// only opens, and the announcement says why, in the words of the
+    /// reading list's: "Opening: <title>. Not started because of the sleep
+    /// timer."
+    func testNextInFolderWithTheSleepTimerInEffectOpensOnlyAndSaysWhy() async throws {
+        let setup = try await makeFeed(options: nil, global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+        startSharedSleepTimer(.minutes(30), ownedBy: reader.readerID)
+        reader.isWhereAmIResumePending = true
+
+        reader.goThroughFolder(.down)
+        await waitFor("the episode opens") { !heard.opened.isEmpty }
+
+        XCTAssertEqual(heard.announced, [
+            "Downloading the next episode: Bottom part",
+            "Opening: Bottom part. Not started because of the sleep timer.",
+        ])
+        XCTAssertEqual(heard.asked, [])
+    }
+
+    /// The words of a folder move's download failing or being cancelled, for
+    /// both directions, both kinds of item, and with or without playback.
+    func testTheFolderMoveDownloadWords() {
+        XCTAssertEqual(
+            FolderNavigationWording.episodeNotDownloaded(reason: "No network.", isArticle: false, going: .down, playbackStopped: false),
+            "The next episode could not be downloaded. No network."
+        )
+        XCTAssertEqual(
+            FolderNavigationWording.episodeNotDownloaded(reason: "No network.", isArticle: true, going: .up, playbackStopped: true),
+            "The previous article could not be downloaded, so playback stopped. No network."
+        )
+        XCTAssertEqual(
+            FolderNavigationWording.downloadCancelled(isArticle: true, going: .up, playbackStopped: false),
+            "Download of the previous article cancelled."
+        )
+        // The end of a book's own sentences are unchanged.
+        XCTAssertEqual(
+            EndOfBookWording.nextEpisodeNotDownloaded(reason: "No network."),
+            "The next episode could not be downloaded, so playback stopped. No network."
+        )
+        XCTAssertEqual(EndOfBookWording.nextEpisodeDownloadCancelled, "Download cancelled, so playback stopped.")
+    }
+
     // MARK: - The Words
 
     /// What the end says of an episode being downloaded, and of a download
@@ -786,6 +912,8 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
     ///   - bottomIsDownloaded: Whether the bottom item's file is here.
     ///   - bottomIsPlayed: Whether the bottom item was played, its file
     ///     (if it was here) since deleted.
+    ///   - topAnswer: What the server answers a request for the top item's
+    ///     file; the file itself by default.
     ///   - bottomAnswer: What the server answers a request for the bottom
     ///     item's file; the file itself by default.
     ///   - middleIsFinished: Whether the middle item rests at its end.
@@ -798,6 +926,7 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         bottomIsDownloaded: Bool = false,
         bottomIsPlayed: Bool = false,
         bottomAnswer: StubResponse? = nil,
+        topAnswer: StubResponse? = nil,
         middleIsFinished: Bool = false,
         withAnOlderEpisode: Bool = false
     ) async throws -> Setup {
@@ -816,7 +945,7 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         }
         world.server.serve("/atlas.xml", .feed(FeedXML.rss(items: items)))
         let silence = FeedMediaFixtures.file(try FeedMediaFixtures.silentAAC(duration: 1), mimeType: "audio/mp4")
-        world.server.serve("/audio/ep-3.m4a", silence)
+        world.server.serve("/audio/ep-3.m4a", topAnswer ?? silence)
         world.server.serve("/audio/ep-0.m4a", silence)
         world.server.serve("/audio/ep-1.m4a", bottomAnswer ?? silence)
         let feed = try await world.subscribe("/atlas.xml")

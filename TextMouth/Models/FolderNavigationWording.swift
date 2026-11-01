@@ -20,7 +20,44 @@ enum FolderNavigationWording {
     /// article) whose file is not here, and it is downloaded first: "Downloading
     /// the next episode: <title>", or "the previous episode" going up.
     static func downloading(_ item: FeedItem, going direction: ReadingList.Direction) -> String {
-        let side = direction == .down ? "next" : "previous"
-        return "Downloading the \(side) \(EndOfBookWording.kind(of: item)): \(item.title)"
+        "Downloading the \(side(direction)) \(EndOfBookWording.kind(of: item)): \(item.title)"
+    }
+
+    /// What the command says when the episode's download failed: "The
+    /// previous episode could not be downloaded. <reason>", the reason being
+    /// the download's own sentence, kept whole. "The next article" for an
+    /// article. When the book was playing, it was paused for the move, and
+    /// the sentence says so, as the end of a book's does: "The next episode
+    /// could not be downloaded, so playback stopped. <reason>".
+    static func episodeNotDownloaded(
+        reason: String,
+        isArticle: Bool,
+        going direction: ReadingList.Direction,
+        playbackStopped: Bool
+    ) -> String {
+        let what = "The \(side(direction)) \(kind(isArticle))"
+        return "\(what) could not be downloaded\(playbackStopped ? ", so playback stopped" : ""). \(reason)"
+    }
+
+    /// What the command says when the listener cancelled the episode's
+    /// download: "Download of the previous episode cancelled." and, when the
+    /// book was playing, "Download of the next episode cancelled, so
+    /// playback stopped."
+    static func downloadCancelled(
+        isArticle: Bool,
+        going direction: ReadingList.Direction,
+        playbackStopped: Bool
+    ) -> String {
+        "Download of the \(side(direction)) \(kind(isArticle)) cancelled\(playbackStopped ? ", so playback stopped" : "")."
+    }
+
+    /// "next" going down, "previous" going up.
+    private static func side(_ direction: ReadingList.Direction) -> String {
+        direction == .down ? "next" : "previous"
+    }
+
+    /// "article" or "episode".
+    private static func kind(_ isArticle: Bool) -> String {
+        isArticle ? "article" : "episode"
     }
 }
