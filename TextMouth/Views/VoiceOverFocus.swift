@@ -190,6 +190,13 @@ class StandardVoiceOverFocusTriggerView: NSView {
         focusPosts[ObjectIdentifier(window), default: 0]
     }
 
+    /// Counts one post of a trigger in `window`: what `postFocusNotifications`
+    /// does as it posts, and what a test does to give a window the count an
+    /// earlier book's trigger left in it.
+    static func noteFocusPost(in window: NSWindow) {
+        focusPosts[ObjectIdentifier(window), default: 0] += 1
+    }
+
     /// The element of `window` marked `voiceOverFocusID`, which a trigger puts
     /// focus on, or nil when the window has none yet (a window showing
     /// "Loading book..." has none) or no content.
@@ -294,7 +301,7 @@ class StandardVoiceOverFocusTriggerView: NSView {
         }
         // Counted from here: the trigger posts, whether or not the attempts
         // below read the element again.
-        Self.focusPosts[ObjectIdentifier(window), default: 0] += 1
+        Self.noteFocusPost(in: window)
 
         if !window.isKeyWindow {
             window.makeKeyAndOrderFront(nil)

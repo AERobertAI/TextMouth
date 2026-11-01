@@ -27,13 +27,26 @@ enum SwitchedWindowFocus {
     /// view's own delay and its attempts have run by then.
     static let checkDelay: TimeInterval = 1.6
 
+    /// Whether the check puts focus in the window: only in the key window, and
+    /// only if no trigger posted since the book loaded. The count at the load
+    /// need not be zero, since an earlier book's trigger in the same window
+    /// has posted before (W8), so the check compares counts and never reads a
+    /// count as a yes or a no.
+    nonisolated static func shouldPlace(postsAtTheLoad: Int, postsNow: Int, windowIsKey: Bool) -> Bool {
+        windowIsKey && postsNow == postsAtTheLoad
+    }
+
     /// Sees to the focus of `window`, which now shows a book that has loaded,
     /// once, `checkDelay` from now.
     static func place(in window: NSWindow) {
         let postsAtTheLoad = StandardVoiceOverFocusTriggerView.focusPostCount(of: window)
         DispatchQueue.main.asyncAfter(deadline: .now() + checkDelay) { [weak window] in
-            guard let window, window.isKeyWindow, window.hasContentForVoiceOverFocus else { return }
-            guard StandardVoiceOverFocusTriggerView.focusPostCount(of: window) == postsAtTheLoad else { return }
+            guard let window, window.hasContentForVoiceOverFocus else { return }
+            guard shouldPlace(
+                postsAtTheLoad: postsAtTheLoad,
+                postsNow: StandardVoiceOverFocusTriggerView.focusPostCount(of: window),
+                windowIsKey: window.isKeyWindow
+            ) else { return }
             let finder = StandardVoiceOverFocusTriggerView()
             guard let target = finder.findMarkedElement(in: window) else {
                 voiceOverFocusLog("switched window: no focus target found")
