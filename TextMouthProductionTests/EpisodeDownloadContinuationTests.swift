@@ -1096,8 +1096,12 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         reader.isWhereAmIResumePending = true
 
         reader.goThroughFolder(.down)
-        reader.goThroughFolder(.up)
+        // The timer runs out in the half second before the cancel.
         SleepTimerService.shared._expireForTesting()
+        XCTAssertEqual(
+            SleepTimerService.shared.expiredWhileHeldBookID, bottom.id, "The timer's run-out was not marked for the held book"
+        )
+        reader.goThroughFolder(.up)
 
         XCTAssertNil(SleepTimerService.shared.expiredWhileHeldBookID, "The cancelled move left a mark for its book")
         reader.isWhereAmIResumePending = true
