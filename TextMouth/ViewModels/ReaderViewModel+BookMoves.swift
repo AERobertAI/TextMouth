@@ -59,8 +59,11 @@ extension ReaderViewModel {
         let startPending = autoplayRequests.hasRequest(for: book.id)
         // A move cancelled by this one, or a wait for an episode it ends, was
         // to play its book: this book counts as playing then.
+        // The last move wins until its book has started: a move asked for
+        // whose book is still to claim its request to play was to play it, as
+        // this book counts as playing then (X1).
         let wasPlaying = isPlaybackUnderWay || whereAmIWillPlayBook || pendingMovePlays || startPending
-            || episodeWaitPlays || nextBookHandOver?.isPendingAsk == true
+            || episodeWaitPlays || nextBookHandOver?.isPendingAsk == true || underWayAskedMove() != nil
         if startPending {
             autoplayRequests.discard(for: book.id)
         }
@@ -70,19 +73,31 @@ extension ReaderViewModel {
         cancelPendingMoves()
         nextEpisodeWait = nil
         let pauses = wasPlaying || isWhereAmIUnderWay
-        let fadeEnds = pauses && sleepTimerIsFadingOutHere
+        // A move ends the fade of any timer it carries, this reader's own or
+        // one held for its book, as a target still loading carries (X3): the
+        // fade and the timer end, the book moved to starts, and the listener is
+        // told. The cancelled move's hold was undone above, so a timer of this
+        // reader's that was held is its own again, and its pause ends its fade.
+        let fadingHeldForThisBook = sleepTimerService.isHeld(forBook: book.id) && sleepTimerService.isFadingOut
+        let fadesHere = sleepTimerIsFadingOutHere || fadingHeldForThisBook
         if pauses {
             pause(playingPauseSound: false)
         }
-        return BookMoveStart(wasPlaying: wasPlaying, timerFadeEnded: fadeEnds)
+        if fadingHeldForThisBook {
+            sleepTimerService.stop(reason: "a move ended the fade of the timer held for its book")
+        }
+        return BookMoveStart(wasPlaying: wasPlaying, timerFadeEnded: fadesHere && !sleepTimerService.isFadingOut)
     }
 
     /// Cancels a move this reader announced and has not asked for yet: a
     /// command's pending ask (`announceMove`) and the end of a book's
-    /// hand-over (`handOverToNextBook`). The hold the cancelled move made is
-    /// undone (`undoPendingMoveHold()`): a cancelled move leaves no trace, and
-    /// the move that cancels it holds the timer as any move does.
+    /// hand-over (`handOverToNextBook`), and a move asked for whose book has
+    /// not started (`cancelAskedMoveUnderWay()`: the last move wins). The hold
+    /// the cancelled move made is undone (`undoPendingMoveHold()`): a cancelled
+    /// move leaves no trace, and the move that cancels it holds the timer as
+    /// any move does.
     func cancelPendingMoves() {
+        cancelAskedMoveUnderWay()
         undoPendingMoveHold()
         pendingMoveGeneration += 1
         pendingMovePlays = false

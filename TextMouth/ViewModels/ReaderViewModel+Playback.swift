@@ -3161,46 +3161,7 @@ extension ReaderViewModel {
     func makeSleepTimerHandlers(fadeOutDuration: TimeInterval)
         -> (onExpire: () -> Void, onFadeStep: (Float) -> Void, onFadeCancelled: () -> Void) {
         let onExpire: () -> Void = { [weak self] in
-            // A reader that is gone cannot pause its book, which went with it,
-            // but the listener is still owed the word that the timer ran out
-            // (W5): a held timer is kept running for a book that never took it.
-            guard let self = self else {
-                VoiceOverAnnouncer.announce(ReaderViewModel.sleepTimerExpiredAnnouncement, priority: .high)
-                return
-            }
-            let bookToken = String(self.book.id.uuidString.prefix(8))
-            let wasPlaying = self.isAudioBook
-                ? self.audioPlaybackService.isPlaying
-                : self.speechService.isSpeaking
-            let wasPaused = self.isAudioBook
-                ? self.audioPlaybackService.isPaused
-                : self.speechService.isPaused
-            let backend = self.isAudioBook ? "audiobook" : "speech"
-            SleepTimerService.log(
-                .event,
-                "EXPIRY_HANDLER_BEGIN book=\(bookToken) backend=\(backend) "
-                    + "playing=\(wasPlaying) paused=\(wasPaused)"
-            )
-            // Use the sleep-timer-specific pause path so the
-            // end-of-fade completion does not play the normal
-            // pause sound. The pause helper still stops audio
-            // before restoring volume, and it also consumes the
-            // service's one-shot fade-completion latch so the
-            // "just finished fading" case is treated the same as
-            // a still-in-progress fade.
-            self.pause(playingPauseSound: false)
-            let isPlayingAfterPause = self.isAudioBook
-                ? self.audioPlaybackService.isPlaying
-                : self.speechService.isSpeaking
-            let isPausedAfterPause = self.isAudioBook
-                ? self.audioPlaybackService.isPaused
-                : self.speechService.isPaused
-            SleepTimerService.log(
-                .event,
-                "EXPIRY_HANDLER_END book=\(bookToken) playing=\(isPlayingAfterPause) "
-                    + "paused=\(isPausedAfterPause)"
-            )
-            self.announceToVoiceOver(Self.sleepTimerExpiredAnnouncement)
+            Self.sleepTimerRanOut(for: self)
         }
         let onFadeStep: (Float) -> Void = { [weak self] volume in
             guard let self = self else { return }
@@ -3222,6 +3183,55 @@ extension ReaderViewModel {
             }
         }
         return (onExpire, onFadeStep, onFadeCancelled)
+    }
+
+    /// What the running out of a timer does for `reader`, the book it was
+    /// given to: pauses it, and says so. A reader that is gone cannot pause
+    /// its book, which went with it, but the listener is still owed the word
+    /// that the timer ran out (W5): a held timer is kept running for a book
+    /// that never took it. Said once, here, whether the reader is gone or not.
+    static func sleepTimerRanOut(for reader: ReaderViewModel?) {
+        reader?.pauseForSleepTimerExpiry()
+        reader?.lastAnnouncement = sleepTimerExpiredAnnouncement
+        VoiceOverAnnouncer.announce(sleepTimerExpiredAnnouncement, priority: .high)
+    }
+
+    /// Pauses this reader's book as its timer runs out, logging the state
+    /// before and after: the timer's own log holds the whole path from an
+    /// input event to the expiry.
+    private func pauseForSleepTimerExpiry() {
+        let bookToken = String(self.book.id.uuidString.prefix(8))
+        let wasPlaying = self.isAudioBook
+            ? self.audioPlaybackService.isPlaying
+            : self.speechService.isSpeaking
+        let wasPaused = self.isAudioBook
+            ? self.audioPlaybackService.isPaused
+            : self.speechService.isPaused
+        let backend = self.isAudioBook ? "audiobook" : "speech"
+        SleepTimerService.log(
+            .event,
+            "EXPIRY_HANDLER_BEGIN book=\(bookToken) backend=\(backend) "
+                + "playing=\(wasPlaying) paused=\(wasPaused)"
+        )
+        // Use the sleep-timer-specific pause path so the
+        // end-of-fade completion does not play the normal
+        // pause sound. The pause helper still stops audio
+        // before restoring volume, and it also consumes the
+        // service's one-shot fade-completion latch so the
+        // "just finished fading" case is treated the same as
+        // a still-in-progress fade.
+        self.pause(playingPauseSound: false)
+        let isPlayingAfterPause = self.isAudioBook
+            ? self.audioPlaybackService.isPlaying
+            : self.speechService.isSpeaking
+        let isPausedAfterPause = self.isAudioBook
+            ? self.audioPlaybackService.isPaused
+            : self.speechService.isPaused
+        SleepTimerService.log(
+            .event,
+            "EXPIRY_HANDLER_END book=\(bookToken) playing=\(isPlayingAfterPause) "
+                + "paused=\(isPausedAfterPause)"
+        )
     }
 
     /// Cancel the sleep timer if one is running. Anyone may cancel —

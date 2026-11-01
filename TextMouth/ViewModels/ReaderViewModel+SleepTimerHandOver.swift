@@ -14,6 +14,17 @@ enum PendingMoveHold: Equatable {
     case passedOn(target: UUID, wasAsked: Bool)
 }
 
+/// A move that has asked for its book, whose request to play it that book's
+/// reader has not claimed yet: the last move wins until its book has started
+/// (the user's question 17), so a later move from the same reader cancels it
+/// within that span (`ReaderViewModel.cancelPendingMoves()`).
+struct AskedMove: Equatable {
+    /// The book the move asked for.
+    let target: UUID
+    /// What the move did to the sleep timer's hold, to be undone with it.
+    let hold: PendingMoveHold?
+}
+
 /// The user's decision on November 1, 2026: "the sleeping timer in particular
 /// I would like to move still running to the new book without a new window
 /// opening". When listening goes on from this book to another, a running
@@ -98,23 +109,73 @@ extension ReaderViewModel {
     /// holds none, and the wait's own move carries the timer when the episode
     /// arrives.
     func undoPendingMoveHold() {
-        let service = sleepTimerService
         let undoing = pendingMoveHold
         pendingMoveHold = nil
         moveCarriesSleepTimer = false
         moveExpiryMark = nil
-        switch undoing {
-        case .ownTimer(let target)?:
-            if service.isHeld(forBook: target), !service.isAsked(forBook: target) {
+        undo(undoing, evenIfAsked: false)
+    }
+
+    /// The move this reader asked for last, if its book's reader has not
+    /// claimed the request to play it: the span in which a later move cancels
+    /// it (`NextBookHandOver.isUnderWay` is the same span for a book's end).
+    /// A move whose request has been claimed, dropped, or has lapsed is no
+    /// longer one, and is forgotten.
+    func underWayAskedMove() -> AskedMove? {
+        guard let move = askedMove else { return nil }
+        guard autoplayRequests.hasRequest(for: move.target) else {
+            askedMove = nil
+            return nil
+        }
+        return move
+    }
+
+    /// Cancels the move this reader asked for last while its book's reader has
+    /// not started the book: the request to play it is discarded, so the book
+    /// opens in its window without playing, and the hold the move made is
+    /// undone, asked or not, unless the book has taken the timer already. The
+    /// last move wins until its book has started (X1).
+    func cancelAskedMoveUnderWay() {
+        guard let move = underWayAskedMove() else { return }
+        askedMove = nil
+        autoplayRequests.discard(for: move.target)
+        undo(move.hold, evenIfAsked: true)
+    }
+
+    /// Returns the timer to how it was before the move that made `hold`, and
+    /// forgets that the timer ran out for the cancelled move's book: the move
+    /// is gone, and a later move to that book must not find the mark (X2).
+    ///
+    /// The return is not a new carry (X3): a timer that has begun to fade out
+    /// goes back too, and the move that cancels this one ends the fade as any
+    /// move does (`beginMoveToAnotherBook()`).
+    ///
+    /// - Parameter evenIfAsked: Whether a hold the book has been asked for is
+    ///   undone too, as the cancelling of a move whose book has not started
+    ///   does, and not only one that is still waiting out the half second.
+    private func undo(_ hold: PendingMoveHold?, evenIfAsked: Bool) {
+        guard let hold else { return }
+        let service = sleepTimerService
+        let target: UUID
+        switch hold {
+        case .ownTimer(let held): target = held
+        case .passedOn(let held, _): target = held
+        }
+        _ = service.consumeExpiredWhileHeld(forBook: target)
+        guard service.isHeld(forBook: target), evenIfAsked || !service.isAsked(forBook: target) else { return }
+        switch hold {
+        case .ownTimer:
+            service.dropHold(forBook: target)
+        case .passedOn(_, let wasAsked):
+            if service.passOnHold(
+                fromBook: target, toBook: book.id, isBookOpen: bookIsOpenCheck, returning: true
+            ) {
+                if wasAsked { service.markAsked(forBook: book.id) }
+            } else {
+                // Not the reader's to put back: nothing is left held for a book
+                // nobody will open.
                 service.dropHold(forBook: target)
             }
-        case .passedOn(let target, let wasAsked)?:
-            if service.isHeld(forBook: target), !service.isAsked(forBook: target),
-               service.passOnHold(fromBook: target, toBook: book.id, isBookOpen: bookIsOpenCheck), wasAsked {
-                service.markAsked(forBook: book.id)
-            }
-        case nil:
-            break
         }
     }
 

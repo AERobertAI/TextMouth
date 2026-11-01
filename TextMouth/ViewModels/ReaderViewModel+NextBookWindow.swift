@@ -145,7 +145,10 @@ extension ReaderViewModel {
         // the switch: a reader open for the book takes the timer before it
         // plays, and one the ask opens takes it as its load ends.
         sleepTimerService.markAsked(forBook: nextBookID)
-        // The move has asked: its hold is no longer one a cancelling move undoes.
+        // The move has asked: its hold is no longer a pending move's, but the
+        // asked move's, which a later move from this reader still cancels until
+        // the book's reader has claimed the request to play it (X1).
+        askedMove = AskedMove(target: nextBookID, hold: pendingMoveHold)
         pendingMoveHold = nil
         let action = NextBookWindowRule.action(
             choice: choice,

@@ -274,6 +274,10 @@ final class ReaderViewModel: ObservableObject {
     /// not asked yet: a cancelling move undoes it, so a cancelled move leaves
     /// no trace (`cancelPendingMoves()`).
     var pendingMoveHold: PendingMoveHold?
+    /// The move this reader asked for last, until its book's reader claims
+    /// the request to play it: a later move from this reader cancels it
+    /// within that span, as the last move wins (`cancelPendingMoves()`).
+    var askedMove: AskedMove?
     /// The sleep timer's expiry count as a move that carries a timer was
     /// announced (`SleepTimerService.expiryCount`), nil for a move that carries
     /// none: the ask drops the move if the timer ran out since.
@@ -2288,7 +2292,7 @@ final class ReaderViewModel: ObservableObject {
         // closing the window a timer belongs to stops it: nothing will play it.
         // Only when no reader of the book is left: another window of the same
         // book takes the timer (W6).
-        if !libraryViewModel.openBookIDs.contains(book.id) {
+        if !bookIsOpenCheck(book.id) {
             sleepTimerService.cancelHeld(forBook: book.id)
         }
         // Last, once nothing above needs the book's text.
