@@ -26,18 +26,27 @@ Branch `feature/nextbook-window`, November 1, 2026. Brief: `Scripts/agents/brief
 
 ## Busy states: open a new window, as today, never lose work
 
-The rule gives `.openANewWindow` (and a book already open elsewhere is brought forward as today, with this window left open) when:
+The rule gives `.openANewWindow` (and a book already open elsewhere is brought forward as today, with this window left open) when `switchingTheWindowCouldLoseWork`:
 
-- **A sheet is open** on the reader's window, `hostWindow?.attachedSheet != nil` (Edit Book Information, Search in Book, headings, bookmarks, sleep timer, voice, export, alerts). The precedent is `speechRefusalWindowStanding`.
-- **Edit Text is in use** for this book (`BookTextEditSessions.isEditing`): its changes arrive through this reader.
-- **The library is moving** (`dataDirectoryMove != nil`): `ContentView` refuses the open and drops the requests, which a silent switch would get around.
-- **No switcher** is set (a reader made in a test, or with no window yet).
+- **The reader has closed, or its window is gone or off screen** (`NextBookWindowStanding.isOnScreen`: visible, minimized, or TextMouth hidden with Command-H, which orders every window out).
+- **A sheet or an alert is open** on the window (`attachedSheet`): Edit Book Information, Search in Book, headings, bookmarks, sleep timer, voice, export.
+- **A field is being typed in** (the window's first responder is a field editor): Go to Percent, Time, and Page are panels inside the window, not sheets, and the typing would reach the next book's single-key shortcuts.
+- **Edit Text is in use** for this book (`BookTextEditSessions.isEditing`).
+- **The library is moving or unavailable** (`dataDirectoryMove`, `dataDirectoryUnavailability`): `ContentView` refuses the open and drops the requests, which a silent switch would get around.
+- **This reader's own sleep timer runs** (`sleepTimerEndsListeningHere`, true for a paused book too): the old reader's `close()` would stop it. The next book opens in a new window and the timer keeps running. Moving the timer with the window is a question for the user.
+- **No switcher** is set (a reader made in a test).
+
+## Focus after a switch
+
+- **How a new reader gets its first focus.** No `FocusState` and no key view loop. The views mark one element with `voiceOverFocusID` (the play button, with `.background(StandardVoiceOverFocus())`; the progress bar and the message of the loading and error states, with `InitialVoiceOverFocusModifier`). The trigger view fires once, 0.8 or 1.2 seconds after it reaches its window: it finds the element, makes it first responder, and posts `.focusedWindowChanged` and `ScreenChanged`, twice, 0.3 seconds apart. The system announces a window that opens.
+- **A switched window.** It is the same window: nothing announces it, and the old focused view has gone. The new views make the same trigger, which should place the focus; this is unverified.
+- **The guarantee.** A switch leaves a claim (`WindowSwitchRequests`, a `ReaderRequestStore`, made with the other requests before the switch). The reader that takes the window over claims it in `attach(to:)`, once its window is found, and `SwitchedWindowFocus.place(in:)` looks 1.6 seconds later: if the window is key and VoiceOver is not on the marked element, it posts the same notifications. A reader opened for a new window finds no claim, and does nothing more than before.
 
 ## What is new, word for word
 
 - **Settings, Playback, below "When book ends":** a pop-up button.
   - Label: "Open the next book in". Choices: "This Window" (default), "A New Window".
-  - Hint: "Where the next book opens when listening goes on from one book to another: in this window in place of the book here, or in a new window. A book already open in another window is brought forward."
+  - Hint: "Where the next book opens when listening goes on from one book to another: in this window in place of the book here, or in a new window. A book already open in another window is brought forward, and with This Window this window closes."
   - config.json key `nextBookWindow`, the choice's name as its value, like `endOfBookBehavior`.
 - **Feed Info and Folder Settings, beside "When an episode ends" and "When a book ends":** a pop-up button.
   - Label: "Open the next episode in", "Open the next article in", "Open the next item in", "Open the next book in".
@@ -50,6 +59,8 @@ The rule gives `.openANewWindow` (and a book already open elsewhere is brought f
   - Spoken: "Starting: <title>" or "Opening: <title>" (the reading list's sentences, sleep timer sentence included).
   - With no item that way: the succession's own note and a full stop: "No more books in folder.", "Every book after it in the folder is finished.", "Every book before it in the folder is finished."
   - For an episode not downloaded: "Downloading the next episode: <title>", "Downloading the previous episode: <title>".
+  - A failed download: "The previous episode could not be downloaded. <reason>", or ", so playback stopped" before the full stop when the book was playing. A cancelled one: "Download of the previous episode cancelled." (", so playback stopped" when it was playing). "Article" for an article.
+  - The sleep timer in effect at the press: "Opening: <title>. Not started because of the sleep timer." The end of a book's own sentences are unchanged.
 
 ## Order of work
 
