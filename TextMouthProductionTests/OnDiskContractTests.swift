@@ -113,6 +113,8 @@ final class OnDiskContractTests: XCTestCase {
                 "Go to Page…",
                 "Next in Reading List",
                 "Previous in Reading List",
+                "Next in Folder",
+                "Previous in Folder",
                 "Up One Level",
                 "Toggle Bookmark",
                 "Next Bookmark",
