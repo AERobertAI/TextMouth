@@ -73,6 +73,20 @@ extension ReaderViewModel {
             || sleepTimerEndsListeningHere
     }
 
+    /// Takes `window` as this reader's window, as the reader's view finds
+    /// it, and, when a switch made this reader, sees to the window's focus
+    /// (`placeFocusAfterSwitch`): a window opened for a book announces
+    /// itself and places its own first focus, but a window switched to
+    /// another book is the same window, and nothing announces it. The
+    /// request is claimed once, so a window found again changes nothing,
+    /// and a reader opened for a new window finds none.
+    func attach(to window: NSWindow) {
+        hostWindow = window
+        guard !hasClosed, windowSwitchRequests.consume(for: book.id) != nil else { return }
+        DiagnosticLog.trace(.playback, "next book: this window was switched to this book; seeing to its focus")
+        placeFocusAfterSwitch(window)
+    }
+
     /// Shows the book `nextBookID`, which every request for it has been
     /// made for, as `choice` and the state of this window say
     /// (`NextBookWindowRule.action`).
@@ -100,8 +114,11 @@ extension ReaderViewModel {
             openANewWindow()
         case .switchThisWindow:
             // Marked first: the switch rebuilds the window's view, whose
-            // closing must leave the window registered for the new one.
+            // closing must leave the window registered for the new one. The
+            // request for the new reader to see to the window's focus comes
+            // with the others, before the switch.
             hasSwitchedWindow = true
+            windowSwitchRequests.request(for: nextBookID)
             nextBookWindowSwitcher?(nextBookID)
         case .bringTheOpenWindowForwardThenClose:
             // The other window comes forward as before; this one goes on

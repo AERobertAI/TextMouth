@@ -67,7 +67,7 @@ struct BookReaderWindowView: View {
         ReaderView(viewModel: viewModel)
             .background(WindowAccessor(
                 onWindowFound: { window in
-                    viewModel.hostWindow = window
+                    viewModel.attach(to: window)
                     // With no Library window open, the router opens a book's
                     // reader through a reader window like this one (TODO A05).
                     LibraryWindowRouter.shared.registerReaderWindow(window) { bookID in

@@ -259,6 +259,10 @@ final class ReaderViewModel: ObservableObject {
     /// read it from the list (FR09): the shared store, unless the reader
     /// was created with its own.
     let readingListRequests: ReadingListOpenRequests
+    /// Where a reader that switched its window to this book asks this reader
+    /// to see to the window's focus once it has found it (0.2.5): the shared
+    /// store, unless the reader was created with its own.
+    let windowSwitchRequests: WindowSwitchRequests
     /// Where this reader's book stands in the reading list while the reader
     /// reads it from the list (FR09): opened from the Reading List, or
     /// reached through the list by a book that continued to it. Nil while it
@@ -500,6 +504,10 @@ final class ReaderViewModel: ObservableObject {
     /// nil reads it from `hostWindow` and the app. A test that has no
     /// window sets it (`windowStanding`).
     var windowStandingOverride: NextBookWindowStanding?
+    /// Places keyboard and VoiceOver focus in the window of a reader that a
+    /// switch made, once its window is found (`attach(to:)`); a test
+    /// replaces it with a recorder.
+    var placeFocusAfterSwitch: (NSWindow) -> Void = { SwitchedWindowFocus.place(in: $0) }
     /// The revision of the latest library update this reader has applied to
     /// its copy of the book (see `LibraryBookUpdates`); an update that is
     /// not newer is ignored. Written only by `applyLibraryUpdate(_:)` and
@@ -705,6 +713,7 @@ final class ReaderViewModel: ObservableObject {
         substitutionService: TextSubstitutionService? = nil,
         autoplayRequests: ReaderAutoplayRequests? = nil,
         readingListRequests: ReadingListOpenRequests? = nil,
+        windowSwitchRequests: WindowSwitchRequests? = nil,
         notificationCenter: NotificationCenter = .default,
         renderScheduler: (any SpeechRenderScheduling)? = nil,
         cloud: ReaderCloudServices? = nil,
@@ -719,6 +728,7 @@ final class ReaderViewModel: ObservableObject {
         self.substitutionService = substitutionService ?? .shared
         self.autoplayRequests = autoplayRequests ?? .shared
         self.readingListRequests = readingListRequests ?? .shared
+        self.windowSwitchRequests = windowSwitchRequests ?? .shared
         self.notificationCenter = notificationCenter
         self.renderScheduler = renderScheduler ?? SpeechRenderCoordinator.shared
         self.cloudServices = cloud ?? .app

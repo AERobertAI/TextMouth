@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import XCTest
 @testable import TextMouth
@@ -497,6 +498,84 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertEqual(switcher.shown, [folder.first.id])
     }
 
+    // MARK: - Focus After a Switch
+
+    /// A window to hand a reader, never shown.
+    private func makeWindow() -> NSWindow {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 200, height: 100),
+            styleMask: [.titled], backing: .buffered, defer: true
+        )
+        window.isReleasedWhenClosed = false
+        return window
+    }
+
+    /// A switch leaves a request for the new reader to see to the window's
+    /// focus, with the others and before the switch; the reader that takes
+    /// the window over claims it once its window is found, and asks for the
+    /// focus once, however often the window is found.
+    func testASwitchLeavesAClaimTheNewReaderTakesOnce() throws {
+        let folder = try makeFolderWorld("FocusClaim")
+        let claims = WindowSwitchRequests()
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests, windowSwitchRequests: claims)
+        let old = makeReader(for: folder.first, in: folder.world, switcher: switcher, windowSwitchRequests: claims)
+
+        old.goThroughFolder(.down)
+        XCTAssertTrue(eventually { !switcher.shown.isEmpty }, "Never switched")
+        XCTAssertEqual(switcher.windowClaimWaitingAtTheSwitch, [true], "The claim came after the switch")
+        XCTAssertTrue(claims.hasRequest(for: folder.second.id))
+
+        let new = makeReader(for: folder.second, in: folder.world, switcher: switcher, windowSwitchRequests: claims)
+        var placed: [NSWindow] = []
+        new.placeFocusAfterSwitch = { placed.append($0) }
+        let window = makeWindow()
+        new.attach(to: window)
+        new.attach(to: window)
+
+        XCTAssertEqual(placed.count, 1, "The focus was asked for \(placed.count) times")
+        XCTAssertTrue(placed.first === window)
+        XCTAssertTrue(new.hostWindow === window)
+        XCTAssertFalse(claims.hasRequest(for: folder.second.id), "The claim was left waiting")
+    }
+
+    /// A reader opened for a new window finds no claim, and asks for no
+    /// focus: a new window places its own, as before; and a move that opens a
+    /// new window leaves no claim for the book.
+    func testAReaderOpenedForANewWindowAsksForNoFocus() throws {
+        let folder = try makeFolderWorld("FocusNone")
+        folder.world.settings.nextBookWindow = .newWindow
+        let claims = WindowSwitchRequests()
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests, windowSwitchRequests: claims)
+        let opened = record(.openBookWindow, in: folder.world)
+        let old = makeReader(for: folder.first, in: folder.world, switcher: switcher, windowSwitchRequests: claims)
+
+        old.goThroughFolder(.down)
+        XCTAssertTrue(eventually { !opened().isEmpty }, "Never opened the next book")
+        XCTAssertFalse(claims.hasRequest(for: folder.second.id), "A new window left a claim")
+
+        let new = makeReader(for: folder.second, in: folder.world, switcher: switcher, windowSwitchRequests: claims)
+        var placed: [NSWindow] = []
+        new.placeFocusAfterSwitch = { placed.append($0) }
+        new.attach(to: makeWindow())
+        XCTAssertTrue(placed.isEmpty, "A reader opened for a new window asked for the focus")
+    }
+
+    /// A reader that has closed claims nothing.
+    func testAClosedReaderTakesNoClaim() throws {
+        let folder = try makeFolderWorld("FocusClosed")
+        let claims = WindowSwitchRequests()
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests, windowSwitchRequests: claims)
+        let reader = makeReader(for: folder.second, in: folder.world, switcher: switcher, windowSwitchRequests: claims)
+        claims.request(for: folder.second.id)
+        var placed: [NSWindow] = []
+        reader.placeFocusAfterSwitch = { placed.append($0) }
+        reader.close()
+
+        reader.attach(to: makeWindow())
+
+        XCTAssertTrue(placed.isEmpty)
+    }
+
     // MARK: - Teardown Against Start
 
     /// The reader moved from closes without touching the media session of the
@@ -567,7 +646,8 @@ final class NextBookWindowReaderTests: XCTestCase {
         for book: Book,
         in world: IntegrationWorld,
         switcher: SwitchRecorder,
-        readingListRequests: ReadingListOpenRequests? = nil
+        readingListRequests: ReadingListOpenRequests? = nil,
+        windowSwitchRequests: WindowSwitchRequests = WindowSwitchRequests()
     ) -> ReaderViewModel {
         let reader = ReaderViewModel(
             book: book,
@@ -576,6 +656,7 @@ final class NextBookWindowReaderTests: XCTestCase {
             substitutionService: TextSubstitutionService(rules: []),
             autoplayRequests: world.autoplayRequests,
             readingListRequests: readingListRequests,
+            windowSwitchRequests: windowSwitchRequests,
             notificationCenter: world.notifications
         )
         reader.nextBookWindowSwitcher = { switcher.show($0) }
@@ -606,12 +687,21 @@ private final class SwitchRecorder {
     private(set) var requestWaitingAtTheSwitch: [Bool] = []
     /// For each switch, whether the reading-list request for the book waited.
     private(set) var readingListRequestWaitingAtTheSwitch: [Bool] = []
+    /// For each switch, whether the request for the new reader to see to the
+    /// window's focus waited.
+    private(set) var windowClaimWaitingAtTheSwitch: [Bool] = []
     private let requests: ReaderAutoplayRequests
     private let readingListRequests: ReadingListOpenRequests?
+    private let windowSwitchRequests: WindowSwitchRequests?
 
-    init(requests: ReaderAutoplayRequests, readingListRequests: ReadingListOpenRequests? = nil) {
+    init(
+        requests: ReaderAutoplayRequests,
+        readingListRequests: ReadingListOpenRequests? = nil,
+        windowSwitchRequests: WindowSwitchRequests? = nil
+    ) {
         self.requests = requests
         self.readingListRequests = readingListRequests
+        self.windowSwitchRequests = windowSwitchRequests
     }
 
     /// Notes that the window was asked to show `bookID`.
@@ -619,5 +709,6 @@ private final class SwitchRecorder {
         shown.append(bookID)
         requestWaitingAtTheSwitch.append(requests.hasRequest(for: bookID))
         readingListRequestWaitingAtTheSwitch.append(readingListRequests?.hasRequest(for: bookID) ?? false)
+        windowClaimWaitingAtTheSwitch.append(windowSwitchRequests?.hasRequest(for: bookID) ?? false)
     }
 }
