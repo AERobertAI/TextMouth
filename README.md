@@ -14,7 +14,7 @@ TextMouth no longer plays Ogg audio (.ogg, .oga, or .opus) itself. On October 14
 - [What TextMouth reads](docs/user/what-textmouth-reads.md): the formats it imports and plays.
 - [The audiobook manifest](docs/user/audiobook-manifest.md): manifest.json, which orders, titles, groups, and paces a ZIP or folder of audio tracks, and Edit Manifest, which changes it after import.
 - [Adding books](docs/user/adding-books.md): Open Book, Finder, ZIP archives, Import Folder… for DAISY books and folders of tracks, New from Text.
-- [The Library window](docs/user/library-window.md): categories, folders, sorting, searching, and the commands on books.
+- [The Library window](docs/user/library-window.md): the View pop-up and the views you arrange and make, folders, sorting, searching, and the commands on books.
 - [Reader windows](docs/user/reader-windows.md): playing, navigating, bookmarks, Where Am I?, and the sleep timer.
 - [Exporting books](docs/user/exporting-books.md): what Export copies out of the library, and the Convert to menu that makes a text book's text HTML, RTF, a Word 97-2003 document, or a braille file (BRF or PEF).
 - [Editing a book's text](docs/user/editing-book-text.md): Edit Text in your own editor.
