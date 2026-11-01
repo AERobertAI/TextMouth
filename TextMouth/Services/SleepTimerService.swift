@@ -76,6 +76,14 @@ final class SleepTimerService: ObservableObject {
     /// when that reader has closed (`forgetLastOwner(_:)`).
     private(set) var lastOwnerID: UUID?
 
+    /// The reader that owned the timer when it last ran out, whether it
+    /// stopped the book at once or after a fade, kept until a timer starts
+    /// or changes hands. A reader that a finished book's timer was to move
+    /// to asks it (`didExpire(whileOwnedBy:)`): a timer that ran out before
+    /// the next book took it has ended listening, and the next book must not
+    /// start.
+    private(set) var lastExpiredOwnerID: UUID?
+
     private static let lastUsedDurationKey = "sleepTimer.lastUsedDuration"
 
     /// Preferences store used for the restart-timer duration: this process's
@@ -270,6 +278,7 @@ final class SleepTimerService: ObservableObject {
         persistLastUsedDuration(duration)
         self.isActive = true
         self.pendingFadeCompletion = false
+        self.lastExpiredOwnerID = nil
 
         switch duration {
         case .minutes(let minutes):
@@ -341,6 +350,55 @@ final class SleepTimerService: ObservableObject {
         onFadeCancelled = nil
         timerLog(.event, "STOP reason=\(reason) \(previousSummary)")
         fadeCancellation?()
+    }
+
+    /// Hands the running timer from the reader `previousOwnerID` to the
+    /// reader `newOwnerID`, which now plays the book listening went on to
+    /// (0.2.5): the owner and the callbacks change, and nothing else. The
+    /// countdown is neither restarted nor reset, a countdown halted by the
+    /// previous owner's pause stays halted until the new owner plays
+    /// (`resumeCountdown(by:)`), and a timer waiting for a place waits for it
+    /// in the new book. Exactly one owner holds the timer at every moment:
+    /// the previous owner's callbacks are dropped as they are replaced, so it
+    /// can never pause a book it no longer belongs to.
+    ///
+    /// Nothing is handed over unless the timer runs, is owned by
+    /// `previousOwnerID`, and is not fading out: a timer fading out is
+    /// putting the listener to sleep, and ends listening.
+    ///
+    /// - Returns: Whether the timer changed hands.
+    @discardableResult
+    func transferOwnership(
+        from previousOwnerID: UUID,
+        to newOwnerID: UUID,
+        onExpire: @escaping () -> Void,
+        onFadeStep: ((Float) -> Void)? = nil,
+        onFadeCancelled: (() -> Void)? = nil
+    ) -> Bool {
+        guard isActive, !isFadingOut, ownerID == previousOwnerID else {
+            timerLog(
+                .event,
+                "TRANSFER_IGNORED from=\(Self.ownerToken(previousOwnerID)) to=\(Self.ownerToken(newOwnerID))"
+            )
+            return false
+        }
+        ownerID = newOwnerID
+        lastOwnerID = newOwnerID
+        lastExpiredOwnerID = nil
+        onTimerExpired = onExpire
+        self.onFadeStep = onFadeStep
+        self.onFadeCancelled = onFadeCancelled
+        timerLog(
+            .event,
+            "TRANSFERRED from=\(Self.ownerToken(previousOwnerID)) to=\(Self.ownerToken(newOwnerID))"
+        )
+        return true
+    }
+
+    /// Whether the timer last ran out while `ownerID` owned it, and has not
+    /// been started or handed over since (`lastExpiredOwnerID`).
+    func didExpire(whileOwnedBy ownerID: UUID) -> Bool {
+        lastExpiredOwnerID == ownerID
     }
 
     /// Forget `ownerID` as the owner of the most recent timer, because that
@@ -562,6 +620,7 @@ final class SleepTimerService: ObservableObject {
             startFadeOut()
         } else if !isFadingOut {
             isActive = false
+            lastExpiredOwnerID = ownerID
             timerLog(.event, "EXPIRY_CALLBACK_BEGIN mode=instant")
             onTimerExpired?()
         } else {
@@ -602,6 +661,7 @@ final class SleepTimerService: ObservableObject {
                     self.pendingFadeCompletion = true
                     self.isFadingOut = false
                     self.isActive = false
+                    self.lastExpiredOwnerID = self.ownerID
                     self.timerLog(.event, "FADE_COMPLETED finalVolume=\(volume)")
                     self.timerLog(.event, "EXPIRY_CALLBACK_BEGIN mode=fade")
                     self.onTimerExpired?()
@@ -688,6 +748,7 @@ final class SleepTimerService: ObservableObject {
         stop(reason: "test-reset")
         lastUsedDuration = nil
         lastOwnerID = nil
+        lastExpiredOwnerID = nil
         userDefaults.removeObject(forKey: Self.lastUsedDurationKey)
     }
 }
