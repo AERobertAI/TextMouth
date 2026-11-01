@@ -38,12 +38,23 @@ The orchestrator launches each agent in its own git worktree under `.claude/work
 
 ## How the orchestrator works
 
-- **Task agents run on Opus, never on the orchestrator's own model.** Every launch passes `model: "opus"` (with `subagent_type: "general-purpose"` and `isolation: "worktree"`); an agent launched without a model override inherits the orchestrator's model, which on October 6 and 7, 2026 put thirteen task agents on Fable and spent the weekly Fable window (only the four read-only sheet sweeps of October 6 ran on Opus). The orchestrator, on Fable, writes the briefs, reads each report and diff, decides, merges, and records; it uses a Fable agent only when the user asks for one. Briefs are kept in `Scripts/agents/briefs/<date>/` (stage with `git add -f`), never only in the session's scratch folder, so the next session can launch from them. The orchestrator itself may run on Opus too (it did on the evening of October 7, 2026); the launches still name the model. The usage script's `binding` window can then be a weekly cap scoped to one model, such as "Weekly (Fable)", which Opus work does not count: read only the unscoped windows ("5-hour session", "Weekly (all models)"), watch them with `Scripts/agents/usage-watch-unscoped.py <left%>` as a background task, and say in every launch message that the scoped window does not apply, or an agent following the usage rule stops at once.
+- **Every launch names its model, Sonnet by default.** Since October 31, 2026, workers, verifiers, documentation passes, and narrow fixes run on Sonnet at high effort (`model: "sonnet"`, `effort: "high"`), and Opus (`model: "opus"`) is kept for the lead of a large design and the first outside review of a big or risky branch. After a night of 76 Opus agents the user asked: "Are the subagents teams running as sonnet agents? just checking given how fast they used usage last night." Every launch also passes `subagent_type: "general-purpose"` and `isolation: "worktree"`; an agent launched without a model override inherits the orchestrator's model, which on October 6 and 7, 2026 put thirteen task agents on Fable and spent the weekly Fable window (only the four read-only sheet sweeps of October 6 ran on Opus). The orchestrator, on Fable, writes the briefs, reads each report and diff, decides, merges, and records; it uses a Fable agent only when the user asks for one. Briefs are kept in `Scripts/agents/briefs/<date>/` (stage with `git add -f`), never only in the session's scratch folder, so the next session can launch from them. The orchestrator itself may run on Opus too (it did on the evening of October 7, 2026); the launches still name the model. The usage script's `binding` window can then be a weekly cap scoped to one model, such as "Weekly (Fable)", which Opus work does not count: read only the unscoped windows ("5-hour session", "Weekly (all models)"), watch them with `Scripts/agents/usage-watch-unscoped.py <left%>` as a background task, and say in every launch message that the scoped window does not apply, or an agent following the usage rule stops at once.
 - One brief per task, written to `Scripts/agents/briefs/<date>/` and pointed at from the launch message; the user's decisions quoted in the brief in their own words; waves of three to five agents whose file regions do not overlap, with a shared contract or a first "core" branch when they must share types.
 - After an agent reports: write the merge message to a file, note the agent's unverified items and its documentation wording where the next documentation pass will find them (`AGENT-NOTES-2026-10-04.md` is the current such file), then `Scripts/agents/merge-chain.sh <branch>:<message-file>` in the background; on a green suite, record the merge in the TODO with `Scripts/agents/record-merge.py` (the three edits named under "Start here"; `--note` in place of `--counts` for a merge that ran no suite, `--tick FR09 --hash <merge>` to tick an entry), commit the TODO, remove the agent's worktree (`git worktree remove --force --force` and `git worktree prune`), unregister and delete `build/DerivedData-main` when the disk is tight, and post `merged: <branch>` on the board with the new counts so the other agents rebase. A suite that fails only in a load-sensitive test (the sleep-timer integration tests, `BookmarkKeyboardAccessTests`, `StorageGenerationMoveTests`, `BookSearchModelTests.testCancelledSearchPublishesNothing`, `DataDirectoryMoveTests.testAMoveShowsItsProgressWhileItCopies`, the reader-sheet redraw count in `ViewsAndWindowsReaderSheetTests`, the resume-data test `FeedDownloadTests.testADownloadThatStopsPartwayGoesOnFromWhereItStopped`, the audiobook-open benchmark, and the performance baselines, which skip while the Mac is busy) is rerun on that class alone before the merge stands.
 - Questions for the user go into a new file in `humanQuestions/` for each session or batch, so the user can answer while away and the answers are kept: each question numbered, with its context in a sentence or two, a recommended answer, and an `Answer:` line for the user; an optional "Answer for the whole section:" line; and an "Answered this session" section quoting the answers already given in chat. Say in chat which file holds new questions. When acting on an answer, record the decision in the TODO with the user's words, as before.
 - A documentation pass is its own agent (no build) that edits only the documentation (README.md, ARCHITECTURE.md, and the pages under docs/) from the merged code and the agents' wording, one commit per documented branch; it is merged without a suite as a Markdown-only merge and recorded in the TODO with a sentence.
 - **The version.** The user's rule (October 23, 2026) is one bump for each day on which main gains bug fixes or small backward-compatible features. After the day's last merge, and before the user's next install, run `make bump-patch`; run `make bump-minor` instead when that day holds a change that is not backward compatible (an older TextMouth cannot open the library, every book is read again, a stored format changes, or a setting, shortcut, or file is removed or renamed). Commit the bump on its own, add the day's dated section to the top of `docs/user/changelog.md` with one plain sentence per change (a MINOR section first says what an older TextMouth can no longer do with the library), and record the bump in the TODO. MAJOR stays 0 until the user calls TextMouth released. Versions in `docs/developer/building.md` has the rules and the cases they leave open.
+- **Builds go through the build train** (since October 31, 2026). That day the Mac, with 8 GB of memory, froze under the agents' builds and was force-restarted, and the user asked for "1 build at a time maybe on a schedule or something every 30 minutes and have the agents pool there work into each build".
+  - **Start it.** While agents work, the orchestrator runs two background tasks. `Scripts/agents/hold-build-slots.sh <release flag>` holds every build slot, so no agent builds on its own. `python3 -I Scripts/agents/build-train.py loop --every 30 --hours <N>` runs the trains.
+  - **An agent's part.** It commits, then queues `build-train.py request --agent <name> --branch <branch> --classes <A,B> --areas <x,y>`. It waits for its board message or for `build/orchestrator/train/results/<name>.md`.
+  - **Each train:**
+    - it merges every waiting branch onto `train/base` in `.claude/worktrees/train`, leaving out a branch that conflicts anywhere but project.pbxproj and telling its agent;
+    - it builds once, with two jobs;
+    - it runs the union of the tests asked for, dropping and reporting any name `Scripts/test/run-area.py` does not know;
+    - it writes `build/orchestrator/train/trains/<id>/summary.md`;
+    - it waits for the next half hour while under 3 GB is free.
+  - **An integration's full suite.** Point `train/base` at the integration branch, then queue `--agent orchestrator --branch <integration> --areas all`. The loop does not exit when a train ends, so wait for that summary with a background task that exits when the file appears.
+  - **Look and finish.** `build-train.py status` shows the next train and the queue. When the agents are done, stop the loop and `touch` the release flag.
 - Two branches that each pass can fail together; the suite after each merge on the merged tree is what counts. A branch started before another merged must rebase before its final suite.
 - The orchestrator keeps its own memory of the campaign (the harness's memory directory) and tells the user, in plain words, what landed, what is unverified, and what decisions are theirs.
 
@@ -72,8 +83,38 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - A changed copy of `bbs.py` must never run against the live board: one worker did on October 12, which created the new tables early (harmlessly). Point `TEXTMOUTH_BBS_DIR` at a scratch folder first.
 - A test host that joins the system's media session takes the user's AirPods; it never does now, but a branch older than that fix still can until it rebases.
 - A tool call that waits on a permission prompt stops its agent until the user answers, and the user may be away. Claude Code asks before an `rm` through a shell variable: on October 18, 2026 a team lead's `rm -f "$D/$out"` in a throwaway test loop waited five hours while its team stood still. Every `rm`, in a brief or the orchestrator's own commands, takes literal paths. While agents work, the orchestrator runs `python3 -I Scripts/agents/stall-watch.py --subagents ~/.claude/projects/<project folder>/<session id>/subagents` as a background task; it exits naming any agent whose tool call has waited fifteen minutes for its result.
+- The Agent tool runs at most 20 subagents at once in a session ("Concurrent subagent limit reached (20)"). Count the leads, reviewers, and workers before a launch: on October 30, 2026 two leads built most of their tasks themselves because they could not launch workers.
+- Nothing re-invokes the orchestrator when a spent usage window comes back, and once the limit is reached the orchestrator cannot start a watcher either. At the start of any long unattended run, start `Scripts/agents/wait-for-usage-reset.py` as a background task: it exits, re-invoking the orchestrator, when a window it saw spent has headroom again. On October 31, 2026 the 5-hour window reset at 03:20 and every agent stood still until 12:06.
+- A revert must keep what other code uses. Reverting a commit also takes away the helpers it added: on October 31, 2026 a revert removed the test helper `onWorkerSizedStack`, which other tests used, and the next build failed. Before a revert, grep for each symbol the commit added.
 
-## Where things stood on October 25, 2026
+## Where things stood on November 1, 2026
+
+**October 30 to November 1.** On Friday evening, October 30, before the Saturday 08:00 reset, the user lifted the usage limit for the night ("treat it as no limit") and asked: "Please try working through any remaining todos and unfinished work that doesn't require me, improve the tests and look for bugs", with a new feature, customizable Library views.
+- **How it ran.**
+  - Four teams worked through the night, every agent on Opus (`Scripts/agents/briefs/2026-10-30/`).
+  - A triage agent read the TODO and the code for open items (`build/orchestrator/oct30/triage-report.md`, gitignored).
+  - Outside Opus reviews read the views, braille, and bug hunt branches, and each found real problems. Every one was fixed and checked by a Sonnet verifier.
+  - The branches were merged on `integrate/oct30`, and one full suite ran there through the build train (train 1031-1800). Main was fast-forwarded to it on November 1 (3769130e).
+- **Merged into main:**
+  - **`team/views` (71f22891).** Customizable Library views.
+    - The categories became views of one system, in a View pop-up ("Library view"), with a new Feeds view.
+    - A Library tab in Settings orders the views and shows each Always, When Applicable, or Hidden.
+    - The user can make views of their own, each a filter and a sort.
+    - Go to View reaches the first nine views (Command-1 to Command-9).
+    - An Opus review's 15 findings were fixed.
+    - The design is `LIBRARY-VIEWS-RESEARCH-2026-10-30.md`. Its 16 questions to the user are in `humanQuestions/2026-10-30.md`; the build follows their recommended answers.
+  - **`team/braillecodes` (0b523829).** Braille file characters, chosen in the Braille tab, Export, and Book Information: North American Braille ASCII, Eurobraille six-dot, and Unicode braille patterns. Nine review findings were fixed.
+  - **`team/bughunt` (d1a1a602).**
+    - About 40 bugs found by five Opus reviews and the triage were fixed.
+    - Its outside review found seven data problems, fixed in `bughunt/datafix`.
+    - Its HTML depth guard changed the words of deeply nested books, so it was reverted (`bughunt/revert-htmldepth`). Redoing it is a follow-up.
+  - **`team/tests` (090bce28).** Eleven load-sensitive tests made deterministic, vacuous tests made to fail, and new tests for risky code. These tests found four app bugs, which were fixed.
+  - **`docs/oct31` (6fabf93f)** and **version 0.2.4** (6116fbb5).
+- **Paused and not merged.** These teams started before the integration and must rebase onto main:
+  - `team/podcastext`: FMT23 and FMT25, SRT and WebVTT transcripts and a podcast's own transcript and chapters;
+  - `team/speechexport`: FMT43, speech to audio.
+
+  `team/fixes30` was never launched: the triage's batches A to C, charter `Scripts/agents/briefs/2026-10-30/team-fixes.md`.
 
 **October 25 (after midnight).** On the evening of October 24 the user asked for FMT16's follow-up: "Go ahead and do the reopening with a different encoding … can it be set in the info screen for a book with the current one seleted in the popup?" One Opus agent built it (`Scripts/agents/briefs/2026-10-24/encodingchoice.md`). One Opus reviewer found a wrong-text bug and four risks, then verified the first fix round and found four more gaps; both rounds were fixed. It was merged on `integrate/encoding-choice` after a green full suite, and main was fast-forwarded (b835fa79). Merged into main:
 - **`formats/encoding-choice` (7b5375b9 and 0b1bf8dd).**
@@ -138,20 +179,37 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - Documentation passes: `docs/oct19` (c77c9cf4), `docs/oct19b` (bc5ef365), and `docs/oct20` (077b4e1e).
 
 **State at the end:**
-- **Main's suite:** **8777 tests, 78 skipped, 0 failures**, the suite after the encoding choice's last merge (71b6aa41). Only the 0.2.3 bump followed, and it was built and checked. The earlier suites that day: 8606 (the first integration) and 8706 (after FMT16), each with 78 skipped and 0 failures.
-- **Not installed yet:** the user's installed build is 0.1.1 (fb46ea6e). 0.2.3's first launch re-reads every text book for pages, safely (PG16), braille and plain text books included (V07).
-- **Questions:** `humanQuestions/2026-10-23.md` holds four.
-  - The escaping (V06) comes after the install.
-  - V03 is built; V04 is not.
-  - The rehearsal on a copy of the library needs the user's yes.
-  - The install's version follows the policy.
-- **Pending with the user:** the install and push, and the rm-hook offer.
+- **Main's suite:** **9173 tests, 75 skipped, 0 failures**, on `integrate/oct30` (3769130e) in train 1031-1800. Only the documentation merge and the 0.2.4 bump followed.
+- **Not installed yet:** the user's installed build is still 0.1.1 (fb46ea6e). The first launch of 0.2.x reads every text book again for pages, safely (PG16), braille and plain text books included (V07).
+- **Questions:**
+  - `humanQuestions/2026-10-30.md` holds 21. Questions 1 to 20 (views and braille) were built with their recommended answers. Question 21, whether Delete After Import may delete a ZIP holding files that were not imported, is open, and nothing was built for it.
+  - That file also lists 20 older questions still open in `2026-10-10-evening.md` and `2026-10-12.md`.
+  - `humanQuestions/2026-10-23.md` holds four: the escaping (V06) comes after the install; V03 is built and V04 is not; the rehearsal on a copy of the library needs the user's yes; the install's version follows the policy.
+- **Pending with the user:** the push and install, the rm-hook offer, and whether and when to resume the paused teams.
 - **The next candidates:**
-  - read the first launch's `PAGES_UPGRADE_SUMMARY` once the user installs;
-  - a choice of BRF braille ASCII code beside the braille table, if the user reads BRFs from outside North America (asked on October 25, unanswered);
-  - V06 in the first update after the install;
-  - FMT43;
-  - the TODO's follow-ups, among them the October 24 integration's.
+  - the October 30 follow-ups in the TODO, the HTML depth guard first;
+  - the paused teams and `team/fixes30`;
+  - the tests team's five unrun briefs (`Scripts/agents/briefs/2026-10-30/tests/`);
+  - reading the first launch's `PAGES_UPGRADE_SUMMARY` once the user installs;
+  - V06 in the first update after the install.
+
+**Lessons of October 30 to November 1:**
+- **Opus everywhere spent the week.**
+  - All 76 agents ran on Opus, and the 5-hour limit stopped them at about 20:45 and 02:20.
+  - The window came back at 03:20, but nothing ran until 12:06, nearly nine hours lost; see "Lessons that cost time".
+  - The user then asked for Sonnet.
+- **The machine.**
+  - **Memory.** Eight gigabytes cannot take the agents' builds beside the user's own apps. At 12:41 on October 31 a build of about 2.5 GB left 64 MB free and the Mac froze. The forced restart killed every agent and background task and emptied the session's scratch folder. Keep the orchestrator's scripts in `build/orchestrator/` or in the repository.
+  - **The build train fixed it.** The trains that followed ran one build at a time, with two jobs, and the Mac did not freeze again.
+- **The disk** fell from 12 GB to 1 GB several times, taken by the teams' build folders (3 to 4 GB each), swap, and the system icon cache (3,517 entries by 01:51 on October 31). By November 1 the icon cache was down to 174 entries.
+- **Every outside review found real problems again:**
+  - 15 in views and 9 in braille;
+  - in the bug hunt, seven data problems and a depth guard that changed a book's words.
+
+  The 17:30 train on October 31 failed four tests, for two causes:
+  - the removal marker's key list, pinned by the bug hunt, lacked the braille branch's new key, which only the merged tree could show;
+  - `train/base` held an older commit of views than the integration branch, one without its fix of the editor's fit test. Once an integration branch exists, point `train/base` at it.
+- **An unnoticed result.** The final suite passed at 18:17 on October 31. Nothing woke the orchestrator, since the board watcher wakes it only for questions, and the result sat unread until 01:50 on November 1.
 
 **Lessons of October 24:**
 - **Every branch needed a fix round.** All five reviews found real bugs, two of them data loss or changed words, and the verifications after the fixes found new bugs in three branches. Plan review, fix, and verify for each branch.
