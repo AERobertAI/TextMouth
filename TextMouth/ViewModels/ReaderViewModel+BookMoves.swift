@@ -15,29 +15,27 @@ enum BookMoveRoute: Equatable, Sendable {
 }
 
 /// What a command found when it began to move from this book: whether the
-/// book was playing, and whether this reader's sleep timer keeps the next
-/// book from starting.
+/// book was playing. A sleep timer of this reader's goes on with the next
+/// book (`ReaderViewModel.handOverSleepTimer(to:)`), so it keeps nothing from
+/// starting.
 struct BookMoveStart: Equatable, Sendable {
     /// Whether this book was playing: speech or audio under way, or paused
     /// only while a Where Am I announcement speaks, or until the end sound
     /// of one that ended has played (`ReaderViewModel.whereAmIWillPlayBook`).
     let wasPlaying: Bool
-    /// Whether this reader's sleep timer is in effect while the book was
-    /// playing, so the next book could never be paused by it and is not
-    /// started.
-    let sleepTimerKeptItFromStarting: Bool
 
-    /// Whether the book moved to plays: this one was playing, and no sleep
-    /// timer keeps it from starting.
-    var plays: Bool { wasPlaying && !sleepTimerKeptItFromStarting }
+    /// Whether the book moved to plays: this one was playing.
+    var plays: Bool { wasPlaying }
 }
 
 extension ReaderViewModel {
 
     /// Begins a move from this book to another, which the reading list's and
     /// the folder's Next and Previous share: reads whether this book was
-    /// playing and whether its sleep timer keeps the next one from starting,
-    /// and pauses it.
+    /// playing, and pauses it. A running sleep timer of this reader's goes on
+    /// with the next book, its countdown halted by the pause until that book
+    /// plays; one fading out ends, as a pause during its fade ends it
+    /// (`pause(playingPauseSound:)`).
     ///
     /// A playing book pauses where it is, without the pause sound, since the
     /// book that starts makes its own; a Where Am I announcement speaking
@@ -46,23 +44,19 @@ extension ReaderViewModel {
     /// moved to.
     func beginMoveToAnotherBook() -> BookMoveStart {
         let wasPlaying = isPlaybackUnderWay || whereAmIWillPlayBook
-        let start = BookMoveStart(
-            wasPlaying: wasPlaying,
-            sleepTimerKeptItFromStarting: wasPlaying && sleepTimerEndsListeningHere
-        )
         if wasPlaying || isWhereAmIUnderWay {
             pause(playingPauseSound: false)
         }
-        return start
+        return BookMoveStart(wasPlaying: wasPlaying)
     }
 
     /// Says that the book `bookID`, titled `title`, is starting or opening,
     /// and asks for it once VoiceOver has begun saying so: "Starting:
     /// <title>" for a book that plays (`EndOfBookWording.starting(_:)`),
-    /// "Opening: <title>" for one that does not, with why when the sleep
-    /// timer kept it from starting
-    /// (`ReadingListReaderWording.opening(_:sleepTimerKeptItFromStarting:)`).
-    /// It is asked for after `continueToNextBookDelay`, as Continue to Next
+    /// "Opening: <title>" for one that does not
+    /// (`ReadingListReaderWording.opening(_:)`). A running sleep timer of this
+    /// reader's is noted, so a timer that runs out before the book is asked for
+    /// ends listening (`noteMoveAnnounced()`). It is asked for after `continueToNextBookDelay`, as Continue to Next
     /// Book asks for its book, so the announcement is not cut off by the
     /// next book's window or by the switch of this one.
     func announceMove(
@@ -72,10 +66,9 @@ extension ReaderViewModel {
         through route: BookMoveRoute
     ) {
         announceToVoiceOver(
-            start.plays
-                ? EndOfBookWording.starting(title)
-                : ReadingListReaderWording.opening(title, sleepTimerKeptItFromStarting: start.sleepTimerKeptItFromStarting)
+            start.plays ? EndOfBookWording.starting(title) : ReadingListReaderWording.opening(title)
         )
+        noteMoveAnnounced()
         let plays = start.plays
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
             self.askForBook(bookID, plays: plays, through: route)

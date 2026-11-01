@@ -710,11 +710,12 @@ final class ReadingListReaderTests: XCTestCase {
         XCTAssertEqual(ReadingStatsService.shared.stats.finishedBooks.map(\.bookID), [first.id.uuidString])
     }
 
-    /// The sleep timer keeps its rules for a book read from the list: a
-    /// timer of this reader's that is in effect starts nothing in the list,
-    /// and says so; a timer that stopped playback at the book's end is said
-    /// after why nothing follows. Another reader's timer does not stop the
-    /// list.
+    /// The sleep timer keeps its rules for a book read from the list where it
+    /// ends listening: a timer of this reader's set for the end of a heading
+    /// or of the book starts nothing in the list, and says so; a timer that
+    /// stopped playback at the book's end is said after why nothing follows.
+    /// Another reader's timer does not stop the list. A timer counting minutes
+    /// goes on with the next book instead (0.2.5).
     func testTheSleepTimerKeepsItsRulesForABookReadFromTheList() throws {
         preserveSharedSleepTimer()
         let world = try makeIntegrationWorld("ReadingListSleepTimer")
@@ -727,7 +728,6 @@ final class ReadingListReaderTests: XCTestCase {
         // as finished here, so the list always offers the book beside.
         world.library.finishedBookIDs = { [] }
         let cases: [(duration: SleepTimerDuration, continuation: ReadingList.Continuation, reading: Book, announcement: String)] = [
-            (.minutes(30), .playBookBelow, first, "Finished: First Crossing. Next book not started because of the sleep timer."),
             (.endOfBook, .playBookBelow, first, "Finished: First Crossing. Next book not started because of the sleep timer."),
             (
                 .endOfBook, .stop, first,
@@ -765,6 +765,38 @@ final class ReadingListReaderTests: XCTestCase {
         }
         timer.stop(reason: "the test ended")
         XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Second Crossing"])
+    }
+
+    /// A sleep timer counting minutes goes on with the next book of the
+    /// reading list (0.2.5): the next book starts, "Starting: <title>", and the
+    /// reader of that book owns the timer, still running.
+    func testAMinutesTimerGoesOnWithTheNextBookInTheReadingList() throws {
+        preserveSharedSleepTimer()
+        let world = try makeIntegrationWorld("ReadingListTimerGoesOn")
+        let requests = ReadingListOpenRequests()
+        let first = try makeAudioBook("First Crossing", in: world)
+        let second = try makeAudioBook("Second Crossing", in: world)
+        list([first, second], in: world)
+        world.library.finishedBookIDs = { [] }
+        let reader = makeReaderFromList(for: first, in: world, requests: requests)
+        let next = makeReader(for: second, in: world, requests: requests)
+        waitForReaderToLoad(next)
+        let timer = SleepTimerService.shared
+        timer.start(duration: .minutes(30), ownerID: reader.readerID, onExpire: {})
+        let before = timer.remainingSeconds
+        let asked = record(.continueToNextBook, in: world)
+
+        let recorder = recordingAnnouncements {
+            reader.handleEndOfBook()
+            XCTAssertTrue(eventually { !asked().isEmpty }, "The timer kept the next book from starting")
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Second Crossing"])
+        XCTAssertTrue(timer.isActive, "The timer ended with the book")
+        XCTAssertEqual(timer.ownerID, next.readerID)
+        XCTAssertLessThanOrEqual(timer.remainingSeconds, before)
+        XCTAssertGreaterThan(timer.remainingSeconds, before - 60)
     }
 
     /// A book taken off the list while it is read ends as its own
@@ -1154,10 +1186,12 @@ final class ReadingListReaderTests: XCTestCase {
         XCTAssertFalse(requests.hasRequest(for: second.id))
     }
 
-    /// This reader's sleep timer keeps the book Next in Reading List opens
-    /// from starting, since it could never pause that book: the book opens
-    /// without playing, and the announcement says why.
-    func testTheSleepTimerKeepsNextInReadingListFromStartingTheBook() throws {
+    /// This reader's running sleep timer goes on with the book Next in
+    /// Reading List goes to (0.2.5): the book starts, "Starting: <title>", as
+    /// any playing book's next does, the book it left is paused, and the
+    /// timer is asked for by the book's reader, still this reader's until that
+    /// reader takes it.
+    func testTheSleepTimerGoesOnWithNextInReadingList() throws {
         preserveSharedSleepTimer()
         let world = try makeIntegrationWorld("ReadingListNextSleepTimer")
         let requests = ReadingListOpenRequests()
@@ -1174,19 +1208,20 @@ final class ReadingListReaderTests: XCTestCase {
 
         let recorder = recordingAnnouncements {
             reader.goThroughReadingList(.down)
-            XCTAssertTrue(eventually { !opened().isEmpty }, "Never opened the next book")
+            XCTAssertTrue(eventually { !asked().isEmpty }, "Never asked for the next book")
             spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
         }
+        let waiting = SleepTimerHandOverRequests.shared.hasRequest(for: second.id)
+        let stillActive = timer.isActive
         timer.stop(reason: "the test ended")
+        SleepTimerHandOverRequests.shared.discard(for: second.id)
 
-        XCTAssertEqual(
-            recorder.announcements.map(\.message),
-            ["Opening: Second Crossing. Not started because of the sleep timer."]
-        )
-        XCTAssertEqual(opened().map { $0.object as? UUID }, [second.id])
-        XCTAssertTrue(asked().isEmpty, "Asked for the next book to start")
-        XCTAssertFalse(world.autoplayRequests.hasRequest(for: second.id))
-        XCTAssertTrue(requests.hasRequest(for: second.id))
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Second Crossing"])
+        XCTAssertEqual(asked().map(\.nextBookID), [second.id])
+        XCTAssertTrue(opened().isEmpty)
+        XCTAssertTrue(world.autoplayRequests.hasRequest(for: second.id))
+        XCTAssertTrue(waiting, "The timer was not asked for the next book")
+        XCTAssertTrue(stillActive, "The timer stopped with the move")
         XCTAssertTrue(reader.audioPlaybackService.isPaused, "This book plays on")
     }
 

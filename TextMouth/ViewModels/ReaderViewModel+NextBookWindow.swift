@@ -60,17 +60,16 @@ extension ReaderViewModel {
     /// - this book's text is being edited in another app (Edit Text), whose
     ///   changes arrive through this reader;
     /// - the library is moving or unavailable, when the app refuses to open a
-    ///   book, which a switch would go around;
-    /// - this reader's own sleep timer is running, which the close of the
-    ///   old reader would stop (`close()`): the next book opens in a new
-    ///   window, and the timer keeps running, as before 0.2.5.
+    ///   book, which a switch would go around.
+    ///
+    /// A running sleep timer of this reader's is not one: it goes on with the
+    /// next book, in this window or another (`handOverSleepTimer(to:)`).
     var switchingTheWindowCouldLoseWork: Bool {
         hasClosed
             || windowStanding.isBusy
             || libraryViewModel.textEditSessions.isEditing(book.id)
             || libraryViewModel.dataDirectoryMove != nil
             || libraryViewModel.dataDirectoryUnavailability != nil
-            || sleepTimerEndsListeningHere
     }
 
     /// Takes `window` as this reader's window, as the reader's view finds
@@ -102,6 +101,21 @@ extension ReaderViewModel {
         under choice: NextBookWindow,
         openingANewWindowWith openANewWindow: () -> Void
     ) {
+        // A sleep timer that was to go on with the next book, and ran out (or
+        // began to fade) since the move was announced, has ended listening:
+        // the next book is not started, and what the timer said as it ran out
+        // is all that is said. The requests made for the book are dropped.
+        if moveCarriesSleepTimer && sleepTimerEndedListening {
+            moveCarriesSleepTimer = false
+            DiagnosticLog.trace(.playback, "next book: the sleep timer ended listening before the book was asked for; not starting it")
+            autoplayRequests.discard(for: nextBookID)
+            readingListRequests.discard(for: nextBookID)
+            return
+        }
+        moveCarriesSleepTimer = false
+        // A running timer goes on with the book, wherever it shows: asked
+        // for with the other requests, before the switch or the window opens.
+        handOverSleepTimer(to: nextBookID)
         let action = NextBookWindowRule.action(
             choice: choice,
             isBusy: switchingTheWindowCouldLoseWork,

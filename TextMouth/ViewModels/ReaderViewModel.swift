@@ -263,6 +263,21 @@ final class ReaderViewModel: ObservableObject {
     /// to see to the window's focus once it has found it (0.2.5): the shared
     /// store, unless the reader was created with its own.
     let windowSwitchRequests: WindowSwitchRequests
+    /// Where a reader listening goes on from asks this reader to take over
+    /// its running sleep timer (0.2.5): the shared store, unless the reader
+    /// was created with its own.
+    let sleepTimerHandOvers: SleepTimerHandOverRequests
+    /// Whether a move to another book that this reader announced was to
+    /// carry a running sleep timer of this reader's: set as the move is
+    /// announced, read as the book is asked for, so a timer that ran out in
+    /// between ends listening, and the book is not started
+    /// (`showNextBook`). Accessed from the NextBookWindow and
+    /// SleepTimerHandOver extensions.
+    var moveCarriesSleepTimer = false
+    /// The book this reader asked to take over its sleep timer, while it is
+    /// asked and unclaimed: this reader's close leaves a timer handed over
+    /// running, for the reader that takes it (`close()`).
+    var sleepTimerHandedOverTo: UUID?
     /// Where this reader's book stands in the reading list while the reader
     /// reads it from the list (FR09): opened from the Reading List, or
     /// reached through the list by a book that continued to it. Nil while it
@@ -714,6 +729,7 @@ final class ReaderViewModel: ObservableObject {
         autoplayRequests: ReaderAutoplayRequests? = nil,
         readingListRequests: ReadingListOpenRequests? = nil,
         windowSwitchRequests: WindowSwitchRequests? = nil,
+        sleepTimerHandOvers: SleepTimerHandOverRequests? = nil,
         notificationCenter: NotificationCenter = .default,
         renderScheduler: (any SpeechRenderScheduling)? = nil,
         cloud: ReaderCloudServices? = nil,
@@ -729,6 +745,7 @@ final class ReaderViewModel: ObservableObject {
         self.autoplayRequests = autoplayRequests ?? .shared
         self.readingListRequests = readingListRequests ?? .shared
         self.windowSwitchRequests = windowSwitchRequests ?? .shared
+        self.sleepTimerHandOvers = sleepTimerHandOvers ?? .shared
         self.notificationCenter = notificationCenter
         self.renderScheduler = renderScheduler ?? SpeechRenderCoordinator.shared
         self.cloudServices = cloud ?? .app
@@ -752,6 +769,7 @@ final class ReaderViewModel: ObservableObject {
         observeSpokenAudioSettings()
         observeLibraryUpdates()
         observeReadingList()
+        observeSleepTimerHandOvers()
         forwardSpeechState()
         // TextMouth's memory is watched while this reader plays (B07).
         followPlaybackForMemoryGuard().store(in: &cancellables)
@@ -1690,6 +1708,10 @@ final class ReaderViewModel: ObservableObject {
         // Save position with global offset now that we have chapter data
         savePosition()
         refreshPlaybackUI()
+        // A sleep timer the previous book handed over is taken before
+        // anything plays: a timer that ran out meanwhile ends listening, so
+        // the book is not started for it (0.2.5).
+        claimSleepTimerHandOver()
         // A finished book may have continued to this one while
         // it loaded: start playing for it now.
         claimAutoplayRequest()
@@ -1723,8 +1745,10 @@ final class ReaderViewModel: ObservableObject {
         isLoading = false
         loadHeldByTextEdit = error is BookTextEditPending
         // A book that cannot load cannot play for a finished
-        // book that continued to it; its error shows instead.
+        // book that continued to it; its error shows instead. Nor can it
+        // take over a sleep timer, which would count toward pausing nothing.
         discardAutoplayRequest()
+        discardSleepTimerHandOver(announcing: true)
     }
 
     // MARK: - EPUB Metadata
@@ -2210,9 +2234,17 @@ final class ReaderViewModel: ObservableObject {
         // from cancelling a timer another window started, even one of
         // the same book. A media gesture restarting the timer then goes
         // to the focused reader rather than to this closed one.
-        if sleepTimerService.ownerID == readerID {
+        //
+        // A timer this reader handed over to the next book (0.2.5) goes on:
+        // the reader that takes the book adopts it, and stopping it here
+        // would end a timer the listener means to keep. A request nobody has
+        // claimed yet is still waiting for that reader.
+        if sleepTimerService.ownerID == readerID, !isWaitingForTheSleepTimerToBeTaken {
             sleepTimerService.stop()
         }
+        // A timer handed to this reader that it never took, as its window
+        // closed while the book loaded, is stopped: nothing will play it.
+        discardSleepTimerHandOver(announcing: false)
         sleepTimerService.forgetLastOwner(readerID)
         // Playback has stopped, so nothing reads the working copy any more
         // (FR02).

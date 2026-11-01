@@ -2913,6 +2913,9 @@ extension ReaderViewModel {
             title: book.title, author: book.author, isPlaying: false
         )
         announceToVoiceOver(EndOfBookWording.starting(title))
+        // A running sleep timer goes on with the next book; one that runs out
+        // before it is asked for ends listening (`showNextBook`).
+        noteMoveAnnounced()
         let handOver = NextBookHandOver(
             nextBookID: nextBookID,
             titled: title,
@@ -3048,20 +3051,24 @@ extension ReaderViewModel {
     }
 
     /// Whether this reader's own sleep timer ends listening with this book,
-    /// so that Continue to Next Book does not start the next one.
-    ///
-    /// The timer pauses only the reader that set it, so it could never pause
-    /// the next book, which would play on past it. Continuing is therefore
-    /// ruled out while the timer is in effect: counting down, fading out,
-    /// or waiting for the end of a heading or of the book. A timer set for
-    /// either place is still in effect as the book's last chapter ends,
-    /// since it ends there itself (`handleEndOfBook()` asks first). A timer
-    /// that has ended, at an earlier heading's end or by running out, rules
+    /// so that Continue to Next Book does not start the next one: the timer
+    /// is fading out, putting the listener to sleep, or waits for the end of
+    /// a heading or of the book. A timer set for either place is still in
+    /// effect as the book's last chapter ends, since it ends there itself
+    /// (`handleEndOfBook()` asks first). A timer counting minutes does not:
+    /// it goes on with the next book (0.2.5, `handOverSleepTimer(to:)`),
+    /// which it pauses when it runs out as it pauses any book. A timer that
+    /// has ended, at an earlier heading's end or by running out, rules
     /// nothing out.
     var sleepTimerEndsListeningHere: Bool {
         Self.sleepTimerEndsListening(
             timerBelongsToThisReader: sleepTimerService.ownerID == readerID,
-            timerIsActive: sleepTimerService.isActive
+            timerIsActive: sleepTimerService.isActive,
+            timerFadesOutOrWaitsForAPlace: sleepTimerService.isFadingOut
+                || sleepTimerService.duration.map { duration in
+                    if case .minutes = duration { return false }
+                    return true
+                } ?? false
         )
     }
 
@@ -3073,11 +3080,15 @@ extension ReaderViewModel {
     ///     book's, set the timer.
     ///   - timerIsActive: Whether the timer is counting down, waiting for
     ///     its moment, or fading out.
+    ///   - timerFadesOutOrWaitsForAPlace: Whether the timer is fading out, or
+    ///     is set for the end of a heading or of the book, rather than
+    ///     counting minutes, which goes on with the next book.
     nonisolated static func sleepTimerEndsListening(
         timerBelongsToThisReader: Bool,
-        timerIsActive: Bool
+        timerIsActive: Bool,
+        timerFadesOutOrWaitsForAPlace: Bool
     ) -> Bool {
-        timerBelongsToThisReader && timerIsActive
+        timerBelongsToThisReader && timerIsActive && timerFadesOutOrWaitsForAPlace
     }
 
     // MARK: - Sleep Timer
@@ -3101,64 +3112,13 @@ extension ReaderViewModel {
         // planning. A settings edit while the timer runs must not make the
         // utterance queue disagree with the timer's already-armed duration.
         let fadeOutDuration = settingsViewModel.sleepFadeOutDuration
+        let handlers = makeSleepTimerHandlers(fadeOutDuration: fadeOutDuration)
         sleepTimerService.start(
             duration: duration,
             ownerID: readerID,
-            onExpire: { [weak self] in
-                guard let self = self else { return }
-                let bookToken = String(self.book.id.uuidString.prefix(8))
-                let wasPlaying = self.isAudioBook
-                    ? self.audioPlaybackService.isPlaying
-                    : self.speechService.isSpeaking
-                let wasPaused = self.isAudioBook
-                    ? self.audioPlaybackService.isPaused
-                    : self.speechService.isPaused
-                let backend = self.isAudioBook ? "audiobook" : "speech"
-                SleepTimerService.log(
-                    .event,
-                    "EXPIRY_HANDLER_BEGIN book=\(bookToken) backend=\(backend) "
-                        + "playing=\(wasPlaying) paused=\(wasPaused)"
-                )
-                // Use the sleep-timer-specific pause path so the
-                // end-of-fade completion does not play the normal
-                // pause sound. The pause helper still stops audio
-                // before restoring volume, and it also consumes the
-                // service's one-shot fade-completion latch so the
-                // "just finished fading" case is treated the same as
-                // a still-in-progress fade.
-                self.pause(playingPauseSound: false)
-                let isPlayingAfterPause = self.isAudioBook
-                    ? self.audioPlaybackService.isPlaying
-                    : self.speechService.isSpeaking
-                let isPausedAfterPause = self.isAudioBook
-                    ? self.audioPlaybackService.isPaused
-                    : self.speechService.isPaused
-                SleepTimerService.log(
-                    .event,
-                    "EXPIRY_HANDLER_END book=\(bookToken) playing=\(isPlayingAfterPause) "
-                        + "paused=\(isPausedAfterPause)"
-                )
-                self.announceToVoiceOver(Self.sleepTimerExpiredAnnouncement)
-            },
-            onFadeStep: { [weak self] volume in
-                guard let self = self else { return }
-                if self.isAudioBook {
-                    self.audioPlaybackService.setVolume(volume)
-                } else {
-                    self.speechService.setSleepTimerFadeVolume(
-                        volume,
-                        duration: fadeOutDuration
-                    )
-                }
-            },
-            onFadeCancelled: { [weak self] in
-                guard let self else { return }
-                if self.isAudioBook {
-                    self.audioPlaybackService.restoreVolume()
-                } else {
-                    self.speechService.cancelSleepTimerFade()
-                }
-            },
+            onExpire: handlers.onExpire,
+            onFadeStep: handlers.onFadeStep,
+            onFadeCancelled: handlers.onFadeCancelled,
             fadeOutDuration: fadeOutDuration
         )
         // A timer for the end of the heading stops playback at this chapter's
@@ -3172,6 +3132,75 @@ extension ReaderViewModel {
         if startPlaybackIfNeeded {
             playUnlessUnderWay()
         }
+    }
+
+    /// What this reader's sleep timer does as it runs: pause this reader's
+    /// playback and say so as it runs out, fade this reader's volume as it
+    /// fades, and restore it if the fade is cancelled. A timer this reader
+    /// starts is given them (`startSleepTimer`), and so is one handed over
+    /// to it (`claimSleepTimerHandOver()`), so the one copy of what a timer
+    /// does to a book serves both. Each captures this reader weakly.
+    ///
+    /// - Parameter fadeOutDuration: The fade the timer was armed with, which
+    ///   direct speech plans its utterance queue by.
+    func makeSleepTimerHandlers(fadeOutDuration: TimeInterval)
+        -> (onExpire: () -> Void, onFadeStep: (Float) -> Void, onFadeCancelled: () -> Void) {
+        let onExpire: () -> Void = { [weak self] in
+            guard let self = self else { return }
+            let bookToken = String(self.book.id.uuidString.prefix(8))
+            let wasPlaying = self.isAudioBook
+                ? self.audioPlaybackService.isPlaying
+                : self.speechService.isSpeaking
+            let wasPaused = self.isAudioBook
+                ? self.audioPlaybackService.isPaused
+                : self.speechService.isPaused
+            let backend = self.isAudioBook ? "audiobook" : "speech"
+            SleepTimerService.log(
+                .event,
+                "EXPIRY_HANDLER_BEGIN book=\(bookToken) backend=\(backend) "
+                    + "playing=\(wasPlaying) paused=\(wasPaused)"
+            )
+            // Use the sleep-timer-specific pause path so the
+            // end-of-fade completion does not play the normal
+            // pause sound. The pause helper still stops audio
+            // before restoring volume, and it also consumes the
+            // service's one-shot fade-completion latch so the
+            // "just finished fading" case is treated the same as
+            // a still-in-progress fade.
+            self.pause(playingPauseSound: false)
+            let isPlayingAfterPause = self.isAudioBook
+                ? self.audioPlaybackService.isPlaying
+                : self.speechService.isSpeaking
+            let isPausedAfterPause = self.isAudioBook
+                ? self.audioPlaybackService.isPaused
+                : self.speechService.isPaused
+            SleepTimerService.log(
+                .event,
+                "EXPIRY_HANDLER_END book=\(bookToken) playing=\(isPlayingAfterPause) "
+                    + "paused=\(isPausedAfterPause)"
+            )
+            self.announceToVoiceOver(Self.sleepTimerExpiredAnnouncement)
+        }
+        let onFadeStep: (Float) -> Void = { [weak self] volume in
+            guard let self = self else { return }
+            if self.isAudioBook {
+                self.audioPlaybackService.setVolume(volume)
+            } else {
+                self.speechService.setSleepTimerFadeVolume(
+                    volume,
+                    duration: fadeOutDuration
+                )
+            }
+        }
+        let onFadeCancelled: () -> Void = { [weak self] in
+            guard let self else { return }
+            if self.isAudioBook {
+                self.audioPlaybackService.restoreVolume()
+            } else {
+                self.speechService.cancelSleepTimerFade()
+            }
+        }
+        return (onExpire, onFadeStep, onFadeCancelled)
     }
 
     /// Cancel the sleep timer if one is running. Anyone may cancel —

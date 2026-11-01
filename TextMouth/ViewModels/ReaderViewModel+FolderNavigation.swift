@@ -72,11 +72,7 @@ extension ReaderViewModel {
         case .episodeToDownload(let feedID, let item):
             announceToVoiceOver(FolderNavigationWording.downloading(item, going: direction))
             DiagnosticLog.trace(.playback, "folder: the episode \(direction == .down ? "below" : "above") is not here; downloading it")
-            let cause = NextEpisodeCause.folderMove(
-                direction: direction,
-                wasPlaying: start.wasPlaying,
-                sleepTimerKeptItFromStarting: start.sleepTimerKeptItFromStarting
-            )
+            let cause = NextEpisodeCause.folderMove(direction: direction, wasPlaying: start.wasPlaying)
             let plays = start.plays
             waitForNextEpisode(item, of: feedID, cause: cause) { bookID in
                 self.askForBook(bookID, plays: plays, through: .folder)

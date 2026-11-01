@@ -479,6 +479,7 @@ extension ReaderViewModel {
         cloudPhase = phase
         announceCloud(message)
         discardAutoplayRequest()
+        discardSleepTimerHandOver(announcing: true)
     }
 
     // MARK: Downloading

@@ -178,13 +178,63 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
 
     // MARK: - The Sleep Timer
 
-    /// This reader's sleep timer in effect: the note, and no download.
-    func testTheSleepTimerKeepsTheNextEpisodeFromBeingDownloaded() async throws {
+    /// A running timer counting minutes does not keep the next episode from
+    /// being downloaded (0.2.5): it goes on with the episode, which starts
+    /// once it arrives, and the timer is asked for by the episode's reader.
+    func testARunningSleepTimerGoesOnWithTheNextEpisode() async throws {
         let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
         let heard = listen(to: setup)
         let reader = try openReader(for: setup.middle, in: setup)
         await waitFor("the episode loads in its reader") { !reader.isLoading }
         startSharedSleepTimer(.minutes(30), ownedBy: reader.readerID)
+
+        reader.handleEndOfBook()
+        await waitFor("the next episode asks to start") { !heard.asked.isEmpty }
+
+        let bottom = try XCTUnwrap(book(of: "guid:ep-1", in: setup))
+        XCTAssertEqual(heard.announced, [
+            "Finished: Middle part. Downloading the next episode: Bottom part.",
+            "Starting: Bottom part",
+        ])
+        XCTAssertEqual(heard.asked, [bottom.id])
+        XCTAssertEqual(heard.downloadsStarted, ["guid:ep-1"])
+        XCTAssertTrue(SleepTimerService.shared.isActive, "The timer ended with the episode")
+        XCTAssertTrue(SleepTimerHandOverRequests.shared.hasRequest(for: bottom.id), "The episode was not asked to take the timer")
+        SleepTimerHandOverRequests.shared.discard(for: bottom.id)
+    }
+
+    /// The timer runs out while the next episode downloads: it has ended
+    /// listening, and the episode is not started when it arrives; the timer's
+    /// own expiry is all that is said after the download began.
+    func testATimerThatRunsOutWhileTheEpisodeDownloadsKeepsItFromStarting() async throws {
+        let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+        startSharedSleepTimer(.minutes(30), ownedBy: reader.readerID)
+        reader.startSleepTimer(duration: .minutes(30))
+
+        reader.handleEndOfBook()
+        SleepTimerService.shared._expireForTesting()
+        await waitFor("the download arrives") { book(of: "guid:ep-1", in: setup) != nil }
+        try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 2))
+
+        XCTAssertEqual(heard.announced, [
+            "Finished: Middle part. Downloading the next episode: Bottom part.",
+            ReaderViewModel.sleepTimerExpiredAnnouncement,
+        ])
+        XCTAssertEqual(heard.asked, [], "The episode started after the timer ran out")
+        XCTAssertNil(reader.nextEpisodeWait)
+    }
+
+    /// This reader's sleep timer set for the end of the book, which ends
+    /// listening at the book's end: the note, and no download.
+    func testATimerForTheBooksEndKeepsTheNextEpisodeFromBeingDownloaded() async throws {
+        let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+        startSharedSleepTimer(.endOfBook, ownedBy: reader.readerID)
 
         reader.handleEndOfBook()
         try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 2))
@@ -198,10 +248,9 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
 
     // MARK: - Later End Decisions End the Wait
 
-    /// The sleep timer is started during the wait, and the download then
-    /// finishes: the episode does not start. The end says again that the
-    /// next book was not started because of the sleep timer.
-    func testASleepTimerStartedDuringTheWaitKeepsTheEpisodeFromStarting() async throws {
+    /// A timer counting minutes started during the wait goes on with the
+    /// episode (0.2.5): it starts once it arrives.
+    func testASleepTimerStartedDuringTheWaitGoesOnWithTheEpisode() async throws {
         let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
         let heard = listen(to: setup)
         let reader = try openReader(for: setup.middle, in: setup)
@@ -209,6 +258,28 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
 
         reader.handleEndOfBook()
         startSharedSleepTimer(.minutes(30), ownedBy: reader.readerID)
+        await waitFor("the next episode asks to start") { !heard.asked.isEmpty }
+
+        let bottom = try XCTUnwrap(book(of: "guid:ep-1", in: setup))
+        XCTAssertEqual(heard.announced, [
+            "Finished: Middle part. Downloading the next episode: Bottom part.",
+            "Starting: Bottom part",
+        ])
+        XCTAssertEqual(heard.asked, [bottom.id])
+        SleepTimerHandOverRequests.shared.discard(for: bottom.id)
+    }
+
+    /// A sleep timer for the end of the book is started during the wait, and
+    /// the download then finishes: the episode does not start. The end says
+    /// again that the next book was not started because of the sleep timer.
+    func testATimerForTheBooksEndStartedDuringTheWaitKeepsTheEpisodeFromStarting() async throws {
+        let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.handleEndOfBook()
+        startSharedSleepTimer(.endOfBook, ownedBy: reader.readerID)
         await waitFor("the download arrives") { book(of: "guid:ep-1", in: setup) != nil }
         try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 2))
 
@@ -220,9 +291,10 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         XCTAssertNil(reader.nextEpisodeWait, "The wait outlived the download")
     }
 
-    /// Play during the wait, with the sleep timer started meanwhile, says
-    /// that the next book was not started, and ends the wait: the download's
-    /// arrival hands nothing over and says nothing more.
+    /// Play during the wait, with a sleep timer for the end of the book
+    /// started meanwhile, says that the next book was not started, and ends
+    /// the wait: the download's arrival hands nothing over and says nothing
+    /// more.
     func testPlayWithASleepTimerEndsTheWait() async throws {
         let setup = try await makeFeed(options: ListeningOptions(continuation: .playBookBelow), global: .stop)
         let heard = listen(to: setup)
@@ -230,7 +302,7 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         await waitFor("the episode loads in its reader") { !reader.isLoading }
 
         reader.handleEndOfBook()
-        startSharedSleepTimer(.minutes(30), ownedBy: reader.readerID)
+        startSharedSleepTimer(.endOfBook, ownedBy: reader.readerID)
         reader.play()
         XCTAssertEqual(heard.announced.last, "Finished: Middle part. Next book not started because of the sleep timer.")
         XCTAssertNil(reader.nextEpisodeWait, "Play left the wait")
@@ -794,11 +866,11 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         XCTAssertEqual(heard.opened, [])
     }
 
-    /// With this reader's sleep timer in effect at the press, the episode
-    /// only opens, and the announcement says why, in the words of the
-    /// reading list's: "Opening: <title>. Not started because of the sleep
-    /// timer."
-    func testNextInFolderWithTheSleepTimerInEffectOpensOnlyAndSaysWhy() async throws {
+    /// With this reader's sleep timer running at the press, the episode starts
+    /// as any playing book's next does, "Starting: <title>", and the timer is
+    /// asked for by the episode's reader (0.2.5): "Not started because of the
+    /// sleep timer" is said no more.
+    func testNextInFolderWithTheSleepTimerRunningStartsTheEpisodeAndCarriesTheTimer() async throws {
         let setup = try await makeFeed(options: nil, global: .stop)
         let heard = listen(to: setup)
         let reader = try openReader(for: setup.middle, in: setup)
@@ -807,13 +879,14 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         reader.isWhereAmIResumePending = true
 
         reader.goThroughFolder(.down)
-        await waitFor("the episode opens") { !heard.opened.isEmpty }
+        await waitFor("the episode asks to start") { !heard.asked.isEmpty }
 
-        XCTAssertEqual(heard.announced, [
-            "Downloading the next episode: Bottom part",
-            "Opening: Bottom part. Not started because of the sleep timer.",
-        ])
-        XCTAssertEqual(heard.asked, [])
+        let bottom = try XCTUnwrap(book(of: "guid:ep-1", in: setup))
+        XCTAssertEqual(heard.announced, ["Downloading the next episode: Bottom part", "Starting: Bottom part"])
+        XCTAssertEqual(heard.asked, [bottom.id])
+        XCTAssertTrue(SleepTimerService.shared.isActive, "The move stopped the timer")
+        XCTAssertTrue(SleepTimerHandOverRequests.shared.hasRequest(for: bottom.id))
+        SleepTimerHandOverRequests.shared.discard(for: bottom.id)
     }
 
     /// The words of a folder move's download failing or being cancelled, for
