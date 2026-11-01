@@ -4,6 +4,25 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.2.5 (November 1, 2026)
+### The next book in this window
+- When listening goes on from one book to another, at the end of a book or with Next in Reading List and Previous in Reading List, the next book now shows in the window you are in, in place of the book there, instead of opening a new window. The window keeps its place and size on the screen, and the book you leave is saved as closing its window saves it (see [Reader windows](reader-windows.md)).
+- A book already open in another window comes forward, and the window you moved from closes, so no two windows show one book. A sheet or an alert open over the window, a field being typed in, Edit Text in use for the book, or a library that is moving or not available still opens a new window.
+- The Playback tab of Settings has a pop-up button, "Open the next book in", with "This Window", the default, and "A New Window", which keeps the way earlier versions went. config.json holds it as nextBookWindow (see [Settings](settings.md) and [Editing settings in config.json](config-json.md)).
+- Feed Info has a pop-up button of its own, "Open the next episode in", "Open the next article in", or "Open the next item in", and Folder Settings has "Open the next book in", each with "Use the global setting" first, then "This Window" and "A New Window". It is dimmed, with a hint that says when it is available, while the feed's or folder's items do not go on to another item when one ends (see [Podcasts and article feeds](feeds.md) and [The Library window](library-window.md)).
+
+### Next and Previous in a folder
+- The Navigate menu has Next in Folder and Previous in Folder, in a reader window, with no keys until you give them some in the Shortcuts tab. They go to the next or the previous item of the book's folder or feed: Next goes the way the end of the book would go on, up in a feed or folder that plays the one above and down in every other case, and Previous goes the other way. A book that was playing plays the item, after "Starting: <title>", and any other only opens it, after "Opening: <title>".
+- An episode that is not on this Mac is downloaded first, with "Downloading the next episode: <title>" or "Downloading the previous episode: <title>", and goes on when it arrives. With no item that way, they say why, as in "No more books in folder." A failed or cancelled download says so, as in "The previous episode could not be downloaded. <reason>" and "Download of the previous episode cancelled."
+
+### The sleep timer
+- A running sleep timer now goes on with listening to the next book, in this window or a new one, and stops that book when it runs out, where before it kept the next book from starting, as in "Opening: Dune. Not started because of the sleep timer." Going on to another book never starts its countdown again, the timer waits for a book that is still opening, and a timer set for the end of the heading or of the book that runs out at a book's end still ends listening there.
+- Restart Sleep Timer, from its shortcut or the AirPods gesture, while the timer is on its way to the next book, starts it again and it still goes on with the book.
+- The timer can say two new sentences: "Sleep timer cancelled, because the next book could not be opened." when the book failed to open, and "Sleep timer cancelled, because you moved to another book while it faded out." when Next or Previous ended a fade.
+
+### Older versions
+- Caution: an older TextMouth ignores the new setting, opening every next book in a new window, and drops a feed's or folder's own choice the next time it saves that feed or folder.
+
 ## 0.2.4 (November 1, 2026)
 ### Library
 - The Library window's View pop-up, which VoiceOver calls "Library view", replaces the row of categories, and offers the views you choose, in the order you choose: Folders, All Items, Unopened, Recently Opened, Reading List, Feeds, and views of your own (see [The Library window](library-window.md)).
