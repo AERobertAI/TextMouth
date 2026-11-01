@@ -22,18 +22,27 @@ extension ReaderViewModel {
     /// - Parameters:
     ///   - item: The episode (or article) to download.
     ///   - feedID: The feed it belongs to.
-    ///   - start: Opens the book with the given ID to be played, after the
-    ///     announcement that it is starting (as for any next book).
+    ///   - start: Opens the book with the given ID, after the announcement
+    ///     that it is starting, or opening (as for any next book).
+    ///   - fromFinishedBook: Whether this book ended, as at the end of a
+    ///     book, so the wait ends once it no longer rests finished. False
+    ///     for Next in Folder and Previous in Folder, which leave this book
+    ///     where it is.
+    ///   - plays: Whether the episode plays once it arrives, "Starting:
+    ///     <title>"; false opens it only, "Opening: <title>".
     func waitForNextEpisode(
         _ item: FeedItem,
         of feedID: UUID,
+        fromFinishedBook: Bool = true,
+        plays: Bool = true,
         startingWith start: @escaping (UUID) -> Void
     ) {
         let feeds = libraryViewModel.feeds
         // Whoever owned the media controls as this episode ended. The wait
         // ends if another reader takes them (see `listenerHasMovedOn`).
         let wait = NextEpisodeWait(
-            item: item, feedID: feedID, start: start, controlsOwner: nowPlayingService.activeOwnerID
+            item: item, feedID: feedID, start: start, controlsOwner: nowPlayingService.activeOwnerID,
+            fromFinishedBook: fromFinishedBook, plays: plays
         )
         nextEpisodeWait = feeds.events.sink { [weak self] event in
             self?.nextEpisodeEventArrived(event, during: wait)
@@ -73,6 +82,12 @@ extension ReaderViewModel {
         /// The reader that owned TextMouth's media controls as the wait
         /// began: nil, this reader, or another one.
         let controlsOwner: UUID?
+        /// Whether this book ended (it rests finished), as at the end of a
+        /// book, rather than moved from by Next in Folder or Previous in
+        /// Folder.
+        let fromFinishedBook: Bool
+        /// Whether the episode plays once it arrives.
+        let plays: Bool
     }
 
     /// Whether the listener has moved on from the finished book, so that the
@@ -83,7 +98,7 @@ extension ReaderViewModel {
     /// returning to this reader, or staying with the reader that held them,
     /// is no move.
     private func listenerHasMovedOn(_ wait: NextEpisodeWait) -> Bool {
-        guard hasFinishedBook, !hasClosed, !isPlaybackUnderWay else { return true }
+        guard !hasClosed, !isPlaybackUnderWay, hasFinishedBook || !wait.fromFinishedBook else { return true }
         guard let owner = nowPlayingService.activeOwnerID else { return false }
         return owner != wait.controlsOwner && owner != readerID
     }
@@ -134,6 +149,16 @@ extension ReaderViewModel {
         nextEpisodeWait = nil
         guard !listenerHasMovedOn(wait) else {
             DiagnosticLog.trace(.playback, "end of book: the next episode arrived, but the listener had moved on")
+            return
+        }
+        // An episode that does not play, as when Next in Folder was pressed
+        // for a book not playing, only opens: "Opening: <title>", and then
+        // the window, as Next in Reading List opens one.
+        guard wait.plays else {
+            announceToVoiceOver(ReadingListReaderWording.opening(wait.item.title, sleepTimerKeptItFromStarting: false))
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
+                wait.start(bookID)
+            }
             return
         }
         // The listener started a sleep timer after the wait began: the next

@@ -203,6 +203,29 @@ final class NextBookWindowTests: XCTestCase {
         }
     }
 
+    /// What Next in Folder and Previous in Folder say when nothing lies that
+    /// way, and when an episode is downloaded first.
+    func testTheFolderCommandsWords() {
+        XCTAssertEqual(
+            FolderNavigationWording.nothingThatWay(EndOfBookWording.noMoreBooksInFolderNote),
+            "No more books in folder."
+        )
+        XCTAssertEqual(
+            FolderNavigationWording.nothingThatWay(EndOfBookWording.onlyFinishedBooksInFolderNote(going: .up)),
+            "Every book before it in the folder is finished."
+        )
+        let episode = FeedItem(
+            id: "guid:e",
+            title: "Part Two",
+            firstSeen: Date(timeIntervalSince1970: 0),
+            enclosure: FeedEnclosure(url: URL(fileURLWithPath: "/part-two.m4a"), mimeType: "audio/mp4")
+        )
+        let article = FeedItem(id: "guid:a", title: "Night Trams", firstSeen: Date(timeIntervalSince1970: 0))
+        XCTAssertEqual(FolderNavigationWording.downloading(episode, going: .down), "Downloading the next episode: Part Two")
+        XCTAssertEqual(FolderNavigationWording.downloading(episode, going: .up), "Downloading the previous episode: Part Two")
+        XCTAssertEqual(FolderNavigationWording.downloading(article, going: .down), "Downloading the next article: Night Trams")
+    }
+
     // MARK: - The Words
 
     /// Every string of the controls, word for word.

@@ -237,6 +237,9 @@ struct NavigationCommands: Commands {
     /// Whether the key reader's book has pages (PG02), which Next Page,
     /// Previous Page, and Go to Page… need.
     @FocusedValue(\.readerHasPages) var readerHasPages
+    /// Which kind of window is key, so Next in Folder and Previous in Folder
+    /// are offered in a reader window alone.
+    @FocusedValue(\.activeWindowType) var activeWindowType
 
     var body: some Commands {
         CommandMenu("Navigate") {
@@ -294,6 +297,19 @@ struct NavigationCommands: Commands {
                 NotificationCenter.default.post(name: .previousInReadingList, object: nil)
             }
             .disabled(readsFromReadingList != true)
+
+            // The item below or above this book in its folder or feed
+            // (0.2.5), available in a reader window. They have no keys until
+            // the user gives them some, as the reading list's commands.
+            Button(ShortcutAction.nextInFolder.title) {
+                NotificationCenter.default.post(name: .nextInFolder, object: nil)
+            }
+            .disabled(activeWindowType != .reader)
+
+            Button(ShortcutAction.previousInFolder.title) {
+                NotificationCenter.default.post(name: .previousInFolder, object: nil)
+            }
+            .disabled(activeWindowType != .reader)
 
             Divider()
 
@@ -893,6 +909,8 @@ extension Notification.Name {
     /// the user gave it one (FR09): the key reader, reading its book from
     /// the reading list, opens the book above it there.
     static let previousInReadingList = Notification.Name("previousInReadingList")
+    static let nextInFolder = Notification.Name("nextInFolder")
+    static let previousInFolder = Notification.Name("previousInFolder")
     static let addBookmark = Notification.Name("addBookmark")
     static let nextBookmark = Notification.Name("nextBookmark")
     static let previousBookmark = Notification.Name("previousBookmark")

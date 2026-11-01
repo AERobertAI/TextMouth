@@ -121,7 +121,7 @@ enum EndOfBookWording {
     static let downloadNotStartedReason = "TextMouth is not downloading right now."
 
     /// "article" for an article, "episode" for any other item.
-    private static func kind(of item: FeedItem) -> String {
+    static func kind(of item: FeedItem) -> String {
         kind(isArticle: item.isArticle)
     }
 

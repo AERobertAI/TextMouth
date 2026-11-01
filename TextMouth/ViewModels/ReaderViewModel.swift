@@ -1164,6 +1164,21 @@ final class ReaderViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
+        // Next in Folder and Previous in Folder (0.2.5).
+        nc.publisher(for: .nextInFolder)
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.goThroughFolder(.down)
+            }
+            .store(in: &cancellables)
+
+        nc.publisher(for: .previousInFolder)
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.goThroughFolder(.up)
+            }
+            .store(in: &cancellables)
+
         nc.publisher(for: .addBookmark)
             .sink { [weak self] notification in
                 guard let self = self, self.isTargetedNotification(notification) else { return }

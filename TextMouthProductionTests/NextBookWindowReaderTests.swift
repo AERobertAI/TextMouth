@@ -195,6 +195,195 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertTrue(switcher.shown.isEmpty)
     }
 
+    // MARK: - Next and Previous in Folder
+
+    /// Next in Folder, from a book not playing, opens the book below it:
+    /// "Opening: <title>", then its window alone is asked for, with no
+    /// request to play it and none to read it from the reading list.
+    func testNextInFolderOpensTheBookBelowWithANewWindow() throws {
+        let folder = try makeFolderWorld("FolderNextNew")
+        folder.world.settings.nextBookWindow = .newWindow
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let asked = record(.continueToNextBook, in: folder.world)
+        let opened = record(.openBookWindow, in: folder.world)
+        let reader = makeReader(for: folder.first, in: folder.world, switcher: switcher)
+
+        let recorder = recordingAnnouncements {
+            reader.goThroughFolder(.down)
+            XCTAssertTrue(opened().isEmpty, "Opened before the announcement had a moment")
+            XCTAssertTrue(eventually { !opened().isEmpty }, "Never opened the next book")
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Opening: B Volume"])
+        XCTAssertEqual(opened().map { $0.object as? UUID }, [folder.second.id])
+        XCTAssertTrue(asked().isEmpty, "Asked for the next book to start")
+        XCTAssertFalse(folder.world.autoplayRequests.hasRequest(for: folder.second.id))
+        XCTAssertTrue(switcher.shown.isEmpty)
+    }
+
+    /// With This Window the same command switches the window instead.
+    func testNextInFolderSwitchesThisWindow() throws {
+        let folder = try makeFolderWorld("FolderNextSwitch")
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let opened = record(.openBookWindow, in: folder.world)
+        let reader = makeReader(for: folder.first, in: folder.world, switcher: switcher)
+
+        reader.goThroughFolder(.down)
+        XCTAssertTrue(eventually { !switcher.shown.isEmpty }, "Never switched")
+
+        XCTAssertEqual(switcher.shown, [folder.second.id])
+        XCTAssertTrue(opened().isEmpty)
+    }
+
+    /// Previous in Folder opens the book above.
+    func testPreviousInFolderOpensTheBookAbove() throws {
+        let folder = try makeFolderWorld("FolderPrevious")
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let reader = makeReader(for: folder.third, in: folder.world, switcher: switcher)
+
+        let recorder = recordingAnnouncements {
+            reader.goThroughFolder(.up)
+            XCTAssertTrue(eventually { !switcher.shown.isEmpty }, "Never switched")
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Opening: B Volume"])
+        XCTAssertEqual(switcher.shown, [folder.second.id])
+    }
+
+    /// At either end the command says so, and changes nothing.
+    func testTheEndsOfTheFolderSayNoMoreBooks() throws {
+        let folder = try makeFolderWorld("FolderEnds")
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let opened = record(.openBookWindow, in: folder.world)
+        let last = makeReader(for: folder.third, in: folder.world, switcher: switcher)
+        let first = makeReader(for: folder.first, in: folder.world, switcher: switcher)
+
+        let down = recordingAnnouncements { last.goThroughFolder(.down) }
+        let up = recordingAnnouncements { first.goThroughFolder(.up) }
+        spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+
+        XCTAssertEqual(down.announcements.map(\.message), ["No more books in folder."])
+        XCTAssertEqual(up.announcements.map(\.message), ["No more books in folder."])
+        XCTAssertTrue(switcher.shown.isEmpty)
+        XCTAssertTrue(opened().isEmpty)
+    }
+
+    /// A finished book is passed over while the folder skips finished books,
+    /// and visited when it does not; with only finished books beyond, the
+    /// command says why.
+    func testFinishedBooksArePassedOverAsTheFolderSays() throws {
+        let folder = try makeFolderWorld("FolderFinished")
+        markFinished(folder.second, in: folder.world)
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let reader = makeReader(for: folder.first, in: folder.world, switcher: switcher)
+
+        reader.goThroughFolder(.down)
+        XCTAssertTrue(eventually { !switcher.shown.isEmpty }, "Never switched")
+        XCTAssertEqual(switcher.shown, [folder.third.id], "went to the finished book")
+
+        // The folder's own options keep finished books in the way.
+        folder.world.library.library.folders[0].listeningOptions = ListeningOptions(skipsFinished: false)
+        reader.goThroughFolder(.down)
+        XCTAssertTrue(eventually { switcher.shown.count == 2 }, "Never switched the second time")
+        XCTAssertEqual(switcher.shown.last, folder.second.id)
+
+        // Only a finished book lies below the second one.
+        markFinished(folder.third, in: folder.world)
+        folder.world.library.library.folders[0].listeningOptions = nil
+        let middle = makeReader(for: folder.second, in: folder.world, switcher: switcher)
+        let said = recordingAnnouncements { middle.goThroughFolder(.down) }
+        XCTAssertEqual(said.announcements.map(\.message), ["Every book after it in the folder is finished."])
+    }
+
+    /// Next in Folder from a book that plays pauses it, says "Starting", and
+    /// asks for the book below to play, after the request, in this window.
+    func testNextInFolderFromAPlayingBookStartsTheBookBelow() throws {
+        let folder = try makeFolderWorld("FolderPlaying")
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let reader = makeReader(for: folder.first, in: folder.world, switcher: switcher)
+        reader.play()
+        XCTAssertTrue(eventually(within: 15) { reader.audioPlaybackService.isPlaying }, "The book did not play")
+
+        let recorder = recordingAnnouncements {
+            reader.goThroughFolder(.down)
+            XCTAssertTrue(eventually { !switcher.shown.isEmpty }, "Never switched")
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: B Volume"])
+        XCTAssertTrue(reader.audioPlaybackService.isPaused, "This book was not paused")
+        XCTAssertEqual(switcher.shown, [folder.second.id])
+        XCTAssertEqual(switcher.requestWaitingAtTheSwitch, [true], "The request to play came after the switch")
+    }
+
+    /// The folder's own choice of window decides the command's window, and a
+    /// dimmed choice, with items that do not go on, does not.
+    func testTheCommandFollowsTheFoldersChoiceWhileItIsInEffect() throws {
+        let folder = try makeFolderWorld("FolderChoice", options: ListeningOptions(
+            continuation: .playBookBelow, nextBookWindow: .newWindow
+        ))
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let opened = record(.openBookWindow, in: folder.world)
+        let reader = makeReader(for: folder.first, in: folder.world, switcher: switcher)
+
+        reader.goThroughFolder(.down)
+        XCTAssertTrue(eventually { !opened().isEmpty }, "Never opened the next book")
+        XCTAssertTrue(switcher.shown.isEmpty, "The folder's choice of a new window was not followed")
+
+        // Stop dims the choice, so the global This Window decides.
+        folder.world.library.library.folders[0].listeningOptions = ListeningOptions(
+            continuation: .stop, nextBookWindow: .newWindow
+        )
+        reader.goThroughFolder(.down)
+        XCTAssertTrue(eventually { !switcher.shown.isEmpty }, "A dimmed choice was followed")
+    }
+
+    // MARK: - The Commands
+
+    /// The two commands are listed under Navigation with no keys until the
+    /// user gives them some, in the app's scope, each posting its own
+    /// notification.
+    func testTheFolderCommandsHaveNoKeysUntilGivenSome() {
+        XCTAssertEqual(ShortcutAction.nextInFolder.rawValue, "Next in Folder")
+        XCTAssertEqual(ShortcutAction.previousInFolder.rawValue, "Previous in Folder")
+        for action in [ShortcutAction.nextInFolder, .previousInFolder] {
+            XCTAssertEqual(action.title, action.rawValue)
+            XCTAssertEqual(action.category, "Navigation", action.rawValue)
+            XCTAssertEqual(action.defaultScope, .app, action.rawValue)
+            XCTAssertEqual(ShortcutAction.defaultBindings[action], [], action.rawValue)
+        }
+        XCTAssertEqual(ShortcutAction.nextInFolder.notificationName, .nextInFolder)
+        XCTAssertEqual(ShortcutAction.previousInFolder.notificationName, .previousInFolder)
+        XCTAssertEqual(Notification.Name.nextInFolder.rawValue, "nextInFolder")
+        XCTAssertEqual(Notification.Name.previousInFolder.rawValue, "previousInFolder")
+    }
+
+    /// The Navigate menu has both, offered in a reader window alone. SwiftUI
+    /// builds the menu where a test cannot read it, so this reads the menu's
+    /// source for the items and for the condition that dims them.
+    func testTheNavigateMenuOffersThemInReaderWindowsOnly() throws {
+        let source = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("TextMouth/App/MenuCommands.swift")
+        let text = try String(contentsOf: source, encoding: .utf8)
+        for name in ["nextInFolder", "previousInFolder"] {
+            XCTAssertTrue(text.contains("Button(ShortcutAction.\(name).title)"), name)
+            XCTAssertTrue(text.contains("post(name: .\(name), object: nil)"), name)
+        }
+        XCTAssertTrue(text.contains(".disabled(activeWindowType != .reader)"))
+    }
+
+    /// The notification reaches the key reader and moves it.
+    func testTheNotificationsMoveTheReader() throws {
+        let folder = try makeFolderWorld("FolderNotification")
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let reader = makeReader(for: folder.second, in: folder.world, switcher: switcher)
+        _ = reader
+
+        folder.world.notifications.post(name: .previousInFolder, object: nil)
+        XCTAssertTrue(eventually { !switcher.shown.isEmpty }, "Previous in Folder did not reach the reader")
+        XCTAssertEqual(switcher.shown, [folder.first.id])
+    }
+
     // MARK: - Teardown Against Start
 
     /// The reader moved from closes without touching the media session of the
@@ -235,13 +424,28 @@ final class NextBookWindowReaderTests: XCTestCase {
         let titles = ["A Volume", "B Volume", "C Volume"]
         var books: [Book] = []
         for title in titles {
-            books.append(try world.makeSilentAudioBook(title: title, trackDurations: [1, 1], endOfBook: .continueNext))
+            // Longer than any test runs, so no chapter ends by itself.
+            books.append(try world.makeSilentAudioBook(title: title, trackDurations: [5, 5], endOfBook: .continueNext))
         }
         var row = BookFolder(name: world.folder.path)
         row.listeningOptions = options
         world.library.library.folders = [row]
         world.settings.endOfBookBehavior = .continueNext
         return FolderWorld(world: world, first: books[0], second: books[1], third: books[2])
+    }
+
+    /// Makes `book`'s row in `world`'s library rest at its end, as a book
+    /// that played to its end does (`Book.restsAtEnd`): its place at the
+    /// last character of a measured total.
+    private func markFinished(_ book: Book, in world: IntegrationWorld) {
+        guard let index = world.library.library.books.firstIndex(where: { $0.id == book.id }) else {
+            return XCTFail("\(book.title) is not in the library")
+        }
+        world.library.library.books[index].totalCharacterCount = 100
+        world.library.library.books[index].readingPosition = ReadingPosition(
+            chapterIndex: 0, characterOffset: 100, globalCharacterOffset: 100
+        )
+        XCTAssertTrue(world.library.library.books[index].restsAtEnd, "\(book.title) does not rest at its end")
     }
 
     /// A reader for `book` in `folder`'s world, loaded, with `switcher` as

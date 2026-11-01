@@ -31,7 +31,7 @@ final class ShortcutMigrationTests: XCTestCase {
     static let actionsAddedSinceOctober5: Set<ShortcutAction> = ShortcutAction.keyEquivalentActions.union([
         .speakInfo, .speakImportProgress, .speakDownloadProgress, .addToReadingList, .removeFromReadingList,
         .nextInReadingList, .previousInReadingList, .whereAmIFull, .speakFullInfo, .moveToLibrary,
-        .folderOrFeedSettings, .nextPage, .previousPage, .goToPage,
+        .folderOrFeedSettings, .nextPage, .previousPage, .goToPage, .nextInFolder, .previousInFolder,
     ]).union(ShortcutAction.goToViewActions)
 
     /// Every action the October 5 build had, in the order Settings lists

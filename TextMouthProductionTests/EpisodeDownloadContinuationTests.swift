@@ -625,6 +625,94 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         XCTAssertEqual(heard.asked, [])
     }
 
+    // MARK: - Next and Previous in Folder (0.2.5)
+
+    /// Next in Folder, from an episode not playing, downloads the episode
+    /// below (the feed's own download, as the end of an episode asks for
+    /// it), says so, and, once it arrives, says "Opening" and opens its
+    /// window without asking for it to play.
+    func testNextInFolderDownloadsTheEpisodeBelowAndOpensItOnceItArrives() async throws {
+        let setup = try await makeFeed(options: nil, global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.goThroughFolder(.down)
+
+        XCTAssertEqual(heard.announced, ["Downloading the next episode: Bottom part"])
+        await waitFor("the episode opens") { !heard.opened.isEmpty }
+        let bottom = try XCTUnwrap(book(of: "guid:ep-1", in: setup))
+        XCTAssertEqual(heard.announced, ["Downloading the next episode: Bottom part", "Opening: Bottom part"])
+        XCTAssertEqual(heard.opened, [bottom.id])
+        XCTAssertEqual(heard.asked, [], "Asked for it to play")
+        XCTAssertEqual(heard.downloadsStarted, ["guid:ep-1"])
+        XCTAssertNil(reader.nextEpisodeWait, "The wait outlived the download")
+    }
+
+    /// Previous in Folder downloads the episode above, and says "previous".
+    func testPreviousInFolderDownloadsTheEpisodeAbove() async throws {
+        let setup = try await makeFeed(options: nil, global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.goThroughFolder(.up)
+        await waitFor("the episode opens") { !heard.opened.isEmpty }
+
+        XCTAssertEqual(heard.announced.first, "Downloading the previous episode: Top part")
+        XCTAssertEqual(heard.downloadsStarted, ["guid:ep-3"])
+    }
+
+    /// An episode here already is opened with no download.
+    func testNextInFolderOpensAnEpisodeThatIsHereWithoutADownload() async throws {
+        let setup = try await makeFeed(options: nil, global: .stop, bottomIsDownloaded: true)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.goThroughFolder(.down)
+        await waitFor("the episode opens") { !heard.opened.isEmpty }
+
+        XCTAssertEqual(heard.announced, ["Opening: Bottom part"])
+        XCTAssertEqual(heard.opened, [try XCTUnwrap(book(of: "guid:ep-1", in: setup)).id])
+        XCTAssertEqual(heard.downloadsStarted, [])
+    }
+
+    /// Nothing below the last episode: the command says so, and nothing
+    /// opens or downloads.
+    func testNextInFolderBelowTheLastEpisodeSaysSo() async throws {
+        let setup = try await makeFeed(options: nil, global: .stop)
+        let heard = listen(to: setup)
+        let bottom = try makeFeedItem(title: "Bottom part", itemID: "guid:ep-1", of: setup.feedID)
+        setup.world.library.addFeedBook(bottom)
+        setup.world.center.store.updateItem("guid:ep-1", of: setup.feedID) { $0.state = .downloaded(bookID: bottom.id) }
+        let reader = try openReader(for: bottom, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.goThroughFolder(.down)
+        try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 2))
+
+        XCTAssertEqual(heard.announced, ["No more books in folder."])
+        XCTAssertEqual(heard.opened, [])
+        XCTAssertEqual(heard.downloadsStarted, [])
+    }
+
+    /// A reader that closes while the episode downloads ends the wait:
+    /// nothing opens when the episode arrives.
+    func testNextInFolderWaitEndsWhenTheReaderCloses() async throws {
+        let setup = try await makeFeed(options: nil, global: .stop)
+        let heard = listen(to: setup)
+        let reader = try openReader(for: setup.middle, in: setup)
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+
+        reader.goThroughFolder(.down)
+        reader.close()
+        try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 3))
+
+        XCTAssertEqual(heard.opened, [], "A closed reader opened the episode")
+        XCTAssertNil(reader.nextEpisodeWait)
+    }
+
     // MARK: - The Words
 
     /// What the end says of an episode being downloaded, and of a download
@@ -679,6 +767,8 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         var asked: [UUID] = []
         /// The items whose downloads started, in order.
         var downloadsStarted: [FeedItem.ID] = []
+        /// The books `.openBookWindow` asked to open, in order.
+        var opened: [UUID] = []
     }
 
     /// Subscribes to a feed listing Top part (ep-3), Middle part (ep-2), and
@@ -796,6 +886,11 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         setup.notifications.publisher(for: .continueToNextBook)
             .sink { note in
                 if let nextBookID = note.nextBookID { heard.asked.append(nextBookID) }
+            }
+            .store(in: &subscriptions)
+        setup.notifications.publisher(for: .openBookWindow)
+            .sink { note in
+                if let bookID = note.object as? UUID { heard.opened.append(bookID) }
             }
             .store(in: &subscriptions)
         setup.world.center.events
