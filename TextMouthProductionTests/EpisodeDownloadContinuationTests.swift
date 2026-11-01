@@ -1066,7 +1066,7 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
     /// since the reader owned it, with no hold left to keep it alive.
     func testAFailedDownloadAfterACancelledMoveThenCloseStopsTheReadersTimer() async throws {
         let setup = try await makeFeed(
-            options: nil, global: .stop, topAnswer: StubResponse(status: 404), bottomIsDownloaded: true
+            options: nil, global: .stop, bottomIsDownloaded: true, topAnswer: StubResponse(status: 404)
         )
         let heard = listen(to: setup)
         let reader = try openReader(for: setup.middle, in: setup)
