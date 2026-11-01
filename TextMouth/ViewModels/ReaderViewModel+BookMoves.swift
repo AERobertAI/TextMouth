@@ -16,7 +16,7 @@ enum BookMoveRoute: Equatable, Sendable {
 
 /// What a command found when it began to move from this book: whether the
 /// book was playing. A sleep timer of this reader's goes on with the next
-/// book (`ReaderViewModel.handOverSleepTimer(to:)`), so it keeps nothing from
+/// book (`ReaderViewModel.noteMoveAnnounced(to:)`), so it keeps nothing from
 /// starting.
 struct BookMoveStart: Equatable, Sendable {
     /// Whether this book was playing: speech or audio under way, or paused

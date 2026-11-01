@@ -178,6 +178,40 @@ class StandardVoiceOverFocusTriggerView: NSView {
         return role == "AXButton" && !isScrollerPart && label?.isEmpty == false
     }
 
+    /// How many times a trigger has posted focus in each window
+    /// (`postFocusNotifications(target:window:)`), by the window's identity.
+    /// It only goes up, so a caller notes it and asks later whether a trigger
+    /// posted since: a switched reader window does, to post only when the
+    /// play button's own trigger did not (`SwitchedWindowFocus`).
+    private static var focusPosts: [ObjectIdentifier: Int] = [:]
+
+    /// How many times a trigger has posted focus in `window`.
+    static func focusPostCount(of window: NSWindow) -> Int {
+        focusPosts[ObjectIdentifier(window), default: 0]
+    }
+
+    /// The element of `window` marked `voiceOverFocusID`, which a trigger puts
+    /// focus on, or nil when the window has none yet (a window showing
+    /// "Loading book..." has none) or no content.
+    func findMarkedElement(in window: NSWindow) -> Any? {
+        guard let contentView = window.contentView else {
+            voiceOverFocusLog("ERROR: window has no contentView")
+            return nil
+        }
+        return findElementByIdentifier(voiceOverFocusID, root: contentView, depth: 0)
+    }
+
+    /// One attempt to put focus on `target` in `window`: the keyboard's, when
+    /// the target is a view, and VoiceOver's, by telling it the screen changed
+    /// with the target in focus. The attempts of `postFocusNotifications` and
+    /// of a switched window's check are each this.
+    static func placeFocus(on target: Any, in window: NSWindow) {
+        if let targetView = target as? NSView {
+            window.makeFirstResponder(targetView)
+        }
+        AccessibilityNotification.ScreenChanged(target).post()
+    }
+
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         guard let window = window, !hasFired else { return }
@@ -213,15 +247,10 @@ class StandardVoiceOverFocusTriggerView: NSView {
     /// Static version for when the trigger view has been deallocated by SwiftUI
     /// but the window is still valid (common with @ViewBuilder re-evaluation).
     static func staticFindAndFocus(in window: NSWindow) {
-        guard let contentView = window.contentView else {
-            voiceOverFocusLog("ERROR: window has no contentView")
-            return
-        }
-
         voiceOverFocusLog("searching (static) for identifier '\(voiceOverFocusID)' in \(VoiceOverFocusDiagnostics.describe(window: window))...")
 
         let helper = StandardVoiceOverFocusTriggerView()
-        if let target = helper.findElementByIdentifier(voiceOverFocusID, root: contentView, depth: 0) {
+        if let target = helper.findMarkedElement(in: window) {
             voiceOverFocusLog("FOUND target: \(VoiceOverFocusDiagnostics.describe(target))")
             helper.postFocusNotifications(target: target, window: window)
         } else {
@@ -237,7 +266,7 @@ class StandardVoiceOverFocusTriggerView: NSView {
 
         voiceOverFocusLog("searching for identifier '\(voiceOverFocusID)' in \(VoiceOverFocusDiagnostics.describe(window: window))...")
 
-        if let target = findElementByIdentifier(voiceOverFocusID, root: contentView, depth: 0) {
+        if let target = findMarkedElement(in: window) {
             voiceOverFocusLog("FOUND target: \(VoiceOverFocusDiagnostics.describe(target))")
             postFocusNotifications(target: target, window: window)
         } else {
@@ -263,6 +292,9 @@ class StandardVoiceOverFocusTriggerView: NSView {
             voiceOverFocusLog("SKIPPED: another window is key, won't steal focus")
             return
         }
+        // Counted from here: the trigger posts, whether or not the attempts
+        // below read the element again.
+        Self.focusPosts[ObjectIdentifier(window), default: 0] += 1
 
         if !window.isKeyWindow {
             window.makeKeyAndOrderFront(nil)
@@ -277,10 +309,7 @@ class StandardVoiceOverFocusTriggerView: NSView {
                 // A window closed since the attempts began has nothing left
                 // to focus, and is not kept alive for them.
                 guard let window else { return }
-                if let targetView = target as? NSView {
-                    window.makeFirstResponder(targetView)
-                }
-                AccessibilityNotification.ScreenChanged(target).post()
+                Self.placeFocus(on: target, in: window)
                 if attempt == 0 {
                     voiceOverFocusLog("posting focus (\(attempts) attempts)")
                 }

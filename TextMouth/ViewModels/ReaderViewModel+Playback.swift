@@ -3071,7 +3071,7 @@ extension ReaderViewModel {
     /// a heading or of the book. A timer set for either place is still in
     /// effect as the book's last chapter ends, since it ends there itself
     /// (`handleEndOfBook()` asks first). A timer counting minutes does not:
-    /// it goes on with the next book (0.2.5, `handOverSleepTimer(to:)`),
+    /// it goes on with the next book (0.2.5, `noteMoveAnnounced(to:)`),
     /// which it pauses when it runs out as it pauses any book. A timer that
     /// has ended, at an earlier heading's end or by running out, rules
     /// nothing out.

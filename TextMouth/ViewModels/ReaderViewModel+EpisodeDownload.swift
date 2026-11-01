@@ -14,7 +14,7 @@ enum NextEpisodeCause: Equatable, Sendable {
     /// - wasPlaying: Whether this book was playing when the command was
     ///   pressed, so the episode plays once it arrives, and "playback
     ///   stopped" is said when it never does. A running sleep timer goes on
-    ///   with the episode either way (`handOverSleepTimer(to:)`).
+    ///   with the episode either way (`noteMoveAnnounced(to:)`).
     case folderMove(direction: ReadingList.Direction, wasPlaying: Bool)
 
     /// Whether the episode plays once it arrives: after the end of a book it

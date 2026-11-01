@@ -63,7 +63,7 @@ extension ReaderViewModel {
     ///   book, which a switch would go around.
     ///
     /// A running sleep timer of this reader's is not one: it goes on with the
-    /// next book, in this window or another (`handOverSleepTimer(to:)`).
+    /// next book, in this window or another (`noteMoveAnnounced(to:)`).
     var switchingTheWindowCouldLoseWork: Bool {
         hasClosed
             || windowStanding.isBusy
