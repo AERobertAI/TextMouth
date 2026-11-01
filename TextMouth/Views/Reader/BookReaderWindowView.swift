@@ -15,7 +15,12 @@ struct BookReaderWindowView: View {
     /// its own, to open a book's reader while no Library window is open.
     @Environment(\.openWindow) private var openWindow
 
-    init(bookID: UUID, libraryViewModel: LibraryViewModel, settingsViewModel: SettingsViewModel) {
+    init(
+        bookID: UUID,
+        libraryViewModel: LibraryViewModel,
+        settingsViewModel: SettingsViewModel,
+        showBook: ((UUID) -> Void)? = nil
+    ) {
         self.bookID = bookID
         // Create the ReaderViewModel as a StateObject
         let book = libraryViewModel.bookByID(bookID) ?? Book(
@@ -24,11 +29,57 @@ struct BookReaderWindowView: View {
             filePath: "",
             md5Hash: ""
         )
-        _viewModel = StateObject(wrappedValue: ReaderViewModel(
+        _viewModel = StateObject(wrappedValue: Self.makeReader(
             book: book,
             libraryViewModel: libraryViewModel,
-            settingsViewModel: settingsViewModel
+            settingsViewModel: settingsViewModel,
+            showBook: showBook,
+            requestedBookID: bookID
         ))
+    }
+
+    /// The reader of `book`, given the means to show another book in this
+    /// window when listening goes on to it (0.2.5): `showBook` changes the
+    /// book the window's scene presents, which makes a new view, and a new
+    /// reader, in the same window (`TextMouthApp`).
+    ///
+    /// - Parameters:
+    ///   - requestedBookID: The book the window was asked for, which the reader
+    ///     of a placeholder for a missing book does not carry.
+    ///   - autoplayRequests: The stores and center the reader uses: the app's,
+    ///     unless a test gives it its own.
+    ///   - showBook: Sets the window's book; nil, for a view with no
+    ///   scene to set it in, leaves the reader unable to switch, and it then
+    ///   opens a new window as before.
+    static func makeReader(
+        book: Book,
+        libraryViewModel: LibraryViewModel,
+        settingsViewModel: SettingsViewModel,
+        showBook: ((UUID) -> Void)?,
+        requestedBookID: UUID,
+        autoplayRequests: ReaderAutoplayRequests? = nil,
+        readingListRequests: ReadingListOpenRequests? = nil,
+        windowSwitchRequests: WindowSwitchRequests? = nil,
+        notificationCenter: NotificationCenter = .default
+    ) -> ReaderViewModel {
+        let reader = ReaderViewModel(
+            book: book,
+            libraryViewModel: libraryViewModel,
+            settingsViewModel: settingsViewModel,
+            autoplayRequests: autoplayRequests,
+            readingListRequests: readingListRequests,
+            windowSwitchRequests: windowSwitchRequests,
+            notificationCenter: notificationCenter
+        )
+        reader.nextBookWindowSwitcher = showBook
+        // A book deleted since the window was asked for is a placeholder with
+        // an ID of its own: a sleep timer held for the book asked for would
+        // never be taken, so it is released here, and said once the error view
+        // has read that the book is gone.
+        if libraryViewModel.bookByID(requestedBookID) == nil {
+            reader.releaseSleepTimerHeld(forBook: requestedBookID, afterTheReason: true)
+        }
+        return reader
     }
 
     var body: some View {
@@ -38,7 +89,7 @@ struct BookReaderWindowView: View {
         ReaderView(viewModel: viewModel)
             .background(WindowAccessor(
                 onWindowFound: { window in
-                    viewModel.hostWindow = window
+                    viewModel.attach(to: window)
                     // With no Library window open, the router opens a book's
                     // reader through a reader window like this one (TODO A05).
                     LibraryWindowRouter.shared.registerReaderWindow(window) { bookID in
@@ -61,13 +112,21 @@ struct BookReaderWindowView: View {
             // Next Page, Previous Page, and Go to Page… are available while
             // this reader's book has pages (PG02), as above.
             .focusedSceneValue(\.readerHasPages, viewModel.hasPages)
+            // Next in Folder and Previous in Folder are offered in a reader
+            // window (0.2.5), whether or not a view of it holds keyboard
+            // focus.
+            .focusedSceneValue(\.isReaderWindow, true)
             .navigationTitle(windowTitle)
             .onAppear {
                 libraryViewModel.markBookOpened(bookID)
                 NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
             }
             .onDisappear {
-                if let window = viewModel.hostWindow {
+                // A reader whose window now shows another book leaves the
+                // window registered: the new view registered the same
+                // window, perhaps before this view disappeared, and an
+                // unregister here would take its entry away (0.2.5).
+                if !viewModel.hasSwitchedWindow, let window = viewModel.hostWindow {
                     LibraryWindowRouter.shared.unregisterReaderWindow(window)
                 }
                 viewModel.close()

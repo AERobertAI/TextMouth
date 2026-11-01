@@ -118,9 +118,7 @@ extension ReaderViewModel {
         noteLoadedTextForAnchors(cacheFormatVersion: MarkdownCacheService.currentCacheVersion)
         // This reader's sleep timer for the end of the heading waits for
         // the heading after the cursor in the edited text.
-        if sleepTimerService.waitsForHeadingEnd(ownedBy: readerID) {
-            sleepTimerNextHeading = headingAfterCursor
-        }
+        refreshSleepTimerHeading()
         savePosition()
         refreshPlaybackUI(forceVisibleTextRefresh: true)
         if wasPlaying {

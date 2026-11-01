@@ -802,6 +802,260 @@ final class SleepTimerServiceTests: XCTestCase {
         XCTAssertFalse(lines.contains { $0.contains("end-of-chapter") }, "\(lines)")
     }
 
+    // MARK: - Handing the Timer to the Next Book's Reader (0.2.5)
+
+    /// Counts the running countdown down by `seconds` without waiting.
+    private func tick(_ seconds: Int) {
+        for _ in 0..<seconds {
+            service._advanceCountdownForTesting()
+        }
+    }
+
+    /// A hand-over changes the owner and nothing else: the time left, the
+    /// duration, and the running countdown are the same, and the last owner,
+    /// which Restart Sleep Timer from a media gesture routes by, is the new
+    /// one.
+    func testAHandOverKeepsTheCountdownAndChangesTheOwner() {
+        let next = UUID()
+        start(.minutes(30))
+        tick(5)
+        let before = service.remainingSeconds
+
+        let moved = service.transferOwnership(from: owner, to: next, onExpire: {})
+
+        XCTAssertTrue(moved)
+        XCTAssertEqual(service.ownerID, next)
+        XCTAssertEqual(service.lastOwnerID, next)
+        XCTAssertEqual(service.remainingSeconds, before, "the hand-over reset the countdown")
+        XCTAssertEqual(service.duration, .minutes(30))
+        XCTAssertTrue(service.isActive)
+        tick(1)
+        XCTAssertEqual(service.remainingSeconds, before - 1, "the countdown stopped running")
+    }
+
+    /// The previous owner can no longer pause the timer, and the new owner can.
+    func testThePreviousOwnerLosesTheTimerAndTheNewOwnerGetsIt() {
+        let next = UUID()
+        start(.minutes(30))
+        service.transferOwnership(from: owner, to: next, onExpire: {})
+
+        service.pauseCountdown(by: owner)
+        let running = service.remainingSeconds
+        tick(1)
+        XCTAssertEqual(service.remainingSeconds, running - 1, "the previous owner paused a timer it no longer owns")
+
+        service.pauseCountdown(by: next)
+        let paused = service.remainingSeconds
+        tick(3)
+        XCTAssertEqual(service.remainingSeconds, paused, "the new owner could not pause it")
+    }
+
+    /// A countdown the previous owner's pause halted stays halted through the
+    /// hand-over, and the new owner's play resumes it.
+    func testAHaltedCountdownStaysHaltedUntilTheNewOwnerPlays() {
+        let next = UUID()
+        start(.minutes(30))
+        tick(2)
+        service.pauseCountdown(by: owner)
+        let halted = service.remainingSeconds
+
+        service.transferOwnership(from: owner, to: next, onExpire: {})
+        tick(3)
+        XCTAssertEqual(service.remainingSeconds, halted, "the hand-over resumed a halted countdown")
+
+        service.resumeCountdown(by: next)
+        service._advanceCountdownForTesting()
+        XCTAssertEqual(service.remainingSeconds, halted - 1)
+    }
+
+    /// Only the new owner's callbacks run when the timer runs out, and what
+    /// it was set for, an end of the heading or of the book, goes with it.
+    func testOnlyTheNewOwnersCallbacksRunWhenTheTimerExpires() {
+        let next = UUID()
+        var previousExpired = false
+        var nextExpired = false
+        start(.minutes(1), onExpire: { previousExpired = true })
+        service.transferOwnership(from: owner, to: next, onExpire: { nextExpired = true })
+
+        service._expireForTesting()
+
+        XCTAssertTrue(nextExpired)
+        XCTAssertFalse(previousExpired, "the previous owner paused a book it no longer owns")
+
+        let placeOwner = UUID()
+        start(.endOfBook, ownerID: placeOwner)
+        XCTAssertTrue(service.transferOwnership(from: placeOwner, to: next, onExpire: {}))
+        XCTAssertEqual(service.duration, .endOfBook)
+        XCTAssertFalse(service.waitsForHeadingEnd(ownedBy: next), "an end-of-book timer waits for no heading")
+        XCTAssertTrue(service.stopsPlaybackAtChapterEnd(endingTheHeading: false, endingTheBook: true, ownedBy: next))
+        XCTAssertFalse(service.stopsPlaybackAtChapterEnd(endingTheHeading: false, endingTheBook: true, ownedBy: placeOwner))
+    }
+
+    /// Nothing changes hands unless the timer runs, belongs to the previous
+    /// owner, and is not fading out.
+    func testNothingIsHandedOverUnlessTheTimerRunsUnderThePreviousOwner() {
+        let next = UUID()
+        XCTAssertFalse(service.transferOwnership(from: owner, to: next, onExpire: {}), "no timer")
+        XCTAssertNil(service.ownerID)
+
+        start(.minutes(30))
+        XCTAssertFalse(service.transferOwnership(from: UUID(), to: next, onExpire: {}), "another owner's")
+        XCTAssertEqual(service.ownerID, owner)
+
+        service.stop()
+        start(.minutes(1), fade: 5)
+        service._expireForTesting()
+        XCTAssertTrue(service.isFadingOut)
+        XCTAssertFalse(service.transferOwnership(from: owner, to: next, onExpire: {}), "fading out")
+        XCTAssertEqual(service.ownerID, owner)
+    }
+
+    /// A timer is held for a book from the announcement of a move: it stays
+    /// the previous owner's, runs on, is passed on to another book by a move
+    /// that comes before the first book takes it, and changes hands only when
+    /// the book it is held for takes it.
+    func testAHeldTimerStaysTheOwnersUntilTheBookTakesIt() {
+        let first = UUID()
+        let second = UUID()
+        let taker = UUID()
+        start(.minutes(30))
+
+        XCTAssertTrue(service.hold(forBook: first, from: owner))
+        XCTAssertTrue(service.isHeld(forBook: first))
+        XCTAssertTrue(service.isHeld(from: owner))
+        XCTAssertEqual(service.ownerID, owner, "Exactly one owner while held")
+
+        XCTAssertTrue(service.passOnHold(fromBook: first, toBook: second))
+        XCTAssertFalse(service.isHeld(forBook: first))
+        XCTAssertTrue(service.isHeld(forBook: second))
+        XCTAssertFalse(service.passOnHold(fromBook: first, toBook: second), "a hold passed on twice")
+
+        XCTAssertFalse(
+            service.adoptHeld(forBook: first, as: taker, onExpire: {}), "a book it is not held for took it"
+        )
+        XCTAssertFalse(
+            service.adoptHeld(forBook: second, as: taker, onExpire: {}), "a book took the timer before it was asked for"
+        )
+        service.markAsked(forBook: second)
+        XCTAssertTrue(service.isAsked(forBook: second))
+        XCTAssertTrue(service.adoptHeld(forBook: second, as: taker, onExpire: {}))
+        XCTAssertEqual(service.ownerID, taker)
+        XCTAssertFalse(service.isHeld(forBook: second), "the hold outlived the take")
+        XCTAssertFalse(service.isHeld(from: owner))
+    }
+
+    /// Only a carriable timer is held: not another owner's, not one fading out.
+    func testOnlyACarriableTimerIsHeld() {
+        let book = UUID()
+        XCTAssertFalse(service.hold(forBook: book, from: owner), "no timer")
+        start(.minutes(30))
+        XCTAssertFalse(service.hold(forBook: book, from: UUID()), "another owner's")
+        XCTAssertTrue(service.isCarriable(by: owner))
+        XCTAssertFalse(service.isCarriable(by: UUID()))
+
+        service.stop()
+        start(.minutes(1), fade: 5)
+        service._expireForTesting()
+        XCTAssertFalse(service.isCarriable(by: owner), "fading out")
+        XCTAssertFalse(service.hold(forBook: book, from: owner))
+        XCTAssertTrue(service.endedListening(ownedBy: owner), "a fading timer has ended listening")
+    }
+
+    /// A hold is returned where it was even while the timer fades out: a new
+    /// carry of a fading timer is refused, but putting back the hold a
+    /// cancelled move made is a return, and a timer that has stopped has no hold
+    /// to return.
+    func testAHoldIsReturnedEvenWhileTheTimerFadesOut() {
+        let first = UUID()
+        let second = UUID()
+        start(.minutes(1), fade: 5)
+        XCTAssertTrue(service.hold(forBook: first, from: owner))
+        XCTAssertTrue(service.passOnHold(fromBook: first, toBook: second))
+        service._expireForTesting()
+        XCTAssertTrue(service.isFadingOut)
+
+        XCTAssertFalse(service.passOnHold(fromBook: second, toBook: first), "a new carry of a fading timer")
+        XCTAssertTrue(service.isHeld(forBook: second))
+        XCTAssertTrue(service.passOnHold(fromBook: second, toBook: first, returning: true), "a return")
+        XCTAssertTrue(service.isHeld(forBook: first))
+        XCTAssertTrue(service.isFadingOut, "the return ended the fade")
+
+        service.stop()
+        XCTAssertFalse(service.passOnHold(fromBook: first, toBook: second, returning: true), "nothing left held")
+    }
+
+    /// A timer held for a book that ran out before the book took it is
+    /// remembered for that book, once; stopping or starting a timer ends the
+    /// hold.
+    func testAHeldTimerThatRanOutIsRememberedForItsBook() {
+        let book = UUID()
+        start(.minutes(1))
+        service.hold(forBook: book, from: owner)
+
+        service._expireForTesting()
+
+        XCTAssertFalse(service.isHeld(forBook: book), "an expired timer was still held")
+        XCTAssertTrue(service.consumeExpiredWhileHeld(forBook: book))
+        XCTAssertFalse(service.consumeExpiredWhileHeld(forBook: book), "asked twice")
+
+        start(.minutes(5))
+        service.hold(forBook: book, from: owner)
+        service.stop()
+        XCTAssertFalse(service.isHeld(forBook: book), "a stopped timer was still held")
+    }
+
+    /// An expiry is counted: a timer that ran out before a move or a wait
+    /// began ended nothing after it, whatever the clock does.
+    func testAnExpiryIsCountedForTheWaitsThatBeganBefore() {
+        start(.minutes(1))
+        let before = service.expiryCount
+
+        service._expireForTesting()
+
+        XCTAssertEqual(service.expiryCount, before + 1)
+        XCTAssertTrue(service.didExpire(whileOwnedBy: owner, sinceExpiry: before))
+        XCTAssertFalse(
+            service.didExpire(whileOwnedBy: owner, sinceExpiry: service.expiryCount),
+            "an expiry before the wait ended it"
+        )
+        XCTAssertTrue(service.endedListening(ownedBy: owner, sinceExpiry: before))
+        XCTAssertFalse(service.endedListening(ownedBy: owner, sinceExpiry: service.expiryCount))
+    }
+
+    /// Releasing the timer held for a book that will not open stops it and
+    /// says so after current speech; a timer held for another book is left.
+    func testReleasingAHeldTimerStopsItAndSaysSoAfterCurrentSpeech() {
+        let book = UUID()
+        start(.minutes(30))
+        service.hold(forBook: book, from: owner)
+        XCTAssertFalse(service.releaseHeld(forBook: UUID()))
+        XCTAssertTrue(service.isActive)
+
+        let recorder = recordingAnnouncements {
+            XCTAssertTrue(service.releaseHeld(forBook: book))
+        }
+
+        XCTAssertFalse(service.isActive)
+        XCTAssertEqual(
+            recorder.announcements,
+            [VoiceOverAnnouncement(message: SleepTimerHandOverWording.noBook, priority: .medium)]
+        )
+    }
+
+    /// A timer that ran out is remembered with its owner until another starts
+    /// or changes hands, so the reader the book goes on to can tell.
+    func testATimerThatRanOutIsRememberedUntilAnotherStarts() {
+        start(.minutes(1))
+        XCTAssertFalse(service.didExpire(whileOwnedBy: owner))
+
+        service._expireForTesting()
+        XCTAssertTrue(service.didExpire(whileOwnedBy: owner))
+        XCTAssertFalse(service.didExpire(whileOwnedBy: UUID()))
+
+        start(.minutes(5))
+        XCTAssertFalse(service.didExpire(whileOwnedBy: owner), "a new timer left the old expiry")
+    }
+
     /// Start a five-minute timer, count down its first minute without
     /// waiting for it, and stop it.
     private func runOneMinuteOfAFiveMinuteTimer() {

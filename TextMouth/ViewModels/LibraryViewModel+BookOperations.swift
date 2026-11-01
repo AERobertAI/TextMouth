@@ -925,7 +925,10 @@ extension LibraryViewModel {
 
     // MARK: - Open Book Tracking
 
+    /// Notes that a reader opened the book `id`: the book is open until its
+    /// last reader closes (`openReaderCounts`).
     func registerOpenBook(_ id: UUID) {
+        openReaderCounts[id, default: 0] += 1
         openBookIDs.insert(id)
         // Track last opened book for quick-resume. config.json takes it once
         // changes pause (PERF17), not as the reader window opens.
@@ -934,11 +937,18 @@ extension LibraryViewModel {
         config.scheduleSave()
     }
 
-    /// Notes that the book `id`'s reader closed. Its last reading checkpoint,
-    /// saved as it closed, reaches library.json now rather than at the
-    /// checkpoint's deadline (PERF15).
+    /// Notes that a reader of the book `id` closed: the book leaves
+    /// `openBookIDs` with its last reader, not before. Its last reading
+    /// checkpoint, saved as it closed, reaches library.json now rather than at
+    /// the checkpoint's deadline (PERF15).
     func unregisterOpenBook(_ id: UUID) {
-        openBookIDs.remove(id)
+        let remaining = (openReaderCounts[id] ?? 0) - 1
+        if remaining > 0 {
+            openReaderCounts[id] = remaining
+        } else {
+            openReaderCounts[id] = nil
+            openBookIDs.remove(id)
+        }
         LibraryPersistenceService.writePendingIndexSoon()
     }
 

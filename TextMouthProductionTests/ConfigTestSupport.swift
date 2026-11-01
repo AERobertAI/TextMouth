@@ -27,6 +27,7 @@ extension ConfigService.AppConfig {
         config.sleepFadeOutDuration = 6
         config.sleepTimerAutoClose = false
         config.endOfBookBehavior = EndOfBookBehavior.continueNext.rawValue
+        config.nextBookWindow = NextBookWindow.newWindow.rawValue
         config.punctuationPauseLevel = 2
         config.lastOpenedBookID = "8E4C2D71-5B0A-4F6B-9C3E-2A7D1F9B6E05"
         config.autoPlayOnNavigate = true

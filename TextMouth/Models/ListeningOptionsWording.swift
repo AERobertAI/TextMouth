@@ -45,7 +45,7 @@ enum ListeningOptionsWording {
 
         /// Whose items they are: "this feed's" for a feed's, "this
         /// folder's" for a folder's.
-        fileprivate var owner: String { self == .book ? "this folder's" : "this feed's" }
+        var owner: String { self == .book ? "this folder's" : "this feed's" }
 
         /// Where the one below and the one above are found: "the list" for
         /// a feed's items, "the folder" for a folder's books.

@@ -38,6 +38,14 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// from the list (FR09). It has no key until the user gives it one in
     /// Settings.
     case previousInReadingList = "Previous in Reading List"
+    /// Goes to the item below this book in its folder, or in its feed
+    /// (0.2.5): it plays when this book was playing, and only opens
+    /// otherwise. It has no key until the user gives it one in Settings.
+    case nextInFolder = "Next in Folder"
+    /// Goes to the item above this book in its folder, or in its feed
+    /// (0.2.5), as Next in Folder goes below. It has no key until the user
+    /// gives it one in Settings.
+    case previousInFolder = "Previous in Folder"
     // Up One Level last of the Navigation group, and Show Bookmarks last of
     // the Bookmarks group, as the Shortcuts tab lists them: `allCases` is
     // Settings order, which the record of edits, the press index, and the
@@ -302,6 +310,8 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .goToPage: return .goToPage
         case .nextInReadingList: return .nextInReadingList
         case .previousInReadingList: return .previousInReadingList
+        case .nextInFolder: return .nextInFolder
+        case .previousInFolder: return .previousInFolder
         case .addBookmark: return .addBookmark
         case .nextBookmark: return .nextBookmark
         case .previousBookmark: return .previousBookmark
@@ -365,7 +375,8 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
              .increaseSpeed, .decreaseSpeed, .copyReadingPosition, .searchInBook:
             return "Playback"
         case .goToLibrary, .goBack, .goForward, .navigateUpLevel, .nextHeading, .previousHeading,
-             .nextPage, .previousPage, .goToPage, .nextInReadingList, .previousInReadingList:
+             .nextPage, .previousPage, .goToPage, .nextInReadingList, .previousInReadingList,
+             .nextInFolder, .previousInFolder:
             return "Navigation"
         case .addBookmark, .nextBookmark, .previousBookmark, .showBookmarkList:
             return "Bookmarks"
@@ -1645,6 +1656,9 @@ extension ShortcutAction {
             // choosing in Settings, as the reading list's Library commands.
             .nextInReadingList: [],
             .previousInReadingList: [],
+            // No keys by default either (0.2.5).
+            .nextInFolder: [],
+            .previousInFolder: [],
             .addBookmark: [
                 KeyBinding(key: "b", command: true)
             ],

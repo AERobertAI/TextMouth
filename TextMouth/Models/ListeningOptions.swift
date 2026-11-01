@@ -24,16 +24,24 @@ struct ListeningOptions: Codable, Equatable, Hashable, Sendable {
     /// playing one ends. On by default. Only a feed's is read: a folder's
     /// books are already on this Mac.
     var predownloadsNext: Bool
+    /// Where the next item opens when listening goes on from one item to
+    /// another (0.2.5): this window, or a new one. Nil is "Use the global
+    /// setting", which follows the Playback tab's "Open the next book in".
+    /// A TextMouth older than 0.2.5 ignores the key, and drops it when it
+    /// next saves the feed or folder.
+    var nextBookWindow: NextBookWindow?
 
     /// Options with the given choices; no argument is the standard one.
     init(
         continuation: ReadingList.Continuation? = nil,
         skipsFinished: Bool = true,
-        predownloadsNext: Bool = true
+        predownloadsNext: Bool = true,
+        nextBookWindow: NextBookWindow? = nil
     ) {
         self.continuation = continuation
         self.skipsFinished = skipsFinished
         self.predownloadsNext = predownloadsNext
+        self.nextBookWindow = nextBookWindow
     }
 
     /// The options of a feed or folder with no choices of its own: nothing
@@ -70,7 +78,7 @@ struct ListeningOptions: Codable, Equatable, Hashable, Sendable {
 
     /// The keys of the options in a record.
     private enum CodingKeys: String, CodingKey {
-        case continuation, skipsFinished, predownloadsNext
+        case continuation, skipsFinished, predownloadsNext, nextBookWindow
     }
 
     /// Reads saved options, leniently, so options can never make a feed's
@@ -86,5 +94,8 @@ struct ListeningOptions: Codable, Equatable, Hashable, Sendable {
         continuation = (try? container.decodeIfPresent(ReadingList.Continuation.self, forKey: .continuation)) ?? nil
         skipsFinished = (try? container.decodeIfPresent(Bool.self, forKey: .skipsFinished)) ?? true
         predownloadsNext = (try? container.decodeIfPresent(Bool.self, forKey: .predownloadsNext)) ?? true
+        // A name this TextMouth does not know reads as "Use the global
+        // setting", as a continuation it does not know does.
+        nextBookWindow = (try? container.decodeIfPresent(NextBookWindow.self, forKey: .nextBookWindow)) ?? nil
     }
 }

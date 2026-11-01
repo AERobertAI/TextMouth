@@ -61,6 +61,11 @@ struct ReadingList: Codable, Equatable, Sendable {
         /// Toward the end of the list: the book below.
         case down
 
+        /// The other way: down for up, up for down.
+        var opposite: Direction {
+            self == .up ? .down : .up
+        }
+
         /// The step through the list's positions: -1 up, +1 down.
         var step: Int {
             self == .up ? -1 : 1

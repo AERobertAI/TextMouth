@@ -63,6 +63,24 @@ extension FocusedValues {
     }
 }
 
+/// Whether the key window is a reader, which Navigate > Next in Folder and
+/// Previous in Folder need (0.2.5). The reader's window publishes it as a
+/// scene value (`BookReaderWindowView`), so the commands stay available while
+/// VoiceOver reads the window's text, which holds no keyboard focus, and
+/// after a window switches to another book, which takes the focused view
+/// away. (`activeWindowType` is a plain focused value, which leaves a menu
+/// command dimmed then.)
+struct IsReaderWindowKey: FocusedValueKey {
+    typealias Value = Bool
+}
+
+extension FocusedValues {
+    var isReaderWindow: Bool? {
+        get { self[IsReaderWindowKey.self] }
+        set { self[IsReaderWindowKey.self] = newValue }
+    }
+}
+
 /// The key Library window's selection as the Library menu's Remove names
 /// it: Delete Download for feed items alone (REV11 F2). Each Library window
 /// publishes its own as a scene value (`LibraryView`), so the title follows
@@ -237,6 +255,9 @@ struct NavigationCommands: Commands {
     /// Whether the key reader's book has pages (PG02), which Next Page,
     /// Previous Page, and Go to Page… need.
     @FocusedValue(\.readerHasPages) var readerHasPages
+    /// Whether the key window is a reader, so Next in Folder and Previous in
+    /// Folder are offered in a reader window alone.
+    @FocusedValue(\.isReaderWindow) var isReaderWindow
 
     var body: some Commands {
         CommandMenu("Navigate") {
@@ -294,6 +315,19 @@ struct NavigationCommands: Commands {
                 NotificationCenter.default.post(name: .previousInReadingList, object: nil)
             }
             .disabled(readsFromReadingList != true)
+
+            // The item below or above this book in its folder or feed
+            // (0.2.5), available in a reader window. They have no keys until
+            // the user gives them some, as the reading list's commands.
+            Button(ShortcutAction.nextInFolder.title) {
+                NotificationCenter.default.post(name: .nextInFolder, object: nil)
+            }
+            .disabled(isReaderWindow != true)
+
+            Button(ShortcutAction.previousInFolder.title) {
+                NotificationCenter.default.post(name: .previousInFolder, object: nil)
+            }
+            .disabled(isReaderWindow != true)
 
             Divider()
 
@@ -893,6 +927,8 @@ extension Notification.Name {
     /// the user gave it one (FR09): the key reader, reading its book from
     /// the reading list, opens the book above it there.
     static let previousInReadingList = Notification.Name("previousInReadingList")
+    static let nextInFolder = Notification.Name("nextInFolder")
+    static let previousInFolder = Notification.Name("previousInFolder")
     static let addBookmark = Notification.Name("addBookmark")
     static let nextBookmark = Notification.Name("nextBookmark")
     static let previousBookmark = Notification.Name("previousBookmark")

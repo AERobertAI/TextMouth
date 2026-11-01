@@ -1167,6 +1167,7 @@ final class ConfigSyncTests: XCTestCase {
             "punctuationPauseLevel": 2.0,
             "autoPlayOnNavigate": true,
             "endOfBookBehavior": EndOfBookBehavior.continueNext.rawValue,
+            "nextBookWindow": NextBookWindow.newWindow.rawValue,
             "sleepFadeOutDuration": 6.0,
             "sleepTimerAutoClose": false,
             "playbackNavigationUnitControlMode": PlaybackNavigationUnitControlMode.separate.rawValue,

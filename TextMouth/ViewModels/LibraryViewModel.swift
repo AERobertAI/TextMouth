@@ -176,6 +176,10 @@ final class LibraryViewModel: ObservableObject {
             audioEditActivity.setOpenInReaders(openBookIDs)
         }
     }
+    /// How many readers are open for each book, from `registerOpenBook` to
+    /// `unregisterOpenBook`: a book stays in `openBookIDs` until its last reader
+    /// closes, since two windows may show one book.
+    var openReaderCounts: [UUID: Int] = [:]
     /// Which books' audio is in use in a way an original must stay for:
     /// open in a reader (mirrored from `openBookIDs`), or being edited or
     /// rendered (FR04, `AudioOriginalSweep`).
