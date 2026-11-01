@@ -981,6 +981,41 @@ final class EpisodeDownloadContinuationTests: FeedItemIndexTestCase {
         XCTAssertFalse(SleepTimerService.shared.isActive, "The fade went on after the move")
     }
 
+    /// Next in Reading List pressed during the wait for an episode a folder
+    /// command began ends the wait through the command itself: the episode is
+    /// not started when it arrives, and only the list's book is asked for.
+    func testNextInReadingListDuringAnEpisodeWaitEndsTheWait() async throws {
+        let setup = try await makeFeed(options: nil, global: .stop, bottomIsDownloaded: true)
+        let heard = listen(to: setup)
+        let bottom = try XCTUnwrap(book(of: "guid:ep-1", in: setup))
+        setup.world.library.library.readingList = ReadingList(bookIDs: [setup.middle.id, bottom.id])
+        let requests = ReadingListOpenRequests()
+        requests.request(for: setup.middle.id)
+        let reader = ReaderViewModel(
+            book: setup.middle,
+            libraryViewModel: setup.world.library,
+            settingsViewModel: setup.settings,
+            substitutionService: TextSubstitutionService(rules: []),
+            autoplayRequests: ReaderAutoplayRequests(),
+            readingListRequests: requests,
+            notificationCenter: setup.notifications,
+            renderScheduler: nil
+        )
+        addTeardownBlock { @MainActor in reader.close() }
+        await waitFor("the episode loads in its reader") { !reader.isLoading }
+        XCTAssertTrue(reader.isOpenedFromReadingList, "The reader does not read its book from the list")
+        reader.isWhereAmIResumePending = true
+        reader.goThroughFolder(.up)
+        XCTAssertNotNil(reader.nextEpisodeWait, "No wait began")
+
+        reader.goThroughReadingList(.down)
+
+        XCTAssertNil(reader.nextEpisodeWait, "The command left the wait")
+        await waitFor("the list's book is asked for") { !heard.asked.isEmpty }
+        try? await Task.sleep(for: .seconds(ReaderViewModel.continueToNextBookDelay * 2))
+        XCTAssertEqual(heard.asked, [bottom.id], "The episode was started, or the list's book was not asked for")
+    }
+
     /// Any move ends the wait for an episode that a folder command began, and
     /// counts the book as playing when that wait was to play its episode: the
     /// start every move shares, Next in Reading List's included.

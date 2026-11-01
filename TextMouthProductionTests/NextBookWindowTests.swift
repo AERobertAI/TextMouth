@@ -291,6 +291,39 @@ final class NextBookWindowTests: XCTestCase {
         XCTAssertEqual(SwitchedWindowFocus.checkDelay, 1.6)
     }
 
+    /// A window an earlier book's trigger posted in has a non-zero count at the
+    /// load, which is no reason for the check to place focus or not to: it
+    /// places only if no trigger posted since, in the key window.
+    func testASwitchedWindowPlacesFocusOnlyWhenNoTriggerPostedSinceTheLoad() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 100, height: 100),
+            styleMask: [.titled], backing: .buffered, defer: true
+        )
+        window.isReleasedWhenClosed = false
+        StandardVoiceOverFocusTriggerView.noteFocusPost(in: window)
+        StandardVoiceOverFocusTriggerView.noteFocusPost(in: window)
+        let atTheLoad = StandardVoiceOverFocusTriggerView.focusPostCount(of: window)
+        XCTAssertEqual(atTheLoad, 2, "The earlier book's posts are not counted")
+
+        XCTAssertTrue(SwitchedWindowFocus.shouldPlace(
+            postsAtTheLoad: atTheLoad,
+            postsNow: StandardVoiceOverFocusTriggerView.focusPostCount(of: window),
+            windowIsKey: true
+        ), "Nothing posted since the load, so the check places focus")
+        XCTAssertFalse(SwitchedWindowFocus.shouldPlace(
+            postsAtTheLoad: atTheLoad,
+            postsNow: StandardVoiceOverFocusTriggerView.focusPostCount(of: window),
+            windowIsKey: false
+        ), "A window that is not key is left alone")
+
+        StandardVoiceOverFocusTriggerView.noteFocusPost(in: window)
+        XCTAssertFalse(SwitchedWindowFocus.shouldPlace(
+            postsAtTheLoad: atTheLoad,
+            postsNow: StandardVoiceOverFocusTriggerView.focusPostCount(of: window),
+            windowIsKey: true
+        ), "The trigger posted after the load, so the check says nothing more")
+    }
+
     // MARK: - The Words
 
     /// Every string of the controls, word for word.
