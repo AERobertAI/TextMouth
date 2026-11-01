@@ -30,32 +30,47 @@ extension ReaderViewModel {
         settingsViewModel.nextBookWindow
     }
 
-    /// Whether this reader's window is on screen, or minimized, so that a
-    /// book shown in it would be seen. A reader whose window has closed, or
-    /// that has no window, is not.
-    private var hostWindowIsOnScreen: Bool {
-        if let hostWindowIsOnScreenOverride { return hostWindowIsOnScreenOverride }
-        guard let window = hostWindow else { return false }
-        return window.isVisible || window.isMiniaturized
+    /// What this reader's window is doing now, read from AppKit: on screen,
+    /// minimized, or hidden with the app; a sheet or alert over it; a text
+    /// field being typed in (the field editor is the window's first
+    /// responder). A reader with no window, as one whose window has gone,
+    /// stands as `NextBookWindowStanding.noWindow`.
+    var windowStanding: NextBookWindowStanding {
+        if let windowStandingOverride { return windowStandingOverride }
+        guard let window = hostWindow else { return .noWindow }
+        return NextBookWindowStanding(
+            isVisible: window.isVisible,
+            isMiniaturized: window.isMiniaturized,
+            appIsHidden: NSApp.isHidden,
+            hasSheet: window.attachedSheet != nil,
+            fieldIsBeingEdited: (window.firstResponder as? NSTextView)?.isFieldEditor == true
+        )
     }
 
-    /// Whether switching this window to another book could lose something,
+    /// Whether switching the window to another book could lose something,
     /// so that the book opens in a new window as before instead:
     /// - this reader has closed, or its window is gone or off screen: the
     ///   listener pressed Command-W between "Starting: <title>" and the
     ///   request, and the hand-over goes on as announced, in a new window;
     /// - a sheet or an alert is open over the window (Edit Book Information,
     ///   Search in Book, the headings, the bookmarks, the sleep timer, the
-    ///   voice, Export, an error);
+    ///   voice, Export, an error), or a field is being typed in (Go to
+    ///   Percent, Time, or Page): the switch would take them away, and the
+    ///   typing would reach the next book's single-key shortcuts;
     /// - this book's text is being edited in another app (Edit Text), whose
     ///   changes arrive through this reader;
-    /// - the library is moving, when the app refuses to open a book.
+    /// - the library is moving or unavailable, when the app refuses to open a
+    ///   book, which a switch would go around;
+    /// - this reader's own sleep timer is running, which the close of the
+    ///   old reader would stop (`close()`): the next book opens in a new
+    ///   window, and the timer keeps running, as before 0.2.5.
     var switchingTheWindowCouldLoseWork: Bool {
         hasClosed
-            || !hostWindowIsOnScreen
-            || hostWindow?.attachedSheet != nil
+            || windowStanding.isBusy
             || libraryViewModel.textEditSessions.isEditing(book.id)
             || libraryViewModel.dataDirectoryMove != nil
+            || libraryViewModel.dataDirectoryUnavailability != nil
+            || sleepTimerEndsListeningHere
     }
 
     /// Shows the book `nextBookID`, which every request for it has been

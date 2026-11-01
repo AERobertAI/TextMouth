@@ -100,6 +100,41 @@ final class NextBookWindowTests: XCTestCase {
         }
     }
 
+    // MARK: - The Window's Standing
+
+    /// A window counts as on screen when it is visible, minimized, or
+    /// TextMouth is hidden (Command-H orders every window out); only a window
+    /// that is none of these, as one that has closed, is off screen.
+    func testTheStandingCountsVisibleMinimizedAndHiddenAppAsOnScreen() {
+        for visible in [false, true] {
+            for minimized in [false, true] {
+                for hidden in [false, true] {
+                    let standing = NextBookWindowStanding(
+                        isVisible: visible, isMiniaturized: minimized, appIsHidden: hidden,
+                        hasSheet: false, fieldIsBeingEdited: false
+                    )
+                    XCTAssertEqual(standing.isOnScreen, visible || minimized || hidden)
+                    XCTAssertEqual(standing.isBusy, !(visible || minimized || hidden))
+                }
+            }
+        }
+        XCTAssertTrue(NextBookWindowStanding.onScreen.isOnScreen)
+        XCTAssertFalse(NextBookWindowStanding.onScreen.isBusy)
+        XCTAssertFalse(NextBookWindowStanding.noWindow.isOnScreen)
+        XCTAssertTrue(NextBookWindowStanding.noWindow.isBusy)
+    }
+
+    /// A sheet open over the window, or a field being typed in, makes an
+    /// on-screen window busy.
+    func testASheetOrAFieldMakesTheStandingBusy() {
+        var sheet = NextBookWindowStanding.onScreen
+        sheet.hasSheet = true
+        XCTAssertTrue(sheet.isBusy)
+        var field = NextBookWindowStanding.onScreen
+        field.fieldIsBeingEdited = true
+        XCTAssertTrue(field.isBusy)
+    }
+
     // MARK: - The Choice as Data
 
     /// The new key round trips, standard options stay standard, and a

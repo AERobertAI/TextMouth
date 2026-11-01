@@ -496,10 +496,10 @@ final class ReaderViewModel: ObservableObject {
     /// (the new view registers the same window) and closes this reader.
     /// Accessed from the NextBookWindow extension and the window's view.
     var hasSwitchedWindow = false
-    /// Whether this reader's window is on screen, or minimized, so that a
-    /// book shown in it is seen; nil reads it from `hostWindow`. A test
-    /// that has no window sets it.
-    var hostWindowIsOnScreenOverride: Bool?
+    /// What this reader's window is doing, as far as a switch is concerned;
+    /// nil reads it from `hostWindow` and the app. A test that has no
+    /// window sets it (`windowStanding`).
+    var windowStandingOverride: NextBookWindowStanding?
     /// The revision of the latest library update this reader has applied to
     /// its copy of the book (see `LibraryBookUpdates`); an update that is
     /// not newer is ignored. Written only by `applyLibraryUpdate(_:)` and

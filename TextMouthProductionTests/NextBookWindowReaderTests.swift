@@ -85,13 +85,117 @@ final class NextBookWindowReaderTests: XCTestCase {
         let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
         let asked = record(.continueToNextBook, in: folder.world)
         let reader = makeReader(for: folder.first, in: folder.world, switcher: switcher)
-        reader.hostWindowIsOnScreenOverride = false
+        reader.windowStandingOverride = .noWindow
 
         reader.handleEndOfBook()
         XCTAssertTrue(eventually { !asked().isEmpty }, "Never asked for the next book")
 
         XCTAssertEqual(asked().map(\.nextBookID), [folder.second.id])
         XCTAssertTrue(switcher.shown.isEmpty)
+    }
+
+    /// Ends the first book of a fresh folder world, whose window stands as
+    /// `standing` and which `prepare` has made busy, and says whether the
+    /// next book opened in a new window (the notification posted, the
+    /// switcher not called) or this window switched.
+    ///
+    /// - Returns: True when a new window opened, false when this window
+    ///   switched.
+    private func endOpensANewWindow(
+        _ label: String,
+        standing: NextBookWindowStanding = .onScreen,
+        prepare: (FolderWorld) -> Void = { _ in },
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws -> Bool {
+        let folder = try makeFolderWorld(label)
+        prepare(folder)
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let asked = record(.continueToNextBook, in: folder.world)
+        let reader = makeReader(for: folder.first, in: folder.world, switcher: switcher)
+        reader.windowStandingOverride = standing
+
+        reader.handleEndOfBook()
+        XCTAssertTrue(
+            eventually { !asked().isEmpty || !switcher.shown.isEmpty },
+            "\(label): never went on", file: file, line: line
+        )
+        // Exactly one of the two happened.
+        XCTAssertEqual(asked().isEmpty, !switcher.shown.isEmpty, "\(label)", file: file, line: line)
+        return !asked().isEmpty
+    }
+
+    /// A sheet or an alert open over the window, or a field being typed in
+    /// (Go to Percent, Time, or Page), opens a new window: a switch would
+    /// take them away.
+    func testASheetOrAFieldBeingEditedOpensANewWindow() throws {
+        var sheet = NextBookWindowStanding.onScreen
+        sheet.hasSheet = true
+        XCTAssertTrue(try endOpensANewWindow("BusySheet", standing: sheet))
+        var field = NextBookWindowStanding.onScreen
+        field.fieldIsBeingEdited = true
+        XCTAssertTrue(try endOpensANewWindow("BusyField", standing: field))
+    }
+
+    /// An Edit Text session of the book, the library moving, and the library
+    /// being unavailable each open a new window: the app refuses to open a
+    /// book while the library moves or is unavailable, which a switch would
+    /// go around.
+    func testAnEditSessionAMoveOrAnUnavailableLibraryOpensANewWindow() throws {
+        XCTAssertTrue(try endOpensANewWindow("BusyEdit") { folder in
+            let sessions = BookTextEditSessions()
+            let baseline = BookTextBaseline(
+                source: nil,
+                cache: FileFingerprint(stamp: FileStamp(byteCount: 0, modificationTimeNanoseconds: 0), digest: "")
+            )
+            sessions.begin(folder.first.id, BookTextEditSessions.Session(baseline: baseline, report: { _, _ in }))
+            folder.world.library.textEditSessions = sessions
+            self.addTeardownBlock { sessions.end(folder.first.id) }
+        })
+        XCTAssertTrue(try endOpensANewWindow("BusyMove") { folder in
+            folder.world.library.dataDirectoryMove = DataDirectoryMoveProgress(
+                destination: URL(fileURLWithPath: "/Volumes/Backup/Library")
+            )
+        })
+        XCTAssertTrue(try endOpensANewWindow("BusyUnavailable") { folder in
+            folder.world.library.noteDataDirectoryUnavailable(
+                .driveNotConnected(volume: "Spare Disk", folder: "/Volumes/Spare Disk/TextMouth")
+            )
+        })
+    }
+
+    /// A window minimized to the Dock, and a window hidden with the app
+    /// (Command-H orders every window out), still switch: a book shown there
+    /// is there when the window returns. A window that has closed does not.
+    func testAMinimizedWindowAndAHiddenAppStillSwitch() throws {
+        var minimized = NextBookWindowStanding.noWindow
+        minimized.isMiniaturized = true
+        XCTAssertFalse(try endOpensANewWindow("StandingMinimized", standing: minimized))
+        var hidden = NextBookWindowStanding.noWindow
+        hidden.appIsHidden = true
+        XCTAssertFalse(try endOpensANewWindow("StandingHidden", standing: hidden))
+        XCTAssertFalse(try endOpensANewWindow("StandingVisible", standing: .onScreen))
+        XCTAssertTrue(try endOpensANewWindow("StandingClosed", standing: .noWindow))
+    }
+
+    /// A sleep timer this reader set and that runs opens the next book in a
+    /// new window, and keeps running: closing the old reader would stop it.
+    func testARunningSleepTimerOpensANewWindowAndKeepsRunning() throws {
+        preserveSharedSleepTimer()
+        let folder = try makeFolderWorld("BusyTimer")
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let opened = record(.openBookWindow, in: folder.world)
+        let reader = makeReader(for: folder.first, in: folder.world, switcher: switcher)
+        SleepTimerService.shared.start(duration: .minutes(30), ownerID: reader.readerID, onExpire: {})
+        XCTAssertTrue(SleepTimerService.shared.isActive)
+
+        reader.goThroughFolder(.down)
+        XCTAssertTrue(eventually { !opened().isEmpty }, "Never opened the next book")
+
+        XCTAssertEqual(opened().map { $0.object as? UUID }, [folder.second.id])
+        XCTAssertTrue(switcher.shown.isEmpty, "Switched a window that holds a running timer")
+        XCTAssertTrue(SleepTimerService.shared.isActive, "The timer stopped")
+        XCTAssertEqual(SleepTimerService.shared.ownerID, reader.readerID)
     }
 
     /// The listener closes the window in the half second between "Starting"
@@ -475,7 +579,7 @@ final class NextBookWindowReaderTests: XCTestCase {
             notificationCenter: world.notifications
         )
         reader.nextBookWindowSwitcher = { switcher.show($0) }
-        reader.hostWindowIsOnScreenOverride = true
+        reader.windowStandingOverride = .onScreen
         addTeardownBlock { reader.close() }
         waitForReaderToLoad(reader)
         return reader

@@ -21,6 +21,52 @@ enum NextBookWindow: String, CaseIterable, Codable, Sendable {
     case newWindow = "A New Window"
 }
 
+/// What the reader's window is doing, as far as switching it to another
+/// book is concerned. Read from AppKit by the reader
+/// (`ReaderViewModel.windowStanding`), and set by a test, which has no
+/// window.
+struct NextBookWindowStanding: Equatable, Sendable {
+    /// Whether the window is on screen (`NSWindow.isVisible`).
+    var isVisible: Bool
+    /// Whether the window is minimized to the Dock, which shows a book
+    /// all the same.
+    var isMiniaturized: Bool
+    /// Whether TextMouth is hidden (Command-H), which orders every window
+    /// out: a hidden app's window is not off screen for good.
+    var appIsHidden: Bool
+    /// Whether a sheet or an alert is open over the window.
+    var hasSheet: Bool
+    /// Whether a text field of the window is being typed in: Go to Percent,
+    /// Go to Time, or Go to Page, whose panel is inside the window, not a
+    /// sheet.
+    var fieldIsBeingEdited: Bool
+
+    /// A window that is on screen with nothing open over it, which a
+    /// switch may change.
+    static let onScreen = NextBookWindowStanding(
+        isVisible: true, isMiniaturized: false, appIsHidden: false, hasSheet: false, fieldIsBeingEdited: false
+    )
+
+    /// No window, or one that has closed: nothing a switch could show a book
+    /// in.
+    static let noWindow = NextBookWindowStanding(
+        isVisible: false, isMiniaturized: false, appIsHidden: false, hasSheet: false, fieldIsBeingEdited: false
+    )
+
+    /// Whether a book shown in the window is seen: it is on screen, or
+    /// minimized, or TextMouth is hidden and the window comes back with it.
+    /// A window that has closed is none of these.
+    var isOnScreen: Bool {
+        isVisible || isMiniaturized || appIsHidden
+    }
+
+    /// Whether switching the window could lose something: it is not on
+    /// screen, a sheet is open over it, or a field is being typed in.
+    var isBusy: Bool {
+        !isOnScreen || hasSheet || fieldIsBeingEdited
+    }
+}
+
 /// What a reader does to show the next book, once every setting and the
 /// state of its window are weighed. The one place the rule is written in
 /// code, so each arrangement is tested without opening a window.
