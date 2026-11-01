@@ -78,13 +78,19 @@ final class SleepTimerService: ObservableObject {
 
     /// The reader that owned the timer when it last ran out, whether it
     /// stopped the book at once or after a fade, kept until a timer starts
-    /// or changes hands, and when (`lastExpiry`). A reader that a finished
-    /// book's timer was to move to asks it (`didExpire(whileOwnedBy:since:)`):
+    /// or changes hands, and which expiry it was (`lastExpiryNumber`). A
+    /// reader that a finished book's timer was to move to asks it
+    /// (`didExpire(whileOwnedBy:sinceExpiry:)`):
     /// a timer that ran out before the next book took it has ended
     /// listening, and the next book must not start.
     private(set) var lastExpiredOwnerID: UUID?
-    /// When the timer last ran out, for `didExpire(whileOwnedBy:since:)`.
-    private(set) var lastExpiry: Date?
+    /// How many times a timer has run out, from the app's start: a counter
+    /// that only goes up, so a move or an episode's wait notes it as it begins
+    /// and asks whether the timer ran out since, whatever the wall clock does
+    /// meanwhile.
+    private(set) var expiryCount = 0
+    /// The number of the expiry `lastExpiredOwnerID` ran out in.
+    private(set) var lastExpiryNumber = 0
 
     // MARK: Held for the Next Book (0.2.5)
 
@@ -439,13 +445,14 @@ final class SleepTimerService: ObservableObject {
     }
 
     /// Whether the timer last ran out while `ownerID` owned it, and has not
-    /// been started or handed over since (`lastExpiredOwnerID`), no earlier
-    /// than `date` when one is given: a timer that ran out before a move was
-    /// announced, or before an episode's wait began, ended nothing there.
-    func didExpire(whileOwnedBy ownerID: UUID, since date: Date? = nil) -> Bool {
+    /// been started or handed over since (`lastExpiredOwnerID`), after the
+    /// expiry count was `mark` when one is given (`expiryCount`): a timer that
+    /// ran out before a move was announced, or before an episode's wait began,
+    /// ended nothing there.
+    func didExpire(whileOwnedBy ownerID: UUID, sinceExpiry mark: Int? = nil) -> Bool {
         guard lastExpiredOwnerID == ownerID else { return false }
-        guard let date else { return true }
-        return (lastExpiry ?? .distantPast) >= date
+        guard let mark else { return true }
+        return lastExpiryNumber > mark
     }
 
     /// Whether `ownerID` owns a timer that is fading out, which is putting
@@ -454,11 +461,11 @@ final class SleepTimerService: ObservableObject {
         isActive && self.ownerID == ownerID && isFadingOut
     }
 
-    /// Whether the timer `ownerID` owns ended listening: it ran out (since
-    /// `date`, when one is given), or is fading out. The book listening was to
-    /// go on to must not be started then.
-    func endedListening(ownedBy ownerID: UUID, since date: Date? = nil) -> Bool {
-        didExpire(whileOwnedBy: ownerID, since: date) || isFadingOut(ownedBy: ownerID)
+    /// Whether the timer `ownerID` owns ended listening: it ran out (after the
+    /// expiry count was `mark`, when one is given), or is fading out. The book
+    /// listening was to go on to must not be started then.
+    func endedListening(ownedBy ownerID: UUID, sinceExpiry mark: Int? = nil) -> Bool {
+        didExpire(whileOwnedBy: ownerID, sinceExpiry: mark) || isFadingOut(ownedBy: ownerID)
     }
 
     /// Whether `ownerID` owns a running timer that can go on with the next
@@ -894,7 +901,8 @@ final class SleepTimerService: ObservableObject {
     /// the reader asks (`consumeExpiredWhileHeld(forBook:)`).
     private func noteExpiry() {
         lastExpiredOwnerID = ownerID
-        lastExpiry = Date()
+        expiryCount += 1
+        lastExpiryNumber = expiryCount
         if let held = heldForBookID {
             expiredWhileHeldBookID = held
         }
@@ -1043,7 +1051,6 @@ final class SleepTimerService: ObservableObject {
         lastUsedDuration = nil
         lastOwnerID = nil
         lastExpiredOwnerID = nil
-        lastExpiry = nil
         expiredWhileHeldBookID = nil
         userDefaults.removeObject(forKey: Self.lastUsedDurationKey)
     }

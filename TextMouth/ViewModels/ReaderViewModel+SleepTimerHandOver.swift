@@ -48,8 +48,8 @@ extension ReaderViewModel {
     /// asks for the book, that the timer ran out meanwhile, and so closing
     /// this window in the meantime does not stop the timer.
     func noteMoveAnnounced(to nextBookID: UUID) {
-        moveAnnouncedAt = Date()
         moveCarriesSleepTimer = carriesSleepTimerOnAMove
+        moveExpiryMark = moveCarriesSleepTimer ? sleepTimerService.expiryCount : nil
         holdSleepTimer(forBook: nextBookID)
     }
 

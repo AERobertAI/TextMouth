@@ -270,7 +270,10 @@ final class ReaderViewModel: ObservableObject {
     /// listening, and the book is not started (`showNextBook`). Accessed from
     /// the NextBookWindow and SleepTimerHandOver extensions.
     var moveCarriesSleepTimer = false
-    var moveAnnouncedAt: Date?
+    /// The sleep timer's expiry count as a move that carries a timer was
+    /// announced (`SleepTimerService.expiryCount`), nil for a move that carries
+    /// none: the ask drops the move if the timer ran out since.
+    var moveExpiryMark: Int?
     /// Counts the moves this reader announces, so the half second's pending
     /// ask of an earlier move does nothing once a later one is announced:
     /// Next then Previous asks once (`announceMove`).

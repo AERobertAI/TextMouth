@@ -981,19 +981,22 @@ final class SleepTimerServiceTests: XCTestCase {
         XCTAssertFalse(service.isHeld(forBook: book), "a stopped timer was still held")
     }
 
-    /// An expiry is stamped: a timer that ran out before a date ended nothing
-    /// after it.
-    func testAnExpiryIsStampedForTheWaitsThatBeganBefore() {
+    /// An expiry is counted: a timer that ran out before a move or a wait
+    /// began ended nothing after it, whatever the clock does.
+    func testAnExpiryIsCountedForTheWaitsThatBeganBefore() {
         start(.minutes(1))
-        let before = Date().addingTimeInterval(-1)
-        let after = Date().addingTimeInterval(60)
+        let before = service.expiryCount
 
         service._expireForTesting()
 
-        XCTAssertTrue(service.didExpire(whileOwnedBy: owner, since: before))
-        XCTAssertFalse(service.didExpire(whileOwnedBy: owner, since: after), "an expiry before the wait ended it")
-        XCTAssertTrue(service.endedListening(ownedBy: owner, since: before))
-        XCTAssertFalse(service.endedListening(ownedBy: owner, since: after))
+        XCTAssertEqual(service.expiryCount, before + 1)
+        XCTAssertTrue(service.didExpire(whileOwnedBy: owner, sinceExpiry: before))
+        XCTAssertFalse(
+            service.didExpire(whileOwnedBy: owner, sinceExpiry: service.expiryCount),
+            "an expiry before the wait ended it"
+        )
+        XCTAssertTrue(service.endedListening(ownedBy: owner, sinceExpiry: before))
+        XCTAssertFalse(service.endedListening(ownedBy: owner, sinceExpiry: service.expiryCount))
     }
 
     /// Releasing the timer held for a book that will not open stops it and

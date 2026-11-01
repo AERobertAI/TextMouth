@@ -120,10 +120,10 @@ extension ReaderViewModel {
         // listening: the next book is not started, and what the timer said as
         // it ran out is all that is said. The requests made for the book, and
         // the timer's note that it ran out for this book, are dropped.
-        let timerRanOut = moveAnnouncedAt.map { sleepTimerService.didExpire(whileOwnedBy: readerID, since: $0) } ?? false
+        let timerRanOut = moveExpiryMark.map { sleepTimerService.didExpire(whileOwnedBy: readerID, sinceExpiry: $0) } ?? false
         if timerRanOut || (moveCarriesSleepTimer && sleepTimerIsFadingOutHere) {
             moveCarriesSleepTimer = false
-            moveAnnouncedAt = nil
+            moveExpiryMark = nil
             DiagnosticLog.trace(.playback, "next book: the sleep timer ended listening before the book was asked for; not starting it")
             autoplayRequests.discard(for: nextBookID)
             readingListRequests.discard(for: nextBookID)
@@ -132,7 +132,7 @@ extension ReaderViewModel {
             return
         }
         moveCarriesSleepTimer = false
-        moveAnnouncedAt = nil
+        moveExpiryMark = nil
         // A running timer goes on with the book, wherever it shows: held for it
         // since the move was announced. Held here only when nothing is held, for
         // a caller that announced nothing: never in place of a hold made for

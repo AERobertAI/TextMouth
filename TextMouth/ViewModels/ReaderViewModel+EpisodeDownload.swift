@@ -70,7 +70,7 @@ extension ReaderViewModel {
         // ends if another reader takes them (see `listenerHasMovedOn`).
         let wait = NextEpisodeWait(
             item: item, feedID: feedID, start: start, controlsOwner: nowPlayingService.activeOwnerID,
-            cause: cause, startedAt: Date()
+            cause: cause, expiryMark: sleepTimerService.expiryCount
         )
         nextEpisodeWait = feeds.events.sink { [weak self] event in
             self?.nextEpisodeEventArrived(event, during: wait)
@@ -111,11 +111,11 @@ extension ReaderViewModel {
         let controlsOwner: UUID?
         /// Why the episode is awaited, which decides what is spoken of it.
         let cause: NextEpisodeCause
-        /// When the wait began: a sleep timer of this reader's that ran out
-        /// since, whether it was set before or during the wait, has ended
-        /// listening, and the episode is not started when it arrives
-        /// (`SleepTimerService.endedListening(ownedBy:since:)`).
-        let startedAt: Date
+        /// The sleep timer's expiry count as the wait began: a timer of this
+        /// reader's that ran out since, whether it was set before or during the
+        /// wait, has ended listening, and the episode is not started when it
+        /// arrives (`SleepTimerService.endedListening(ownedBy:sinceExpiry:)`).
+        let expiryMark: Int
     }
 
     /// Says that the awaited episode could not be downloaded, in the words
@@ -211,7 +211,7 @@ extension ReaderViewModel {
         // is fading out, has ended listening: the episode is not started, and
         // the timer's own expiry is all that is said. A running one, set
         // before the wait or during it, goes on with the episode.
-        if sleepTimerService.endedListening(ownedBy: readerID, since: wait.startedAt) {
+        if sleepTimerService.endedListening(ownedBy: readerID, sinceExpiry: wait.expiryMark) {
             DiagnosticLog.trace(.playback, "the next episode arrived, but the sleep timer had ended listening")
             return
         }
