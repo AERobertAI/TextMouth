@@ -89,6 +89,19 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 
 ## Where things stood on November 1, 2026
 
+**November 1, version 0.2.5.** On the morning of November 1 the user asked that a reader window go on to the next book in place instead of opening a new window, with Next and Previous for a folder's or feed's items and "a global setting for the behavior of moving from book to book for windows and a local one for feeds and folders". At about 09:50 they added: "the sleeping timer in particular I would like to move still running to the new book without a new window opening."
+- **How it ran.**
+  - One Sonnet agent, `nextbook`, built it (design `NEXTBOOK-WINDOW-RESEARCH-2026-11-01.md`, briefs `Scripts/agents/briefs/2026-11-01/`).
+  - Three Opus reviews and three Sonnet verifications each found real problems, mostly in the sleep timer's hand-over, and six fix rounds closed them. The orchestrator read the last round itself (reports in `build/orchestrator/nextbook/`, gitignored).
+  - The user's questions 1 to 18 are in `humanQuestions/2026-11-01.md`.
+- **Merged into main:**
+  - **`feature/nextbook-window` (aad1fab9).**
+    - A reader window shows the next book in place: the scene's `$bookID` changes, and `.id(bookID)` gives the same window a new reader.
+    - The Playback tab's "Open the next book in" (`nextBookWindow`), and a feed's or folder's own choice in Feed Info and Folder Settings.
+    - Next in Folder and Previous in Folder, in the Navigate menu.
+    - A running sleep timer goes on with listening: the shared service holds it for the next book until that book's reader takes it.
+  - **`docs/nextbook` (ff328b9a)** and **version 0.2.5** (4d72a43c).
+
 **October 30 to November 1.** On Friday evening, October 30, before the Saturday 08:00 reset, the user lifted the usage limit for the night ("treat it as no limit") and asked: "Please try working through any remaining todos and unfinished work that doesn't require me, improve the tests and look for bugs", with a new feature, customizable Library views.
 - **How it ran.**
   - Four teams worked through the night, every agent on Opus (`Scripts/agents/briefs/2026-10-30/`).
@@ -179,19 +192,26 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - Documentation passes: `docs/oct19` (c77c9cf4), `docs/oct19b` (bc5ef365), and `docs/oct20` (077b4e1e).
 
 **State at the end:**
-- **Main's suite:** **9173 tests, 75 skipped, 0 failures**, on `integrate/oct30` (3769130e) in train 1031-1800. Only the documentation merge and the 0.2.4 bump followed.
+- **Main's suite:** **9301 tests, 75 skipped, 0 failures**, on `feature/nextbook-window` merged with main's code in train 1101-1800, the same tree as main's merge (aad1fab9). Only the documentation merge and the 0.2.5 bump followed.
 - **Not installed yet:** the user's installed build is still 0.1.1 (fb46ea6e). The first launch of 0.2.x reads every text book again for pages, safely (PG16), braille and plain text books included (V07).
 - **Questions:**
+  - `humanQuestions/2026-11-01.md` holds 18, on the next-book window. The user said yes to 9 to 11. 1 to 8 and 13 to 18 are built as recommended and unanswered. 12, whether Next in Reading List should follow the list's direction, is open, and nothing was built for it.
   - `humanQuestions/2026-10-30.md` holds 21. Questions 1 to 20 (views and braille) were built with their recommended answers. Question 21, whether Delete After Import may delete a ZIP holding files that were not imported, is open, and nothing was built for it.
   - That file also lists 20 older questions still open in `2026-10-10-evening.md` and `2026-10-12.md`.
   - `humanQuestions/2026-10-23.md` holds four: the escaping (V06) comes after the install; V03 is built and V04 is not; the rehearsal on a copy of the library needs the user's yes; the install's version follows the policy.
-- **Pending with the user:** the push and install, the rm-hook offer, and whether and when to resume the paused teams.
+- **Pending with the user:** the push and install, now of 0.2.5, with the hand checks of the next-book window (the timer through a slow iCloud download, Command-W just after "Starting", focus in a switched window); the rm-hook offer; and whether and when to resume the paused teams.
 - **The next candidates:**
+  - the next-book window's follow-ups in the TODO (questions 12 and 18);
   - the October 30 follow-ups in the TODO, the HTML depth guard first;
   - the paused teams and `team/fixes30`;
   - the tests team's five unrun briefs (`Scripts/agents/briefs/2026-10-30/tests/`);
   - reading the first launch's `PAGES_UPGRADE_SUMMARY` once the user installs;
   - V06 in the first update after the install.
+
+**Lessons of November 1:**
+- **An agent that says it is waiting has stopped.** At 15:34 the `nextbook` agent wrote that it was waiting on two trains and ended its turn. Both results sat unread until 17:47. When an agent's work goes to the train, the orchestrator starts a background waiter on `build/orchestrator/train/results/<agent>.md`, which exits when the result is written.
+- **A delayed closure can carry a test's fixtures past its teardown.** A move asks for its book half a second after saying so, and holds its reader, with the test's settings, until then. A test that ended within the config's 250 ms save delay left a save that ran after its sandbox was removed. The failure sentence then landed in the next test, which records every announcement. A fixture that removes a folder at teardown writes any waiting save first, in a teardown block added after the folder's (2f3674d2).
+- **Every review round found something.** Each of the six rounds was answered by a fix and a check. The sleep timer's hand-over was where most of the problems lay.
 
 **Lessons of October 30 to November 1:**
 - **Opus everywhere spent the week.**
