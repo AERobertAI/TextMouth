@@ -33,7 +33,6 @@ The rule gives `.openANewWindow` (and a book already open elsewhere is brought f
 - **A field is being typed in** (the window's first responder is a field editor): Go to Percent, Time, and Page are panels inside the window, not sheets, and the typing would reach the next book's single-key shortcuts.
 - **Edit Text is in use** for this book (`BookTextEditSessions.isEditing`).
 - **The library is moving or unavailable** (`dataDirectoryMove`, `dataDirectoryUnavailability`): `ContentView` refuses the open and drops the requests, which a silent switch would get around.
-- **This reader's own sleep timer runs** (`sleepTimerEndsListeningHere`, true for a paused book too): the old reader's `close()` would stop it. The next book opens in a new window and the timer keeps running. Moving the timer with the window is a question for the user.
 - **No switcher** is set (a reader made in a test).
 
 ## Focus after a switch
@@ -56,11 +55,20 @@ The rule gives `.openANewWindow` (and a book already open elsewhere is brought f
   - A dimmed choice is not in effect, as the pre-download switch's is not.
 - **Navigate menu, Shortcuts tab (no default keys):** "Next in Folder", "Previous in Folder".
   - Offered in a reader window.
-  - Spoken: "Starting: <title>" or "Opening: <title>" (the reading list's sentences, sleep timer sentence included).
+  - Next goes the way the end of the book would go on: up in a feed or folder that plays the one above, down otherwise (Stop included); Previous goes the other way. The words "next" and "previous" follow the command; what lies that way ("before it", "after it") follows the way looked.
+  - Spoken: "Starting: <title>" or "Opening: <title>" (the reading list's sentences).
   - With no item that way: the succession's own note and a full stop: "No more books in folder.", "Every book after it in the folder is finished.", "Every book before it in the folder is finished."
   - For an episode not downloaded: "Downloading the next episode: <title>", "Downloading the previous episode: <title>".
   - A failed download: "The previous episode could not be downloaded. <reason>", or ", so playback stopped" before the full stop when the book was playing. A cancelled one: "Download of the previous episode cancelled." (", so playback stopped" when it was playing). "Article" for an article.
-  - The sleep timer in effect at the press: "Opening: <title>. Not started because of the sleep timer." The end of a book's own sentences are unchanged.
+  - Gone: "Opening: <title>. Not started because of the sleep timer." A running timer goes on with the book. New: "Sleep timer cancelled, because the next book could not be opened." The end of a book's own sentences are unchanged.
+
+## The sleep timer goes on with the book (the user, November 1: "yes for all 3, the sleeping timer in particular I would like to move still running to the new book without a new window opening")
+
+- **Rule.** When listening goes on from a book (its end, Next and Previous in the reading list and in the folder), a running timer its reader owns goes on, in this window or another. `showNextBook` asks as it shows the book (`handOverSleepTimer(to:)`: `SleepTimerHandOverRequests`, a reader request store, made before the switch or the notification); the reader of the next book adopts it (`SleepTimerService.transferOwnership`) as its load ends, before the autoplay claim, or as the request is made when it is open already. Owner and callbacks change; the countdown, duration, and a countdown halted by a pause do not (the new reader's play resumes it). A timer waiting for a heading's end then waits in the new book.
+- **What still ends listening.** A timer fading out, or set for the end of a heading or of the book that this book's end spends (`sleepTimerEndsListeningHere`): "Finished: <title>. Next book not started because of the sleep timer." is unchanged. A minutes timer no longer keeps the next book from starting.
+- **A fade at a move.** A command's pause during a fade does what the listener's own Pause does today (`pause()`: it stops the timer, ends the fade, restores volume), so a fading timer is not handed over, and the book moved to starts without a timer. At a book's end a fading timer ends listening.
+- **Runs out before the new book takes it.** Noted as the move is announced (`moveCarriesSleepTimer`); at the ask, an expired or fading timer drops the requests and starts nothing (the expiry has said so). A load that ends after the expiry (`didExpire(whileOwnedBy:)`) drops the autoplay request. An episode wait does the same (`timerWasRunning`). A timer started during the wait goes with the episode. One the listener cancelled leaves nothing to take, and the book starts.
+- **Hazards.** Exactly one owner: the old reader keeps it until the new reader adopts. Its `close()` leaves a handed-over timer running while the request waits (`isWaitingForTheSleepTimerToBeTaken`), and the old callbacks are replaced, so it never pauses a book it no longer holds. No taker (load failure, window closed first): the timer is stopped and said so. Restart Sleep Timer's last owner follows the new reader.
 
 ## Order of work
 
@@ -69,7 +77,7 @@ The rule gives `.openANewWindow` (and a book already open elsewhere is brought f
 3. The local controls in Feed Info and Folder Settings.
 4. Next in Folder and Previous in Folder.
 
-## Open choices for the orchestrator
+## Decided
 
-- The folder commands, run in a book read from the reading list, still go through the book's folder.
+- The folder commands, run in a book read from the reading list, go through the book's folder.
 - A feed that stops at an item's end dims its choice, and the choice stops applying everywhere (the commands then follow the global setting).
