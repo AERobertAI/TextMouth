@@ -136,14 +136,26 @@ extension ReaderViewModel {
         DiagnosticLog.trace(.playback, "next book: took over the running sleep timer")
     }
 
-    /// Releases the sleep timer held for the book `bookID`, which will not
-    /// open: this reader's book failed to load or download, its window closed
-    /// first, or the book the window was asked for is gone
-    /// (`SleepTimerService.releaseHeld(forBook:)`, which stops the timer and
-    /// tells the listener after current speech).
-    func releaseSleepTimerHeld(forBook bookID: UUID) {
-        if sleepTimerService.releaseHeld(forBook: bookID) {
+    /// Releases the sleep timer held for the book `bookID`, which truly could
+    /// not be opened: this reader's book failed to load or download, or the
+    /// book the window was asked for is gone
+    /// (`SleepTimerService.releaseHeld(forBook:announcingAfter:)`, which stops
+    /// the timer and tells the listener, after current speech and, for a book
+    /// that failed, once the reason has been read).
+    ///
+    /// - Parameter afterTheReason: Whether the book failed with a reason the
+    ///   listener is being told, which the sentence must follow.
+    func releaseSleepTimerHeld(forBook bookID: UUID, afterTheReason: Bool = false) {
+        let delay = afterTheReason ? SleepTimerHandOverWording.afterTheReason : 0
+        if sleepTimerService.releaseHeld(forBook: bookID, announcingAfter: delay) {
             DiagnosticLog.trace(.playback, "next book: no reader took the sleep timer; stopped it")
         }
+    }
+
+    /// Stops the sleep timer held for the book `bookID` without a word: this
+    /// reader's window is closing while its book loads
+    /// (`SleepTimerService.cancelHeld(forBook:)`).
+    func cancelSleepTimerHeld(forBook bookID: UUID) {
+        sleepTimerService.cancelHeld(forBook: bookID)
     }
 }

@@ -642,15 +642,37 @@ final class SleepTimerService: ObservableObject {
     ///
     /// - Returns: Whether the timer was held for that book.
     @discardableResult
-    func releaseHeld(forBook bookID: UUID, reason: String = "the book could not be opened") -> Bool {
+    func releaseHeld(
+        forBook bookID: UUID,
+        reason: String = "the book could not be opened",
+        announcingAfter delay: TimeInterval = 0
+    ) -> Bool {
         // The mark that the timer ran out for this book never outlives the
         // move it was made for: a later move to the book, with no timer
         // started since, must not find it.
         if expiredWhileHeldBookID == bookID { expiredWhileHeldBookID = nil }
         guard heldForBookID == bookID else { return false }
         stop(reason: "held for a book that took no timer: \(reason)")
-        VoiceOverAnnouncer.announce(SleepTimerHandOverWording.noBook, priority: .medium)
+        // The timer is stopped at once, so it is true; the listener hears of it
+        // after `delay`, when the reason the book did not open has been read.
+        if delay > 0 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                VoiceOverAnnouncer.announce(SleepTimerHandOverWording.noBook, priority: .medium)
+            }
+        } else {
+            VoiceOverAnnouncer.announce(SleepTimerHandOverWording.noBook, priority: .medium)
+        }
         return true
+    }
+
+    /// Stops the timer held for the book `bookID`, and says nothing: the
+    /// listener closed the book's window while it loaded, as closing the
+    /// window a timer belongs to stops the timer. Forgets that the timer ran
+    /// out for the book, too.
+    func cancelHeld(forBook bookID: UUID) {
+        if expiredWhileHeldBookID == bookID { expiredWhileHeldBookID = nil }
+        guard heldForBookID == bookID else { return }
+        stop(reason: "the window of the book it was held for closed")
     }
 
     /// Whether the timer ran out while held for the book `bookID`, so that

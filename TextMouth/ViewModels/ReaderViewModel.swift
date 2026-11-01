@@ -1775,7 +1775,8 @@ final class ReaderViewModel: ObservableObject {
         // book that continued to it; its error shows instead. Nor can it
         // take over a sleep timer, which would count toward pausing nothing.
         discardAutoplayRequest()
-        releaseSleepTimerHeld(forBook: book.id)
+        // Said once the error view's own focus has read the reason.
+        releaseSleepTimerHeld(forBook: book.id, afterTheReason: true)
     }
 
     // MARK: - EPUB Metadata
@@ -2270,9 +2271,9 @@ final class ReaderViewModel: ObservableObject {
             sleepTimerService.stop()
         }
         // A timer held for this reader's book, which it never took because its
-        // window closed while the book loaded, is stopped and said so:
-        // nothing will play it.
-        releaseSleepTimerHeld(forBook: book.id)
+        // window closed while the book loaded, is stopped without a word, as
+        // closing the window a timer belongs to stops it: nothing will play it.
+        cancelSleepTimerHeld(forBook: book.id)
         sleepTimerService.noteReaderGone(forBook: book.id)
         sleepTimerService.forgetLastOwner(readerID)
         // Playback has stopped, so nothing reads the working copy any more

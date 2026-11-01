@@ -636,8 +636,9 @@ final class NextBookWindowReaderTests: XCTestCase {
     }
 
     /// The window of the book a timer is held for closes before the book
-    /// loaded: the timer is stopped, and the listener is told after current
-    /// speech, rather than left with a book that will never play.
+    /// loaded: the timer is stopped without a word, as closing the window a
+    /// timer belongs to stops it, rather than left with a book that will never
+    /// play, and the mark that it ran out for that book goes with it.
     func testClosingTheTargetsWindowBeforeItLoadsReleasesTheTimer() throws {
         preserveSharedSleepTimer()
         let folder = try makeFolderWorld("TargetCloses")
@@ -651,13 +652,12 @@ final class NextBookWindowReaderTests: XCTestCase {
 
         let recorder = recordingAnnouncements {
             loading.close()
+            spinMainRunLoop(for: 0.5)
         }
 
         XCTAssertFalse(timer.isActive, "The timer went on counting with no book to pause")
-        XCTAssertEqual(
-            recorder.announcements,
-            [VoiceOverAnnouncement(message: SleepTimerHandOverWording.noBook, priority: .medium)]
-        )
+        XCTAssertEqual(recorder.announcements, [], "Closing a window said the book could not be opened")
+        XCTAssertNil(timer.expiredWhileHeldBookID)
     }
 
     /// The Library refuses to open the book a timer is held for: the timer is
@@ -691,17 +691,40 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertTrue(timer.hold(forBook: deleted, from: old.readerID))
         let placeholder = Book(title: "Unknown", format: .txt, filePath: "", md5Hash: "")
 
-        let reader = BookReaderWindowView.makeReader(
-            book: placeholder,
-            libraryViewModel: folder.world.library,
-            settingsViewModel: folder.world.settings,
-            showBook: nil,
-            requestedBookID: deleted
-        )
-        addTeardownBlock { reader.close() }
+        var stoppedAtOnce = false
+        var reader: ReaderViewModel?
+        let recorder = recordingAnnouncements {
+            // Stores and a center of the test's own, not the app's.
+            reader = BookReaderWindowView.makeReader(
+                book: placeholder,
+                libraryViewModel: folder.world.library,
+                settingsViewModel: folder.world.settings,
+                showBook: nil,
+                requestedBookID: deleted,
+                autoplayRequests: ReaderAutoplayRequests(),
+                readingListRequests: ReadingListOpenRequests(),
+                windowSwitchRequests: WindowSwitchRequests(),
+                notificationCenter: folder.world.notifications
+            )
+            // True at once, the sentence waits for the error view's reason.
+            stoppedAtOnce = !timer.isActive
+            XCTAssertTrue(
+                SleepTimerHandOverWording.afterTheReason > 1.2,
+                "The sentence would come before the error view's own focus reads the reason"
+            )
+            spinMainRunLoop(for: SleepTimerHandOverWording.afterTheReason + 1)
+        }
+        if let reader {
+            addTeardownBlock { reader.close() }
+        }
 
-        XCTAssertFalse(timer.isActive, "The timer was left held for a book that is gone")
+        XCTAssertTrue(stoppedAtOnce, "The timer was left held for a book that is gone")
         XCTAssertFalse(timer.isHeld(forBook: deleted))
+        XCTAssertEqual(
+            recorder.announcements.filter { $0.message == SleepTimerHandOverWording.noBook },
+            [VoiceOverAnnouncement(message: SleepTimerHandOverWording.noBook, priority: .medium)],
+            "The sentence is said once, after current speech"
+        )
     }
 
     /// The listener closes the window in the half second between "Starting"

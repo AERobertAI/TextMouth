@@ -46,6 +46,8 @@ struct BookReaderWindowView: View {
     /// - Parameters:
     ///   - requestedBookID: The book the window was asked for, which the reader
     ///     of a placeholder for a missing book does not carry.
+    ///   - autoplayRequests: The stores and center the reader uses: the app's,
+    ///     unless a test gives it its own.
     ///   - showBook: Sets the window's book; nil, for a view with no
     ///   scene to set it in, leaves the reader unable to switch, and it then
     ///   opens a new window as before.
@@ -54,19 +56,28 @@ struct BookReaderWindowView: View {
         libraryViewModel: LibraryViewModel,
         settingsViewModel: SettingsViewModel,
         showBook: ((UUID) -> Void)?,
-        requestedBookID: UUID
+        requestedBookID: UUID,
+        autoplayRequests: ReaderAutoplayRequests? = nil,
+        readingListRequests: ReadingListOpenRequests? = nil,
+        windowSwitchRequests: WindowSwitchRequests? = nil,
+        notificationCenter: NotificationCenter = .default
     ) -> ReaderViewModel {
         let reader = ReaderViewModel(
             book: book,
             libraryViewModel: libraryViewModel,
-            settingsViewModel: settingsViewModel
+            settingsViewModel: settingsViewModel,
+            autoplayRequests: autoplayRequests,
+            readingListRequests: readingListRequests,
+            windowSwitchRequests: windowSwitchRequests,
+            notificationCenter: notificationCenter
         )
         reader.nextBookWindowSwitcher = showBook
         // A book deleted since the window was asked for is a placeholder with
         // an ID of its own: a sleep timer held for the book asked for would
-        // never be taken, so it is released here.
+        // never be taken, so it is released here, and said once the error view
+        // has read that the book is gone.
         if libraryViewModel.bookByID(requestedBookID) == nil {
-            reader.releaseSleepTimerHeld(forBook: requestedBookID)
+            reader.releaseSleepTimerHeld(forBook: requestedBookID, afterTheReason: true)
         }
         return reader
     }

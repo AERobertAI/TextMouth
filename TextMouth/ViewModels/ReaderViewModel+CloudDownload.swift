@@ -479,7 +479,8 @@ extension ReaderViewModel {
         cloudPhase = phase
         announceCloud(message)
         discardAutoplayRequest()
-        releaseSleepTimerHeld(forBook: book.id)
+        // Said after the cloud message that gave the reason.
+        releaseSleepTimerHeld(forBook: book.id, afterTheReason: true)
     }
 
     // MARK: Downloading
