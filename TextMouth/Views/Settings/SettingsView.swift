@@ -433,9 +433,17 @@ struct PlaybackSettingsView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
 
+                // What Play does on a finished book with each choice that
+                // stops there (TODO P07).
+                Text(EndOfBookWording.playOnAFinishedBookCaption)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
                 // Where the next book opens when listening goes on from one
-                // book to another (0.2.5). The label is spoken from the
-                // control itself; its hint says what the choices do, once.
+                // book to another (0.2.5), below the captions of "When book
+                // ends", which stay under their picker. The label is spoken
+                // from the control itself; its hint says what the choices
+                // do, once.
                 Picker(NextBookWindowWording.globalLabel, selection: Binding(
                     get: { settingsViewModel.nextBookWindow },
                     set: { settingsViewModel.nextBookWindow = $0 }
@@ -451,12 +459,6 @@ struct PlaybackSettingsView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .accessibilityHidden(true)
-
-                // What Play does on a finished book with each choice that
-                // stops there (TODO P07).
-                Text(EndOfBookWording.playOnAFinishedBookCaption)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             } header: {
                 Text("End of Book")
             }

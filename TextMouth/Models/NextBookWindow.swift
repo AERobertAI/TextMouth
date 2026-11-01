@@ -155,7 +155,7 @@ enum NextBookWindowWording {
     /// The hint of Settings' pop-up button.
     static let globalHint = "Where the next book opens when listening goes on from one book to another: "
         + "in this window in place of the book here, or in a new window. "
-        + "A book already open in another window is brought forward."
+        + "A book already open in another window is brought forward, and with This Window this window closes."
 
     // MARK: A Feed's or Folder's Own Choice
 

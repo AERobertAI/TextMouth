@@ -261,6 +261,22 @@ final class NextBookWindowTests: XCTestCase {
         XCTAssertEqual(FolderNavigationWording.downloading(article, going: .down), "Downloading the next article: Night Trams")
     }
 
+    /// The new pop-up comes after both captions of "When book ends", which
+    /// stay right under their picker for VoiceOver and braille. SwiftUI builds
+    /// the section where a test cannot read its order, so this reads the
+    /// view's source.
+    func testThePopUpComesAfterWhenBookEndsCaptions() throws {
+        let source = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("TextMouth/Views/Settings/SettingsView.swift")
+        let text = try String(contentsOf: source, encoding: .utf8)
+        let picker = try XCTUnwrap(text.range(of: "Picker(\"When book ends\"")?.lowerBound)
+        let caption = try XCTUnwrap(text.range(of: "Text(EndOfBookWording.playOnAFinishedBookCaption)")?.lowerBound)
+        let window = try XCTUnwrap(text.range(of: "Picker(NextBookWindowWording.globalLabel")?.lowerBound)
+        XCTAssertLessThan(picker, caption)
+        XCTAssertLessThan(caption, window, "the new pop-up splits When book ends from its caption")
+    }
+
     // MARK: - The Words
 
     /// Every string of the controls, word for word.
@@ -272,7 +288,7 @@ final class NextBookWindowTests: XCTestCase {
             NextBookWindowWording.globalHint,
             "Where the next book opens when listening goes on from one book to another: "
                 + "in this window in place of the book here, or in a new window. "
-                + "A book already open in another window is brought forward."
+                + "A book already open in another window is brought forward, and with This Window this window closes."
         )
         XCTAssertEqual(NextBookWindowWording.label(.book), "Open the next book in")
         XCTAssertEqual(NextBookWindowWording.label(.episode), "Open the next episode in")
