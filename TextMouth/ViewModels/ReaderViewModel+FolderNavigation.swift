@@ -46,60 +46,31 @@ extension ReaderViewModel {
         // This decision supersedes a wait for an episode that an earlier
         // one began.
         nextEpisodeWait = nil
-        // Playing: speech or audio under way, or paused only while a Where
-        // Am I announcement speaks, or until the end sound of one that ended
-        // has played (`whereAmIWillPlayBook`).
-        let wasPlaying = isPlaybackUnderWay || whereAmIWillPlayBook
-        let sleepTimerKeepsItFromStarting = wasPlaying && sleepTimerEndsListeningHere
-        // The pause ends a Where Am I announcement too, without resuming
-        // this book, even for a book that was not playing, whose
-        // announcement would otherwise speak over the item's.
-        if wasPlaying || isWhereAmIUnderWay {
-            pause(playingPauseSound: false)
-        }
-        let plays = wasPlaying && !sleepTimerKeepsItFromStarting
+        // The pause, the sleep timer's rule, the announcement, and the
+        // moment before the item is asked for are the reading list's too
+        // (`beginMoveToAnotherBook()`, `announceMove(to:titled:start:through:)`).
+        let start = beginMoveToAnotherBook()
         switch succession {
         case .nothing:
             // Said above.
             return
 
         case .book(let neighbor):
-            announceToVoiceOver(
-                plays
-                    ? EndOfBookWording.starting(neighbor.title)
-                    : ReadingListReaderWording.opening(neighbor.title, sleepTimerKeptItFromStarting: sleepTimerKeepsItFromStarting)
-            )
-            DiagnosticLog.trace(.playback, "folder: going \(direction == .down ? "down" : "up") to a book; plays: \(plays)")
-            // Asked for once VoiceOver has begun the announcement, as
-            // Continue to Next Book asks for its book.
-            let neighborID = neighbor.id
-            DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
-                self.askForFolderItem(neighborID, plays: plays)
-            }
+            DiagnosticLog.trace(.playback, "folder: going \(direction == .down ? "down" : "up") to a book; plays: \(start.plays)")
+            announceMove(to: neighbor.id, titled: neighbor.title, start: start, through: .folder)
 
         case .episodeToDownload(let feedID, let item):
             announceToVoiceOver(FolderNavigationWording.downloading(item, going: direction))
             DiagnosticLog.trace(.playback, "folder: the episode \(direction == .down ? "below" : "above") is not here; downloading it")
             let cause = NextEpisodeCause.folderMove(
                 direction: direction,
-                wasPlaying: wasPlaying,
-                sleepTimerKeptItFromStarting: sleepTimerKeepsItFromStarting
+                wasPlaying: start.wasPlaying,
+                sleepTimerKeptItFromStarting: start.sleepTimerKeptItFromStarting
             )
+            let plays = start.plays
             waitForNextEpisode(item, of: feedID, cause: cause) { bookID in
-                self.askForFolderItem(bookID, plays: plays)
+                self.askForBook(bookID, plays: plays, through: .folder)
             }
-        }
-    }
-
-    /// Asks for the item `bookID`, which Next in Folder or Previous in
-    /// Folder goes to, once it is announced (or downloaded): to be played,
-    /// as a book that ends continues to the next one
-    /// (`continueToNextBook(_:under:)`), or only opened.
-    private func askForFolderItem(_ bookID: UUID, plays: Bool) {
-        if plays {
-            continueToNextBook(bookID, under: folderMoveWindowChoice)
-        } else {
-            openInFolder(bookID)
         }
     }
 

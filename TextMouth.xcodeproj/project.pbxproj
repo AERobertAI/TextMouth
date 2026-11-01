@@ -149,6 +149,7 @@
 		1D12DB0E693C0C4D687007FD /* ReadingListViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 259A632136AC5338B5E5FF0D /* ReadingListViewTests.swift */; };
 		1D16024C9FD3D99221839F6F /* FolderNavigationHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62ED866F0874D09898F6616D /* FolderNavigationHistory.swift */; };
 		1D5E78D1E258F995BB599EBA /* IntegrationImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F73377ACB34718AB2D448190 /* IntegrationImportTests.swift */; };
+		1DC649DEC8532CD0DE1D458E /* ReaderViewModel+BookMoves.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D27AC4FC783125E5CE84BBB /* ReaderViewModel+BookMoves.swift */; };
 		1DF92BEA46FE1C2709CC1570 /* TextEncodingChoiceDecoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D204A2A453D0603FD648C7B3 /* TextEncodingChoiceDecoderTests.swift */; };
 		1DFF338B412F98105243BE9B /* FeedSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94559A41D8F0BE56561F9BA7 /* FeedSettingsView.swift */; };
 		1EBDD3F5FB61798DB616717E /* DOCXParser+Styles.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDF28B487B2701C071FD0C8C /* DOCXParser+Styles.swift */; };
@@ -1271,21 +1272,21 @@
 		9279BF2ABA7F3526AB66874A /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/LAME;
+			dstPath = liblouis;
 			dstSubfolderSpec = 7;
 			files = (
-				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
-				943853340D2809882740233D /* LICENSE in CopyFiles */,
+				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		BF489798E33F1F27D1434BD7 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = liblouis;
+			dstPath = Licenses/LAME;
 			dstSubfolderSpec = 7;
 			files = (
-				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
+				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
+				943853340D2809882740233D /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1554,6 +1555,7 @@
 		2C25416AEFBB90050530860C /* ImportFuzzTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportFuzzTests.swift; sourceTree = "<group>"; };
 		2C6B17E0F6F50CD3C22ADC1D /* AudioExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioExportTests.swift; sourceTree = "<group>"; };
 		2C9FDEC2B09B1117428A92AB /* WindowSwitchRequests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowSwitchRequests.swift; sourceTree = "<group>"; };
+		2D27AC4FC783125E5CE84BBB /* ReaderViewModel+BookMoves.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ReaderViewModel+BookMoves.swift"; sourceTree = "<group>"; };
 		2D4EB53D35C473F48CEB323C /* PlaceRelocatorTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceRelocatorTestSupport.swift; sourceTree = "<group>"; };
 		2D734C46A5C4F01BCCD73474 /* CloudTestDoubles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudTestDoubles.swift; sourceTree = "<group>"; };
 		2DB6300843B67B7E1CBD3DD4 /* LibraryViewDefinitionList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryViewDefinitionList.swift; sourceTree = "<group>"; };
@@ -4022,6 +4024,7 @@
 				0AB06F14B0457FAAC6C77EB1 /* OggConversionProgress.swift */,
 				22E7D4AAEE36EFDFD40C8CB0 /* ReaderViewModel.swift */,
 				88571A802B33BD871D6F8549 /* ReaderViewModel+Bookmarks.swift */,
+				2D27AC4FC783125E5CE84BBB /* ReaderViewModel+BookMoves.swift */,
 				0EF652E07625EAAA30C3E548 /* ReaderViewModel+CloudDownload.swift */,
 				EFB10241A4D89A2A85B74E6B /* ReaderViewModel+EditedText.swift */,
 				14E753ED75F769DB5A43EF61 /* ReaderViewModel+EpisodeDownload.swift */,
@@ -5354,6 +5357,7 @@
 				682E1F19D85094334616B046 /* ReaderSnapshot.swift in Sources */,
 				42963A2B43DE42CBC69135A0 /* ReaderTimeWording.swift in Sources */,
 				660A36E42E6AC01AEDBD81E6 /* ReaderView.swift in Sources */,
+				1DC649DEC8532CD0DE1D458E /* ReaderViewModel+BookMoves.swift in Sources */,
 				758EA7FB6A037E3DA3D19D31 /* ReaderViewModel+Bookmarks.swift in Sources */,
 				8D101E61072B85DC0EAEFB0D /* ReaderViewModel+CloudDownload.swift in Sources */,
 				904CC549B53BC8449443AFAE /* ReaderViewModel+EditedText.swift in Sources */,

@@ -204,36 +204,14 @@ extension ReaderViewModel {
             announceToVoiceOver(ReadingListReaderWording.noNeighbor(readingListEnd(going: direction), going: direction))
             return
         }
-        // Playing: speech or audio under way, or paused only while a Where
-        // Am I announcement speaks, or until the end sound of one that ended
-        // has played (`whereAmIWillPlayBook`).
-        let wasPlaying = isPlaybackUnderWay || whereAmIWillPlayBook
-        let sleepTimerKeepsItFromStarting = wasPlaying && sleepTimerEndsListeningHere
-        // The pause ends a Where Am I announcement too, without resuming
-        // this book, even for a book that was not playing, whose
-        // announcement would otherwise speak over the one below.
-        if wasPlaying || isWhereAmIUnderWay {
-            pause(playingPauseSound: false)
-        }
-        let plays = wasPlaying && !sleepTimerKeepsItFromStarting
-        announceToVoiceOver(
-            plays
-                ? EndOfBookWording.starting(neighbor.title)
-                : ReadingListReaderWording.opening(neighbor.title, sleepTimerKeptItFromStarting: sleepTimerKeepsItFromStarting)
-        )
+        // The pause, the sleep timer's rule, the announcement, and the
+        // moment before the book is asked for are the folder commands' too.
+        let start = beginMoveToAnotherBook()
         DiagnosticLog.trace(
             .playback,
-            "reading list: opening the book \(ReadingListReaderWording.side(direction)) this one; plays: \(plays)"
+            "reading list: opening the book \(ReadingListReaderWording.side(direction)) this one; plays: \(start.plays)"
         )
-        // Asked for once VoiceOver has begun the announcement, as Continue
-        // to Next Book asks for its book.
-        DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
-            if plays {
-                self.continueThroughReadingList(to: neighbor.id)
-            } else {
-                self.openFromReadingList(neighbor.id)
-            }
-        }
+        announceMove(to: neighbor.id, titled: neighbor.title, start: start, through: .readingList)
     }
 
     /// Opens the book `bookID` to be read from the reading list, without

@@ -179,14 +179,8 @@ enum NextBookWindowWording {
     /// the hint says when it is available instead of what it does.
     static func hint(_ noun: ListeningOptionsWording.Noun, enabled: Bool) -> String {
         guard enabled else {
-            return "Available only while \(owner(noun)) \(noun.plural) go on to another \(noun.singular) when one ends"
+            return "Available only while \(noun.owner) \(noun.plural) go on to another \(noun.singular) when one ends"
         }
-        return "Where the next \(noun.singular) opens when listening goes on from one of \(owner(noun)) \(noun.plural): "
+        return "Where the next \(noun.singular) opens when listening goes on from one of \(noun.owner) \(noun.plural):"
             + "in this window, in a new window, or as the global setting says"
-    }
-
-    /// Whose items they are: "this feed's", "this folder's".
-    private static func owner(_ noun: ListeningOptionsWording.Noun) -> String {
-        noun == .book ? "this folder's" : "this feed's"
-    }
-}
+    }}
