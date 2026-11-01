@@ -113,6 +113,7 @@ test("All actions have default binding entries") {
             .releaseMediaControls, .addToReadingList, .removeFromReadingList,
             .nextInReadingList, .previousInReadingList, .speakImportProgress,
             .speakDownloadProgress, .moveToLibrary, .folderOrFeedSettings,
+            .nextInFolder, .previousInFolder,
         ].contains(action) {
             try assertGreater(bindings!.count, 0, "\(action.rawValue) should have at least one binding")
         }
