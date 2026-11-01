@@ -387,14 +387,14 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertEqual(switcher.shown, [folder.third.id], "went to the finished book")
 
         // The folder's own options keep finished books in the way.
-        folder.world.library.library.folders[0].listeningOptions = ListeningOptions(skipsFinished: false)
+        setFolderOptions(ListeningOptions(skipsFinished: false), in: folder.world)
         reader.goThroughFolder(.down)
         XCTAssertTrue(eventually { switcher.shown.count == 2 }, "Never switched the second time")
         XCTAssertEqual(switcher.shown.last, folder.second.id)
 
         // Only a finished book lies below the second one.
         markFinished(folder.third, in: folder.world)
-        folder.world.library.library.folders[0].listeningOptions = nil
+        setFolderOptions(nil, in: folder.world)
         let middle = makeReader(for: folder.second, in: folder.world, switcher: switcher)
         let said = recordingAnnouncements { middle.goThroughFolder(.down) }
         XCTAssertEqual(said.announcements.map(\.message), ["Every book after it in the folder is finished."])
@@ -435,9 +435,7 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertTrue(switcher.shown.isEmpty, "The folder's choice of a new window was not followed")
 
         // Stop dims the choice, so the global This Window decides.
-        folder.world.library.library.folders[0].listeningOptions = ListeningOptions(
-            continuation: .stop, nextBookWindow: .newWindow
-        )
+        setFolderOptions(ListeningOptions(continuation: .stop, nextBookWindow: .newWindow), in: folder.world)
         reader.goThroughFolder(.down)
         XCTAssertTrue(eventually { !switcher.shown.isEmpty }, "A dimmed choice was followed")
     }
@@ -624,6 +622,21 @@ final class NextBookWindowReaderTests: XCTestCase {
         world.library.library.folders = [row]
         world.settings.endOfBookBehavior = .continueNext
         return FolderWorld(world: world, first: books[0], second: books[1], third: books[2])
+    }
+
+    /// Gives the world's folder `options`, as library.json holds them
+    /// (nothing is saved), or none for nil; fails the test when the world has
+    /// no such folder.
+    private func setFolderOptions(
+        _ options: ListeningOptions?,
+        in world: IntegrationWorld,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        guard let index = world.library.library.folders.firstIndex(where: { $0.fullPath == world.folder.path }) else {
+            return XCTFail("The world has no folder row", file: file, line: line)
+        }
+        world.library.library.folders[index].listeningOptions = options
     }
 
     /// Makes `book`'s row in `world`'s library rest at its end, as a book
