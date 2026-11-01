@@ -342,6 +342,31 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertTrue(timer.isActive)
     }
 
+    /// An End of heading timer taken by a finished book that starts over waits
+    /// for the heading after its beginning, not for the end of the book: the
+    /// heading looked for at its end found none.
+    func testAnEndOfHeadingTimerTakenByAFinishedBookWaitsForTheHeadingAfterItsBeginning() throws {
+        preserveSharedSleepTimer()
+        let folder = try makeFolderWorld("FinishedHeading")
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let finished = makeReader(for: folder.second, in: folder.world, switcher: switcher)
+        let place = try XCTUnwrap(finished.endOfBookPlace)
+        finished.currentChapterIndex = place.chapterIndex
+        finished.currentCharacterOffset = place.characterOffset
+        finished.hasFinishedBook = true
+        SleepTimerService.shared.start(duration: .endOfHeading, ownerID: finished.readerID, onExpire: {})
+        finished.refreshSleepTimerHeading()
+        XCTAssertNil(finished.sleepTimerNextHeading, "a heading was found after the book's end")
+
+        // Play on a book resting at its end starts it over, as a move onto a
+        // finished book does when the folder does not skip it.
+        _ = folder.world.autoplayRequests.request(for: folder.second.id, from: folder.first.id)
+        finished.claimAutoplayRequest()
+
+        XCTAssertEqual(finished.currentChapterIndex, 0, "the book did not start over")
+        XCTAssertEqual(finished.sleepTimerNextHeading?.chapterIndex, 1, "the timer still waits for the book's end")
+    }
+
     /// A timer held for a book that nothing ever takes is stopped at the
     /// deadline, as a last resort, and the listener is told after current
     /// speech.

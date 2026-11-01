@@ -2711,6 +2711,10 @@ extension ReaderViewModel {
         currentCharacterOffset = 0
         hasFinishedBook = false
         chapterPlaybackGeneration += 1
+        // A timer for the end of the heading, which this reader took or set
+        // while the book rested at its end, found no heading after the cursor:
+        // it waits for the heading after the beginning now, not the book's end.
+        refreshSleepTimerHeading()
         savePosition()
     }
 
