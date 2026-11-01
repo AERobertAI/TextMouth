@@ -239,6 +239,10 @@ final class SettingsViewModel: ObservableObject {
     @AppStorage var endOfBookBehaviorRaw: String {
         didSet { syncToConfig() }
     }
+    /// Stored choice of where the next book opens; use `nextBookWindow`.
+    @AppStorage var nextBookWindowRaw: String {
+        didSet { syncToConfig() }
+    }
     /// Stored punctuation pause level; use `punctuationPauseLevel`.
     @AppStorage private var storedPunctuationPauseLevel: Double {
         didSet { syncToConfig() }
@@ -440,6 +444,13 @@ final class SettingsViewModel: ObservableObject {
         set { endOfBookBehaviorRaw = newValue.rawValue }
     }
 
+    /// Where the next book opens when listening goes on from one book to
+    /// another: this window by default (0.2.5).
+    var nextBookWindow: NextBookWindow {
+        get { SettingsPolicy.nextBookWindow.value(fromRaw: nextBookWindowRaw) }
+        set { nextBookWindowRaw = newValue.rawValue }
+    }
+
     var rewindOnResumeUnit: RewindUnit {
         get { SettingsPolicy.rewindOnResumeUnit.value(fromRaw: rewindOnResumeUnitRaw) }
         set { rewindOnResumeUnitRaw = newValue.rawValue }
@@ -518,6 +529,7 @@ final class SettingsViewModel: ObservableObject {
         _storedSleepFadeOutDuration = SettingsPolicy.sleepFadeOutDuration.appStorage(in: userDefaults)
         _sleepTimerAutoClose = AppStorage(wrappedValue: true, "sleepTimerAutoClose", store: userDefaults)
         _endOfBookBehaviorRaw = SettingsPolicy.endOfBookBehavior.appStorage(in: userDefaults)
+        _nextBookWindowRaw = SettingsPolicy.nextBookWindow.appStorage(in: userDefaults)
         _storedPunctuationPauseLevel = SettingsPolicy.punctuationPauseLevel.appStorage(in: userDefaults)
         _autoPlayOnNavigate = AppStorage(wrappedValue: false, "autoPlayOnNavigate", store: userDefaults)
         _showBookmarkInPlaybackControls = AppStorage(
@@ -670,6 +682,7 @@ final class SettingsViewModel: ObservableObject {
         config.sleepFadeOutDuration = sleepFadeOutDuration
         config.sleepTimerAutoClose = sleepTimerAutoClose
         config.endOfBookBehavior = endOfBookBehavior.rawValue
+        config.nextBookWindow = nextBookWindow.rawValue
         config.punctuationPauseLevel = punctuationPauseLevel
         config.autoPlayOnNavigate = autoPlayOnNavigate
         config.bluetoothMonitoringEnabled = bluetoothMonitoringEnabled
@@ -754,6 +767,7 @@ final class SettingsViewModel: ObservableObject {
             )
             adopt(config.sleepTimerAutoClose, into: \.sleepTimerAutoClose)
             adopt(config.endOfBookBehavior, rule: SettingsPolicy.endOfBookBehavior, into: \.endOfBookBehaviorRaw)
+            adopt(config.nextBookWindow, rule: SettingsPolicy.nextBookWindow, into: \.nextBookWindowRaw)
             adopt(
                 config.punctuationPauseLevel,
                 rule: SettingsPolicy.punctuationPauseLevel,

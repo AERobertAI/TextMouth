@@ -251,6 +251,9 @@ final class ConfigService: ObservableObject {
         var sleepTimerAutoClose: Bool = true
         /// End-of-book behavior (stop, loop, continueNext)
         var endOfBookBehavior: String = ""
+        /// Where the next book opens when listening goes on (this window, or
+        /// a new window); empty until chosen, as `endOfBookBehavior` is
+        var nextBookWindow: String = ""
         /// Punctuation pause level (0 = none, 1 = subtle, 2 = moderate, 3 = heavy)
         var punctuationPauseLevel: Double = SettingsPolicy.punctuationPauseLevel.configDefault
         /// UUID of the last book that was opened/played (for quick-resume)
@@ -477,6 +480,7 @@ final class ConfigService: ObservableObject {
             sleepFadeOutDuration = fields.number(.sleepFadeOutDuration, rule: SettingsPolicy.sleepFadeOutDuration)
             sleepTimerAutoClose = fields.value(.sleepTimerAutoClose, default: fallback.sleepTimerAutoClose)
             endOfBookBehavior = fields.rawChoice(.endOfBookBehavior, rule: SettingsPolicy.endOfBookBehavior)
+            nextBookWindow = fields.rawChoice(.nextBookWindow, rule: SettingsPolicy.nextBookWindow)
             punctuationPauseLevel = fields.number(.punctuationPauseLevel, rule: SettingsPolicy.punctuationPauseLevel)
             lastOpenedBookID = fields.value(.lastOpenedBookID, default: fallback.lastOpenedBookID)
             autoPlayOnNavigate = fields.value(.autoPlayOnNavigate, default: fallback.autoPlayOnNavigate)
@@ -627,7 +631,7 @@ final class ConfigService: ObservableObject {
                 mirrored += sameNames([
                     "skipForwardUnit", "skipBackwardUnit", "shiftSkipForwardUnit", "shiftSkipBackwardUnit",
                     "rewindOnResumeUnit", "rewindSmartMode", "rewindSmartThreshold", "punctuationPauseLevel",
-                    "autoPlayOnNavigate", "endOfBookBehavior", "sleepFadeOutDuration", "sleepTimerAutoClose",
+                    "autoPlayOnNavigate", "endOfBookBehavior", "nextBookWindow", "sleepFadeOutDuration", "sleepTimerAutoClose",
                     "playbackNavigationUnitControlMode", "showBookmarkInPlaybackControls",
                     "showSpeedInPlaybackControls", "showExportInReaderToolbar", "includeSpeedWithTimes",
                     "showsPageInReader", "saysPageInWhereAmI",

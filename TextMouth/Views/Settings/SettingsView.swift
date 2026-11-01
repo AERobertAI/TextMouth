@@ -433,6 +433,25 @@ struct PlaybackSettingsView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
 
+                // Where the next book opens when listening goes on from one
+                // book to another (0.2.5). The label is spoken from the
+                // control itself; its hint says what the choices do, once.
+                Picker(NextBookWindowWording.globalLabel, selection: Binding(
+                    get: { settingsViewModel.nextBookWindow },
+                    set: { settingsViewModel.nextBookWindow = $0 }
+                )) {
+                    ForEach(NextBookWindow.allCases, id: \.self) { choice in
+                        Text(choice.rawValue).tag(choice)
+                    }
+                }
+                .accessibilityLabel(NextBookWindowWording.globalLabel)
+                .accessibilityHint(NextBookWindowWording.globalHint)
+
+                Text(NextBookWindowWording.globalHint)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
+
                 // What Play does on a finished book with each choice that
                 // stops there (TODO P07).
                 Text(EndOfBookWording.playOnAFinishedBookCaption)

@@ -236,7 +236,7 @@ final class OnDiskContractTests: XCTestCase {
             "skipBackwardUnit", "importDeleteBehavior", "dataDirectoryPath", "confirmBeforeDelete",
             "shiftSkipForwardUnit", "shiftSkipBackwardUnit", "rewindOnResumeUnit", "rewindSmartMode",
             "rewindSmartThreshold", "sleepFadeOutDuration", "sleepTimerAutoClose", "endOfBookBehavior",
-            "punctuationPauseLevel", "lastOpenedBookID", "autoPlayOnNavigate", "moveToTrashInsteadOfDeleting",
+            "nextBookWindow", "punctuationPauseLevel", "lastOpenedBookID", "autoPlayOnNavigate", "moveToTrashInsteadOfDeleting",
             "keepsOriginalOfConvertedAudio", "bluetoothMonitoringEnabled", "bluetoothDisconnectDelay",
             "restartTimerGestureEnabled", "restartTimerGesturePattern", "restartTimerGestureWindow",
             "playbackNavigationUnitControlMode", "showBookmarkInPlaybackControls", "showSpeedInPlaybackControls",
