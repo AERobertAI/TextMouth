@@ -33,7 +33,8 @@ struct BookReaderWindowView: View {
             book: book,
             libraryViewModel: libraryViewModel,
             settingsViewModel: settingsViewModel,
-            showBook: showBook
+            showBook: showBook,
+            requestedBookID: bookID
         ))
     }
 
@@ -42,14 +43,18 @@ struct BookReaderWindowView: View {
     /// book the window's scene presents, which makes a new view, and a new
     /// reader, in the same window (`TextMouthApp`).
     ///
-    /// - Parameter showBook: Sets the window's book; nil, for a view with no
+    /// - Parameters:
+    ///   - requestedBookID: The book the window was asked for, which the reader
+    ///     of a placeholder for a missing book does not carry.
+    ///   - showBook: Sets the window's book; nil, for a view with no
     ///   scene to set it in, leaves the reader unable to switch, and it then
     ///   opens a new window as before.
     static func makeReader(
         book: Book,
         libraryViewModel: LibraryViewModel,
         settingsViewModel: SettingsViewModel,
-        showBook: ((UUID) -> Void)?
+        showBook: ((UUID) -> Void)?,
+        requestedBookID: UUID
     ) -> ReaderViewModel {
         let reader = ReaderViewModel(
             book: book,
@@ -57,6 +62,12 @@ struct BookReaderWindowView: View {
             settingsViewModel: settingsViewModel
         )
         reader.nextBookWindowSwitcher = showBook
+        // A book deleted since the window was asked for is a placeholder with
+        // an ID of its own: a sleep timer held for the book asked for would
+        // never be taken, so it is released here.
+        if libraryViewModel.bookByID(requestedBookID) == nil {
+            reader.releaseSleepTimerHeld(forBook: requestedBookID)
+        }
         return reader
     }
 

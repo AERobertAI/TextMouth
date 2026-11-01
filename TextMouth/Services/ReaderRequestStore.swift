@@ -179,8 +179,10 @@ final class ReaderRequestStore<Request: ReaderRequest> {
 /// list should it be opened some other way meanwhile.
 enum ReaderOpenRefusal {
     /// Drops the autoplay request and the reading list's request waiting
-    /// for the book `action` opens (`GlobalAction.bookToOpen`); an action
-    /// that opens no book drops nothing.
+    /// for the book `action` opens (`GlobalAction.bookToOpen`), and releases
+    /// a sleep timer held for it (0.2.5): the book will not open, so the
+    /// timer would count toward pausing nothing. An action that opens no book
+    /// drops nothing.
     ///
     /// - Parameters:
     ///   - action: The app-wide action refused.
@@ -188,14 +190,18 @@ enum ReaderOpenRefusal {
     ///     its own.
     ///   - readingList: The reading list's requests: the app's, unless a
     ///     test gives its own.
+    ///   - sleepTimer: The sleep timer service: the app's, unless a test gives
+    ///     its own.
     @MainActor
     static func dropRequests(
         for action: GlobalAction,
         autoplay: ReaderAutoplayRequests = .shared,
-        readingList: ReadingListOpenRequests = .shared
+        readingList: ReadingListOpenRequests = .shared,
+        sleepTimer: SleepTimerService = .shared
     ) {
         guard let bookID = action.bookToOpen else { return }
         autoplay.discard(for: bookID)
         readingList.discard(for: bookID)
+        sleepTimer.releaseHeld(forBook: bookID, reason: "the Library refused the open")
     }
 }

@@ -653,7 +653,7 @@ final class ContinueToNextBookTests: XCTestCase {
 
         // The ask: a request for the next book to take the timer, as a switch
         // makes it before the next reader exists.
-        finishedReader.handOverSleepTimer(to: next.id)
+        finishedReader.holdSleepTimer(forBook: next.id)
         finishedReader.close()
         let timer = SleepTimerService.shared
         XCTAssertTrue(timer.isActive, "Closing the reader stopped a timer it handed over")
@@ -663,7 +663,7 @@ final class ContinueToNextBookTests: XCTestCase {
         waitUntilLoaded(nextReader)
         XCTAssertTrue(timer.isActive)
         XCTAssertEqual(timer.ownerID, nextReader.readerID)
-        XCTAssertFalse(finishedReader.isWaitingForTheSleepTimerToBeTaken)
+        XCTAssertFalse(timer.isHeld(forBook: next.id), "The hold was left after the next reader took the timer")
     }
 
     /// The timer runs out in the half second between "Starting" and the ask:
@@ -708,7 +708,7 @@ final class ContinueToNextBookTests: XCTestCase {
         let finishedReader = makeReader(for: finished, in: world)
         waitUntilLoaded(finishedReader)
         startSharedSleepTimer(.minutes(30), ownedBy: finishedReader.readerID)
-        finishedReader.handOverSleepTimer(to: next.id)
+        finishedReader.holdSleepTimer(forBook: next.id)
         _ = world.requests.request(for: next.id, from: finished.id)
         SleepTimerService.shared._expireForTesting()
 

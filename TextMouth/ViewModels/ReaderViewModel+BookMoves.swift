@@ -23,6 +23,11 @@ struct BookMoveStart: Equatable, Sendable {
     /// only while a Where Am I announcement speaks, or until the end sound
     /// of one that ended has played (`ReaderViewModel.whereAmIWillPlayBook`).
     let wasPlaying: Bool
+    /// Whether the move ended a sleep timer fading out: the pause the move
+    /// begins with ends a fade as the listener's own Pause does, and the
+    /// listener did not ask to cancel the timer, so it is told after
+    /// "Starting: <title>" (`SleepTimerHandOverWording.fadeEndedByTheMove`).
+    var timerFadeEnded = false
 
     /// Whether the book moved to plays: this one was playing.
     var plays: Bool { wasPlaying }
@@ -42,12 +47,26 @@ extension ReaderViewModel {
     /// ends with that pause, without resuming its book, even for a book that
     /// was not playing, whose announcement would otherwise speak over the one
     /// moved to.
+    ///
+    /// A book that a move brought here, and that has not started yet, counts as
+    /// playing: its book is still loading with a request to play it waiting
+    /// (`ReaderAutoplayRequests`), or an earlier move of this reader to play
+    /// was announced and not yet asked for. A second move then goes on to play
+    /// its book, and carries the sleep timer held for this one
+    /// (`holdSleepTimer(forBook:)`); the request to play this book is dropped,
+    /// since the listener has moved on from it.
     func beginMoveToAnotherBook() -> BookMoveStart {
-        let wasPlaying = isPlaybackUnderWay || whereAmIWillPlayBook
-        if wasPlaying || isWhereAmIUnderWay {
+        let startPending = autoplayRequests.hasRequest(for: book.id)
+        let wasPlaying = isPlaybackUnderWay || whereAmIWillPlayBook || pendingMovePlays || startPending
+        if startPending {
+            autoplayRequests.discard(for: book.id)
+        }
+        let pauses = wasPlaying || isWhereAmIUnderWay
+        let fadeEnds = pauses && sleepTimerIsFadingOutHere
+        if pauses {
             pause(playingPauseSound: false)
         }
-        return BookMoveStart(wasPlaying: wasPlaying)
+        return BookMoveStart(wasPlaying: wasPlaying, timerFadeEnded: fadeEnds)
     }
 
     /// Says that the book `bookID`, titled `title`, is starting or opening,
@@ -55,10 +74,13 @@ extension ReaderViewModel {
     /// <title>" for a book that plays (`EndOfBookWording.starting(_:)`),
     /// "Opening: <title>" for one that does not
     /// (`ReadingListReaderWording.opening(_:)`). A running sleep timer of this
-    /// reader's is noted, so a timer that runs out before the book is asked for
-    /// ends listening (`noteMoveAnnounced()`). It is asked for after `continueToNextBookDelay`, as Continue to Next
-    /// Book asks for its book, so the announcement is not cut off by the
-    /// next book's window or by the switch of this one.
+    /// reader's is held for the book, so a timer that runs out before the book
+    /// is asked for ends listening, and closing this window meanwhile stops
+    /// nothing (`noteMoveAnnounced(to:)`). The book is asked for after
+    /// `continueToNextBookDelay`, as Continue to Next Book asks for its book,
+    /// so the announcement is not cut off by the next book's window or by the
+    /// switch of this one. A later move of this reader announced before the
+    /// ask cancels it: Next then Previous asks once.
     func announceMove(
         to bookID: UUID,
         titled title: String,
@@ -68,9 +90,19 @@ extension ReaderViewModel {
         announceToVoiceOver(
             start.plays ? EndOfBookWording.starting(title) : ReadingListReaderWording.opening(title)
         )
-        noteMoveAnnounced()
+        // Said after "Starting", and after current speech: the listener did
+        // not ask to cancel the timer the move's pause ended.
+        if start.timerFadeEnded {
+            announceToVoiceOverAfterCurrentSpeech(SleepTimerHandOverWording.fadeEndedByTheMove)
+        }
+        noteMoveAnnounced(to: bookID)
+        pendingMoveGeneration += 1
+        let generation = pendingMoveGeneration
+        pendingMovePlays = start.plays
         let plays = start.plays
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
+            guard self.pendingMoveGeneration == generation else { return }
+            self.pendingMovePlays = false
             self.askForBook(bookID, plays: plays, through: route)
         }
     }

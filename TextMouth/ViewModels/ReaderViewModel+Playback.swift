@@ -110,8 +110,10 @@ extension ReaderViewModel {
     /// of one, and stays finished. Play once played the book's last word
     /// or moment again, which ended it again at once: "Finished" again, and
     /// another entry in Books Finished, six of them for one book within nine
-    /// seconds on October 7. The sleep timer keeps its rule: this reader's
-    /// timer in effect starts no next book, since it could never pause it.
+    /// seconds on October 7. The sleep timer goes on with the next book, as
+    /// at the end (0.2.5): only a timer fading out ends listening here, since
+    /// one set for the end of a heading or of the book, now that the book has
+    /// ended, has not run out.
     private func playFromTheEnd() {
         DiagnosticLog.trace(.playback, "play: the book rests at its end; Play does what its end does")
         // Play is a new end decision: a wait for a next episode that an
@@ -121,7 +123,7 @@ extension ReaderViewModel {
         nextEpisodeWait = nil
         if isOpenedFromReadingList {
             followReadingListPastThisBook(
-                sleepTimerEndsListening: sleepTimerEndsListeningHere,
+                sleepTimerEndsListening: sleepTimerIsFadingOutHere,
                 sleepTimerStoppedHere: false,
                 sayingNothingFollows: announceToVoiceOver(_:)
             )
@@ -138,7 +140,7 @@ extension ReaderViewModel {
         case .continueNext:
             continueToNextBookInFolder(
                 following: rule,
-                sleepTimerEndsListening: sleepTimerEndsListeningHere,
+                sleepTimerEndsListening: sleepTimerIsFadingOutHere,
                 sleepTimerStoppedHere: false,
                 sayingNothingFollows: announceToVoiceOver(_:)
             )
@@ -2913,9 +2915,10 @@ extension ReaderViewModel {
             title: book.title, author: book.author, isPlaying: false
         )
         announceToVoiceOver(EndOfBookWording.starting(title))
-        // A running sleep timer goes on with the next book; one that runs out
-        // before it is asked for ends listening (`showNextBook`).
-        noteMoveAnnounced()
+        // A running sleep timer is held for the next book, which it goes on
+        // with; one that runs out before the book is asked for ends listening
+        // (`showNextBook`).
+        noteMoveAnnounced(to: nextBookID)
         let handOver = NextBookHandOver(
             nextBookID: nextBookID,
             titled: title,

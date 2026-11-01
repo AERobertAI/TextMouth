@@ -61,7 +61,7 @@ extension ReaderViewModel {
         // ends if another reader takes them (see `listenerHasMovedOn`).
         let wait = NextEpisodeWait(
             item: item, feedID: feedID, start: start, controlsOwner: nowPlayingService.activeOwnerID,
-            cause: cause, timerWasRunning: ownsCarriableSleepTimer
+            cause: cause, startedAt: Date()
         )
         nextEpisodeWait = feeds.events.sink { [weak self] event in
             self?.nextEpisodeEventArrived(event, during: wait)
@@ -101,10 +101,11 @@ extension ReaderViewModel {
         let controlsOwner: UUID?
         /// Why the episode is awaited, which decides what is spoken of it.
         let cause: NextEpisodeCause
-        /// Whether a running sleep timer of this reader's was to go on with
-        /// the episode as the wait began: one that ran out meanwhile has
-        /// ended listening, and the episode is not started when it arrives.
-        let timerWasRunning: Bool
+        /// When the wait began: a sleep timer of this reader's that ran out
+        /// since, whether it was set before or during the wait, has ended
+        /// listening, and the episode is not started when it arrives
+        /// (`SleepTimerService.endedListening(ownedBy:since:)`).
+        let startedAt: Date
     }
 
     /// Says that the awaited episode could not be downloaded, in the words
@@ -196,38 +197,27 @@ extension ReaderViewModel {
             DiagnosticLog.trace(.playback, "end of book: the next episode arrived, but the listener had moved on")
             return
         }
-        // A sleep timer that was running as the wait began, and has run out
-        // (or begun to fade out) since, has ended listening: the episode is
-        // not started, and the timer's own expiry is all that is said. One
-        // started during the wait goes on with the episode, as one running
-        // before it does (`handOverSleepTimer(to:)`).
-        if wait.timerWasRunning && sleepTimerEndedListening {
+        // A sleep timer of this reader's that ran out since the wait began, or
+        // is fading out, has ended listening: the episode is not started, and
+        // the timer's own expiry is all that is said. A running one, set
+        // before the wait or during it, goes on with the episode.
+        if sleepTimerService.endedListening(ownedBy: readerID, since: wait.startedAt) {
             DiagnosticLog.trace(.playback, "the next episode arrived, but the sleep timer had ended listening")
             return
         }
         // Next in Folder or Previous in Folder went to the episode. It plays
-        // when the book was playing; any other episode only opens: "Opening:
-        // <title>", and then its window (`openInFolder(_:)`, which only those
-        // commands wait for), as a book that is here opens.
+        // when the book was playing; any other episode only opens, as a book
+        // that is here does (`announceMove(to:titled:start:through:)`).
         if case .folderMove(_, let wasPlaying) = wait.cause {
-            guard wasPlaying else {
-                announceToVoiceOver(ReadingListReaderWording.opening(wait.item.title))
-                noteMoveAnnounced()
-                DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
-                    self.openInFolder(bookID)
+            if wasPlaying {
+                handOverToNextBook(to: bookID, titled: wait.item.title) {
+                    wait.start(bookID)
                 }
-                return
+            } else {
+                announceMove(
+                    to: bookID, titled: wait.item.title, start: BookMoveStart(wasPlaying: false), through: .folder
+                )
             }
-            handOverToNextBook(to: bookID, titled: wait.item.title) {
-                wait.start(bookID)
-            }
-            return
-        }
-        // The timer ends listening here (it is fading out, or waits for the end
-        // of a heading or of the book, which this book's end spends): say what
-        // the end says.
-        guard !sleepTimerEndsListeningHere else {
-            saySleepTimerKeepsNextBookFromStarting(in: "its feed", saying: announceToVoiceOver(_:))
             return
         }
         handOverToNextBook(to: bookID, titled: wait.item.title) {

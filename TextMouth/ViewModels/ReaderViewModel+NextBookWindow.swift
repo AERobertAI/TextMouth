@@ -101,21 +101,28 @@ extension ReaderViewModel {
         under choice: NextBookWindow,
         openingANewWindowWith openANewWindow: () -> Void
     ) {
-        // A sleep timer that was to go on with the next book, and ran out (or
-        // began to fade) since the move was announced, has ended listening:
-        // the next book is not started, and what the timer said as it ran out
-        // is all that is said. The requests made for the book are dropped.
-        if moveCarriesSleepTimer && sleepTimerEndedListening {
+        // A sleep timer that ran out since the move was announced, or began to
+        // fade out while it was to go on with the next book, has ended
+        // listening: the next book is not started, and what the timer said as
+        // it ran out is all that is said. The requests made for the book, and
+        // the timer's note that it ran out for this book, are dropped.
+        let timerRanOut = moveAnnouncedAt.map { sleepTimerService.didExpire(whileOwnedBy: readerID, since: $0) } ?? false
+        if timerRanOut || (moveCarriesSleepTimer && sleepTimerIsFadingOutHere) {
             moveCarriesSleepTimer = false
+            moveAnnouncedAt = nil
             DiagnosticLog.trace(.playback, "next book: the sleep timer ended listening before the book was asked for; not starting it")
             autoplayRequests.discard(for: nextBookID)
             readingListRequests.discard(for: nextBookID)
+            sleepTimerService.dropHold(forBook: nextBookID)
+            _ = sleepTimerService.consumeExpiredWhileHeld(forBook: nextBookID)
             return
         }
         moveCarriesSleepTimer = false
-        // A running timer goes on with the book, wherever it shows: asked
-        // for with the other requests, before the switch or the window opens.
-        handOverSleepTimer(to: nextBookID)
+        moveAnnouncedAt = nil
+        // A running timer goes on with the book, wherever it shows: held for it
+        // since the move was announced, and held again here for a caller that
+        // announced nothing.
+        holdSleepTimer(forBook: nextBookID)
         let action = NextBookWindowRule.action(
             choice: choice,
             isBusy: switchingTheWindowCouldLoseWork,

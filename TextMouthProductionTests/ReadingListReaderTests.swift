@@ -1211,16 +1211,15 @@ final class ReadingListReaderTests: XCTestCase {
             XCTAssertTrue(eventually { !asked().isEmpty }, "Never asked for the next book")
             spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
         }
-        let waiting = SleepTimerHandOverRequests.shared.hasRequest(for: second.id)
+        let waiting = timer.isHeld(forBook: second.id)
         let stillActive = timer.isActive
         timer.stop(reason: "the test ended")
-        SleepTimerHandOverRequests.shared.discard(for: second.id)
 
         XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Second Crossing"])
         XCTAssertEqual(asked().map(\.nextBookID), [second.id])
         XCTAssertTrue(opened().isEmpty)
         XCTAssertTrue(world.autoplayRequests.hasRequest(for: second.id))
-        XCTAssertTrue(waiting, "The timer was not asked for the next book")
+        XCTAssertTrue(waiting, "The timer was not held for the next book")
         XCTAssertTrue(stillActive, "The timer stopped with the move")
         XCTAssertTrue(reader.audioPlaybackService.isPaused, "This book plays on")
     }
