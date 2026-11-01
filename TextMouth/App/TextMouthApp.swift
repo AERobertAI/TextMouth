@@ -53,12 +53,20 @@ struct TextMouthApp: App {
                 BookReaderWindowView(
                     bookID: bookID,
                     libraryViewModel: libraryViewModel,
-                    settingsViewModel: settingsViewModel
+                    settingsViewModel: settingsViewModel,
+                    // Listening goes on to another book in this window
+                    // (0.2.5): the window's book changes, and `.id` below
+                    // makes a new view, with a new reader, of it.
+                    showBook: { nextBookID in $bookID.wrappedValue = nextBookID }
                 )
                 .environmentObject(libraryViewModel)
                 .environmentObject(settingsViewModel)
                 .environmentObject(shortcutManager)
                 .environmentObject(soundEffectService)
+                // Without an identity of its own for each book, SwiftUI
+                // would keep the old view and its reader, and the window
+                // would go on showing the old book.
+                .id(bookID)
             }
         }
         // Without this, SwiftUI adds File > New > New Book Reader Window,

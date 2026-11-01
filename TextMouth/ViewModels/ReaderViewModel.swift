@@ -485,6 +485,21 @@ final class ReaderViewModel: ObservableObject {
     /// book hands over, and again once a Play finds the hand-over done.
     /// Accessed from the Playback extension.
     var nextBookHandOver: NextBookHandOver?
+    /// Shows the book with the given ID in this reader's own window, in
+    /// place of this reader's book: the reader window's scene sets the
+    /// window's book (`BookReaderWindowView`). Nil for a reader that cannot
+    /// switch its window, as in a test, which then opens a new window as
+    /// before 0.2.5. Accessed from the NextBookWindow extension.
+    var nextBookWindowSwitcher: ((UUID) -> Void)?
+    /// Whether this reader's window now shows another book: set just
+    /// before the switch, so the closing view leaves the window registered
+    /// (the new view registers the same window) and closes this reader.
+    /// Accessed from the NextBookWindow extension and the window's view.
+    var hasSwitchedWindow = false
+    /// Whether this reader's window is on screen, or minimized, so that a
+    /// book shown in it is seen; nil reads it from `hostWindow`. A test
+    /// that has no window sets it.
+    var hostWindowIsOnScreenOverride: Bool?
     /// The revision of the latest library update this reader has applied to
     /// its copy of the book (see `LibraryBookUpdates`); an update that is
     /// not newer is ignored. Written only by `applyLibraryUpdate(_:)` and

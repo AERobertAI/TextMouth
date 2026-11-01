@@ -2678,7 +2678,9 @@ extension ReaderViewModel {
         goOnPastThisBook(
             to: successionInFolder(following: rule),
             in: "its folder",
-            startingWith: { self.continueToNextBook($0) },
+            // The window choice is read as the book is asked for, not
+            // before: the listener may change it meanwhile.
+            startingWith: { self.continueToNextBook($0, under: self.folderMoveWindowChoice) },
             sleepTimerEndsListening: sleepTimerEndsListening,
             sleepTimerStoppedHere: sleepTimerStoppedHere,
             sayingNothingFollows: say
@@ -2967,14 +2969,23 @@ extension ReaderViewModel {
     /// own center, where the app opens the book's reader window, or
     /// brings it forward when it is already open.
     ///
-    /// - Parameter nextBookID: The book after this one in its folder.
-    func continueToNextBook(_ nextBookID: UUID) {
+    /// Where the book shows is `choice`'s to say (`showNextBook`): a new
+    /// window opens through the notification, as before 0.2.5, or this
+    /// window shows the book, the request waiting for the reader that takes
+    /// over.
+    ///
+    /// - Parameters:
+    ///   - nextBookID: The book after this one in its folder.
+    ///   - choice: The window choice in force for this move.
+    func continueToNextBook(_ nextBookID: UUID, under choice: NextBookWindow) {
         let request = autoplayRequests.request(for: nextBookID, from: book.id)
-        notificationCenter.post(
-            name: .continueToNextBook,
-            object: nil,
-            userInfo: request.notificationUserInfo
-        )
+        showNextBook(nextBookID, under: choice) {
+            notificationCenter.post(
+                name: .continueToNextBook,
+                object: nil,
+                userInfo: request.notificationUserInfo
+            )
+        }
     }
 
     /// Start playing because a finished book continued to this one, when

@@ -15,7 +15,12 @@ struct BookReaderWindowView: View {
     /// its own, to open a book's reader while no Library window is open.
     @Environment(\.openWindow) private var openWindow
 
-    init(bookID: UUID, libraryViewModel: LibraryViewModel, settingsViewModel: SettingsViewModel) {
+    init(
+        bookID: UUID,
+        libraryViewModel: LibraryViewModel,
+        settingsViewModel: SettingsViewModel,
+        showBook: @escaping (UUID) -> Void = { _ in }
+    ) {
         self.bookID = bookID
         // Create the ReaderViewModel as a StateObject
         let book = libraryViewModel.bookByID(bookID) ?? Book(
@@ -24,11 +29,35 @@ struct BookReaderWindowView: View {
             filePath: "",
             md5Hash: ""
         )
-        _viewModel = StateObject(wrappedValue: ReaderViewModel(
+        _viewModel = StateObject(wrappedValue: Self.makeReader(
+            book: book,
+            libraryViewModel: libraryViewModel,
+            settingsViewModel: settingsViewModel,
+            showBook: showBook
+        ))
+    }
+
+    /// The reader of `book`, given the means to show another book in this
+    /// window when listening goes on to it (0.2.5): `showBook` changes the
+    /// book the window's scene presents, which makes a new view, and a new
+    /// reader, in the same window (`TextMouthApp`).
+    ///
+    /// - Parameter showBook: Sets the window's book; the default, for a
+    ///   view with no scene to set it in, does nothing, and the reader then
+    ///   opens a new window as before.
+    static func makeReader(
+        book: Book,
+        libraryViewModel: LibraryViewModel,
+        settingsViewModel: SettingsViewModel,
+        showBook: @escaping (UUID) -> Void
+    ) -> ReaderViewModel {
+        let reader = ReaderViewModel(
             book: book,
             libraryViewModel: libraryViewModel,
             settingsViewModel: settingsViewModel
-        ))
+        )
+        reader.nextBookWindowSwitcher = showBook
+        return reader
     }
 
     var body: some View {
@@ -67,7 +96,11 @@ struct BookReaderWindowView: View {
                 NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
             }
             .onDisappear {
-                if let window = viewModel.hostWindow {
+                // A reader whose window now shows another book leaves the
+                // window registered: the new view registered the same
+                // window, perhaps before this view disappeared, and an
+                // unregister here would take its entry away (0.2.5).
+                if !viewModel.hasSwitchedWindow, let window = viewModel.hostWindow {
                     LibraryWindowRouter.shared.unregisterReaderWindow(window)
                 }
                 viewModel.close()

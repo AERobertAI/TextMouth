@@ -145,7 +145,7 @@ extension ReaderViewModel {
     /// the notification that opens its window or brings it forward.
     func continueThroughReadingList(to nextBookID: UUID) {
         readingListRequests.request(for: nextBookID)
-        continueToNextBook(nextBookID)
+        continueToNextBook(nextBookID, under: readingListMoveWindowChoice)
     }
 
     /// Why nothing follows this book at its end in the reading list, as the
@@ -240,9 +240,12 @@ extension ReaderViewModel {
     /// starting it: the request to read it from the list first, so a reader
     /// already open for it claims it at once, then `.openBookWindow`, which
     /// opens its window or brings it forward, as a book an import opens is
-    /// opened (`LibraryWindowRouter`).
+    /// opened (`LibraryWindowRouter`); or, as the global setting says, this
+    /// window shows it (`showNextBook`).
     func openFromReadingList(_ bookID: UUID) {
         readingListRequests.request(for: bookID)
-        notificationCenter.post(name: .openBookWindow, object: bookID)
+        showNextBook(bookID, under: readingListMoveWindowChoice) {
+            notificationCenter.post(name: .openBookWindow, object: bookID)
+        }
     }
 }
