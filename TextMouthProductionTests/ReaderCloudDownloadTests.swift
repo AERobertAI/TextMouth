@@ -382,6 +382,44 @@ final class ReaderCloudDownloadTests: XCTestCase {
         reader.stop()
     }
 
+    /// A later move from the old window, before a cloud book the first move
+    /// asked for has downloaded, cancels the first book's start: its request,
+    /// held while it downloads, is discarded and the timer's hold undone, so
+    /// when the book has downloaded and loaded it neither plays nor takes the
+    /// timer (the last move wins until its book has started).
+    func testALaterMoveBeforeACloudTargetHasDownloadedCancelsItsStart() throws {
+        preserveSharedSleepTimer()
+        let cloud = try makeCloudReaders("Cloud Last Move")
+        let world = cloud.world
+        // In folder order: A Volume, the old reader's B Volume, the cloud C Volume.
+        _ = try world.makeSilentAudioBook(title: "A Volume", trackDurations: [5, 5], endOfBook: .continueNext)
+        let current = try world.makeSilentAudioBook(title: "B Volume", trackDurations: [5, 5], endOfBook: .continueNext)
+        let target = try makeSingleFileAudioBook("C Volume", in: cloud)
+        world.library.library.folders = [BookFolder(name: world.folder.path)]
+        world.settings.endOfBookBehavior = .continueNext
+        world.settings.nextBookWindow = .newWindow
+        cloud.storage.setState(.inCloud, of: target.id)
+        cloud.storage.scriptDownload(of: target.id, steps: [Self.halfway], holdsOpen: true)
+        let old = cloud.open(current)
+        waitForReaderToLoad(old)
+        let timer = SleepTimerService.shared
+        timer.start(duration: .minutes(30), ownerID: old.readerID, onExpire: {})
+        old.isWhereAmIResumePending = true
+        old.goThroughFolder(.down)
+        waitFor("the move asks for the cloud book") { world.autoplayRequests.hasRequest(for: target.id) }
+        let downloading = cloud.open(target)
+        waitFor("the download's first step") { downloading.shownDownload?.progress == Self.halfway }
+
+        old.goThroughFolder(.up)
+
+        XCTAssertFalse(world.autoplayRequests.hasRequest(for: target.id), "The cloud book's request was left")
+        XCTAssertFalse(timer.isHeld(forBook: target.id), "The cloud book's hold was left")
+        cloud.storage.finishHeldDownload(of: target.id)
+        waitForReaderToLoad(downloading)
+        XCTAssertFalse(downloading.audioPlaybackService.isPlaying, "The cancelled book played")
+        XCTAssertNotEqual(timer.ownerID, downloading.readerID, "The cancelled book took the timer")
+    }
+
     /// A download that is cancelled, or fails, drops the request to start
     /// the book at once, whatever its age, so the book never starts by
     /// itself later, and its requests are held no longer.

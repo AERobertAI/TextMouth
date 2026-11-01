@@ -961,6 +961,29 @@ final class SleepTimerServiceTests: XCTestCase {
         XCTAssertTrue(service.endedListening(ownedBy: owner), "a fading timer has ended listening")
     }
 
+    /// A hold is returned where it was even while the timer fades out: a new
+    /// carry of a fading timer is refused, but putting back the hold a
+    /// cancelled move made is a return, and a timer that has stopped has no hold
+    /// to return.
+    func testAHoldIsReturnedEvenWhileTheTimerFadesOut() {
+        let first = UUID()
+        let second = UUID()
+        start(.minutes(1), fade: 5)
+        XCTAssertTrue(service.hold(forBook: first, from: owner))
+        XCTAssertTrue(service.passOnHold(fromBook: first, toBook: second))
+        service._expireForTesting()
+        XCTAssertTrue(service.isFadingOut)
+
+        XCTAssertFalse(service.passOnHold(fromBook: second, toBook: first), "a new carry of a fading timer")
+        XCTAssertTrue(service.isHeld(forBook: second))
+        XCTAssertTrue(service.passOnHold(fromBook: second, toBook: first, returning: true), "a return")
+        XCTAssertTrue(service.isHeld(forBook: first))
+        XCTAssertTrue(service.isFadingOut, "the return ended the fade")
+
+        service.stop()
+        XCTAssertFalse(service.passOnHold(fromBook: first, toBook: second, returning: true), "nothing left held")
+    }
+
     /// A timer held for a book that ran out before the book took it is
     /// remembered for that book, once; stopping or starting a timer ends the
     /// hold.
