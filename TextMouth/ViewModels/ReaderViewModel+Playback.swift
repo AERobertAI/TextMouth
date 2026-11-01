@@ -2966,7 +2966,7 @@ extension ReaderViewModel {
             nextBookHandOver = nil
             return false
         }
-        let askedBefore = handOver.hasAskedForNextBook
+        let askedBefore = !handOver.isPendingAsk
         DiagnosticLog.trace(
             .playback,
             "play: the hand-over to the next book is under way; asked before=\(askedBefore)"
@@ -3161,7 +3161,13 @@ extension ReaderViewModel {
     func makeSleepTimerHandlers(fadeOutDuration: TimeInterval)
         -> (onExpire: () -> Void, onFadeStep: (Float) -> Void, onFadeCancelled: () -> Void) {
         let onExpire: () -> Void = { [weak self] in
-            guard let self = self else { return }
+            // A reader that is gone cannot pause its book, which went with it,
+            // but the listener is still owed the word that the timer ran out
+            // (W5): a held timer is kept running for a book that never took it.
+            guard let self = self else {
+                VoiceOverAnnouncer.announce(ReaderViewModel.sleepTimerExpiredAnnouncement, priority: .high)
+                return
+            }
             let bookToken = String(self.book.id.uuidString.prefix(8))
             let wasPlaying = self.isAudioBook
                 ? self.audioPlaybackService.isPlaying
@@ -3326,9 +3332,18 @@ extension ReaderViewModel {
         // lives in the fade-cleanup branch below, which is why the
         // sleep timer must keep a one-shot "fade just completed"
         // marker until this helper runs.
+        // A fade that began while the timer was held for the next book is left
+        // to run out, as `finishStopping` leaves it (W2): a pause reaching this
+        // reader meanwhile neither ends it nor consumes its completion, so the
+        // timer ends listening, its expiry is said once, and the book it was
+        // held for is not started. A move's own pause ends a fade because the
+        // move undoes the hold it made first (`cancelPendingMoves()`); the
+        // expiry's own pause stops the timer because `noteExpiry` clears the
+        // hold before it.
         let ownsSleepTimer = sleepTimerService.ownerID == readerID
-        let completedSleepTimerFade = ownsSleepTimer && sleepTimerService.consumePendingFadeCompletion()
-        let completingSleepFade = ownsSleepTimer && (sleepTimerService.isFadingOut || completedSleepTimerFade)
+        let fadeIsHeld = ownsSleepTimer && sleepTimerService.isHeld(from: readerID)
+        let completedSleepTimerFade = ownsSleepTimer && !fadeIsHeld && sleepTimerService.consumePendingFadeCompletion()
+        let completingSleepFade = ownsSleepTimer && !fadeIsHeld && (sleepTimerService.isFadingOut || completedSleepTimerFade)
         // Halt audio output before any volume restoration. For TTS engine
         // playback, a sleep fade needs stronger handling than pause(): the
         // engine is stopped at volume 0 so downstream time-pitch/mixer
@@ -3741,11 +3756,6 @@ final class NextBookHandOver {
         self.askForNextBook = askForNextBook
     }
 
-    /// Whether the next book has been asked for.
-    var hasAskedForNextBook: Bool {
-        askForNextBook == nil
-    }
-
     /// Whether the next book is still to be asked for: announced, and not
     /// cancelled or asked.
     var isPendingAsk: Bool {
@@ -3763,7 +3773,7 @@ final class NextBookHandOver {
     /// asked for, or asked for and its request still waiting for that
     /// book's reader to claim it as it starts.
     var isUnderWay: Bool {
-        !hasAskedForNextBook || autoplayRequests.hasRequest(for: nextBookID)
+        isPendingAsk || autoplayRequests.hasRequest(for: nextBookID)
     }
 
     /// Asks for the next book, unless it has been asked for already, so it
