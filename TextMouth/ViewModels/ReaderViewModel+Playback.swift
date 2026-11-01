@@ -540,7 +540,15 @@ extension ReaderViewModel {
         // callback can now restore volume without briefly restarting direct
         // speech that this stop operation would immediately halt again.
         if wasSleepTimerFading {
-            sleepTimerService.stop()
+            // A fade that began while the timer was held for the next book is
+            // left to run out, as it would if this reader stayed open: the
+            // timer ends listening, its expiry is said once, and the book it
+            // was held for is not started. Closing this reader must not stop
+            // it (`SleepTimerService.noteExpiry`). Its callbacks touch only
+            // this reader's own audio and speech.
+            if !sleepTimerService.isHeld(from: readerID) {
+                sleepTimerService.stop()
+            }
         } else {
             // A minutes timer keeps the time it has left until Play resumes
             // its countdown (`play()`), so none is spent while nothing

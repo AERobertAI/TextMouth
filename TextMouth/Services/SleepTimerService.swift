@@ -643,6 +643,10 @@ final class SleepTimerService: ObservableObject {
     /// - Returns: Whether the timer was held for that book.
     @discardableResult
     func releaseHeld(forBook bookID: UUID, reason: String = "the book could not be opened") -> Bool {
+        // The mark that the timer ran out for this book never outlives the
+        // move it was made for: a later move to the book, with no timer
+        // started since, must not find it.
+        if expiredWhileHeldBookID == bookID { expiredWhileHeldBookID = nil }
         guard heldForBookID == bookID else { return false }
         stop(reason: "held for a book that took no timer: \(reason)")
         VoiceOverAnnouncer.announce(SleepTimerHandOverWording.noBook, priority: .medium)

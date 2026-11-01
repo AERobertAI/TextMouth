@@ -565,6 +565,54 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertEqual(timer.ownerID, old.readerID)
     }
 
+    /// Closing the old reader while the held timer fades out gives the result
+    /// not closing it gives: the timer runs out, and the book it was held for
+    /// does not start. The close does not stop the timer.
+    func testClosingTheOldReaderDuringAHeldFadeLeavesTheFadeToRunOut() throws {
+        preserveSharedSleepTimer()
+        let folder = try makeFolderWorld("HeldFade")
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
+        let timer = SleepTimerService.shared
+        timer.start(duration: .minutes(1), ownerID: old.readerID, onExpire: {}, fadeOutDuration: 5)
+        XCTAssertTrue(timer.hold(forBook: folder.second.id, from: old.readerID))
+        timer.markAsked(forBook: folder.second.id)
+        timer._expireForTesting()
+        XCTAssertTrue(timer.isFadingOut)
+        _ = folder.world.autoplayRequests.request(for: folder.second.id, from: folder.first.id)
+
+        old.close()
+        XCTAssertTrue(timer.isFadingOut, "Closing the reader stopped a timer that was fading out")
+        let next = makeReader(for: folder.second, in: folder.world, switcher: switcher)
+        spinMainRunLoop(for: 1.0)
+
+        XCTAssertFalse(next.isCurrentlyPlaying, "The book started after the timer began to fade out")
+        XCTAssertFalse(folder.world.autoplayRequests.hasRequest(for: folder.second.id))
+        XCTAssertNotEqual(timer.ownerID, next.readerID, "The book took a timer that was fading out")
+    }
+
+    /// The mark that a timer ran out for a book is cleared when the book's
+    /// reader is released or closed: a later move to that book, with no timer
+    /// started since, plays it.
+    func testTheRunOutMarkDoesNotOutliveTheMoveItWasMadeFor() throws {
+        preserveSharedSleepTimer()
+        let folder = try makeFolderWorld("MarkCleared")
+        let switcher = SwitchRecorder(requests: folder.world.autoplayRequests)
+        let old = makeReader(for: folder.first, in: folder.world, switcher: switcher)
+        let timer = SleepTimerService.shared
+        timer.start(duration: .minutes(1), ownerID: old.readerID, onExpire: {})
+        XCTAssertTrue(timer.hold(forBook: folder.second.id, from: old.readerID))
+        timer._expireForTesting()
+        XCTAssertEqual(timer.expiredWhileHeldBookID, folder.second.id)
+
+        timer.releaseHeld(forBook: folder.second.id)
+
+        XCTAssertNil(timer.expiredWhileHeldBookID, "The mark outlived the release")
+        _ = folder.world.autoplayRequests.request(for: folder.second.id, from: folder.first.id)
+        let later = makeReader(for: folder.second, in: folder.world, switcher: switcher)
+        XCTAssertTrue(eventually(within: 15) { later.isCurrentlyPlaying }, "A later move to the book did not play it")
+    }
+
     /// A timer held for a book that nothing ever takes is stopped at the
     /// deadline, as a last resort, and the listener is told after current
     /// speech.
