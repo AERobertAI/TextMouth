@@ -369,7 +369,16 @@ final class NextBookWindowReaderTests: XCTestCase {
             XCTAssertTrue(text.contains("Button(ShortcutAction.\(name).title)"), name)
             XCTAssertTrue(text.contains("post(name: .\(name), object: nil)"), name)
         }
-        XCTAssertTrue(text.contains(".disabled(activeWindowType != .reader)"))
+        // Gated on a scene value the reader's window publishes, so the items
+        // stay offered while VoiceOver reads the text, which holds no
+        // keyboard focus; a plain focused value would dim them then.
+        XCTAssertTrue(text.contains(".disabled(isReaderWindow != true)"))
+        XCTAssertFalse(text.contains("activeWindowType != .reader"))
+        let view = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("TextMouth/Views/Reader/BookReaderWindowView.swift")
+        let viewText = try String(contentsOf: view, encoding: .utf8)
+        XCTAssertTrue(viewText.contains(".focusedSceneValue(\\.isReaderWindow, true)"))
     }
 
     /// The notification reaches the key reader and moves it.

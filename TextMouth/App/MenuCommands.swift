@@ -63,6 +63,24 @@ extension FocusedValues {
     }
 }
 
+/// Whether the key window is a reader, which Navigate > Next in Folder and
+/// Previous in Folder need (0.2.5). The reader's window publishes it as a
+/// scene value (`BookReaderWindowView`), so the commands stay available while
+/// VoiceOver reads the window's text, which holds no keyboard focus, and
+/// after a window switches to another book, which takes the focused view
+/// away. (`activeWindowType` is a plain focused value, which leaves a menu
+/// command dimmed then.)
+struct IsReaderWindowKey: FocusedValueKey {
+    typealias Value = Bool
+}
+
+extension FocusedValues {
+    var isReaderWindow: Bool? {
+        get { self[IsReaderWindowKey.self] }
+        set { self[IsReaderWindowKey.self] = newValue }
+    }
+}
+
 /// The key Library window's selection as the Library menu's Remove names
 /// it: Delete Download for feed items alone (REV11 F2). Each Library window
 /// publishes its own as a scene value (`LibraryView`), so the title follows
@@ -237,9 +255,9 @@ struct NavigationCommands: Commands {
     /// Whether the key reader's book has pages (PG02), which Next Page,
     /// Previous Page, and Go to Page… need.
     @FocusedValue(\.readerHasPages) var readerHasPages
-    /// Which kind of window is key, so Next in Folder and Previous in Folder
-    /// are offered in a reader window alone.
-    @FocusedValue(\.activeWindowType) var activeWindowType
+    /// Whether the key window is a reader, so Next in Folder and Previous in
+    /// Folder are offered in a reader window alone.
+    @FocusedValue(\.isReaderWindow) var isReaderWindow
 
     var body: some Commands {
         CommandMenu("Navigate") {
@@ -304,12 +322,12 @@ struct NavigationCommands: Commands {
             Button(ShortcutAction.nextInFolder.title) {
                 NotificationCenter.default.post(name: .nextInFolder, object: nil)
             }
-            .disabled(activeWindowType != .reader)
+            .disabled(isReaderWindow != true)
 
             Button(ShortcutAction.previousInFolder.title) {
                 NotificationCenter.default.post(name: .previousInFolder, object: nil)
             }
-            .disabled(activeWindowType != .reader)
+            .disabled(isReaderWindow != true)
 
             Divider()
 
