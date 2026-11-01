@@ -74,15 +74,29 @@ extension ReaderViewModel {
 
     /// Takes `window` as this reader's window, as the reader's view finds
     /// it, and, when a switch made this reader, sees to the window's focus
-    /// (`placeFocusAfterSwitch`): a window opened for a book announces
-    /// itself and places its own first focus, but a window switched to
-    /// another book is the same window, and nothing announces it. The
-    /// request is claimed once, so a window found again changes nothing,
-    /// and a reader opened for a new window finds none.
+    /// once the book has loaded (`placeFocusAfterSwitch`): a window opened
+    /// for a book announces itself and places its own first focus, but a
+    /// window switched to another book is the same window, and nothing
+    /// announces it. The check waits for the load because the book's own
+    /// focus trigger runs only then (`SwitchedWindowFocus`). The request is
+    /// claimed once, so a window found again changes nothing, and a reader
+    /// opened for a new window finds none.
     func attach(to window: NSWindow) {
         hostWindow = window
         guard !hasClosed, windowSwitchRequests.consume(for: book.id) != nil else { return }
-        DiagnosticLog.trace(.playback, "next book: this window was switched to this book; seeing to its focus")
+        DiagnosticLog.trace(.playback, "next book: this window was switched to this book; its focus is seen to once it has loaded")
+        if isLoading {
+            windowAwaitingFocusAfterLoad = window
+        } else {
+            placeFocusAfterSwitch(window)
+        }
+    }
+
+    /// Sees to the focus of the window a switch made this reader's, found
+    /// before the book had loaded: called as the load ends.
+    func placeFocusAfterSwitchIfDue() {
+        guard !hasClosed, let window = windowAwaitingFocusAfterLoad else { return }
+        windowAwaitingFocusAfterLoad = nil
         placeFocusAfterSwitch(window)
     }
 

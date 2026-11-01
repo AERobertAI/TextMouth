@@ -1725,6 +1725,9 @@ final class ReaderViewModel: ObservableObject {
         // anything plays: a timer that ran out meanwhile ends listening, so
         // the book is not started for it (0.2.5).
         claimSleepTimerHandOver()
+        // A window a switch made this reader's has its focus seen to now that
+        // the book has loaded (`attach(to:)`).
+        placeFocusAfterSwitchIfDue()
         // A finished book may have continued to this one while
         // it loaded: start playing for it now.
         claimAutoplayRequest()

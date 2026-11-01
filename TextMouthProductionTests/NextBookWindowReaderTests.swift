@@ -853,6 +853,41 @@ final class NextBookWindowReaderTests: XCTestCase {
         XCTAssertFalse(claims.hasRequest(for: folder.second.id), "The claim was left waiting")
     }
 
+    /// The focus of a switched window is seen to once the book has loaded, not
+    /// when the window is found: the book's own focus trigger runs only then.
+    func testAWindowFoundBeforeTheBookLoadedHasItsFocusSeenToAfterTheLoad() throws {
+        let folder = try makeFolderWorld("FocusAfterLoad")
+        let claims = WindowSwitchRequests()
+        claims.request(for: folder.second.id)
+        // Inactive until activated, which a second activation leaves alone, so
+        // the load is let go however the test ends.
+        let held = DispatchQueue(label: "nextbook-held-load", attributes: .initiallyInactive)
+        addTeardownBlock { held.activate() }
+        let reader = ReaderViewModel(
+            book: folder.second,
+            libraryViewModel: folder.world.library,
+            settingsViewModel: folder.world.settings,
+            substitutionService: TextSubstitutionService(rules: []),
+            autoplayRequests: folder.world.autoplayRequests,
+            windowSwitchRequests: claims,
+            notificationCenter: folder.world.notifications,
+            loadQueue: held
+        )
+        addTeardownBlock { reader.close() }
+        var placed: [NSWindow] = []
+        reader.placeFocusAfterSwitch = { placed.append($0) }
+        let window = makeWindow()
+
+        reader.attach(to: window)
+        XCTAssertTrue(placed.isEmpty, "The focus was seen to before the book loaded")
+        XCTAssertTrue(reader.isLoading)
+
+        held.activate()
+        waitForReaderToLoad(reader)
+        XCTAssertEqual(placed.count, 1, "The focus was asked for \(placed.count) times after the load")
+        XCTAssertTrue(placed.first === window)
+    }
+
     /// A reader opened for a new window finds no claim, and asks for no
     /// focus: a new window places its own, as before; and a move that opens a
     /// new window leaves no claim for the book.
