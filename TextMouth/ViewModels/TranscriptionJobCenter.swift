@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 import Foundation
 
@@ -149,7 +153,7 @@ final class TranscriptionJobCenter: ObservableObject {
     private var task: Task<Void, Never>?
     /// The window that started the transcription under way, where what
     /// VoiceOver hears of it is announced from.
-    private weak var announcingWindow: NSWindow?
+    private weak var announcingWindow: PlatformWindow?
     /// The quarters of the transcription under way already announced.
     private var announcedMilestones: Set<Int> = []
     /// When the transcription's progress was last shown.
@@ -183,7 +187,7 @@ final class TranscriptionJobCenter: ObservableObject {
     /// - Returns: Whether it started: false while another transcription is
     ///   under way, which the sheet says before Transcribe is offered.
     @discardableResult
-    func start(_ book: Book, language: String, library: LibraryViewModel, window: NSWindow?) -> Bool {
+    func start(_ book: Book, language: String, library: LibraryViewModel, window: PlatformWindow?) -> Bool {
         guard current == nil else { return false }
         let job = TranscriptionJob(id: UUID(), bookID: book.id, bookTitle: book.title, startedAt: Date())
         current = job

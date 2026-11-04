@@ -2486,6 +2486,7 @@ struct TextMouthRelauncher {
                 quit: {}
             )
         }
+        #if os(macOS)
         return TextMouthRelauncher(
             openNewInstance: {
                 let configuration = NSWorkspace.OpenConfiguration()
@@ -2503,5 +2504,14 @@ struct TextMouthRelauncher {
             },
             quit: { NSApplication.shared.terminate(nil) }
         )
+        #else
+        // iOS cannot open a second instance of the app, nor quit this one
+        // (phase 0): opening throws, so Use This Library reports it, and
+        // quitting does nothing, so this instance carries on.
+        return TextMouthRelauncher(
+            openNewInstance: { throw IOSUnavailable.feature("Opening TextMouth again") },
+            quit: {}
+        )
+        #endif
     }
 }

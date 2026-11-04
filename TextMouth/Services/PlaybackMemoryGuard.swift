@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Darwin
 import os
 
@@ -420,6 +424,7 @@ final class PlaybackMemoryGuard {
     static func tellOfAQuitToProtectTheMac() {
         guard !TextMouthRuntime.current.isHostedTest, let marker = MemoryQuitMarker.take() else { return }
         DiagnosticLog.event(.app, "AUDIO_MEMORY_QUIT_TOLD: TextMouth quit at its last launch to protect the Mac")
+#if os(macOS)
         Task { @MainActor in
             let alert = NSAlert()
             alert.alertStyle = .warning
@@ -428,6 +433,11 @@ final class PlaybackMemoryGuard {
             alert.addButton(withTitle: "OK")
             alert.runModal()
         }
+#else
+        // Phase 0: iOS shows no alert (an iPhone app cannot quit itself to
+        // protect the device, so no quit marker is ever left to announce).
+        _ = marker
+#endif
     }
 
     // MARK: The App's Actions
@@ -444,7 +454,12 @@ final class PlaybackMemoryGuard {
     /// `isQuittingToProtectTheMac` is set, so `applicationWillTerminate`
     /// shuts down as it always does.
     static func quitAskingNothing() {
+#if os(macOS)
         NSApplication.shared.terminate(nil)
+#else
+        // Phase 0: iOS lets an app end only by the system's choice, so there
+        // is nothing to quit; the system itself ends apps under memory pressure.
+#endif
     }
 
     /// Quit at once, from any thread, without running anything more: the

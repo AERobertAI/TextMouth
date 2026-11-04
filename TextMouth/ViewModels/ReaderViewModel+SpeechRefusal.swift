@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 
 // MARK: - The Report of a Speech Refusal (B05)
 
@@ -8,13 +12,25 @@ extension ReaderViewModel {
     /// refusal comes, and as its sheet is made. A reader with no window, as
     /// in a test, stands behind.
     var speechRefusalWindowStanding: SpeechRefusalWindowStanding {
-        let keyWindow = NSApp.keyWindow
+        #if os(macOS)
+        let keyWindow = PlatformApplication.keyWindow
         return .of(
-            appIsActive: NSApp.isActive,
+            appIsActive: PlatformApplication.isActive,
             windowIsKey: hostWindow.map { $0 === keyWindow } ?? false,
             windowHasSheet: hostWindow?.attachedSheet != nil,
             keyWindowIsItsSheet: hostWindow.map { keyWindow?.sheetParent === $0 } ?? false
         )
+        #else
+        // Phase 0 (iOS): sheets and key windows are AppKit's. The reader
+        // stands as one with no window does on the Mac (behind), which
+        // phase 1 replaces with a reading of the scene.
+        return .of(
+            appIsActive: PlatformApplication.isActive,
+            windowIsKey: false,
+            windowHasSheet: false,
+            keyWindowIsItsSheet: false
+        )
+        #endif
     }
 
     /// Shows the report of `refusal`, which stopped this reader's speech

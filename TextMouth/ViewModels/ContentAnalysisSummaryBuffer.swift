@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 import Foundation
 
@@ -225,11 +229,16 @@ final class ContentAnalysisSummaryBuffer {
         self.apply = apply
         // Delivered on the posting thread, the main thread, while AppKit
         // quits, so the flush is done before TextMouth exits.
+        // iOS ends an app without a guaranteed willTerminate notice, so
+        // phase 0 listens for none there (phase 1 flushes as the app goes
+        // to the background).
+        #if os(macOS)
         terminationSubscription = notificationCenter
             .publisher(for: NSApplication.willTerminateNotification)
             .sink { [weak self] _ in
                 MainActor.assumeIsolated { self?.flushForTermination() }
             }
+        #endif
     }
 
     /// How many summaries are waiting.

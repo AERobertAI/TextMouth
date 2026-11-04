@@ -1,5 +1,9 @@
 import SwiftUI
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import AVFoundation
 
 // MARK: - Where Am I, Copy Reading Position, VoiceOver Announcements
@@ -768,8 +772,13 @@ extension ReaderViewModel {
     func copyReadingPosition() {
         guard content != nil else { return }
 
+        #if os(macOS)
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(readingPositionText, forType: .string)
+        #else
+        // iOS's pasteboard replaces its contents when a string is set.
+        UIPasteboard.general.string = readingPositionText
+        #endif
         announceToVoiceOver("Reading position copied to clipboard")
     }
 

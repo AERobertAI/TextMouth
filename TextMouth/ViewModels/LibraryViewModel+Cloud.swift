@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 import Foundation
 
@@ -257,7 +261,7 @@ final class LibraryCloudRefresher {
             .store(in: &observers)
 
         // When the app becomes active while a Library window shows the result.
-        notificationCenter.publisher(for: NSApplication.didBecomeActiveNotification)
+        notificationCenter.publisher(for: PlatformApplication.didBecomeActiveNotification)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in self?.appBecameActive() }
             .store(in: &observers)
@@ -527,7 +531,12 @@ final class LibraryCloudCommands {
         kept: KeptBooks = .shared,
         storage: @escaping @MainActor () -> any BookCloudStorage = { CloudServices.bookStorage },
         refreshAfterRemoval: @escaping @MainActor () -> Void = { LibraryCloudRefresher.shared.requestRefresh() },
-        revealInFinder: @escaping @MainActor ([URL]) -> Void = { NSWorkspace.shared.activateFileViewerSelecting($0) },
+        revealInFinder: @escaping @MainActor ([URL]) -> Void = {
+            // iOS has no Finder to reveal files in (phase 0): it does nothing.
+            #if os(macOS)
+            NSWorkspace.shared.activateFileViewerSelecting($0)
+            #endif
+        },
         now: @escaping @MainActor () -> Date = { Date() }
     ) {
         self.states = states
@@ -544,7 +553,7 @@ final class LibraryCloudCommands {
     /// background.
     /// - Returns: Remove Download's refusal for the window to show, if any.
     @discardableResult
-    func perform(_ command: LibraryCloudCommand, in library: LibraryViewModel, from window: NSWindow?) async -> LibraryCloudRefusal? {
+    func perform(_ command: LibraryCloudCommand, in library: LibraryViewModel, from window: PlatformWindow?) async -> LibraryCloudRefusal? {
         switch command.kind {
         case .download:
             download(command.books, in: library, from: window)
@@ -571,7 +580,7 @@ final class LibraryCloudCommands {
     /// - Returns: The task running the downloads, which tests await; nil
     ///   when no book needed downloading.
     @discardableResult
-    func keep(_ books: [Book], in library: LibraryViewModel, from window: NSWindow?) -> Task<Void, Never>? {
+    func keep(_ books: [Book], in library: LibraryViewModel, from window: PlatformWindow?) -> Task<Void, Never>? {
         let newlyKept = kept.keep(books.map(\.id))
         let keptNow = books.filter { newlyKept.contains($0.id) }
         guard !keptNow.isEmpty else { return nil }
@@ -589,7 +598,7 @@ final class LibraryCloudCommands {
     /// tells VoiceOver which books. Nothing is downloaded or removed now:
     /// their downloads stay until the sync service, or Remove Download,
     /// removes them. Books not kept change nothing.
-    func stopKeeping(_ books: [Book], from window: NSWindow?) {
+    func stopKeeping(_ books: [Book], from window: PlatformWindow?) {
         let released = kept.stopKeeping(books.map(\.id))
         let titles = books.filter { released.contains($0.id) }.map(\.title)
         guard !titles.isEmpty else { return }
@@ -611,7 +620,7 @@ final class LibraryCloudCommands {
         _ keeping: Bool,
         for selection: [Book],
         in library: LibraryViewModel,
-        from window: NSWindow?
+        from window: PlatformWindow?
     ) -> Task<Void, Never>? {
         let kind: LibraryCloudCommand.Kind = keeping ? .keepOnThisMac : .stopKeepingOnThisMac
         let offered = LibraryCloudCommand.commands(
@@ -698,7 +707,7 @@ final class LibraryCloudCommands {
     /// - Returns: The task running the downloads, which tests await; nil
     ///   when no book needed downloading.
     @discardableResult
-    func download(_ books: [Book], in library: LibraryViewModel, from window: NSWindow?) -> Task<Void, Never>? {
+    func download(_ books: [Book], in library: LibraryViewModel, from window: PlatformWindow?) -> Task<Void, Never>? {
         download(books, in: library, from: window, origin: .downloadNow)
     }
 
@@ -749,7 +758,7 @@ final class LibraryCloudCommands {
     private func download(
         _ books: [Book],
         in library: LibraryViewModel,
-        from window: NSWindow?,
+        from window: PlatformWindow?,
         origin: DownloadOrigin
     ) -> Task<Void, Never>? {
         let queued = books.filter(canStartDownload)
@@ -876,7 +885,7 @@ final class LibraryCloudCommands {
     /// - Returns: The refusal for `window` to show when any book keeps its
     ///   download; nil when every download was removed, or none could be.
     @discardableResult
-    func removeDownloads(of books: [Book], in library: LibraryViewModel, from window: NSWindow?) async -> LibraryCloudRefusal? {
+    func removeDownloads(of books: [Book], in library: LibraryViewModel, from window: PlatformWindow?) async -> LibraryCloudRefusal? {
         let targets = books.filter { book in
             !booksBeingRemoved.contains(book.id) && states.listedState(of: book.id)?.canRemoveDownload == true
         }

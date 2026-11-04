@@ -1,6 +1,10 @@
 import Foundation
 import Combine
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 
 /// Manages the sleep timer. There is exactly ONE timer at a time across
 /// the whole app (any number of book windows may exist) — accessed via

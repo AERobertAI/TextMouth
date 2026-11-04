@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Foundation
 
 // MARK: - Where the Next Book Opens (0.2.5)
@@ -37,6 +41,7 @@ extension ReaderViewModel {
     /// stands as `NextBookWindowStanding.noWindow`.
     var windowStanding: NextBookWindowStanding {
         if let windowStandingOverride { return windowStandingOverride }
+        #if os(macOS)
         guard let window = hostWindow else { return .noWindow }
         return NextBookWindowStanding(
             isVisible: window.isVisible,
@@ -45,6 +50,13 @@ extension ReaderViewModel {
             hasSheet: window.attachedSheet != nil,
             fieldIsBeingEdited: (window.firstResponder as? NSTextView)?.isFieldEditor == true
         )
+        #else
+        // Phase 0 (iOS): the standing is read from AppKit's window, which
+        // iOS lacks, so no iOS reader has a window to stand in. Phase 1
+        // will read the scene instead; until then a reader stands as one
+        // with no window and claims no listener's attention.
+        return .noWindow
+        #endif
     }
 
     /// Whether switching the window to another book could lose something,
@@ -177,9 +189,13 @@ extension ReaderViewModel {
             // the next turn of the main queue, once that request is
             // routed, so no two windows show one book.
             openANewWindow()
+            // Closing this window is a Mac window action; phase 0 of the iOS
+            // port has no second window to close (phase 1 uses scenes).
+            #if os(macOS)
             DispatchQueue.main.async { [weak self] in
                 self?.hostWindow?.close()
             }
+            #endif
         }
     }
 }

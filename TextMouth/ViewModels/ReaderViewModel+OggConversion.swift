@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 
 /// What a reader says when it will not play a book's Ogg audio (B06).
 enum ReaderOggWording {
