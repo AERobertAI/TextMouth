@@ -261,6 +261,7 @@ enum EPUBParser {
     }
 
     private static func updateOPFMetadata(opfXML: String, metadata: EPUBMetadata) throws -> String {
+#if os(macOS)
         try readingXML(opfXML) { doc in
             // Update title
             if let titleNode = (try? doc.nodes(forXPath: "//*[local-name()='title']"))?.first {
@@ -300,6 +301,13 @@ enum EPUBParser {
 
             return doc.xmlString(options: [.nodePrettyPrint])
         }
+#else
+        // Phase 0 of the iOS port: the portable XML tree (PortableXML.swift) only reads. It
+        // cannot change a package document and write it back as Foundation's tree does, and
+        // nothing less faithful should rewrite a book's own file, so iOS does not save a
+        // book's details into its EPUB yet.
+        throw IOSUnavailable.feature("Saving a book's details into its EPUB file")
+#endif
     }
 
     // MARK: - The Author a Package Names
