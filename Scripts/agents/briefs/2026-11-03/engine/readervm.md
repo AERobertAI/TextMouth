@@ -19,6 +19,8 @@ You are worker `engine-readervm` of team `engine` (lead `engine-lead`). Read `Sc
 4. `NSAccessibilityPriorityLevel` (WhereAmI:869, CloudDownload:739) and `priority: .high/.medium` (Playback:3199, OggConversion:55, WhereAmI:857/864, CloudDownload:631/767, TranscriptionJobCenter:266) are for a11y's team (finding posted to `a11y-lead`). Make no edit for them; if they remain, say so in your report.
 5. No `@unchecked Sendable`, no `nonisolated(unsafe)`, no traps. Comment every new branch.
 
+**PlatformApplication (new since the pattern was written).** `TextMouth/Platform/PlatformApplication.swift` offers `PlatformApplication.keyWindow`, `.mainWindow`, `.isActive`, `.didBecomeActiveNotification`, and `.didResignActiveNotification`: on the Mac each is exactly `NSApp.keyWindow`, `NSApp.mainWindow`, `NSApp.isActive`, `NSApplication.didBecomeActiveNotification`, `NSApplication.didResignActiveNotification` (the projection reads them as such), and on iOS each answers as well as phase 0 can. Use them in place of those AppKit expressions (rule 3, an alias); the old expressions then need no `#if`. Other `NSApp`/`NSApplication` uses still go behind `#if os(macOS)`.
+
 ## Mac test areas to request from the train
 
 `reader-text`, `transcripts`, `cloud` (name the classes of the files you touch: `ls TextMouthTests TextMouthProductionTests | grep -i "ReaderViewModel\|TranscriptCleanup\|TranscriptionSheet\|TranscriptionJob"`).

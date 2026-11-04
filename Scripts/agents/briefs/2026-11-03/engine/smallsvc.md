@@ -21,6 +21,8 @@ Done when the census shows none of these files. The errors are pasted at the end
 6. **PDFTextParser.** `NSFont` becomes `PlatformFont` at lines 425, 502, 686. Where it reads the font's traits (`font?.fontDescriptor.symbolicTraits.contains(.bold)` and `.italic`, lines ~427-428, and wherever the same appears), NSFont's `NSFontDescriptor.SymbolicTraits` names (`.bold`, `.italic`) differ from UIFont's (`.traitBold`, `.traitItalic`): read them in an `#if os(macOS)` ... `#else` pair. The Mac text is exactly as before (aliases excepted); DRY the pair into one small private helper only if the Mac text stays the same.
 7. No `@unchecked Sendable`, no `nonisolated(unsafe)`, no traps.
 
+**PlatformApplication (new since the pattern was written).** `TextMouth/Platform/PlatformApplication.swift` offers `PlatformApplication.keyWindow`, `.mainWindow`, `.isActive`, `.didBecomeActiveNotification`, and `.didResignActiveNotification`: on the Mac each is exactly `NSApp.keyWindow`, `NSApp.mainWindow`, `NSApp.isActive`, `NSApplication.didBecomeActiveNotification`, `NSApplication.didResignActiveNotification` (the projection reads them as such), and on iOS each answers as well as phase 0 can. Use them in place of those AppKit expressions (rule 3, an alias); the old expressions then need no `#if`. Other `NSApp`/`NSApplication` uses still go behind `#if os(macOS)`.
+
 ## Mac test areas to request from the train
 
 `storage`, `stats`, `export`, `pdf` (name the classes of the files you touch: `ls TextMouthTests TextMouthProductionTests | grep -i "SessionLease\|PublishedFile\|ReadingStats\|SleepTimer\|TextSubstitution\|RTFExport\|BookExport\|PDF"`).

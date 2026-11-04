@@ -18,6 +18,8 @@ You are worker `engine-libvm` of team `engine` (lead `engine-lead`). Read `Scrip
 4. The `.medium` error in `+ReadingList.swift:119` and `+Duplicates.swift:459` is `VoiceOverAnnouncer.announce(priority:)`, which a11y's team handles (finding posted to `a11y-lead`). Make no edit for those; if they remain, say so in your report.
 5. No `@unchecked Sendable`, no `nonisolated(unsafe)`, no traps. Comment every new branch.
 
+**PlatformApplication (new since the pattern was written).** `TextMouth/Platform/PlatformApplication.swift` offers `PlatformApplication.keyWindow`, `.mainWindow`, `.isActive`, `.didBecomeActiveNotification`, and `.didResignActiveNotification`: on the Mac each is exactly `NSApp.keyWindow`, `NSApp.mainWindow`, `NSApp.isActive`, `NSApplication.didBecomeActiveNotification`, `NSApplication.didResignActiveNotification` (the projection reads them as such), and on iOS each answers as well as phase 0 can. Use them in place of those AppKit expressions (rule 3, an alias); the old expressions then need no `#if`. Other `NSApp`/`NSApplication` uses still go behind `#if os(macOS)`.
+
 ## Mac test areas to request from the train
 
 `library`, `cloud` (name the classes of the files you touch: `ls TextMouthTests TextMouthProductionTests | grep -i "LibraryViewModel\|BookExport"`).

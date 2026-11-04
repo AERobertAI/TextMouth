@@ -17,6 +17,8 @@ Done when the census shows no error in NowPlayingService.swift. The errors, past
 5. No trap in an iOS branch. No `@unchecked Sendable`, no `nonisolated(unsafe)`. The service is `@MainActor`: keep that.
 6. The callers of NowPlayingService in other teams' files must keep compiling: before you rename or remove anything on iOS, `grep -rn "NowPlayingService\|NowPlayingSession\|RemoteMediaCommandPolicy" TextMouth --include='*.swift'`.
 
+**PlatformApplication (new since the pattern was written).** `TextMouth/Platform/PlatformApplication.swift` offers `PlatformApplication.keyWindow`, `.mainWindow`, `.isActive`, `.didBecomeActiveNotification`, and `.didResignActiveNotification`: on the Mac each is exactly `NSApp.keyWindow`, `NSApp.mainWindow`, `NSApp.isActive`, `NSApplication.didBecomeActiveNotification`, `NSApplication.didResignActiveNotification` (the projection reads them as such), and on iOS each answers as well as phase 0 can. Use them in place of those AppKit expressions (rule 3, an alias); the old expressions then need no `#if`. Other `NSApp`/`NSApplication` uses still go behind `#if os(macOS)`.
+
 ## Mac test areas to request from the train
 
 `audio`, `playback-end` (classes to name: `ls TextMouthTests TextMouthProductionTests | grep -i "NowPlaying\|RemoteMedia\|AudioRoute\|Bluetooth"`).
