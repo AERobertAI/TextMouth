@@ -23,9 +23,9 @@ enum WindowCommandRouting {
     /// a panel's own shortcut from reaching the reader to close that panel.
     @MainActor
     static func shouldAccept(
-        sourceWindow: NSWindow?,
-        hostWindow: NSWindow?,
-        keyWindow: NSWindow?
+        sourceWindow: PlatformWindow?,
+        hostWindow: PlatformWindow?,
+        keyWindow: PlatformWindow?
     ) -> Bool {
         guard let hostWindow else { return true }
 
@@ -41,7 +41,8 @@ enum WindowCommandRouting {
     /// Walk through nested sheets to the document window that owns them.
     /// The visited set guards against a malformed AppKit relationship cycle.
     @MainActor
-    static func rootWindow(for window: NSWindow) -> NSWindow {
+    static func rootWindow(for window: PlatformWindow) -> PlatformWindow {
+        #if os(macOS)
         var currentWindow = window
         var visited: Set<ObjectIdentifier> = []
 
@@ -51,6 +52,11 @@ enum WindowCommandRouting {
         }
 
         return currentWindow
+        #else
+        // A UIWindow has no sheets of its own (a presented sheet is a view
+        // controller inside it), so it is already the document window.
+        return window
+        #endif
     }
 }
 
@@ -266,7 +272,7 @@ struct LibraryView: View {
     /// its sheet.
     @State private var bookInfoRequest: UUID?
     /// The NSWindow hosting this library, for checking key window status on notifications
-    @State private var hostWindow: NSWindow?
+    @State private var hostWindow: PlatformWindow?
     /// Whether removing asks first and where deleted files go, kept current
     /// so removal buttons and confirmations say what removal will do.
     @State private var removalPreferences = RemovalPreferences(ConfigService.shared.config)
@@ -1659,7 +1665,7 @@ struct LibraryView: View {
     /// key window takes it; a window whose NSWindow isn't known yet takes
     /// either.
     private func takesCommand(_ notification: Notification) -> Bool {
-        let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow
+        let sourceWindow = notification.userInfo?["sourceWindow"] as? PlatformWindow
         return WindowCommandRouting.shouldAccept(
             hasSourceWindow: sourceWindow != nil,
             sourceMatchesHost: sourceWindow === hostWindow,
