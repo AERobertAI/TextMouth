@@ -36,7 +36,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import difflint  # noqa: E402
 from difflint import ERROR, REVIEW, Rule  # noqa: E402
 
-DEFAULT_PATHS = ["TextMouth/Views", "TextMouth/App/MenuCommands.swift"]
+# The SwiftUI the app shows: its views, the menus, and, since the iOS port's
+# phase 0 (November 3, 2026), the platform folders, where views only one app
+# compiles now live (TextMouth/Platform/macOS/Views/, TextMouth/Platform/iOS/).
+DEFAULT_PATHS = ["TextMouth/Views", "TextMouth/App/MenuCommands.swift", "TextMouth/Platform"]
 
 
 # ---------------------------------------------------------------------------
