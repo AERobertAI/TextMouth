@@ -54,38 +54,80 @@ final class PortableXMLDifferentialTests: XCTestCase {
 
     // MARK: - Where the Trees Differ, and Why
 
+    /// A known difference: why the trees differ, and a fragment of the
+    /// difference the comparison reports, which it must contain, so that a
+    /// different difference in the same document is not hidden behind the entry.
+    struct KnownDifference {
+        /// Why the two trees differ.
+        let reason: String
+        /// Text the reported difference must contain.
+        let evidence: String
+    }
+
     /// The documents the two trees read differently, as "strict: name" or
-    /// "tidy: name", each with the reason. "Strict" is the reading the EPUB
-    /// reader makes (`.nodeLoadExternalEntitiesNever`); "tidy" the feed and
-    /// OPML readers' second reading of a document their own parser refused
+    /// "tidy: name". "Strict" is the reading the EPUB reader makes
+    /// (`.nodeLoadExternalEntitiesNever`); "tidy" the feed and OPML readers'
+    /// second reading of a document their own parser refused
     /// (`.documentTidyXML`).
     ///
     /// The tidy differences are all in documents that are broken in ways
     /// libxml2 and Tidy repair in their own way, and in the tidied text of
     /// whitespace character references and `xml:space="preserve"`, which the
     /// portable tree does not imitate.
-    static let knownDifferences: [String: String] = [
-        "strict: fault-external-entity.xml": entityReason,
-        "strict: an internal entity": entityReason,
-        "strict: an external entity": entityReason,
-        "strict: fault-netscape-doctype.xml": unresolvedEntityReason,
-        "strict: an undefined entity beside a DTD naming an external subset": unresolvedEntityReason,
-        "tidy: references and whitespace": "tidying keeps whitespace written as a character reference (&#32;) and the portable tree collapses it",
-        "tidy: xml:space preserve": "tidying keeps the whitespace inside an element marked xml:space=\"preserve\"; the portable tree does not",
-        "tidy: a qualified name starting with a colon": "tidying reads <:b/> as text; SwiftSoup reads an element",
-        "tidy: a qualified name ending with a colon": "tidying splits b: into the prefix b and no local name",
-        "tidy: a prefix bound to nothing": "tidying gives the element the empty namespace; SwiftSoup drops the empty declaration",
-        "tidy: a duplicate attribute": "tidying keeps both attributes; SwiftSoup keeps the last",
-        "tidy: an attribute without a value": "tidying drops the attribute; SwiftSoup keeps it with an empty value",
-        "tidy: an unquoted attribute value": "SwiftSoup reads the / of <a b=c/> into the value",
+    static let knownDifferences: [String: KnownDifference] = [
+        "strict: fault-external-entity.xml": entityDifference,
+        "strict: an internal entity": entityDifference,
+        "strict: an external entity": entityDifference,
+        "strict: fault-netscape-doctype.xml": unresolvedEntityDifference,
+        "strict: an undefined entity beside a DTD naming an external subset": unresolvedEntityDifference,
+        "tidy: references and whitespace": KnownDifference(
+            reason: "tidying keeps whitespace written as a character reference (&#32;) and the portable tree collapses it",
+            evidence: "Foundation: element L1 name=a local=a prefix= uri=nil text=\"& &   \\n\""
+        ),
+        "tidy: xml:space preserve": KnownDifference(
+            reason: "tidying keeps the whitespace inside an element marked xml:space=\"preserve\"; the portable tree does not",
+            evidence: "Foundation: element L1 name=a local=a prefix= uri=nil text=\"    \""
+        ),
+        "tidy: a qualified name starting with a colon": KnownDifference(
+            reason: "tidying reads <:b/> as text; SwiftSoup reads an element",
+            evidence: "text=\"<:b/>\""
+        ),
+        "tidy: a qualified name ending with a colon": KnownDifference(
+            reason: "tidying splits b: into the prefix b and no local name",
+            evidence: "name=b: local= prefix=b"
+        ),
+        "tidy: a prefix bound to nothing": KnownDifference(
+            reason: "tidying gives the element the empty namespace; SwiftSoup drops the empty declaration",
+            evidence: "name=p:b local=b prefix=p uri= text"
+        ),
+        "tidy: a duplicate attribute": KnownDifference(
+            reason: "tidying keeps both attributes; SwiftSoup keeps the last",
+            evidence: "portable:     @x|x||nil=\"2\""
+        ),
+        "tidy: an attribute without a value": KnownDifference(
+            reason: "tidying drops the attribute; SwiftSoup keeps it with an empty value",
+            evidence: "portable:     @b|b||nil=\"\""
+        ),
+        "tidy: an unquoted attribute value": KnownDifference(
+            reason: "SwiftSoup reads the / of <a b=c/> into the value",
+            evidence: "portable:     @b|b||nil=\"c/\""
+        ),
+        "tidy: unclosed void elements that the item's end tag closes": KnownDifference(
+            reason: "Foundation's tidying leaves each unclosed <br> open past its item, nesting the items inside one another; SwiftSoup closes them with the item's end tag",
+            evidence: "from channel selects 1 and 300"
+        ),
     ]
 
     /// Why a document that declares an entity is read differently.
-    private static let entityReason =
-        "XMLParser does not expand entities a document declares, so the strict reading refuses the document"
+    private static let entityDifference = KnownDifference(
+        reason: "XMLParser does not expand entities a document declares, so the strict reading refuses the document",
+        evidence: "Foundation reads the document and the portable tree refuses it"
+    )
     /// Why a reference to an entity only an external DTD declares is read differently.
-    private static let unresolvedEntityReason =
-        "Foundation keeps an empty entity-reference node between two text nodes; the portable tree has one text node"
+    private static let unresolvedEntityDifference = KnownDifference(
+        reason: "Foundation keeps an empty entity-reference node between two text nodes; the portable tree has one text node",
+        evidence: "text=\"Onetwo\""
+    )
 
     // MARK: - The Comparisons
 
@@ -267,8 +309,14 @@ final class PortableXMLDifferentialTests: XCTestCase {
         for tidy in [false, true] {
             let key = "\(tidy ? "tidy" : "strict"): \(name)"
             let found = differences(in: data, tidy: tidy)
-            if let reason = Self.knownDifferences[key] {
-                XCTAssertFalse(found.isEmpty, "\(key) is listed as differing (\(reason)) but the trees now agree; remove it from knownDifferences", file: file, line: line)
+            if let known = Self.knownDifferences[key] {
+                let report = found.joined(separator: "\n")
+                XCTAssertFalse(found.isEmpty, "\(key) is listed as differing (\(known.reason)) but the trees now agree; remove it from knownDifferences", file: file, line: line)
+                XCTAssertTrue(
+                    found.isEmpty || report.contains(known.evidence),
+                    "\(key) differs, but not as listed (\(known.reason)); expected the report to contain \(known.evidence), got:\n\(report)",
+                    file: file, line: line
+                )
             } else {
                 XCTAssertTrue(found.isEmpty, "\(key) differs:\n" + found.joined(separator: "\n"), file: file, line: line)
             }
