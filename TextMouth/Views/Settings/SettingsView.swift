@@ -145,7 +145,7 @@ struct SettingsTabPage: View {
         if tab.scrollsAsAWhole {
             SettingsTabContent(tab: tab)
                 .formStyle(.grouped)
-                .toggleStyle(.checkbox)
+                .checkboxToggleStyle()
                 .textFieldStyle(.roundedBorder)
         } else {
             SettingsTabContent(tab: tab)

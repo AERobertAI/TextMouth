@@ -240,9 +240,9 @@ struct ReaderBookCommandsSupport: ViewModifier {
     /// reader command (`WindowCommandRouting`).
     private func takesCommand(_ notification: Notification) -> Bool {
         WindowCommandRouting.shouldAccept(
-            sourceWindow: notification.userInfo?["sourceWindow"] as? NSWindow,
+            sourceWindow: notification.userInfo?["sourceWindow"] as? PlatformWindow,
             hostWindow: viewModel.hostWindow,
-            keyWindow: NSApp.keyWindow
+            keyWindow: PlatformApplication.keyWindow
         )
     }
 }

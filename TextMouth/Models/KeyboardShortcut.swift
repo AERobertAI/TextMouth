@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 
 /// All actions that can have keyboard shortcuts
 enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
@@ -938,6 +942,7 @@ struct KeyBinding: Codable, Equatable, Hashable {
         Self.keyName(forKey: key)?.shown ?? key.uppercased()
     }
 
+#if os(macOS)
     /// The binding a key press makes, as the Shortcuts tab records it and
     /// the dispatcher matches it: the key named by its key code, or else by
     /// the character it gives, in lower case, with the modifiers held. Nil
@@ -963,6 +968,7 @@ struct KeyBinding: Codable, Equatable, Hashable {
 
         return KeyBinding(key: key, command: cmd, option: opt, shift: shft, control: ctrl)
     }
+#endif
 }
 
 // MARK: - Keys in Words

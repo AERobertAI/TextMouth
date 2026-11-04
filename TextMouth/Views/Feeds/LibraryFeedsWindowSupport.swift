@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import SwiftUI
 
 // MARK: - A Library Window's Feed Sheets (FR03)
@@ -43,7 +47,7 @@ final class LibraryFeedsPresenter: ObservableObject {
 
     /// Speaks what a command did, from the window it was chosen in: through
     /// VoiceOver, unless a test listens instead.
-    var announce: @MainActor (String, NSWindow?) -> Void = { message, window in
+    var announce: @MainActor (String, PlatformWindow?) -> Void = { message, window in
         VoiceOverAnnouncer.announce(message, from: window)
     }
     /// Selects books' packages in Finder (Show in Finder), as the library's
@@ -83,7 +87,7 @@ final class LibraryFeedsPresenter: ObservableObject {
     /// plain http shows its warning once, which says the subscription was
     /// made; any other is announced, a moment later, once VoiceOver has
     /// settled back on the library.
-    func addFeedDidClose(in window: NSWindow?, center: FeedCenter) {
+    func addFeedDidClose(in window: PlatformWindow?, center: FeedCenter) {
         guard let feed = justSubscribed else { return }
         justSubscribed = nil
         // The record as the engine keeps it now, read when the feed was.
@@ -114,7 +118,7 @@ struct LibraryFeedsWindowSupport: ViewModifier {
     /// The library the window shows.
     let library: LibraryViewModel
     /// The window, once known.
-    let hostWindow: NSWindow?
+    let hostWindow: PlatformWindow?
     /// The folder the window shows ("" for the top level), and whether it
     /// shows folders at all, which decide where Add Feed first offers to
     /// put a feed's folder.
@@ -143,11 +147,20 @@ struct LibraryFeedsWindowSupport: ViewModifier {
             .onReceive(arrivals.$pendingAlert) { _ in
                 claimArrivalsAlert()
             }
+            #if os(macOS)
             .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { notification in
                 if let hostWindow, (notification.object as? NSWindow) === hostWindow {
                     claimArrivalsAlert()
                 }
             }
+            #else
+            // UIKit posts the same notification as a window becomes key.
+            .onReceive(NotificationCenter.default.publisher(for: UIWindow.didBecomeKeyNotification)) { notification in
+                if let hostWindow, (notification.object as? PlatformWindow) === hostWindow {
+                    claimArrivalsAlert()
+                }
+            }
+            #endif
             .alert(arrivals.pendingAlert?.title ?? "", isPresented: isShowingArrivals, presenting: arrivals.pendingAlert) { _ in
                 Button("OK", role: .cancel) {
                     arrivals.dismissAlert()

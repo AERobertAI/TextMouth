@@ -22,7 +22,7 @@ struct LibraryWindowView: View {
     /// router for File > New from Text....
     @State private var showTextInput = false
     /// The NSWindow hosting this library view, captured via WindowAccessor
-    @State private var hostWindow: NSWindow?
+    @State private var hostWindow: PlatformWindow?
 
     /// Finder-style folder navigation history (back/forward with Cmd+[ / Cmd+])
     @StateObject private var folderNav = FolderNavigationHistory()
@@ -43,7 +43,13 @@ struct LibraryWindowView: View {
                     notice: libraryViewModel.dataDirectoryRefusalNotice,
                     onAnnounce: { libraryViewModel.announceDataDirectoryUnavailability(from: hostWindow) },
                     onTryAgain: { libraryViewModel.retryDataDirectory() },
-                    onQuit: { NSApplication.shared.terminate(nil) }
+                    onQuit: {
+                        // Quitting is the Mac's; an iPhone app closes from
+                        // the system, so the button does nothing there.
+                        #if os(macOS)
+                        NSApplication.shared.terminate(nil)
+                        #endif
+                    }
                 )
             } else {
                 LibraryView(
@@ -314,7 +320,7 @@ struct LibraryWindowView: View {
     ///   - window: This view's hosting window.
     ///   - openReaderWindow: This window's `openWindow` action, read while
     ///     the view was installed, which opens a book's reader window.
-    private func registerForGlobalActions(_ window: NSWindow, openingReadersWith openReaderWindow: OpenWindowAction) {
+    private func registerForGlobalActions(_ window: PlatformWindow, openingReadersWith openReaderWindow: OpenWindowAction) {
         libraryWindowRouter.register(window) { action in
             takeGlobalAction(action, openingReadersWith: openReaderWindow)
         }
@@ -368,11 +374,13 @@ struct LibraryWindowView: View {
     /// Brings this Library window to the front as the key window, out of
     /// the Dock first when it was minimized.
     private func bringToFront() {
+        #if os(macOS)
         guard let hostWindow else { return }
         if hostWindow.isMiniaturized {
             hostWindow.deminiaturize(nil)
         }
         hostWindow.makeKeyAndOrderFront(nil)
+        #endif
     }
 
     // MARK: - While the Library Moves (FR02)
@@ -404,6 +412,7 @@ struct LibraryWindowView: View {
     /// (TODO I02), or, at the Reading List, into the folder viewed last, the
     /// books then joining the list (FR09).
     private func presentDAISYFolderPanel() {
+        #if os(macOS)
         let panel = LibraryViewModel.makeDAISYFolderPanel()
         let destination = currentFolderPath
         let origin = ImportOrigin(window: hostWindow)
@@ -423,6 +432,11 @@ struct LibraryWindowView: View {
         } else {
             panel.begin(completionHandler: importChosenFolders)
         }
+        #else
+        // Importing folders on iPhone is phase 1's: there is no folder
+        // panel here, so the command does nothing.
+        return
+        #endif
     }
 }
 

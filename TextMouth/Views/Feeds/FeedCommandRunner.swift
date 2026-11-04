@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Foundation
 
 // MARK: - Running the Feed Commands (FR03)
@@ -12,7 +16,7 @@ struct FeedCommandContext {
     /// The library the window shows.
     let library: LibraryViewModel
     /// The window the command was chosen in, once known.
-    let window: NSWindow?
+    let window: PlatformWindow?
 }
 
 extension FeedCenter {

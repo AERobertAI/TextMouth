@@ -721,6 +721,7 @@ struct ShortcutRecorderButton: View {
         .buttonStyle(.plain)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityHint(isRecording ? ShortcutsSettingsWording.recordingHint : ShortcutsSettingsWording.recordHint)
+        #if os(macOS)
         .background(
             ShortcutRecorderEventHandler(
                 isActive: isRecording,
@@ -731,6 +732,7 @@ struct ShortcutRecorderButton: View {
                 onCancel: onCancel
             )
         )
+        #endif
     }
 
     private var accessibilityLabel: String {
@@ -744,6 +746,7 @@ struct ShortcutRecorderButton: View {
     }
 }
 
+#if os(macOS)
 /// Invisible view that, while active, takes the key presses made in
 /// TextMouth with a local event monitor and records the key they press
 /// (`ShortcutRecording`); the shortcut manager acts on none of them
@@ -876,6 +879,8 @@ struct ShortcutRecorderEventHandler: NSViewRepresentable {
         }
     }
 }
+
+#endif
 
 // MARK: - Recording a Key
 
