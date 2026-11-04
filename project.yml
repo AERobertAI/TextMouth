@@ -43,12 +43,72 @@ settings:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
 
+# The version both apps carry, on one line: Scripts/set-version.sh (make
+# set-version, bump-patch, and bump-minor) changes exactly one
+# MARKETING_VERSION line, and the Mac app and the iOS app share it.
+settingGroups:
+  appVersion:
+    MARKETING_VERSION: "0.2.5"
+    CURRENT_PROJECT_VERSION: "1"
+
+# The two C libraries both apps link, each defined once and built for each
+# platform by a target of its own (LAME and LAME_iOS, ObjCExceptionCatcher
+# and ObjCExceptionCatcher_iOS): see the targets below for what each is.
+targetTemplates:
+  LAMELibrary:
+    type: library.static
+    # LAME is C alone, with no Objective-C class or category for the linker
+    # to keep, so the app links it without the -ObjC flag XcodeGen otherwise
+    # adds to every target that links a static library.
+    requiresObjCLinking: false
+    sources:
+      - path: Vendor/lame/libmp3lame
+        headerVisibility: project
+      - path: Vendor/lame/config.h
+        headerVisibility: project
+    settings:
+      base:
+        PRODUCT_NAME: mp3lame
+        HEADER_SEARCH_PATHS:
+          - $(SRCROOT)/Vendor/lame
+          - $(SRCROOT)/Vendor/lame/include
+          - $(SRCROOT)/Vendor/lame/libmp3lame
+        GCC_PREPROCESSOR_DEFINITIONS: HAVE_CONFIG_H=1
+        GCC_OPTIMIZATION_LEVEL: s
+        GCC_WARN_INHIBIT_ALL_WARNINGS: YES
+        SKIP_INSTALL: YES
+        # LAME and liblouis each include their own "config.h". Xcode's header
+        # map lists every header of the project under its bare name, so it
+        # can hand either target the other's; without it, each target finds
+        # its own through its search paths above.
+        USE_HEADERMAP: NO
+  ObjCExceptionCatcherLibrary:
+    type: library.static
+    requiresObjCLinking: false
+    sources:
+      - path: Vendor/ObjCExceptionCatcher/ObjCExceptionCatcher.m
+      - path: Vendor/ObjCExceptionCatcher/include/ObjCExceptionCatcher.h
+        headerVisibility: project
+    settings:
+      base:
+        PRODUCT_NAME: ObjCExceptionCatcher
+        HEADER_SEARCH_PATHS:
+          - $(SRCROOT)/Vendor/ObjCExceptionCatcher/include
+        CLANG_ENABLE_OBJC_ARC: YES
+        SKIP_INSTALL: YES
+
 targets:
   TextMouth:
     type: application
     platform: macOS
     sources:
-      - TextMouth
+      # Every source file, less the iOS app's own folder: a new file is
+      # shared by both apps unless it is in TextMouth/Platform/iOS/ (iOS
+      # only) or TextMouth/Platform/macOS/ (the Mac only, which the iOS
+      # target leaves out). Scripts/ios/typecheck.py follows the same rule.
+      - path: TextMouth
+        excludes:
+          - "Platform/iOS/**"
       # liblouis's braille tables (FMT21), copied unchanged as one folder
       # into Contents/Resources/liblouis/tables, where the braille helper
       # finds them (see the liblouis target below).
@@ -86,10 +146,10 @@ targets:
             destination: resources
             subpath: Licenses/LAME
     settings:
+      groups:
+        - appVersion
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouth
-        MARKETING_VERSION: "0.2.5"
-        CURRENT_PROJECT_VERSION: "1"
         TEXTMOUTH_GIT_COMMIT: unknown
         TEXTMOUTH_BUILD_DATE: unknown
         INFOPLIST_FILE: TextMouth/Resources/Info.plist
@@ -169,54 +229,72 @@ targets:
   # it encodes speech about 100 times faster than real time. Its compiler
   # warnings are LAME's own and are not shown; the gate counts Swift warnings
   # only. DEBUG stays undefined, as it would turn on LAME's debugging output.
+  # Its settings are the LAMELibrary template's, above; LAME_iOS, below, is
+  # the same library built for the iOS app.
   LAME:
-    type: library.static
+    templates:
+      - LAMELibrary
     platform: macOS
-    # LAME is C alone, with no Objective-C class or category for the linker
-    # to keep, so the app links it without the -ObjC flag XcodeGen otherwise
-    # adds to every target that links a static library.
-    requiresObjCLinking: false
-    sources:
-      - path: Vendor/lame/libmp3lame
-        headerVisibility: project
-      - path: Vendor/lame/config.h
-        headerVisibility: project
-    settings:
-      base:
-        PRODUCT_NAME: mp3lame
-        HEADER_SEARCH_PATHS:
-          - $(SRCROOT)/Vendor/lame
-          - $(SRCROOT)/Vendor/lame/include
-          - $(SRCROOT)/Vendor/lame/libmp3lame
-        GCC_PREPROCESSOR_DEFINITIONS: HAVE_CONFIG_H=1
-        GCC_OPTIMIZATION_LEVEL: s
-        GCC_WARN_INHIBIT_ALL_WARNINGS: YES
-        SKIP_INSTALL: YES
-        # LAME and liblouis each include their own "config.h". Xcode's header
-        # map lists every header of the project under its bare name, so it
-        # can hand either target the other's; without it, each target finds
-        # its own through its search paths above.
-        USE_HEADERMAP: NO
   # One C function that runs a block and returns the Objective-C exception it
   # raised (TMCatchException), for the few framework calls that raise one
   # Swift cannot catch. Built as LAME is: a static library with a module
   # map, which the app links. It is a function, with no class or category
-  # for the linker to keep, so the app links it without -ObjC.
+  # for the linker to keep, so the app links it without -ObjC. Its settings
+  # are the ObjCExceptionCatcherLibrary template's, above.
   ObjCExceptionCatcher:
-    type: library.static
+    templates:
+      - ObjCExceptionCatcherLibrary
     platform: macOS
-    requiresObjCLinking: false
+  # The iOS app's builds of the same two libraries.
+  LAME_iOS:
+    templates:
+      - LAMELibrary
+    platform: iOS
+    deploymentTarget: "26.0"
+  ObjCExceptionCatcher_iOS:
+    templates:
+      - ObjCExceptionCatcherLibrary
+    platform: iOS
+    deploymentTarget: "26.0"
+  # The iOS app (phase 0 of the port, IOS-PORT-RESEARCH-2026-11-03.md): the
+  # same sources as the Mac app, less TextMouth/Platform/macOS/ and the Mac's
+  # resources, with TextMouth/Platform/iOS/ for what only iOS compiles. Its
+  # module is named TextMouth too, so shared code and tests read the same on
+  # both. Xcode builds it only once its iOS platform is downloaded (Xcode >
+  # Settings > Components); until then Scripts/ios/typecheck.py checks it.
+  # It runs no helper program: iOS lets an app start none.
+  TextMouthiOS:
+    type: application
+    platform: iOS
+    deploymentTarget: "26.0"
     sources:
-      - path: Vendor/ObjCExceptionCatcher/ObjCExceptionCatcher.m
-      - path: Vendor/ObjCExceptionCatcher/include/ObjCExceptionCatcher.h
-        headerVisibility: project
+      - path: TextMouth
+        excludes:
+          - "Platform/macOS/**"
+          - "Resources/**"
     settings:
+      groups:
+        - appVersion
       base:
-        PRODUCT_NAME: ObjCExceptionCatcher
-        HEADER_SEARCH_PATHS:
-          - $(SRCROOT)/Vendor/ObjCExceptionCatcher/include
-        CLANG_ENABLE_OBJC_ARC: YES
-        SKIP_INSTALL: YES
+        PRODUCT_NAME: TextMouth
+        PRODUCT_MODULE_NAME: TextMouth
+        PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouth
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: true
+        INFOPLIST_KEY_CFBundleDisplayName: TextMouth
+        INFOPLIST_KEY_UILaunchScreen_Generation: true
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
+        CODE_SIGN_STYLE: Automatic
+        # The LAME, exception-catcher, and braille-protocol modules, as the
+        # Mac target finds them.
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include
+    dependencies:
+      - package: ZIPFoundation
+      - package: SwiftSoup
+      - package: swift-markdown
+        product: Markdown
+      - target: LAME_iOS
+      - target: ObjCExceptionCatcher_iOS
   # liblouis 3.39.0, the braille translator (FMT21), vendored in
   # Vendor/liblouis and built as a static library that only the braille
   # helper links: liblouis is C that reads untrusted braille and text, it has
