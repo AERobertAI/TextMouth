@@ -1862,45 +1862,21 @@
 		9279BF2ABA7F3526AB66874A /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 			dstPath = Licenses/LAME;
 			dstSubfolderSpec = 7;
 			files = (
 				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
 				943853340D2809882740233D /* LICENSE in CopyFiles */,
-=======
-			dstPath = Licenses/liblouis;
-			dstSubfolderSpec = 7;
-			files = (
-				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
-				41F911ECAF492222AF723C10 /* README in CopyFiles */,
->>>>>>> 5be90167 (Regenerate the project after rebasing onto team/engine)
-=======
-			dstPath = Licenses/LAME;
-			dstSubfolderSpec = 7;
-			files = (
-				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
-				943853340D2809882740233D /* LICENSE in CopyFiles */,
->>>>>>> b8283fe4 (Regenerate the project after integrating engine-helpers)
-=======
-			dstPath = liblouis;
-			dstSubfolderSpec = 7;
-			files = (
-				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
->>>>>>> 27c8e30b (Add iOS stand-ins for the editor round trip and regenerate the project)
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		BF489798E33F1F27D1434BD7 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/LAME;
+			dstPath = liblouis;
 			dstSubfolderSpec = 7;
 			files = (
-				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
-				943853340D2809882740233D /* LICENSE in CopyFiles */,
+				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1918,18 +1894,11 @@
 		C4DD7093AEE01EB21DD71ECD /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-<<<<<<< HEAD
-			dstPath = liblouis;
-			dstSubfolderSpec = 7;
-			files = (
-				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
-=======
 			dstPath = Licenses/liblouis;
 			dstSubfolderSpec = 7;
 			files = (
 				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
 				41F911ECAF492222AF723C10 /* README in CopyFiles */,
->>>>>>> b8283fe4 (Regenerate the project after integrating engine-helpers)
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
