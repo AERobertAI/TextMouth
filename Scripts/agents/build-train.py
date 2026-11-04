@@ -16,6 +16,11 @@ into each build". So agents no longer build on their own:
   posts each agent its result on the message board.
 - A branch that conflicts with the base or with a branch merged before it is
   left out of that train, and its agent is told which files conflicted.
+- The build and tests run under the Mac's heavy-work lock (heavy_lock.py),
+  which Scripts/ios/typecheck.py takes too, so no type-check runs beside a
+  train's build. When the merged tree has that script, the train then counts
+  the iOS errors left in it (a census, under the same lock) and tells each
+  agent the ones in the files its branch changes (November 3, 2026).
 
 Usage:
   build-train.py request --agent SLUG --branch BRANCH [--classes A,B] [--areas x,y] [--note TEXT]
@@ -38,6 +43,10 @@ from datetime import datetime
 from pathlib import Path
 
 sys.dont_write_bytecode = True
+
+# The heavy-work lock, beside this script (python3 -I leaves its folder out of sys.path).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import heavy_lock  # noqa: E402  (imported by path, after sys.path is set)
 
 ROOT = Path("/Users/roberteggleston/programming/ai/claude/swift/TextMouth")
 TRAIN_DIR = ROOT / "build" / "orchestrator" / "train"
@@ -267,6 +276,31 @@ def run_tests(merged, train_dir):
     return output
 
 
+def ios_census(train_dir):
+    """Counts the iOS errors left in the merged tree with Scripts/ios/typecheck.py
+    (a census, which reads AppKit imports as UIKit so every use is counted).
+    Returns (the summary's count line, the errors as "path:line:col: error: …"
+    lines), or None when the merged tree has no such script. The caller holds
+    the heavy-work lock, so the check runs with --no-lock."""
+    script = WORKTREE / "Scripts" / "ios" / "typecheck.py"
+    if not script.exists():
+        return None
+    result = subprocess.run(["python3", "-I", str(script), "--platform", "ios", "--census", "--no-lock",
+                             "--agent", "build-train", "--quiet"],
+                            cwd=WORKTREE, capture_output=True, text=True)
+    output = result.stdout + result.stderr
+    (train_dir / "ios-census.txt").write_text(output)
+    count = next((l.strip("- ").strip() for l in output.splitlines() if l.startswith("- Errors in the app:")),
+                 "the census did not finish; see ios-census.txt")
+    written = next((l for l in output.splitlines() if l.startswith("Written: ")), "")
+    errors = []
+    if written:
+        errors_file = Path(written.split("Written: ", 1)[1].split("/summary.md", 1)[0]) / "errors.txt"
+        if errors_file.exists():
+            errors = errors_file.read_text().splitlines()
+    return count.replace("**", ""), errors
+
+
 def summarize(output):
     """The run's verdict, its Executed line, its failures, and its compile errors."""
     lines = output.splitlines()
@@ -284,14 +318,17 @@ def failure_class(line):
     return match.group(1) if match else ""
 
 
-def report(train_id, base, merged, conflicts, output, train_dir):
+def report(train_id, base, merged, conflicts, output, train_dir, census=None):
     """Writes each agent's result and posts it to them on the board."""
     verdict, executed, failures, errors, crashed = summarize(output) if merged else ("NOT RUN", "", [], [], False)
     RESULTS.mkdir(parents=True, exist_ok=True)
     summary = [f"# Train {train_id}", "", f"- Base: {base}",
                f"- Merged: {', '.join(r['branch'] + ' (' + r['agent'] + ')' for r in merged) or 'none'}",
                f"- Verdict: {verdict}", f"- {executed}", f"- Crash: {'yes' if crashed else 'no'}",
-               f"- Log: {train_dir / 'run.log'}", ""]
+               f"- Log: {train_dir / 'run.log'}"]
+    if census:
+        summary += [f"- iOS census of the merged tree: {census[0]} ({train_dir / 'ios-census.txt'})"]
+    summary += [""]
     if errors:
         summary += ["## Compile errors", *[f"- {e}" for e in errors], ""]
     if failures:
@@ -308,13 +345,22 @@ def report(train_id, base, merged, conflicts, output, train_dir):
         lines = [f"# {agent}: train {train_id}", "", f"- Your branch: {request['branch']} at {request['head'][:8]}",
                  f"- Verdict of the whole train: {verdict}", f"- {executed}",
                  f"- Failures in the classes you asked for: {len(mine)}", *[f"  - {f}" for f in mine],
-                 f"- Compile errors in files your branch changes: {len(my_errors)}", *[f"  - {e}" for e in my_errors],
-                 f"- Names left out, unknown to run-area.py on the merged tree: "
-                 f"{', '.join(request.get('dropped', [])) or 'none'}",
-                 f"- Every failure and error in the train: {train_dir / 'summary.md'}", ""]
+                 f"- Compile errors in files your branch changes: {len(my_errors)}", *[f"  - {e}" for e in my_errors]]
+        ios_note = ""
+        if census:
+            # The census's paths are repository-relative, as `touched` is.
+            my_ios = [e for e in census[1] if e.split(":", 1)[0] in touched]
+            lines += [f"- iOS census of the merged tree: {census[0]}",
+                      f"- iOS errors in files your branch changes: {len(my_ios)}", *[f"  - {e}" for e in my_ios[:30]]]
+            if len(my_ios) > 30:
+                lines += [f"  - … and {len(my_ios) - 30} more, in {train_dir / 'ios-census.txt'}"]
+            ios_note = f"; iOS errors in your files: {len(my_ios)}"
+        lines += [f"- Names left out, unknown to run-area.py on the merged tree: "
+                  f"{', '.join(request.get('dropped', [])) or 'none'}",
+                  f"- Every failure and error in the train: {train_dir / 'summary.md'}", ""]
         (RESULTS / f"{agent}.md").write_text("\n".join(lines))
-        post(agent, f"train {train_id}: {verdict}; yours: {len(mine)} failures, {len(my_errors)} compile errors; "
-                    f"see {short_path(RESULTS / (agent + '.md'))}; {executed}")
+        post(agent, f"train {train_id}: {verdict}; yours: {len(mine)} failures, {len(my_errors)} compile errors"
+                    f"{ios_note}; see {short_path(RESULTS / (agent + '.md'))}; {executed}")
     for agent, (request, files) in conflicts.items():
         (RESULTS / f"{agent}.md").write_text(
             f"# {agent}: train {train_id}\n\n- {request['branch']} was left out: it conflicts with the base "
@@ -349,8 +395,16 @@ def command_run(args):
         if merged and regenerate_project():
             git("add", "TextMouth.xcodeproj", cwd=WORKTREE)
             git("commit", "-q", "-m", f"Regenerate the project for train {train_id}", cwd=WORKTREE)
-        output = run_tests(merged, train_dir) if merged else ""
-        report(train_id, args.base, merged, conflicts, output, train_dir)
+        output, census = "", None
+        if merged:
+            def waiting(owner):
+                post("orchestrator", f"build-train: train {train_id} waits for the heavy-work lock, held by "
+                                     f"{(owner or {}).get('name', '?')}", tag="notice")
+            # The train is the priority: after 20 minutes it goes on without the lock.
+            with heavy_lock.held("build-train", 1200, waiting):
+                output = run_tests(merged, train_dir)
+                census = ios_census(train_dir)
+        report(train_id, args.base, merged, conflicts, output, train_dir, census)
     finally:
         release_lock()
     return 0
