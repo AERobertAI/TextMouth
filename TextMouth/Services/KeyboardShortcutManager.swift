@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 
 /// Manages customizable keyboard shortcuts using NSEvent monitoring.
@@ -35,7 +39,9 @@ final class KeyboardShortcutManager: ObservableObject {
     /// config.json, is published, and the next key press goes by it.
     private(set) var doublePressTime: TimeInterval
 
+#if os(macOS)
     private var eventMonitor: Any?
+#endif
     /// The store holding the record.
     private let userDefaults: UserDefaults
     /// Where the actions' notifications are posted: the app's own center,
@@ -100,9 +106,11 @@ final class KeyboardShortcutManager: ObservableObject {
                 self?.takeEditsFromStore()
             }
         }
+#if os(macOS)
         if installsEventMonitor {
             startMonitoring()
         }
+#endif
     }
 
     // MARK: - Persistence
@@ -563,6 +571,7 @@ final class KeyboardShortcutManager: ObservableObject {
 
     // MARK: - Event Monitoring
 
+#if os(macOS)
     private func startMonitoring() {
         eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self = self else { return event }
@@ -637,6 +646,7 @@ final class KeyboardShortcutManager: ObservableObject {
             || window === NSApp.modalWindow
     }
 
+#endif
     /// Posts the action `trigger` names, with the window it was pressed in,
     /// so that only that window acts (`WindowCommandRouting`), and whether
     /// Shift was held beyond the binding's own modifiers.
@@ -648,6 +658,7 @@ final class KeyboardShortcutManager: ObservableObject {
         if let window = trigger.window {
             userInfo["sourceWindow"] = window
         }
+#if os(macOS)
         if trigger.action == .restartSleepTimer {
             let windowNumber = trigger.window.map { String($0.windowNumber) } ?? "none"
             SleepTimerService.log(
@@ -656,9 +667,11 @@ final class KeyboardShortcutManager: ObservableObject {
                     + "sourceWindow=\(windowNumber)"
             )
         }
+#endif
         notificationCenter.post(name: trigger.action.notificationName, object: nil, userInfo: userInfo)
     }
 
+#if os(macOS)
     /// The kind of window a key pressed while `keyWindow` is key is pressed
     /// in, whose scopes' shortcuts match it (FR12's branch E): a sheet's
     /// window's kind (`pressKind(window:sheetParent:)`), and `.other` with no
@@ -701,6 +714,7 @@ final class KeyboardShortcutManager: ObservableObject {
         }
     }
 
+#endif
     /// The kind whose shortcuts a key pressed in a window of `kind` matches,
     /// a sheet over a window of `parentKind` when it is one: a sheet counts
     /// as its window, so a reader's shortcuts work in a sheet over a reader,
@@ -744,6 +758,7 @@ final class KeyboardShortcutManager: ObservableObject {
         eventHasShift && !bindingRequiresShift
     }
 
+#if os(macOS)
     /// Whether `responder`, as the key window's first responder, takes
     /// text from the keyboard: a text view, editable or only selectable
     /// (a feed item's description is read and copied from one); the field
@@ -754,6 +769,7 @@ final class KeyboardShortcutManager: ObservableObject {
     static func isTextInput(_ responder: NSResponder?) -> Bool {
         responder is NSTextView || responder is NSTextField
     }
+#endif
 }
 
 /// A default key an action following its defaults goes without, and the
