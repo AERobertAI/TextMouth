@@ -30,14 +30,21 @@ enum PageReaderVersions {
     /// theirs later, each with a case of its own and its own version, which
     /// reads again only its own books (V07).
     ///
-    /// EPUB and HTML are at "1.0.1": the HTML converter they share no longer
-    /// leaves a page-break element's number in the label of a heading that
-    /// holds one ("Part 9Two" is "Part Two"), which changes the reading text
-    /// of the books that have such a heading and of no others.
+    /// EPUB and HTML are at "1.0.2". At "1.0.1" the HTML converter they
+    /// share stopped leaving a page-break element's number in the label of a
+    /// heading that holds one ("Part 9Two" is "Part Two"), which changed the
+    /// reading text of the books that have such a heading and of no others.
+    /// At "1.0.2" a label that is only the word "Page" names no page
+    /// (`MarkdownPageMarker.namesNoPage`), and an EPUB page list that labels
+    /// none of its pages, such as one whose only entry is the id it links
+    /// to, is passed over (`EPUBParser.readPageList`). That changes the
+    /// pages of the books that have either, and their reading text only
+    /// where such a book's page-break element holds its page's number,
+    /// which is then the page's label and no longer read (ST02).
     static func current(for format: BookFormat) -> String? {
         switch format {
         case .epub, .html:
-            return "1.0.1"
+            return "1.0.2"
         case .pdf, .docx, .daisy:
             return "1.0.0"
         case .rtf, .rtfd, .doc, .odt, .wordml:
