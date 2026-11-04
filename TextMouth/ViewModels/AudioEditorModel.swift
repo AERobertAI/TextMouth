@@ -317,16 +317,9 @@ final class AudioEditorModel: ObservableObject {
     /// Performs `action`, an editor shortcut pressed in `source`, when that
     /// is this editor's window.
     private func shortcutPressed(_ action: ShortcutAction?, in source: PlatformWindow?) {
-        #if os(macOS)
         guard let action,
-              WindowCommandRouting.shouldAccept(sourceWindow: source, hostWindow: hostWindow, keyWindow: NSApp.keyWindow) else { return }
+              WindowCommandRouting.shouldAccept(sourceWindow: source, hostWindow: hostWindow, keyWindow: PlatformApplication.keyWindow) else { return }
         perform(action)
-        #else
-        // iOS has no second window to route a shortcut between, so any
-        // shortcut pressed belongs to this editor.
-        guard let action else { return }
-        perform(action)
-        #endif
     }
 
     // MARK: The Preview
