@@ -8,7 +8,9 @@ Every version of TextMouth, newest first, and what changed for you in each.
 ### Reading
 - A book whose EPUB gives its pages no numbers no longer has a page named by its markup: a page list whose one entry was named "pagenum_000000" made the page button say "Page pagenum_000000 of 1". A page list that gives none of its pages a number now counts as none, and a page break named only "Page" is no page. Such a book shows no page button, and Next Page says "This book has no pages."
 - The hint of Go to Page…'s field says how many pages the book has, from its first page to its last, as in "This book has 300 pages, from i to 300. Type a page as the book numbers it, such as 12 or xii." A book of one page names it: "This book's only page is 1."
-- The first time this version opens, every EPUB and HTML book is read again once, for its pages. In the books the first change mends, a page number printed at a page break now names its page, and is no longer read aloud, as page numbers never are.
+- A page a book names "Page 12" is now page 12, where the page button said "Page Page 12 of 300".
+- A book of one page shows no page button, which said "Page 1 of 1" wherever you were. Next Page, Previous Page, and Go to Page… still work in it.
+- The first time this version opens, every EPUB and HTML book is read again once, for its pages. In the books these changes mend, a page number printed at a page break now names its page, and is no longer read aloud, as page numbers never are.
 
 ## 0.2.5 (November 1, 2026)
 ### The next book in this window
