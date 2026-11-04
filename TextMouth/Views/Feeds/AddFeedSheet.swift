@@ -359,7 +359,7 @@ struct AddFeedSheet: View {
                     Text(FeedWording.linkTitle(link)).tag(index)
                 }
             }
-            .pickerStyle(.radioGroup)
+            .radioGroupPickerStyle()
             .disabled(model.isWorking)
             .accessibilityLabel(FeedWording.chooseLabel)
             .modifier(InitialVoiceOverFocusModifier(isTarget: true))
