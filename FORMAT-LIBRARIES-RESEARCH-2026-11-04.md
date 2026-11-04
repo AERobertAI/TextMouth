@@ -320,3 +320,22 @@ The October 17 research put MOBI (FMT42) and AZW3 (FMT48) in the TODO, with only
 - LGPL and the App Store: no primary source answers it.
 - Some licence texts, where only GitHub's licence detection and the file's presence were checked: doc2txt, msdoc, litchi, rtf-parser, striprtf, and odfdo.
 - The APNX layout, the Print Replica (.azw4) layout, and KFX voucher files.
+
+## Your answers (November 4)
+
+You said: "libraries compiled into the IOS app but not Mac OS is fine though I think small Text Mouth readers for .doc /odt etc might be good for both so formatting extraction is under our control, same for kfx. It seemse the current Mac compile is 21 mb roughly which is still under my 30 mb line for wanting to look at optimizing again..."
+
+What that settles:
+- **Libraries only the iOS app needs** are built into the iOS app alone, while the Mac keeps its helper programs:
+  - Xiph's Ogg decoders, while the Mac keeps afconvert in its watched helper;
+  - liblouis, if Apple's braille translator fails the iPhone test, while the Mac keeps its braille helper.
+- **TextMouth's own readers, in both apps,** so that what is taken from a document's formatting is TextMouth's to decide:
+  - Word 97-2003 and RTF (FMT47);
+  - OpenDocument (FMT27);
+  - Word 2003 XML (FMT53, new);
+  - KFX (FMT52).
+
+  On the Mac each replaces textutil for its format once it has been checked against textutil's own reading.
+- **Size.** The app is about 21 MB, under your 30 MB line.
+  - The own readers are Swift: tens of kilobytes compiled.
+  - Xiph's decoders add about 0.5 to 0.9 MB, and only to the iOS app.
