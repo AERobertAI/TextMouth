@@ -421,7 +421,7 @@ struct BrailleExportOptionsView: View {
                 range: BraillePageFormat.linesPerPageRange
             )
             Toggle(BrailleExportWording.numbersLabel, isOn: $options.page.numbersPages)
-                .toggleStyle(.checkbox)
+                .checkboxToggleStyle()
                 .accessibilityHint(BrailleExportWording.numbersHint)
             // A BRF's own two pop-ups come last, the braille file characters
             // after the line ends, so every other control keeps its place in

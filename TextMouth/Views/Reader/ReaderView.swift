@@ -642,7 +642,7 @@ struct ReaderPanelCommands: ViewModifier {
             }
             .onReceive(NotificationCenter.default.publisher(for: .showBookInfo)) { notification in
                 // Only open in the focused reader window
-                if let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow {
+                if let sourceWindow = notification.userInfo?["sourceWindow"] as? PlatformWindow {
                     guard sourceWindow === viewModel.hostWindow else { return }
                 } else {
                     guard viewModel.hostWindow == nil || viewModel.hostWindow?.isKeyWindow == true else { return }
@@ -656,9 +656,9 @@ struct ReaderPanelCommands: ViewModifier {
     /// reliable toggle while preserving correct routing between book windows.
     private func shouldAcceptPanelCommand(_ notification: Notification) -> Bool {
         WindowCommandRouting.shouldAccept(
-            sourceWindow: notification.userInfo?["sourceWindow"] as? NSWindow,
+            sourceWindow: notification.userInfo?["sourceWindow"] as? PlatformWindow,
             hostWindow: viewModel.hostWindow,
-            keyWindow: NSApp.keyWindow
+            keyWindow: PlatformApplication.keyWindow
         )
     }
 }

@@ -214,7 +214,7 @@ struct FolderSettingsSheet: View {
                 get: { model.skipsFinished },
                 set: { model.skipsFinished = $0 }
             ))
-            .toggleStyle(.checkbox)
+            .checkboxToggleStyle()
             .help(skipHint)
             .accessibilityLabel(skipLabel)
             .accessibilityHint(skipHint)

@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import SwiftUI
 
 // MARK: - Feed Info (FR03)
@@ -450,7 +454,7 @@ struct FeedInfoSheet: View {
         let skipLabel = ListeningOptionsWording.skipFinishedLabel(noun)
         let skipHint = ListeningOptionsWording.skipFinishedHint(noun)
         Toggle(skipLabel, isOn: Binding(get: { model.skipsFinishedEpisodes }, set: { model.skipsFinishedEpisodes = $0 }))
-            .toggleStyle(.checkbox)
+            .checkboxToggleStyle()
             .help(skipHint)
             .accessibilityLabel(skipLabel)
             .accessibilityHint(skipHint)
@@ -462,7 +466,7 @@ struct FeedInfoSheet: View {
         let downloadLabel = ListeningOptionsWording.predownloadLabel(noun)
         let downloadHint = ListeningOptionsWording.predownloadHint(noun, enabled: goesOn)
         Toggle(downloadLabel, isOn: Binding(get: { model.predownloadsNextEpisode }, set: { model.predownloadsNextEpisode = $0 }))
-            .toggleStyle(.checkbox)
+            .checkboxToggleStyle()
             .disabled(!goesOn)
             .help(downloadHint)
             .accessibilityLabel(downloadLabel)

@@ -42,7 +42,7 @@ struct ReadingListOptionsBar: View {
                 get: { skipsFinished },
                 set: { chooseSkipsFinished($0) }
             ))
-            .toggleStyle(.checkbox)
+            .checkboxToggleStyle()
             .help(ReadingListWording.skipFinishedHint)
             .accessibilityLabel(ReadingListWording.skipFinishedLabel)
             .accessibilityHint(ReadingListWording.skipFinishedHint)

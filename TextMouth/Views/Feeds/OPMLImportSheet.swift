@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -325,6 +329,7 @@ extension LibraryFeedsPresenter {
     /// the window, reads it off the main thread, and opens the Import OPML
     /// sheet with its subscriptions, or says why it can't be read.
     func chooseOPMLFile(in context: FeedCommandContext, parentPath: String) {
+#if os(macOS)
         let panel = NSOpenPanel()
         panel.allowedContentTypes = OPMLFileType.readable
         panel.allowsMultipleSelection = false
@@ -339,6 +344,9 @@ extension LibraryFeedsPresenter {
         } else {
             panel.begin(completionHandler: finish)
         }
+#else
+        // Phase 0: iOS has no Open panel, so choosing a file does nothing yet; phase 1 uses a file importer.
+#endif
     }
 
     /// Reads the OPML file at `url` off the main thread, then opens the
@@ -379,6 +387,7 @@ extension LibraryFeedsPresenter {
     /// listener unsubscribed from, which an export leaves out (REV11, board
     /// #1814). VoiceOver reads the alert as it appears (REV14 feeds 6).
     func chooseOPMLDestination(in context: FeedCommandContext) {
+#if os(macOS)
         guard context.center.feeds.contains(where: \.isSubscribed) else {
             let message = context.center.feeds.isEmpty ? FeedWording.nothingToExport : FeedWording.nothingSubscribedToExport
             notice = FeedNotice(title: FeedWording.exportFailedTitle, message: message)
@@ -397,6 +406,9 @@ extension LibraryFeedsPresenter {
         } else {
             panel.begin(completionHandler: finish)
         }
+#else
+        // Phase 0: iOS has no Save panel, so choosing a destination does nothing yet; phase 1 uses a file exporter.
+#endif
     }
 
     /// Writes every subscription to the OPML file `url`, and says how many

@@ -1,4 +1,10 @@
+#if os(macOS)
 import AppKit
+#else
+import Accessibility
+import SwiftUI
+import UIKit
+#endif
 
 /// One request for VoiceOver to speak a message.
 struct VoiceOverAnnouncement: Equatable {
@@ -23,7 +29,7 @@ struct VoiceOverAnnouncement: Equatable {
 enum VoiceOverAnnouncer {
     /// Delivers one announcement. `window` is the caller's preferred window,
     /// or nil when the caller has none.
-    typealias Poster = @MainActor (_ announcement: VoiceOverAnnouncement, _ window: NSWindow?) -> Void
+    typealias Poster = @MainActor (_ announcement: VoiceOverAnnouncement, _ window: PlatformWindow?) -> Void
 
     /// How the default poster delivers an announcement.
     enum Delivery: Equatable {
@@ -68,7 +74,7 @@ enum VoiceOverAnnouncer {
     ///   - priority: How urgent the message is; high unless stated.
     static func announce(
         _ message: String,
-        from window: NSWindow? = nil,
+        from window: PlatformWindow? = nil,
         priority: NSAccessibilityPriorityLevel = .high
     ) {
         poster(VoiceOverAnnouncement(message: message, priority: priority), window)
@@ -92,14 +98,15 @@ enum VoiceOverAnnouncer {
     /// dialog over it has closed (`afterSheetCloses(_:)`), as a Library
     /// window says what a subscription, Move to Folder…, Move to Library…,
     /// or Remove's Delete Download did (REV11 F6).
-    static func announceAfterSheetCloses(_ message: String, from window: NSWindow?) {
+    static func announceAfterSheetCloses(_ message: String, from window: PlatformWindow?) {
         afterSheetCloses { announce(message, from: window) }
     }
 
     /// The app's poster. It requests the announcement from `window`, falling
     /// back to the key window and then the main window, and does nothing when
     /// the app has no window to post from.
-    static func postThroughAccessibility(_ announcement: VoiceOverAnnouncement, from window: NSWindow?) {
+    static func postThroughAccessibility(_ announcement: VoiceOverAnnouncement, from window: PlatformWindow?) {
+        #if os(macOS)
         guard let target = window ?? NSApp?.keyWindow ?? NSApp?.mainWindow else { return }
         NSAccessibility.post(
             element: target,
@@ -109,6 +116,20 @@ enum VoiceOverAnnouncer {
                 .priority: announcement.priority.rawValue
             ]
         )
+        #else
+        // iOS posts through SwiftUI's announcement notification. The window
+        // is not needed: iOS speaks the announcement for the whole screen.
+        // The Mac's priority levels map to iOS's speech priority: high
+        // speaks at once, interrupting current speech; medium and low wait
+        // for the current speech (default and low).
+        var spoken = AttributedString(announcement.message)
+        switch announcement.priority {
+        case .high: spoken.accessibilitySpeechAnnouncementPriority = .high
+        case .medium: spoken.accessibilitySpeechAnnouncementPriority = .default
+        case .low: spoken.accessibilitySpeechAnnouncementPriority = .low
+        }
+        AccessibilityNotification.Announcement(spoken).post()
+        #endif
     }
 }
 

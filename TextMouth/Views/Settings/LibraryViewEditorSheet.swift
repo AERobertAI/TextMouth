@@ -66,7 +66,7 @@ struct LibraryViewEditorSheet: View {
                 }
             }
             .formStyle(.grouped)
-            .toggleStyle(.checkbox)
+            .checkboxToggleStyle()
             .textFieldStyle(.roundedBorder)
             Divider()
             HStack {

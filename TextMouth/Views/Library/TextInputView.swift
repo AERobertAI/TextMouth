@@ -1,5 +1,9 @@
 import SwiftUI
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 
 enum TextImportPolicy {
     static func defaultTitle(for date: Date = Date()) -> String {
@@ -147,12 +151,20 @@ struct TextInputView: View {
     // MARK: - Actions
 
     private func pasteFromClipboard() {
+        #if os(macOS)
         if let string = NSPasteboard.general.string(forType: .string) {
             textContent = string
         }
+        #else
+        // iOS: the general pasteboard's plain text, when it holds any.
+        if let string = UIPasteboard.general.string {
+            textContent = string
+        }
+        #endif
     }
 
     private func openInEditor() {
+        #if os(macOS)
         let tempDir = NSTemporaryDirectory()
         let fileName = "TextMouth_\(UUID().uuidString).txt"
         let fileURL = URL(fileURLWithPath: tempDir).appendingPathComponent(fileName)
@@ -165,6 +177,10 @@ struct TextInputView: View {
         } catch {
             // If writing fails, do nothing; the user can try again.
         }
+        #else
+        // Phase 0: iOS has no external editor to open the text in; phase 1
+        // decides what stands in for it. Nothing happens, and nothing throws.
+        #endif
     }
 
     private func reloadFromEditor() {
