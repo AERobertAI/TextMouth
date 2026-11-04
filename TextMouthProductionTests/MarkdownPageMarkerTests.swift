@@ -57,6 +57,43 @@ final class MarkdownPageMarkerTests: XCTestCase {
         XCTAssertEqual(marker("", ordinal: 7).markdown, "<!-- page: 7 -->")
     }
 
+    /// A label that is only the word "Page", which a generator writes when
+    /// it has no number for the page (`aria-label="Page "`), names no page,
+    /// so the marker takes the ordinal, and the reader never says "Page Page
+    /// of 1". A label holding anything besides the word stays as it is.
+    func testALabelOfOnlyTheWordPageIsTheOrdinal() {
+        for label in ["Page", "Page ", "PAGE", " page. ", "Page\n"] {
+            XCTAssertEqual(marker(label, ordinal: 3).label, "3", label)
+        }
+        for label in ["Page 12", "Pages", "Pg", "Page-1"] {
+            XCTAssertEqual(marker(label, ordinal: 3).label, label, label)
+        }
+    }
+
+    /// Which labels name no page (`namesNoPage`): blank ones, a lone period,
+    /// and the word "Page" alone in any capitals; any other text names one.
+    func testWhichLabelsNameNoPage() {
+        for label in ["", "  ", "\n\t", ".", "Page", "page ", " PAGE.", "Page\n"] {
+            XCTAssertTrue(MarkdownPageMarker.namesNoPage(label), "\"\(label)\"")
+        }
+        for label in ["1", "xii", "A-3", "Page 1", "Pages", "Pg", "-", "pagenum_000000"] {
+            XCTAssertFalse(MarkdownPageMarker.namesNoPage(label), "\"\(label)\"")
+        }
+    }
+
+    /// Which labels are page numbers (`isPageNumber`), by the rule
+    /// `isNoMoreThanLabel` reads them with: ASCII digits, or a canonical
+    /// Roman numeral, with case, white space, and one trailing period set
+    /// aside.
+    func testWhichLabelsArePageNumbers() {
+        for label in ["1", "12", " 300 ", "xii", "XIV", "iv.", "MCMLXXXIV"] {
+            XCTAssertTrue(MarkdownPageMarker.isPageNumber(label), "\"\(label)\"")
+        }
+        for label in ["", "A-3", "pagenum_000000", "p12", "IIII", "Page 12", "1.5", "12a", "\u{0661}\u{0662}"] {
+            XCTAssertFalse(MarkdownPageMarker.isPageNumber(label), "\"\(label)\"")
+        }
+    }
+
     // MARK: - Escaping
 
     func testTheCharactersThatBreakACommentAreEscaped() {

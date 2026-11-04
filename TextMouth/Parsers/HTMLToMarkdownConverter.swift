@@ -470,16 +470,35 @@ enum HTMLToMarkdownConverter {
     /// `maximumLabelLength` Characters is no more than. Conversion and
     /// `destinationMarkers(inside:context:)` both ask this, so they agree.
     private static func readsOwnText(ofPageBreak element: Element, page: MarkdownPageMarker?) -> Bool {
-        let label = page?.label ?? attributeLabel(of: element) ?? ""
+        let label = page?.label ?? attributeText(of: element) ?? ""
         return !MarkdownPageMarker.isNoMoreThanLabel(HTMLReadingText.inlineText(of: element), label: label)
     }
 
+    /// The attributes a page-break element names its page in, in the order
+    /// they are asked.
+    private static let pageLabelAttributes = ["aria-label", "title"]
+
     /// The first of an element's `aria-label` and `title` that is not blank,
-    /// or nil when it has neither.
-    private static func attributeLabel(of element: Element) -> String? {
-        for name in ["aria-label", "title"] {
+    /// or nil when it has neither. This is what `readsOwnText` compares the
+    /// element's text with when it begins no page, so its words are read
+    /// whenever they are more than these attributes say.
+    private static func attributeText(of element: Element) -> String? {
+        for name in pageLabelAttributes {
             let value = (try? element.attr(name)) ?? ""
             if value.contains(where: { !$0.isWhitespace }) { return value }
+        }
+        return nil
+    }
+
+    /// The first of an element's `aria-label` and `title` that names a page,
+    /// or nil when neither does. A blank one, or one that is only the word
+    /// "Page" (`MarkdownPageMarker.namesNoPage`), names none: a generator
+    /// that has no number for a page writes `aria-label="Page "`, and the
+    /// element's `title` is then asked.
+    private static func attributeLabel(of element: Element) -> String? {
+        for name in pageLabelAttributes {
+            let value = (try? element.attr(name)) ?? ""
+            if !MarkdownPageMarker.namesNoPage(value) { return value }
         }
         return nil
     }
@@ -488,7 +507,9 @@ enum HTMLToMarkdownConverter {
     /// names at this element's id is that page, written once however many
     /// elements share the id. Otherwise a page-break element is a page of its
     /// own when the book has no page list, labelled by its `aria-label`, its
-    /// `title`, or its text, and is no page when it has no label at all. Its
+    /// `title`, or its text, and is no page when it has no label at all (a
+    /// label that is only the word "Page" is none,
+    /// `MarkdownPageMarker.namesNoPage`). Its
     /// text is a label only when it could be one (not longer than
     /// `maximumLabelLength`): a page-break element holding a paragraph begins
     /// no page, so the paragraph's first words are not read out by Go to Page.
@@ -507,10 +528,17 @@ enum HTMLToMarkdownConverter {
         if let label = attributeLabel(of: element) {
             return MarkdownPageMarker(label: label, ordinal: 0)
         }
-        // Without an attribute label the element's text names the page, when
-        // it is not blank and short enough to be a label.
         let text = HTMLReadingText.inlineText(of: element)
-        if text.contains(where: { !$0.isWhitespace }),
+        // An element whose attributes say "Page" and give no number names
+        // its page by its text only when the text is a page number. Words
+        // beside such an attribute ("Page " over "Chapter One") stay words,
+        // which `readsOwnText` reads.
+        if attributeText(of: element) != nil {
+            return MarkdownPageMarker.isPageNumber(text) ? MarkdownPageMarker(label: text, ordinal: 0) : nil
+        }
+        // Without an attribute the element's text names the page, when it
+        // names one at all and is short enough to be a label.
+        if !MarkdownPageMarker.namesNoPage(text),
            MarkdownPageMarker.isNoMoreThanLabel(text, label: "") {
             return MarkdownPageMarker(label: text, ordinal: 0)
         }

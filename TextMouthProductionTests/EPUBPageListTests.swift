@@ -520,6 +520,36 @@ final class EPUBPageListTests: XCTestCase {
         assertPages(of: chapters[1].chapter, [("4", "At dusk the tally")])
     }
 
+    // MARK: - Lists and labels that name no page
+
+    /// A page-break element's `aria-label` of only "Page" names no page: its
+    /// `title` names it then, or else a page number the element holds, and
+    /// with neither it is no page. Words it holds beside such an attribute
+    /// are read, and so are they beside no attribute at all; the word "Page"
+    /// alone, with no attribute, is no page and is not read.
+    func testAnAriaLabelOfOnlyPageIsPassedOver() throws {
+        let titled = try parsed("<p>One <span epub:type=\"pagebreak\" aria-label=\"Page \" title=\"12\"></span>two</p>")
+        XCTAssertEqual(titled.chapter.pages.map(\.label), ["12"])
+        XCTAssertEqual(titled.chapter.text, "One two")
+
+        let numbered = try parsed("<p>One <span epub:type=\"pagebreak\" aria-label=\"Page\">xii</span>two</p>")
+        XCTAssertEqual(numbered.chapter.pages.map(\.label), ["xii"])
+        XCTAssertEqual(numbered.chapter.text, "One two")
+
+        let unnumbered = try parsed("<p>One <span epub:type=\"pagebreak\" aria-label=\"Page \" title=\"\"></span> two</p>")
+        XCTAssertTrue(unnumbered.chapter.pages.isEmpty)
+        XCTAssertEqual(unnumbered.chapter.text, "One two")
+        XCTAssertFalse(unnumbered.markdown.contains("<!-- page:"), unnumbered.markdown)
+
+        let worded = try parsed("<p>One <span epub:type=\"pagebreak\" aria-label=\"Page \">Chapter One</span> two</p>")
+        XCTAssertTrue(worded.chapter.pages.isEmpty)
+        XCTAssertTrue(worded.chapter.text.contains("Chapter One"), worded.chapter.text)
+
+        let bare = try parsed("<p>One <span epub:type=\"pagebreak\">Page</span> two</p>")
+        XCTAssertTrue(bare.chapter.pages.isEmpty)
+        XCTAssertEqual(bare.chapter.text, "One two")
+    }
+
     // MARK: - Precedence, blank documents, and duplicate ids
 
     /// A book with both an EPUB 3 page list and an NCX pageList takes the
