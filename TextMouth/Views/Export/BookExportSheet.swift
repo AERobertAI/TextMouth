@@ -25,7 +25,7 @@ struct BookExportSheet: View {
     let close: () -> Void
     /// The sheet's own window, where the folder chooser opens and the
     /// export's announcement is posted from.
-    @State private var window: NSWindow?
+    @State private var window: PlatformWindow?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -93,7 +93,7 @@ struct BookExportSheet: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Toggle(model.label(for: choice), isOn: checkedBinding(for: choice.kind))
-                    .toggleStyle(.checkbox)
+                    .checkboxToggleStyle()
                     .disabled(!choice.isAvailable || model.isExporting)
                     .accessibilityHint(model.hint(for: choice.kind))
                     .modifier(InitialVoiceOverFocusModifier(isTarget: choice.kind == model.choices.first?.kind))
