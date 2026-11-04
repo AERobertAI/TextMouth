@@ -1490,6 +1490,7 @@
 		D4C442685750B7F2E085D8C0 /* RTFDPackageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D14D50E047BE62FD514425 /* RTFDPackageTests.swift */; };
 		D4CDAD9BEF28B08116411D63 /* SyntheticWesternText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DAAC28642133BEF9FF5EA13 /* SyntheticWesternText.swift */; };
 		D4FC7C6DBABAD6FF925FAF14 /* AudioEditPlacesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A44E1875FDCD2079F025CD21 /* AudioEditPlacesTests.swift */; };
+		D50705BDC0D8CFD05F3897E1 /* NowPlayingService+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A993330A84D654AA879827 /* NowPlayingService+iOS.swift */; };
 		D51FB0CE2C7919B972623D36 /* ImportDecisionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F55E4147A16F76D554D605C /* ImportDecisionSheet.swift */; };
 		D53F39949BEC8769C95B061A /* ReaderTextAreaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E410511870ABBB5C4F1467B /* ReaderTextAreaTests.swift */; };
 		D59E6569B02684E1EE5CBB15 /* set_get.c in Sources */ = {isa = PBXBuildFile; fileRef = 24326B1A436797014C125B7F /* set_get.c */; };
@@ -1873,11 +1874,10 @@
 		BF489798E33F1F27D1434BD7 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/liblouis;
+			dstPath = liblouis;
 			dstSubfolderSpec = 7;
 			files = (
-				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
-				41F911ECAF492222AF723C10 /* README in CopyFiles */,
+				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1895,10 +1895,11 @@
 		C4DD7093AEE01EB21DD71ECD /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = liblouis;
+			dstPath = Licenses/liblouis;
 			dstSubfolderSpec = 7;
 			files = (
-				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
+				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
+				41F911ECAF492222AF723C10 /* README in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2736,6 +2737,7 @@
 		A55A38275385F4D95E633117 /* TextPipelineFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPipelineFixtures.swift; sourceTree = "<group>"; };
 		A57F311CC37B3A3BCBA8C9D7 /* HTMLToMarkdownConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTMLToMarkdownConverter.swift; sourceTree = "<group>"; };
 		A596C67BDFEECE72CCE2AB19 /* TranscriptionSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionSheet.swift; sourceTree = "<group>"; };
+		A5A993330A84D654AA879827 /* NowPlayingService+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NowPlayingService+iOS.swift"; sourceTree = "<group>"; };
 		A634220C2B8AF5EE677C60F6 /* COPYING.LESSER */ = {isa = PBXFileReference; path = COPYING.LESSER; sourceTree = "<group>"; };
 		A6A0D773BF8F74475C20EA44 /* TranscriptAccuracy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptAccuracy.swift; sourceTree = "<group>"; };
 		A6A3E0B35F8C458F2AF8B529 /* CountWordingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountWordingTests.swift; sourceTree = "<group>"; };
@@ -3539,6 +3541,7 @@
 			children = (
 				C3C3CF5196B3AF9A5D75DBFB /* BookManifestEditor+iOS.swift */,
 				CE36E771AEC1AE0627D219E0 /* BookTextEditor+iOS.swift */,
+				A5A993330A84D654AA879827 /* NowPlayingService+iOS.swift */,
 				EBA8B1EFB5EC9719217CD99F /* OrphanedConversionSweep+iOS.swift */,
 				A455D116536C3301E5E4CC68 /* PackageFileEditing+iOS.swift */,
 				BAFA8EB0E8C12485331AB81E /* WatchedProcess+iOS.swift */,
@@ -6712,6 +6715,7 @@
 				30A63C8D0CF0DF4DFB163B62 /* NetworkReachability.swift in Sources */,
 				9D890690F9F854F0235D85DA /* NextBookWindow.swift in Sources */,
 				7C16DAE0B028B174C3C4823C /* NextBookWindowPicker.swift in Sources */,
+				D50705BDC0D8CFD05F3897E1 /* NowPlayingService+iOS.swift in Sources */,
 				4DEE603FA73020378B27A370 /* NowPlayingService.swift in Sources */,
 				53F9085F027C846169DE0B48 /* OPMLImportSheet.swift in Sources */,
 				4FCE4B03416CB7DA80BAC853 /* ObjCException.swift in Sources */,
