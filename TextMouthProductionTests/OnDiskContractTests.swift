@@ -533,14 +533,15 @@ final class OnDiskContractTests: XCTestCase {
         }
         // EPUB and HTML were at 1.0.1 from October 24, 2026: their converter
         // left a page-break element's number out of the label of a heading
-        // that holds one, which changed those books' reading text. They are
-        // at 1.0.2 since November 4, 2026: a label of only the word "Page"
-        // names no page, and an EPUB page list that labels none of its pages
-        // is passed over, which changed those books' pages, and their text
-        // where a page-break element holds its page's number.
+        // that holds one, which changed those books' reading text. On
+        // November 4, 2026 they went to 1.0.2, where a label of only the
+        // word "Page" names no page and an EPUB page list that labels none
+        // of its pages is passed over, and then to 1.0.3, where a label's
+        // leading "Page" is taken off; both changed those books' pages, and
+        // their text where a page-break element holds its page's number.
         XCTAssertEqual(
             versions,
-            Dictionary(uniqueKeysWithValues: withPages.map { ($0, ["epub", "html"].contains($0) ? "1.0.2" : "1.0.0") }),
+            Dictionary(uniqueKeysWithValues: withPages.map { ($0, ["epub", "html"].contains($0) ? "1.0.3" : "1.0.0") }),
             Self.because("a page reader's version, or the formats with pages", forces)
         )
         XCTAssertEqual(

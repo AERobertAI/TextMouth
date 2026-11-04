@@ -29,6 +29,9 @@ final class GoToPageTests: XCTestCase {
         PageBreak(label: "300", chapterIndex: 1, characterOffset: 50),
     ]
 
+    /// A book's one page, at its start.
+    private static let onePage = [PageBreak(label: "1", chapterIndex: 0, characterOffset: 0)]
+
     /// Pages 11, 12, and 300 in chapter 0, so a place at offset 60 is on
     /// "Page 12 of 300".
     private static let pagesAroundTwelve = [
@@ -156,7 +159,7 @@ final class GoToPageTests: XCTestCase {
         XCTAssertEqual(ReaderPageWording.showInReaderTitle, "Show the page on the reader screen")
         XCTAssertEqual(
             ReaderPageWording.showInReaderHint,
-            "Shows the page being read, such as Page 12 of 300, beside the percent, for books with pages."
+            "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page."
         )
         XCTAssertEqual(ReaderPageWording.sayInWhereAmITitle, "Say the page in Where Am I?")
         XCTAssertEqual(
@@ -792,9 +795,9 @@ final class GoToPageTests: XCTestCase {
         XCTAssertEqual(button.hint, "Opens jump to page controls")
     }
 
-    /// With the setting off, or in a book without pages, the status row has
-    /// no page button.
-    func testTheStatusRowHasNoPageButtonWhenOffOrWithoutPages() throws {
+    /// With the setting off, in a book without pages, or in a book of one
+    /// page, the status row has no page button.
+    func testTheStatusRowHasNoPageButtonWhenOffOrWithOnePageOrNone() throws {
         try skipUnlessSwiftUIExposesItsOwnElements()
         let hidden = try makeIsolatedSettings("page-button-off")
         hidden.showsPageInReader = false
@@ -808,6 +811,32 @@ final class GoToPageTests: XCTestCase {
         defer { plain.close() }
         let plainButtons = try statusRowButtons(of: plain)
         XCTAssertFalse(plainButtons.contains { $0.label.hasPrefix("Page") })
+
+        let single = makePagedReader(pages: Self.onePage, settings: try makeIsolatedSettings("page-button-one"))
+        defer { single.close() }
+        let singleButtons = try statusRowButtons(of: single)
+        XCTAssertFalse(singleButtons.contains { $0.label.hasPrefix("Page") || $0.label.hasPrefix("Before page") })
+    }
+
+    /// A book of one page has a page to go to, so the page commands and Go
+    /// to Page… work in it, but not several, so the status row leaves its
+    /// page button out (the user's request, November 4, 2026): it would say
+    /// "Page 1 of 1" wherever the book is read. A book of two pages has
+    /// several, and a book without pages has neither.
+    func testABookOfOnePageHasAPageButNotSeveral() {
+        let single = makePagedReader(pages: Self.onePage)
+        defer { single.close() }
+        XCTAssertTrue(single.hasPages)
+        XCTAssertFalse(single.hasSeveralPages)
+
+        let two = makePagedReader(pages: Array(Self.pagesAroundTwelve.prefix(2)))
+        defer { two.close() }
+        XCTAssertTrue(two.hasSeveralPages)
+
+        let none = makePagedReader(pages: [])
+        defer { none.close() }
+        XCTAssertFalse(none.hasPages)
+        XCTAssertFalse(none.hasSeveralPages)
     }
 
     // MARK: - The Setting

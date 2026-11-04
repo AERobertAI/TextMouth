@@ -199,7 +199,7 @@ enum ReaderPageWording {
 
     /// What showing the page does, as its checkbox's hint says and its
     /// caption shows.
-    static let showInReaderHint = "Shows the page being read, such as Page 12 of 300, beside the percent, for books with pages."
+    static let showInReaderHint = "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page."
 
     /// The setting that adds the page to Where Am I?.
     static let sayInWhereAmITitle = "Say the page in Where Am I?"

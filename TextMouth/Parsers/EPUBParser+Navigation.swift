@@ -53,9 +53,15 @@ extension EPUBParser {
         var path: String
         var fragment: String
         var marker: MarkdownPageMarker
-        /// Whether the entry gave its page a label (`givenPageLabel`), rather
-        /// than leaving the marker its ordinal.
-        var isLabelled: Bool
+        /// The label the entry gave its page, as the list spelled it, before
+        /// the marker's normalization took a leading "Page" off it; nil when
+        /// the entry gave none (`givenPageLabel`) and the marker has its
+        /// ordinal.
+        var sourceLabel: String?
+
+        /// Whether the entry gave its page a label, rather than leaving the
+        /// marker its ordinal.
+        var isLabelled: Bool { sourceLabel != nil }
     }
 
     /// The page list's entries grouped by the document each names (PG05), and
@@ -73,13 +79,17 @@ extension EPUBParser {
 
         /// What the converter needs to know of the document at `path`: the
         /// pages named at its elements (the first entry for an id takes it),
-        /// and whether its page-break elements are pages.
+        /// with their labels as the list spelled them, and whether its
+        /// page-break elements are pages.
         func htmlTargets(in path: String) -> HTMLPageTargets {
             var markers: [String: MarkdownPageMarker] = [:]
+            var sourceLabels: [String: String] = [:]
             for target in targetsByPath[path] ?? [] where !target.fragment.isEmpty {
-                if markers[target.fragment] == nil { markers[target.fragment] = target.marker }
+                guard markers[target.fragment] == nil else { continue }
+                markers[target.fragment] = target.marker
+                sourceLabels[target.fragment] = target.sourceLabel
             }
-            return HTMLPageTargets(markers: markers, pageBreaksArePages: !hasPageList)
+            return HTMLPageTargets(markers: markers, sourceLabels: sourceLabels, pageBreaksArePages: !hasPageList)
         }
 
         /// The pages that begin the document at `path` itself, in list order.
@@ -542,7 +552,7 @@ extension EPUBParser {
             path: destination.path,
             fragment: destination.fragment,
             marker: MarkdownPageMarker(label: label ?? "", ordinal: ordinal),
-            isLabelled: label != nil
+            sourceLabel: label
         )
     }
 

@@ -923,16 +923,61 @@ final class EPUBPageListTests: XCTestCase {
         assertPages(of: result.chapter, [("12", "Hello")])
     }
 
-    /// A number under a longer label ("12" under "Page 12") is not the page's
-    /// own label, so it is read (stable020 review, finding 2), as the reading
-    /// without pages reads it; the page begins at it.
-    func testANumberUnderALongerLabelIsRead() throws {
-        let html = "<p>One <span role=\"doc-pagebreak\" aria-label=\"Page 12\">12</span>two</p>"
-        let result = try parsed(html)
+    /// A number under a label of "Page" and the number ("12" under "Page
+    /// 12") is the page's own number, so it is not read: the label's leading
+    /// "Page" is taken off (the user's choice, November 4, 2026), where the
+    /// stable020 review read the "12" as words beside a longer label.
+    func testANumberUnderAPagePrefixedLabelIsNotRead() throws {
+        let result = try parsed("<p>One <span role=\"doc-pagebreak\" aria-label=\"Page 12\">12</span>two</p>")
 
-        XCTAssertEqual(result.chapter.text, "One 12two")
-        XCTAssertEqual(result.chapter.text, try parsed(html, includesPages: false).chapter.text, "the two readings differ")
-        assertPages(of: result.chapter, [("Page 12", "12two")])
+        XCTAssertEqual(result.chapter.text, "One two")
+        assertPages(of: result.chapter, [("12", "two")])
+    }
+
+    /// Text that is a page's label as its source spelled it ("Page 12") is no
+    /// more than the page's name, however the label is shown ("12"): the
+    /// element's own text with no attribute, the same text in its
+    /// `aria-label`, and a number beside an `aria-label` of "Page" alone are
+    /// each the page "12" and are not read. A caption under a label that
+    /// says only the number is still read (stable020 review, finding 2).
+    func testTextThatIsAPagePrefixedLabelIsNotRead() throws {
+        for html in [
+            "<p>One <span epub:type=\"pagebreak\">Page 12</span> two</p>",
+            "<p>One <span epub:type=\"pagebreak\" aria-label=\"Page 12\">Page 12</span> two</p>",
+            "<p>One <span epub:type=\"pagebreak\" aria-label=\"Page \">Page 12</span> two</p>",
+        ] {
+            let result = try parsed(html)
+            XCTAssertEqual(result.chapter.text, "One two", html)
+            XCTAssertEqual(result.chapter.pages.map(\.label), ["12"], html)
+        }
+
+        let captioned = try parsed("<p>One <span epub:type=\"pagebreak\" title=\"12\">Page 12</span> two</p>")
+        XCTAssertEqual(captioned.chapter.text, "One Page 12 two")
+        assertPages(of: captioned.chapter, [("12", "Page 12")])
+    }
+
+    /// A page list's labels lose their leading "Page" too: its "Page i" and
+    /// "Page 2" are the pages "i" and "2", and "of N" counts them. An
+    /// element whose text is the list's own label ("Page 2") is not read;
+    /// a caption under a list label of the number alone is.
+    func testAPageListsLabelsLoseTheirLeadingPage() throws {
+        let epub = try bookWithPageList(
+            """
+            <li><a href="ch1.xhtml#a">Page i</a></li><li><a href="ch1.xhtml#b">Page 2</a></li>
+            <li><a href="ch1.xhtml#c">3</a></li>
+            """,
+            body: """
+                <h1>Title</h1><p id="a">Alpha text.</p>
+                <p>Bravo <span epub:type="pagebreak" id="b">Page 2</span> text.</p>
+                <p>Charlie <span epub:type="pagebreak" id="c">Page 3</span> text.</p>
+                """
+        )
+        let chapters = try EPUBParser.prepareBook(url: epub).chapters
+        guard let chapter = chapters.first?.chapter else { return XCTFail("no chapter") }
+        assertPages(of: chapter, [("i", "Alpha text."), ("2", "text."), ("3", "Page 3 text.")])
+        XCTAssertTrue(chapter.text.contains("Bravo text."), chapter.text)
+        XCTAssertTrue(chapter.text.contains("Charlie Page 3 text."), chapter.text)
+        XCTAssertEqual(BookPages(breaks: chapter.pages).total, 3)
     }
 
     /// A number with a caption ("Page XII" under the label "xii") is not the
