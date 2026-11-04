@@ -631,6 +631,7 @@ struct StorageSettingsView: View {
 
     // MARK: - Choosing a Folder (FR02)
 
+    #if os(macOS)
     /// The folder chooser Change Location and Choose Another Library open:
     /// any one folder, hidden ones shown, as this user keeps them, with a
     /// button that makes a new folder and a prompt naming the action. The
@@ -654,10 +655,12 @@ struct StorageSettingsView: View {
         }
         return panel
     }
+    #endif
 
     /// Opens the folder chooser, as a sheet on the Settings window, and
     /// looks at the folder chosen.
     private func chooseFolder() {
+#if os(macOS)
         let panel = Self.makeLibraryFolderPanel(isLibraryAvailable: unavailability == nil)
         let assessChosenFolder: (NSApplication.ModalResponse) -> Void = { response in
             guard response == .OK, let folder = panel.url else { return }
@@ -668,6 +671,9 @@ struct StorageSettingsView: View {
         } else {
             panel.begin(completionHandler: assessChosenFolder)
         }
+#else
+        // Phase 0: iOS has no folder panel, so choosing a folder does nothing yet; phase 1 uses a file importer.
+#endif
     }
 
     /// Looks at `folder` off the main thread (`StorageDestinationAssessment`)
