@@ -1,6 +1,8 @@
 import Foundation
 import Combine
+#if os(macOS)
 import AppKit
+#endif
 
 /// Tracks reading/listening statistics.
 ///
@@ -211,7 +213,15 @@ final class ReadingStatsService: ObservableObject {
         userCalendar: @escaping () -> Calendar = ReadingStatsService.systemCalendar,
         readFile: @escaping SavedFile.Reader = SavedFile.readWithoutDownloading,
         awakeClock: @escaping () -> TimeInterval = ReadingStatsService.systemAwakeTime,
-        workspaceNotifications: NotificationCenter = NSWorkspace.shared.notificationCenter
+        workspaceNotifications: NotificationCenter = {
+            #if os(macOS)
+            NSWorkspace.shared.notificationCenter
+            #else
+            // iOS has no workspace and no sleep or wake notices for now: an
+            // unshared center, which nothing posts to, stands in.
+            NotificationCenter()
+            #endif
+        }()
     ) {
         precondition(checkpointInterval > 0, "The checkpoint interval must be positive")
         customFileURL = fileURL
@@ -222,12 +232,14 @@ final class ReadingStatsService: ObservableObject {
         // The time the Mac sleeps is never listening (`SleepNote`). AppKit
         // posts both notices on the main thread, the first before the Mac
         // sleeps, so its checkpoint is made while the app still runs.
+        #if os(macOS)
         sleepSubscription = workspaceNotifications
             .publisher(for: NSWorkspace.willSleepNotification)
             .sink { [weak self] _ in self?.noteSystemWillSleep(at: Date()) }
         wakeSubscription = workspaceNotifications
             .publisher(for: NSWorkspace.didWakeNotification)
             .sink { [weak self] _ in self?.noteSystemDidWake(at: Date()) }
+        #endif
         if fileURL == nil {
             // Nothing is read from a data directory the library model found
             // unavailable (FR02): fresh statistics stand in until it is back.
