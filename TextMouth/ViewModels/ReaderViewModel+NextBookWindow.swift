@@ -81,7 +81,7 @@ extension ReaderViewModel {
     /// focus trigger runs only then (`SwitchedWindowFocus`). The request is
     /// claimed once, so a window found again changes nothing, and a reader
     /// opened for a new window finds none.
-    func attach(to window: NSWindow) {
+    func attach(to window: PlatformWindow) {
         hostWindow = window
         guard !hasClosed, windowSwitchRequests.consume(for: book.id) != nil else { return }
         DiagnosticLog.trace(.playback, "next book: this window was switched to this book; its focus is seen to once it has loaded")

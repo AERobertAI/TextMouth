@@ -293,7 +293,7 @@ final class ReaderViewModel: ObservableObject {
     /// The window of a reader a switch made, found before its book has
     /// loaded: its focus is seen to once the book has loaded
     /// (`attach(to:)`, `placeFocusAfterSwitchIfDue()`).
-    weak var windowAwaitingFocusAfterLoad: NSWindow?
+    weak var windowAwaitingFocusAfterLoad: PlatformWindow?
     /// Where this reader's book stands in the reading list while the reader
     /// reads it from the list (FR09): opened from the Reading List, or
     /// reached through the list by a book that continued to it. Nil while it
@@ -375,7 +375,7 @@ final class ReaderViewModel: ObservableObject {
     /// The NSWindow hosting this reader. Used to check if this is the focused window
     /// before responding to keyboard shortcut notifications (prevents K from activating
     /// playback in ALL open book windows at once).
-    weak var hostWindow: NSWindow?
+    weak var hostWindow: PlatformWindow?
 
     /// Separate synthesizer for "Where Am I?" announcements (not the book reader).
     /// Replaced with a fresh one when the system cancels an announcement on
@@ -546,7 +546,7 @@ final class ReaderViewModel: ObservableObject {
     /// Places keyboard and VoiceOver focus in the window of a reader that a
     /// switch made, once its window is found (`attach(to:)`); a test
     /// replaces it with a recorder.
-    var placeFocusAfterSwitch: (NSWindow) -> Void = { SwitchedWindowFocus.place(in: $0) }
+    var placeFocusAfterSwitch: (PlatformWindow) -> Void = { SwitchedWindowFocus.place(in: $0) }
     /// The revision of the latest library update this reader has applied to
     /// its copy of the book (see `LibraryBookUpdates`); an update that is
     /// not newer is ignored. Written only by `applyLibraryUpdate(_:)` and
@@ -1103,11 +1103,11 @@ final class ReaderViewModel: ObservableObject {
     /// - Menu commands have no source window: follow the current key window,
     ///   including a sheet attached to this reader.
     private func isTargetedNotification(_ notification: Notification) -> Bool {
-        let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow
+        let sourceWindow = notification.userInfo?["sourceWindow"] as? PlatformWindow
         return WindowCommandRouting.shouldAccept(
             sourceWindow: sourceWindow,
             hostWindow: hostWindow,
-            keyWindow: NSApp.keyWindow
+            keyWindow: PlatformApplication.keyWindow
         )
     }
 
@@ -1116,7 +1116,7 @@ final class ReaderViewModel: ObservableObject {
 
         // TextMouth becoming active looks for an edit of an open
         // audiobook's manifest made meanwhile outside Edit Manifest (FR18).
-        nc.publisher(for: NSApplication.didBecomeActiveNotification)
+        nc.publisher(for: PlatformApplication.didBecomeActiveNotification)
             .sink { [weak self] _ in self?.lookForOutsideManifestEdit() }
             .store(in: &cancellables)
 
