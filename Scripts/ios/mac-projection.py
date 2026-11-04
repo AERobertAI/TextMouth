@@ -46,6 +46,12 @@ ALIAS_LINE = re.compile(r"^\s*(?:public\s+|internal\s+)?typealias\s+(Platform\w+
 EQUIVALENCES = [
     (re.compile(r"\.checkboxToggleStyle\(\)"), ".toggleStyle(.checkbox)"),
     (re.compile(r"\.radioGroupPickerStyle\(\)"), ".pickerStyle(.radioGroup)"),
+    # TextMouth/Platform/PlatformApplication.swift.
+    (re.compile(r"\bPlatformApplication\.keyWindow\b"), "NSApp.keyWindow"),
+    (re.compile(r"\bPlatformApplication\.mainWindow\b"), "NSApp.mainWindow"),
+    (re.compile(r"\bPlatformApplication\.isActive\b"), "NSApp.isActive"),
+    (re.compile(r"\bPlatformApplication\.didBecomeActiveNotification\b"), "NSApplication.didBecomeActiveNotification"),
+    (re.compile(r"\bPlatformApplication\.didResignActiveNotification\b"), "NSApplication.didResignActiveNotification"),
 ]
 
 # The truth of each platform condition on the Mac. Anything else (DEBUG,
