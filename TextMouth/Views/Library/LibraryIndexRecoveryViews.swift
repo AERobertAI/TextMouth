@@ -80,9 +80,13 @@ struct LibraryIndexRecoverySheet: View {
             detail("Unreadable file", recovery.failure.indexURL.path)
             if let savedCopy = recovery.failure.quarantineURL {
                 detail("Saved copy", savedCopy.path)
+                // Finder is the Mac's; the saved copy's path is already
+                // shown on the line above, so iOS has no button here.
+                #if os(macOS)
                 Button("Show Saved Copy in Finder") {
                     NSWorkspace.shared.activateFileViewerSelecting([savedCopy])
                 }
+                #endif
             } else {
                 paragraph(LibraryIndexRecoveryText.noCopy)
             }
