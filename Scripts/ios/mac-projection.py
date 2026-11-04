@@ -33,9 +33,10 @@ import sys
 
 sys.dont_write_bytecode = True
 
-# Where the platform aliases are declared, and the pattern of a Mac alias in
-# its `#if os(macOS)` branch: `typealias PlatformWindow = NSWindow`.
-ALIASES_FILE = "TextMouth/Platform/PlatformTypes.swift"
+# Where the platform aliases are declared (any shared file directly in
+# TextMouth/Platform/, PlatformTypes.swift first among them), and the pattern
+# of a Mac alias in its `#if os(macOS)` branch: `typealias PlatformWindow = NSWindow`.
+ALIASES_FOLDER = "TextMouth/Platform/"
 ALIAS_LINE = re.compile(r"^\s*(?:public\s+|internal\s+)?typealias\s+(Platform\w+)\s*=\s*([\w.]+)\s*$")
 
 # Shared helpers that stand, on the Mac, for exactly one Mac expression
@@ -229,12 +230,17 @@ def show(ref, path):
 
 
 def aliases_at(ref):
-    """The Mac type of each platform alias declared at `ref`."""
+    """The Mac type of each platform alias declared at `ref`, in the shared
+    files directly in TextMouth/Platform/ (not its macOS/ or iOS/ folders)."""
     found = {}
-    for line in project(show(ref, ALIASES_FILE)):
-        match = ALIAS_LINE.match(line)
-        if match:
-            found[match.group(1)] = match.group(2)
+    listing = git("ls-tree", "--name-only", f"{ref}:{ALIASES_FOLDER}", check=False).split()
+    for name in listing:
+        if not name.endswith(".swift"):
+            continue
+        for line in project(show(ref, ALIASES_FOLDER + name)):
+            match = ALIAS_LINE.match(line)
+            if match:
+                found[match.group(1)] = match.group(2)
     return found
 
 
