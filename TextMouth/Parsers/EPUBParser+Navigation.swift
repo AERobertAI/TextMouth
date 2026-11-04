@@ -53,6 +53,9 @@ extension EPUBParser {
         var path: String
         var fragment: String
         var marker: MarkdownPageMarker
+        /// Whether the entry gave its page a label (`givenPageLabel`), rather
+        /// than leaving the marker its ordinal.
+        var isLabelled: Bool
     }
 
     /// The page list's entries grouped by the document each names (PG05), and
@@ -443,6 +446,12 @@ extension EPUBParser {
     /// navigation document's `page-list` navigation, else the EPUB 2 NCX's
     /// `pageList`. Empty when the book has none, or when none of its entries
     /// names a place (a web link, or an entry with no `href`).
+    ///
+    /// A list that labels none of its pages (`givenPageLabel`) names no pages
+    /// either: a generator with no page numbers can write a list whose one
+    /// entry is the id it links to ("pagenum_000000"), and such a list is
+    /// passed over, for the NCX's when the navigation document's is the one,
+    /// and else for the book's page-break elements, as in a book with no list.
     private static func readPageList(archive: IndexedArchive, opfPath: String, opfData: OPFData) -> [PageTarget] {
         var targets: [PageTarget] = []
         // The entries read so far, which numbers an entry that has no label.
@@ -457,17 +466,20 @@ extension EPUBParser {
                     guard link.hasAttr("href") else { continue }
                     entryCount += 1
                     let href = (try? link.attr("href")) ?? ""
-                    let label = (try? link.text()) ?? ""
-                    if let target = pageTarget(href: href, label: label, ordinal: entryCount, relativeTo: path) {
+                    let text = (try? link.text()) ?? ""
+                    if let target = pageTarget(
+                        href: href, labels: [text], entryID: link.id(), ordinal: entryCount, relativeTo: path
+                    ) {
                         targets.append(target)
                     }
                 }
             }
         }
-        if !targets.isEmpty { return targets }
+        if targets.contains(where: \.isLabelled) { return targets }
 
-        // No EPUB 3 page list: the NCX's pageList, each pageTarget labelled by
-        // its navLabel, else its value, and numbered from 1 in list order.
+        // No EPUB 3 page list that labels a page: the NCX's pageList, each
+        // pageTarget labelled by its navLabel, else its value, and numbered
+        // from 1 in list order.
         return withNCX(archive: archive, opfPath: opfPath, opfData: opfData) { (path, doc) -> [PageTarget] in
             let entries = (try? doc.nodes(
                 forXPath: "//*[local-name()='pageList']/*[local-name()='pageTarget']"
@@ -475,14 +487,17 @@ extension EPUBParser {
             var listed: [PageTarget] = []
             for (index, entry) in entries.compactMap({ $0 as? XMLElement }).enumerated() {
                 let text = (try? entry.nodes(forXPath: "*[local-name()='navLabel']/*[local-name()='text']"))?.first?.stringValue ?? ""
-                let label = text.contains(where: { !$0.isWhitespace }) ? text : (entry.attribute(forName: "value")?.stringValue ?? "")
+                let value = entry.attribute(forName: "value")?.stringValue ?? ""
                 let content = (try? entry.nodes(forXPath: "*[local-name()='content']"))?.first as? XMLElement
                 if let href = content?.attribute(forName: "src")?.stringValue,
-                   let target = pageTarget(href: href, label: label, ordinal: index + 1, relativeTo: path) {
+                   let target = pageTarget(
+                       href: href, labels: [text, value], entryID: entry.attribute(forName: "id")?.stringValue ?? "",
+                       ordinal: index + 1, relativeTo: path
+                   ) {
                     listed.append(target)
                 }
             }
-            return listed
+            return listed.contains(where: \.isLabelled) ? listed : []
         } ?? []
     }
 
@@ -509,15 +524,40 @@ extension EPUBParser {
     }
 
     /// One page list entry: the place `href` names (resolved as a TOC entry's
-    /// is) and a marker labelled `label`, or the entry's `ordinal`, its
-    /// 1-based position in the list, when the label is empty.
-    private static func pageTarget(href: String, label: String, ordinal: Int, relativeTo path: String) -> PageTarget? {
+    /// is) and a marker labelled by the first of `labels` that labels the
+    /// page (`givenPageLabel`), or by the entry's `ordinal`, its 1-based
+    /// position in the list, when none does. `entryID` is the id the entry's
+    /// own element carries, empty when it has none.
+    private static func pageTarget(
+        href: String,
+        labels: [String],
+        entryID: String,
+        ordinal: Int,
+        relativeTo path: String
+    ) -> PageTarget? {
         guard let destination = resolvedDestination(href: href, relativeTo: path) else { return nil }
+        let ids = [destination.fragment, entryID].filter { !$0.isEmpty }
+        let label = labels.lazy.compactMap { givenPageLabel($0, ids: ids) }.first
         return PageTarget(
             path: destination.path,
             fragment: destination.fragment,
-            marker: MarkdownPageMarker(label: label, ordinal: ordinal)
+            marker: MarkdownPageMarker(label: label ?? "", ordinal: ordinal),
+            isLabelled: label != nil
         )
+    }
+
+    /// The label a page list entry's `text` gives its page (PG05), or nil
+    /// when the text labels no page. That is when it is blank or only the
+    /// word "Page" (`MarkdownPageMarker.namesNoPage`), or when it is no more
+    /// than one of `ids`, the id the entry links to or carries, and no page
+    /// number: a generator with no number for a page can write the id in its
+    /// place ("pagenum_000000" linking to `#pagenum_000000`). An id that is a
+    /// page number itself ("12" linking to `#12`) is the page's label.
+    private static func givenPageLabel(_ text: String, ids: [String]) -> String? {
+        guard !MarkdownPageMarker.namesNoPage(text) else { return nil }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if ids.contains(trimmed), !MarkdownPageMarker.isPageNumber(trimmed) { return nil }
+        return text
     }
 
     /// `markdown` without its page markers, for judging whether a document
