@@ -167,6 +167,7 @@ struct FFmpeg: Equatable, Sendable {
     ///   `.ffmpegFailed` with its own words when it ends in failure, or
     ///   `CancellationError` when the task is cancelled, which stops it.
     func run(_ arguments: [String]) async throws {
+        #if os(macOS)
         let executable = self.executable
         let running = OSAllocatedUnfairLock<Int32?>(initialState: nil)
         let outcome: (status: Int32, errors: Data) = try await withTaskCancellationHandler {
@@ -203,6 +204,12 @@ struct FFmpeg: Equatable, Sendable {
         guard outcome.status == 0 else {
             throw AudioFilterError.ffmpegFailed(Self.describe(String(decoding: outcome.errors, as: UTF8.self), status: outcome.status))
         }
+        #else
+        // iOS cannot start a child process, and `FFmpeg.locate` finds no
+        // executable there anyway, so callers already take their "no ffmpeg"
+        // path; this branch reports the same thing if one reaches it.
+        throw AudioFilterError.ffmpegMissing
+        #endif
     }
 
     /// What went wrong, in ffmpeg's own words from its standard error: its
