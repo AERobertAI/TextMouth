@@ -1623,6 +1623,7 @@
 		E5031798F409F08FE7841450 /* encoder.c in Sources */ = {isa = PBXBuildFile; fileRef = 92D133F0245F04B20A9009CD /* encoder.c */; };
 		E52C5F7C1EB9F7F6AF151BF5 /* RetainedPackageImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C495B6597A143726D8203953 /* RetainedPackageImportTests.swift */; };
 		E533EFB6F6D11EF2CEE5ED63 /* LibraryInfoSpeaker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D078171B8B8C6CAA455BB6C /* LibraryInfoSpeaker.swift */; };
+		E57760517F4373DD563FD520 /* PlatformWindow+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B998C3FCB1F599A12936141 /* PlatformWindow+iOS.swift */; };
 		E5A63AEB66531BC31580E8E5 /* DOCXParser+Sections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F75A571835C27C39E53DD16 /* DOCXParser+Sections.swift */; };
 		E5CE79BB82E6ED69F42A9D0E /* DOCXParser+Converter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3450279E11EFC69474C1B838 /* DOCXParser+Converter.swift */; };
 		E60DFA0FF3B7A6AAFF8BEFE1 /* LibraryViewModel+FeedDownloadReturn.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3441B703C0173CE738D199DC /* LibraryViewModel+FeedDownloadReturn.swift */; };
@@ -1863,22 +1864,21 @@
 		9279BF2ABA7F3526AB66874A /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/LAME;
+			dstPath = Licenses/liblouis;
 			dstSubfolderSpec = 7;
 			files = (
-				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
-				943853340D2809882740233D /* LICENSE in CopyFiles */,
+				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
+				41F911ECAF492222AF723C10 /* README in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		BF489798E33F1F27D1434BD7 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/liblouis;
+			dstPath = liblouis;
 			dstSubfolderSpec = 7;
 			files = (
-				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
-				41F911ECAF492222AF723C10 /* README in CopyFiles */,
+				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1896,10 +1896,11 @@
 		C4DD7093AEE01EB21DD71ECD /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = liblouis;
+			dstPath = Licenses/LAME;
 			dstSubfolderSpec = 7;
 			files = (
-				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
+				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
+				943853340D2809882740233D /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2386,6 +2387,7 @@
 		5AC953218AC5A44CE71872C7 /* FeedEndToEndTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedEndToEndTests.swift; sourceTree = "<group>"; };
 		5B154CF1F2CC17C668B84EE6 /* DOCXParser+Relationships.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DOCXParser+Relationships.swift"; sourceTree = "<group>"; };
 		5B3FFD06EB2569D06263840B /* ReaderRefreshTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderRefreshTests.swift; sourceTree = "<group>"; };
+		5B998C3FCB1F599A12936141 /* PlatformWindow+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PlatformWindow+iOS.swift"; sourceTree = "<group>"; };
 		5BD94334C3E62B5995708549 /* LegacyNavigationAlgorithmTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyNavigationAlgorithmTests.swift; sourceTree = "<group>"; };
 		5C412E8D775291A7B4F34223 /* DocumentByteLimitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentByteLimitTests.swift; sourceTree = "<group>"; };
 		5C500922099E57640870E468 /* BrailleBookReader+Pages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BrailleBookReader+Pages.swift"; sourceTree = "<group>"; };
@@ -3534,6 +3536,7 @@
 				E8E1817CBE6052026E97BFC5 /* App */,
 				5417E8B7D0BE62A82160D51B /* Parsers */,
 				5F3F182FB68B675D96F58C81 /* Services */,
+				AED86B675DEE7A7B387ED4F4 /* Windows */,
 			);
 			path = iOS;
 			sourceTree = "<group>";
@@ -3942,6 +3945,14 @@
 				222778998EA559EECD759D02 /* XMLDocumentSniffer.swift */,
 			);
 			path = Parsers;
+			sourceTree = "<group>";
+		};
+		AED86B675DEE7A7B387ED4F4 /* Windows */ = {
+			isa = PBXGroup;
+			children = (
+				5B998C3FCB1F599A12936141 /* PlatformWindow+iOS.swift */,
+			);
+			path = Windows;
 			sourceTree = "<group>";
 		};
 		B38911B57EFAF4E45AC410D9 /* App */ = {
@@ -6755,6 +6766,7 @@
 				8DAE984AD7246FCD8C7D8F54 /* PlatformApplication.swift in Sources */,
 				3B79F9D53801EACC2FE0F399 /* PlatformControlStyles.swift in Sources */,
 				DE556920091F449C43C8ADA1 /* PlatformTypes.swift in Sources */,
+				E57760517F4373DD563FD520 /* PlatformWindow+iOS.swift in Sources */,
 				8927A3360785FBBD57B8460E /* PlaybackControlsView.swift in Sources */,
 				F34995BDCFAC8536F4A54A98 /* PlaybackMemoryGuard.swift in Sources */,
 				5D2E0B487A9D34D20B1FF5BD /* PlaylistImportWording.swift in Sources */,
