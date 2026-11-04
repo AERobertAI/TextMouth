@@ -19,6 +19,15 @@ extension ReaderViewModel {
         !bookPages.isEmpty
     }
 
+    /// Whether the book has more than one page, so that the status row's
+    /// page button has something to tell: a book of one page would say
+    /// "Page 1 of 1" wherever it is read, so the button is left out (the
+    /// user's request, November 4, 2026). The page commands and Go to Page…
+    /// still work in such a book, which `hasPages` decides.
+    var hasSeveralPages: Bool {
+        bookPages.count > 1
+    }
+
     /// The index in `bookPages.breaks` of the page holding the reading
     /// cursor: the last page that begins at or before it, nil before the
     /// first page and in a book without pages.

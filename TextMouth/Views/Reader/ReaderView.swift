@@ -1311,8 +1311,8 @@ struct BookInfoBar: View {
             .accessibilityHint(percentButtonHint)
 
             // The page — click to open jump-to-page (PG03). Drawn for a book
-            // with pages while the setting that shows it is on.
-            if settingsViewModel.showsPageInReader && viewModel.hasPages {
+            // with more than one page while the setting that shows it is on.
+            if settingsViewModel.showsPageInReader && viewModel.hasSeveralPages {
                 Button {
                     togglePanel(.page)
                 } label: {
