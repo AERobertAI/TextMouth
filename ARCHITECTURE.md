@@ -7,6 +7,7 @@ README.md indexes the pages on building, testing, the files in the data director
 Each part below is a page of its own under docs/architecture, so an agent can read only the parts its task touches.
 
 - [The parts of the app](docs/architecture/parts-of-the-app.md)
+- [The two apps and the platform folders](docs/architecture/platforms.md)
 - [Launch](docs/architecture/launch.md)
 
 ## Who owns each kind of state

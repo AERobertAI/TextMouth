@@ -1,0 +1,80 @@
+# The two apps and the platform folders
+
+Part of [TextMouth's architecture](../../ARCHITECTURE.md).
+
+TextMouth is a Mac app, and since November 4, 2026 (phase 0 of the iOS port) a second app, for iOS, compiles from the same code. The design is in IOS-PORT-RESEARCH-2026-11-03.md, in the repository root, whose sections "How one codebase builds both apps" and "A plan in phases" this page follows. Phase 0 had one goal: the iOS app compiles and links, and the Mac app does exactly what it did. This page says how the code is divided between the two, and where phase 1 starts.
+
+## One source folder, two apps
+
+- Both apps compile the TextMouth source folder. project.yml defines `TextMouth`, the Mac app, and `TextMouthiOS`, the iOS app (how they build is in [Building TextMouth](../developer/building.md)). The iOS app has the module name TextMouth too, so shared code and shared tests read the same on both.
+- Each app leaves out the other's platform folder:
+  - the Mac app leaves out `TextMouth/Platform/iOS/`;
+  - the iOS app leaves out `TextMouth/Platform/macOS/` and the Mac's `TextMouth/Resources/`.
+- A file anywhere else is shared. A new file is shared by default, which is the point: write it for both apps, and put in a platform folder only what one app alone can compile.
+- Every Swift file under `TextMouth/` is in an app target, and both apps use the same Swift 6 language mode and complete concurrency checking. `UncheckedConcurrencyPolicyTests` counts `@unchecked Sendable` and `nonisolated(unsafe)` across every Swift file, the platform folders included.
+
+## The platform folders
+
+- `TextMouth/Platform/macOS/` holds what only the Mac compiles. Its folders mirror the ones the files came from, so a file keeps its place below `Platform/macOS/`: `TextMouth/Services/WatchedProcess.swift` is `TextMouth/Platform/macOS/Services/WatchedProcess.swift`. It holds:
+  - `App`: TextMouthApp, AppDelegate, and FrontWindowKind (split out of MenuCommands, which stays in `App`);
+  - `Services`: WatchedProcess, OrphanedConversionSweep (and its Textutil extension), PackageFileEditing, BookTextEditor, BookManifestEditor, MenuVisibilityManager, and `Export/WordDocExportWriter`;
+  - `Views`: the window controllers of the Record window and the audio editor, the audio editor's Edit menu and launcher, VoiceOverFocus, ReadOnlyTextArea, SilentKeyEquivalent, SwitchedWindowFocus, LogsInFinder, and `Reader/WindowAccessor`.
+- `TextMouth/Platform/iOS/` holds what only the iOS app compiles: the placeholder app (`App/TextMouthIOSApp.swift`), IOSUnavailable, and a stand-in for each Mac-only type that shared code still names, in folders that mirror the Mac's. A stand-in's file name ends `+iOS` and starts with the comment `// Phase 0 stand-in:`, which says what the Mac version does and what iOS does instead.
+- The files directly in `TextMouth/Platform/` are shared by both apps:
+  - `PlatformTypes` declares three aliases: `PlatformWindow` (NSWindow on the Mac, UIWindow on iOS), `PlatformFont` (NSFont, UIFont), and `PlatformView` (NSView, UIView);
+  - `PlatformApplication` answers the application-wide questions shared code asks: `keyWindow`, `mainWindow`, `isActive`, `didBecomeActiveNotification`, and `didResignActiveNotification`. On the Mac each is the AppKit expression the code used before (`NSApp.keyWindow`). On iOS there is no key or main window to name yet, so those two answer nil, and "active" means in the foreground;
+  - `PlatformControlStyles` gives `checkboxToggleStyle()` (a checkbox on the Mac, a switch on iOS) and `radioGroupPickerStyle()` (a radio group on the Mac, an inline list on iOS).
+
+## The five kinds of Mac change
+
+The Mac app must compile what it compiled before. Every change phase 0 made to a file the Mac compiles is one of these five, and nothing else is allowed without a reason a reviewer reads:
+
+- **A move, unchanged.** A file only the Mac needs is moved into `Platform/macOS/`, with its text unchanged in the move.
+- **A wrapper.** Existing Mac code is wrapped, as it stands, in `#if os(macOS)`, with iOS code in the `#else` branch. In a file both apps share, `import AppKit` becomes `import AppKit` under `#if os(macOS)` and `import UIKit` under `#else`.
+- **A platform alias.** A type or an expression is named through a shared alias that is exactly the old one on the Mac: `PlatformWindow`, `PlatformFont`, `PlatformView`, and `PlatformApplication`'s members. A new alias goes in a shared file directly in `Platform/`, one alias to a line in the form `typealias PlatformX = NSX`.
+- **A control-style helper.** `.toggleStyle(.checkbox)` is `.checkboxToggleStyle()`, and `.pickerStyle(.radioGroup)` is `.radioGroupPickerStyle()`. On the Mac each applies exactly the old style.
+- **A split, unchanged.** When a file holds shared code and code only the Mac can compile, a whole declaration moves, unchanged, into a file of its own: FrontWindowKind out of MenuCommands and WindowAccessor out of BookReaderWindowView, both into `Platform/macOS/`, and AudioEditorLauncher's `describe(_:)`, which the shared audio editor models call on either app, into a shared extension, `Views/AudioEditor/AudioEditorLauncher+Describe.swift`.
+
+`make mac-projection` checks this (see [Building TextMouth](../developer/building.md)). It reads each changed file as the Mac compiles it, resolving `#if os(macOS)` the Mac's way and reading each alias and helper as the Mac expression it stands for, and prints what is left. Its list of equivalences lives in `Scripts/ios/mac-projection.py`: a new helper in `Platform/` needs its line there, or its calls look like real changes. One limit: it pools the removed lines of all the files, so a real deletion of a line such as `}` can count as moved when another file adds the same text. The final review of phase 0 read the 13 files it listed with a stricter matcher and found nothing hidden.
+
+On November 4 the projection read 105 changed Swift files, of which 92 are unchanged for the Mac. The other 13 are new shared code that only tests and aliases use (the portable XML tree and the three shared files directly in `Platform/`), the three declarations split out unchanged, which add only their imports and an `extension` line, and four closures reflowed around a `#if`. Each of the four closures is a one-line default or argument made into a closure so that an `#if` has a place to sit (LibrarySessionLease's quit, ReadingStatsService's workspace notifications, LibraryViewModel's reveal in Finder, and ContentView's Quit): the Mac still runs the same statement.
+
+## The iOS stand-ins and IOSUnavailable
+
+- Where shared code names a Mac-only type, the type has a stand-in in `Platform/iOS/` with the same name and the members shared code uses. The rule is that a name is never taken away from iOS: move a type to `Platform/macOS/` only with a stand-in for each name a shared file still uses.
+- A stand-in does the least it safely can: it does nothing, answers "no", or throws. None traps. Mark it `@MainActor` where its Mac twin is.
+- `IOSUnavailable` (`Platform/iOS/IOSUnavailable.swift`) is what a stand-in throws for work the iPhone app cannot do. Its one case, `feature`, takes a phrase that completes "… is not available on iPhone yet", and its description is the full sentence, such as "Converting this kind of file is not available on iPhone yet.", since a person may hear it.
+- The stand-ins phase 1 inherits, by what they stand in for:
+  - Helper programs: WatchedProcess throws `IOSUnavailable` from `run` and `runCapturingOutput` and has no memory reading; OrphanedConversionSweep does nothing.
+  - Editing in another app: PackageFileEditing's workspace opener throws, and BookTextEditor and BookManifestEditor start no session (`canEditText` is false).
+  - Windows and keys: WindowAccessor reports no window; SilentKeyEquivalent takes no key; SwitchedWindowFocus does nothing; FrontWindowKind is always nil; LogsInFinder says showing the logs in Finder is not available on iPhone yet; `FunctionKeyConstants+iOS` gives the 72 function-key constants NSEvent.h defines, with its values, so config.json's key names (pageDown, f5, and the rest) read the same.
+  - VoiceOver: VoiceOverFocus and StandardVoiceOverFocus are hidden views; VoiceOverAnnouncer posts `AccessibilityNotification.Announcement`, mapping high, medium, and low priority to `.high`, `.default`, and `.low`; `NSAccessibilityPriorityLevel` exists on iOS as an enum.
+  - Text: ReadOnlyTextArea is a read-only, selectable `UITextView` with the Mac's label.
+  - Recording and editing audio: the Record window and audio editor controllers and the audio editor launcher do nothing; the capture backend's `start` throws `IOSUnavailable` for "Recording"; FFmpeg's `run` throws that ffmpeg is missing.
+  - Now Playing: audio-device queries answer "no device", and the device listeners are never installed.
+  - Smaller ones: PDF text reading's bold and italic traits (`UIFontDescriptorSymbolicTraits+iOS`), and `isMainWindow` on UIWindow.
+- Some Mac-only work has no stand-in file, only an `#else` branch where it is called: the quit hold and the memory guard's alert and quit do nothing on iOS; opening TextMouth again throws `IOSUnavailable`; Word 97-2003 export (`WordDocExportWriter`) is left out of the list of export writers; and the file and folder panels (DAISY folder import, OPML import, the data directory's folder chooser, Export's destination, and the text input's open-in-editor action) are empty branches.
+
+## The portable XML tree
+
+The EPUB, feed, and OPML readers walk Foundation's `XMLDocument` and search it with XPath. iOS's Foundation has only the streaming `XMLParser`. So phase 0 added a portable tree that has the part of the interface those readers use, and gave it Foundation's names on iOS, so the reader files compile for iOS as they are.
+
+- `Parsers/PortableXML.swift` holds the classes (`PortableXMLDocument`, `PortableXMLElement`, and `PortableXMLNode`). The tree is read-only: its name, local name, prefix, namespace, kind, level, string value, attributes, children, and `rootElement()`, `attribute(forName:)`, and `nodes(forXPath:)`.
+- `Parsers/PortableXMLPath.swift` is the XPath subset the readers use: an optional `//`, steps that are `*` with any number of `[local-name()='x']`, `[@a]`, and `[@a='v']` predicates. Anything else throws `PortableXMLError.unsupportedXPath`.
+- `Parsers/PortableXMLBuilder.swift` builds the tree with no recursion. A strict reader runs on Foundation's `XMLParser`; a lenient reader, used only when Tidy is asked for and the strict reading fails, runs on SwiftSoup's XML parser. A tree deeper than 512 levels is refused, a document that declares its own entities is refused, and releasing a tree is iterative, so a hostile feed cannot overflow the stack or hang the app.
+- `Platform/iOS/Parsers/XMLTree+iOS.swift` is the iOS-only file that makes `XMLDocument`, `XMLElement`, and `XMLNode` the portable classes. The Mac compiles the portable tree too, but only `PortableXMLDifferentialTests` uses it: no Mac code reads through it, so the Mac's own EPUB and feed reading is unchanged.
+- `PortableXMLDifferentialTests` is what makes the tree trustworthy. It reads 104 documents with Foundation's `XMLDocument` and with the portable tree, strictly and tidied: the 16 XML documents of the five test EPUBs, 27 feed, OPML, and OPF fixtures, and 61 small documents in `PortableXMLCorpus`. It compares every node's kind, level, name, local name, prefix, namespace, and string value, every attribute, and the answers to the XPath expressions the four reader files use (a scan test confirms every XPath string in them is one the comparison makes). The trees agree except where `knownDifferences` lists a difference, 14 in all, each with its reason and an evidence fragment the reported difference must contain; a listed difference that goes away fails the test. Some differences are accepted and hidden on purpose: attribute order within an element, `*` selecting a processing instruction in Foundation, the DTD node and XML declaration not being nodes, and the depth bound.
+- `EPUBParser.updateOPFMetadata`, which writes a book's details into its EPUB, is wrapped in `#if os(macOS)`: its output must match what Foundation's pretty printer writes, and the portable tree does not write. On iOS it throws `IOSUnavailable` for "Saving a book's details into its EPUB file".
+
+## What iOS does now, and where phase 1 starts
+
+- The iOS app builds nothing for the iPhone's user. It shows one screen, the app's name as a heading and a sentence saying the iPhone app is still being built, and `make typecheck-ios` ends BUILD SUCCEEDED with 0 errors and 0 warnings where the first count, on the evening of November 3, found 817 errors in 99 files. Nothing has run on an iPhone or in the simulator, and the stand-ins have no tests of their own.
+- Phase 1 builds the first iPhone reader on the shared engine (see "A plan in phases" in the research file). It starts from the stand-ins above, and from these places phase 0 left empty or approximate:
+  - the interface itself, which replaces the placeholder: the library, the reader, settings, and importing;
+  - the audio session, route changes in Now Playing, and the lifecycle;
+  - real VoiceOver focus and announcements on iOS (the stand-ins above do the least);
+  - the empty file and folder pickers, and the Shortcuts recorder, hardware keys, and menus, which compile but are untested on iOS;
+  - a recording backend, if recording comes to iOS, and a writer for the EPUB metadata (it needs a serializer and a decision on whether to match Foundation's output);
+  - the window passed through shared code, which is nil on iOS: `PlatformApplication` names no key or main window until phase 1 finds the scene's;
+  - the one bundle identifier both apps share, which phase 1 decides whether to keep.
+- A change to shared code now has a second check. Compile it for iOS with `make typecheck-ios`, and show it leaves the Mac as it was with `make mac-projection`, besides the hosted test suite, which tests the Mac only.
