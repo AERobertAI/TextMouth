@@ -23,11 +23,14 @@ struct FFmpeg: Equatable, Sendable {
 
     /// The ffmpeg found first in `locations`, then in each folder of the
     /// PATH in `environment`: an executable file named ffmpeg. Nil when there
-    /// is none. Reads only file metadata.
+    /// is none. Reads only file metadata. On iOS always nil: an app there may
+    /// start no child process, even in the Simulator, which sees the Mac's
+    /// own files.
     static func locate(
         in locations: [String] = standardLocations,
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) -> FFmpeg? {
+        #if os(macOS)
         let path = (environment["PATH"] ?? "").split(separator: ":").map { "\($0)/ffmpeg" }
         for candidate in locations + path where FileManager.default.isExecutableFile(atPath: candidate) {
             var isFolder: ObjCBool = false
@@ -35,6 +38,9 @@ struct FFmpeg: Equatable, Sendable {
             return FFmpeg(executable: URL(fileURLWithPath: candidate))
         }
         return nil
+        #else
+        return nil
+        #endif
     }
 
     // MARK: Commands
@@ -205,9 +211,9 @@ struct FFmpeg: Equatable, Sendable {
             throw AudioFilterError.ffmpegFailed(Self.describe(String(decoding: outcome.errors, as: UTF8.self), status: outcome.status))
         }
         #else
-        // iOS cannot start a child process, and `FFmpeg.locate` finds no
-        // executable there anyway, so callers already take their "no ffmpeg"
-        // path; this branch reports the same thing if one reaches it.
+        // iOS cannot start a child process, and `FFmpeg.locate` returns nil
+        // there, so callers take their "no ffmpeg" path; this branch reports
+        // the same thing if one reaches it.
         throw AudioFilterError.ffmpegMissing
         #endif
     }
