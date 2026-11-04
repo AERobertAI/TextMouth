@@ -219,6 +219,7 @@ extension LibraryViewModel {
 
     // MARK: - Import Folder…
 
+    #if os(macOS)
     /// The panel the Import Folder… command presents (TODO I02, FR17): it
     /// chooses folders, several at once, and no files, since a DAISY book
     /// kept as loose files is imported by its folder, and so is a folder of
@@ -238,6 +239,7 @@ extension LibraryViewModel {
         panel.canCreateDirectories = false
         return panel
     }
+    #endif
 
     /// Imports the folders chosen with Import Folder… into the library
     /// folder `folderPath`, each as the book or books it holds: a folder
