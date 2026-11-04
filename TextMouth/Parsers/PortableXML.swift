@@ -220,8 +220,11 @@ final class PortableXMLDocument: PortableXMLNode {
     /// depth to exhaust memory or the stack.
     static let maximumDepth = 512
 
-    /// Read `xmlString`. Its text is read as UTF-8 whatever its XML
-    /// declaration says, as Foundation reads it.
+    /// Read `xmlString`, handed over as its UTF-8 bytes. Both readers honor
+    /// the document's XML declaration, as Foundation's `XMLDocument` does: a
+    /// declaration of another encoding makes the UTF-8 bytes read as that
+    /// encoding (`café` under `ISO-8859-1` reads as `cafÃ©` in both trees), or
+    /// fail where the encoding cannot be read.
     /// - Throws: The reading's error, as `init(data:options:)` does.
     convenience init(xmlString: String, options: Options = []) throws {
         try self.init(data: Data(xmlString.utf8), options: options)

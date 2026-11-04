@@ -21,6 +21,10 @@ import SwiftSoup
 //   the text around a reference to an external one, where Foundation expands
 //   the first and reads the second as nothing. The lenient reader keeps the
 //   reference as it stands. An undeclared entity is an error in both.
+//   That test is a byte search for `<!ENTITY`: a UTF-16 document that declares
+//   entities slips past it (XMLParser then drops the entity text), and one that
+//   has the string only in a comment or a CDATA section is refused needlessly.
+//   Both are rare; they are follow-ups.
 // - A reference to an entity that only an external DTD could declare (the
 //   `&nbsp;` of an old DTD) is kept by Foundation as an empty node between
 //   two text nodes; here it is nothing, and the text around it is one node.
