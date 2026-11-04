@@ -514,6 +514,7 @@ struct LibraryView: View {
                     AccessibilityRotorEntry(entry.label, id: entry.id)
                 }
             }
+            #if os(macOS)
             .onDeleteCommand {
                 // Delete key removes all selected books (either selection mechanism)
                 let books = selectedBooks
@@ -522,6 +523,7 @@ struct LibraryView: View {
                     clearAllSelections()
                 }
             }
+            #endif
             .onChange(of: currentFolderPath) { _, _ in
                 // Clear selections when navigating to a different folder
                 editSelection = []
