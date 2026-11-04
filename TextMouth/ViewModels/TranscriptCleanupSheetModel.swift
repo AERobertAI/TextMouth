@@ -62,7 +62,14 @@ struct TranscriptCleanupServices {
                     try TranscriptCleanupRuleFile.prepareUserCopy()
                 }
             }
+            #if os(macOS)
             let editor = NSWorkspace.shared.urlForApplication(toOpen: .plainText)
+            #else
+            // iPhone has no default text editor to name: the open below
+            // throws "Editing a book's text in another app is not
+            // available on iPhone yet", which the sheet shows as its notice.
+            let editor: URL? = nil
+            #endif
             try await PackageFileEditing.openWithWorkspace(TextMouthPaths.transcriptCleanupRulesFile, app: editor)
             return nil
         } catch {
