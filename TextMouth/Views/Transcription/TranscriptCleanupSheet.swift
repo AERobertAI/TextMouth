@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import SwiftUI
 
 /// The Clean Up sheet (FR05, experimental): the rules in use, what they
@@ -32,10 +36,12 @@ struct TranscriptCleanupSheet: View {
         }
         .padding(20)
         .frame(width: 560, alignment: .leading)
+        #if os(macOS)
         .onExitCommand { model.escape() }
+        #endif
         .task { await model.load() }
         .task(id: model.focusTarget) { await moveFocus() }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: PlatformApplication.didBecomeActiveNotification)) { _ in
             Task { await model.refresh() }
         }
     }
