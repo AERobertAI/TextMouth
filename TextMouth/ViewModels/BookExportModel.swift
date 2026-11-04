@@ -494,6 +494,7 @@ final class BookExportModel: ObservableObject, Identifiable {
 
     // MARK: Choosing the Folder
 
+    #if os(macOS)
     /// The folder chooser of the dialog's Choose Folder… button: one folder,
     /// with a button that makes a new one, starting in `folder`.
     static func makeDestinationPanel(startingIn folder: URL) -> NSOpenPanel {
@@ -524,4 +525,10 @@ final class BookExportModel: ObservableObject, Identifiable {
             panel.begin(completionHandler: take)
         }
     }
+    #else
+    /// Phase 0 stand-in: the Mac opens a folder chooser here; iOS has no
+    /// folder panel yet (phase 1 brings the document picker), so choosing
+    /// does nothing and the destination stays as it was.
+    func chooseDestination(from window: PlatformWindow?) {}
+    #endif
 }
