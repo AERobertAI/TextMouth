@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import SwiftUI
 
 // MARK: - Which Window Asks
@@ -8,7 +12,7 @@ extension ImportOrigin {
     /// has never been shown and so has no number. Main actor only, as
     /// windows are.
     @MainActor
-    init?(window: NSWindow?) {
+    init?(window: PlatformWindow?) {
         guard let window, window.windowNumber > 0 else { return nil }
         self.init(windowNumber: window.windowNumber)
     }
@@ -19,7 +23,7 @@ extension View {
     /// is to ask, one at a time in a sheet (`ImportDecisionPresenter`).
     func importDecisionSheet(
         for libraryViewModel: LibraryViewModel,
-        in window: NSWindow?,
+        in window: PlatformWindow?,
         router: LibraryWindowRouter = .shared
     ) -> some View {
         modifier(ImportDecisionPresenter(libraryViewModel: libraryViewModel, window: window, router: router))
@@ -38,7 +42,7 @@ extension View {
 struct ImportDecisionPresenter: ViewModifier {
     @ObservedObject var libraryViewModel: LibraryViewModel
     /// The Library window this modifier's view is in; nil until it is known.
-    let window: NSWindow?
+    let window: PlatformWindow?
     /// Knows which Library windows are open, and in which order.
     let router: LibraryWindowRouter
 
@@ -84,8 +88,13 @@ struct ImportDecisionPresenter: ViewModifier {
     /// question that appears while the user is elsewhere, such as listening
     /// in a reader window when a background import finishes, waits in its
     /// sheet without taking focus or speaking over the reader.
-    static func userIsIn(_ window: NSWindow?) -> Bool {
-        guard NSApp.isActive, let window else { return false }
+    static func userIsIn(_ window: PlatformWindow?) -> Bool {
+        #if os(macOS)
+        guard PlatformApplication.isActive, let window else { return false }
         return window.isKeyWindow || window.attachedSheet?.isKeyWindow == true
+        #else
+        // Phase 0 iOS body: a UIKit window has no attached sheets to ask.
+        return PlatformApplication.isActive && window?.isKeyWindow == true
+        #endif
     }
 }
