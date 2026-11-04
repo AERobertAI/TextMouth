@@ -480,13 +480,25 @@ enum PortableXMLLenientReader {
         return String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(encoding))
     }
 
-    /// Whether `bytes` open elements more than `PortableXMLDocument.maximumDepth`
-    /// levels deep at once, by a plain scan of its tags that skips comments,
-    /// CDATA, and processing instructions, and counts a start tag that is not
-    /// self-closing as one level (as XML does, an HTML `<br>` too).
+    /// Whether SwiftSoup's tree for `bytes` would nest elements more than
+    /// `PortableXMLDocument.maximumDepth` levels deep, found by a plain scan
+    /// of its tags that keeps the stack of open element names as SwiftSoup's
+    /// XML tree builder does (`XmlTreeBuilder.popStackToClose`):
+    ///
+    /// - a start tag that is not self-closing pushes its name (an HTML
+    ///   `<br>` too, since XML has no void elements);
+    /// - an end tag pops down to the nearest open element of the same name,
+    ///   the elements above it with it, and is ignored when none is open;
+    /// - comments, CDATA, declarations, and processing instructions are skipped.
+    ///
+    /// So unclosed `<br>` elements that an ancestor's end tag closes do not
+    /// add up, and stray end tags that close nothing do not hide the depth.
+    /// The scan stops as soon as the stack passes the bound, so the search an
+    /// end tag makes is at most that deep and the scan stays linear.
     static func nestsTooDeeply(_ bytes: [UInt8]) -> Bool {
         let lessThan = UInt8(ascii: "<")
-        var depth = 0
+        // The names of the elements open, innermost last.
+        var open: [ArraySlice<UInt8>] = []
         var index = 0
         while index < bytes.count {
             guard bytes[index] == lessThan, index + 1 < bytes.count else { index += 1; continue }
@@ -498,18 +510,28 @@ enum PortableXMLLenientReader {
             } else if next == UInt8(ascii: "?") {
                 index = find(Array("?>".utf8), after: index + 2, in: bytes)
             } else if next == UInt8(ascii: "/") {
-                depth = max(0, depth - 1)
+                let name = tagName(from: index + 2, in: bytes)
+                if let match = open.lastIndex(of: name) { open.removeSubrange(match...) }
                 index = find([UInt8(ascii: ">")], after: index + 2, in: bytes)
             } else if isNameStart(next) {
                 let close = endOfStartTag(from: index + 1, in: bytes)
-                if close == 0 || bytes[close - 1] != UInt8(ascii: "/") { depth += 1 }
-                if depth > PortableXMLDocument.maximumDepth { return true }
+                if close == 0 || bytes[close - 1] != UInt8(ascii: "/") { open.append(tagName(from: index + 1, in: bytes)) }
+                if open.count > PortableXMLDocument.maximumDepth { return true }
                 index = close + 1
             } else {
                 index += 1
             }
         }
         return false
+    }
+
+    /// The name of the tag whose name begins at `start`: up to the first
+    /// space, `/`, or `>`.
+    private static func tagName(from start: Int, in bytes: [UInt8]) -> ArraySlice<UInt8> {
+        let ends: [UInt8] = [0x20, 0x09, 0x0A, 0x0D, UInt8(ascii: "/"), UInt8(ascii: ">")]
+        var end = start
+        while end < bytes.count, !ends.contains(bytes[end]) { end += 1 }
+        return bytes[start..<end]
     }
 
     /// Whether `bytes` has `text` at `index`.

@@ -119,6 +119,14 @@ enum PortableXMLCorpus {
         PortableXMLSample("a comment only", "<!-- nothing -->"),
         PortableXMLSample("two roots", "<a/><b/>"),
         PortableXMLSample("a mismatched end tag", "<a><b>x</a>"),
+        PortableXMLSample("a mismatch several levels deep", "<a><b><c>x</a>"),
+        PortableXMLSample("crossed tags", "<b><i>x</b></i>"),
+        PortableXMLSample(
+            "unclosed void elements that the item's end tag closes",
+            "<rss><channel>" + String(
+                repeating: "<item><description>Line one<br>Line two<br>Line three<br></description></item>", count: 60
+            ) + "</channel></rss>"
+        ),
         PortableXMLSample("truncated", "<rss><channel><title>T</title><item><title>I"),
         PortableXMLSample("a bare ampersand", "<a>Q&A night</a>"),
         PortableXMLSample("a control character", "<a>bad\u{0B}char</a>"),

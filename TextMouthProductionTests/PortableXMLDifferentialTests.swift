@@ -114,7 +114,7 @@ final class PortableXMLDifferentialTests: XCTestCase {
         ),
         "tidy: unclosed void elements that the item's end tag closes": KnownDifference(
             reason: "Foundation's tidying leaves each unclosed <br> open past its item, nesting the items inside one another; SwiftSoup closes them with the item's end tag",
-            evidence: "from channel selects 1 and 300"
+            evidence: "from channel selects 1 and 60"
         ),
     ]
 
@@ -634,6 +634,44 @@ final class PortableXMLDifferentialTests: XCTestCase {
         return outermost
     }
 
+    /// The depth scan models SwiftSoup's stack, not a count of tags: unclosed
+    /// `<br>` elements that an ancestor's end tag closes do not add up (a
+    /// damaged feed of any length is read), while stray end tags that close
+    /// nothing, which leave SwiftSoup's stack growing, are refused.
+    func testTheLenientDepthScanFollowsSwiftSoupsStack() throws {
+        let limit = PortableXMLDocument.maximumDepth
+        let items = String(repeating: "<item><description>One<br>Two<br>Three<br></description></item>", count: 300)
+        let feed = "<rss><channel>" + items + "</channel></rss>"
+        XCTAssertFalse(PortableXMLLenientReader.nestsTooDeeply(Array(feed.utf8)))
+        let tidied = try PortableXMLDocument(xmlString: feed, options: [.documentTidyXML])
+        XCTAssertEqual(try tidied.nodes(forXPath: "//*[local-name()='item']").count, 300)
+
+        // An end tag closes the nearest open element of its name, and those above it.
+        let rounds = String(repeating: "<a>" + String(repeating: "<b><c>", count: 200) + "</a>", count: 5)
+        XCTAssertFalse(PortableXMLLenientReader.nestsTooDeeply(Array(rounds.utf8)))
+        // Stray end tags close nothing: the opens pile up.
+        let stray = "<a>" + String(repeating: "<b></q>", count: limit + 88) + "</a>"
+        XCTAssertTrue(PortableXMLLenientReader.nestsTooDeeply(Array(stray.utf8)))
+        XCTAssertThrowsError(try PortableXMLDocument(xmlString: stray, options: [.documentTidyXML])) { error in
+            XCTAssertEqual(error as? PortableXMLError, .tooDeep)
+        }
+        // 600 stray end tags around nested opens.
+        let around = String(repeating: "</q>", count: 600) + String(repeating: "<a>", count: limit + 1) + String(repeating: "</q>", count: 600)
+        XCTAssertTrue(PortableXMLLenientReader.nestsTooDeeply(Array(around.utf8)))
+    }
+
+    /// A hostile document of 100,000 pairs `<a></q>` is refused promptly by
+    /// the scan, before SwiftSoup is asked to build a tree 100,000 deep
+    /// (with a search of its whole stack for every stray end tag).
+    func testAHugeDocumentOfStrayEndTagsIsRefusedPromptly() {
+        let hostile = String(repeating: "<a></q>", count: 100_000)
+        let started = Date()
+        XCTAssertThrowsError(try PortableXMLDocument(xmlString: hostile, options: [.documentTidyXML])) { error in
+            XCTAssertEqual(error as? PortableXMLError, .tooDeep)
+        }
+        XCTAssertLessThan(Date().timeIntervalSince(started), 5, "the refusal reads only the first few hundred tags")
+    }
+
     /// Letting a tree go does not recurse, however deep it is, so a crafted
     /// document cannot exhaust the stack: Foundation's tree needed
     /// `EPUBParser.takeApart` for this. Releasing the root of a chain 300,000
@@ -666,5 +704,29 @@ final class PortableXMLDifferentialTests: XCTestCase {
         XCTAssertThrowsError(try PortableXMLDocument(xmlString: xml))
         let tidiedWithoutTheOption = try PortableXMLDocument(xmlString: xml, options: [.documentTidyXML])
         XCTAssertFalse((tidiedWithoutTheOption.stringValue ?? "").contains("TOP-SECRET-MARKER"))
+    }
+
+    /// The `<!ENTITY` pre-scan refuses the document above before XMLParser
+    /// runs, so that test does not exercise XMLParser's own settings. Here the
+    /// document names a DTD file as its external subset, and the entity is
+    /// declared in that file, so the document has no `<!ENTITY` in it: the
+    /// entity's text could reach the tree only if XMLParser loaded the file.
+    /// It never does, strictly or tidily. (Probed on the Mac: XMLParser does
+    /// not load an external subset even with `shouldResolveExternalEntities`
+    /// on, and instead asks its delegate for the entity, so the guard is
+    /// `PortableXMLStrictReader` answering nil; this test fails if it ever
+    /// answers with the file.)
+    func testNoExternalSubsetIsEverLoaded() throws {
+        let folder = try makeSandboxDirectory("PortableXMLSubset")
+        let subset = folder.appendingPathComponent("subset.dtd")
+        try "<!ENTITY x \"TOP-SECRET-MARKER\">".write(to: subset, atomically: true, encoding: .utf8)
+        let xml = "<!DOCTYPE a SYSTEM \"\(subset.absoluteString)\"><a>[&x;]</a>"
+        XCTAssertNil(xml.range(of: "<!ENTITY"), "the pre-scan must not be what stops this document")
+        for options: PortableXMLNode.Options in [[], [.nodeLoadExternalEntitiesNever], [.documentTidyXML]] {
+            // The document may be read or refused, but the file's text is never in it.
+            if let document = try? PortableXMLDocument(xmlString: xml, options: options) {
+                XCTAssertFalse((document.stringValue ?? "").contains("TOP-SECRET-MARKER"))
+            }
+        }
     }
 }
