@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 import Foundation
 import SwiftUI
@@ -363,7 +367,7 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// could not be exported.
     /// - Returns: What the export did; nil when it could not start.
     @discardableResult
-    func export(announcingFrom window: NSWindow? = nil) async -> BookExportOutcome? {
+    func export(announcingFrom window: PlatformWindow? = nil) async -> BookExportOutcome? {
         guard canExport else { return nil }
         let earlier = (phase: phase, summary: summary)
         let cancellation = BookExportCancellation()
@@ -508,7 +512,7 @@ final class BookExportModel: ObservableObject, Identifiable {
 
     /// Opens the folder chooser, as a sheet on `window` when there is one,
     /// and makes the folder chosen the destination.
-    func chooseDestination(from window: NSWindow?) {
+    func chooseDestination(from window: PlatformWindow?) {
         let panel = Self.makeDestinationPanel(startingIn: destination)
         let take: (NSApplication.ModalResponse) -> Void = { [weak self] response in
             guard response == .OK, let folder = panel.url else { return }
