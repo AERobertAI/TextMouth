@@ -13,8 +13,14 @@ extension ImportOrigin {
     /// windows are.
     @MainActor
     init?(window: PlatformWindow?) {
+        #if os(macOS)
         guard let window, window.windowNumber > 0 else { return nil }
         self.init(windowNumber: window.windowNumber)
+        #else
+        // Phase 0 iOS body: a UIKit window has no window number, so no
+        // window is named yet (phase 1 names the scene's window).
+        return nil
+        #endif
     }
 }
 

@@ -208,7 +208,12 @@ struct BookExportSheet: View {
     /// and closes the dialog when everything asked was done; otherwise the
     /// dialog stays, with what could not be done.
     private func export() async {
+        #if os(macOS)
         let announcingWindow = window?.sheetParent ?? window
+        #else
+        // Phase 0 iOS: a UIKit window has no sheet parent.
+        let announcingWindow = window
+        #endif
         guard let outcome = await model.export(announcingFrom: announcingWindow) else { return }
         if BookExportModel.didEverything(outcome) {
             close()

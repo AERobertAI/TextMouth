@@ -92,6 +92,11 @@ enum ExportCommandRouting {
     /// The windows of `windows` still open, on screen or in the Dock: a
     /// window closed but kept by SwiftUI counts as none.
     static func openWindows(_ windows: [PlatformWindow]) -> [PlatformWindow] {
+        #if os(macOS)
         windows.filter { $0.isVisible || $0.isMiniaturized }
+        #else
+        // Phase 0 iOS body: a UIKit window has no Dock; open means not hidden.
+        windows.filter { !$0.isHidden }
+        #endif
     }
 }
