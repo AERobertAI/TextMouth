@@ -191,12 +191,22 @@ def project(text):
     return out
 
 
+def without_comment(line):
+    """`line` without a trailing `//` comment. A line holding a quotation mark
+    is left whole, since its `//` may be inside a string (a URL)."""
+    if '"' in line:
+        return line
+    position = line.find("//")
+    return line if position < 0 else line[:position]
+
+
 def normalize(lines, aliases):
-    """The projected lines as compared: trailing space removed, blank lines
-    dropped, and every platform alias read as its Mac type."""
+    """The projected lines as compared: comments, trailing space, and blank
+    lines dropped (none changes what the Mac runs), and every platform alias
+    read as its Mac type."""
     result = []
     for line in lines:
-        line = line.rstrip()
+        line = without_comment(line).rstrip()
         if not line.strip():
             continue
         for alias, mac in aliases.items():
@@ -354,6 +364,10 @@ def self_test():
     if normalize(["  func f(_ w: PlatformWindow?) {", "", "  }  "], aliases) != ["  func f(_ w: NSWindow?) {", "  }"]:
         failures += 1
         print("FAIL alias normalization")
+    if normalize(["/// A doc comment.", "  // A comment.", "  let a = 1 // why", '  let u = "https://x"'], {}) != \
+            ["  let a = 1", '  let u = "https://x"']:
+        failures += 1
+        print("FAIL comment removal")
     if normalize(["  .checkboxToggleStyle()", "  .radioGroupPickerStyle()"], {}) != \
             ["  .toggleStyle(.checkbox)", "  .pickerStyle(.radioGroup)"]:
         failures += 1
