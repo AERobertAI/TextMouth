@@ -32,15 +32,16 @@ final class PagesUpgradeTests: XCTestCase {
 
     /// Only the formats that gained pages have a page reader; every other
     /// format has none, so no book of it is ever read again for pages. EPUB
-    /// and HTML, whose shared converter changed a heading's label and then
-    /// stopped taking "Page" alone for a page's label, are at 1.0.2; the
-    /// others have not changed since they gained pages.
+    /// and HTML, whose shared converter changed a heading's label, then
+    /// stopped taking "Page" alone for a page's label, and then took a
+    /// leading "Page" off every label, are at 1.0.3; the others have not
+    /// changed since they gained pages.
     func testOnlyTheFormatsWithPagesHaveAPageReader() {
         let withPages: Set<BookFormat> = [.epub, .html, .pdf, .docx, .daisy, .rtf, .rtfd, .doc, .odt, .wordml, .braille, .txt]
         for format in BookFormat.allCases {
             XCTAssertEqual(
                 PageReaderVersions.current(for: format),
-                withPages.contains(format) ? (format == .epub || format == .html ? "1.0.2" : "1.0.0") : nil,
+                withPages.contains(format) ? (format == .epub || format == .html ? "1.0.3" : "1.0.0") : nil,
                 format.rawValue
             )
         }
@@ -57,12 +58,13 @@ final class PagesUpgradeTests: XCTestCase {
             book.pageReaderVersion = stored
             XCTAssertEqual(PageReaderVersions.isOutdated(book), outdated, "stored \"\(stored)\"")
         }
-        // An EPUB's is 1.0.2, so a book the first or the second reader
-        // stamped is behind it.
+        // An EPUB's is 1.0.3, so a book any earlier reader stamped is
+        // behind it.
         let epub = Book(title: "Outdated", format: .epub, filePath: "/tmp/outdated.epub", md5Hash: "m", folderPath: "")
         XCTAssertTrue(PageReaderVersions.isOutdated(epub), "no page reader recorded")
         for (stored, outdated) in [
-            ("0.9.0", true), ("1", true), ("1.0.0", true), ("1.0.1", true), ("1.0.2", false), ("1.2.0", false),
+            ("0.9.0", true), ("1", true), ("1.0.0", true), ("1.0.1", true), ("1.0.2", true), ("1.0.3", false),
+            ("1.2.0", false),
         ] {
             var book = epub
             book.pageReaderVersion = stored
@@ -992,7 +994,7 @@ final class PagesUpgradeTests: XCTestCase {
 
     /// The stamp of a page reader earlier than any format's now, as a book
     /// carries once its format's reader has changed (V05): "0.9.0" stands
-    /// for "1.0.1" once the reader is "1.0.2".
+    /// for "1.0.2" once the reader is "1.0.3".
     private static let earlierReader = "0.9.0"
 
     /// The EPUB sample's text with pages as an earlier page reader wrote
