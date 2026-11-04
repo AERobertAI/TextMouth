@@ -50,23 +50,12 @@ final class LibraryWindowRouter: ObservableObject {
     /// application's key window, and the main queue; a test passes its own.
     init(
         now: @escaping @MainActor () -> Date = { Date() },
-        keyWindow: @escaping @MainActor () -> PlatformWindow? = LibraryWindowRouter.applicationKeyWindow,
+        keyWindow: @escaping @MainActor () -> PlatformWindow? = { PlatformApplication.keyWindow },
         schedule: @escaping Scheduler = LibraryWindowRouter.scheduleOnMainQueue
     ) {
         self.now = now
         self.currentKeyWindow = keyWindow
         self.schedule = schedule
-    }
-
-    /// The application's key window: on the Mac, `NSApp.keyWindow`, as the
-    /// router always asked. iOS has no single key window to ask for, so it
-    /// answers none, and a window is routed to by its registration alone.
-    static func applicationKeyWindow() -> PlatformWindow? {
-        #if os(macOS)
-        NSApp.keyWindow
-        #else
-        nil
-        #endif
     }
 
     // MARK: - Library Windows
