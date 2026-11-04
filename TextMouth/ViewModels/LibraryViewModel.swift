@@ -481,11 +481,21 @@ struct DataDirectoryEnvironment {
     /// The app's: this process's preferences, the shared workspace, and the
     /// shared session lease.
     @MainActor static var app: DataDirectoryEnvironment {
+        #if os(macOS)
         DataDirectoryEnvironment(
             preferences: TextMouthRuntime.current.preferences,
             volumeNotifications: NSWorkspace.shared.notificationCenter,
             sessionLease: .shared
         )
+        #else
+        // iOS has no workspace to announce unmounted volumes (phase 0): the
+        // default center stands in, and nothing posts the unmount names to it.
+        DataDirectoryEnvironment(
+            preferences: TextMouthRuntime.current.preferences,
+            volumeNotifications: .default,
+            sessionLease: .shared
+        )
+        #endif
     }
 }
 
@@ -618,7 +628,7 @@ extension LibraryViewModel {
     /// Tells VoiceOver why the library can't be used, once for each reason,
     /// however many Library windows show the screen (FR02). The screen asks
     /// for this once VoiceOver has moved to the reason.
-    func announceDataDirectoryUnavailability(from window: NSWindow? = nil) {
+    func announceDataDirectoryUnavailability(from window: PlatformWindow? = nil) {
         guard let reason = dataDirectoryUnavailability, reason != announcedUnavailability else { return }
         announcedUnavailability = reason
         VoiceOverAnnouncer.announce(DataDirectoryUnavailableText.announcement(for: reason), from: window)
@@ -627,7 +637,7 @@ extension LibraryViewModel {
     /// Refuses an app-wide action that needs the library while it can't be
     /// used (FR02), such as a book opened from Finder: the Library Not
     /// Available screen shows `refusal`, and VoiceOver hears it.
-    func refuseWhileDataDirectoryUnavailable(_ refusal: String, from window: NSWindow? = nil) {
+    func refuseWhileDataDirectoryUnavailable(_ refusal: String, from window: PlatformWindow? = nil) {
         dataDirectoryRefusalNotice = refusal
         VoiceOverAnnouncer.announce(refusal, from: window)
     }
@@ -638,11 +648,13 @@ extension LibraryViewModel {
     /// TextMouth runs: an unmounted volume, and a write that found the
     /// folder gone (`LibraryPersistenceService`).
     func observeDataDirectoryLoss() {
+        #if os(macOS)
         dataDirectoryEnvironment.volumeNotifications.publisher(for: NSWorkspace.didUnmountNotification)
             .compactMap { $0.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL }
             .receive(on: DispatchQueue.main)
             .sink { [weak self] volume in self?.volumeDidUnmount(volume) }
             .store(in: &cancellables)
+        #endif
         NotificationCenter.default.publisher(for: .dataDirectoryWriteFoundFolderMissing)
             .compactMap { $0.userInfo?[DataDirectoryEvents.rootKey] as? String }
             .receive(on: DispatchQueue.main)

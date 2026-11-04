@@ -65,7 +65,7 @@ extension LibraryViewModel {
     /// once, and one no longer in the library not at all. Returns what it
     /// said.
     @discardableResult
-    func addToReadingList(_ books: [Book], announcingFrom window: NSWindow?) -> String {
+    func addToReadingList(_ books: [Book], announcingFrom window: PlatformWindow?) -> String {
         let listedBefore = Set(readingList.bookIDs)
         let chosen = booksStillInLibrary(books)
         let added = addToReadingList(chosen.map(\.id))
@@ -86,7 +86,7 @@ extension LibraryViewModel {
     /// off, why (`ReadingListWording.removeRefusal`). The books stay in the
     /// library. Returns what it said.
     @discardableResult
-    func removeFromReadingList(_ books: [Book], announcingFrom window: NSWindow?) -> String {
+    func removeFromReadingList(_ books: [Book], announcingFrom window: PlatformWindow?) -> String {
         let chosen = booksStillInLibrary(books)
         let removed = removeFromReadingList(chosen.map(\.id))
         let message = removed.isEmpty
