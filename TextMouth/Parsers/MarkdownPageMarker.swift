@@ -33,12 +33,33 @@ struct MarkdownPageMarker: Equatable, Sendable {
     ///
     /// The label is normalized: whitespace at its ends is trimmed, each inner
     /// run of whitespace and line breaks becomes one space, and it is cut to
-    /// `maximumLabelLength` Characters and trimmed again. A label with nothing
-    /// left (a source that gives no name) becomes `ordinal`, the page's
-    /// 1-based number among the book's pages.
+    /// `maximumLabelLength` Characters and trimmed again. A label that names
+    /// no page (`namesNoPage`: nothing left, or only the word "Page", from a
+    /// source that gives no name) becomes `ordinal`, the page's 1-based
+    /// number among the book's pages.
     init(label: String, ordinal: Int) {
         let normalized = Self.normalized(label)
-        self.label = normalized.isEmpty ? String(ordinal) : normalized
+        self.label = Self.namesNoPage(normalized) ? String(ordinal) : normalized
+    }
+
+    // MARK: - Labels that name no page
+
+    /// Whether `label` gives a page no name of its own: it holds nothing but
+    /// white space and a lone period, or only the word "Page" in any
+    /// capitals, which a generator writes when it has no number for the page
+    /// (`aria-label="Page "`). Every reader of a book's page labels asks this
+    /// one rule before it takes a label, so no page is named "Page", which
+    /// the reader would show as "Page Page of 1".
+    static func namesNoPage(_ label: String) -> Bool {
+        let key = comparisonKey(label)
+        return key.isEmpty || key == "PAGE"
+    }
+
+    /// Whether `label` is a page number as `isNoMoreThanLabel` reads one:
+    /// ASCII digits, or a Roman numeral in its canonical form, with case,
+    /// white space, and one trailing period set aside ("12", "xii", "XII.").
+    static func isPageNumber(_ label: String) -> Bool {
+        pageNumber(comparisonKey(label)) != nil
     }
 
     /// A marker whose label is already normalized and not empty.
