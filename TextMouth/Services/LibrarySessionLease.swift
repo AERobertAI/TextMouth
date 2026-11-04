@@ -1,5 +1,9 @@
+#if os(macOS)
 import AppKit
 import SystemConfiguration
+#else
+import UIKit
+#endif
 
 /// This Mac's note, in a library another Mac can open too, that TextMouth
 /// has the library open (FR02: two Macs, a warning and never a lock).
@@ -150,7 +154,13 @@ final class LibrarySessionLease {
         warn: @escaping @MainActor (OtherMac, @escaping Answer) -> Void = { other, answer in
             LibrarySessionLease.presentWarning(about: other, answer: answer)
         },
-        quit: @escaping @MainActor () -> Void = { NSApplication.shared.terminate(nil) }
+        // The Mac terminates the app. An iPhone app never ends itself (the
+        // system decides), so on iOS quitting does nothing.
+        quit: @escaping @MainActor () -> Void = {
+            #if os(macOS)
+            NSApplication.shared.terminate(nil)
+            #endif
+        }
     ) {
         self.preferences = preferences
         self.clock = clock
@@ -473,6 +483,7 @@ final class LibrarySessionLease {
             + "Using one library on two Macs at the same time can lose reading positions and changes."
     }
 
+    #if os(macOS)
     /// Shows the warning as a sheet on the key Library window, or on its own
     /// when no window is key, and answers with the choice. Continue is the
     /// default button, on Return; VoiceOver reads the alert as it appears.
@@ -496,9 +507,20 @@ final class LibrarySessionLease {
     nonisolated static func choice(after response: NSApplication.ModalResponse) -> Choice {
         response == .alertSecondButtonReturn ? .quit : .continueHere
     }
+    #else
+    /// Phase 0 on iOS shows no alert: it answers Continue, the warning's
+    /// default, so the library stays usable. A phase 1 alert replaces this.
+    static func presentWarning(about other: OtherMac, answer: @escaping Answer) {
+        answer(.continueHere)
+    }
+    #endif
 
     /// This computer's name, as Sharing settings give it.
     static func systemComputerName() -> String {
+        #if os(macOS)
         (SCDynamicStoreCopyComputerName(nil, nil) as String?) ?? "this Mac"
+        #else
+        UIDevice.current.name
+        #endif
     }
 }
