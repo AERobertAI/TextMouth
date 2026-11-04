@@ -1006,6 +1006,7 @@
 		8F471AAA3EF3B59EA7F5130C /* ShortcutPressDispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B5C2318FD444E85BA1B947D /* ShortcutPressDispatcher.swift */; };
 		8F52DB119B313211CEFAAC70 /* LibraryViewDefinition.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30033D99C49EF14FE4B4758 /* LibraryViewDefinition.swift */; };
 		8F7D19ACE9DD31CE148095B8 /* LibraryFolderAdoptionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E510D30600D0156FC7172655 /* LibraryFolderAdoptionTests.swift */; };
+		8F864814F63D702FC7932B16 /* UIFontDescriptorSymbolicTraits+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51C68B288C9FADEBAE121022 /* UIFontDescriptorSymbolicTraits+iOS.swift */; };
 		8FAF46B67A95B256FC46AA9C /* BookSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65975C06BFA32E3D48086801 /* BookSearchView.swift */; };
 		8FCE7B1749165DDD4A5FF92D /* LibraryViewModel+AudioEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = F767BE78C6D4E99D99C3A904 /* LibraryViewModel+AudioEditing.swift */; };
 		8FDF6B240901A8D50F337A89 /* ImportFailure.swift in Sources */ = {isa = PBXBuildFile; fileRef = B33BAE34A8FF3CE2B699D156 /* ImportFailure.swift */; };
@@ -1862,21 +1863,22 @@
 		9279BF2ABA7F3526AB66874A /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/LAME;
+			dstPath = Licenses/liblouis;
 			dstSubfolderSpec = 7;
 			files = (
-				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
-				943853340D2809882740233D /* LICENSE in CopyFiles */,
+				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
+				41F911ECAF492222AF723C10 /* README in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		BF489798E33F1F27D1434BD7 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = liblouis;
+			dstPath = Licenses/LAME;
 			dstSubfolderSpec = 7;
 			files = (
-				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
+				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
+				943853340D2809882740233D /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1894,11 +1896,10 @@
 		C4DD7093AEE01EB21DD71ECD /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/liblouis;
+			dstPath = liblouis;
 			dstSubfolderSpec = 7;
 			files = (
-				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
-				41F911ECAF492222AF723C10 /* README in CopyFiles */,
+				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2346,6 +2347,7 @@
 		50FD16E1C8E5E84FC02F08E5 /* SSMLReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSMLReader.swift; sourceTree = "<group>"; };
 		51253324799456BB16A269EE /* AddToLibraryHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddToLibraryHost.swift; sourceTree = "<group>"; };
 		519193A3EE2A972186F85724 /* TranscriptInstallation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptInstallation.swift; sourceTree = "<group>"; };
+		51C68B288C9FADEBAE121022 /* UIFontDescriptorSymbolicTraits+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIFontDescriptorSymbolicTraits+iOS.swift"; sourceTree = "<group>"; };
 		5264DB4EF7281C549A29BF60 /* AudioEditorFilterSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorFilterSheet.swift; sourceTree = "<group>"; };
 		52DA94DBDAF962FCE656AC08 /* bitstream.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bitstream.h; sourceTree = "<group>"; };
 		531D0DA2D5A7B376181508E9 /* LibraryViewFilterEvaluatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryViewFilterEvaluatorTests.swift; sourceTree = "<group>"; };
@@ -3460,6 +3462,7 @@
 		5417E8B7D0BE62A82160D51B /* Parsers */ = {
 			isa = PBXGroup;
 			children = (
+				51C68B288C9FADEBAE121022 /* UIFontDescriptorSymbolicTraits+iOS.swift */,
 				D5B02BF8854544C66BBE6299 /* XMLTree+iOS.swift */,
 			);
 			path = Parsers;
@@ -6911,6 +6914,7 @@
 				7A99BF5F9B00D7E5F96D9453 /* TranscriptionSheet.swift in Sources */,
 				D47CE969427CBAB3DD51B5AE /* TranscriptionSheetModel.swift in Sources */,
 				43D9D2CC3D7D56E4FA259474 /* TranscriptionWording.swift in Sources */,
+				8F864814F63D702FC7932B16 /* UIFontDescriptorSymbolicTraits+iOS.swift in Sources */,
 				B9D0F47C9DE0EF64E80E65B4 /* UbiquitousItemStatusProvider.swift in Sources */,
 				A2012FBB2EADAE288EF13F80 /* UnsavedChangesTermination.swift in Sources */,
 				34C6E9744A8B2EA82DCB8437 /* ViewBodyCounter.swift in Sources */,

@@ -1,6 +1,10 @@
 import Foundation
 import PDFKit
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import os
 
 // MARK: - Error Types
@@ -422,7 +426,7 @@ enum PDFTextParser {
                 return
             }
 
-            let font = attrs[.font] as? NSFont
+            let font = attrs[.font] as? PlatformFont
             let fontSize = font?.pointSize ?? bodyFontSize
             let isBold = font?.fontDescriptor.symbolicTraits.contains(.bold) ?? false
             let isItalic = font?.fontDescriptor.symbolicTraits.contains(.italic) ?? false
@@ -499,7 +503,7 @@ enum PDFTextParser {
                 return
             }
 
-            let font = attrs[.font] as? NSFont
+            let font = attrs[.font] as? PlatformFont
             let fontSize = font?.pointSize ?? bodyFontSize
             let isBold = font?.fontDescriptor.symbolicTraits.contains(.bold) ?? false
             let isItalic = font?.fontDescriptor.symbolicTraits.contains(.italic) ?? false
@@ -683,7 +687,7 @@ enum PDFTextParser {
         let fullRange = NSRange(location: 0, length: attrString.length)
 
         attrString.enumerateAttribute(.font, in: fullRange, options: []) { value, range, _ in
-            guard let font = value as? NSFont else { return }
+            guard let font = value as? PlatformFont else { return }
             let roundedSize = (font.pointSize * 2).rounded() / 2 // Round to nearest 0.5
             let charCount = range.length
             sizeCounts[roundedSize, default: 0] += charCount
