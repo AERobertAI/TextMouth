@@ -22,7 +22,7 @@ struct TranscriptCleanupServices {
     /// Opens the user's copy of the rules in their text editor, from a
     /// window, making it from TextMouth's own rules first when there is
     /// none: nil once it opened, or why it could not.
-    var editRules: @MainActor (NSWindow?) async -> String?
+    var editRules: @MainActor (PlatformWindow?) async -> String?
     /// Whether the book is being transcribed now.
     var isTranscribing: @MainActor (UUID) -> Bool
     /// Settles and ends the Edit Text session of a book whose transcript is
@@ -32,7 +32,7 @@ struct TranscriptCleanupServices {
     /// Begins the book's Edit Text session again when the rewrite failed.
     var resumeTextEdit: @MainActor (Book) async -> Void
     /// Asks VoiceOver to speak a message from a window.
-    var announce: @MainActor (String, NSWindow?) -> Void
+    var announce: @MainActor (String, PlatformWindow?) -> Void
 
     /// The app's own: the rule file in the bundle and the data directory,
     /// the user's default text editor, the app's transcription center and
@@ -146,7 +146,7 @@ final class TranscriptCleanupSheetModel: ObservableObject, Identifiable {
     @Published private(set) var editRulesNotice: String?
 
     /// The window the sheet sits on, where announcements come from.
-    weak var window: NSWindow?
+    weak var window: PlatformWindow?
     /// Closes the sheet; the presenter sets it.
     var onClose: () -> Void = {}
 
