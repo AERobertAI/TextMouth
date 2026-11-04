@@ -219,7 +219,10 @@ enum TextExportWriters {
     static let all: [any TextExportWriter] = [
         HTMLExportWriter(),
         RTFExportWriter(),
+        #if os(macOS)
+        // The Word 97-2003 writer needs AppKit's .docFormat: the Mac alone offers it.
         WordDocExportWriter(),
+        #endif
         BRFExportWriter(),
         PEFExportWriter(),
     ]
