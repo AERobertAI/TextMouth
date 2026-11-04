@@ -229,7 +229,8 @@ struct JumpToPagePanel: View {
     var body: some View {
         JumpFieldPanel(
             label: ReaderPageWording.fieldLabel,
-            hint: ReaderPageWording.fieldHint,
+            // The book's pages, so the listener knows the range to type in.
+            hint: ReaderPageWording.fieldHint(for: viewModel.bookPages),
             fieldWidth: 80,
             // The current page's label, so the user can adjust it rather
             // than type from nothing.

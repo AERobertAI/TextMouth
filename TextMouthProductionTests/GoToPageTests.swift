@@ -87,10 +87,45 @@ final class GoToPageTests: XCTestCase {
         )
     }
 
+    /// The field's hint says how many pages the book has, the N of "Page 12
+    /// of N", and its first and last pages' labels, before saying how to
+    /// type one: for a book numbered i, ii, then 1 to 300, "This book has
+    /// 300 pages, from i to 300." A book of one page names it, a book whose
+    /// labels hold no number counts its pages, and a book without pages
+    /// says so.
+    func testTheFieldHintGivesTheBooksPages() {
+        let typing = " Type a page as the book numbers it, such as 12 or xii."
+        XCTAssertEqual(
+            ReaderPageWording.fieldHint(for: BookPages(breaks: Self.sixPages)),
+            "This book has 300 pages, from i to 300." + typing
+        )
+        XCTAssertEqual(
+            ReaderPageWording.fieldHint(for: BookPages(breaks: [PageBreak(label: "1", chapterIndex: 0, characterOffset: 0)])),
+            "This book's only page is 1." + typing
+        )
+        let lettered = ["A", "B", "C"].enumerated().map {
+            PageBreak(label: $0.element, chapterIndex: 0, characterOffset: $0.offset * 10)
+        }
+        XCTAssertEqual(
+            ReaderPageWording.fieldHint(for: BookPages(breaks: lettered)),
+            "This book has 3 pages, from A to C." + typing
+        )
+        let oneNumbered = [
+            PageBreak(label: "1", chapterIndex: 0, characterOffset: 0),
+            PageBreak(label: "A", chapterIndex: 0, characterOffset: 10),
+        ]
+        XCTAssertEqual(
+            ReaderPageWording.fieldHint(for: BookPages(breaks: oneNumbered)),
+            "This book has 1 page, from 1 to A." + typing,
+            "the count follows the N of \"Page A of 1\", in the singular"
+        )
+        XCTAssertEqual(ReaderPageWording.fieldHint(for: .none), "This book has no pages.")
+    }
+
     /// The wording, pinned.
     func testTheWordsAreFixed() {
         XCTAssertEqual(ReaderPageWording.fieldLabel, "Page")
-        XCTAssertEqual(ReaderPageWording.fieldHint, "Type a page as the book numbers it, such as 12 or xii.")
+        XCTAssertEqual(ReaderPageWording.typingHint, "Type a page as the book numbers it, such as 12 or xii.")
         XCTAssertEqual(ReaderPageWording.emptyField, "Type a page number.")
         XCTAssertEqual(ReaderPageWording.jumped(to: "12"), "Jumped to page 12.")
         XCTAssertEqual(
@@ -696,8 +731,9 @@ final class GoToPageTests: XCTestCase {
 
     // MARK: - The Hosted Field and Status Row
 
-    /// The page panel's field is one text field, labelled "Page", with what
-    /// to type as its hint and the current page's label as its value.
+    /// The page panel's field is one text field, labelled "Page", with the
+    /// book's pages and what to type as its hint and the current page's
+    /// label as its value.
     func testThePagePanelsFieldIsOneLabelledEditText() throws {
         let reader = makePagedReader(pages: Self.pagesAroundTwelve)
         defer { reader.close() }
@@ -708,7 +744,10 @@ final class GoToPageTests: XCTestCase {
         try withHostedField(panel, holding: "12") { field, controls in
             XCTAssertEqual(field.role, .textField)
             XCTAssertEqual(field.label, "Page")
-            XCTAssertEqual(field.hint, "Type a page as the book numbers it, such as 12 or xii.")
+            XCTAssertEqual(
+                field.hint,
+                "This book has 300 pages, from 11 to 300. Type a page as the book numbers it, such as 12 or xii."
+            )
             XCTAssertEqual(field.element.accessibilityValue() as? String, "12")
             XCTAssertEqual(controls.filter { $0.role == .textField }.count, 1)
         }

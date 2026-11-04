@@ -24,8 +24,24 @@ enum ReaderPageWording {
     /// Go to Page's field name, shown before it and spoken as its label.
     static let fieldLabel = "Page"
 
-    /// What Go to Page's field takes, spoken as its hint.
-    static let fieldHint = "Type a page as the book numbers it, such as 12 or xii."
+    /// How Go to Page's field is filled in, the last sentence of its hint.
+    static let typingHint = "Type a page as the book numbers it, such as 12 or xii."
+
+    /// What Go to Page's field takes, spoken as its hint: how many pages the
+    /// book has, the N of "Page 12 of N" (`BookPages.total`), from its first
+    /// page's label to its last's, then `typingHint`. "This book has 300
+    /// pages, from i to 300. Type a page as the book numbers it, such as 12
+    /// or xii." A book of one page names it ("This book's only page is 1."),
+    /// and a book without pages says so, as a page command does there.
+    static func fieldHint(for pages: BookPages) -> String {
+        guard let first = pages.breaks.first?.label, let last = pages.breaks.last?.label else {
+            return noPages
+        }
+        let size = pages.count == 1
+            ? "This book's only page is \(first)."
+            : "This book has \(pages.total) \(pages.total == 1 ? "page" : "pages"), from \(first) to \(last)."
+        return "\(size) \(typingHint)"
+    }
 
     /// What Go to Page says to an empty field.
     static let emptyField = "Type a page number."
