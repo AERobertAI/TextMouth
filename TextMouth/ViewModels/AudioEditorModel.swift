@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 
 /// What the audio editor window shows and does (FR04): one audio file of a
@@ -40,7 +44,7 @@ final class AudioEditorModel: ObservableObject {
     let store: UserDefaults
     /// The editor's window, once it is open: the window its shortcuts are
     /// pressed in, and its announcements are posted from.
-    weak var hostWindow: NSWindow?
+    weak var hostWindow: PlatformWindow?
 
     // MARK: Published State
 
@@ -205,7 +209,7 @@ final class AudioEditorModel: ObservableObject {
         ) { [weak self] notification in
             // Read on the main queue it is delivered on, then handed on.
             let action = (notification.userInfo?["action"] as? String).flatMap(ShortcutAction.init(rawValue:))
-            let source = notification.userInfo?["sourceWindow"] as? NSWindow
+            let source = notification.userInfo?["sourceWindow"] as? PlatformWindow
             MainActor.assumeIsolated { self?.shortcutPressed(action, in: source) }
         }
         bindingsObserver = PreferenceObserver(keys: [KeyboardShortcutManager.bindingsPreference.key], in: store) { [weak self] _ in
@@ -312,10 +316,17 @@ final class AudioEditorModel: ObservableObject {
 
     /// Performs `action`, an editor shortcut pressed in `source`, when that
     /// is this editor's window.
-    private func shortcutPressed(_ action: ShortcutAction?, in source: NSWindow?) {
+    private func shortcutPressed(_ action: ShortcutAction?, in source: PlatformWindow?) {
+        #if os(macOS)
         guard let action,
               WindowCommandRouting.shouldAccept(sourceWindow: source, hostWindow: hostWindow, keyWindow: NSApp.keyWindow) else { return }
         perform(action)
+        #else
+        // iOS has no second window to route a shortcut between, so any
+        // shortcut pressed belongs to this editor.
+        guard let action else { return }
+        perform(action)
+        #endif
     }
 
     // MARK: The Preview
