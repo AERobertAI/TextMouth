@@ -14,9 +14,8 @@ final class PackageFileEditing {
     /// Would open `file` in `app`, or in the default app for its kind, as
     /// the Mac does. iPhone cannot hand a file to another app to be edited
     /// and taken back, so this always throws `IOSUnavailable`, whose words
-    /// read "Editing a book's text in another app is not available on
-    /// iPhone yet."
+    /// read "Editing a file in another app is not available on iPhone yet."
     static func openWithWorkspace(_ file: URL, app: URL?) async throws {
-        throw IOSUnavailable.feature("Editing a book's text in another app")
+        throw IOSUnavailable.feature("Editing a file in another app")
     }
 }
