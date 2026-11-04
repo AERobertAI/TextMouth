@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 
 // MARK: - The Report of a Speech Refusal (B05)
 

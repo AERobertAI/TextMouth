@@ -1,6 +1,10 @@
 import SwiftUI
 import Combine
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import AVFoundation
 import os.log
 

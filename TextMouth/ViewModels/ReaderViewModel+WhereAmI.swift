@@ -1,5 +1,9 @@
 import SwiftUI
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import AVFoundation
 
 // MARK: - Where Am I, Copy Reading Position, VoiceOver Announcements

@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Foundation
 
 // MARK: - FR02: Opening a Book That Is in the Cloud
