@@ -32,6 +32,12 @@ final class MOBIBookStructureTests: XCTestCase {
         text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
 
+    /// `html` from its `<body` tag on: the part of a book the reader reads. What
+    /// comes before, the head, is about the book and is left out.
+    private func fromBody(_ html: String) -> String {
+        html.range(of: "<body").map { String(html[$0.lowerBound...]) } ?? html
+    }
+
     /// A text long enough for several records, with phrases that repeat (so
     /// a PalmDOC compressor uses back references) and spaces before capitals
     /// (so it uses the space codes).
@@ -53,7 +59,7 @@ final class MOBIBookStructureTests: XCTestCase {
                 fixture.recordSize = recordSize
                 let book = try opened(fixture)
                 XCTAssertEqual(book.sections.count, 1, "compression \(compression), records of \(recordSize)")
-                XCTAssertEqual(book.sections[0].html, html, "compression \(compression), records of \(recordSize)")
+                XCTAssertEqual(book.sections[0].html, fromBody(html), "compression \(compression), records of \(recordSize)")
             }
         }
     }
@@ -65,7 +71,7 @@ final class MOBIBookStructureTests: XCTestCase {
             fixture.compression = compression
             fixture.recordSize = 500
             fixture.trailingEntry = Array("TRAILING ENTRY".utf8)
-            XCTAssertEqual(try opened(fixture).sections[0].html, fixture.html, "compression \(compression)")
+            XCTAssertEqual(try opened(fixture).sections[0].html, fromBody(fixture.html), "compression \(compression)")
         }
     }
 
@@ -456,7 +462,7 @@ final class MOBIBookStructureTests: XCTestCase {
             let record0 = MOBIFixture.recordOffsets(of: bytes)[0]
             MOBIFixture.put32(&bytes, record0 + 4, fixture.text.count - 7)
             let book = try MOBIBook(bytes: bytes)
-            XCTAssertEqual(book.sections.first?.html, String(fixture.html.dropLast(7)), "compression \(compression)")
+            XCTAssertEqual(book.sections.first?.html, fromBody(String(fixture.html.dropLast(7))), "compression \(compression)")
         }
     }
 
@@ -527,12 +533,12 @@ final class MOBIBookStructureTests: XCTestCase {
         for recordSize in [4096, 300, 41] {
             var fixture = huffmanBook()
             fixture.recordSize = recordSize
-            XCTAssertEqual(try opened(fixture).sections[0].html, fixture.html, "records of \(recordSize)")
+            XCTAssertEqual(try opened(fixture).sections[0].html, fromBody(fixture.html), "records of \(recordSize)")
         }
         var trailing = huffmanBook()
         trailing.recordSize = 500
         trailing.trailingEntry = Array("TRAILING".utf8)
-        XCTAssertEqual(try opened(trailing).sections[0].html, trailing.html)
+        XCTAssertEqual(try opened(trailing).sections[0].html, fromBody(trailing.html))
     }
 
     func testHuffmanTextBeforeAndAfterAContentsReadsAsChapters() throws {
