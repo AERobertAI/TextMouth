@@ -57,7 +57,8 @@ struct MOBIBook {
         metadata = Self.metadata(of: headers, database: database)
 
         let text = try MOBIText.bytes(of: database, headers: headers)
-        if headers.hasMOBIHeader {
+        // A plain PalmDOC book is plain text, unless the text is HTML.
+        if headers.hasMOBIHeader || MOBIMarkup.looksLikeHTML(text) {
             sections = try Self.sections(of: text, headers: headers, database: database)
         } else {
             sections = [Self.plainSection(of: text)]
@@ -150,7 +151,10 @@ struct MOBIBook {
         let anchors = MOBIMarkup.anchors(for: offsets, in: text)
 
         // Where each section starts, with its title when the contents gives one.
-        let starts = sectionStarts(entries: entries, anchors: anchors, pageBreaks: scan.pageBreakOffsets)
+        // The head of the book (its metadata and guide) is not read, so no section begins before the body.
+        let starts = sectionStarts(
+            entries: entries, anchors: anchors, pageBreaks: scan.pageBreakOffsets, bodyStart: scan.bodyStart
+        )
 
         // Each entry that has a label is a heading at its anchor. The first
         // entry to name a place names it.
@@ -184,7 +188,7 @@ struct MOBIBook {
     /// Where each section starts (an offset into the text, snapped to a tag's
     /// start) and the title the contents gives it, in order, the first at 0.
     private static func sectionStarts(
-        entries: [MOBIIndexEntry], anchors: [MOBIMarkup.Anchor], pageBreaks: [Int]
+        entries: [MOBIIndexEntry], anchors: [MOBIMarkup.Anchor], pageBreaks: [Int], bodyStart: Int
     ) -> [(position: Int, title: String?)] {
         var starts: [(position: Int, title: String?)] = []
         let chapters = entries.filter { $0.depth == 0 }
@@ -198,6 +202,8 @@ struct MOBIBook {
                 positions[entry.offset].map { (position: $0, title: entry.label.isEmpty ? nil : entry.label) }
             }
         }
+        // A section that would begin in the head begins where the body does.
+        starts = starts.map { (position: max($0.position, bodyStart), title: $0.title) }
         // In order of place; of two sections at one place, the first one stays.
         starts = starts.enumerated().sorted {
             $0.element.position != $1.element.position ? $0.element.position < $1.element.position : $0.offset < $1.offset
@@ -206,9 +212,9 @@ struct MOBIBook {
         for start in starts where start.position != unique.last?.position {
             unique.append(start)
         }
-        // The first section starts at the start of the text, whether or not
-        // the contents does: the words before it are a section of their own.
-        if unique.first?.position != 0 { unique.insert((position: 0, title: nil), at: 0) }
+        // The first section starts where the body does, whether or not the
+        // contents does: the words before it are a section of their own.
+        if unique.first?.position != bodyStart { unique.insert((position: bodyStart, title: nil), at: 0) }
         return unique
     }
 

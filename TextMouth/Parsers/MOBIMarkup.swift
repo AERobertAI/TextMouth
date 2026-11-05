@@ -37,6 +37,38 @@ enum MOBIMarkup {
         var fileposTargets: Set<Int> = []
         /// The offset of each `<mbp:pagebreak>` tag, in order.
         var pageBreakOffsets: [Int] = []
+        /// Where the first `<body>` tag starts, if the text has one.
+        var bodyOffset: Int?
+        /// Where the first `</head>` tag ends, if the text has one.
+        var headEnd: Int?
+
+        /// Where the words of the book start: at its `<body>` tag, else after
+        /// its `</head>`, else at the start of the text. What comes before
+        /// is the head (the title, an OEB `<metadata>` block with dc:Title and
+        /// dc:Creator, a `<guide>`), which is about the book and is not read
+        /// aloud: SwiftSoup moves a head element it does not know into the
+        /// body, where its words would be heard.
+        var bodyStart: Int { bodyOffset ?? headEnd ?? 0 }
+    }
+
+    /// How much of a text is looked at to tell whether it is HTML.
+    static let htmlSniffLength = 4096
+
+    /// Whether `text` is HTML: it holds an `<html` or a `<body` tag, in any
+    /// letter case, in its first `htmlSniffLength` bytes. A plain PalmDOC
+    /// book (`TEXtREAd`) with markup is an early Mobipocket book whose text
+    /// is HTML, and is read as one; calibre's reader does the same.
+    static func looksLikeHTML(_ text: [UInt8]) -> Bool {
+        let end = min(text.count, htmlSniffLength)
+        var position = 0
+        while position < end {
+            if text[position] == UInt8(ascii: "<"),
+               matches(htmlName, in: text, at: position + 1, limit: end) || matches(bodyName, in: text, at: position + 1, limit: end) {
+                return true
+            }
+            position += 1
+        }
+        return false
     }
 
     /// A place to put an anchor: the offset the book names, and the place
@@ -122,6 +154,9 @@ enum MOBIMarkup {
     private static let pageBreakName = Array("pagebreak".utf8)
     private static let prefixedPageBreakName = Array("mbp:pagebreak".utf8)
     private static let mobipocketPrefix = Array("mbp:".utf8)
+    private static let htmlName = Array("html".utf8)
+    private static let bodyName = Array("body".utf8)
+    private static let headEndName = Array("/head".utf8)
 
     /// Finds the offsets the book's `filepos` attributes name, and where
     /// its `<mbp:pagebreak>` tags are.
@@ -132,6 +167,12 @@ enum MOBIMarkup {
                 result.fileposTargets.insert(target)
             }
             if isPageBreak(text, tag: tag) { result.pageBreakOffsets.append(tag.lowerBound) }
+            if result.bodyOffset == nil, matches(bodyName, in: text, at: tag.lowerBound + 1, limit: tag.upperBound, endsName: true) {
+                result.bodyOffset = tag.lowerBound
+            }
+            if result.headEnd == nil, matches(headEndName, in: text, at: tag.lowerBound + 1, limit: tag.upperBound, endsName: true) {
+                result.headEnd = tag.upperBound
+            }
         }
         return result
     }
