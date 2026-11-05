@@ -99,8 +99,8 @@ final class WordDocumentReaderTests: XCTestCase {
     func testTheTemplatesReadAsDocuments() throws {
         let synthetic = try sampleBody("dot/headings-synthetic.dot", pages: false)
         XCTAssertEqual(synthetic, try sampleBody("doc/headings.doc", pages: false))
-        // The LibreOffice template holds one empty paragraph.
-        XCTAssertEqual(try sampleBody("dot/libreoffice-tdf120761_zOrder.dot", pages: false), "")
+        // The LibreOffice template's body is one empty paragraph, and its only words are in a header text box.
+        XCTAssertEqual(try sampleBody("dot/libreoffice-tdf120761_zOrder.dot", pages: false), "<p><strong>Blah blah blah</strong></p>\n")
     }
 
     // MARK: - Text
@@ -227,6 +227,38 @@ final class WordDocumentReaderTests: XCTestCase {
     func testAListItemKeepsItsEmphasisAndItsPage() throws {
         let body = try wideBody([Paragraph(runs: [Run("•\t"), Run("bold", bold: 1), Run(" item")]), Paragraph("\u{0C}•\tnext")], pages: true)
         XCTAssertEqual(body, span(1) + "<ul>\n<li><strong>bold</strong> item</li>\n<li>\(span(2))next</li>\n</ul>\n")
+    }
+
+    // MARK: - Other Stories
+
+    private func storyDocument(main: [Paragraph]) -> WordDocumentBuilder {
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = main
+        builder.stories = [
+            .footnotes: [Paragraph("Footnote words.")], .headers: [Paragraph("Header words.")],
+            .comments: [Paragraph("Comment words.")], .endnotes: [Paragraph("Endnote words.")],
+            .textBoxes: [Paragraph("Textbox words.")], .headerTextBoxes: [Paragraph("Header textbox words.")],
+        ]
+        return builder
+    }
+
+    func testAMainStoryWithWordsLeavesTheOtherStoriesOut() throws {
+        let body = try body(of: storyDocument(main: [Paragraph("Main words.")]).build())
+        XCTAssertEqual(body, "<p>Main words.</p>\n")
+    }
+
+    func testAMainStoryWithNoWordsReadsTheOtherStoriesInFileOrder() throws {
+        for main in [[], [Paragraph("")], [Paragraph("  ... ")]] {
+            let body = try body(of: storyDocument(main: main).build())
+            let expected = ["Footnote", "Header", "Comment", "Endnote", "Textbox", "Header textbox"].map { "<p>\($0) words.</p>\n" }.joined()
+            // A main story of punctuation keeps its punctuation, as textutil's does.
+            XCTAssertTrue(body.hasSuffix(expected), body)
+        }
+    }
+
+    func testTheOtherStoriesOfAnEmptyBodyHavePagesToo() throws {
+        let body = try body(of: storyDocument(main: []).build(), pages: true)
+        XCTAssertTrue(body.hasPrefix(span(1) + "<p>Footnote words.</p>\n"), body)
     }
 
     // MARK: - Fields

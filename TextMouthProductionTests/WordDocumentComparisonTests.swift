@@ -30,9 +30,11 @@ final class WordDocumentComparisonTests: XCTestCase {
     /// the text boxes of its headers as part of the text, after the body; the
     /// reader reads the body alone, since a header is page furniture that
     /// repeats on every page and would be read aloud at the end of the book.
+    /// Only a document whose body holds no words at all has its other stories
+    /// read (the sample `libreoffice-tdf120761_zOrder.dot`, whose only words
+    /// are in a header text box), as textutil reads them.
     private static let wordsOnlyTextutilReads: [String: [String]] = [
         "doc/libreoffice-tdf104239_chapterNumbering.doc": ["Chapter", "numbering"],
-        "dot/libreoffice-tdf120761_zOrder.dot": ["Blah", "blah", "blah"],
     ]
 
     /// The headings textutil's size guess finds that the reader does not,

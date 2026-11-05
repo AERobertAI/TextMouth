@@ -103,13 +103,13 @@ enum WordDocumentReader {
         var paragraphs = WordFormatRuns<WordParagraphFormat>(runs: [])
         if let range = try fib.range(of: .paragraphBinTable, in: table) {
             paragraphs = try WordDocumentProperties.paragraphRuns(
-                binTable: range, table: table, document: document, pieces: pieces, styles: styles, limit: textEnd
+                binTable: range, table: table, document: document, pieces: pieces, styles: styles, limit: pieces.characterCount
             )
         }
         var characters = WordFormatRuns<WordCharacterFormat>(runs: [])
         if let range = try fib.range(of: .characterBinTable, in: table) {
             characters = try WordDocumentProperties.characterRuns(
-                binTable: range, table: table, document: document, pieces: pieces, styles: styles, limit: textEnd
+                binTable: range, table: table, document: document, pieces: pieces, styles: styles, limit: pieces.characterCount
             )
         }
         var sections = WordSections.none
@@ -117,15 +117,32 @@ enum WordDocumentReader {
             sections = try WordSections(range: range, table: table, document: document)
         }
 
-        // Write the text.
-        var writer = WordHTMLWriter(
-            styles: styles, sections: sections, includesPages: includesPages,
-            outputLimit: Int(DocumentByteLimit.current) * 2, paragraphs: paragraphs, characters: characters
-        )
-        try pieces.forEachCharacter(upTo: textEnd, in: document) { position, unit in
-            try writer.add(position: position, unit: unit)
+        // Writes the text up to character `end` and says whether it holds a
+        // letter or a digit.
+        func write(upTo end: Int) throws -> (body: String, hasWords: Bool) {
+            var writer = WordHTMLWriter(
+                styles: styles, sections: sections, includesPages: includesPages,
+                outputLimit: Int(DocumentByteLimit.current) * 2, paragraphs: paragraphs, characters: characters
+            )
+            try pieces.forEachCharacter(upTo: end, in: document) { position, unit in
+                try writer.add(position: position, unit: unit)
+            }
+            let body = try writer.finish(endingAt: end)
+            return (body, writer.wroteCountedCharacter)
         }
-        let body = try writer.finish(endingAt: textEnd)
+
+        // The main story, which is the book. Only when it holds no words at
+        // all (a document whose text is in a text box, or a header) are the
+        // stories after it read too, in the order the file keeps them
+        // (footnotes, headers, comments, endnotes, text boxes, header text
+        // boxes), as textutil reads them. A document with words in its main
+        // story never reads its headers: they would repeat page furniture at
+        // the end of the book.
+        var written = try write(upTo: textEnd)
+        if !written.hasWords, pieces.characterCount > textEnd {
+            written = try write(upTo: pieces.characterCount)
+        }
+        let body = written.body
 
         // The names are a convenience: a damaged stream gives none.
         let summary = (try? file.stream(named: "\u{05}SummaryInformation")) ?? nil

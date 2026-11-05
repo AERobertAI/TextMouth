@@ -78,7 +78,29 @@ struct WordDocumentBuilder {
         var pageBreakBefore: Int?
     }
 
+    /// The stories of a document after the main one, in the order the file
+    /// stores them: the CP ranges of their lengths are the FIB's ccpFtn,
+    /// ccpHdd, ccpAtn, ccpEdn, ccpTxbx, and ccpHdrTxbx.
+    enum Story: Int, CaseIterable {
+        case footnotes, headers, comments, endnotes, textBoxes, headerTextBoxes
+
+        /// The offset in the FIB of the story's length (ccpFtn is at 80, ccpHdd
+        /// at 84, then ccpMcr at 88, which these builds leave 0).
+        var lengthOffset: Int {
+            switch self {
+            case .footnotes: return 80
+            case .headers: return 84
+            case .comments: return 92
+            case .endnotes: return 96
+            case .textBoxes: return 100
+            case .headerTextBoxes: return 104
+            }
+        }
+    }
+
     var paragraphs: [Paragraph] = []
+    /// The paragraphs of the stories other than the main one.
+    var stories: [Story: [Paragraph]] = [:]
     /// The style sheet; the default is Normal and Heading 1 to 9 at indexes 0 to 9.
     var styles: [Style?] = WordDocumentBuilder.standardStyles
     /// How each section after the first begins (`sprmSBkc`), keyed by the
@@ -147,7 +169,12 @@ struct WordDocumentBuilder {
         var units: [UInt16] = []
         var paragraphRanges: [Range<Int>] = []
         var runRanges: [(range: Range<Int>, run: Run, paragraph: Int)] = []
-        for (index, paragraph) in paragraphs.enumerated() {
+        // The main story's paragraphs, then each other story's, in file order.
+        let allParagraphs = paragraphs + Story.allCases.flatMap { stories[$0] ?? [] }
+        var mainLength = 0
+        var storyLengths: [Story: Int] = [:]
+        for (index, paragraph) in allParagraphs.enumerated() {
+            if index == paragraphs.count { mainLength = units.count }
             let start = units.count
             for run in paragraph.runs {
                 let runStart = units.count
@@ -156,6 +183,13 @@ struct WordDocumentBuilder {
             }
             units.append(paragraph.mark)
             paragraphRanges.append(start..<units.count)
+        }
+
+        // Without other stories, the main story is all the text.
+        if allParagraphs.count == paragraphs.count { mainLength = units.count }
+        for story in Story.allCases {
+            let length = (stories[story] ?? []).reduce(0) { $0 + $1.runs.reduce(0) { $0 + $1.text.utf16.count } + 1 }
+            storyLengths[story] = length
         }
 
         // The WordDocument stream: the FIB's room, then the pieces' text.
@@ -201,7 +235,7 @@ struct WordDocumentBuilder {
         // The paragraph and character properties, in pages.
         var table: [UInt8] = []
         let paragraphRuns = paragraphRanges.enumerated().flatMap { index, range in
-            fileRanges(of: range).map { (range: $0, data: Self.paragraphBlob(for: paragraphs[index])) }
+            fileRanges(of: range).map { (range: $0, data: Self.paragraphBlob(for: allParagraphs[index])) }
         }
         let characterRuns = runRanges.flatMap { entry in
             fileRanges(of: entry.range).map { (range: $0, data: Self.characterBlob(for: entry.run)) }
@@ -220,7 +254,7 @@ struct WordDocumentBuilder {
             sectionEnds.append(paragraphRanges[endingParagraph].upperBound)
             sectionKinds.append(nextKind)
         }
-        sectionEnds.append(units.count)
+        sectionEnds.append(mainLength)
         var sectionTable = sectionEnds.flatMap { Self.le32($0) }
         sectionTable = Self.le32(0) + sectionTable
         for kind in sectionKinds {
@@ -283,7 +317,8 @@ struct WordDocumentBuilder {
         put(Self.le16(14), at: 32)
         put(Self.le16(22), at: 62)
         // ccpText is the fourth of the 32-bit values that begin at 64.
-        put(Self.le32(units.count), at: 64 + 12)
+        put(Self.le32(mainLength), at: 64 + 12)
+        for story in Story.allCases { put(Self.le32(storyLengths[story] ?? 0), at: story.lengthOffset) }
         put(Self.le16(93), at: 152)
         for (index, pair) in pairs {
             put(Self.le32(pair.0) + Self.le32(pair.1), at: layout.pairs + index * 8)

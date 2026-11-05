@@ -104,7 +104,7 @@ struct WordHTMLWriter {
     /// How many page breaks have been met.
     private var pageBreakCount = 0
     /// Whether a letter or digit has been written.
-    private var wroteCountedCharacter = false
+    private(set) var wroteCountedCharacter = false
 
     // Fields. Each entry is true while the field is in its instruction part.
     private var fields: [Bool] = []

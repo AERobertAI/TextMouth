@@ -164,11 +164,11 @@ final class WordDocumentHostileTests: XCTestCase {
         }
         let html = try XCTUnwrap(WordDocumentReader.html(from: data, includesPages: true))
         XCTAssertTrue(html.contains("Second section."), html)
-        // And zero: no text.
+        // And zero: a main story with no words reads the rest of the text, so nothing is lost.
         let none = richDocument().build { word, _, _ in
             word.replaceSubrange(64 + 12..<64 + 16, with: WordDocumentBuilder.le32(0))
         }
-        XCTAssertFalse(try XCTUnwrap(WordDocumentReader.html(from: none, includesPages: true)).contains("<p>"))
+        XCTAssertTrue(try XCTUnwrap(WordDocumentReader.html(from: none, includesPages: true)).contains("Second section."))
     }
 
     // MARK: - The FIB
