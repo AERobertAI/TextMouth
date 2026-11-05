@@ -169,6 +169,8 @@ struct RTFInterpreter {
                 starred = true
                 return
             }
+            // A fallback is text or a hex byte: a control symbol means there is none.
+            pendingSkip = 0
             try handleSymbol(symbol)
         case .controlWord(let name, let parameter):
             if isFirstOfGroup, let destination = destination(named: name, starred: starred) {
@@ -177,6 +179,9 @@ struct RTFInterpreter {
                 return
             }
             starred = false
+            // A fallback is text or a hex byte: any other word (but the next
+            // \u) means the writer left none, and the next text is not skipped.
+            if name != "u" { pendingSkip = 0 }
             try handleWord(name, parameter)
         case .hexByte, .text:
             break
@@ -567,61 +572,74 @@ struct RTFInterpreter {
         }
     }
 
+    /// The control words the body reads, found by name in one lookup: a
+    /// document can hold millions of them, and a chain of string comparisons
+    /// for each would be slow.
+    private enum BodyWord: String, CaseIterable {
+        case ansi, mac, pc, pca, ansicpg, deff
+        case plain, b, i, v, f, fs, uc
+        case line, lbr, par, pard, s, outlinelevel, ls, ilvl, intbl, itap
+        case cell, row, nestcell
+        case page, pagebb, sect, sectd, sbkpage, sbkeven, sbkodd, sbknone, sbkcol
+
+        /// Every body word, by its name.
+        static let byName: [String: BodyWord] = Dictionary(uniqueKeysWithValues: allCases.map { ($0.rawValue, $0) })
+    }
+
     /// Words of the body: formatting, paragraphs, tables, and pages.
     private mutating func readBodyWord(_ name: String, _ parameter: Int?) throws {
-        switch name {
+        guard let word = BodyWord.byName[name] else { return }
+        switch word {
         // Code pages
-        case "ansi", "mac", "pc", "pca":
+        case .ansi, .mac, .pc, .pca:
             if !hasExplicitCodePage, let codePage = RTFEncodings.codePage(forDocumentWord: name) {
                 documentCodePage = codePage
             }
-        case "ansicpg":
+        case .ansicpg:
             if let parameter {
                 documentCodePage = parameter
                 hasExplicitCodePage = true
             }
-        case "deff":
+        case .deff:
             defaultFont = parameter ?? 0
 
         // Character formatting
-        case "plain": state.resetCharacterFormatting()
-        case "b": state.isBold = parameter != 0
-        case "i": state.isItalic = parameter != 0
-        case "v": state.isHidden = parameter != 0
-        case "f": state.font = parameter
-        case "fs": state.fontSize = max(parameter ?? RTFGroupState.defaultFontSize, 1)
-        case "uc": state.unicodeSkip = max(parameter ?? 1, 0)
+        case .plain: state.resetCharacterFormatting()
+        case .b: state.isBold = parameter != 0
+        case .i: state.isItalic = parameter != 0
+        case .v: state.isHidden = parameter != 0
+        case .f: state.font = parameter
+        case .fs: state.fontSize = max(parameter ?? RTFGroupState.defaultFontSize, 1)
+        case .uc: state.unicodeSkip = max(parameter ?? 1, 0)
 
         // Line and paragraph structure
-        case "line", "lbr": builder.appendLineBreak()
-        case "par": try endParagraph()
-        case "pard": state.paragraph = RTFParagraphProperties()
-        case "s": setStyle(parameter)
-        case "outlinelevel": state.paragraph.outlineLevel = parameter
-        case "ls": state.paragraph.listOverride = parameter
-        case "ilvl": state.paragraph.listLevel = min(max(parameter ?? 0, 0), 8)
-        case "intbl": state.paragraph.inTable = true
-        case "itap": state.paragraph.inTable = (parameter ?? 1) > 0
+        case .line, .lbr: builder.appendLineBreak()
+        case .par: try endParagraph()
+        case .pard: state.paragraph = RTFParagraphProperties()
+        case .s: setStyle(parameter)
+        case .outlinelevel: state.paragraph.outlineLevel = parameter
+        case .ls: state.paragraph.listOverride = parameter
+        case .ilvl: state.paragraph.listLevel = min(max(parameter ?? 0, 0), 8)
+        case .intbl: state.paragraph.inTable = true
+        case .itap: state.paragraph.inTable = (parameter ?? 1) > 0
 
         // Tables. A nested cell ends a paragraph of the cell it is in, and a
         // nested row ends nothing: the words of a nested table stay in the
         // cell around it.
-        case "cell": endCell()
-        case "row": endRow()
-        case "nestcell": try endParagraph(inTable: true)
+        case .cell: try endCell()
+        case .row: try endRow()
+        case .nestcell: try endParagraph(inTable: true)
 
         // Pages and sections
-        case "page":
+        case .page:
             builder.addPageBreak()
             try emit(" ")
-        case "pagebb": builder.addParagraphPageBreak()
-        case "sect":
+        case .pagebb: builder.addParagraphPageBreak()
+        case .sect:
             try endParagraph()
             builder.beginSectionBreak()
-        case "sectd", "sbkpage", "sbkeven", "sbkodd": builder.setSectionStartsPage(true)
-        case "sbknone", "sbkcol": builder.setSectionStartsPage(false)
-        default:
-            break
+        case .sectd, .sbkpage, .sbkeven, .sbkodd: builder.setSectionStartsPage(true)
+        case .sbknone, .sbkcol: builder.setSectionStartsPage(false)
         }
     }
 
@@ -674,16 +692,16 @@ struct RTFInterpreter {
     }
 
     /// `\cell`: the cell ends.
-    private mutating func endCell() {
+    private mutating func endCell() throws {
         // The cell's last paragraph is a paragraph of the table whatever
         // its properties say.
-        builder.endCell()
+        try builder.endCell()
         listMarker = nil
     }
 
     /// `\row`: the row ends.
-    private mutating func endRow() {
-        builder.endRow()
+    private mutating func endRow() throws {
+        try builder.endRow()
         listMarker = nil
     }
 }

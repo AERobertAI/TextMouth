@@ -239,7 +239,10 @@ struct RTFBlockBuilder {
 
     /// `\cell`: the cell ends. Its paragraph, if it holds words, is the
     /// cell's last.
-    mutating func endCell() {
+    /// - Throws: `DocumentTooLargeError`: every cell is charged to the budget,
+    ///   empty or not.
+    mutating func endCell() throws {
+        try spend(Self.runAllowance)
         closeRun()
         if paragraph.hasWords { cell.append(paragraph) }
         paragraph = RTFParagraph()
@@ -250,10 +253,11 @@ struct RTFBlockBuilder {
     }
 
     /// `\row`: the row ends.
-    mutating func endRow() {
+    /// - Throws: `DocumentTooLargeError`.
+    mutating func endRow() throws {
         // Words not yet closed in a cell are kept in one.
         closeRun()
-        if paragraph.hasWords || !cell.isEmpty { endCell() }
+        if paragraph.hasWords || !cell.isEmpty { try endCell() }
         guard !row.isEmpty else { return }
         if table == nil { table = RTFTable() }
         table?.rows.append(row)

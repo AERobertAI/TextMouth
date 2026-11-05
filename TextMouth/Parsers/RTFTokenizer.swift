@@ -164,11 +164,12 @@ struct RTFTokenizer {
     /// A control word: its letters, an optional signed number, and the one
     /// space that ends it, which belongs to the word and is not text.
     private mutating func readControlWord() -> RTFToken {
-        var name = ""
+        let start = position
         while position < bytes.count, Self.isLetter(bytes[position]) {
-            if name.utf8.count < Self.longestName { name.unicodeScalars.append(Unicode.Scalar(bytes[position])) }
             position += 1
         }
+        // The name is made in one piece, of at most `longestName` letters.
+        let name = String(decoding: bytes[start..<min(position, start + Self.longestName)], as: UTF8.self)
         let parameter = readParameter()
         // The single space after a word (or its number) is its delimiter.
         if position < bytes.count, bytes[position] == 0x20 { position += 1 }
