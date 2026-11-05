@@ -19,10 +19,15 @@ final class RTFTextutilComparisonTests: XCTestCase {
     }
 
     /// The Markdown of the file at `url`, read as `format`, as the reading
-    /// text is made from textutil's HTML (the reader's own path).
+    /// text is made from textutil's HTML (the reader's own path). textutil
+    /// reads it whatever the own reader's switch says
+    /// (`OwnDocumentReaders.forcesTextutil`), so that the comparison is of
+    /// the two readers even once the Mac reads rich text with the own one.
     private func textutilMarkdown(of url: URL, as format: BookFormat) throws -> String {
-        try TextutilDocumentReader.$temporaryRoot.withValue(work) {
-            try TextutilDocumentReader.extract(from: url, bookFormat: format, includesPages: true).markdown
+        try OwnDocumentReaders.$forcesTextutil.withValue(true) {
+            try TextutilDocumentReader.$temporaryRoot.withValue(work) {
+                try TextutilDocumentReader.extract(from: url, bookFormat: format, includesPages: true).markdown
+            }
         }
     }
 
