@@ -35,7 +35,9 @@ final class DocumentTypeDeclarationTests: XCTestCase {
         Declaration(name: "SSML Document", extensions: ["ssml"], contentTypes: ["org.w3.ssml"]),
         Declaration(name: "BRF Braille File", extensions: ["brf"], contentTypes: ["com.textmouth.brf"]),
         Declaration(name: "BRL Braille File", extensions: ["brl"], contentTypes: ["com.textmouth.brl"]),
-        Declaration(name: "PEF Braille File", extensions: ["pef"], contentTypes: ["org.daisy.pef"])
+        Declaration(name: "PEF Braille File", extensions: ["pef"], contentTypes: ["org.daisy.pef"]),
+        // Kindle books (FMT42): Info.plist lists the type before SSML's.
+        Declaration(name: "Kindle Book (MOBI)", extensions: ["mobi", "prc", "azw"], contentTypes: ["com.textmouth.mobi"])
     ]
 
     // MARK: - Document types
