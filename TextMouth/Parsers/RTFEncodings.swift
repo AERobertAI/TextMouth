@@ -58,6 +58,23 @@ enum RTFEncodings {
         }
     }
 
+    /// The code pages whose characters are one or two bytes, the second of a
+    /// pair possibly in the ASCII range: Shift-JIS (932), GBK (936), Korean
+    /// (949), Big5 (950), Johab (1361), the Mac Japanese, Traditional
+    /// Chinese, Korean, and Simplified Chinese pages (10001 to 10003 and
+    /// 10008), and the EUC and GB 18030 pages. UTF-8 is not listed: every
+    /// byte of its multibyte characters is above ASCII.
+    private static let multibyteCodePages: Set<Int> = [
+        932, 936, 949, 950, 1361, 10001, 10002, 10003, 10008, 20932, 51932, 51936, 51949, 54936
+    ]
+
+    /// Whether code page `codePage` has two-byte characters, whose second
+    /// byte can be an ASCII byte, so that a run of bytes must be decoded
+    /// whole, ASCII bytes included.
+    static func isMultibyte(codePage: Int) -> Bool {
+        multibyteCodePages.contains(codePage)
+    }
+
     /// The Foundation encoding of Windows code page `codePage`, or nil when
     /// this system knows none (an unknown number in a hostile file).
     /// 65001 is UTF-8 and 1200 UTF-16; CoreFoundation knows the rest.

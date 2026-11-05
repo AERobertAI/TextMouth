@@ -318,10 +318,19 @@ struct RTFInterpreter {
             index += skipped
             pendingSkip -= skipped
         }
+        // In a code page with two-byte characters, the second byte of a pair
+        // can be an ASCII byte: while bytes wait, ASCII bytes wait with them,
+        // and the whole run is decoded as a unit. (Single-byte pages end the
+        // run at an ASCII byte, as each of their bytes is a character.)
+        let keepsAsciiInRun = RTFEncodings.isMultibyte(codePage: currentCodePage)
         var ascii = String.UnicodeScalarView()
         for position in index..<range.upperBound {
             let byte = tokenizer.bytes[position]
             if byte < 0x80 {
+                if !byteRun.isEmpty && keepsAsciiInRun {
+                    byteRun.append(byte)
+                    continue
+                }
                 if !byteRun.isEmpty {
                     try emit(String(ascii))
                     ascii = String.UnicodeScalarView()
