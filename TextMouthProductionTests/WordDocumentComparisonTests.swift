@@ -35,6 +35,15 @@ final class WordDocumentComparisonTests: XCTestCase {
         "dot/libreoffice-tdf120761_zOrder.dot": ["Blah", "blah", "blah"],
     ]
 
+    /// The headings textutil's size guess finds that the reader does not,
+    /// by sample. "Contents" in the outline-level sample is the title of a
+    /// table of contents, set in Word's "TOC Heading" style, whose own outline
+    /// level says it is body text; the reader trusts the author's styles,
+    /// textutil sees only that the line is larger than the body.
+    private static let headingsOnlyTextutilFinds: [String: Set<String>] = [
+        "doc/libreoffice-tdf81705_outlineLevel.doc": [" Contents"],
+    ]
+
     // MARK: - Helpers
 
     /// What an import of the sample makes of it, read by textutil, as the
@@ -92,7 +101,9 @@ final class WordDocumentComparisonTests: XCTestCase {
             let reader = try readerChapter(sample).headings.map { "\($0.level): \($0.text)" }
             // Every heading textutil guesses is a heading of the reader's, at
             // any level; a level that differs is listed with the sample.
-            let missing = Set(textutil.map { $0.drop { $0 != " " } }).subtracting(reader.map { $0.drop { $0 != " " } })
+            let missing = Set(textutil.map { String($0.drop { $0 != " " }) })
+                .subtracting(reader.map { String($0.drop { $0 != " " }) })
+                .subtracting(Self.headingsOnlyTextutilFinds[sample] ?? [])
             if !missing.isEmpty {
                 differences.append("\(sample): headings only textutil finds: \(missing.sorted()); textutil \(textutil), reader \(reader)")
             }
