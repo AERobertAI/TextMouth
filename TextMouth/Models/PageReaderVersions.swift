@@ -53,7 +53,13 @@ enum PageReaderVersions {
             return "1.0.3"
         case .pdf, .docx, .daisy:
             return "1.0.0"
-        case .rtf, .rtfd, .doc, .odt, .wordml:
+        case .rtf, .rtfd:
+            // TextMouth's own reader reads rich text (FMT47) instead of
+            // textutil: headings from the style sheet, bold and italic, and
+            // pages at every \page, \pagebb, and page-starting \sect, so the
+            // books of these two formats are read again once.
+            return "1.1.0"
+        case .doc, .odt, .wordml:
             return "1.0.0"
         case .braille:
             // Braille gained its pages later, each braille page of a BRF or

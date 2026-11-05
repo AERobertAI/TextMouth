@@ -35,9 +35,14 @@ final class TextutilPageTests: XCTestCase {
         using tool: TextutilConverter.Tool = TextutilConverter.tool
     ) throws -> (markdown: String, chapter: Chapter) {
         let copy = try copyOfFormatSample(path)
-        let markdown = try TextutilDocumentReader.$temporaryRoot.withValue(work) {
-            try TextutilConverter.$tool.withValue(tool) {
-                try TextutilDocumentReader.extract(from: copy, bookFormat: format, includesPages: includesPages).markdown
+        // These tests pin textutil's reading of the samples: the rich text
+        // ones go to textutil, whatever reads them in the app
+        // (`OwnDocumentReaders.forcesTextutil`).
+        let markdown = try OwnDocumentReaders.$forcesTextutil.withValue(true) {
+            try TextutilDocumentReader.$temporaryRoot.withValue(work) {
+                try TextutilConverter.$tool.withValue(tool) {
+                    try TextutilDocumentReader.extract(from: copy, bookFormat: format, includesPages: includesPages).markdown
+                }
             }
         }
         // Every working folder the read made is gone.
@@ -127,8 +132,11 @@ final class TextutilPageTests: XCTestCase {
 
     func testTheDirectReaderReadsTheSameWordsAsTheCache() throws {
         let copy = try copyOfFormatSample("rtf/page-breaks.rtf")
-        let content = try TextutilDocumentReader.$temporaryRoot.withValue(work) {
-            try TextutilDocumentReader.parse(url: copy, bookFormat: .rtf)
+        // The rich text sample is textutil's here (`OwnDocumentReaders.forcesTextutil`).
+        let content = try OwnDocumentReaders.$forcesTextutil.withValue(true) {
+            try TextutilDocumentReader.$temporaryRoot.withValue(work) {
+                try TextutilDocumentReader.parse(url: copy, bookFormat: .rtf)
+            }
         }
         // The direct reader does not read page markers (as it reads no
         // heading annotations), but its words must be the cache's, so that a
@@ -152,9 +160,12 @@ final class TextutilPageTests: XCTestCase {
             residentMemory: real.residentMemory
         )
         let copy = try copyOfFormatSample("rtf/page-breaks.rtf")
-        _ = try TextutilDocumentReader.$temporaryRoot.withValue(work) {
-            try TextutilConverter.$tool.withValue(counting) {
-                try TextutilDocumentReader.readMetadata(from: copy, bookFormat: .rtf)
+        // The rich text sample is textutil's here (`OwnDocumentReaders.forcesTextutil`).
+        _ = try OwnDocumentReaders.$forcesTextutil.withValue(true) {
+            try TextutilDocumentReader.$temporaryRoot.withValue(work) {
+                try TextutilConverter.$tool.withValue(counting) {
+                    try TextutilDocumentReader.readMetadata(from: copy, bookFormat: .rtf)
+                }
             }
         }
         XCTAssertEqual(runs.value, 1)
