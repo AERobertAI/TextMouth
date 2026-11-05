@@ -401,6 +401,65 @@ final class MOBIBookStructureTests: XCTestCase {
         XCTAssertEqual(spaced(book.chapters[0].chapter.text), "First line & more Second <line> Café")
     }
 
+    /// An early Mobipocket book: type TEXtREAd, no MOBI header, and a text
+    /// that is HTML with an OEB metadata block in its head.
+    private func textReadHTMLBook(_ html: String) -> MOBIFixture {
+        var fixture = MOBIFixture()
+        fixture.type = "TEXt"
+        fixture.creator = "REAd"
+        fixture.hasMOBIHeader = false
+        fixture.databaseName = "Early_Book"
+        fixture.textBytes = Array(html.utf8)
+        return fixture
+    }
+
+    func testAPalmDOCBookWhoseTextIsHTMLIsReadAsHTMLAndItsHeadIsNotRead() throws {
+        let fixture = textReadHTMLBook(
+            "<HTML><HEAD><metadata><dc-metadata><dc:Title>Hidden Title</dc:Title><dc:Creator>Hidden Maker</dc:Creator>"
+                + "</dc-metadata></metadata><GUIDE><REFERENCE type=\"toc\" title=\"Hidden Guide\" filepos=0000000300 /></GUIDE></HEAD>"
+                + "<BODY><P>Shown words come first.</P><P>Then more words.</P></BODY></HTML>")
+        let chapter = try XCTUnwrap(try prepared(fixture).chapters.first).chapter
+        XCTAssertEqual(spaced(chapter.text), "Shown words come first. Then more words.")
+        for hidden in ["Hidden", "<", "metadata"] { XCTAssertFalse(chapter.text.contains(hidden), hidden) }
+    }
+
+    func testAPalmDOCBookWithAngleBracketsFarInIsStillPlainText() throws {
+        var fixture = MOBIFixture()
+        fixture.type = "TEXt"
+        fixture.creator = "REAd"
+        fixture.hasMOBIHeader = false
+        // The first 4,096 bytes hold no tag; an <html further on is only words.
+        fixture.textBytes = Array((String(repeating: "Plain line of words.\n", count: 250) + "Then <html> is a tag.").utf8)
+        let chapter = try XCTUnwrap(try prepared(fixture).chapters.first).chapter
+        XCTAssertTrue(chapter.text.contains("<html> is a tag."), String(chapter.text.suffix(60)))
+    }
+
+    func testTheHeadOfAnyBookIsNotRead() throws {
+        // With a body tag the words start there.
+        var withBody = MOBIFixture()
+        withBody.html = "<html><head><metadata><dc:Title>Hidden Title</dc:Title></metadata><guide><reference title=\"Hidden\"/></guide></head>"
+            + "<body><p>Shown.</p></body></html>"
+        XCTAssertEqual(spaced(try XCTUnwrap(try prepared(withBody).chapters.first).chapter.text), "Shown.")
+        // With none the words start after the head.
+        var noBody = MOBIFixture()
+        noBody.html = "<html><head><metadata><dc:Title>Hidden Title</dc:Title></metadata></head><p>Shown too.</p></html>"
+        XCTAssertEqual(spaced(try XCTUnwrap(try prepared(noBody).chapters.first).chapter.text), "Shown too.")
+    }
+
+    func testATextThatDecompressesPastItsDeclaredLengthIsCutThereAndRead() throws {
+        for compression in [1, 2] {
+            var fixture = MOBIFixture()
+            fixture.html = "<html><body><p>Alpha beta gamma.</p></body></html>"
+            fixture.compression = compression
+            var bytes = fixture.data()
+            // The header declares seven bytes fewer than the records hold: "</html>" is cut off.
+            let record0 = MOBIFixture.recordOffsets(of: bytes)[0]
+            MOBIFixture.put32(&bytes, record0 + 4, fixture.text.count - 7)
+            let book = try MOBIBook(bytes: bytes)
+            XCTAssertEqual(book.sections.first?.html, String(fixture.html.dropLast(7)), "compression \(compression)")
+        }
+    }
+
     // MARK: - Refusals
 
     private func assertRefused(
