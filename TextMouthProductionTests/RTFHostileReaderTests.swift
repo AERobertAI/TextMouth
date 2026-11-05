@@ -81,7 +81,8 @@ final class RTFHostileReaderTests: XCTestCase {
         let depth = RTFInterpreter.deepestNesting - 10
         let source = "{\\rtf1 A{\\*\\junk " + String(repeating: "{", count: depth) + "hidden" + String(repeating: "}", count: depth) + "}B\\par}"
         let html = try XCTUnwrap(read(source, "deep skipped destination"))
-        XCTAssertEqual(try rtfWords(html), ["A", "B"])
+        // The skipped destination leaves the two letters side by side.
+        XCTAssertEqual(try rtfWords(html), ["AB"])
     }
 
     // MARK: - Lengths and numbers
@@ -93,7 +94,8 @@ final class RTFHostileReaderTests: XCTestCase {
         let beyond = try XCTUnwrap(read("{\\rtf1 Before\\par\\bin99999999 After", "bin beyond the file"))
         XCTAssertEqual(try rtfWords(beyond), ["Before"])
         let negative = try XCTUnwrap(read("{\\rtf1 A\\bin-5 B\\bin0 C\\par}", "negative bin"))
-        XCTAssertEqual(try rtfWords(negative), ["A", "B", "C"])
+        // Nothing separates the three letters in the file, so they are one word.
+        XCTAssertEqual(try rtfWords(negative), ["ABC"])
         let binary = "{\\b Hidden \\par}"
         let looksLikeRTF = try XCTUnwrap(read("{\\rtf1 A\\bin\(binary.utf8.count) \(binary) B\\par}", "bin that looks like RTF"))
         XCTAssertEqual(try rtfWords(looksLikeRTF), ["A", "B"])
@@ -184,7 +186,7 @@ final class RTFHostileReaderTests: XCTestCase {
     /// document that is too large, before it fills the Mac's memory.
     func testTextPastTheLimitIsRefused() throws {
         let source = "{\\rtf1 " + String(repeating: "word \\par ", count: 20_000) + "}"
-        DocumentByteLimit.$current.withValue(10_000) {
+        try DocumentByteLimit.$current.withValue(10_000) {
             XCTAssertThrowsError(try RTFDocumentReader.html(from: Data(source.utf8), includesPages: true)) { error in
                 XCTAssertEqual(error as? DocumentTooLargeError, DocumentTooLargeError(limit: 10_000))
             }
@@ -195,7 +197,7 @@ final class RTFHostileReaderTests: XCTestCase {
     /// the file; the budget stops it.
     func testMarkupBloatIsStopped() throws {
         let source = "{\\rtf1 " + String(repeating: "\\b a\\b0 b", count: 100_000) + "\\par}"
-        DocumentByteLimit.$current.withValue(200_000) {
+        try DocumentByteLimit.$current.withValue(200_000) {
             XCTAssertThrowsError(try RTFDocumentReader.html(from: Data(source.utf8), includesPages: true)) { error in
                 XCTAssertTrue(error is DocumentTooLargeError)
             }
@@ -269,7 +271,7 @@ final class RTFHostileReaderTests: XCTestCase {
         let folder = try makeSandboxDirectory("RTFLimit")
         let file = folder.appendingPathComponent("big.rtf")
         try Data("{\\rtf1 Some words, more than the limit allows.\\par}".utf8).write(to: file)
-        DocumentByteLimit.$current.withValue(10) {
+        try DocumentByteLimit.$current.withValue(10) {
             XCTAssertThrowsError(try RTFDocumentReader.html(of: file, as: .rtf, includesPages: true)) { error in
                 XCTAssertEqual(error as? DocumentTooLargeError, DocumentTooLargeError(limit: 10))
             }
