@@ -22,8 +22,8 @@ enum MOBIError: LocalizedError, Equatable {
     /// The book is in the newer KF8 format (MOBI header version 8 and
     /// later), which is the next task (FMT48), not this reader's.
     case kf8Only
-    /// The text is compressed in a way this reader does not read: HUFF/CDIC
-    /// until that is written, or a compression type no one defined.
+    /// The text is compressed in a way this reader does not read: a
+    /// compression type no one defined (PalmDOC and HUFF/CDIC are read).
     case unsupportedCompression
 
     var errorDescription: String? {

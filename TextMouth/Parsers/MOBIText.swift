@@ -33,7 +33,8 @@ enum MOBIText {
     /// - Throws: `MOBIError.damaged` for a book with fewer records than it
     ///   says hold its text, or a record that does not decompress;
     ///   `MOBIError.unsupportedCompression` for a compression this reader
-    ///   does not read; `DocumentTooLargeError` for a text that declares
+    ///   does not read (not PalmDOC, HUFF/CDIC, or none);
+    ///   `DocumentTooLargeError` for a text that declares
     ///   more than `DocumentByteLimit` allows; `FileImportError.noTextToRead`
     ///   for a book that declares none.
     static func bytes(of database: MOBIPalmDatabase, headers: MOBIHeaders) throws -> [UInt8] {
@@ -50,7 +51,7 @@ enum MOBIText {
             throw MOBIError.damaged("it says \(headers.textRecordCount) records hold its text, and it has only \(database.recordCount - 1)")
         }
 
-        let decompress = try decompressor(for: headers)
+        let decompress = try decompressor(for: headers, in: database)
         var text: [UInt8] = []
         // Room for what the records can plausibly hold, never for what the
         // header merely claims: a hostile header may claim 64 MB of a file of 4 KB.
@@ -81,8 +82,9 @@ enum MOBIText {
 
     /// The decompressor for the book's compression type.
     /// - Throws: `MOBIError.unsupportedCompression` for a type this reader
-    ///   does not read.
-    private static func decompressor(for headers: MOBIHeaders) throws -> Decompressor {
+    ///   does not read, and `MOBIError.damaged` for HUFF/CDIC tables that do
+    ///   not read.
+    private static func decompressor(for headers: MOBIHeaders, in database: MOBIPalmDatabase) throws -> Decompressor {
         switch headers.compression {
         case 1:
             // No compression: the record is the text.
@@ -94,8 +96,16 @@ enum MOBIText {
             return { bytes, range, output, limit in
                 try decompressPalmDOC(bytes, range, into: &output, limit: limit)
             }
+        case 17480:
+            // HUFF/CDIC: the tables are read once, then each record is decoded with them.
+            let huffman = try MOBIHuffman(
+                database: database, firstRecord: headers.huffmanFirstRecord, recordCount: headers.huffmanRecordCount
+            )
+            return { _, range, output, limit in
+                try huffman.decompress(range, into: &output, limit: limit)
+            }
         default:
-            // 17480 is HUFF/CDIC, which is not read yet.
+            // No other compression type was ever defined.
             throw MOBIError.unsupportedCompression
         }
     }
