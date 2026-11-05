@@ -56,7 +56,11 @@ RESULTS = TRAIN_DIR / "results"
 LOCK = TRAIN_DIR / "lock"
 NEXT = TRAIN_DIR / "next.txt"
 WORKTREE = ROOT / ".claude" / "worktrees" / "train"
-DERIVED = Path("/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-train")
+# The train's build cache. It is kept beside the train's records, not in the user's temporary folder
+# under /var/folders, because macOS sweeps that folder of files unused for three days: on 2026-11-04
+# the sweep took the cache's precompiled modules (.pcm) between loops, and the next train failed
+# before testing. The ".noindex" ending keeps Spotlight from indexing a gigabyte of build products.
+DERIVED = TRAIN_DIR / "DerivedData.noindex"
 BBS = ROOT / ".claude" / "skills" / "agent-bbs" / "scripts" / "bbs.py"
 XCODEGEN = "/opt/homebrew/bin/xcodegen"
 DEFAULT_BASE = "train/base"
