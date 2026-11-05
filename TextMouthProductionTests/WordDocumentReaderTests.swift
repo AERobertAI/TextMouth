@@ -50,6 +50,7 @@ final class WordDocumentReaderTests: XCTestCase {
         XCTAssertTrue(body.contains("<h1>Harbour Notes</h1>"), body)
         XCTAssertTrue(body.contains("<h2>Morning Tides</h2>"), body)
         XCTAssertTrue(body.contains("<h2>Timetable</h2>"), body)
+        XCTAssertTrue(body.contains("<ul>\n<li>Bread from the bakery on Rue Ménard</li>\n<li>Smoked fish, naïve prices</li>\n<li>A newspaper already a day old</li>\n</ul>"), body)
         XCTAssertTrue(body.contains("<p>The ferry leaves at seven. Café tables fill early, and the señor at the counter pours coffee without asking.</p>"), body)
         XCTAssertTrue(body.contains("Prices — in euros — are posted by the quay."), body)
         XCTAssertTrue(body.contains("<table>"), body)
@@ -183,6 +184,34 @@ final class WordDocumentReaderTests: XCTestCase {
         let bare = try XCTUnwrap(WordDocumentReader.html(from: builder.build(), includesPages: false))
         XCTAssertFalse(bare.contains("<title>"), bare)
         XCTAssertFalse(bare.contains("author"), bare)
+    }
+
+    // MARK: - Bullets
+
+    /// The body of the document made from `paragraphs` stored as UTF-16, which
+    /// the bullet glyphs need.
+    private func wideBody(_ paragraphs: [Paragraph], pages: Bool = false) throws -> String {
+        var builder = WordDocumentBuilder()
+        builder.isCompressed = false
+        builder.paragraphs = paragraphs
+        return try body(of: builder.build(), pages: pages)
+    }
+
+    func testParagraphsThatBeginWithABulletAndASpaceBecomeAList() throws {
+        let body = try wideBody([
+            Paragraph("Before"), Paragraph("•\tfirst item"), Paragraph("•\tsecond item"), Paragraph("After"),
+            Paragraph("● third"),
+        ])
+        XCTAssertEqual(body, "<p>Before</p>\n<ul>\n<li>first item</li>\n<li>second item</li>\n</ul>\n<p>After</p>\n<ul>\n<li>third</li>\n</ul>\n")
+    }
+
+    func testADashOrABulletWithNoSpaceIsNotAListItem() throws {
+        XCTAssertEqual(try wideBody([Paragraph("- a dash"), Paragraph("•glued"), Paragraph("•")]), "<p>- a dash</p>\n<p>•glued</p>\n<p>•</p>\n")
+    }
+
+    func testAListItemKeepsItsEmphasisAndItsPage() throws {
+        let body = try wideBody([Paragraph(runs: [Run("•\t"), Run("bold", bold: 1), Run(" item")]), Paragraph("\u{0C}•\tnext")], pages: true)
+        XCTAssertEqual(body, span(1) + "<ul>\n<li><strong>bold</strong> item</li>\n<li>\(span(2))next</li>\n</ul>\n")
     }
 
     // MARK: - Fields

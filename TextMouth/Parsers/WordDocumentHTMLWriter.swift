@@ -107,6 +107,10 @@ struct WordHTMLWriter {
     /// is dropped while this is not zero.
     private var instructionDepth = 0
 
+    /// Whether a bulleted list is open: a `ul` whose items are the paragraphs
+    /// that begin with a bullet.
+    private var listIsOpen = false
+
     // Tables.
     private var tableIsOpen = false
     private var rowIsOpen = false
@@ -395,10 +399,14 @@ struct WordHTMLWriter {
                 } else {
                     // A paragraph short enough to be a heading by its size or
                     // weight, if the document has no real headings.
-                    if length <= Self.longestHeading, !(length == 1 && startsWithLetter) {
-                        candidates.append((blocks.count, census, content))
+                    if let item = Self.bulletItem(in: content) {
+                        write("<li>" + item + "</li>\n", isListItem: true)
+                    } else {
+                        write("<p>" + content + "</p>\n")
+                        if length <= Self.longestHeading, !(length == 1 && startsWithLetter) {
+                            candidates.append((blocks.count - 1, census, content))
+                        }
                     }
-                    write("<p>" + content + "</p>\n")
                 }
             }
         }
@@ -408,10 +416,34 @@ struct WordHTMLWriter {
     /// The longest paragraph, in characters, that can be a heading by its size or weight.
     private static let longestHeading = 120
 
-    /// Adds a complete block to the output.
-    private mutating func write(_ block: String) {
+    /// Adds a complete block to the output. A list item opens the list if it
+    /// is not open; any other block closes it.
+    private mutating func write(_ block: String, isListItem: Bool = false) {
+        if isListItem != listIsOpen {
+            let tag = isListItem ? "<ul>\n" : "</ul>\n"
+            blocks.append(tag)
+            outputSize += tag.utf8.count
+            listIsOpen = isListItem
+        }
         blocks.append(block)
         outputSize += block.utf8.count
+    }
+
+    /// The glyphs that begin a bulleted paragraph when white space follows.
+    /// The hyphen, the en dash, and the asterisk are left out: a paragraph
+    /// may begin with them for other reasons.
+    private static let bulletGlyphs: Set<Character> = ["•", "◦", "▪", "▫", "‣", "⁃", "∙", "●", "○", "■", "□"]
+
+    /// The inline HTML of the paragraph `content` without its bullet, when
+    /// the paragraph begins with a bullet glyph and a space (a tab, after
+    /// white space is read as one space); nil when it does not. Word writes
+    /// a typed bullet as the glyph, a tab, and the words.
+    private static func bulletItem(in content: String) -> String? {
+        guard let first = content.first, bulletGlyphs.contains(first) else { return nil }
+        let rest = content.dropFirst()
+        guard rest.first == " " else { return nil }
+        let item = rest.drop { $0 == " " }
+        return item.isEmpty ? nil : String(item)
     }
 
     /// Closes the cell, row, and table that are open, in that order.
@@ -444,6 +476,7 @@ struct WordHTMLWriter {
         }
         if paragraphHasText || !paragraph.isEmpty { try endParagraph(mark: 0x0D, at: position) }
         closeTable()
+        if listIsOpen { write("") }
         // A document with no real headings gets the guess textutil's readers
         // make: larger paragraphs, then paragraphs wholly in bold.
         if !hasRealHeading {
