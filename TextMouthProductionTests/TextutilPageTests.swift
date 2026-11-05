@@ -132,8 +132,11 @@ final class TextutilPageTests: XCTestCase {
 
     func testTheDirectReaderReadsTheSameWordsAsTheCache() throws {
         let copy = try copyOfFormatSample("rtf/page-breaks.rtf")
-        let content = try TextutilDocumentReader.$temporaryRoot.withValue(work) {
-            try TextutilDocumentReader.parse(url: copy, bookFormat: .rtf)
+        // The rich text sample is textutil's here (`OwnDocumentReaders.forcesTextutil`).
+        let content = try OwnDocumentReaders.$forcesTextutil.withValue(true) {
+            try TextutilDocumentReader.$temporaryRoot.withValue(work) {
+                try TextutilDocumentReader.parse(url: copy, bookFormat: .rtf)
+            }
         }
         // The direct reader does not read page markers (as it reads no
         // heading annotations), but its words must be the cache's, so that a
