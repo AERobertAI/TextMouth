@@ -15,6 +15,10 @@ enum RTFDestination: Equatable {
     /// (`\NeXTGraphic`, `\NeXTPlainFile`): read by nobody, and followed in
     /// the text around it by one character that stands for it.
     case attachment
+    /// A drawing shape (`\shp`, `\shpgrp`, `\do`), whose properties and
+    /// pictures are read by nobody, and whose text box (`\shptxt`) is the
+    /// body of the document set in a frame, so it is read.
+    case shape
     /// The font table, read for its fonts' character sets.
     case fontTable
     /// The style sheet, whose groups are style definitions.
@@ -36,7 +40,7 @@ enum RTFDestination: Equatable {
     /// Whether the text of the destination is read by nobody: skipped
     /// groups and attachments.
     var isUnread: Bool {
-        self == .skipped || self == .attachment
+        self == .skipped || self == .attachment || self == .shape
     }
 
     /// The destination the control word `name` starts when it is the first
@@ -57,21 +61,22 @@ enum RTFDestination: Equatable {
             "fonttbl": .fontTable, "stylesheet": .styleSheet, "info": .info,
             "listtable": .listTable, "listoverridetable": .listTable,
             "listtext": .listText, "pntext": .listText,
-            "NeXTGraphic": .attachment, "NeXTPlainFile": .attachment
+            "NeXTGraphic": .attachment, "NeXTPlainFile": .attachment,
+            "shp": .shape, "shpgrp": .shape, "do": .shape
         ]
         // Destinations that hold nothing a listener should hear.
         let skippedNames = [
             "colortbl", "pict", "object", "header", "headerl", "headerr", "headerf",
             "footer", "footerl", "footerr", "footerf", "footnote", "fldinst",
             "annotation", "comment", "atnauthor", "atndate", "atnid", "atnref", "atntime",
-            "atrfend", "atrfstart", "bkmkstart", "bkmkend", "private", "shp", "shpgrp",
-            "do", "nonshppict", "shppict", "falt", "panose", "fontemb", "fontfile",
+            "atrfend", "atrfstart", "bkmkstart", "bkmkend", "private",
+            "nonshppict", "shppict", "falt", "panose", "fontemb", "fontfile",
             "filetbl", "generator", "themedata", "colorschememapping", "datastore",
             "latentstyles", "xmlnstbl", "rsidtbl", "revtbl", "protusertbl", "userprops",
             "pgdsctbl", "template", "tc", "tcn", "xe", "txe", "rxe", "ftnsep", "ftnsepc",
             "ftncn", "aftnsep", "aftnsepc", "aftncn", "pn", "pntxta", "pntxtb",
             "nesttableprops", "nonesttables", "wgrffmtfilter", "mmathPr", "mathPr",
-            "listpicture", "stylerestrictions", "sp", "shpinst", "shptxt"
+            "listpicture", "stylerestrictions", "sp", "shpinst"
         ]
         for name in skippedNames { table[name] = .skipped }
         return table
