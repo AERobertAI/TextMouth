@@ -41,7 +41,12 @@ enum OwnDocumentReaders {
     static func html(of url: URL, as format: TextutilInputFormat, includesPages: Bool) throws -> String? {
         switch format {
         // A format read with TextMouth's own reader returns its HTML here.
-        case .rtf, .rtfd, .doc, .odt, .wordml:
+        case .doc:
+            // Word 97-2003 (.doc and .dot); nil too for a Word 6 or Word 95
+            // document, which textutil reads.
+            guard WordDocumentReader.isOn else { return nil }
+            return try WordDocumentReader.html(of: url, includesPages: includesPages)
+        case .rtf, .rtfd, .odt, .wordml:
             return nil
         }
     }
