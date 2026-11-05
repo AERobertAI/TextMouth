@@ -29,6 +29,8 @@ struct WordDocumentBuilder {
         var isSpecial = false
         /// The font size in half-points.
         var fontSize: Int?
+        /// Whether the run is a tracked deletion (`sprmCFRMarkDel`).
+        var isDeleted = false
 
         init(_ text: String, bold: Int? = nil, italic: Int? = nil, characterStyle: Int? = nil, fontSize: Int? = nil) {
             self.fontSize = fontSize
@@ -373,6 +375,7 @@ struct WordDocumentBuilder {
         if let style = run.characterStyle { bytes += le16(WordSprm.characterStyle) + le16(style) }
         if run.isSpecial { bytes += modifier(WordSprm.special, 1) }
         if let size = run.fontSize { bytes += le16(WordSprm.fontSize) + le16(size) }
+        if run.isDeleted { bytes += modifier(WordSprm.deleted, 1) }
         return bytes + run.extraModifiers
     }
 

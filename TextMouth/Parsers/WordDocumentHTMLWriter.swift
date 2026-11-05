@@ -222,11 +222,13 @@ struct WordHTMLWriter {
 
     /// Writes the scalar `scalar` of the text at `position`.
     private mutating func addText(_ scalar: Unicode.Scalar, at position: Int) throws {
+        let format = characters.format(at: position) ?? WordCharacterFormat()
+        // Text a tracked change deleted is not in the document any more.
+        if format.isDeleted { return }
         if scalar.properties.isWhitespace {
             addWhitespace(scalar)
             return
         }
-        let format = characters.format(at: position) ?? WordCharacterFormat()
         // A special character in the text (a symbol from a font, 0x28, which
         // is "(" otherwise) has no words to read.
         if format.isSpecial && scalar == "(" { return }

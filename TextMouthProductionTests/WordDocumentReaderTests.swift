@@ -270,6 +270,21 @@ final class WordDocumentReaderTests: XCTestCase {
         XCTAssertTrue(body.hasPrefix(span(1) + "<p>Footnote words.</p>\n"), body)
     }
 
+    // MARK: - Tracked Changes
+
+    func testTextATrackedChangeDeletedIsNotRead() throws {
+        var deleted = Run(" dolor sit amet")
+        deleted.isDeleted = true
+        let body = try body([Paragraph(runs: [Run("Lorem ipsum"), deleted, Run(" consectetur")])])
+        XCTAssertEqual(body, "<p>Lorem ipsum consectetur</p>\n")
+    }
+
+    func testAParagraphThatIsAllDeletedTextIsLeftOut() throws {
+        var deleted = Run("gone entirely")
+        deleted.isDeleted = true
+        XCTAssertEqual(try body([Paragraph(runs: [deleted]), Paragraph("kept")]), "<p>kept</p>\n")
+    }
+
     // MARK: - Fields
 
     func testAFieldKeepsItsResultAndDropsItsInstruction() throws {

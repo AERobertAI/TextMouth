@@ -34,6 +34,9 @@ struct WordCharacterFormat: Equatable {
     var isSpecial = false
     /// The font size in half-points, or nil.
     var fontSize: Int?
+    /// Whether the characters are text a tracked change deleted, which the
+    /// document no longer holds.
+    var isDeleted = false
 }
 
 // MARK: - Runs of Formats
@@ -182,6 +185,7 @@ enum WordDocumentProperties {
                 case WordSprm.characterStyle: format.style = value
                 case WordSprm.special: format.isSpecial = value != 0
                 case WordSprm.fontSize: format.fontSize = value
+                case WordSprm.deleted: format.isDeleted = value != 0
                 default: break
                 }
             }

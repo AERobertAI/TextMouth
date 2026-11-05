@@ -163,6 +163,8 @@ enum WordSprm {
     static let bold = 0x0835
     /// Italic (`sprmCFItalic`).
     static let italic = 0x0836
+    /// The text is a tracked deletion (`sprmCFRMarkDel`).
+    static let deleted = 0x0800
     /// The font size in half-points (`sprmCHps`).
     static let fontSize = 0x4A43
     /// The character style (`sprmCIstd`).
