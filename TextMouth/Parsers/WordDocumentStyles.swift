@@ -29,6 +29,8 @@ struct WordStyleSheet {
         let bold: Int?
         /// The style's own italic property, valued as `bold` is.
         let italic: Int?
+        /// The style's own font size in half-points, or nil.
+        let fontSize: Int?
     }
 
     /// The styles by index; nil for an unused slot of the sheet.
@@ -105,6 +107,7 @@ struct WordStyleSheet {
         var outlineLevel: Int?
         var bold: Int?
         var italic: Int?
+        var fontSize: Int?
         // Paragraph properties of a paragraph style: after the index (2 bytes).
         if kind == 1, let paragraph = groups.first, paragraph.count >= 2 {
             WordSprm.forEach(in: paragraph.dropFirst(2)) { opcode, operand in
@@ -119,6 +122,7 @@ struct WordStyleSheet {
                 guard let value = operand.first else { return }
                 if opcode == WordSprm.bold { bold = Int(value) }
                 if opcode == WordSprm.italic { italic = Int(value) }
+                if opcode == WordSprm.fontSize, operand.count >= 2 { fontSize = Int(operand[operand.startIndex]) | Int(operand[operand.startIndex + 1]) << 8 }
             }
         }
         return Style(
@@ -126,7 +130,8 @@ struct WordStyleSheet {
             basedOn: basedOn == 0x0FFF ? nil : basedOn,
             outlineLevel: outlineLevel,
             bold: bold,
-            italic: italic
+            italic: italic,
+            fontSize: fontSize
         )
     }
 
@@ -195,6 +200,17 @@ struct WordStyleSheet {
             for style in chain(from: characterStyle).reversed() { value = Self.toggled(value, by: style[keyPath: property]) }
         }
         return Self.toggled(value, by: direct)
+    }
+
+    /// The font size in half-points of text with the paragraph style
+    /// `paragraphStyle`, the character style `characterStyle` (or nil), and
+    /// the direct size `direct` (or nil): the direct size, else the character
+    /// style's, else the paragraph style's, each through the styles it is
+    /// based on, else Word's default of 10 points.
+    func fontSize(paragraphStyle: Int, characterStyle: Int?, direct: Int?) -> Int {
+        if let direct { return direct }
+        if let characterStyle, let size = chain(from: characterStyle).lazy.compactMap(\.fontSize).first { return size }
+        return chain(from: paragraphStyle).lazy.compactMap(\.fontSize).first ?? 20
     }
 
     /// `value` after the toggle property `setting` is applied to it.

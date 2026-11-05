@@ -139,6 +139,8 @@ enum WordSprm {
     static let bold = 0x0835
     /// Italic (`sprmCFItalic`).
     static let italic = 0x0836
+    /// The font size in half-points (`sprmCHps`).
+    static let fontSize = 0x4A43
     /// The character style (`sprmCIstd`).
     static let characterStyle = 0x4A30
     /// The character is a special character, such as a picture's anchor (`sprmCFSpec`).

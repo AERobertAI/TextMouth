@@ -46,14 +46,29 @@ struct WordHTMLWriter {
 
     // MARK: Output
 
-    /// The HTML written so far: the blocks that are complete.
-    private var body = ""
+    /// The HTML written so far, one string for each block that is complete.
+    private var blocks: [String] = []
+    /// The bytes in `blocks`.
+    private var outputSize = 0
+    /// The paragraphs that could be headings by their size or weight, if the
+    /// document has no real headings: the index of each one's block, its
+    /// census, and its inline HTML.
+    private var candidates: [(block: Int, census: WordCharacterCensus, content: String)] = []
+    /// The census of every character of the document.
+    private var documentCensus = WordCharacterCensus()
+    /// Whether the document has a heading by style or outline level.
+    private var hasRealHeading = false
 
     // The paragraph being written.
     /// Its inline HTML.
     private var paragraph = ""
     /// Whether it holds a character that is not white space.
     private var paragraphHasText = false
+    /// Its census by size and weight, and the number of characters it holds
+    /// (white space between words included) and its first.
+    private var paragraphCensus = WordCharacterCensus()
+    private var paragraphLength = 0
+    private var paragraphFirst: Unicode.Scalar = " "
     /// White space met since the last character that is not, written when
     /// the next one comes (and dropped at the paragraph's end), so that it
     /// falls outside the emphasis that begins or ends there.
@@ -69,7 +84,14 @@ struct WordHTMLWriter {
 
     // Caches of the last answers, since most characters ask what the one before did.
     private var headingCache: (format: WordParagraphFormat, level: Int?)?
-    private var emphasisCache: (style: Int, format: WordCharacterFormat, bold: Bool, italic: Bool)?
+    private var appearanceCache: (style: Int, format: WordCharacterFormat, appearance: Appearance)?
+
+    /// How text looks: bold, italic, and the size in half-points.
+    private struct Appearance {
+        var bold: Bool
+        var italic: Bool
+        var size: Int
+    }
 
     // Pages.
     /// The numbers of the pages that begin before the next letter or digit.
@@ -197,7 +219,10 @@ struct WordHTMLWriter {
         // is "(" otherwise) has no words to read.
         if format.isSpecial && scalar == "(" { return }
         let paragraphFormat = currentParagraphFormat(at: position)
-        let emphasis = emphasis(of: format, in: paragraphFormat)
+        let appearance = appearance(of: format, in: paragraphFormat)
+        // A heading carries no emphasis.
+        let heading = isHeading(paragraphFormat)
+        let emphasis = (bold: appearance.bold && !heading, italic: appearance.italic && !heading)
 
         // The emphasis that ends closes before the white space that follows
         // it, and the emphasis that begins opens after it.
@@ -205,7 +230,10 @@ struct WordHTMLWriter {
         let needsSeparator = !previousWasSpace && pendingWhitespace.isEmpty
         // White space that begins a paragraph is not written.
         if paragraphHasText { paragraph += pendingWhitespace }
-        if !pendingWhitespace.isEmpty { previousWasSpace = true }
+        if !pendingWhitespace.isEmpty {
+            previousWasSpace = true
+            if paragraphHasText { paragraphLength += 1 }
+        }
         pendingWhitespace = ""
         if TextutilPageBreaks.isCounted(scalar) {
             wroteCountedCharacter = true
@@ -220,7 +248,10 @@ struct WordHTMLWriter {
             italicIsOpen = true
         }
         Self.append(scalar, to: &paragraph)
+        if !paragraphHasText { paragraphFirst = scalar }
         paragraphHasText = true
+        paragraphLength += 1
+        paragraphCensus.add(size: appearance.size, isBold: appearance.bold)
         previousWasSpace = false
     }
 
@@ -279,23 +310,29 @@ struct WordHTMLWriter {
         return level
     }
 
-    /// Whether text with `character` in a paragraph with `paragraph` is bold
-    /// and italic. A heading is neither: its style bolds it all.
-    private mutating func emphasis(
-        of character: WordCharacterFormat, in paragraph: WordParagraphFormat
-    ) -> (bold: Bool, italic: Bool) {
-        if headingLevel(of: paragraph) != nil, !paragraph.isInTable { return (false, false) }
-        if let cache = emphasisCache, cache.style == paragraph.style, cache.format == character {
-            return (cache.bold, cache.italic)
+    /// Whether a paragraph with `paragraph` is a heading by its style or
+    /// outline level, outside a table. A heading carries no emphasis: its
+    /// style bolds it all.
+    private mutating func isHeading(_ paragraph: WordParagraphFormat) -> Bool {
+        headingLevel(of: paragraph) != nil && !paragraph.isInTable
+    }
+
+    /// How text with `character` in a paragraph with `paragraph` looks.
+    private mutating func appearance(of character: WordCharacterFormat, in paragraph: WordParagraphFormat) -> Appearance {
+        if let cache = appearanceCache, cache.style == paragraph.style, cache.format == character {
+            return cache.appearance
         }
-        let bold = styles.isEmphasized(
-            paragraphStyle: paragraph.style, characterStyle: character.style, direct: character.bold, \.bold
+        let appearance = Appearance(
+            bold: styles.isEmphasized(
+                paragraphStyle: paragraph.style, characterStyle: character.style, direct: character.bold, \.bold
+            ),
+            italic: styles.isEmphasized(
+                paragraphStyle: paragraph.style, characterStyle: character.style, direct: character.italic, \.italic
+            ),
+            size: styles.fontSize(paragraphStyle: paragraph.style, characterStyle: character.style, direct: character.fontSize)
         )
-        let italic = styles.isEmphasized(
-            paragraphStyle: paragraph.style, characterStyle: character.style, direct: character.italic, \.italic
-        )
-        emphasisCache = (paragraph.style, character, bold, italic)
-        return (bold, italic)
+        appearanceCache = (paragraph.style, character, appearance)
+        return appearance
     }
 
     /// Closes the emphasis tags that are open.
@@ -313,16 +350,22 @@ struct WordHTMLWriter {
         closeEmphasis()
         let content = paragraph
         let hasText = paragraphHasText
+        let census = paragraphCensus
+        let length = paragraphLength
+        let startsWithLetter = paragraphFirst.properties.isAlphabetic
         paragraph = ""
         paragraphHasText = false
+        paragraphCensus = WordCharacterCensus()
+        paragraphLength = 0
         pendingWhitespace = ""
         previousWasSpace = true
+        documentCensus.merge(census)
 
         // A paragraph in a table, however deep.
         let depth = max(format.tableDepth, format.isInTable ? 1 : 0)
         if depth > 0 {
             if !tableIsOpen {
-                body += "<table>\n"
+                write("<table>\n")
                 tableIsOpen = true
             }
             // The mark that ends a row has no text of its own.
@@ -332,14 +375,14 @@ struct WordHTMLWriter {
                 return
             }
             if !rowIsOpen {
-                body += "<tr>"
+                write("<tr>")
                 rowIsOpen = true
             }
             if !cellIsOpen {
-                body += "<td>"
+                write("<td>")
                 cellIsOpen = true
             }
-            if hasText { body += "<p>" + content + "</p>\n" }
+            if hasText { write("<p>" + content + "</p>\n") }
             // The mark of a cell of this table ends the cell; a cell of a
             // table inside it is only the end of a paragraph.
             if mark == 0x07, depth == 1 { closeCell() }
@@ -347,30 +390,45 @@ struct WordHTMLWriter {
             closeTable()
             if hasText {
                 if let level = headingLevel(of: format) {
-                    body += "<h\(level)>" + content + "</h\(level)>\n"
+                    hasRealHeading = true
+                    write("<h\(level)>" + content + "</h\(level)>\n")
                 } else {
-                    body += "<p>" + content + "</p>\n"
+                    // A paragraph short enough to be a heading by its size or
+                    // weight, if the document has no real headings.
+                    if length <= Self.longestHeading, !(length == 1 && startsWithLetter) {
+                        candidates.append((blocks.count, census, content))
+                    }
+                    write("<p>" + content + "</p>\n")
                 }
             }
         }
-        guard body.utf8.count <= outputLimit else { throw DocumentTooLargeError(limit: Int64(outputLimit)) }
+        guard outputSize <= outputLimit else { throw DocumentTooLargeError(limit: Int64(outputLimit)) }
+    }
+
+    /// The longest paragraph, in characters, that can be a heading by its size or weight.
+    private static let longestHeading = 120
+
+    /// Adds a complete block to the output.
+    private mutating func write(_ block: String) {
+        blocks.append(block)
+        outputSize += block.utf8.count
     }
 
     /// Closes the cell, row, and table that are open, in that order.
     private mutating func closeTable() {
         closeCell()
         closeRow()
-        if tableIsOpen { body += "</table>\n" }
+        if tableIsOpen { write("</table>\n") }
         tableIsOpen = false
     }
 
     private mutating func closeRow() {
-        if rowIsOpen { body += "</tr>\n" }
+        if rowIsOpen { write("</tr>\n") }
         rowIsOpen = false
     }
 
     private mutating func closeCell() {
-        if cellIsOpen { body += "</td>" }
+        if cellIsOpen { write("</td>") }
         cellIsOpen = false
     }
 
@@ -386,10 +444,25 @@ struct WordHTMLWriter {
         }
         if paragraphHasText || !paragraph.isEmpty { try endParagraph(mark: 0x0D, at: position) }
         closeTable()
+        // A document with no real headings gets the guess textutil's readers
+        // make: larger paragraphs, then paragraphs wholly in bold.
+        if !hasRealHeading {
+            let levels = WordHeadingGuess.levels(of: candidates.map(\.census), in: documentCensus)
+            for (candidate, level) in zip(candidates, levels) {
+                guard let level else { continue }
+                blocks[candidate.block] = "<h\(level)>" + Self.withoutEmphasis(candidate.content) + "</h\(level)>\n"
+            }
+        }
         let firstPage = includesPages && wroteCountedCharacter
             ? "<span role=\"\(TextutilPageBreaks.pageBreakRole)\" aria-label=\"1\"></span>"
             : ""
-        return firstPage + body
+        return firstPage + blocks.joined()
+    }
+
+    /// `html` without its emphasis tags (the text is escaped, so these
+    /// strings are never text).
+    private static func withoutEmphasis(_ html: String) -> String {
+        ["<strong>", "</strong>", "<em>", "</em>"].reduce(html) { $0.replacingOccurrences(of: $1, with: "") }
     }
 
     // MARK: Escaping

@@ -46,7 +46,10 @@ final class WordDocumentReaderTests: XCTestCase {
 
     func testTheTextutilSampleKeepsItsWordsBoldAndTable() throws {
         let body = try sampleBody("doc/headings.doc", pages: false)
-        XCTAssertTrue(body.contains("<p><strong>Harbour Notes</strong></p>"), body)
+        // No heading styles, so headings are guessed from size, as for textutil: 24, 18, and 12 point.
+        XCTAssertTrue(body.contains("<h1>Harbour Notes</h1>"), body)
+        XCTAssertTrue(body.contains("<h2>Morning Tides</h2>"), body)
+        XCTAssertTrue(body.contains("<h2>Timetable</h2>"), body)
         XCTAssertTrue(body.contains("<p>The ferry leaves at seven. Café tables fill early, and the señor at the counter pours coffee without asking.</p>"), body)
         XCTAssertTrue(body.contains("Prices — in euros — are posted by the quay."), body)
         XCTAssertTrue(body.contains("<table>"), body)
@@ -266,6 +269,65 @@ final class WordDocumentReaderTests: XCTestCase {
         XCTAssertEqual(body, "<h1>Bold italic</h1>\n")
     }
 
+    // MARK: - Guessed Headings
+
+    /// A body of ordinary paragraphs (10 point) for the guess to measure.
+    private func bodyText() -> [Paragraph] {
+        (1...3).map { Paragraph("This is ordinary body text number \($0), long enough to outweigh any short heading in the count of characters.") }
+    }
+
+    func testLargerParagraphsAreHeadingsRankedBySizeWhenTheDocumentHasNoRealOnes() throws {
+        let body = try body([
+            Paragraph(runs: [Run("Big", fontSize: 40)]), Paragraph(runs: [Run("Medium", fontSize: 28)]),
+            Paragraph(runs: [Run("Medium again", fontSize: 28)]), Paragraph(runs: [Run("Small", fontSize: 24)]),
+        ] + bodyText())
+        XCTAssertTrue(body.hasPrefix("<h1>Big</h1>\n<h2>Medium</h2>\n<h2>Medium again</h2>\n<h3>Small</h3>\n<p>This is"), body)
+    }
+
+    func testAShortParagraphWhollyInBoldAtTheBodySizeIsTheNextLevel() throws {
+        let body = try body([
+            Paragraph(runs: [Run("Large", fontSize: 32)]), Paragraph(runs: [Run("Just bold", bold: 1)]),
+            Paragraph(runs: [Run("Some "), Run("bold", bold: 1), Run(" words")]),
+        ] + bodyText())
+        XCTAssertTrue(body.hasPrefix("<h1>Large</h1>\n<h2>Just bold</h2>\n<p>Some <strong>bold</strong> words</p>\n"), body)
+    }
+
+    func testNoGuessIsMadeWhenTheDocumentHasARealHeading() throws {
+        let body = try body([
+            Paragraph("Real", style: 1), Paragraph(runs: [Run("Large", fontSize: 32)]), Paragraph(runs: [Run("Just bold", bold: 1)]),
+        ] + bodyText())
+        XCTAssertTrue(body.hasPrefix("<h1>Real</h1>\n<p>Large</p>\n<p><strong>Just bold</strong></p>\n"), body)
+    }
+
+    func testLongParagraphsSingleLettersAndTablesAreNotGuessedToBeHeadings() throws {
+        let long = String(repeating: "word ", count: 30)
+        let inTable = WordDocumentBuilder.modifier(WordSprm.inTable, 1)
+        let body = try body([
+            Paragraph(runs: [Run(long, fontSize: 40)]), Paragraph(runs: [Run("W", fontSize: 40)]),
+            Paragraph(runs: [Run("Cell", fontSize: 40)], modifiers: inTable, mark: 0x07),
+            Paragraph("", modifiers: inTable + WordDocumentBuilder.modifier(WordSprm.rowEnd, 1), mark: 0x07),
+        ] + bodyText())
+        XCTAssertFalse(body.contains("<h"), body)
+    }
+
+    func testADocumentWhollyInBoldHasNoHeadingsFromBold() throws {
+        let bold = (1...3).map { Paragraph(runs: [Run("Bold line number \($0)", bold: 1)]) }
+        XCTAssertFalse(try body(bold).contains("<h"))
+    }
+
+    func testAHeadingGuessedFromSizeCarriesNoEmphasis() throws {
+        let body = try body([Paragraph(runs: [Run("Big ", bold: 1, fontSize: 40), Run("title", bold: 1, fontSize: 40)])] + bodyText())
+        XCTAssertTrue(body.hasPrefix("<h1>Big title</h1>\n"), body)
+    }
+
+    func testSizesComeFromStylesToo() throws {
+        var builder = WordDocumentBuilder()
+        // Style 12 is a paragraph style set in 30 point.
+        builder.styles.append(WordDocumentBuilder.Style(basedOn: 0, fontSize: 60))
+        builder.paragraphs = [Paragraph("Styled big", style: 12)] + bodyText()
+        XCTAssertTrue(try body(of: builder.build()).hasPrefix("<h1>Styled big</h1>\n"))
+    }
+
     // MARK: - Emphasis
 
     func testBoldAndItalicRunsBecomeStrongAndEm() throws {
@@ -304,6 +366,8 @@ final class WordDocumentReaderTests: XCTestCase {
         builder.styles.append(WordDocumentBuilder.Style(basedOn: 0, bold: 1))
         builder.styles.append(WordDocumentBuilder.Style(basedOn: 12, bold: 0x81))
         builder.paragraphs = [
+            // A heading, so that no bold paragraph is guessed to be one.
+            Paragraph("Heading", style: 1),
             Paragraph(runs: [Run("bold style")], style: 12),
             Paragraph(runs: [Run("reversed to plain")], style: 13),
             Paragraph(runs: [Run("char bold", characterStyle: 10), Run(" "), Run("char italic", characterStyle: 11)]),
@@ -312,7 +376,7 @@ final class WordDocumentReaderTests: XCTestCase {
         ]
         XCTAssertEqual(
             try body(of: builder.build()),
-            "<p><strong>bold style</strong></p>\n<p>reversed to plain</p>\n"
+            "<h1>Heading</h1>\n<p><strong>bold style</strong></p>\n<p>reversed to plain</p>\n"
                 + "<p><strong>char bold</strong> <em>char italic</em></p>\n<p>flipped</p>\n"
         )
     }

@@ -27,8 +27,11 @@ struct WordDocumentBuilder {
         var extraModifiers: [UInt8] = []
         /// Whether the run is marked special (`sprmCFSpec`).
         var isSpecial = false
+        /// The font size in half-points.
+        var fontSize: Int?
 
-        init(_ text: String, bold: Int? = nil, italic: Int? = nil, characterStyle: Int? = nil) {
+        init(_ text: String, bold: Int? = nil, italic: Int? = nil, characterStyle: Int? = nil, fontSize: Int? = nil) {
+            self.fontSize = fontSize
             self.text = text
             self.bold = bold
             self.italic = italic
@@ -70,6 +73,7 @@ struct WordDocumentBuilder {
         var outlineLevel: Int?
         var bold: Int?
         var italic: Int?
+        var fontSize: Int?
     }
 
     var paragraphs: [Paragraph] = []
@@ -331,6 +335,7 @@ struct WordDocumentBuilder {
         if let italic = run.italic { bytes += modifier(WordSprm.italic, italic) }
         if let style = run.characterStyle { bytes += le16(WordSprm.characterStyle) + le16(style) }
         if run.isSpecial { bytes += modifier(WordSprm.special, 1) }
+        if let size = run.fontSize { bytes += le16(WordSprm.fontSize) + le16(size) }
         return bytes + run.extraModifiers
     }
 
@@ -363,6 +368,7 @@ struct WordDocumentBuilder {
             var characters: [UInt8] = []
             if let bold = style.bold { characters += Self.modifier(WordSprm.bold, bold) }
             if let italic = style.italic { characters += Self.modifier(WordSprm.italic, italic) }
+            if let size = style.fontSize { characters += Self.le16(WordSprm.fontSize) + Self.le16(size) }
             if style.kind == 1 {
                 var paragraph = Self.le16(index)
                 if let outline = style.outlineLevel { paragraph += Self.modifier(WordSprm.outlineLevel, outline) }

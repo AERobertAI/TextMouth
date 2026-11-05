@@ -31,6 +31,8 @@ struct WordCharacterFormat: Equatable {
     var italic: Int?
     /// Whether the characters are special characters (a picture's anchor).
     var isSpecial = false
+    /// The font size in half-points, or nil.
+    var fontSize: Int?
 }
 
 // MARK: - Runs of Formats
@@ -178,6 +180,7 @@ enum WordDocumentProperties {
                 case WordSprm.italic: format.italic = value
                 case WordSprm.characterStyle: format.style = value
                 case WordSprm.special: format.isSpecial = value != 0
+                case WordSprm.fontSize: format.fontSize = value
                 default: break
                 }
             }
