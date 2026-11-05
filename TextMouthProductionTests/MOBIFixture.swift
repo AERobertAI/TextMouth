@@ -27,7 +27,8 @@ struct MOBIFixture {
     /// The text encoding the header names: 65001 or 1252.
     var encoding = 65001
     /// The compression the header names, and the one the fixture really
-    /// uses: 1 none, 2 PalmDOC.
+    /// uses: 1 none, 2 PalmDOC, 17480 HUFF/CDIC (the small code of
+    /// `huffmanRecords()`, which writes only text of bytes below 0xF0).
     var compression = 1
     /// How many bytes of text one record holds before it is cut.
     var recordSize = 4096
@@ -70,8 +71,9 @@ struct MOBIFixture {
     /// The text, once it is bytes.
     var text: [UInt8] { textBytes ?? Array(html.utf8) }
 
-    /// The index of the first record of the contents, or nil without one.
-    var indexRecordNumber: Int? { entries.isEmpty ? nil : 1 + textRecords().count }
+    /// The index of the first record of the contents, or nil without one. The
+    /// Huffman tables, when the book has them, come right after the text.
+    var indexRecordNumber: Int? { entries.isEmpty ? nil : 1 + textRecords().count + (compression == 17480 ? 2 : 0) }
 
     // MARK: Building
 
@@ -80,6 +82,7 @@ struct MOBIFixture {
         let textRecords = self.textRecords()
         var records: [[UInt8]] = [record0(textRecordCount: textRecords.count)]
         records += textRecords
+        if compression == 17480 { records += Self.huffmanRecords() }
         if hasMOBIHeader, !entries.isEmpty { records += indexRecords() }
         return Self.database(named: databaseName, type: type, creator: creator, records: records)
     }
@@ -92,7 +95,9 @@ struct MOBIFixture {
         var start = 0
         while start < bytes.count {
             let chunk = Array(bytes[start..<min(bytes.count, start + recordSize)])
-            var record = compression == 2 ? Self.compress(chunk) : chunk
+            var record = chunk
+            if compression == 2 { record = Self.compress(chunk) }
+            if compression == 17480 { record = Self.huffmanCompress(chunk) }
             if let entry = trailingEntry {
                 // The entry, then its own size (counting the size byte) with
                 // the high bit set, which marks where the number starts.
@@ -121,7 +126,12 @@ struct MOBIFixture {
         Self.put32(&record, 24, 2)
         Self.put32(&record, 28, encoding)
         Self.put32(&record, 36, version)
-        // Fields that say "none": the Huffman table, the DRM, the index.
+        // The Huffman tables, when the book has them, follow the text records.
+        if compression == 17480 {
+            Self.put32(&record, 112, 1 + textRecordCount)
+            Self.put32(&record, 116, 2)
+        }
+        // Fields that say "none": the DRM, the index.
         Self.put32(&record, 168, drmOffset)
         Self.put32(&record, 244, indexRecordNumber ?? 0xFFFF_FFFF)
         Self.put32(&record, 240, trailingEntry == nil ? 0 : 0b10)
@@ -259,6 +269,93 @@ struct MOBIFixture {
             rest >>= 7
         }
         return groups
+    }
+
+    // MARK: HUFF/CDIC Compression
+
+    /// A small Huffman code in the layout the format uses, to prove the
+    /// reader against the specification: a byte below 0xF0 is its own 8-bit
+    /// codeword (the dictionary entry 0xEF - byte, a text entry of that
+    /// byte); the 256 codewords of 12 bits that begin with 0xF are the
+    /// dictionary entries 0xF0 to 0x1EF, whose text is a capital and its
+    /// lowercase ("Aa", "Bb", and so on, cycling) except the last, entry
+    /// 0x1EF, whose text is "hello" written as a coded string (an entry that
+    /// must be decompressed in turn). Entry k's 12-bit codeword is 0x10EF - k.
+    static let huffmanLastEntry = 0x1EF
+    static let huffmanCodedText = Array("hello".utf8)
+
+    /// The HUFF record and the CDIC record the code above is written in.
+    static func huffmanRecords() -> [[UInt8]] {
+        // HUFF: a 24-byte header, the 256 words of the first-byte table, and
+        // the 32 pairs of the length table.
+        var huff = Array("HUFF".utf8) + be32(24) + be32(24) + be32(24 + 1024) + [UInt8](repeating: 0, count: 8)
+        for byte in 0..<256 {
+            // Bit 7: the byte settles the code. Bits 0 to 4: its length. The rest: the base of its index.
+            huff += be32(byte < 0xF0 ? (0xEF << 8) | 0x80 | 8 : 12)
+        }
+        for length in 1...32 {
+            huff += length == 12 ? be32(0xF00) + be32(0x10EF) : be32(0xFFFF_FFFF) + be32(0)
+        }
+
+        // CDIC: a 16-byte header, a 16-bit offset for each of the 496
+        // entries (counted from the end of the header), and the entries.
+        let entryCount = huffmanLastEntry + 1
+        var offsets: [UInt8] = []
+        var body: [UInt8] = []
+        for index in 0..<entryCount {
+            offsets += [UInt8((entryCount * 2 + body.count) >> 8), UInt8((entryCount * 2 + body.count) & 0xFF)]
+            let text: [UInt8]
+            var isText = true
+            if index < 0xF0 {
+                text = [UInt8(0xEF - index)]
+            } else if index == huffmanLastEntry {
+                text = huffmanCodedText
+                isText = false
+            } else {
+                let letter = (index - 0xF0) % 26
+                text = [UInt8(0x41 + letter), UInt8(0x61 + letter)]
+            }
+            let word = text.count | (isText ? 0x8000 : 0)
+            body += [UInt8(word >> 8), UInt8(word & 0xFF)] + text
+        }
+        let cdic = Array("CDIC".utf8) + be32(16) + be32(entryCount) + be32(9) + offsets + body
+        return [huff, cdic]
+    }
+
+    /// `input` written in the small code: "hello" as the coded entry, a
+    /// capital with its lowercase as a 12-bit codeword, and any other byte
+    /// (below 0xF0) as an 8-bit codeword. Bits are packed from the high bit
+    /// of each byte and the last byte is padded with zeros.
+    static func huffmanCompress(_ input: [UInt8]) -> [UInt8] {
+        var bits: [Bool] = []
+        /// Appends the low `count` bits of `value`, high bit first.
+        func append(_ value: Int, _ count: Int) {
+            for shift in stride(from: count - 1, through: 0, by: -1) { bits.append(value >> shift & 1 == 1) }
+        }
+        var position = 0
+        while position < input.count {
+            let byte = input[position]
+            if input[position...].starts(with: huffmanCodedText) {
+                append(0x10EF - huffmanLastEntry, 12)
+                position += huffmanCodedText.count
+            } else if (0x41...0x5A).contains(byte), position + 1 < input.count, input[position + 1] == byte + 0x20 {
+                append(0x10EF - (0xF0 + Int(byte - 0x41)), 12)
+                position += 2
+            } else {
+                // The small code has no codeword for the high bytes; a test that
+                // asks for one has made a mistake, so it is loud.
+                precondition(byte < 0xF0, "the small code writes only bytes below 0xF0")
+                append(Int(byte), 8)
+                position += 1
+            }
+        }
+        var bytes: [UInt8] = []
+        for start in stride(from: 0, to: bits.count, by: 8) {
+            var value = 0
+            for offset in 0..<8 { value = value << 1 | (start + offset < bits.count && bits[start + offset] ? 1 : 0) }
+            bytes.append(UInt8(value))
+        }
+        return bytes
     }
 
     // MARK: PalmDOC Compression

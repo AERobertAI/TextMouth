@@ -149,20 +149,21 @@ final class MOBIHostileFileTests: XCTestCase {
         }
     }
 
-    func testRecordsOutOfOrderOrAllAtOnePlaceAreRefused() {
+    func testRecordsOutOfOrderAreRefused() {
         let bytes = plainBook().data()
         let count = Int(bytes[76]) << 8 | Int(bytes[77])
-        // Two records swapped: a table that runs backward.
-        var swapped = bytes
-        swapped.replaceSubrange(78 + 8..<78 + 12, with: Array(bytes[78 + 16..<78 + 20]))
-        swapped.replaceSubrange(78 + 16..<78 + 20, with: Array(bytes[78 + 8..<78 + 12]))
-        assertRefused(swapped, "records 1 and 2 swapped")
-        // Every record starting where record 1 does: all but the last are empty.
-        var overlapping = bytes
-        for record in 1..<count {
-            overlapping.replaceSubrange(78 + record * 8..<78 + record * 8 + 4, with: Array(bytes[78 + 8..<78 + 12]))
+        // Two records swapped: a table that runs backward, which would make
+        // a record that ends before it begins. Every pair is tried.
+        for first in 1..<(count - 1) {
+            for second in (first + 1)..<count {
+                var swapped = bytes
+                let firstEntry = 78 + first * 8
+                let secondEntry = 78 + second * 8
+                swapped.replaceSubrange(firstEntry..<firstEntry + 4, with: Array(bytes[secondEntry..<secondEntry + 4]))
+                swapped.replaceSubrange(secondEntry..<secondEntry + 4, with: Array(bytes[firstEntry..<firstEntry + 4]))
+                assertRefused(swapped, "records \(first) and \(second) swapped")
+            }
         }
-        assertRefused(overlapping, "every record starting at one place")
     }
 
     func testTheRecordCountPastTheTableOrAtItsLargestIsRefused() {
@@ -290,6 +291,74 @@ final class MOBIHostileFileTests: XCTestCase {
         damaged[first] = 0x80
         damaged[first + 1] = 0x08
         assertRefused(damaged, "a phrase before the start of the first record")
+    }
+
+    // MARK: - HUFF/CDIC
+
+    /// A book in the small Huffman code, and the records the tables are in.
+    private func huffmanBook() -> (bytes: [UInt8], huff: Int, cdic: Int) {
+        var fixture = MOBIFixture()
+        fixture.html = "<html><body>" + (0..<30).map { "<p>Crossing \($0): Aa Bb hello Zz.</p>" }.joined() + "</body></html>"
+        fixture.compression = 17480
+        fixture.recordSize = 300
+        let bytes = fixture.data()
+        let offsets = MOBIFixture.recordOffsets(of: bytes)
+        let huff = 1 + fixture.textRecords().count
+        return (bytes, offsets[huff], offsets[huff + 1])
+    }
+
+    func testAHuffmanBookReadsAndItsCodedEntryThatNamesItselfIsRefused() throws {
+        let (bytes, _, cdic) = huffmanBook()
+        XCTAssertNil(read(bytes, "the Huffman book"))
+        // "hello" is in the file once: the coded entry's bytes. Make them a
+        // codeword for the entry itself (12 bits, 0xF00), then zeros.
+        let hello = Array("hello".utf8)
+        let places = (cdic..<bytes.count - 4).filter { Array(bytes[$0..<$0 + 5]) == hello }
+        XCTAssertEqual(places.count, 1)
+        var cyclic = bytes
+        cyclic.replaceSubrange(places[0]..<places[0] + 5, with: [0xF0, 0x00, 0x00, 0x00, 0x00])
+        assertRefused(cyclic, "an entry coded as itself")
+    }
+
+    func testEveryFieldOfTheHuffmanTablesPointedWrongIsRefused() {
+        let (bytes, huff, cdic) = huffmanBook()
+        let record0 = MOBIFixture.recordOffsets(of: bytes)[0]
+        let count = Int(bytes[76]) << 8 | Int(bytes[77])
+        // The record the tables begin at, and how many records they fill.
+        for value in [0, 1, count - 1, count, 0xFFFF_FFFF] {
+            assertRefused(patching32(bytes, at: record0 + 112, to: value), "the tables' record set to \(value)")
+        }
+        for value in [0, 1, 3, 257, 0xFFFF_FFFF] {
+            assertRefused(patching32(bytes, at: record0 + 116, to: value), "the tables' record count set to \(value)")
+        }
+        let cases: [(String, Int, [Int])] = [
+            ("the first table's offset", huff + 8, [0, 0xFFFF, 0xFFFF_FFFF]),
+            ("the second table's offset", huff + 12, [0xFFFF, 0xFFFF_FFFF]),
+            ("the dictionary's header length", cdic + 4, [0xFFFF, 0xFFFF_FFFF]),
+            ("the dictionary's entry count", cdic + 8, [0x20_0000, 0xFFFF_FFFF]),
+            ("the dictionary's code length", cdic + 12, [17, 0xFFFF_FFFF]),
+        ]
+        for (name, at, values) in cases {
+            for value in values {
+                assertRefused(patching32(bytes, at: at, to: value), "\(name) set to \(value)")
+            }
+        }
+        // A codeword with no length: the first byte settles the code, and its length is 0.
+        assertRefused(patching32(bytes, at: huff + 24 + 4 * 0x41, to: 0x0000_EF80), "a codeword of length 0")
+        // The magic words.
+        for (name, at) in [("HUFF", huff), ("CDIC", cdic)] {
+            var damaged = bytes
+            damaged[at] = UInt8(ascii: "X")
+            assertRefused(damaged, "\(name) damaged")
+        }
+    }
+
+    func testFlippedBytesInAHuffmanBookNeverTrapOrHang() {
+        var generator = SeededGenerator(state: 17_480)
+        let (bytes, _, _) = huffmanBook()
+        for round in 0..<600 {
+            read(flipped(bytes, flips: 1 + round % 5, using: &generator), "Huffman book, round \(round)")
+        }
     }
 
     // MARK: - The markup

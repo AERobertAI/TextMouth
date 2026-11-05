@@ -440,15 +440,51 @@ final class MOBIBookStructureTests: XCTestCase {
         XCTAssertEqual(try opened(hybrid).sections.count, 1)
     }
 
-    func testHuffmanCompressionIsRefusedUntilItIsRead() {
-        var fixture = MOBIFixture()
-        fixture.compression = 17480
-        assertRefused(fixture, .unsupportedCompression)
-        var unknown = MOBIFixture()
-        unknown.compression = 3
-        assertRefused(unknown, .unsupportedCompression)
+    func testACompressionNoOneDefinedIsRefused() {
+        for compression in [0, 3, 17479] {
+            var fixture = MOBIFixture()
+            fixture.compression = compression
+            assertRefused(fixture, .unsupportedCompression)
+        }
         XCTAssertEqual(MOBIError.unsupportedCompression.localizedDescription,
                        "This Kindle book is compressed in a way TextMouth can't read yet.")
+    }
+
+    // MARK: - HUFF/CDIC
+
+    /// A book for the small Huffman code of the fixture: capitals with their
+    /// lowercase (12-bit codewords), "hello" (an entry that is itself coded),
+    /// and plain bytes (8-bit codewords).
+    private func huffmanBook() -> MOBIFixture {
+        var fixture = MOBIFixture()
+        fixture.html = "<html><body>" + (0..<60).map { "<p>Crossing \($0): Aa Bb hello Zz hello world, Quay.</p>" }.joined()
+            + "</body></html>"
+        fixture.compression = 17480
+        return fixture
+    }
+
+    func testHuffmanCompressedTextReadsBack() throws {
+        for recordSize in [4096, 300, 41] {
+            var fixture = huffmanBook()
+            fixture.recordSize = recordSize
+            XCTAssertEqual(try opened(fixture).sections[0].html, fixture.html, "records of \(recordSize)")
+        }
+        var trailing = huffmanBook()
+        trailing.recordSize = 500
+        trailing.trailingEntry = Array("TRAILING".utf8)
+        XCTAssertEqual(try opened(trailing).sections[0].html, trailing.html)
+    }
+
+    func testHuffmanTextBeforeAndAfterAContentsReadsAsChapters() throws {
+        var fixture = huffmanBook()
+        fixture.html = "<html><body><p>First hello part.</p><p>Second Aa part.</p></body></html>"
+        fixture.entries = [
+            .init(label: "First", offset: try offset(of: "<p>First", in: fixture.html)),
+            .init(label: "Second", offset: try offset(of: "<p>Second", in: fixture.html)),
+        ]
+        let book = try prepared(fixture)
+        XCTAssertEqual(book.chapters.map(\.chapter.title), ["First", "Second"])
+        XCTAssertEqual(spaced(book.chapters[1].chapter.text), "Second Aa part.")
     }
 
     func testFilesThatAreNotKindleBooksAreRefused() {
