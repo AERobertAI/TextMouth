@@ -336,6 +336,19 @@ final class RTFReaderTests: XCTestCase {
         XCTAssertEqual(text, "Before after. Pictured. Hiddenshown. Done.")
     }
 
+    /// The words in a shape's text box are read, and the shape's properties
+    /// are not; a shape in a header, a footer, or a footnote is skipped with
+    /// its text box.
+    func testTheTextOfAShapeIsReadButNotInAHeaderOrFooter() throws {
+        let html = try rtfHTML(#"""
+            {\rtf1 Before {\shp{\sp{\sn fLine}{\sv 0}}{\*\shpinst{\sp{\sn shapeType}{\sv 1}}{\shptxt{\pard In a box\par}}}} after.\par
+            {\header {\shp{\*\shpinst{\shptxt In the header\par}}}}{\footer {\shp{\shptxt In the footer\par}}}
+            Note{\footnote {\shp{\shptxt In a note\par}}} here.\par
+            {\do{\dptxbx{\dptxbxtext{\pard Old box\par}}}}Done.\par}
+            """#)
+        XCTAssertEqual(try rtfBody(html).text(), "Before In a box after. Note here. Old box Done.")
+    }
+
     /// The title and author are in the head, escaped; the rest of the info
     /// group is not read.
     func testInfoGivesTheTitleAndAuthor() throws {

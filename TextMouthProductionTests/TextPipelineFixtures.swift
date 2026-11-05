@@ -126,6 +126,18 @@ enum TextPipelineFixtures {
         "format-samples/ott/handwritten.ott",
         "format-samples/pdf/labelled-pages.pdf",
         "format-samples/rtf/headings.rtf",
+        "format-samples/rtf/libreoffice-cp950listleveltext2.rtf",
+        "format-samples/rtf/libreoffice-fdo44715.rtf",
+        "format-samples/rtf/libreoffice-fdo53556.rtf",
+        "format-samples/rtf/libreoffice-fdo74709.rtf",
+        "format-samples/rtf/libreoffice-rhbz1065629.rtf",
+        "format-samples/rtf/libreoffice-tdf108055.rtf",
+        "format-samples/rtf/libreoffice-tdf108123.rtf",
+        "format-samples/rtf/libreoffice-tdf121623.rtf",
+        "format-samples/rtf/libreoffice-tdf128428_dntblnsbdb.rtf",
+        "format-samples/rtf/libreoffice-tdf130817.rtf",
+        "format-samples/rtf/libreoffice-tdf146489.rtf",
+        "format-samples/rtf/libreoffice-tdf95706.rtf",
         "format-samples/rtf/page-breaks.rtf",
         "format-samples/rtf/word-list-table.rtf",
         "format-samples/rtf/word-styles.rtf",
@@ -149,7 +161,17 @@ enum TextPipelineFixtures {
     /// bug. Their goldens are not recorded or compared until the reader is
     /// fixed: then the entry goes and the golden is recorded in the same
     /// commit. `testHeldBackSamplesAreFormatSamples` keeps the list honest.
-    static let formatSamplesHeldBack: [String: String] = [:]
+    ///
+    /// The real RTF files from LibreOffice are held back for another
+    /// reason: their reading is compared with textutil's word for word in
+    /// `RTFTextutilComparisonTests`, which names every difference, and a
+    /// golden of textutil's reading would pin what the own reader replaces
+    /// (textutil refuses three of them outright).
+    static let formatSamplesHeldBack: [String: String] = Dictionary(
+        uniqueKeysWithValues: formatSampleNames
+            .filter { $0.hasPrefix("format-samples/rtf/libreoffice-") }
+            .map { ($0, "compared with textutil's reading in RTFTextutilComparisonTests instead of a golden") }
+    )
 
     /// The folders of the format samples that macOS's own readers read
     /// (`/usr/bin/textutil`, and PDFKit for "pdf", PG06). What they give can

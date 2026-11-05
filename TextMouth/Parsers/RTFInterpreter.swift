@@ -215,8 +215,10 @@ struct RTFInterpreter {
             // A group inside a style (such as `\*\keycode`) is not read.
             state.destination = .skipped
             groupJustStarted = false
-        case .skipped, .attachment:
-            groupJustStarted = false
+        case .skipped, .attachment, .shape:
+            // A group inside a skipped one is skipped too, unless its first
+            // word is a shape's text box (`destination(named:starred:)`).
+            break
         default:
             break
         }
@@ -241,6 +243,11 @@ struct RTFInterpreter {
     /// when the word is not a destination there. After `\*`, a word that is
     /// not known starts a skipped destination.
     private func destination(named name: String, starred: Bool) -> RTFDestination? {
+        // The words in a shape's text box (`\shptxt`, and `\dptxbxtext` of an
+        // old drawing object) are text of the document, set in a frame: they
+        // are read. A shape in a header, a footer, or a footnote is skipped
+        // with them, and so is its text box.
+        if state.destination == .shape, name == "shptxt" || name == "dptxbxtext" { return .body }
         if state.destination.isUnread { return nil }
         if state.destination == .info {
             // Only the title and the author are read of the info group.
@@ -372,7 +379,7 @@ struct RTFInterpreter {
     /// Whether the text of this group is read by nothing.
     private var isIgnoringText: Bool {
         switch state.destination {
-        case .skipped, .attachment, .fontTable, .styleSheet, .listTable, .info: return true
+        case .skipped, .attachment, .shape, .fontTable, .styleSheet, .listTable, .info: return true
         default: return false
         }
     }
@@ -510,7 +517,7 @@ struct RTFInterpreter {
     /// A control word, by where it stands.
     private mutating func handleWord(_ name: String, _ parameter: Int?) throws {
         switch state.destination {
-        case .skipped, .attachment, .styleSheet, .info:
+        case .skipped, .attachment, .shape, .styleSheet, .info:
             return
         case .fontTable:
             readFontWord(name, parameter)
