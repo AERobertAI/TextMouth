@@ -59,7 +59,12 @@ enum PageReaderVersions {
             // pages at every \page, \pagebb, and page-starting \sect, so the
             // books of these two formats are read again once.
             return "1.1.0"
-        case .doc, .odt, .wordml:
+        case .doc:
+            // Word 97-2003 is read by TextMouth's own reader (FMT47) from
+            // "1.1.0", which finds the pages and the headings by the
+            // document's own structure, so every .doc book is read again once.
+            return "1.1.0"
+        case .odt, .wordml:
             return "1.0.0"
         case .braille:
             // Braille gained its pages later, each braille page of a BRF or

@@ -123,7 +123,10 @@ final class TextutilPageTests: XCTestCase {
     }
 
     func testTheWordDocumentSampleGivesTheSamePagesAndWords() throws {
-        assertTheSamplesPages(of: try read("doc/page-breaks.doc", as: .doc).chapter)
+        // This test pins textutil's reading of the Word sample, so the sample goes to textutil whatever reads .doc in the app (`OwnDocumentReaders.forcesTextutil`).
+        try OwnDocumentReaders.$forcesTextutil.withValue(true) {
+            assertTheSamplesPages(of: try read("doc/page-breaks.doc", as: .doc).chapter)
+        }
     }
 
     func testTheWordML2003SampleGivesTheSamePagesAndWords() throws {
@@ -442,44 +445,47 @@ final class TextutilPageTests: XCTestCase {
     /// field: only page 1 was kept and the words at each break stayed joined.
     /// The pages are placed while both still hold the instructions.
     func testAWordFileWithFieldsKeepsEveryPage() throws {
-        try XCTSkipUnless(FileManager.default.isExecutableFile(atPath: "/usr/bin/textutil"), "textutil is not here")
-        // Three pages: the contents and a link are on the first, so the
-        // second and third pages come after the instructions. In an RTF
-        // string a doubled backslash is one backslash of text.
-        let rtf = #"""
-            {\rtf1\ansi\deff0{\fonttbl{\f0 Helvetica;}}
-            \pard Alpha opening words.\par
-            \pard TOC \\o "1-3" \\h \\z \\u HYPERLINK \\l "_Toc68096040" Contents\tab PAGEREF _Toc68096040 \\h 1\par
-            \pard Still the first page ends here.\page Bravo second page begins here.\page Charlie third page begins here.\par
+        // This test pins textutil's reading of a .doc that textutil wrote, so the file goes to textutil whatever reads .doc in the app (`OwnDocumentReaders.forcesTextutil`).
+        try OwnDocumentReaders.$forcesTextutil.withValue(true) {
+            try XCTSkipUnless(FileManager.default.isExecutableFile(atPath: "/usr/bin/textutil"), "textutil is not here")
+            // Three pages: the contents and a link are on the first, so the
+            // second and third pages come after the instructions. In an RTF
+            // string a doubled backslash is one backslash of text.
+            let rtf = #"""
+                {\rtf1\ansi\deff0{\fonttbl{\f0 Helvetica;}}
+                \pard Alpha opening words.\par
+                \pard TOC \\o "1-3" \\h \\z \\u HYPERLINK \\l "_Toc68096040" Contents\tab PAGEREF _Toc68096040 \\h 1\par
+                \pard Still the first page ends here.\page Bravo second page begins here.\page Charlie third page begins here.\par
+                }
+                """#
+            let folder = try makeSandboxDirectory("TextutilFieldsDoc")
+            let source = folder.appendingPathComponent("fields.rtf")
+            let doc = folder.appendingPathComponent("fields.doc")
+            try rtf.write(to: source, atomically: true, encoding: .utf8)
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/textutil")
+            process.arguments = ["-convert", "doc", "-format", "rtf", "-output", doc.path, source.path]
+            try process.run()
+            process.waitUntilExit()
+            try XCTSkipUnless(process.terminationStatus == 0, "textutil could not make the .doc")
+
+            let markdown = try TextutilDocumentReader.$temporaryRoot.withValue(work) {
+                try TextutilDocumentReader.extract(from: doc, bookFormat: .doc, includesPages: true).markdown
             }
-            """#
-        let folder = try makeSandboxDirectory("TextutilFieldsDoc")
-        let source = folder.appendingPathComponent("fields.rtf")
-        let doc = folder.appendingPathComponent("fields.doc")
-        try rtf.write(to: source, atomically: true, encoding: .utf8)
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/textutil")
-        process.arguments = ["-convert", "doc", "-format", "rtf", "-output", doc.path, source.path]
-        try process.run()
-        process.waitUntilExit()
-        try XCTSkipUnless(process.terminationStatus == 0, "textutil could not make the .doc")
+            let chapter = try MarkdownDocParser.parseChapter(markdown: markdown, title: "", includeNavigationHeadings: true)
 
-        let markdown = try TextutilDocumentReader.$temporaryRoot.withValue(work) {
-            try TextutilDocumentReader.extract(from: doc, bookFormat: .doc, includesPages: true).markdown
+            XCTAssertEqual(chapter.pages.map(\.label), ["1", "2", "3"], markdown)
+            guard chapter.pages.count == 3 else { return }
+            XCTAssertTrue(text(from: chapter.pages[0], in: chapter).hasPrefix("Alpha"), chapter.text)
+            XCTAssertTrue(text(from: chapter.pages[1], in: chapter).hasPrefix("Bravo"), chapter.text)
+            XCTAssertTrue(text(from: chapter.pages[2], in: chapter).hasPrefix("Charlie"), chapter.text)
+            // The words either side of each break are apart (B13), and the
+            // instructions are never read.
+            XCTAssertTrue(chapter.text.contains("ends here. Bravo second"), chapter.text)
+            XCTAssertTrue(chapter.text.contains("begins here. Charlie third"), chapter.text)
+            XCTAssertFalse(chapter.text.contains("HYPERLINK"), chapter.text)
+            XCTAssertFalse(chapter.text.contains("PAGEREF"), chapter.text)
         }
-        let chapter = try MarkdownDocParser.parseChapter(markdown: markdown, title: "", includeNavigationHeadings: true)
-
-        XCTAssertEqual(chapter.pages.map(\.label), ["1", "2", "3"], markdown)
-        guard chapter.pages.count == 3 else { return }
-        XCTAssertTrue(text(from: chapter.pages[0], in: chapter).hasPrefix("Alpha"), chapter.text)
-        XCTAssertTrue(text(from: chapter.pages[1], in: chapter).hasPrefix("Bravo"), chapter.text)
-        XCTAssertTrue(text(from: chapter.pages[2], in: chapter).hasPrefix("Charlie"), chapter.text)
-        // The words either side of each break are apart (B13), and the
-        // instructions are never read.
-        XCTAssertTrue(chapter.text.contains("ends here. Bravo second"), chapter.text)
-        XCTAssertTrue(chapter.text.contains("begins here. Charlie third"), chapter.text)
-        XCTAssertFalse(chapter.text.contains("HYPERLINK"), chapter.text)
-        XCTAssertFalse(chapter.text.contains("PAGEREF"), chapter.text)
     }
 
     // MARK: - The Cost
@@ -489,27 +495,30 @@ final class TextutilPageTests: XCTestCase {
     /// pages writes no page marker, the read with pages has its plain-text
     /// run succeed, and the samples with page breaks have markers with it.
     func testTheSecondRunsCost() throws {
-        let samples: [(path: String, format: BookFormat, hasPageBreaks: Bool)] = [
-            ("rtf/page-breaks.rtf", .rtf, true), ("doc/page-breaks.doc", .doc, true), ("rtf/word-styles.rtf", .rtf, false),
-        ]
-        for (path, format, hasPageBreaks) in samples {
-            let copy = try copyOfFormatSample(path)
-            let started = Date()
-            let single = try TextutilDocumentReader.$temporaryRoot.withValue(work) {
-                try TextutilDocumentReader.extract(from: copy, bookFormat: format, includesPages: false)
-            }
-            let singleSeconds = Date().timeIntervalSince(started)
-            let startedAgain = Date()
-            let withPages = try TextutilDocumentReader.$temporaryRoot.withValue(work) {
-                try TextutilDocumentReader.extract(from: copy, bookFormat: format, includesPages: true)
-            }
-            let doubleSeconds = Date().timeIntervalSince(startedAgain)
-            print("PG11 cost \(path): one run \(singleSeconds) s, with the plain-text run \(doubleSeconds) s")
+        // This test pins what textutil's second run costs, so the samples go to textutil whatever reads them in the app (`OwnDocumentReaders.forcesTextutil`).
+        try OwnDocumentReaders.$forcesTextutil.withValue(true) {
+            let samples: [(path: String, format: BookFormat, hasPageBreaks: Bool)] = [
+                ("rtf/page-breaks.rtf", .rtf, true), ("doc/page-breaks.doc", .doc, true), ("rtf/word-styles.rtf", .rtf, false),
+            ]
+            for (path, format, hasPageBreaks) in samples {
+                let copy = try copyOfFormatSample(path)
+                let started = Date()
+                let single = try TextutilDocumentReader.$temporaryRoot.withValue(work) {
+                    try TextutilDocumentReader.extract(from: copy, bookFormat: format, includesPages: false)
+                }
+                let singleSeconds = Date().timeIntervalSince(started)
+                let startedAgain = Date()
+                let withPages = try TextutilDocumentReader.$temporaryRoot.withValue(work) {
+                    try TextutilDocumentReader.extract(from: copy, bookFormat: format, includesPages: true)
+                }
+                let doubleSeconds = Date().timeIntervalSince(startedAgain)
+                print("PG11 cost \(path): one run \(singleSeconds) s, with the plain-text run \(doubleSeconds) s")
 
-            XCTAssertFalse(single.markdown.contains("<!-- page:"), path)
-            XCTAssertFalse(withPages.pageRunFailed, path)
-            if hasPageBreaks {
-                XCTAssertTrue(withPages.markdown.contains("<!-- page:"), path)
+                XCTAssertFalse(single.markdown.contains("<!-- page:"), path)
+                XCTAssertFalse(withPages.pageRunFailed, path)
+                if hasPageBreaks {
+                    XCTAssertTrue(withPages.markdown.contains("<!-- page:"), path)
+                }
             }
         }
     }

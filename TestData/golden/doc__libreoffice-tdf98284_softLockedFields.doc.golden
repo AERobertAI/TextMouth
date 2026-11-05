@@ -5,9 +5,9 @@ format: doc
 title: Imaginative title
 author: Justin
 chapters: 1
-words: 24
-text length: 190
-text checksum: e6d22c716c3562e2
-first 300: Title:  TITLE   \\* MERGEFORMAT Untitled\n\nSave Date:  SAVEDATE   \\* MERGEFORMAT recently\n\nSaved by user:  LASTSAVEDBY   \\* MERGEFORMAT Justin\n\nPrint Date:  PRINTDATE   \\* MERGEFORMAT recently
-last 300: Title:  TITLE   \\* MERGEFORMAT Untitled\n\nSave Date:  SAVEDATE   \\* MERGEFORMAT recently\n\nSaved by user:  LASTSAVEDBY   \\* MERGEFORMAT Justin\n\nPrint Date:  PRINTDATE   \\* MERGEFORMAT recently
-page: 1 | 0:0 | Title:  TITLE   \\* MERGE
+words: 12
+text length: 81
+text checksum: 4d3878af50665d39
+first 300: Title: Untitled\n\nSave Date: recently\n\nSaved by user: Justin\n\nPrint Date: recently
+last 300: Title: Untitled\n\nSave Date: recently\n\nSaved by user: Justin\n\nPrint Date: recently
+page: 1 | 0:0 | Title: Untitled\n\nSave Da

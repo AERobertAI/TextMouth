@@ -31,12 +31,12 @@ final class PagesUpgradeTests: XCTestCase {
     // MARK: - The Versions
 
     /// The page reader's version each format with pages is at: EPUB and HTML
-    /// at 1.0.3, rich text (.rtf and .rtfd, TextMouth's own reader since
-    /// FMT47) at 1.1.0, and the rest at 1.0.0.
+    /// at 1.0.3, rich text (.rtf and .rtfd) and Word 97-2003 (.doc), read by
+    /// TextMouth's own readers since FMT47, at 1.1.0, and the rest at 1.0.0.
     private static func expectedVersion(of format: BookFormat) -> String {
         switch format {
         case .epub, .html: return "1.0.3"
-        case .rtf, .rtfd: return "1.1.0"
+        case .rtf, .rtfd, .doc: return "1.1.0"
         default: return "1.0.0"
         }
     }
@@ -46,8 +46,8 @@ final class PagesUpgradeTests: XCTestCase {
     /// and HTML, whose shared converter changed a heading's label, then
     /// stopped taking "Page" alone for a page's label, and then took a
     /// leading "Page" off every label, are at 1.0.3; the others have not
-    /// changed since they gained pages, except rich text, which went to TextMouth's
-    /// own reader at 1.1.0.
+    /// changed since they gained pages, except rich text and Word 97-2003, which
+    /// went to TextMouth's own readers at 1.1.0.
     func testOnlyTheFormatsWithPagesHaveAPageReader() {
         let withPages: Set<BookFormat> = [.epub, .html, .pdf, .docx, .daisy, .rtf, .rtfd, .doc, .odt, .wordml, .braille, .txt]
         for format in BookFormat.allCases {

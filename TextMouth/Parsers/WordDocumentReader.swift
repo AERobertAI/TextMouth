@@ -38,14 +38,9 @@ enum WordDocumentReader {
 
     /// Whether this platform reads Word 97-2003 documents with this reader:
     /// iOS, which has no textutil, always; the Mac once the reader has been
-    /// checked against textutil's reading of the same files.
-    static var isOn: Bool {
-        #if os(macOS)
-        false
-        #else
-        true
-        #endif
-    }
+    /// checked against textutil's reading of the same files
+    /// (`WordDocumentComparisonTests`), which it now is.
+    static var isOn: Bool { true }
 
     // MARK: Reading
 

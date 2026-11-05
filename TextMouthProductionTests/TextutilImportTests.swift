@@ -199,28 +199,31 @@ final class TextutilImportTests: XCTestCase {
     // MARK: - Samples: Word and OpenDocument
 
     func testWordSamplesImportAsDocWhateverTheirTemplateBit() throws {
-        let harbour = ["1: Harbour Notes", "2: Morning Tides", "2: Timetable"]
-        for sample in ["doc/headings.doc", "dot/headings-synthetic.dot"] {
+        // This test pins textutil's reading of the Word sample, so the sample goes to textutil whatever reads .doc in the app (`OwnDocumentReaders.forcesTextutil`).
+        try OwnDocumentReaders.$forcesTextutil.withValue(true) {
+            let harbour = ["1: Harbour Notes", "2: Morning Tides", "2: Timetable"]
+            for sample in ["doc/headings.doc", "dot/headings-synthetic.dot"] {
+                try assertImports(Expectation(
+                    sample: sample, format: .doc, title: String(sample.dropFirst(4).dropLast(4)), author: "A. Sample",
+                    headings: harbour,
+                    contains: ["Bread from the bakery on Rue Ménard", "A newspaper already a day old"],
+                    excludes: ["•"]
+                ))
+            }
             try assertImports(Expectation(
-                sample: sample, format: .doc, title: String(sample.dropFirst(4).dropLast(4)), author: "A. Sample",
-                headings: harbour,
-                contains: ["Bread from the bakery on Rue Ménard", "A newspaper already a day old"],
-                excludes: ["•"]
+                sample: "dot/libreoffice-tdf120761_zOrder.dot", format: .doc, title: "libreoffice-tdf120761_zOrder",
+                headings: [], contains: ["Blah blah blah"]
+            ))
+            try assertImports(Expectation(
+                sample: "doc/libreoffice-tdf104239_chapterNumbering.doc", format: .doc,
+                title: "libreoffice-tdf104239_chapterNumbering",
+                headings: ["1: Heading 1", "2: Heading 2", "3: Heading 3", "4: Heading 4", "5: Heading 5", "5: Heading 6"]
+            ))
+            try assertImports(Expectation(
+                sample: "doc/libreoffice-tdf81705_outlineLevel.doc", format: .doc,
+                title: "libreoffice-tdf81705_outlineLevel", author: "user", headings: ["1: Contents"]
             ))
         }
-        try assertImports(Expectation(
-            sample: "dot/libreoffice-tdf120761_zOrder.dot", format: .doc, title: "libreoffice-tdf120761_zOrder",
-            headings: [], contains: ["Blah blah blah"]
-        ))
-        try assertImports(Expectation(
-            sample: "doc/libreoffice-tdf104239_chapterNumbering.doc", format: .doc,
-            title: "libreoffice-tdf104239_chapterNumbering",
-            headings: ["1: Heading 1", "2: Heading 2", "3: Heading 3", "4: Heading 4", "5: Heading 5", "5: Heading 6"]
-        ))
-        try assertImports(Expectation(
-            sample: "doc/libreoffice-tdf81705_outlineLevel.doc", format: .doc,
-            title: "libreoffice-tdf81705_outlineLevel", author: "user", headings: ["1: Contents"]
-        ))
     }
 
     func testOpenDocumentSamplesImportAsODTWhateverTheirTemplateName() throws {

@@ -5,12 +5,15 @@ format: doc
 title: Something
 author: JLAutoBuild
 chapters: 1
-words: 94
-text length: 592
-text checksum: dbfe45a6fffedf00
+words: 89
+text length: 564
+text checksum: d9a158a48b4a06cd
 first 300: In Word, the Body text can start ABOVE the header.\n\nIn LibreOffice, I don’t think that is possible.\n\nThat should cause some troubles.\n\nSomething\n\nThe header is lost in the background.\n\nThat should cause some troubles.\n\nSomething\n\nThe header is lost in the background.\n\nThat should cause some troubles
-last 300: troubles.\n\nSomething\n\nThe header is lost in the background.\n\nThat should cause some troubles.\n\nSomething\n\nThe header is lost in the background.\n\nThat should cause some troubles.\n\nSomething\n\nThe header is lost in the background.\n\nThat should cause some troubles.\n\nSomething\n\nTiny header\n\nPAGE\n\nPAGE  1
-heading: 1 | Tiny header
-heading: 2 | PAGE
-heading: 2 | PAGE  1
+last 300: nd.\n\nThat should cause some troubles.\n\nSomething\n\nThe header is lost in the background.\n\nThat should cause some troubles.\n\nSomething\n\nThe header is lost in the background.\n\nThat should cause some troubles.\n\nSomething\n\nThe header is lost in the background.\n\nThat should cause some troubles.\n\nSomething
+heading: 1 | In Word, the Body text can start ABOVE the header.
+heading: 1 | Something
+heading: 1 | Something
+heading: 1 | Something
+heading: 1 | Something
+heading: 1 | Something
 page: 1 | 0:0 | In Word, the Body text c
