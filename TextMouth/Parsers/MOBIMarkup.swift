@@ -140,6 +140,10 @@ enum MOBIMarkup {
     /// none. The number may be quoted and is often padded with zeros
     /// (`filepos=0000012345`); one of more than ten digits is not a place.
     private static func fileposValue(in text: [UInt8], tag: Range<Int>) -> Int? {
+        // A comment, a declaration, or an instruction holds no attributes, so
+        // a filepos inside one (such as <!-- <a filepos=9> -->) names nothing.
+        guard tag.lowerBound + 1 < tag.upperBound,
+              text[tag.lowerBound + 1] != UInt8(ascii: "!"), text[tag.lowerBound + 1] != UInt8(ascii: "?") else { return nil }
         let name = fileposName
         var position = tag.lowerBound + 1
         while position + name.count < tag.upperBound {
