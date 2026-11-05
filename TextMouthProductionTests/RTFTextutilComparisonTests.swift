@@ -157,6 +157,8 @@ final class RTFTextutilComparisonTests: XCTestCase {
         var ownOnly: [String] = []
         /// The headings of the own reading, as "level: words".
         var headings: [String] = []
+        /// The headings of textutil's reading that the own reading lacks.
+        var textutilHeadingsNotOwn: [String] = []
         /// How many pages each reading finds.
         var pages = (own: 1, textutil: 1)
         /// For a file that differs: why the difference is acceptable, or
@@ -171,7 +173,10 @@ final class RTFTextutilComparisonTests: XCTestCase {
         RealFile(name: "libreoffice-cp950listleveltext2.rtf"),
         RealFile(name: "libreoffice-fdo44715.rtf"),
         RealFile(name: "libreoffice-tdf108055.rtf", pages: (3, 3)),
-        RealFile(name: "libreoffice-tdf146489.rtf"),
+        RealFile(
+            name: "libreoffice-tdf146489.rtf", textutilOnly: ["1"],
+            why: "textutil reads the number of a list item inside a table cell (\"1.\") and the own reader reads the item without it; neutral to slightly worse, and rare"
+        ),
         RealFile(name: "libreoffice-fdo74709.rtf"),
         RealFile(
             name: "libreoffice-tdf128428_dntblnsbdb.rtf", textutilRefuses: true,
@@ -190,6 +195,7 @@ final class RTFTextutilComparisonTests: XCTestCase {
             textutilOnly: ["fFilled0fLine0ARL", "fFilled0shapeType1fLine0fFilled0fLine0This"],
             ownOnly: ["ARL", "This"],
             headings: ["1: ARL STATISTICS 2011 2012 WORKSHEET"],
+            textutilHeadingsNotOwn: ["1: fFilled0fLine0ARL STATISTICS 2011 2012 WORKSHEET"],
             why: "textutil runs the shapes' property names into the first word of each text box; the own reading is the words alone"
         ),
         RealFile(
@@ -233,7 +239,10 @@ final class RTFTextutilComparisonTests: XCTestCase {
                 case .insert(_, let word, _): ownOnly.append(word)
                 }
             }
-            if textutilOnly != file.textutilOnly || ownOnly != file.ownOnly {
+            // The differences come in no fixed order; they are compared sorted.
+            textutilOnly.sort()
+            ownOnly.sort()
+            if textutilOnly != file.textutilOnly.sorted() || ownOnly != file.ownOnly.sorted() {
                 problems.append("\(file.name): words only textutil has \(textutilOnly) (expected \(file.textutilOnly)); only the own reader has \(ownOnly) (expected \(file.ownOnly))")
             }
 
@@ -243,7 +252,9 @@ final class RTFTextutilComparisonTests: XCTestCase {
                 problems.append("\(file.name): own headings \(ownHeadings), expected \(file.headings)")
             }
             let missing = headings(of: textutil).map(wordsOnly).filter { !ownHeadings.contains($0) }
-            if !missing.isEmpty { problems.append("\(file.name): textutil's headings missing from the own reading: \(missing)") }
+            if missing != file.textutilHeadingsNotOwn {
+                problems.append("\(file.name): textutil's headings missing from the own reading: \(missing), expected \(file.textutilHeadingsNotOwn)")
+            }
 
             // The pages.
             let pages = (own: pageCount(of: own), textutil: pageCount(of: textutil))
