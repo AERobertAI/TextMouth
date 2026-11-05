@@ -46,17 +46,20 @@ enum RTFDocumentReader {
     /// - Parameters:
     ///   - format: the format the file's bytes showed (`.rtf` or `.rtfd`).
     ///   - includesPages: whether page-break elements are written.
-    /// - Throws: `TextutilConverter.Failure.unreadable` for a file that is
-    ///   missing, empty, or not rich text by its first bytes (as textutil
-    ///   would fail on it), or a package with no `TXT.rtf`, and
+    /// - Throws: `FileImportError.noTextToRead` for an empty file,
     ///   `DocumentTooLargeError` for a file, or text, past
-    ///   `DocumentByteLimit`.
+    ///   `DocumentByteLimit`, the file system's error for a file that cannot
+    ///   be read, and `TextutilConverter.Failure.unreadable` for a file that
+    ///   is not rich text by its first bytes (as textutil would fail on it)
+    ///   or a package with no `TXT.rtf`.
     static func html(of url: URL, as format: TextutilInputFormat, includesPages: Bool) throws -> String {
         let file = try documentFile(at: url, as: format)
+        // The bytes are read first: an empty file is "no text to read", as
+        // it is when textutil reads it, and one past the limit is too large.
+        let bytes = try DocumentByteLimit.contents(of: file)
         guard TextutilSourceCheck.beginsAsRTF(file) else {
             throw TextutilConverter.Failure.unreadable(format)
         }
-        let bytes = try DocumentByteLimit.contents(of: file)
         return try html(from: bytes, includesPages: includesPages)
     }
 
