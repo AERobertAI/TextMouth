@@ -1,0 +1,261 @@
+import Foundation
+
+// MARK: - Building the Body
+
+/// Builds the body of a Rich Text Format document from what the
+/// interpreter reads (FMT47): it gathers the words of a paragraph, places
+/// the page breaks, groups the cells of a table, and keeps the budget that
+/// stops a hostile file from making the result large.
+///
+/// It knows nothing of RTF's syntax; the interpreter tells it what the
+/// document says in the document's order.
+struct RTFBlockBuilder {
+
+    // MARK: Kinds
+
+    /// What a finished paragraph is, as the interpreter decides it from the
+    /// paragraph's style, outline level, and list.
+    enum Kind: Equatable {
+        /// A paragraph of body text.
+        case body
+        /// A heading at this level, 1 to 6.
+        case heading(Int)
+        /// An item of a list, at this depth (0 is the outermost list).
+        case listItem(level: Int, numbered: Bool)
+    }
+
+    // MARK: State
+
+    /// Whether page breaks are placed (the caller asked for pages).
+    private let includesPages: Bool
+    /// What is left to spend (bytes of text, plus an allowance for each run
+    /// and paragraph): once it is gone the document is too large.
+    private var budget: Int64
+    /// The limit, for the error that names it.
+    private let limit: Int64
+
+    /// The finished blocks.
+    private(set) var blocks: [RTFBlock] = []
+    /// The paragraph being read, less its open run.
+    private var paragraph = RTFParagraph()
+    /// The run being written: text joins it, in place, while its style stays
+    /// the same, so a paragraph built of many small pieces is not copied
+    /// again with each. It is closed into the paragraph when anything else
+    /// is added, and when the paragraph ends.
+    private var openRun: (text: String, bold: Bool, italic: Bool, size: Int)?
+
+    /// The table being read: its finished rows, the row's finished cells,
+    /// and the paragraphs of the cell being read.
+    private var table: RTFTable?
+    private var row: [[RTFParagraph]] = []
+    private var cell: [RTFParagraph] = []
+
+    // MARK: Pages
+
+    /// How many page breaks the document holds. Breaks with no word after
+    /// them count: a document with too many has no pages at all.
+    private(set) var pageBreaks = 0
+    /// The breaks waiting for the next letter or digit, where their pages
+    /// begin.
+    private var pendingBreaks = 0
+    /// The number of the page most recently begun; page 1 begins at the
+    /// start of the body.
+    private var pageNumber = 1
+    /// Whether a `\sect` has been read and the first text of the section it
+    /// begins has not.
+    private var sectionBreakPending = false
+    /// Whether the section being begun starts a page: `\sbkpage` (the
+    /// default, restored by `\sectd`), `\sbkeven`, and `\sbkodd` do;
+    /// `\sbknone` and `\sbkcol` do not.
+    private var sectionStartsPage = true
+    /// Whether the paragraph being read already counted its `\pagebb`.
+    private var paragraphBreakCounted = false
+
+    /// The room a run or a paragraph is charged beyond its words.
+    private static let runAllowance: Int64 = 16
+    private static let paragraphAllowance: Int64 = 64
+
+    init(includesPages: Bool, limit: Int64) {
+        self.includesPages = includesPages
+        self.limit = limit
+        self.budget = limit
+    }
+
+    // MARK: Words
+
+    /// Charges `bytes` to the budget.
+    /// - Throws: `DocumentTooLargeError` when the budget is spent.
+    private mutating func spend(_ bytes: Int64) throws {
+        budget -= bytes
+        guard budget >= 0 else { throw DocumentTooLargeError(limit: limit) }
+    }
+
+    /// Adds `text` to the paragraph, in the given emphasis and size, with
+    /// the page breaks that wait written right before its first letter or
+    /// digit. Text that continues a run in the same style joins it.
+    /// - Throws: `DocumentTooLargeError`.
+    mutating func appendText(_ text: String, bold: Bool, italic: Bool, size: Int) throws {
+        guard !text.isEmpty else { return }
+        try spend(Int64(text.utf8.count) + Self.runAllowance)
+        // A section break is settled by the first words after it, not by
+        // white space.
+        if text.contains(where: { !$0.isWhitespace }) { resolveSectionBreak() }
+        var remaining = Substring(text)
+        if pendingBreaks > 0, let split = firstCountedIndex(in: remaining) {
+            // The text before the first letter or digit, then the pages
+            // that begin there, then the rest.
+            let before = remaining[..<split]
+            if !before.isEmpty { add(String(before), bold: bold, italic: italic, size: size) }
+            closeRun()
+            for _ in 0..<pendingBreaks {
+                pageNumber += 1
+                paragraph.inlines.append(.pageBreak(pageNumber))
+            }
+            pendingBreaks = 0
+            remaining = remaining[split...]
+        }
+        add(String(remaining), bold: bold, italic: italic, size: size)
+    }
+
+    /// The index of the first letter or digit in `text`, or nil.
+    private func firstCountedIndex(in text: Substring) -> Substring.Index? {
+        var index = text.unicodeScalars.startIndex
+        while index < text.unicodeScalars.endIndex {
+            if TextutilPageBreaks.isCounted(text.unicodeScalars[index]) { return index }
+            index = text.unicodeScalars.index(after: index)
+        }
+        return nil
+    }
+
+    /// Appends text to the open run when its style is the same, and to a
+    /// new run otherwise.
+    private mutating func add(_ text: String, bold: Bool, italic: Bool, size: Int) {
+        guard !text.isEmpty else { return }
+        if let open = openRun, open.bold == bold, open.italic == italic, open.size == size {
+            openRun?.text.append(text)
+        } else {
+            closeRun()
+            openRun = (text, bold, italic, size)
+        }
+    }
+
+    /// Moves the open run into the paragraph.
+    private mutating func closeRun() {
+        if let open = openRun {
+            paragraph.inlines.append(.text(open.text, bold: open.bold, italic: open.italic, size: open.size))
+            openRun = nil
+        }
+    }
+
+    /// `\line`: a line break inside the paragraph.
+    mutating func appendLineBreak() {
+        closeRun()
+        paragraph.inlines.append(.lineBreak)
+    }
+
+    // MARK: Page breaks
+
+    /// A hard page break (`\page`): the next letter or digit begins a page.
+    mutating func addPageBreak() {
+        guard includesPages else { return }
+        pageBreaks += 1
+        pendingBreaks += 1
+    }
+
+    /// `\pagebb`, or a style with it: the paragraph begins a page, once.
+    mutating func addParagraphPageBreak() {
+        guard !paragraphBreakCounted else { return }
+        paragraphBreakCounted = true
+        addPageBreak()
+    }
+
+    /// `\sect`: a section ends. Whether the next one begins a page is known
+    /// when its first words come (`\sbknone` and the rest come before them).
+    mutating func beginSectionBreak() {
+        sectionBreakPending = true
+        sectionStartsPage = true
+    }
+
+    /// `\sectd` and `\sbk…`: whether the section being begun starts a page.
+    mutating func setSectionStartsPage(_ startsPage: Bool) {
+        sectionStartsPage = startsPage
+    }
+
+    /// Settles the section break that waits, now that the section has words.
+    private mutating func resolveSectionBreak() {
+        guard sectionBreakPending else { return }
+        sectionBreakPending = false
+        if sectionStartsPage { addPageBreak() }
+    }
+
+    // MARK: Paragraphs
+
+    /// Ends the paragraph being read as `kind`. A paragraph with no words is
+    /// dropped (but ends a table that is open, unless it is in the table).
+    /// - Parameter inTable: whether the paragraph is part of a table cell.
+    /// - Throws: `DocumentTooLargeError`.
+    mutating func finishParagraph(_ kind: Kind, inTable: Bool) throws {
+        closeRun()
+        let finished = paragraph
+        paragraph = RTFParagraph()
+        paragraphBreakCounted = false
+        try spend(Self.paragraphAllowance)
+        if inTable {
+            if finished.hasWords { cell.append(finished) }
+            return
+        }
+        closeTable()
+        guard finished.hasWords else { return }
+        switch kind {
+        case .body: blocks.append(.paragraph(finished))
+        case .heading(let level): blocks.append(.heading(finished, level: level))
+        case .listItem(let level, let numbered): blocks.append(.listItem(finished, level: level, numbered: numbered))
+        }
+    }
+
+    // MARK: Tables
+
+    /// `\cell`: the cell ends. Its paragraph, if it holds words, is the
+    /// cell's last.
+    mutating func endCell() {
+        closeRun()
+        if paragraph.hasWords { cell.append(paragraph) }
+        paragraph = RTFParagraph()
+        paragraphBreakCounted = false
+        row.append(cell)
+        cell = []
+        if table == nil { table = RTFTable() }
+    }
+
+    /// `\row`: the row ends.
+    mutating func endRow() {
+        // Words not yet closed in a cell are kept in one.
+        closeRun()
+        if paragraph.hasWords || !cell.isEmpty { endCell() }
+        guard !row.isEmpty else { return }
+        if table == nil { table = RTFTable() }
+        table?.rows.append(row)
+        row = []
+    }
+
+    /// Ends the table that is open, if any. A table in which no cell holds
+    /// a word (a layout grid) is dropped.
+    private mutating func closeTable() {
+        guard table != nil || !row.isEmpty || !cell.isEmpty else { return }
+        // Cells and rows left open by a damaged table are closed here.
+        if !cell.isEmpty { row.append(cell); cell = [] }
+        if !row.isEmpty { table?.rows.append(row); row = [] }
+        if let finished = table, finished.rows.contains(where: { $0.contains { !$0.isEmpty } }) {
+            blocks.append(.table(finished))
+        }
+        table = nil
+    }
+
+    /// Ends the document: an unfinished paragraph and an open table are
+    /// closed as `kind` and returned with every block.
+    mutating func finish(lastParagraph kind: Kind, inTable: Bool) throws -> [RTFBlock] {
+        try finishParagraph(kind, inTable: inTable)
+        closeTable()
+        return blocks
+    }
+}
