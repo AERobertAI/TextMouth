@@ -335,6 +335,23 @@ final class RTFReaderTests: XCTestCase {
         XCTAssertFalse(bare.contains("name=\"author\""))
     }
 
+    /// A field written as `{\upr{ANSI}{\*\ud{Unicode}}}` is read once, from
+    /// its ANSI branch, as textutil reads it: the title is "ANSI title".
+    func testAUprTitleGivesItsAnsiBranchOnly() throws {
+        let html = try rtfHTML(#"{\rtf1\ansi{\info{\upr{\title ANSI title}{\*\ud{\title Uni\u915 code title}}}}Body.\par}"#)
+        XCTAssertTrue(html.contains("<title>ANSI title</title>"), html)
+        XCTAssertFalse(html.contains("Uni"), html)
+        let author = try rtfHTML(#"{\rtf1\ansi{\info{\upr{\author Ansi Author}{\*\ud{\author Another}}}}Body.\par}"#)
+        XCTAssertTrue(author.contains("<meta name=\"author\" content=\"Ansi Author\">"), author)
+    }
+
+    /// Body text inside `\upr` is read once: the ANSI branch is read and the
+    /// Unicode branch is skipped.
+    func testBodyTextInUprIsReadOnce() throws {
+        let html = try rtfHTML(#"{\rtf1\ansi Before {\upr{Plain words}{\*\ud{Unicode words}}} after.\par}"#)
+        XCTAssertEqual(try rtfBody(html).text(), "Before Plain words after.")
+    }
+
     // MARK: - Emphasis
 
     /// Bold and italic are strong and em; nested groups set and reset them.

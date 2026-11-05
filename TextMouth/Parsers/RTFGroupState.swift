@@ -46,10 +46,14 @@ enum RTFDestination: Equatable {
         known[name]
     }
 
-    /// The destinations this reader knows by name.
+    /// The destinations this reader knows by name. `\upr` and `\ud` are
+    /// deliberately not among them: `{\upr{ANSI}{\*\ud{Unicode}}}` holds the
+    /// same words twice, and the reader reads the ANSI branch (the `\upr`
+    /// group takes its parent's destination) and skips the `\*\ud` branch as
+    /// an unknown starred destination, as textutil's reading does.
     private static let known: [String: RTFDestination] = {
         var table: [String: RTFDestination] = [
-            "rtf": .body, "field": .body, "fldrslt": .body, "ud": .body,
+            "rtf": .body, "field": .body, "fldrslt": .body,
             "fonttbl": .fontTable, "stylesheet": .styleSheet, "info": .info,
             "listtable": .listTable, "listoverridetable": .listTable,
             "listtext": .listText, "pntext": .listText,
@@ -58,7 +62,7 @@ enum RTFDestination: Equatable {
         // Destinations that hold nothing a listener should hear.
         let skippedNames = [
             "colortbl", "pict", "object", "header", "headerl", "headerr", "headerf",
-            "footer", "footerl", "footerr", "footerf", "footnote", "fldinst", "upr",
+            "footer", "footerl", "footerr", "footerf", "footnote", "fldinst",
             "annotation", "comment", "atnauthor", "atndate", "atnid", "atnref", "atntime",
             "atrfend", "atrfstart", "bkmkstart", "bkmkend", "private", "shp", "shpgrp",
             "do", "nonshppict", "shppict", "falt", "panose", "fontemb", "fontfile",

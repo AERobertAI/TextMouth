@@ -247,6 +247,11 @@ struct RTFInterpreter {
             switch name {
             case "title": return .title
             case "author": return .author
+            // A Unicode-bearing field is `{\upr{ANSI}{\*\ud{Unicode}}}`: the
+            // `\upr` group is transparent, so its ANSI branch is read, as
+            // textutil reads it, and the `\*\ud` branch, an unknown starred
+            // destination, is skipped.
+            case "upr": return nil
             default: return .skipped
             }
         }
