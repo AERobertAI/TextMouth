@@ -81,7 +81,8 @@ final class RTFHostileReaderTests: XCTestCase {
         let depth = RTFInterpreter.deepestNesting - 10
         let source = "{\\rtf1 A{\\*\\junk " + String(repeating: "{", count: depth) + "hidden" + String(repeating: "}", count: depth) + "}B\\par}"
         let html = try XCTUnwrap(read(source, "deep skipped destination"))
-        XCTAssertEqual(try rtfWords(html), ["A", "B"])
+        // The skipped destination leaves the two letters side by side.
+        XCTAssertEqual(try rtfWords(html), ["AB"])
     }
 
     // MARK: - Lengths and numbers
@@ -93,7 +94,8 @@ final class RTFHostileReaderTests: XCTestCase {
         let beyond = try XCTUnwrap(read("{\\rtf1 Before\\par\\bin99999999 After", "bin beyond the file"))
         XCTAssertEqual(try rtfWords(beyond), ["Before"])
         let negative = try XCTUnwrap(read("{\\rtf1 A\\bin-5 B\\bin0 C\\par}", "negative bin"))
-        XCTAssertEqual(try rtfWords(negative), ["A", "B", "C"])
+        // Nothing separates the three letters in the file, so they are one word.
+        XCTAssertEqual(try rtfWords(negative), ["ABC"])
         let binary = "{\\b Hidden \\par}"
         let looksLikeRTF = try XCTUnwrap(read("{\\rtf1 A\\bin\(binary.utf8.count) \(binary) B\\par}", "bin that looks like RTF"))
         XCTAssertEqual(try rtfWords(looksLikeRTF), ["A", "B"])
