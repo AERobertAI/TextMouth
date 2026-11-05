@@ -16,11 +16,14 @@ enum RTFEncodings {
     static let windows1252 = 1252
 
     /// The code page each `\fcharsetN` of the font table names, for the
-    /// character sets that have one of their own. Character sets 0 (ANSI),
-    /// 1 (default), and 2 (symbol) name none: the text keeps the document's
-    /// code page, as Apple's writer, which gives every font `\fcharset0`,
-    /// needs.
+    /// character sets that have one of their own. Character set 0 (ANSI) is
+    /// Windows-1252 whatever `\ansicpg` says: that is how Windows defines
+    /// ANSI_CHARSET, and it is how Word, LibreOffice, and textutil read a
+    /// font marked so, even in a document whose default is another code page.
+    /// Character sets 1 (default) and 2 (symbol) name none, so the text keeps
+    /// the document's code page.
     private static let codePageOfCharset: [Int: Int] = [
+        0: 1252,     // ANSI
         77: 10000,   // Mac Roman
         128: 932,    // Shift-JIS
         129: 949,    // Korean (Hangul)
@@ -56,6 +59,23 @@ enum RTFEncodings {
         case "pca": return 850
         default: return nil
         }
+    }
+
+    /// The code pages whose characters are one or two bytes, the second of a
+    /// pair possibly in the ASCII range: Shift-JIS (932), GBK (936), Korean
+    /// (949), Big5 (950), Johab (1361), the Mac Japanese, Traditional
+    /// Chinese, Korean, and Simplified Chinese pages (10001 to 10003 and
+    /// 10008), and the EUC and GB 18030 pages. UTF-8 is not listed: every
+    /// byte of its multibyte characters is above ASCII.
+    private static let multibyteCodePages: Set<Int> = [
+        932, 936, 949, 950, 1361, 10001, 10002, 10003, 10008, 20932, 51932, 51936, 51949, 54936
+    ]
+
+    /// Whether code page `codePage` has two-byte characters, whose second
+    /// byte can be an ASCII byte, so that a run of bytes must be decoded
+    /// whole, ASCII bytes included.
+    static func isMultibyte(codePage: Int) -> Bool {
+        multibyteCodePages.contains(codePage)
     }
 
     /// The Foundation encoding of Windows code page `codePage`, or nil when

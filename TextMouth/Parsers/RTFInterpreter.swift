@@ -247,6 +247,11 @@ struct RTFInterpreter {
             switch name {
             case "title": return .title
             case "author": return .author
+            // A Unicode-bearing field is `{\upr{ANSI}{\*\ud{Unicode}}}`: the
+            // `\upr` group is transparent, so its ANSI branch is read, as
+            // textutil reads it, and the `\*\ud` branch, an unknown starred
+            // destination, is skipped.
+            case "upr": return nil
             default: return .skipped
             }
         }
@@ -318,10 +323,19 @@ struct RTFInterpreter {
             index += skipped
             pendingSkip -= skipped
         }
+        // In a code page with two-byte characters, the second byte of a pair
+        // can be an ASCII byte: while bytes wait, ASCII bytes wait with them,
+        // and the whole run is decoded as a unit. (Single-byte pages end the
+        // run at an ASCII byte, as each of their bytes is a character.)
+        let keepsAsciiInRun = RTFEncodings.isMultibyte(codePage: currentCodePage)
         var ascii = String.UnicodeScalarView()
         for position in index..<range.upperBound {
             let byte = tokenizer.bytes[position]
             if byte < 0x80 {
+                if !byteRun.isEmpty && keepsAsciiInRun {
+                    byteRun.append(byte)
+                    continue
+                }
                 if !byteRun.isEmpty {
                     try emit(String(ascii))
                     ascii = String.UnicodeScalarView()
@@ -514,6 +528,10 @@ struct RTFInterpreter {
                 try emit(text)
             } else if name == "u" {
                 try handleUnicode(parameter)
+            } else if name == "uc" {
+                // How many characters follow each \u applies wherever text is
+                // read: a title or a list marker can hold \u too.
+                state.unicodeSkip = max(parameter ?? 1, 0)
             } else if state.destination == .body {
                 try readBodyWord(name, parameter)
             }

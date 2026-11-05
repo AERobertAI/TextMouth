@@ -48,12 +48,17 @@ final class OnDiskContractTests: XCTestCase {
 
     /// Every `BookFormat` is saved by its raw value, in library.json and in
     /// each package's record, in this order.
+    ///
+    /// "mobi" (FMT42, November 4, 2026) was added deliberately at the end: a
+    /// TextMouth built before it refuses a library that holds a Kindle book,
+    /// as 0.2.0's eight formats did, so the orchestrator raises the version's
+    /// MINOR and the changelog cautions the user.
     func testEveryBookFormatIsSavedUnderItsOwnName() {
         XCTAssertEqual(
             BookFormat.allCases.map(\.rawValue),
             [
                 "epub", "txt", "markdown", "html", "webarchive", "ssml", "docx", "rtf", "rtfd", "doc", "odt",
-                "wordml", "braille", "daisy", "pdf", "audio",
+                "wordml", "braille", "daisy", "pdf", "audio", "mobi",
             ],
             Self.because("a BookFormat's raw value, or the cases", Self.formatForces)
         )
@@ -546,7 +551,9 @@ final class OnDiskContractTests: XCTestCase {
         )
         XCTAssertEqual(
             withoutPages,
-            ["markdown", "webarchive", "ssml", "audio"],
+            // A Kindle book (FMT42) has no print pages; an APNX file beside it
+            // would hold them, which is a later item.
+            ["markdown", "webarchive", "ssml", "audio", "mobi"],
             Self.because("the formats without pages", forces)
         )
     }

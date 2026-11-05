@@ -19,6 +19,12 @@ enum ReaderPageWording {
     /// nothing.
     static let noPages = "This book has no pages."
 
+    /// What a page command says in a book of one page, which has no other
+    /// page to go to, and moves nothing (the user's request, November 4,
+    /// 2026: such a command "should just warn the user and not do
+    /// anything").
+    static let onlyOnePage = "This book has only one page."
+
     // MARK: - Go to Page
 
     /// Go to Page's field name, shown before it and spoken as its label.
@@ -206,5 +212,5 @@ enum ReaderPageWording {
 
     /// What saying the page does, as its checkbox's hint says and its
     /// caption shows.
-    static let sayInWhereAmIHint = "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books with pages."
+    static let sayInWhereAmIHint = "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page."
 }

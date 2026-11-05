@@ -1283,9 +1283,10 @@ struct BookInfoBar: View {
         .onChange(of: viewModel.goToPageRequests) { _, _ in
             withAnimation(.easeInOut(duration: 0.15)) { expandedPanel = .page }
         }
-        // A book that no longer has pages has no page panel to leave open.
-        .onChange(of: viewModel.hasPages) { _, hasPages in
-            if !hasPages && expandedPanel == .page { expandedPanel = nil }
+        // A book that no longer has pages to move by has no page panel to
+        // leave open.
+        .onChange(of: viewModel.hasSeveralPages) { _, hasSeveralPages in
+            if !hasSeveralPages && expandedPanel == .page { expandedPanel = nil }
         }
     }
 

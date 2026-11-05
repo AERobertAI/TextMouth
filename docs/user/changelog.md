@@ -4,12 +4,24 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.3.0 (November 4, 2026)
+### Kindle books
+- TextMouth reads Kindle books that are not copy-protected, in the MOBI format: .mobi, .prc, and .azw files in the older MOBI 6 format, and the MOBI 6 part of a .mobi made for both formats, as many Kindle books are. Each becomes a text book like any other, so it reopens, searches, and keeps its place, bookmarks, and skipped headings (see [What TextMouth reads](what-textmouth-reads.md)).
+- A book's chapters come from its own table of contents, the entries under a chapter being its headings, and a book with no table of contents is a chapter for each page break its maker wrote. What a book's head says about it is never read aloud.
+- Open Book… offers Kindle books, and Finder offers TextMouth in the Open With menu for them.
+- A copy-protected book is refused, never read: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books." A book only in the newer KF8 format, as an .azw3 is, is refused for now, with "This Kindle book is in the newer KF8 format, which TextMouth can't read yet." [Adding books](adding-books.md) gives every sentence.
+- Kindle books have no pages yet.
+
+### Older versions
+- Caution: TextMouth 0.2.1 to 0.2.6 opens a library that holds a Kindle book without that book. The book stays in the library, so this version shows it again, but it leaves the Reading List the next time the list changes in the older version. TextMouth 0.2.0 and earlier can't open such a library at all.
+
 ## 0.2.6 (November 4, 2026)
 ### Reading
 - A book whose EPUB gives its pages no numbers no longer has a page named by its markup: a page list whose one entry was named "pagenum_000000" made the page button say "Page pagenum_000000 of 1". A page list that gives none of its pages a number now counts as none, and a page break named only "Page" is no page. Such a book shows no page button, and Next Page says "This book has no pages."
 - The hint of Go to Page…'s field says how many pages the book has, from its first page to its last, as in "This book has 300 pages, from i to 300. Type a page as the book numbers it, such as 12 or xii." A book of one page names it: "This book's only page is 1."
 - A page a book names "Page 12" is now page 12, where the page button said "Page Page 12 of 300".
-- A book of one page shows no page button, which said "Page 1 of 1" wherever you were. Next Page, Previous Page, and Go to Page… still work in it.
+- A book of one page shows no page button, which said "Page 1 of 1" wherever you were.
+- In a book of one page, Next Page, Previous Page, Go to Page…, and a skip by Page say "This book has only one page." and do nothing. The Navigate menu dims the three commands, the playback bar's pickers leave Page out, and Where Am I? leaves the page out.
 - The first time this version opens, every EPUB and HTML book is read again once, for its pages. In the books these changes mend, a page number printed at a page break now names its page, and is no longer read aloud, as page numbers never are.
 
 ## 0.2.5 (November 1, 2026)

@@ -467,6 +467,24 @@
 		</dict>
 		<dict>
 			<key>CFBundleTypeName</key>
+			<string>Kindle Book (MOBI)</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>mobi</string>
+				<string>prc</string>
+				<string>azw</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.textmouth.mobi</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
 			<string>SSML Document</string>
 			<key>CFBundleTypeExtensions</key>
 			<array>
@@ -664,6 +682,30 @@
 				<key>public.mime-type</key>
 				<array>
 					<string>application/ssml+xml</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.mobi</string>
+			<key>UTTypeDescription</key>
+			<string>Kindle Book (MOBI)</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>mobi</string>
+					<string>prc</string>
+					<string>azw</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/x-mobipocket-ebook</string>
+					<string>application/vnd.amazon.ebook</string>
 				</array>
 			</dict>
 		</dict>

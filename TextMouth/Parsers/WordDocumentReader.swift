@@ -47,15 +47,6 @@ enum WordDocumentReader {
         #endif
     }
 
-    /// Whether the router sends Word 97-2003 documents to textutil whatever
-    /// `isOn` says. It exists for tests alone, which bind it with
-    /// `WordDocumentReader.$forcesTextutil.withValue(true)`: the comparison
-    /// with textutil's reading (`WordDocumentComparisonTests`) must go on
-    /// reading with textutil once the Mac reads with the reader. Like
-    /// `DocumentByteLimit.$current` it is read on the caller's thread, where
-    /// the route is decided (`OwnDocumentReaders`), before any hop.
-    @TaskLocal static var forcesTextutil = false
-
     // MARK: Reading
 
     /// The HTML document of the Word 97-2003 document at `url`, or nil for a

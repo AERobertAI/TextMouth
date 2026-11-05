@@ -235,10 +235,55 @@ final class RTFReaderTests: XCTestCase {
         XCTAssertEqual(try rtfBody(mac).text(), "Café")
     }
 
+    /// A font marked \fcharset0 (ANSI) is Windows-1252 even in a document
+    /// whose \ansicpg is another, as textutil reads it (0xE9 is é); a font
+    /// marked \fcharset1 (default) keeps the document's code page (0xE9 is
+    /// the Cyrillic й of Windows-1251).
+    func testFcharset0IsWindows1252AndFcharset1IsTheDocumentsCodePage() throws {
+        let ansi = try rtfHTML(#"{\rtf1\ansi\ansicpg1251{\fonttbl{\f0\fnil\fcharset0 Times;}}\f0 x\'e9x\par}"#)
+        XCTAssertEqual(try rtfBody(ansi).text(), "x\u{E9}x")
+        let standard = try rtfHTML(#"{\rtf1\ansi\ansicpg1251{\fonttbl{\f0\fnil\fcharset1 Times;}}\f0 x\'e9x\par}"#)
+        XCTAssertEqual(try rtfBody(standard).text(), "x\u{439}x")
+        // A document that never marks its font is the document's code page.
+        let unmarked = try rtfHTML(#"{\rtf1\ansi\ansicpg1251{\fonttbl{\f0\fnil Times;}}\f0 x\'e9x\par}"#)
+        XCTAssertEqual(try rtfBody(unmarked).text(), "x\u{439}x")
+    }
+
     /// The two bytes of a Shift-JIS character make one character.
     func testDoubleByteCharactersAreDecodedTogether() throws {
         let html = try rtfHTML(#"{\rtf1\ansi\ansicpg932\deff0{\fonttbl{\f0\fcharset128 MS Mincho;}}\f0 \'82\'a0\'82\'a2\par}"#)
         XCTAssertEqual(try rtfBody(html).text(), "あい")
+    }
+
+    /// The start of the Shift-JIS documents these tests share, up to the
+    /// first character of the body.
+    private static let shiftJISHead = #"{\rtf1\ansi\ansicpg932\deff0{\fonttbl{\f0\fnil\fcharset128 MS Mincho;}}\f0 "#
+
+    /// Raw double-byte text, bytes and all, is decoded as a unit: the trail
+    /// byte of a Shift-JIS character can be an ASCII byte (0x65 here is
+    /// "e"), which must not end the run of its lead byte. textutil reads
+    /// this as the four katakana of "text".
+    func testRawDoubleByteTextIsDecodedWhole() throws {
+        var source = Data(Self.shiftJISHead.utf8)
+        source.append(contentsOf: [0x83, 0x65, 0x83, 0x4C, 0x83, 0x58, 0x83, 0x67])
+        source.append(contentsOf: Data(#"\par}"#.utf8))
+        let html = try RTFDocumentReader.html(from: source, includesPages: true)
+        XCTAssertEqual(try rtfBody(html).text(), "\u{30C6}\u{30AD}\u{30B9}\u{30C8}")
+    }
+
+    /// A lead byte escaped and its ASCII trail byte raw (\'83A) are one
+    /// character, and ASCII text between characters stays text: textutil
+    /// reads "A I and A I" in katakana.
+    func testAnEscapedLeadByteWithARawAsciiTrailByte() throws {
+        let html = try rtfHTML(Self.shiftJISHead + #"\'83A\'83C and \'83\'41\'83\'43\par}"#)
+        XCTAssertEqual(try rtfBody(html).text(), "\u{30A2}\u{30A4} and \u{30A2}\u{30A4}")
+    }
+
+    /// A single-byte code page still ends its run at an ASCII byte: each
+    /// byte is a character there.
+    func testSingleByteCodePagesAreUnchangedByTheDoubleByteRule() throws {
+        let html = try rtfHTML(#"{\rtf1\ansi\ansicpg1252 Caf\'e9A \'e9b\par}"#)
+        XCTAssertEqual(try rtfBody(html).text(), "Caf\u{E9}A \u{E9}b")
     }
 
     /// An invalid \' stands for no byte and swallows nothing after it.
@@ -302,6 +347,31 @@ final class RTFReaderTests: XCTestCase {
         let bare = try rtfHTML(#"{\rtf1 Body.\par}"#)
         XCTAssertFalse(bare.contains("<title>"))
         XCTAssertFalse(bare.contains("name=\"author\""))
+    }
+
+    /// A field written as `{\upr{ANSI}{\*\ud{Unicode}}}` is read once, from
+    /// its ANSI branch, as textutil reads it: the title is "ANSI title".
+    func testAUprTitleGivesItsAnsiBranchOnly() throws {
+        let html = try rtfHTML(#"{\rtf1\ansi{\info{\upr{\title ANSI title}{\*\ud{\title Uni\u915 code title}}}}Body.\par}"#)
+        XCTAssertTrue(html.contains("<title>ANSI title</title>"), html)
+        XCTAssertFalse(html.contains("Uni"), html)
+        let author = try rtfHTML(#"{\rtf1\ansi{\info{\upr{\author Ansi Author}{\*\ud{\author Another}}}}Body.\par}"#)
+        XCTAssertTrue(author.contains("<meta name=\"author\" content=\"Ansi Author\">"), author)
+    }
+
+    /// \ucN sets how many fallback bytes follow each \u in a title as it does
+    /// in the body: with \uc2 the two bytes of the Shift-JIS fallback are
+    /// skipped, and textutil reads this title as two hiragana.
+    func testUcAppliesInATitle() throws {
+        let html = try rtfHTML(#"{\rtf1\ansi\ansicpg932{\fonttbl{\f0\fcharset128 MS Mincho;}}{\info{\title \uc2\u\#(12354)\'82\'a0\u\#(12356)\'82\'a2}}\f0 Body.\par}"#)
+        XCTAssertTrue(html.contains("<title>\u{3042}\u{3044}</title>"), html)
+    }
+
+    /// Body text inside `\upr` is read once: the ANSI branch is read and the
+    /// Unicode branch is skipped.
+    func testBodyTextInUprIsReadOnce() throws {
+        let html = try rtfHTML(#"{\rtf1\ansi Before {\upr{Plain words}{\*\ud{Unicode words}}} after.\par}"#)
+        XCTAssertEqual(try rtfBody(html).text(), "Before Plain words after.")
     }
 
     // MARK: - Emphasis
@@ -400,7 +470,7 @@ final class RTFReaderTests: XCTestCase {
         XCTAssertEqual(try body.select("ul").count, 1)
         XCTAssertEqual(try body.select("ol").count, 2)
         XCTAssertEqual(try body.select("ul > li > ol > li").array().map { try $0.text() }, ["Nested number", "Nested number two"])
-        XCTAssertEqual(try body.select("body > ul > li").array().map { try $0.ownText() }, ["Bullet one", "Bullet two"])
+        XCTAssertEqual(try body.select("body > ul > li").array().map { $0.ownText() }, ["Bullet one", "Bullet two"])
         XCTAssertEqual(try body.select("body > ol > li").array().map { try $0.text() }, ["First", "Second"])
         XCTAssertFalse(try body.text().contains("1."), "The numbers are not the items' words")
     }

@@ -110,8 +110,8 @@ struct BookReaderWindowView: View {
             // (FR09), whether or not a view of it holds keyboard focus.
             .focusedSceneValue(\.readsFromReadingList, viewModel.isOpenedFromReadingList)
             // Next Page, Previous Page, and Go to Page… are available while
-            // this reader's book has pages (PG02), as above.
-            .focusedSceneValue(\.readerHasPages, viewModel.hasPages)
+            // this reader's book has more than one page (PG02), as above.
+            .focusedSceneValue(\.readerHasPages, viewModel.hasSeveralPages)
             // Next in Folder and Previous in Folder are offered in a reader
             // window (0.2.5), whether or not a view of it holds keyboard
             // focus.

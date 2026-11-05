@@ -59,8 +59,9 @@ extension ReaderViewModel {
         let currentUnit = direction == .forward
             ? playbackSkipForwardUnit
             : playbackSkipBackwardUnit
-        // A book without pages has no Page unit to stop at (PG02).
-        let nextUnit = Self.unit(after: currentUnit, bookHasPages: hasPages)
+        // A book without pages, or of only one page, has no Page unit to
+        // stop at (PG02).
+        let nextUnit = Self.unit(after: currentUnit, bookHasPages: hasSeveralPages)
 
         switch settingsViewModel.playbackNavigationUnitControlMode {
         case .none:

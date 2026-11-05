@@ -52,7 +52,7 @@ final class WordDocumentComparisonTests: XCTestCase {
         let copy = try copyOfFormatSample(sample)
         // The router sends the sample to textutil even when the Mac reads
         // .doc with the reader.
-        let markdown = try WordDocumentReader.$forcesTextutil.withValue(true) {
+        let markdown = try OwnDocumentReaders.$forcesTextutil.withValue(true) {
             try TextutilDocumentReader.extract(from: copy, bookFormat: .doc, includesPages: true).markdown
         }
         return try MarkdownDocParser.parseChapter(markdown: markdown, title: "", includeNavigationHeadings: true)

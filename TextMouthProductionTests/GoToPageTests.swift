@@ -164,7 +164,7 @@ final class GoToPageTests: XCTestCase {
         XCTAssertEqual(ReaderPageWording.sayInWhereAmITitle, "Say the page in Where Am I?")
         XCTAssertEqual(
             ReaderPageWording.sayInWhereAmIHint,
-            "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books with pages."
+            "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page."
         )
     }
 
@@ -818,11 +818,11 @@ final class GoToPageTests: XCTestCase {
         XCTAssertFalse(singleButtons.contains { $0.label.hasPrefix("Page") || $0.label.hasPrefix("Before page") })
     }
 
-    /// A book of one page has a page to go to, so the page commands and Go
-    /// to Page… work in it, but not several, so the status row leaves its
-    /// page button out (the user's request, November 4, 2026): it would say
-    /// "Page 1 of 1" wherever the book is read. A book of two pages has
-    /// several, and a book without pages has neither.
+    /// A book of one page has pages but not several, so the status row
+    /// leaves its page button out (the user's request, November 4, 2026):
+    /// it would say "Page 1 of 1" wherever the book is read, and its page
+    /// commands say so and move nothing (`PageNavigationTests`). A book of
+    /// two pages has several, and a book without pages has neither.
     func testABookOfOnePageHasAPageButNotSeveral() {
         let single = makePagedReader(pages: Self.onePage)
         defer { single.close() }
@@ -1006,6 +1006,13 @@ final class GoToPageTests: XCTestCase {
         defer { plain.close() }
         XCTAssertEqual(plain.whereAmIPageLabel, "")
         XCTAssertFalse(plain.buildBriefWhereAmI().contains(" of "))
+
+        // A book of one page says no page, which would be "Page 1 of 1".
+        let single = makePagedReader(pages: Self.onePage, settings: try makeIsolatedSettings("page-where-am-i-one"))
+        defer { single.close() }
+        single.currentCharacterOffset = 10
+        XCTAssertEqual(single.whereAmIPageLabel, "")
+        XCTAssertFalse(single.buildBriefWhereAmI().contains("Page 1"), single.buildBriefWhereAmI())
     }
 
     /// The setting is on until it is turned off, config.json names it, and
