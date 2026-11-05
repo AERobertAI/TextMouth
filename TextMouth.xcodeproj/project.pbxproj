@@ -1038,6 +1038,7 @@
 		8FCE7B1749165DDD4A5FF92D /* LibraryViewModel+AudioEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = F767BE78C6D4E99D99C3A904 /* LibraryViewModel+AudioEditing.swift */; };
 		8FDF6B240901A8D50F337A89 /* ImportFailure.swift in Sources */ = {isa = PBXBuildFile; fileRef = B33BAE34A8FF3CE2B699D156 /* ImportFailure.swift */; };
 		8FEDF6B39B23816A5796C86C /* LibrarySessionLease.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E0BDCEEE2E18C6E6E2AFD82 /* LibrarySessionLease.swift */; };
+		90056498A62AF125B0A40193 /* LICENSE in CopyFiles */ = {isa = PBXBuildFile; fileRef = 500FDD96F70320785C50C053 /* LICENSE */; };
 		902DC8B5D2E1F839182E2687 /* TextutilConverterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56A899A6F2D1A67759CCAEA3 /* TextutilConverterTests.swift */; };
 		9030A133E8CAFD8D1ED147C9 /* AudioEditingSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7EDCC74508AC75F91D0AC4 /* AudioEditingSettingsSection.swift */; };
 		904CC549B53BC8449443AFAE /* ReaderViewModel+EditedText.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFB10241A4D89A2A85B74E6B /* ReaderViewModel+EditedText.swift */; };
@@ -1929,7 +1930,18 @@
 			dstPath = liblouis;
 			dstSubfolderSpec = 7;
 			files = (
-				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
+				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
+				41F911ECAF492222AF723C10 /* README in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C91BEB2BE96CF7A4E3259148 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "Licenses/foliate-js";
+			dstSubfolderSpec = 7;
+			files = (
+				90056498A62AF125B0A40193 /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2379,6 +2391,7 @@
 		4FA86068E04276BA1A18BAE3 /* Transcript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transcript.swift; sourceTree = "<group>"; };
 		4FCA1A2E4961EFF2AB76D9BD /* ReaderLifecycleAuditTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderLifecycleAuditTests.swift; sourceTree = "<group>"; };
 		4FF88532DEB869885DA347AC /* FeedPaths+Items.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FeedPaths+Items.swift"; sourceTree = "<group>"; };
+		500FDD96F70320785C50C053 /* LICENSE */ = {isa = PBXFileReference; path = LICENSE; sourceTree = "<group>"; };
 		500C711F790B86AC50187381 /* ArchiveImportBoundsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchiveImportBoundsTests.swift; sourceTree = "<group>"; };
 		501AC3CF81E3781F6F3228A6 /* FeedListeningOptionsSheetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedListeningOptionsSheetTests.swift; sourceTree = "<group>"; };
 		50DCA38A731F30CC2EAD2A8B /* ReaderViewModel+Predownload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ReaderViewModel+Predownload.swift"; sourceTree = "<group>"; };
@@ -3306,6 +3319,7 @@
 		186811333DB411ED58703F4D = {
 			isa = PBXGroup;
 			children = (
+				CFEE772A98FE2477CC004F27 /* foliate-js */,
 				09883462A53C249CB78C2482 /* tables */,
 				4E2A00CDDD6095FEBE6D9866 /* include */,
 				416BA244963037D85CAE7566 /* include */,
@@ -4899,6 +4913,15 @@
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
+		CFEE772A98FE2477CC004F27 /* foliate-js */ = {
+			isa = PBXGroup;
+			children = (
+				500FDD96F70320785C50C053 /* LICENSE */,
+			);
+			name = "foliate-js";
+			path = "Vendor/foliate-js";
+			sourceTree = "<group>";
+		};
 		};
 		D6FE09815376DEB08BA01C4D /* Export */ = {
 			isa = PBXGroup;
@@ -5171,6 +5194,7 @@
 				64C6E8FEA130287FBBD07DBC /* Resources */,
 				BF489798E33F1F27D1434BD7 /* CopyFiles */,
 				9279BF2ABA7F3526AB66874A /* CopyFiles */,
+				C91BEB2BE96CF7A4E3259148 /* CopyFiles */,
 				C4DD7093AEE01EB21DD71ECD /* CopyFiles */,
 				5B26D5AA6DDCEFAEAEB67A60 /* Frameworks */,
 				C0C794FB23B67989FD99D8E3 /* Embed Dependencies */,

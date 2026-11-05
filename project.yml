@@ -121,10 +121,11 @@ targets:
       # The licences of the code TextMouth bundles, copied unchanged from the
       # vendored files into Contents/Resources/Licenses, one folder for each:
       # liblouis (FMT21) is under the GNU Lesser General Public License 2.1,
-      # and LAME (FR04) under the GNU Library General Public License 2. They
-      # are copied from Vendor, never into the repository a second time, so
-      # each stays the vendored release's own text. BundledLicenseTests checks
-      # that all four reach the built app.
+      # LAME (FR04) under the GNU Library General Public License 2, and
+      # foliate-js (MIT), whose mobi.js the MOBI reader (FMT42) follows, under
+      # its own MIT licence. They are copied from Vendor, never into the
+      # repository a second time, so each stays the vendored release's own
+      # text. BundledLicenseTests checks that every one reaches the built app.
       - path: Vendor/liblouis/COPYING.LESSER
         buildPhase:
           copyFiles:
@@ -145,6 +146,11 @@ targets:
           copyFiles:
             destination: resources
             subpath: Licenses/LAME
+      - path: Vendor/foliate-js/LICENSE
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/foliate-js
     settings:
       groups:
         - appVersion
