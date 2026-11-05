@@ -19,11 +19,13 @@ extension ReaderViewModel {
         !bookPages.isEmpty
     }
 
-    /// Whether the book has more than one page, so that the status row's
-    /// page button has something to tell: a book of one page would say
-    /// "Page 1 of 1" wherever it is read, so the button is left out (the
-    /// user's request, November 4, 2026). The page commands and Go to Page…
-    /// still work in such a book, which `hasPages` decides.
+    /// Whether the book has more than one page, and so pages to move by.
+    /// A book of one page would say "Page 1 of 1" wherever it is read,
+    /// and has no other page to go to, so its page shows nowhere (the
+    /// user's requests, November 4, 2026): the status row's page button,
+    /// the Navigate menu's page commands (dimmed), the pickers' Page unit,
+    /// and Where Am I?'s page are left out, and the page commands' keys say
+    /// so and move nothing (`pageCommandHasPages()`).
     var hasSeveralPages: Bool {
         bookPages.count > 1
     }
@@ -95,9 +97,9 @@ extension ReaderViewModel {
     }
 
     /// The units a picker for one book offers, in the order every picker
-    /// shows them: every unit, except Page when the book has no pages (an
-    /// audiobook, or a text book whose format or file gives none), which
-    /// would have nothing to move by. A unit already in force stays in the
+    /// shows them: every unit, except Page when the book has no pages to
+    /// move by (an audiobook, a text book whose format or file gives none,
+    /// or a book of only one page). A unit already in force stays in the
     /// list even then, so the picker always holds the value it shows: a
     /// global default of Page reaches a book without pages (its skip says
     /// "This book has no pages."), and a picker whose selection is not among
@@ -110,7 +112,7 @@ extension ReaderViewModel {
     /// The units the playback bar's pickers offer for this book, one of
     /// whose pickers is showing `selected` (`navigationUnitChoices(bookHasPages:keeping:)`).
     func navigationUnitChoices(keeping selected: SkipUnit) -> [SkipUnit] {
-        Self.navigationUnitChoices(bookHasPages: hasPages, keeping: selected)
+        Self.navigationUnitChoices(bookHasPages: hasSeveralPages, keeping: selected)
     }
 
     // MARK: - Skipped sections
@@ -160,11 +162,16 @@ extension ReaderViewModel {
     /// as Next Heading does: the book may well have pages, and saying that it
     /// had none, for the moments it takes to load, would tell the listener
     /// otherwise. A loaded book without pages says so and moves nothing
-    /// (`ReaderPageWording.noPages`).
+    /// (`ReaderPageWording.noPages`), and so does a book of one page, which
+    /// has no other page to go to (`ReaderPageWording.onlyOnePage`).
     private func pageCommandHasPages() -> Bool {
         guard content != nil else { return false }
         guard hasPages else {
             announceToVoiceOver(ReaderPageWording.noPages)
+            return false
+        }
+        guard hasSeveralPages else {
+            announceToVoiceOver(ReaderPageWording.onlyOnePage)
             return false
         }
         return true

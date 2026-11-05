@@ -378,6 +378,36 @@ final class PageNavigationTests: XCTestCase {
         XCTAssertFalse(reader.hasPages)
     }
 
+    /// In a book of one page every page command says so and moves nothing,
+    /// as in a book without pages, since there is no other page to go to
+    /// (the user's request, November 4, 2026), and the pickers leave Page
+    /// out unless it is the unit in force.
+    func testABookOfOnePageSaysSoAndMovesNothing() {
+        let reader = makePagedReader(pages: [PageBreak(label: "1", chapterIndex: 0, characterOffset: 0)])
+        defer { reader.close() }
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 50
+
+        reader.performSkip(unit: .page, forward: true)
+        XCTAssertEqual(reader.lastAnnouncement, "This book has only one page.")
+        XCTAssertEqual(pagedPlace(of: reader), "0:50")
+
+        reader.lastAnnouncement = nil
+        reader.previousPage()
+        XCTAssertEqual(reader.lastAnnouncement, ReaderPageWording.onlyOnePage)
+        XCTAssertEqual(pagedPlace(of: reader), "0:50", "Previous Page moved to the page's start")
+
+        reader.lastAnnouncement = nil
+        reader.requestGoToPage()
+        XCTAssertEqual(reader.lastAnnouncement, "This book has only one page.")
+        XCTAssertEqual(reader.goToPageRequests, 0, "Go to Page… opened its panel")
+
+        XCTAssertTrue(reader.hasPages)
+        XCTAssertFalse(reader.hasSeveralPages)
+        XCTAssertFalse(reader.navigationUnitChoices(keeping: .seconds15).contains(.page))
+        XCTAssertTrue(reader.navigationUnitChoices(keeping: .page).contains(.page), "the unit in force stays")
+    }
+
     /// While the book loads every page command does nothing and says
     /// nothing, as Next Heading does: the reader has no book to ask yet, and
     /// "This book has no pages." for the moments a book with pages takes to

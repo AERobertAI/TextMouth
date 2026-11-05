@@ -106,9 +106,10 @@ extension ReaderViewModel {
 
     /// The page Where Am I? says (PG04): the reading position's "Page 112 of
     /// 300" (or "Before page 1") while the setting that adds the page is on,
-    /// and nothing otherwise. A book without pages has no label to say.
+    /// and nothing otherwise. A book without pages has no label to say, and
+    /// a book of one page none worth saying (`hasSeveralPages`).
     var whereAmIPageLabel: String {
-        settingsViewModel.saysPageInWhereAmI ? currentPagePosition.label : ""
+        settingsViewModel.saysPageInWhereAmI && hasSeveralPages ? currentPagePosition.label : ""
     }
 
     /// Brief summary: book title, current heading, heading number, the page
