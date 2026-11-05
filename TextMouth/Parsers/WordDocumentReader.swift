@@ -117,30 +117,36 @@ enum WordDocumentReader {
             sections = try WordSections(range: range, table: table, document: document)
         }
 
-        // Writes the text up to character `end` and says whether it holds a
-        // letter or a digit.
-        func write(upTo end: Int) throws -> (body: String, hasWords: Bool) {
+        // Writes the text of the character `ranges` (in order, none going
+        // back) and says whether it holds a letter or a digit.
+        func write(_ ranges: [Range<Int>]) throws -> (body: String, hasWords: Bool) {
             var writer = WordHTMLWriter(
                 styles: styles, sections: sections, includesPages: includesPages,
                 outputLimit: Int(DocumentByteLimit.current) * 2, paragraphs: paragraphs, characters: characters
             )
-            try pieces.forEachCharacter(upTo: end, in: document) { position, unit in
-                try writer.add(position: position, unit: unit)
+            for range in ranges {
+                try pieces.forEachCharacter(from: range.lowerBound, upTo: range.upperBound, in: document) { position, unit in
+                    try writer.add(position: position, unit: unit)
+                }
             }
-            let body = try writer.finish(endingAt: end)
+            let body = try writer.finish(endingAt: ranges.last?.upperBound ?? 0)
             return (body, writer.wroteCountedCharacter)
         }
 
-        // The main story, which is the book. Only when it holds no words at
-        // all (a document whose text is in a text box, or a header) are the
-        // stories after it read too, in the order the file keeps them
-        // (footnotes, headers, comments, endnotes, text boxes, header text
-        // boxes), as textutil reads them. A document with words in its main
-        // story never reads its headers: they would repeat page furniture at
-        // the end of the book.
-        var written = try write(upTo: textEnd)
-        if !written.hasWords, pieces.characterCount > textEnd {
-            written = try write(upTo: pieces.characterCount)
+        // The main story is the book, and the footnotes and endnotes follow it,
+        // as they follow it in textutil's reading, so their words are not
+        // lost; headers, comments, and text boxes are left out, since a
+        // header would repeat page furniture at the end of the book. Only when
+        // the main story holds no words at all (a document whose text is in a
+        // text box, or a header) are all the stories after it read, in the
+        // order the file keeps them, as textutil reads them.
+        let main = 0..<textEnd
+        var written = try write([main])
+        if !written.hasWords {
+            if pieces.characterCount > textEnd { written = try write([0..<pieces.characterCount]) }
+        } else {
+            let notes = try fib.noteRanges(limit: pieces.characterCount)
+            if !notes.isEmpty { written = try write([main] + notes) }
         }
         let body = written.body
 

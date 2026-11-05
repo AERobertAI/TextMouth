@@ -116,17 +116,21 @@ struct WordPieceTable {
     // MARK: Reading the Text
 
     /// Calls `body` with the character position and the UTF-16 code unit of
-    /// each character from position 0 up to (not including) `limit`, in
-    /// order. Windows-1252 characters are turned into their Unicode code
+    /// each character from position `start` up to (not including) `limit`,
+    /// in order. Windows-1252 characters are turned into their Unicode code
     /// unit as they are read.
     /// - Parameter document: the stream the table was checked against; the
     ///   reads here stay inside the ranges that check passed.
-    func forEachCharacter(upTo limit: Int, in document: OLEBytes, _ body: (_ position: Int, _ unit: UInt16) throws -> Void) rethrows {
+    func forEachCharacter(
+        from start: Int = 0, upTo limit: Int, in document: OLEBytes,
+        _ body: (_ position: Int, _ unit: UInt16) throws -> Void
+    ) rethrows {
         let bytes = document.bytes
         for piece in pieces {
             guard piece.firstCharacter < limit else { return }
+            guard piece.endCharacter > start else { continue }
             let end = min(piece.endCharacter, limit)
-            var position = piece.firstCharacter
+            var position = max(piece.firstCharacter, start)
             if piece.isCompressed {
                 while position < end {
                     try body(position, Self.unicode(ofWindows1252: bytes[piece.fileOffset + position - piece.firstCharacter]))

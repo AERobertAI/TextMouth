@@ -242,9 +242,18 @@ final class WordDocumentReaderTests: XCTestCase {
         return builder
     }
 
-    func testAMainStoryWithWordsLeavesTheOtherStoriesOut() throws {
+    func testAMainStoryWithWordsIsFollowedByItsFootnotesAndEndnotesAndNothingElse() throws {
+        // Headers, comments, and text boxes are left out; the notes follow, as in textutil's reading.
         let body = try body(of: storyDocument(main: [Paragraph("Main words.")]).build())
-        XCTAssertEqual(body, "<p>Main words.</p>\n")
+        XCTAssertEqual(body, "<p>Main words.</p>\n<p>Footnote words.</p>\n<p>Endnote words.</p>\n")
+    }
+
+    func testOnlyEndnotesOrOnlyFootnotesFollowTheMainStory() throws {
+        var builder = storyDocument(main: [Paragraph("Main words.")])
+        builder.stories = [.endnotes: [Paragraph("Endnote one."), Paragraph("Endnote two.")], .headers: [Paragraph("Header.")]]
+        XCTAssertEqual(try body(of: builder.build()), "<p>Main words.</p>\n<p>Endnote one.</p>\n<p>Endnote two.</p>\n")
+        builder.stories = [.footnotes: [Paragraph("Footnote one.")]]
+        XCTAssertEqual(try body(of: builder.build()), "<p>Main words.</p>\n<p>Footnote one.</p>\n")
     }
 
     func testAMainStoryWithNoWordsReadsTheOtherStoriesInFileOrder() throws {

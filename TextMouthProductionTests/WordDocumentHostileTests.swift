@@ -171,6 +171,20 @@ final class WordDocumentHostileTests: XCTestCase {
         XCTAssertTrue(try XCTUnwrap(WordDocumentReader.html(from: none, includesPages: true)).contains("Second section."))
     }
 
+    func testStoryLengthsThatDoNotFitTheTextAreCutNotTrusted() throws {
+        var builder = richDocument()
+        builder.stories = [.footnotes: [Paragraph("Footnote words.")], .endnotes: [Paragraph("Endnote words.")]]
+        // Every length in the FIB, in turn, as large as it can be, and the main text longer than the text.
+        for offset in [76, 80, 84, 88, 92, 96, 100, 104] {
+            for value in [0xFFFF_FFFF, 0x7FFF_FFFF, 1_000_000] {
+                let data = builder.build { word, _, _ in
+                    word.replaceSubrange(offset..<offset + 4, with: WordDocumentBuilder.le32(value))
+                }
+                assertSurvives(data, "FIB length at \(offset) of \(value)")
+            }
+        }
+    }
+
     // MARK: - The FIB
 
     func testFIBFieldsThatDoNotFitAreRefused() {

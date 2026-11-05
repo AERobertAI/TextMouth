@@ -48,6 +48,9 @@ struct WordFileInformationBlock {
     let flags: Int
     /// `ccpText`: how many characters the main document holds.
     let mainTextLength: Int
+    /// Where the FIB's 32-bit values begin, and how many there are.
+    private let longValuesOffset: Int
+    private let longValueCount: Int
     /// Where the pairs begin in the `WordDocument` stream.
     private let pairsOffset: Int
     /// How many pairs the FIB holds.
@@ -96,8 +99,29 @@ struct WordFileInformationBlock {
         guard pairCount > Structure.complexInformation.rawValue else { throw OLEDamage(reason: "the FIB has no CLX") }
         return WordFileInformationBlock(
             version: version, flags: flags, mainTextLength: textLength,
+            longValuesOffset: longStart, longValueCount: longValues,
             pairsOffset: pairsOffset, pairCount: pairCount, stream: stream
         )
+    }
+
+    /// The stories of footnotes and of endnotes, as character positions
+    /// (the stories are laid end to end after the main text: footnotes,
+    /// headers, macros, comments, endnotes, text boxes, header text boxes),
+    /// each cut at `limit`, the characters the document holds; empty ones are
+    /// left out. A FIB too short to give the lengths gives none.
+    func noteRanges(limit: Int) throws -> [Range<Int>] {
+        guard longValueCount >= 9 else { return [] }
+        // ccpFtn, ccpHdd, ccpMcr, ccpAtn, and ccpEdn follow ccpText.
+        let lengths = try (1...5).map { try stream.u32(longValuesOffset + (3 + $0) * 4) }
+        let footnotes = mainTextLength..<mainTextLength + lengths[0]
+        let endnotesStart = mainTextLength + lengths[0] + lengths[1] + lengths[2] + lengths[3]
+        let endnotes = endnotesStart..<endnotesStart + lengths[4]
+        return [footnotes, endnotes].compactMap { range in
+            // A story that begins past the characters the document holds has none.
+            guard range.lowerBound < limit else { return nil }
+            let cut = range.lowerBound..<min(range.upperBound, limit)
+            return cut.isEmpty ? nil : cut
+        }
     }
 
     /// Where `structure` lies in `table`: its offset and length, checked
