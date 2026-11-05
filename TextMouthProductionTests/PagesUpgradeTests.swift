@@ -41,7 +41,7 @@ final class PagesUpgradeTests: XCTestCase {
         for format in BookFormat.allCases {
             XCTAssertEqual(
                 PageReaderVersions.current(for: format),
-                withPages.contains(format) ? (format == .epub || format == .html ? "1.0.3" : "1.0.0") : nil,
+                withPages.contains(format) ? (format == .epub || format == .html ? "1.0.3" : format == .doc ? "1.1.0" : "1.0.0") : nil,
                 format.rawValue
             )
         }

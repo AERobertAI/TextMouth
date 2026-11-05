@@ -546,7 +546,7 @@ final class OnDiskContractTests: XCTestCase {
         // their text where a page-break element holds its page's number.
         XCTAssertEqual(
             versions,
-            Dictionary(uniqueKeysWithValues: withPages.map { ($0, ["epub", "html"].contains($0) ? "1.0.3" : "1.0.0") }),
+            Dictionary(uniqueKeysWithValues: withPages.map { ($0, ["epub", "html"].contains($0) ? "1.0.3" : $0 == "doc" ? "1.1.0" : "1.0.0") }),
             Self.because("a page reader's version, or the formats with pages", forces)
         )
         XCTAssertEqual(

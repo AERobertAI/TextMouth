@@ -756,11 +756,7 @@ final class WordDocumentReaderTests: XCTestCase {
         XCTAssertEqual(unreadable.localizedDescription, "This file could not be read as a Word 97-2003 document. It may be damaged, or another kind of file.")
     }
 
-    func testTheReaderIsOffOnTheMacUntilItIsChecked() {
-        #if os(macOS)
-        XCTAssertFalse(WordDocumentReader.isOn)
-        #else
+    func testTheReaderIsOnForEveryPlatform() {
         XCTAssertTrue(WordDocumentReader.isOn)
-        #endif
     }
 }
