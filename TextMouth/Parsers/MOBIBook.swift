@@ -170,7 +170,7 @@ struct MOBIBook {
             while nextAnchor < anchors.count, anchors[nextAnchor].position < start.position { nextAnchor += 1 }
             var lastAnchor = nextAnchor
             while lastAnchor < anchors.count, anchors[lastAnchor].position < end { lastAnchor += 1 }
-            let bytes = MOBIMarkup.html(of: text, range: start.position..<end, anchors: anchors[nextAnchor..<lastAnchor])
+            let bytes = try MOBIMarkup.html(of: text, range: start.position..<end, anchors: anchors[nextAnchor..<lastAnchor])
             nextAnchor = lastAnchor
             sections.append(Section(
                 title: start.title,

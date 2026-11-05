@@ -18,6 +18,19 @@ import Foundation
 /// expression over the whole text, so a hostile file costs a single pass.
 enum MOBIMarkup {
 
+    /// Most places a book may name by `filepos` that get an anchor. A real
+    /// book names a few hundred; a dictionary, some tens of thousands. A
+    /// hostile one could name a place in every tag, so the places beyond this
+    /// many (in file order) get none: a link to one has no destination, and
+    /// its words are read all the same.
+    static let maximumFileposTargets = 500_000
+
+    /// Most levels of unclosed elements a section may hold. Every section is
+    /// parsed into a tree and converted by code that visits it recursively,
+    /// so a file that nests tens of thousands of elements would overflow the
+    /// stack; real books nest a dozen.
+    static let maximumNesting = 256
+
     /// What a first pass over the text found.
     struct Scan: Equatable {
         /// Every byte offset a `filepos` attribute names.
@@ -108,7 +121,9 @@ enum MOBIMarkup {
     static func scan(_ text: [UInt8]) -> Scan {
         var result = Scan()
         forEachTag(in: text, within: 0..<text.count) { tag in
-            if let target = fileposValue(in: text, tag: tag) { result.fileposTargets.insert(target) }
+            if result.fileposTargets.count < maximumFileposTargets, let target = fileposValue(in: text, tag: tag) {
+                result.fileposTargets.insert(target)
+            }
             if isPageBreak(text, tag: tag) { result.pageBreakOffsets.append(tag.lowerBound) }
         }
         return result
@@ -189,7 +204,9 @@ enum MOBIMarkup {
     /// position), and the Mobipocket tags taken out. An anchor is an empty
     /// link, `<a id="filepos-N"></a>`, which the converter reads as a
     /// destination and no word.
-    static func html(of text: [UInt8], range: Range<Int>, anchors: ArraySlice<Anchor>) -> [UInt8] {
+    /// - Throws: `MOBIError.damaged` for a section that nests elements more
+    ///   than `maximumNesting` levels deep.
+    static func html(of text: [UInt8], range: Range<Int>, anchors: ArraySlice<Anchor>) throws -> [UInt8] {
         var output: [UInt8] = []
         output.reserveCapacity(range.count + anchors.count * 24)
         var cursor = range.lowerBound
@@ -212,14 +229,60 @@ enum MOBIMarkup {
             }
         }
 
+        var depth = 0
+        var deepest = 0
         forEachTag(in: text, within: range) { tag in
+            depth = max(0, depth + nestingChange(of: tag, in: text))
+            deepest = max(deepest, depth)
             guard isMobipocketTag(text, tag: tag) else { return }
             // The anchors up to this tag, then the text, then past the tag.
             copy(to: tag.lowerBound)
             cursor = tag.upperBound
         }
+        guard deepest <= maximumNesting else {
+            throw MOBIError.damaged("its markup is nested more than \(maximumNesting) levels deep")
+        }
         copy(to: range.upperBound)
         return output
+    }
+
+    // MARK: Nesting
+
+    /// Elements that have no end tag.
+    private static let voidElements: Set<String> = [
+        "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr",
+        // Old books write these without an end tag as well.
+        "basefont", "frame", "isindex",
+    ]
+
+    /// Elements the HTML parser closes by itself when the next one begins, so
+    /// a book may leave their end tags out and they never nest deeply.
+    private static let selfClosingByParser: Set<String> = [
+        "p", "li", "dt", "dd", "tr", "td", "th", "option", "tbody", "thead", "tfoot", "colgroup", "caption",
+    ]
+
+    /// How much `tag` changes the number of open elements: 1 for the start
+    /// of one that stays open, -1 for the end of one, 0 for a comment, a
+    /// declaration, a void or self-closed element, and one the parser closes
+    /// by itself. It is an estimate for a limit, not a parse: a book with
+    /// more end tags than start tags cannot take the count below 0.
+    private static func nestingChange(of tag: Range<Int>, in text: [UInt8]) -> Int {
+        let first = tag.lowerBound + 1
+        guard first < tag.upperBound, text[first] != UInt8(ascii: "!"), text[first] != UInt8(ascii: "?") else { return 0 }
+        let closing = text[first] == UInt8(ascii: "/")
+        var end = closing ? first + 1 : first
+        let nameStart = end
+        while end < tag.upperBound, !isSpace(text[end]), text[end] != UInt8(ascii: "/"), text[end] != UInt8(ascii: ">") {
+            end += 1
+        }
+        guard end > nameStart else { return 0 }
+        let name = String(decoding: text[nameStart..<end], as: UTF8.self).lowercased()
+        if voidElements.contains(name) || selfClosingByParser.contains(name) { return 0 }
+        if closing { return -1 }
+        // "<x/>" closes itself.
+        let selfClosed = tag.upperBound - tag.lowerBound >= 3 && text[tag.upperBound - 1] == UInt8(ascii: ">")
+            && text[tag.upperBound - 2] == UInt8(ascii: "/")
+        return selfClosed ? 0 : 1
     }
 
     // MARK: Bytes
