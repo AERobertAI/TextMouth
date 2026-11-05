@@ -580,6 +580,80 @@ final class WordDocumentReaderTests: XCTestCase {
         XCTAssertTrue(body.contains("aria-label=\"\(TextutilPageBreaks.maximumPages)\""))
     }
 
+    // MARK: - Page Break Before
+
+    private let pageBreakBefore = WordDocumentBuilder.modifier(WordSprm.pageBreakBefore, 1)
+
+    func testAParagraphWithPageBreakBeforeBeginsAPageBeforeItsFirstWords() throws {
+        let body = try body([Paragraph("One"), Paragraph("Two", modifiers: pageBreakBefore), Paragraph("Three")], pages: true)
+        XCTAssertEqual(body, span(1) + "<p>One</p>\n<p>\(span(2))Two</p>\n<p>Three</p>\n")
+    }
+
+    func testPageBreakBeforeOnTheFirstParagraphIsNotASecondPage() throws {
+        let body = try body([Paragraph("One", modifiers: pageBreakBefore), Paragraph("Two")], pages: true)
+        XCTAssertEqual(body, span(1) + "<p>One</p>\n<p>Two</p>\n")
+    }
+
+    func testAStyleWithPageBreakBeforeAndTheStylesBasedOnItBeginPages() throws {
+        var builder = WordDocumentBuilder()
+        // 12 begins pages; 13 is based on 12 and says nothing; 14 is based on 12 and turns it off.
+        builder.styles += [
+            WordDocumentBuilder.Style(basedOn: 0, pageBreakBefore: 1),
+            WordDocumentBuilder.Style(basedOn: 12),
+            WordDocumentBuilder.Style(basedOn: 12, pageBreakBefore: 0),
+        ]
+        builder.paragraphs = [
+            Paragraph("a"), Paragraph("b", style: 12), Paragraph("c", style: 13), Paragraph("d", style: 14),
+            // The paragraph's own setting wins over its style, either way.
+            Paragraph("e", style: 12, modifiers: WordDocumentBuilder.modifier(WordSprm.pageBreakBefore, 0)),
+            Paragraph("f", modifiers: pageBreakBefore),
+        ]
+        XCTAssertEqual(
+            try body(of: builder.build(), pages: true),
+            span(1) + "<p>a</p>\n<p>\(span(2))b</p>\n<p>\(span(3))c</p>\n<p>d</p>\n<p>e</p>\n<p>\(span(4))f</p>\n"
+        )
+    }
+
+    func testPageBreakBeforeOnAHeadingStyleOpensTheHeadingOnANewPage() throws {
+        var builder = WordDocumentBuilder()
+        builder.styles[1] = WordDocumentBuilder.Style(builtInIdentifier: 1, basedOn: 0, outlineLevel: 0, bold: 1, pageBreakBefore: 1)
+        builder.paragraphs = [Paragraph("Intro"), Paragraph("Chapter", style: 1), Paragraph("Text")]
+        XCTAssertEqual(try body(of: builder.build(), pages: true), span(1) + "<p>Intro</p>\n<h1>\(span(2))Chapter</h1>\n<p>Text</p>\n")
+    }
+
+    func testPageBreakBeforeAfterAFormFeedOrSectionBreakIsNotAnEmptyPage() throws {
+        // A form feed, and then a paragraph that begins a page: one break.
+        XCTAssertEqual(
+            try body([Paragraph("A\u{0C}"), Paragraph("B", modifiers: pageBreakBefore)], pages: true),
+            span(1) + "<p>A</p>\n<p>\(span(2))B</p>\n"
+        )
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [Paragraph("A", mark: 0x0C), Paragraph("B", modifiers: pageBreakBefore)]
+        builder.sectionBreaks = [(0, 2)]
+        XCTAssertEqual(try body(of: builder.build(), pages: true), span(1) + "<p>A</p>\n<p>\(span(2))B</p>\n")
+    }
+
+    func testPageBreakBeforeNeedsWordsAndAskedForPagesAndIsNotForTables() throws {
+        // An empty paragraph begins no page, and neither do two together.
+        XCTAssertEqual(
+            try body([Paragraph("A"), Paragraph("", modifiers: pageBreakBefore), Paragraph("B")], pages: true),
+            span(1) + "<p>A</p>\n<p>B</p>\n"
+        )
+        XCTAssertEqual(try body([Paragraph("A"), Paragraph("B", modifiers: pageBreakBefore)], pages: false), "<p>A</p>\n<p>B</p>\n")
+        let inTable = WordDocumentBuilder.modifier(WordSprm.inTable, 1)
+        XCTAssertEqual(
+            try body([Paragraph("A"), Paragraph("cell", modifiers: inTable + pageBreakBefore, mark: 0x07)], pages: true),
+            span(1) + "<p>A</p>\n<table>\n<tr><td><p>cell</p>\n</td></tr>\n</table>\n"
+        )
+    }
+
+    func testTwoParagraphsThatBeginPagesAreTwoPages() throws {
+        XCTAssertEqual(
+            try body([Paragraph("A"), Paragraph("B", modifiers: pageBreakBefore), Paragraph("C", modifiers: pageBreakBefore)], pages: true),
+            span(1) + "<p>A</p>\n<p>\(span(2))B</p>\n<p>\(span(3))C</p>\n"
+        )
+    }
+
     // MARK: - Documents Left Alone or Refused
 
     func testAWord95DocumentIsLeftToTextutil() throws {

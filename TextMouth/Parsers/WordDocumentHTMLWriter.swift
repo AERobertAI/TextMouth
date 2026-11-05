@@ -97,6 +97,8 @@ struct WordHTMLWriter {
     }
 
     // Pages.
+    /// Whether the current paragraph has been asked if it begins a page.
+    private var askedPageBreakBefore = false
     /// The numbers of the pages that begin before the next letter or digit.
     private var pendingPages: [Int] = []
     /// How many page breaks have been met.
@@ -229,6 +231,10 @@ struct WordHTMLWriter {
         // is "(" otherwise) has no words to read.
         if format.isSpecial && scalar == "(" { return }
         let paragraphFormat = currentParagraphFormat(at: position)
+        if !askedPageBreakBefore {
+            askedPageBreakBefore = true
+            try beginPageIfParagraphDoes(paragraphFormat)
+        }
         let appearance = appearance(of: format, in: paragraphFormat)
         // A heading carries no emphasis.
         let heading = isHeading(paragraphFormat)
@@ -301,10 +307,28 @@ struct WordHTMLWriter {
     private mutating func addPageBreak(at position: Int) throws {
         addWhitespace(" ")
         guard includesPages, sections.formFeedStartsPage(at: position) else { return }
+        try beginPage()
+    }
+
+    /// Begins a page before the next letter or digit.
+    private mutating func beginPage() throws {
         pageBreakCount += 1
         guard pageBreakCount < TextutilPageBreaks.maximumPages else { throw PageLimitExceeded() }
         // The first break begins page 2.
         pendingPages.append(pageBreakCount + 1)
+    }
+
+    /// Begins a page before the paragraph with `format`'s first words, if it
+    /// says so itself or by its style (page break before), as the DOCX reader
+    /// does for `w:pageBreakBefore`. A paragraph in a table does not. No page
+    /// begins when none was asked for, when no words have been written (the
+    /// first page begins there already), or when a break is waiting for the
+    /// same words already (a form feed, or a section break, right before).
+    private mutating func beginPageIfParagraphDoes(_ format: WordParagraphFormat) throws {
+        guard includesPages, wroteCountedCharacter, pendingPages.isEmpty,
+              !format.isInTable, format.tableDepth == 0,
+              styles.beginsPage(styleIndex: format.style, direct: format.pageBreakBefore) else { return }
+        try beginPage()
     }
 
     // MARK: Paragraphs
@@ -371,6 +395,7 @@ struct WordHTMLWriter {
         firstIsFollowedByTab = false
         paragraph = ""
         paragraphHasText = false
+        askedPageBreakBefore = false
         paragraphCensus = WordCharacterCensus()
         paragraphLength = 0
         pendingWhitespace = ""

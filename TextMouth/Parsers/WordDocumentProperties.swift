@@ -16,8 +16,9 @@ struct WordParagraphFormat: Equatable {
     /// The depth of the table the paragraph is in: 1 for a table, 2 for a
     /// table in a cell of a table; 0 when the paragraph does not say.
     var tableDepth = 0
-    /// Whether the paragraph begins a page.
-    var startsPage = false
+    /// Whether the paragraph itself says it begins a page (`sprmPFPageBreakBefore`,
+    /// on or off), or nil when it says nothing and its style decides.
+    var pageBreakBefore: Bool?
 }
 
 /// The character properties a run of text names directly (its CHPX), of
@@ -148,7 +149,7 @@ enum WordDocumentProperties {
         case WordSprm.inTable: format.isInTable = value != 0
         case WordSprm.rowEnd: format.isRowEnd = value != 0
         case WordSprm.tableDepth: format.tableDepth = value
-        case WordSprm.pageBreakBefore: format.startsPage = value != 0
+        case WordSprm.pageBreakBefore: format.pageBreakBefore = value != 0
         default: break
         }
     }

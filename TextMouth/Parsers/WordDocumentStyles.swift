@@ -31,6 +31,8 @@ struct WordStyleSheet {
         let italic: Int?
         /// The style's own font size in half-points, or nil.
         let fontSize: Int?
+        /// Whether the style says a paragraph in it begins a page, or nil.
+        let pageBreakBefore: Bool?
     }
 
     /// The styles by index; nil for an unused slot of the sheet.
@@ -105,6 +107,7 @@ struct WordStyleSheet {
         }
 
         var outlineLevel: Int?
+        var pageBreakBefore: Bool?
         var bold: Int?
         var italic: Int?
         var fontSize: Int?
@@ -112,6 +115,7 @@ struct WordStyleSheet {
         if kind == 1, let paragraph = groups.first, paragraph.count >= 2 {
             WordSprm.forEach(in: paragraph.dropFirst(2)) { opcode, operand in
                 if opcode == WordSprm.outlineLevel, let value = operand.first { outlineLevel = Int(value) }
+                if opcode == WordSprm.pageBreakBefore, let value = operand.first { pageBreakBefore = value != 0 }
             }
         }
         // Character properties: the second group of a paragraph style, the
@@ -131,7 +135,8 @@ struct WordStyleSheet {
             outlineLevel: outlineLevel,
             bold: bold,
             italic: italic,
-            fontSize: fontSize
+            fontSize: fontSize,
+            pageBreakBefore: pageBreakBefore
         )
     }
 
@@ -200,6 +205,15 @@ struct WordStyleSheet {
             for style in chain(from: characterStyle).reversed() { value = Self.toggled(value, by: style[keyPath: property]) }
         }
         return Self.toggled(value, by: direct)
+    }
+
+    /// Whether a paragraph in style `index` with the property `direct` (its own
+    /// page-break-before setting, or nil) begins a page: its own setting
+    /// wins, else the style's, else that of the style it is based on, and so
+    /// on, as the DOCX reader reads `w:pageBreakBefore`.
+    func beginsPage(styleIndex index: Int, direct: Bool?) -> Bool {
+        if let direct { return direct }
+        return chain(from: index).lazy.compactMap(\.pageBreakBefore).first ?? false
     }
 
     /// The font size in half-points of text with the paragraph style

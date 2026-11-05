@@ -74,6 +74,8 @@ struct WordDocumentBuilder {
         var bold: Int?
         var italic: Int?
         var fontSize: Int?
+        /// The style's page-break-before setting (0 or 1).
+        var pageBreakBefore: Int?
     }
 
     var paragraphs: [Paragraph] = []
@@ -372,6 +374,7 @@ struct WordDocumentBuilder {
             if style.kind == 1 {
                 var paragraph = Self.le16(index)
                 if let outline = style.outlineLevel { paragraph += Self.modifier(WordSprm.outlineLevel, outline) }
+                if let value = style.pageBreakBefore { paragraph += Self.modifier(WordSprm.pageBreakBefore, value) }
                 std += group(paragraph) + group(characters)
             } else {
                 std += group(characters)
