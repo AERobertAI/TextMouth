@@ -47,7 +47,7 @@ enum OwnDocumentReaders {
         case .doc:
             // Word 97-2003 (.doc and .dot); nil too for a Word 6 or Word 95
             // document, which textutil reads.
-            guard WordDocumentReader.isOn else { return nil }
+            guard WordDocumentReader.isOn, !WordDocumentReader.forcesTextutil else { return nil }
             return try WordDocumentReader.html(of: url, includesPages: includesPages)
         case .odt, .wordml:
             return nil

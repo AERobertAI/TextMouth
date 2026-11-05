@@ -50,7 +50,11 @@ final class WordDocumentComparisonTests: XCTestCase {
     /// chapter the Markdown parses to.
     private func textutilChapter(_ sample: String) throws -> Chapter {
         let copy = try copyOfFormatSample(sample)
-        let markdown = try TextutilDocumentReader.extract(from: copy, bookFormat: .doc, includesPages: true).markdown
+        // The router sends the sample to textutil even when the Mac reads
+        // .doc with the reader.
+        let markdown = try WordDocumentReader.$forcesTextutil.withValue(true) {
+            try TextutilDocumentReader.extract(from: copy, bookFormat: .doc, includesPages: true).markdown
+        }
         return try MarkdownDocParser.parseChapter(markdown: markdown, title: "", includeNavigationHeadings: true)
     }
 
