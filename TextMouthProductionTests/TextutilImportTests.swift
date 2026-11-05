@@ -418,8 +418,12 @@ final class TextutilImportTests: XCTestCase {
         for expected in cases {
             let recorder = TextutilToolRecorder()
             let copy = try copyOfFormatSample(expected.sample)
-            let book = try TextutilConverter.$tool.withValue(recorder.countingTool()) {
-                try importedForTest(copy).book
+            // The rich text samples are textutil's here, whatever reads them
+            // in the app (`OwnDocumentReaders.forcesTextutil`).
+            let book = try OwnDocumentReaders.$forcesTextutil.withValue(true) {
+                try TextutilConverter.$tool.withValue(recorder.countingTool()) {
+                    try importedForTest(copy).book
+                }
             }
             // One HTML conversion makes the text and the names; a second run
             // of textutil writes the plain text that holds the page breaks (PG11).
@@ -440,9 +444,12 @@ final class TextutilImportTests: XCTestCase {
     func testOnlyTheRefreshReadsTextutilNamesApartFromTheText() throws {
         let copy = try copyOfFormatSample("rtf/word-styles.rtf")
         let refresh = TextutilToolRecorder()
-        let read = TextutilDocumentReader.$temporaryRoot.withValue(temporaryRoot) {
-            TextutilConverter.$tool.withValue(refresh.countingTool()) {
-                ImportedFileMetadata.read(from: copy, format: .rtf)
+        // The rich text sample is textutil's here (`OwnDocumentReaders.forcesTextutil`).
+        let read = OwnDocumentReaders.$forcesTextutil.withValue(true) {
+            TextutilDocumentReader.$temporaryRoot.withValue(temporaryRoot) {
+                TextutilConverter.$tool.withValue(refresh.countingTool()) {
+                    ImportedFileMetadata.read(from: copy, format: .rtf)
+                }
             }
         }
         XCTAssertEqual(refresh.outputs.count, 1)
@@ -473,9 +480,13 @@ final class TextutilImportTests: XCTestCase {
         let thrown = thrown
         queue.enqueue {
             do {
-                // The stand-in tool is bound here, on the queue's own thread.
-                _ = try TextutilConverter.$tool.withValue(tool) {
-                    try FileImportService.importFileWithReport(from: url, toFolder: folderPath)
+                // The stand-in tool is bound here, on the queue's own thread,
+                // and so is the rule that sends rich text to textutil, which
+                // these tests exercise (`OwnDocumentReaders.forcesTextutil`).
+                _ = try OwnDocumentReaders.$forcesTextutil.withValue(true) {
+                    try TextutilConverter.$tool.withValue(tool) {
+                        try FileImportService.importFileWithReport(from: url, toFolder: folderPath)
+                    }
                 }
             } catch {
                 thrown.value = error
@@ -664,9 +675,12 @@ final class TextutilImportTests: XCTestCase {
     func testAConversionOutsideAStagedPackageWorksInTheBoundRoot() throws {
         let copy = try copyOfFormatSample("rtf/headings.rtf")
         let recorder = TextutilToolRecorder()
-        let named = try TextutilDocumentReader.$temporaryRoot.withValue(temporaryRoot) {
-            try TextutilConverter.$tool.withValue(recorder.countingTool()) {
-                try TextutilDocumentReader.readMetadata(from: copy, bookFormat: .rtf)
+        // The rich text sample is textutil's here (`OwnDocumentReaders.forcesTextutil`).
+        let named = try OwnDocumentReaders.$forcesTextutil.withValue(true) {
+            try TextutilDocumentReader.$temporaryRoot.withValue(temporaryRoot) {
+                try TextutilConverter.$tool.withValue(recorder.countingTool()) {
+                    try TextutilDocumentReader.readMetadata(from: copy, bookFormat: .rtf)
+                }
             }
         }
         XCTAssertEqual(named.author, "A. Sample")
