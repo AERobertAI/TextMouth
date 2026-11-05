@@ -470,7 +470,7 @@ final class RTFReaderTests: XCTestCase {
         XCTAssertEqual(try body.select("ul").count, 1)
         XCTAssertEqual(try body.select("ol").count, 2)
         XCTAssertEqual(try body.select("ul > li > ol > li").array().map { try $0.text() }, ["Nested number", "Nested number two"])
-        XCTAssertEqual(try body.select("body > ul > li").array().map { try $0.ownText() }, ["Bullet one", "Bullet two"])
+        XCTAssertEqual(try body.select("body > ul > li").array().map { $0.ownText() }, ["Bullet one", "Bullet two"])
         XCTAssertEqual(try body.select("body > ol > li").array().map { try $0.text() }, ["First", "Second"])
         XCTAssertFalse(try body.text().contains("1."), "The numbers are not the items' words")
     }
