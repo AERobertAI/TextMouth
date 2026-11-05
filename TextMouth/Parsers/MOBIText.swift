@@ -52,7 +52,9 @@ enum MOBIText {
 
         let decompress = try decompressor(for: headers)
         var text: [UInt8] = []
-        text.reserveCapacity(declared)
+        // Room for what the records can plausibly hold, never for what the
+        // header merely claims: a hostile header may claim 64 MB of a file of 4 KB.
+        text.reserveCapacity(min(declared, lastTextRecord * 8192))
         for index in 1...lastTextRecord {
             let record = try database.record(index, "A text record")
             let length = try usableLength(of: record, flags: headers.extraDataFlags)
@@ -62,9 +64,13 @@ enum MOBIText {
             if text.count >= declared { break }
         }
         // A book may decompress to a little more than it declares (padding
-        // in its last record): the declared length is the text.
+        // in its last record): the declared length is the text. One that
+        // decompresses to less has lost part of its text, as a download that
+        // stopped short does, and is not read as if it were whole.
         if text.count > declared { text.removeLast(text.count - declared) }
-        guard !text.isEmpty else { throw FileImportError.noTextToRead }
+        guard text.count == declared else {
+            throw MOBIError.damaged("its text records hold \(text.count) bytes of the \(declared) it says the text has")
+        }
         return text
     }
 
