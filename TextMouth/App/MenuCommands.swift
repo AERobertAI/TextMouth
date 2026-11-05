@@ -284,7 +284,9 @@ struct NavigationCommands: Commands {
             }
 
             // Pages (PG02, PG03): available while the key reader's book has
-            // pages. Their keys are the manager's, as the headings' are.
+            // more than one page. Their keys are the manager's, as the
+            // headings' are, and in any other book they say why they move
+            // nothing.
             Button(ShortcutAction.nextPage.title) {
                 NotificationCenter.default.post(name: .nextPage, object: nil)
             }

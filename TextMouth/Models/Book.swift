@@ -46,6 +46,13 @@ enum BookFormat: String, Codable, CaseIterable {
     case daisy
     case pdf
     case audio
+    // A Kindle book (MOBI 6, FMT42), read by TextMouth's own reader
+    // (`MOBIParser`) on the Mac and on iOS. Like every raw value here, written
+    // into the library index and never changed: a TextMouth built before this
+    // case refuses a library that holds a Kindle book, as one built before
+    // the braille case refuses a library that holds a braille book. The
+    // documentation warns the user before they go back to an older build.
+    case mobi
 
     var displayName: String {
         switch self {
@@ -65,6 +72,7 @@ enum BookFormat: String, Codable, CaseIterable {
         case .daisy: return "DAISY"
         case .pdf: return "PDF"
         case .audio: return "Audio"
+        case .mobi: return "Kindle Book (MOBI)"
         }
     }
 
@@ -113,6 +121,10 @@ enum BookFormat: String, Codable, CaseIterable {
         case .audio:
             return ["mp3", "m4a", "m4b", "wav", "aiff", "aif", "flac", "alac", "aac", "ogg", "oga", "opus", "mp4", "m4v", "mov"]
                 + ImportAudioConverter.coreAudioExtensions.sorted()
+        // .prc is a Palm database, which a Kindle book of the first
+        // generation was named, and .azw is an Amazon Kindle book; both are
+        // read by the book's own headers (`MOBIPalmDatabase`), not by the name.
+        case .mobi: return ["mobi", "prc", "azw"]
         }
     }
 
