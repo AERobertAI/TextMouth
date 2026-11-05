@@ -528,6 +528,10 @@ struct RTFInterpreter {
                 try emit(text)
             } else if name == "u" {
                 try handleUnicode(parameter)
+            } else if name == "uc" {
+                // How many characters follow each \u applies wherever text is
+                // read: a title or a list marker can hold \u too.
+                state.unicodeSkip = max(parameter ?? 1, 0)
             } else if state.destination == .body {
                 try readBodyWord(name, parameter)
             }

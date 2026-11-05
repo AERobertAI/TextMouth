@@ -345,6 +345,14 @@ final class RTFReaderTests: XCTestCase {
         XCTAssertTrue(author.contains("<meta name=\"author\" content=\"Ansi Author\">"), author)
     }
 
+    /// \ucN sets how many fallback bytes follow each \u in a title as it does
+    /// in the body: with \uc2 the two bytes of the Shift-JIS fallback are
+    /// skipped, and textutil reads this title as two hiragana.
+    func testUcAppliesInATitle() throws {
+        let html = try rtfHTML(#"{\rtf1\ansi\ansicpg932{\fonttbl{\f0\fcharset128 MS Mincho;}}{\info{\title \uc2\u\#(12354)\'82\'a0\u\#(12356)\'82\'a2}}\f0 Body.\par}"#)
+        XCTAssertTrue(html.contains("<title>\u{3042}\u{3044}</title>"), html)
+    }
+
     /// Body text inside `\upr` is read once: the ANSI branch is read and the
     /// Unicode branch is skipped.
     func testBodyTextInUprIsReadOnce() throws {
