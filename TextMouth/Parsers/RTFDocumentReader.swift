@@ -28,15 +28,10 @@ import Foundation
 enum RTFDocumentReader {
 
     /// Whether this platform reads rich text with this reader: iOS, which has
-    /// no textutil, always; the Mac once the reader has been checked
-    /// against textutil's reading of the same files.
-    static var isOn: Bool {
-        #if os(macOS)
-        false
-        #else
-        true
-        #endif
-    }
+    /// no textutil, always, and the Mac since the reader was checked against
+    /// textutil's reading of every sample (`RTFTextutilComparisonTests`: the
+    /// same words, and at least textutil's headings).
+    static var isOn: Bool { true }
 
     // MARK: Entry points
 
