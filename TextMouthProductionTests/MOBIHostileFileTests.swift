@@ -56,17 +56,19 @@ final class MOBIHostileFileTests: XCTestCase {
     }
 
     /// A book with a contents of three entries, two levels deep.
-    private func contentsBook() -> MOBIFixture {
+    private func contentsBook() throws -> MOBIFixture {
         var fixture = MOBIFixture()
         fixture.html = "<html><body><p>Alpha words here.</p><p>Beta words here.</p><p>Gamma words here.</p></body></html>"
         fixture.recordSize = 60
-        let alpha = fixture.html.utf8.distance(from: fixture.html.startIndex, to: fixture.html.range(of: "<p>Alpha")!.lowerBound)
-        let beta = fixture.html.utf8.distance(from: fixture.html.startIndex, to: fixture.html.range(of: "<p>Beta")!.lowerBound)
-        let gamma = fixture.html.utf8.distance(from: fixture.html.startIndex, to: fixture.html.range(of: "<p>Gamma")!.lowerBound)
+        /// The byte offset in the book's HTML of the paragraph that begins with `needle`.
+        func offset(of needle: String) throws -> Int {
+            let range = try XCTUnwrap(fixture.html.range(of: needle), needle)
+            return fixture.html.utf8.distance(from: fixture.html.startIndex, to: range.lowerBound)
+        }
         fixture.entries = [
-            .init(label: "Alpha", offset: alpha, depth: 0),
-            .init(label: "Beta", offset: beta, depth: 1),
-            .init(label: "Gamma", offset: gamma, depth: 0),
+            .init(label: "Alpha", offset: try offset(of: "<p>Alpha"), depth: 0),
+            .init(label: "Beta", offset: try offset(of: "<p>Beta"), depth: 1),
+            .init(label: "Gamma", offset: try offset(of: "<p>Gamma"), depth: 0),
         ]
         return fixture
     }
@@ -102,9 +104,10 @@ final class MOBIHostileFileTests: XCTestCase {
         }
     }
 
-    func testABookWithAContentsCutAtAnyLengthNeverTraps() {
-        let bytes = contentsBook().data()
-        let firstContentsRecord = MOBIFixture.recordOffsets(of: bytes)[1 + contentsBook().textRecords().count]
+    func testABookWithAContentsCutAtAnyLengthNeverTraps() throws {
+        let book = try contentsBook()
+        let bytes = book.data()
+        let firstContentsRecord = MOBIFixture.recordOffsets(of: bytes)[1 + book.textRecords().count]
         for length in 0..<bytes.count {
             let cut = Array(bytes[0..<length])
             // Cut inside the text or before it, the book is refused; cut in
@@ -234,8 +237,8 @@ final class MOBIHostileFileTests: XCTestCase {
         number32(bytes, at: MOBIFixture.recordOffsets(of: bytes)[0] + 244)
     }
 
-    func testAContentsRecordPointedOutsideTheFileIsRefused() {
-        let bytes = contentsBook().data()
+    func testAContentsRecordPointedOutsideTheFileIsRefused() throws {
+        let bytes = try contentsBook().data()
         let record0 = MOBIFixture.recordOffsets(of: bytes)[0]
         let count = Int(bytes[76]) << 8 | Int(bytes[77])
         // The index's first record: out of the file, at the end, and a record that is not INDX.
@@ -244,8 +247,8 @@ final class MOBIHostileFileTests: XCTestCase {
         }
     }
 
-    func testEveryFieldOfTheContentsPointedPastTheEndIsRefused() {
-        let bytes = contentsBook().data()
+    func testEveryFieldOfTheContentsPointedPastTheEndIsRefused() throws {
+        let bytes = try contentsBook().data()
         let offsets = MOBIFixture.recordOffsets(of: bytes)
         let primary = offsets[indexRecord(of: bytes)]
         let data = offsets[indexRecord(of: bytes) + 1]
@@ -275,8 +278,8 @@ final class MOBIHostileFileTests: XCTestCase {
         assertRefused(longName, "an entry name of 255 bytes")
     }
 
-    func testAnEntryNamingAPlacePastTheTextIsPassedOver() {
-        var fixture = contentsBook()
+    func testAnEntryNamingAPlacePastTheTextIsPassedOver() throws {
+        var fixture = try contentsBook()
         fixture.entries[2].offset = 0x0FFF_FFFF
         XCTAssertNil(read(fixture.data(), "an entry past the end"))
     }
@@ -413,9 +416,9 @@ final class MOBIHostileFileTests: XCTestCase {
         }
     }
 
-    func testFlippedBytesInTheHeadersAndTheContentsOfABuiltBookNeverTrapOrHang() {
+    func testFlippedBytesInTheHeadersAndTheContentsOfABuiltBookNeverTrapOrHang() throws {
         var generator = SeededGenerator(state: 1104)
-        let bytes = contentsBook().data()
+        let bytes = try contentsBook().data()
         for round in 0..<1000 {
             read(flipped(bytes, flips: 1 + round % 4, using: &generator), "built book, round \(round)")
         }

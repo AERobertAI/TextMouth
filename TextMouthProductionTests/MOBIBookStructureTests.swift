@@ -175,6 +175,7 @@ final class MOBIBookStructureTests: XCTestCase {
     func testTopLevelEntriesAreChaptersAndDeeperEntriesAreHeadings() throws {
         let book = try prepared(twoPartBook())
         XCTAssertEqual(book.chapters.map(\.chapter.title), ["Part One", "Part Two"])
+        guard book.chapters.count == 2 else { return XCTFail("chapters: \(book.chapters.map(\.chapter.title))") }
         let first = book.chapters[0].chapter
         XCTAssertEqual(first.headings.map(\.text), ["Part One", "Section A"])
         XCTAssertEqual(first.headings.map(\.level), [1, 2])
@@ -188,7 +189,7 @@ final class MOBIBookStructureTests: XCTestCase {
     func testTheMarkdownKeepsEntriesAsAnnotationsNotWords() throws {
         let book = try prepared(twoPartBook())
         XCTAssertTrue(book.chapters[0].markdown.contains("<!-- textmouth-heading: "))
-        XCTAssertFalse(book.chapters[0].chapter.text.contains("textmouth"))
+        XCTAssertFalse(book.chapters.first?.chapter.text.contains("textmouth") ?? true)
     }
 
     func testWordsBeforeTheFirstEntryAreAChapterOfTheirOwn() throws {
@@ -197,7 +198,7 @@ final class MOBIBookStructureTests: XCTestCase {
         fixture.entries = [.init(label: "The Story", offset: try offset(of: "<p>The story", in: fixture.html))]
         let book = try prepared(fixture)
         XCTAssertEqual(book.chapters.map(\.chapter.title), ["Chapter 1", "The Story"])
-        XCTAssertEqual(spaced(book.chapters[0].chapter.text), "A dedication to the ferry crew.")
+        XCTAssertEqual(spaced(book.chapters.first?.chapter.text ?? ""), "A dedication to the ferry crew.")
     }
 
     func testTwoEntriesAtOnePlaceAreOneChapterAndAnEntryPastTheEndIsPassedOver() throws {
@@ -232,7 +233,7 @@ final class MOBIBookStructureTests: XCTestCase {
         let book = try prepared(fixture)
         // A chapter with a heading of its own takes the heading as its title.
         XCTAssertEqual(book.chapters.map(\.chapter.title), ["Chapter 1", "Second Part", "Chapter 3"])
-        XCTAssertEqual(spaced(book.chapters[1].chapter.text), "Second Part Second words.")
+        XCTAssertEqual(spaced(book.chapters.dropFirst().first?.chapter.text ?? ""), "Second Part Second words.")
         // A page break is a layout break, never a print page.
         XCTAssertTrue(book.chapters.allSatisfy { $0.chapter.pages.isEmpty })
         XCTAssertFalse(book.chapters.contains { $0.markdown.contains("pagebreak") })
@@ -244,7 +245,7 @@ final class MOBIBookStructureTests: XCTestCase {
         fixture.entries = [.init(label: "Everything", offset: try offset(of: "<p>Only", in: fixture.html))]
         let book = try prepared(fixture)
         XCTAssertEqual(book.chapters.map(\.chapter.title), ["Everything"])
-        XCTAssertEqual(spaced(book.chapters[0].chapter.text), "Only chapter words. More words after a break.")
+        XCTAssertEqual(spaced(book.chapters.first?.chapter.text ?? ""), "Only chapter words. More words after a break.")
     }
 
     func testChaptersThatHoldNoWordsAreLeftOut() throws {
@@ -484,7 +485,7 @@ final class MOBIBookStructureTests: XCTestCase {
         ]
         let book = try prepared(fixture)
         XCTAssertEqual(book.chapters.map(\.chapter.title), ["First", "Second"])
-        XCTAssertEqual(spaced(book.chapters[1].chapter.text), "Second Aa part.")
+        XCTAssertEqual(spaced(book.chapters.dropFirst().first?.chapter.text ?? ""), "Second Aa part.")
     }
 
     func testFilesThatAreNotKindleBooksAreRefused() {

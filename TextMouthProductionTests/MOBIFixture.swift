@@ -342,10 +342,9 @@ struct MOBIFixture {
                 append(0x10EF - (0xF0 + Int(byte - 0x41)), 12)
                 position += 2
             } else {
-                // The small code has no codeword for the high bytes; a test that
-                // asks for one has made a mistake, so it is loud.
-                precondition(byte < 0xF0, "the small code writes only bytes below 0xF0")
-                append(Int(byte), 8)
+                // The small code has no codeword for the high bytes, so one is left
+                // out; a test that uses one finds its text changed, and fails.
+                if byte < 0xF0 { append(Int(byte), 8) }
                 position += 1
             }
         }

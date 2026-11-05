@@ -46,6 +46,7 @@ final class MOBIReaderTests: XCTestCase {
             "The Yellow Wallpaper",
             "THE FULL PROJECT GUTENBERG LICENSE",
         ])
+        guard book.chapters.count == 3 else { return XCTFail("chapters: \(book.chapters.map(\.chapter.title))") }
         let story = spaced(book.chapters[1].chapter.text)
         XCTAssertTrue(story.hasPrefix(
             "The Yellow Wallpaper By Charlotte Perkins Gilman It is very seldom that mere ordinary people "
@@ -90,6 +91,7 @@ final class MOBIReaderTests: XCTestCase {
         XCTAssertEqual(book.chapters.map(\.chapter.title), [
             "The Morning Crossing", "Buying a Ticket", "Reading the Timetable", "The Evening Crossing", "Lost Property",
         ])
+        guard book.chapters.count == 5 else { return XCTFail("chapters: \(book.chapters.map(\.chapter.title))") }
         XCTAssertTrue(spaced(book.chapters[0].chapter.text).hasPrefix(
             "The Morning Crossing The first ferry leaves the Tallow Quay at seven and reaches the island before the bakers have finished their loaves."))
         XCTAssertTrue(spaced(book.chapters[1].chapter.text).contains("The hatch opens when the kettle behind it boils."))
@@ -98,6 +100,7 @@ final class MOBIReaderTests: XCTestCase {
 
     func testAnImageWithoutAltTextAddsNoWordsToTheFerryNotes() throws {
         let book = try MOBIParser.prepareBook(url: copyOfFormatSample("mobi/ferry-notes-ncx.mobi"))
+        guard book.chapters.count == 5 else { return XCTFail("chapters: \(book.chapters.map(\.chapter.title))") }
         let last = spaced(book.chapters[4].chapter.text)
         XCTAssertTrue(last.hasSuffix("keys for as long as it takes someone to ask."), last)
     }
