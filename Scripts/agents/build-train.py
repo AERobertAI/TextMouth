@@ -16,6 +16,11 @@ into each build". So agents no longer build on their own:
   posts each agent its result on the message board.
 - A branch that conflicts with the base or with a branch merged before it is
   left out of that train, and its agent is told which files conflicted.
+- When the build fails to compile and every compile error is in a file that
+  some of the merged branches change, the train builds again without those
+  branches, so the others still get their tests, and the branches left out
+  are told their errors (November 4, 2026, after two trains in one evening
+  were lost to one branch's test files).
 - The build and tests run under the Mac's heavy-work lock (heavy_lock.py),
   which Scripts/ios/typecheck.py takes too, so no type-check runs beside a
   train's build. When the merged tree has that script, the train then counts
@@ -253,6 +258,14 @@ def changed_files(base, branch):
     return set(git("diff", "--name-only", f"{base}...{branch}", check=False).stdout.split())
 
 
+def errors_in_branch(errors, base, branch):
+    """The compile errors (summarize's "ERROR …" lines) that name a file `branch`
+    changes since it left `base`. The lines give a file by its name alone, so
+    a name is matched wherever the branch's file is."""
+    names = {Path(path).name for path in changed_files(base, branch)}
+    return [error for error in errors if any(name in error for name in names)]
+
+
 def run_tests(merged, train_dir):
     """Runs the union of the merged requests' areas and classes; returns run-area's
     output. Names the merged tree does not know are left out, and each request
@@ -278,6 +291,47 @@ def run_tests(merged, train_dir):
     output = result.stdout + result.stderr
     (train_dir / "run-summary.txt").write_text(output)
     return output
+
+
+def without_broken_branches(base, train_id, train_dir, merged, conflicts, output):
+    """Builds the train again without the branches that broke its build.
+
+    When the run compiled nothing and every compile error lies in a file that
+    a merged branch changes, the branches whose files hold errors are taken
+    out, and the rest are merged and run again, once. A branch that merged
+    another one, as a reader branch may merge its neighbour to settle a
+    conflict, changes that branch's files too, so it goes with it. Nothing is
+    retried when every branch would go, or when an error lies in a file no
+    branch changes, which the remaining branches might still break.
+
+    The first run's log and summary are kept beside the new ones, as
+    run-with-all.log and run-summary-with-all.txt.
+
+    Returns (merged, conflicts, output, broken): the branches the final run
+    holds, the conflicts with any the second merge met added, the final run's
+    output, and the branches left out, each as (request, its errors)."""
+    _, executed, _, errors, _ = summarize(output)
+    if not errors or executed != "no tests ran":
+        return merged, conflicts, output, []
+    blamed = [(request, errors_in_branch(errors, base, request["branch"])) for request in merged]
+    broken = [(request, mine) for request, mine in blamed if mine]
+    kept = [request for request, mine in blamed if not mine]
+    explained = {error for _, mine in broken for error in mine}
+    if not broken or not kept or explained != set(errors):
+        return merged, conflicts, output, []
+    (train_dir / "run.log").rename(train_dir / "run-with-all.log")
+    (train_dir / "run-summary.txt").rename(train_dir / "run-summary-with-all.txt")
+    prepare_worktree(base, train_id)
+    with open(train_dir / "merge.log", "a") as log:
+        log.write("\n# The build failed to compile in the files of "
+                  + ", ".join(request["branch"] for request, _ in broken)
+                  + "; merging again without them\n")
+        kept, more_conflicts = merge_requests(kept, log)
+    if kept and regenerate_project():
+        git("add", "TextMouth.xcodeproj", cwd=WORKTREE)
+        git("commit", "-q", "-m", f"Regenerate the project for train {train_id}", cwd=WORKTREE)
+    output = run_tests(kept, train_dir) if kept else ""
+    return kept, {**conflicts, **more_conflicts}, output, broken
 
 
 def ios_census(train_dir):
@@ -322,8 +376,10 @@ def failure_class(line):
     return match.group(1) if match else ""
 
 
-def report(train_id, base, merged, conflicts, output, train_dir, census=None):
-    """Writes each agent's result and posts it to them on the board."""
+def report(train_id, base, merged, conflicts, output, train_dir, census=None, broken=()):
+    """Writes each agent's result and posts it to them on the board. `broken`
+    holds the branches without_broken_branches left out, each as (request,
+    the compile errors in its files)."""
     verdict, executed, failures, errors, crashed = summarize(output) if merged else ("NOT RUN", "", [], [], False)
     RESULTS.mkdir(parents=True, exist_ok=True)
     summary = [f"# Train {train_id}", "", f"- Base: {base}",
@@ -339,13 +395,17 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None):
         summary += ["## Failures", *[f"- {f}" for f in failures], ""]
     for agent, (request, files) in conflicts.items():
         summary += [f"## Left out: {request['branch']} ({agent}) conflicts in", *[f"- {f}" for f in files], ""]
+    for request, mine in broken:
+        summary += [f"## Left out: {request['branch']} ({request['agent']}) broke the first build, which then "
+                    f"ran again without it (log: {train_dir / 'run-with-all.log'})",
+                    *[f"- {e}" for e in mine], ""]
     (train_dir / "summary.md").write_text("\n".join(summary))
 
     for request in merged:
         agent = request["agent"]
         mine = [f for f in failures if failure_class(f) in request["classes"]]
         touched = changed_files(base, request["branch"])
-        my_errors = [e for e in errors if any(path in e for path in {Path(t).name for t in touched})]
+        my_errors = errors_in_branch(errors, base, request["branch"])
         lines = [f"# {agent}: train {train_id}", "", f"- Your branch: {request['branch']} at {request['head'][:8]}",
                  f"- Verdict of the whole train: {verdict}", f"- {executed}",
                  f"- Failures in the classes you asked for: {len(mine)}", *[f"  - {f}" for f in mine],
@@ -372,6 +432,16 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None):
             "- Rebase it onto the base, or ask the orchestrator, then request again.\n")
         post(agent, f"train {train_id}: {request['branch']} LEFT OUT; see {short_path(RESULTS / (agent + '.md'))}; "
                     f"conflicts in {', '.join(Path(f).name for f in files)}")
+    for request, mine in broken:
+        agent = request["agent"]
+        (RESULTS / f"{agent}.md").write_text(
+            f"# {agent}: train {train_id}\n\n- Your branch: {request['branch']} at {request['head'][:8]}\n"
+            f"- The train's first build failed to compile, with errors in files your branch changes, so it was "
+            f"built and tested again without your branch:\n" + "".join(f"  - {e}\n" for e in mine) +
+            f"- The first build's log: {train_dir / 'run-with-all.log'}\n"
+            "- Fix the errors, then request again.\n")
+        post(agent, f"train {train_id}: {request['branch']} LEFT OUT, {len(mine)} compile errors in your files; "
+                    f"see {short_path(RESULTS / (agent + '.md'))}")
     print("\n".join(summary))
 
 
@@ -399,7 +469,7 @@ def command_run(args):
         if merged and regenerate_project():
             git("add", "TextMouth.xcodeproj", cwd=WORKTREE)
             git("commit", "-q", "-m", f"Regenerate the project for train {train_id}", cwd=WORKTREE)
-        output, census = "", None
+        output, census, broken = "", None, []
         if merged:
             def waiting(owner):
                 post("orchestrator", f"build-train: train {train_id} waits for the heavy-work lock, held by "
@@ -407,8 +477,10 @@ def command_run(args):
             # The train is the priority: after 20 minutes it goes on without the lock.
             with heavy_lock.held("build-train", 1200, waiting):
                 output = run_tests(merged, train_dir)
+                merged, conflicts, output, broken = without_broken_branches(
+                    args.base, train_id, train_dir, merged, conflicts, output)
                 census = ios_census(train_dir)
-        report(train_id, args.base, merged, conflicts, output, train_dir, census)
+        report(train_id, args.base, merged, conflicts, output, train_dir, census, broken)
     finally:
         release_lock()
     return 0
