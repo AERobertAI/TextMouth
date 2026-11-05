@@ -191,7 +191,7 @@ final class RTFReaderTests: XCTestCase {
         try Data().write(to: empty)
         XCTAssertThrowsError(try RTFDocumentReader.html(of: empty, as: .rtf, includesPages: true)) { error in
             // The wording an empty file has when textutil reads it.
-            XCTAssertEqual(error as? FileImportError, .noTextToRead)
+            XCTAssertEqual(error.localizedDescription, FileImportError.noTextToRead.localizedDescription)
         }
         // Rich text with no words is read: the import decides what it holds.
         let blank = folder.appendingPathComponent("blank.rtf")
