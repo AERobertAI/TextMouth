@@ -700,6 +700,8 @@ enum MarkdownCacheService {
             )
         case .daisy:
             markdown = try DAISYParser.extractMarkdown(from: url, includesPages: includesPages)
+        case .mobi:
+            return try extractFromMOBI(url: url)
         case .pdf:
             // The report says how each page was read and names any page
             // whose pictures OCR could not read, so an import warns and
@@ -722,6 +724,19 @@ enum MarkdownCacheService {
             "\(chapterMarker(title: prepared.chapter.title))\n\(prepared.markdown)"
         }.joined(separator: "\n\n")
         return ExtractedCache(markdown: markdown, chapters: book.chapters.map(\.chapter), report: book.report)
+    }
+
+    /// A Kindle book (FMT42), read by `MOBIParser`: chapter markers preserve
+    /// the contents' chapters, and heading annotations its deeper entries,
+    /// without inserting any extra text into the book, as an EPUB's do. A
+    /// MOBI book has no print pages, so none are written whatever
+    /// `includesPages` says.
+    private static func extractFromMOBI(url: URL) throws -> ExtractedCache {
+        let book = try MOBIParser.prepareBook(url: url)
+        let markdown = book.chapters.map { prepared in
+            "\(chapterMarker(title: prepared.chapter.title))\n\(prepared.markdown)"
+        }.joined(separator: "\n\n")
+        return ExtractedCache(markdown: markdown, chapters: book.chapters.map(\.chapter))
     }
 
     // MARK: - Multi-Chapter Markdown Parsing

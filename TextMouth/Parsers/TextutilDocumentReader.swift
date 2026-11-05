@@ -15,7 +15,7 @@ extension TextutilInputFormat {
         case .doc: self = .doc
         case .odt: self = .odt
         case .wordml: self = .wordml
-        case .epub, .txt, .markdown, .html, .webarchive, .ssml, .docx, .braille, .daisy, .pdf, .audio: return nil
+        case .epub, .txt, .markdown, .html, .webarchive, .ssml, .docx, .braille, .daisy, .pdf, .audio, .mobi: return nil
         }
     }
 }
@@ -153,6 +153,10 @@ enum TextutilDocumentReader {
         /// Whether pages were asked for and the plain-text run failed or was
         /// stopped (PG16).
         var pageRunFailed = false
+        /// True for HTML that TextMouth's own reader made
+        /// (`OwnDocumentReaders`), whose headings, lists, and page breaks
+        /// are in its markup already, so nothing is restored or lined up.
+        var isOwnReading = false
     }
 
     /// How a document is read, decided from its first bytes
@@ -213,6 +217,12 @@ enum TextutilDocumentReader {
             throw PasswordProtectedDocument()
         case .rtf, .rtfd, .doc, .odt, .wordml:
             break
+        }
+
+        // A format this platform reads with TextMouth's own reader never
+        // reaches textutil (`OwnDocumentReaders`).
+        if let own = try OwnDocumentReaders.html(of: url, as: format, includesPages: includesPages) {
+            return Source(html: own, isOwnReading: true)
         }
 
         return try withWorkingFolder(for: url) { folder in
@@ -300,6 +310,15 @@ enum TextutilDocumentReader {
         fileName: String,
         includesPages: Bool
     ) throws -> String {
+        // TextMouth's own reader wrote its structure and its pages into its
+        // markup, so its HTML goes to the shared converter as it is.
+        guard !source.isOwnReading else {
+            return try HTMLToMarkdownConverter.convert(
+                document: document,
+                readingFlow: PublicationSemantics.ReadingFlow(source: source.html),
+                includesPages: includesPages
+            )
+        }
         // The page breaks go in while the field instructions are still in the
         // text, as the plain text holds them too (ST10); see
         // `TextutilHTMLStructure.restore(in:beforeFieldRemoval:)`.

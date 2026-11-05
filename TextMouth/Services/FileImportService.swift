@@ -226,7 +226,7 @@ struct ImportedFileMetadata {
     /// Markdown, or HTML file keeps no title or author it reads.
     static func readsFile(of format: BookFormat) -> Bool {
         switch format {
-        case .epub, .docx, .rtf, .rtfd, .doc, .odt, .wordml, .braille, .pdf, .daisy, .audio: return true
+        case .epub, .docx, .rtf, .rtfd, .doc, .odt, .wordml, .braille, .pdf, .daisy, .audio, .mobi: return true
         case .txt, .markdown, .html, .webarchive, .ssml: return false
         }
     }
@@ -292,6 +292,14 @@ struct ImportedFileMetadata {
             // Title and author from the document's attributes.
             if let attributes = PDFTextParser.readMetadata(from: url) {
                 adopt(title: attributes.title, author: attributes.author)
+            }
+        case .mobi:
+            // Title and author from the book's EXTH records, or its header
+            // (FMT42). Reading metadata never fails an import, so a book
+            // that is protected or cannot be read keeps the defaults and the
+            // import's own reading of the text fails with its sentence.
+            if let named = try? MOBIParser.readMetadata(url: url) {
+                adopt(title: named.title, author: named.author)
             }
         case .daisy:
             // Title and author from the OPF or ncc.html.
@@ -2848,6 +2856,9 @@ enum FileImportService {
         // always offers .ssml.
         types.append(.webArchive)
         types.append(UTType(importedAs: "org.w3.ssml", conformingTo: .xml))
+        // Kindle books (FMT42): .mobi, .prc, and .azw, for which macOS
+        // declares no type; the app imports one in Info.plist.
+        types.append(UTType(importedAs: "com.textmouth.mobi", conformingTo: .data))
         // Braille files (FMT20): BRF and BRL, which macOS declares no type
         // for, and PEF, which macOS takes for a Pentax raw photo by its
         // extension; the import tells them apart by their contents.
