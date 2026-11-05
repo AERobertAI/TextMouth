@@ -1,0 +1,13 @@
+# TextMouth document golden, format 2
+file: doc__libreoffice-tdf95576.doc
+macOS: 26.3
+format: doc
+title: libreoffice-tdf95576
+author: Microsoft account
+chapters: 1
+words: 88
+text length: 431
+text checksum: 5e3126fb60ef371f
+first 300: Here is a heading created in Word 2013 with the “Heading 1” style with very many words in it so that it overflows to the next line\n\nHere is a subheading with the “Heading 2” style which also has quite a lot of words in it so that it too overflows to the next line\n\nThis is a subsubheading with the “H
+last 300: \nHere is a subheading with the “Heading 2” style which also has quite a lot of words in it so that it too overflows to the next line\n\nThis is a subsubheading with the “Heading 3” style and I need to think of more words to write here – there that is enough\n\nNone of the lines above should be indented.
+page: 1 | 0:0 | Here is a heading create

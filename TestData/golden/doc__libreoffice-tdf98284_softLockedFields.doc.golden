@@ -1,0 +1,13 @@
+# TextMouth document golden, format 2
+file: doc__libreoffice-tdf98284_softLockedFields.doc
+macOS: 26.3
+format: doc
+title: Imaginative title
+author: Justin
+chapters: 1
+words: 24
+text length: 190
+text checksum: e6d22c716c3562e2
+first 300: Title:  TITLE   \\* MERGEFORMAT Untitled\n\nSave Date:  SAVEDATE   \\* MERGEFORMAT recently\n\nSaved by user:  LASTSAVEDBY   \\* MERGEFORMAT Justin\n\nPrint Date:  PRINTDATE   \\* MERGEFORMAT recently
+last 300: Title:  TITLE   \\* MERGEFORMAT Untitled\n\nSave Date:  SAVEDATE   \\* MERGEFORMAT recently\n\nSaved by user:  LASTSAVEDBY   \\* MERGEFORMAT Justin\n\nPrint Date:  PRINTDATE   \\* MERGEFORMAT recently
+page: 1 | 0:0 | Title:  TITLE   \\* MERGE
