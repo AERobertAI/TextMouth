@@ -58,7 +58,12 @@ enum OwnDocumentReaders {
         case .rtf, .rtfd:
             guard RTFDocumentReader.isOn else { return nil }
             return try RTFDocumentReader.html(of: url, as: format, includesPages: includesPages)
-        case .doc, .odt, .wordml:
+        case .doc:
+            // Word 97-2003 (.doc and .dot); nil too for a Word 6 or Word 95
+            // document, which textutil reads.
+            guard WordDocumentReader.isOn else { return nil }
+            return try WordDocumentReader.html(of: url, includesPages: includesPages)
+        case .odt, .wordml:
             return nil
         }
     }
