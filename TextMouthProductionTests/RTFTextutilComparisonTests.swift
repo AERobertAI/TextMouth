@@ -167,6 +167,23 @@ final class RTFTextutilComparisonTests: XCTestCase {
 
     // MARK: - Routing
 
+    /// The test hook sends rich text, files and packages alike, to textutil
+    /// whatever the reader's switch says, and changes nothing when false.
+    func testTheTestHookSendsRichTextToTextutil() throws {
+        let file = try copyOfFormatSample("rtf/headings.rtf")
+        let package = try copyOfFormatSample("rtfd/headings.rtfd")
+        XCTAssertFalse(OwnDocumentReaders.forcesTextutil)
+        let forced = try OwnDocumentReaders.$forcesTextutil.withValue(true) {
+            (
+                try OwnDocumentReaders.html(of: file, as: .rtf, includesPages: false),
+                try OwnDocumentReaders.html(of: package, as: .rtfd, includesPages: false)
+            )
+        }
+        XCTAssertNil(forced.0)
+        XCTAssertNil(forced.1)
+        XCTAssertFalse(OwnDocumentReaders.forcesTextutil)
+    }
+
     /// A file named .doc whose bytes are RTF is read by the RTF reader, and
     /// the router hands rich text to it exactly where the switch is on.
     func testAnRTFNamedDocIsReadAsRTF() throws {

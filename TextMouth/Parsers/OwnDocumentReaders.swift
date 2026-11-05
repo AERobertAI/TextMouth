@@ -33,12 +33,26 @@ import Foundation
 /// Each reader adds its format to `html(of:as:includesPages:)`, behind a
 /// switch of its own that is on for iOS and, once checked, for the Mac.
 enum OwnDocumentReaders {
+    /// Whether the router sends every format to textutil, whatever the own
+    /// readers' switches say. It exists only for the tests that pin
+    /// textutil's own behaviour with the format samples (its second run for
+    /// pages, its one run per import, its refusal wording, the cancelling of
+    /// its child): they bind it with
+    /// `OwnDocumentReaders.$forcesTextutil.withValue(true)`, so that they go
+    /// on testing textutil now that an own reader reads the samples. Like
+    /// `DocumentByteLimit.$current` it is read on the caller's thread, where
+    /// the route is decided, before any hop. Nothing else sets it, and false
+    /// changes nothing.
+    @TaskLocal static var forcesTextutil = false
+
     /// The HTML document TextMouth's own reader makes of the file at `url`,
     /// read as `format` (the format its bytes showed, which can differ from
     /// its name's: `TextutilDocumentReader`'s first step), or nil when this
     /// platform reads `format` with textutil.
     /// - Throws: what the format's reader throws for a file it cannot read.
     static func html(of url: URL, as format: TextutilInputFormat, includesPages: Bool) throws -> String? {
+        // The tests that pin textutil's behaviour read everything with it.
+        guard !forcesTextutil else { return nil }
         switch format {
         // A format read with TextMouth's own reader returns its HTML here.
         case .rtf, .rtfd:
