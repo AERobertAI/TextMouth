@@ -16,11 +16,14 @@ enum RTFEncodings {
     static let windows1252 = 1252
 
     /// The code page each `\fcharsetN` of the font table names, for the
-    /// character sets that have one of their own. Character sets 0 (ANSI),
-    /// 1 (default), and 2 (symbol) name none: the text keeps the document's
-    /// code page, as Apple's writer, which gives every font `\fcharset0`,
-    /// needs.
+    /// character sets that have one of their own. Character set 0 (ANSI) is
+    /// Windows-1252 whatever `\ansicpg` says: that is how Windows defines
+    /// ANSI_CHARSET, and it is how Word, LibreOffice, and textutil read a
+    /// font marked so, even in a document whose default is another code page.
+    /// Character sets 1 (default) and 2 (symbol) name none, so the text keeps
+    /// the document's code page.
     private static let codePageOfCharset: [Int: Int] = [
+        0: 1252,     // ANSI
         77: 10000,   // Mac Roman
         128: 932,    // Shift-JIS
         129: 949,    // Korean (Hangul)

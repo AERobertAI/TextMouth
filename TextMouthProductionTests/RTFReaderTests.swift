@@ -235,6 +235,20 @@ final class RTFReaderTests: XCTestCase {
         XCTAssertEqual(try rtfBody(mac).text(), "Café")
     }
 
+    /// A font marked \fcharset0 (ANSI) is Windows-1252 even in a document
+    /// whose \ansicpg is another, as textutil reads it (0xE9 is é); a font
+    /// marked \fcharset1 (default) keeps the document's code page (0xE9 is
+    /// the Cyrillic й of Windows-1251).
+    func testFcharset0IsWindows1252AndFcharset1IsTheDocumentsCodePage() throws {
+        let ansi = try rtfHTML(#"{\rtf1\ansi\ansicpg1251{\fonttbl{\f0\fnil\fcharset0 Times;}}\f0 x\'e9x\par}"#)
+        XCTAssertEqual(try rtfBody(ansi).text(), "x\u{E9}x")
+        let standard = try rtfHTML(#"{\rtf1\ansi\ansicpg1251{\fonttbl{\f0\fnil\fcharset1 Times;}}\f0 x\'e9x\par}"#)
+        XCTAssertEqual(try rtfBody(standard).text(), "x\u{439}x")
+        // A document that never marks its font is the document's code page.
+        let unmarked = try rtfHTML(#"{\rtf1\ansi\ansicpg1251{\fonttbl{\f0\fnil Times;}}\f0 x\'e9x\par}"#)
+        XCTAssertEqual(try rtfBody(unmarked).text(), "x\u{439}x")
+    }
+
     /// The two bytes of a Shift-JIS character make one character.
     func testDoubleByteCharactersAreDecodedTogether() throws {
         let html = try rtfHTML(#"{\rtf1\ansi\ansicpg932\deff0{\fonttbl{\f0\fcharset128 MS Mincho;}}\f0 \'82\'a0\'82\'a2\par}"#)
