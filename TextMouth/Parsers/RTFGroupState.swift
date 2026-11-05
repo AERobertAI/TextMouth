@@ -11,6 +11,10 @@ enum RTFDestination: Equatable {
     /// Read by nobody: pictures, objects, headers, footers, footnotes,
     /// field instructions, and every `\*` destination not known here.
     case skipped
+    /// A picture or file that Cocoa's writer attaches to the text
+    /// (`\NeXTGraphic`, `\NeXTPlainFile`): read by nobody, and followed in
+    /// the text around it by one character that stands for it.
+    case attachment
     /// The font table, read for its fonts' character sets.
     case fontTable
     /// The style sheet, whose groups are style definitions.
@@ -29,6 +33,12 @@ enum RTFDestination: Equatable {
     /// read only to learn which kind of list it is, and never read aloud.
     case listText
 
+    /// Whether the text of the destination is read by nobody: skipped
+    /// groups and attachments.
+    var isUnread: Bool {
+        self == .skipped || self == .attachment
+    }
+
     /// The destination the control word `name` starts when it is the first
     /// word of a group (or follows `\*`), or nil for a word that is not a
     /// destination.
@@ -42,7 +52,8 @@ enum RTFDestination: Equatable {
             "rtf": .body, "field": .body, "fldrslt": .body, "ud": .body,
             "fonttbl": .fontTable, "stylesheet": .styleSheet, "info": .info,
             "listtable": .listTable, "listoverridetable": .listTable,
-            "listtext": .listText, "pntext": .listText
+            "listtext": .listText, "pntext": .listText,
+            "NeXTGraphic": .attachment, "NeXTPlainFile": .attachment
         ]
         // Destinations that hold nothing a listener should hear.
         let skippedNames = [

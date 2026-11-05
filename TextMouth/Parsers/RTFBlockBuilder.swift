@@ -70,6 +70,13 @@ struct RTFBlockBuilder {
     private var sectionStartsPage = true
     /// Whether the paragraph being read already counted its `\pagebb`.
     private var paragraphBreakCounted = false
+    /// Whether the document has had a letter or a digit yet. A paragraph
+    /// that begins a page (`\pagebb`, or a style with it) before any words
+    /// begins the document's first page, which is page 1 already: Word's
+    /// chapter styles all begin a page, and the first chapter must not make
+    /// a blank page of its own. (A hard `\page` or `\sect` at the start does,
+    /// as it does in Word and in textutil's plain text.)
+    private var hasCountedText = false
 
     /// The room a run or a paragraph is charged beyond its words.
     private static let runAllowance: Int64 = 16
@@ -115,6 +122,7 @@ struct RTFBlockBuilder {
             remaining = remaining[split...]
         }
         add(String(remaining), bold: bold, italic: italic, size: size)
+        if !hasCountedText { hasCountedText = text.unicodeScalars.contains(where: TextutilPageBreaks.isCounted) }
     }
 
     /// The index of the first letter or digit in `text`, or nil.
@@ -147,6 +155,20 @@ struct RTFBlockBuilder {
         }
     }
 
+    /// If the paragraph so far is a bullet character alone (the way writers
+    /// that have no list write one: a bullet, a tab, and the item's words),
+    /// takes it out of the paragraph and returns it; otherwise leaves the
+    /// paragraph as it is and returns nil.
+    /// - Parameter bullets: the characters that are bullets.
+    mutating func takeBulletMark(from bullets: Set<Character>) -> String? {
+        closeRun()
+        guard paragraph.inlines.count == 1, case .text(let text, _, _, _) = paragraph.inlines[0] else { return nil }
+        let mark = text.trimmingCharacters(in: .whitespaces)
+        guard mark.count == 1, let character = mark.first, bullets.contains(character) else { return nil }
+        paragraph = RTFParagraph()
+        return mark
+    }
+
     /// `\line`: a line break inside the paragraph.
     mutating func appendLineBreak() {
         closeRun()
@@ -166,7 +188,7 @@ struct RTFBlockBuilder {
     mutating func addParagraphPageBreak() {
         guard !paragraphBreakCounted else { return }
         paragraphBreakCounted = true
-        addPageBreak()
+        if hasCountedText { addPageBreak() }
     }
 
     /// `\sect`: a section ends. Whether the next one begins a page is known

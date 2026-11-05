@@ -210,7 +210,7 @@ struct RTFInterpreter {
             // A group inside a style (such as `\*\keycode`) is not read.
             state.destination = .skipped
             groupJustStarted = false
-        case .skipped:
+        case .skipped, .attachment:
             groupJustStarted = false
         default:
             break
@@ -236,7 +236,7 @@ struct RTFInterpreter {
     /// when the word is not a destination there. After `\*`, a word that is
     /// not known starts a skipped destination.
     private func destination(named name: String, starred: Bool) -> RTFDestination? {
-        if state.destination == .skipped { return nil }
+        if state.destination.isUnread { return nil }
         if state.destination == .info {
             // Only the title and the author are read of the info group.
             switch name {
@@ -275,6 +275,9 @@ struct RTFInterpreter {
             listTable.finish()
         case .styleEntry:
             finishStyle()
+        case .attachment:
+            // The one character after an attachment stands for it.
+            pendingSkip = 1
         default:
             break
         }
@@ -299,9 +302,7 @@ struct RTFInterpreter {
     /// A run of text bytes. ASCII goes straight to the output; other bytes
     /// wait to be decoded together in the code page that applies.
     private mutating func handleText(_ range: Range<Int>) throws {
-        guard state.destination != .skipped, state.destination != .fontTable,
-              state.destination != .styleSheet, state.destination != .listTable,
-              state.destination != .info else {
+        guard !isIgnoringText else {
             flushBytes()
             return
         }
@@ -352,7 +353,7 @@ struct RTFInterpreter {
     /// Whether the text of this group is read by nothing.
     private var isIgnoringText: Bool {
         switch state.destination {
-        case .skipped, .fontTable, .styleSheet, .listTable, .info: return true
+        case .skipped, .attachment, .fontTable, .styleSheet, .listTable, .info: return true
         default: return false
         }
     }
@@ -399,13 +400,18 @@ struct RTFInterpreter {
     }
 
     /// `text` with the characters a reading should not hold made safe: each
-    /// control character is a space (a tab, a form feed) or nothing (NUL),
-    /// so the words around it stay apart.
+    /// control character is a space (a tab, a form feed), so the words
+    /// around it stay apart, and NUL, DEL, and the character that stands for
+    /// a picture (U+FFFC) are nothing.
     private static func readable(_ text: String) -> String {
-        guard text.unicodeScalars.contains(where: { $0.value < 0x20 || $0.value == 0x7F }) else { return text }
+        let objectReplacement: UInt32 = 0xFFFC
+        guard text.unicodeScalars.contains(where: { $0.value < 0x20 || $0.value == 0x7F || $0.value == objectReplacement }) else {
+            return text
+        }
         var cleaned = String.UnicodeScalarView()
         for scalar in text.unicodeScalars {
-            if scalar.value == 0 || scalar.value == 0x7F {
+            // NUL, DEL, and the character that stands for a picture are not words.
+            if scalar.value == 0 || scalar.value == 0x7F || scalar.value == objectReplacement {
                 continue
             } else if scalar.value < 0x20 {
                 cleaned.append(" ")
@@ -485,7 +491,7 @@ struct RTFInterpreter {
     /// A control word, by where it stands.
     private mutating func handleWord(_ name: String, _ parameter: Int?) throws {
         switch state.destination {
-        case .skipped, .styleSheet, .info:
+        case .skipped, .attachment, .styleSheet, .info:
             return
         case .fontTable:
             readFontWord(name, parameter)
@@ -494,7 +500,12 @@ struct RTFInterpreter {
         case .listTable:
             readListWord(name, parameter)
         case .body, .listText, .title, .author:
-            if let text = Self.characters[name] {
+            if name == "tab", state.destination == .body,
+               let bullet = builder.takeBulletMark(from: TextutilHTMLStructure.bulletCharacters) {
+                // A bullet and a tab begin a list item, as writers without
+                // lists write one (and as textutil's reading finds them).
+                listMarker = bullet
+            } else if let text = Self.characters[name] {
                 try emit(text)
             } else if name == "u" {
                 try handleUnicode(parameter)
