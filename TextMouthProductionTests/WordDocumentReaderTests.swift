@@ -205,8 +205,23 @@ final class WordDocumentReaderTests: XCTestCase {
         XCTAssertEqual(body, "<p>Before</p>\n<ul>\n<li>first item</li>\n<li>second item</li>\n</ul>\n<p>After</p>\n<ul>\n<li>third</li>\n</ul>\n")
     }
 
-    func testADashOrABulletWithNoSpaceIsNotAListItem() throws {
-        XCTAssertEqual(try wideBody([Paragraph("- a dash"), Paragraph("•glued"), Paragraph("•")]), "<p>- a dash</p>\n<p>•glued</p>\n<p>•</p>\n")
+    func testADashOrAnAsteriskIsABulletOnlyBeforeATab() throws {
+        // Dialogue that begins with a dash and a space stays a paragraph, as in textutil's rule.
+        XCTAssertEqual(
+            try wideBody([Paragraph("– Hello, she said."), Paragraph("- again"), Paragraph("* star")]),
+            "<p>– Hello, she said.</p>\n<p>- again</p>\n<p>* star</p>\n"
+        )
+        XCTAssertEqual(
+            try wideBody([Paragraph("–\tone"), Paragraph("-\ttwo"), Paragraph("*\tthree")]),
+            "<ul>\n<li>one</li>\n<li>two</li>\n<li>three</li>\n</ul>\n"
+        )
+    }
+
+    func testABulletGlyphMayBeFollowedByATabOrASpaceButNotByNothing() throws {
+        XCTAssertEqual(
+            try wideBody([Paragraph("•\ttab"), Paragraph("• space"), Paragraph("•glued"), Paragraph("•")]),
+            "<ul>\n<li>tab</li>\n<li>space</li>\n</ul>\n<p>•glued</p>\n<p>•</p>\n"
+        )
     }
 
     func testAListItemKeepsItsEmphasisAndItsPage() throws {

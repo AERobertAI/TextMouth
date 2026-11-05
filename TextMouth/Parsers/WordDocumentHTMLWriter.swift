@@ -69,6 +69,11 @@ struct WordHTMLWriter {
     private var paragraphCensus = WordCharacterCensus()
     private var paragraphLength = 0
     private var paragraphFirst: Unicode.Scalar = " "
+    /// Whether the white space that came right after its first character
+    /// began with a tab: what a bullet needs, if the bullet is a dash.
+    private var firstIsFollowedByTab = false
+    /// Whether the white space waiting to be written began with a tab.
+    private var pendingWhitespaceIsTab = false
     /// White space met since the last character that is not, written when
     /// the next one comes (and dropped at the paragraph's end), so that it
     /// falls outside the emphasis that begins or ends there.
@@ -79,8 +84,6 @@ struct WordHTMLWriter {
     /// The emphasis tags now open.
     private var boldIsOpen = false
     private var italicIsOpen = false
-    /// The last paragraph format seen, which the text after the last mark takes.
-    private var lastParagraphFormat = WordParagraphFormat()
 
     // Caches of the last answers, since most characters ask what the one before did.
     private var headingCache: (format: WordParagraphFormat, level: Int?)?
@@ -197,8 +200,11 @@ struct WordHTMLWriter {
             if sections.endsSection(at: position) { try endParagraph(mark: unit, at: position) }
         case 0x0B:
             addLineBreak()
-        case 0x09, 0x0E:
-            // A tab or a column break reads as white space.
+        case 0x09:
+            // A tab reads as white space; whether it was a tab matters to a bullet.
+            addWhitespace(" ", isTab: true)
+        case 0x0E:
+            // A column break reads as white space.
             addWhitespace(" ")
         case 0x1E:
             // A non-breaking hyphen.
@@ -236,7 +242,10 @@ struct WordHTMLWriter {
         if paragraphHasText { paragraph += pendingWhitespace }
         if !pendingWhitespace.isEmpty {
             previousWasSpace = true
-            if paragraphHasText { paragraphLength += 1 }
+            if paragraphHasText {
+                if paragraphLength == 1 { firstIsFollowedByTab = pendingWhitespaceIsTab }
+                paragraphLength += 1
+            }
         }
         pendingWhitespace = ""
         if TextutilPageBreaks.isCounted(scalar) {
@@ -262,8 +271,10 @@ struct WordHTMLWriter {
     /// Notes white space, written when the next character that is not white
     /// space comes. A run of it is kept as its first scalar: HTML reads it as
     /// one space, and the shared converter collapses it.
-    private mutating func addWhitespace(_ scalar: Unicode.Scalar) {
-        if pendingWhitespace.isEmpty { pendingWhitespace.unicodeScalars.append(scalar) }
+    private mutating func addWhitespace(_ scalar: Unicode.Scalar, isTab: Bool = false) {
+        guard pendingWhitespace.isEmpty else { return }
+        pendingWhitespace.unicodeScalars.append(scalar)
+        pendingWhitespaceIsTab = isTab
     }
 
     /// Writes the empty page-break spans of the pages that begin here. Where
@@ -298,12 +309,10 @@ struct WordHTMLWriter {
 
     // MARK: Paragraphs
 
-    /// The format of the paragraph that holds `position`, remembered as the
-    /// format of the text after the last mark.
+    /// The format of the paragraph that holds `position`. It moves the
+    /// cursor forward, as every position asked for is at or after the last.
     private mutating func currentParagraphFormat(at position: Int) -> WordParagraphFormat {
-        let format = paragraphs.format(at: position) ?? WordParagraphFormat()
-        lastParagraphFormat = format
-        return format
+        paragraphs.format(at: position) ?? WordParagraphFormat()
     }
 
     /// The heading level of a paragraph with `format`, or nil.
@@ -357,6 +366,9 @@ struct WordHTMLWriter {
         let census = paragraphCensus
         let length = paragraphLength
         let startsWithLetter = paragraphFirst.properties.isAlphabetic
+        let first = paragraphFirst
+        let tabAfterFirst = firstIsFollowedByTab
+        firstIsFollowedByTab = false
         paragraph = ""
         paragraphHasText = false
         paragraphCensus = WordCharacterCensus()
@@ -399,7 +411,7 @@ struct WordHTMLWriter {
                 } else {
                     // A paragraph short enough to be a heading by its size or
                     // weight, if the document has no real headings.
-                    if let item = Self.bulletItem(in: content) {
+                    if let item = Self.bulletItem(in: content, first: first, followedByTab: tabAfterFirst) {
                         write("<li>" + item + "</li>\n", isListItem: true)
                     } else {
                         write("<p>" + content + "</p>\n")
@@ -429,17 +441,22 @@ struct WordHTMLWriter {
         outputSize += block.utf8.count
     }
 
-    /// The glyphs that begin a bulleted paragraph when white space follows.
-    /// The hyphen, the en dash, and the asterisk are left out: a paragraph
-    /// may begin with them for other reasons.
-    private static let bulletGlyphs: Set<Character> = ["•", "◦", "▪", "▫", "‣", "⁃", "∙", "●", "○", "■", "□"]
+    /// The characters that begin a bullet only before a tab, as in textutil's
+    /// rule: a line of dialogue may begin with a dash and a space.
+    private static let bulletsNeedingATab: Set<Character> = ["–", "-", "*"]
 
     /// The inline HTML of the paragraph `content` without its bullet, when
-    /// the paragraph begins with a bullet glyph and a space (a tab, after
-    /// white space is read as one space); nil when it does not. Word writes
-    /// a typed bullet as the glyph, a tab, and the words.
-    private static func bulletItem(in content: String) -> String? {
-        guard let first = content.first, bulletGlyphs.contains(first) else { return nil }
+    /// the paragraph begins with one of textutil's bullet characters
+    /// (`TextutilHTMLStructure.bulletCharacters`) and white space; nil when
+    /// it does not. Word writes a typed bullet as the character, a tab, and
+    /// the words. A dash or an asterisk is a bullet only before a tab
+    /// (`followedByTab`); a bullet glyph may be followed by a space too.
+    /// - Parameter first: the paragraph's first character.
+    private static func bulletItem(in content: String, first: Unicode.Scalar, followedByTab: Bool) -> String? {
+        let bullet = Character(first)
+        guard TextutilHTMLStructure.bulletCharacters.contains(bullet),
+              !bulletsNeedingATab.contains(bullet) || followedByTab,
+              content.first == bullet else { return nil }
         let rest = content.dropFirst()
         guard rest.first == " " else { return nil }
         let item = rest.drop { $0 == " " }
