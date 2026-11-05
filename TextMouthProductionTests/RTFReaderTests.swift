@@ -610,6 +610,64 @@ final class RTFReaderTests: XCTestCase {
         XCTAssertTrue(html.contains("<h1><span role=\"doc-pagebreak\" aria-label=\"2\"></span>Second</h1>"), html)
     }
 
+    // MARK: - The Direct Reader and the Cache (B13)
+
+    /// A place saved in the direct read (which reads no page markers) must
+    /// be the same place in the cache (which reads them): the own reader's
+    /// text is the same word for word, space for space, with pages and
+    /// without, on every rich text sample and package. The reader writes
+    /// one space where a page break falls between words, as it does where
+    /// there is none.
+    func testTheTextIsTheSameWithAndWithoutPagesOnEverySample() throws {
+        let folder = try formatSampleURL("rtf")
+        let files = try FileManager.default.contentsOfDirectory(atPath: folder.path)
+            .filter { $0.hasSuffix(".rtf") }.sorted().map { "rtf/\($0)" }
+        let packages = ["rtfd/headings.rtfd", "rtfd/with-image.rtfd"]
+        XCTAssertGreaterThanOrEqual(files.count, 16)
+        for path in files + packages {
+            let copy = try copyOfFormatSample(path)
+            let format: TextutilInputFormat = path.hasSuffix(".rtfd") ? .rtfd : .rtf
+            let withPages = try HTMLToMarkdownConverter.convert(
+                RTFDocumentReader.html(of: copy, as: format, includesPages: true), includesPages: true
+            )
+            let without = try HTMLToMarkdownConverter.convert(
+                RTFDocumentReader.html(of: copy, as: format, includesPages: false), includesPages: false
+            )
+            let cached = try MarkdownDocParser.parseChapter(markdown: withPages, title: "", includeNavigationHeadings: true)
+            let plain = try MarkdownDocParser.parseChapter(markdown: without, title: "", includeNavigationHeadings: true)
+            XCTAssertEqual(cached.text, plain.text, path)
+            XCTAssertEqual(cached.headings.map(\.text), plain.headings.map(\.text), path)
+        }
+    }
+
+    /// The direct reader's chapter (pages in the Markdown, none read) is the
+    /// cache's chapter for the page-breaks sample, whose words a page break
+    /// falls between.
+    func testTheDirectReadersChapterIsTheCachesForThePageBreaksSample() throws {
+        let copy = try copyOfFormatSample("rtf/page-breaks.rtf")
+        let markdown = try HTMLToMarkdownConverter.convert(
+            RTFDocumentReader.html(of: copy, as: .rtf, includesPages: true), includesPages: true
+        )
+        let direct = try MarkdownDocParser.parse(markdown: markdown, title: "page-breaks")
+        let cached = try MarkdownDocParser.parseChapter(markdown: markdown, title: "", includeNavigationHeadings: true)
+        XCTAssertEqual(direct.chapters.count, 1)
+        XCTAssertEqual(direct.chapters.first?.text, cached.text)
+        XCTAssertTrue(cached.text.contains("runs on and continues here."), cached.text)
+    }
+
+    /// The same through the app's own readers, whichever reads rich text on
+    /// this Mac: `parse(url:)` (the direct reader) and `extract(from:)` (the
+    /// cache) give the same chapter text for the page-breaks sample.
+    func testTheAppsDirectReaderAndCacheAgreeOnThePageBreaksSample() throws {
+        let copy = try copyOfFormatSample("rtf/page-breaks.rtf")
+        let direct = try TextutilDocumentReader.parse(url: copy, bookFormat: .rtf)
+        let markdown = try TextutilDocumentReader.extract(from: copy, bookFormat: .rtf, includesPages: true).markdown
+        let cached = try MarkdownDocParser.parseChapter(markdown: markdown, title: "", includeNavigationHeadings: true)
+        XCTAssertEqual(direct.chapters.count, 1)
+        XCTAssertEqual(direct.chapters.first?.text, cached.text)
+        XCTAssertTrue(cached.text.contains("runs on and continues here."), cached.text)
+    }
+
     // MARK: - Damage
 
     /// A document that ends before its groups do still gives its text, and
