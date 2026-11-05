@@ -116,6 +116,13 @@ enum MOBIMarkup {
 
     // MARK: Scan
 
+    /// The names scanned for, as bytes made once: a hostile book may hold
+    /// millions of tags, and each is looked at for these.
+    private static let fileposName = Array("filepos".utf8)
+    private static let pageBreakName = Array("pagebreak".utf8)
+    private static let prefixedPageBreakName = Array("mbp:pagebreak".utf8)
+    private static let mobipocketPrefix = Array("mbp:".utf8)
+
     /// Finds the offsets the book's `filepos` attributes name, and where
     /// its `<mbp:pagebreak>` tags are.
     static func scan(_ text: [UInt8]) -> Scan {
@@ -133,12 +140,12 @@ enum MOBIMarkup {
     /// none. The number may be quoted and is often padded with zeros
     /// (`filepos=0000012345`); one of more than ten digits is not a place.
     private static func fileposValue(in text: [UInt8], tag: Range<Int>) -> Int? {
-        let name = Array("filepos".utf8)
+        let name = fileposName
         var position = tag.lowerBound + 1
         while position + name.count < tag.upperBound {
-            // The name starts an attribute: after a space or a quote.
-            let precededByBoundary = isSpace(text[position - 1]) || text[position - 1] == UInt8(ascii: "\"") || text[position - 1] == UInt8(ascii: "'")
-            guard precededByBoundary, matches(name, in: text, at: position) else {
+            // The name starts an attribute: after a space. (One inside another
+            // attribute's quoted value, such as title="filepos=7", is no attribute.)
+            guard isSpace(text[position - 1]), matches(name, in: text, at: position) else {
                 position += 1
                 continue
             }
@@ -164,8 +171,8 @@ enum MOBIMarkup {
     /// without its prefix, as some books write it.
     private static func isPageBreak(_ text: [UInt8], tag: Range<Int>) -> Bool {
         let start = tag.lowerBound + 1
-        return matches(Array("mbp:pagebreak".utf8), in: text, at: start, limit: tag.upperBound, endsName: true)
-            || matches(Array("pagebreak".utf8), in: text, at: start, limit: tag.upperBound, endsName: true)
+        return matches(prefixedPageBreakName, in: text, at: start, limit: tag.upperBound, endsName: true)
+            || matches(pageBreakName, in: text, at: start, limit: tag.upperBound, endsName: true)
     }
 
     /// Whether the tag is a Mobipocket tag (`<mbp:...>` or `</mbp:...>`, or a
@@ -173,7 +180,7 @@ enum MOBIMarkup {
     private static func isMobipocketTag(_ text: [UInt8], tag: Range<Int>) -> Bool {
         var start = tag.lowerBound + 1
         if start < tag.upperBound, text[start] == UInt8(ascii: "/") { start += 1 }
-        return matches(Array("mbp:".utf8), in: text, at: start, limit: tag.upperBound)
+        return matches(mobipocketPrefix, in: text, at: start, limit: tag.upperBound)
             || isPageBreak(text, tag: tag)
     }
 
@@ -220,7 +227,7 @@ enum MOBIMarkup {
                     output.append(contentsOf: text[cursor..<anchor.position])
                     cursor = anchor.position
                 }
-                output.append(contentsOf: Array("<a id=\"\(anchor.id)\"></a>".utf8))
+                output.append(contentsOf: "<a id=\"\(anchor.id)\"></a>".utf8)
                 next += 1
             }
             if position > cursor {
@@ -276,8 +283,12 @@ enum MOBIMarkup {
             end += 1
         }
         guard end > nameStart else { return 0 }
-        let name = String(decoding: text[nameStart..<end], as: UTF8.self).lowercased()
-        if voidElements.contains(name) || selfClosingByParser.contains(name) { return 0 }
+        // The names in the two sets are at most eight letters, so a longer
+        // name is looked up in neither (and no string is made of it).
+        if end - nameStart <= 8 {
+            let name = String(decoding: text[nameStart..<end], as: UTF8.self).lowercased()
+            if voidElements.contains(name) || selfClosingByParser.contains(name) { return 0 }
+        }
         if closing { return -1 }
         // "<x/>" closes itself.
         let selfClosed = tag.upperBound - tag.lowerBound >= 3 && text[tag.upperBound - 1] == UInt8(ascii: ">")
