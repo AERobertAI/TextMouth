@@ -134,6 +134,132 @@ final class RTFTextutilComparisonTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(ownFirstWords.count, firstWords(textutil).count)
     }
 
+    // MARK: - Real Files from LibreOffice
+
+    /// What reading one real RTF file from LibreOffice's test data gives
+    /// next to textutil's reading of it (FMT47). Nothing is left to differ
+    /// silently: a file is the same, or its every difference is named here
+    /// with the reason a listener would accept.
+    private struct RealFile {
+        /// The sample's name in `TestData/format-samples/rtf`.
+        let name: String
+        /// Whether textutil cannot read the file ("not in the correct
+        /// format"), so that only the own reading is checked.
+        var textutilRefuses = false
+        /// The words only textutil's reading has, and only the own reading
+        /// has, each in order.
+        var textutilOnly: [String] = []
+        var ownOnly: [String] = []
+        /// The headings of the own reading, as "level: words".
+        var headings: [String] = []
+        /// How many pages each reading finds.
+        var pages = (own: 1, textutil: 1)
+        /// For a file that differs: why the difference is acceptable, or
+        /// better, for a listener.
+        var why = ""
+    }
+
+    /// The twelve real files, with what each comparison found.
+    private static let realFiles: [RealFile] = [
+        RealFile(name: "libreoffice-rhbz1065629.rtf"),
+        RealFile(name: "libreoffice-tdf130817.rtf", headings: ["1: Titolo 1", "2: Titolo 2"]),
+        RealFile(name: "libreoffice-cp950listleveltext2.rtf"),
+        RealFile(name: "libreoffice-fdo44715.rtf"),
+        RealFile(name: "libreoffice-tdf108055.rtf", pages: (3, 3)),
+        RealFile(name: "libreoffice-tdf146489.rtf"),
+        RealFile(name: "libreoffice-fdo74709.rtf"),
+        RealFile(
+            name: "libreoffice-tdf128428_dntblnsbdb.rtf", textutilRefuses: true,
+            why: "textutil refuses the file; the own reader reads its \\upr branches once"
+        ),
+        RealFile(
+            name: "libreoffice-tdf121623.rtf", textutilRefuses: true,
+            why: "textutil refuses the file; the own reader reads it"
+        ),
+        RealFile(
+            name: "libreoffice-tdf95706.rtf", textutilRefuses: true,
+            why: "textutil refuses {\\rtf with no version number; the own reader reads it"
+        ),
+        RealFile(
+            name: "libreoffice-fdo53556.rtf",
+            textutilOnly: ["fFilled0fLine0ARL", "fFilled0shapeType1fLine0fFilled0fLine0This"],
+            ownOnly: ["ARL", "This"],
+            headings: ["1: ARL STATISTICS 2011 2012 WORKSHEET"],
+            why: "textutil runs the shapes' property names into the first word of each text box; the own reading is the words alone"
+        ),
+        RealFile(
+            name: "libreoffice-tdf108123.rtf",
+            ownOnly: ["Aligns", "with", "HIPAA", "Security", "Rule"],
+            headings: ["1: Table of Contents"],
+            pages: (2, 1),
+            why: "the own reader reads the words of a text box that textutil drops, and begins a page at the section break (\\sbkpage) that textutil's plain text loses"
+        )
+    ]
+
+    /// Every real file reads with the same words as textutil's reading, or
+    /// with the differences named in `realFiles`, the same headings, and at
+    /// least textutil's pages; the files textutil refuses read with words
+    /// and no error. One failure lists every difference of every file.
+    func testRealFilesFromLibreOfficeMatchTextutilOrNameTheirDifferences() throws {
+        var problems: [String] = []
+        for file in Self.realFiles {
+            let copy = try copyOfFormatSample("rtf/" + file.name)
+            let own = try ownMarkdown(of: copy, as: .rtf)
+            let ownWords = words(of: own)
+            var textutil: String?
+            do {
+                textutil = try textutilMarkdown(of: copy, as: .rtf)
+            } catch let failure as TextutilConverter.Failure {
+                if !file.textutilRefuses { problems.append("\(file.name): textutil refused it: \(failure.localizedDescription)") }
+            }
+            if file.textutilRefuses {
+                if textutil != nil { problems.append("\(file.name): textutil read a file it was expected to refuse") }
+                if ownWords.count < 10 { problems.append("\(file.name): the own reading has only \(ownWords.count) words") }
+                continue
+            }
+            guard let textutil else { continue }
+
+            // The words, in order: what only one reading has.
+            let changes = ownWords.difference(from: words(of: textutil))
+            var textutilOnly: [String] = [], ownOnly: [String] = []
+            for change in changes {
+                switch change {
+                case .remove(_, let word, _): textutilOnly.append(word)
+                case .insert(_, let word, _): ownOnly.append(word)
+                }
+            }
+            if textutilOnly != file.textutilOnly || ownOnly != file.ownOnly {
+                problems.append("\(file.name): words only textutil has \(textutilOnly) (expected \(file.textutilOnly)); only the own reader has \(ownOnly) (expected \(file.ownOnly))")
+            }
+
+            // The headings: the own reading's, and textutil's all among them.
+            let ownHeadings = headings(of: own).map(wordsOnly)
+            if ownHeadings != file.headings {
+                problems.append("\(file.name): own headings \(ownHeadings), expected \(file.headings)")
+            }
+            let missing = headings(of: textutil).map(wordsOnly).filter { !ownHeadings.contains($0) }
+            if !missing.isEmpty { problems.append("\(file.name): textutil's headings missing from the own reading: \(missing)") }
+
+            // The pages.
+            let pages = (own: pageCount(of: own), textutil: pageCount(of: textutil))
+            if pages != file.pages { problems.append("\(file.name): pages own \(pages.own), textutil \(pages.textutil); expected \(file.pages)") }
+        }
+        XCTAssertEqual(problems, [])
+    }
+
+    /// A heading line "level: text" as "level: its words", so that a
+    /// difference in punctuation or escaping is not a difference.
+    private func wordsOnly(_ heading: String) -> String {
+        guard let colon = heading.firstIndex(of: ":") else { return heading }
+        let text = String(heading[heading.index(after: colon)...])
+        return String(heading[...colon]) + " " + words(of: text).joined(separator: " ")
+    }
+
+    /// How many pages the Markdown marks.
+    private func pageCount(of markdown: String) -> Int {
+        markdown.components(separatedBy: "<!-- page: ").count - 1
+    }
+
     // MARK: - What TextMouth Writes
 
     /// RTF written by TextMouth's export reads as textutil reads it: the same
