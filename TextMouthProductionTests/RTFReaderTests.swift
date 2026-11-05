@@ -174,8 +174,8 @@ final class RTFReaderTests: XCTestCase {
         }
     }
 
-    /// A file that is not rich text is refused with the sentence for it; an
-    /// empty file has no text.
+    /// A file that is not rich text, and an empty one, are refused with the
+    /// sentence for a file that could not be read as rich text.
     func testFilesThatAreNotRichTextAreRefused() throws {
         let folder = try makeSandboxDirectory("RTFNot")
         let text = folder.appendingPathComponent("plain.rtf")
@@ -190,8 +190,12 @@ final class RTFReaderTests: XCTestCase {
         let empty = folder.appendingPathComponent("empty.rtf")
         try Data().write(to: empty)
         XCTAssertThrowsError(try RTFDocumentReader.html(of: empty, as: .rtf, includesPages: true)) { error in
-            XCTAssertEqual(error as? FileImportError, .noTextToRead)
+            XCTAssertEqual(error as? TextutilConverter.Failure, .unreadable(.rtf))
         }
+        // Rich text with no words is read: the import decides what it holds.
+        let blank = folder.appendingPathComponent("blank.rtf")
+        try Data(#"{\rtf1\ansi\par}"#.utf8).write(to: blank)
+        XCTAssertEqual(try rtfBody(RTFDocumentReader.html(of: blank, as: .rtf, includesPages: true)).text(), "")
     }
 
     // MARK: - Characters

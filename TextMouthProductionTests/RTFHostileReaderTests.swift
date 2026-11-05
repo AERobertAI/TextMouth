@@ -276,7 +276,7 @@ final class RTFHostileReaderTests: XCTestCase {
         }
     }
 
-    /// A missing file is the file system's error, not a trap.
+    /// A missing file is refused, not a trap.
     func testAMissingFileThrows() throws {
         let missing = try makeSandboxDirectory("RTFMissing").appendingPathComponent("nothing.rtf")
         XCTAssertThrowsError(try RTFDocumentReader.html(of: missing, as: .rtf, includesPages: true))
