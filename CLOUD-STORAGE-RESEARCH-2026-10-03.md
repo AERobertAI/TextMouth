@@ -163,6 +163,8 @@ Research for the October 3 request, from the code on main (6acb853), the macOS 2
 
 ## What I could not verify
 
+(November 6, 2026: the real-drive tests of October 3 did run FileManager's download and removal calls on Google Drive and Dropbox, for book files; see Testing on real cloud drives in docs/developer/testing.md. A library's own files are now fetched by reading them, which TextMouth can wait for, as LibraryViewModel+LibraryFetch does.)
+
 - Downloading or evicting through FileManager on Google Drive and Dropbox.
 - `Progress.addSubscriber` progress.
 - Whether the zero-byte iCloud files are really empty.
