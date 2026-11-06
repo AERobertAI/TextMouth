@@ -103,6 +103,8 @@ struct WordLegacyDocumentBuilder {
     var damagedStyle: Int?
     /// The names of the first fonts of the font table (the rest are "Font" and their index).
     var fontNames: [String] = []
+    /// The font of the sheet's default character formatting (the header's `ftcStandardChpStsh`).
+    var defaultFont = 0
     var sections: [Section] = []
     /// The code page the characters are written in.
     var encoding: String.Encoding = .windowsCP1252
@@ -401,6 +403,7 @@ struct WordLegacyDocumentBuilder {
         // Stshi: the count of styles, the base's size (8), flags, and the rest, 14 bytes in all.
         var header: [UInt8] = UInt16(styles.count).bytes + UInt16(8).bytes + UInt16(1).bytes
         header += [UInt8](repeating: 0, count: 14 - header.count)
+        header.replaceSubrange(12..<14, with: UInt16(defaultFont).bytes)
         var sheet: [UInt8] = UInt16(14).bytes + header
         for (index, style) in styles.enumerated() {
             guard let style else {

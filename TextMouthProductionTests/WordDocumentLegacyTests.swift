@@ -392,9 +392,12 @@ final class WordDocumentLegacyTests: XCTestCase {
 
     func testACyrillicFontOrLanguageMakesTheDocumentWindows1251() throws {
         let encoding = try XCTUnwrap(TextEncodingCatalog.entry(forIdentifier: "windows-1251")?.encoding)
+        // The language says Russian; or the run's font does (a font in the table that no run uses says nothing);
+        // or the sheet's default font does.
         for configure in [
-            { (builder: inout Builder) in builder.fontCharacterSets = [0, 204] },
             { (builder: inout Builder) in builder.language = 0x0419 },
+            { (builder: inout Builder) in builder.fontCharacterSets = [0, 204]; builder.paragraphs = [Paragraph(runs: [Run("Привет", sprms: Builder.sprm(93, [1, 0]))])] },
+            { (builder: inout Builder) in builder.fontCharacterSets = [0, 204]; builder.defaultFont = 1 },
         ] {
             let body = try body([Paragraph("Привет")]) {
                 $0.encoding = encoding

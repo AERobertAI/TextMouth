@@ -58,7 +58,9 @@ final class WordDocumentSymbolTests: XCTestCase {
         XCTAssertEqual(try body([Paragraph(runs: [Run("0.67 "), placeholder(font: 1, code: 0x6D), Run("m")])]), "<p>0.67 \u{00B5}m</p>\n")
         XCTAssertEqual(try body([Paragraph(runs: [Run("28"), placeholder(font: 1, code: 0xB0), Run("C")])]), "<p>28\u{00B0}C</p>\n")
         XCTAssertEqual(try body([Paragraph(runs: [Run("x"), placeholder(font: 1, code: 0xB1), Run("y")])]), "<p>x\u{00B1}y</p>\n")
-        XCTAssertEqual(try body([Paragraph(runs: [placeholder(font: 1, code: 0xB7), Run(" item")])]), "<p>\u{2022} item</p>\n")
+        XCTAssertEqual(try body([Paragraph(runs: [Run("a "), placeholder(font: 1, code: 0xB7), Run(" b")])]), "<p>a \u{2022} b</p>\n")
+        // A bullet that begins a paragraph makes it an item of a list, as every bullet does.
+        XCTAssertEqual(try body([Paragraph(runs: [placeholder(font: 1, code: 0xB7), Run(" item")])]), "<ul>\n<li>item</li>\n</ul>\n")
     }
 
     func testTheSymbolFontsCodeOneHundredNinetyIsALongDashBecauseThatIsWhatWordsAuthorsUseItFor() throws {
