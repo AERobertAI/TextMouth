@@ -343,7 +343,11 @@ final class WordDocumentReaderTests: XCTestCase {
         plain.extraModifiers = WordDocumentBuilder.modifier(WordSprm.plain, 0)
         XCTAssertEqual(try body([Paragraph(runs: [plain])]), "<p>x</p>\n")
         // Hidden before the character style (italic): the style's properties replace it.
-        XCTAssertEqual(try body([Paragraph(runs: [Run("y", hidden: 1, characterStyle: 11)])]), "<p><em>y</em></p>\n")
+        // (The builder writes a character style first, as Word does, so both are written by hand here.)
+        var before = Run("y")
+        before.extraModifiers = WordDocumentBuilder.modifier(WordSprm.hidden, 1)
+            + WordDocumentBuilder.le16(WordSprm.characterStyle) + WordDocumentBuilder.le16(11)
+        XCTAssertEqual(try body([Paragraph(runs: [before])]), "<p><em>y</em></p>\n")
         // Hidden after it: it stays.
         var after = Run("z", characterStyle: 11)
         after.extraModifiers = WordDocumentBuilder.modifier(WordSprm.hidden, 1)
