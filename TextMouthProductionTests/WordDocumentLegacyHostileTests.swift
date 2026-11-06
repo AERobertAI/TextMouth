@@ -213,7 +213,7 @@ final class WordDocumentLegacyHostileTests: XCTestCase {
     func testManyNotesGrowInStep() {
         assertLinear(150, "footnotes") { count in
             var builder = Builder()
-            builder.paragraphs = (0..<count).map { Paragraph(runs: [Run("text"), Run("\u{02}", sprms: Builder.sprm(117, [1]))]) }
+            builder.paragraphs = (0..<count).map { _ in Paragraph(runs: [Run("text"), Run("\u{02}", sprms: Builder.sprm(117, [1]))]) }
             builder.footnotes = (0..<count).map { "\u{02}Note \($0)." }
             return builder.build()
         }

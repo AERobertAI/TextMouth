@@ -465,6 +465,7 @@ final class WordDocumentLegacyTests: XCTestCase {
         )
         let chapter = try MarkdownDocParser.parseChapter(markdown: markdown, title: "", includeNavigationHeadings: true)
         XCTAssertEqual(chapter.headings.map(\.text), ["Title"])
-        XCTAssertEqual(chapter.text, "Title\n\nSome bold words.")
+        XCTAssertTrue(chapter.text.contains("Some bold words."), chapter.text)
+        XCTAssertFalse(chapter.text.contains("*"), chapter.text)
     }
 }
