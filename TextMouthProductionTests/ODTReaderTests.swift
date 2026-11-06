@@ -344,17 +344,6 @@ final class ODTReaderTests: XCTestCase {
         ])
     }
 
-    /// A text box is read where it stands, between the words before and
-    /// after it.
-    func testTextBoxesAreReadInPlace() throws {
-        let lines = try odfLines(
-            """
-            <text:p>Before <draw:frame><draw:text-box><text:p>Boxed words</text:p></draw:text-box></draw:frame> after.</text:p>
-            """
-        )
-        XCTAssertEqual(lines, ["<p>Before </p>", "<p>Boxed words</p>", "<p>after.</p>"])
-    }
-
     // MARK: - Lists
 
     /// A list is bulleted or numbered by its style's level, nested lists go
@@ -583,6 +572,173 @@ final class ODTReaderTests: XCTestCase {
                 XCTAssertEqual($0 as? PasswordProtectedDocument, PasswordProtectedDocument(), sample)
             }
         }
+    }
+
+    // MARK: - Hidden Text, Notes, and Text Boxes
+
+    /// The styles that hide paragraphs and text, break pages, and size text.
+    private var gone: String {
+        """
+        <style:style style:name="Gone" style:family="text"><style:text-properties text:display="none"/></style:style>\
+        <style:style style:name="Gone" style:family="paragraph"><style:text-properties text:display="none"/></style:style>\
+        <style:style style:name="Chap" style:family="paragraph"><style:paragraph-properties fo:break-before="page"/></style:style>\
+        <style:style style:name="Big" style:family="paragraph"><style:text-properties fo:font-size="24pt"/></style:style>
+        """
+    }
+
+    /// A text box is read right after the paragraph that holds its anchor,
+    /// not in the middle of its sentence: also in a table cell. A box
+    /// anchored in hidden text is not read.
+    func testATextBoxFollowsTheParagraphThatHoldsItsAnchor() throws {
+        let lines = try odfLines(
+            """
+            <text:p>Before <draw:frame><draw:text-box><text:p>Boxed words</text:p><text:p>Second box line</text:p>\
+            </draw:text-box></draw:frame> after.</text:p>\
+            <text:p>Hid <text:span text:style-name="Gone"><draw:frame><draw:text-box><text:p>Hidden box</text:p>\
+            </draw:text-box></draw:frame></text:span>end.</text:p>\
+            <text:p text:style-name="Gone">All hidden <draw:frame><draw:text-box><text:p>Box in hidden paragraph</text:p>\
+            </draw:text-box></draw:frame></text:p>\
+            <text:p>Dropped<draw:frame><draw:text-box><text:p>Box in hidden-paragraph field</text:p></draw:text-box></draw:frame>\
+            <text:hidden-paragraph text:condition="x" text:is-hidden="true"/></text:p>\
+            <table:table><table:table-row><table:table-cell><text:p>Cell <draw:frame><draw:text-box>\
+            <text:p>Cell box</text:p></draw:text-box></draw:frame>text.</text:p></table:table-cell></table:table-row></table:table>
+            """,
+            styles: gone
+        )
+        XCTAssertEqual(lines, [
+            "<p>Before after.</p>", "<p>Boxed words</p>", "<p>Second box line</p>", "<p>Hid end.</p>",
+            "<table>", "<tr><td><p>Cell text.</p><p>Cell box</p></td></tr>", "</table>",
+        ])
+    }
+
+    /// A note is read only if a person would see its reference: not one in a
+    /// hidden span, a paragraph hidden by a field after the note, a hidden
+    /// section, or tracked deleted content.
+    func testANoteInHiddenOrDeletedTextIsNotRead() throws {
+        let lines = try odfLines(
+            """
+            <text:tracked-changes><text:changed-region text:id="c"><text:deletion><text:p>Deleted\
+            <text:note><text:note-citation>9</text:note-citation><text:note-body><text:p>Deleted note</text:p></text:note-body></text:note>\
+            </text:p></text:deletion></text:changed-region></text:tracked-changes>\
+            <text:p>Gone<text:note><text:note-citation>1</text:note-citation><text:note-body><text:p>Note of hidden paragraph</text:p>\
+            </text:note-body></text:note><text:hidden-paragraph text:condition="x" text:is-hidden="true"/></text:p>\
+            <text:p>Hid <text:span text:style-name="Gone">x<text:note><text:note-citation>2</text:note-citation><text:note-body>\
+            <text:p>Note in hidden span</text:p></text:note-body></text:note></text:span>end.</text:p>\
+            <text:section text:display="none"><text:p>Sect<text:note><text:note-citation>3</text:note-citation><text:note-body>\
+            <text:p>Note in hidden section</text:p></text:note-body></text:note></text:p></text:section>\
+            <text:p>Kept<text:note><text:note-citation>4</text:note-citation><text:note-body><text:p>Kept note</text:p></text:note-body>\
+            </text:note>.</text:p>
+            """,
+            styles: gone
+        )
+        XCTAssertEqual(lines, ["<p>Hid end.</p>", "<p>Kept.</p>", "<p>Kept note</p>"])
+    }
+
+    /// A page break through a style, or a master page, on a paragraph that
+    /// holds only hidden words begins no page; a heading whose words are all
+    /// hidden writes no heading and does not turn off the guess at headings.
+    func testHiddenWordsBeginNoPageAndNameNoHeading() throws {
+        let lines = try odfLines(
+            """
+            <text:h text:outline-level="1"><text:span text:style-name="Gone">all hidden heading</text:span></text:h>\
+            <text:p text:style-name="Big">Large words</text:p>\
+            <text:p>Body words here are many enough to be the body size.</text:p>\
+            <text:p text:style-name="Chap"><text:span text:style-name="Gone">only hidden words</text:span></text:p>\
+            <text:p>More body words to outweigh the large one entirely.</text:p>
+            """,
+            styles: gone,
+            pages: true
+        )
+        XCTAssertEqual(lines, [
+            page(1) + "<h1>Large words</h1>",
+            "<p>Body words here are many enough to be the body size.</p>",
+            "<p>More body words to outweigh the large one entirely.</p>",
+        ])
+    }
+
+    /// A tracked change's rules: the deleted text lives only under
+    /// `text:tracked-changes`, so the body between `text:change-start` and
+    /// `text:change-end` is the text a person sees, and a `text:change` point
+    /// marks only where a deletion was.
+    func testChangeMarkersAndTrackedDeletions() throws {
+        let lines = try odfLines(
+            """
+            <text:tracked-changes>\
+            <text:changed-region text:id="ins"><text:insertion/></text:changed-region>\
+            <text:changed-region text:id="del"><text:deletion><text:p>removed words</text:p></text:deletion></text:changed-region>\
+            <text:changed-region text:id="fmt"><text:format-change/></text:changed-region>\
+            </text:tracked-changes>\
+            <text:p>Kept <text:change-start text:change-id="ins"/>added words<text:change-end text:change-id="ins"/> and\
+            <text:change text:change-id="del"/> <text:change-start text:change-id="fmt"/>reformatted<text:change-end text:change-id="fmt"/>.</text:p>
+            """
+        )
+        XCTAssertEqual(lines, ["<p>Kept added words and reformatted.</p>"])
+    }
+
+    // MARK: - What a Listener Hears
+
+    /// The reading text writes no list marker, so the numbers of a numbered
+    /// list are not heard, nor is the number a heading or an item shows
+    /// (`text:number`): the heading is its words. textutil's reading has the
+    /// number, run into the heading's first word ("1.1Intro"), which the own
+    /// reader leaves out as it leaves out every automatic number.
+    func testNoNumberIsHeardOfListsOrNumberedHeadings() throws {
+        let heard = try odfHeard(
+            """
+            <text:h text:outline-level="1"><text:number>1.1</text:number>Intro</text:h>\
+            <text:ordered-list><text:list-item><text:p><text:number>7.</text:number>first</text:p></text:list-item>\
+            <text:list-item><text:p>second</text:p></text:list-item><text:list-item><text:p>third</text:p></text:list-item></text:ordered-list>
+            """
+        )
+        XCTAssertEqual(heard.filter { $0.contains(where: \.isNumber) }, [])
+        XCTAssertEqual(heard.filter { ["first", "second", "third", "Intro"].contains($0) }.sorted(), ["Intro", "first", "second", "third"])
+    }
+
+    /// A line break, a tab, a no-break space, and a soft hyphen join no
+    /// words and are spoken as nothing odd: the first three are spacing, the
+    /// last is not there.
+    func testSpacingCharactersJoinNoWordsAndAreNotSpoken() throws {
+        let heard = try odfHeard(
+            "<text:p>one<text:line-break/>two<text:tab/>three<text:s text:c=\"2\"/>four \u{00A0}five\u{00A0}six co\u{00AD}operate</text:p>"
+        )
+        XCTAssertEqual(heard, ["one", "two", "three", "four", "five", "six", "cooperate"])
+    }
+
+    // MARK: - A Damaged Optional Part
+
+    /// A damaged, cut-off, or oversized `styles.xml` or `meta.xml` does not
+    /// refuse the book: its body is read, the damage is reported by the
+    /// closure, and what the part gave (the headings of its styles, or the
+    /// title) is missing. Only `content.xml` refuses the book.
+    func testADamagedOptionalPartIsReportedAndTheBookIsRead() throws {
+        let content = odfContent(body: "<text:p text:style-name=\"Heading_20_1\">Named by styles</text:p><text:p>Words</text:p>")
+        let goodStyles = odfStyles(
+            "<style:style style:name=\"Heading_20_1\" style:family=\"paragraph\" style:default-outline-level=\"1\"/>"
+        )
+        for (label, styles, meta) in [
+            ("a cut-off styles part", String(goodStyles.dropLast(60)), odfMeta("<dc:title>T</dc:title>")),
+            ("an unreadable meta part", goodStyles, "<office:document-meta><dc:title>cut"),
+        ] {
+            let url = try makeODT(content: content, styles: styles, meta: meta)
+            var reported: [String] = []
+            let html = try ODTDocumentReader.html(of: url, includesPages: false) { reported.append($0.file) }
+            XCTAssertEqual(reported.count, 1, label)
+            XCTAssertTrue(odfBodyLines(html).contains("<p>Words</p>"), label)
+        }
+        // A part over the limit is a damaged part too, told in the package's words.
+        let big = try makeODT(
+            content: content, meta: odfMeta("<dc:title>" + String(repeating: "t", count: 200_000) + "</dc:title>"),
+            compression: .deflate
+        )
+        var reported: [ODTPartDamage] = []
+        let html = try DocumentByteLimit.$current.withValue(100_000) {
+            try ODTDocumentReader.html(of: big, includesPages: false) { reported.append($0) }
+        }
+        XCTAssertEqual(reported.map(\.file), ["meta.xml"])
+        XCTAssertTrue(reported.first?.errorDescription?.contains("meta.xml") == true)
+        XCTAssertFalse(html.contains("<title>"))
+        let noContent = try makeODT(entries: [TestZIPEntry("styles.xml", Data(goodStyles.utf8))])
+        XCTAssertThrowsError(try ODTDocumentReader.html(of: noContent, includesPages: false))
     }
 
     // MARK: - The Switch

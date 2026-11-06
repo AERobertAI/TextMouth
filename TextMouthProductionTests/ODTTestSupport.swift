@@ -106,6 +106,17 @@ extension XCTestCase {
         return odfBodyLines(try ODTDocumentReader.html(of: url, includesPages: pages))
     }
 
+    /// The words a listener hears of the document whose body is `body`: the
+    /// reading text (`MarkdownDocParser.parseChapter`, which writes no list
+    /// marker) of the HTML the reader makes, split at white space.
+    func odfHeard(_ body: String, styles: String = "") throws -> [String] {
+        let url = try makeODT(body: body, automaticStyles: styles)
+        let html = try ODTDocumentReader.html(of: url, includesPages: false)
+        let markdown = try HTMLToMarkdownConverter.convert(html, includesPages: false)
+        return try MarkdownDocParser.parseChapter(markdown: markdown, title: "", includeNavigationHeadings: true)
+            .text.split(whereSeparator: \.isWhitespace).map(String.init)
+    }
+
     /// The text of `html`'s body with no markup, for a test that cares about
     /// words alone.
     func odfPlainText(_ html: String) -> String {

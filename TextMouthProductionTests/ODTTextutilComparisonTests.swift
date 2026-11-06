@@ -59,6 +59,14 @@ final class ODTTextutilComparisonTests: XCTestCase {
         return words
     }
 
+    /// The words a listener hears of `markdown`: the words of its reading
+    /// text (`MarkdownDocParser.parseChapter`), which writes no list marker,
+    /// so that the numbers of a numbered list are not words of either reading.
+    private func heardWords(of markdown: String) throws -> [String] {
+        let chapter = try MarkdownDocParser.parseChapter(markdown: markdown, title: "", includeNavigationHeadings: true)
+        return words(of: chapter.text)
+    }
+
     /// The headings of `markdown`, as "level: text".
     private func headings(of markdown: String) -> [String] {
         withoutComments(markdown).split(separator: "\n").compactMap { line in
@@ -99,9 +107,9 @@ final class ODTTextutilComparisonTests: XCTestCase {
     /// shows: the words only textutil's has, the words only the own one has
     /// (each in order, sorted for comparison), and the own reading's
     /// headings and textutil's that the own reading lacks.
-    private func differences(own: String, textutil: String) -> (textutilOnly: [String], ownOnly: [String]) {
+    private func differences(own: String, textutil: String) throws -> (textutilOnly: [String], ownOnly: [String]) {
         var textutilOnly: [String] = [], ownOnly: [String] = []
-        for change in words(of: own).difference(from: words(of: textutil)) {
+        for change in try heardWords(of: own).difference(from: try heardWords(of: textutil)) {
             switch change {
             case .remove(_, let word, _): textutilOnly.append(word)
             case .insert(_, let word, _): ownOnly.append(word)
@@ -122,7 +130,7 @@ final class ODTTextutilComparisonTests: XCTestCase {
         let copy = try copyOfFormatSample(path)
         let textutil = try textutilMarkdown(of: copy)
         let own = try ownMarkdown(of: copy)
-        let found = differences(own: own, textutil: textutil)
+        let found = try differences(own: own, textutil: textutil)
         XCTAssertEqual(found.textutilOnly, [], "\(path): words only textutil has", file: file, line: line)
         XCTAssertEqual(found.ownOnly, [], "\(path): words only the own reader has", file: file, line: line)
         let ownHeadings = headings(of: own)
@@ -266,7 +274,7 @@ final class ODTTextutilComparisonTests: XCTestCase {
             let textutil = try textutilMarkdown(of: copy)
 
             // The words, in order: what only one reading has.
-            let found = differences(own: own, textutil: textutil)
+            let found = try differences(own: own, textutil: textutil)
             if let count = file.textutilOnlyCount {
                 if found.textutilOnly.count != count { problems.append("\(file.name): \(found.textutilOnly.count) words only textutil has, expected \(count)") }
             } else if found.textutilOnly != file.textutilOnly.sorted() {

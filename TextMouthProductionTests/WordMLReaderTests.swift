@@ -157,11 +157,63 @@ final class WordMLReaderTests: XCTestCase {
             "</table>",
             "<p>Deletion inserted words</p>",
             "<p>Note here and on.</p>",
-            "<p>Box: </p>", "<p>Boxed words</p>", "<p> after box.</p>",
+            "<p>Box:  after box.</p>", "<p>Boxed words</p>",
             "<p>Field: 7 today link</p>",
             "<p>One<br>two\(page(3))three</p>",
             "<p>Foot text</p>",
         ])
+    }
+
+    /// A text box is read right after the paragraph that holds its anchor;
+    /// one in a hidden run is not read; a note in a hidden run, a hidden
+    /// paragraph, or a tracked deletion (or moved-from text) is not read.
+    func testTextBoxesFollowTheirParagraphAndHiddenNotesAreNotRead() throws {
+        let box = "<w:r><w:pict><v:shape><v:textbox><w:txbxContent><w:p><w:r><w:t>Boxed</w:t></w:r></w:p></w:txbxContent></v:textbox></v:shape></w:pict></w:r>"
+        let note = "<w:r><w:footnote><w:p><w:r><w:t>Noted</w:t></w:r></w:p></w:footnote></w:r>"
+        let hidden = "<w:rPr><w:vanish/></w:rPr>"
+        let body = """
+            <w:p><w:r><w:t>Before </w:t></w:r>\(box)<w:r><w:t>after.</w:t></w:r></w:p>\
+            <w:p><w:r><w:t>Hid </w:t></w:r><w:r>\(hidden)<w:pict><v:shape><v:textbox><w:txbxContent><w:p><w:r><w:t>Hidden box</w:t></w:r></w:p>\
+            </w:txbxContent></v:textbox></v:shape></w:pict></w:r><w:r><w:t>end.</w:t></w:r></w:p>\
+            <w:p><w:pPr><w:pStyle w:val="Gone"/></w:pPr><w:r><w:t>Gone</w:t></w:r>\(note)\(box)</w:p>\
+            <w:p><w:r><w:t>Seen</w:t></w:r><w:r>\(hidden)<w:footnote><w:p><w:r><w:t>Hidden note</w:t></w:r></w:p></w:footnote></w:r>\
+            <aml:annotation aml:id="1" w:type="Word.Deletion"><aml:content><w:r><w:t>deleted</w:t></w:r>\(note)</aml:content></aml:annotation>\
+            <w:moveFrom><w:r><w:t>moved away</w:t></w:r></w:moveFrom><w:r><w:t> here.</w:t></w:r>\(note)</w:p>
+            """
+        let head = "<w:styles><w:style w:type=\"paragraph\" w:styleId=\"Gone\"><w:name w:val=\"Gone\"/><w:rPr><w:vanish/></w:rPr></w:style></w:styles>"
+        XCTAssertEqual(try bodyLines(of: document(body: body, head: head)), [
+            "<p>Before after.</p>", "<p>Boxed</p>", "<p>Hid end.</p>", "<p>Seen here.</p>", "<p>Noted</p>",
+        ])
+    }
+
+    /// A paragraph that holds only hidden words begins no page, whatever its
+    /// style says; a heading of only hidden words writes no heading and does
+    /// not turn off the guess at headings.
+    func testHiddenWordsBeginNoPageAndNameNoHeading() throws {
+        let hiddenRun = "<w:r><w:rPr><w:vanish/></w:rPr><w:t>hidden words</w:t></w:r>"
+        let body = """
+            <w:p><w:pPr><w:outlineLvl w:val="0"/></w:pPr>\(hiddenRun)</w:p>\
+            <w:p><w:r><w:rPr><w:sz w:val="40"/></w:rPr><w:t>Large words</w:t></w:r></w:p>\
+            <w:p><w:r><w:t>Body words here are many enough to be the body size.</w:t></w:r></w:p>\
+            <w:p><w:pPr><w:pageBreakBefore/></w:pPr>\(hiddenRun)<w:r><w:br w:type="page"/></w:r></w:p>\
+            <w:p><w:r><w:t>More body words to outweigh the large one entirely.</w:t></w:r></w:p>
+            """
+        XCTAssertEqual(try bodyLines(of: document(body: body), pages: true), [
+            page(1) + "<h1>Large words</h1>",
+            "<p>Body words here are many enough to be the body size.</p>",
+            "<p>More body words to outweigh the large one entirely.</p>",
+        ])
+    }
+
+    /// A no-break space and a soft hyphen join no words, and a tab and a
+    /// break are spacing, in what is heard.
+    func testSpacingCharactersJoinNoWordsAndAreNotSpoken() throws {
+        let xml = document(body: "<w:p><w:r><w:t>one</w:t><w:br/><w:t>two</w:t><w:tab/><w:t>three \u{00A0}four\u{00AD}five\u{00A0}six</w:t></w:r></w:p>")
+        let html = try WordMLDocumentReader.html(of: file(holding: xml), includesPages: false)
+        let markdown = try HTMLToMarkdownConverter.convert(html, includesPages: false)
+        let heard = try MarkdownDocParser.parseChapter(markdown: markdown, title: "", includeNavigationHeadings: true)
+            .text.split(whereSeparator: \.isWhitespace).map(String.init)
+        XCTAssertEqual(heard, ["one", "two", "three", "fourfive", "six"])
     }
 
     /// A bullet and a tab that begin a paragraph make it a bullet item; a
@@ -347,16 +399,18 @@ final class WordMLReaderTests: XCTestCase {
             let own = try HTMLToMarkdownConverter.convert(
                 WordMLDocumentReader.html(of: copy, includesPages: true), includesPages: true
             )
-            XCTAssertEqual(markdownWords(own), markdownWords(textutil), sample)
+            XCTAssertEqual(try heardWords(own), try heardWords(textutil), sample)
             let ownHeadings = markdownHeadings(own)
             XCTAssertEqual(markdownHeadings(textutil).filter { !ownHeadings.contains($0) }, [], "\(sample): own \(ownHeadings)")
         }
     }
 
-    /// The words of `markdown`, comments removed: runs of letters and digits.
-    private func markdownWords(_ markdown: String) -> [String] {
-        markdown.replacingOccurrences(of: "<!--[\\s\\S]*?-->", with: " ", options: .regularExpression)
-            .split { !$0.isLetter && !$0.isNumber }.map(String.init)
+    /// The words a listener hears of `markdown`: runs of letters and digits in
+    /// the reading text (`MarkdownDocParser.parseChapter`), which writes no
+    /// list marker.
+    private func heardWords(_ markdown: String) throws -> [String] {
+        try MarkdownDocParser.parseChapter(markdown: markdown, title: "", includeNavigationHeadings: true)
+            .text.split { !$0.isLetter && !$0.isNumber }.map(String.init)
     }
 
     /// The headings of `markdown`, as "level: text".
