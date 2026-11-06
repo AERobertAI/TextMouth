@@ -49,7 +49,15 @@ enum MOBIParser {
     ///   damaged), `DocumentTooLargeError` for one past `DocumentByteLimit`,
     ///   and `FileImportError.noTextToRead` for one with no text.
     static func prepareBook(url: URL, fallbackTitle: String? = nil) throws -> PreparedBook {
-        let book = try MOBIBook(bytes: try bytes(of: url))
+        let fileBytes = try bytes(of: url)
+        // Kindle's apps name KFX books .azw: the bytes decide, not the name.
+        if KFXSignature.isKFXOrProtected(fileBytes) {
+            return try KFXParser.prepareBook(
+                bytes: fileBytes,
+                fallbackTitle: fallbackTitle ?? url.deletingPathExtension().lastPathComponent
+            )
+        }
+        let book = try MOBIBook(bytes: fileBytes)
         var chapters: [EPUBParser.PreparedChapter] = []
         for section in book.sections {
             if let chapter = try preparedChapter(of: section, number: chapters.count + 1) {
@@ -70,7 +78,10 @@ enum MOBIParser {
     /// - Throws: `MOBIError.notAKindleBook` and `.damaged` for a file whose
     ///   headers do not read; the file system's error for one that cannot be read.
     static func readMetadata(url: URL) throws -> MOBIBook.Metadata {
-        try MOBIBook.metadata(in: bytes(of: url))
+        let fileBytes = try bytes(of: url)
+        // An .azw file holding KFX names itself as KFX does.
+        if KFXSignature.isKFXOrProtected(fileBytes) { return try KFXParser.readMetadata(bytes: fileBytes) }
+        return try MOBIBook.metadata(in: fileBytes)
     }
 
     /// The bytes of the file at `url`, within `DocumentByteLimit`.

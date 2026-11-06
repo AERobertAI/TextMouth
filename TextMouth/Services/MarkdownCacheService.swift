@@ -702,6 +702,8 @@ enum MarkdownCacheService {
             markdown = try DAISYParser.extractMarkdown(from: url, includesPages: includesPages)
         case .mobi:
             return try extractFromMOBI(url: url)
+        case .kfx:
+            return try extractFromKFX(url: url)
         case .pdf:
             // The report says how each page was read and names any page
             // whose pictures OCR could not read, so an import warns and
@@ -733,6 +735,19 @@ enum MarkdownCacheService {
     /// `includesPages` says.
     private static func extractFromMOBI(url: URL) throws -> ExtractedCache {
         let book = try MOBIParser.prepareBook(url: url)
+        let markdown = book.chapters.map { prepared in
+            "\(chapterMarker(title: prepared.chapter.title))\n\(prepared.markdown)"
+        }.joined(separator: "\n\n")
+        return ExtractedCache(markdown: markdown, chapters: book.chapters.map(\.chapter))
+    }
+
+    /// A Kindle KFX book (FMT52), read by `KFXParser`: chapter markers
+    /// preserve its chapters, and heading annotations its headings, without
+    /// inserting any extra text into the book, as an EPUB's do. No print
+    /// pages are written whatever `includesPages` says, until the reader's
+    /// navigation layer reads a book's own page list.
+    private static func extractFromKFX(url: URL) throws -> ExtractedCache {
+        let book = try KFXParser.prepareBook(url: url)
         let markdown = book.chapters.map { prepared in
             "\(chapterMarker(title: prepared.chapter.title))\n\(prepared.markdown)"
         }.joined(separator: "\n\n")

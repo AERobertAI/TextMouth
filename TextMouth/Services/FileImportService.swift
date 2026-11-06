@@ -226,7 +226,7 @@ struct ImportedFileMetadata {
     /// Markdown, or HTML file keeps no title or author it reads.
     static func readsFile(of format: BookFormat) -> Bool {
         switch format {
-        case .epub, .docx, .rtf, .rtfd, .doc, .odt, .wordml, .braille, .pdf, .daisy, .audio, .mobi: return true
+        case .epub, .docx, .rtf, .rtfd, .doc, .odt, .wordml, .braille, .pdf, .daisy, .audio, .mobi, .kfx: return true
         case .txt, .markdown, .html, .webarchive, .ssml: return false
         }
     }
@@ -299,6 +299,14 @@ struct ImportedFileMetadata {
             // that is protected or cannot be read keeps the defaults and the
             // import's own reading of the text fails with its sentence.
             if let named = try? MOBIParser.readMetadata(url: url) {
+                adopt(title: named.title, author: named.author)
+            }
+        case .kfx:
+            // Title and author from the book's metadata fragment (FMT52).
+            // Reading metadata never fails an import, so a book that is
+            // protected or cannot be read keeps the defaults and the
+            // import's own reading of the text fails with its sentence.
+            if let named = try? KFXParser.readMetadata(url: url) {
                 adopt(title: named.title, author: named.author)
             }
         case .daisy:
@@ -2859,6 +2867,8 @@ enum FileImportService {
         // Kindle books (FMT42): .mobi, .prc, and .azw, for which macOS
         // declares no type; the app imports one in Info.plist.
         types.append(UTType(importedAs: "com.textmouth.mobi", conformingTo: .data))
+        // Kindle KFX books (FMT52): .kfx, .kfx-zip, .azw8, and .kpf, the same.
+        types.append(UTType(importedAs: "com.textmouth.kfx", conformingTo: .data))
         // Braille files (FMT20): BRF and BRL, which macOS declares no type
         // for, and PEF, which macOS takes for a Pentax raw photo by its
         // extension; the import tells them apart by their contents.

@@ -53,6 +53,13 @@ enum BookFormat: String, Codable, CaseIterable {
     // the braille case refuses a library that holds a braille book. The
     // documentation warns the user before they go back to an older build.
     case mobi
+    // A DRM-free Kindle KFX book (FMT52), read by TextMouth's own reader
+    // (`KFXParser`) on the Mac and on iOS. Like every raw value here, written
+    // into the library index and never changed: a TextMouth built before this
+    // case refuses a library that holds a KFX book, as with the MOBI case
+    // before it. The documentation warns the user before they go back to an
+    // older build.
+    case kfx
 
     var displayName: String {
         switch self {
@@ -73,6 +80,7 @@ enum BookFormat: String, Codable, CaseIterable {
         case .pdf: return "PDF"
         case .audio: return "Audio"
         case .mobi: return "Kindle Book (MOBI)"
+        case .kfx: return "Kindle Book (KFX)"
         }
     }
 
@@ -125,6 +133,13 @@ enum BookFormat: String, Codable, CaseIterable {
         // generation was named, and .azw is an Amazon Kindle book; both are
         // read by the book's own headers (`MOBIPalmDatabase`), not by the name.
         case .mobi: return ["mobi", "prc", "azw"]
+        // .kfx is a KFX container; .azw8 is the same container as Kindle for
+        // iOS and Mac name it; .kfx-zip is calibre's bundle of a book's
+        // containers. .kpf is a Kindle Create package, which is taken only
+        // to be refused with its own sentence (`KFXError.kindleCreatePackage`)
+        // rather than as an unknown type. An `.azw` file holding KFX bytes is
+        // a MOBI-named file read by its bytes (`MOBIParser`), not listed here.
+        case .kfx: return ["kfx", "kfx-zip", "azw8", "kpf"]
         }
     }
 
