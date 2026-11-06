@@ -91,6 +91,10 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         var hyperlinkRelId = ""
         var hyperlinkText = ""
 
+        /// The text boxes anchored in this paragraph, finished, waiting for the
+        /// paragraph to end (`writePendingBoxes`).
+        var pendingBoxes: [FinishedBox] = []
+
         // The list
         /// Whether the paragraph before this one was a list item. Numbering
         /// starts again when a non-list paragraph interrupts a list.
@@ -312,21 +316,25 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             if val != "0" && val != "false" {
                 paragraph.runIsStrikethrough = true
             }
-        case "br" where paragraph.isInRun && !paragraph.runIsHidden:
+        case let name where (name == "br" || name == "cr") && paragraph.isInRun && !runIsUnread:
             // Keep breaks in their run; the paragraph has not received the
             // preceding run text yet, so appending there reverses their order.
-            if pageTracker != nil && deletionDepth == 0 && attributes["w:type"] == "page" {
+            // (`w:cr` is a carriage return: a line break, as `w:br` is.)
+            if pageTracker != nil && name == "br" && attributes["w:type"] == "page" {
                 // A page break starts a page where it stands (PG07). The
                 // words around it are kept apart by the marker, not a newline.
                 cutRun(joinsWords: true)
             } else {
                 paragraph.runText += "\n"
             }
-        case "lastRenderedPageBreak" where paragraph.isInRun && !paragraph.runIsHidden && pageTracker != nil && deletionDepth == 0:
+        case "lastRenderedPageBreak" where paragraph.isInRun && !runIsUnread && pageTracker != nil:
             // Where Word's last layout put a page (PG07); no text of its own
             cutRun(joinsWords: false)
-        case "tab" where paragraph.isInRun && !paragraph.runIsHidden:
+        case "tab" where paragraph.isInRun && !runIsUnread:
             paragraph.runText += "\t"
+        case "noBreakHyphen" where paragraph.isInRun && !runIsUnread:
+            // The same character RTF's `\_` gives
+            paragraph.runText += "-"
         case "hyperlink":
             // A page that began before the link begins before its words, not
             // inside the label (PG07)
@@ -355,8 +363,10 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
 
     func parser(_ parser: XMLParser, foundCharacters string: String) {
         // Only capture text inside <w:t> elements (handled by element context),
-        // and not in a subtree that is skipped or in a hidden run
-        if ignoredDepth == 0, !paragraph.runIsHidden, let lastElement = elementStack.last, lastElement == "t" {
+        // and not in a subtree that is skipped, in a hidden run, or in text a
+        // tracked change deleted or moved away (its words are read once, where
+        // they were moved to)
+        if ignoredDepth == 0, !runIsUnread, let lastElement = elementStack.last, lastElement == "t" {
             paragraph.runText += string
             if !string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 producedText = true
@@ -463,6 +473,23 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         case skip
     }
 
+    /// The namespace prefixes of a `mc:Choice`'s `Requires` whose content the
+    /// reader finds by element name: the text boxes of word processing shapes
+    /// (`wps`), of their groups (`wpg`), and of their canvases (`wpc`); in the
+    /// LibreOffice test documents these are the only ones whose choices hold
+    /// words. It is not a list of what the reader cannot read: a prefix it has
+    /// never heard of must send the reader to the fallback, which older readers
+    /// get (a typed emoji is a `w16se:symEx` choice and the character itself in
+    /// the fallback).
+    private static let understoodPrefixes: Set<String> = ["wps", "wpg", "wpc"]
+
+    /// Whether every prefix in `requires` (a `mc:Choice`'s attribute: prefixes
+    /// separated by white space) is one the reader understands.
+    private func understands(requires: String?) -> Bool {
+        let prefixes = (requires ?? "").split(whereSeparator: \.isWhitespace)
+        return prefixes.allSatisfy { Self.understoodPrefixes.contains(String($0)) }
+    }
+
     /// The `w:type` values of a note that only separates the others, or
     /// notices a note continued on the next page: not notes of the document.
     private static let separatorNoteTypes: Set<String> = ["separator", "continuationSeparator", "continuationNotice"]
@@ -483,14 +510,19 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         case "AlternateContent":
             alternateContentChoiceTaken.append(false)
         case "Choice" where parent == "AlternateContent":
-            if alternateContentChoiceTaken.last == true { return .skip }
+            // The first choice whose every required prefix the reader
+            // understands is read; any other choice is passed over, so the next
+            // one, or at last the fallback, can be read instead.
+            if alternateContentChoiceTaken.last == true || !understands(requires: attributes["Requires"]) { return .skip }
             if !alternateContentChoiceTaken.isEmpty { alternateContentChoiceTaken[alternateContentChoiceTaken.count - 1] = true }
         case "Fallback" where parent == "AlternateContent":
             if alternateContentChoiceTaken.last == true { return .skip }
         case "footnote", "endnote":
             if readsNotes, Self.separatorNoteTypes.contains(attributes["w:type"] ?? "") { return .skip }
         case "txbxContent":
-            setAsideParagraph()
+            // A text box anchored in text nobody reads is not read
+            if runIsUnread { return .skip }
+            startBox()
         default:
             break
         }
@@ -503,25 +535,92 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         case "AlternateContent":
             _ = alternateContentChoiceTaken.popLast()
         case "txbxContent":
-            takeUpParagraphAgain()
+            endBox()
         default:
             break
         }
     }
 
-    /// Sets the paragraph being read aside, whole, and begins with a new one,
-    /// for the paragraphs of a text box. The box's paragraphs are written as
-    /// they end, so its words come before the paragraph that holds its anchor,
-    /// none of whose words are lost.
-    private func setAsideParagraph() {
-        asideParagraphs.append(paragraph)
-        paragraph = ParagraphState()
+    /// A text box's text, finished: Markdown for a box read in the page's
+    /// flow, or the text of its paragraphs for one inside a table cell.
+    private struct FinishedBox {
+        var markdown: String
+        var texts: [String]?
     }
 
-    /// Takes up again the paragraph that a text box interrupted.
-    private func takeUpParagraphAgain() {
-        guard let outer = asideParagraphs.popLast() else { return }
-        paragraph = outer
+    /// What the converter held outside a text box while the box is read.
+    private struct OutsideBox {
+        var markdown: String
+        var tables: [TableInProgress]
+        var pageTracker: DOCXPageTracker?
+        var capture: [String]?
+        var tableTrailingMarker: String?
+    }
+    private var outsideBoxes: [OutsideBox] = []
+
+    /// While a text box is read inside a table cell (or inside another such
+    /// box), the text of its paragraphs: a cell holds text, not blocks.
+    /// Nil otherwise.
+    private var capture: [String]?
+
+    /// A text box begins. Its paragraphs are paragraphs in the middle of
+    /// another, so the paragraph being read is set aside, whole, and the box
+    /// is read as a document of its own: into a side buffer, in no table, and
+    /// with no pages (a page that begins inside a floating box is not a page
+    /// of the document, and the page pending before the box must wait for the
+    /// words after it). When the box ends its text waits for the end of the
+    /// paragraph that holds its anchor and is written right after it.
+    private func startBox() {
+        asideParagraphs.append(paragraph)
+        paragraph = ParagraphState()
+        outsideBoxes.append(OutsideBox(
+            markdown: markdown, tables: tables, pageTracker: pageTracker,
+            capture: capture, tableTrailingMarker: tableTrailingMarker
+        ))
+        let insideCell = !tables.isEmpty || capture != nil
+        markdown = ""
+        tables = []
+        pageTracker = nil
+        tableTrailingMarker = nil
+        capture = insideCell ? [] : nil
+    }
+
+    /// The text box ends: what the converter held is taken up again, and the
+    /// box's text is left with the paragraph that holds its anchor.
+    private func endBox() {
+        guard let outside = outsideBoxes.popLast(), let anchor = asideParagraphs.popLast() else { return }
+        let finished = FinishedBox(markdown: markdown, texts: capture)
+        markdown = outside.markdown
+        tables = outside.tables
+        pageTracker = outside.pageTracker
+        capture = outside.capture
+        tableTrailingMarker = outside.tableTrailingMarker
+        paragraph = anchor
+        paragraph.pendingBoxes.append(finished)
+    }
+
+    /// Writes the text boxes anchored in the paragraph that has just ended,
+    /// after it: in the cell the paragraph is in, in the box it is in, or as
+    /// blocks of the page's flow. A list the paragraph was in is ended by
+    /// them.
+    private func writePendingBoxes() {
+        let boxes = paragraph.pendingBoxes
+        guard !boxes.isEmpty else { return }
+        paragraph.pendingBoxes = []
+        for box in boxes {
+            if let texts = box.texts {
+                for text in texts {
+                    if !tables.isEmpty {
+                        appendToTable(.text(text))
+                    } else {
+                        capture?.append(text)
+                    }
+                }
+            } else {
+                paragraph.openListItems.removeAll()
+                markdown += box.markdown
+            }
+        }
     }
 
     // MARK: - Paragraph Processing
@@ -556,14 +655,30 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         return styles.headingLevels[paragraph.style]
     }
 
-    /// Emit the completed paragraph as Markdown
+    /// The paragraph ends: its Markdown is written, and then the text boxes
+    /// anchored in it.
     private func endParagraph() {
+        writeParagraph()
+        writePendingBoxes()
+    }
+
+    /// Emit the completed paragraph as Markdown
+    private func writeParagraph() {
         let text = Self.removingLineIndentation(paragraph.text.trimmingCharacters(in: .whitespaces))
 
         // Inside a table, the paragraph's words belong to the cell being read
         if !tables.isEmpty {
             if !text.isEmpty {
                 appendToTable(.text(text))
+            }
+            paragraph.isOpen = false
+            return
+        }
+
+        // In a text box that sits in a cell the paragraphs are only text
+        if capture != nil {
+            if !text.isEmpty {
+                capture?.append(text)
             }
             paragraph.isOpen = false
             return
@@ -734,6 +849,14 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         paragraph.runExplicitlyHidden = nil
         paragraph.runStyle = ""
         updateRunHidden()
+    }
+
+    /// Whether the run being read is read by nobody: hidden, or inside text a
+    /// tracked change deleted or moved away (`w:del`, `w:moveFrom`). Its text,
+    /// tabs, breaks, hyphens, page breaks, and any text box anchored in it are
+    /// left out.
+    private var runIsUnread: Bool {
+        paragraph.runIsHidden || deletionDepth > 0
     }
 
     /// Settle whether the run being read is hidden, by the toggle rule of
@@ -954,8 +1077,12 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         endTableRow()
         let finished = tables.removeLast().table
         if tables.isEmpty {
-            writeTable(finished)
-            writeTrailingTableMarker()
+            if capture != nil {
+                capture?.append(contentsOf: Self.rowParagraphs(of: finished))
+            } else {
+                writeTable(finished)
+                writeTrailingTableMarker()
+            }
         } else {
             appendToTable(.table(finished))
         }

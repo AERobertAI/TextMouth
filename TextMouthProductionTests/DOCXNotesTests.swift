@@ -25,11 +25,6 @@ final class DOCXNotesTests: XCTestCase {
             """)
     }
 
-    /// The Markdown with its runs of blank lines made one.
-    private func compact(_ markdown: String) -> String {
-        markdown.replacingOccurrences(of: "\n{2,}", with: "\n\n", options: .regularExpression)
-    }
-
     /// A body of one paragraph holding two note references.
     private var bodyWithReferences: String {
         docxParagraph(docxRun("Main text") + reference("footnote", 1) + docxRun(" goes on") + reference("endnote", 1))

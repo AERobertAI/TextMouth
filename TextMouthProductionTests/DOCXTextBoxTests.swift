@@ -10,11 +10,6 @@ import XCTest
 /// aside while the box is read and are there when it goes on.
 final class DOCXTextBoxTests: XCTestCase {
 
-    /// The Markdown with its runs of blank lines made one.
-    private func compact(_ markdown: String) -> String {
-        markdown.replacingOccurrences(of: "\n{2,}", with: "\n\n", options: .regularExpression)
-    }
-
     // MARK: - Text boxes
 
     /// A text box as Word writes it: in a `mc:Choice` for current Word and
@@ -26,11 +21,6 @@ final class DOCXTextBoxTests: XCTestCase {
         <mc:Fallback><w:pict><v:shape><v:textbox><w:txbxContent>\(docxParagraph(docxRun(words)))</w:txbxContent></v:textbox></v:shape></w:pict></mc:Fallback>
         </mc:AlternateContent></w:r>
         """
-    }
-
-    /// How many times `needle` is in `text`.
-    private func occurrences(of needle: String, in text: String) -> Int {
-        text.components(separatedBy: needle).count - 1
     }
 
     /// A text box written in both the choice and the fallback is read once,
@@ -103,6 +93,130 @@ final class DOCXTextBoxTests: XCTestCase {
         let docx = try makeDOCXPackage(document: broken)
         var diagnostics: [DOCXParserError] = []
         let result = try DOCXParser.extractMarkdown(from: docx, includesPages: false) { diagnostics.append($0) }
+        XCTAssertTrue(result.contains("Box words"), result)
+        XCTAssertEqual(diagnostics.count, 1)
+    }
+
+    // MARK: - Which choice is read
+
+    /// A typed emoji as Word writes it: a `w16se:symEx` choice the reader cannot
+    /// read, and the character itself in the fallback. The fallback is read.
+    func testATypedEmojiIsRead() throws {
+        let emoji = """
+            <w:r><mc:AlternateContent><mc:Choice Requires="w16se"><w16se:symEx w16se:font="Segoe UI Emoji" w16se:char="1F600"/></mc:Choice>\
+            <mc:Fallback><w:t>\u{1F600}</w:t></mc:Fallback></mc:AlternateContent></w:r>
+            """
+        let body = docxParagraph(docxRun("Smile ") + emoji + docxRun(" now"))
+        XCTAssertEqual(try docxReadingText(body: body), "Smile \u{1F600} now")
+    }
+
+    /// A choice that requires a prefix the reader does not know is passed over
+    /// for the next one it does, and the fallback is read only when none
+    /// is: here the later `wps` choice.
+    func testAChoiceWithAnUnknownPrefixGivesWayToTheNextChoice() throws {
+        let alternate = """
+            <w:r><mc:AlternateContent>\
+            <mc:Choice Requires="w99"><w:t>Future</w:t></mc:Choice>\
+            <mc:Choice Requires="wps w99"><w:t>Half known</w:t></mc:Choice>\
+            <mc:Choice Requires="wps"><w:t>Known</w:t></mc:Choice>\
+            <mc:Fallback><w:t>Fallback</w:t></mc:Fallback></mc:AlternateContent></w:r>
+            """
+        XCTAssertEqual(try docxReadingText(body: docxParagraph(docxRun("A ") + alternate)), "A Known")
+        let unknownOnly = """
+            <w:r><mc:AlternateContent><mc:Choice Requires="w99"><w:t>Future</w:t></mc:Choice>\
+            <mc:Fallback><w:t>Fallback</w:t></mc:Fallback></mc:AlternateContent></w:r>
+            """
+        XCTAssertEqual(try docxReadingText(body: docxParagraph(docxRun("A ") + unknownOnly)), "A Fallback")
+    }
+
+    // MARK: - Where the box is read
+
+    /// A text box is read right after the paragraph that holds its anchor, so
+    /// that the sentence is whole.
+    func testATextBoxIsReadRightAfterItsAnchorParagraph() throws {
+        let body = docxParagraph(docxRun("Before ") + textBoxAlternate("Boxed words") + docxRun("after."))
+            + docxParagraph(docxRun("Next paragraph."))
+        XCTAssertEqual(
+            try docxReadingText(body: body),
+            "Before after.\n\nBoxed words\n\nNext paragraph."
+        )
+    }
+
+    /// A page break before the box keeps its page and the words after it: the
+    /// box has no pages of its own and takes none of the document's.
+    func testAPageBreakBeforeABoxKeepsItsPageAndItsWords() throws {
+        let body = docxParagraph(
+            docxRun("A") + "<w:r><w:br w:type=\"page\"/></w:r>" + textBoxAlternate("B") + docxRun("C")
+        )
+        let markdown = try docxMarkdown(body: body, includesPages: true)
+        XCTAssertEqual(try pageLabels(of: markdown), ["1", "2"])
+        let reading = try MarkdownDocParser.parseChapter(markdown: markdown).text
+        XCTAssertEqual(reading, "A C\n\nB")
+    }
+
+    /// A box in a list item does not end the numbering of the list.
+    func testABoxInAListItemKeepsTheListWhole() throws {
+        let numbering = """
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+            <w:abstractNum w:abstractNumId="0"><w:lvl w:ilvl="0"><w:numFmt w:val="decimal"/></w:lvl></w:abstractNum>
+            <w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num></w:numbering>
+            """
+        func item(_ content: String) -> String {
+            "<w:p><w:pPr><w:numPr><w:ilvl w:val=\"0\"/><w:numId w:val=\"1\"/></w:numPr></w:pPr>\(content)</w:p>"
+        }
+        let body = item(docxRun("One")) + item(docxRun("Two") + textBoxAlternate("Side")) + item(docxRun("Three"))
+        let markdown = try docxMarkdown(body: body, numbering: numbering)
+        XCTAssertEqual(compact(markdown), "1. One\n2. Two\n\nSide\n\n3. Three")
+    }
+
+    /// A box anchored in a table cell is read in the cell, after the words of
+    /// the paragraph that holds it.
+    func testABoxInACellStaysInTheCell() throws {
+        let table = "<w:tbl><w:tr><w:tc>"
+            + docxParagraph(docxRun("Left ") + textBoxAlternate("In box") + docxRun("right"))
+            + "</w:tc><w:tc>" + docxParagraph(docxRun("Other")) + "</w:tc></w:tr></w:tbl>"
+        let markdown = try docxMarkdown(body: table)
+        XCTAssertTrue(markdown.contains("| Left right In box | Other |"), markdown)
+    }
+
+    /// A box inside a box is read after the paragraph of the box that holds it.
+    func testNestedBoxesAreReadAfterTheirAnchors() throws {
+        let inner = "<w:r><w:pict><w:txbxContent>"
+            + docxParagraph(docxRun("Mid ") + textBoxAlternate("Inner") + docxRun("end"))
+            + "</w:txbxContent></w:pict></w:r>"
+        let body = docxParagraph(docxRun("Outer ") + inner + docxRun("tail"))
+        XCTAssertEqual(try docxReadingText(body: body), "Outer tail\n\nMid end\n\nInner")
+    }
+
+    // MARK: - Boxes nobody sees
+
+    /// A box anchored in hidden text, or in text a tracked change deleted or
+    /// moved away, is not read; one in visible text is.
+    func testABoxAnchoredInHiddenOrDeletedTextIsNotRead() throws {
+        let box = "<w:pict><w:txbxContent>\(docxParagraph(docxRun("Boxed words")))</w:txbxContent></w:pict>"
+        let hidden = "<w:r><w:rPr><w:vanish/></w:rPr>\(box)</w:r>"
+        let deleted = "<w:del w:id=\"1\" w:author=\"A\"><w:r>\(box)</w:r></w:del>"
+        let moved = "<w:moveFrom w:id=\"2\" w:author=\"A\"><w:r>\(box)</w:r></w:moveFrom>"
+        let visible = "<w:r>\(box)</w:r>"
+        for (name, anchor) in [("hidden", hidden), ("deleted", deleted), ("moved", moved)] {
+            let result = try docxReadingText(body: docxParagraph(docxRun("A") + anchor + docxRun("B")))
+            XCTAssertEqual(result, "AB", name)
+        }
+        XCTAssertEqual(
+            try docxReadingText(body: docxParagraph(docxRun("A") + visible + docxRun("B"))), "AB\n\nBoxed words"
+        )
+    }
+
+    /// The damage cut inside the box: the box's words and the anchor paragraph's
+    /// words are both kept.
+    func testDamageInsideABoxKeepsBothParagraphs() throws {
+        let intact = docxDocumentXML(docxParagraph(docxRun("Before ") + textBoxAlternate("Box words here") + docxRun("after")))
+        let cut = try XCTUnwrap(intact.range(of: "words here"))
+        let docx = try makeDOCXPackage(document: String(intact[..<cut.lowerBound]) + "words")
+        var diagnostics: [DOCXParserError] = []
+        let result = try DOCXParser.extractMarkdown(from: docx, includesPages: false) { diagnostics.append($0) }
+        XCTAssertTrue(result.contains("Before"), result)
         XCTAssertTrue(result.contains("Box words"), result)
         XCTAssertEqual(diagnostics.count, 1)
     }

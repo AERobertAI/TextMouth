@@ -19,11 +19,6 @@ final class DOCXRealFileTests: XCTestCase {
         return try DOCXParser.extractMarkdown(from: copy, includesPages: includesPages)
     }
 
-    /// How many times `needle` is in `text`.
-    private func occurrences(of needle: String, in text: String) -> Int {
-        text.components(separatedBy: needle).count - 1
-    }
-
     // MARK: - Hidden text
 
     /// A paragraph style and a character style that both hide: the text the

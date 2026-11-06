@@ -11,12 +11,14 @@ extension XCTestCase {
 
     /// The namespaces a Word text part declares, which the small documents
     /// below use: the document's own, relationships, markup compatibility,
-    /// word processing shapes, and the VML that older Word writes.
+    /// word processing shapes, symbol extensions (typed emoji), and the VML that
+    /// older Word writes.
     static let docxNamespaces = """
         xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" \
         xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" \
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" \
         xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" \
+        xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" \
         xmlns:v="urn:schemas-microsoft-com:vml"
         """
 
@@ -69,11 +71,13 @@ extension XCTestCase {
     func makeDOCXPackage(
         document: String,
         styles: String? = nil,
+        numbering: String? = nil,
         footnotes: String? = nil,
         endnotes: String? = nil
     ) throws -> URL {
         var parts: [String: Data] = [DOCXParser.Part.document: Data(document.utf8)]
         if let styles { parts[DOCXParser.Part.styles] = Data(styles.utf8) }
+        if let numbering { parts[DOCXParser.Part.numbering] = Data(numbering.utf8) }
         if let footnotes { parts[DOCXParser.Part.footnotes] = Data(footnotes.utf8) }
         if let endnotes { parts[DOCXParser.Part.endnotes] = Data(endnotes.utf8) }
         let zip = try makeTemporaryZip(prefix: "TextMouthDOCXPackage", entries: parts)
@@ -90,14 +94,48 @@ extension XCTestCase {
     func docxMarkdown(
         body: String,
         styles: String? = nil,
+        numbering: String? = nil,
         footnotes: String? = nil,
         endnotes: String? = nil,
         includesPages: Bool = false
     ) throws -> String {
         let docx = try makeDOCXPackage(
-            document: docxDocumentXML(body), styles: styles,
+            document: docxDocumentXML(body), styles: styles, numbering: numbering,
             footnotes: footnotes, endnotes: endnotes
         )
         return try DOCXParser.extractMarkdown(from: docx, includesPages: includesPages)
+    }
+
+    /// What a listener hears of the package with the given parts: the reading
+    /// text the app's Markdown parser makes of the Markdown, with no marks of
+    /// emphasis, comments, or list numbers. The tests that ask whether a mark
+    /// would be spoken ask this, not the Markdown string.
+    func docxReadingText(
+        body: String,
+        styles: String? = nil,
+        numbering: String? = nil,
+        footnotes: String? = nil,
+        endnotes: String? = nil
+    ) throws -> String {
+        let markdown = try docxMarkdown(
+            body: body, styles: styles, numbering: numbering, footnotes: footnotes, endnotes: endnotes
+        )
+        return try MarkdownDocParser.parseChapter(markdown: markdown).text
+    }
+
+    /// The labels of the pages the Markdown `markdown` marks.
+    func pageLabels(of markdown: String) throws -> [String] {
+        try MarkdownDocParser.parseChapter(markdown: markdown, includeNavigationHeadings: true).pages.map(\.label)
+    }
+
+    /// `markdown` with each run of blank lines made one: an empty paragraph
+    /// writes a blank line of its own, which says nothing about what is read.
+    func compact(_ markdown: String) -> String {
+        markdown.replacingOccurrences(of: "\n{2,}", with: "\n\n", options: .regularExpression)
+    }
+
+    /// How many times `needle` is in `text`.
+    func occurrences(of needle: String, in text: String) -> Int {
+        text.components(separatedBy: needle).count - 1
     }
 }
