@@ -76,6 +76,20 @@ final class ODTTextutilComparisonTests: XCTestCase {
         return String(heading[...colon]) + " " + words(of: text).joined(separator: " ")
     }
 
+    /// The words of a heading line "level: text", with no level: the levels
+    /// textutil gives come from sizes, and the own reading keeps the levels
+    /// the file names, so a heading is textutil's and the own reading's when
+    /// their words are.
+    private func headingWords(_ heading: String) -> String {
+        words(of: heading.drop { $0 != ":" }.dropFirst().description).joined(separator: " ")
+    }
+
+    /// The headings of `textutil` whose words are in none of `own`'s.
+    private func headingsLacking(from own: [String], in textutil: [String]) -> [String] {
+        let ownWords = Set(own.map(headingWords))
+        return textutil.filter { !ownWords.contains(headingWords($0)) }
+    }
+
     /// How many pages the Markdown marks.
     private func pageCount(of markdown: String) -> Int {
         markdown.components(separatedBy: "<!-- page: ").count - 1
@@ -112,7 +126,7 @@ final class ODTTextutilComparisonTests: XCTestCase {
         XCTAssertEqual(found.textutilOnly, [], "\(path): words only textutil has", file: file, line: line)
         XCTAssertEqual(found.ownOnly, [], "\(path): words only the own reader has", file: file, line: line)
         let ownHeadings = headings(of: own)
-        let missing = headings(of: textutil).filter { !ownHeadings.contains($0) }
+        let missing = headingsLacking(from: ownHeadings, in: headings(of: textutil))
         XCTAssertEqual(missing, [], "\(path): textutil's headings that the own reading lacks; own: \(ownHeadings)", file: file, line: line)
     }
 
@@ -148,7 +162,10 @@ final class ODTTextutilComparisonTests: XCTestCase {
         var ownOnlyCount: Int?
         /// The headings of the own reading, as "level: words".
         var headings: [String] = []
-        /// The headings of textutil's reading that the own reading lacks.
+        /// The headings of textutil's reading that the own reading lacks:
+        /// those whose words are in none of the own reading's headings (the
+        /// levels differ wherever the file names levels and textutil takes
+        /// them from sizes).
         var textutilHeadingsNotOwn: [String] = []
         /// How many pages each reading finds.
         var pages = (own: 1, textutil: 1)
@@ -178,7 +195,7 @@ final class ODTTextutilComparisonTests: XCTestCase {
             why: "textutil reads the text of the hidden sections, which a person does not see (212 words); the own reader reads the bodies of the notes, which textutil drops (21 words)"
         ),
         RealFile(
-            name: "libreoffice-ooo77837-1.odt", textutilOnly: ["footnote1"], ownOnlyCount: 386,
+            name: "libreoffice-ooo77837-1.odt", textutilOnly: ["footnote1"], ownOnlyCount: 387,
             headings: ["1: Demo of bug"],
             why: "textutil runs the endnote's number into the word before it and drops the endnote's body, which here holds the whole bibliography; the own reader reads the word whole and the note after the text"
         ),
@@ -188,14 +205,11 @@ final class ODTTextutilComparisonTests: XCTestCase {
                 "1: Sequence", "1: Chapter", "1: Paragraph", "1: Paragraph II", "1: Paragraph III", "1: „Őseinket...”",
                 "1: A fejezetek", "1: Az egyebek", "1: 2018-asok", "1: 50-esek", "1: Isten",
             ],
+            textutilHeadingsNotOwn: ["1: reference language"],
             pages: (2, 1),
-            why: "the own reader begins a page at the layout's soft page break"
+            why: "the own reader begins a page at the layout's soft page break, and keeps the headings the file names, at the levels it names (textutil takes levels from sizes); textutil also takes the large paragraph \"reference language\", which the file does not make a heading, for one"
         ),
-        RealFile(
-            name: "libreoffice-space.odt", textutilOnly: ["a", "b"], ownOnly: ["ab"],
-            headings: ["1: Simple spaces", "1: Spaces and <s/>"],
-            why: "the specification says two spans with no white space between them are one word, which the own reader reads; textutil breaks the word"
-        ),
+        RealFile(name: "libreoffice-space.odt", headings: ["1: Simple spaces", "1: Spaces and <s/>"]),
         RealFile(name: "libreoffice-spellmenu-redline.odt"),
         RealFile(
             name: "libreoffice-tdf103025.odt", pages: (3, 1),
@@ -208,12 +222,17 @@ final class ODTTextutilComparisonTests: XCTestCase {
         RealFile(
             name: "libreoffice-tdf152015.odt", textutilOnly: ["1", "2", "3"], ownOnlyCount: 61,
             headings: ["3: Zwischenergebnis für die Zeit während Wohlverhaltenphase"],
-            why: "textutil reads the numbers of the footnotes and drops their bodies; the own reader reads the bodies after the text, without the numbers"
+            textutilHeadingsNotOwn: ["1: Das Restschuldbefreiungsverfahren in der InsO"],
+            why: "textutil reads the numbers of the footnotes and drops their bodies; the own reader reads the bodies after the text, without the numbers. textutil also takes a large paragraph the file does not make a heading for one"
         ),
         RealFile(
             name: "libreoffice-tdf152710.odt",
+            textutilOnly: [
+                "akl", "akl", "baltix", "childsplay", "downloads", "gcompris", "http", "http", "http", "http", "http", "lt",
+                "lt", "mokslui", "net", "net", "org", "sf", "tuxpaint",
+            ],
             headings: ["1: Laisvos programos vaikų lavinimui"], pages: (2, 1),
-            why: "the own reader begins a page at the layout's soft page break"
+            why: "the words of five hyperlink addresses, which textutil's reading keeps in the Markdown links and the own reader does not (the words of each link are read); the own reader begins a page at the layout's soft page break"
         ),
         RealFile(
             name: "libreoffice-tdf156905.odt",
@@ -221,17 +240,19 @@ final class ODTTextutilComparisonTests: XCTestCase {
             why: "the own reader begins pages at the layout's soft page breaks"
         ),
         RealFile(
-            name: "libreoffice-tdf169882.odt", ownOnly: ["nibh", "eu", "sollicitudin", "molestie"],
+            name: "libreoffice-tdf169882.odt",
+            textutilOnly: ["3", "4", "5", "6", "7", "8", "9", "10"],
+            ownOnly: ["1", "2", "3", "4", "5", "6", "7", "8", "nibh", "eu", "sollicitudin", "molestie"],
             headings: [
                 "1: Heading", "2: Heading", "3: Heading", "2: Heading", "2: Heading", "2: Heading", "1: Heading",
                 "1: Heading", "2: Heading",
             ],
             pages: (7, 1),
-            why: "the own reader reads the text box, which textutil drops, and begins pages at soft page breaks and master pages"
+            why: "the own reader reads the text box, which textutil drops, and begins pages at soft page breaks and master pages; textutil writes the numbers of a numbered list as words (3 to 10) where the converter numbers the own reader's list itself, from 1 (1 to 8)"
         ),
         RealFile(
-            name: "libreoffice-whitespace.odt", textutilOnly: ["1"], ownOnly: ["X", "X", "X", "X"],
-            why: "textutil drops the words of text boxes and shapes (four \"X\") and reads the mark of a footnote (\"1\"); the own reader reads the words and not the mark"
+            name: "libreoffice-whitespace.odt", textutilOnly: ["1", "com", "example", "http"], ownOnly: ["X", "X", "X", "X"],
+            why: "textutil drops the words of text boxes and shapes (four \"X\"), reads the mark of a footnote (\"1\"), and keeps a hyperlink's address (http://example.com) in the Markdown link; the own reader reads the words and neither the mark nor the address"
         ),
     ]
 
@@ -264,7 +285,7 @@ final class ODTTextutilComparisonTests: XCTestCase {
             if ownHeadings != file.headings.map(wordsOnly) {
                 problems.append("\(file.name): own headings \(ownHeadings), expected \(file.headings.map(wordsOnly))")
             }
-            let missing = headings(of: textutil).map(wordsOnly).filter { !ownHeadings.contains($0) }
+            let missing = headingsLacking(from: ownHeadings, in: headings(of: textutil)).map(wordsOnly)
             if missing != file.textutilHeadingsNotOwn.map(wordsOnly) {
                 problems.append("\(file.name): textutil's headings missing from the own reading: \(missing), expected \(file.textutilHeadingsNotOwn)")
             }

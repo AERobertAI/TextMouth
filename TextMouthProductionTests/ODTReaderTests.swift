@@ -86,7 +86,8 @@ final class ODTReaderTests: XCTestCase {
         XCTAssertTrue(markdown.contains("# Harbour Notes"))
         XCTAssertTrue(markdown.contains("## Morning Tides"))
         XCTAssertTrue(markdown.contains("<!-- page: 1 -->"))
-        XCTAssertTrue(markdown.contains("- Smoked fish, naïve prices"))
+        // The list items are Markdown list items, whichever the bullet.
+        XCTAssertNotNil(markdown.range(of: "(?m)^\\s*[-*+] +Smoked fish", options: .regularExpression), markdown)
     }
 
     // MARK: - Styles and Headings

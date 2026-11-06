@@ -159,12 +159,16 @@ enum ODTDocumentReader {
         /// the archive records for it, as it is inflated.
         /// - Throws: `DocumentTooLargeError` for a part past the limit, and
         ///   `TextutilConverter.Failure.unreadable(.odt)` for a part that
-        ///   holds more than the archive records for it or cannot be
-        ///   inflated.
+        ///   holds more than the archive records for it, whose checksum is
+        ///   not the one the archive records, or that cannot be inflated.
         func part(_ path: String, limit: Int64 = DocumentByteLimit.current) throws -> Data? {
             guard let entry = archive.file(at: path), entry.type == .file else { return nil }
             do {
-                return try ArchiveEntryReader.read(entry, in: archive, limit: limit, holdingToDeclaredSize: true).data
+                let part = try ArchiveEntryReader.read(entry, in: archive, limit: limit, holdingToDeclaredSize: true)
+                // The reader only takes the checksum of what it read: a part
+                // that is not the part the archive recorded is damaged.
+                guard part.checksum == entry.checksum else { throw TextutilConverter.Failure.unreadable(.odt) }
+                return part.data
             } catch let overflow as ArchiveEntryOverflow {
                 switch overflow {
                 case .pastLimit: throw DocumentTooLargeError(limit: limit)
