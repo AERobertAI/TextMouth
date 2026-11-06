@@ -262,8 +262,8 @@ struct LibraryWindowView: View {
     private var windowTitle: String {
         // VoiceOver names the window by its title when moving between
         // windows, so it says why the library isn't shown (FR02).
-        guard libraryViewModel.dataDirectoryUnavailability == nil else {
-            return DataDirectoryUnavailableText.title
+        if let reason = libraryViewModel.dataDirectoryUnavailability {
+            return DataDirectoryUnavailableText.title(for: reason)
         }
         let location = LibraryLocation(view: shownView, folderPath: currentFolderPath)
         return location.windowTitle(sortedBy: libraryViewModel.sortState(at: location))
