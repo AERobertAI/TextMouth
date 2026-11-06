@@ -140,6 +140,7 @@ struct MetadataEditorView: View {
         .navigationTitle("Info: \(isAudio ? editedAudioMetadata.title : editedEPUBMetadata.title)")
         // A reason that no longer applies is never read beside new input.
         .clearingFailure($failureMessage, whenChanged: editedEPUBFields)
+        .clearingFailure($failureMessage, whenChanged: editedAudioMetadata.title)
         .clearingFailure($failureMessage, whenChanged: writesToFile)
     }
 
@@ -147,6 +148,16 @@ struct MetadataEditorView: View {
 
     /// Saves the edits the way the book's format needs.
     private func save() {
+        // A title the user emptied is refused here, in the editor, which stays
+        // open with their edits and says why, so a book is never left with no
+        // name to hear in the library, the windows, or Now Playing.
+        let openedTitle = isAudio ? openedAudioMetadata.title : openedEPUBMetadata.title
+        let editedTitle = isAudio ? editedAudioMetadata.title : editedEPUBMetadata.title
+        if MetadataEditorWording.clearsTitle(opened: openedTitle, edited: editedTitle) {
+            failureMessage = MetadataEditorWording.titleCleared
+            VoiceOverAnnouncer.announce(MetadataEditorWording.titleCleared)
+            return
+        }
         if isAudio {
             saveAudioAfterClosing()
         } else {
@@ -352,6 +363,21 @@ enum MetadataEditorWording {
     static func fieldLabel(_ label: String, for field: Book.MetadataField, in handEdits: Book.HandEdits?) -> String {
         guard handEdits?.contains(field) == true else { return label }
         return "\(label), \(editedByHand)"
+    }
+
+    /// What the editor says when Save is pressed after the title was
+    /// emptied.
+    static let titleCleared = "Could not save: the book's title is empty. Type a title, then save again."
+
+    /// Whether saving would leave the book without a title: the editor
+    /// opened with a title, and the edit holds nothing but blanks. A book
+    /// that had no title to begin with may be saved with none, so that a
+    /// change to another field is never held back.
+    static func clearsTitle(opened: String, edited: String) -> Bool {
+        func isBlank(_ title: String) -> Bool {
+            title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+        return !isBlank(opened) && isBlank(edited)
     }
 
     /// When the book titled `title` has left the library, so its edit has

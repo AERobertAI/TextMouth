@@ -451,6 +451,19 @@ final class HandEditedMetadataTests: XCTestCase {
         )
     }
 
+    /// The editors refuse a save that would leave the book with no title:
+    /// the user emptied one it opened with, or left only blanks. A book
+    /// that opened without a title may be saved without one, so a change
+    /// to another field is never held back.
+    func testASaveThatEmptiesTheTitleIsRefused() {
+        XCTAssertTrue(MetadataEditorWording.clearsTitle(opened: "Dune", edited: ""))
+        XCTAssertTrue(MetadataEditorWording.clearsTitle(opened: "Dune", edited: "  \n "))
+        XCTAssertFalse(MetadataEditorWording.clearsTitle(opened: "Dune", edited: "Dune Messiah"))
+        XCTAssertFalse(MetadataEditorWording.clearsTitle(opened: "", edited: ""))
+        XCTAssertFalse(MetadataEditorWording.clearsTitle(opened: "   ", edited: ""))
+        XCTAssertTrue(MetadataEditorWording.titleCleared.hasSuffix("save again."))
+    }
+
     /// A library model listing one book without a package, without the
     /// app's services, whose index is put back when the test ends.
     @MainActor
