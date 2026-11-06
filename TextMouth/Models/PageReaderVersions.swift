@@ -80,8 +80,13 @@ enum PageReaderVersions {
             // numbered and bulleted paragraphs list items (their numbers are
             // not heard while `WordDocumentReader.speaksListNumbers` is off),
             // and reads the main document's text boxes after the notes, so
-            // every .doc book is read again once more.
-            return "1.2.0"
+            // every .doc book is read again once more. At "1.3.0" it reads
+            // Word 6 and Word 95 documents too (which textutil read before on
+            // the Mac): their headings from the style sheet, their hidden
+            // text, tracked deletions, numbering and notes by the same
+            // policy, and Far East and Cyrillic text in the code page their
+            // fonts name, so every .doc book is read again once more.
+            return "1.3.0"
         case .odt, .wordml:
             // OpenDocument text (FMT27) and Word 2003 XML (FMT53) are read by
             // TextMouth's own readers from "1.1.0": the documents' own
