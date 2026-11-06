@@ -468,6 +468,19 @@ final class WordDocumentLegacyTests: XCTestCase {
         XCTAssertNotNil(try WordDocumentReader.html(from: modern.build(), includesPages: false, readsOldLayout: false))
     }
 
+    func testWord1AndWord2DocumentsAreRefusedWithTheUnreadableSentenceAtOnce() throws {
+        // Bare streams from before Word 6, with no compound file: out of scope, refused as they were before.
+        for name in ["poi-word2.doc", "libreoffice-ww5-ooo37322-1-WW2.doc", "libreoffice-ww5-ooo40683-1-WW1.doc"] {
+            let data = try Data(contentsOf: formatSampleURL("doc6/\(name)"))
+            let start = Date()
+            XCTAssertThrowsError(try WordDocumentReader.html(from: data, includesPages: true), name) { error in
+                XCTAssertTrue(error is TextutilConverter.Failure, "\(name): \(error)")
+                XCTAssertTrue(error.localizedDescription.hasPrefix("This file could not be read as"), error.localizedDescription)
+            }
+            XCTAssertLessThan(Date().timeIntervalSince(start), 1.0, name)
+        }
+    }
+
     func testADocumentOlderThanWord6IsLeftAlone() throws {
         var builder = Builder()
         builder.paragraphs = [Paragraph("old")]
