@@ -1042,8 +1042,14 @@ final class ConfigService: ObservableObject {
             loadedFile = .decoded
         } catch where DatalessFiles.isDownloadRefusal(error) {
             // Not loaded: the preferences stand until the file is on this
-            // Mac, and the saves until then leave it as it is.
+            // Mac, and the saves until then leave it as it is. The settings
+            // in use now stand for what the file last held, so a setting
+            // changed from here on, the first one included, is kept when
+            // the file arrives and is merged.
             loadedFile = .missing
+            if lastSyncedConfig == nil {
+                lastSyncedConfig = config
+            }
             noteFileInCloud()
         } catch {
             loadedFile = .unreadable

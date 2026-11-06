@@ -192,10 +192,22 @@ extension LibraryViewModel {
         with fetch: @escaping LibraryFileFetch
     ) async -> LibraryFetchPass.Result {
         let pass = LibraryFetchPass(files: files)
+        let slots = libraryFetchReadSlots
         for file in files {
             libraryFilesBeingRead.insert(file.standardizedFileURL.path)
             Task { [weak self] in
+                // At most `LibraryFetchReadSlots.limit` reads are out at once,
+                // so a silent sync service holds a few threads, not one for
+                // each of a library's feeds. A read still queued when its
+                // pass is over is never started.
+                await slots.acquire()
+                guard !pass.isOver else {
+                    slots.release()
+                    self?.libraryFileNotStarted(file)
+                    return
+                }
                 let failure = await OffMainWork.run { Self.failure(reading: file, in: root, with: fetch) }
+                slots.release()
                 let inTime = pass.complete(file, failure: failure)
                 self?.libraryFileReturned(file, late: !inTime)
             }
@@ -224,13 +236,21 @@ extension LibraryViewModel {
         }
     }
 
+    /// A read of `file` that was still queued for a slot when its pass ended
+    /// is dropped without being started.
+    private func libraryFileNotStarted(_ file: URL) {
+        libraryFilesBeingRead.remove(file.standardizedFileURL.path)
+    }
+
     /// A read of `file` returned. When it came after its fetch gave up
     /// (`late`) and no fetch runs now, the files it was holding may have
     /// been the last ones missing: the check runs again, and the library
     /// opens if it is there.
     private func libraryFileReturned(_ file: URL, late: Bool) {
         libraryFilesBeingRead.remove(file.standardizedFileURL.path)
-        guard late, libraryFetchTask == nil, dataDirectoryUnavailability != nil else { return }
+        // Nothing opens once the user has chosen another library: this
+        // process is on its way out.
+        guard late, !librarySwitchPending, libraryFetchTask == nil, dataDirectoryUnavailability != nil else { return }
         DiagnosticLog.event(
             .storage,
             "LIBRARY_FETCH: a read of \(DataDirectoryPaths.relativeName(of: file, in: TextMouthPaths.root)) returned late"
@@ -299,6 +319,13 @@ extension LibraryViewModel {
 /// and hands the waiting pass its result when all have, or when the stall
 /// limit expires with some still out.
 final class LibraryFetchPass: @unchecked Sendable {
+    /// Whether the pass has ended, by every read returning or by expiry.
+    var isOver: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return isFinished
+    }
+
     /// What a pass found.
     struct Result: Sendable {
         /// How each read that failed failed (`failure(reading:in:with:)`).
@@ -313,8 +340,8 @@ final class LibraryFetchPass: @unchecked Sendable {
     private var outstanding: [String: URL]
     /// What has been found so far.
     private var found = Result()
-    /// Whether the pass has ended, by every read returning or by expiry.
-    private var isOver = false
+    /// Backs `isOver`.
+    private var isFinished = false
     /// The waiting pass, until it is handed the result.
     private var waiter: CheckedContinuation<Result, Never>?
 
@@ -328,7 +355,7 @@ final class LibraryFetchPass: @unchecked Sendable {
     func complete(_ file: URL, failure: String?) -> Bool {
         lock.lock()
         defer { lock.unlock() }
-        guard !isOver else { return false }
+        guard !isFinished else { return false }
         outstanding[file.standardizedFileURL.path] = nil
         if let failure {
             found.failures.append(failure)
@@ -344,7 +371,7 @@ final class LibraryFetchPass: @unchecked Sendable {
     func expire() {
         lock.lock()
         defer { lock.unlock() }
-        guard !isOver else { return }
+        guard !isFinished else { return }
         found.stalled = Array(outstanding.values)
         end()
     }
@@ -354,7 +381,7 @@ final class LibraryFetchPass: @unchecked Sendable {
         await withCheckedContinuation { continuation in
             lock.lock()
             defer { lock.unlock() }
-            if isOver {
+            if isFinished {
                 continuation.resume(returning: found)
             } else {
                 waiter = continuation
@@ -365,9 +392,53 @@ final class LibraryFetchPass: @unchecked Sendable {
     /// Marks the pass over and hands the result to the waiter. Call with
     /// `lock` held.
     private func end() {
-        isOver = true
+        isFinished = true
         waiter?.resume(returning: found)
         waiter = nil
+    }
+}
+
+// MARK: - Reads in Flight
+
+/// How many fetch reads may be out at once: each holds a thread in the
+/// kernel while the sync service answers, and a silent one would otherwise
+/// hold a thread for each file of a library with many feeds, starving the
+/// pool Swift's concurrency shares. A queued read waits for a slot; a stuck
+/// read keeps its slot, so the stall limit still ends a pass.
+final class LibraryFetchReadSlots: @unchecked Sendable {
+    /// The most reads out at once.
+    static let limit = 8
+
+    /// Guards the two properties below.
+    private let lock = NSLock()
+    /// Slots free now.
+    private var available = LibraryFetchReadSlots.limit
+    /// Reads waiting for a slot, in order.
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    /// Waits for a free slot and takes it.
+    func acquire() async {
+        await withCheckedContinuation { continuation in
+            lock.lock()
+            defer { lock.unlock() }
+            if available > 0 {
+                available -= 1
+                continuation.resume()
+            } else {
+                waiters.append(continuation)
+            }
+        }
+    }
+
+    /// Gives a slot back, to the read that has waited longest.
+    func release() {
+        lock.lock()
+        defer { lock.unlock() }
+        if waiters.isEmpty {
+            available += 1
+        } else {
+            waiters.removeFirst().resume()
+        }
     }
 }
 

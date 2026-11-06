@@ -2048,6 +2048,7 @@ extension LibraryViewModel {
         // would otherwise check the old folder against the new library's
         // expectations, while TextMouth waits to open again.
         let droppedFetch = cancelLibraryFetch()
+        librarySwitchPending = true
         TextMouthPaths.setCustomRoot(
             TextMouthPaths.isDefaultLocation(folder) ? nil : folder,
             in: dataDirectoryEnvironment.preferences
@@ -2060,6 +2061,7 @@ extension LibraryViewModel {
             try await relauncher.openNewInstance()
         } catch {
             DiagnosticLog.event(.storage, "DATA_DIRECTORY_SWITCH: TextMouth couldn't open again: \(error.localizedDescription)")
+            librarySwitchPending = false
             if droppedFetch {
                 recheckAfterDroppedLibraryFetch()
             }

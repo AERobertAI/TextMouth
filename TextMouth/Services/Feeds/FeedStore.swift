@@ -229,7 +229,8 @@ final class FeedStore: ObservableObject {
     /// each that is on this Mac now. A feed subscribed or changed meanwhile
     /// keeps its record as the store holds it.
     func loadRecordsInCloud() async {
-        guard !recordsInCloud.isEmpty else { return }
+        // Only once `load()` has listed what is in the cloud.
+        guard hasLoaded, !recordsInCloud.isEmpty else { return }
         let folder = location.currentFolder()
         let waiting = recordsInCloud
         let read = await OffMainWork.run(on: .global(qos: .utility)) {

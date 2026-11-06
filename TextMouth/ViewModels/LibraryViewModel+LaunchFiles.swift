@@ -112,7 +112,10 @@ extension LibraryViewModel {
     ) {
         guard !isBeingRead(url) else { return }
         libraryFilesBeingRead.insert(url.standardizedFileURL.path)
+        let slots = libraryFetchReadSlots
         Task { [weak self] in
+            // Sharing the library fetch's cap on reads in flight.
+            await slots.acquire()
             let read: LaunchFileRead = await OffMainWork.run {
                 // Metadata only, with downloads refused; a file on this Mac
                 // needs nothing.
@@ -121,6 +124,7 @@ extension LibraryViewModel {
                 }
                 return Self.failure(reading: url, in: root, with: fetch).map { .failed($0) } ?? .fetched
             }
+            slots.release()
             self?.launchFileReturned(file, at: url, root: root, read: read)
         }
     }
@@ -139,6 +143,7 @@ extension LibraryViewModel {
     /// service that reads it, and a failure is logged.
     private func launchFileReturned(_ file: LibraryLaunchFile, at url: URL, root: URL, read: LaunchFileRead) {
         libraryFilesBeingRead.remove(url.standardizedFileURL.path)
+        guard !librarySwitchPending else { return }
         let name = DataDirectoryPaths.relativeName(of: url, in: root)
         switch read {
         case .notNeeded:
