@@ -44,16 +44,11 @@ enum ODTDocumentReader {
     // MARK: The Switch
 
     /// Whether this platform reads OpenDocument text with this reader: iOS,
-    /// which has no textutil, always; the Mac once the reader has been
-    /// checked against textutil's reading of the same files
-    /// (`ODTTextutilComparisonTests`).
-    static var isOn: Bool {
-        #if os(macOS)
-        false
-        #else
-        true
-        #endif
-    }
+    /// which has no textutil, always, and the Mac since the reader was
+    /// checked against textutil's reading of every sample
+    /// (`ODTTextutilComparisonTests`: the same words but for the named
+    /// differences, and at least textutil's headings).
+    static var isOn: Bool { true }
 
     // MARK: Reading
 

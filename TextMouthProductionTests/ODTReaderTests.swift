@@ -979,13 +979,9 @@ final class ODTReaderTests: XCTestCase {
     // MARK: - The Switch
 
     /// iOS, which has no textutil, always reads OpenDocument text with this
-    /// reader; the Mac reads it with this reader only once it has been
-    /// checked against textutil's reading, which the switch commit records.
-    func testTheSwitchIsOnForIOS() {
-        #if os(macOS)
-        XCTAssertFalse(ODTDocumentReader.isOn)
-        #else
+    /// reader, and the Mac does since the reader was checked against
+    /// textutil's reading (`ODTTextutilComparisonTests`).
+    func testTheSwitchIsOn() {
         XCTAssertTrue(ODTDocumentReader.isOn)
-        #endif
     }
 }

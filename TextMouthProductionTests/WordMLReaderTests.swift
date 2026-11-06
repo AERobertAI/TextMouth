@@ -540,12 +540,10 @@ final class WordMLReaderTests: XCTestCase {
 
     // MARK: - The Switch
 
-    /// iOS always reads Word 2003 XML with this reader; the Mac, once checked.
-    func testTheSwitchIsOnForIOS() {
-        #if os(macOS)
-        XCTAssertFalse(WordMLDocumentReader.isOn)
-        #else
+    /// iOS always reads Word 2003 XML with this reader, and the Mac does since
+    /// the reader was checked against textutil's reading
+    /// (`testSamplesMatchTextutil`).
+    func testTheSwitchIsOn() {
         XCTAssertTrue(WordMLDocumentReader.isOn)
-        #endif
     }
 }
