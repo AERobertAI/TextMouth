@@ -446,6 +446,14 @@ final class WordDocumentReaderTests: XCTestCase {
         )
     }
 
+    func testAParagraphOfDeletedWordsThatBeginsAPageBeginsNone() throws {
+        var deleted = Run("gone")
+        deleted.isDeleted = true
+        let pageBreakBefore = WordDocumentBuilder.modifier(WordSprm.pageBreakBefore, 1)
+        let body = try body([Paragraph("A"), Paragraph(runs: [deleted], modifiers: pageBreakBefore), Paragraph("B")], pages: true)
+        XCTAssertEqual(body, span(1) + "<p>A</p>\n<p>B</p>\n")
+    }
+
     func testAHiddenSectionBreakBeginsNoPage() throws {
         var builder = WordDocumentBuilder()
         builder.paragraphs = [Paragraph("first", mark: 0x0C, markModifiers: hiddenMark), Paragraph("second")]
