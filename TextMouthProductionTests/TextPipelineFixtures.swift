@@ -94,7 +94,9 @@ enum TextPipelineFixtures {
         "format-samples/doc/libreoffice-fdo77844.doc",
         "format-samples/doc/libreoffice-list-nolevel.doc",
         "format-samples/doc/libreoffice-nonInlinePageBreakFirstLine.doc",
+        "format-samples/doc/libreoffice-tdf102334_hiddenText.doc",
         "format-samples/doc/libreoffice-tdf104239_chapterNumbering.doc",
+        "format-samples/doc/libreoffice-tdf106541_chapterNumbering.doc",
         "format-samples/doc/libreoffice-tdf106799.doc",
         "format-samples/doc/libreoffice-tdf116194.doc",
         "format-samples/doc/libreoffice-tdf121110_absJustify.doc",
@@ -106,6 +108,9 @@ enum TextPipelineFixtures {
         "format-samples/doc/libreoffice-tdf95576.doc",
         "format-samples/doc/libreoffice-tdf98284_softLockedFields.doc",
         "format-samples/doc/page-breaks.doc",
+        "format-samples/doc/poi-lists.doc",
+        "format-samples/doc/poi-rasp.doc",
+        "format-samples/doc/poi-textboxes.doc",
         "format-samples/docm/headings-synthetic.docm",
         "format-samples/docm/libreoffice-hello.docm",
         "format-samples/docx/page-breaks.docx",
@@ -167,11 +172,31 @@ enum TextPipelineFixtures {
     /// `RTFTextutilComparisonTests`, which names every difference, and a
     /// golden of textutil's reading would pin what the own reader replaces
     /// (textutil refuses three of them outright).
-    static let formatSamplesHeldBack: [String: String] = Dictionary(
-        uniqueKeysWithValues: formatSampleNames
-            .filter { $0.hasPrefix("format-samples/rtf/libreoffice-") }
-            .map { ($0, "compared with textutil's reading in RTFTextutilComparisonTests instead of a golden") }
-    )
+    ///
+    /// Five real Word 97-2003 files added with the reader's follow-ups
+    /// (hidden text, a fast-saved file's piece modifiers, list numbers, and
+    /// text boxes) are held back the same way: `WordDocumentReaderTests`
+    /// pins what each reads as, and `WordDocumentComparisonTests` compares
+    /// their words with textutil's and names every difference.
+    static let formatSamplesHeldBack: [String: String] = {
+        var heldBack: [String: String] = [:]
+        for name in formatSampleNames where name.hasPrefix("format-samples/rtf/libreoffice-") {
+            heldBack[name] = "compared with textutil's reading in RTFTextutilComparisonTests instead of a golden"
+        }
+        for name in wordFollowUpSamples {
+            heldBack[name] = "pinned by WordDocumentReaderTests and compared with textutil's reading in WordDocumentComparisonTests instead of a golden"
+        }
+        return heldBack
+    }()
+
+    /// The Word 97-2003 samples added with the reader's follow-ups; see `formatSamplesHeldBack`.
+    private static let wordFollowUpSamples = [
+        "format-samples/doc/libreoffice-tdf102334_hiddenText.doc",
+        "format-samples/doc/libreoffice-tdf106541_chapterNumbering.doc",
+        "format-samples/doc/poi-lists.doc",
+        "format-samples/doc/poi-rasp.doc",
+        "format-samples/doc/poi-textboxes.doc",
+    ]
 
     /// The folders of the format samples that macOS's own readers read
     /// (`/usr/bin/textutil`, and PDFKit for "pdf", PG06). What they give can
