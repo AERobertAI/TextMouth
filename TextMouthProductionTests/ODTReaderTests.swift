@@ -57,8 +57,8 @@ final class ODTReaderTests: XCTestCase {
         XCTAssertTrue(lines.contains { $0.contains("<strong>Boat</strong>") })
     }
 
-    /// Pages are marked only when asked for, and the words are the same
-    /// either way, on every sample.
+    /// Pages are marked only when asked for, and the reading is the same
+    /// either way but for the page elements, on every sample.
     func testTheTextIsTheSameWithAndWithoutPagesOnEverySample() throws {
         let samples = try FileManager.default.contentsOfDirectory(
             atPath: formatSampleURL("odt").path
@@ -68,9 +68,10 @@ final class ODTReaderTests: XCTestCase {
             let withPages = try readHTML(ofSample: "odt/\(sample)", pages: true)
             let without = try readHTML(ofSample: "odt/\(sample)", pages: false)
             XCTAssertFalse(without.contains("doc-pagebreak"), sample)
+            // The pages add their elements and nothing else.
             XCTAssertEqual(
-                odfPlainText(withPages.replacingOccurrences(of: "<span[^>]*></span>", with: " ", options: .regularExpression)),
-                odfPlainText(without),
+                withPages.replacingOccurrences(of: "<span role=\"doc-pagebreak\"[^>]*></span>", with: "", options: .regularExpression),
+                without,
                 sample
             )
         }

@@ -70,13 +70,18 @@ final class WordMLReaderTests: XCTestCase {
         XCTAssertTrue(odfBodyLines(html).contains("<p>First page paragraph two runs on and\(page(2))continues here.</p>"))
     }
 
-    /// The words are the same with and without pages.
+    /// The reading is the same with and without pages, but for the page elements.
     func testTheTextIsTheSameWithAndWithoutPages() throws {
         for sample in ["wordml/headings.wordml", "wordml/page-breaks.wordml"] {
             let copy = try copyOfFormatSample(sample)
             let withPages = try WordMLDocumentReader.html(of: copy, includesPages: true)
             let without = try WordMLDocumentReader.html(of: copy, includesPages: false)
-            XCTAssertEqual(odfPlainText(withPages), odfPlainText(without), sample)
+            // The pages add their elements and nothing else.
+            XCTAssertEqual(
+                withPages.replacingOccurrences(of: "<span role=\"doc-pagebreak\"[^>]*></span>", with: "", options: .regularExpression),
+                without,
+                sample
+            )
         }
     }
 
