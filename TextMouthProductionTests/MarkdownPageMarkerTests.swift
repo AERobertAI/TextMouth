@@ -539,6 +539,85 @@ final class MarkdownPageMarkerTests: XCTestCase {
         XCTAssertEqual(written(into: "", inline: false), marker + "\n\n")
     }
 
+    // MARK: - A Long Last Line
+
+    /// A line of many thousands of scalars is not walked back to its start for
+    /// every marker written in it: a book's paragraph holding 20,000 pages
+    /// took 116 s to write (2 MB), where it now takes a few milliseconds. The
+    /// limit is thirty seconds, which the quadratic walk passes at about half
+    /// the pages (it is checked as the pages are written, so a regression
+    /// fails in half a minute and does not wait for the end), and which a
+    /// busy machine cannot make the linear walk reach.
+    func testManyMarkersInOneLongParagraphAreWrittenInLinearTime() {
+        let pages = 20_000
+        let words = String(repeating: "word ", count: 20)
+        let limit: Duration = .seconds(30)
+        // Every way a caller writes an inline marker.
+        let callers: [(keepingWordsApart: Bool, continuationAtMargin: Bool)] = [
+            (false, true), (true, false), (false, false),
+        ]
+        for caller in callers {
+            var markdown = ""
+            let clock = ContinuousClock()
+            let start = clock.now
+            var written = 0
+            while written < pages, clock.now - start < limit {
+                markdown += words
+                MarkdownMarkerWriter.write(
+                    "<!-- page: \(written + 1) -->", inline: true,
+                    keepingWordsApart: caller.keepingWordsApart,
+                    continuationAtMargin: caller.continuationAtMargin, into: &markdown)
+                written += 1
+            }
+            XCTAssertEqual(written, pages, "\(caller): \(written) pages were written in \(limit)")
+            // The words and markers are all there, one paragraph still.
+            XCTAssertEqual(markdown.filter { $0 == "\n" }.count, 0, "\(caller)")
+            XCTAssertTrue(markdown.hasSuffix("<!-- page: \(pages) -->"), "\(caller)")
+        }
+    }
+
+    /// Where a marker is written is the same however long the last line is:
+    /// the scan back stops at a scalar only words hold, and reads on through
+    /// a tail of marker characters, indentation, and openings to the start.
+    func testAMarkerInALongLineIsPlacedAsInAShortOne() {
+        let marker = "<!-- page: 2 -->"
+        let long = 5_000
+        // Words far back, then a long tail of delimiters and marker
+        // characters: the line holds words, so the space goes before.
+        for tail in ["-", "*", "_", "~", "#", "+", "1.", " ", "\t", ">"] {
+            let line = "words " + String(repeating: tail, count: long)
+            XCTAssertEqual(
+                written(into: line, inline: true, keepingWordsApart: true),
+                line + (line.last?.isWhitespace == true ? "" : " ") + marker, "tail \(tail.debugDescription)")
+        }
+        // A line made only of emphasis delimiters, or only of a list
+        // marker's or heading's characters, is read to its start, and the
+        // space goes after the marker, as it does in a short one.
+        let delimiters = String(repeating: "*", count: long)
+        XCTAssertEqual(written(into: delimiters, inline: true, keepingWordsApart: true), delimiters + marker + " ")
+        XCTAssertEqual(written(into: "*Roses\n" + delimiters, inline: true, keepingWordsApart: true),
+                       "*Roses\n" + delimiters + marker + " ")
+        XCTAssertEqual(written(into: "1.", inline: true, keepingWordsApart: true), "1." + marker + " ")
+        XCTAssertEqual(written(into: "##", inline: true, keepingWordsApart: true), "##" + marker + " ")
+        // The same delimiters after a word are words: the space goes before.
+        XCTAssertEqual(written(into: "a" + delimiters, inline: true, keepingWordsApart: true),
+                       "a" + delimiters + " " + marker)
+        // A scalar outside ASCII, a carriage return, and punctuation prove words too.
+        for word in ["\u{E9}", "\r", "`", "<", "!", "\u{2028}"] {
+            XCTAssertEqual(written(into: "-" + word + "--", inline: true, keepingWordsApart: true),
+                           "-" + word + "-- " + marker, word.debugDescription)
+        }
+        // A long line indented four columns or more may be code, wherever
+        // its words are: the marker is a block of its own, at the margin.
+        let indented = "    " + String(repeating: "word ", count: long)
+        XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: indented), .withinLine)
+        XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "text\n" + indented + "\n"), .blockStart)
+        // After a long line's break, the marker goes at its end, as after a short one.
+        let longLine = String(repeating: "word ", count: long)
+        XCTAssertEqual(written(into: longLine + "\n", inline: true),
+                       String(longLine.dropLast()) + marker + " \n")
+    }
+
     func testABlankLineIsEnsuredOnlyWhenMissing() {
         var markdown = ""
         MarkdownMarkerWriter.ensureBlankLine(&markdown)

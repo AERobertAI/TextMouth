@@ -137,7 +137,10 @@ enum MarkdownMarkerWriter {
 
     /// Where a marker goes at the end of the Markdown: its position, and the
     /// index `write` works at, in the Markdown's Unicode scalars. For
-    /// `withinLine` the index is where the last line's words begin; for
+    /// `withinLine` the index is where the last line's words begin, or, when
+    /// the scan back from the end met a scalar that only a word holds before
+    /// it met the line's start (`scanBackFromEnd`), that scalar, which words
+    /// begin at or before; for
     /// `continuationLine` where the words of the line before it end, or the
     /// end when the marker begins its own line (`continuationAtMargin`); for
     /// `containerStart` and `headingStart` the end of the opening, after
@@ -155,7 +158,15 @@ enum MarkdownMarkerWriter {
     /// or at the beginning.
     private static func placement(atEndOf markdown: String, continuationAtMargin: Bool = false) -> Placement {
         let scalars = markdown.unicodeScalars
-        let lastStart = scalars.lastIndex(of: "\n").map { scalars.index(after: $0) } ?? scalars.startIndex
+        let lastStart: String.Index
+        switch scanBackFromEnd(of: scalars) {
+        case .wordsProved(at: let wordScalar):
+            // The last line holds words, wherever it begins: a long line is
+            // not walked to its start for every marker written in it.
+            return Placement(position: .withinLine, index: wordScalar)
+        case .lineStart(let start):
+            lastStart = start
+        }
         let last = Line(scalars[lastStart...])
         if !last.words.isEmpty || (continuationAtMargin && last.opensContainer) {
             return Placement(position: .withinLine, index: last.wordsStart)
@@ -194,6 +205,53 @@ enum MarkdownMarkerWriter {
             return Placement(position: .blockStart, index: scalars.endIndex)
         }
         return Placement(position: .continuationLine, index: wordsEnd)
+    }
+
+    /// What the scan back from the end of the Markdown met first.
+    private enum EndScan {
+        /// A scalar that only the words of a line can hold, so the last line
+        /// has words, and begins before it.
+        case wordsProved(at: String.Index)
+        /// The start of the last line: just after the last line feed, or the
+        /// start of the Markdown.
+        case lineStart(String.Index)
+    }
+
+    /// Scan back from the end of `scalars` to the first line feed, stopping
+    /// early at a scalar that proves the last line holds words
+    /// (`provesWords(_:)`). A paragraph of many pages is one line of many
+    /// thousands of scalars, and walking it back to its start for every
+    /// marker written in it made the whole conversion quadratic (20,000 pages
+    /// in 2 MB took 116 s). The marker written last holds letters, so a scan
+    /// stops within a marker or the words before it. Only a last line made
+    /// wholly of openings, indentation, and marker characters is read to its
+    /// start, and nothing is written in such a line until a marker is.
+    private static func scanBackFromEnd(of scalars: String.UnicodeScalarView) -> EndScan {
+        var index = scalars.endIndex
+        while index > scalars.startIndex {
+            let before = scalars.index(before: index)
+            let scalar = scalars[before]
+            if scalar == "\n" { return .lineStart(index) }
+            if provesWords(scalar) { return .wordsProved(at: before) }
+            index = before
+        }
+        return .lineStart(scalars.startIndex)
+    }
+
+    /// Whether `scalar`, found in a line, proves the line has words, and that
+    /// those words are not a list item's or heading's marker alone, nor only
+    /// emphasis delimiters (`Line.isMarkerAlone`, `spaceSide`). Every scalar
+    /// the openings (`Line.init`) and those markers are made of is left out:
+    /// indentation, ">", "-", "*", "+", digits, ".", ")", "#", "_", and "~".
+    /// A scalar anywhere else cannot be part of an opening, so the words
+    /// begin at or before it.
+    private static func provesWords(_ scalar: Unicode.Scalar) -> Bool {
+        switch scalar {
+        case " ", "\t", ">", "-", "*", "+", ".", ")", "#", "_", "~", "0"..."9":
+            return false
+        default:
+            return true
+        }
     }
 
     /// Which side of a marker the one space that keeps two words apart goes.
