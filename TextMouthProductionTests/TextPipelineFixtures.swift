@@ -182,19 +182,10 @@ enum TextPipelineFixtures {
     /// `RTFTextutilComparisonTests`, which names every difference, and a
     /// golden of textutil's reading would pin what the own reader replaces
     /// (textutil refuses three of them outright).
-    ///
-    /// The real OpenDocument files from LibreOffice are held back for the
-    /// same reason, in `ODTTextutilComparisonTests`.
     static let formatSamplesHeldBack: [String: String] = Dictionary(
-        uniqueKeysWithValues: formatSampleNames.compactMap { name -> (String, String)? in
-            if name.hasPrefix("format-samples/rtf/libreoffice-") {
-                return (name, "compared with textutil's reading in RTFTextutilComparisonTests instead of a golden")
-            }
-            if name.hasPrefix("format-samples/odt/libreoffice-") {
-                return (name, "compared with textutil's reading in ODTTextutilComparisonTests instead of a golden")
-            }
-            return nil
-        }
+        uniqueKeysWithValues: formatSampleNames
+            .filter { $0.hasPrefix("format-samples/rtf/libreoffice-") }
+            .map { ($0, "compared with textutil's reading in RTFTextutilComparisonTests instead of a golden") }
     )
 
     /// The folders of the format samples that macOS's own readers read

@@ -115,3 +115,18 @@ extension XCTestCase {
             .joined(separator: " ")
     }
 }
+
+// MARK: - The Samples Compared with textutil Instead of a Golden
+
+extension TextPipelineFixtures {
+    /// Whether the format sample `name` (a path in `formatSampleNames`) is one
+    /// of the real OpenDocument files from LibreOffice, whose reading
+    /// `ODTTextutilComparisonTests` compares with textutil's, naming every
+    /// difference, instead of `DocumentGoldenTests` recording a golden of it
+    /// (a golden of textutil's reading would pin what the own reader
+    /// replaces). It is not part of `formatSamplesHeldBack`, which the other
+    /// readers' samples change too.
+    static func isComparedByODTTests(_ name: String) -> Bool {
+        name.hasPrefix("format-samples/odt/libreoffice-")
+    }
+}
