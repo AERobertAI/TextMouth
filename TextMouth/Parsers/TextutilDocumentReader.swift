@@ -90,10 +90,13 @@ enum TextutilDocumentReader {
             )
         }
         let html = source.html
+        // Cancel is heard between the steps of a very large document's reading
+        try ImportCancellation.throwIfCancelled()
         let document = try SwiftSoup.parse(html)
         // The names are read before `markdown(from:source:fileName:includesPages:)`, which restores
         // the structure in the document and so changes it.
         let named = metadata(in: document)
+        try ImportCancellation.throwIfCancelled()
         return Extraction(
             markdown: try markdown(from: document, source: source, fileName: url.lastPathComponent, includesPages: includesPages),
             named: named,

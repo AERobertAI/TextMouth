@@ -63,7 +63,8 @@ enum RTFDocumentReader {
     /// The HTML document of the rich text in `data`, which the caller has
     /// held to the byte limit.
     /// - Throws: `TextutilConverter.Failure.unreadable` for groups nested
-    ///   too deeply, and `DocumentTooLargeError` for text past the limit.
+    ///   too deeply, `DocumentTooLargeError` for text past the limit, and
+    ///   `ImportCancelled` when the import running the read was cancelled.
     static func html(from data: Data, includesPages: Bool) throws -> String {
         var interpreter = RTFInterpreter(
             bytes: Array(data),
@@ -71,6 +72,8 @@ enum RTFDocumentReader {
             limit: DocumentByteLimit.current
         )
         let document = try interpreter.read()
+        // Cancel is heard between the steps as well as inside the parse
+        try ImportCancellation.throwIfCancelled()
         return RTFHTMLWriter.html(of: document, includesPages: includesPages)
     }
 
