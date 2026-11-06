@@ -226,10 +226,12 @@ final class TextutilImportTests: XCTestCase {
         }
     }
 
+    /// The author is the document's own (`dc:creator`), which textutil's
+    /// reading lost and TextMouth's own reader reads.
     func testOpenDocumentSamplesImportAsODTWhateverTheirTemplateName() throws {
         let harbour = ["1: Harbour Notes", "2: Morning Tides", "2: Timetable"]
         try assertImports(Expectation(
-            sample: "odt/handwritten.odt", format: .odt, title: "Harbour Notes", headings: harbour,
+            sample: "odt/handwritten.odt", format: .odt, title: "Harbour Notes", author: "A. Sample", headings: harbour,
             contains: ["Bread from the bakery on Rue Ménard"]
         ))
         try assertImports(Expectation(
@@ -237,7 +239,7 @@ final class TextutilImportTests: XCTestCase {
             contains: ["A newspaper already a day old"]
         ))
         try assertImports(Expectation(
-            sample: "ott/handwritten.ott", format: .odt, title: "Harbour Notes", headings: harbour
+            sample: "ott/handwritten.ott", format: .odt, title: "Harbour Notes", author: "A. Sample", headings: harbour
         ))
     }
 
