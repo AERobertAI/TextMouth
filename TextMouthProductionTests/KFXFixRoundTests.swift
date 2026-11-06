@@ -335,7 +335,7 @@ final class KFXFixRoundTests: XCTestCase {
         XCTAssertTrue(prepared.chapters[1].chapter.text.contains("Delta"))
     }
 
-    func testABookWithNoContentsAndNoHeadingsIsOneChapterWithNoHeadingMadeUp() throws {
+    func testABookWithNoContentsAndNoHeadingsIsOneChapterTitledByTheBook() throws {
         var book = KFXTestBook()
         book.sections = [
             (name: "c0", nodes: [.text("First words.")]), (name: "c1", nodes: [.text("Second words.")]),
@@ -343,9 +343,30 @@ final class KFXFixRoundTests: XCTestCase {
         ]
         let prepared = try prepare(book)
         XCTAssertEqual(prepared.chapters.count, 1)
-        XCTAssertEqual(prepared.chapters[0].chapter.headings.count, 0)
-        XCTAssertFalse(prepared.chapters[0].markdown.contains("textmouth-heading"))
+        XCTAssertEqual(prepared.chapters[0].chapter.title, "A Test Book")
+        XCTAssertEqual(prepared.chapters[0].chapter.headings.map(\.text), ["A Test Book"])
         XCTAssertEqual(try words(book), ["First", "words.", "Second", "words.", "Third", "words."])
+        // A book whose title is missing takes the fallback title the other formats do.
+        var untitled = book
+        untitled.title = nil
+        XCTAssertEqual(try prepare(untitled).chapters[0].chapter.title, "T")
+    }
+
+    /// The direct reader and a reload from the cache give the same one row.
+    func testTheDirectReaderAndTheReloadFromTheCacheAgreeOnTheUntitledChaptersRow() throws {
+        var book = KFXTestBook()
+        book.sections = [(name: "c0", nodes: [.text("First words.")]), (name: "c1", nodes: [.text("Second words.")])]
+        let prepared = try prepare(book)
+        let markdown = prepared.chapters.map { chapter in
+            "\(MarkdownCacheService.chapterMarker(title: chapter.chapter.title))\n\(chapter.markdown)"
+        }.joined(separator: "\n\n")
+        let reloaded = MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: prepared.title, bookAuthor: prepared.author)
+        func rows(_ chapters: [Chapter]) -> [String] {
+            chapters.flatMap { $0.headings.map { "\($0.level) \($0.characterOffset) \($0.text)" } }
+        }
+        XCTAssertEqual(rows(reloaded.chapters), rows(prepared.chapters.map(\.chapter)))
+        XCTAssertEqual(rows(reloaded.chapters), ["1 0 A Test Book"])
+        XCTAssertEqual(reloaded.chapters.map(\.title), prepared.chapters.map(\.chapter.title))
     }
 
     // MARK: - Finding 13: authors

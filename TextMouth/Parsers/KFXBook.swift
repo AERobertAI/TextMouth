@@ -173,7 +173,7 @@ struct KFXBook {
             if begins {
                 result.append(MOBIBook.Section(
                     title: titles[index], html: section.html, headingTargets: headings[index], pages: page,
-                    addsStartHeading: false))
+                    untitledTakesBookTitle: true))
             } else {
                 // Joined to the section before it: one chapter.
                 result[result.count - 1].html += section.html

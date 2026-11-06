@@ -226,7 +226,7 @@ final class KFXWalkTests: XCTestCase {
         // continues the first: one chapter, no heading made up for it.
         let chapters = try prepare(book).chapters
         XCTAssertEqual(chapters.count, 1)
-        XCTAssertEqual(chapters[0].chapter.headings.count, 0)
+        XCTAssertEqual(chapters[0].chapter.headings.map(\.text), ["A Test Book"])
         XCTAssertEqual(chapters[0].chapter.text.split(whereSeparator: \.isWhitespace).count, 6)
     }
 

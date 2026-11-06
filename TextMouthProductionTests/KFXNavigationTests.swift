@@ -86,8 +86,8 @@ final class KFXNavigationTests: XCTestCase {
             [navContainer(212, [navUnit("  ", ids[0]), navUnit("Ghost", 999_999), navUnit("Real\n  Entry", ids[1])])]
         }
         let chapter = try prepare(book).chapters[0].chapter
-        // Nothing in the book titles the start, so no heading is made up for it.
-        XCTAssertEqual(chapter.headings.map(\.text), ["Real Entry"])
+        // Nothing in the book titles the start, so it takes the book's own title.
+        XCTAssertEqual(chapter.headings.map(\.text), ["A Test Book", "Real Entry"])
     }
 
     func testAnEntryThatNamesTheSameStartTwiceTitlesTheChapterOnce() throws {
