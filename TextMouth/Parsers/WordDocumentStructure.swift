@@ -215,6 +215,7 @@ enum WordSprm {
     /// The paragraph is the last of a nested table's row (`sprmPFInnerTtp`).
     static let innerRowEnd = 0x244C
     /// The paragraph's level in its list, 0 to 8 (`sprmPIlvl`).
+    static let listLevel = 0x260A
     /// The list instance the paragraph is in, one-based (`sprmPIlfo`).
     static let listIndex = 0x460B
     /// The paragraph's outline level, 0 to 8, or 9 for body text (`sprmPOutLvl`).
