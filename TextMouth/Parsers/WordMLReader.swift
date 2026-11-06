@@ -26,7 +26,7 @@ import Foundation
 /// them too.
 final class WordMLReader: OfficeXMLReader {
     /// The prefix each Word 2003 XML namespace is read as.
-    private static let usualPrefixes: [String: String] = [
+    fileprivate static let usualPrefixes: [String: String] = [
         "http://schemas.microsoft.com/office/word/2003/wordml": "w",
         "http://schemas.microsoft.com/office/word/2003/auxHint": "wx",
         "http://schemas.microsoft.com/aml/2001/core": "aml",
@@ -46,8 +46,22 @@ final class WordMLReader: OfficeXMLReader {
     /// The list definition and level being read, in `w:lists`.
     private var listDefinition: String?
     private var listLevel: Int?
-    /// The text of the title or author element being read.
+    /// The text of the title or author element being read, and whether the
+    /// document's own properties (`o:DocumentProperties`) are open: a title in
+    /// the custom properties is not the document's.
     private var naming: String?
+    private var inDocumentProperties = false
+
+    /// Whether each open table row is hidden (`w:trPr` holding `w:hidden`),
+    /// innermost last, and whether `w:trPr` is open.
+    private var rowsHidden: [Bool] = []
+    private var inRowProperties = false
+
+    /// Whether each `wx:sect` after the first begins a page (its type is not
+    /// continuous), found by a first pass (`WordMLSectionScanner`), and how
+    /// many have started.
+    private let sectionsStartPages: [Bool]
+    private var sectionsStarted = 0
 
     /// Whether `w:body` has begun, and whether `w:pPr` and `w:rPr` are open.
     private var inBody = false
@@ -59,6 +73,8 @@ final class WordMLReader: OfficeXMLReader {
     /// A paragraph whose properties are being read, and then whose runs.
     private struct OpenParagraph {
         var properties = WordMLParagraphProperties()
+        /// What the paragraph's style says of its text.
+        var styleRun = WordMLRunProperties()
         var isStarted = false
     }
     private var paragraphs: [OpenParagraph] = []
@@ -72,8 +88,10 @@ final class WordMLReader: OfficeXMLReader {
     }
     private var runs: [OpenRun] = []
 
-    /// Prepares to read `data`, the document.
-    init(data: Data, file: String, includesPages: Bool, limit: Int64) {
+    /// Prepares to read `data`, the document, whose sections after the first
+    /// begin pages as `sectionsStartPages` says (empty when pages are not asked for).
+    init(data: Data, file: String, includesPages: Bool, limit: Int64, sectionsStartPages: [Bool] = []) {
+        self.sectionsStartPages = sectionsStartPages
         writer = OfficeBlockWriter(includesPages: includesPages, limit: limit)
         super.init(data: data, file: file, format: .wordml, usualPrefixes: Self.usualPrefixes)
     }
@@ -86,6 +104,7 @@ final class WordMLReader: OfficeXMLReader {
 
     // MARK: Elements
 
+    /// An element starts.
     override func startElement(_ name: String, attributes: [String: String]) {
         do {
             try start(name, attributes)
@@ -94,6 +113,7 @@ final class WordMLReader: OfficeXMLReader {
         }
     }
 
+    /// An element ends.
     override func endElement(_ name: String) {
         do {
             try end(name)
@@ -102,6 +122,7 @@ final class WordMLReader: OfficeXMLReader {
         }
     }
 
+    /// Text: a name's, or a `w:t`'s.
     override func characters(_ text: String) {
         do {
             if let naming {
@@ -132,8 +153,14 @@ final class WordMLReader: OfficeXMLReader {
         switch name {
         case "w:pPr": inParagraphProperties = true; return
         case "w:rPr": inRunProperties = true; return
+        case "w:trPr": inRowProperties = true; return
+        case "w:hidden" where inRowProperties:
+            // A hidden row is not seen: its words are hidden text.
+            if !rowsHidden.isEmpty { rowsHidden[rowsHidden.count - 1] = WordMLRunProperties.isOn(attributes) }
+            return
         default: break
         }
+        if inRowProperties { return }
         if inRunProperties {
             // The properties of a paragraph mark (inside `w:pPr`) are not the
             // paragraph's words'.
@@ -148,6 +175,13 @@ final class WordMLReader: OfficeXMLReader {
         // Anything else inside a paragraph starts it, once its properties are read.
         try startParagraphIfNeeded()
         switch name {
+        case "wx:sect":
+            // A section after the first begins a page, unless it is continuous.
+            sectionsStarted += 1
+            if sectionsStarted > 1, sectionsStarted - 1 < sectionsStartPages.count, sectionsStartPages[sectionsStarted - 1] {
+                writer.beginPage()
+            }
+        case "w:tr": rowsHidden.append(false)
         case "w:p": paragraphs.append(OpenParagraph())
         case "w:r": runs.append(OpenRun())
         case "w:t":
@@ -196,8 +230,11 @@ final class WordMLReader: OfficeXMLReader {
         case "w:p":
             if let paragraph = paragraphs.popLast(), paragraph.isStarted { try endParagraph() }
         case "w:footnote", "w:endnote": writer.endNote()
+        case "w:trPr": inRowProperties = false
         case "w:tc": try writer.endCell()
-        case "w:tr": try writer.endRow()
+        case "w:tr":
+            _ = rowsHidden.popLast()
+            try writer.endRow()
         case "w:tbl": try writer.endTable()
         default: break
         }
@@ -227,24 +264,28 @@ final class WordMLReader: OfficeXMLReader {
         paragraphs[index].isStarted = true
         let direct = paragraphs[index].properties
         let style = sheet.resolved(type: "paragraph", id: direct.style)
-        let level = direct.outlineLevel ?? style.paragraph.outlineLevel
+        paragraphs[index].styleRun = style.run
+        // An outline level of 0 to 8 is a heading; level 9 (body text) or
+        // any other number is not, whatever the style says.
+        let level = (direct.outline ?? style.paragraph.outline)?.headingLevel
         let kind: RTFBlockBuilder.Kind
         if let level {
-            kind = .heading(min(level, 6))
-        } else if let listID = direct.listID {
-            let level = direct.listLevel ?? 0
+            kind = .heading(level)
+        } else if let listID = direct.listID ?? style.paragraph.listID {
+            let level = direct.listLevel ?? style.paragraph.listLevel ?? 0
+            let mark = direct.listMark ?? style.paragraph.listMark
             let numbered = sheet.isNumbered(list: listID, level: level)
-                ?? direct.listMark.map { $0.first?.isLetter == true || $0.first?.isNumber == true }
+                ?? mark.map { $0.first?.isLetter == true || $0.first?.isNumber == true }
                 ?? false
             kind = .listItem(level: level, numbered: numbered)
         } else {
             kind = .body
         }
+        // Hidden text is settled run by run (`startRunIfNeeded`), not here.
         let base = OfficeRun(size: style.run.size ?? 24).applying(bold: style.run.bold, italic: style.run.italic, size: nil)
         try writer.beginParagraph(
             kind: kind, run: base, startsPage: direct.pageBreakBefore ?? style.paragraph.pageBreakBefore ?? false
         )
-        if style.run.hidden == true { writer.hideParagraph() }
     }
 
     /// Ends the paragraph open. A paragraph that begins with a bullet and a
@@ -253,19 +294,32 @@ final class WordMLReader: OfficeXMLReader {
         try writer.endParagraph(bulletCharacters: TextutilHTMLStructure.bulletCharacters)
     }
 
-    /// Takes the look of the run open: the paragraph's, then its character
-    /// style's, then its own properties. Once.
+    /// What a toggle property comes to for a run (ECMA-376 17.7.3): the
+    /// paragraph's style and the character style each say on or off, and a
+    /// property both turn on is off again, but a property the run itself
+    /// states is the run's. Nil when nothing states it.
+    private static func toggled(paragraphStyle: Bool?, characterStyle: Bool?, direct: Bool?) -> Bool? {
+        if let direct { return direct }
+        guard paragraphStyle != nil || characterStyle != nil else { return nil }
+        return (paragraphStyle ?? false) != (characterStyle ?? false)
+    }
+
+    /// Takes the look of the run open: the paragraph's style and the character
+    /// style, by the toggle rule, then its own properties. Once.
     private func startRunIfNeeded() throws {
         guard let index = runs.indices.last, !runs[index].isStarted, !inRunProperties else { return }
         try startParagraphIfNeeded()
         runs[index].isStarted = true
         let direct = runs[index].properties
         let character = sheet.resolved(type: "character", id: direct.characterStyle).run
-        let own = character.overridden(by: direct)
-        runs[index].isHidden = own.hidden == true
+        let paragraphStyle = paragraphs.last?.styleRun ?? WordMLRunProperties()
+        func settle(_ property: KeyPath<WordMLRunProperties, Bool?>) -> Bool? {
+            Self.toggled(paragraphStyle: paragraphStyle[keyPath: property], characterStyle: character[keyPath: property], direct: direct[keyPath: property])
+        }
+        runs[index].isHidden = settle(\.hidden) == true || rowsHidden.contains(true)
         if runs[index].isHidden { writer.markHiddenText() }
-        // The paragraph's own hidden text is the paragraph's alone.
-        writer.beginSpan((writer.currentRun ?? OfficeRun()).applying(bold: own.bold, italic: own.italic, size: own.size))
+        let size = direct.size ?? character.size ?? paragraphStyle.size
+        writer.beginSpan(OfficeRun(size: size ?? 24).applying(bold: settle(\.bold) ?? false, italic: settle(\.italic) ?? false, size: nil))
     }
 
     // MARK: Definitions
@@ -273,7 +327,8 @@ final class WordMLReader: OfficeXMLReader {
     /// An element before the body starts: the names, the styles, the lists.
     private func startDefinition(_ name: String, _ attributes: [String: String]) {
         switch name {
-        case "o:Title", "o:Author": naming = name
+        case "o:DocumentProperties": inDocumentProperties = true
+        case "o:Title", "o:Author": if inDocumentProperties { naming = name }
         case "w:style":
             style = (attributes["w:type"] ?? "paragraph", attributes["w:styleId"] ?? "", WordMLStyle())
             style?.style.isDefault = attributes["w:default"].map { $0 == "on" || $0 == "1" || $0 == "true" } ?? false
@@ -307,6 +362,7 @@ final class WordMLReader: OfficeXMLReader {
     /// An element before the body ends.
     private func endDefinition(_ name: String) {
         switch name {
+        case "o:DocumentProperties": inDocumentProperties = false
         case "o:Title", "o:Author": naming = nil
         case "w:pPr": inParagraphProperties = false
         case "w:rPr": inRunProperties = false
@@ -318,5 +374,59 @@ final class WordMLReader: OfficeXMLReader {
         case "w:list": currentList = nil
         default: break
         }
+    }
+}
+
+// MARK: - The Sections
+
+/// A first pass over a Word 2003 XML document that finds how each of its
+/// sections (`wx:sect`) begins. A section's type is stated at its end, in
+/// its `w:sectPr` (`w:type`: next page is the default, then continuous, even
+/// page, and odd page), after the words the section begins, so the reader
+/// that writes the pages needs it beforehand.
+final class WordMLSectionScanner: OfficeXMLReader {
+    /// For each section in document order, whether it begins a page (its type
+    /// is not continuous).
+    private(set) var startsPage: [Bool] = []
+    /// The sections open, innermost last: the depth each is at and its place
+    /// in `startsPage`; and whether the innermost one's own `w:sectPr` is open.
+    private var openSections: [(depth: Int, index: Int)] = []
+    private var inSectionProperties = false
+
+    /// The most sections noted; a document with more has pages only up to them.
+    private static let mostSections = 100_000
+
+    /// For each section of the Word 2003 XML in `data`, whether it begins a page.
+    /// - Throws: whatever reading the document throws.
+    static func scan(_ data: Data) throws -> [Bool] {
+        let scanner = WordMLSectionScanner(
+            data: data, file: "the document", format: .wordml, usualPrefixes: WordMLReader.usualPrefixes
+        )
+        try scanner.read()
+        return scanner.startsPage
+    }
+
+    /// A section starts, or its properties, or their type.
+    override func startElement(_ name: String, attributes: [String: String]) {
+        switch name {
+        case "wx:sect":
+            if startsPage.count < Self.mostSections { startsPage.append(true) }
+            openSections.append((depth, startsPage.count - 1))
+        case "w:sectPr":
+            // The section's own properties are its direct children.
+            inSectionProperties = openSections.last.map { depth == $0.depth + 1 } ?? false
+        case "w:type":
+            if inSectionProperties, attributes["w:val"] == "continuous", let section = openSections.last {
+                startsPage[section.index] = false
+            }
+        default:
+            break
+        }
+    }
+
+    /// A section or its properties end.
+    override func endElement(_ name: String) {
+        if name == "wx:sect" { _ = openSections.popLast() }
+        if name == "w:sectPr" { inSectionProperties = false }
     }
 }

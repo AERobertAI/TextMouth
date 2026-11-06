@@ -28,7 +28,7 @@ enum WordMLDocumentReader {
     /// Whether this platform reads Word 2003 XML with this reader: iOS, which
     /// has no textutil, always; the Mac once the reader has been checked
     /// against textutil's reading of the same files
-    /// (`WordMLTextutilComparisonTests`).
+    /// (`WordMLReaderTests.testSamplesMatchTextutil`).
     static var isOn: Bool {
         #if os(macOS)
         false
@@ -51,7 +51,13 @@ enum WordMLDocumentReader {
     /// The HTML document of the Word 2003 XML in `data`, which the caller has
     /// held to the byte limit.
     static func html(from data: Data, includesPages: Bool) throws -> String {
-        let reader = WordMLReader(data: data, file: "the document", includesPages: includesPages, limit: DocumentByteLimit.current)
+        // The sections' types are stated at their ends, so the pages they
+        // begin are found by a first pass, when pages are asked for.
+        let sections = includesPages ? try WordMLSectionScanner.scan(data) : []
+        let reader = WordMLReader(
+            data: data, file: "the document", includesPages: includesPages, limit: DocumentByteLimit.current,
+            sectionsStartPages: sections
+        )
         try reader.read()
         let body = try reader.finish()
         var document = RTFDocument()

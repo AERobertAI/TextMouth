@@ -43,13 +43,39 @@ struct WordMLRunProperties: Equatable {
     }
 }
 
+/// What an outline level (`w:outlineLvl`) or a style's name says about a
+/// paragraph, by the rule of the DOCX reader (`DOCXOutlineLevel`): Word's
+/// levels 0 through 8 are headings, read as heading levels 1 through 6 (the
+/// deepest three share level 6), and anything else, level 9 included, is
+/// body text, which overrides the heading level a style gives.
+enum WordMLOutline: Equatable {
+    /// A heading at this level, 1 through 6.
+    case heading(Int)
+    /// Body text: explicitly not a heading.
+    case bodyText
+
+    /// The outline level the attribute value `value` declares, or nil when
+    /// it is missing or not a whole number, which declares nothing. A
+    /// number too large for an `Int`, or any other, is body text.
+    init?(_ value: String?) {
+        guard let value, let outline = Int(value) else { return nil }
+        self = (0...8).contains(outline) ? .heading(min(outline + 1, 6)) : .bodyText
+    }
+
+    /// The heading level, or nil for body text.
+    var headingLevel: Int? {
+        if case .heading(let level) = self { return level }
+        return nil
+    }
+}
+
 /// The paragraph properties Word 2003 XML states with `w:pPr`: the ones the
 /// reading uses.
 struct WordMLParagraphProperties: Equatable {
     /// `w:pStyle`: the paragraph's style.
     var style: String?
-    /// `w:outlineLvl`, counted from 1 here (Word counts from 0).
-    var outlineLevel: Int?
+    /// `w:outlineLvl`.
+    var outline: WordMLOutline?
     /// `w:pageBreakBefore`.
     var pageBreakBefore: Bool?
     /// `w:listPr`: the level (`w:ilvl`), the list (`w:ilfo`), and the mark it
@@ -62,9 +88,9 @@ struct WordMLParagraphProperties: Equatable {
     mutating func read(_ name: String, _ attributes: [String: String]) {
         switch name {
         case "w:pStyle": style = attributes["w:val"]
-        case "w:outlineLvl": outlineLevel = attributes["w:val"].flatMap { Int($0) }.map { min(max($0 + 1, 1), 9) }
+        case "w:outlineLvl": outline = WordMLOutline(attributes["w:val"])
         case "w:pageBreakBefore": pageBreakBefore = WordMLRunProperties.isOn(attributes)
-        case "w:ilvl": listLevel = attributes["w:val"].flatMap { Int($0) }.map { min(max($0, 0), 8) }
+        case "w:ilvl": listLevel = attributes["w:val"].flatMap { Int($0) }.map { min(max($0, 0), 8) }  // clamped: a file's number
         case "w:ilfo": listID = attributes["w:val"]
         case "wx:t": listMark = attributes["wx:val"]
         default: break
@@ -75,6 +101,7 @@ struct WordMLParagraphProperties: Equatable {
 /// One style: what it says of its paragraphs and of its text, the style it is
 /// based on, and its name.
 struct WordMLStyle {
+    var id = ""
     var name: String?
     var basedOn: String?
     var isDefault = false
@@ -105,6 +132,8 @@ final class WordMLStyleSheet {
 
     /// Adds a style of `type` (`paragraph` or `character`) with `id`.
     func add(_ style: WordMLStyle, type: String, id: String) {
+        var style = style
+        style.id = id
         styles[type + "\u{0}" + id] = style
         if type == "paragraph", style.isDefault { defaultParagraphID = id }
     }
@@ -126,20 +155,33 @@ final class WordMLStyleSheet {
         var run = WordMLRunProperties()
         for style in chain.reversed() {
             let own = style.paragraph
-            paragraph.outlineLevel = own.outlineLevel ?? Self.headingLevel(named: style.name) ?? paragraph.outlineLevel
+            paragraph.outline = own.outline ?? Self.outline(of: style) ?? paragraph.outline
             paragraph.pageBreakBefore = own.pageBreakBefore ?? paragraph.pageBreakBefore
+            // A list a style belongs to (`w:listPr` in the style).
+            paragraph.listID = own.listID ?? paragraph.listID
+            paragraph.listLevel = own.listLevel ?? paragraph.listLevel
+            paragraph.listMark = own.listMark ?? paragraph.listMark
             run = run.overridden(by: style.run)
         }
         return (paragraph, run)
     }
 
-    /// The level 1 to 9 of a style named "heading N" (without regard to
-    /// case), or nil.
-    private static func headingLevel(named name: String?) -> Int? {
-        guard let name = name?.lowercased(), name.hasPrefix("heading "),
-              let level = Int(name.dropFirst("heading ".count).trimmingCharacters(in: .whitespaces)),
-              (1...9).contains(level) else { return nil }
-        return level
+    /// What a style's name makes of its paragraphs: a style named "heading N"
+    /// (1 to 9) is a heading of level N (at most 6), "title" is level 1 and
+    /// "subtitle" level 2 (as the DOCX and rich-text readers read them), all
+    /// without regard to case, by the style's name or its id; nil otherwise.
+    private static func outline(of style: WordMLStyle) -> WordMLOutline? {
+        for candidate in [style.name, style.id] {
+            guard let name = candidate?.lowercased() else { continue }
+            if name == "title" { return .heading(1) }
+            if name == "subtitle" { return .heading(2) }
+            if name.hasPrefix("heading "),
+               let level = Int(name.dropFirst("heading ".count).trimmingCharacters(in: .whitespaces)),
+               (1...9).contains(level) {
+                return .heading(min(level, 6))
+            }
+        }
+        return nil
     }
 
     // MARK: Lists
