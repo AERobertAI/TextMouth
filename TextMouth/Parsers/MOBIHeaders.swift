@@ -49,6 +49,19 @@ struct MOBIHeaders {
     /// The record the NCX index starts at (INDX); nil for a book with none.
     let indexRecord: Int?
 
+    // MARK: KF8 fields (from byte 192, in a header of version 8)
+
+    /// The record the flow table (FDST) is in; nil when the header names
+    /// none, as a MOBI 6 header does not.
+    let flowTableRecord: Int?
+    /// The record the skeleton index (SKEL) starts at; nil for a book with none.
+    let skeletonIndexRecord: Int?
+    /// The record the fragment index (FRAG) starts at; nil for a book with none.
+    let fragmentIndexRecord: Int?
+    /// The record the guide index starts at, which names the book's cover,
+    /// contents page, and start; nil for a book with none.
+    let guideIndexRecord: Int?
+
     // MARK: EXTH
 
     /// The EXTH records by type, each type's values in the order they
@@ -95,6 +108,10 @@ struct MOBIHeaders {
             huffmanRecordCount = 0
             extraDataFlags = 0
             indexRecord = nil
+            flowTableRecord = nil
+            skeletonIndexRecord = nil
+            fragmentIndexRecord = nil
+            guideIndexRecord = nil
             exth = [:]
             return
         }
@@ -124,6 +141,13 @@ struct MOBIHeaders {
         extraDataFlags = (try field(240, "The extra-data flags") ?? 0) & 0xFFFF
         let index = try field(244, "The index record")
         indexRecord = index.flatMap { $0 == 0xFFFF_FFFF ? nil : $0 }
+        // The KF8 fields are read only from a header of version 8: in a
+        // MOBI 6 header the same bytes are other fields (or padding).
+        let isKF8 = version >= 8
+        flowTableRecord = isKF8 ? Self.record(try field(192, "The flow table's record")) : nil
+        fragmentIndexRecord = isKF8 ? Self.record(try field(248, "The fragment index's record")) : nil
+        skeletonIndexRecord = isKF8 ? Self.record(try field(252, "The skeleton index's record")) : nil
+        guideIndexRecord = isKF8 ? Self.record(try field(260, "The guide index's record")) : nil
 
         fullName = Self.fullName(in: record0, encoding: encoding)
         // Bit 6 of the EXTH flags says an EXTH header follows the MOBI header.
@@ -145,6 +169,20 @@ struct MOBIHeaders {
     /// Every value of EXTH `type` as text (a book may have several authors).
     func exthTexts(_ type: Int) -> [String] {
         (exth[type] ?? []).map { MOBIText.decode($0, encoding: encoding) }
+    }
+
+    /// The record number `field` names, or nil when the header has no such
+    /// field or it holds 0xFFFFFFFF, which means "none".
+    private static func record(_ field: Int?) -> Int? {
+        guard let field, field != 0xFFFF_FFFF else { return nil }
+        return field
+    }
+
+    /// Where the KF8 half of a hybrid file begins (EXTH 121), a record
+    /// number counted from the start of the file; nil for a book that names
+    /// none.
+    var kf8BoundaryRecord: Int? {
+        Self.record(exthNumber(EXTHType.kf8Boundary))
     }
 
     /// The first value of EXTH `type` as a big-endian number, or nil when

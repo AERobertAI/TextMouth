@@ -26,10 +26,16 @@ struct MOBIIndexEntry: Equatable {
 enum MOBIIndex {
 
     /// Most entries a book may hold, and most label strings (CNCX records)
-    /// and tags it may name. A real book has dozens of entries.
+    /// and tags it may name. A real book has dozens of entries; a KF8 book's
+    /// fragment index, a few thousand.
     private static let maximumEntries = 100_000
     private static let maximumStringRecords = 32
     private static let maximumTags = 64
+    /// Most numbers all the entries of one index may hold together. An entry
+    /// holds a handful; a hostile book could make every one of 100,000
+    /// entries (all at one offset in a record) claim thousands, so the work
+    /// is bounded by the sum, not by each entry.
+    private static let maximumValues = 2_000_000
 
     /// One tag of the tag table: which value it is, how many numbers make
     /// one value, the mask that picks its bits from the entry's control
@@ -41,11 +47,52 @@ enum MOBIIndex {
         var endsControlByte: Bool
     }
 
-    /// The entries of the index that begins at record `indexRecord`.
+    /// One row of an index: the name the row is filed under, and the numbers
+    /// it holds by tag. A table of contents row is named with a counter and
+    /// holds an offset, a label, and a depth; a KF8 skeleton row holds its
+    /// fragment count and its place in the text; a fragment row is named for
+    /// the place in its skeleton where it goes.
+    struct Row {
+        /// The row's name, as its bytes (often ASCII digits).
+        var name: [UInt8]
+        /// The numbers of each tag the row has, in the order they were written.
+        var values: [Int: [Int]]
+    }
+
+    /// A whole index: its rows in order, and the label strings (CNCX) its
+    /// rows name by place.
+    struct Table {
+        var rows: [Row]
+        /// A label by the place the rows name it: its offset in its record,
+        /// plus 0x10000 for each record before it.
+        var labels: [Int: String]
+    }
+
+    /// The entries of the table of contents that begins at record `indexRecord`.
     /// - Throws: `MOBIError.damaged` when a record the index needs is not in
     ///   the book, a header or table is cut short, or an offset or length
     ///   points outside its record.
     static func entries(startingAt indexRecord: Int, in database: MOBIPalmDatabase) throws -> [MOBIIndexEntry] {
+        let index = try table(startingAt: indexRecord, in: database)
+        return index.rows.compactMap { row in
+            // Tag 1 is the entry's offset into the text, 3 its label's
+            // place among the strings, and 4 its depth. An entry with no
+            // offset names no place, so it is passed over.
+            guard let offset = row.values[1]?.first else { return nil }
+            return MOBIIndexEntry(
+                label: row.values[3]?.first.flatMap { index.labels[$0] } ?? "",
+                offset: offset,
+                depth: row.values[4]?.first ?? 0
+            )
+        }
+    }
+
+    /// Every row and label of the index that begins at record `indexRecord`.
+    /// - Throws: `MOBIError.damaged` when a record the index needs is not in
+    ///   the book, a header or table is cut short, an offset or length
+    ///   points outside its record, or the index holds more rows or numbers
+    ///   than any book does.
+    static func table(startingAt indexRecord: Int, in database: MOBIPalmDatabase) throws -> Table {
         let first = try database.record(indexRecord, "The index")
         guard first.hasTag("INDX", at: 0) else { throw MOBIError.damaged("the index does not begin with INDX") }
         let headerLength = try first.uint32(4, "The index header's length")
@@ -63,7 +110,9 @@ enum MOBIIndex {
             of: database, encoding: encoding
         )
 
-        var entries: [MOBIIndexEntry] = []
+        var rows: [Row] = []
+        // The numbers read so far in all the rows (`maximumValues`).
+        var valuesRead = 0
         for index in 0..<dataRecordCount {
             let record = try database.record(indexRecord + 1 + index, "An index record")
             guard record.hasTag("INDX", at: 0) else { throw MOBIError.damaged("an index record does not begin with INDX") }
@@ -73,21 +122,15 @@ enum MOBIIndex {
             guard record.hasTag("IDXT", at: tableOffset) else { throw MOBIError.damaged("an index record's entry table is missing") }
             try record.require(tableOffset + 4, count * 2, "An index record's entry table")
             for position in 0..<count {
-                guard entries.count < maximumEntries else { throw MOBIError.damaged("the index holds too many entries") }
+                guard rows.count < maximumEntries else { throw MOBIError.damaged("the index holds too many entries") }
                 let entryOffset = try record.uint16(tableOffset + 4 + position * 2, "An index entry's offset")
-                let values = try tagValues(of: record, at: entryOffset, tags: tags, controlByteCount: controlByteCount)
-                // Tag 1 is the entry's offset into the text, 3 its label's
-                // place among the strings, and 4 its depth. An entry with no
-                // offset names no place, so it is passed over.
-                guard let offset = values[1]?.first else { continue }
-                entries.append(MOBIIndexEntry(
-                    label: values[3]?.first.flatMap { labels[$0] } ?? "",
-                    offset: offset,
-                    depth: values[4]?.first ?? 0
-                ))
+                let (name, values) = try tagValues(
+                    of: record, at: entryOffset, tags: tags, controlByteCount: controlByteCount, valuesRead: &valuesRead
+                )
+                rows.append(Row(name: name, values: values))
             }
         }
-        return entries
+        return Table(rows: rows, labels: labels)
     }
 
     // MARK: The Tag Table
@@ -118,9 +161,10 @@ enum MOBIIndex {
     /// `controlByteCount` control bytes saying how many values each tag has,
     /// and the values, as variable-width numbers.
     private static func tagValues(
-        of record: MOBIView, at offset: Int, tags: [Tag], controlByteCount: Int
-    ) throws -> [Int: [Int]] {
+        of record: MOBIView, at offset: Int, tags: [Tag], controlByteCount: Int, valuesRead: inout Int
+    ) throws -> (name: [UInt8], values: [Int: [Int]]) {
         let nameLength = try record.uint8(offset, "An index entry's name length")
+        let name = try record.slice(offset + 1, nameLength, "An index entry's name")
         let controlStart = offset + 1 + nameLength
         try record.require(controlStart, controlByteCount, "An index entry's control bytes")
         var position = controlStart + controlByteCount
@@ -159,6 +203,7 @@ enum MOBIIndex {
                     let (number, size) = try variableNumber(in: record, at: position)
                     numbers.append(number)
                     position += size
+                    valuesRead += 1
                 }
             } else if let byteLength = plan.byteLength {
                 var consumed = 0
@@ -167,11 +212,15 @@ enum MOBIIndex {
                     numbers.append(number)
                     position += size
                     consumed += size
+                    valuesRead += 1
                 }
             }
+            // A count that claims more than the record holds ends in the
+            // reads above; this bounds the total many entries can claim.
+            guard valuesRead <= maximumValues else { throw MOBIError.damaged("the index holds too many numbers") }
             values[plan.tag.number] = numbers
         }
-        return values
+        return (name, values)
     }
 
     /// The variable-width number at `offset` in `record` and its size in

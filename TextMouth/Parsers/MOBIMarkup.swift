@@ -298,6 +298,23 @@ enum MOBIMarkup {
         return output
     }
 
+    /// Throws unless `markup` nests its elements no more than
+    /// `maximumNesting` levels deep (the same estimate `html(of:range:anchors:)`
+    /// makes). A KF8 part is joined from pieces of the text and then checked
+    /// whole, in one pass over its bytes.
+    /// - Throws: `MOBIError.damaged` for markup nested deeper.
+    static func requireShallowNesting(of markup: [UInt8]) throws {
+        var depth = 0
+        var deepest = 0
+        forEachTag(in: markup, within: 0..<markup.count) { tag in
+            depth = max(0, depth + nestingChange(of: tag, in: markup))
+            deepest = max(deepest, depth)
+        }
+        guard deepest <= maximumNesting else {
+            throw MOBIError.damaged("its markup is nested more than \(maximumNesting) levels deep")
+        }
+    }
+
     // MARK: Nesting
 
     /// Elements that have no end tag.

@@ -174,6 +174,29 @@ struct MOBIPalmDatabase {
         }
     }
 
+    /// A database made of `records` of another one, under the same names.
+    private init(of other: MOBIPalmDatabase, records: [MOBIView]) {
+        file = other.file
+        name = other.name
+        type = other.type
+        creator = other.creator
+        self.records = records
+    }
+
+    /// The database as it is seen from record `first` on: its record 0 is
+    /// this one's record `first`, and every record number a header in it
+    /// names counts from there. This is how the KF8 half of a hybrid file
+    /// (a MOBI 6 book first, then a boundary, then a KF8 book) is read: its
+    /// headers, text, and indexes number their records from the half's own
+    /// first record.
+    /// - Throws: `MOBIError.damaged` when the book has no record `first`.
+    func starting(atRecord first: Int) throws -> MOBIPalmDatabase {
+        guard records.indices.contains(first) else {
+            throw MOBIError.damaged("the second part of the book begins at record \(first), and the book has only \(records.count)")
+        }
+        return MOBIPalmDatabase(of: self, records: Array(records[first...]))
+    }
+
     /// How many records the database holds.
     var recordCount: Int { records.count }
 
