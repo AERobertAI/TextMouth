@@ -1,4 +1,6 @@
 import Foundation
+import SwiftSoup
+import XCTest
 @testable import TextMouth
 
 // MARK: - Building Word 97-2003 Documents in Code
@@ -734,4 +736,39 @@ struct WordDocumentBuilder {
         stream += [UInt8](repeating: 0, count: 16) + Self.le32(48)
         return stream + set
     }
+}
+
+
+// MARK: - Reading a Built Document
+
+/// The inner HTML of the body of the document `data`, read as the reader does
+/// with its list numbers written as words or not (`speaksNumbers`).
+func wordBody(
+    of data: Data, pages: Bool = false, speaksNumbers: Bool = WordDocumentReader.speaksListNumbers,
+    file: StaticString = #filePath, line: UInt = #line
+) throws -> String {
+    let html = try XCTUnwrap(
+        WordDocumentReader.html(from: data, includesPages: pages, speaksListNumbers: speaksNumbers), file: file, line: line
+    )
+    let start = try XCTUnwrap(html.range(of: "<body>\n"), file: file, line: line)
+    let end = try XCTUnwrap(html.range(of: "</body>"), file: file, line: line)
+    return String(html[start.upperBound..<end.lowerBound])
+}
+
+/// The body of the format sample at `path`, as `wordBody(of:)` reads it.
+func wordSampleBody(
+    _ path: String, pages: Bool = false, speaksNumbers: Bool = WordDocumentReader.speaksListNumbers,
+    file: StaticString = #filePath, line: UInt = #line
+) throws -> String {
+    try wordBody(of: Data(contentsOf: formatSampleURL(path)), pages: pages, speaksNumbers: speaksNumbers, file: file, line: line)
+}
+
+/// The chapter an import makes of the HTML the reader writes for `data`: its
+/// reading text, as a listener hears it, and its headings.
+func wordReadingChapter(of data: Data, speaksNumbers: Bool = WordDocumentReader.speaksListNumbers) throws -> Chapter {
+    let html = try XCTUnwrap(WordDocumentReader.html(from: data, includesPages: false, speaksListNumbers: speaksNumbers))
+    let markdown = try HTMLToMarkdownConverter.convert(
+        document: SwiftSoup.parse(html), readingFlow: PublicationSemantics.ReadingFlow(source: html), includesPages: false
+    )
+    return try MarkdownDocParser.parseChapter(markdown: markdown, title: "", includeNavigationHeadings: true)
 }

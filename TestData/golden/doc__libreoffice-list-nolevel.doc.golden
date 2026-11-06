@@ -5,11 +5,11 @@ format: doc
 title: libreoffice-list-nolevel
 author: vmiklos
 chapters: 1
-words: 16
-text length: 60
-text checksum: 26a23e7d92035587
-first 300: 1. This is 1\n\n1.1 This is 1.1\n\n2. This is 2\n\n2.1 This is 2.1
-last 300: 1. This is 1\n\n1.1 This is 1.1\n\n2. This is 2\n\n2.1 This is 2.1
-heading: 1 | 1. This is 1
-heading: 1 | 2. This is 2
-page: 1 | 0:0 | 1. This is 1\n\n1.1 This i
+words: 12
+text length: 46
+text checksum: 1eac3bf97e52d697
+first 300: This is 1\n\nThis is 1.1\n\nThis is 2\n\nThis is 2.1
+last 300: This is 1\n\nThis is 1.1\n\nThis is 2\n\nThis is 2.1
+heading: 1 | This is 1
+heading: 1 | This is 2
+page: 1 | 0:0 | This is 1\n\nThis is 1.1\n\n

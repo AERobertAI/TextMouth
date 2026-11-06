@@ -5,15 +5,15 @@ format: doc
 title: libreoffice-tdf104239_chapterNumbering
 author: Unknown
 chapters: 1
-words: 17
-text length: 88
-text checksum: ed3f5db9a178cf16
-first 300: A. Heading 1\n\nI. Heading 2\n\na. Heading 3\n\ni. Heading 4\n\nHeading 5\n\nA.I.a.i.1.1 Heading 6
-last 300: A. Heading 1\n\nI. Heading 2\n\na. Heading 3\n\ni. Heading 4\n\nHeading 5\n\nA.I.a.i.1.1 Heading 6
-heading: 1 | A. Heading 1
-heading: 2 | I. Heading 2
-heading: 3 | a. Heading 3
-heading: 4 | i. Heading 4
+words: 12
+text length: 64
+text checksum: edc64c56485d98b0
+first 300: Heading 1\n\nHeading 2\n\nHeading 3\n\nHeading 4\n\nHeading 5\n\nHeading 6
+last 300: Heading 1\n\nHeading 2\n\nHeading 3\n\nHeading 4\n\nHeading 5\n\nHeading 6
+heading: 1 | Heading 1
+heading: 2 | Heading 2
+heading: 3 | Heading 3
+heading: 4 | Heading 4
 heading: 5 | Heading 5
-heading: 6 | A.I.a.i.1.1 Heading 6
-page: 1 | 0:0 | A. Heading 1\n\nI. Heading
+heading: 6 | Heading 6
+page: 1 | 0:0 | Heading 1\n\nHeading 2\n\nHe

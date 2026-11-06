@@ -36,6 +36,16 @@ enum WordDocumentReader {
 
     // MARK: The Switch
 
+    /// Whether a list's numbers are written as words before their paragraphs
+    /// ("A. Heading 1", "2.2.1. Clause"), so that a listener hears them, or
+    /// the paragraphs are items of a list whose numbers are not heard, as the
+    /// DOCX and rich text readers read a list (the reading text leaves out a
+    /// list's markers). Off for now: the user was asked on November 6, 2026
+    /// whether numbers should be read aloud (`humanQuestions/2026-11-06.md`,
+    /// question 1), and nothing changes until they answer. The words form is
+    /// whole and tested: if the answer is yes, this is the one line to change.
+    static let speaksListNumbers = false
+
     /// Whether this platform reads Word 97-2003 documents with this reader:
     /// iOS, which has no textutil, always; the Mac once the reader has been
     /// checked against textutil's reading of the same files
@@ -55,16 +65,22 @@ enum WordDocumentReader {
         try html(from: DocumentByteLimit.contents(of: url), includesPages: includesPages)
     }
 
+    /// `speaksListNumbers` for the document at `url`, passed in so that both
+    /// forms are tested.
+    static func html(of url: URL, includesPages: Bool, speaksListNumbers: Bool) throws -> String? {
+        try html(from: DocumentByteLimit.contents(of: url), includesPages: includesPages, speaksListNumbers: speaksListNumbers)
+    }
+
     /// The HTML document of the Word 97-2003 document in `data`; see
     /// `html(of:includesPages:)`.
-    static func html(from data: Data, includesPages: Bool) throws -> String? {
+    static func html(from data: Data, includesPages: Bool, speaksListNumbers: Bool = WordDocumentReader.speaksListNumbers) throws -> String? {
         do {
             // A document with more page breaks than pages are numbered is
             // read again without any.
             do {
-                return try read(data, includesPages: includesPages)
+                return try read(data, includesPages: includesPages, speaksListNumbers: speaksListNumbers)
             } catch is WordHTMLWriter.PageLimitExceeded {
-                return try read(data, includesPages: false)
+                return try read(data, includesPages: false, speaksListNumbers: speaksListNumbers)
             }
         } catch is OLEDamage {
             throw TextutilConverter.Failure.unreadable(.doc)
@@ -72,7 +88,7 @@ enum WordDocumentReader {
     }
 
     /// Reads `data` once.
-    private static func read(_ data: Data, includesPages: Bool) throws -> String? {
+    private static func read(_ data: Data, includesPages: Bool, speaksListNumbers: Bool) throws -> String? {
         let file = try CompoundFile(data)
         guard let documentData = try file.stream(named: "WordDocument") else {
             throw OLEDamage(reason: "the file has no WordDocument stream")
@@ -149,7 +165,7 @@ enum WordDocumentReader {
             var writer = WordHTMLWriter(
                 styles: styles, sections: sections, includesPages: includesPages,
                 outputLimit: Int(DocumentByteLimit.current) * 2, paragraphs: paragraphs, characters: characters,
-                lists: lists
+                lists: lists, numbersAreWords: speaksListNumbers
             )
             for range in ranges {
                 try pieces.forEachCharacter(from: range.lowerBound, upTo: range.upperBound, in: document) { position, unit in
