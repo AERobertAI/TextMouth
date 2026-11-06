@@ -737,6 +737,52 @@ final class RTFReaderTests: XCTestCase {
         XCTAssertEqual(try rtfBody(html).select("p").array().map { try $0.text() }, ["One. Two.", "Boxed."])
     }
 
+    /// The paragraphs of `html` that hold a page's beginning, as text.
+    private func paragraphsBeginningPages(_ html: String) throws -> [String] {
+        try rtfBody(html).select("p").array()
+            .filter { try !$0.select("span[role=\(TextutilPageBreaks.pageBreakRole)]").isEmpty() }
+            .map { try $0.text() }
+    }
+
+    /// A page that waits begins at the first words written, the paragraph's or,
+    /// when it held none, the box's: a box that is the whole of its paragraph
+    /// is read under the page that began before it, not the one before.
+    func testAPageBreakBeforeAParagraphOfOnlyABoxBeginsTheBoxsPage() throws {
+        let box = { (words: String) in #"{\shp{\*\shpinst{\shptxt{\pard \#(words)\par}}}}"# }
+        let html = try rtfHTML(#"{\rtf1 One\page \#(box("BOXP2"))\par later\par}"#)
+        XCTAssertEqual(try rtfPages(html), ["1", "2"])
+        XCTAssertEqual(try paragraphsBeginningPages(html), ["BOXP2"])
+        XCTAssertEqual(try rtfBody(html).select("p").array().map { try $0.text() }, ["One", "BOXP2", "later"])
+        // The same when the box is anchored in a paragraph of its own.
+        let separate = try rtfHTML(#"{\rtf1 One\page\par \#(box("BOXP2"))\par later\par}"#)
+        XCTAssertEqual(try rtfPages(separate), ["1", "2"])
+        XCTAssertEqual(try paragraphsBeginningPages(separate), ["BOXP2"])
+    }
+
+    /// A box that is the first words of the document leaves page 1 where it
+    /// is, and a box after a paragraph with words of its own stays after them
+    /// (the paragraph's words take the page).
+    func testABoxAfterAParagraphWithWordsStaysAfterItsPage() throws {
+        let box = { (words: String) in #"{\shp{\*\shpinst{\shptxt{\pard \#(words)\par}}}}"# }
+        let first = try rtfHTML(#"{\rtf1 \#(box("BOX"))\par later\par}"#)
+        XCTAssertEqual(try rtfPages(first), ["1"])
+        XCTAssertEqual(try rtfBody(first).select("p").array().map { try $0.text() }, ["BOX", "later"])
+        let after = try rtfHTML(#"{\rtf1 One \page Two \#(box("BOX"))\par later\par}"#)
+        XCTAssertEqual(try paragraphsBeginningPages(after), ["One Two"])
+        // A box with no letter or digit takes no page.
+        let empty = try rtfHTML(#"{\rtf1 One\page \#(box("!!"))\par later\par}"#)
+        XCTAssertEqual(try paragraphsBeginningPages(empty), ["later"])
+    }
+
+    /// A section break that waits is settled by the first words after it, a
+    /// box's as well.
+    func testASectionBreakBeforeAParagraphOfOnlyABoxBeginsThePageAtTheBox() throws {
+        let box = { (words: String) in #"{\shp{\*\shpinst{\shptxt{\pard \#(words)\par}}}}"# }
+        let html = try rtfHTML(#"{\rtf1 One\par\sect \#(box("BOXP2"))\par later\par}"#)
+        XCTAssertEqual(try rtfPages(html), ["1", "2"])
+        XCTAssertEqual(try paragraphsBeginningPages(html), ["BOXP2"])
+    }
+
     /// A box anchored in a table cell is read in that cell, after the cell's
     /// own words; a box in hidden or deleted text is not read.
     func testATextBoxInACellAndInHiddenText() throws {
