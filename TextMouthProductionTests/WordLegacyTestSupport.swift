@@ -117,6 +117,8 @@ struct WordLegacyDocumentBuilder {
     static func italic(_ value: UInt8 = 1) -> [UInt8] { sprm(86, [value]) }
     static func hidden(_ value: UInt8 = 1) -> [UInt8] { sprm(92, [value]) }
     static func deleted(_ value: UInt8 = 1) -> [UInt8] { sprm(65, [value]) }
+    /// The font size in half-points (`sprmCHps`, two bytes).
+    static func size(halfPoints: Int) -> [UInt8] { sprm(99, [UInt8(halfPoints & 0xFF), UInt8(halfPoints >> 8)]) }
     /// The paragraph is in a table, and ends a row.
     static let inTable = sprm(24, [1])
     static let rowEnd = sprm(25, [1])

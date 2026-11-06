@@ -247,7 +247,7 @@ final class WordDocumentLegacyTests: XCTestCase {
     func testAHiddenHeadingWritesNoHeadingAndLeavesTheGuessBySizeOn() throws {
         let body = try body([
             Paragraph(runs: [Run("Hidden chapter", sprms: Builder.hidden())], style: 1),
-            Paragraph(runs: [Run("Big title", sprms: Builder.sprm(99, [80]))]),
+            Paragraph(runs: [Run("Big title", sprms: Builder.size(halfPoints: 80))]),
             Paragraph("Body text goes on for a good while here."),
             Paragraph("More body text."),
         ])
@@ -260,6 +260,47 @@ final class WordDocumentLegacyTests: XCTestCase {
             Paragraph("Body follows."),
         ])
         XCTAssertEqual(body, "<h1>Run-in heading.</h1>\n<p>Body follows.</p>\n")
+    }
+
+    // MARK: - The Sizes of Sprms
+
+    func testTheFontSizeIsTwoBytesSoWhatFollowsItIsStillRead() throws {
+        // Real files write `63 18 00 56 01`: a size of 24 half-points, then italic. Word writes bold, italic, and
+        // hidden text before the size, but other writers put them after it.
+        XCTAssertEqual(
+            try body([Paragraph(runs: [Run("size first", sprms: Builder.size(halfPoints: 24) + Builder.italic())])]),
+            "<p><em>size first</em></p>\n"
+        )
+        XCTAssertEqual(
+            try body([Paragraph(runs: [Run("seen "), Run("secret", sprms: Builder.size(halfPoints: 24) + Builder.hidden()), Run(" seen")])]),
+            "<p>seen seen</p>\n"
+        )
+    }
+
+    func testAPicturePlaceAndASymbolHaveASizeByteSoWhatFollowsThemIsStillRead() throws {
+        // `44 04 04 e7 07 00 55 81`: a picture's place of four bytes, then bold toggled.
+        let place = Builder.sprm(68, [4, 0x04, 0xE7, 0x07, 0x00])
+        XCTAssertEqual(
+            try body([Paragraph(runs: [Run("x"), Run("hidden after a picture", sprms: place + Builder.hidden())])]),
+            "<p>x</p>\n"
+        )
+        // `4a 03 01 00 2d`: a symbol of font 1 and character 0x2d, then hidden text.
+        let symbol = Builder.sprm(74, [3, 1, 0, 0x2D])
+        XCTAssertEqual(
+            try body([Paragraph(runs: [Run("a"), Run("secret", sprms: symbol + Builder.hidden())])]),
+            "<p>a</p>\n"
+        )
+    }
+
+    func testTheCharacterSetAndTheLanguageSprmsAreSizedSoWhatFollowsThemIsStillRead() throws {
+        // 73 (a flag and 16 bits), 77 (16 bits), and 14 (a byte) before hidden text.
+        for before in [Builder.sprm(73, [0, 0, 0]), Builder.sprm(77, [1, 2]), Builder.sprm(14, [0])] {
+            XCTAssertEqual(
+                try body([Paragraph(runs: [Run("a"), Run("secret", sprms: before + Builder.hidden())])]),
+                "<p>a</p>\n",
+                "\(before)"
+            )
+        }
     }
 
     // MARK: - Pages

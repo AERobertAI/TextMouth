@@ -339,12 +339,20 @@ enum WordSprm {
     static let special = 0x0855
     /// How a section begins (`sprmSBkc`).
     static let sectionBreakKind = 0x3009
-    /// Two opcodes that only a Word 6 or Word 95 document makes
-    /// (`WordLegacySprm`), outside the range Word 97 uses: the paragraph's
-    /// numbering (`sprmPAnld`, whose operand is a size byte and then the 52
-    /// bytes of an `ANLD`) and its level in the numbering (`sprmPNLvlAnm`).
-    static let legacyNumbering = 0xFFF0
-    static let legacyNumberingLevel = 0xFFF1
+    /// The symbol a run holds (`sprmCSymbol`): a 16-bit font (an index into the font
+    /// table) and a 16-bit character ([MS-DOC] 2.6.1; a character in 0xF000 to 0xF0FF is its low byte).
+    static let symbol = 0x6A09
+    /// Opcodes that only a Word 6 or Word 95 document makes (`WordLegacySprm`), outside the
+    /// ones Word 97 has. Their top bits (`spra`) give the operand sizes the Word 97 walker reads
+    /// them by, so a group of modifiers kept in this form (a piece's) is read by either walker:
+    /// - the paragraph's numbering (`sprmPAnld`; a size byte, then the 52 bytes of an `ANLD`) and
+    ///   its level in the numbering (`sprmPNLvlAnm`);
+    /// - the run's font (`sprmCFtc`, an index into the font table) and its character set
+    ///   (`sprmCChse`: a flag that says it differs, and 16 bits, 256 for the Macintosh's).
+    static let legacyNumbering = 0xC0F0
+    static let legacyNumberingLevel = 0x24F1
+    static let legacyFont = 0x4AF2
+    static let legacyCharacterSet = 0xE0F3
 
     // MARK: Operands
 

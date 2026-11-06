@@ -55,6 +55,17 @@ struct WordCharacterFormat: Equatable {
     /// Whether the characters are text a tracked change deleted, which the
     /// document no longer holds.
     var isDeleted = false
+    /// The font the run sets itself (an index into the font table), for a Word 6 or
+    /// Word 95 document, whose font's character set names the code page of the
+    /// run's text (`sprmCFtc`); nil when it says nothing and its styles decide.
+    var fontIndex: Int?
+    /// The character set the run says its text is in (`sprmCChse`), when it says it differs
+    /// from the document's: 256 for the Macintosh's, 0 for Windows'; nil when it says nothing.
+    var characterSet: Int?
+    /// The font and the character (0 to 255 in practice) of a symbol the run holds
+    /// (`sprmCSymbol`): the run's text is a placeholder ("(") for it.
+    var symbolFont: Int?
+    var symbolCharacter: Int?
 }
 
 // MARK: - Runs of Formats
@@ -266,6 +277,17 @@ enum WordDocumentProperties {
             format.style = nil
         case WordSprm.styleSeparator: format.isStyleSeparator = value == 1 || value == 0x81
         case WordSprm.special: format.isSpecial = value != 0
+        case WordSprm.legacyFont: format.fontIndex = value
+        case WordSprm.legacyCharacterSet:
+            // A flag byte (non-zero when the run's set differs from the document's), then 16 bits.
+            if operand.count >= 3, value & 0xFF != 0 { format.characterSet = (value >> 8) & 0xFFFF }
+        case WordSprm.symbol:
+            // A 16-bit font, then a 16-bit character; one in 0xF000 to 0xF0FF stands for its low byte.
+            if operand.count >= 4 {
+                format.symbolFont = value & 0xFFFF
+                let character = (value >> 16) & 0xFFFF
+                format.symbolCharacter = (0xF000...0xF0FF).contains(character) ? character & 0xFF : character
+            }
         case WordSprm.fontSize: format.fontSize = value
         // A toggle ([MS-DOC] 2.6.1): 0x80 keeps what a style gives, and no style
         // gives a deletion, so only 1 and 0x81 delete.
@@ -314,6 +336,7 @@ enum WordDocumentProperties {
         format.italic = nil
         format.hidden = nil
         format.fontSize = nil
+        format.fontIndex = nil
     }
 
     /// Walks a bin table's pages and builds the runs of formats `format`
