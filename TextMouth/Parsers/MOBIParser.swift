@@ -47,11 +47,14 @@ enum MOBIParser {
     /// - Throws: `MOBIError` for a file that is not a Kindle book TextMouth
     ///   reads (copy-protected, KF8, or compressed in a way not read yet, or
     ///   damaged), `DocumentTooLargeError` for one past `DocumentByteLimit`,
-    ///   and `FileImportError.noTextToRead` for one with no text.
+    ///   `FileImportError.noTextToRead` for one with no text, and
+    ///   `ImportCancelled` when the import running it was cancelled.
     static func prepareBook(url: URL, fallbackTitle: String? = nil) throws -> PreparedBook {
         let book = try MOBIBook(bytes: try bytes(of: url))
         var chapters: [EPUBParser.PreparedChapter] = []
         for section in book.sections {
+            // Cancel during a very large book is heard between its sections.
+            try ImportCancellation.throwIfCancelled()
             if let chapter = try preparedChapter(of: section, number: chapters.count + 1) {
                 chapters.append(chapter)
             }

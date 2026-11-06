@@ -26,8 +26,17 @@ struct RTFInterpreter {
     /// its name).
     private static let longestName = 1_000
 
+    /// How many tokens are read between two looks at whether the import was
+    /// cancelled: a few thousand, so that the look costs nothing measurable
+    /// and Cancel is heard within a few thousandths of a second even on a
+    /// file of many megabytes.
+    static let tokensBetweenCancellationChecks = 4_096
+
     // MARK: State
 
+    /// Asked every `tokensBetweenCancellationChecks` tokens; throws to stop
+    /// the read. The import's own check unless a test gives another.
+    private let checkCancellation: () throws -> Void
     /// The tokens being read.
     private var tokenizer: RTFTokenizer
     /// The state of the group being read, and of the groups around it.
@@ -116,17 +125,32 @@ struct RTFInterpreter {
     /// - Parameters:
     ///   - includesPages: whether page breaks are placed.
     ///   - limit: the most text the document may make.
-    init(bytes: [UInt8], includesPages: Bool, limit: Int64) {
+    ///   - checkCancellation: asked now and then while reading, and throws
+    ///     to stop; by default it throws `ImportCancelled` when the import
+    ///     running on this thread was cancelled (`ImportCancellation`).
+    init(
+        bytes: [UInt8],
+        includesPages: Bool,
+        limit: Int64,
+        checkCancellation: @escaping () throws -> Void = { try ImportCancellation.throwIfCancelled() }
+    ) {
+        self.checkCancellation = checkCancellation
         tokenizer = RTFTokenizer(bytes: bytes)
         builder = RTFBlockBuilder(includesPages: includesPages, limit: limit)
     }
 
     /// Reads the whole document.
     /// - Throws: `TextutilConverter.Failure.unreadable` for groups nested
-    ///   past `deepestNesting`, and `DocumentTooLargeError` for text past
-    ///   the limit.
+    ///   past `deepestNesting`, `DocumentTooLargeError` for text past the
+    ///   limit, and `ImportCancelled` when the import was cancelled: the
+    ///   reader runs on the import's thread, so it asks as it goes.
     mutating func read() throws -> RTFDocument {
+        // A read that begins cancelled reads nothing.
+        try checkCancellation()
+        var tokensRead = 0
         while !isFinished, let token = tokenizer.next() {
+            tokensRead += 1
+            if tokensRead % Self.tokensBetweenCancellationChecks == 0 { try checkCancellation() }
             try handle(token)
         }
         flushBytes()
