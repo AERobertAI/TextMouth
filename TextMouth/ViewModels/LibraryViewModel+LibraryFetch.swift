@@ -33,7 +33,7 @@ extension LibraryViewModel {
     /// How long a fetch waits before each retry of files that were read
     /// without error and are still named: a sync service that isn't up yet
     /// just after a restart often is within half a minute.
-    static let libraryFetchRetryDelays: [Duration] = [.seconds(5), .seconds(15), .seconds(30)]
+    static let defaultLibraryFetchRetryDelays: [Duration] = [.seconds(5), .seconds(15), .seconds(30)]
 
     // MARK: Starting and Stopping
 
@@ -127,8 +127,8 @@ extension LibraryViewModel {
             if named == previousNames {
                 // The same files again: whatever was read did not bring them.
                 // A sync service that isn't up yet may be in a moment.
-                guard retries < Self.libraryFetchRetryDelays.count else { break }
-                try? await Task.sleep(for: Self.libraryFetchRetryDelays[retries])
+                guard retries < libraryFetchRetryDelays.count else { break }
+                try? await Task.sleep(for: libraryFetchRetryDelays[retries])
                 retries += 1
                 guard libraryFetchToken == token else { return }
                 if checkDataDirectory() {
@@ -159,7 +159,11 @@ extension LibraryViewModel {
             if !result.stalled.isEmpty {
                 let seconds = Int(libraryFetchStallLimit.components.seconds)
                 let offline = libraryFetchReachability.isOnline() ? "" : ", and this Mac is offline"
-                failLibraryFetch(token, provider, folder, root, ending: "no answer within \(seconds) seconds\(offline)")
+                failLibraryFetch(
+                    token, provider, folder, root,
+                    files: names(of: result.stalled, in: root),
+                    ending: "no answer within \(seconds) seconds\(offline)"
+                )
                 return
             }
             if checkDataDirectory() {
@@ -239,16 +243,18 @@ extension LibraryViewModel {
     // MARK: Endings
 
     /// Ends the fetch with the failure screen: `ending` says in a few words
-    /// why, for the log, and the reason names the files still waiting.
+    /// why, for the log, and the reason names `files`, by default the ones
+    /// the last check named, that are still waiting.
     private func failLibraryFetch(
         _ token: UUID,
         _ provider: CloudProvider?,
         _ folder: String,
         _ root: URL,
+        files: [String]? = nil,
         ending: String
     ) {
         guard isCurrentLibraryFetch(token, root: root) else { return }
-        let named = names(of: pendingLibraryFiles, in: root)
+        let named = files ?? names(of: pendingLibraryFiles, in: root)
         DiagnosticLog.event(.storage, "LIBRARY_FETCH: gave up on \(DataDirectoryUnavailability.listed(named)); \(ending)")
         endLibraryFetch(token)
         noteDataDirectoryUnavailable(.cloudFetchFailed(provider, folder: folder, files: named, ending: ending))

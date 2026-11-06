@@ -344,6 +344,10 @@ final class LibraryViewModel: ObservableObject {
     /// and have not returned, including those of a fetch that gave up on a
     /// stuck read: none is read again meanwhile, so no threads pile up.
     var libraryFilesBeingRead: Set<String> = []
+    /// The waits before the retries of a fetch whose reads fail or bring
+    /// nothing: a sync service that isn't up yet just after a restart often
+    /// is within half a minute.
+    var libraryFetchRetryDelays = LibraryViewModel.defaultLibraryFetchRetryDelays
     /// How long a fetch waits for its reads before it shows the failure.
     var libraryFetchStallLimit: Duration = BookCloudStorageService.defaultStallLimit
     /// Whether this Mac is online, which a stalled fetch's log line says.
