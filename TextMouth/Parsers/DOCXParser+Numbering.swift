@@ -208,6 +208,14 @@ struct DOCXListCounter {
         return .number(number)
     }
 
+    /// The number last given at `level` in the list of instance `numId`, or
+    /// nil if that level has not been counted since it started. A level's
+    /// number text can name the number of a more significant level (the
+    /// "1" of "1.2"), which is this.
+    func lastNumber(numId: String, level: Int) -> Int? {
+        counts[numbering.counterKey(numId: numId)]?[level]
+    }
+
     /// Forget every count, so each list starts again from its start value.
     mutating func restartAll() {
         counts.removeAll()
