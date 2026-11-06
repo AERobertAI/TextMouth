@@ -68,7 +68,7 @@ enum RTFBlock: Equatable {
     /// A heading at `level`, 1 to 6.
     case heading(RTFParagraph, level: Int)
     /// A list item at nesting depth `level` (0 is the outermost list).
-    case listItem(RTFParagraph, RTFListPosition)
+    case listItem(RTFParagraph, level: Int, numbered: Bool)
     /// A table.
     case table(RTFTable)
 }

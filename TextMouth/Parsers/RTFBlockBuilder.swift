@@ -21,7 +21,7 @@ struct RTFBlockBuilder {
         /// A heading at this level, 1 to 6.
         case heading(Int)
         /// An item of a list, at this depth (0 is the outermost list).
-        case listItem(RTFListPosition)
+        case listItem(level: Int, numbered: Bool)
     }
 
     // MARK: State
@@ -280,7 +280,7 @@ struct RTFBlockBuilder {
         switch kind {
         case .body: blocks.append(.paragraph(finished))
         case .heading(let level): blocks.append(.heading(finished, level: level))
-        case .listItem(let position): blocks.append(.listItem(finished, position))
+        case .listItem(let level, let numbered): blocks.append(.listItem(finished, level: level, numbered: numbered))
         }
     }
 
@@ -311,9 +311,9 @@ struct RTFBlockBuilder {
     /// `paragraph` for a table's cell: when it is a list item, carrying its
     /// place in the list (a heading or body paragraph carries nothing).
     private static func markingListItem(_ paragraph: RTFParagraph, as kind: Kind) -> RTFParagraph {
-        guard case .listItem(let position) = kind else { return paragraph }
+        guard case .listItem(let level, let numbered) = kind else { return paragraph }
         var marked = paragraph
-        marked.listItem = position
+        marked.listItem = RTFListPosition(level: level, numbered: numbered)
         return marked
     }
 

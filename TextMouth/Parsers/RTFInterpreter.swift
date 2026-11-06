@@ -891,7 +891,7 @@ struct RTFInterpreter {
         } else {
             numbered = false
         }
-        return .listItem(RTFListPosition(level: properties.listLevel, numbered: numbered))
+        return .listItem(level: properties.listLevel, numbered: numbered)
     }
 
     /// `\par`: the paragraph ends.
