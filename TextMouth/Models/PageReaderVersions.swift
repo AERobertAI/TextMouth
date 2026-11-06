@@ -51,14 +51,24 @@ enum PageReaderVersions {
         switch format {
         case .epub, .html:
             return "1.0.3"
-        case .pdf, .docx, .daisy:
+        case .pdf, .daisy:
             return "1.0.0"
+        case .docx:
+            // The DOCX reader follows the policy every document reader of
+            // TextMouth follows: hidden text (w:vanish) is not read, a
+            // text box written twice is read once, and the footnotes and
+            // endnotes are read after the text. Every .docx book is read
+            // again once.
+            return "1.1.0"
         case .rtf, .rtfd:
             // TextMouth's own reader reads rich text (FMT47) instead of
             // textutil: headings from the style sheet, bold and italic, and
             // pages at every \page, \pagebb, and page-starting \sect, so the
-            // books of these two formats are read again once.
-            return "1.1.0"
+            // books of these two formats are read again once ("1.1.0"). At
+            // "1.2.0" text a tracked change deleted is not read, a list
+            // item's number inside a table cell is, and footnotes and
+            // endnotes are read after the text.
+            return "1.2.0"
         case .doc:
             // Word 97-2003 is read by TextMouth's own reader (FMT47) from
             // "1.1.0", which finds the pages and the headings by the
