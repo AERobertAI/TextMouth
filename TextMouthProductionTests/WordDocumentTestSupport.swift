@@ -296,9 +296,20 @@ struct WordDocumentBuilder {
         layout.pieceOffsets = pieceFileOffsets
         while word.count % 512 != 0 { word.append(0) }
 
+        // The piece that holds a character position, by halving (a document
+        // of a hundred thousand pieces is built here too).
+        func pieceIndex(of position: Int) -> Int {
+            var low = 0
+            var high = pieceCount
+            while low < high {
+                let middle = (low + high) / 2
+                if position < pieceBounds[middle + 1] { high = middle } else { low = middle + 1 }
+            }
+            return min(low, pieceCount - 1)
+        }
         // A character position's offset in the stream.
         func fileOffset(ofCharacter position: Int) -> Int {
-            let index = (0..<pieceCount).first { position < pieceBounds[$0 + 1] } ?? pieceCount - 1
+            let index = pieceIndex(of: position)
             return pieceFileOffsets[index] + (position - pieceBounds[index]) * (isCompressed ? 1 : 2)
         }
         // Splits a range of character positions at the pieces' ends into ranges of file offsets.
@@ -306,7 +317,7 @@ struct WordDocumentBuilder {
             var result: [Range<Int>] = []
             var position = range.lowerBound
             while position < range.upperBound {
-                let index = (0..<pieceCount).first { position < pieceBounds[$0 + 1] } ?? pieceCount - 1
+                let index = pieceIndex(of: position)
                 let end = min(range.upperBound, pieceBounds[index + 1])
                 let first = fileOffset(ofCharacter: position)
                 result.append(first..<first + (end - position) * (isCompressed ? 1 : 2))

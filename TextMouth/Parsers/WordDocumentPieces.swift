@@ -178,7 +178,10 @@ struct WordPieceTable {
     /// Calls `body` with the character position and the UTF-16 code unit of
     /// each character from position `start` up to (not including) `limit`,
     /// in order. Windows-1252 characters are turned into their Unicode code
-    /// unit as they are read.
+    /// unit as they are read. The first piece it reads is found by halving
+    /// the pieces (their ends never go back), so a caller that reads many
+    /// short ranges of a document of many pieces does not walk the pieces
+    /// before each.
     /// - Parameter document: the stream the table was checked against; the
     ///   reads here stay inside the ranges that check passed.
     func forEachCharacter(
@@ -186,7 +189,14 @@ struct WordPieceTable {
         _ body: (_ position: Int, _ unit: UInt16) throws -> Void
     ) rethrows {
         let bytes = document.bytes
-        for piece in pieces {
+        var low = 0
+        var high = pieces.count
+        while low < high {
+            let middle = (low + high) / 2
+            if pieces[middle].endCharacter > start { high = middle } else { low = middle + 1 }
+        }
+        for index in low..<pieces.count {
+            let piece = pieces[index]
             guard piece.firstCharacter < limit else { return }
             guard piece.endCharacter > start else { continue }
             let end = min(piece.endCharacter, limit)

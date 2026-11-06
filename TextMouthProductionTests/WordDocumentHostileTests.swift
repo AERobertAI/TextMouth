@@ -256,17 +256,31 @@ final class WordDocumentHostileTests: XCTestCase {
 
     // MARK: - The Style Sheet
 
-    func testAStyleSheetWhoseCountsDoNotFitIsRefused() {
+    func testAStyleSheetCutShortHasOnlyTheStylesItHolds() throws {
         let builder = richDocument()
-        // The count of styles larger than the sheet.
-        assertUnreadable(damaged(builder, table: { table, layout in
-            self.put(self.le16(0xFFFF), at: layout.styleSheet + 2, in: &table)
-        }), "65535 styles")
-        // A style's size past the sheet.
-        assertUnreadable(damaged(builder, table: { table, layout in
-            let first = layout.styleSheet + 2 + 18
-            self.put(self.le16(0xFFFF), at: first, in: &table)
-        }), "a style of 64 KB")
+        // A sheet cut short is read as far as it goes (real files are: the
+        // slots past the length the header gives are unused), the styles it
+        // does not hold in full are unused, and a paragraph in one has the
+        // default formatting, so the document reads, with no headings.
+        for (message, damage) in [
+            ("65535 styles", { (table: inout [UInt8], layout: WordDocumentBuilder.Layout) in
+                table.replaceSubrange(layout.styleSheet + 2..<layout.styleSheet + 4, with: [0xFF, 0xFF])
+            }),
+            ("a style of 64 KB", { (table: inout [UInt8], layout: WordDocumentBuilder.Layout) in
+                table.replaceSubrange(layout.styleSheet + 2 + 18..<layout.styleSheet + 2 + 20, with: [0xFF, 0xFF])
+            }),
+            ("a header of 64 KB", { (table: inout [UInt8], layout: WordDocumentBuilder.Layout) in
+                table.replaceSubrange(layout.styleSheet..<layout.styleSheet + 2, with: [0xFF, 0xFF])
+            }),
+        ] {
+            let html = try XCTUnwrap(WordDocumentReader.html(from: damaged(builder, table: damage), includesPages: true), message)
+            XCTAssertTrue(html.contains("Chapter one"), message)
+            XCTAssertFalse(html.contains("<h1>"), message)
+        }
+    }
+
+    func testAStyleSheetWhoseFixedPartDoesNotFitIsRefused() {
+        let builder = richDocument()
         // A fixed part larger than the style.
         assertUnreadable(damaged(builder, table: { table, layout in
             self.put(self.le16(0xFFFF), at: layout.styleSheet + 4, in: &table)
@@ -274,23 +288,22 @@ final class WordDocumentHostileTests: XCTestCase {
         assertUnreadable(damaged(builder, table: { table, layout in
             self.put(self.le16(2), at: layout.styleSheet + 4, in: &table)
         }), "a fixed part of 2 bytes")
-        // The header's own size past the sheet.
-        assertUnreadable(damaged(builder, table: { table, layout in
-            self.put(self.le16(0xFFFF), at: layout.styleSheet, in: &table)
-        }), "a header of 64 KB")
     }
 
-    func testAStyleIndexPastTheStyleSheetIsRefused() {
-        var builder = richDocument()
-        builder.paragraphs.append(Paragraph("lost", style: 200))
-        assertUnreadable(builder.build(), "a paragraph in style 200")
-        builder = richDocument()
-        builder.paragraphs.append(Paragraph(runs: [Run("lost", characterStyle: 200)]))
-        assertUnreadable(builder.build(), "a run in character style 200")
-        // The paragraph style set by a modifier.
-        builder = richDocument()
-        builder.paragraphs.append(Paragraph("lost", modifiers: WordDocumentBuilder.le16(WordSprm.paragraphStyle) + WordDocumentBuilder.le16(300)))
-        assertUnreadable(builder.build(), "a style modifier of 300")
+    func testAStyleIndexPastTheStyleSheetHasTheDefaultFormatting() throws {
+        // [MS-DOC] sprmPIstd: a style that is empty or does not exist is the
+        // default formatting. Real files name style 0xFFFF, or one past the sheet.
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [
+            Paragraph("in style 200", style: 200),
+            Paragraph("in style 0xFFFF", style: 0xFFFF),
+            Paragraph(runs: [Run("in character style 200", characterStyle: 200)]),
+            Paragraph("set by a modifier", modifiers: WordDocumentBuilder.le16(WordSprm.paragraphStyle) + WordDocumentBuilder.le16(300)),
+        ]
+        XCTAssertEqual(
+            try wordBody(of: builder.build()),
+            "<p>in style 200</p>\n<p>in style 0xFFFF</p>\n<p>in character style 200</p>\n<p>set by a modifier</p>\n"
+        )
     }
 
     func testStyleIndexesOfNoStyleAreBodyText() throws {
@@ -409,6 +422,52 @@ final class WordDocumentHostileTests: XCTestCase {
         } catch {
             XCTAssertTrue(error is DocumentTooLargeError, "\(error)")
         }
+    }
+
+    // MARK: - Time
+
+    /// Asserts that reading `data` takes under `seconds` and gives HTML.
+    private func assertReadsWithin(_ seconds: Double, _ data: Data, _ message: String, file: StaticString = #filePath, line: UInt = #line) throws -> String {
+        let start = Date()
+        let html = try XCTUnwrap(WordDocumentReader.html(from: data, includesPages: true), message, file: file, line: line)
+        XCTAssertLessThan(Date().timeIntervalSince(start), seconds, message, file: file, line: line)
+        return html
+    }
+
+    func testAChainOfThousandsOfStylesCostsNothingPerParagraph() throws {
+        // 4,000 styles each based on the next, a list the deepest one is in, and
+        // many paragraphs in it: the chain was walked for each paragraph's
+        // heading, page break, list, size, and emphasis (126 microseconds a
+        // paragraph; two hours for a 64 MB file).
+        var builder = WordDocumentBuilder()
+        let first = builder.styles.count
+        let depth = 4000
+        for index in 0..<depth {
+            let based = index == depth - 1 ? 0 : first + index + 1
+            builder.styles.append(WordDocumentBuilder.Style(
+                basedOn: based, bold: 0x81, hidden: 0x80, listIndex: index == depth - 1 ? 1 : nil, listLevel: index == depth - 1 ? 0 : nil
+            ))
+        }
+        builder.lists = [WordDocumentBuilder.List(identifier: 7, levels: (0..<9).map { WordDocumentBuilder.ListLevel(0, "%\($0 + 1).") })]
+        builder.listInstances = [WordDocumentBuilder.ListInstance(listIdentifier: 7)]
+        builder.paragraphs = (0..<40_000).map { _ in Paragraph("a", style: first) }
+        let html = try assertReadsWithin(2.0, builder.build(), "40,000 paragraphs under a chain of 4,000 styles")
+        XCTAssertTrue(html.contains("<li>a"), String(html.prefix(300)))
+    }
+
+    func testManyNotesWhoseMarksAreHiddenInManyPiecesCostNothingPerNote() throws {
+        // 100,000 one-mark pieces and notes, every other mark hidden: each
+        // shown note was read from a walk of every piece before it (a
+        // quadratic time: an hour for a 64 MB file).
+        let count = 100_000
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [Paragraph(runs: [Run("Main.")] + (0..<count).map { Run("\u{02}", hidden: $0 % 2 == 0 ? 1 : nil) })]
+        builder.footnoteReferences = (0..<count).map { $0 + 5 }
+        builder.stories = [.footnotes: (0..<count).map { _ in Paragraph("n") }]
+        builder.pieceCount = count
+        let html = try assertReadsWithin(1.0, builder.build(), "100,000 notes in 100,000 pieces")
+        // The shown notes are the odd ones, 50,000 of them, each a paragraph.
+        XCTAssertEqual(html.components(separatedBy: "<p>n</p>").count - 1, count / 2)
     }
 
     // MARK: - Truncation and Random Damage
