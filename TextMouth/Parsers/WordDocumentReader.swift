@@ -114,13 +114,13 @@ enum WordDocumentReader {
         var paragraphs = WordFormatRuns<WordParagraphFormat>(runs: [])
         if let range = try fib.range(of: .paragraphBinTable, in: table) {
             paragraphs = try WordDocumentProperties.paragraphRuns(
-                binTable: range, table: table, document: document, pieces: pieces, styles: styles, limit: pieces.characterCount
+                binTable: range, table: table, document: document, pieces: pieces, limit: pieces.characterCount
             )
         }
         var characters = WordFormatRuns<WordCharacterFormat>(runs: [])
         if let range = try fib.range(of: .characterBinTable, in: table) {
             characters = try WordDocumentProperties.characterRuns(
-                binTable: range, table: table, document: document, pieces: pieces, styles: styles, limit: pieces.characterCount
+                binTable: range, table: table, document: document, pieces: pieces, limit: pieces.characterCount
             )
         }
         // The lists, whose numbers Word does not store in the text. They are

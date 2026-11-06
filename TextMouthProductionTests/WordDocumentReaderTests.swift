@@ -725,10 +725,25 @@ final class WordDocumentReaderTests: XCTestCase {
         XCTAssertEqual(body, "<h1>Zero</h1>\n<h3>Two</h3>\n<h6>Eight</h6>\n<p>Body</p>\n")
     }
 
-    func testBodyTextOutlineLevelOverridesAHeadingStyle() throws {
-        // The paragraph keeps the style's bold: it is body text, so it shows.
-        let body = try body([Paragraph("Not a heading", style: 2, modifiers: WordDocumentBuilder.modifier(WordSprm.outlineLevel, 9))])
-        XCTAssertEqual(body, "<p><strong>Not a heading</strong></p>\n")
+    func testADirectOutlineLevelOnHeadingOneToNineIsIgnoredAndOnAStyleBasedOnOneIsNot() throws {
+        // [MS-DOC] sprmPOutLvl: "This MUST be ignored if the paragraph has an
+        // istd that is greater than or equal to 0x1 and less than or equal to 0x9."
+        var builder = WordDocumentBuilder()
+        // Index 12 is based on Heading 2 and says nothing of its own.
+        builder.styles.append(WordDocumentBuilder.Style(basedOn: 2))
+        let outline = { (level: Int) in WordDocumentBuilder.modifier(WordSprm.outlineLevel, level) }
+        builder.paragraphs = [
+            Paragraph("Heading 2 says body text", style: 2, modifiers: outline(9)),
+            Paragraph("Heading 2 says level 5", style: 2, modifiers: outline(4)),
+            // A style that is based on a heading is not one: its paragraph's own level counts.
+            Paragraph("Based on a heading, body text", style: 12, modifiers: outline(9)),
+            Paragraph("Based on a heading, level 1", style: 12, modifiers: outline(0)),
+        ]
+        XCTAssertEqual(
+            try body(of: builder.build()),
+            "<h2>Heading 2 says body text</h2>\n<h2>Heading 2 says level 5</h2>\n"
+                + "<p><strong>Based on a heading, body text</strong></p>\n<h1>Based on a heading, level 1</h1>\n"
+        )
     }
 
     func testAStyleBasedOnAHeadingIsAHeadingAndOneWithItsOwnOutlineLevelUsesIt() throws {

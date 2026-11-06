@@ -116,12 +116,11 @@ enum WordDocumentProperties {
     /// before `limit`.
     /// - Parameters:
     ///   - binTable: where the PlcfBtePapx lies in `table`.
-    ///   - styles: the style sheet, for checking each paragraph's style index.
     /// - Throws: `OLEDamage` for a page, run, offset, or style index that does
     ///   not fit.
     static func paragraphRuns(
         binTable: Range<Int>, table: OLEBytes, document: OLEBytes,
-        pieces: WordPieceTable, styles: WordStyleSheet, limit: Int
+        pieces: WordPieceTable, limit: Int
     ) throws -> WordFormatRuns<WordParagraphFormat> {
         try runs(binTable: binTable, table: table, document: document, pieces: pieces, limit: limit,
                  maximumRuns: (pageSize - 1 - 4) / (4 + paragraphEntrySize),
@@ -153,7 +152,8 @@ enum WordDocumentProperties {
             }
             // Then the piece's own modifiers, over the PAPX's.
             WordSprm.forEach(in: modifiers) { opcode, operand in apply(opcode, operand, to: &format) }
-            guard styles.contains(styleIndex: format.style) else { throw OLEDamage(reason: "a paragraph's style \(format.style) is not in the style sheet") }
+            // A style that is not in the sheet (or 0xFFFF, none) has the default
+            // formatting: the sheet's questions answer nothing for it.
             return format
         }
     }
@@ -201,7 +201,7 @@ enum WordDocumentProperties {
     ///   not fit.
     static func characterRuns(
         binTable: Range<Int>, table: OLEBytes, document: OLEBytes,
-        pieces: WordPieceTable, styles: WordStyleSheet, limit: Int
+        pieces: WordPieceTable, limit: Int
     ) throws -> WordFormatRuns<WordCharacterFormat> {
         try runs(binTable: binTable, table: table, document: document, pieces: pieces, limit: limit,
                  maximumRuns: (pageSize - 1 - 4) / 5,
@@ -221,9 +221,6 @@ enum WordDocumentProperties {
             }
             // Then the piece's own modifiers, over the CHPX's.
             WordSprm.forEach(in: modifiers) { opcode, operand in apply(opcode, operand, to: &format) }
-            if let style = format.style, !styles.contains(styleIndex: style) {
-                throw OLEDamage(reason: "a run's character style \(style) is not in the style sheet")
-            }
             return format
         }
     }
