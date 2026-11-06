@@ -446,8 +446,10 @@ final class ODTReaderTests: XCTestCase {
             </table:table>
             """
         )
+        // The cell repeated a million times is read 16 times, the most a cell is repeated.
         XCTAssertEqual(lines, [
-            "<table>", "<tr><td><p>Head</p></td></tr>", "<tr><td><p>A1</p><p>nested</p></td><td></td></tr>", "</table>",
+            "<table>", "<tr><td><p>Head</p></td></tr>",
+            "<tr><td><p>A1</p><p>nested</p></td>" + String(repeating: "<td></td>", count: 16) + "</tr>", "</table>",
             "<table>", "<tr><td><p>second</p></td></tr>", "</table>",
         ])
     }
@@ -891,7 +893,10 @@ final class ODTReaderTests: XCTestCase {
     }
 
     /// A list in a text box starts at its own level, a list header is not an
-    /// item, and a list nested 100 deep is read to its words.
+    /// item, and a list nested 95 deep (193 elements deep, under the 200 the
+    /// reader allows, and past the 40 list levels it tells apart) is read to
+    /// its words. One nested 100 deep is 203 elements deep, past the limit,
+    /// and is refused.
     func testListsInTextBoxesListHeadersAndDeepLists() throws {
         XCTAssertEqual(try odfLines(
             """
@@ -902,10 +907,17 @@ final class ODTReaderTests: XCTestCase {
         XCTAssertEqual(try odfLines(
             "<text:list><text:list-header><text:p>Header words</text:p></text:list-header><text:list-item><text:p>item</text:p></text:list-item></text:list>"
         ), ["<p>Header words</p>", "<ul>", "<li>item</li>", "</ul>"])
-        let deep = (0..<100).map { "<text:list><text:list-item><text:p>level \($0)</text:p>" }.joined()
-            + String(repeating: "</text:list-item></text:list>", count: 100)
+        let deep = (0..<95).map { "<text:list><text:list-item><text:p>level \($0)</text:p>" }.joined()
+            + String(repeating: "</text:list-item></text:list>", count: 95)
         let words = try odfHeard(deep).filter { $0.allSatisfy(\.isNumber) }
-        XCTAssertEqual(words, (0..<100).map(String.init))
+        XCTAssertEqual(words, (0..<95).map(String.init))
+        // The limit is on the elements' depth (200), not on the lists: 100
+        // levels of lists, with the three elements above them, is past it.
+        let tooDeep = (0..<100).map { "<text:list><text:list-item><text:p>level \($0)</text:p>" }.joined()
+            + String(repeating: "</text:list-item></text:list>", count: 100)
+        XCTAssertThrowsError(try odfLines(tooDeep)) {
+            XCTAssertEqual($0 as? TextutilConverter.Failure, .unreadable(.odt))
+        }
     }
 
     /// A heading only in a table or in a note does not turn off the guess at

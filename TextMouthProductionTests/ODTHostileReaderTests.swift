@@ -145,7 +145,9 @@ final class ODTHostileReaderTests: XCTestCase {
     // MARK: - Repetition
 
     /// A million cells, columns, and rows asked for in one attribute each
-    /// are one cell, one column, and one row in the result, read at once.
+    /// cost nothing: the repeated cell is read 16 times (the most a cell is
+    /// repeated), a repeated column and row once, and the covered cells not
+    /// at all; `read` holds the time to seconds.
     func testRepeatedCellsColumnsAndRowsCostNothing() throws {
         let body = """
             <table:table><table:table-column table:number-columns-repeated="1000000"/>\
@@ -155,7 +157,8 @@ final class ODTHostileReaderTests: XCTestCase {
             """
         let html = try XCTUnwrap(read(makeODT(body: body), "repeated cells"))
         XCTAssertEqual(odfBodyLines(html).filter { $0.hasPrefix("<tr>") }.count, 1)
-        XCTAssertEqual(odfPlainText(html), "cell")
+        XCTAssertEqual(odfPlainText(html), Array(repeating: "cell", count: 16).joined(separator: " "))
+        XCTAssertEqual(odfBodyLines(html).joined().components(separatedBy: "<td>").count - 1, 16)
     }
 
     /// A count of a billion spaces in one `text:s` is held to a handful, and
@@ -206,7 +209,9 @@ final class ODTHostileReaderTests: XCTestCase {
             chain += "<style:style style:name=\"S\(index)\" style:family=\"paragraph\" style:parent-style-name=\"S\(index + 1)\">\(properties)</style:style>"
         }
         let html = try XCTUnwrap(read(makeODT(body: "<text:p text:style-name=\"S0\">words</text:p>", automaticStyles: chain), "long chain"))
-        XCTAssertEqual(odfBodyLines(html), ["<p><strong>words</strong></p>"])
+        // The read has pages, so the first words follow the span of page 1.
+        let page1 = "<span role=\"\(TextutilPageBreaks.pageBreakRole)\" aria-label=\"1\"></span>"
+        XCTAssertEqual(odfBodyLines(html), [page1 + "<p><strong>words</strong></p>"])
 
         // One more than the most styles a document may define.
         var many = ""
