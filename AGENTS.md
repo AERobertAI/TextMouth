@@ -88,6 +88,18 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - Nothing re-invokes the orchestrator when a spent usage window comes back, and once the limit is reached the orchestrator cannot start a watcher either. At the start of any long unattended run, start `Scripts/agents/wait-for-usage-reset.py` as a background task: it exits, re-invoking the orchestrator, when a window it saw spent has headroom again. On October 31, 2026 the 5-hour window reset at 03:20 and every agent stood still until 12:06.
 - A revert must keep what other code uses. Reverting a commit also takes away the helpers it added: on October 31, 2026 a revert removed the test helper `onWorkerSizedStack`, which other tests used, and the next build failed. Before a revert, grep for each symbol the commit added.
 
+## Where things stood on November 6, 2026
+
+- Main is version 0.4.0: the one policy for every document reader, OpenDocument and Word 2003 XML, and DRM-free KFX, after 0.3.2's removal of the page commands and a library in the cloud that fetches its files and opens by itself. Full suite 10243 tests, 78 skipped, 0 failures.
+- The record is in the TODO, under "One policy for every document reader". The questions left with the user are in `humanQuestions/2026-11-06.md`.
+- Lessons of that night, which hold for any campaign:
+  - Every first review found blockers, and every fix round's verification found something. Keep review, fix, and verify as separate steps.
+  - Private train copies of a branch tangle with other agents' commits. When branches conflict, make one shared base early (`--base`), and have agents request their real branches.
+  - A hang in a test holds every agent, as a trap does: the train now kills a host that writes nothing for 15 minutes, and every wait in a test takes a limit.
+  - Never wrap `make typecheck-*` in another hold of the heavy lock: they take it themselves.
+  - Every `rm` uses a literal or relative path, never a variable, substitution, glob, or built path: the user's rule, and it goes in every agent's prompt.
+  - A subagent may be refused writes outside its worktree. Let its final message be its report, and save it from there.
+
 ## Where things stood on November 4, 2026
 
 **November 3 and 4: iOS phase 0.**
