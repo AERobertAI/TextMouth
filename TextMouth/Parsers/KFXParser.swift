@@ -65,30 +65,46 @@ enum KFXParser {
             from: try containers(of: bytes, near: url), fallbackTitle: fallbackTitle, includesPages: includesPages)
     }
 
+    /// The containers of one book: the main ones, and what sits beside the
+    /// main file.
+    private struct Opened {
+        var main: [KFXContainer]
+        var sidecars: [KFXContainer] = []
+    }
+
     /// The prepared book of the containers of one book.
-    private static func prepared(
-        from containers: [KFXContainer], fallbackTitle: String, includesPages: Bool
-    ) throws -> PreparedBook {
-        let book = try KFXBook(containers: containers, includesPages: includesPages)
+    private static func prepared(from opened: Opened, fallbackTitle: String, includesPages: Bool) throws -> PreparedBook {
+        let book = try KFXBook(containers: opened.main, sidecars: opened.sidecars, includesPages: includesPages)
         return try MOBIParser.preparedBook(
             sections: book.sections, metadata: book.metadata, fallbackTitle: fallbackTitle, includesPages: includesPages)
     }
 
     // MARK: Containers
 
+    /// Whether anything beside the book at `url` (its `.sdr` folder, a
+    /// voucher with its name) says it is protected. The app asks this of a
+    /// source file before it copies the file into the library, where the
+    /// folder is not.
+    static func isProtected(near url: URL) -> Bool {
+        KFXSidecar.scan(near: url).isProtected
+    }
+
     /// The containers of the book at `url`: the containers of a set in a ZIP,
     /// or a main file with what sits beside it. The first bytes decide, and a
-    /// protected book is refused before anything else is read.
-    private static func containers(at url: URL) throws -> [KFXContainer] {
+    /// protected book is refused before anything else is read (its size
+    /// included: the sentence is the protected one, however large).
+    private static func containers(at url: URL) throws -> Opened {
         switch try KFXSignature.kind(ofFileAt: url) {
         case .zip:
             switch try KFXPackage.kind(ofArchiveAt: url) {
             case .protected: throw MOBIError.copyProtected
             case .kindleCreate: throw KFXError.kindleCreatePackage
             case .other: throw MOBIError.notAKindleBook
-            case .containers: return try KFXPackage.containers(inArchiveAt: url)
+            case .containers: return Opened(main: try KFXPackage.containers(inArchiveAt: url))
             }
-        case .container, .protected:
+        case .protected:
+            throw MOBIError.copyProtected
+        case .container:
             return try containers(of: [UInt8](try DocumentByteLimit.contents(of: url)), near: url)
         case .other:
             throw MOBIError.notAKindleBook
@@ -96,13 +112,13 @@ enum KFXParser {
     }
 
     /// The containers of the book whose main file holds `bytes`: that file,
-    /// then the containers in the folder beside it (`url`'s `.sdr`), which
+    /// and the containers in the folder beside it (`url`'s `.sdr`), which
     /// add whatever the main file lacks, such as its metadata (a fragment
     /// the main file holds is the one read, whatever a sidecar says).
     /// - Throws: `MOBIError.copyProtected` when `bytes` or anything beside the
     ///   file is protected, and what `KFXContainer.init(bytes:)` throws for the
     ///   main file. A sidecar that does not read is left out.
-    private static func containers(of bytes: [UInt8], near url: URL?) throws -> [KFXContainer] {
+    private static func containers(of bytes: [UInt8], near url: URL?) throws -> Opened {
         switch KFXSignature.kind(ofPrefix: Array(bytes.prefix(KFXSignature.prefixLength))) {
         case .protected: throw MOBIError.copyProtected
         case .container: break
@@ -113,15 +129,15 @@ enum KFXParser {
         // Nothing beside a protected book is opened.
         if neighbours.isProtected { throw MOBIError.copyProtected }
 
-        var containers = [try KFXContainer(bytes: bytes)]
+        var opened = Opened(main: [try KFXContainer(bytes: bytes)])
         var total: Int64 = 0
         for sidecar in neighbours.containers {
             guard let data = try? DocumentByteLimit.contents(of: sidecar) else { continue }
             total += Int64(data.count)
             guard total <= maximumSidecarBytes else { break }
-            if let container = try? KFXContainer(bytes: [UInt8](data)) { containers.append(container) }
+            if let container = try? KFXContainer(bytes: [UInt8](data)) { opened.sidecars.append(container) }
         }
-        return containers
+        return opened
     }
 
     // MARK: Metadata
@@ -130,7 +146,8 @@ enum KFXParser {
     /// text.
     /// - Throws: As `prepareBook(url:fallbackTitle:includesPages:)`.
     static func readMetadata(url: URL) throws -> MOBIBook.Metadata {
-        try KFXBook.metadata(of: try containers(at: url))
+        let opened = try containers(at: url)
+        return try KFXBook.metadata(of: opened.main, sidecars: opened.sidecars)
     }
 
     /// What the KFX container in `bytes` says about itself. A protected
@@ -139,6 +156,7 @@ enum KFXParser {
     /// - Throws: `MOBIError.copyProtected` for a protected container,
     ///   `MOBIError.notAKindleBook` for a file of another kind.
     static func readMetadata(bytes: [UInt8], near url: URL? = nil) throws -> MOBIBook.Metadata {
-        try KFXBook.metadata(of: try containers(of: bytes, near: url))
+        let opened = try containers(of: bytes, near: url)
+        return try KFXBook.metadata(of: opened.main, sidecars: opened.sidecars)
     }
 }

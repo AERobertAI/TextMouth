@@ -153,13 +153,22 @@ struct KFXContainer {
                 range: (entityBase + offset)..<(entityBase + offset + length)
             ))
         }
+        // The entities lie end to end (notes, part 4.3): one that overlaps
+        // another, as a row listed many times does, would be decoded again
+        // for each row, so it is refused.
+        let ranges = entities.map(\.range).sorted { $0.lowerBound < $1.lowerBound }
+        for (previous, next) in zip(ranges, ranges.dropFirst()) where next.lowerBound < previous.upperBound {
+            throw MOBIError.damaged("two fragments overlap")
+        }
         self.entities = entities
     }
 
     /// Refuses a container whose compression or DRM scheme is not 0.
     private static func refuseUnreadable(_ info: IonStruct) throws {
-        if let scheme = info[drmField]?.intValue, scheme != 0 { throw MOBIError.copyProtected }
-        if let compression = info[compressionField]?.intValue, compression != 0 {
+        // A field that is anything but 0 (a number, or a value of another
+        // kind) is a scheme this reader does not know.
+        if let scheme = info[drmField], scheme != .null, scheme.intValue != 0 { throw MOBIError.copyProtected }
+        if let compression = info[compressionField], compression != .null, compression.intValue != 0 {
             throw MOBIError.unsupportedCompression
         }
     }

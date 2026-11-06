@@ -1,8 +1,9 @@
 import Foundation
 
 /// Writes one text block's string as inline HTML: its style runs as `strong`
-/// and `em`, its links as `a`, its line breaks as `br`, and a named anchor
-/// at each place the book's navigation points into it.
+/// and `em`, its links as `a`, its line breaks as `br`, a named anchor at
+/// each place the book's navigation points into it, and the HTML of the
+/// inline nodes (pictures, math, floated spans) that stand among its words.
 ///
 /// Offsets count Unicode code points, not UTF-16 units and not Characters
 /// (KFX-FORMAT-NOTES-2026-11-05.md, part 6.2), so the text is walked as its
@@ -29,23 +30,48 @@ struct KFXInlineText {
     /// without emphasis, so a hostile list of runs cannot cost time or memory.
     static let maximumRuns = 2_000
 
+    /// Stands for an inline node in a text that is built from a list of
+    /// strings and nodes: a noncharacter, which no book's words hold. The
+    /// node counts as one code point, as the book's offsets count it.
+    static let placeholder: Unicode.Scalar = "\u{FDD0}"
+
+    /// Writes `scalar` as HTML into `out`: the characters HTML gives meaning
+    /// to escaped, and the control characters (other than the line and tab
+    /// characters, which have no place in a book's words) left out.
+    private static func append(_ scalar: Unicode.Scalar, to out: inout String) {
+        switch scalar {
+        case "&": out += "&amp;"
+        case "<": out += "&lt;"
+        case ">": out += "&gt;"
+        case "\"": out += "&quot;"
+        case "\u{0}"..."\u{8}", "\u{B}", "\u{C}", "\u{E}"..."\u{1F}": break
+        default: out.unicodeScalars.append(scalar)
+        }
+    }
+
     /// Escapes the characters HTML gives meaning to.
     static func escaped(_ text: String) -> String {
         var out = ""
         out.reserveCapacity(text.utf8.count)
-        for scalar in text.unicodeScalars {
-            switch scalar {
-            case "&": out += "&amp;"
-            case "<": out += "&lt;"
-            case ">": out += "&gt;"
-            case "\"": out += "&quot;"
-            // A NUL or other control character other than the line and tab
-            // characters has no place in a book's words, and breaks HTML.
-            case "\u{0}"..."\u{8}", "\u{B}", "\u{C}", "\u{E}"..."\u{1F}": continue
-            default: out.unicodeScalars.append(scalar)
-            }
-        }
+        for scalar in text.unicodeScalars { append(scalar, to: &out) }
         return out
+    }
+
+    /// What `html(of:...)` is told of the text it writes.
+    struct Context {
+        /// The HTML of the anchor to write at each offset, in code points,
+        /// where the book's navigation points into the text.
+        var anchorAt: [Int: String] = [:]
+        /// The HTML of each inline node, in order; the text holds a
+        /// `placeholder` for each.
+        var inserts: [String] = []
+        /// The text to leave out, by its offset and length in code points: a
+        /// page's own number that stands where the page begins (the EPUB
+        /// reader leaves such a number out as well).
+        var skipAt: [Int: Int] = [:]
+        /// Emphasis the whole text has, from its node's own style.
+        var baseBold = false
+        var baseItalic = false
     }
 
     /// The HTML for `text`.
@@ -53,13 +79,12 @@ struct KFXInlineText {
     ///   - runs: The node's style runs (`$142`), as the book wrote them;
     ///     a run that is not a struct, or lies outside the text, is clamped
     ///     or ignored.
-    ///   - anchorAt: The HTML of the anchor to write at each offset, in code
-    ///     points, where the book's navigation points into the text.
+    ///   - context: Anchors, inline nodes, text to leave out, and base emphasis.
     ///   - resolveRun: What a run's style and link mean (bold, italic, address).
     static func html(
         of text: String,
         runs: [IonValue],
-        anchorAt: [Int: String],
+        context: Context = Context(),
         resolveRun: (IonStruct) -> (isBold: Bool, isItalic: Bool, href: String?)
     ) -> String {
         let scalars = Array(text.unicodeScalars)
@@ -80,31 +105,42 @@ struct KFXInlineText {
             }
         }
 
-        // Every offset where something changes: a run starts or ends, or an
-        // anchor stands. The text is cut at these.
+        // Every offset where something changes: a run starts or ends, an
+        // anchor stands, or text is left out. The text is cut at these.
         var cuts: Set<Int> = [0, count]
         for run in parsed { cuts.insert(run.range.lowerBound); cuts.insert(run.range.upperBound) }
-        for offset in anchorAt.keys where offset > 0 && offset < count { cuts.insert(offset) }
+        for offset in context.anchorAt.keys where offset > 0 && offset < count { cuts.insert(offset) }
+        var skipped: [Range<Int>] = []
+        for (offset, length) in context.skipAt where offset >= 0 && length > 0 && offset < count {
+            let range = offset..<min(count, offset + min(length, count))
+            skipped.append(range)
+            cuts.insert(range.lowerBound)
+            cuts.insert(range.upperBound)
+        }
         let boundaries = cuts.sorted()
 
         var html = ""
         var open = Marks()
-        // The anchor at the very end of the text, and any beyond it, closes the block.
+        var nextInsert = 0
         for (index, start) in boundaries.enumerated() {
-            if let anchor = anchorAt[start] {
+            if let anchor = context.anchorAt[start] {
                 // An anchor stands outside any emphasis, between pieces.
                 close(&open, into: &html)
                 html += anchor
             }
             guard index + 1 < boundaries.count else { break }
             let end = boundaries[index + 1]
-            let current = marks(over: start, in: parsed)
+            // An inline node is not left out with the text beside it.
+            if skipped.contains(where: { $0.contains(start) }) { continue }
+            var current = marks(over: start, in: parsed)
+            current.isBold = current.isBold || context.baseBold
+            current.isItalic = current.isItalic || context.baseItalic
             transition(from: &open, to: current, into: &html)
-            html += piece(scalars[start..<end])
+            html += piece(scalars[start..<end], inserts: context.inserts, next: &nextInsert)
         }
         close(&open, into: &html)
         // Anchors past the end of the text stand at its end.
-        for (offset, anchor) in anchorAt.sorted(by: { $0.key < $1.key }) where offset > count {
+        for (offset, anchor) in context.anchorAt.sorted(by: { $0.key < $1.key }) where offset > count {
             html += anchor
         }
         return html
@@ -142,10 +178,21 @@ struct KFXInlineText {
         open = Marks()
     }
 
-    /// The HTML of a piece of text: escaped, with each line feed a line break.
-    private static func piece(_ scalars: ArraySlice<Unicode.Scalar>) -> String {
-        var view = String.UnicodeScalarView()
-        view.append(contentsOf: scalars)
-        return escaped(String(view)).replacingOccurrences(of: "\n", with: "<br/>")
+    /// The HTML of a piece of text: escaped, each line feed a line break, and
+    /// each placeholder the next inline node's HTML (the nodes come in the
+    /// order of the placeholders).
+    private static func piece(_ scalars: ArraySlice<Unicode.Scalar>, inserts: [String], next: inout Int) -> String {
+        var out = ""
+        for scalar in scalars {
+            if scalar == placeholder, !inserts.isEmpty {
+                if next < inserts.count { out += inserts[next] }
+                next += 1
+            } else if scalar == "\n" {
+                out += "<br/>"
+            } else {
+                append(scalar, to: &out)
+            }
+        }
+        return out
     }
 }

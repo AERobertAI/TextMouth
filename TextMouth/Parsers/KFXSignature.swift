@@ -29,6 +29,21 @@ enum KFXSignature {
     /// 0xEA byte before it and a 0xEE byte after.
     static let protectedMagic: [UInt8] = [0xEA, 0x44, 0x52, 0x4D, 0x49, 0x4F, 0x4E, 0xEE]
 
+    /// The container versions there are.
+    static let supportedVersions = 1...2
+
+    /// Where a Palm database (MOBI) names its type and creator, and the two
+    /// pairs that mean a MOBI or PalmDOC book, not a KFX one.
+    private static let palmTypeOffset = 0x3C
+    private static let palmTypes: [[UInt8]] = [Array("BOOKMOBI".utf8), Array("TEXtREAd".utf8)]
+
+    /// Whether a file named `name` is a voucher, the key envelope of a
+    /// protected book: `voucher`, or a name that ends `.voucher`.
+    static func isVoucherName(_ name: String) -> Bool {
+        let lowered = name.lowercased()
+        return lowered == "voucher" || lowered.hasSuffix(".voucher")
+    }
+
     /// The first four bytes of a ZIP archive's first entry.
     static let zipMagic: [UInt8] = [0x50, 0x4B, 0x03, 0x04]
 
@@ -39,7 +54,10 @@ enum KFXSignature {
     /// prefix is `other`).
     static func kind(ofPrefix prefix: [UInt8]) -> Kind {
         if prefix.starts(with: protectedMagic) { return .protected }
-        if prefix.starts(with: containerMagic) { return .container }
+        // A container says its version, 1 or 2, in the two bytes after the
+        // signature: a Palm database named "CONTACT..." is not one.
+        if prefix.starts(with: containerMagic), prefix.count > containerMagic.count + 1,
+           supportedVersions.contains(Int(prefix[4])), prefix[5] == 0 { return .container }
         if prefix.starts(with: zipMagic) { return .zip }
         return .other
     }
@@ -49,13 +67,21 @@ enum KFXSignature {
     /// what the MOBI reader hands on to this one.
     static func isKFXOrProtected(_ bytes: [UInt8]) -> Bool {
         let kind = kind(ofPrefix: Array(bytes.prefix(prefixLength)))
-        return kind == .container || kind == .protected
+        guard kind == .container || kind == .protected else { return false }
+        // A Palm database that names itself a MOBI book is one, whatever its name begins.
+        let typeEnd = palmTypeOffset + 8
+        if bytes.count >= typeEnd, palmTypes.contains(where: { Array(bytes[palmTypeOffset..<typeEnd]) == $0 }) { return false }
+        return true
     }
 
     /// The kind of the file at `url`, from its first bytes alone, so a large
     /// file is not read to be told apart.
     /// - Throws: The file system's error for a file that cannot be read.
     static func kind(ofFileAt url: URL) throws -> Kind {
+        // Only a regular file is opened: reading a named pipe would wait for
+        // a writer that never comes. A link is followed to what it names.
+        let isRegular = try url.resolvingSymlinksInPath().resourceValues(forKeys: [.isRegularFileKey]).isRegularFile
+        guard isRegular == true else { return .other }
         let handle = try FileHandle(forReadingFrom: url)
         defer { try? handle.close() }
         let prefix = try handle.read(upToCount: prefixLength) ?? Data()

@@ -45,7 +45,7 @@ enum KFXPackage {
             }
             let name = (entry.path as NSString).lastPathComponent.lowercased()
             // A voucher is the key envelope of a protected book.
-            if name == "voucher" || name.hasSuffix(".voucher") { return .protected }
+            if KFXSignature.isVoucherName(name) { return .protected }
             if name.hasSuffix(".kdf") { isKindleCreate = true }
             // Every member is checked for the protected mark, not only the
             // main file: a set holds several containers.
@@ -88,12 +88,20 @@ enum KFXPackage {
             }
             let bytes: Data
             do {
-                bytes = try ArchiveEntryReader.read(entry, in: archive, holdingToDeclaredSize: true).data
+                let read = try ArchiveEntryReader.read(entry, in: archive, holdingToDeclaredSize: true)
+                // The archive's own checksum: a damaged member is damage, not wrong words.
+                guard read.checksum == entry.checksum else { throw MOBIError.damaged("a file in the set does not match its checksum") }
+                bytes = read.data
             } catch let overflow as ArchiveEntryOverflow {
                 switch overflow {
                 case .pastLimit(_, let limit): throw DocumentTooLargeError(limit: limit)
                 case .pastDeclaredSize: throw MOBIError.damaged("a file in the set holds more than its archive records")
                 }
+            } catch let error as MOBIError {
+                throw error
+            } catch {
+                // ZIPFoundation's own errors are no sentence for a listener.
+                throw MOBIError.damaged("a file in the set does not inflate")
             }
             total += Int64(bytes.count)
             guard total <= maximumTotalBytes else { throw DocumentTooLargeError(limit: maximumTotalBytes) }

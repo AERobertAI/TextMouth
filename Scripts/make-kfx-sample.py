@@ -18,7 +18,7 @@ Previewer stamps a new identifier into every run, so the bytes differ each
 time; the files in the repository are the ones the tests were written
 against, and their sha256 is in samples.tsv.
 
-Usage: python3 -I Scripts/make-kfx-sample.py [output-folder]
+Usage: python3 -I Scripts/make-kfx-sample.py [output-folder] [--inline-only] [--epub-only]
 The default folder is TestData/format-samples/kfx. With --epub-only the EPUB
 alone is written, which needs no tool.
 """
@@ -31,8 +31,9 @@ import zlib
 
 REPOSITORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_FOLDER = os.path.join(REPOSITORY, "TestData/format-samples/kfx")
-KFX_TOOLS = ("/Users/roberteggleston/programming/ai/claude/swift/TextMouth/"
-             "build/orchestrator/followups1105/kindle-previewer/kfx_tools.sh")
+# The black-box tool lives in the main checkout's gitignored build folder.
+KFX_TOOLS = os.environ.get("KFX_TOOLS", os.path.join(
+    REPOSITORY, "build/orchestrator/followups1105/kindle-previewer/kfx_tools.sh"))
 
 # A fixed timestamp, so the EPUB's bytes are the same at every run.
 ZIP_TIME = (2026, 11, 6, 0, 0, 0)
@@ -46,7 +47,7 @@ def page(number):
 
 
 # The chapters: (file name, title, body). The tests look for these sentences,
-# so change them only together with KFXFeaturesTests.
+# so change them only together with KFXEPUBComparisonTests.
 CHAPTERS = [
     ("ch1.xhtml", "Chapter One: Headings and Emphasis", f"""
 <h1 id="c1">Chapter One: Headings and Emphasis</h1>
@@ -111,6 +112,38 @@ CHAPTERS = [
 ]
 
 
+# A second small book for the pictures, math, and spans that sit inside a
+# paragraph: Amazon stores such a paragraph as strings and nodes in one list.
+# The tests look for these sentences (KFXInlineBookTests).
+INLINE_CHAPTERS = [
+    ("ch1.xhtml", "Inline Things", f"""
+<h1 id="i1">Inline Things</h1>
+{page(1)}
+<p>Text then <img src="plan.png" alt=""/> more text.</p>
+<p>Before picture <img src="plan.png" alt="first inline alt"/> middle words after the page.</p>
+<p><img src="plan.png" alt="first of two"/> <img src="plan.png" alt="second of two"/></p>
+<h2 id="i2">Heading <img src="plan.png" alt="x"/> words</h2>
+<p>Text <span style="float:right">floated span words</span> tail.</p>
+<ul><li>Item with <img src="plan.png" alt="item picture"/> inside</li></ul>
+<table><tr><td>Cell with <img src="plan.png" alt="cell picture"/> inside</td><td>Plain cell</td></tr></table>
+<p>Math inline <math xmlns="http://www.w3.org/1998/Math/MathML" alttext="y equals two"><mi>y</mi><mo>=</mo><mn>2</mn></math> done.</p>
+<p>Words before{page(2)} and after the page.</p>
+<p>Bold start <em>and an emphasised <img src="plan.png" alt="inner"/> picture</em> then end.</p>
+<h2 id="i3"><img src="plan.png" alt="Picture Only Heading"/></h2>
+<p><em>Whole paragraph in em.</em></p>
+<p>Number shown before<span epub:type="pagebreak" role="doc-pagebreak" id="p11" aria-label="11">11</span> and after.</p>
+"""),
+    ("ch2.xhtml", "Second Part", """
+<h1 id="j1">Second Part</h1>
+<table><thead><tr><th>Row head</th><th>Next head</th></tr></thead>
+<tbody><tr><td>Row value</td><td>Next value</td></tr></tbody></table>
+<p style="page-break-after:always">Before the cut.</p>
+<p>After the cut, in a new section with no heading.</p>
+"""),
+]
+INLINE_PAGES = [("ch1.xhtml", 1), ("ch1.xhtml", 2), ("ch1.xhtml", 11)]
+
+
 def png(width=8, height=8):
     """A small grey PNG, made by hand so no image library is needed."""
     def chunk(kind, data):
@@ -132,12 +165,13 @@ def xhtml(title, body):
         f'<body>{body}</body>\n</html>\n')
 
 
-def navigation():
+FEATURE_PAGES = [("ch1.xhtml", 1), ("ch1.xhtml", 2), ("ch2.xhtml", 3), ("ch3.xhtml", 4), ("ch3.xhtml", 5)]
+
+
+def navigation(chapters, page_entries):
     """The EPUB 3 navigation document: contents, page list, landmarks."""
-    toc = "".join(f'<li><a href="{name}">{title}</a></li>' for name, title, _ in CHAPTERS)
-    pages = "".join(
-        f'<li><a href="{name}#p{n}">{n}</a></li>'
-        for name, n in [("ch1.xhtml", 1), ("ch1.xhtml", 2), ("ch2.xhtml", 3), ("ch3.xhtml", 4), ("ch3.xhtml", 5)])
+    toc = "".join(f'<li><a href="{name}">{title}</a></li>' for name, title, _ in chapters if title)
+    pages = "".join(f'<li><a href="{name}#p{n}">{n}</a></li>' for name, n in page_entries)
     return (
         '<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE html>\n'
         '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en">\n'
@@ -149,18 +183,19 @@ def navigation():
         '</ol></nav>\n</body>\n</html>\n')
 
 
-def package():
+def package(chapters, book_title, identifier, mathml=False):
     """The package document (OPF)."""
+    math = ' properties="mathml"' if mathml else ""
     items = "".join(
-        f'<item id="ch{i}" href="{name}" media-type="application/xhtml+xml"/>'
-        for i, (name, _, _) in enumerate(CHAPTERS, 1))
-    spine = "".join(f'<itemref idref="ch{i}"/>' for i in range(1, len(CHAPTERS) + 1))
+        f'<item id="ch{i}" href="{name}" media-type="application/xhtml+xml"{math}/>'
+        for i, (name, _, _) in enumerate(chapters, 1))
+    spine = "".join(f'<itemref idref="ch{i}"/>' for i in range(1, len(chapters) + 1))
     return (
         '<?xml version="1.0" encoding="utf-8"?>\n'
         '<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid" xml:lang="en">\n'
         '<metadata xmlns:dc="http://purl.org/dc/elements/1.1/">\n'
-        '<dc:identifier id="uid">urn:uuid:5b1e3a0e-7a47-4f0e-9a4e-6b6b0d6f0c11</dc:identifier>\n'
-        '<dc:title>The Tool Library Handbook</dc:title>\n'
+        f'<dc:identifier id="uid">urn:uuid:{identifier}</dc:identifier>\n'
+        f'<dc:title>{book_title}</dc:title>\n'
         '<dc:creator>Test Author</dc:creator>\n'
         '<dc:language>en</dc:language>\n'
         '<meta property="dcterms:modified">2026-11-06T00:00:00Z</meta>\n'
@@ -171,8 +206,11 @@ def package():
         f'</manifest>\n<spine>{spine}</spine>\n</package>\n')
 
 
-def write_epub(path):
-    """Writes the sample EPUB to `path`, the same bytes at every run."""
+def write_epub(path, chapters=None, page_entries=None, book_title="The Tool Library Handbook",
+               identifier="5b1e3a0e-7a47-4f0e-9a4e-6b6b0d6f0c11", mathml=False):
+    """Writes a sample EPUB to `path`, the same bytes at every run."""
+    chapters = CHAPTERS if chapters is None else chapters
+    page_entries = FEATURE_PAGES if page_entries is None else page_entries
     container = (
         '<?xml version="1.0"?>\n'
         '<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">'
@@ -180,10 +218,10 @@ def write_epub(path):
         '</rootfiles></container>\n')
     files = [("mimetype", "application/epub+zip", zipfile.ZIP_STORED),
              ("META-INF/container.xml", container, zipfile.ZIP_DEFLATED),
-             ("OEBPS/content.opf", package(), zipfile.ZIP_DEFLATED),
-             ("OEBPS/nav.xhtml", navigation(), zipfile.ZIP_DEFLATED),
+             ("OEBPS/content.opf", package(chapters, book_title, identifier, mathml), zipfile.ZIP_DEFLATED),
+             ("OEBPS/nav.xhtml", navigation(chapters, page_entries), zipfile.ZIP_DEFLATED),
              ("OEBPS/plan.png", png(), zipfile.ZIP_STORED)]
-    files += [(f"OEBPS/{name}", xhtml(title, body), zipfile.ZIP_DEFLATED) for name, title, body in CHAPTERS]
+    files += [(f"OEBPS/{name}", xhtml(title, body), zipfile.ZIP_DEFLATED) for name, title, body in chapters]
     with zipfile.ZipFile(path, "w") as archive:
         for name, content, method in files:
             info = zipfile.ZipInfo(name, ZIP_TIME)
@@ -195,14 +233,22 @@ def main():
     arguments = [a for a in sys.argv[1:] if not a.startswith("--")]
     folder = arguments[0] if arguments else DEFAULT_FOLDER
     os.makedirs(folder, exist_ok=True)
-    epub = os.path.join(folder, "kfx-features.epub")
-    write_epub(epub)
-    print("wrote", epub)
-    if "--epub-only" in sys.argv:
-        return
-    kfx = os.path.join(folder, "kfx-features.kfx")
-    subprocess.run([KFX_TOOLS, "make", epub, kfx], check=True)
-    print("wrote", kfx)
+    # --inline-only makes just the inline book (the features book's KFX is
+    # kept as it is: Previewer stamps new identifiers into every run).
+    books = [] if "--inline-only" in sys.argv else [("kfx-features", None)]
+    for name, kind in books + [("kfx-inline", "inline")]:
+        epub = os.path.join(folder, name + ".epub")
+        if kind == "inline":
+            write_epub(epub, INLINE_CHAPTERS, INLINE_PAGES, "Inline Things Handbook",
+                       "7c2f3e0a-1d6b-4c53-8a77-2f6b6a0e9d12", mathml=True)
+        else:
+            write_epub(epub)
+        print("wrote", epub)
+        if "--epub-only" in sys.argv:
+            continue
+        kfx = os.path.join(folder, name + ".kfx")
+        subprocess.run([KFX_TOOLS, "make", epub, kfx], check=True)
+        print("wrote", kfx)
 
 
 if __name__ == "__main__":

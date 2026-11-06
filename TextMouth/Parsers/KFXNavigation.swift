@@ -32,7 +32,7 @@ struct KFXNavigation {
     private static let containerTypeField = 235
     private static let containerNameField = 239
     private static let containerUnitsField = 247
-    private static let readingOrderNameField = 178
+    private static let readingOrderNameField = KFXSymbol.readingOrderName
     private static let containersField = 392
     private static let unitTypeField = 238
     private static let unitRepresentationField = 241
@@ -74,8 +74,10 @@ struct KFXNavigation {
         let chosen = lists.first { $0.structValue?[Self.readingOrderNameField]?.symbolID == KFXSymbol.defaultReadingOrder }
             ?? lists.first
         var unitsRead = 0
-        for container in chosen?.structValue?[Self.containersField]?.listValue ?? [] {
-            guard let members = container.structValue, let type = members[Self.containerTypeField]?.symbolID else { continue }
+        for containerValue in chosen?.structValue?[Self.containersField]?.listValue ?? [] {
+            // A container, like a unit, may be given by the name of its own fragment.
+            guard let members = Self.resolved(containerValue, type: Self.containerFragmentType, in: fragments).structValue,
+                  let type = members[Self.containerTypeField]?.symbolID else { continue }
             let name = members[Self.containerNameField]?.stringValue
             if type == Self.pageListType && name == Self.approximatePageList { continue }
             guard [Self.tableOfContentsType, Self.pageListType, Self.headingsType].contains(type) else { continue }
@@ -86,7 +88,7 @@ struct KFXNavigation {
             while let pending = stack.popLast() {
                 unitsRead += 1
                 guard unitsRead <= Self.maximumUnits else { break }
-                guard let unit = pending.unit.structValue else { continue }
+                guard let unit = Self.resolved(pending.unit, type: Self.unitFragmentType, in: fragments).structValue else { continue }
                 let children = unit[Self.containerUnitsField]?.listValue ?? []
 
                 if type == Self.headingsType {
@@ -111,6 +113,16 @@ struct KFXNavigation {
                 for child in children.reversed() { stack.append(Pending(unit: child, depth: pending.depth + 1, level: nil)) }
             }
         }
+    }
+
+    /// The fragment types of a navigation container and of a navigation unit.
+    private static let containerFragmentType = 391
+    private static let unitFragmentType = 393
+
+    /// `value`, or the fragment of `type` it names when it is a name.
+    private static func resolved(_ value: IonValue, type: Int, in fragments: KFXFragments) -> IonValue {
+        if case .string(let name) = value.unannotated, let fragment = fragments[type, name] { return fragment }
+        return value
     }
 
     /// The level a headings unit names, 1 to 6, nil when it names none.
@@ -140,7 +152,7 @@ struct KFXNavigation {
     func targets(includingPages: Bool) -> KFXTargets {
         var targets = KFXTargets()
         for entry in contents { targets.add(node: entry.node, offset: entry.offset) }
-        if includingPages { for entry in pages { targets.add(node: entry.node, offset: entry.offset) } }
+        if includingPages { for entry in pages { targets.addPage(node: entry.node, offset: entry.offset, label: entry.label) } }
         for link in linkTargets { targets.add(node: link.node, offset: link.offset) }
         return targets
     }
