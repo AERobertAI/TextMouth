@@ -5,8 +5,10 @@ import Foundation
 /// Two checks of the raw bytes of an XML part, made before `XMLParser` sees
 /// them, for the two hazards a hostile part has that the parser does not
 /// guard against. Both are linear in the size of the part and need no tree.
-/// The OpenDocument and Word 2003 XML readers ask them (`OfficeXMLReader`);
-/// the DOCX, EPUB, and DAISY readers have the same hazards and can adopt them.
+/// The OpenDocument and Word 2003 XML readers ask both (`OfficeXMLReader`).
+/// Every reader that parses with `PackageSAXParser` (DOCX, DAISY, SSML) asks
+/// for the start tag limit there, and the EPUB reader in `readingXML`. They do
+/// not ask for the document type check: DAISY's DTBook files declare one.
 ///
 /// - **A document type declaration.** It can declare entities that expand
 ///   into gigabytes (a 10 MB entity referenced millions of times), and an
@@ -28,6 +30,11 @@ enum XMLInputGuard {
     /// The longest start tag, in bytes of the part, that is read: 64 KB, 30
     /// times the longest of 2,067 real parts (2,166 bytes).
     static let longestStartTag = 65_536
+
+    /// What a part with a start tag over the limit is refused for, as the
+    /// reason that completes "The file is damaged or incomplete: …"
+    /// (`PackageDamage.message`).
+    static let longStartTagProblem = "it has a start tag longer than 64 KB, which no real file has"
 
     // MARK: Code units
 

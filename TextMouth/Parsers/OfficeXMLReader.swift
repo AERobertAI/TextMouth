@@ -169,10 +169,11 @@ class OfficeXMLReader: PackageSAXParser {
     ///   whatever error a subclass ended the read with.
     final func read() throws {
         // No part has a document type declaration (entities declared there
-        // can expand into gigabytes), and none has a start tag that long
-        // (the parser takes time that grows with the square of its attributes).
-        // Both are found in the raw bytes, in any encoding (`XMLInputGuard`).
-        if XMLInputGuard.declaresDocumentType(data) || XMLInputGuard.hasStartTag(in: data) {
+        // can expand into gigabytes). It is found in the raw bytes, in any
+        // encoding (`XMLInputGuard`). A start tag too long for the parser
+        // (its time grows with the square of the tag's attributes) is refused
+        // by `parseDocument()`, which every part goes through.
+        if XMLInputGuard.declaresDocumentType(data) {
             throw TextutilConverter.Failure.unreadable(format)
         }
         do {

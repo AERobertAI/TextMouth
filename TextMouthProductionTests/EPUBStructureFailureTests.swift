@@ -71,6 +71,38 @@ final class EPUBStructureFailureTests: XCTestCase {
         )
     }
 
+    // MARK: - A Start Tag Too Long to Parse
+
+    /// A start tag over 64 KB (`XMLInputGuard.longestStartTag`, 21 times the
+    /// longest of 264 parts of 25 real DOCX and EPUB files) in the container
+    /// or the package document is refused as damage, naming the file, before
+    /// the XML reader sees it: 200,000 attributes in one tag cost the reader
+    /// seconds, and a hostile book could stall an import with them. The bound
+    /// of five seconds is far above the refusal and below the reader's cost.
+    @MainActor
+    func testAStartTagTooLongToParseIsRefusedAsDamageNamingTheFile() throws {
+        let many = (0..<200_000).map { "a\($0)=\"\"" }.joined(separator: " ")
+        let hostileContainer = Self.container().replacingOccurrences(of: "<rootfiles>", with: "<rootfiles \(many)>")
+        let hostilePackage = Self.packageDocument().replacingOccurrences(of: "<manifest>", with: "<manifest \(many)>")
+        let cases: [(file: String, container: String, package: String)] = [
+            ("META-INF/container.xml", hostileContainer, Self.packageDocument()),
+            ("OEBPS/content.opf", Self.container(), hostilePackage),
+        ]
+        for testCase in cases {
+            let epub = try makeEPUB(container: testCase.container, packageDocument: testCase.package)
+            let clock = ContinuousClock()
+            let start = clock.now
+            try assertRefused(
+                epub,
+                throwing: .otherEPUBError(String(describing: EPUBParserError.damagedFile(
+                    file: testCase.file, reason: XMLInputGuard.longStartTagProblem))),
+                saying: "The file “\(testCase.file)” in this EPUB book is damaged or incomplete: "
+                    + "it has a start tag longer than 64 KB, which no real file has. "
+                    + "Get a fresh copy of the book, then import it again.")
+            XCTAssertLessThan(clock.now - start, .seconds(5), "\(testCase.file) took too long")
+        }
+    }
+
     // MARK: - The Reading Order
 
     /// A package document whose spine names nothing says the book has no

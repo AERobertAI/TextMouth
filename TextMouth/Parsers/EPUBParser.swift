@@ -52,6 +52,10 @@ enum EPUBParser {
     /// "The file “OEBPS/ch07.xhtml” in this EPUB book is damaged …".
     static let bookNameInMessages = "this EPUB book"
 
+    /// Where every EPUB keeps its container file, which names the package
+    /// document.
+    static let containerPath = "META-INF/container.xml"
+
     /// An EPUB read in reading order: its package metadata, the chapters that
     /// could be read, and a report of the chapters that could not.
     struct PreparedBook {
@@ -86,12 +90,12 @@ enum EPUBParser {
         let archive = IndexedArchive(try openArchive(at: url))
 
         // Step 1: Read container.xml to find OPF path
-        let containerXML = try extractString(archive: archive, path: "META-INF/container.xml")
+        let containerXML = try extractString(archive: archive, path: containerPath)
         let opfPath = try parseContainerForOPFPath(containerXML)
 
         // Step 2: Read and parse OPF
         let opfXML = try extractString(archive: archive, path: opfPath)
-        let opfData = try parseOPF(opfXML)
+        let opfData = try parseOPF(opfXML, file: opfPath)
 
         // Step 3: Read the chapters in spine order, recording any left out.
         let prepared = try preparedChapters(
@@ -124,14 +128,14 @@ enum EPUBParser {
 
     static func readMetadata(url: URL) throws -> EPUBMetadata {
         let archive = try openArchive(at: url)
-        let containerXML = try extractString(archive: archive, path: "META-INF/container.xml")
+        let containerXML = try extractString(archive: archive, path: containerPath)
         let opfPath = try parseContainerForOPFPath(containerXML)
         let opfXML = try extractString(archive: archive, path: opfPath)
-        return try parseMetadata(opfXML)
+        return try parseMetadata(opfXML, file: opfPath)
     }
 
-    private static func parseMetadata(_ xml: String) throws -> EPUBMetadata {
-        try readingXML(xml) { doc in
+    private static func parseMetadata(_ xml: String, file: String) throws -> EPUBMetadata {
+        try readingXML(xml, file: file) { doc in
             let title = (try? doc.nodes(forXPath: "//*[local-name()='title']"))?.first?.stringValue ?? ""
             let author = authorName(in: doc) ?? ""
             let publisher = (try? doc.nodes(forXPath: "//*[local-name()='publisher']"))?.first?.stringValue ?? ""
@@ -198,12 +202,12 @@ enum EPUBParser {
             throw EPUBParserError.invalidArchive
         }
 
-        let containerXML = try extractString(archive: archive, path: "META-INF/container.xml")
+        let containerXML = try extractString(archive: archive, path: containerPath)
         let opfPath = try parseContainerForOPFPath(containerXML)
         let opfXML = try extractString(archive: archive, path: opfPath)
 
         // Parse and modify the OPF XML
-        let updatedXML = try updateOPFMetadata(opfXML: opfXML, metadata: metadata)
+        let updatedXML = try updateOPFMetadata(opfXML: opfXML, file: opfPath, metadata: metadata)
 
         // We need to create a new archive with the updated OPF
         let tempURL = url.deletingLastPathComponent().appendingPathComponent(UUID().uuidString + ".epub")
@@ -244,7 +248,7 @@ enum EPUBParser {
               let preparedOPF = try? extractString(archive: preparedArchive, path: opfPath) else {
             throw EPUBParserError.writeFailed("Updated archive failed validation")
         }
-        _ = try parseOPF(preparedOPF)
+        _ = try parseOPF(preparedOPF, file: opfPath)
 
         // Hash the prepared archive while a failure still leaves the original
         // untouched; the replacement below installs these exact bytes.
@@ -260,9 +264,9 @@ enum EPUBParser {
         return newHash
     }
 
-    private static func updateOPFMetadata(opfXML: String, metadata: EPUBMetadata) throws -> String {
+    private static func updateOPFMetadata(opfXML: String, file: String, metadata: EPUBMetadata) throws -> String {
 #if os(macOS)
-        try readingXML(opfXML) { doc in
+        try readingXML(opfXML, file: file) { doc in
             // Update title
             if let titleNode = (try? doc.nodes(forXPath: "//*[local-name()='title']"))?.first {
                 titleNode.stringValue = metadata.title
@@ -422,9 +426,20 @@ enum EPUBParser {
     /// apart (`takeApart(_:)`), so `body` finishes all its work with the
     /// document, a write of it back into the book included, and returns
     /// none of its nodes.
-    /// - Throws: XMLDocument's error when `xml` is not well-formed, or what
-    ///   `body` throws.
-    static func readingXML<Result>(_ xml: String, _ body: (XMLDocument) throws -> Result) throws -> Result {
+    /// - Parameters:
+    ///   - xml: The file's text.
+    ///   - file: The file's path inside the book, which a refusal names.
+    /// - Throws: `EPUBParserError.damagedFile` for a start tag over
+    ///   `XMLInputGuard.longestStartTag`, XMLDocument's error when `xml` is
+    ///   not well-formed, or what `body` throws.
+    static func readingXML<Result>(
+        _ xml: String, file: String, _ body: (XMLDocument) throws -> Result
+    ) throws -> Result {
+        // A start tag too long for an XML parser is refused as damage before
+        // the parser reads it (`XMLInputGuard`).
+        if XMLInputGuard.hasStartTag(in: Data(xml.utf8)) {
+            throw EPUBParserError.damagedFile(file: file, reason: XMLInputGuard.longStartTagProblem)
+        }
         let document = try XMLDocument(xmlString: xml, options: [.nodeLoadExternalEntitiesNever])
         defer { takeApart(document) }
         return try body(document)
@@ -456,7 +471,7 @@ enum EPUBParser {
     // MARK: - Container Parsing (shared with MarkdownCacheService)
 
     static func parseContainerForOPFPath(_ xml: String) throws -> String {
-        try readingXML(xml) { doc in
+        try readingXML(xml, file: containerPath) { doc in
             let rootfiles = try doc.nodes(forXPath: "//*[local-name()='rootfile']")
             guard let rootfile = rootfiles.first,
                   let element = rootfile as? XMLElement,
@@ -484,8 +499,10 @@ enum EPUBParser {
         var properties: String = ""
     }
 
-    static func parseOPF(_ xml: String) throws -> OPFData {
-        try readingXML(xml) { doc in
+    /// - Parameter file: The package document's path inside the book, which a
+    ///   refusal of it names.
+    static func parseOPF(_ xml: String, file: String = "package document") throws -> OPFData {
+        try readingXML(xml, file: file) { doc in
             // Metadata
             let titles = try doc.nodes(forXPath: "//*[local-name()='title']")
             let title = titles.first?.stringValue ?? "Untitled"
@@ -567,7 +584,7 @@ enum EPUBParser {
     /// the archive has no member there.
     private static func extractString(entry: Entry?, at path: String, in archive: Archive) throws -> String {
         guard let entry else {
-            if path == "META-INF/container.xml" {
+            if path == containerPath {
                 throw EPUBParserError.missingContainer
             }
             throw EPUBParserError.invalidOPF

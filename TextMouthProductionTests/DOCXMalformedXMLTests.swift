@@ -403,6 +403,58 @@ final class DOCXMalformedXMLTests: XCTestCase {
         }
     }
 
+    // MARK: - A Start Tag Too Long to Parse
+
+    /// The intact package with the first `opening` of `part` replaced by
+    /// `hostile`, in which "MANY" stands for 200,000 attributes (the parser
+    /// takes time that grows with the square of them: 17 s).
+    private func makeDOCX(replacing part: String, opening: String, with hostile: String) throws -> URL {
+        let text = try XCTUnwrap(Self.intactParts[part], "No fixture part at \(part)")
+        let range = try XCTUnwrap(text.range(of: opening), "\(part) has no \(opening)")
+        let many = (0..<200_000).map { "a\($0)=\"\"" }.joined(separator: " ")
+        let replaced = text.replacingCharacters(in: range, with: hostile.replacingOccurrences(of: "MANY", with: many))
+        return try makeDOCX(replacing: [part: Data(replaced.utf8)])
+    }
+
+    /// A start tag over 64 KB (`XMLInputGuard.longestStartTag`, 21 times the
+    /// longest of 264 parts of 25 real DOCX and EPUB files) in any part TextMouth
+    /// reads is refused as damage, naming the part, in a few milliseconds: the
+    /// parser took seventeen seconds over 200,000 attributes. A bound of five
+    /// seconds is far above the refusal and far below the parser.
+    func testAStartTagTooLongToParseIsRefusedAsDamageNamingThePart() throws {
+        let cases: [(part: String, opening: String, hostile: String)] = [
+            (DOCXParser.Part.document, "<w:p>", "<w:p MANY>"),
+            (DOCXParser.Part.styles, "<w:style w:type", "<w:style MANY w:type"),
+            (DOCXParser.Part.numbering, "<w:num w:numId", "<w:num MANY w:numId"),
+            (DOCXParser.Part.documentRelationships, "<Relationship Id", "<Relationship MANY Id"),
+            (DOCXParser.Part.coreProperties, "<dc:title>", "<dc:title MANY>"),
+        ]
+        for testCase in cases {
+            let docx = try makeDOCX(replacing: testCase.part, opening: testCase.opening, with: testCase.hostile)
+            let clock = ContinuousClock()
+            let start = clock.now
+            // The core properties never fail an import; the others do.
+            if testCase.part == DOCXParser.Part.coreProperties {
+                _ = try DOCXParser.extractMarkdown(from: docx)
+            } else {
+                let reason = malformedXMLReason(naming: testCase.part) { try DOCXParser.extractMarkdown(from: docx) }
+                XCTAssertEqual(reason, XMLInputGuard.longStartTagProblem, testCase.part)
+            }
+            XCTAssertLessThan(clock.now - start, .seconds(5), "\(testCase.part) took too long")
+        }
+    }
+
+    /// The refusal reads as the other damage does: it names the part and says
+    /// what to do.
+    func testTheRefusalOfALongStartTagIsInTheSentenceOfAnyDamagedPart() {
+        let error = DOCXParserError.malformedXML(file: "word/document.xml", reason: XMLInputGuard.longStartTagProblem)
+        XCTAssertEqual(
+            error.errorDescription,
+            "The file “word/document.xml” in this document is damaged or incomplete: "
+                + "it has a start tag longer than 64 KB, which no real file has. "
+                + "Get a fresh copy of the document, then import it again.")
+    }
+
     /// Markup after the document's root element comes after all of its text,
     /// so every word is kept, exactly as from the intact part, and the damage
     /// is still reported.
