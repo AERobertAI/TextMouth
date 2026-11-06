@@ -92,7 +92,18 @@ final class KFXEPUBComparisonTests: XCTestCase {
     func testAliceHeadingsAreTheEPUBsHeadingForHeading() throws {
         let epub = try epubChapters(requireFile("alice.epub"))
         let kfx = try kfxChapters(formatSampleURL("kfx/alice.kfx"))
-        XCTAssertEqual(headingLines(kfx), headingLines(epub))
+        // Two named differences, both a chapter's fallback title that the EPUB
+        // reader takes from the XHTML document's <title> and a KFX book, which
+        // keeps no document titles, cannot (neither adds a word):
+        // 1. the cover document is titled "Cover" in the EPUB, with its quotes;
+        // 2. the last document, with no heading or contents entry, is titled by
+        //    its <title> in the EPUB and "Chapter 17" (its number) in the KFX.
+        var expected = headingLines(epub)
+        XCTAssertEqual(expected.first, "1: \"Cover\"")
+        expected.removeFirst()
+        let lastIndex = try XCTUnwrap(expected.firstIndex(of: "1: Alice\u{2019}s Adventures in Wonderland | Project Gutenberg"))
+        expected[lastIndex] = "1: Chapter 17"
+        XCTAssertEqual(headingLines(kfx), expected)
     }
 
     func testTheFeatureBookHasTheEPUBsThreeChapters() throws {
