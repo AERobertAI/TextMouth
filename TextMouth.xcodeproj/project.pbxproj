@@ -1840,6 +1840,7 @@
 		F7D1613C8C3FDC5248070171 /* LibraryViewModel+Duplicates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15DD35F17969272D70397A5A /* LibraryViewModel+Duplicates.swift */; };
 		F7ED9C47B4579FE533C4D55F /* DOCXEdgeCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CAB7D7B735376475942A514 /* DOCXEdgeCaseTests.swift */; };
 		F815FC6E15FA2C0F9F2CF4C1 /* PreferenceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B37AE821110AC99E30841FA /* PreferenceStoreTests.swift */; };
+		F836E6FBC33DC8DEF581DCB3 /* DOCXEmphasisTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D346C26890C2A4C754F4A810 /* DOCXEmphasisTests.swift */; };
 		F839B84E1B3A978AFBB35675 /* FeedSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECC8048BC1E98D863AAF0D6F /* FeedSettingsTests.swift */; };
 		F89198C3A9D9ED226CEEAD23 /* TextAnchorCaptureLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 968F795E85D76DB621C9A2AE /* TextAnchorCaptureLaunchTests.swift */; };
 		F895DE1FCEF31ED0083592FE /* DOCXTestPackages.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53170AFED6F639025C95F78 /* DOCXTestPackages.swift */; };
@@ -3134,6 +3135,7 @@
 		D3151A3FE0E28821BBF014CF /* DataDirectoryCopyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataDirectoryCopyTests.swift; sourceTree = "<group>"; };
 		D31E8B59AF004AAA9AF4CD19 /* LibraryFolderSettingsTargetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryFolderSettingsTargetTests.swift; sourceTree = "<group>"; };
 		D33463B02862E1A57688E682 /* ReaderViewModel+VoiceAndSpeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ReaderViewModel+VoiceAndSpeed.swift"; sourceTree = "<group>"; };
+		D346C26890C2A4C754F4A810 /* DOCXEmphasisTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DOCXEmphasisTests.swift; sourceTree = "<group>"; };
 		D34FE01A7C665D44A08BDF55 /* BookTextEditTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookTextEditTests.swift; sourceTree = "<group>"; };
 		D37DBA97FFBC2225A8814437 /* ArchiveEntryReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchiveEntryReader.swift; sourceTree = "<group>"; };
 		D3B63BBA404BF0EFC3C8FD9E /* ImportScratchSpace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportScratchSpace.swift; sourceTree = "<group>"; };
@@ -4409,6 +4411,7 @@
 				7BC5A8F6A753EEED476BF839 /* DocumentGoldenTests.swift */,
 				C9230BD23AD88184DFCBAFE0 /* DocumentLinkTests.swift */,
 				CF21B735233AB52434401919 /* DocumentTypeDeclarationTests.swift */,
+				D346C26890C2A4C754F4A810 /* DOCXEmphasisTests.swift */,
 				123D1BF7024211D8F4219819 /* DOCXHiddenTextTests.swift */,
 				D6018DC6189219689FF4F390 /* DOCXMalformedXMLTests.swift */,
 				E1FD43DFD02AE1C48C1C70C3 /* DOCXNotesTests.swift */,
@@ -5575,6 +5578,7 @@
 				2AA1C183E1B27C679DE9D6CC /* DAISYPageTests.swift in Sources */,
 				6D86FFF46267459C8A6B08F1 /* DAISYParserTests.swift in Sources */,
 				F7ED9C47B4579FE533C4D55F /* DOCXEdgeCaseTests.swift in Sources */,
+				F836E6FBC33DC8DEF581DCB3 /* DOCXEmphasisTests.swift in Sources */,
 				F7BE5BD1BB12879BF6842660 /* DOCXHiddenTextTests.swift in Sources */,
 				7BB5AAED282F2863E96C581A /* DOCXMalformedXMLTests.swift in Sources */,
 				B8D3624B5F3844DB523B5B11 /* DOCXNotesTests.swift in Sources */,
