@@ -55,7 +55,7 @@ final class KFXHostileFileTests: XCTestCase {
         of real: [UInt8], rounds: Int, seed: UInt64, read: ([UInt8]) throws -> Void,
         file: StaticString = #filePath, line: UInt = #line
     ) {
-        var generator = SeededGenerator(seed: seed)
+        var generator = KFXSeededGenerator(seed: seed)
         for round in 0..<rounds {
             var damaged = real
             for _ in 0..<(1 + Int(generator.next() % 5)) {

@@ -305,7 +305,7 @@ final class KFXContainerTests: XCTestCase {
 
     func testAFixedSeedByteFlipRunOverTheRealContainerNeverTraps() throws {
         let real = try realBytes()
-        var generator = SeededGenerator(seed: 52)
+        var generator = KFXSeededGenerator(seed: 52)
         // Flips in the header and tables, where an offset can be made wrong,
         // and flips anywhere; each ends quickly, in a read or an error.
         for round in 0..<120 {

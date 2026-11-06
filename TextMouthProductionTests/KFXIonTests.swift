@@ -208,7 +208,7 @@ final class KFXIonTests: XCTestCase {
             (7, .list([.string("hello"), .int(70_000), .float64(1.0), .bool(true), .symbol(900)])),
             (6, .structure([(4, .symbol(300)), (5, .annotated([1, 2], .string("hi")))])),
         ])))
-        var generator = SeededGenerator(seed: 2026_11_06)
+        var generator = KFXSeededGenerator(seed: 2026_11_06)
         assertQuick("2,000 flips") {
             for _ in 0..<2_000 {
                 var damaged = whole

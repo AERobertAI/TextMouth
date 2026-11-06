@@ -240,7 +240,7 @@ extension XCTestCase {
 }
 
 /// A fixed-seed generator, so a byte-flip run is the same every time.
-struct SeededGenerator: RandomNumberGenerator {
+struct KFXSeededGenerator: RandomNumberGenerator {
     private var state: UInt64
     init(seed: UInt64) { state = seed }
     mutating func next() -> UInt64 {
