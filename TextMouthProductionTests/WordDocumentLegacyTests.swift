@@ -460,7 +460,7 @@ final class WordDocumentLegacyTests: XCTestCase {
             try body(paragraphs, speaksNumbers: false),
             "<ol>\n<li>One</li>\n<li>Two</li>\n</ol>\n<p>Plain</p>\n<ol>\n<li>Three</li>\n</ol>\n"
         )
-        XCTAssertEqual(try body(paragraphs, speaksNumbers: true), "<p>1. One</p>\n<p>2. Two</p>\n<p>Plain</p>\n<p>3. Three</p>\n")
+        XCTAssertEqual(try body(paragraphs, speaksNumbers: true), "<p>1. One</p>\n<p>2. Two</p>\n<p>Plain</p>\n<p>1. Three</p>\n")
     }
 
     func testABulletIsAnItemOfAnUnorderedListAndAnOutlineNestsByItsLevel() throws {

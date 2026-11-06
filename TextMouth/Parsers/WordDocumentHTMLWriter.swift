@@ -493,6 +493,8 @@ struct WordHTMLWriter {
         let markFormat = characters.format(at: position) ?? WordCharacterFormat()
         let markIsDeleted = markFormat.isDeleted
         let marker: WordListNumbering.Marker = isRowEnd ? .none : paragraphMarker(of: format, hasText: hasText, markIsDeleted: markIsDeleted)
+        // Ordinary text ends the count of the lists that it ends (a Word 6 or Word 95 document's simple lists).
+        if hasText, !isRowEnd, marker == .none { lists.plainTextEndsCounts() }
         let level = listLevel
         // What a number written as words says: a level's number, or the words
         // of a level that has none.

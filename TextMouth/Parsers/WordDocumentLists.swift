@@ -168,10 +168,20 @@ struct WordListTables {
     /// The tables of a Word 6 or Word 95 document, which numbers a paragraph
     /// by a description of its own (`ANLD`): `levels[i]` are the nine levels
     /// of list instance `i + 1`, a list of its own, with no overrides.
-    init(legacyInstances levels: [[WordListLevel]]) {
+    /// - Parameter endedByPlainText: the instances (one-based) whose count begins again after a paragraph
+    ///   of ordinary text (see `endedByPlainText`).
+    init(legacyInstances levels: [[WordListLevel]], endedByPlainText: Set<Int> = []) {
         lists = Dictionary(uniqueKeysWithValues: levels.enumerated().map { ($0.offset + 1, $0.element) })
         instances = levels.indices.map { Instance(listIdentifier: $0 + 1, overrides: [:]) }
+        self.endedByPlainText = endedByPlainText
     }
+
+    /// The list instances (one-based) whose count begins again at the number it starts at after a
+    /// paragraph of ordinary text: the simple lists of a Word 6 or Word 95 document, whose paragraphs carry
+    /// their numbers in themselves and are stored with the numbers they were counted to, in the files
+    /// seen, when plain text lies between them. (The levels of an outline go on counting through text.)
+    /// Empty for a Word 97 document.
+    private(set) var endedByPlainText: Set<Int> = []
 
     /// Whether the document has no list a paragraph could be in.
     var isEmpty: Bool { instances.isEmpty || lists.isEmpty }
@@ -354,6 +364,11 @@ struct WordListNumbering {
         self.tables = tables
         numbering = tables.numbering
         counter = DOCXListCounter(numbering: numbering)
+    }
+
+    /// A paragraph of ordinary text has been met: the lists it ends begin again (`WordListTables.endedByPlainText`).
+    mutating func plainTextEndsCounts() {
+        for instance in tables.endedByPlainText { counter.restart(numId: String(instance)) }
     }
 
     /// Forgets every count: the paragraphs after this are in another story

@@ -224,7 +224,7 @@ enum WordDocumentReader {
         }
         // A Word 6 or Word 95 paragraph carries its own numbering: give each a list instance.
         if let legacyCharacters {
-            let numbered = WordLegacyNumbering.apply(to: paragraphs, characters: legacyCharacters)
+            let numbered = WordLegacyNumbering.apply(to: paragraphs, characters: legacyCharacters, styles: styles)
             paragraphs = numbered.paragraphs
             lists = numbered.lists
         }
