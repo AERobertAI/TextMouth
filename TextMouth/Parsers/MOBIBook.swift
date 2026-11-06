@@ -39,6 +39,11 @@ struct MOBIBook {
         /// HTML, by the element's id; none for a MOBI book, which has no
         /// print pages, and for a KFX book that has no page list.
         var pages = HTMLPageTargets()
+        /// Whether a chapter that nothing titles takes the book's own title
+        /// (a KFX book's only such chapter is its first, or the whole of a
+        /// book with no contents and no headings) rather than "Chapter" and
+        /// its number, which a MOBI book's does.
+        var untitledTakesBookTitle = false
     }
 
     var metadata: Metadata

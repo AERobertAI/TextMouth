@@ -51,8 +51,14 @@ struct KFXNavigation {
     // MARK: Reading
 
     /// Reads the navigation of the book whose fragments are `fragments`.
-    init(_ fragments: KFXFragments) {
-        readUnits(of: fragments)
+    /// - Parameters:
+    ///   - maximumUnits: The most units read in all.
+    ///   - maximumPages: The most pages read; a test gives small limits.
+    init(
+        _ fragments: KFXFragments, maximumUnits: Int = KFXNavigation.maximumUnits,
+        maximumPages: Int = MarkdownPageMarker.maximumPagesPerBook
+    ) {
+        readUnits(of: fragments, maximumUnits: maximumUnits, maximumPages: maximumPages)
         for anchor in fragments.all(KFXSymbol.anchor).values {
             guard let position = anchor.structValue?[KFXSymbol.anchorPosition]?.structValue,
                   let node = position[KFXSymbol.positionNode]?.intValue else { continue }
@@ -68,7 +74,7 @@ struct KFXNavigation {
         var level: Int?
     }
 
-    private mutating func readUnits(of fragments: KFXFragments) {
+    private mutating func readUnits(of fragments: KFXFragments, maximumUnits: Int, maximumPages: Int) {
         let lists = fragments.singleton(KFXSymbol.navigation)?.listValue ?? []
         // The default reading order's navigation, else the first.
         let chosen = lists.first { $0.structValue?[Self.readingOrderNameField]?.symbolID == KFXSymbol.defaultReadingOrder }
@@ -87,7 +93,7 @@ struct KFXNavigation {
             var stack = (members[Self.containerUnitsField]?.listValue ?? []).reversed().map { Pending(unit: $0, depth: 1, level: nil) }
             while let pending = stack.popLast() {
                 unitsRead += 1
-                guard unitsRead <= Self.maximumUnits else { break }
+                guard unitsRead <= maximumUnits else { break }
                 guard let unit = Self.resolved(pending.unit, type: Self.unitFragmentType, in: fragments).structValue else { continue }
                 let children = unit[Self.containerUnitsField]?.listValue ?? []
 
@@ -106,7 +112,7 @@ struct KFXNavigation {
                     let entry = Entry(label: label, node: position.node, offset: position.offset, depth: pending.depth)
                     if type == Self.tableOfContentsType {
                         if !label.isEmpty { contents.append(entry) }
-                    } else if pages.count < MarkdownPageMarker.maximumPagesPerBook {
+                    } else if pages.count < maximumPages {
                         pages.append(entry)
                     }
                 }

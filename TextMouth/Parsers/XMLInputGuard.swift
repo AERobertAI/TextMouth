@@ -19,11 +19,15 @@ import Foundation
 ///   way round, and UTF-32.
 /// - **A very long start tag.** `XMLParser` takes time that grows with the
 ///   square of the attributes in one start tag (200,000 attributes: 17
-///   seconds; a start tag at the size limit: minutes). No real element is
-///   near a megabyte, so a start tag that long is refused.
+///   seconds; a start tag of a megabyte: 5 seconds, and 64 of them minutes
+///   in which Cancel cannot land). The longest start tag in 2,067 parts of
+///   535 real files is 2,166 bytes (the root of a document, which declares its
+///   namespaces), so a start tag of 64 KB, 30 times that, is refused: it
+///   costs the parser a fiftieth of a second.
 enum XMLInputGuard {
-    /// The longest start tag, in bytes of the part, that is read.
-    static let longestStartTag = 1_000_000
+    /// The longest start tag, in bytes of the part, that is read: 64 KB, 30
+    /// times the longest of 2,067 real parts (2,166 bytes).
+    static let longestStartTag = 65_536
 
     // MARK: Code units
 

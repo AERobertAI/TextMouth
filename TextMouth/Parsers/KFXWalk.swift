@@ -253,14 +253,33 @@ struct KFXWalk {
 
         let id = node[KFXSymbol.nodeID]?.intValue
         // The node's text: its own string, or the strings and inline nodes
-        // of its children flattened into one text.
+        // of its children flattened into one text. A heading with no text of
+        // its own that holds one child of text (Amazon's form for a heading
+        // with a floated span in it) takes the child's text, runs, and places.
+        var source = node
+        var textIDs: [Int] = id.map { [$0] } ?? []
         var text = try string(of: node)
         var inserts: [String] = []
         var flatWords: Bool?
+        var consumedChildren = false
         if text == nil, let flat = try flatten(node, depth: context.depth + 1, active: &active) {
             text = flat.text
             inserts = flat.inserts
             flatWords = flat.hasWords
+            consumedChildren = true
+        } else if text == nil, looksLikeHeading(node, id: id), let only = onlyChild(of: node) {
+            if let own = try string(of: only) {
+                text = own
+            } else if let flat = try flatten(only, depth: context.depth + 1, active: &active) {
+                text = flat.text
+                inserts = flat.inserts
+                flatWords = flat.hasWords
+            }
+            if text != nil {
+                source = only
+                consumedChildren = true
+                if let childID = only[KFXSymbol.nodeID]?.intValue { textIDs.append(childID) }
+            }
         }
         if let text { try spend(text.utf8.count) }
         let hasText = text.map { flatWords ?? hasWords($0) } ?? false
@@ -268,21 +287,24 @@ struct KFXWalk {
         // A targeted node is marked: its start waits for the next element,
         // unless the node writes the text itself, which places its anchors.
         var textAnchors: [Int: String] = [:]
-        if let id, let offsets = targets.offsets[id] {
-            output.targetNodeIDs.insert(id)
-            if offsets.contains(0) && !output.holdsText { output.startNodeIDs.insert(id) }
+        for named in textIDs {
+            guard let offsets = targets.offsets[named] else { continue }
+            output.targetNodeIDs.insert(named)
+            if offsets.contains(0) && !output.holdsText { output.startNodeIDs.insert(named) }
             if hasText {
-                for offset in offsets { textAnchors[offset] = KFXTargets.anchorHTML(node: id, offset: offset) }
+                for offset in offsets where textAnchors[offset] == nil {
+                    textAnchors[offset] = KFXTargets.anchorHTML(node: named, offset: offset)
+                }
             } else {
                 // Any place named in a node that writes no text is its start.
-                for offset in offsets.sorted() { output.pendingAnchors += KFXTargets.anchorHTML(node: id, offset: offset) }
+                for offset in offsets.sorted() { output.pendingAnchors += KFXTargets.anchorHTML(node: named, offset: offset) }
             }
         }
 
         let bareInCell = context.parent == .soleCellChild
         let isInline = context.isInline || node[KFXSymbol.renderMode]?.symbolID == KFXSymbol.inlineRender
         // The children were read into the text when it was flattened.
-        let children = flatWords == nil ? (node[KFXSymbol.children]?.listValue ?? []) : []
+        let children = consumedChildren ? [] : (node[KFXSymbol.children]?.listValue ?? [])
         // A node that names another storyline holds its nodes in place.
         if let expanded = node[KFXSymbol.storylineName]?.stringValue {
             stack.append(.storyline(expanded, depth: context.depth + 1))
@@ -324,7 +346,7 @@ struct KFXWalk {
             let isCaption = context.parent == .table && node[KFXSymbol.classification]?.symbolID == KFXSymbol.caption
             let hasInlineChildren = children.contains { $0.structValue?[KFXSymbol.renderMode]?.symbolID == KFXSymbol.inlineRender }
             let wrapsInlineChildren = !isCell && !isItem && !isCaption && !isInline && !bareInCell && text == nil
-                && (hasInlineChildren || startsWithPictureDropCap(children))
+                && (hasInlineChildren || startsWithFloat(children))
             let wrapper: String? = isCell ? "td" : isItem ? "li" : isCaption ? "caption" : wrapsInlineChildren ? "p" : nil
             if let wrapper {
                 output.html += "<\(wrapper)>" + output.takeAnchors()
@@ -337,11 +359,17 @@ struct KFXWalk {
                 let tag: String? = (wrapper != nil || isInline) ? nil : (heading ?? (bareInCell ? nil : "p"))
                 if let tag { output.html += "<\(tag)>" + output.takeAnchors() }
                 output.noteBlock(tag)
-                output.html += try inline(text, of: node, id: id, anchors: textAnchors, inserts: inserts, withBase: heading == nil)
+                output.html += try inline(text, of: source, id: textIDs.last, anchors: textAnchors, inserts: inserts, withBase: heading == nil)
                 if let tag { output.html += "</\(tag)>" }
                 output.holdsText = true
             }
-            if isInline || wrapsInlineChildren && startsWithPictureDropCap(children) { childContext.isInline = true }
+            if isInline || wrapsInlineChildren && startsWithFloat(children) { childContext.isInline = true }
+            // A floated block among the words of its paragraph is set off by a
+            // space on each side, so the words beside it do not run into it.
+            if isInline, node[KFXSymbol.floatMarker] != nil {
+                output.html += " "
+                stack.append(.literal(" "))
+            }
             if isCell, children.count == 1, children[0].structValue != nil { childContext.parent = .soleCellChild }
         }
 
@@ -349,11 +377,26 @@ struct KFXWalk {
         for child in children.reversed() { stack.append(.node(child, childContext)) }
     }
 
-    /// Whether `children` are a picture and then the text it is a drop cap
-    /// of: a picture that does not flow inline, followed by a node of text.
-    private func startsWithPictureDropCap(_ children: [IonValue]) -> Bool {
+    /// Whether `children` are a picture or a floated block and then the text
+    /// it belongs to: a picture drop cap, or a floated span of words, that
+    /// does not flow inline, followed by a node of text. They are one paragraph.
+    private func startsWithFloat(_ children: [IonValue]) -> Bool {
         guard children.count >= 2, let first = children[0].structValue, let second = children[1].structValue else { return false }
-        return first[KFXSymbol.nodeType]?.symbolID == KFXSymbol.image && second[KFXSymbol.text] != nil
+        let floated = first[KFXSymbol.nodeType]?.symbolID == KFXSymbol.image || first[KFXSymbol.floatMarker] != nil
+        return floated && second[KFXSymbol.text] != nil
+    }
+
+    /// Whether the book marks the node a heading, by its level container or
+    /// its style, without changing the level a heading without one takes.
+    private func looksLikeHeading(_ node: IonStruct, id: Int?) -> Bool {
+        if let id, headingLevels[id] != nil { return true }
+        return styles.style(of: node).marksHeading
+    }
+
+    /// The node's only child, when it has just one and it is a node.
+    private func onlyChild(of node: IonStruct) -> IonStruct? {
+        guard let children = node[KFXSymbol.children]?.listValue, children.count == 1 else { return nil }
+        return children[0].structValue
     }
 
     /// Writes an image: its alt text when it has any, and nothing otherwise.
@@ -568,7 +611,9 @@ struct KFXWalk {
             let scalars = Array(text.unicodeScalars)
             for (offset, label) in labels {
                 let wanted = Array(label.unicodeScalars)
-                if offset + wanted.count <= scalars.count, scalars[offset..<(offset + wanted.count)].elementsEqual(wanted) {
+                // The offset comes from the book: compared before it is added to anything.
+                if offset >= 0, offset < scalars.count, wanted.count <= scalars.count - offset,
+                   scalars[offset..<(offset + wanted.count)].elementsEqual(wanted) {
                     context.skipAt[offset] = wanted.count
                 }
             }

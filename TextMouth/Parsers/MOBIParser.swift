@@ -81,16 +81,18 @@ enum MOBIParser {
         includesPages: Bool = false
     ) throws -> PreparedBook {
         var chapters: [EPUBParser.PreparedChapter] = []
+        let bookTitle = metadata.title.isEmpty ? fallbackTitle : metadata.title
         for section in sections {
             // Cancel during a very large book is heard between its sections.
             try ImportCancellation.throwIfCancelled()
-            if let chapter = try preparedChapter(of: section, number: chapters.count + 1, includesPages: includesPages) {
+            if let chapter = try preparedChapter(
+                of: section, number: chapters.count + 1, bookTitle: bookTitle, includesPages: includesPages) {
                 chapters.append(chapter)
             }
         }
         guard !chapters.isEmpty else { throw FileImportError.noTextToRead }
         return PreparedBook(
-            title: metadata.title.isEmpty ? fallbackTitle : metadata.title,
+            title: bookTitle,
             author: metadata.author.isEmpty ? Book.unknownAuthor : metadata.author,
             language: metadata.language,
             chapters: chapters
@@ -126,9 +128,10 @@ enum MOBIParser {
 
     /// Makes a chapter of `section`, or nil when it holds no words.
     /// `number` is the chapter's place among those that hold text, which
-    /// titles a chapter nothing else titles.
+    /// titles a chapter nothing else titles (or `bookTitle`, for a section that
+    /// asks for it).
     private static func preparedChapter(
-        of section: MOBIBook.Section, number: Int, includesPages: Bool
+        of section: MOBIBook.Section, number: Int, bookTitle: String, includesPages: Bool
     ) throws -> EPUBParser.PreparedChapter? {
         // The section's HTML in Markdown, its contents entries kept as
         // heading annotations at their anchors (and the pages a KFX book names).
@@ -136,7 +139,7 @@ enum MOBIParser {
             section.html, stripDuplicateNavigation: false,
             headingTargets: section.headingTargets, pages: section.pages, includesPages: includesPages
         )
-        let fallbackTitle = section.title ?? untitledChapter(number: number)
+        let fallbackTitle = section.title ?? (section.untitledTakesBookTitle ? bookTitle : untitledChapter(number: number))
         var chapter = try MarkdownDocParser.parseChapter(
             markdown: markdown, title: fallbackTitle, includeNavigationHeadings: true
         )

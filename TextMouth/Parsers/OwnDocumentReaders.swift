@@ -59,8 +59,9 @@ enum OwnDocumentReaders {
             guard RTFDocumentReader.isOn else { return nil }
             return try RTFDocumentReader.html(of: url, as: format, includesPages: includesPages)
         case .doc:
-            // Word 6 to Word 2003 (.doc and .dot); nil for a document older than
-            // Word 6, which has no compound file and is refused.
+            // Word 6 to Word 2003 (.doc and .dot); nil for a compound file older than
+            // Word 6, which goes to textutil. (A Word 1 or Word 2 document is a bare
+            // stream, not a compound file, and is refused as unreadable.)
             guard WordDocumentReader.isOn else { return nil }
             return try WordDocumentReader.html(
                 of: url, includesPages: includesPages, readsOldLayout: WordDocumentReader.readsWord6AndWord95

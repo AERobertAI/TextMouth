@@ -230,6 +230,12 @@ struct DOCXListCounter {
         counts[key] = levels
     }
 
+    /// Forget the counts of list instance `numId`, so it starts again from its start value.
+    mutating func restart(numId: String) {
+        counts[numbering.counterKey(numId: numId)] = nil
+        startedInstances.remove(numId)
+    }
+
     /// Forget every count, so each list starts again from its start value.
     mutating func restartAll() {
         counts.removeAll()

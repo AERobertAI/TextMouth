@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Formats
 
-/// The paragraph properties a paragraph of a Word 97-2003 document names
+/// The paragraph properties a paragraph of a Word document (any version) names
 /// directly (its PAPX), of those this reader uses.
 struct WordParagraphFormat: Equatable {
     /// The paragraph's style index (`istd`).
@@ -55,6 +55,17 @@ struct WordCharacterFormat: Equatable {
     /// Whether the characters are text a tracked change deleted, which the
     /// document no longer holds.
     var isDeleted = false
+    /// The font the run sets itself (an index into the font table), for a Word 6 or
+    /// Word 95 document, whose font's character set names the code page of the
+    /// run's text (`sprmCFtc`); nil when it says nothing and its styles decide.
+    var fontIndex: Int?
+    /// The character set the run says its text is in (`sprmCChse`), when it says it differs
+    /// from the document's: 256 for the Macintosh's, 0 for Windows'; nil when it says nothing.
+    var characterSet: Int?
+    /// The font and the character (0 to 255 in practice) of a symbol the run holds
+    /// (`sprmCSymbol`): the run's text is a placeholder ("(") for it.
+    var symbolFont: Int?
+    var symbolCharacter: Int?
 }
 
 // MARK: - Runs of Formats
@@ -99,7 +110,7 @@ struct WordFormatRuns<Format> {
 
 // MARK: - Reading the Bin Tables
 
-/// Reads the paragraph and character properties of a Word 97-2003 document
+/// Reads the paragraph and character properties of a Word document (Word 6 and Word 95 in their form: `dialect`)
 /// from its bin tables and formatted disk pages (FKPs, [MS-DOC] 2.9.25 and
 /// 2.9.181).
 ///
@@ -134,11 +145,13 @@ enum WordDocumentProperties {
     ///   not fit.
     static func paragraphRuns(
         binTable: Range<Int>, table: OLEBytes, document: OLEBytes,
-        pieces: WordPieceTable, limit: Int, data: OLEBytes? = nil, dialect: WordSprm.Dialect = .modern
+        pieces: WordPieceTable, limit: Int, data: OLEBytes? = nil, dialect: WordSprm.Dialect = .modern,
+        declaredPageCount: Int = 0, checkCancellation: () throws -> Void = { try ImportCancellation.throwIfCancelled() }
     ) throws -> WordFormatRuns<WordParagraphFormat> {
         let entrySize = paragraphEntrySize(dialect)
         return try runs(binTable: binTable, table: table, document: document, pieces: pieces, limit: limit,
-                 dialect: dialect, maximumRuns: (pageSize - 1 - 4) / (4 + entrySize),
+                 dialect: dialect, declaredPageCount: declaredPageCount, checkCancellation: checkCancellation,
+                 maximumRuns: (pageSize - 1 - 4) / (4 + entrySize),
                  // A paragraph is one run, and the modifiers of the piece that
                  // holds its last character (the last range) are the ones
                  // that apply to it all ([MS-DOC] 2.4.6.1).
@@ -266,6 +279,17 @@ enum WordDocumentProperties {
             format.style = nil
         case WordSprm.styleSeparator: format.isStyleSeparator = value == 1 || value == 0x81
         case WordSprm.special: format.isSpecial = value != 0
+        case WordSprm.legacyFont: format.fontIndex = value
+        case WordSprm.legacyCharacterSet:
+            // A flag byte (non-zero when the run's set differs from the document's), then 16 bits.
+            if operand.count >= 3, value & 0xFF != 0 { format.characterSet = (value >> 8) & 0xFFFF }
+        case WordSprm.symbol:
+            // A 16-bit font, then a 16-bit character; one in 0xF000 to 0xF0FF stands for its low byte.
+            if operand.count >= 4 {
+                format.symbolFont = value & 0xFFFF
+                let character = (value >> 16) & 0xFFFF
+                format.symbolCharacter = (0xF000...0xF0FF).contains(character) ? character & 0xFF : character
+            }
         case WordSprm.fontSize: format.fontSize = value
         // A toggle ([MS-DOC] 2.6.1): 0x80 keeps what a style gives, and no style
         // gives a deletion, so only 1 and 0x81 delete.
@@ -280,10 +304,12 @@ enum WordDocumentProperties {
     ///   not fit.
     static func characterRuns(
         binTable: Range<Int>, table: OLEBytes, document: OLEBytes,
-        pieces: WordPieceTable, limit: Int, dialect: WordSprm.Dialect = .modern
+        pieces: WordPieceTable, limit: Int, dialect: WordSprm.Dialect = .modern, declaredPageCount: Int = 0,
+        checkCancellation: () throws -> Void = { try ImportCancellation.throwIfCancelled() }
     ) throws -> WordFormatRuns<WordCharacterFormat> {
         try runs(binTable: binTable, table: table, document: document, pieces: pieces, limit: limit,
-                 dialect: dialect, maximumRuns: (pageSize - 1 - 4) / 5,
+                 dialect: dialect, declaredPageCount: declaredPageCount, checkCancellation: checkCancellation,
+                 maximumRuns: (pageSize - 1 - 4) / 5,
                  // Each character takes the modifiers of its own piece.
                  modifiersOfRange: { ranges, position in ranges[position].modifiers }) { page, index, runCount, modifiers in
             var format = WordCharacterFormat()
@@ -314,11 +340,14 @@ enum WordDocumentProperties {
         format.italic = nil
         format.hidden = nil
         format.fontSize = nil
+        format.fontIndex = nil
     }
 
     /// Walks a bin table's pages and builds the runs of formats `format`
     /// reads from them.
     /// - Parameters:
+    ///   - declaredPageCount: for a Word 6 or Word 95 document, how many pages of this kind the FIB
+    ///     says the file holds (the table may list fewer); 0 for none.
     ///   - maximumRuns: the most runs a page of this kind can hold, by its size.
     ///   - modifiersOfRange: the property modifiers (`Pcd.prm`) that apply to
     ///     the characters of range number `position` of `ranges`, the ranges
@@ -327,7 +356,7 @@ enum WordDocumentProperties {
     ///     `runCount` runs, with the piece modifiers laid over its properties.
     private static func runs<Format>(
         binTable: Range<Int>, table: OLEBytes, document: OLEBytes, pieces: WordPieceTable, limit: Int,
-        dialect: WordSprm.Dialect, maximumRuns: Int,
+        dialect: WordSprm.Dialect, declaredPageCount: Int, checkCancellation: () throws -> Void, maximumRuns: Int,
         modifiersOfRange: (_ ranges: [WordPieceTable.Placed], _ position: Int) -> ArraySlice<UInt8>,
         format: (_ page: Int, _ index: Int, _ runCount: Int, _ modifiers: ArraySlice<UInt8>) throws -> Format
     ) throws -> WordFormatRuns<Format> {
@@ -339,20 +368,38 @@ enum WordDocumentProperties {
         let pageCount = (length - 4) / (4 + numberSize)
         let pageNumbersStart = binTable.lowerBound + (pageCount + 1) * 4
 
-        // The pieces examined in all, for the overlap bound of the piece table.
-        var budget = 16 * (pieces.pieces.count + pageCount * maximumRuns) + 4096
-        var result: [WordFormatRuns<Format>.Run] = []
+        // The pages the table lists, then (in a Word 6 or Word 95 document saved in full) the pages
+        // the FIB says exist beyond the last listed: a bin table that stops short leaves the formatting
+        // of the rest of the file on pages that follow the last, one after another.
+        var pageNumbers: [Int] = []
         for pageIndex in 0..<pageCount {
-            // A page of runs is a unit of work; a cancelled import stops between them.
-            try ImportCancellation.throwIfCancelled()
-            // The page number is the low 22 bits (all 16 in Word 6 and Word 95).
-            let number = try dialect == .modern
+            pageNumbers.append(try dialect == .modern
                 ? table.u32(pageNumbersStart + pageIndex * 4) & 0x003F_FFFF
-                : table.u16(pageNumbersStart + pageIndex * 2)
+                : table.u16(pageNumbersStart + pageIndex * 2))
+        }
+        if dialect == .legacy, declaredPageCount > pageCount, let last = pageNumbers.last {
+            for offset in 1...(declaredPageCount - pageCount) {
+                // A page past the stream ends the pages there are.
+                guard document.contains(offset: (last + offset) * pageSize, length: pageSize) else { break }
+                pageNumbers.append(last + offset)
+            }
+        }
+        let listedCount = pageCount
+
+        // The pieces examined in all, for the overlap bound of the piece table.
+        var budget = 16 * (pieces.pieces.count + pageNumbers.count * maximumRuns) + 4096
+        var result: [WordFormatRuns<Format>.Run] = []
+        for (pageIndex, number) in pageNumbers.enumerated() {
+            // A page of runs is a unit of work; a cancelled import stops between them.
+            try checkCancellation()
             let page = number * pageSize
+            let isFollowing = pageIndex >= listedCount
             guard document.contains(offset: page, length: pageSize) else {
                 throw OLEDamage(reason: "a properties page at \(page) is past the stream")
             }
+            // A page that follows the listed ones and is no page of runs (its count of runs is too
+            // large) is not one: the formatting is a help, and this is not what the table said.
+            if isFollowing, try document.u8(page + pageSize - 1) > maximumRuns { continue }
             let runCount = try document.u8(page + pageSize - 1)
             guard runCount <= maximumRuns else { throw OLEDamage(reason: "a properties page holds \(runCount) runs") }
             for index in 0..<runCount {

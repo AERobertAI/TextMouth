@@ -1,8 +1,8 @@
 import Foundation
 
-// MARK: - The Word 97-2003 Reader
+// MARK: - The Word 6 to Word 2003 Reader
 
-/// TextMouth's own reader of Word 97-2003 documents (.doc and the template
+/// TextMouth's own reader of Word 6, Word 95, and Word 97-2003 documents (.doc and the template
 /// .dot, FMT47), compiled into both apps. It reads, from the specification
 /// [MS-DOC] and the compound file [MS-CFB] beneath it, what the user wants
 /// under TextMouth's control: the text, the real heading styles (Heading 1
@@ -50,7 +50,7 @@ enum WordDocumentReader {
     /// whole and tested: if the answer is yes, this is the one line to change.
     static let speaksListNumbers = false
 
-    /// Whether this platform reads Word 97-2003 documents with this reader:
+    /// Whether this platform reads Word 97-2003 documents with this reader (Word 6 and Word 95 have their own switch):
     /// iOS, which has no textutil, always; the Mac once the reader has been
     /// checked against textutil's reading of the same files
     /// (`WordDocumentComparisonTests`), which it now is.
@@ -77,7 +77,7 @@ enum WordDocumentReader {
     /// - Throws: `PasswordProtectedDocument`, `DocumentTooLargeError`,
     ///   `FileImportError.noTextToRead` for an empty file, and
     ///   `TextutilConverter.Failure.unreadable` for a file that is not a
-    ///   readable Word 97-2003 document.
+    ///   readable Word 6 to Word 2003 document.
     static func html(of url: URL, includesPages: Bool, readsOldLayout: Bool = true) throws -> String? {
         try html(from: DocumentByteLimit.contents(of: url), includesPages: includesPages, readsOldLayout: readsOldLayout)
     }
@@ -88,27 +88,37 @@ enum WordDocumentReader {
         try html(from: DocumentByteLimit.contents(of: url), includesPages: includesPages, speaksListNumbers: speaksListNumbers)
     }
 
-    /// The HTML document of the Word 97-2003 document in `data`; see
+    /// The HTML document of the Word 6 to Word 2003 document in `data`; see
     /// `html(of:includesPages:)`.
     static func html(
         from data: Data, includesPages: Bool, speaksListNumbers: Bool = WordDocumentReader.speaksListNumbers,
-        readsOldLayout: Bool = true
+        readsOldLayout: Bool = true, checkCancellation: () throws -> Void = { try ImportCancellation.throwIfCancelled() }
     ) throws -> String? {
         do {
             // A document with more page breaks than pages are numbered is
             // read again without any.
             do {
-                return try read(data, includesPages: includesPages, speaksListNumbers: speaksListNumbers, readsOldLayout: readsOldLayout)
+                return try read(
+                    data, includesPages: includesPages, speaksListNumbers: speaksListNumbers, readsOldLayout: readsOldLayout,
+                    checkCancellation: checkCancellation
+                )
             } catch is WordHTMLWriter.PageLimitExceeded {
-                return try read(data, includesPages: false, speaksListNumbers: speaksListNumbers, readsOldLayout: readsOldLayout)
+                return try read(
+                    data, includesPages: false, speaksListNumbers: speaksListNumbers, readsOldLayout: readsOldLayout,
+                    checkCancellation: checkCancellation
+                )
             }
         } catch is OLEDamage {
             throw TextutilConverter.Failure.unreadable(.doc)
         }
     }
 
-    /// Reads `data` once.
-    private static func read(_ data: Data, includesPages: Bool, speaksListNumbers: Bool, readsOldLayout: Bool) throws -> String? {
+    /// Reads `data` once. `checkCancellation` is asked at the start, between the pages of formatting, and
+    /// every few thousand characters written, and throws to stop (by default `ImportCancelled`, when the
+    /// import running on this thread was cancelled); a test passes its own to count the asks.
+    private static func read(
+        _ data: Data, includesPages: Bool, speaksListNumbers: Bool, readsOldLayout: Bool, checkCancellation: () throws -> Void
+    ) throws -> String? {
         let file = try CompoundFile(data)
         guard let documentData = try file.stream(named: "WordDocument") else {
             throw OLEDamage(reason: "the file has no WordDocument stream")
@@ -120,7 +130,7 @@ enum WordDocumentReader {
         // Encrypted, whether by Word's password or by obfuscation: the text
         // cannot be read, and the listener is told what to do.
         guard !fib.isEncrypted else { throw PasswordProtectedDocument() }
-        try ImportCancellation.throwIfCancelled()
+        try checkCancellation()
 
         // Where the structures are: Word 97 keeps them in a table stream; Word 6
         // and Word 95 in the WordDocument stream itself, in properties of
@@ -161,6 +171,12 @@ enum WordDocumentReader {
             do { return try read() } catch is OLEDamage { return fallback }
         }
 
+        // How many pages of a bin table the FIB says the file holds, for a document saved in full: the
+        // pages beyond the last the table lists follow it. (A Fast Save document's pieces say where they are.)
+        func followingPages(of structure: WordFileInformationBlock.Structure) -> Int {
+            fib.hasPieceTable ? 0 : fib.declaredPageCount(of: structure)
+        }
+
         // The styles, and the properties that name them.
         let styles = try lenient({ () -> WordStyleSheet in
             guard let range = try fib.range(of: .styleSheet, in: table) else { return .empty }
@@ -172,16 +188,37 @@ enum WordDocumentReader {
             guard let range = try fib.range(of: .paragraphBinTable, in: table) else { return WordFormatRuns(runs: []) }
             return try WordDocumentProperties.paragraphRuns(
                 binTable: range, table: table, document: document, pieces: pieces, limit: pieces.characterCount, data: data,
-                dialect: dialect
+                dialect: dialect, declaredPageCount: followingPages(of: .paragraphBinTable),
+                checkCancellation: checkCancellation
             )
         }, else: WordFormatRuns(runs: []))
         let characters = try lenient({ () -> WordFormatRuns<WordCharacterFormat> in
             guard let range = try fib.range(of: .characterBinTable, in: table) else { return WordFormatRuns(runs: []) }
             return try WordDocumentProperties.characterRuns(
                 binTable: range, table: table, document: document, pieces: pieces, limit: pieces.characterCount,
-                dialect: dialect
+                dialect: dialect, declaredPageCount: followingPages(of: .characterBinTable),
+                checkCancellation: checkCancellation
             )
         }, else: WordFormatRuns(runs: []))
+        // The code page of each stretch of a Word 6 or Word 95 document of one-byte characters.
+        var codePages: WordLegacyCodePages?
+        if let legacyCharacters, legacyCharacters.width == 1 {
+            codePages = WordLegacyCodePages.build(
+                characters: legacyCharacters, styles: styles, paragraphs: paragraphs, characterRuns: characters,
+                pieces: pieces, document: document
+            )
+        }
+        // The fonts, for the symbols: a symbol of the font named Symbol is a character with words to read, and
+        // one of any other font (a picture) is not. A table that does not fit gives none, and every symbol is white space.
+        var fonts = WordFontTable.none
+        if let range = try? fib.range(of: .fontTable, in: table) {
+            if fib.layout == .modern {
+                fonts = (try? WordFontTable.modern(range: range, in: table)) ?? .none
+            } else {
+                fonts = (try? WordFontTable.legacy(range: range, in: table)) ?? .none
+            }
+        }
+        let symbolFonts = fonts.symbolFonts
         // The lists, whose numbers Word does not store in the text. They are
         // a help to the listener and not the text: a list table that does
         // not fit loses the numbers, not the document.
@@ -193,7 +230,7 @@ enum WordDocumentReader {
         }
         // A Word 6 or Word 95 paragraph carries its own numbering: give each a list instance.
         if let legacyCharacters {
-            let numbered = WordLegacyNumbering.apply(to: paragraphs, characters: legacyCharacters)
+            let numbered = WordLegacyNumbering.apply(to: paragraphs, characters: legacyCharacters, styles: styles)
             paragraphs = numbered.paragraphs
             lists = numbered.lists
         }
@@ -231,16 +268,18 @@ enum WordDocumentReader {
             var writer = WordHTMLWriter(
                 styles: styles, sections: sections, includesPages: includesPages,
                 outputLimit: Int(DocumentByteLimit.current) * 2, paragraphs: paragraphs, characters: characters,
-                lists: lists, numbersAreWords: speaksListNumbers
+                lists: lists, numbersAreWords: speaksListNumbers, symbolFonts: symbolFonts
             )
             var charactersWritten = 0
             for segment in segments {
                 try writer.beginStory(isMain: segment.isMain)
-                try pieces.forEachCharacter(from: segment.range.lowerBound, upTo: segment.range.upperBound, in: document) { position, unit in
+                try pieces.forEachCharacter(
+                    from: segment.range.lowerBound, upTo: segment.range.upperBound, in: document, codePages: codePages
+                ) { position, unit in
                     try writer.add(position: position, unit: unit)
                     // A cancelled import stops here, however long the document is.
                     charactersWritten += 1
-                    if charactersWritten % Self.charactersBetweenCancellationChecks == 0 { try ImportCancellation.throwIfCancelled() }
+                    if charactersWritten % Self.charactersBetweenCancellationChecks == 0 { try checkCancellation() }
                 }
             }
             let body = try writer.finish(endingAt: segments.last?.range.upperBound ?? 0)

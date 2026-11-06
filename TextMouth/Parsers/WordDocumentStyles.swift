@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - The Style Sheet
 
-/// The style sheet (STSH) of a Word 97-2003 document ([MS-DOC] 2.9.271):
+/// The style sheet (STSH) of a Word document ([MS-DOC] 2.9.271; the shorter form of Word 6 and Word 95 is read by `init(legacyRange:table:)`):
 /// the styles a paragraph or run of text can name by index (`istd`), each
 /// with its built-in identifier (`sti`), the style it is based on, and the
 /// paragraph and character properties the reader needs from it: the outline
@@ -43,6 +43,12 @@ struct WordStyleSheet {
         let listIndex: Int?
         /// The level in its list a paragraph in the style is at (`sprmPIlvl`), or nil.
         let listLevel: Int?
+        /// For a Word 6 or Word 95 style, the font the style sets (`sprmCFtc`, an index into the
+        /// font table), or nil.
+        let fontIndex: Int?
+        /// For a Word 6 or Word 95 paragraph style, the level in the document's numbering a
+        /// paragraph in it is at (`sprmPNLvlAnm`), or nil.
+        let numberingLevel: Int?
     }
 
     /// What a style says once the styles it is based on are counted: the first
@@ -61,6 +67,8 @@ struct WordStyleSheet {
         var fontSize: Int?
         var listIndex: Int?
         var listLevel: Int?
+        var fontIndex: Int?
+        var numberingLevel: Int?
         var bold = Toggle()
         var italic = Toggle()
         var hidden = Toggle()
@@ -99,12 +107,17 @@ struct WordStyleSheet {
     /// Each style as the chain it is based on makes it (`Resolved`); nil where `styles` is.
     private let resolvedStyles: [Resolved?]
 
+    /// For a Word 6 or Word 95 sheet, the font the sheet's default character formatting uses (an index
+    /// into the font table: the sheet's header names it); nil for any other.
+    let defaultFontIndex: Int?
+
     /// A document with no style sheet: every paragraph is body text.
     static let empty = WordStyleSheet(styles: [])
 
     private init(styles: [Style?]) {
         self.styles = styles
         resolvedStyles = Self.resolve(styles)
+        defaultFontIndex = nil
     }
 
     /// Works out every style's `Resolved`. A style is worked out from the one
@@ -158,6 +171,8 @@ struct WordStyleSheet {
         result.fontSize = style.fontSize ?? base.fontSize
         result.listIndex = style.listIndex ?? base.listIndex
         result.listLevel = style.listLevel ?? base.listLevel
+        result.fontIndex = style.fontIndex ?? base.fontIndex
+        result.numberingLevel = style.numberingLevel ?? base.numberingLevel
         result.bold = base.bold.laying(style.bold)
         result.italic = base.italic.laying(style.italic)
         result.hidden = base.hidden.laying(style.hidden)
@@ -206,6 +221,7 @@ struct WordStyleSheet {
         while styles.count < styleCount { styles.append(nil) }
         self.styles = styles
         resolvedStyles = Self.resolve(styles)
+        defaultFontIndex = nil
     }
 
     /// Reads the style sheet of a Word 6 or Word 95 document at `range` in
@@ -238,6 +254,30 @@ struct WordStyleSheet {
         while styles.count < styleCount { styles.append(nil) }
         self.styles = styles
         resolvedStyles = Self.resolve(styles)
+        // The header names the font of the sheet's default characters (`ftcStandardChpStsh`), 12 bytes in.
+        if headerSize >= 14, let font = try? table.u16(range.lowerBound + 2 + 12) {
+            defaultFontIndex = font
+        } else {
+            defaultFontIndex = nil
+        }
+    }
+
+    /// The `count` property groups of the style whose bytes are `size` bytes at `position` in `table`, the first
+    /// beginning `offset` bytes in: each a 16-bit size and the bytes, padded to an even size. A sheet that
+    /// ends the groups early has the ones before.
+    /// - Throws: `OLEDamage` when a group runs past the style.
+    private static func propertyGroups(count: Int, from offset: Int, at position: Int, size: Int, in table: OLEBytes) throws -> [ArraySlice<UInt8>] {
+        var offset = offset
+        var groups: [ArraySlice<UInt8>] = []
+        for _ in 0..<count {
+            guard offset + 2 <= size else { break }
+            let groupSize = try table.u16(position + offset)
+            offset += 2
+            guard offset + groupSize <= size else { throw OLEDamage(reason: "a style's properties run past the style") }
+            groups.append(try table.slice(offset: position + offset, length: groupSize))
+            offset += groupSize + groupSize % 2
+        }
+        return groups
     }
 
     /// The Word 6 or Word 95 style whose bytes are `size` bytes at `position` in `table`.
@@ -251,15 +291,7 @@ struct WordStyleSheet {
         // The name: a size byte, the characters, and a null; the groups begin at an even place.
         var offset = try baseSize + 1 + table.u8(position + baseSize) + 1
         offset += offset % 2
-        var groups: [ArraySlice<UInt8>] = []
-        for _ in 0..<groupCount {
-            guard offset + 2 <= size else { break }
-            let groupSize = try table.u16(position + offset)
-            offset += 2
-            guard offset + groupSize <= size else { throw OLEDamage(reason: "a style's properties run past the style") }
-            groups.append(try table.slice(offset: position + offset, length: groupSize))
-            offset += groupSize + groupSize % 2
-        }
+        let groups = try Self.propertyGroups(count: groupCount, from: offset, at: position, size: size, in: table)
         return makeStyle(builtInIdentifier: first & 0x0FFF, basedOn: second >> 4, kind: kind, groups: groups, dialect: .legacy)
     }
 
@@ -277,22 +309,14 @@ struct WordStyleSheet {
         // Then the name: a 16-bit length, that many UTF-16 characters, and a
         // terminating null.
         let nameLength = try table.u16(position + fixedSize)
-        var offset = fixedSize + 2 + (nameLength + 1) * 2
+        let offset = fixedSize + 2 + (nameLength + 1) * 2
         guard offset <= size else { throw OLEDamage(reason: "a style's name runs past the style") }
 
         // Then the property groups, each a 16-bit size and the bytes, padded
         // to an even size. A paragraph style has two: paragraph properties
         // (which begin with the style index of the paragraph) and character
         // properties. A character style has one: character properties.
-        var groups: [ArraySlice<UInt8>] = []
-        for _ in 0..<groupCount {
-            guard offset + 2 <= size else { break }
-            let groupSize = try table.u16(position + offset)
-            offset += 2
-            guard offset + groupSize <= size else { throw OLEDamage(reason: "a style's properties run past the style") }
-            groups.append(try table.slice(offset: position + offset, length: groupSize))
-            offset += groupSize + groupSize % 2
-        }
+        let groups = try Self.propertyGroups(count: groupCount, from: offset, at: position, size: size, in: table)
 
         return makeStyle(builtInIdentifier: first & 0x0FFF, basedOn: basedOn, kind: kind, groups: groups, dialect: .modern)
     }
@@ -309,6 +333,8 @@ struct WordStyleSheet {
         var pageBreakBefore: Bool?
         var listIndex: Int?
         var listLevel: Int?
+        var fontIndex: Int?
+        var numberingLevel: Int?
         var bold: Int?
         var italic: Int?
         var hidden: Int?
@@ -319,6 +345,7 @@ struct WordStyleSheet {
                 if opcode == WordSprm.outlineLevel, let value = operand.first { outlineLevel = Int(value) }
                 if opcode == WordSprm.pageBreakBefore, let value = operand.first { pageBreakBefore = value != 0 }
                 if opcode == WordSprm.listLevel, let value = operand.first { listLevel = Int(value) }
+                if opcode == WordSprm.legacyNumberingLevel, let value = operand.first { numberingLevel = Int(value) }
                 if opcode == WordSprm.listIndex, operand.count >= 2 { listIndex = WordSprm.value(of: operand) }
             }
         }
@@ -332,6 +359,7 @@ struct WordStyleSheet {
                 if opcode == WordSprm.italic { italic = Int(value) }
                 if opcode == WordSprm.hidden { hidden = Int(value) }
                 if opcode == WordSprm.fontSize, operand.count >= 2 { fontSize = WordSprm.value(of: operand) }
+                if opcode == WordSprm.legacyFont, operand.count >= 2 { fontIndex = WordSprm.value(of: operand) }
             }
         }
         return Style(
@@ -344,7 +372,9 @@ struct WordStyleSheet {
             fontSize: fontSize,
             pageBreakBefore: pageBreakBefore,
             listIndex: listIndex,
-            listLevel: listLevel
+            listLevel: listLevel,
+            fontIndex: fontIndex,
+            numberingLevel: numberingLevel
         )
     }
 
@@ -415,6 +445,22 @@ struct WordStyleSheet {
               let instance = WordListTables.instanceNumber(ofIlfo: raw) else { return nil }
         let level = directLevel ?? resolved.listLevel ?? 0
         return level < WordListTables.levelCount ? (instance, level) : nil
+    }
+
+    /// The font (an index into the font table) of text with the paragraph style `paragraphStyle`, the
+    /// character style `characterStyle` (or nil), and the direct font `direct` (or nil): the direct one,
+    /// else the character style's, else the paragraph style's, each through the styles it is based on,
+    /// else the sheet's default; nil when none says (a Word 97 sheet).
+    func fontIndex(paragraphStyle: Int, characterStyle: Int?, direct: Int?) -> Int? {
+        if let direct { return direct }
+        if let characterStyle, let font = resolved(styleIndex: characterStyle).fontIndex { return font }
+        return resolved(styleIndex: paragraphStyle).fontIndex ?? defaultFontIndex
+    }
+
+    /// The level in the document's numbering (`sprmPNLvlAnm`) a paragraph in the style `index` is at, through
+    /// the styles it is based on, or nil.
+    func numberingLevel(styleIndex index: Int) -> Int? {
+        resolved(styleIndex: index).numberingLevel
     }
 
     /// The font size in half-points of text with the paragraph style

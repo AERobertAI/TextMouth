@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - The Piece Table
 
-/// The piece table of a Word 97-2003 document ([MS-DOC] 2.9.178, in the CLX
+/// The piece table of a Word document ([MS-DOC] 2.9.178, in the CLX
 /// of the table stream): the list of pieces of text that make up the
 /// document, each with the file offset where its characters are stored and
 /// whether they are stored as 8-bit Windows-1252 or as UTF-16LE.
@@ -221,20 +221,19 @@ struct WordPieceTable {
     /// the pieces (their ends never go back), so a caller that reads many
     /// short ranges of a document of many pieces does not walk the pieces
     /// before each.
-    /// - Parameter document: the stream the table was checked against; the
-    ///   reads here stay inside the ranges that check passed.
+    /// - Parameters:
+    ///   - document: the stream the table was checked against; the
+    ///     reads here stay inside the ranges that check passed.
+    ///   - codePages: for a Word 6 or Word 95 document of one-byte characters, the code page of
+    ///     each stretch of its text; without it the document's own decodes all.
     func forEachCharacter(
-        from start: Int = 0, upTo limit: Int, in document: OLEBytes,
+        from start: Int = 0, upTo limit: Int, in document: OLEBytes, codePages: WordLegacyCodePages? = nil,
         _ body: (_ position: Int, _ unit: UInt16) throws -> Void
     ) rethrows {
         let bytes = document.bytes
-        var low = 0
-        var high = pieces.count
-        while low < high {
-            let middle = (low + high) / 2
-            if pieces[middle].endCharacter > start { high = middle } else { low = middle + 1 }
-        }
-        for index in low..<pieces.count {
+        // The code page of each stretch, for a document of one-byte characters that has them.
+        var codeCursor = codePages?.cursor()
+        for index in indexOfFirstPiece(endingAfter: start)..<pieces.count {
             let piece = pieces[index]
             guard piece.firstCharacter < limit else { return }
             guard piece.endCharacter > start else { continue }
@@ -247,7 +246,11 @@ struct WordPieceTable {
                 while position < end {
                     let at = piece.fileOffset + (position - piece.firstCharacter) * piece.width
                     if piece.width == 1 {
-                        try body(position, characters.unit(ofByte: bytes[at]))
+                        if codeCursor != nil {
+                            try body(position, codeCursor!.table(at: position)[Int(bytes[at])])
+                        } else {
+                            try body(position, characters.unit(ofByte: bytes[at]))
+                        }
                     } else {
                         let stored = characters.characters(ofStored: UInt16(bytes[at]) | UInt16(bytes[at + 1]) << 8, cache: &decoded)
                         try body(position, stored.first)
@@ -268,6 +271,36 @@ struct WordPieceTable {
                 }
             }
         }
+    }
+
+    /// The index of the first piece (in character order) that ends after character position `start`,
+    /// found by halving: the pieces' ends never go back.
+    private func indexOfFirstPiece(endingAfter start: Int) -> Int {
+        var low = 0
+        var high = pieces.count
+        while low < high {
+            let middle = (low + high) / 2
+            if pieces[middle].endCharacter > start { high = middle } else { low = middle + 1 }
+        }
+        return low
+    }
+
+    /// How many bytes above 0x7F the characters at `range` hold, in a Word 6 or Word 95 document of
+    /// one-byte characters (0 for any other): the weight a code page is chosen by.
+    func countBytesAbove7F(in range: Range<Int>, document: OLEBytes) -> Int {
+        guard legacyCharacters?.width == 1 else { return 0 }
+        let bytes = document.bytes
+        var count = 0
+        for index in indexOfFirstPiece(endingAfter: range.lowerBound)..<pieces.count {
+            let piece = pieces[index]
+            guard piece.firstCharacter < range.upperBound else { break }
+            let first = max(piece.firstCharacter, range.lowerBound)
+            let end = min(piece.endCharacter, range.upperBound)
+            guard first < end else { continue }
+            let from = piece.fileOffset + (first - piece.firstCharacter)
+            for at in from..<from + (end - first) where bytes[at] > 0x7F { count += 1 }
+        }
+        return count
     }
 
     /// Some characters and the property modifiers of the piece that holds them.

@@ -59,6 +59,8 @@ struct WordHTMLWriter {
     /// Whether a number is written as words before its paragraph, rather than
     /// the paragraph being an item of an `ol` whose number is not heard.
     private let numbersAreWords: Bool
+    /// The indexes of the fonts named Symbol: a symbol in one is a character of the Symbol encoding.
+    private let symbolFonts: Set<Int>
 
     /// A document with more page breaks than this reader numbers has no
     /// pages (`TextutilPageBreaks.maximumPages`); the writer says so by
@@ -161,11 +163,13 @@ struct WordHTMLWriter {
     ///   - lists: the document's lists, for the paragraphs that are in one.
     ///   - numbersAreWords: whether a list's numbers are written as words
     ///     (`WordDocumentReader.speaksListNumbers`).
+    ///   - symbolFonts: the indexes of the document's fonts named Symbol.
     init(
         styles: WordStyleSheet, sections: WordSections, includesPages: Bool, outputLimit: Int,
         paragraphs: WordFormatRuns<WordParagraphFormat>, characters: WordFormatRuns<WordCharacterFormat>,
-        lists: WordListTables = .none, numbersAreWords: Bool = false
+        lists: WordListTables = .none, numbersAreWords: Bool = false, symbolFonts: Set<Int> = []
     ) {
+        self.symbolFonts = symbolFonts
         self.lists = WordListNumbering(tables: lists)
         self.numbersAreWords = numbersAreWords
         self.styles = styles
@@ -264,8 +268,10 @@ struct WordHTMLWriter {
     }
 
     /// Writes the scalar `scalar` of the text at `position`.
-    private mutating func addText(_ scalar: Unicode.Scalar, at position: Int) throws {
+    private mutating func addText(_ original: Unicode.Scalar, at position: Int) throws {
         let format = characters.format(at: position) ?? WordCharacterFormat()
+        // A symbol from Insert Symbol is a placeholder ("(") with the font and the code of the character.
+        let scalar = symbol(replacing: original, in: format)
         // Text a tracked change deleted is not in the document any more.
         if format.isDeleted { return }
         let paragraphFormat = currentParagraphFormat(at: position)
@@ -278,7 +284,8 @@ struct WordHTMLWriter {
             return
         }
         // A special character in the text (a symbol from a font, 0x28, which
-        // is "(" otherwise) has no words to read.
+        // is "(" otherwise) has no words to read, when it is not a symbol with
+        // a character of its own (`symbol(replacing:in:)`).
         if format.isSpecial && scalar == "(" { return }
         // The first visible words of a paragraph decide whether it begins a
         // page, so a paragraph of hidden text begins none.
@@ -322,6 +329,23 @@ struct WordHTMLWriter {
         paragraphLength += 1
         paragraphCensus.add(size: appearance.size, isBold: appearance.bold)
         previousWasSpace = false
+    }
+
+    /// What the placeholder `scalar` of a run `format` stands for. A symbol (`sprmCSymbol`) is stored as
+    /// the text "(" with the font and the code of the character it shows; what is read there is:
+    /// - the character of the Symbol encoding, for a font named Symbol (`AdobeSymbolEncoding`), where the
+    ///   encoding gives a character a voice can speak; code 190 (the extender of a horizontal arrow) is
+    ///   read as a long dash, U+2014, because it is what Word's authors use it for: in the real documents
+    ///   it stands alone between two words ("goals" and "achieve"), where the dash is, and nothing in
+    ///   the text uses it as an arrow's shaft;
+    /// - a space for a symbol of any other font (Wingdings and the like: pictures with no words, between
+    ///   which the words on either side must not run together) and for a code Symbol has no character for.
+    /// A "(" with no symbol, or any other text with one, is left as it is.
+    private func symbol(replacing scalar: Unicode.Scalar, in format: WordCharacterFormat) -> Unicode.Scalar {
+        guard scalar == "(", let font = format.symbolFont, let code = format.symbolCharacter else { return scalar }
+        guard symbolFonts.contains(font) else { return " " }
+        if code == 190 { return "\u{2014}" }
+        return AdobeSymbolEncoding.scalar(forCode: code) ?? " "
     }
 
     /// Notes white space, written when the next character that is not white
@@ -469,6 +493,8 @@ struct WordHTMLWriter {
         let markFormat = characters.format(at: position) ?? WordCharacterFormat()
         let markIsDeleted = markFormat.isDeleted
         let marker: WordListNumbering.Marker = isRowEnd ? .none : paragraphMarker(of: format, hasText: hasText, markIsDeleted: markIsDeleted)
+        // Ordinary text ends the count of the lists that it ends (a Word 6 or Word 95 document's simple lists).
+        if hasText, !isRowEnd, marker == .none { lists.plainTextEndsCounts() }
         let level = listLevel
         // What a number written as words says: a level's number, or the words
         // of a level that has none.

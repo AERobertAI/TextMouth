@@ -213,6 +213,8 @@ struct WordDocumentBuilder {
     var identifier = 0xA5EC
     /// Whether `fEncrypted` is set.
     var isEncrypted = false
+    /// The names of the fonts of the font table, in order (none writes no table).
+    var fonts: [String] = []
     var title: String?
     var author: String?
     /// Left out when false: the properties of paragraphs, of characters.
@@ -474,6 +476,19 @@ struct WordDocumentBuilder {
             bytes += [UInt8](repeating: 0, count: 22 * (named.count + 1))
             while table.count % 4 != 0 { table.append(0) }
             listPairs[WordFileInformationBlock.Structure.textBoxText.rawValue] = (table.count, bytes.count)
+            table += bytes
+        }
+
+        // The font table (SttbfFfn): a count and a size of extra data, then each font: its size byte, flags, weight,
+        // character set, a byte for a second name, 10 bytes of PANOSE and 24 of font signature, and its name in UTF-16.
+        if !fonts.isEmpty {
+            while table.count % 4 != 0 { table.append(0) }
+            var bytes = Self.le16(fonts.count) + Self.le16(0)
+            for name in fonts {
+                let characters = name.utf16.flatMap { Self.le16(Int($0)) } + Self.le16(0)
+                bytes += [UInt8(39 + characters.count), 0x10, 0x90, 0x01, 0, 0] + [UInt8](repeating: 0, count: 34) + characters
+            }
+            listPairs[WordFileInformationBlock.Structure.fontTable.rawValue] = (table.count, bytes.count)
             table += bytes
         }
 

@@ -21,6 +21,9 @@ enum KFXParser {
     /// The most bytes of sidecar containers read beside a book, all together.
     static let maximumSidecarBytes: Int64 = 2 * DocumentByteLimit.standard
 
+    /// The limit in force: `maximumSidecarBytes`, unless a test binds a smaller one.
+    @TaskLocal static var currentSidecarBytes: Int64 = maximumSidecarBytes
+
     // MARK: Reading
 
     /// Reads the KFX book at `url` for direct reading.
@@ -134,7 +137,7 @@ enum KFXParser {
         for sidecar in neighbours.containers {
             guard let data = try? DocumentByteLimit.contents(of: sidecar) else { continue }
             total += Int64(data.count)
-            guard total <= maximumSidecarBytes else { break }
+            guard total <= currentSidecarBytes else { break }
             if let container = try? KFXContainer(bytes: [UInt8](data)) { opened.sidecars.append(container) }
         }
         return opened

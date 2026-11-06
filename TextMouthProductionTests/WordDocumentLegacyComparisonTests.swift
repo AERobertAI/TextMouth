@@ -18,7 +18,7 @@ final class WordDocumentLegacyComparisonTests: XCTestCase {
 
     /// The real samples of the old layout, as paths under the format samples.
     private static let samples = [
-        "doc6/poi-Word6.doc", "doc6/poi-Word6_sections.doc", "doc6/poi-Word6_sections2.doc", "doc6/poi-Word95.doc",
+        "doc6/poi-Word6.doc", "doc6/poi-Word6_sections.doc", "doc6/poi-Word6_sections2.doc", "doc6/poi-Bug60936.doc", "doc6/libreoffice-tdf59896.doc",
         "doc6/poi-word95err.doc",
         "doc6/libreoffice-ooo17498-1.doc", "doc6/libreoffice-ooo17498-2.doc", "doc6/libreoffice-ooo17498-3.doc",
         "doc6/libreoffice-ooo17498-4.doc", "doc6/libreoffice-ooo8726-1.doc",
@@ -32,7 +32,7 @@ final class WordDocumentLegacyComparisonTests: XCTestCase {
     /// characters: textutil reads the Simplified Chinese one as Shift JIS half-width katakana, the Korean one as
     /// another set of characters, and reads nothing at all of the two Traditional Chinese ones.
     private static let readInTheRightCodePageNotTextutils: Set<String> = [
-        "doc6/poi-word95err.doc", "doc6/libreoffice-ooo17498-2.doc", "doc6/libreoffice-ooo17498-3.doc",
+        "doc6/poi-word95err.doc", "doc6/poi-Bug60936.doc", "doc6/libreoffice-ooo17498-2.doc", "doc6/libreoffice-ooo17498-3.doc",
         "doc6/libreoffice-ooo17498-4.doc", "doc6/libreoffice-ooo8726-1.doc",
     ]
 
@@ -90,6 +90,24 @@ final class WordDocumentLegacyComparisonTests: XCTestCase {
                 XCTAssertNotEqual(textutil, reader, "\(sample) is listed as read differently on purpose, and does not differ")
             } else if textutil != reader {
                 differences.append("\(sample): textutil \(textutil.count) words, reader \(reader.count): textutil \(textutil.prefix(60)), reader \(reader.prefix(60))")
+            }
+        }
+        XCTAssertEqual(differences, [], differences.joined(separator: "\n"))
+    }
+
+    /// How often `mark` stands in `text`.
+    private func count(_ mark: String, in text: String) -> Int {
+        text.components(separatedBy: mark).count - 1
+    }
+
+    func testTheReaderReadsTheSameBracketsAsTextutilOnEverySample() throws {
+        // The words above are letters and digits only, and hid that every Word 6 symbol was read as a left parenthesis.
+        var differences: [String] = []
+        for sample in Self.samples where !Self.readInTheRightCodePageNotTextutils.contains(sample) {
+            guard let chapter = try textutilChapter(sample) else { continue }
+            let reader = try readerChapter(sample).text
+            for mark in ["(", ")", "[", "]", "\u{2014}", "\u{00B0}"] where count(mark, in: chapter.text) != count(mark, in: reader) {
+                differences.append("\(sample): \(mark) textutil \(count(mark, in: chapter.text)), reader \(count(mark, in: reader))")
             }
         }
         XCTAssertEqual(differences, [], differences.joined(separator: "\n"))
