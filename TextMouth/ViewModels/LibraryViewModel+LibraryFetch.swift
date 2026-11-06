@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 // MARK: - Getting the Library's Files From the Cloud
 
@@ -317,15 +318,9 @@ extension LibraryViewModel {
 
 /// The reads of one pass of a fetch: it hears each finish, from any thread,
 /// and hands the waiting pass its result when all have, or when the stall
-/// limit expires with some still out.
-final class LibraryFetchPass: @unchecked Sendable {
-    /// Whether the pass has ended, by every read returning or by expiry.
-    var isOver: Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        return isFinished
-    }
-
+/// limit expires with some still out. Its state sits in an unfair lock, so
+/// the compiler checks that the class is `Sendable`.
+final class LibraryFetchPass: Sendable {
     /// What a pass found.
     struct Result: Sendable {
         /// How each read that failed failed (`failure(reading:in:with:)`).
@@ -334,67 +329,76 @@ final class LibraryFetchPass: @unchecked Sendable {
         var stalled: [URL] = []
     }
 
-    /// Guards every stored property below.
-    private let lock = NSLock()
-    /// The files of this pass not yet read, by standardized path.
-    private var outstanding: [String: URL]
-    /// What has been found so far.
-    private var found = Result()
-    /// Backs `isOver`.
-    private var isFinished = false
-    /// The waiting pass, until it is handed the result.
-    private var waiter: CheckedContinuation<Result, Never>?
+    /// Everything the pass keeps, read and changed only under the lock.
+    private struct State: Sendable {
+        /// The files of this pass not yet read, by standardized path.
+        var outstanding: [String: URL]
+        /// What has been found so far.
+        var found = Result()
+        /// Whether the pass has ended, by every read returning or by expiry.
+        var isFinished = false
+        /// The waiting pass, until it is handed the result.
+        var waiter: CheckedContinuation<Result, Never>?
+    }
+
+    /// The pass's state.
+    private let state: OSAllocatedUnfairLock<State>
 
     /// A pass over `files`.
     init(files: [URL]) {
-        outstanding = Dictionary(files.map { ($0.standardizedFileURL.path, $0) }, uniquingKeysWith: { first, _ in first })
+        let outstanding = Dictionary(files.map { ($0.standardizedFileURL.path, $0) }, uniquingKeysWith: { first, _ in first })
+        state = OSAllocatedUnfairLock(initialState: State(outstanding: outstanding))
+    }
+
+    /// Whether the pass has ended, by every read returning or by expiry.
+    var isOver: Bool {
+        state.withLock { $0.isFinished }
     }
 
     /// Records the read of `file`, which failed as `failure` says, or nil.
     /// Returns whether it came in time: false when the pass was over already.
     func complete(_ file: URL, failure: String?) -> Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        guard !isFinished else { return false }
-        outstanding[file.standardizedFileURL.path] = nil
-        if let failure {
-            found.failures.append(failure)
+        state.withLock { state in
+            guard !state.isFinished else { return false }
+            state.outstanding[file.standardizedFileURL.path] = nil
+            if let failure {
+                state.found.failures.append(failure)
+            }
+            if state.outstanding.isEmpty {
+                Self.end(&state)
+            }
+            return true
         }
-        if outstanding.isEmpty {
-            end()
-        }
-        return true
     }
 
     /// Ends the pass with the reads still out as stalled; does nothing if it
     /// has ended already.
     func expire() {
-        lock.lock()
-        defer { lock.unlock() }
-        guard !isFinished else { return }
-        found.stalled = Array(outstanding.values)
-        end()
+        state.withLock { state in
+            guard !state.isFinished else { return }
+            state.found.stalled = Array(state.outstanding.values)
+            Self.end(&state)
+        }
     }
 
     /// The result, once the pass is over.
     func result() async -> Result {
         await withCheckedContinuation { continuation in
-            lock.lock()
-            defer { lock.unlock() }
-            if isFinished {
-                continuation.resume(returning: found)
-            } else {
-                waiter = continuation
+            state.withLock { state in
+                if state.isFinished {
+                    continuation.resume(returning: state.found)
+                } else {
+                    state.waiter = continuation
+                }
             }
         }
     }
 
-    /// Marks the pass over and hands the result to the waiter. Call with
-    /// `lock` held.
-    private func end() {
-        isFinished = true
-        waiter?.resume(returning: found)
-        waiter = nil
+    /// Marks the pass over and hands the result to the waiter.
+    private static func end(_ state: inout State) {
+        state.isFinished = true
+        state.waiter?.resume(returning: state.found)
+        state.waiter = nil
     }
 }
 
@@ -404,40 +408,45 @@ final class LibraryFetchPass: @unchecked Sendable {
 /// kernel while the sync service answers, and a silent one would otherwise
 /// hold a thread for each file of a library with many feeds, starving the
 /// pool Swift's concurrency shares. A queued read waits for a slot; a stuck
-/// read keeps its slot, so the stall limit still ends a pass.
-final class LibraryFetchReadSlots: @unchecked Sendable {
+/// read keeps its slot, so the stall limit still ends a pass. Its state sits
+/// in an unfair lock, so the compiler checks that the class is `Sendable`.
+final class LibraryFetchReadSlots: Sendable {
     /// The most reads out at once.
     static let limit = 8
 
-    /// Guards the two properties below.
-    private let lock = NSLock()
-    /// Slots free now.
-    private var available = LibraryFetchReadSlots.limit
-    /// Reads waiting for a slot, in order.
-    private var waiters: [CheckedContinuation<Void, Never>] = []
+    /// What the slots keep, read and changed only under the lock.
+    private struct State: Sendable {
+        /// Slots free now.
+        var available = LibraryFetchReadSlots.limit
+        /// Reads waiting for a slot, in order.
+        var waiters: [CheckedContinuation<Void, Never>] = []
+    }
+
+    /// The slots' state.
+    private let state = OSAllocatedUnfairLock(initialState: State())
 
     /// Waits for a free slot and takes it.
     func acquire() async {
         await withCheckedContinuation { continuation in
-            lock.lock()
-            defer { lock.unlock() }
-            if available > 0 {
-                available -= 1
-                continuation.resume()
-            } else {
-                waiters.append(continuation)
+            state.withLock { state in
+                if state.available > 0 {
+                    state.available -= 1
+                    continuation.resume()
+                } else {
+                    state.waiters.append(continuation)
+                }
             }
         }
     }
 
     /// Gives a slot back, to the read that has waited longest.
     func release() {
-        lock.lock()
-        defer { lock.unlock() }
-        if waiters.isEmpty {
-            available += 1
-        } else {
-            waiters.removeFirst().resume()
+        state.withLock { state in
+            if state.waiters.isEmpty {
+                state.available += 1
+            } else {
+                state.waiters.removeFirst().resume()
+            }
         }
     }
 }
