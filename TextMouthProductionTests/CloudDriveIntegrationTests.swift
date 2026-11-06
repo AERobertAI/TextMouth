@@ -205,6 +205,35 @@ final class CloudDriveIntegrationTests: XCTestCase {
         }
     }
 
+    // MARK: - The Library's Own Fetch
+
+    /// A small text file, once uploaded and then evicted so that it is only
+    /// in the cloud, is brought back by the fetch the library uses for the
+    /// files it opens from (`LibraryFileFetcher`): the file reads as dataless
+    /// first, the fetch returns without error, and the file is on this Mac
+    /// again with the bytes that were written. Nothing is asserted about how
+    /// long the drive takes.
+    func testTheLibraryFetchBringsAnEvictedFileBack() async throws {
+        await forEachRoot(label: "library-fetch") { root, run in
+            let file = try Self.writeTextFile(at: run.appendingPathComponent("library.json"))
+            let written = try Data(contentsOf: file)
+            guard try await CloudDriveWait.until(limit: CloudDriveWait.upload, { areUploaded([file], on: root) }) != nil else {
+                throw CloudDriveStepFailure(reason: "library.json was not reported uploaded, so it can't be evicted safely.")
+            }
+            try items.removeLocalCopy(of: file)
+            guard try await CloudDriveWait.until(limit: CloudDriveWait.removal, { Self.isDataless(file) }) != nil else {
+                throw CloudDriveStepFailure(
+                    reason: "library.json was still on this Mac after its removal: \(describeStatuses(of: [file]))"
+                )
+            }
+
+            try LibraryFileFetcher.fetch(file)
+
+            XCTAssertFalse(Self.isDataless(file), "\(root.driveName): the fetch left library.json in the cloud")
+            XCTAssertEqual(try Data(contentsOf: file), written, "\(root.driveName): library.json came back changed")
+        }
+    }
+
     // MARK: - Remove Download While Uploading (Step 10)
 
     /// A package holding one new 20 MB file, whose download the book service
