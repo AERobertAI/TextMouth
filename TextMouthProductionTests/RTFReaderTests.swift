@@ -323,7 +323,8 @@ final class RTFReaderTests: XCTestCase {
         XCTAssertEqual(try rtfBody(html).text(), "ABC")
     }
 
-    /// Pictures, objects, headers, footers, footnotes, and hidden text are not read.
+    /// Pictures, objects, headers, footers, and hidden text are not read; a
+    /// footnote is read after the main text (`RTFNotesTests`).
     func testWhatIsNotTheBodyIsNotRead() throws {
         let html = try rtfHTML(#"""
             {\rtf1\ansi{\header Header words\par}{\footer Footer words}
@@ -333,12 +334,13 @@ final class RTFReaderTests: XCTestCase {
             {\colortbl;\red0\green0\blue0;}{\*\generator Some Writer 1.0;}{\comment A comment.}Done.\par}
             """#)
         let text = try rtfBody(html).text()
-        XCTAssertEqual(text, "Before after. Pictured. Hiddenshown. Done.")
+        XCTAssertEqual(text, "Before after. Pictured. Hiddenshown. Done. Footnote words.")
     }
 
-    /// The words in a shape's text box are read, and the shape's properties
-    /// are not; a shape in a header, a footer, or a footnote is skipped with
-    /// its text box.
+    /// The words in a shape's text box are read, right after the paragraph that
+    /// holds the shape's anchor, and the shape's properties are not; a shape in
+    /// a header or a footer is skipped with its text box, and one in a
+    /// footnote is read with the note, after the main text.
     func testTheTextOfAShapeIsReadButNotInAHeaderOrFooter() throws {
         let html = try rtfHTML(#"""
             {\rtf1 Before {\shp{\sp{\sn fLine}{\sv 0}}{\*\shpinst{\sp{\sn shapeType}{\sv 1}}{\shptxt{\pard In a box\par}}}} after.\par
@@ -346,7 +348,7 @@ final class RTFReaderTests: XCTestCase {
             Note{\footnote {\shp{\shptxt In a note\par}}} here.\par
             {\do{\dptxbx{\dptxbxtext{\pard Old box\par}}}}Done.\par}
             """#)
-        XCTAssertEqual(try rtfBody(html).text(), "Before In a box after. Note here. Old box Done.")
+        XCTAssertEqual(try rtfBody(html).text(), "Before after. In a box Note here. Done. Old box In a note")
     }
 
     /// The title and author are in the head, escaped; the rest of the info
@@ -715,5 +717,37 @@ final class RTFReaderTests: XCTestCase {
         XCTAssertEqual(try body.select("tr").array().map { try $0.select("td").array().map { try $0.text() } }, [
             ["Port", "Depth"], ["Hull", "9"]
         ])
+    }
+
+    // MARK: - Text boxes after their anchor
+
+    /// A text box in the middle of a sentence leaves the sentence whole, and is
+    /// read right after the paragraph; two boxes in a paragraph are read in order.
+    func testATextBoxLeavesTheSentenceWhole() throws {
+        let box = { (words: String) in #"{\shp{\*\shpinst{\shptxt{\pard \#(words)\par}}}}"# }
+        let html = try rtfHTML(#"{\rtf1 Before \#(box("Box one")) middle \#(box("Box two")) after.\par Next.\par}"#)
+        XCTAssertEqual(try rtfBody(html).select("p").array().map { try $0.text() }, ["Before middle after.", "Box one", "Box two", "Next."])
+    }
+
+    /// A page break before the box keeps its page: the box begins none, and
+    /// the page waits for the words after it.
+    func testAPageBreakBeforeATextBoxKeepsItsPage() throws {
+        let html = try rtfHTML(#"{\rtf1 One.\page {\shp{\*\shpinst{\shptxt{\pard Boxed.\par}}}} Two.\par}"#)
+        XCTAssertEqual(try rtfPages(html), ["1", "2"])
+        XCTAssertEqual(try rtfBody(html).select("p").array().map { try $0.text() }, ["One. Two.", "Boxed."])
+    }
+
+    /// A box anchored in a table cell is read in that cell, after the cell's
+    /// own words; a box in hidden or deleted text is not read.
+    func testATextBoxInACellAndInHiddenText() throws {
+        let html = try rtfHTML(#"""
+            {\rtf1 \trowd\cellx2000\cellx4000
+            \pard\intbl Left {\shp{\*\shpinst{\shptxt{\pard In box\par}}}}text\cell\pard\intbl Right\cell\row
+            \pard After.\par
+            One {\v {\shp{\*\shpinst{\shptxt{\pard Hidden box\par}}}}}two.\par}
+            """#)
+        let body = try rtfBody(html)
+        XCTAssertEqual(try body.select("td").array().map { try $0.text() }, ["Left text In box", "Right"])
+        XCTAssertEqual(try body.select("body > p").array().map { try $0.text() }, ["After.", "One two."])
     }
 }

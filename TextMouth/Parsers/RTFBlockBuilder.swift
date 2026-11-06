@@ -32,7 +32,10 @@ struct RTFBlockBuilder {
     /// and paragraph): once it is gone the document is too large.
     private var budget: Int64
     /// The limit, for the error that names it.
-    private let limit: Int64
+    let limit: Int64
+    /// What the budget was when this builder began, so that what it spent
+    /// can be charged to the builder it works beside (`spentBytes`).
+    private let startingBudget: Int64
 
     /// The finished blocks.
     private(set) var blocks: [RTFBlock] = []
@@ -70,6 +73,13 @@ struct RTFBlockBuilder {
     private var sectionStartsPage = true
     /// Whether the paragraph being read already counted its `\pagebb`.
     private var paragraphBreakCounted = false
+    /// Whether the paragraph being read began a page by its `\pagebb` (or its
+    /// style's), and whether words were left out of it because they are not
+    /// read (hidden or deleted). A paragraph that held only such words
+    /// begins no page.
+    private var paragraphBreakAdded = false
+    private var paragraphHadUnreadWords = false
+
     /// Whether the document has had a letter or a digit yet. A paragraph
     /// that begins a page (`\pagebb`, or a style with it) before any words
     /// begins the document's first page, which is page 1 already: Word's
@@ -82,17 +92,29 @@ struct RTFBlockBuilder {
     private static let runAllowance: Int64 = 16
     private static let paragraphAllowance: Int64 = 64
 
-    init(includesPages: Bool, limit: Int64) {
+    /// A builder for the text of a document, or, with `budget`, for part of
+    /// it (a note) that may spend no more than what is left of the whole.
+    /// - Parameters:
+    ///   - limit: the most text the whole document may make.
+    ///   - budget: what is left of `limit` to spend; all of it by default.
+    init(includesPages: Bool, limit: Int64, budget: Int64? = nil) {
         self.includesPages = includesPages
         self.limit = limit
-        self.budget = limit
+        self.budget = budget ?? limit
+        self.startingBudget = budget ?? limit
     }
+
+    /// What is left of the budget.
+    var remainingBudget: Int64 { budget }
+
+    /// What this builder has spent since it began.
+    var spentBytes: Int64 { startingBudget - budget }
 
     // MARK: Words
 
     /// Charges `bytes` to the budget.
     /// - Throws: `DocumentTooLargeError` when the budget is spent.
-    private mutating func spend(_ bytes: Int64) throws {
+    mutating func spend(_ bytes: Int64) throws {
         budget -= bytes
         guard budget >= 0 else { throw DocumentTooLargeError(limit: limit) }
     }
@@ -188,7 +210,33 @@ struct RTFBlockBuilder {
     mutating func addParagraphPageBreak() {
         guard !paragraphBreakCounted else { return }
         paragraphBreakCounted = true
-        if hasCountedText { addPageBreak() }
+        if hasCountedText {
+            addPageBreak()
+            paragraphBreakAdded = includesPages
+        }
+    }
+
+    /// Words of the paragraph were left out because they are not read.
+    mutating func noteUnreadWords(_ text: String) {
+        if text.contains(where: { !$0.isWhitespace }) { paragraphHadUnreadWords = true }
+    }
+
+    /// Takes back the page the paragraph that has ended began by its
+    /// `\pagebb`, when every word it held was left out (`finished` is what it
+    /// holds), and forgets what was noted of the paragraph.
+    private mutating func settleParagraphBreak(of finished: RTFParagraph) {
+        if paragraphBreakAdded && paragraphHadUnreadWords && !finished.hasWords && pendingBreaks > 0 {
+            pendingBreaks -= 1
+            pageBreaks -= 1
+        }
+        paragraphBreakAdded = false
+        paragraphHadUnreadWords = false
+    }
+
+    /// Whether the paragraph being read holds a word so far.
+    var currentParagraphHasWords: Bool {
+        if paragraph.hasWords { return true }
+        return openRun?.text.contains(where: { !$0.isWhitespace }) ?? false
     }
 
     /// `\sect`: a section ends. Whether the next one begins a page is known
@@ -221,9 +269,10 @@ struct RTFBlockBuilder {
         let finished = paragraph
         paragraph = RTFParagraph()
         paragraphBreakCounted = false
+        settleParagraphBreak(of: finished)
         try spend(Self.paragraphAllowance)
         if inTable {
-            if finished.hasWords { cell.append(finished) }
+            if finished.hasWords { cell.append(Self.markingListItem(finished, as: kind)) }
             return
         }
         closeTable()
@@ -235,16 +284,52 @@ struct RTFBlockBuilder {
         }
     }
 
+    // MARK: Text boxes
+
+    /// Adds the text of shapes' text boxes right after the paragraph or cell
+    /// that has just ended and held their anchors: as blocks of the body, or as
+    /// paragraphs of the cell (a cell holds paragraphs, not blocks).
+    /// - Parameters:
+    ///   - inTable: whether the paragraph that ended is in a table's cell.
+    ///   - afterCell: whether a `\cell` ended it, so that the cell has been
+    ///     closed into its row.
+    mutating func appendBoxBlocks(_ boxes: [RTFBlock], inTable: Bool, afterCell: Bool) {
+        guard inTable else {
+            blocks.append(contentsOf: boxes)
+            return
+        }
+        let paragraphs = RTFHTMLWriter.paragraphs(of: boxes).filter(\.hasWords)
+        if afterCell, !row.isEmpty {
+            row[row.count - 1].append(contentsOf: paragraphs)
+        } else {
+            cell.append(contentsOf: paragraphs)
+        }
+    }
+
     // MARK: Tables
+
+    /// `paragraph` for a table's cell: when it is a list item, carrying its
+    /// place in the list (a heading or body paragraph carries nothing).
+    private static func markingListItem(_ paragraph: RTFParagraph, as kind: Kind) -> RTFParagraph {
+        guard case .listItem(let level, let numbered) = kind else { return paragraph }
+        var marked = paragraph
+        marked.listItem = RTFListPosition(level: level, numbered: numbered)
+        return marked
+    }
 
     /// `\cell`: the cell ends. Its paragraph, if it holds words, is the
     /// cell's last.
+    /// - Parameter kind: what that last paragraph is, which matters when it
+    ///   is a list item: the cell then writes its number or bullet. A
+    ///   paragraph that `\cell` ends has no `\par` of its own.
     /// - Throws: `DocumentTooLargeError`: every cell is charged to the budget,
     ///   empty or not.
-    mutating func endCell() throws {
-        try spend(Self.runAllowance)
+    mutating func endCell(lastParagraph kind: Kind = .body) throws {
+        // A cell costs what a paragraph does: it writes a `td`, and may write more
+        try spend(Self.paragraphAllowance)
         closeRun()
-        if paragraph.hasWords { cell.append(paragraph) }
+        settleParagraphBreak(of: paragraph)
+        if paragraph.hasWords { cell.append(Self.markingListItem(paragraph, as: kind)) }
         paragraph = RTFParagraph()
         paragraphBreakCounted = false
         row.append(cell)
@@ -253,11 +338,12 @@ struct RTFBlockBuilder {
     }
 
     /// `\row`: the row ends.
+    /// - Parameter kind: what the words not yet closed in a cell are.
     /// - Throws: `DocumentTooLargeError`.
-    mutating func endRow() throws {
+    mutating func endRow(lastParagraph kind: Kind = .body) throws {
         // Words not yet closed in a cell are kept in one.
         closeRun()
-        if paragraph.hasWords || !cell.isEmpty { try endCell() }
+        if paragraph.hasWords || !cell.isEmpty { try endCell(lastParagraph: kind) }
         guard !row.isEmpty else { return }
         if table == nil { table = RTFTable() }
         table?.rows.append(row)
@@ -270,7 +356,13 @@ struct RTFBlockBuilder {
         guard table != nil || !row.isEmpty || !cell.isEmpty else { return }
         // Cells and rows left open by a damaged table are closed here.
         if !cell.isEmpty { row.append(cell); cell = [] }
-        if !row.isEmpty { table?.rows.append(row); row = [] }
+        if !row.isEmpty {
+            // Words in a table's cell that no `\cell` or `\row` ever closed are
+            // in a table all the same
+            if table == nil { table = RTFTable() }
+            table?.rows.append(row)
+            row = []
+        }
         if let finished = table, finished.rows.contains(where: { $0.contains { !$0.isEmpty } }) {
             blocks.append(.table(finished))
         }

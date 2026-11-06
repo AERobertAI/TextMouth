@@ -76,6 +76,18 @@ final class ImportCancellation: @unchecked Sendable {
         { [self] in isCancelled }
     }
 
+    /// The one check for work that runs on the import's own thread with no
+    /// child process to kill, such as one of TextMouth's own readers parsing
+    /// a very large file: stops it at once when the import running on this
+    /// thread has been cancelled, as a conversion by textutil ends
+    /// (`TextutilConverter`), and does nothing outside an import, where
+    /// there is no `current`. Cheap enough to call every few thousand steps
+    /// of a loop: it reads a task-local and takes one short lock.
+    /// - Throws: `ImportCancelled`.
+    static func throwIfCancelled() throws {
+        if current?.isCancelled == true { throw ImportCancelled() }
+    }
+
     /// Records in the console and the debug log that the import of
     /// `fileName` was cancelled, and where it stopped:
     /// `IMPORT_CANCELLED: <file>: <where>`, an event on one line

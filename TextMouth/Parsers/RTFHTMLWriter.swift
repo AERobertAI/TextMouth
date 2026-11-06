@@ -27,11 +27,13 @@ enum RTFHTMLWriter {
         // Page 1 begins at the start of the body of a document with words;
         // the later pages' spans are already among the paragraphs' content.
         let writesPages = includesPages && document.pageBreaks < TextutilPageBreaks.maximumPages
-        if writesPages, hasLetterOrDigit(document.blocks) {
+        // The notes follow the body and begin no page of their own.
+        let allBlocks = document.blocks + document.notes
+        if writesPages, hasLetterOrDigit(allBlocks) {
             output += pageBreakSpan(1)
         }
         var writer = BlockWriter(writesPages: writesPages)
-        for block in document.blocks {
+        for block in allBlocks {
             writer.write(block, to: &output)
         }
         writer.closeLists(in: &output)
@@ -136,17 +138,37 @@ enum RTFHTMLWriter {
             }
         }
 
-        /// Writes a table: a cell holds a paragraph for each of its own.
+        /// Writes a table: a cell holds a paragraph for each of its own, and
+        /// a cell's list items are lists, with the numbers or bullets they
+        /// have outside a table.
         private func write(_ table: RTFTable, to output: inout String) {
             output += "<table>\n"
             for row in table.rows {
                 output += "<tr>"
                 for cell in row {
-                    output += "<td>" + cell.map { "<p>\(inline($0, emphasis: true))</p>" }.joined() + "</td>"
+                    output += "<td>" + html(ofCell: cell) + "</td>"
                 }
                 output += "</tr>\n"
             }
             output += "</table>\n"
+        }
+
+        /// The HTML inside one cell. A cell's paragraphs are written as `p`
+        /// except for list items, which go through a writer of their own
+        /// (a list cannot continue out of its cell into the next).
+        private func html(ofCell paragraphs: [RTFParagraph]) -> String {
+            var cellWriter = BlockWriter(writesPages: writesPages)
+            var markup = ""
+            for paragraph in paragraphs {
+                if let item = paragraph.listItem {
+                    cellWriter.writeListItem(paragraph, level: item.level, numbered: item.numbered, to: &markup)
+                } else {
+                    cellWriter.closeLists(in: &markup)
+                    markup += "<p>\(inline(paragraph, emphasis: true))</p>"
+                }
+            }
+            cellWriter.closeLists(in: &markup)
+            return markup
         }
 
         /// The inline HTML of `paragraph`: its words escaped, bold as

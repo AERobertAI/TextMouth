@@ -8,8 +8,8 @@ import Foundation
 enum RTFDestination: Equatable {
     /// The body of the document: text becomes paragraphs.
     case body
-    /// Read by nobody: pictures, objects, headers, footers, footnotes,
-    /// field instructions, and every `\*` destination not known here.
+    /// Read by nobody: pictures, objects, headers, footers, footnote
+    /// separators, field instructions, and every `\*` destination not known here.
     case skipped
     /// A picture or file that Cocoa's writer attaches to the text
     /// (`\NeXTGraphic`, `\NeXTPlainFile`): read by nobody, and followed in
@@ -36,11 +36,27 @@ enum RTFDestination: Equatable {
     /// The number or bullet a list item shows (`\listtext`, `\pntext`),
     /// read only to learn which kind of list it is, and never read aloud.
     case listText
+    /// The text of a shape's text box (`\shptxt`, `\dptxbxtext`): the body of the
+    /// document set in a frame, read right after the paragraph that holds the
+    /// shape's anchor.
+    case box
+    /// A footnote or an endnote (`\footnote`, with `\ftnalt` for an
+    /// endnote): its text is read after the main text, in the order the file
+    /// keeps the notes. Its group's text is the body of the document, set
+    /// apart. (Started by the interpreter, which knows whether the note's
+    /// reference is read; no name leads here.)
+    case note
 
     /// Whether the text of the destination is read by nobody: skipped
     /// groups and attachments.
     var isUnread: Bool {
         self == .skipped || self == .attachment || self == .shape
+    }
+
+    /// Whether the text of the destination is the document's own words,
+    /// set in paragraphs: the body and a note.
+    var isBody: Bool {
+        self == .body || self == .note || self == .box
     }
 
     /// The destination the control word `name` starts when it is the first
@@ -67,7 +83,7 @@ enum RTFDestination: Equatable {
         // Destinations that hold nothing a listener should hear.
         let skippedNames = [
             "colortbl", "pict", "object", "header", "headerl", "headerr", "headerf",
-            "footer", "footerl", "footerr", "footerf", "footnote", "fldinst",
+            "footer", "footerl", "footerr", "footerf", "fldinst",
             "annotation", "comment", "atnauthor", "atndate", "atnid", "atnref", "atntime",
             "atrfend", "atrfstart", "bkmkstart", "bkmkend", "private",
             "nonshppict", "shppict", "falt", "panose", "fontemb", "fontfile",
@@ -112,6 +128,13 @@ struct RTFGroupState: Equatable {
     var isItalic = false
     /// Hidden text, `\v`, which is not read.
     var isHidden = false
+    /// Text a tracked change deleted or moved away, `\deleted` and `\mvf`,
+    /// which is not read (text a change inserted, `\revised`, is, and moved
+    /// text is read where it was moved to, `\mvt`). Microsoft's table lists
+    /// `\deleted` with the character formatting properties, so `\plain`
+    /// brings the text back, as the group that set it ending, or `\deleted0`,
+    /// does.
+    var isDeleted = false
     /// The font size in half points, `\fsN`; 24 (12 points) until set.
     var fontSize = RTFGroupState.defaultFontSize
     /// The font in force, `\fN`; nil until one is set, when the default
@@ -125,6 +148,12 @@ struct RTFGroupState: Equatable {
     /// The font size `\plain` and a new document use: 12 points.
     static let defaultFontSize = 24
 
+    /// Whether the text now is read by nobody: hidden by `\v`, or deleted
+    /// by a tracked change. One place for the rule, so that the words, the
+    /// line breaks, the page and section breaks, and the notes referred to
+    /// all follow it. (A paragraph mark is not read in any case.)
+    var isUnreadRun: Bool { isHidden || isDeleted }
+
     /// `\plain`: the character formatting back to its defaults. (The
     /// paragraph's properties and the destination are not character
     /// formatting.)
@@ -132,6 +161,7 @@ struct RTFGroupState: Equatable {
         isBold = false
         isItalic = false
         isHidden = false
+        isDeleted = false
         fontSize = Self.defaultFontSize
         font = nil
     }
