@@ -705,6 +705,53 @@ final class ContentIndexValidationTests: XCTestCase {
         XCTAssertNil(try multiFileIndex(in: folder).validationFailure(for: .audio, audioBaseURL: folder))
     }
 
+    /// A symbolic link among the tracks is passed over, and nothing else is:
+    /// asking the enumerator to skip a link's "descendants" skips the rest of
+    /// the folder being listed, and the next folder's tracks with it. Many
+    /// links stand among many tracks, so whichever order the folder lists
+    /// them in, a link comes before some track.
+    func testALinkAmongTheTracksHidesNoOtherTrack() throws {
+        let folder = try scratchFolder("ContentIndexLinksAmongTracks")
+        let realNames = (1...12).map { String(format: "t%02d.wav", $0) } + ["Disc 2/d01.wav", "Disc 2/d02.wav"]
+        try createFiles(realNames, in: folder)
+        let target = folder.appendingPathComponent("t01.wav")
+        for index in 1...12 {
+            try FileManager.default.createSymbolicLink(
+                at: folder.appendingPathComponent(String(format: "l%02d.wav", index)),
+                withDestinationURL: target
+            )
+        }
+
+        let found = try AudioBookParser.audioFiles(in: folder).map { $0.path.replacingOccurrences(of: folder.path + "/", with: "") }
+
+        XCTAssertEqual(Set(found), Set(realNames))
+    }
+
+    /// The import's two walks over a folder pass over links the same way:
+    /// the count of the files held counts every regular file, and the search
+    /// for a DAISY book beneath a folder still finds one after a link.
+    func testTheImportWalksPassOverALinkWithoutSkippingTheRest() throws {
+        let folder = try scratchFolder("ImportWalksLinks")
+        let noteNames = (1...12).map { String(format: "n%02d.txt", $0) } + ["Disc 2/m01.txt", "Disc 2/m02.txt"]
+        try createFiles(noteNames, in: folder)
+        // Three DAISY books, each in a folder of its own, among the links:
+        // the search has found none unless it passed the links.
+        try createFiles(["Talking1/ncc.html", "Talking2/ncc.html", "Talking3/ncc.html"], in: folder)
+        XCTAssertTrue(DAISYParser.isDAISYDirectory(url: folder.appendingPathComponent("Talking1")))
+        for index in 1...12 {
+            try FileManager.default.createSymbolicLink(
+                at: folder.appendingPathComponent(String(format: "l%02d", index)),
+                withDestinationURL: folder.appendingPathComponent("n01.txt")
+            )
+        }
+
+        let held = FileImportService.filesHeld(by: folder)
+
+        // The notes, and the three ncc.html files.
+        XCTAssertEqual(held.total, noteNames.count + 3)
+        XCTAssertTrue(FileImportService.holdsDAISYBookBeneath(folder))
+    }
+
     /// A folder, even one inside the book's folder, is not a playable file.
     func testAudioPathNamingAFolderIsRejected() throws {
         let folder = try audioFolder()
@@ -1428,6 +1475,16 @@ final class ContentIndexValidationTests: XCTestCase {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
         return folder
+    }
+
+    /// Create the empty files at `relativePaths` inside `folder`, creating
+    /// the folders they need.
+    private func createFiles(_ relativePaths: [String], in folder: URL) throws {
+        for path in relativePaths {
+            let url = folder.appendingPathComponent(path)
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            XCTAssertTrue(FileManager.default.createFile(atPath: url.path, contents: Data()))
+        }
     }
 
     /// Replace the file at `relativePath` inside `folder` with a symbolic

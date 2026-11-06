@@ -1291,7 +1291,7 @@ enum FileImportService {
     /// The visible files anywhere in `folder`, counted by kind: hidden
     /// files, Finder's __MACOSX folder, and symbolic links are passed over,
     /// as the tracks' discovery passes over them.
-    private static func filesHeld(by folder: URL) -> NonBookFiles {
+    static func filesHeld(by folder: URL) -> NonBookFiles {
         var files = NonBookFiles()
         let keys: Set<URLResourceKey> = [.isRegularFileKey, .isSymbolicLinkKey]
         guard let enumerator = FileManager.default.enumerator(
@@ -1301,10 +1301,14 @@ enum FileImportService {
         ) else { return files }
         for case let item as URL in enumerator {
             let values = try? item.resourceValues(forKeys: keys)
-            if item.lastPathComponent == "__MACOSX" || values?.isSymbolicLink == true {
+            // Only a skipped folder's contents are skipped; a symbolic link
+            // is passed over without that call, which on a link to a file
+            // would skip the rest of the folder being walked.
+            if item.lastPathComponent == "__MACOSX" {
                 enumerator.skipDescendants()
                 continue
             }
+            if values?.isSymbolicLink == true { continue }
             if values?.isRegularFile == true {
                 files.add(item)
             }
@@ -1336,7 +1340,7 @@ enum FileImportService {
     /// top level is not checked: `BookFormat.detect` has done that. Finder's
     /// __MACOSX folder, hidden items, and symbolic links are passed over, as
     /// `filesHeld(by:)` and the tracks' discovery pass over them.
-    private static func holdsDAISYBookBeneath(_ folder: URL) -> Bool {
+    static func holdsDAISYBookBeneath(_ folder: URL) -> Bool {
         let keys: Set<URLResourceKey> = [.isDirectoryKey, .isSymbolicLinkKey]
         guard let enumerator = FileManager.default.enumerator(
             at: folder,
@@ -1345,10 +1349,14 @@ enum FileImportService {
         ) else { return false }
         for case let item as URL in enumerator {
             let values = try? item.resourceValues(forKeys: keys)
-            if item.lastPathComponent == "__MACOSX" || values?.isSymbolicLink == true {
+            // Only a skipped folder's contents are skipped; a symbolic link
+            // is passed over without that call, which on a link to a file
+            // would skip the rest of the folder being walked.
+            if item.lastPathComponent == "__MACOSX" {
                 enumerator.skipDescendants()
                 continue
             }
+            if values?.isSymbolicLink == true { continue }
             if values?.isDirectory == true, DAISYParser.isDAISYDirectory(url: item) {
                 return true
             }

@@ -116,10 +116,15 @@ enum AudioBookParser {
         var files: [URL] = []
         for case let file as URL in enumerator {
             let values = try file.resourceValues(forKeys: keys)
-            if file.lastPathComponent == "__MACOSX" || values.isSymbolicLink == true {
+            // Only a skipped folder's contents are skipped. A symbolic link
+            // is passed over without that call: on a link to a file it
+            // skips the rest of the folder being listed, and the next
+            // folder's tracks with it, and a link to a folder is not entered.
+            if file.lastPathComponent == "__MACOSX" {
                 enumerator.skipDescendants()
                 continue
             }
+            if values.isSymbolicLink == true { continue }
             guard values.isRegularFile == true else { continue }
             let fileExtension = file.pathExtension.lowercased()
             switch scan {
