@@ -202,8 +202,8 @@ final class KFXHostileFileTests: XCTestCase {
         assertRefusedQuickly("missing sections") { try KFXBook(bytes: bytes) }
     }
 
-    func testAContentListOfMillionsOfEmptyStringsCostsNoMoreThanItsBytes() throws {
-        // A content fragment whose list claims a huge length is refused by Ion before it is allocated.
+    func testAFragmentWhoseStructDeclaresAHugeLengthIsRefusedBeforeAnythingIsAllocated() throws {
+        // A content fragment whose struct claims a huge length is refused by Ion before anything is allocated.
         var book = KFXTestBook()
         book.sections = [("c0", [.text("Real.")])]
         let bytes = book.build { builder in

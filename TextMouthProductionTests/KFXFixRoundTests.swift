@@ -469,6 +469,34 @@ final class KFXFixRoundTests: XCTestCase {
         XCTAssertEqual(try KFXBook(bytes: bytes).sections[0].html, "<p>Alpha.</p><p>Alpha.</p>")
     }
 
+    /// Storylines that expand one another reach the walk's own depth guard
+    /// (nodes nested in the Ion reach Ion's cap first, so this is the way to it).
+    func testAChainOfStorylinesPastTheDepthLimitIsRefusedByTheWalk() throws {
+        func chain(_ length: Int) -> [UInt8] {
+            var book = single([.text("Start.")])
+            return book.build { builder in
+                let names = (1...length).map { "chain_\($0)" }
+                builder.localSymbols += names
+                let first = builder.entities.firstIndex { $0.type == 259 }!
+                builder.entities[first].value = .structure([
+                    (176, .symbol(builder.id(of: "story_c0"))),
+                    (146, .list([.structure([(155, .int(1)), (159, .symbol(270)), (176, .symbol(builder.id(of: names[0])))])])),
+                ])
+                for (index, name) in names.enumerated() {
+                    var node: [(Int, IonOut)] = [(155, .int(Int64(10 + index))), (159, .symbol(270))]
+                    if index + 1 < names.count { node.append((176, .symbol(builder.id(of: names[index + 1])))) }
+                    else { node.append((145, .string("End of the chain."))) }
+                    builder.entities.append(.init(id: builder.id(of: name), type: 259, value: .structure([
+                        (176, .symbol(builder.id(of: name))), (146, .list([.structure(node)])),
+                    ])))
+                }
+            }
+        }
+        XCTAssertNoThrow(try KFXBook(bytes: chain(KFXWalk.maximumDepth - 5)))
+        let error = assertRefusedQuickly("chain of storylines") { try KFXBook(bytes: chain(KFXWalk.maximumDepth + 10)) }
+        XCTAssertTrue(error?.localizedDescription.contains("nest too deeply") == true, "\(String(describing: error))")
+    }
+
     func testLowerAlphaAndUpperRomanListsAreNumbered() {
         XCTAssertTrue(KFXSymbol.orderedListStyles.isSuperset(of: [343, 345, 346]))
     }
