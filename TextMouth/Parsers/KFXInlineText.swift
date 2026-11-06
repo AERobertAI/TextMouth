@@ -118,6 +118,10 @@ struct KFXInlineText {
             cuts.insert(range.upperBound)
         }
         let boundaries = cuts.sorted()
+        // The ranges left out do not overlap in a sound book; sorted, one pass
+        // along the boundaries finds the one a piece falls in.
+        skipped.sort { $0.lowerBound < $1.lowerBound }
+        var nextSkipped = 0
 
         var html = ""
         var open = Marks()
@@ -131,7 +135,8 @@ struct KFXInlineText {
             guard index + 1 < boundaries.count else { break }
             let end = boundaries[index + 1]
             // An inline node is not left out with the text beside it.
-            if skipped.contains(where: { $0.contains(start) }) { continue }
+            while nextSkipped < skipped.count, skipped[nextSkipped].upperBound <= start { nextSkipped += 1 }
+            if nextSkipped < skipped.count, skipped[nextSkipped].contains(start) { continue }
             var current = marks(over: start, in: parsed)
             current.isBold = current.isBold || context.baseBold
             current.isItalic = current.isItalic || context.baseItalic

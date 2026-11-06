@@ -1,4 +1,5 @@
 import XCTest
+import os
 @testable import TextMouth
 
 /// The fix round of the KFX reader (FMT52, after the review of November 6):
@@ -182,11 +183,20 @@ final class KFXFixRoundTests: XCTestCase {
         try FileManager.default.createDirectory(at: sdr, withIntermediateDirectories: true)
         let pipe = sdr.appendingPathComponent("pipe.kfx")
         XCTAssertEqual(mkfifo(pipe.path, 0o600), 0)
-        // A pipe with no writer would block an open for good: this returns at once.
-        try assertQuick("pipe") {
-            XCTAssertEqual(try? KFXSignature.kind(ofFileAt: pipe), .other)
-            XCTAssertEqual(try KFXParser.prepareBook(url: main).chapters.count, 1)
+        // A pipe with no writer would block an open for good: the read runs on
+        // a queue, and the test waits for it a few seconds, not for ever.
+        let finished = DispatchSemaphore(value: 0)
+        let outcome = OSAllocatedUnfairLock(initialState: (kind: KFXSignature.Kind.container, chapters: -1))
+        DispatchQueue.global().async {
+            let kind = (try? KFXSignature.kind(ofFileAt: pipe)) ?? .container
+            let chapters = (try? KFXParser.prepareBook(url: main).chapters.count) ?? 0
+            outcome.withLock { $0 = (kind, chapters) }
+            finished.signal()
         }
+        XCTAssertEqual(finished.wait(timeout: .now() + 5), .success, "reading beside a named pipe hung")
+        let result = outcome.withLock { $0 }
+        XCTAssertEqual(result.kind, .other)
+        XCTAssertEqual(result.chapters, 1)
     }
 
     // MARK: - Finding 7: protected is told before size
@@ -295,32 +305,47 @@ final class KFXFixRoundTests: XCTestCase {
 
     // MARK: - Finding 10: a cut is not a chapter
 
-    func testASectionNoOneBeganJoinsTheChapterBeforeIt() throws {
+    func testASectionThatBeginsNothingJoinsTheChapterBeforeIt() throws {
         var book = KFXTestBook()
         book.sections = [
             (name: "c0", nodes: [.text("One", heading: 1), .text("First part.")]),
             (name: "c1", nodes: [.text("Second part, cut by a page break.")]),
             (name: "c2", nodes: [.text("Two", heading: 1), .text("Another.")]),
         ]
-        let bytes = book.build { builder in
-            // The producer marks the sections its author began (not c1).
-            for name in ["c0", "c2"] {
-                builder.localSymbols.append(name + "-ad")
-                builder.add(type: 597, name: name + "-ad", .structure([
-                    (258, .list([.structure([(492, .string("IS_TARGET_SECTION")), (307, .bool(true))])])),
-                ]))
-            }
-        }
-        let prepared = try KFXParser.prepareBook(bytes: bytes, fallbackTitle: "T")
+        let prepared = try prepare(book)
         XCTAssertEqual(prepared.chapters.map(\.chapter.title), ["One", "Two"])
-        XCTAssertFalse(prepared.chapters.contains { $0.chapter.title.hasPrefix("Chapter") })
         XCTAssertTrue(prepared.chapters[0].chapter.text.contains("Second part"))
     }
 
-    func testABookWhoseProducerMarksNoSectionsIsNotJoined() throws {
+    func testAContentsEntryAtASectionsStartBeginsAChapterAndOneDeeperDoesNot() throws {
         var book = KFXTestBook()
-        book.sections = [(name: "c0", nodes: [.text("First.")]), (name: "c1", nodes: [.text("Second.")])]
-        XCTAssertEqual(try prepare(book).chapters.count, 2)
+        book.sections = [
+            (name: "c0", nodes: [.text("Alpha.")]),
+            (name: "c1", nodes: [.text("Beta."), .text("Gamma.")]),
+            (name: "c2", nodes: [.text("Delta.")]),
+        ]
+        // ids: Alpha 801, Beta 802, Gamma 803, Delta 804. Entries: Alpha (start of c0), Beta (start of c1), Gamma (deeper, in c1).
+        book.navigation = { ids in
+            kfxNavigation(type: 212, [(label: "First", node: ids[0], offset: 0), (label: "Second", node: ids[1], offset: 0), (label: "Deep", node: ids[2], offset: 0)])
+        }
+        let prepared = try prepare(book)
+        // c2 begins nothing and joins c1.
+        XCTAssertEqual(prepared.chapters.map(\.chapter.title), ["First", "Second"])
+        XCTAssertEqual(prepared.chapters[1].chapter.headings.map(\.text), ["Second", "Deep"])
+        XCTAssertTrue(prepared.chapters[1].chapter.text.contains("Delta"))
+    }
+
+    func testABookWithNoContentsAndNoHeadingsIsOneChapterWithNoHeadingMadeUp() throws {
+        var book = KFXTestBook()
+        book.sections = [
+            (name: "c0", nodes: [.text("First words.")]), (name: "c1", nodes: [.text("Second words.")]),
+            (name: "c2", nodes: [.text("Third words.")]),
+        ]
+        let prepared = try prepare(book)
+        XCTAssertEqual(prepared.chapters.count, 1)
+        XCTAssertEqual(prepared.chapters[0].chapter.headings.count, 0)
+        XCTAssertFalse(prepared.chapters[0].markdown.contains("textmouth-heading"))
+        XCTAssertEqual(try words(book), ["First", "words.", "Second", "words.", "Third", "words."])
     }
 
     // MARK: - Finding 13: authors

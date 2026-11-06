@@ -75,7 +75,7 @@ enum KFXPackage {
     ///   too many containers, or holds a member larger than it records;
     ///   `DocumentTooLargeError` for a member or a set past the limits; what
     ///   `KFXContainer.init(bytes:)` throws for a member that is not a sound container.
-    static func containers(inArchiveAt url: URL) throws -> [KFXContainer] {
+    static func containers(inArchiveAt url: URL, totalLimit: Int64 = KFXPackage.maximumTotalBytes) throws -> [KFXContainer] {
         guard let archive = Archive.openedForReading(at: url) else {
             throw MOBIError.damaged("the set's archive does not open")
         }
@@ -104,7 +104,7 @@ enum KFXPackage {
                 throw MOBIError.damaged("a file in the set does not inflate")
             }
             total += Int64(bytes.count)
-            guard total <= maximumTotalBytes else { throw DocumentTooLargeError(limit: maximumTotalBytes) }
+            guard total <= totalLimit else { throw DocumentTooLargeError(limit: totalLimit) }
             containers.append(try KFXContainer(bytes: [UInt8](bytes)))
         }
         return containers

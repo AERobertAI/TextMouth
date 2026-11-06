@@ -142,7 +142,7 @@ enum MOBIParser {
         )
         guard !chapter.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
 
-        if chapter.headings.first?.characterOffset != 0 {
+        if section.title != nil || section.addsStartHeading, chapter.headings.first?.characterOffset != 0 {
             // A chapter that starts with no heading (or only a later one)
             // still needs a start entry. It is kept as metadata, never as
             // text, so nothing is added to what is read aloud.
