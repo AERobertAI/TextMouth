@@ -217,6 +217,9 @@ enum TextPipelineFixtures {
         for name in formatSampleNames where name.hasPrefix("format-samples/docx/libreoffice-") {
             heldBack[name] = "read by name in DOCXRealFileTests instead of a golden"
         }
+        for name in formatSampleNames where name.hasPrefix("format-samples/doc6/") {
+            heldBack[name] = "Word 6 and Word 95 files read by WordDocumentLegacyTests and compared with textutil's reading in WordDocumentLegacyComparisonTests (the hostile ones by WordDocumentLegacyHostileTests) instead of a golden"
+        }
         for name in wordFollowUpSamples {
             heldBack[name] = "pinned by WordDocumentReaderTests and compared with textutil's reading in WordDocumentComparisonTests instead of a golden"
         }
