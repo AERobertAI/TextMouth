@@ -490,13 +490,18 @@ final class PageNavigationTests: XCTestCase {
 
     /// A key the user gave one of the removed commands is left out of the
     /// record of their edits, with a line saying why, and every other edit
-    /// in the record is kept.
+    /// in the record is kept. The record is in the store's own form, where
+    /// each key is an object; only `config.json` writes keys as "control+g".
     func testAKeyGivenToARemovedPageCommandIsLeftOut() throws {
         let record = #"""
-            {"Next Page": ["control+n"], "Go to Page…": ["control+g"]}
+            {
+              "Next Page": [{"key": "n", "command": false, "option": false, "shift": false, "control": true}],
+              "Go to Page…": [{"key": "g", "command": false, "option": false, "shift": false, "control": true}]
+            }
             """#
         let reading = ShortcutEdits.reading(try XCTUnwrap(record.data(using: .utf8)))
         XCTAssertEqual(reading.skipped.map(\.name), ["Next Page"])
+        XCTAssertEqual(reading.skipped.first?.reason, "names nothing TextMouth knows; leaving it out")
         XCTAssertEqual(
             reading.edits.keys(of: .goToPage),
             [KeyBinding(key: "g", control: true)]
