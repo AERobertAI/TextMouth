@@ -28,9 +28,11 @@ struct KFXSymbols: Equatable {
     /// (which is handled, never a trap). The same name stands for the same
     /// symbol in the book's other containers, whose numbers differ.
     func name(of id: Int) -> String {
-        let index = id - sharedMaximum - 1
-        if id > sharedMaximum, local.indices.contains(index) {
-            return local[index]
+        // The index is worked out only for an id past the shared symbols, so
+        // no id from a file (Int.min included) can overflow the subtraction.
+        if id > sharedMaximum {
+            let index = id - sharedMaximum - 1
+            if local.indices.contains(index) { return local[index] }
         }
         return "$\(id)"
     }

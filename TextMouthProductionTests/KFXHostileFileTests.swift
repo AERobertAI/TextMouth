@@ -147,6 +147,50 @@ final class KFXHostileFileTests: XCTestCase {
         XCTAssertEqual(words, ["Alpha", "beta", "gamma."])
     }
 
+    func testTheExtremeIntegersAnIonFileCanHoldNeverTrapAnyArithmetic() throws {
+        let extremes: [Int64] = [Int64.min, Int64.min + 1, -1, 0, Int64.max, Int64.max - 1]
+        // Symbols, runs, link positions, and navigation offsets at the extremes.
+        for value in extremes {
+            var book = KFXTestBook()
+            book.sections = [("c0", [.text("Alpha beta gamma.", runs: [
+                .init(start: Int(value), length: Int(value), style: "bold"),
+                .init(start: 2, length: Int(value), style: "bold"),
+                .init(start: Int(value), length: 3, style: "italic"),
+            ])])]
+            book.anchors = ["x": (url: nil, node: Int(value), offset: Int(value))]
+            book.navigation = { ids in
+                func unit(_ label: String, _ node: Int64) -> IonOut {
+                    let label: IonOut = .structure([(244, .string(label))])
+                    let position: IonOut = .structure([(155, .int(node)), (143, .int(value))])
+                    return .annotated([393], .structure([(241, label), (246, position)]))
+                }
+                func container(_ type: Int, _ unit: IonOut) -> IonOut {
+                    .annotated([391], .structure([(235, .symbol(type)), (247, .list([unit]))]))
+                }
+                let containers: [IonOut] = [
+                    container(212, unit("T", Int64(ids[0]))),
+                    container(237, unit("9", value)),
+                ]
+                return .list([.structure([(178, .symbol(351)), (392, .list(containers))])])
+            }
+            let bytes = { var copy = book; return copy.build() }()
+            // Whatever it does, it does not trap, and a book that reads keeps its words.
+            if let prepared = try? KFXParser.prepareBook(bytes: bytes, fallbackTitle: "T") {
+                XCTAssertEqual(
+                    prepared.chapters.flatMap { $0.chapter.text.split(whereSeparator: \.isWhitespace).map(String.init) },
+                    ["Alpha", "beta", "gamma."], "\(value)")
+            }
+        }
+    }
+
+    func testSymbolNamesAtTheExtremeIdsNeverTrap() {
+        for symbols in [KFXSymbols.sharedOnly, KFXSymbols(sharedMaximum: 859, local: ["a"]), KFXSymbols(sharedMaximum: Int.max, local: ["a"])] {
+            for id in [Int.min, Int.min + 1, -1, 0, 1, 859, 860, Int.max - 1, Int.max] {
+                _ = symbols.name(of: id)
+            }
+        }
+    }
+
     func testAReadingOrderNamingManySectionsThatAreNotThereIsDamageQuickly() throws {
         var book = KFXTestBook()
         book.sections = [("c0", [.text("Real.")])]
