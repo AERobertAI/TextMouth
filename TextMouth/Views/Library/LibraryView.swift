@@ -1971,12 +1971,13 @@ struct LibraryView: View {
     /// Move the currently selected book up or down in the order the list
     /// shows. Only works when a single book is selected and the list shows
     /// an order the user arranges: one folder's manual order (TODO A06), or
-    /// the reading list (FR09). Announces the result to VoiceOver.
+    /// the reading list (FR09). Announces the result to VoiceOver, and when
+    /// the move cannot be made, says why rather than staying silent
+    /// (`LibraryViewModel.moveSelection(_:direction:in:)`).
     private func moveSelectedBookInManualOrder(direction: Int) {
-        guard let target = reorderTarget else { return }
-        let ids = effectiveSelection
-        guard ids.count == 1, let bookID = ids.first else { return }
-        moveBook(bookID, direction: direction, in: target)
+        announceToVoiceOver(
+            libraryViewModel.moveSelection(effectiveSelection, direction: direction, in: reorderTarget)
+        )
     }
 
     /// Moves a book one place up (-1) or down (+1) in `target`, which saves

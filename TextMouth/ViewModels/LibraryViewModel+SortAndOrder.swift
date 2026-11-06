@@ -41,6 +41,23 @@ enum ManualBookOrder {
         "\(title) can't move \(direction < 0 ? "up" : "down")."
     }
 
+    /// What VoiceOver says when Move Book Up or Move Book Down is used
+    /// where the list shows no order the user arranges: in a folder not
+    /// sorted by Manual Order, in All Items or Recent, or in a view listing
+    /// only feeds. It names what is wrong and the way to set it right.
+    static let noArrangedOrderAnnouncement =
+        "Books can be moved only in a folder sorted by Manual Order, or in the Reading List. "
+        + "Choose Manual Order in the Sort menu, then try again."
+
+    /// What VoiceOver says when Move Book Up or Move Book Down is used with
+    /// no book selected.
+    static let noBookToMoveAnnouncement = "No book is selected. Select the book to move, then try again."
+
+    /// What VoiceOver says when Move Book Up or Move Book Down is used with
+    /// several books selected, since a move shifts one book one place.
+    static let severalBooksToMoveAnnouncement =
+        "Several books are selected, and a move shifts one book at a time. Select just one book, then try again."
+
     /// The books in `folderPath`, in the folder's manual order exactly as
     /// the list shows it: by manual position, then title, then book ID
     /// (`LibraryBookSorter`). Moving a book up or down, dragging, and
@@ -310,6 +327,28 @@ extension LibraryViewModel {
             guard let way = ReadingList.Direction(step: direction) else { return nil }
             return moveInReadingList(bookID: bookID, direction: way)
         }
+    }
+
+    /// Moves the one book in `selection` one place up (-1) or down (+1) in
+    /// `target`, as Move Book Up and Move Book Down do from the Library menu
+    /// and the keyboard, and returns what VoiceOver should say. A command
+    /// that cannot act never stays silent, since nothing on the screen tells
+    /// a listener it did nothing: the returned sentence says why, whether
+    /// there is no order to arrange (`target` nil), no book or several are
+    /// selected, or the book is at the edge.
+    ///
+    /// - Parameters:
+    ///   - selection: The books selected.
+    ///   - direction: -1 for up, +1 for down.
+    ///   - target: What the list shows to arrange, or nil when nothing.
+    func moveSelection(_ selection: Set<UUID>, direction: Int, in target: LibraryReorderTarget?) -> String {
+        guard let target else { return ManualBookOrder.noArrangedOrderAnnouncement }
+        guard let bookID = selection.first else { return ManualBookOrder.noBookToMoveAnnouncement }
+        guard selection.count == 1 else { return ManualBookOrder.severalBooksToMoveAnnouncement }
+        if let result = moveBook(bookID, direction: direction, in: target) {
+            return result.announcement
+        }
+        return ManualBookOrder.cannotMoveAnnouncement(bookByID(bookID)?.title ?? "The book", direction: direction)
     }
 
     /// Moves the books at `source` to `destination` in `target`, as a drag

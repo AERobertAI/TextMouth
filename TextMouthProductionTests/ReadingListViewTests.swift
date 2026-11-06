@@ -286,6 +286,47 @@ final class ReadingListViewTests: XCTestCase {
         XCTAssertEqual(ManualBookOrder.cannotMoveAnnouncement("Dune", direction: 1), "Dune can't move down.")
     }
 
+    /// Move Book Up and Move Book Down from the Library menu and the
+    /// keyboard never stay silent: where the list shows no order to arrange,
+    /// with no book or several selected, or with the book at the edge, the
+    /// sentence says why, and a move that is made says what moved (the
+    /// follow-up noted with TODO A06: "do nothing silently").
+    @MainActor
+    func testMoveCommandsAlwaysSayWhatHappened() {
+        let shelf = Self.shelf()
+        shelf.model.addToReadingList(shelf.ids("Field Notes", "Loose Pages"))
+        let fieldNotes = shelf.id("Field Notes")
+        let loosePages = shelf.id("Loose Pages")
+
+        // No order the user arranges here.
+        XCTAssertEqual(
+            shelf.model.moveSelection([fieldNotes], direction: 1, in: nil),
+            ManualBookOrder.noArrangedOrderAnnouncement
+        )
+        XCTAssertTrue(ManualBookOrder.noArrangedOrderAnnouncement.contains("Manual Order"))
+        // Nothing selected, and several selected.
+        XCTAssertEqual(
+            shelf.model.moveSelection([], direction: 1, in: .readingList),
+            ManualBookOrder.noBookToMoveAnnouncement
+        )
+        XCTAssertEqual(
+            shelf.model.moveSelection([fieldNotes, loosePages], direction: 1, in: .readingList),
+            ManualBookOrder.severalBooksToMoveAnnouncement
+        )
+        // At the top, the book cannot move up, and the order is unchanged.
+        XCTAssertEqual(
+            shelf.model.moveSelection([fieldNotes], direction: -1, in: .readingList),
+            "Field Notes can't move up."
+        )
+        XCTAssertEqual(shelf.model.library.readingList.bookIDs, [fieldNotes, loosePages])
+        // A move that can be made says what moved, and does it.
+        XCTAssertEqual(
+            shelf.model.moveSelection([loosePages], direction: -1, in: .readingList),
+            "Moved Loose Pages above Field Notes"
+        )
+        XCTAssertEqual(shelf.model.library.readingList.bookIDs, [loosePages, fieldNotes])
+    }
+
     // MARK: - The Edit-Mode Bar
 
     /// The edit-mode bar offers the reading list's commands for the
