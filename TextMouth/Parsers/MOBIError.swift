@@ -19,9 +19,6 @@ enum MOBIError: LocalizedError, Equatable {
     /// 0) or carries DRM (the MOBI header's DRM offset is not 0xFFFFFFFF).
     /// TextMouth never removes copy protection, and no code may try.
     case copyProtected
-    /// The book is in the newer KF8 format (MOBI header version 8 and
-    /// later), which is the next task (FMT48), not this reader's.
-    case kf8Only
     /// The text is compressed in a way this reader does not read: a
     /// compression type no one defined (PalmDOC and HUFF/CDIC are read).
     case unsupportedCompression
@@ -34,8 +31,6 @@ enum MOBIError: LocalizedError, Equatable {
             return "This Kindle book is damaged or incomplete: \(detail). Get a fresh copy of the book, then import it again."
         case .copyProtected:
             return "This Kindle book is copy-protected, and TextMouth can't read copy-protected books."
-        case .kf8Only:
-            return "This Kindle book is in the newer KF8 format, which TextMouth can't read yet."
         case .unsupportedCompression:
             return "This Kindle book is compressed in a way TextMouth can't read yet."
         }

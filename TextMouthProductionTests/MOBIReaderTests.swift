@@ -113,12 +113,6 @@ final class MOBIReaderTests: XCTestCase {
             sentence: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books.")
     }
 
-    func testTheKF8SampleIsRefusedAsKF8() throws {
-        assertRefused(
-            try copyOfFormatSample("mobi/pg1952-yellow-wallpaper-kf8.mobi"), .kf8Only,
-            sentence: "This Kindle book is in the newer KF8 format, which TextMouth can't read yet.")
-    }
-
     // MARK: - The metadata
 
     func testTheMetadataOfEachSampleReadsWithoutTheText() throws {
@@ -137,7 +131,7 @@ final class MOBIReaderTests: XCTestCase {
     func testKindleBooksAreRecognizedByTheirExtensions() throws {
         XCTAssertEqual(BookFormat.mobi.rawValue, "mobi")
         XCTAssertEqual(BookFormat.mobi.displayName, "Kindle Book (MOBI)")
-        // An .azw3 is a Kindle book in KF8 (FMT48), named for the reader that reads it.
+        // An .azw3 is a Kindle book in KF8 (FMT48), which the same reader reads.
         for name in ["a.mobi", "a.MOBI", "a.prc", "a.azw", "a.azw3", "a.AZW3"] {
             XCTAssertEqual(BookFormat.detect(from: URL(fileURLWithPath: "/tmp/\(name)")), .mobi, name)
         }
@@ -189,12 +183,10 @@ final class MOBIReaderTests: XCTestCase {
         ])
     }
 
-    func testImportingTheProtectedAndKF8SamplesFailsWithTheirSentences() throws {
+    func testImportingTheProtectedSampleFailsWithItsSentence() throws {
         for (sample, sentence) in [
             ("mobi/yellow-wallpaper-drm-flagged-synthetic.mobi",
              "This Kindle book is copy-protected, and TextMouth can't read copy-protected books."),
-            ("mobi/pg1952-yellow-wallpaper-kf8.mobi",
-             "This Kindle book is in the newer KF8 format, which TextMouth can't read yet."),
         ] {
             let url = try copyOfFormatSample(sample)
             XCTAssertThrowsError(try FileImportService.importFileWithReport(from: url), sample) {

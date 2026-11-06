@@ -92,7 +92,7 @@ enum MOBIMarkup {
     /// letter, `/`, `!`, or `?`; any other `<` is text. A quoted attribute
     /// value (the quote right after `=`) may hold a `>`, and a comment ends
     /// at `-->`. A tag that never ends runs to the end of the range.
-    private static func forEachTag(in text: [UInt8], within range: Range<Int>, _ body: (Range<Int>) -> Void) {
+    static func forEachTag(in text: [UInt8], within range: Range<Int>, _ body: (Range<Int>) -> Void) {
         var position = range.lowerBound
         let end = range.upperBound
         while position < end {

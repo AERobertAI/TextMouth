@@ -701,7 +701,7 @@ enum MarkdownCacheService {
         case .daisy:
             markdown = try DAISYParser.extractMarkdown(from: url, includesPages: includesPages)
         case .mobi:
-            return extractFromKindle(try MOBIParser.prepareBook(url: url))
+            return extractFromKindle(try MOBIParser.prepareBook(url: url, includesPages: includesPages))
         case .kfx:
             return extractFromKindle(try KFXParser.prepareBook(url: url, includesPages: includesPages))
         case .pdf:
@@ -731,9 +731,9 @@ enum MarkdownCacheService {
     /// A Kindle book (FMT42, FMT52) read by `MOBIParser` or `KFXParser`:
     /// chapter markers preserve its chapters, and heading annotations its
     /// deeper entries, without inserting any extra text into the book, as an
-    /// EPUB's do. A MOBI book has no print pages, so none are written
-    /// whatever `includesPages` says; a KFX book's own print page list is
-    /// written as pages with it.
+    /// EPUB's do. A MOBI 6 book has no print pages, so none are written
+    /// whatever `includesPages` says; a KF8 book's page-break elements and a
+    /// KFX book's own print page list are written as pages with it.
     private static func extractFromKindle(_ book: MOBIParser.PreparedBook) -> ExtractedCache {
         let markdown = book.chapters.map { prepared in
             "\(chapterMarker(title: prepared.chapter.title))\n\(prepared.markdown)"

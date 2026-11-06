@@ -6,9 +6,14 @@ import SwiftSoup
 /// before the shared HTML converter turns it into the reading text
 /// (`MOBIParser`).
 ///
+/// It reads MOBI 6 books and KF8 books (an .azw3, or a KF8 file named .mobi
+/// or .azw; the header's version decides, not the name). A hybrid file holds
+/// both: a MOBI 6 book first and, after the boundary EXTH 121 names, the same
+/// book in KF8 (`HybridChoice` says which is read).
+///
 /// It refuses what TextMouth does not read, in this order: a book that is
-/// encrypted or carries DRM (never removed), a KF8 book (the next format,
-/// FMT48), and a text compressed in a way not yet read.
+/// encrypted or carries DRM (never removed, and checked in both halves of a
+/// hybrid), and a text compressed in a way not read.
 struct MOBIBook {
 
     /// What the book says about itself.
@@ -44,27 +49,76 @@ struct MOBIBook {
         /// book with no contents and no headings) rather than "Chapter" and
         /// its number, which a MOBI book's does.
         var untitledTakesBookTitle = false
+        /// Whether the converter takes out the text of a navigation list the
+        /// section repeats, as it does for an EPUB's documents (a KF8 book's
+        /// documents are an EPUB's, a MOBI 6 book's are not).
+        var stripsDuplicateNavigation = false
     }
+
+    /// Which half of a hybrid file is read.
+    enum HybridChoice: Equatable {
+        /// The KF8 half, which keeps the book's structure; the MOBI 6 half
+        /// when the KF8 half does not read.
+        case kf8
+        /// The MOBI 6 half, which is what TextMouth read before KF8 was read.
+        case mobi6
+    }
+
+    /// The half of a hybrid file `init(bytes:)` reads: the KF8 half. On the
+    /// eight real hybrids read both ways (two made by Amazon's kindlegen, six
+    /// by calibre), the KF8 half had the same words as the MOBI 6 half, except
+    /// that the MOBI 6 half also read a contents page a converter added at the
+    /// end and the KF8 half also read a picture's description and a title
+    /// page that MOBI 6 had dropped; and it had at least as many headings in
+    /// all eight, at the levels the book's author gave them (the MOBI 6 half
+    /// of a calibre hybrid has every heading at level 1).
+    static let hybridChoice = HybridChoice.kf8
 
     var metadata: Metadata
     var sections: [Section]
+    /// Whether the book's print pages (the page-break elements of its
+    /// markup) are written: for a KF8 book, whose documents keep them as an
+    /// EPUB's do; a MOBI 6 book has none.
+    private(set) var includesPages = false
 
     // MARK: Opening
 
     /// Reads the book in `bytes`.
+    /// - Parameter hybrid: Which half of a hybrid file is read.
     /// - Throws: `MOBIError` for a file that is not a readable Kindle book
     ///   (see the type's comment for the refusals), `DocumentTooLargeError`
     ///   for a text past `DocumentByteLimit`, and `FileImportError.noTextToRead`
     ///   for a book without text.
-    init(bytes: [UInt8]) throws {
+    init(bytes: [UInt8], hybrid: HybridChoice = MOBIBook.hybridChoice) throws {
         let database = try MOBIPalmDatabase(bytes: bytes)
         let headers = try MOBIHeaders(
             record0: try database.record(0, "Record 0"),
             requiresMOBIHeader: database.type == MOBIPalmDatabase.mobiSignature.type
         )
-        try Self.refuseWhatIsNotRead(headers)
-        metadata = Self.metadata(of: headers, database: database)
+        try Self.refuseProtected(headers)
 
+        // The KF8 half of a hybrid, when the file is one. Its protection is
+        // looked at whether or not it is the half read: a file that is
+        // protected in either half is a protected book.
+        let second = Self.secondHalf(of: database, firstHeaders: headers)
+        if let second { try Self.refuseProtected(second.headers) }
+
+        if let second, hybrid == .kf8 {
+            do {
+                self = try Self.kf8Book(database: second.database, headers: second.headers, firstHeaders: headers)
+                return
+            } catch MOBIError.damaged {
+                // A KF8 half that does not read leaves the MOBI 6 half,
+                // which the file opens as. Any other error (a cancel, a
+                // text too large) is the book's, not the half's.
+            }
+        }
+        if headers.version >= 8 {
+            self = try Self.kf8Book(database: database, headers: headers, firstHeaders: nil)
+            return
+        }
+
+        metadata = Self.metadata(of: headers, database: database)
         let text = try MOBIText.bytes(of: database, headers: headers)
         // A plain PalmDOC book is plain text, unless the text is HTML.
         if headers.hasMOBIHeader || MOBIMarkup.looksLikeHTML(text) {
@@ -74,9 +128,37 @@ struct MOBIBook {
         }
     }
 
+    /// A book made of the KF8 book in `database`. For the KF8 half of a
+    /// hybrid, `firstHeaders` holds the MOBI 6 half's, which names the book
+    /// where the KF8 half does not.
+    private static func kf8Book(
+        database: MOBIPalmDatabase, headers: MOBIHeaders, firstHeaders: MOBIHeaders?
+    ) throws -> MOBIBook {
+        var metadata = Self.metadata(of: headers, database: database)
+        if let firstHeaders {
+            let first = Self.metadata(of: firstHeaders, database: database)
+            if metadata.title.isEmpty { metadata.title = first.title }
+            if metadata.author.isEmpty { metadata.author = first.author }
+            if metadata.language == nil { metadata.language = first.language }
+        }
+        let text = try MOBIText.bytes(of: database, headers: headers)
+        return MOBIBook(
+            metadata: metadata,
+            sections: try KF8Book.sections(of: text, headers: headers, database: database, bookTitle: metadata.title),
+            includesPages: true
+        )
+    }
+
+    /// A book made of its parts.
+    private init(metadata: Metadata, sections: [Section], includesPages: Bool) {
+        self.metadata = metadata
+        self.sections = sections
+        self.includesPages = includesPages
+    }
+
     /// What the book says about itself, read without its text. A book that
-    /// is protected, in KF8, or compressed in a way not read still names its
-    /// title and author.
+    /// is protected or compressed in a way not read still names its title
+    /// and author.
     /// - Throws: `MOBIError` for a file that is not a Kindle book.
     static func metadata(in bytes: [UInt8]) throws -> Metadata {
         let database = try MOBIPalmDatabase(bytes: bytes)
@@ -89,17 +171,31 @@ struct MOBIBook {
 
     // MARK: Refusals
 
-    /// Throws for a book this reader does not read, before any of its text
-    /// is touched. Copy protection comes first: TextMouth never removes it,
+    /// Throws for a book that is protected, before any of its text is
+    /// touched. Copy protection comes first: TextMouth never removes it,
     /// and says so rather than naming the book's other faults.
-    private static func refuseWhatIsNotRead(_ headers: MOBIHeaders) throws {
+    private static func refuseProtected(_ headers: MOBIHeaders) throws {
         // The encryption field is not 0, or the DRM offset is not
         // 0xFFFFFFFF: the book is protected.
         if headers.encryption != 0 || headers.hasDRM { throw MOBIError.copyProtected }
-        // Version 8 and later is KF8. A hybrid file's record 0 is its MOBI 6
-        // part (version 6, with an EXTH record 121 naming where the KF8 part
-        // begins), which is read; only a book that is all KF8 is refused.
-        if headers.version >= 8 { throw MOBIError.kf8Only }
+    }
+
+    // MARK: The Halves of a Hybrid
+
+    /// The KF8 half of a hybrid file: the database seen from the boundary
+    /// that EXTH 121 of the MOBI 6 half names, and the headers of the record
+    /// the boundary names. Nil for a book that is not a hybrid: one that is
+    /// KF8 throughout, one without a boundary, or one whose boundary does
+    /// not name a KF8 header (then the file is the MOBI 6 book it opens as).
+    private static func secondHalf(
+        of database: MOBIPalmDatabase, firstHeaders: MOBIHeaders
+    ) -> (database: MOBIPalmDatabase, headers: MOBIHeaders)? {
+        guard firstHeaders.version < 8, let boundary = firstHeaders.kf8BoundaryRecord, boundary > 0,
+              let half = try? database.starting(atRecord: boundary),
+              let record0 = try? half.record(0, "The second part's record 0"),
+              let headers = try? MOBIHeaders(record0: record0, requiresMOBIHeader: true),
+              headers.version >= 8 else { return nil }
+        return (half, headers)
     }
 
     // MARK: Metadata

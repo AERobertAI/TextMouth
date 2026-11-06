@@ -9,8 +9,10 @@ import Foundation
 /// become the chapters and, below them, headings kept as annotations
 /// (`MarkdownHeadingAnnotation`) that add no words to what is read aloud.
 ///
-/// A MOBI book has no print pages (an APNX file beside it would hold them,
-/// which is a later item), so none are written.
+/// A MOBI 6 book has no print pages (an APNX file beside it would hold them,
+/// which is a later item), so none are written. A KF8 book (FMT48) is made of
+/// the XHTML documents of an EPUB, and a page-break element in them is a page
+/// as it is in the EPUB (`KF8Book`).
 enum MOBIParser {
 
     /// A book read in its chapters: its names and the chapters that hold
@@ -42,14 +44,17 @@ enum MOBIParser {
     /// Opens the Kindle book at `url` and prepares each of its sections that
     /// holds text as a chapter. The direct reader and the Markdown cache both
     /// read a MOBI book here, so they hear the same words.
-    /// - Parameter fallbackTitle: The title for a book that names none; its
-    ///   file's name when nil.
+    /// - Parameters:
+    ///   - fallbackTitle: The title for a book that names none; its file's
+    ///     name when nil.
+    ///   - includesPages: Whether the print pages a KF8 book's page-break
+    ///     elements name are written; a MOBI 6 book has none, and a KFX book
+    ///     is read by `KFXParser`.
     /// - Throws: `MOBIError` for a file that is not a Kindle book TextMouth
-    ///   reads (copy-protected, KF8, or compressed in a way not read yet, or
-    ///   damaged), `DocumentTooLargeError` for one past `DocumentByteLimit`,
+    ///   reads (copy-protected, compressed in a way not read, or damaged), `DocumentTooLargeError` for one past `DocumentByteLimit`,
     ///   `FileImportError.noTextToRead` for one with no text, and
     ///   `ImportCancelled` when the import running it was cancelled.
-    static func prepareBook(url: URL, fallbackTitle: String? = nil) throws -> PreparedBook {
+    static func prepareBook(url: URL, fallbackTitle: String? = nil, includesPages: Bool = true) throws -> PreparedBook {
         try refuseProtectedKFX(at: url)
         let fileBytes = try bytes(of: url)
         // Kindle's apps name KFX books .azw: the bytes decide, not the name.
@@ -64,7 +69,8 @@ enum MOBIParser {
         let book = try MOBIBook(bytes: fileBytes)
         return try preparedBook(
             sections: book.sections, metadata: book.metadata,
-            fallbackTitle: fallbackTitle ?? url.deletingPathExtension().lastPathComponent)
+            fallbackTitle: fallbackTitle ?? url.deletingPathExtension().lastPathComponent,
+            includesPages: includesPages && book.includesPages)
     }
 
     /// Makes a book of the HTML `sections` a Kindle book was cut into: each
@@ -136,7 +142,7 @@ enum MOBIParser {
         // The section's HTML in Markdown, its contents entries kept as
         // heading annotations at their anchors (and the pages a KFX book names).
         var markdown = try HTMLToMarkdownConverter.convert(
-            section.html, stripDuplicateNavigation: false,
+            section.html, stripDuplicateNavigation: section.stripsDuplicateNavigation,
             headingTargets: section.headingTargets, pages: section.pages, includesPages: includesPages
         )
         let fallbackTitle = section.title ?? (section.untitledTakesBookTitle ? bookTitle : untitledChapter(number: number))

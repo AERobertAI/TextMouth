@@ -494,16 +494,23 @@ final class MOBIBookStructureTests: XCTestCase {
         assertRefused(both, .copyProtected)
     }
 
-    func testAKF8BookIsRefusedAndAHybridIsReadAsItsMOBI6Part() throws {
+    func testAKF8BookWithoutItsTablesIsDamagedAndAHybridWithoutASecondPartReadsAsMOBI6() throws {
+        // A header of version 8 with no skeleton or fragment index is a KF8
+        // book that cannot be read; the sentence tells the listener what to do.
         var kf8 = MOBIFixture()
         kf8.version = 8
-        assertRefused(kf8, .kf8Only)
-        XCTAssertEqual(MOBIError.kf8Only.localizedDescription, "This Kindle book is in the newer KF8 format, which TextMouth can't read yet.")
+        XCTAssertThrowsError(try opened(kf8)) {
+            guard case .damaged? = $0 as? MOBIError else { return XCTFail("\($0)") }
+            XCTAssertTrue($0.localizedDescription.hasSuffix("Get a fresh copy of the book, then import it again."))
+        }
 
-        // A hybrid file: version 6, and EXTH 121 naming where the KF8 part begins.
+        // A hybrid file: version 6, and EXTH 121 naming where the KF8 part
+        // begins. Here no record is there, so the book is the MOBI 6 book
+        // it opens as, in whichever half is asked for.
         var hybrid = MOBIFixture()
         hybrid.extraEXTH[121] = MOBIFixture.be32(40)
         XCTAssertEqual(try opened(hybrid).sections.count, 1)
+        XCTAssertEqual(try MOBIBook(bytes: hybrid.data(), hybrid: .kf8).sections.count, 1)
     }
 
     func testACompressionNoOneDefinedIsRefused() {
