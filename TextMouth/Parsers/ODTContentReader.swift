@@ -203,8 +203,9 @@ final class ODTContentReader: ODTXMLReader {
     private static func isSkipped(_ name: String, _ attributes: [String: String]) -> Bool {
         switch name {
         // Comments, the tracked changes (a deletion's text lives there),
-        // and a note's mark.
-        case "office:annotation", "text:tracked-changes", "text:note-citation":
+        // a note's mark, and the number a heading or list item shows (the
+        // converter numbers list items itself, as for every reader).
+        case "office:annotation", "text:tracked-changes", "text:note-citation", "text:number":
             return true
         // The phonetic guide above a word.
         case "text:ruby-text":
