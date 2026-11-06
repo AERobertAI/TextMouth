@@ -38,9 +38,9 @@ final class WordDocumentComparisonTests: XCTestCase {
     /// The words textutil puts at the end of a document's text that the
     /// reader leaves out, by sample: the text of its headers. A header is page
     /// furniture that repeats on every page, and read once at the end of the
-    /// book it would be noise; the reader reads the body (with its footnotes
-    /// and endnotes), and reads the headers and the text boxes only when the
-    /// body holds no words at all.
+    /// book it would be noise; the reader reads the body (with its footnotes,
+    /// endnotes, and text boxes), and reads the headers and the text boxes of
+    /// the headers only when the body holds no words at all.
     private static let wordsOnlyTextutilReads: [String: [String]] = [
         "doc/libreoffice-tdf104239_chapterNumbering.doc": ["Chapter", "numbering"],
         // Its header holds a PAGE field, whose instruction textutil reads as a word too.
@@ -73,9 +73,34 @@ final class WordDocumentComparisonTests: XCTestCase {
     ///
     /// The other known difference is the header text textutil appends (above),
     /// which its size guess then reads as headings.
+    ///
+    /// In the fast-saved POI sample a form's company line is bold and larger
+    /// than the body in the first of two identical forms, where textutil
+    /// guesses it to be a heading, and Heading 1 only through the piece
+    /// modifiers (`Pcd.prm`) of its paragraph mark in the second, which the
+    /// reader reads and textutil does not (it shows that line as body text).
+    /// The document therefore has a real heading, so the reader makes no
+    /// guess by size, and the first form's line is a bold paragraph.
     private static let headingsOnlyTextutilFinds: [String: Set<String>] = [
         "doc/libreoffice-tdf81705_outlineLevel.doc": ["Contents"],
         "doc/libreoffice-tdf139495_tinyHeader.doc": ["Tiny header", "PAGE", "PAGE 1"],
+        "doc/poi-rasp.doc": ["Открытое акционерное общество «ХХХХХХХХХХХ»"],
+    ]
+
+    /// The numbers the reader writes at the start of paragraphs that Word
+    /// numbers by list formatting, in the order they come, by sample. Word
+    /// stores no number in such a paragraph's text and textutil reads none;
+    /// the reader writes the level's own number text ("A.", "2.2.1.") as
+    /// the first words of the paragraph, so a listener hears the chapter or
+    /// clause number a reader of the document sees. The comparison takes
+    /// each of these off the front of its paragraph and requires the rest to
+    /// be textutil's words; a number missing from the reader's text, or
+    /// left over, fails it. (Bullets add no words.)
+    private static let listNumbersOnlyReaderReads: [String: [String]] = [
+        "doc/libreoffice-tdf104239_chapterNumbering.doc": ["A.", "I.", "a.", "i.", "A.I.a.i.1.1"],
+        "doc/libreoffice-list-nolevel.doc": ["1.", "1.1", "2.", "2.1"],
+        "doc/libreoffice-tdf106541_chapterNumbering.doc": ["1", "1.1", "2", "2.1"],
+        "doc/poi-lists.doc": ["1.", "2.", "3.", "1.", "2.", "2.1.", "2.2.", "2.2.1.", "2.2.2.", "2.2.2.1.", "2.2.3.", "3."],
     ]
 
     // MARK: - Helpers
@@ -110,10 +135,33 @@ final class WordDocumentComparisonTests: XCTestCase {
         text.split { !($0.isLetter || $0.isNumber) }.map(String.init)
     }
 
+    /// The words of the reader's reading of `sample` without the list
+    /// numbers it writes (`listNumbersOnlyReaderReads`).
+    private func readerWords(_ sample: String, _ chapter: Chapter) -> [String] {
+        var numbers = Self.listNumbersOnlyReaderReads[sample] ?? []
+        guard !numbers.isEmpty else { return words(chapter.text) }
+        var paragraphs: [String] = []
+        for paragraph in chapter.text.components(separatedBy: "\n\n") {
+            var text = paragraph.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let number = numbers.first, text.hasPrefix(number + " ") {
+                text = String(text.dropFirst(number.count + 1))
+                numbers.removeFirst()
+            }
+            paragraphs.append(text)
+        }
+        XCTAssertEqual(numbers, [], "\(sample): list numbers the reader did not write")
+        return words(paragraphs.joined(separator: " "))
+    }
+
     /// The words of a heading line such as "2: Tiny  header", without its
-    /// level, with every run of white space as one space.
-    private func headingText(_ line: String) -> String {
-        line.drop { $0 != " " }.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    /// level, with every run of white space as one space, and without the
+    /// list number `sample`'s reading puts before it.
+    private func headingText(_ line: String, in sample: String) -> String {
+        let text = line.drop { $0 != " " }.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        for number in Self.listNumbersOnlyReaderReads[sample] ?? [] where text.hasPrefix(number + " ") {
+            return String(text.dropFirst(number.count + 1))
+        }
+        return text
     }
 
     /// The pages of `chapter` as "label@offset" lines.
@@ -133,7 +181,7 @@ final class WordDocumentComparisonTests: XCTestCase {
         var differences: [String] = []
         for sample in try allSamples() where !Self.leftToTextutil.contains(sample) {
             let expected = words(try textutilChapter(sample).text)
-            let actual = words(try XCTUnwrap(readerChapter(sample)).text)
+            let actual = readerWords(sample, try XCTUnwrap(readerChapter(sample)))
             // textutil's extra words come last; the reader does not read them.
             let leftOut = Self.wordsOnlyTextutilReads[sample] ?? []
             guard expected.count >= leftOut.count, Array(expected.suffix(leftOut.count)) == leftOut else {
@@ -166,7 +214,8 @@ final class WordDocumentComparisonTests: XCTestCase {
             print("DOCCMP headings \(sample): textutil \(textutil), reader \(reader)")
             // Every heading textutil guesses is a heading of the reader's, at
             // any level; a level that differs is listed with the sample.
-            let missing = Set(textutil.map(headingText)).subtracting(reader.map(headingText))
+            let missing = Set(textutil.map { headingText($0, in: sample) })
+                .subtracting(reader.map { headingText($0, in: sample) })
                 .subtracting(Self.headingsOnlyTextutilFinds[sample] ?? [])
             if !missing.isEmpty {
                 differences.append("\(sample): headings only textutil finds: \(missing.sorted()); textutil \(textutil), reader \(reader)")
