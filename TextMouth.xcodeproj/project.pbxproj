@@ -38,6 +38,8 @@
 		04EFEEDF986570A6C2F90090 /* TextEncodingByteGrammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 120512849388E6EBB3E9E035 /* TextEncodingByteGrammar.swift */; };
 		04FA7EC719C3C7139B990740 /* ImportDecisionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F55E4147A16F76D554D605C /* ImportDecisionSheet.swift */; };
 		051C599F9147EB957F1A38FE /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D811A8124A1918F17347B0C /* SettingsViewModel.swift */; };
+		052BB5A0F77F091F064DC34E /* WordDocumentNotes.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECC504DB363EFEC7D5FBD912 /* WordDocumentNotes.swift */; };
+		054B7B457F14C52C3D5D1A15 /* WordDocumentNotes.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECC504DB363EFEC7D5FBD912 /* WordDocumentNotes.swift */; };
 		054E7CB5CC74959574FF910A /* FullSummaryActionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E815796B553C5037C0DC9663 /* FullSummaryActionTests.swift */; };
 		0576C2B5B7C28E9EFA114552 /* FeedUIDeleteFeedTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F39BC000051B39D271C5B05 /* FeedUIDeleteFeedTests.swift */; };
 		05A601160F0D1A40DCEF1F5F /* TextCacheVerificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91CC9BD320117CED94A8D70B /* TextCacheVerificationTests.swift */; };
@@ -3237,6 +3239,7 @@
 		EC48A6C8FBFE467CF658410B /* TranscriptionSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionSettingsTests.swift; sourceTree = "<group>"; };
 		EC971B7D1BD131286A335906 /* PlaceRelocatorHeadingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceRelocatorHeadingTests.swift; sourceTree = "<group>"; };
 		EC981DE149D43E32DE97290C /* PlaceSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceSnapshotTests.swift; sourceTree = "<group>"; };
+		ECC504DB363EFEC7D5FBD912 /* WordDocumentNotes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordDocumentNotes.swift; sourceTree = "<group>"; };
 		ECC8048BC1E98D863AAF0D6F /* FeedSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedSettingsTests.swift; sourceTree = "<group>"; };
 		ECD33783F8E3B732BC27A976 /* LibraryViewDefinitionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryViewDefinitionTests.swift; sourceTree = "<group>"; };
 		ECF7E0A885F8C1D6DC6D79FF /* EPUBMetadataWritebackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EPUBMetadataWritebackTests.swift; sourceTree = "<group>"; };
@@ -4193,6 +4196,7 @@
 				258F85B716E4A189B08FF041 /* WordDocumentHeadingGuess.swift */,
 				51A0A4769BCDBDDE8984B4A4 /* WordDocumentHTMLWriter.swift */,
 				CC6D9D585824EEF9766C2BD9 /* WordDocumentLists.swift */,
+				ECC504DB363EFEC7D5FBD912 /* WordDocumentNotes.swift */,
 				38477A7C3EC2A86D2556298D /* WordDocumentPieces.swift */,
 				2B1945EC4FE0DF6740E7D81F /* WordDocumentProperties.swift */,
 				18D38E61927FF4046A5A45F8 /* WordDocumentReader.swift */,
@@ -6679,6 +6683,7 @@
 				5FD74B25EF29C7EC602B1635 /* WordDocumentHTMLWriter.swift in Sources */,
 				C71607B873FA944F860F8CCB /* WordDocumentHeadingGuess.swift in Sources */,
 				0BC830B747370697ADE89827 /* WordDocumentLists.swift in Sources */,
+				054B7B457F14C52C3D5D1A15 /* WordDocumentNotes.swift in Sources */,
 				3BC98DF4701E9551F7D53D09 /* WordDocumentPieces.swift in Sources */,
 				CA5E7C7CFD75658CEAB144CB /* WordDocumentProperties.swift in Sources */,
 				AFE138CC40950D7816564EB5 /* WordDocumentReader.swift in Sources */,
@@ -7312,6 +7317,7 @@
 				199D71A8D576D3447F360B03 /* WordDocumentHTMLWriter.swift in Sources */,
 				92BB04E4C61EDA0725DC8BB0 /* WordDocumentHeadingGuess.swift in Sources */,
 				A4ED940DD5A6B88BEAB0AEA8 /* WordDocumentLists.swift in Sources */,
+				052BB5A0F77F091F064DC34E /* WordDocumentNotes.swift in Sources */,
 				39DC6A025DD802BDC8A78DB4 /* WordDocumentPieces.swift in Sources */,
 				B30C21B10DD92803CD29BB6A /* WordDocumentProperties.swift in Sources */,
 				486F5285CA92E80D2EB91200 /* WordDocumentReader.swift in Sources */,
