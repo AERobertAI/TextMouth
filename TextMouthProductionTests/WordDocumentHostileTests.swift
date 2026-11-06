@@ -260,21 +260,23 @@ final class WordDocumentHostileTests: XCTestCase {
         // A sheet cut short is read as far as it goes (real files are: the
         // slots past the length the header gives are unused), the styles it
         // does not hold in full are unused, and a paragraph in one has the
-        // default formatting, so the document reads, with no headings.
-        for (message, damage) in [
-            ("65535 styles", { (table: inout [UInt8], layout: WordDocumentBuilder.Layout) in
+        // default formatting, so the document reads. A count of styles that is
+        // too large holds every style the sheet really has, so the headings
+        // stay; a style or a header that swallows the rest leaves none.
+        for (message, keepsHeadings, damage) in [
+            ("65535 styles", true, { (table: inout [UInt8], layout: WordDocumentBuilder.Layout) in
                 table.replaceSubrange(layout.styleSheet + 2..<layout.styleSheet + 4, with: [0xFF, 0xFF])
             }),
-            ("a style of 64 KB", { (table: inout [UInt8], layout: WordDocumentBuilder.Layout) in
+            ("a style of 64 KB", false, { (table: inout [UInt8], layout: WordDocumentBuilder.Layout) in
                 table.replaceSubrange(layout.styleSheet + 2 + 18..<layout.styleSheet + 2 + 20, with: [0xFF, 0xFF])
             }),
-            ("a header of 64 KB", { (table: inout [UInt8], layout: WordDocumentBuilder.Layout) in
+            ("a header of 64 KB", false, { (table: inout [UInt8], layout: WordDocumentBuilder.Layout) in
                 table.replaceSubrange(layout.styleSheet..<layout.styleSheet + 2, with: [0xFF, 0xFF])
             }),
         ] {
             let html = try XCTUnwrap(WordDocumentReader.html(from: damaged(builder, table: damage), includesPages: true), message)
             XCTAssertTrue(html.contains("Chapter one"), message)
-            XCTAssertFalse(html.contains("<h1>"), message)
+            XCTAssertEqual(html.contains("<h1>"), keepsHeadings, message)
         }
     }
 
@@ -536,19 +538,44 @@ final class WordDocumentHostileTests: XCTestCase {
         XCTAssertTrue(html.contains("<li>a"), String(html.prefix(300)))
     }
 
-    func testManyNotesWhoseMarksAreHiddenInManyPiecesCostNothingPerNote() throws {
-        // 100,000 one-mark pieces and notes, every other mark hidden: each
-        // shown note was read from a walk of every piece before it (a
-        // quadratic time: an hour for a 64 MB file).
-        let count = 100_000
+    /// A document of `count` one-mark pieces and notes, every other mark hidden.
+    private func notesInManyPieces(_ count: Int) -> Data {
         var builder = WordDocumentBuilder()
         builder.paragraphs = [Paragraph(runs: [Run("Main.")] + (0..<count).map { Run("\u{02}", hidden: $0 % 2 == 0 ? 1 : nil) })]
         builder.footnoteReferences = (0..<count).map { $0 + 5 }
         builder.stories = [.footnotes: (0..<count).map { _ in Paragraph("n") }]
         builder.pieceCount = count
-        let html = try assertReadsWithin(1.0, builder.build(), "100,000 notes in 100,000 pieces")
+        return builder.build()
+    }
+
+    func testManyNotesWhoseMarksAreHiddenInManyPiecesCostNothingPerNote() throws {
+        // 100,000 one-mark pieces and notes, every other mark hidden: each
+        // shown note was read from a walk of every piece before it (a
+        // quadratic time: an hour for a 64 MB file). How long a read takes
+        // depends on the Mac and the build, so the test asks what a hang
+        // would change: four times the notes must take about four times as
+        // long (sixteen if each note walked the pieces), the best of two
+        // reads each so that a busy moment does not decide it.
+        func best(_ data: Data) throws -> (seconds: Double, html: String) {
+            var fastest = Double.infinity
+            var html = ""
+            for _ in 0..<2 {
+                let start = Date()
+                html = try XCTUnwrap(WordDocumentReader.html(from: data, includesPages: true))
+                fastest = min(fastest, Date().timeIntervalSince(start))
+            }
+            return (fastest, html)
+        }
+        let small = try best(notesInManyPieces(25_000))
+        let large = try best(notesInManyPieces(100_000))
         // The shown notes are the odd ones, 50,000 of them, each a paragraph.
-        XCTAssertEqual(html.components(separatedBy: "<p>n</p>").count - 1, count / 2)
+        XCTAssertEqual(large.html.components(separatedBy: "<p>n</p>").count - 1, 50_000)
+        XCTAssertLessThan(
+            large.seconds, max(small.seconds, 0.05) * 9,
+            "25,000 notes took \(small.seconds) s and 100,000 took \(large.seconds) s: the time must grow in step with the notes"
+        )
+        // A bound far above any busy Mac's time for the linear read (the quadratic one took minutes at 500,000).
+        XCTAssertLessThan(large.seconds, 10, "100,000 notes in 100,000 pieces")
     }
 
     // MARK: - Truncation and Random Damage
