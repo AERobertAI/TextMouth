@@ -51,12 +51,12 @@ enum TextImportPolicy {
     }
 
     /// The text of the file an external editor saved, read as a plain-text
-    /// book is read: UTF-8, or the encoding a byte-order mark names, or the
-    /// encoding the bytes look like, so an editor that saves in another
-    /// encoding than the one the file was written in still reloads. Nil when
-    /// the file cannot be read at all.
+    /// book with no recorded encoding is read: UTF-8, or the encoding a
+    /// byte-order mark names, or Windows-1252, so an editor that saves in
+    /// another encoding than the one the file was written in still reloads.
+    /// Nil when the file cannot be read at all.
     static func reloadedText(from url: URL) -> String? {
-        try? TextFileDecoder.readText(at: url, format: .txt, policy: .guess)
+        try? TextFileDecoder.readText(at: url, format: .txt, policy: .fallback)
     }
 
     static func resolvedTitle(_ title: String) -> String {
