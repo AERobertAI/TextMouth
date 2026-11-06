@@ -52,9 +52,11 @@ enum MOBIParser {
         let fileBytes = try bytes(of: url)
         // Kindle's apps name KFX books .azw: the bytes decide, not the name.
         if KFXSignature.isKFXOrProtected(fileBytes) {
+            // A book of the MOBI format has no print pages, so none are written.
             return try KFXParser.prepareBook(
                 bytes: fileBytes,
-                fallbackTitle: fallbackTitle ?? url.deletingPathExtension().lastPathComponent
+                fallbackTitle: fallbackTitle ?? url.deletingPathExtension().lastPathComponent,
+                includesPages: false, near: url
             )
         }
         let book = try MOBIBook(bytes: fileBytes)
@@ -98,7 +100,7 @@ enum MOBIParser {
     static func readMetadata(url: URL) throws -> MOBIBook.Metadata {
         let fileBytes = try bytes(of: url)
         // An .azw file holding KFX names itself as KFX does.
-        if KFXSignature.isKFXOrProtected(fileBytes) { return try KFXParser.readMetadata(bytes: fileBytes) }
+        if KFXSignature.isKFXOrProtected(fileBytes) { return try KFXParser.readMetadata(bytes: fileBytes, near: url) }
         return try MOBIBook.metadata(in: fileBytes)
     }
 

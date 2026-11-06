@@ -119,14 +119,15 @@ struct KFXBook {
         }
     }
 
-    /// What the container in `bytes` says about itself, read without walking
-    /// its text. A book that is in a set, or has no flowing text, still names
-    /// its title and author.
-    /// - Throws: `MOBIError` for a file that is not a container.
-    static func metadata(in bytes: [UInt8]) throws -> MOBIBook.Metadata {
-        let container = try KFXContainer(bytes: bytes)
+    /// What the containers of a book say about itself, read without walking
+    /// its text. A book that has no flowing text, or whose text is in
+    /// another container of its set, still names its title and author.
+    /// - Throws: `MOBIError.damaged` for a container that does not read.
+    static func metadata(of containers: [KFXContainer]) throws -> MOBIBook.Metadata {
         var budget = KFXContainer.maximumValues
-        return KFXMetadata(KFXFragments(try container.fragments(budget: &budget))).metadata
+        var fragments: [KFXContainer.Fragment] = []
+        for container in containers { fragments += try container.fragments(budget: &budget) }
+        return KFXMetadata(KFXFragments(fragments)).metadata
     }
 
     // MARK: Reading order

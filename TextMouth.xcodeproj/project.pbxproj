@@ -120,6 +120,7 @@
 		0FA873FC247766EA469EF283 /* MarkdownLiteral.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3370B79E9AB9358A78248BC /* MarkdownLiteral.swift */; };
 		0FA89E935FD1DF7798496FD6 /* FeedMoveToLibraryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39243B646C40367EDDB9484A /* FeedMoveToLibraryTests.swift */; };
 		0FB01EB87666121D9131A054 /* FeedDirectory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70557CF2F2F4FFC22CDF6A53 /* FeedDirectory.swift */; };
+		0FB5BD44F8029405E075787E /* KFXSetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2995810842903DC1972E1B29 /* KFXSetTests.swift */; };
 		100D7D682B98FE3BD9C7CB53 /* MOBIParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DAC7316767B1E05FF9D968 /* MOBIParser.swift */; };
 		101D5F23B06AF664BA8587F0 /* PDFTextParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D161A613B5D570B1FACBD40 /* PDFTextParser.swift */; };
 		104181C25DE990278D30035F /* BookExportConversionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ACBFFF607748E3A23D8A46E /* BookExportConversionTests.swift */; };
@@ -287,6 +288,7 @@
 		261512AE2A3127560CD71FB0 /* BookPages.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8242C2F692806F62CA41FF6 /* BookPages.swift */; };
 		2634E234B23650FE1EF30EAC /* AudioEditorPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BDAB9C2D9ACEB18926683E1 /* AudioEditorPrompt.swift */; };
 		26445E8F628F0ECE6BDE7F06 /* LibraryViewModel+Bookmarks.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6FA29359F70363F11224810 /* LibraryViewModel+Bookmarks.swift */; };
+		26C57841292D1B74301DAD12 /* KFXSidecar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58B58D11258B86C42708A762 /* KFXSidecar.swift */; };
 		26E330C223B57A39F702B43C /* BrailleTableCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0233D0E3D21B14FE80F00311 /* BrailleTableCatalog.swift */; };
 		27214AB4163C14DF95B56531 /* LegacyLibraryModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E91F94D19AE25B9DC8596C7 /* LegacyLibraryModelTests.swift */; };
 		27551BB2F61F54B5681F6183 /* FeedSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5DC9769C3FFFE8F0FB2CE1C /* FeedSettings.swift */; };
@@ -611,6 +613,7 @@
 		50A9F09EE33C209B3A58B584 /* LegacyVoiceSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DB32ED1D2602F36E34AD00E /* LegacyVoiceSettingsTests.swift */; };
 		50ADE0C8695EFFAC74E8F14C /* DAISYInlineFragmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AF5D78231C95D456E935D64 /* DAISYInlineFragmentTests.swift */; };
 		510C6CB83E85D5866485E19F /* MetadataEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6356D9B0A96ADE86ED7338A9 /* MetadataEditorView.swift */; };
+		5126F8D3E71F142D8B0E1E03 /* KFXSidecar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58B58D11258B86C42708A762 /* KFXSidecar.swift */; };
 		512F82A8059BC86875596353 /* BookWaitingSkipTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF029A8F2284D5ED116F01C /* BookWaitingSkipTests.swift */; };
 		5130EBBB81F37C14901C9F34 /* BrailleEmphasis.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4905328B6D1E11EB0F166B2 /* BrailleEmphasis.swift */; };
 		5135B32E1AEF4A4927C8FE08 /* FolderPathEquivalence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31DD12BF0D978201500B48D6 /* FolderPathEquivalence.swift */; };
@@ -2291,6 +2294,7 @@
 		29579D025E7BA9A74D8CD948 /* MediaCommandPlaybackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCommandPlaybackTests.swift; sourceTree = "<group>"; };
 		2975C903E8C1DC6FA0F94E76 /* FeedLifecycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedLifecycle.swift; sourceTree = "<group>"; };
 		2978A59EB5FDE6F5FFB3746C /* ChapterPauses.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChapterPauses.swift; sourceTree = "<group>"; };
+		2995810842903DC1972E1B29 /* KFXSetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KFXSetTests.swift; sourceTree = "<group>"; };
 		2A60242E06B0099E26A9060A /* AudioEditorSelectingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorSelectingTests.swift; sourceTree = "<group>"; };
 		2A71C29141DF7942AEB4FAD6 /* PlaceRelocatorAtLoadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceRelocatorAtLoadTests.swift; sourceTree = "<group>"; };
 		2A86B0AB979C8C15A652A3FB /* EndBehaviorMatrixTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndBehaviorMatrixTests.swift; sourceTree = "<group>"; };
@@ -2545,6 +2549,7 @@
 		5891B23C0D5F67923B0AB98E /* BookManifestEditTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookManifestEditTests.swift; sourceTree = "<group>"; };
 		589D5F5C7514EE6091B24834 /* ObjCExceptionCatcher.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ObjCExceptionCatcher.h; sourceTree = "<group>"; };
 		589E186C9166AF7A454AC586 /* RepeatedSymbolNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepeatedSymbolNames.swift; sourceTree = "<group>"; };
+		58B58D11258B86C42708A762 /* KFXSidecar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KFXSidecar.swift; sourceTree = "<group>"; };
 		592EF25298C3BF7511A680BC /* OrphanedConversionSweep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrphanedConversionSweep.swift; sourceTree = "<group>"; };
 		593F507CF89D611AE2C62C3D /* FeedRecordTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedRecordTests.swift; sourceTree = "<group>"; };
 		59727A3DFD06B1BF576D41B7 /* LibraryOnlyRemovalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryOnlyRemovalTests.swift; sourceTree = "<group>"; };
@@ -4207,6 +4212,7 @@
 				96BC569364608C0D733F1BB0 /* KFXNavigation.swift */,
 				5DF9C89B1E34910FBE4B9C86 /* KFXPackage.swift */,
 				3ED46E52C47549688E1514BC /* KFXParser.swift */,
+				58B58D11258B86C42708A762 /* KFXSidecar.swift */,
 				6457754310799A932C255D3A /* KFXSignature.swift */,
 				0CE6E7BAAD638BF2F062EF22 /* KFXStyles.swift */,
 				D441E4C22982464C28EE5E44 /* KFXSymbol.swift */,
@@ -4594,6 +4600,7 @@
 				364364ACCDC253E8B79FB72B /* KFXIonTests.swift */,
 				FC86CFAC2855C3BD1FF6CFE9 /* KFXNavigationTests.swift */,
 				57EF58605B98D9918BE2F53A /* KFXRecognitionTests.swift */,
+				2995810842903DC1972E1B29 /* KFXSetTests.swift */,
 				201335713BB975F161C5D653 /* KFXTestBook.swift */,
 				C73B1986B199D65CA1695AE4 /* KFXWalkTests.swift */,
 				54CDB66EE9D2786D224F3D58 /* LegacyAudioMetadataTests.swift */,
@@ -5788,6 +5795,7 @@
 				5C959D5AAEEEA9D34DD57E7B /* KFXIonTests.swift in Sources */,
 				570991F83D3FC89E815A30F3 /* KFXNavigationTests.swift in Sources */,
 				F9C7346EA82293E9F589BD51 /* KFXRecognitionTests.swift in Sources */,
+				0FB5BD44F8029405E075787E /* KFXSetTests.swift in Sources */,
 				01445A5018232A4FEA38302E /* KFXTestBook.swift in Sources */,
 				2FB890DBB509FAACDA99DFFF /* KFXWalkTests.swift in Sources */,
 				B6044620E2D0B1C22D11B2FC /* KeepOnThisMacTests.swift in Sources */,
@@ -6452,6 +6460,7 @@
 				692171BCA4322784CB676820 /* KFXNavigation.swift in Sources */,
 				D7F54D2194B3A850C6EB3371 /* KFXPackage.swift in Sources */,
 				89CD76559FDD43E6D41E9F71 /* KFXParser.swift in Sources */,
+				26C57841292D1B74301DAD12 /* KFXSidecar.swift in Sources */,
 				F615C9CA09514741C7525159 /* KFXSignature.swift in Sources */,
 				84782F56EDA5560663772C91 /* KFXStyles.swift in Sources */,
 				61154253DAAE9F46189D3685 /* KFXSymbol.swift in Sources */,
@@ -7099,6 +7108,7 @@
 				72BFDEC9C48BA7EBE000649E /* KFXNavigation.swift in Sources */,
 				404CCEF2E74AEDB9BFDEF516 /* KFXPackage.swift in Sources */,
 				C867F957FF27DF7249033849 /* KFXParser.swift in Sources */,
+				5126F8D3E71F142D8B0E1E03 /* KFXSidecar.swift in Sources */,
 				ECA4B1049AA10F85F005001B /* KFXSignature.swift in Sources */,
 				DE7DA68CA2A98E415A1E14F0 /* KFXStyles.swift in Sources */,
 				C3B37CF7562384CEA3DA0CA3 /* KFXSymbol.swift in Sources */,

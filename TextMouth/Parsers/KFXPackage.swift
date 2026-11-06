@@ -59,6 +59,49 @@ enum KFXPackage {
         return holdsContainer ? .containers : .other
     }
 
+    /// The most containers a set may hold.
+    static let maximumContainers = 64
+    /// The most bytes a set's containers may hold, all together.
+    static let maximumTotalBytes: Int64 = 4 * DocumentByteLimit.standard
+
+    /// The containers of the set in the archive at `url`: every member that
+    /// begins with the container's signature, in the archive's order. A member
+    /// is read within the limit for one document and the containers together
+    /// within `maximumTotalBytes`, by the sizes read, not the sizes declared,
+    /// so an archive that lies about them is stopped at the first byte past.
+    /// Members that are not containers (a voucher is checked first, in
+    /// `kind(ofArchiveAt:)`) are not opened.
+    /// - Throws: `MOBIError.damaged` for an archive that does not open, holds
+    ///   too many containers, or holds a member larger than it records;
+    ///   `DocumentTooLargeError` for a member or a set past the limits; what
+    ///   `KFXContainer.init(bytes:)` throws for a member that is not a sound container.
+    static func containers(inArchiveAt url: URL) throws -> [KFXContainer] {
+        guard let archive = Archive.openedForReading(at: url) else {
+            throw MOBIError.damaged("the set's archive does not open")
+        }
+        var containers: [KFXContainer] = []
+        var total: Int64 = 0
+        for entry in archive where entry.type == .file {
+            guard KFXSignature.kind(ofPrefix: firstBytes(of: entry, in: archive)) == .container else { continue }
+            guard containers.count < maximumContainers else {
+                throw MOBIError.damaged("the set holds more than \(maximumContainers) containers")
+            }
+            let bytes: Data
+            do {
+                bytes = try ArchiveEntryReader.read(entry, in: archive, holdingToDeclaredSize: true).data
+            } catch let overflow as ArchiveEntryOverflow {
+                switch overflow {
+                case .pastLimit(_, let limit): throw DocumentTooLargeError(limit: limit)
+                case .pastDeclaredSize: throw MOBIError.damaged("a file in the set holds more than its archive records")
+                }
+            }
+            total += Int64(bytes.count)
+            guard total <= maximumTotalBytes else { throw DocumentTooLargeError(limit: maximumTotalBytes) }
+            containers.append(try KFXContainer(bytes: [UInt8](bytes)))
+        }
+        return containers
+    }
+
     /// Up to `KFXSignature.prefixLength` bytes from the start of `entry`.
     /// ZIPFoundation hands the data over in chunks; the first one is enough,
     /// so the extraction is stopped there and nothing more is inflated.
