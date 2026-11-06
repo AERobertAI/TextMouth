@@ -312,12 +312,13 @@ final class ODTStylesReader: ODTXMLReader {
         // The master pages' headers and footers hold text, which is not read.
         if name == "style:master-page" || name == "office:master-styles" { return skipSubtree() }
         collector.start(name, attributes: attributes)
-        if collector.sheet.count > ODTStyleSheet.maximumStyles { fail(TextutilConverter.Failure.unreadable(.odt)) }
     }
 
     /// A style element ends, and the style is added.
     override func endElement(_ name: String) {
         collector.end(name)
+        // A style is added where it ends, so this is where the limit is met.
+        if collector.sheet.count > ODTStyleSheet.maximumStyles { fail(TextutilConverter.Failure.unreadable(.odt)) }
     }
 }
 
