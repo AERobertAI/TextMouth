@@ -38,8 +38,8 @@ struct PageBreak: Equatable, Hashable, Sendable {
     /// text's end, it stays. An EPUB page-break element often stands just
     /// before the space that begins its page ("end.<span/> The next"), and a
     /// page can begin inside a hyphenated word; either way the page begins, for
-    /// a listener, at its first whole word, so the place Next Page lands on and
-    /// the page shown agree.
+    /// a listener, at its first whole word, so the place a move by page lands
+    /// on and the page shown agree.
     static func firstWordStart(in text: String, at offset: Int) -> Int {
         let length = text.utf16Length
         let clamped = min(max(0, offset), length)

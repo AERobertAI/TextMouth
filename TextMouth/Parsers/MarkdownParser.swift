@@ -60,7 +60,7 @@ enum MarkdownDocParser {
 
         // Pages come from the same walk, so they are already in reading order.
         // A page that begins in whitespace or inside a word begins at the
-        // nearest whole word (PG01), so Next Page and the page shown agree.
+        // nearest whole word (PG01), so a move by page and the page shown agree.
         let pages = textExtractor.pages.map { page in
             let offset = min(textLength, max(0, page.offset - trimmedPrefixLength))
             return PageBreak(
