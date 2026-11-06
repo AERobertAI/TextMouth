@@ -28,7 +28,14 @@ struct KFXContainer {
         /// The fragment's name: its local symbol's text, or "$348" for the
         /// one fragment of a kind that has no name.
         var name: String
+        /// The value, with every local symbol as a string of its name, so
+        /// that fragments of several containers, whose local ids differ,
+        /// can be read together. Shared symbols stay symbols, by number.
         var value: IonValue
+        /// The names of the struct fields in `value` that are local symbols
+        /// (rather than shared ones, by number), such as a notebook's
+        /// `nmdl.canvas_width`; empty in nearly every fragment.
+        var localFieldNames: Set<String>
     }
 
     // MARK: Limits
@@ -210,8 +217,36 @@ struct KFXContainer {
             // A value annotated with its own type, as the entity's, is the
             // type repeated: the fragment is what it wraps.
             if case .annotated(let ids, let inner) = value, ids.contains(entity.type) { value = inner }
-            fragments.append(Fragment(type: entity.type, name: symbols.name(of: entity.id), value: value))
+            var localFields: Set<String> = []
+            value = resolved(value, localFieldNames: &localFields)
+            fragments.append(Fragment(
+                type: entity.type, name: symbols.name(of: entity.id), value: value, localFieldNames: localFields))
         }
         return fragments
+    }
+
+    /// `value` with each local symbol replaced by a string of its name, and
+    /// the names of the local struct fields gathered into `localFieldNames`.
+    /// The recursion is as deep as the value, which `IonReader.maximumDepth`
+    /// caps.
+    private func resolved(_ value: IonValue, localFieldNames: inout Set<String>) -> IonValue {
+        switch value {
+        case .symbol(let id):
+            return id > symbols.sharedMaximum ? .string(symbols.name(of: id)) : value
+        case .list(let items):
+            return .list(items.map { resolved($0, localFieldNames: &localFieldNames) })
+        case .structure(let members):
+            var fields: [IonField] = []
+            fields.reserveCapacity(members.fields.count)
+            for field in members.fields {
+                if field.id > symbols.sharedMaximum { localFieldNames.insert(symbols.name(of: field.id)) }
+                fields.append(IonField(id: field.id, value: resolved(field.value, localFieldNames: &localFieldNames)))
+            }
+            return .structure(IonStruct(fields: fields))
+        case .annotated(let ids, let inner):
+            return .annotated(ids, resolved(inner, localFieldNames: &localFieldNames))
+        case .null, .bool, .int, .float, .string, .opaque:
+            return value
+        }
     }
 }

@@ -48,6 +48,9 @@ final class KFXContainerTests: XCTestCase {
         XCTAssertEqual(fragments.map(\.type), [260, 145, 538])
         XCTAssertEqual(fragments.map(\.name), ["c0", "content_1", "$348"])
         XCTAssertEqual(fragments[1].value.structValue?[146]?.listValue?.compactMap(\.stringValue), ["One", "Two"])
+        // The fragment's own name is a local symbol, so it is a string in the value; $4 is a system field.
+        XCTAssertEqual(fragments[1].value.structValue?[4], .string("content_1"))
+        XCTAssertTrue(fragments[1].localFieldNames.isEmpty)
     }
 
     func testARawResourceIsItsBytesAfterTheEntityHeader() throws {
@@ -157,7 +160,8 @@ final class KFXContainerTests: XCTestCase {
         let fragments = try container.fragments(budget: &budget)
         let storyline = try XCTUnwrap(fragments.first { $0.type == 260 && $0.name == "c108" })
         let template = try XCTUnwrap(storyline.value.structValue?[141]?.listValue?.first?.structValue)
-        XCTAssertEqual(container.symbols.name(of: template[176]), "l10C")
+        // Local symbols come back as the strings of their names.
+        XCTAssertEqual(template[176], .string("l10C"))
         XCTAssertTrue(fragments.contains { $0.type == 259 && $0.name == "l10C" })
     }
 
