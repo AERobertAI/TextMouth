@@ -89,7 +89,53 @@ struct WordDocumentBuilder {
         var fontSize: Int?
         /// The style's page-break-before setting (0 or 1).
         var pageBreakBefore: Int?
+        /// The style's list instance (`sprmPIlfo`) and level (`sprmPIlvl`).
+        var listIndex: Int?
+        var listLevel: Int?
     }
+
+    /// One level of a list: its number format (an MSONFC), where it counts
+    /// from, and its number text, in which "%1" to "%9" stand for the numbers
+    /// of levels 1 to 9.
+    struct ListLevel {
+        var numberFormat = 0
+        var start = 1
+        var text = ""
+        /// `ilvlRestartLim` when `fNoRestart` is on.
+        var restartLimit: Int?
+        var isLegal = false
+
+        init(_ numberFormat: Int = 0, _ text: String = "", start: Int = 1, restartLimit: Int? = nil, isLegal: Bool = false) {
+            self.numberFormat = numberFormat
+            self.text = text
+            self.start = start
+            self.restartLimit = restartLimit
+            self.isLegal = isLegal
+        }
+    }
+
+    /// A list: its identifier and its levels (nine, or one if simple).
+    struct List {
+        var identifier: Int
+        var levels: [ListLevel]
+        var isSimple = false
+    }
+
+    /// A change a list instance makes to one level of its list.
+    struct ListOverride {
+        var level: Int
+        /// `LFOLVL.iStartAt`, with `fStartAt` set, if given.
+        var startAt: Int?
+        /// A level in full (`fFormatting`), if given.
+        var replacement: ListLevel?
+    }
+
+    /// A list instance (`LFO`): the list it uses and its overrides.
+    struct ListInstance {
+        var listIdentifier: Int
+        var overrides: [ListOverride] = []
+    }
+
 
     /// The stories of a document after the main one, in the order the file
     /// stores them: the CP ranges of their lengths are the FIB's ccpFtn,
@@ -125,6 +171,9 @@ struct WordDocumentBuilder {
     /// How many pieces to split the text into; more than one stores them in
     /// reverse order in the file.
     var pieceCount = 1
+    /// The lists (`PlfLst`) and list instances (`PlfLfo`); none leaves out both.
+    var lists: [List] = []
+    var listInstances: [ListInstance] = []
     /// The property modifiers (`Pcd.prm`, two bytes) of the pieces, by piece
     /// index; a piece beyond the list has none. See `prm0(_:_:)` and `prm1(_:)`.
     var piecePrms: [Int] = []
@@ -172,6 +221,9 @@ struct WordDocumentBuilder {
         var pieceTable = 0
         /// In the `WordDocument` stream: the offset of each piece's characters, in character order.
         var pieceOffsets: [Int] = []
+        /// In the table stream: the list table (PlfLst) and the list override table (PlfLfo), when there are lists.
+        var listFormats = 0
+        var listOverrides = 0
         /// In the `WordDocument` stream: the offset of the FIB's (offset, length) pairs.
         var pairs = 154
     }
@@ -322,6 +374,22 @@ struct WordDocumentBuilder {
         table += plc
         let clxLength = table.count - layout.clx
 
+        // The list tables, after everything else in the table stream: the
+        // PlfLst (its LVLs follow it, outside its length) and the PlfLfo.
+        var listPairs: [Int: (Int, Int)] = [:]
+        if !lists.isEmpty || !listInstances.isEmpty {
+            while table.count % 4 != 0 { table.append(0) }
+            let formats = Self.listTableBytes(lists)
+            layout.listFormats = table.count
+            listPairs[WordFileInformationBlock.Structure.listFormats.rawValue] = (table.count, formats.header.count)
+            table += formats.header + formats.levels
+            while table.count % 4 != 0 { table.append(0) }
+            let overrides = Self.listOverrideBytes(listInstances)
+            layout.listOverrides = table.count
+            listPairs[WordFileInformationBlock.Structure.listOverrides.rawValue] = (table.count, overrides.count)
+            table += overrides
+        }
+
         // The pairs of the FIB: (offset, length) of each structure.
         let styleSheetLength = layout.sectionTable - layout.styleSheet
         let sectionLength = sectionTable.count
@@ -330,6 +398,7 @@ struct WordDocumentBuilder {
             WordFileInformationBlock.Structure.sectionTable.rawValue: (layout.sectionTable, sectionLength),
             WordFileInformationBlock.Structure.complexInformation.rawValue: (layout.clx, clxLength),
         ]
+        pairs.merge(listPairs) { first, _ in first }
         pairs[WordFileInformationBlock.Structure.paragraphBinTable.rawValue] =
             writesParagraphProperties ? (layout.paragraphBinTable, layout.characterBinTable - layout.paragraphBinTable) : (0, 0)
         pairs[WordFileInformationBlock.Structure.characterBinTable.rawValue] =
@@ -382,6 +451,12 @@ struct WordDocumentBuilder {
 
     static func le16(_ value: Int) -> [UInt8] { [UInt8(value & 0xFF), UInt8((value >> 8) & 0xFF)] }
     static func le32(_ value: Int) -> [UInt8] { le16(value & 0xFFFF) + le16((value >> 16) & 0xFFFF) }
+
+    /// The paragraph modifiers that put a paragraph in list instance
+    /// `instance` (one-based; the raw 16-bit value is written as it is) at `level`.
+    static func listProperties(instance: Int, level: Int) -> [UInt8] {
+        le16(WordSprm.listIndex) + le16(instance & 0xFFFF) + modifier(WordSprm.listLevel, level)
+    }
 
     /// A `Prm0`: the sprm in the specification's table at `isprm`, with the one-byte operand `value`.
     static func prm0(_ isprm: Int, _ value: Int) -> Int { (isprm << 1) | (value << 8) }
@@ -445,11 +520,70 @@ struct WordDocumentBuilder {
                 var paragraph = Self.le16(index)
                 if let outline = style.outlineLevel { paragraph += Self.modifier(WordSprm.outlineLevel, outline) }
                 if let value = style.pageBreakBefore { paragraph += Self.modifier(WordSprm.pageBreakBefore, value) }
+                if let level = style.listLevel { paragraph += Self.modifier(WordSprm.listLevel, level) }
+                if let index = style.listIndex { paragraph += Self.le16(WordSprm.listIndex) + Self.le16(index) }
                 std += group(paragraph) + group(characters)
             } else {
                 std += group(characters)
             }
             bytes += Self.le16(std.count) + std
+        }
+        return bytes
+    }
+
+    // MARK: Lists
+
+    /// The `LVL` of `level` ([MS-DOC] 2.9.149).
+    private static func levelBytes(_ level: ListLevel) -> [UInt8] {
+        // The number text: "%N" is the placeholder for level N, a character of value N - 1.
+        var units: [UInt16] = []
+        var placeholders: [UInt8] = []
+        let characters = Array(level.text.utf16)
+        var index = 0
+        while index < characters.count {
+            if characters[index] == 0x25, index + 1 < characters.count, (0x31...0x39).contains(characters[index + 1]) {
+                placeholders.append(UInt8(units.count + 1))
+                units.append(characters[index + 1] - 0x31)
+                index += 2
+            } else {
+                units.append(characters[index])
+                index += 1
+            }
+        }
+        // The LVLF: start, format, flags, the placeholders (nine bytes), what follows, and sizes.
+        var bytes = le32(level.start) + [UInt8(level.numberFormat)]
+        bytes.append((level.isLegal ? 0x04 : 0) | (level.restartLimit != nil ? 0x08 : 0))
+        bytes += (placeholders + [UInt8](repeating: 0, count: 9)).prefix(9)
+        bytes += [0] + le32(0) + le32(0) + [0, 0, UInt8(level.restartLimit ?? 0), 0]
+        return bytes + le16(units.count) + units.flatMap { le16(Int($0)) }
+    }
+
+    /// The `PlfLst` (a count and an `LSTF` for each list) and, apart, the
+    /// `LVL`s that follow it.
+    private static func listTableBytes(_ lists: [List]) -> (header: [UInt8], levels: [UInt8]) {
+        var header = le16(lists.count)
+        var levels: [UInt8] = []
+        for list in lists {
+            header += le32(list.identifier) + le32(0) + (0..<9).flatMap { _ in le16(0x0FFF) }
+            header += [list.isSimple ? 1 : 0, 0]
+            for level in list.levels.prefix(list.isSimple ? 1 : 9) { levels += levelBytes(level) }
+        }
+        return (header, levels)
+    }
+
+    /// The `PlfLfo`: a count, an `LFO` for each instance, and an `LFOData` for each.
+    private static func listOverrideBytes(_ instances: [ListInstance]) -> [UInt8] {
+        var bytes = le32(instances.count)
+        for instance in instances {
+            bytes += le32(instance.listIdentifier) + le32(0) + le32(0) + [UInt8(instance.overrides.count), 0, 0, 0]
+        }
+        for instance in instances {
+            bytes += le32(0)
+            for entry in instance.overrides {
+                let flags = entry.level | (entry.startAt != nil ? 0x10 : 0) | (entry.replacement != nil ? 0x20 : 0)
+                bytes += le32(entry.startAt ?? 0) + le32(flags)
+                if let replacement = entry.replacement { bytes += levelBytes(replacement) }
+            }
         }
         return bytes
     }

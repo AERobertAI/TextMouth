@@ -36,6 +36,12 @@ struct WordStyleSheet {
         let fontSize: Int?
         /// Whether the style says a paragraph in it begins a page, or nil.
         let pageBreakBefore: Bool?
+        /// The list instance a paragraph in the style is in (`sprmPIlfo`, as
+        /// the file stores it), or nil: how a heading style is linked to a
+        /// list of chapter numbers.
+        let listIndex: Int?
+        /// The level in its list a paragraph in the style is at (`sprmPIlvl`), or nil.
+        let listLevel: Int?
     }
 
     /// The styles by index; nil for an unused slot of the sheet.
@@ -111,6 +117,8 @@ struct WordStyleSheet {
 
         var outlineLevel: Int?
         var pageBreakBefore: Bool?
+        var listIndex: Int?
+        var listLevel: Int?
         var bold: Int?
         var italic: Int?
         var hidden: Int?
@@ -120,6 +128,10 @@ struct WordStyleSheet {
             WordSprm.forEach(in: paragraph.dropFirst(2)) { opcode, operand in
                 if opcode == WordSprm.outlineLevel, let value = operand.first { outlineLevel = Int(value) }
                 if opcode == WordSprm.pageBreakBefore, let value = operand.first { pageBreakBefore = value != 0 }
+                if opcode == WordSprm.listLevel, let value = operand.first { listLevel = Int(value) }
+                if opcode == WordSprm.listIndex, operand.count >= 2 {
+                    listIndex = Int(operand[operand.startIndex]) | Int(operand[operand.startIndex + 1]) << 8
+                }
             }
         }
         // Character properties: the second group of a paragraph style, the
@@ -142,7 +154,9 @@ struct WordStyleSheet {
             italic: italic,
             hidden: hidden,
             fontSize: fontSize,
-            pageBreakBefore: pageBreakBefore
+            pageBreakBefore: pageBreakBefore,
+            listIndex: listIndex,
+            listLevel: listLevel
         )
     }
 
@@ -221,6 +235,21 @@ struct WordStyleSheet {
     func beginsPage(styleIndex index: Int, direct: Bool?) -> Bool {
         if let direct { return direct }
         return chain(from: index).lazy.compactMap(\.pageBreakBefore).first ?? false
+    }
+
+    /// The list instance (one-based) and level (0 to 8) of a paragraph in
+    /// style `index` with the list properties `direct` and `directLevel` set
+    /// on the paragraph itself (nil for none), or nil when the paragraph is
+    /// not in a list or its level skips the numbering (0x0C). Each property
+    /// is the paragraph's own, else the style's, else that of the style it is
+    /// based on, and so on; a paragraph that names list 0 is in no list
+    /// whatever its style says, and the level is 0 when none says.
+    func listMembership(styleIndex index: Int, listIndex direct: Int?, listLevel directLevel: Int?) -> (instance: Int, level: Int)? {
+        let chain = self.chain(from: index)
+        guard let raw = direct ?? chain.lazy.compactMap(\.listIndex).first,
+              let instance = WordListTables.instanceNumber(ofIlfo: raw) else { return nil }
+        let level = directLevel ?? chain.lazy.compactMap(\.listLevel).first ?? 0
+        return level < WordListTables.levelCount ? (instance, level) : nil
     }
 
     /// The font size in half-points of text with the paragraph style

@@ -19,6 +19,12 @@ struct WordParagraphFormat: Equatable {
     /// Whether the paragraph itself says it begins a page (`sprmPFPageBreakBefore`,
     /// on or off), or nil when it says nothing and its style decides.
     var pageBreakBefore: Bool?
+    /// The list instance the paragraph names (`sprmPIlfo`, as the file
+    /// stores it: a signed 16-bit number), or nil when it says nothing and
+    /// its style decides.
+    var listIndex: Int?
+    /// The paragraph's level in its list (`sprmPIlvl`), or nil as for `listIndex`.
+    var listLevel: Int?
 }
 
 /// The character properties a run of text names directly (its CHPX), of
@@ -163,6 +169,8 @@ enum WordDocumentProperties {
         case WordSprm.rowEnd: format.isRowEnd = value != 0
         case WordSprm.tableDepth: format.tableDepth = value
         case WordSprm.pageBreakBefore: format.pageBreakBefore = value != 0
+        case WordSprm.listIndex: format.listIndex = value
+        case WordSprm.listLevel: format.listLevel = value
         default: break
         }
     }

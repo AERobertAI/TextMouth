@@ -107,6 +107,15 @@ enum WordDocumentReader {
                 binTable: range, table: table, document: document, pieces: pieces, styles: styles, limit: pieces.characterCount
             )
         }
+        // The lists, whose numbers Word does not store in the text. They are
+        // a help to the listener and not the text: a list table that does
+        // not fit loses the numbers, not the document.
+        var lists = WordListTables.none
+        let listFormats = try? fib.range(of: .listFormats, in: table)
+        let listOverrides = try? fib.range(of: .listOverrides, in: table)
+        if listFormats != nil || listOverrides != nil {
+            lists = (try? WordListTables(listFormats: listFormats, listOverrides: listOverrides, table: table)) ?? .none
+        }
         var sections = WordSections.none
         if let range = try fib.range(of: .sectionTable, in: table) {
             sections = try WordSections(range: range, table: table, document: document)
@@ -117,7 +126,8 @@ enum WordDocumentReader {
         func write(_ ranges: [Range<Int>]) throws -> (body: String, hasWords: Bool) {
             var writer = WordHTMLWriter(
                 styles: styles, sections: sections, includesPages: includesPages,
-                outputLimit: Int(DocumentByteLimit.current) * 2, paragraphs: paragraphs, characters: characters
+                outputLimit: Int(DocumentByteLimit.current) * 2, paragraphs: paragraphs, characters: characters,
+                lists: lists
             )
             for range in ranges {
                 try pieces.forEachCharacter(from: range.lowerBound, upTo: range.upperBound, in: document) { position, unit in

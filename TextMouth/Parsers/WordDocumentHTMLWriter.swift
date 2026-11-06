@@ -21,6 +21,12 @@ import Foundation
 /// - other paragraphs are `p`, and bold and italic text is `strong` and `em`;
 /// - the paragraphs of a table become `table`, `tr`, and `td`;
 /// - the pages are written as `TextutilPageBreaks` writes textutil's;
+/// - the paragraphs in lists (`sprmPIlfo`, directly or through the paragraph's
+///   style) get what Word shows before them and does not store in the text:
+///   a bullet makes the paragraph an item of a `ul`, and a number is written
+///   as the level's number text ("A.", "1.2.3", "(b)") before the paragraph's
+///   words, in a heading as in a paragraph, so a chapter-numbered book keeps
+///   its chapter numbers (`WordListNumbering`);
 /// - hidden text (`sprmCFVanish`, through direct formatting and the
 ///   character and paragraph styles) and tracked deletions are not read: a
 ///   paragraph whose every word is hidden writes nothing, a page break inside
@@ -40,6 +46,8 @@ struct WordHTMLWriter {
     private let outputLimit: Int
     private var paragraphs: WordFormatRuns<WordParagraphFormat>.Cursor
     private var characters: WordFormatRuns<WordCharacterFormat>.Cursor
+    /// Counts the numbered paragraphs, in the order they end.
+    private var lists: WordListNumbering
 
     /// A document with more page breaks than this reader numbers has no
     /// pages (`TextutilPageBreaks.maximumPages`); the writer says so by
@@ -138,10 +146,13 @@ struct WordHTMLWriter {
     ///   - paragraphs: the paragraph formats by character position.
     ///   - characters: the character formats by character position.
     ///   - outputLimit: the most HTML to write; more throws `DocumentTooLargeError`.
+    ///   - lists: the document's lists, for the paragraphs that are in one.
     init(
         styles: WordStyleSheet, sections: WordSections, includesPages: Bool, outputLimit: Int,
-        paragraphs: WordFormatRuns<WordParagraphFormat>, characters: WordFormatRuns<WordCharacterFormat>
+        paragraphs: WordFormatRuns<WordParagraphFormat>, characters: WordFormatRuns<WordCharacterFormat>,
+        lists: WordListTables = .none
     ) {
+        self.lists = WordListNumbering(tables: lists)
         self.styles = styles
         self.sections = sections
         self.includesPages = includesPages
@@ -429,6 +440,16 @@ struct WordHTMLWriter {
         previousWasSpace = true
         documentCensus.merge(census)
 
+        // Its place in a list, if it has one. Every paragraph of a list is
+        // counted, empty or not, as Word counts it. The mark that ends a row
+        // is no paragraph.
+        let isRowEnd = mark == 0x07 && format.isRowEnd
+        let marker: WordListNumbering.Marker = isRowEnd ? .none : listMarker(of: format)
+        var shown = content
+        if case .number(let number) = marker, hasText {
+            shown = Self.inserting(Self.escaped(number) + " ", into: content)
+        }
+
         // A paragraph in a table, however deep.
         let depth = max(format.tableDepth, format.isInTable ? 1 : 0)
         if depth > 0 {
@@ -450,7 +471,7 @@ struct WordHTMLWriter {
                 write("<td>")
                 cellIsOpen = true
             }
-            if hasText { write("<p>" + content + "</p>\n") }
+            if hasText { write("<p>" + shown + "</p>\n") }
             // The mark of a cell of this table ends the cell; a cell of a
             // table inside it is only the end of a paragraph.
             if mark == 0x07, depth == 1 { closeCell() }
@@ -459,22 +480,45 @@ struct WordHTMLWriter {
             if hasText {
                 if let level = headingLevel(of: format) {
                     hasRealHeading = true
-                    write("<h\(level)>" + content + "</h\(level)>\n")
+                    write("<h\(level)>" + shown + "</h\(level)>\n")
+                } else if marker == .bullet {
+                    // An automatic bullet is an item of a list.
+                    write("<li>" + content + "</li>\n", isListItem: true)
                 } else {
                     // A paragraph short enough to be a heading by its size or
                     // weight, if the document has no real headings.
-                    if let item = Self.bulletItem(in: content, first: first, followedByTab: tabAfterFirst) {
+                    if marker == .none, let item = Self.bulletItem(in: content, first: first, followedByTab: tabAfterFirst) {
                         write("<li>" + item + "</li>\n", isListItem: true)
                     } else {
-                        write("<p>" + content + "</p>\n")
+                        write("<p>" + shown + "</p>\n")
                         if length <= Self.longestHeading, !(length == 1 && startsWithLetter) {
-                            candidates.append((blocks.count - 1, census, content))
+                            candidates.append((blocks.count - 1, census, shown))
                         }
                     }
                 }
             }
         }
         guard outputSize <= outputLimit else { throw DocumentTooLargeError(limit: Int64(outputLimit)) }
+    }
+
+    /// The marker of the paragraph with `format`, counting it in its list.
+    private mutating func listMarker(of format: WordParagraphFormat) -> WordListNumbering.Marker {
+        guard !lists.isEmpty,
+              let membership = styles.listMembership(styleIndex: format.style, listIndex: format.listIndex, listLevel: format.listLevel)
+        else { return .none }
+        return lists.marker(instance: membership.instance, level: membership.level)
+    }
+
+    /// `content` (a paragraph's inline HTML) with `text` put before its
+    /// words: after the page-break spans it begins with, so that a page
+    /// begins where its number does.
+    private static func inserting(_ text: String, into content: String) -> String {
+        let span = "<span role=\"\(TextutilPageBreaks.pageBreakRole)\""
+        var index = content.startIndex
+        while content[index...].hasPrefix(span), let close = content[index...].range(of: "</span>") {
+            index = close.upperBound
+        }
+        return String(content[..<index]) + text + String(content[index...])
     }
 
     /// The longest paragraph, in characters, that can be a heading by its size or weight.
