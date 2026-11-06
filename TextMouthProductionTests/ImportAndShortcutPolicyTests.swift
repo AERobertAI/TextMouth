@@ -22,6 +22,46 @@ final class ImportAndShortcutPolicyTests: XCTestCase {
         XCTAssertEqual(TextImportPolicy.resolvedTitle(""), "Untitled")
     }
 
+    /// Paste from Clipboard changes nothing, and so says so, when the
+    /// clipboard holds no text (nil) or an empty string.
+    func testPasteFromAnEmptyClipboardIsRefusedWithAWordToSay() {
+        XCTAssertNil(TextImportPolicy.pastedText(fromClipboard: nil))
+        XCTAssertNil(TextImportPolicy.pastedText(fromClipboard: ""))
+        XCTAssertEqual(TextImportPolicy.pastedText(fromClipboard: " \n"), " \n", "blanks are text, and paste as they are")
+        XCTAssertEqual(TextImportPolicy.pastedText(fromClipboard: "A page."), "A page.")
+        XCTAssertTrue(TextImportPolicy.noClipboardTextAnnouncement.contains("no text"))
+    }
+
+    /// Reload from Editor reads what an editor saved in the encoding the
+    /// editor chose, not only UTF-8, and gives nil, so the view says so,
+    /// when the file cannot be read.
+    func testReloadFromEditorReadsTheEncodingTheEditorSavedIn() throws {
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ReloadFromEditor-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
+        func saved(_ name: String, _ bytes: Data) throws -> URL {
+            let url = folder.appendingPathComponent(name)
+            try bytes.write(to: url)
+            return url
+        }
+
+        let utf8 = try saved("utf8.txt", Data("Caf\u{E9} au lait\n".utf8))
+        XCTAssertEqual(TextImportPolicy.reloadedText(from: utf8), "Caf\u{E9} au lait\n")
+
+        // An editor that saves UTF-16 with a byte-order mark.
+        let utf16 = try saved("utf16.txt", Data([0xFF, 0xFE]) + (try XCTUnwrap("Caf\u{E9}\n".data(using: .utf16LittleEndian))))
+        XCTAssertEqual(TextImportPolicy.reloadedText(from: utf16), "Caf\u{E9}\n")
+
+        // An editor that saves Windows-1252: a lone E9 byte is not valid UTF-8.
+        let windows = try saved("windows.txt", Data([0x43, 0x61, 0x66, 0xE9, 0x0A]))
+        XCTAssertEqual(TextImportPolicy.reloadedText(from: windows), "Caf\u{E9}\n")
+
+        XCTAssertNil(TextImportPolicy.reloadedText(from: folder.appendingPathComponent("missing.txt")))
+        XCTAssertTrue(TextImportPolicy.reloadFailedAnnouncement.contains("unchanged"))
+        XCTAssertTrue(TextImportPolicy.editorOpenFailedAnnouncement.hasSuffix("try again."))
+    }
+
     func testTextImportSanitizesFilenameWithoutChangingTitle() {
         let title = "My/Book:Title?"
         XCTAssertEqual(TextImportPolicy.textFilename(for: title), "My-Book-Title.txt")

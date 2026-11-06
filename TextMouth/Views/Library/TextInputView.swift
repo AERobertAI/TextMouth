@@ -24,6 +24,41 @@ enum TextImportPolicy {
         !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    // MARK: Pasting and the External Editor
+
+    /// What VoiceOver says when Paste from Clipboard finds no text on the
+    /// clipboard: nothing on the screen would tell a listener it did nothing.
+    static let noClipboardTextAnnouncement =
+        "The clipboard has no text to paste, so the text is unchanged. Copy some text, then paste again."
+
+    /// What VoiceOver says when Open in Editor could not write the text to a
+    /// file for the editor to open.
+    static let editorOpenFailedAnnouncement =
+        "Could not open the text in an editor, because its file could not be written. "
+        + "Paste or type the text here instead, or try again."
+
+    /// What VoiceOver says when Reload from Editor could not read the editor's
+    /// file back, so the text here is unchanged.
+    static let reloadFailedAnnouncement =
+        "Could not read the text back from the editor's file, so the text here is unchanged. "
+        + "Save the file in the editor, then choose Reload from Editor again."
+
+    /// The text to put in the editor from the clipboard's text: nil when the
+    /// clipboard holds none, or an empty string, which pastes nothing.
+    static func pastedText(fromClipboard string: String?) -> String? {
+        guard let string, !string.isEmpty else { return nil }
+        return string
+    }
+
+    /// The text of the file an external editor saved, read as a plain-text
+    /// book is read: UTF-8, or the encoding a byte-order mark names, or the
+    /// encoding the bytes look like, so an editor that saves in another
+    /// encoding than the one the file was written in still reloads. Nil when
+    /// the file cannot be read at all.
+    static func reloadedText(from url: URL) -> String? {
+        try? TextFileDecoder.readText(at: url, format: .txt, policy: .guess)
+    }
+
     static func resolvedTitle(_ title: String) -> String {
         title.isEmpty ? "Untitled" : title
     }
@@ -152,15 +187,17 @@ struct TextInputView: View {
 
     private func pasteFromClipboard() {
         #if os(macOS)
-        if let string = NSPasteboard.general.string(forType: .string) {
-            textContent = string
-        }
+        let clipboardText = NSPasteboard.general.string(forType: .string)
         #else
         // iOS: the general pasteboard's plain text, when it holds any.
-        if let string = UIPasteboard.general.string {
-            textContent = string
-        }
+        let clipboardText = UIPasteboard.general.string
         #endif
+        if let pasted = TextImportPolicy.pastedText(fromClipboard: clipboardText) {
+            textContent = pasted
+        } else {
+            // Nothing changed, and nothing on the screen would say so.
+            VoiceOverAnnouncer.announce(TextImportPolicy.noClipboardTextAnnouncement)
+        }
     }
 
     private func openInEditor() {
@@ -175,7 +212,8 @@ struct TextInputView: View {
             NSWorkspace.shared.open(fileURL)
             showReload = true
         } catch {
-            // If writing fails, do nothing; the user can try again.
+            // The user can try again, or paste or type; but not in silence.
+            VoiceOverAnnouncer.announce(TextImportPolicy.editorOpenFailedAnnouncement)
         }
         #else
         // Phase 0: iOS has no external editor to open the text in; phase 1
@@ -185,10 +223,11 @@ struct TextInputView: View {
 
     private func reloadFromEditor() {
         guard let url = editorTempURL else { return }
-        do {
-            textContent = try String(contentsOf: url, encoding: .utf8)
-        } catch {
-            // If reading fails, leave content unchanged.
+        if let reloaded = TextImportPolicy.reloadedText(from: url) {
+            textContent = reloaded
+        } else {
+            // The content stays as it was, and the listener is told so.
+            VoiceOverAnnouncer.announce(TextImportPolicy.reloadFailedAnnouncement)
         }
     }
 
