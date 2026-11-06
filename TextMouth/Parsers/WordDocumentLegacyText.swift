@@ -25,7 +25,7 @@ struct WordLegacyCharacters {
     let width: Int
     /// The code page's encoding.
     private let encoding: String.Encoding
-    /// The code unit of each single byte; a byte below 0x80 is its own.
+    /// The code unit of each single byte.
     private let singleBytes: [UInt16]
 
     /// Characters stored `width` bytes each in `encoding`.
@@ -33,13 +33,23 @@ struct WordLegacyCharacters {
         self.width = width
         self.encoding = encoding
         singleBytes = (0..<256).map { byte in
-            // Controls and ASCII are themselves in every code page this reads
-            // (a field mark, a tab, a page break must stay what they are).
+            // Controls and ASCII are themselves in every code page this reads (a field
+            // mark, a tab, a page break must stay what they are), except a line feed.
+            // Word 97 drops it; textutil reads it as the end of a line, and a listener
+            // must not hear the words on either side of it run together.
+            if byte == 0x0A { return 0x0B }
             if byte < 0x80 { return UInt16(byte) }
-            guard let text = String(data: Data([UInt8(byte)]), encoding: encoding), let unit = text.utf16.first,
-                  text.utf16.count == 1 else { return UInt16(byte) }
-            return unit
+            // A byte the code page does not define is the Windows-1252 character, as in
+            // a Far East document that holds Western text; one that neither defines is itself.
+            return Self.unit(ofByte: UInt8(byte), in: encoding) ?? Self.unit(ofByte: UInt8(byte), in: .windowsCP1252) ?? UInt16(byte)
         }
+    }
+
+    /// The code unit `encoding` gives the single byte `byte`, or nil if it is not a character of it.
+    private static func unit(ofByte byte: UInt8, in encoding: String.Encoding) -> UInt16? {
+        guard let text = String(data: Data([byte]), encoding: encoding), text.utf16.count == 1,
+              let unit = text.utf16.first, unit != 0xFFFD else { return nil }
+        return unit
     }
 
     // MARK: Decoding
@@ -47,20 +57,28 @@ struct WordLegacyCharacters {
     /// The code unit of the single byte `byte`.
     func unit(ofByte byte: UInt8) -> UInt16 { singleBytes[Int(byte)] }
 
-    /// The code unit of the 16-bit stored unit `stored`, or nil for a pair
-    /// of bytes that is not a character of the code page (it is then left
-    /// out). `cache` keeps the pairs already decoded: a document has few
-    /// different characters.
-    func unit(ofStored stored: UInt16, cache: inout [UInt16: UInt16?]) -> UInt16? {
+    /// What a stored 16-bit unit reads as: one code unit, or two.
+    struct Decoded {
+        var first: UInt16
+        var second: UInt16?
+    }
+
+    /// The characters of the 16-bit stored unit `stored`: a byte with a zero above it is that byte; a
+    /// pair (the lead byte above) is a character of the code page; and a pair that is none is its two
+    /// bytes, the high one first, as textutil reads it: a document of this age holds a stray single byte
+    /// beside the pairs now and then (a paragraph mark among them, which must not be lost).
+    /// `cache` keeps the pairs already decoded: a document has few different characters.
+    func characters(ofStored stored: UInt16, cache: inout [UInt16: Decoded]) -> Decoded {
         let high = UInt8(stored >> 8)
-        if high == 0 { return singleBytes[Int(stored & 0xFF)] }
+        let low = UInt8(stored & 0xFF)
+        if high == 0 { return Decoded(first: singleBytes[Int(low)], second: nil) }
         if let known = cache[stored] { return known }
-        // The lead byte is the high byte.
-        var decoded: UInt16?
-        if let text = String(data: Data([high, UInt8(stored & 0xFF)]), encoding: encoding), text.utf16.count == 1 {
-            decoded = text.utf16.first
+        var decoded = Decoded(first: singleBytes[Int(high)], second: singleBytes[Int(low)])
+        if let text = String(data: Data([high, low]), encoding: encoding), text.utf16.count == 1, let unit = text.utf16.first,
+           unit != 0xFFFD {
+            decoded = Decoded(first: unit, second: nil)
         }
-        cache[stored] = .some(decoded)
+        cache[stored] = decoded
         return decoded
     }
 

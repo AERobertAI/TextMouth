@@ -1400,11 +1400,13 @@ final class WordDocumentReaderTests: XCTestCase {
         var builder = WordDocumentBuilder()
         builder.paragraphs = [Paragraph("old")]
         builder.version = 0x0068
-        XCTAssertNil(try WordDocumentReader.html(from: builder.build(), includesPages: true))
+        // Asked not to read the older layout (the Mac's choice), the reader leaves it to textutil;
+        // `WordDocumentLegacyTests` reads these documents.
+        XCTAssertNil(try WordDocumentReader.html(from: builder.build(), includesPages: true, readsOldLayout: false))
         // And one from before Word 95, by its other wIdent.
         builder.version = 0x0065
         builder.identifier = 0xA5DC
-        XCTAssertNil(try WordDocumentReader.html(from: builder.build(), includesPages: true))
+        XCTAssertNil(try WordDocumentReader.html(from: builder.build(), includesPages: true, readsOldLayout: false))
     }
 
     func testAnEncryptedDocumentIsRefusedWithThePasswordSentence() throws {

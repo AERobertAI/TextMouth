@@ -36,6 +36,13 @@ final class WordDocumentLegacyComparisonTests: XCTestCase {
         "doc6/libreoffice-ooo17498-4.doc", "doc6/libreoffice-ooo8726-1.doc",
     ]
 
+    /// The pages textutil finds that the reader does not, by sample. The section sample's second and third sections
+    /// begin continuously (`sprmSBkc` is 0 in both), so the form feeds that end the first two sections are section
+    /// breaks that begin no page: Word shows the text on one page. textutil makes a page of the first form feed.
+    private static let pagesOnlyTextutilFinds: [String: [String]] = [
+        "doc6/poi-Word6_sections.doc": ["2@17"],
+    ]
+
     // MARK: - Helpers
 
     /// What an import of the sample makes of it, read by textutil, as the chapter the Markdown parses to.
@@ -109,7 +116,8 @@ final class WordDocumentLegacyComparisonTests: XCTestCase {
             let textutil = chapter.pages.map { "\($0.label)@\($0.characterOffset)" }
             let reader = try readerChapter(sample).pages.map { "\($0.label)@\($0.characterOffset)" }
             print("LEGCMP pages \(sample): textutil \(textutil), reader \(reader)")
-            if textutil.count != reader.count { differences.append("\(sample): textutil pages \(textutil), reader pages \(reader)") }
+            let expected = textutil.filter { !(Self.pagesOnlyTextutilFinds[sample] ?? []).contains($0) }
+            if expected != reader { differences.append("\(sample): textutil pages \(textutil), reader pages \(reader)") }
         }
         XCTAssertEqual(differences, [], differences.joined(separator: "\n"))
     }

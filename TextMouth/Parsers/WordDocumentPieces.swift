@@ -242,15 +242,16 @@ struct WordPieceTable {
             var position = max(piece.firstCharacter, start)
             if let characters = legacyCharacters {
                 // A Word 6 or Word 95 character: a byte, or a 16-bit unit
-                // that holds a byte or a pair. One that is no character of
-                // the code page is left out.
-                var decoded: [UInt16: UInt16?] = [:]
+                // that holds a byte, a pair, or (a pair that is none) two bytes.
+                var decoded: [UInt16: WordLegacyCharacters.Decoded] = [:]
                 while position < end {
                     let at = piece.fileOffset + (position - piece.firstCharacter) * piece.width
                     if piece.width == 1 {
                         try body(position, characters.unit(ofByte: bytes[at]))
-                    } else if let unit = characters.unit(ofStored: UInt16(bytes[at]) | UInt16(bytes[at + 1]) << 8, cache: &decoded) {
-                        try body(position, unit)
+                    } else {
+                        let stored = characters.characters(ofStored: UInt16(bytes[at]) | UInt16(bytes[at + 1]) << 8, cache: &decoded)
+                        try body(position, stored.first)
+                        if let second = stored.second { try body(position, second) }
                     }
                     position += 1
                 }

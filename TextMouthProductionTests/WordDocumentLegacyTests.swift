@@ -83,7 +83,8 @@ final class WordDocumentLegacyTests: XCTestCase {
     func testTheJapaneseSampleReadsShiftJisFromTheTwoByteUnitsAndItsFonts() throws {
         // wIdent 0xA697, fExtChar, an English language id, and SHIFTJIS_CHARSET fonts.
         let body = try sampleBody("libreoffice-ooo17498-1.doc")
-        XCTAssertTrue(body.hasPrefix("<p>管理組合役員各位</p>\n<p>理事会開催のお知らせ</p>\n"), body)
+        // The second line is larger than the rest: a heading, as in textutil's reading of the file.
+        XCTAssertTrue(body.hasPrefix("<p>管理組合役員各位</p>\n<h1>理事会開催のお知らせ</h1>\n"), body)
         XCTAssertTrue(body.contains("2001/9/2"), body)
     }
 
@@ -103,8 +104,14 @@ final class WordDocumentLegacyTests: XCTestCase {
     func testTheFastSavedWord95SampleReadsItsPiecesInTheOrderOfTheText() throws {
         // wIdent 0xA699, nFib 0x68, two-byte characters in a piece table, English text.
         let body = try body(of: Data(contentsOf: formatSampleURL("doc/poi-Bug51944.doc")))
-        XCTAssertTrue(body.contains("FACSIMILE TRANSMISSION"), body)
-        XCTAssertTrue(body.contains("Please telephone (555) 5555 5555 if all"), body)
+        // The first words of the first piece in the text, which the stream stores after its second.
+        XCTAssertTrue(body.hasPrefix("<p>By Post and Fax (5555 5555)</p>\n"), body)
+        XCTAssertTrue(body.contains("Attention"), body)
+        XCTAssertTrue(body.contains("Many thanks for"), body)
+        // A unit that is a stray pair of single bytes (0x350D: a "5" and a paragraph mark) is kept as the two.
+        XCTAssertTrue(body.contains("5</p>\n<p>9-55"), body)
+        // And Western punctuation in a document with Far East fonts is Windows-1252: 0x92 is a right quote.
+        XCTAssertTrue(body.contains("\u{2019}"), body)
     }
 
     func testTheOutlineNumberedSampleIsAListWhoseNumbersAreSilentOrWords() throws {
@@ -152,12 +159,18 @@ final class WordDocumentLegacyTests: XCTestCase {
 
     func testBoldIsAToggleThroughTheParagraphStyle() throws {
         let body = try body([
+            // Most of the document is bold, so that a bold paragraph is not guessed to be a heading.
+            Paragraph("The first paragraph is long, and set in the bold style, so that most of the document is bold.", style: 4),
             Paragraph("styled", style: 4),
             Paragraph(runs: [Run("off", sprms: Builder.bold(0))], style: 4),
             Paragraph(runs: [Run("reversed", sprms: Builder.bold(0x81))], style: 4),
             Paragraph(runs: [Run("kept", sprms: Builder.bold(0x80))], style: 4),
         ]) { $0.styles.append(Builder.Style(sti: 100, basedOn: 0, name: "Strong", characterSprms: Builder.bold())) }
-        XCTAssertEqual(body, "<p><strong>styled</strong></p>\n<p>off</p>\n<p>reversed</p>\n<p><strong>kept</strong></p>\n")
+        XCTAssertEqual(
+            body,
+            "<p><strong>The first paragraph is long, and set in the bold style, so that most of the document is bold.</strong></p>\n"
+                + "<p><strong>styled</strong></p>\n<p>off</p>\n<p>reversed</p>\n<p><strong>kept</strong></p>\n"
+        )
     }
 
     func testACharacterStyleTakesItsPropertiesFromTheStyleSheet() throws {
@@ -353,21 +366,36 @@ final class WordDocumentLegacyTests: XCTestCase {
         XCTAssertEqual(body, "<p>café</p>\n")
     }
 
-    func testADoubleByteCharacterThatIsNotInTheCodePageIsLeftOut() throws {
-        // The unit 0x8140 is a character of Shift JIS; 0xFFFF is not, and is left out.
+    func testAUnitThatIsNoDoubleByteCharacterReadsAsItsTwoBytesAndKeepsAParagraphMark() throws {
+        // The unit 0x350D is a "5" and a carriage return, as a stray pair of single bytes in a two-byte document.
         let encoding = try XCTUnwrap(TextEncodingCatalog.entry(forIdentifier: "cp932")?.encoding)
         var builder = Builder()
-        builder.paragraphs = [Paragraph("ab")]
+        builder.paragraphs = [Paragraph("abc")]
         builder.twoByteCharacters = true
         builder.encoding = encoding
         builder.fontCharacterSets = [128]
         let built = builder.buildStream()
         var stream = built.bytes
-        // Put an impossible unit between a and b.
-        stream.replaceSubrange(built.layout.textStart + 2..<built.layout.textStart + 4, with: [0xFF, 0xFF])
+        // The unit of "b" is stored 0x0D, 0x35 (low byte first).
+        stream.replaceSubrange(built.layout.textStart + 2..<built.layout.textStart + 4, with: [0x0D, 0x35])
         var file = CompoundFileBuilder()
         file.streams = [("WordDocument", stream)]
-        XCTAssertEqual(try body(of: file.build().data), "<p>ab</p>\n")
+        XCTAssertEqual(try body(of: file.build().data), "<p>a5</p>\n<p>c</p>\n")
+    }
+
+    func testWesternPunctuationInADocumentWithFarEastFontsIsWindows1252() throws {
+        // 0x92 alone is no character of Shift JIS, and is a right single quote in Windows-1252.
+        let body = try body([Paragraph(runs: [Run("it\u{2019}s")])]) {
+            $0.twoByteCharacters = true
+            $0.fontCharacterSets = [128]
+            $0.encoding = .windowsCP1252
+        }
+        XCTAssertEqual(body, "<p>it\u{2019}s</p>\n")
+    }
+
+    func testALineFeedIsALineBreakSoTheWordsOnEitherSideDoNotRunTogether() throws {
+        // Word 97 drops the character; textutil reads it as the end of a line.
+        XCTAssertEqual(try body([Paragraph("one\ntwo")]), "<p>one<br>two</p>\n")
     }
 
     // MARK: - Fast Save
