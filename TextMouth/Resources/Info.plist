@@ -485,6 +485,25 @@
 		</dict>
 		<dict>
 			<key>CFBundleTypeName</key>
+			<string>Kindle Book (KFX)</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>kfx</string>
+				<string>kfx-zip</string>
+				<string>azw8</string>
+				<string>kpf</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.textmouth.kfx</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
 			<string>SSML Document</string>
 			<key>CFBundleTypeExtensions</key>
 			<array>
@@ -706,6 +725,26 @@
 				<array>
 					<string>application/x-mobipocket-ebook</string>
 					<string>application/vnd.amazon.ebook</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.kfx</string>
+			<key>UTTypeDescription</key>
+			<string>Kindle Book (KFX)</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>kfx</string>
+					<string>kfx-zip</string>
+					<string>azw8</string>
+					<string>kpf</string>
 				</array>
 			</dict>
 		</dict>

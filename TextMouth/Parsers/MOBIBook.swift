@@ -35,6 +35,10 @@ struct MOBIBook {
         /// The contents entries that name places in the book, by the id of
         /// their anchor; the converter writes each as a heading annotation.
         var headingTargets: [String: MarkdownHeadingAnnotation]
+        /// The pages the book's own page list begins at elements of the
+        /// HTML, by the element's id; none for a MOBI book, which has no
+        /// print pages, and for a KFX book that has no page list.
+        var pages = HTMLPageTargets()
     }
 
     var metadata: Metadata

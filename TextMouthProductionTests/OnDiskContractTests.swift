@@ -52,13 +52,14 @@ final class OnDiskContractTests: XCTestCase {
     /// "mobi" (FMT42, November 4, 2026) was added deliberately at the end: a
     /// TextMouth built before it refuses a library that holds a Kindle book,
     /// as 0.2.0's eight formats did, so the orchestrator raises the version's
-    /// MINOR and the changelog cautions the user.
+    /// MINOR and the changelog cautions the user. "kfx" (FMT52, November 6,
+    /// 2026) was added deliberately after it, for the same reason.
     func testEveryBookFormatIsSavedUnderItsOwnName() {
         XCTAssertEqual(
             BookFormat.allCases.map(\.rawValue),
             [
                 "epub", "txt", "markdown", "html", "webarchive", "ssml", "docx", "rtf", "rtfd", "doc", "odt",
-                "wordml", "braille", "daisy", "pdf", "audio", "mobi",
+                "wordml", "braille", "daisy", "pdf", "audio", "mobi", "kfx",
             ],
             Self.because("a BookFormat's raw value, or the cases", Self.formatForces)
         )
@@ -523,7 +524,7 @@ final class OnDiskContractTests: XCTestCase {
     /// Each page reader's version: the formats with pages, and that no
     /// other format has one.
     func testThePageReaderVersions() {
-        let withPages = ["epub", "html", "pdf", "docx", "daisy", "rtf", "rtfd", "doc", "odt", "wordml", "braille", "txt"]
+        let withPages = ["epub", "html", "pdf", "docx", "daisy", "rtf", "rtfd", "doc", "odt", "wordml", "braille", "txt", "kfx"]
         let forces = "every book of that format is read again at the next launch (V05, V07)"
         var versions: [String: String] = [:]
         var withoutPages: Set<String> = []

@@ -81,6 +81,9 @@ enum BookParser {
         case .mobi:
             // A Kindle book, read by TextMouth's own reader (FMT42).
             return try MOBIParser.parse(url: url)
+        case .kfx:
+            // A DRM-free Kindle KFX book, read by TextMouth's own reader (FMT52).
+            return try KFXParser.parse(url: url)
         case .audio:
             // Audio parsing is async, so wait for it through the shared bridge.
             return try AsyncBridge.waitForResult(reading: url, timeLimit: AsyncBridge.audioAnalysisTimeLimit) {

@@ -50,20 +50,48 @@ enum MOBIParser {
     ///   `FileImportError.noTextToRead` for one with no text, and
     ///   `ImportCancelled` when the import running it was cancelled.
     static func prepareBook(url: URL, fallbackTitle: String? = nil) throws -> PreparedBook {
-        let book = try MOBIBook(bytes: try bytes(of: url))
+        let fileBytes = try bytes(of: url)
+        // Kindle's apps name KFX books .azw: the bytes decide, not the name.
+        if KFXSignature.isKFXOrProtected(fileBytes) {
+            // A book of the MOBI format has no print pages, so none are written.
+            return try KFXParser.prepareBook(
+                bytes: fileBytes,
+                fallbackTitle: fallbackTitle ?? url.deletingPathExtension().lastPathComponent,
+                includesPages: false, near: url
+            )
+        }
+        let book = try MOBIBook(bytes: fileBytes)
+        return try preparedBook(
+            sections: book.sections, metadata: book.metadata,
+            fallbackTitle: fallbackTitle ?? url.deletingPathExtension().lastPathComponent)
+    }
+
+    /// Makes a book of the HTML `sections` a Kindle book was cut into: each
+    /// section that holds words is a chapter. MOBI and KFX books both end
+    /// here, so they are read into chapters the same way.
+    /// - Parameters:
+    ///   - metadata: What the book says of itself; a title it lacks becomes
+    ///     `fallbackTitle`, an author it lacks the unknown author.
+    ///   - includesPages: Whether the pages a section names are written as
+    ///     page markers; a MOBI book names none.
+    /// - Throws: `FileImportError.noTextToRead` for a book with no words.
+    static func preparedBook(
+        sections: [MOBIBook.Section], metadata: MOBIBook.Metadata, fallbackTitle: String,
+        includesPages: Bool = false
+    ) throws -> PreparedBook {
         var chapters: [EPUBParser.PreparedChapter] = []
-        for section in book.sections {
+        for section in sections {
             // Cancel during a very large book is heard between its sections.
             try ImportCancellation.throwIfCancelled()
-            if let chapter = try preparedChapter(of: section, number: chapters.count + 1) {
+            if let chapter = try preparedChapter(of: section, number: chapters.count + 1, includesPages: includesPages) {
                 chapters.append(chapter)
             }
         }
         guard !chapters.isEmpty else { throw FileImportError.noTextToRead }
         return PreparedBook(
-            title: book.metadata.title.isEmpty ? (fallbackTitle ?? url.deletingPathExtension().lastPathComponent) : book.metadata.title,
-            author: book.metadata.author.isEmpty ? Book.unknownAuthor : book.metadata.author,
-            language: book.metadata.language,
+            title: metadata.title.isEmpty ? fallbackTitle : metadata.title,
+            author: metadata.author.isEmpty ? Book.unknownAuthor : metadata.author,
+            language: metadata.language,
             chapters: chapters
         )
     }
@@ -73,7 +101,10 @@ enum MOBIParser {
     /// - Throws: `MOBIError.notAKindleBook` and `.damaged` for a file whose
     ///   headers do not read; the file system's error for one that cannot be read.
     static func readMetadata(url: URL) throws -> MOBIBook.Metadata {
-        try MOBIBook.metadata(in: bytes(of: url))
+        let fileBytes = try bytes(of: url)
+        // An .azw file holding KFX names itself as KFX does.
+        if KFXSignature.isKFXOrProtected(fileBytes) { return try KFXParser.readMetadata(bytes: fileBytes, near: url) }
+        return try MOBIBook.metadata(in: fileBytes)
     }
 
     /// The bytes of the file at `url`, within `DocumentByteLimit`.
@@ -86,12 +117,14 @@ enum MOBIParser {
     /// Makes a chapter of `section`, or nil when it holds no words.
     /// `number` is the chapter's place among those that hold text, which
     /// titles a chapter nothing else titles.
-    private static func preparedChapter(of section: MOBIBook.Section, number: Int) throws -> EPUBParser.PreparedChapter? {
+    private static func preparedChapter(
+        of section: MOBIBook.Section, number: Int, includesPages: Bool
+    ) throws -> EPUBParser.PreparedChapter? {
         // The section's HTML in Markdown, its contents entries kept as
         // heading annotations at their anchors. No page markers are written.
         var markdown = try HTMLToMarkdownConverter.convert(
             section.html, stripDuplicateNavigation: false,
-            headingTargets: section.headingTargets, includesPages: false
+            headingTargets: section.headingTargets, pages: section.pages, includesPages: includesPages
         )
         let fallbackTitle = section.title ?? untitledChapter(number: number)
         var chapter = try MarkdownDocParser.parseChapter(
