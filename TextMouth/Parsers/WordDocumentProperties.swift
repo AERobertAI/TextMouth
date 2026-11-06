@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Formats
 
-/// The paragraph properties a paragraph of a Word 97-2003 document names
+/// The paragraph properties a paragraph of a Word document (any version) names
 /// directly (its PAPX), of those this reader uses.
 struct WordParagraphFormat: Equatable {
     /// The paragraph's style index (`istd`).
@@ -110,7 +110,7 @@ struct WordFormatRuns<Format> {
 
 // MARK: - Reading the Bin Tables
 
-/// Reads the paragraph and character properties of a Word 97-2003 document
+/// Reads the paragraph and character properties of a Word document (Word 6 and Word 95 in their form: `dialect`)
 /// from its bin tables and formatted disk pages (FKPs, [MS-DOC] 2.9.25 and
 /// 2.9.181).
 ///

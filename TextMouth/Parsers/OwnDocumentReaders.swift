@@ -59,8 +59,9 @@ enum OwnDocumentReaders {
             guard RTFDocumentReader.isOn else { return nil }
             return try RTFDocumentReader.html(of: url, as: format, includesPages: includesPages)
         case .doc:
-            // Word 97-2003 (.doc and .dot); nil too for a Word 6 or Word 95
-            // document, which textutil reads.
+            // Word 6 to Word 2003 (.doc and .dot); nil for a compound file older
+            // than Word 6, and for a Word 6 or Word 95 document where the
+            // platform keeps textutil for it (`readsWord6AndWord95`).
             guard WordDocumentReader.isOn else { return nil }
             return try WordDocumentReader.html(
                 of: url, includesPages: includesPages, readsOldLayout: WordDocumentReader.readsWord6AndWord95

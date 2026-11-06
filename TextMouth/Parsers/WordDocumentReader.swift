@@ -1,8 +1,8 @@
 import Foundation
 
-// MARK: - The Word 97-2003 Reader
+// MARK: - The Word 6 to Word 2003 Reader
 
-/// TextMouth's own reader of Word 97-2003 documents (.doc and the template
+/// TextMouth's own reader of Word 6, Word 95, and Word 97-2003 documents (.doc and the template
 /// .dot, FMT47), compiled into both apps. It reads, from the specification
 /// [MS-DOC] and the compound file [MS-CFB] beneath it, what the user wants
 /// under TextMouth's control: the text, the real heading styles (Heading 1
@@ -50,7 +50,7 @@ enum WordDocumentReader {
     /// whole and tested: if the answer is yes, this is the one line to change.
     static let speaksListNumbers = false
 
-    /// Whether this platform reads Word 97-2003 documents with this reader:
+    /// Whether this platform reads Word 97-2003 documents with this reader (Word 6 and Word 95 have their own switch):
     /// iOS, which has no textutil, always; the Mac once the reader has been
     /// checked against textutil's reading of the same files
     /// (`WordDocumentComparisonTests`), which it now is.
@@ -83,7 +83,7 @@ enum WordDocumentReader {
     /// - Throws: `PasswordProtectedDocument`, `DocumentTooLargeError`,
     ///   `FileImportError.noTextToRead` for an empty file, and
     ///   `TextutilConverter.Failure.unreadable` for a file that is not a
-    ///   readable Word 97-2003 document.
+    ///   readable Word 6 to Word 2003 document.
     static func html(of url: URL, includesPages: Bool, readsOldLayout: Bool = true) throws -> String? {
         try html(from: DocumentByteLimit.contents(of: url), includesPages: includesPages, readsOldLayout: readsOldLayout)
     }
@@ -94,7 +94,7 @@ enum WordDocumentReader {
         try html(from: DocumentByteLimit.contents(of: url), includesPages: includesPages, speaksListNumbers: speaksListNumbers)
     }
 
-    /// The HTML document of the Word 97-2003 document in `data`; see
+    /// The HTML document of the Word 6 to Word 2003 document in `data`; see
     /// `html(of:includesPages:)`.
     static func html(
         from data: Data, includesPages: Bool, speaksListNumbers: Bool = WordDocumentReader.speaksListNumbers,

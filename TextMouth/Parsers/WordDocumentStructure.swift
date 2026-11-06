@@ -64,12 +64,12 @@ struct WordFileInformationBlock {
 
         /// Where the offset and size of this structure lie in the FIB of a
         /// Word 6 or Word 95 document, or nil for one those do not have
-        /// (endnotes, text boxes, and the list tables of Word 97). The
-        /// structures are in the `WordDocument` stream itself. The style
-        /// sheet, the section table, the bin tables, and the CLX were found
-        /// by reading real files; the footnote tables are from the format's
-        /// order and not confirmed by a sample (a document with footnotes is
-        /// the one thing the samples lack).
+        /// (endnotes, text boxes, and the list tables of Word 97: the stories
+        /// of the first two are read whole, in one range each). The
+        /// structures are in the `WordDocument` stream itself. Every offset here
+        /// was found by reading real files; the footnote tables fit in all 26
+        /// real documents that have footnotes (the sizes of the tables, the marks
+        /// in the main text, and the ends agreeing with `ccpFtn`).
         fileprivate var legacyOffset: Int? {
             switch self {
             case .styleSheet: return 0x60

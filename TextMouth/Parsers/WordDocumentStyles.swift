@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - The Style Sheet
 
-/// The style sheet (STSH) of a Word 97-2003 document ([MS-DOC] 2.9.271):
+/// The style sheet (STSH) of a Word document ([MS-DOC] 2.9.271; the shorter form of Word 6 and Word 95 is read by `init(legacyRange:table:)`):
 /// the styles a paragraph or run of text can name by index (`istd`), each
 /// with its built-in identifier (`sti`), the style it is based on, and the
 /// paragraph and character properties the reader needs from it: the outline
@@ -262,6 +262,24 @@ struct WordStyleSheet {
         }
     }
 
+    /// The `count` property groups of the style whose bytes are `size` bytes at `position` in `table`, the first
+    /// beginning `offset` bytes in: each a 16-bit size and the bytes, padded to an even size. A sheet that
+    /// ends the groups early has the ones before.
+    /// - Throws: `OLEDamage` when a group runs past the style.
+    private static func propertyGroups(count: Int, from offset: Int, at position: Int, size: Int, in table: OLEBytes) throws -> [ArraySlice<UInt8>] {
+        var offset = offset
+        var groups: [ArraySlice<UInt8>] = []
+        for _ in 0..<count {
+            guard offset + 2 <= size else { break }
+            let groupSize = try table.u16(position + offset)
+            offset += 2
+            guard offset + groupSize <= size else { throw OLEDamage(reason: "a style's properties run past the style") }
+            groups.append(try table.slice(offset: position + offset, length: groupSize))
+            offset += groupSize + groupSize % 2
+        }
+        return groups
+    }
+
     /// The Word 6 or Word 95 style whose bytes are `size` bytes at `position` in `table`.
     private static func legacyStyle(at position: Int, size: Int, baseSize: Int, in table: OLEBytes) throws -> Style {
         guard baseSize + 2 <= size else { throw OLEDamage(reason: "a style is \(size) bytes long") }
@@ -273,15 +291,7 @@ struct WordStyleSheet {
         // The name: a size byte, the characters, and a null; the groups begin at an even place.
         var offset = try baseSize + 1 + table.u8(position + baseSize) + 1
         offset += offset % 2
-        var groups: [ArraySlice<UInt8>] = []
-        for _ in 0..<groupCount {
-            guard offset + 2 <= size else { break }
-            let groupSize = try table.u16(position + offset)
-            offset += 2
-            guard offset + groupSize <= size else { throw OLEDamage(reason: "a style's properties run past the style") }
-            groups.append(try table.slice(offset: position + offset, length: groupSize))
-            offset += groupSize + groupSize % 2
-        }
+        let groups = try Self.propertyGroups(count: groupCount, from: offset, at: position, size: size, in: table)
         return makeStyle(builtInIdentifier: first & 0x0FFF, basedOn: second >> 4, kind: kind, groups: groups, dialect: .legacy)
     }
 
@@ -299,22 +309,14 @@ struct WordStyleSheet {
         // Then the name: a 16-bit length, that many UTF-16 characters, and a
         // terminating null.
         let nameLength = try table.u16(position + fixedSize)
-        var offset = fixedSize + 2 + (nameLength + 1) * 2
+        let offset = fixedSize + 2 + (nameLength + 1) * 2
         guard offset <= size else { throw OLEDamage(reason: "a style's name runs past the style") }
 
         // Then the property groups, each a 16-bit size and the bytes, padded
         // to an even size. A paragraph style has two: paragraph properties
         // (which begin with the style index of the paragraph) and character
         // properties. A character style has one: character properties.
-        var groups: [ArraySlice<UInt8>] = []
-        for _ in 0..<groupCount {
-            guard offset + 2 <= size else { break }
-            let groupSize = try table.u16(position + offset)
-            offset += 2
-            guard offset + groupSize <= size else { throw OLEDamage(reason: "a style's properties run past the style") }
-            groups.append(try table.slice(offset: position + offset, length: groupSize))
-            offset += groupSize + groupSize % 2
-        }
+        let groups = try Self.propertyGroups(count: groupCount, from: offset, at: position, size: size, in: table)
 
         return makeStyle(builtInIdentifier: first & 0x0FFF, basedOn: basedOn, kind: kind, groups: groups, dialect: .modern)
     }

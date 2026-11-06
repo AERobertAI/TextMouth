@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - The Piece Table
 
-/// The piece table of a Word 97-2003 document ([MS-DOC] 2.9.178, in the CLX
+/// The piece table of a Word document ([MS-DOC] 2.9.178, in the CLX
 /// of the table stream): the list of pieces of text that make up the
 /// document, each with the file offset where its characters are stored and
 /// whether they are stored as 8-bit Windows-1252 or as UTF-16LE.
