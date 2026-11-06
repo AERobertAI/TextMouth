@@ -103,10 +103,10 @@ struct RTFInterpreter {
 
     // MARK: Notes
 
-    /// What the body had in hand when a footnote, an endnote, or a shape's
-    /// text box began, to take up again when it ends. Such text is built by a
-    /// builder of its own, so its paragraphs, tables, and page breaks never
-    /// touch the body's.
+    /// What was in hand when a footnote, an endnote, or a shape's text box
+    /// began, to take up again when it ends. Such text is built by a builder
+    /// of its own, so its paragraphs, tables, and page breaks never touch
+    /// the body's.
     private struct BodyInHand {
         var builder: RTFBlockBuilder
         var listMarker: String?
@@ -114,19 +114,21 @@ struct RTFInterpreter {
         /// Whether it is a text box, not a note.
         var isBox: Bool
     }
-    /// The body, set aside while a note or a text box is read; nil when none is.
-    private var bodyInHand: BodyInHand?
+    /// What was set aside while a note or a text box is read, the innermost
+    /// last; empty when neither is. A text box holds at most one note (the
+    /// note of a reference in the box), and a note holds nothing of its own,
+    /// so the depth is two at most and a hostile file cannot nest builders.
+    private var bodiesInHand: [BodyInHand] = []
     /// The blocks of the notes finished so far, in the file's order.
     private var noteBlocks: [RTFBlock] = []
     /// The blocks of the text boxes finished since the paragraph that holds
     /// their anchor began: they are written right after it (`writeBoxes`).
     private var pendingBoxBlocks: [RTFBlock] = []
-    /// Whether a note or a text box is being read (one inside another is read
-    /// in place, or skipped for a note, so that a hostile file cannot nest
-    /// builders).
-    private var isReadingSideText: Bool { bodyInHand != nil }
-    /// Whether a note is being read.
-    private var isReadingNote: Bool { bodyInHand.map { !$0.isBox } ?? false }
+    /// Whether a note or a text box is being read (a text box inside either is
+    /// read in place).
+    private var isReadingSideText: Bool { !bodiesInHand.isEmpty }
+    /// Whether a note is being read (a note inside one is skipped).
+    private var isReadingNote: Bool { bodiesInHand.last.map { !$0.isBox } ?? false }
 
     // MARK: Entry point
 
@@ -164,8 +166,9 @@ struct RTFInterpreter {
         }
         flushBytes()
         flushLoneSurrogate()
-        // A note the document ended in the middle of is finished as it stands.
-        try finishNote()
+        // A note or a text box the document ended in the middle of is finished
+        // as it stands, the innermost first.
+        while isReadingSideText { try finishNote() }
         let kind = paragraphKind(of: lastParagraphProperties)
         if case .heading = kind, builder.currentParagraphHasWords { hasNamedHeading = true }
         var document = RTFDocument()
@@ -310,12 +313,14 @@ struct RTFInterpreter {
             return isReadingSideText ? .body : .box
         }
         if state.destination.isUnread { return nil }
-        // A note is read where the body is read: not inside the title, a list
-        // marker, or another note, and only when a person who reads the body
-        // sees its reference: a note referred to in hidden or deleted text is
-        // not read.
+        // A note is read where the body or a text box is read: not inside the
+        // title, a list marker, or another note, and only when a person who
+        // reads sees its reference: a note referred to in hidden or deleted
+        // text is not read. (A reference in a text box is seen, so its note
+        // is read, as a DOCX reader reads it.)
         if name == "footnote" {
-            return state.destination == .body && !isReadingSideText && !state.isUnreadRun ? .note : .skipped
+            let inReadText = state.destination == .body || state.destination == .box
+            return inReadText && !isReadingNote && !state.isUnreadRun ? .note : .skipped
         }
         if state.destination == .info {
             // Only the title and the author are read of the info group.
@@ -360,9 +365,9 @@ struct RTFInterpreter {
     /// before the note's first `\pard` may be the note's own custom mark, so it
     /// is held until that is known (`holdsNoteMark`).
     private mutating func beginSideText(isBox: Bool) {
-        bodyInHand = BodyInHand(
+        bodiesInHand.append(BodyInHand(
             builder: builder, listMarker: listMarker, lastParagraphProperties: lastParagraphProperties, isBox: isBox
-        )
+        ))
         builder = RTFBlockBuilder(includesPages: false, limit: builder.limit, budget: builder.remainingBudget)
         listMarker = nil
         state.paragraph = RTFParagraphProperties()
@@ -410,7 +415,7 @@ struct RTFInterpreter {
     /// taken up again. Does nothing when none is being read.
     /// - Throws: `DocumentTooLargeError`.
     private mutating func finishNote() throws {
-        guard let saved = bodyInHand else { return }
+        guard let saved = bodiesInHand.popLast() else { return }
         try endNoteMarkWait(isParagraphStart: false)
         // Whatever the note leaves open is closed as paragraphs of body text.
         let blocks = try builder.finish(lastParagraph: .body, inTable: false)
@@ -418,7 +423,6 @@ struct RTFInterpreter {
         builder = saved.builder
         listMarker = saved.listMarker
         lastParagraphProperties = saved.lastParagraphProperties
-        bodyInHand = nil
         try builder.spend(spent)
         if saved.isBox {
             pendingBoxBlocks.append(contentsOf: blocks)
