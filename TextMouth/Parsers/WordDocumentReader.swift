@@ -98,23 +98,33 @@ enum WordDocumentReader {
     /// `html(of:includesPages:)`.
     static func html(
         from data: Data, includesPages: Bool, speaksListNumbers: Bool = WordDocumentReader.speaksListNumbers,
-        readsOldLayout: Bool = true
+        readsOldLayout: Bool = true, checkCancellation: () throws -> Void = { try ImportCancellation.throwIfCancelled() }
     ) throws -> String? {
         do {
             // A document with more page breaks than pages are numbered is
             // read again without any.
             do {
-                return try read(data, includesPages: includesPages, speaksListNumbers: speaksListNumbers, readsOldLayout: readsOldLayout)
+                return try read(
+                    data, includesPages: includesPages, speaksListNumbers: speaksListNumbers, readsOldLayout: readsOldLayout,
+                    checkCancellation: checkCancellation
+                )
             } catch is WordHTMLWriter.PageLimitExceeded {
-                return try read(data, includesPages: false, speaksListNumbers: speaksListNumbers, readsOldLayout: readsOldLayout)
+                return try read(
+                    data, includesPages: false, speaksListNumbers: speaksListNumbers, readsOldLayout: readsOldLayout,
+                    checkCancellation: checkCancellation
+                )
             }
         } catch is OLEDamage {
             throw TextutilConverter.Failure.unreadable(.doc)
         }
     }
 
-    /// Reads `data` once.
-    private static func read(_ data: Data, includesPages: Bool, speaksListNumbers: Bool, readsOldLayout: Bool) throws -> String? {
+    /// Reads `data` once. `checkCancellation` is asked at the start, between the pages of formatting, and
+    /// every few thousand characters written, and throws to stop (by default `ImportCancelled`, when the
+    /// import running on this thread was cancelled); a test passes its own to count the asks.
+    private static func read(
+        _ data: Data, includesPages: Bool, speaksListNumbers: Bool, readsOldLayout: Bool, checkCancellation: () throws -> Void
+    ) throws -> String? {
         let file = try CompoundFile(data)
         guard let documentData = try file.stream(named: "WordDocument") else {
             throw OLEDamage(reason: "the file has no WordDocument stream")
@@ -126,7 +136,7 @@ enum WordDocumentReader {
         // Encrypted, whether by Word's password or by obfuscation: the text
         // cannot be read, and the listener is told what to do.
         guard !fib.isEncrypted else { throw PasswordProtectedDocument() }
-        try ImportCancellation.throwIfCancelled()
+        try checkCancellation()
 
         // Where the structures are: Word 97 keeps them in a table stream; Word 6
         // and Word 95 in the WordDocument stream itself, in properties of
@@ -184,14 +194,16 @@ enum WordDocumentReader {
             guard let range = try fib.range(of: .paragraphBinTable, in: table) else { return WordFormatRuns(runs: []) }
             return try WordDocumentProperties.paragraphRuns(
                 binTable: range, table: table, document: document, pieces: pieces, limit: pieces.characterCount, data: data,
-                dialect: dialect, declaredPageCount: followingPages(of: .paragraphBinTable)
+                dialect: dialect, declaredPageCount: followingPages(of: .paragraphBinTable),
+                checkCancellation: checkCancellation
             )
         }, else: WordFormatRuns(runs: []))
         let characters = try lenient({ () -> WordFormatRuns<WordCharacterFormat> in
             guard let range = try fib.range(of: .characterBinTable, in: table) else { return WordFormatRuns(runs: []) }
             return try WordDocumentProperties.characterRuns(
                 binTable: range, table: table, document: document, pieces: pieces, limit: pieces.characterCount,
-                dialect: dialect, declaredPageCount: followingPages(of: .characterBinTable)
+                dialect: dialect, declaredPageCount: followingPages(of: .characterBinTable),
+                checkCancellation: checkCancellation
             )
         }, else: WordFormatRuns(runs: []))
         // The code page of each stretch of a Word 6 or Word 95 document of one-byte characters.
@@ -273,7 +285,7 @@ enum WordDocumentReader {
                     try writer.add(position: position, unit: unit)
                     // A cancelled import stops here, however long the document is.
                     charactersWritten += 1
-                    if charactersWritten % Self.charactersBetweenCancellationChecks == 0 { try ImportCancellation.throwIfCancelled() }
+                    if charactersWritten % Self.charactersBetweenCancellationChecks == 0 { try checkCancellation() }
                 }
             }
             let body = try writer.finish(endingAt: segments.last?.range.upperBound ?? 0)

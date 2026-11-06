@@ -24,10 +24,13 @@ struct WordLegacyDocumentBuilder {
         var text: String
         /// The run's character sprms, as bytes (`sprm(_:_:)`).
         var sprms: [UInt8]
+        /// The encoding the run's characters are written in, when it is not the document's (Mac text in a Windows file).
+        var encoding: String.Encoding?
 
-        init(_ text: String, sprms: [UInt8] = []) {
+        init(_ text: String, sprms: [UInt8] = [], encoding: String.Encoding? = nil) {
             self.text = text
             self.sprms = sprms
+            self.encoding = encoding
         }
     }
 
@@ -89,6 +92,17 @@ struct WordLegacyDocumentBuilder {
     ]
     /// The notes' texts; each begins with a reference mark (U+0002) in the main text where the caller puts one.
     var footnotes: [String] = []
+    /// The endnotes' and text boxes' paragraphs: stories with no tables of their own in this layout, read whole.
+    var endnotes: [String] = []
+    var textBoxes: [String] = []
+    /// The property modifiers (`Pcd.prm`) of the first and of the second piece of a fast-saved document, and the
+    /// groups of modifiers (in the form of a property list) that a `Prm1` names by its index.
+    var piecePrms: [UInt16] = [0, 0]
+    var modifierGroups: [[UInt8]] = []
+    /// The index of a style whose first property group claims to be larger than the style.
+    var damagedStyle: Int?
+    /// The names of the first fonts of the font table (the rest are "Font" and their index).
+    var fontNames: [String] = []
     var sections: [Section] = []
     /// The code page the characters are written in.
     var encoding: String.Encoding = .windowsCP1252
@@ -126,17 +140,23 @@ struct WordLegacyDocumentBuilder {
     static let pageBreakBefore = sprm(9, [1])
 
     /// An `ANLD` of 52 bytes numbering with format `format` (0 Arabic, 255 bullet), text before and after
-    /// the number, starting at `start`; as a paragraph's sprm, at `level` (1 to 9, 10 simple).
-    static func numbering(format: UInt8 = 0, before: String = "", after: String = ".", start: Int = 1, level: UInt8 = 10) -> [UInt8] {
+    /// the number, starting at `start`, that includes the previous level's number if `includesPrevious`; as a
+    /// paragraph's sprm, at `level` (1 to 9 outline, 10 simple, 11 bullet; nil leaves the level out, as a
+    /// leftover `ANLD` is stored).
+    static func numbering(
+        format: UInt8 = 0, before: String = "", after: String = ".", start: Int = 1, level: UInt8? = 10,
+        includesPrevious: Bool = false
+    ) -> [UInt8] {
         var anld = [UInt8](repeating: 0, count: 52)
         anld[0] = format
+        anld[3] = includesPrevious ? 0x04 : 0
         anld[1] = UInt8(before.utf8.count)
         anld[2] = UInt8(after.utf8.count)
         anld[10] = UInt8(start & 0xFF)
         anld[11] = UInt8(start >> 8)
         for (index, byte) in (Array(before.utf8) + Array(after.utf8)).enumerated() { anld[20 + index] = byte }
         // The size byte, then the 52 bytes; then the level.
-        return sprm(12, [52] + anld) + sprm(13, [level])
+        return sprm(12, [52] + anld) + (level.map { sprm(13, [$0]) } ?? [])
     }
 
     // MARK: Building
@@ -154,6 +174,8 @@ struct WordLegacyDocumentBuilder {
         /// The characters of the main text and of the notes.
         var mainCharacters = 0
         var noteCharacters = 0
+        var endnoteCharacters = 0
+        var textBoxCharacters = 0
     }
 
     /// The `WordDocument` stream and where its parts are.
@@ -164,10 +186,10 @@ struct WordLegacyDocumentBuilder {
         // The text, as units, in order: every paragraph's runs and mark, then the notes.
         var units: [[UInt8]] = []
         /// Appends the units of `text` and returns how many.
-        func appendUnits(_ text: String) -> Int {
+        func appendUnits(_ text: String, in runEncoding: String.Encoding? = nil) -> Int {
             var count = 0
             for scalar in text.unicodeScalars {
-                let bytes = scalar.value < 0x80 ? [UInt8(scalar.value)] : Array(String(scalar).data(using: encoding) ?? Data([0x3F]))
+                let bytes = scalar.value < 0x80 ? [UInt8(scalar.value)] : Array(String(scalar).data(using: runEncoding ?? encoding) ?? Data([0x3F]))
                 if twoByteCharacters {
                     // A byte is itself with a zero above; a pair is stored trail byte first.
                     units.append(bytes.count == 2 ? [bytes[1], bytes[0]] : [bytes.first ?? 0x3F, 0])
@@ -185,7 +207,7 @@ struct WordLegacyDocumentBuilder {
             let start = units.count
             for run in paragraph.runs {
                 let runStart = units.count
-                let count = appendUnits(run.text)
+                let count = appendUnits(run.text, in: run.encoding)
                 characterSpans.append((runStart..<runStart + count, run.sprms))
             }
             let markStart = units.count
@@ -200,6 +222,10 @@ struct WordLegacyDocumentBuilder {
             _ = appendUnits(note + "\r")
         }
         layout.noteCharacters = units.count - layout.mainCharacters
+        for note in endnotes { _ = appendUnits(note + "\r") }
+        layout.endnoteCharacters = units.count - layout.mainCharacters - layout.noteCharacters
+        for box in textBoxes { _ = appendUnits(box + "\r") }
+        layout.textBoxCharacters = units.count - layout.mainCharacters - layout.noteCharacters - layout.endnoteCharacters
 
         // The stream: the FIB's room, then the text. A fast-saved document stores the second half first.
         var stream = [UInt8](repeating: 0, count: layout.textStart)
@@ -278,10 +304,11 @@ struct WordLegacyDocumentBuilder {
         }
         if isFastSaved {
             // The CLX: a PlcPcd of two pieces, each a descriptor of flags, a plain offset, and no modifiers.
-            let first = [UInt8](UInt16(0x40).bytes) + UInt32(offset(0)).bytes + [0, 0]
-            let second = [UInt8](UInt16(0x40).bytes) + UInt32(offset(splitAt)).bytes + [0, 0]
+            let first = [UInt8](UInt16(0x40).bytes) + UInt32(offset(0)).bytes + (piecePrms.first ?? 0).bytes
+            let second = [UInt8](UInt16(0x40).bytes) + UInt32(offset(splitAt)).bytes + (piecePrms.dropFirst().first ?? 0).bytes
             let pieceTable = UInt32(0).bytes + UInt32(splitAt).bytes + UInt32(units.count).bytes + first + second
-            let clx = [UInt8(2)] + UInt32(pieceTable.count).bytes + pieceTable
+            let groups = modifierGroups.flatMap { [UInt8(1)] + UInt16($0.count).bytes + $0 }
+            let clx = groups + [UInt8(2)] + UInt32(pieceTable.count).bytes + pieceTable
             layout.clx = stream.count
             layout.clxLength = clx.count
             append(clx, as: 0x160)
@@ -299,6 +326,8 @@ struct WordLegacyDocumentBuilder {
         put32(layout.textEnd, at: 0x1C)
         put32(layout.mainCharacters, at: 0x34)
         put32(layout.noteCharacters, at: 0x38)
+        put32(layout.endnoteCharacters, at: 0x48)
+        put32(layout.textBoxCharacters, at: 0x4C)
         for (field, pair) in pairs {
             put32(pair.0, at: field)
             put32(pair.1, at: field + 4)
@@ -396,6 +425,10 @@ struct WordLegacyDocumentBuilder {
                 std += group(style.characterSprms)
             }
             std.replaceSubrange(6..<8, with: UInt16(std.count).bytes)
+            if index == damagedStyle, let groupAt = std.indices.first(where: { $0 >= 8 + name.count + 2 && $0 % 2 == 0 }) {
+                // The first group's size is larger than the style.
+                std.replaceSubrange(groupAt..<groupAt + 2, with: UInt16(0x7FFF).bytes)
+            }
             sheet += UInt16(std.count).bytes + std
         }
         return sheet
@@ -406,7 +439,8 @@ struct WordLegacyDocumentBuilder {
     private func fontTable() -> [UInt8] {
         guard !fontCharacterSets.isEmpty else { return [] }
         let fonts = fontCharacterSets.enumerated().map { index, set -> [UInt8] in
-            let body: [UInt8] = [0x10, 0x90, 0x01, UInt8(set), 0] + Array("Font\(index)".utf8) + [0]
+            let name = index < fontNames.count ? fontNames[index] : "Font\(index)"
+            let body: [UInt8] = [0x10, 0x90, 0x01, UInt8(set), 0] + Array(name.utf8) + [0]
             return [UInt8(body.count)] + body
         }
         return UInt16(fonts.reduce(0) { $0 + $1.count }).bytes + fonts.flatMap { $0 }

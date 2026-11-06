@@ -146,11 +146,12 @@ enum WordDocumentProperties {
     static func paragraphRuns(
         binTable: Range<Int>, table: OLEBytes, document: OLEBytes,
         pieces: WordPieceTable, limit: Int, data: OLEBytes? = nil, dialect: WordSprm.Dialect = .modern,
-        declaredPageCount: Int = 0
+        declaredPageCount: Int = 0, checkCancellation: () throws -> Void = { try ImportCancellation.throwIfCancelled() }
     ) throws -> WordFormatRuns<WordParagraphFormat> {
         let entrySize = paragraphEntrySize(dialect)
         return try runs(binTable: binTable, table: table, document: document, pieces: pieces, limit: limit,
-                 dialect: dialect, declaredPageCount: declaredPageCount, maximumRuns: (pageSize - 1 - 4) / (4 + entrySize),
+                 dialect: dialect, declaredPageCount: declaredPageCount, checkCancellation: checkCancellation,
+                 maximumRuns: (pageSize - 1 - 4) / (4 + entrySize),
                  // A paragraph is one run, and the modifiers of the piece that
                  // holds its last character (the last range) are the ones
                  // that apply to it all ([MS-DOC] 2.4.6.1).
@@ -303,10 +304,12 @@ enum WordDocumentProperties {
     ///   not fit.
     static func characterRuns(
         binTable: Range<Int>, table: OLEBytes, document: OLEBytes,
-        pieces: WordPieceTable, limit: Int, dialect: WordSprm.Dialect = .modern, declaredPageCount: Int = 0
+        pieces: WordPieceTable, limit: Int, dialect: WordSprm.Dialect = .modern, declaredPageCount: Int = 0,
+        checkCancellation: () throws -> Void = { try ImportCancellation.throwIfCancelled() }
     ) throws -> WordFormatRuns<WordCharacterFormat> {
         try runs(binTable: binTable, table: table, document: document, pieces: pieces, limit: limit,
-                 dialect: dialect, declaredPageCount: declaredPageCount, maximumRuns: (pageSize - 1 - 4) / 5,
+                 dialect: dialect, declaredPageCount: declaredPageCount, checkCancellation: checkCancellation,
+                 maximumRuns: (pageSize - 1 - 4) / 5,
                  // Each character takes the modifiers of its own piece.
                  modifiersOfRange: { ranges, position in ranges[position].modifiers }) { page, index, runCount, modifiers in
             var format = WordCharacterFormat()
@@ -353,7 +356,7 @@ enum WordDocumentProperties {
     ///     `runCount` runs, with the piece modifiers laid over its properties.
     private static func runs<Format>(
         binTable: Range<Int>, table: OLEBytes, document: OLEBytes, pieces: WordPieceTable, limit: Int,
-        dialect: WordSprm.Dialect, declaredPageCount: Int, maximumRuns: Int,
+        dialect: WordSprm.Dialect, declaredPageCount: Int, checkCancellation: () throws -> Void, maximumRuns: Int,
         modifiersOfRange: (_ ranges: [WordPieceTable.Placed], _ position: Int) -> ArraySlice<UInt8>,
         format: (_ page: Int, _ index: Int, _ runCount: Int, _ modifiers: ArraySlice<UInt8>) throws -> Format
     ) throws -> WordFormatRuns<Format> {
@@ -388,7 +391,7 @@ enum WordDocumentProperties {
         var result: [WordFormatRuns<Format>.Run] = []
         for (pageIndex, number) in pageNumbers.enumerated() {
             // A page of runs is a unit of work; a cancelled import stops between them.
-            try ImportCancellation.throwIfCancelled()
+            try checkCancellation()
             let page = number * pageSize
             let isFollowing = pageIndex >= listedCount
             guard document.contains(offset: page, length: pageSize) else {
