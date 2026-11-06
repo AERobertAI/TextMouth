@@ -38,10 +38,10 @@ struct DocumentContent {
     /// chapter's last word, where a chapter's last page break often stands,
     /// begins at the first word of the next chapter that has words. The
     /// reader never rests at a chapter's very end, so it could not reach the
-    /// page there: Next Page would land on the page before and find the same
-    /// page again at every press. After the book's last word such a page
-    /// stays where it is, a page without words, which Next Page passes over
-    /// (`ReaderViewModel.nextPage()`).
+    /// page there: a move forward by page would land on the page before and
+    /// find the same page again at every press. After the book's last word
+    /// such a page stays where it is, a page without words, which a move by
+    /// page passes over (`ReaderViewModel.nextPage()`).
     private static func pageBreaks(of chapters: [Chapter]) -> [PageBreak] {
         var breaks: [PageBreak] = []
         for (index, chapter) in chapters.enumerated() where !chapter.pages.isEmpty {

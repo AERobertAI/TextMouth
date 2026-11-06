@@ -26,13 +26,12 @@ final class ShortcutMigrationTests: XCTestCase {
     /// commands, the two full summaries (FR12), Move to Library… (FR11's
     /// branch D), and the menu commands and Record window buttons whose keys
     /// were fixed before (FR12's branch D), Folder or Feed Settings (FR19),
-    /// Next Page, Previous Page, and Go to Page… (PG02, PG03), and Go to View
-    /// 1 to Go to View 9 (the Library views of October 30, 2026), and Next in
-    /// Folder and Previous in Folder (0.2.5).
+    /// Go to Page… (PG03), and Go to View 1 to Go to View 9 (the Library views
+    /// of October 30, 2026), and Next in Folder and Previous in Folder (0.2.5).
     static let actionsAddedSinceOctober5: Set<ShortcutAction> = ShortcutAction.keyEquivalentActions.union([
         .speakInfo, .speakImportProgress, .speakDownloadProgress, .addToReadingList, .removeFromReadingList,
         .nextInReadingList, .previousInReadingList, .whereAmIFull, .speakFullInfo, .moveToLibrary,
-        .folderOrFeedSettings, .nextPage, .previousPage, .goToPage, .nextInFolder, .previousInFolder,
+        .folderOrFeedSettings, .goToPage, .nextInFolder, .previousInFolder,
     ]).union(ShortcutAction.goToViewActions)
 
     /// Every action the October 5 build had, in the order Settings lists

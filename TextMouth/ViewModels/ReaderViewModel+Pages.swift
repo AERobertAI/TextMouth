@@ -1,9 +1,9 @@
 import Foundation
 
-/// Pages as a navigation unit (PG02): Next Page and Previous Page move the
-/// reader by the book's pages as it numbers them, as Next Heading and
-/// Previous Heading move it by headings. A page is a place in the reading
-/// text and adds no text, so moving by page changes no saved position
+/// Pages as a navigation unit (PG02): with Page chosen, Skip Forward and Skip
+/// Backward move the reader by the book's pages as it numbers them, as Next
+/// Heading and Previous Heading move it by headings. A page is a place in the
+/// reading text and adds no text, so moving by page changes no saved position
 /// beyond the move itself.
 extension ReaderViewModel {
     // MARK: - The book's pages
@@ -67,9 +67,9 @@ extension ReaderViewModel {
 
     /// The last page in an earlier chapter, or in this chapter more than
     /// `graceZone` units before the place, that is not passed over; nil when
-    /// there is none. The grace zone is `previousHeading`'s: Previous Page
-    /// from inside a page, or just after its start, goes to that page's
-    /// start, and repeated Previous commands keep moving.
+    /// there is none. The grace zone is `previousHeading`'s: a move back by
+    /// page from inside a page, or just after its start, goes to that page's
+    /// start, and repeated moves back keep moving.
     nonisolated static func previousPage(
         in pages: BookPages,
         chapterIndex: Int,
@@ -134,10 +134,10 @@ extension ReaderViewModel {
     /// starts inside a skipped section, as speech passes over the section, or
     /// after the book's last word, where it has no words and the reader
     /// cannot rest (`DocumentContent` moves a page after any other chapter's
-    /// last word to the next chapter's first). Landing there, Next Page would
-    /// stop on the page before and find the same page at every press. Each
-    /// chapter's skipped ranges are worked out at most once per move, and
-    /// not at all when the book skips nothing.
+    /// last word to the next chapter's first). Landing there, a move forward
+    /// by page would stop on the page before and find the same page at every
+    /// press. Each chapter's skipped ranges are worked out at most once per
+    /// move, and not at all when the book skips nothing.
     private func withPassedOverCheck<Result>(
         _ body: (_ isPassedOver: (PageBreak) -> Bool) -> Result
     ) -> Result {
@@ -250,8 +250,8 @@ extension ReaderViewModel {
     /// plays restarts speech, which passes over a page whose words are all
     /// in skipped sections to the next words it reads. Saying the typed
     /// label then told the listener one page while the row, Where Am I?, and
-    /// Next Page all named another; now it names the row's page, and says
-    /// why the cursor is not on the page asked for when the pages say.
+    /// a move by page all named another; now it names the row's page, and
+    /// says why the cursor is not on the page asked for when the pages say.
     func goToPage(typed text: String) -> String? {
         let pages = bookPages
         switch JumpInputValidator.page(text, in: pages, currentIndex: currentPageIndex) {
@@ -349,8 +349,8 @@ extension ReaderViewModel {
     /// once it has moved to the start of `page`: the page holding the cursor,
     /// which is the last of the pages that begin at that place
     /// (`BookPages.index(ofPageAtChapter:offset:)`) and so `page` itself when
-    /// no other page shares its place. What Next Page and Previous Page say
-    /// is this label, as Go to Page names the row's page too, so the words
+    /// no other page shares its place. What a move by page says is this
+    /// label, as Go to Page names the row's page too, so the words
     /// spoken, the row, and Where Am I? always agree. The cursor is read
     /// after the move, not worked out from `page`, because a move may stop
     /// short of a page's place (the last word of the book is as far as the

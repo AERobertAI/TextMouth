@@ -113,8 +113,6 @@ final class OnDiskContractTests: XCTestCase {
                 "Go Forward",
                 "Next Heading",
                 "Previous Heading",
-                "Next Page",
-                "Previous Page",
                 "Go to Page…",
                 "Next in Reading List",
                 "Previous in Reading List",

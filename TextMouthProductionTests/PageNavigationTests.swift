@@ -5,9 +5,10 @@ import XCTest
 
 /// Page as a navigation unit (PG02): the Page skip unit and its place in the
 /// unit cycle, the pickers that offer it (the playback bar's leave it out
-/// for a book without pages), Next Page and Previous Page over a book's
-/// pages, the pages a skipped section is passed over for, the words
-/// VoiceOver hears, and the three actions that carry the commands.
+/// for a book without pages), `nextPage()` and `previousPage()`, which the
+/// Page unit moves with, called "Next Page" and "Previous Page" below, over a
+/// book's pages, the pages a skipped section is passed over for, the words
+/// VoiceOver hears, and Go to Page…'s action.
 @MainActor
 final class PageNavigationTests: XCTestCase {
 
@@ -469,21 +470,37 @@ final class PageNavigationTests: XCTestCase {
 
     // MARK: - The Actions
 
-    /// The three actions: their titles, group, notifications, keys, and the
-    /// scope they work in.
-    func testThePageActions() {
-        let expected: [(ShortcutAction, String, Notification.Name, KeyBinding)] = [
-            (.nextPage, "Next Page", .nextPage, KeyBinding(key: "rightArrow", command: true, option: true)),
-            (.previousPage, "Previous Page", .previousPage, KeyBinding(key: "leftArrow", command: true, option: true)),
-            (.goToPage, "Go to Page…", .goToPage, KeyBinding(key: "g", command: true, option: true)),
-        ]
-        for (action, title, notification, binding) in expected {
-            XCTAssertEqual(action.title, title)
-            XCTAssertEqual(action.category, "Navigation")
-            XCTAssertEqual(action.notificationName, notification)
-            XCTAssertEqual(ShortcutAction.defaultBindings[action], [binding], title)
-            XCTAssertEqual(action.defaultScope, .app, title)
-        }
+    /// The one page action: its title, group, notification, key, and the
+    /// scope it works in. Moving from page to page is the Page unit's: the
+    /// separate Next Page and Previous Page commands were removed at the
+    /// user's request (November 5, 2026), and their names are no action's.
+    func testThePageAction() {
+        let action = ShortcutAction.goToPage
+        XCTAssertEqual(action.title, "Go to Page…")
+        XCTAssertEqual(action.category, "Navigation")
+        XCTAssertEqual(action.notificationName, .goToPage)
+        XCTAssertEqual(
+            ShortcutAction.defaultBindings[action],
+            [KeyBinding(key: "g", command: true, option: true)]
+        )
+        XCTAssertEqual(action.defaultScope, .app)
+        XCTAssertNil(ShortcutAction.named("Next Page"))
+        XCTAssertNil(ShortcutAction.named("Previous Page"))
+    }
+
+    /// A key the user gave one of the removed commands is left out of the
+    /// record of their edits, with a line saying why, and every other edit
+    /// in the record is kept.
+    func testAKeyGivenToARemovedPageCommandIsLeftOut() throws {
+        let record = #"""
+            {"Next Page": ["control+n"], "Go to Page…": ["control+g"]}
+            """#
+        let reading = ShortcutEdits.reading(try XCTUnwrap(record.data(using: .utf8)))
+        XCTAssertEqual(reading.skipped.map(\.name), ["Next Page"])
+        XCTAssertEqual(
+            reading.edits.keys(of: .goToPage),
+            [KeyBinding(key: "g", control: true)]
+        )
     }
 
     /// The playback bar's menus name the unit "Page", as they name the others.

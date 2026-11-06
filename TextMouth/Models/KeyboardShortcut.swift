@@ -25,12 +25,6 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case goForward = "Go Forward"
     case nextHeading = "Next Heading"
     case previousHeading = "Previous Heading"
-    /// Navigate > Next Page: moves to the start of the next page of a book
-    /// that has pages, and says its label (PG02).
-    case nextPage = "Next Page"
-    /// Navigate > Previous Page: moves to the start of the page being read,
-    /// or of the one before it when the place is at the page's start (PG02).
-    case previousPage = "Previous Page"
     /// Navigate > Go to Page…: opens the reader's page field, where the user
     /// types a page as the book numbers it (PG03).
     case goToPage = "Go to Page…"
@@ -309,8 +303,6 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .navigateUpLevel: return .navigateUpLevel
         case .nextHeading: return .nextHeading
         case .previousHeading: return .previousHeading
-        case .nextPage: return .nextPage
-        case .previousPage: return .previousPage
         case .goToPage: return .goToPage
         case .nextInReadingList: return .nextInReadingList
         case .previousInReadingList: return .previousInReadingList
@@ -379,7 +371,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
              .increaseSpeed, .decreaseSpeed, .copyReadingPosition, .searchInBook:
             return "Playback"
         case .goToLibrary, .goBack, .goForward, .navigateUpLevel, .nextHeading, .previousHeading,
-             .nextPage, .previousPage, .goToPage, .nextInReadingList, .previousInReadingList,
+             .goToPage, .nextInReadingList, .previousInReadingList,
              .nextInFolder, .previousInFolder:
             return "Navigation"
         case .addBookmark, .nextBookmark, .previousBookmark, .showBookmarkList:
@@ -1647,14 +1639,8 @@ extension ShortcutAction {
             .previousHeading: [
                 KeyBinding(key: "upArrow", command: true, option: true)
             ],
-            // Pages (PG02, PG03): Option-Command with the horizontal arrows
-            // and G, which no other default uses.
-            .nextPage: [
-                KeyBinding(key: "rightArrow", command: true, option: true)
-            ],
-            .previousPage: [
-                KeyBinding(key: "leftArrow", command: true, option: true)
-            ],
+            // Go to Page… (PG03): Option-Command-G, which no other default
+            // uses.
             .goToPage: [
                 KeyBinding(key: "g", command: true, option: true)
             ],

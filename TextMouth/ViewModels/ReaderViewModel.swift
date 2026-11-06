@@ -1196,21 +1196,7 @@ final class ReaderViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Next Page, Previous Page, and Go to Page… (PG02, PG03).
-        nc.publisher(for: .nextPage)
-            .sink { [weak self] notification in
-                guard let self = self, self.isTargetedNotification(notification) else { return }
-                self.nextPage()
-            }
-            .store(in: &cancellables)
-
-        nc.publisher(for: .previousPage)
-            .sink { [weak self] notification in
-                guard let self = self, self.isTargetedNotification(notification) else { return }
-                self.previousPage()
-            }
-            .store(in: &cancellables)
-
+        // Go to Page… (PG03).
         nc.publisher(for: .goToPage)
             .sink { [weak self] notification in
                 guard let self = self, self.isTargetedNotification(notification) else { return }
