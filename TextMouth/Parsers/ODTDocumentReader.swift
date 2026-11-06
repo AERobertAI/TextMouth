@@ -59,15 +59,32 @@ enum ODTDocumentReader {
 
     /// The HTML document of the OpenDocument text at `url`.
     /// - Parameter includesPages: whether page-break elements are written.
+    /// - Parameter reportDamagedPart: receives the damage of `styles.xml` or
+    ///   `meta.xml` when that part is damaged, missing its end, or past its
+    ///   limit. The book is then read without what the part gave (the styles'
+    ///   headings and emphasis, or the title and author), as the DOCX reader
+    ///   reads a document with damaged properties. The default writes one
+    ///   line to the console and the debug log.
     /// - Throws: `FileImportError.noTextToRead` for an empty file,
-    ///   `DocumentTooLargeError` for a file, a part, or text past
+    ///   `DocumentTooLargeError` for a file, `content.xml`, or text past
     ///   `DocumentByteLimit`, the file system's error for a file that cannot
     ///   be read, and `TextutilConverter.Failure.unreadable` for a file that
-    ///   is not an OpenDocument text package, or is damaged.
-    static func html(of url: URL, includesPages: Bool) throws -> String {
+    ///   is not an OpenDocument text package, or whose `content.xml` is
+    ///   damaged. Only `content.xml` refuses the book.
+    static func html(
+        of url: URL,
+        includesPages: Bool,
+        reportDamagedPart: (ODTPartDamage) -> Void = ODTDocumentReader.logDamagedPart
+    ) throws -> String {
         try checkSize(of: url)
         let package = try Package(at: url)
-        return try html(of: package, includesPages: includesPages)
+        return try html(of: package, includesPages: includesPages, reportDamagedPart: reportDamagedPart)
+    }
+
+    /// Default report for a damaged optional part: one line in the console
+    /// and in the debug log. The import layer has no warning channel yet.
+    static func logDamagedPart(_ damage: ODTPartDamage) {
+        PackageDamage.log(damage, tag: "ODT_DAMAGED_PART")
     }
 
     /// Refuses a file that is empty or past the byte limit, before it is
@@ -82,10 +99,19 @@ enum ODTDocumentReader {
 
     /// The HTML document of the package: its styles, then its content, with
     /// the title and author its metadata names.
-    private static func html(of package: Package, includesPages: Bool) throws -> String {
+    private static func html(
+        of package: Package,
+        includesPages: Bool,
+        reportDamagedPart: (ODTPartDamage) -> Void
+    ) throws -> String {
         let sheet = ODTStyleSheet()
-        if let styles = try package.part(Package.stylesPath) {
-            try ODTStylesReader(data: styles, file: Package.stylesPath, sheet: sheet).read()
+        // The styles are optional: what was read of a damaged part stands.
+        do {
+            if let styles = try package.part(Package.stylesPath) {
+                try ODTStylesReader(data: styles, file: Package.stylesPath, sheet: sheet).read()
+            }
+        } catch {
+            reportDamagedPart(ODTPartDamage(file: Package.stylesPath, error: error))
         }
         guard let content = try package.part(Package.contentPath) else {
             throw TextutilConverter.Failure.unreadable(.odt)
@@ -105,12 +131,15 @@ enum ODTDocumentReader {
         document.pageBreaks = body.pageBreaks
         // The names are the document's own, when it gives them. A damaged
         // metadata part loses the names and nothing else.
-        if let meta = try package.part(Package.metaPath) {
-            let metadata = ODTMetadataReader(data: meta, file: Package.metaPath)
-            if (try? metadata.read()) != nil {
+        do {
+            if let meta = try package.part(Package.metaPath) {
+                let metadata = ODTMetadataReader(data: meta, file: Package.metaPath)
+                try metadata.read()
                 document.title = metadata.title
                 document.author = metadata.author
             }
+        } catch {
+            reportDamagedPart(ODTPartDamage(file: Package.metaPath, error: error))
         }
         return RTFHTMLWriter.html(of: document, includesPages: includesPages)
     }
@@ -214,5 +243,29 @@ final class ODTMetadataReader: ODTXMLReader {
         case "meta:initial-creator" where initialCreator.utf8.count < 4_096: initialCreator += text
         default: break
         }
+    }
+}
+
+// MARK: - A Damaged Optional Part
+
+/// The damage of a part of an OpenDocument package that the book can be read
+/// without: `styles.xml` or `meta.xml`. Its sentence is the one every format
+/// gives for a damaged file in a package (`PackageDamage`).
+struct ODTPartDamage: LocalizedError {
+    /// The part's path inside the package.
+    let file: String
+    /// What was wrong, completing "is damaged or incomplete: …".
+    let reason: String
+
+    /// The damage `error` was, found while reading `file`.
+    init(file: String, error: Error) {
+        self.file = file
+        reason = error is DocumentTooLargeError
+            ? "it holds more than TextMouth reads from one file"
+            : "its markup is not well-formed or it could not be unpacked"
+    }
+
+    var errorDescription: String? {
+        PackageDamage.message(file: file, reason: reason, container: "this document", original: "the document")
     }
 }
