@@ -15,8 +15,11 @@ import Foundation
 /// The steps:
 /// 1. open the compound file and take its `WordDocument` stream;
 /// 2. read the File Information Block (`WordFileInformationBlock`), which
-///    refuses a document protected by a password and leaves a Word 6 or
-///    Word 95 document to textutil;
+///    refuses a document protected by a password, and says whether the
+///    document is Word 97's layout or Word 6's and Word 95's (their
+///    structures are in the WordDocument stream itself, the text in a code
+///    page, the properties in another form: `WordLegacySprm`); a document
+///    older than Word 6 is left to textutil;
 /// 3. read the table stream's structures: the piece table (`WordPieceTable`),
 ///    the style sheet (`WordStyleSheet`), the paragraph and character
 ///    properties (`WordDocumentProperties`), and the sections
@@ -53,17 +56,36 @@ enum WordDocumentReader {
     /// (`WordDocumentComparisonTests`), which it now is.
     static var isOn: Bool { true }
 
+    /// Whether this platform reads Word 6 and Word 95 documents with this
+    /// reader: iOS, which has no textutil, always; the Mac keeps textutil for
+    /// them until the reader has been checked against textutil's reading of
+    /// the same files (`WordDocumentComparisonTests`), which the branch that
+    /// turns this on does. `OwnDocumentReaders` asks it; the reader's own
+    /// entry points read the old layout whatever it says, so that the tests
+    /// can.
+    static var readsWord6AndWord95: Bool {
+        #if os(macOS)
+        false
+        #else
+        true
+        #endif
+    }
+
+    /// How many characters are written between two asks whether the import
+    /// was cancelled (`ImportCancellation`).
+    private static let charactersBetweenCancellationChecks = 4096
+
     // MARK: Reading
 
-    /// The HTML document of the Word 97-2003 document at `url`, or nil for a
-    /// Word 6 or Word 95 document, which is left to textutil. The file is
+    /// The HTML document of the Word 6 to Word 2003 document at `url`, or nil
+    /// for one older than Word 6, which is left to textutil. The file is
     /// held to `DocumentByteLimit`.
     /// - Throws: `PasswordProtectedDocument`, `DocumentTooLargeError`,
     ///   `FileImportError.noTextToRead` for an empty file, and
     ///   `TextutilConverter.Failure.unreadable` for a file that is not a
     ///   readable Word 97-2003 document.
-    static func html(of url: URL, includesPages: Bool) throws -> String? {
-        try html(from: DocumentByteLimit.contents(of: url), includesPages: includesPages)
+    static func html(of url: URL, includesPages: Bool, readsOldLayout: Bool = true) throws -> String? {
+        try html(from: DocumentByteLimit.contents(of: url), includesPages: includesPages, readsOldLayout: readsOldLayout)
     }
 
     /// `speaksListNumbers` for the document at `url`, passed in so that both
@@ -74,14 +96,17 @@ enum WordDocumentReader {
 
     /// The HTML document of the Word 97-2003 document in `data`; see
     /// `html(of:includesPages:)`.
-    static func html(from data: Data, includesPages: Bool, speaksListNumbers: Bool = WordDocumentReader.speaksListNumbers) throws -> String? {
+    static func html(
+        from data: Data, includesPages: Bool, speaksListNumbers: Bool = WordDocumentReader.speaksListNumbers,
+        readsOldLayout: Bool = true
+    ) throws -> String? {
         do {
             // A document with more page breaks than pages are numbered is
             // read again without any.
             do {
-                return try read(data, includesPages: includesPages, speaksListNumbers: speaksListNumbers)
+                return try read(data, includesPages: includesPages, speaksListNumbers: speaksListNumbers, readsOldLayout: readsOldLayout)
             } catch is WordHTMLWriter.PageLimitExceeded {
-                return try read(data, includesPages: false, speaksListNumbers: speaksListNumbers)
+                return try read(data, includesPages: false, speaksListNumbers: speaksListNumbers, readsOldLayout: readsOldLayout)
             }
         } catch is OLEDamage {
             throw TextutilConverter.Failure.unreadable(.doc)
@@ -89,41 +114,67 @@ enum WordDocumentReader {
     }
 
     /// Reads `data` once.
-    private static func read(_ data: Data, includesPages: Bool, speaksListNumbers: Bool) throws -> String? {
+    private static func read(_ data: Data, includesPages: Bool, speaksListNumbers: Bool, readsOldLayout: Bool) throws -> String? {
         let file = try CompoundFile(data)
         guard let documentData = try file.stream(named: "WordDocument") else {
             throw OLEDamage(reason: "the file has no WordDocument stream")
         }
         let document = OLEBytes(documentData)
         guard let fib = try WordFileInformationBlock.read(from: document) else { return nil }
+        // A Word 6 or Word 95 document is left to textutil where the platform says so.
+        guard fib.layout == .modern || readsOldLayout else { return nil }
         // Encrypted, whether by Word's password or by obfuscation: the text
         // cannot be read, and the listener is told what to do.
         guard !fib.isEncrypted else { throw PasswordProtectedDocument() }
-        guard let tableData = try file.stream(named: fib.tableStreamName) else {
-            throw OLEDamage(reason: "the file has no \(fib.tableStreamName) stream")
-        }
-        let table = OLEBytes(tableData)
+        try ImportCancellation.throwIfCancelled()
 
-        // The text, through the piece table.
-        guard let clx = try fib.range(of: .complexInformation, in: table) else { throw OLEDamage(reason: "the file has no CLX") }
-        let pieces = try WordPieceTable(clx: clx, table: table, document: document)
+        // Where the structures are: Word 97 keeps them in a table stream; Word 6
+        // and Word 95 in the WordDocument stream itself, in properties of
+        // another form (`dialect`) and text in a code page.
+        let dialect: WordSprm.Dialect = fib.layout == .modern ? .modern : .legacy
+        let table: OLEBytes
+        let pieces: WordPieceTable
+        switch fib.layout {
+        case .modern:
+            guard let tableData = try file.stream(named: fib.tableStreamName) else {
+                throw OLEDamage(reason: "the file has no \(fib.tableStreamName) stream")
+            }
+            table = OLEBytes(tableData)
+            // The text, through the piece table.
+            guard let clx = try fib.range(of: .complexInformation, in: table) else { throw OLEDamage(reason: "the file has no CLX") }
+            pieces = try WordPieceTable(clx: clx, table: table, document: document)
+        case .legacy:
+            table = document
+            let characters = WordLegacyCharacters.characters(of: fib, in: document)
+            // A document saved with Fast Save has a piece table; one saved in
+            // full has its text in one piece between two offsets of the FIB.
+            if fib.hasPieceTable, let clx = try fib.range(of: .complexInformation, in: table) {
+                pieces = try WordPieceTable(clx: clx, table: table, document: document, characters: characters)
+            } else {
+                pieces = try WordPieceTable(contiguous: fib.legacyText, document: document, characters: characters)
+            }
+        }
         let textEnd = min(fib.mainTextLength, pieces.characterCount)
 
         // The styles, and the properties that name them.
         var styles = WordStyleSheet.empty
-        if let range = try fib.range(of: .styleSheet, in: table) { styles = try WordStyleSheet(range: range, table: table) }
+        if let range = try fib.range(of: .styleSheet, in: table) {
+            styles = fib.layout == .modern ? try WordStyleSheet(range: range, table: table) : try WordStyleSheet(legacyRange: range, table: table)
+        }
         // The Data stream, where a paragraph's properties are when they do not fit its page.
-        let data = (try? file.stream(named: "Data")).map { OLEBytes($0) }
+        let data = fib.layout == .modern ? (try? file.stream(named: "Data")).map { OLEBytes($0) } : nil
         var paragraphs = WordFormatRuns<WordParagraphFormat>(runs: [])
         if let range = try fib.range(of: .paragraphBinTable, in: table) {
             paragraphs = try WordDocumentProperties.paragraphRuns(
-                binTable: range, table: table, document: document, pieces: pieces, limit: pieces.characterCount, data: data
+                binTable: range, table: table, document: document, pieces: pieces, limit: pieces.characterCount, data: data,
+                dialect: dialect
             )
         }
         var characters = WordFormatRuns<WordCharacterFormat>(runs: [])
         if let range = try fib.range(of: .characterBinTable, in: table) {
             characters = try WordDocumentProperties.characterRuns(
-                binTable: range, table: table, document: document, pieces: pieces, limit: pieces.characterCount
+                binTable: range, table: table, document: document, pieces: pieces, limit: pieces.characterCount,
+                dialect: dialect
             )
         }
         // The lists, whose numbers Word does not store in the text. They are
@@ -137,7 +188,7 @@ enum WordDocumentReader {
         }
         var sections = WordSections.none
         if let range = try fib.range(of: .sectionTable, in: table) {
-            sections = try WordSections(range: range, table: table, document: document)
+            sections = try WordSections(range: range, table: table, document: document, dialect: dialect)
         }
 
         // Whether the characters at these positions (in order) are hidden or
@@ -171,10 +222,14 @@ enum WordDocumentReader {
                 outputLimit: Int(DocumentByteLimit.current) * 2, paragraphs: paragraphs, characters: characters,
                 lists: lists, numbersAreWords: speaksListNumbers
             )
+            var charactersWritten = 0
             for segment in segments {
                 try writer.beginStory(isMain: segment.isMain)
                 try pieces.forEachCharacter(from: segment.range.lowerBound, upTo: segment.range.upperBound, in: document) { position, unit in
                     try writer.add(position: position, unit: unit)
+                    // A cancelled import stops here, however long the document is.
+                    charactersWritten += 1
+                    if charactersWritten % Self.charactersBetweenCancellationChecks == 0 { try ImportCancellation.throwIfCancelled() }
                 }
             }
             let body = try writer.finish(endingAt: segments.last?.range.upperBound ?? 0)
