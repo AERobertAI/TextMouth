@@ -228,6 +228,13 @@ struct WordStyleSheet {
         return Self.toggled(value, by: direct)
     }
 
+    /// Whether the text with the character format `character` in a paragraph
+    /// with the format `paragraph` is hidden (`sprmCFVanish`, a toggle through
+    /// the styles): the ordinary view does not show it.
+    func hides(_ character: WordCharacterFormat, in paragraph: WordParagraphFormat) -> Bool {
+        isToggledOn(paragraphStyle: paragraph.style, characterStyle: character.style, direct: character.hidden, \.hidden)
+    }
+
     /// Whether a paragraph in style `index` with the property `direct` (its own
     /// page-break-before setting, or nil) begins a page: its own setting
     /// wins, else the style's, else that of the style it is based on, and so

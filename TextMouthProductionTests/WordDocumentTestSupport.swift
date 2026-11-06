@@ -171,6 +171,11 @@ struct WordDocumentBuilder {
     /// How many pieces to split the text into; more than one stores them in
     /// reverse order in the file.
     var pieceCount = 1
+    /// The character positions in the main text of the reference marks of
+    /// the footnotes and of the endnotes, one for each paragraph of those
+    /// stories (a note is a paragraph); none leaves out the note tables.
+    var footnoteReferences: [Int] = []
+    var endnoteReferences: [Int] = []
     /// The lists (`PlfLst`) and list instances (`PlfLfo`); none leaves out both.
     var lists: [List] = []
     var listInstances: [ListInstance] = []
@@ -388,6 +393,33 @@ struct WordDocumentBuilder {
             layout.listOverrides = table.count
             listPairs[WordFileInformationBlock.Structure.listOverrides.rawValue] = (table.count, overrides.count)
             table += overrides
+        }
+
+        // The note tables: where each reference mark stands in the main text
+        // (PlcfRef: the positions, one more, and an FRD for each) and where
+        // each note begins in its story (PlcfTxt: the starts, where the last
+        // ends, and one more).
+        for (story, marks, reference, text) in [
+            (Story.footnotes, footnoteReferences, WordFileInformationBlock.Structure.footnoteReferences, WordFileInformationBlock.Structure.footnoteText),
+            (Story.endnotes, endnoteReferences, WordFileInformationBlock.Structure.endnoteReferences, WordFileInformationBlock.Structure.endnoteText),
+        ] where !marks.isEmpty {
+            var starts = [0]
+            for note in (stories[story] ?? []).prefix(marks.count) {
+                starts.append(starts[starts.count - 1] + note.runs.reduce(0) { $0 + $1.text.utf16.count } + 1)
+            }
+            var referenceBytes: [UInt8] = []
+            for mark in marks { referenceBytes += Self.le32(mark) }
+            referenceBytes += Self.le32(mainLength)
+            for _ in marks { referenceBytes += Self.le16(1) }
+            var textBytes: [UInt8] = []
+            for start in starts { textBytes += Self.le32(start) }
+            textBytes += Self.le32(starts[starts.count - 1] + 1)
+            while table.count % 4 != 0 { table.append(0) }
+            listPairs[reference.rawValue] = (table.count, referenceBytes.count)
+            table += referenceBytes
+            while table.count % 4 != 0 { table.append(0) }
+            listPairs[text.rawValue] = (table.count, textBytes.count)
+            table += textBytes
         }
 
         // The pairs of the FIB: (offset, length) of each structure.

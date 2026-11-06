@@ -188,7 +188,9 @@ enum WordDocumentProperties {
         case WordSprm.characterStyle: format.style = value
         case WordSprm.special: format.isSpecial = value != 0
         case WordSprm.fontSize: format.fontSize = value
-        case WordSprm.deleted: format.isDeleted = value != 0
+        // A toggle ([MS-DOC] 2.6.1): 0x80 keeps what a style gives, and no style
+        // gives a deletion, so only 1 and 0x81 delete.
+        case WordSprm.deleted: format.isDeleted = value == 1 || value == 0x81
         default: break
         }
     }

@@ -215,8 +215,8 @@ struct WordHTMLWriter {
         case 0x07:
             try endParagraph(mark: unit, at: position)
         case 0x0C:
-            // A page break inside hidden text begins no page, but a section
-            // break is a paragraph's mark all the same.
+            // A page break inside hidden or deleted text begins no page, but a
+            // section break is a paragraph's mark all the same.
             if !isHidden(at: position) { try addPageBreak(at: position) }
             // A section break is a paragraph's mark as well.
             if sections.endsSection(at: position) { try endParagraph(mark: unit, at: position) }
@@ -381,12 +381,12 @@ struct WordHTMLWriter {
         headingLevel(of: paragraph) != nil && !paragraph.isInTable
     }
 
-    /// Whether the character at `position` is hidden text: the ordinary view
-    /// does not show it. Asking moves the cursors forward, so `position` must
-    /// not be before any earlier one asked about.
+    /// Whether the character at `position` is not shown: hidden text, or text
+    /// a tracked change deleted. Asking moves the cursors forward, so
+    /// `position` must not be before any earlier one asked about.
     private mutating func isHidden(at position: Int) -> Bool {
         let format = characters.format(at: position) ?? WordCharacterFormat()
-        return appearance(of: format, in: currentParagraphFormat(at: position)).hidden
+        return format.isDeleted || appearance(of: format, in: currentParagraphFormat(at: position)).hidden
     }
 
     /// How text with `character` in a paragraph with `paragraph` looks.
@@ -401,9 +401,7 @@ struct WordHTMLWriter {
             italic: styles.isToggledOn(
                 paragraphStyle: paragraph.style, characterStyle: character.style, direct: character.italic, \.italic
             ),
-            hidden: styles.isToggledOn(
-                paragraphStyle: paragraph.style, characterStyle: character.style, direct: character.hidden, \.hidden
-            ),
+            hidden: styles.hides(character, in: paragraph),
             size: styles.fontSize(paragraphStyle: paragraph.style, characterStyle: character.style, direct: character.fontSize)
         )
         appearanceCache = (paragraph.style, character, appearance)

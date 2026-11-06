@@ -1,4 +1,5 @@
 import XCTest
+import SwiftSoup
 @testable import TextMouth
 
 /// TextMouth's own reader of Word 97-2003 documents (`WordDocumentReader`,
@@ -347,6 +348,173 @@ final class WordDocumentReaderTests: XCTestCase {
         XCTAssertEqual(try body(of: builder.build()), "<p>Main words.</p>\n")
         builder.stories = [.endnotes: [Paragraph("End.")], .textBoxes: [Paragraph("Box.")], .footnotes: [Paragraph("Foot.")]]
         XCTAssertEqual(try body(of: builder.build()), "<p>Main words.</p>\n<p>Foot.</p>\n<p>End.</p>\n<p>Box.</p>\n")
+    }
+
+    // MARK: - Notes Whose Marks Are Not Shown
+
+    /// A document whose main paragraph is "Seen", a shown footnote mark,
+    /// " and more", and a second mark `second`, with two footnotes.
+    private func noteDocument(second: Run) -> WordDocumentBuilder {
+        var builder = WordDocumentBuilder()
+        // The marks stand at positions 4 and 14 of the main text.
+        builder.paragraphs = [Paragraph(runs: [Run("Seen"), Run("\u{02}"), Run(" and more"), second])]
+        builder.footnoteReferences = [4, 14]
+        builder.stories = [.footnotes: [Paragraph("Shown note."), Paragraph("Second note.")]]
+        return builder
+    }
+
+    func testANoteIsReadOnlyIfItsReferenceMarkIsShown() throws {
+        // Both marks shown: both notes.
+        XCTAssertEqual(
+            try body(of: noteDocument(second: Run("\u{02}")).build()),
+            "<p>Seen and more</p>\n<p>Shown note.</p>\n<p>Second note.</p>\n"
+        )
+        // The second mark hidden: its note is left out.
+        XCTAssertEqual(
+            try body(of: noteDocument(second: Run("\u{02}", hidden: 1)).build()),
+            "<p>Seen and more</p>\n<p>Shown note.</p>\n"
+        )
+        // Or deleted by a tracked change.
+        var deleted = Run("\u{02}")
+        deleted.isDeleted = true
+        XCTAssertEqual(try body(of: noteDocument(second: deleted).build()), "<p>Seen and more</p>\n<p>Shown note.</p>\n")
+    }
+
+    func testEndnotesFollowTheSameRule() throws {
+        var builder = WordDocumentBuilder()
+        var gone = Run("\u{02}")
+        gone.isDeleted = true
+        builder.paragraphs = [Paragraph(runs: [Run("Main."), gone, Run("\u{02}")])]
+        builder.endnoteReferences = [5, 6]
+        builder.stories = [.endnotes: [Paragraph("Lost end."), Paragraph("Kept end.")]]
+        XCTAssertEqual(try body(of: builder.build()), "<p>Main.</p>\n<p>Kept end.</p>\n")
+    }
+
+    func testEveryNoteHiddenLeavesTheMainTextAlone() throws {
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [Paragraph(runs: [Run("Main."), Run("\u{02}\u{02}", hidden: 1)])]
+        builder.footnoteReferences = [5, 6]
+        builder.stories = [.footnotes: [Paragraph("One."), Paragraph("Two.")]]
+        XCTAssertEqual(try body(of: builder.build()), "<p>Main.</p>\n")
+    }
+
+    func testNoteTablesThatDoNotAddUpReadTheWholeStory() throws {
+        // Marks that go back are not trusted, so nothing is left out.
+        var builder = noteDocument(second: Run("\u{02}", hidden: 1))
+        builder.footnoteReferences = [14, 4]
+        XCTAssertEqual(
+            try body(of: builder.build()),
+            "<p>Seen and more</p>\n<p>Shown note.</p>\n<p>Second note.</p>\n"
+        )
+    }
+
+    // MARK: - Tracked Deletions and Moves
+
+    func testADeletionIsATogglePropertyAndNoStyleGivesOne() throws {
+        // Revision-mark deletion is a toggle ([MS-DOC] sprmCFRMarkDel): 1 and
+        // 0x81 delete, 0x80 keeps what a style gives, which is nothing.
+        func run(_ value: Int) -> Run {
+            var run = Run(" word")
+            run.extraModifiers = WordDocumentBuilder.modifier(WordSprm.deleted, value)
+            return run
+        }
+        for (value, expected) in [(1, "<p>Kept</p>\n"), (0x81, "<p>Kept</p>\n"), (0x80, "<p>Kept word</p>\n"), (0, "<p>Kept word</p>\n")] {
+            XCTAssertEqual(try body([Paragraph(runs: [Run("Kept"), run(value)])]), expected, "operand \(value)")
+        }
+    }
+
+    func testMovedTextIsReadOnceBecauseTheFormatHasNoMoves() throws {
+        // [MS-DOC] has no move: a tracked move is a deletion where the text
+        // was and an insertion where it went, so the text is read at its
+        // new place only.
+        var movedFrom = Run("The paragraph that moved. ")
+        movedFrom.isDeleted = true
+        XCTAssertEqual(
+            try body([Paragraph(runs: [movedFrom, Run("First.")]), Paragraph("The paragraph that moved. Second.")]),
+            "<p>First.</p>\n<p>The paragraph that moved. Second.</p>\n"
+        )
+    }
+
+    // MARK: - Hidden Text and Pages, Headings
+
+    func testAPageBreakInsideDeletedTextBeginsNoPage() throws {
+        var deleted = Run("\u{0C}")
+        deleted.isDeleted = true
+        XCTAssertEqual(
+            try body([Paragraph(runs: [Run("one "), deleted, Run("two")])], pages: true),
+            span(1) + "<p>one two</p>\n"
+        )
+    }
+
+    func testAHiddenSectionBreakBeginsNoPage() throws {
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [Paragraph("first", mark: 0x0C, markModifiers: hiddenMark), Paragraph("second")]
+        builder.sectionBreaks = [(0, 2)]
+        XCTAssertEqual(try body(of: builder.build(), pages: true), span(1) + "<p>first</p>\n<p>second</p>\n")
+        // The same break shown begins page 2.
+        builder.paragraphs = [Paragraph("first", mark: 0x0C), Paragraph("second")]
+        XCTAssertEqual(try body(of: builder.build(), pages: true), span(1) + "<p>first</p>\n<p>\(span(2))second</p>\n")
+    }
+
+    func testAHiddenHeadingWritesNoHeadingAndLeavesTheGuessBySizeOn() throws {
+        // The Heading 1 paragraph is all hidden: no heading is written, and it
+        // is not a "real" heading that turns off the guess by size.
+        let body = try body([
+            Paragraph(runs: [Run("Hidden chapter", hidden: 1)], style: 1),
+            Paragraph(runs: [Run("Big title", fontSize: 40)]),
+            Paragraph("Body text goes on for a good while here."),
+            Paragraph("More body text."),
+        ])
+        XCTAssertEqual(body, "<h1>Big title</h1>\n<p>Body text goes on for a good while here.</p>\n<p>More body text.</p>\n")
+    }
+
+    // MARK: - The Reading Text
+
+    /// The chapter an import makes of the HTML the reader writes for `data`:
+    /// its reading text, as a listener hears it, and its headings.
+    private func readingChapter(of data: Data) throws -> Chapter {
+        let html = try XCTUnwrap(WordDocumentReader.html(from: data, includesPages: false))
+        let markdown = try HTMLToMarkdownConverter.convert(
+            document: SwiftSoup.parse(html), readingFlow: PublicationSemantics.ReadingFlow(source: html), includesPages: false
+        )
+        return try MarkdownDocParser.parseChapter(markdown: markdown, title: "", includeNavigationHeadings: true)
+    }
+
+    func testListNumbersAreInTheReadingTextBecauseTheyAreWordsNotMarkers() throws {
+        // The Markdown of a numbered paragraph escapes its dot ("1\. First"),
+        // so it is text and no list marker, and a listener hears "1. First".
+        var builder = listBuilder([ListLevel(0, "%1.")])
+        builder.paragraphs = [Paragraph("First", modifiers: inList()), Paragraph("Second", modifiers: inList())]
+        XCTAssertEqual(try readingChapter(of: builder.build()).text, "1. First\n\n2. Second")
+    }
+
+    func testABulletAddsNoWordToTheReadingText() throws {
+        var builder = listBuilder([ListLevel(0x17, "\u{F0B7}")])
+        builder.paragraphs = [Paragraph("one", modifiers: inList()), Paragraph("two", modifiers: inList())]
+        XCTAssertEqual(try readingChapter(of: builder.build()).text, "one\n\ntwo")
+    }
+
+    func testANumberedHeadingKeepsItsNumberInTheReadingTextAndInTheHeadingList() throws {
+        // The chapter-numbering sample: the number is part of the heading's
+        // words, spoken and shown in the list of headings (textutil's text has none).
+        let chapter = try readingChapter(of: Data(contentsOf: formatSampleURL("doc/libreoffice-tdf104239_chapterNumbering.doc")))
+        XCTAssertTrue(chapter.text.hasPrefix("A. Heading 1\n\nI. Heading 2\n\na. Heading 3"), chapter.text)
+        XCTAssertEqual(chapter.headings.first?.text, "A. Heading 1")
+        XCTAssertTrue(chapter.text.hasSuffix("A.I.a.i.1.1 Heading 6"), chapter.text)
+    }
+
+    func testEmphasisThatStartsOrEndsOnPunctuationSpeaksNoAsterisk() throws {
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [
+            Paragraph(runs: [Run("He said "), Run("\"stop!\"", bold: 1), Run(" loudly")]),
+            Paragraph(runs: [Run("word"), Run("(aside)", italic: 1), Run(" and "), Run("Really", italic: 1), Run("?", italic: 1)]),
+            Paragraph(runs: [Run("Price: "), Run("$5.00,", bold: 1), Run(" or "), Run("-", bold: 1), Run("dash", bold: 1)]),
+        ]
+        let text = try readingChapter(of: builder.build()).text
+        XCTAssertFalse(text.contains("*"), text)
+        XCTAssertEqual(
+            text, "He said \"stop!\" loudly\n\nword(aside) and Really?\n\nPrice: $5.00, or -dash"
+        )
     }
 
     func testTheRealSampleWithTextBoxesReadsThemAfterTheMainText() throws {
@@ -766,7 +934,7 @@ final class WordDocumentReaderTests: XCTestCase {
         )
     }
 
-    func testTheRealSampleWithBulletedAndNumberedListsReadsThemAsLists() throws {
+    func testTheRealSampleWithBulletedAndNumberedListsWritesThemAsLists() throws {
         let body = try sampleBody("doc/poi-lists.doc", pages: false)
         // Bullets of three different lists are items of lists; the glyphs are not words.
         XCTAssertTrue(body.contains("<ul>\n<li>Unordered list 1</li>\n<li>UL 2</li>\n<li>UL 3</li>\n</ul>"), body)

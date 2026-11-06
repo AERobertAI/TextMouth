@@ -121,6 +121,28 @@ enum WordDocumentReader {
             sections = try WordSections(range: range, table: table, document: document)
         }
 
+        // Whether the characters at these positions (in order) are hidden or
+        // deleted text, for the notes whose reference marks stand there.
+        func isNotShown(_ positions: [Int]) -> [Bool] {
+            var characterCursor = characters.cursor()
+            var paragraphCursor = paragraphs.cursor()
+            return positions.map { position in
+                let character = characterCursor.format(at: position) ?? WordCharacterFormat()
+                let paragraph = paragraphCursor.format(at: position) ?? WordParagraphFormat()
+                return character.isDeleted || styles.hides(character, in: paragraph)
+            }
+        }
+
+        // The parts of the notes `story` that a person sees a reference to.
+        func shownNotes(of story: Range<Int>, references: WordFileInformationBlock.Structure, texts: WordFileInformationBlock.Structure) -> [Range<Int>] {
+            WordNotes.shownRanges(
+                of: story,
+                references: try? fib.range(of: references, in: table),
+                texts: try? fib.range(of: texts, in: table),
+                in: table, isNotShown: isNotShown
+            )
+        }
+
         // Writes the text of the character `ranges` (in order, none going
         // back) and says whether it holds a letter or a digit.
         func write(_ ranges: [Range<Int>]) throws -> (body: String, hasWords: Bool) {
@@ -152,7 +174,12 @@ enum WordDocumentReader {
         if !written.hasWords {
             if pieces.characterCount > textEnd { written = try write([0..<pieces.characterCount]) }
         } else {
-            let following = try fib.followingStoryRanges(limit: pieces.characterCount)
+            // A note is read only if a person would see its reference mark:
+            // not when the mark is in hidden or deleted text.
+            let stories = try fib.followingStories(limit: pieces.characterCount)
+            let following = shownNotes(of: stories.footnotes, references: .footnoteReferences, texts: .footnoteText)
+                + shownNotes(of: stories.endnotes, references: .endnoteReferences, texts: .endnoteText)
+                + (stories.textBoxes.isEmpty ? [] : [stories.textBoxes])
             if !following.isEmpty { written = try write([main] + following) }
         }
         let body = written.body

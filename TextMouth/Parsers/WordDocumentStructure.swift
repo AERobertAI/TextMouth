@@ -38,6 +38,14 @@ struct WordFileInformationBlock {
         case paragraphBinTable = 13
         /// The complex file information (CLX), which holds the piece table.
         case complexInformation = 33
+        /// Where the footnotes' reference marks lie in the main text (PlcffndRef).
+        case footnoteReferences = 2
+        /// Where each footnote's text lies in the footnote story (PlcffndTxt).
+        case footnoteText = 3
+        /// Where the endnotes' reference marks lie in the main text (PlcfendRef).
+        case endnoteReferences = 46
+        /// Where each endnote's text lies in the endnote story (PlcfendTxt).
+        case endnoteText = 47
         /// The list table (PlfLst): the lists and their levels.
         case listFormats = 73
         /// The list override table (PlfLfo): the list instances paragraphs name.
@@ -110,15 +118,16 @@ struct WordFileInformationBlock {
 
     /// The stories a person reading the document sees after its main text:
     /// the footnotes, the endnotes, and the main document's text boxes, as
-    /// character positions in that order. (The stories are laid end to end
-    /// after the main text: footnotes, headers, macros, comments, endnotes,
-    /// text boxes, header text boxes. The headers, the comments, and the
-    /// header text boxes are page furniture or notes to the author and are
-    /// not read.) Each is cut at `limit`, the characters the document holds,
-    /// and an empty one is left out. A FIB too short to give the lengths
-    /// gives none.
-    func followingStoryRanges(limit: Int) throws -> [Range<Int>] {
-        guard longValueCount >= 9 else { return [] }
+    /// character positions. (The stories are laid end to end after the main
+    /// text: footnotes, headers, macros, comments, endnotes, text boxes,
+    /// header text boxes. The headers, the comments, and the header text
+    /// boxes are page furniture or notes to the author and are not read.)
+    /// Each is cut at `limit`, the characters the document holds; one that
+    /// is empty, or that a FIB too short to give the lengths leaves out, is
+    /// an empty range.
+    func followingStories(limit: Int) throws -> (footnotes: Range<Int>, endnotes: Range<Int>, textBoxes: Range<Int>) {
+        let none = 0..<0
+        guard longValueCount >= 9 else { return (none, none, none) }
         // ccpFtn, ccpHdd, ccpMcr, ccpAtn, and ccpEdn follow ccpText, and
         // ccpTxbx follows them when the FIB is long enough to hold it.
         let lengths = try (1...6).map { index -> Int in
@@ -129,12 +138,12 @@ struct WordFileInformationBlock {
         let endnotes = endnotesStart..<endnotesStart + lengths[4]
         let textBoxesStart = endnotesStart + lengths[4]
         let textBoxes = textBoxesStart..<textBoxesStart + lengths[5]
-        return [footnotes, endnotes, textBoxes].compactMap { range in
+        let cut = { (range: Range<Int>) -> Range<Int> in
             // A story that begins past the characters the document holds has none.
-            guard range.lowerBound < limit else { return nil }
-            let cut = range.lowerBound..<min(range.upperBound, limit)
-            return cut.isEmpty ? nil : cut
+            guard range.lowerBound < limit else { return none }
+            return range.lowerBound..<min(range.upperBound, limit)
         }
+        return (cut(footnotes), cut(endnotes), cut(textBoxes))
     }
 
     /// Where `structure` lies in `table`: its offset and length, checked
