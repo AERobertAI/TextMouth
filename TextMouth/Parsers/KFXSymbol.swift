@@ -150,6 +150,8 @@ enum KFXSymbol {
     /// layouts are not flowing text.
     static let templateLayout = 156
     static let nonFlowingLayouts: Set<Int> = [324, 325, 326, 437]
+    /// The field a floated block carries.
+    static let floatMarker = 658
     /// A node's annotations (a list), as math carries its spoken form.
     static let annotations = 683
     /// An annotation's kind.
@@ -159,8 +161,6 @@ enum KFXSymbol {
     static let accessibleName = 584
     /// The annotation kind that holds a formula's MathML.
     static let mathML = 690
-    /// An auxiliary fragment of a section, named like the section with "-ad".
-    static let auxiliaryData = 597
     /// The classification of a table's caption.
     static let caption = 453
     /// An inline fragment: a node that a children list names rather than holds.

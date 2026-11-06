@@ -56,6 +56,39 @@ extension XCTestCase {
         return try makeODT(entries: entries, compression: compression)
     }
 
+    /// Runs `work` on another thread, bound to an import of its own, and
+    /// returns what it did; or, if it has not finished in `seconds`, fails the
+    /// test, cancels the import (a reader stops at its next check), waits a
+    /// little for the thread, and returns nil. A read that hangs fails its
+    /// test and does not stop the suite, and every agent behind it.
+    func finishing<T>(
+        within seconds: Double,
+        _ label: String,
+        file: StaticString = #filePath,
+        line: UInt = #line,
+        _ work: @escaping () throws -> T
+    ) -> Result<T, Error>? {
+        let cancellation = ImportCancellation()
+        let outcome = TimedOutcome<T>()
+        let done = DispatchSemaphore(value: 0)
+        // A thread of its own with a large stack, as the main thread has.
+        let carried = CarriedWork(work)
+        let thread = Thread {
+            outcome.result = Result { try ImportCancellation.$current.withValue(cancellation) { try carried.work() } }
+            done.signal()
+        }
+        thread.stackSize = 8 << 20
+        thread.start()
+        if done.wait(timeout: .now() + seconds) == .timedOut {
+            cancellation.cancel()
+            // Work that asks stops now; work that does not is given a moment.
+            _ = done.wait(timeout: .now() + 5)
+            XCTFail("\(label) took more than \(seconds) seconds", file: file, line: line)
+            return nil
+        }
+        return outcome.result
+    }
+
     /// An OpenDocument package holding exactly `entries`, in order.
     func makeODT(entries: [TestZIPEntry], compression: CompressionMethod = .none) throws -> URL {
         let url = try makeTemporaryZip(prefix: "ODT", orderedEntries: entries, compressionMethod: compression)
@@ -140,4 +173,20 @@ extension TextPipelineFixtures {
     static func isComparedByODTTests(_ name: String) -> Bool {
         name.hasPrefix("format-samples/odt/libreoffice-")
     }
+}
+
+/// A test's work on its way to the thread that runs it. The test waits for that
+/// thread, or gives up on it, so nothing else touches the work meanwhile.
+private final class CarriedWork<T>: @unchecked Sendable {
+    let work: () throws -> T
+
+    init(_ work: @escaping () throws -> T) {
+        self.work = work
+    }
+}
+
+/// What a thread that `finishing(within:_:_:)` runs left, read only after the
+/// thread has signalled that it is done.
+final class TimedOutcome<T>: @unchecked Sendable {
+    var result: Result<T, Error>?
 }

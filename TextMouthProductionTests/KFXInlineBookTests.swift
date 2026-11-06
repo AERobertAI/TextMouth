@@ -62,6 +62,15 @@ final class KFXInlineBookTests: XCTestCase {
         }
     }
 
+    func testAHeadingWithAFloatedSpanIsAHeadingAndAFloatFirstParagraphIsOne() throws {
+        let kfxChapters = try kfx()
+        let headings = kfxChapters.flatMap(\.chapter.headings).map(\.text)
+        XCTAssertTrue(headings.contains("Alpha fl words gamma"), "\(headings)")
+        let lines = paragraphs(kfxChapters)
+        XCTAssertTrue(lines.contains("Floated first then the remaining words"), "\(lines)")
+        XCTAssertFalse(lines.contains("Floated first"))
+    }
+
     // MARK: - Headings and chapters
 
     func testHeadingsAreTheEPUBsHeadingForHeading() throws {

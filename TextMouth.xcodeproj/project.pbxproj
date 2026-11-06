@@ -26,6 +26,7 @@
 		01BB9C0AFF4B0FFD2975D04A /* TranscriptEditAlignment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6864D1FB08052BCFE377DDB9 /* TranscriptEditAlignment.swift */; };
 		0203E2A52AA52A8F595B7E39 /* WordDocumentLegacyHostileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F32E4E3A0536ECFA1384A2EF /* WordDocumentLegacyHostileTests.swift */; };
 		0232E88FBA0ED4BC20BEF313 /* TextExtractionProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4614F4E0D73497717F0B94F6 /* TextExtractionProgress.swift */; };
+		025970B8E9D372236CEAB4F3 /* KFXVerifyRoundTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDB1CD670E6672F384A7D4CA /* KFXVerifyRoundTests.swift */; };
 		02827A8F4F3E9DD15561046A /* AudioInputPermission.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1BD2F8BFC19E87C56868F94 /* AudioInputPermission.swift */; };
 		028C013665E15A78972E1AE7 /* TextEditingKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925BCC37E18EBC6C6B91EDF8 /* TextEditingKeys.swift */; };
 		02C0927F2308D810ED735261 /* FeedListeningOptionsSheetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 501AC3CF81E3781F6F3228A6 /* FeedListeningOptionsSheetTests.swift */; };
@@ -3170,6 +3171,7 @@
 		BD7E0129E92D5888530D5C18 /* quantize.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = quantize.h; sourceTree = "<group>"; };
 		BD89817525DA305BE9C009E7 /* BrailleCellsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleCellsTests.swift; sourceTree = "<group>"; };
 		BD90D574B03B2EA6CAB3B623 /* LibraryViewModel+TextAnchors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LibraryViewModel+TextAnchors.swift"; sourceTree = "<group>"; };
+		BDB1CD670E6672F384A7D4CA /* KFXVerifyRoundTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KFXVerifyRoundTests.swift; sourceTree = "<group>"; };
 		BE1566BA3FCBC2A94F3A3242 /* id3tag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = id3tag.h; sourceTree = "<group>"; };
 		BE3183560BA08EE8B3CB14A3 /* AudioEditorWaveformTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorWaveformTests.swift; sourceTree = "<group>"; };
 		BE61CB21736CB9B3EE94E7C6 /* TextEncodingCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextEncodingCatalog.swift; sourceTree = "<group>"; };
@@ -4748,6 +4750,7 @@
 				57EF58605B98D9918BE2F53A /* KFXRecognitionTests.swift */,
 				2995810842903DC1972E1B29 /* KFXSetTests.swift */,
 				201335713BB975F161C5D653 /* KFXTestBook.swift */,
+				BDB1CD670E6672F384A7D4CA /* KFXVerifyRoundTests.swift */,
 				C73B1986B199D65CA1695AE4 /* KFXWalkTests.swift */,
 				54CDB66EE9D2786D224F3D58 /* LegacyAudioMetadataTests.swift */,
 				85CA7CFEF983403DB1ED1E8C /* LegacyBookMigrationTests.swift */,
@@ -5972,6 +5975,7 @@
 				F9C7346EA82293E9F589BD51 /* KFXRecognitionTests.swift in Sources */,
 				0FB5BD44F8029405E075787E /* KFXSetTests.swift in Sources */,
 				01445A5018232A4FEA38302E /* KFXTestBook.swift in Sources */,
+				025970B8E9D372236CEAB4F3 /* KFXVerifyRoundTests.swift in Sources */,
 				2FB890DBB509FAACDA99DFFF /* KFXWalkTests.swift in Sources */,
 				B6044620E2D0B1C22D11B2FC /* KeepOnThisMacTests.swift in Sources */,
 				0B4B79B3DE7A7A5233B4A2E6 /* KeyboardReachabilityTests.swift in Sources */,
@@ -7768,7 +7772,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.3.2;
+				MARKETING_VERSION = 0.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouth;
 				PRODUCT_MODULE_NAME = TextMouth;
 				PRODUCT_NAME = TextMouth;
@@ -7926,7 +7930,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.3.2;
+				MARKETING_VERSION = 0.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouth;
 				PRODUCT_NAME = TextMouth;
 				SDKROOT = macosx;
@@ -8140,7 +8144,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.3.2;
+				MARKETING_VERSION = 0.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouth;
 				PRODUCT_MODULE_NAME = TextMouth;
 				PRODUCT_NAME = TextMouth;
@@ -8258,7 +8262,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.3.2;
+				MARKETING_VERSION = 0.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouth;
 				PRODUCT_NAME = TextMouth;
 				SDKROOT = macosx;

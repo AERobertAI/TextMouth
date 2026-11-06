@@ -405,12 +405,12 @@ final class WordMLReaderTests: XCTestCase {
     @discardableResult
     private func read(_ xml: String, _ label: String, file: StaticString = #filePath, line: UInt = #line) throws -> String? {
         let url = try self.file(holding: xml)
-        let start = Date()
-        defer {
-            XCTAssertLessThan(Date().timeIntervalSince(start), allowedSeconds, "\(label) took too long", file: file, line: line)
-        }
+        // On another thread, so that a read that hangs fails the test.
+        guard let outcome = finishing(within: allowedSeconds, label, file: file, line: line, {
+            try WordMLDocumentReader.html(of: url, includesPages: true)
+        }) else { return nil }
         do {
-            return try WordMLDocumentReader.html(of: url, includesPages: true)
+            return try outcome.get()
         } catch {
             let known = error is TextutilConverter.Failure || error is DocumentTooLargeError || error is FileImportError
             XCTAssertTrue(known, "\(label) threw an error the reader does not name: \(error)", file: file, line: line)
@@ -489,13 +489,11 @@ final class WordMLReaderTests: XCTestCase {
             for _ in 0..<(1 + round % 8) { damaged[next() % damaged.count] = UInt8(truncatingIfNeeded: next()) }
             let url = folder.appendingPathComponent("flipped-\(round).xml")
             try damaged.write(to: url)
-            let start = Date()
-            do {
-                _ = try WordMLDocumentReader.html(of: url, includesPages: true)
-            } catch {
+            // On another thread, so that a read that hangs fails the test.
+            guard let outcome = finishing(within: allowedSeconds, "round \(round)", { try WordMLDocumentReader.html(of: url, includesPages: true) }) else { return }
+            if case .failure(let error) = outcome {
                 XCTAssertTrue(error is TextutilConverter.Failure || error is DocumentTooLargeError, "round \(round): \(error)")
             }
-            XCTAssertLessThan(Date().timeIntervalSince(start), allowedSeconds, "round \(round)")
         }
     }
 

@@ -133,13 +133,6 @@ class OfficeXMLReader: PackageSAXParser {
     /// (5,000 levels parse on this Mac), so this limit is the only guard.
     private static let deepestNesting = 200
 
-    /// How many elements pass between two asks whether the import was
-    /// cancelled.
-    private static let elementsBetweenCancelChecks = 4_096
-
-    /// How many elements have started.
-    private var elementCount = 0
-
     /// How many elements are open.
     private(set) var depth = 0
 
@@ -236,8 +229,12 @@ class OfficeXMLReader: PackageSAXParser {
     ) {
         running = parser
         depth += 1
-        elementCount += 1
-        if elementCount % Self.elementsBetweenCancelChecks == 0 { stopIfCancelled() }
+        // Asked at every element: the ask costs about 16 ns (a task-local and
+        // a lock), a tenth of what XMLParser spends on an element with nothing
+        // done to it, and so under 1% of the reading. A part of few, slow
+        // elements (a long start tag costs the parser seconds) is stopped
+        // between them.
+        stopIfCancelled()
         names.enter(attributeDict)
         guard depth <= Self.deepestNesting else {
             fail(TextutilConverter.Failure.unreadable(format))
@@ -268,6 +265,8 @@ class OfficeXMLReader: PackageSAXParser {
 
     final func parser(_ parser: XMLParser, foundCharacters string: String) {
         running = parser
+        // A paragraph of millions of characters arrives in a few calls.
+        stopIfCancelled()
         guard skippedDepth == nil else { return }
         characters(string)
     }

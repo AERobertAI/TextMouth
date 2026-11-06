@@ -222,7 +222,12 @@ final class KFXWalkTests: XCTestCase {
     func testASectionWithNoHeadingIsTitledByItsNumber() throws {
         var book = KFXTestBook()
         book.sections = [("c0", [.text("No heading here.")]), ("c1", [.text("Nor here.")])]
-        XCTAssertEqual(try prepare(book).chapters.map(\.chapter.title), ["Chapter 1", "Chapter 2"])
+        // The second section begins nothing (no contents entry, no heading), so it
+        // continues the first: one chapter, no heading made up for it.
+        let chapters = try prepare(book).chapters
+        XCTAssertEqual(chapters.count, 1)
+        XCTAssertEqual(chapters[0].chapter.headings.map(\.text), ["A Test Book"])
+        XCTAssertEqual(chapters[0].chapter.text.split(whereSeparator: \.isWhitespace).count, 5)
     }
 
     func testTheTitleAuthorAndLanguageAreTheBooks() throws {
@@ -260,7 +265,8 @@ final class KFXWalkTests: XCTestCase {
             ]))]))
         }
         let book = try KFXBook(bytes: bytes)
-        XCTAssertEqual(book.sections.map(\.html), ["<p>Beta.</p>", "<p>Alpha.</p>"])
+        // The second section begins nothing, so it continues the first: one section, in the order of the reading order.
+        XCTAssertEqual(book.sections.map(\.html), ["<p>Beta.</p><p>Alpha.</p>"])
     }
 
     func testAnOlderBooksReadingOrderIsInItsFlatMetadata() throws {

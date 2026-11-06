@@ -15,16 +15,18 @@ final class OfficeXMLGuardTests: XCTestCase {
     private let allowedSeconds = 10.0
 
     /// Reads the OpenDocument package holding `content` as its `content.xml`,
-    /// and returns its HTML or the error; fails the test if it took too long.
+    /// and returns its HTML or the error. The read runs on a thread the test
+    /// waits for, `allowedSeconds` at most: one that hangs fails the test (and
+    /// is cancelled), and does not stop the suite.
     private func read(_ content: Data, _ label: String, file: StaticString = #filePath, line: UInt = #line) throws -> Result<String, Error> {
         let url = try makeODT(entries: [
             TestZIPEntry("mimetype", Data("application/vnd.oasis.opendocument.text".utf8)),
             TestZIPEntry("content.xml", content),
         ], compression: .deflate)
-        let start = Date()
-        let result = Result { try ODTDocumentReader.html(of: url, includesPages: false) }
-        XCTAssertLessThan(Date().timeIntervalSince(start), allowedSeconds, "\(label) took too long", file: file, line: line)
-        return result
+        let outcome = finishing(within: allowedSeconds, label, file: file, line: line) {
+            try ODTDocumentReader.html(of: url, includesPages: false)
+        }
+        return outcome ?? .failure(ImportCancelled())
     }
 
     /// A `content.xml` in UTF-8 with `prolog` before its root and `body` as its text.
@@ -52,11 +54,12 @@ final class OfficeXMLGuardTests: XCTestCase {
     /// Escaping a text of millions of ampersands takes time in proportion to
     /// its length (it once took the square of it: 12.8 million took hours).
     func testEscapingIsLinear() {
-        let start = Date()
-        let escaped = XMLEscaping.text(String(repeating: "&", count: 2_000_000))
-        XCTAssertEqual(escaped.utf8.count, 5 * 2_000_000)
-        XCTAssertEqual(XMLEscaping.attribute(String(repeating: "\"", count: 1_000_000)).utf8.count, 6 * 1_000_000)
-        XCTAssertLessThan(Date().timeIntervalSince(start), allowedSeconds)
+        let escaped = finishing(within: allowedSeconds, "escaping") {
+            (XMLEscaping.text(String(repeating: "&", count: 2_000_000)), XMLEscaping.attribute(String(repeating: "\"", count: 1_000_000)))
+        }
+        guard let (text, attribute) = try? escaped?.get() else { return }
+        XCTAssertEqual(text.utf8.count, 5 * 2_000_000)
+        XCTAssertEqual(attribute.utf8.count, 6 * 1_000_000)
     }
 
     /// A paragraph of two million ampersands in `content.xml` is read (it
@@ -70,13 +73,19 @@ final class OfficeXMLGuardTests: XCTestCase {
 
     // MARK: - The namespaces
 
-    /// A root that declares thousands of prefixes and a hundred thousand
-    /// elements that each declare one again is read in seconds (it once
-    /// copied the whole table for each element).
+    /// 16,000 prefixes in scope (sixteen nested elements declare a thousand
+    /// each, under the limit on one start tag) and a hundred thousand
+    /// elements that each declare one again are read in seconds. The scope
+    /// once copied its whole table for each element: this input took it
+    /// about 17 seconds in a debug build, where a flood of 2,000 prefixes took
+    /// 2 and passed.
     func testAFloodOfNamespaceDeclarationsIsReadInSeconds() throws {
-        let prefixes = (0..<2_000).map { "xmlns:p\($0)=\"urn:oasis:names:tc:opendocument:xmlns:text:1.0\"" }.joined(separator: " ")
-        let flood = String(repeating: "<q xmlns:p0=\"urn:oasis:names:tc:opendocument:xmlns:text:1.0\"/>", count: 100_000)
-        let result = try read(Data(content(namespaces: prefixes, body: flood + "<text:p>after</text:p>").utf8), "a namespace flood")
+        let wrappers = (0..<16).map { wrapper in
+            "<w\(wrapper) " + (0..<1_000).map { "xmlns:p\(wrapper)x\($0)=\"urn:t\"" }.joined(separator: " ") + ">"
+        }
+        let flood = String(repeating: "<q xmlns:p0x0=\"urn:t\"/>", count: 100_000)
+        let body = wrappers.joined() + flood + (0..<16).reversed().map { "</w\($0)>" }.joined() + "<text:p>after</text:p>"
+        let result = try read(Data(content(body: body).utf8), "a namespace flood")
         XCTAssertEqual(words(result, "a namespace flood"), "after")
     }
 
@@ -92,13 +101,25 @@ final class OfficeXMLGuardTests: XCTestCase {
 
     // MARK: - Start tags
 
-    /// A start tag of more than a megabyte is refused; one a little shorter
+    /// A start tag of more than 64 KB (`XMLInputGuard.longestStartTag`, 30
+    /// times the longest of 2,067 real parts) is refused; one a little shorter
     /// (a long attribute value is not a hostile tag) is read.
-    func testAStartTagOverAMegabyteIsRefused() throws {
-        let long = content(namespaces: "a=\"" + String(repeating: "x", count: 1_100_000) + "\"", body: "<text:p>words</text:p>")
+    func testAStartTagOver64KBIsRefused() throws {
+        XCTAssertEqual(XMLInputGuard.longestStartTag, 65_536)
+        let long = content(namespaces: "a=\"" + String(repeating: "x", count: 70_000) + "\"", body: "<text:p>words</text:p>")
         assertRefused(try read(Data(long.utf8), "a long start tag"), "a long start tag")
-        let shorter = content(body: "<text:p>words<text:span a='" + String(repeating: ">", count: 900_000) + "'>fine</text:span></text:p>")
+        let shorter = content(body: "<text:p>words<text:span a='" + String(repeating: ">", count: 60_000) + "'>fine</text:span></text:p>")
         XCTAssertEqual(words(try read(Data(shorter.utf8), "a long attribute"), "a long attribute"), "wordsfine")
+    }
+
+    /// Sixty-four start tags at the limit, each of thousands of attributes,
+    /// are read in a fraction of a second each; none costs the parser the
+    /// seconds a tag of a megabyte did (which a Cancel could not interrupt).
+    func testStartTagsAtTheLimitCostLittleEach() throws {
+        let attributes = (0..<4_000).map { "a\($0)=\"\"" }.joined(separator: " ")
+        XCTAssertLessThan(attributes.utf8.count, XMLInputGuard.longestStartTag - 100)
+        let body = String(repeating: "<text:span \(attributes)>w</text:span>", count: 64) + "<text:p>words</text:p>"
+        XCTAssertNotNil(words(try read(Data(content(body: body).utf8), "tags at the limit"), "tags at the limit"))
     }
 
     /// 200,000 attributes in one start tag are refused before the parser
@@ -173,8 +194,52 @@ final class OfficeXMLGuardTests: XCTestCase {
 
     // MARK: - Cancel
 
-    /// A read inside an import that was cancelled stops at the next check
-    /// (every few thousand elements) with `ImportCancelled`; one inside an
+    /// Reads `content` with an import that is cancelled `delay` seconds after
+    /// the read begins, and checks that the read ended with `ImportCancelled`
+    /// within two seconds of the cancel: not finished, and not in minutes.
+    private func assertCancelStopsTheRead(
+        _ content: String,
+        after delay: Double,
+        _ label: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        let url = try makeODT(content: content, compression: .deflate)
+        let cancellation = ImportCancellation()
+        let outcome = TimedOutcome<String>()
+        let done = DispatchSemaphore(value: 0)
+        let thread = Thread {
+            outcome.result = Result {
+                try ImportCancellation.$current.withValue(cancellation) { try ODTDocumentReader.html(of: url, includesPages: false) }
+            }
+            done.signal()
+        }
+        thread.stackSize = 8 << 20
+        thread.start()
+        Thread.sleep(forTimeInterval: delay)
+        let cancelledAt = Date()
+        cancellation.cancel()
+        guard done.wait(timeout: .now() + 30) == .success else {
+            return XCTFail("\(label): the read went on 30 seconds after Cancel", file: file, line: line)
+        }
+        XCTAssertLessThan(Date().timeIntervalSince(cancelledAt), 2, "\(label): the read stopped late", file: file, line: line)
+        guard case .failure(let error)? = outcome.result else {
+            return XCTFail("\(label): the read finished before the cancel; the input is too small", file: file, line: line)
+        }
+        XCTAssertEqual(error as? ImportCancelled, ImportCancelled(), label, file: file, line: line)
+    }
+
+    /// Cancel lands in the middle of a read: of half a million paragraphs, of
+    /// one paragraph of millions of characters (the parser hands them over in
+    /// a few calls), and of a flood of namespace declarations.
+    func testCancelLandsInTheMiddleOfARead() throws {
+        try assertCancelStopsTheRead(content(body: String(repeating: "<text:p>w</text:p>", count: 500_000)), after: 0.2, "paragraphs")
+        try assertCancelStopsTheRead(content(body: "<text:p>" + String(repeating: "&amp;", count: 3_000_000) + "</text:p>"), after: 0.2, "characters")
+        try assertCancelStopsTheRead(content(body: String(repeating: "<q xmlns:p0=\"urn:t\"/>", count: 500_000)), after: 0.2, "declarations")
+    }
+
+    /// A read inside an import that was cancelled before it began stops at its
+    /// first element with `ImportCancelled`; one inside an
     /// import that was not, or outside any import, reads.
     func testACancelledImportStopsTheRead() throws {
         let body = String(repeating: "<text:p>w</text:p>", count: 20_000)
