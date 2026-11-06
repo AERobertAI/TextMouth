@@ -58,8 +58,11 @@ enum PageReaderVersions {
             // TextMouth follows: hidden text (w:vanish) is not read, a
             // text box written twice is read once, and the footnotes and
             // endnotes are read after the text. Every .docx book is read
-            // again once.
-            return "1.1.0"
+            // again once ("1.1.0"). At "1.2.0" the toggle rule for hidden
+            // text is whole: a table style's w:vanish, the document defaults',
+            // and a hidden table row (w:trPr/w:hidden) hide their words too,
+            // so every .docx book is read again once more.
+            return "1.2.0"
         case .rtf, .rtfd:
             // TextMouth's own reader reads rich text (FMT47) instead of
             // textutil: headings from the style sheet, bold and italic, and
