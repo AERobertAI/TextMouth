@@ -63,7 +63,11 @@ enum OwnDocumentReaders {
             // document, which textutil reads.
             guard WordDocumentReader.isOn else { return nil }
             return try WordDocumentReader.html(of: url, includesPages: includesPages)
-        case .odt, .wordml:
+        case .odt:
+            // OpenDocument text (.odt and the .ott template).
+            guard ODTDocumentReader.isOn else { return nil }
+            return try ODTDocumentReader.html(of: url, includesPages: includesPages)
+        case .wordml:
             return nil
         }
     }
