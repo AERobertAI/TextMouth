@@ -54,6 +54,9 @@ final class ODTContentReader: ODTXMLReader {
         /// The `svg:title` and `svg:desc` it holds.
         var title = ""
         var description = ""
+        /// Whether it holds a text box or paragraphs of its own: those are
+        /// read, and its description, which often repeats them, is not.
+        var holdsWords = false
     }
     private var anchored: [Anchored] = []
     /// The `svg:title` or `svg:desc` being read, and its text so far.
@@ -171,11 +174,15 @@ final class ODTContentReader: ODTXMLReader {
                 return skipSubtree()
             }
             anchored.append(Anchored(flow: writer.flow, paragraphCount: writer.flow.paragraphs.count))
+            // A text box belongs to the frame that holds it.
+            if name == "draw:text-box", anchored.count >= 2 { anchored[anchored.count - 2].holdsWords = true }
         }
         switch name {
         // Text
-        case "text:p": try beginParagraph(isHeading: false, attributes)
-        case "text:h": try beginParagraph(isHeading: true, attributes)
+        case "text:p", "text:h":
+            // A shape with paragraphs of its own is read through them.
+            if !anchored.isEmpty { anchored[anchored.count - 1].holdsWords = true }
+            try beginParagraph(isHeading: name == "text:h", attributes)
         case "text:span", "text:a": beginSpan(attributes)
         case "text:s":
             try writer.addLiteral(String(repeating: " ", count: min(max(attributes["text:c"].flatMap { Int($0) } ?? 1, 0), Self.mostSpaces)))
@@ -236,11 +243,12 @@ final class ODTContentReader: ODTXMLReader {
 
     /// A picture, formula, chart, or shape is read as its description
     /// (`svg:desc`, or else `svg:title`): a paragraph after the one holding
-    /// its anchor. One with neither is silent.
+    /// its anchor, which the guess at headings leaves alone. One with neither
+    /// is silent, and so is one that holds words of its own (a text box).
     private func readDescription(_ shape: Anchored) throws {
         let words = shape.description.isEmpty ? shape.title : shape.description
-        guard !words.isEmpty else { return }
-        writer.beginParagraph(kind: .body, run: OfficeRun(size: OfficeRun.halfPoints(sheet.defaultPointSize)))
+        guard !words.isEmpty, !shape.holdsWords else { return }
+        writer.beginParagraph(kind: .body, run: OfficeRun(size: OfficeRun.descriptionSize))
         try writer.addLiteral(words)
         try writer.endParagraph()
     }
