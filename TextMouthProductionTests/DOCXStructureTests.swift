@@ -1033,6 +1033,25 @@ final class DOCXStructureTests: XCTestCase {
         XCTAssertEqual(reading.spoken, "Formula:\n\nf(x) = x * 2")
     }
 
+    /// A table row is one line of Markdown, so a line break inside a cell's
+    /// paragraph is a space there. A newline would end the row early and put
+    /// the rest of the cell after a pipe that a listener hears.
+    func testALineBreakInATableCellSpeaksNoPipe() throws {
+        func cell(_ runs: String) -> String { "<w:tc><w:p>\(runs)</w:p></w:tc>" }
+        let broken = cell("<w:r><w:t>x</w:t><w:br/><w:t>y</w:t></w:r>")
+        let twice = cell("<w:r><w:rPr><w:b/></w:rPr><w:t>m</w:t><w:br/><w:br/><w:t>n</w:t></w:r>")
+        let trailing = cell("<w:r><w:t>p</w:t><w:br/></w:r>")
+        let reading = try read(body: [
+            Self.table(Self.row(broken, cell("<w:r><w:t>z</w:t></w:r>")), Self.row(twice, trailing))
+        ])
+
+        XCTAssertTrue(reading.markdown.contains("| x y | z |"), reading.markdown)
+        XCTAssertEqual(reading.markdown.components(separatedBy: "\n").filter { $0.hasPrefix("|") }.count, 4, reading.markdown)
+        XCTAssertFalse(reading.spoken.contains("|"), reading.spoken)
+        XCTAssertTrue(reading.spoken.contains("x y"), reading.spoken)
+        XCTAssertTrue(reading.spoken.contains("m n"), reading.spoken)
+    }
+
     // MARK: - Helpers
 
     /// The WordprocessingML namespace each part declares.

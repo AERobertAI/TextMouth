@@ -1315,7 +1315,10 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     }
 
     /// The text of a cell of a Markdown table: the text of its paragraphs,
-    /// joined by spaces and trimmed.
+    /// joined by spaces and trimmed. A table row is one line of Markdown, so
+    /// a line break inside a paragraph (`w:br`) is a space here: a newline
+    /// would end the row, and the rest of the cell would be read as a row of
+    /// its own, after a pipe the listener would hear.
     private static func cellText(_ cell: ReadTable.Cell) -> String {
         cell.compactMap { content -> String? in
             if case .text(let text) = content {
@@ -1323,6 +1326,9 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             }
             return nil
         }
+        .flatMap { $0.split(whereSeparator: \.isNewline) }
+        .map { $0.trimmingCharacters(in: .whitespaces) }
+        .filter { !$0.isEmpty }
         .joined(separator: " ")
         .trimmingCharacters(in: .whitespacesAndNewlines)
     }
