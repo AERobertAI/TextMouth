@@ -57,10 +57,14 @@ final class LibraryCloudFetchTests: XCTestCase {
 
         XCTAssertTrue(waitUntil(timeout: 5) { model.hasStartedLibrary }, "the library never opened")
         XCTAssertNil(model.dataDirectoryUnavailability)
+        // The Feeds folder comes first, in a pass of its own. The feed's folder
+        // and index are read in one later pass, whose reads finish in any order.
+        let names = world.fetched.names(in: world.fixture.root)
+        XCTAssertEqual(names.first, "Feeds")
         XCTAssertEqual(
-            world.fetched.names(in: world.fixture.root),
-            ["Feeds", DataDirectoryPaths.relativeName(of: itemsFolder, in: world.fixture.root),
-             DataDirectoryPaths.relativeName(of: feedIndex, in: world.fixture.root)]
+            names.dropFirst().sorted(),
+            [DataDirectoryPaths.relativeName(of: itemsFolder, in: world.fixture.root),
+             DataDirectoryPaths.relativeName(of: feedIndex, in: world.fixture.root)].sorted()
         )
     }
 
