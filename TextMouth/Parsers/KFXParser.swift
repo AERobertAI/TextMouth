@@ -32,21 +32,25 @@ enum KFXParser {
     /// Opens the KFX book at `url` and prepares each of its sections that
     /// holds text as a chapter. The direct reader and the Markdown cache
     /// both read a KFX book here, so they hear the same words.
-    /// - Parameter fallbackTitle: The title for a book that names none; its
-    ///   file's name when nil.
+    /// - Parameters:
+    ///   - fallbackTitle: The title for a book that names none; its file's
+    ///     name when nil.
+    ///   - includesPages: Whether the book's print page list is written as
+    ///     pages, as the EPUB reader does for a direct reading.
     /// - Throws: `MOBIError.copyProtected` for a protected book,
     ///   `MOBIError.notAKindleBook` and `.damaged` for a file that is not a
     ///   readable KFX book, `KFXError` for the books and packages not read,
     ///   `DocumentTooLargeError` for a file past `DocumentByteLimit`.
-    static func prepareBook(url: URL, fallbackTitle: String? = nil) throws -> PreparedBook {
+    static func prepareBook(url: URL, fallbackTitle: String? = nil, includesPages: Bool = true) throws -> PreparedBook {
         // The first bytes decide, so a ZIP is not read whole to be told apart.
         switch try KFXSignature.kind(ofFileAt: url) {
         case .zip:
-            return try prepareBook(archiveAt: url, fallbackTitle: fallbackTitle)
+            return try prepareBook(archiveAt: url, fallbackTitle: fallbackTitle, includesPages: includesPages)
         case .container, .protected, .other:
             return try prepareBook(
                 bytes: [UInt8](try DocumentByteLimit.contents(of: url)),
-                fallbackTitle: fallbackTitle ?? url.deletingPathExtension().lastPathComponent
+                fallbackTitle: fallbackTitle ?? url.deletingPathExtension().lastPathComponent,
+                includesPages: includesPages
             )
         }
     }
@@ -55,15 +59,16 @@ enum KFXParser {
     /// an `.azw` file here when its bytes are KFX, as Kindle's apps name
     /// their KFX books.
     /// - Throws: As `prepareBook(url:fallbackTitle:)`.
-    static func prepareBook(bytes: [UInt8], fallbackTitle: String) throws -> PreparedBook {
+    static func prepareBook(bytes: [UInt8], fallbackTitle: String, includesPages: Bool = true) throws -> PreparedBook {
         switch KFXSignature.kind(ofPrefix: Array(bytes.prefix(KFXSignature.prefixLength))) {
         case .protected:
             // Never decrypted: the same sentence as a protected MOBI book.
             throw MOBIError.copyProtected
         case .container:
-            let book = try KFXBook(bytes: bytes)
+            let book = try KFXBook(bytes: bytes, includesPages: includesPages)
             return try MOBIParser.preparedBook(
-                sections: book.sections, metadata: book.metadata, fallbackTitle: fallbackTitle)
+                sections: book.sections, metadata: book.metadata, fallbackTitle: fallbackTitle,
+                includesPages: includesPages)
         case .zip, .other:
             throw MOBIError.notAKindleBook
         }
@@ -71,7 +76,7 @@ enum KFXParser {
 
     /// Prepares the set of containers in the ZIP archive at `url`, or
     /// refuses an archive that is not one.
-    private static func prepareBook(archiveAt url: URL, fallbackTitle: String?) throws -> PreparedBook {
+    private static func prepareBook(archiveAt url: URL, fallbackTitle: String?, includesPages: Bool) throws -> PreparedBook {
         switch try KFXPackage.kind(ofArchiveAt: url) {
         case .protected:
             throw MOBIError.copyProtected

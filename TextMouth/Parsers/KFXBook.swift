@@ -18,11 +18,13 @@ struct KFXBook {
 
     /// Reads the book whose containers are `containers`: one file, or the
     /// several of a set.
+    /// - Parameter includesPages: Whether the book's print page list is
+    ///   written as pages (the sections name where each page begins).
     /// - Throws: `KFXError.partOfABook` and `.noFlowingText` for the books
     ///   described above, `MOBIError.damaged` for one that stops short or
     ///   names what it lacks, `DocumentTooLargeError` for one whose text
     ///   passes `DocumentByteLimit`.
-    init(containers: [KFXContainer]) throws {
+    init(containers: [KFXContainer], includesPages: Bool = true) throws {
         var fragmentBudget = KFXContainer.maximumValues
         var decoded: [KFXContainer.Fragment] = []
         for container in containers {
@@ -42,23 +44,79 @@ struct KFXBook {
         }
         if marks.hasNoFlowingText(in: fragments) { throw KFXError.noFlowingText }
 
-        var walk = KFXWalk(fragments: fragments)
-        var sections: [MOBIBook.Section] = []
-        var holdsText = false
-        for name in order {
-            let walked = try walk.section(named: name)
-            holdsText = holdsText || walked.holdsText
-            sections.append(MOBIBook.Section(title: nil, html: walked.html, headingTargets: [:]))
-        }
+        let navigation = KFXNavigation(fragments)
+        var walk = KFXWalk(
+            fragments: fragments, targets: navigation.targets(includingPages: includesPages),
+            headingLevels: navigation.headingLevels)
+        var walked: [KFXWalk.Section] = []
+        for name in order { walked.append(try walk.section(named: name)) }
         // Sections that are all pictures: no words to read.
-        if !holdsText { throw KFXError.noFlowingText }
-        self.sections = sections
+        guard walked.contains(where: \.holdsText) else { throw KFXError.noFlowingText }
+
+        sections = Self.sections(of: walked, navigation: navigation, includesPages: includesPages)
     }
 
     /// Reads the single container in `bytes`.
-    /// - Throws: As `init(containers:)`, and what `KFXContainer.init(bytes:)` throws.
-    init(bytes: [UInt8]) throws {
-        try self.init(containers: [KFXContainer(bytes: bytes)])
+    /// - Throws: As `init(containers:includesPages:)`, and what
+    ///   `KFXContainer.init(bytes:)` throws.
+    init(bytes: [UInt8], includesPages: Bool = true) throws {
+        try self.init(containers: [KFXContainer(bytes: bytes)], includesPages: includesPages)
+    }
+
+    // MARK: Chapters
+
+    /// The walked sections as the sections of a Kindle book, each with what
+    /// the navigation says of it:
+    /// - a contents entry that points at the start of a section titles it
+    ///   (the first such entry; the way an EPUB's entry for a whole document
+    ///   names its chapter);
+    /// - every other contents entry is a heading kept as an annotation at
+    ///   its place, one level deeper for each level of nesting;
+    /// - each print page the page list names begins at its place.
+    private static func sections(
+        of walked: [KFXWalk.Section], navigation: KFXNavigation, includesPages: Bool
+    ) -> [MOBIBook.Section] {
+        // The section that holds each node the navigation points at.
+        var sectionOfNode: [Int: Int] = [:]
+        for (index, section) in walked.enumerated() {
+            for node in section.targetNodeIDs where sectionOfNode[node] == nil { sectionOfNode[node] = index }
+        }
+        var titles: [Int: String] = [:]
+        var headings = [[String: MarkdownHeadingAnnotation]](repeating: [:], count: walked.count)
+        // A place is named once, by the first entry that points at it (as an
+        // EPUB's contents name each destination once).
+        var named: Set<String> = []
+        for entry in navigation.contents {
+            guard let index = sectionOfNode[entry.node] else { continue }
+            let anchor = KFXTargets.anchorID(node: entry.node, offset: entry.offset)
+            guard named.insert(anchor).inserted else { continue }
+            if entry.offset == 0, walked[index].startNodeIDs.contains(entry.node), titles[index] == nil {
+                titles[index] = entry.label
+            } else {
+                headings[index][anchor] = MarkdownHeadingAnnotation(level: min(entry.depth, 6), text: entry.label)
+            }
+        }
+
+        var pageTargets = [[String: MarkdownPageMarker]](repeating: [:], count: walked.count)
+        var pageLabels = [[String: String]](repeating: [:], count: walked.count)
+        if includesPages {
+            var ordinal = 0
+            for entry in navigation.pages {
+                ordinal += 1
+                guard let index = sectionOfNode[entry.node] else { continue }
+                let anchor = KFXTargets.anchorID(node: entry.node, offset: entry.offset)
+                // The first entry for a place names its page.
+                guard pageTargets[index][anchor] == nil else { continue }
+                pageTargets[index][anchor] = MarkdownPageMarker(label: entry.label, ordinal: ordinal)
+                if !entry.label.isEmpty { pageLabels[index][anchor] = entry.label }
+            }
+        }
+
+        return walked.enumerated().map { index, section in
+            MOBIBook.Section(
+                title: titles[index], html: section.html, headingTargets: headings[index],
+                pages: HTMLPageTargets(markers: pageTargets[index], sourceLabels: pageLabels[index], pageBreaksArePages: false))
+        }
     }
 
     /// What the container in `bytes` says about itself, read without walking

@@ -703,7 +703,7 @@ enum MarkdownCacheService {
         case .mobi:
             return try extractFromMOBI(url: url)
         case .kfx:
-            return try extractFromKFX(url: url)
+            return try extractFromKFX(url: url, includesPages: includesPages)
         case .pdf:
             // The report says how each page was read and names any page
             // whose pictures OCR could not read, so an import warns and
@@ -743,11 +743,10 @@ enum MarkdownCacheService {
 
     /// A Kindle KFX book (FMT52), read by `KFXParser`: chapter markers
     /// preserve its chapters, and heading annotations its headings, without
-    /// inserting any extra text into the book, as an EPUB's do. No print
-    /// pages are written whatever `includesPages` says, until the reader's
-    /// navigation layer reads a book's own page list.
-    private static func extractFromKFX(url: URL) throws -> ExtractedCache {
-        let book = try KFXParser.prepareBook(url: url)
+    /// inserting any extra text into the book, as an EPUB's do. With
+    /// `includesPages` the book's own print page list is written as pages.
+    private static func extractFromKFX(url: URL, includesPages: Bool) throws -> ExtractedCache {
+        let book = try KFXParser.prepareBook(url: url, includesPages: includesPages)
         let markdown = book.chapters.map { prepared in
             "\(chapterMarker(title: prepared.chapter.title))\n\(prepared.markdown)"
         }.joined(separator: "\n\n")

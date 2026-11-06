@@ -526,7 +526,7 @@ final class OnDiskContractTests: XCTestCase {
     /// Each page reader's version: the formats with pages, and that no
     /// other format has one.
     func testThePageReaderVersions() {
-        let withPages = ["epub", "html", "pdf", "docx", "daisy", "rtf", "rtfd", "doc", "odt", "wordml", "braille", "txt"]
+        let withPages = ["epub", "html", "pdf", "docx", "daisy", "rtf", "rtfd", "doc", "odt", "wordml", "braille", "txt", "kfx"]
         let forces = "every book of that format is read again at the next launch (V05, V07)"
         var versions: [String: String] = [:]
         var withoutPages: Set<String> = []
@@ -557,8 +557,7 @@ final class OnDiskContractTests: XCTestCase {
             withoutPages,
             // A Kindle book (FMT42) has no print pages; an APNX file beside it
             // would hold them, which is a later item.
-            // A KFX book (FMT52) has none either until its reader reads a book's own page list.
-            ["markdown", "webarchive", "ssml", "audio", "mobi", "kfx"],
+            ["markdown", "webarchive", "ssml", "audio", "mobi"],
             Self.because("the formats without pages", forces)
         )
     }

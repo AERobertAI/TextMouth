@@ -19,7 +19,7 @@ final class KFXEPUBComparisonTests: XCTestCase {
 
     /// The reading text of the KFX book at `url`, as chapters.
     private func kfxChapters(_ url: URL) throws -> [Chapter] {
-        try KFXParser.prepareBook(url: url).chapters.map(\.chapter)
+        try KFXParser.prepareBook(url: url, includesPages: false).chapters.map(\.chapter)
     }
 
     /// The words of `chapters`, in order: the reading text split at white space.
@@ -58,6 +58,41 @@ final class KFXEPUBComparisonTests: XCTestCase {
 
     func testAliceReadsAsItsEPUBDoes() throws {
         try assertSameWords(epub: requireFile("alice.epub"), kfx: formatSampleURL("kfx/alice.kfx"))
+    }
+
+    /// The headings of `chapters` as "level: text" lines, chapter by chapter.
+    private func headingLines(_ chapters: [Chapter]) -> [String] {
+        chapters.flatMap { $0.headings.map { "\($0.level): \($0.text)" } }
+    }
+
+    /// The pages of `chapters` as "label: the first three words of the page".
+    private func pageLines(_ chapters: [Chapter]) -> [String] {
+        chapters.flatMap { chapter in
+            chapter.pages.map { page -> String in
+                let start = chapter.text.utf16.index(chapter.text.utf16.startIndex, offsetBy: page.characterOffset)
+                return page.label + ": " + chapter.text[start...].split(whereSeparator: \.isWhitespace).prefix(3).joined(separator: " ")
+            }
+        }
+    }
+
+    func testTheFeatureBooksHeadingsAreTheEPUBsHeadingForHeading() throws {
+        let epub = try epubChapters(formatSampleURL("kfx/kfx-features.epub"))
+        let kfx = try kfxChapters(formatSampleURL("kfx/kfx-features.kfx"))
+        XCTAssertEqual(headingLines(kfx), headingLines(epub))
+        XCTAssertEqual(kfx.map(\.title), epub.map(\.title))
+    }
+
+    func testTheFeatureBooksPagesAreTheEPUBsPagesAtTheSameWords() throws {
+        let epub = try EPUBParser.prepareBook(url: formatSampleURL("kfx/kfx-features.epub"), includesPages: true).chapters.map(\.chapter)
+        let kfx = try KFXParser.prepareBook(url: formatSampleURL("kfx/kfx-features.kfx"), includesPages: true).chapters.map(\.chapter)
+        XCTAssertFalse(pageLines(epub).isEmpty)
+        XCTAssertEqual(pageLines(kfx), pageLines(epub))
+    }
+
+    func testAliceHeadingsAreTheEPUBsHeadingForHeading() throws {
+        let epub = try epubChapters(requireFile("alice.epub"))
+        let kfx = try kfxChapters(formatSampleURL("kfx/alice.kfx"))
+        XCTAssertEqual(headingLines(kfx), headingLines(epub))
     }
 
     func testTheFeatureBookHasTheEPUBsThreeChapters() throws {

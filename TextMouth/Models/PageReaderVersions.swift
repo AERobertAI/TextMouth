@@ -79,6 +79,11 @@ enum PageReaderVersions {
             // feed between words: each is read again once, its content.md
             // byte for byte as before, and then stamped.
             return "1.0.0"
+        case .kfx:
+            // A KFX book (FMT52) has pages when it carries a print page
+            // list; one named APPROXIMATE_PAGE_LIST is a machine's guess and
+            // is not read as pages. The format has its own case and version.
+            return "1.0.0"
         default:
             return nil
         }
