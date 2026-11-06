@@ -32,7 +32,10 @@ struct RTFBlockBuilder {
     /// and paragraph): once it is gone the document is too large.
     private var budget: Int64
     /// The limit, for the error that names it.
-    private let limit: Int64
+    let limit: Int64
+    /// What the budget was when this builder began, so that what it spent
+    /// can be charged to the builder it works beside (`spentBytes`).
+    private let startingBudget: Int64
 
     /// The finished blocks.
     private(set) var blocks: [RTFBlock] = []
@@ -82,17 +85,29 @@ struct RTFBlockBuilder {
     private static let runAllowance: Int64 = 16
     private static let paragraphAllowance: Int64 = 64
 
-    init(includesPages: Bool, limit: Int64) {
+    /// A builder for the text of a document, or, with `budget`, for part of
+    /// it (a note) that may spend no more than what is left of the whole.
+    /// - Parameters:
+    ///   - limit: the most text the whole document may make.
+    ///   - budget: what is left of `limit` to spend; all of it by default.
+    init(includesPages: Bool, limit: Int64, budget: Int64? = nil) {
         self.includesPages = includesPages
         self.limit = limit
-        self.budget = limit
+        self.budget = budget ?? limit
+        self.startingBudget = budget ?? limit
     }
+
+    /// What is left of the budget.
+    var remainingBudget: Int64 { budget }
+
+    /// What this builder has spent since it began.
+    var spentBytes: Int64 { startingBudget - budget }
 
     // MARK: Words
 
     /// Charges `bytes` to the budget.
     /// - Throws: `DocumentTooLargeError` when the budget is spent.
-    private mutating func spend(_ bytes: Int64) throws {
+    mutating func spend(_ bytes: Int64) throws {
         budget -= bytes
         guard budget >= 0 else { throw DocumentTooLargeError(limit: limit) }
     }

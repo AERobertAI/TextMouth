@@ -17,8 +17,10 @@ import Foundation
 ///   as one of its words; tables are tables;
 /// - page breaks (`\page`, `\pagebb`, and a `\sect` that begins a page)
 ///   are pages, where textutil's HTML loses them;
-/// - headers, footers, footnotes, hidden text, pictures, and objects are not
-///   read, and a field is read for its result alone.
+/// - footnotes and endnotes are read after the main text, in the order the
+///   file keeps them, with no heading of their own and no page of their own;
+/// - headers, footers, hidden text, text a tracked change deleted, pictures,
+///   and objects are not read, and a field is read for its result alone.
 ///
 /// The specification is Microsoft's Rich Text Format 1.9.1 (2008), free to
 /// implement under the Open Specification Promise. The reader is written

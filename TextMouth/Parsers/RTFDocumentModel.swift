@@ -77,6 +77,9 @@ enum RTFBlock: Equatable {
 struct RTFDocument {
     /// The body, in order.
     var blocks: [RTFBlock] = []
+    /// The text of the footnotes and endnotes, in the order the file keeps
+    /// them: read after the body, with no heading and no page of their own.
+    var notes: [RTFBlock] = []
     /// The `\title` of the document's `\info`, empty when it has none.
     var title = ""
     /// The `\author` of the document's `\info`, empty when it has none.

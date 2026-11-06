@@ -169,11 +169,19 @@ final class RTFTextutilComparisonTests: XCTestCase {
     /// The twelve real files, with what each comparison found.
     private static let realFiles: [RealFile] = [
         RealFile(name: "libreoffice-rhbz1065629.rtf"),
-        RealFile(name: "libreoffice-tdf130817.rtf", headings: ["1: Titolo 1", "2: Titolo 2"]),
+        RealFile(
+            name: "libreoffice-tdf130817.rtf", ownOnly: ["Titolo", "1", "Titolo", "2"],
+            headings: ["1: Titolo 1", "2: Titolo 2"],
+            why: "textutil drops the two endnotes (\\ftnalt); the own reader reads them after the main text, not as headings"
+        ),
         RealFile(name: "libreoffice-cp950listleveltext2.rtf"),
         RealFile(name: "libreoffice-fdo44715.rtf"),
         RealFile(name: "libreoffice-tdf108055.rtf", pages: (3, 3)),
-        RealFile(name: "libreoffice-tdf146489.rtf"),
+        RealFile(
+            name: "libreoffice-tdf146489.rtf",
+            ownOnly: ["Footnote", "caller", "in", "body", "text", "is", "large", "red", "color"],
+            why: "textutil drops the footnote; the own reader reads it after the main text"
+        ),
         RealFile(name: "libreoffice-fdo74709.rtf"),
         RealFile(
             name: "libreoffice-tdf128428_dntblnsbdb.rtf", textutilRefuses: true,

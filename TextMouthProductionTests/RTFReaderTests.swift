@@ -323,7 +323,8 @@ final class RTFReaderTests: XCTestCase {
         XCTAssertEqual(try rtfBody(html).text(), "ABC")
     }
 
-    /// Pictures, objects, headers, footers, footnotes, and hidden text are not read.
+    /// Pictures, objects, headers, footers, and hidden text are not read; a
+    /// footnote is read after the main text (`RTFNotesTests`).
     func testWhatIsNotTheBodyIsNotRead() throws {
         let html = try rtfHTML(#"""
             {\rtf1\ansi{\header Header words\par}{\footer Footer words}
@@ -333,12 +334,12 @@ final class RTFReaderTests: XCTestCase {
             {\colortbl;\red0\green0\blue0;}{\*\generator Some Writer 1.0;}{\comment A comment.}Done.\par}
             """#)
         let text = try rtfBody(html).text()
-        XCTAssertEqual(text, "Before after. Pictured. Hiddenshown. Done.")
+        XCTAssertEqual(text, "Before after. Pictured. Hiddenshown. Done. Footnote words.")
     }
 
     /// The words in a shape's text box are read, and the shape's properties
-    /// are not; a shape in a header, a footer, or a footnote is skipped with
-    /// its text box.
+    /// are not; a shape in a header or a footer is skipped with its text box,
+    /// and one in a footnote is read with the note, after the main text.
     func testTheTextOfAShapeIsReadButNotInAHeaderOrFooter() throws {
         let html = try rtfHTML(#"""
             {\rtf1 Before {\shp{\sp{\sn fLine}{\sv 0}}{\*\shpinst{\sp{\sn shapeType}{\sv 1}}{\shptxt{\pard In a box\par}}}} after.\par
@@ -346,7 +347,7 @@ final class RTFReaderTests: XCTestCase {
             Note{\footnote {\shp{\shptxt In a note\par}}} here.\par
             {\do{\dptxbx{\dptxbxtext{\pard Old box\par}}}}Done.\par}
             """#)
-        XCTAssertEqual(try rtfBody(html).text(), "Before In a box after. Note here. Old box Done.")
+        XCTAssertEqual(try rtfBody(html).text(), "Before In a box after. Note here. Old box Done. In a note")
     }
 
     /// The title and author are in the head, escaped; the rest of the info

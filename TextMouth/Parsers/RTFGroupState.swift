@@ -8,8 +8,8 @@ import Foundation
 enum RTFDestination: Equatable {
     /// The body of the document: text becomes paragraphs.
     case body
-    /// Read by nobody: pictures, objects, headers, footers, footnotes,
-    /// field instructions, and every `\*` destination not known here.
+    /// Read by nobody: pictures, objects, headers, footers, footnote
+    /// separators, field instructions, and every `\*` destination not known here.
     case skipped
     /// A picture or file that Cocoa's writer attaches to the text
     /// (`\NeXTGraphic`, `\NeXTPlainFile`): read by nobody, and followed in
@@ -36,11 +36,22 @@ enum RTFDestination: Equatable {
     /// The number or bullet a list item shows (`\listtext`, `\pntext`),
     /// read only to learn which kind of list it is, and never read aloud.
     case listText
+    /// A footnote or an endnote (`\footnote`, with `\ftnalt` for an
+    /// endnote): its text is read after the main text, in the order the file
+    /// keeps the notes. Its group's text is the body of the document, set
+    /// apart.
+    case note
 
     /// Whether the text of the destination is read by nobody: skipped
     /// groups and attachments.
     var isUnread: Bool {
         self == .skipped || self == .attachment || self == .shape
+    }
+
+    /// Whether the text of the destination is the document's own words,
+    /// set in paragraphs: the body and a note.
+    var isBody: Bool {
+        self == .body || self == .note
     }
 
     /// The destination the control word `name` starts when it is the first
@@ -57,7 +68,7 @@ enum RTFDestination: Equatable {
     /// an unknown starred destination, as textutil's reading does.
     private static let known: [String: RTFDestination] = {
         var table: [String: RTFDestination] = [
-            "rtf": .body, "field": .body, "fldrslt": .body,
+            "rtf": .body, "field": .body, "fldrslt": .body, "footnote": .note,
             "fonttbl": .fontTable, "stylesheet": .styleSheet, "info": .info,
             "listtable": .listTable, "listoverridetable": .listTable,
             "listtext": .listText, "pntext": .listText,
@@ -67,7 +78,7 @@ enum RTFDestination: Equatable {
         // Destinations that hold nothing a listener should hear.
         let skippedNames = [
             "colortbl", "pict", "object", "header", "headerl", "headerr", "headerf",
-            "footer", "footerl", "footerr", "footerf", "footnote", "fldinst",
+            "footer", "footerl", "footerr", "footerf", "fldinst",
             "annotation", "comment", "atnauthor", "atndate", "atnid", "atnref", "atntime",
             "atrfend", "atrfstart", "bkmkstart", "bkmkend", "private",
             "nonshppict", "shppict", "falt", "panose", "fontemb", "fontfile",

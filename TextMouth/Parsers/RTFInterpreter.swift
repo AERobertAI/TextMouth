@@ -92,6 +92,24 @@ struct RTFInterpreter {
     /// Whether some paragraph is a heading by its style or outline level.
     private var hasNamedHeading = false
 
+    // MARK: Notes
+
+    /// What the body had in hand when a footnote or endnote began, to take
+    /// up again when it ends. A note is built by a builder of its own, so
+    /// its paragraphs, tables, and page breaks never touch the body's.
+    private struct BodyInHand {
+        var builder: RTFBlockBuilder
+        var listMarker: String?
+        var lastParagraphProperties: RTFParagraphProperties
+    }
+    /// The body, set aside while a note is read; nil when none is.
+    private var bodyInHand: BodyInHand?
+    /// The blocks of the notes finished so far, in the file's order.
+    private var noteBlocks: [RTFBlock] = []
+    /// Whether a note is being read (a note inside a note is skipped, so
+    /// that a hostile file cannot nest builders).
+    private var isReadingNote: Bool { bodyInHand != nil }
+
     // MARK: Entry point
 
     /// An interpreter for the document in `bytes`.
@@ -113,10 +131,13 @@ struct RTFInterpreter {
         }
         flushBytes()
         flushLoneSurrogate()
+        // A note the document ended in the middle of is finished as it stands.
+        try finishNote()
         let kind = paragraphKind(of: lastParagraphProperties)
         if case .heading = kind { hasNamedHeading = true }
         var document = RTFDocument()
         document.blocks = try builder.finish(lastParagraph: kind, inTable: lastParagraphProperties.inTable)
+        document.notes = noteBlocks
         document.title = title
         document.author = author
         document.pageBreaks = builder.pageBreaks
@@ -161,7 +182,7 @@ struct RTFInterpreter {
         case .groupEnd:
             flushLoneSurrogate()
             pendingSkip = 0
-            endGroup()
+            try endGroup()
         case .controlSymbol(let symbol):
             if isFirstOfGroup, symbol == "*" {
                 // The next word names an ignorable destination.
@@ -227,13 +248,15 @@ struct RTFInterpreter {
     /// A group ends: whatever it was reading is finished, and the state
     /// before it is restored. The document's outermost group ending ends
     /// the document.
-    private mutating func endGroup() {
+    /// - Throws: `DocumentTooLargeError`, when a note that ends takes the
+    ///   text past the limit.
+    private mutating func endGroup() throws {
         guard let parent = stack.popLast() else {
             isFinished = true
             return
         }
         if state.destination != parent.destination {
-            finishDestination(state.destination, parent: parent.destination)
+            try finishDestination(state.destination, parent: parent.destination)
         }
         state = parent
         if stack.isEmpty { isFinished = true }
@@ -249,6 +272,11 @@ struct RTFInterpreter {
         // with them, and so is its text box.
         if state.destination == .shape, name == "shptxt" || name == "dptxbxtext" { return .body }
         if state.destination.isUnread { return nil }
+        // A note is read where the body is read: not inside the title, a list
+        // marker, or another note.
+        if name == "footnote" {
+            return state.destination == .body && !isReadingNote ? .note : .skipped
+        }
         if state.destination == .info {
             // Only the title and the author are read of the info group.
             switch name {
@@ -274,13 +302,51 @@ struct RTFInterpreter {
             infoText = ""
         case .listText:
             markerText = ""
+        case .note:
+            beginNote()
         default:
             break
         }
     }
 
+    /// A footnote or endnote begins: the body is set aside, and the note is
+    /// built apart, with no page breaks and a share of what is left of the
+    /// text budget. The note is its own context: it begins with no paragraph
+    /// properties of the paragraph around its reference mark (no table, no
+    /// list), and with that run's emphasis, size, and hiding undone. (A
+    /// tracked deletion of the reference mark stays: the note goes with it.)
+    private mutating func beginNote() {
+        bodyInHand = BodyInHand(builder: builder, listMarker: listMarker, lastParagraphProperties: lastParagraphProperties)
+        builder = RTFBlockBuilder(includesPages: false, limit: builder.limit, budget: builder.remainingBudget)
+        listMarker = nil
+        state.paragraph = RTFParagraphProperties()
+        state.isBold = false
+        state.isItalic = false
+        state.isHidden = false
+        state.fontSize = RTFGroupState.defaultFontSize
+    }
+
+    /// The note being read ends (or the document does): its blocks join the
+    /// notes, what it spent is charged to the body's budget, and the body is
+    /// taken up again. Does nothing when no note is being read.
+    /// - Throws: `DocumentTooLargeError`.
+    private mutating func finishNote() throws {
+        guard let saved = bodyInHand else { return }
+        flushBytes()
+        flushLoneSurrogate()
+        // Whatever the note leaves open is closed as paragraphs of body text.
+        let blocks = try builder.finish(lastParagraph: .body, inTable: false)
+        let spent = builder.spentBytes
+        builder = saved.builder
+        listMarker = saved.listMarker
+        lastParagraphProperties = saved.lastParagraphProperties
+        bodyInHand = nil
+        try builder.spend(spent)
+        noteBlocks.append(contentsOf: blocks)
+    }
+
     /// The group that began `destination` (inside `parent`) ends.
-    private mutating func finishDestination(_ destination: RTFDestination, parent: RTFDestination) {
+    private mutating func finishDestination(_ destination: RTFDestination, parent: RTFDestination) throws {
         switch destination {
         case .title:
             title = infoText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -288,6 +354,8 @@ struct RTFInterpreter {
             author = infoText.trimmingCharacters(in: .whitespacesAndNewlines)
         case .listText:
             listMarker = markerText
+        case .note:
+            try finishNote()
         case .listTable:
             listTable.finish()
         case .styleEntry:
@@ -405,7 +473,7 @@ struct RTFInterpreter {
     private mutating func emit(_ text: String) throws {
         guard !text.isEmpty else { return }
         switch state.destination {
-        case .body:
+        case .body, .note:
             guard !state.isUnreadRun else { return }
             lastParagraphProperties = state.paragraph
             try builder.appendText(
@@ -525,8 +593,8 @@ struct RTFInterpreter {
             readStyleWord(name, parameter)
         case .listTable:
             readListWord(name, parameter)
-        case .body, .listText, .title, .author:
-            if name == "tab", state.destination == .body, !state.isUnreadRun,
+        case .body, .note, .listText, .title, .author:
+            if name == "tab", state.destination.isBody, !state.isUnreadRun,
                let bullet = builder.takeBulletMark(from: TextutilHTMLStructure.bulletCharacters) {
                 // A bullet and a tab begin a list item, as writers without
                 // lists write one (and as textutil's reading finds them).
@@ -539,7 +607,7 @@ struct RTFInterpreter {
                 // How many characters follow each \u applies wherever text is
                 // read: a title or a list marker can hold \u too.
                 state.unicodeSkip = max(parameter ?? 1, 0)
-            } else if state.destination == .body {
+            } else if state.destination.isBody {
                 try readBodyWord(name, parameter)
             }
         }
@@ -685,7 +753,10 @@ struct RTFInterpreter {
     /// list; and otherwise body text.
     private mutating func paragraphKind(of properties: RTFParagraphProperties) -> RTFBlockBuilder.Kind {
         let headingLevel: Int?
-        if let outline = properties.outlineLevel {
+        if isReadingNote {
+            // A note's own text is never a heading, whatever its style says.
+            headingLevel = nil
+        } else if let outline = properties.outlineLevel {
             headingLevel = RTFStyleSheet.headingLevel(forOutlineLevel: outline)
         } else if let style = properties.style {
             headingLevel = styleSheet.headingLevel(ofStyle: style)

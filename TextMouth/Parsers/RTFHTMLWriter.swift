@@ -27,11 +27,13 @@ enum RTFHTMLWriter {
         // Page 1 begins at the start of the body of a document with words;
         // the later pages' spans are already among the paragraphs' content.
         let writesPages = includesPages && document.pageBreaks < TextutilPageBreaks.maximumPages
-        if writesPages, hasLetterOrDigit(document.blocks) {
+        // The notes follow the body and begin no page of their own.
+        let allBlocks = document.blocks + document.notes
+        if writesPages, hasLetterOrDigit(allBlocks) {
             output += pageBreakSpan(1)
         }
         var writer = BlockWriter(writesPages: writesPages)
-        for block in document.blocks {
+        for block in allBlocks {
             writer.write(block, to: &output)
         }
         writer.closeLists(in: &output)
