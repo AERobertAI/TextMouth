@@ -64,7 +64,8 @@ struct KFXBook {
     /// text counted once), never less than a floor that small books fit
     /// under, never more than the walk's own limit.
     static func workLimit(forBytes bytes: Int) -> Int {
-        min(KFXWalk.maximumWork, max(workFloor, bytes.multipliedReportingOverflow(by: workPerByte).partialValue))
+        let product = bytes.multipliedReportingOverflow(by: workPerByte)
+        return product.overflow ? KFXWalk.maximumWork : min(KFXWalk.maximumWork, max(workFloor, product.partialValue))
     }
 
     /// The floor and the multiple of `workLimit(forBytes:)`.

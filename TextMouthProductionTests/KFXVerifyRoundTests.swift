@@ -110,7 +110,9 @@ final class KFXVerifyRoundTests: XCTestCase {
         let chapter = try prepare(bytes).chapters[0].chapter
         XCTAssertEqual(chapter.pages.map(\.label), ["9"])
         let text = chapter.text
-        XCTAssertEqual(chapter.pages.map(\.characterOffset), [text.utf16.distance(from: text.startIndex, to: text.range(of: "beta")!.lowerBound)])
+        // A page that begins inside a heading is written before the heading, as the EPUB reader writes it,
+        // so it begins at the heading's first word.
+        XCTAssertEqual(chapter.pages.map(\.characterOffset), [text.utf16.distance(from: text.startIndex, to: text.range(of: "Alpha")!.lowerBound)])
     }
 
     func testAParagraphStartingWithAFloatedSpanOfWordsIsOneParagraph() throws {
