@@ -20,7 +20,12 @@ import Foundation
 ///   carries no emphasis, since its style makes the whole line bold;
 /// - other paragraphs are `p`, and bold and italic text is `strong` and `em`;
 /// - the paragraphs of a table become `table`, `tr`, and `td`;
-/// - the pages are written as `TextutilPageBreaks` writes textutil's.
+/// - the pages are written as `TextutilPageBreaks` writes textutil's;
+/// - hidden text (`sprmCFVanish`, through direct formatting and the
+///   character and paragraph styles) and tracked deletions are not read: a
+///   paragraph whose every word is hidden writes nothing, a page break inside
+///   hidden text begins no page, and a hidden paragraph mark alone joins
+///   nothing, so the paragraphs on either side of it stay separate.
 ///
 /// Everything it keeps is in strings; there is no recursion, and nothing the
 /// file says is used as a size or an index here.
@@ -89,10 +94,12 @@ struct WordHTMLWriter {
     private var headingCache: (format: WordParagraphFormat, level: Int?)?
     private var appearanceCache: (style: Int, format: WordCharacterFormat, appearance: Appearance)?
 
-    /// How text looks: bold, italic, and the size in half-points.
+    /// How text looks: bold, italic, whether it is hidden, and the size in
+    /// half-points.
     private struct Appearance {
         var bold: Bool
         var italic: Bool
+        var hidden: Bool
         var size: Int
     }
 
@@ -197,17 +204,19 @@ struct WordHTMLWriter {
         case 0x07:
             try endParagraph(mark: unit, at: position)
         case 0x0C:
-            try addPageBreak(at: position)
+            // A page break inside hidden text begins no page, but a section
+            // break is a paragraph's mark all the same.
+            if !isHidden(at: position) { try addPageBreak(at: position) }
             // A section break is a paragraph's mark as well.
             if sections.endsSection(at: position) { try endParagraph(mark: unit, at: position) }
         case 0x0B:
-            addLineBreak()
+            if !isHidden(at: position) { addLineBreak() }
         case 0x09:
             // A tab reads as white space; whether it was a tab matters to a bullet.
-            addWhitespace(" ", isTab: true)
+            if !isHidden(at: position) { addWhitespace(" ", isTab: true) }
         case 0x0E:
             // A column break reads as white space.
-            addWhitespace(" ")
+            if !isHidden(at: position) { addWhitespace(" ") }
         case 0x1E:
             // A non-breaking hyphen.
             try addText("-", at: position)
@@ -225,6 +234,11 @@ struct WordHTMLWriter {
         let format = characters.format(at: position) ?? WordCharacterFormat()
         // Text a tracked change deleted is not in the document any more.
         if format.isDeleted { return }
+        let paragraphFormat = currentParagraphFormat(at: position)
+        let appearance = appearance(of: format, in: paragraphFormat)
+        // Hidden text is not shown in the ordinary view, so it is not read;
+        // its white space goes with it.
+        if appearance.hidden { return }
         if scalar.properties.isWhitespace {
             addWhitespace(scalar)
             return
@@ -232,12 +246,12 @@ struct WordHTMLWriter {
         // A special character in the text (a symbol from a font, 0x28, which
         // is "(" otherwise) has no words to read.
         if format.isSpecial && scalar == "(" { return }
-        let paragraphFormat = currentParagraphFormat(at: position)
+        // The first visible words of a paragraph decide whether it begins a
+        // page, so a paragraph of hidden text begins none.
         if !askedPageBreakBefore {
             askedPageBreakBefore = true
             try beginPageIfParagraphDoes(paragraphFormat)
         }
-        let appearance = appearance(of: format, in: paragraphFormat)
         // A heading carries no emphasis.
         let heading = isHeading(paragraphFormat)
         let emphasis = (bold: appearance.bold && !heading, italic: appearance.italic && !heading)
@@ -356,17 +370,28 @@ struct WordHTMLWriter {
         headingLevel(of: paragraph) != nil && !paragraph.isInTable
     }
 
+    /// Whether the character at `position` is hidden text: the ordinary view
+    /// does not show it. Asking moves the cursors forward, so `position` must
+    /// not be before any earlier one asked about.
+    private mutating func isHidden(at position: Int) -> Bool {
+        let format = characters.format(at: position) ?? WordCharacterFormat()
+        return appearance(of: format, in: currentParagraphFormat(at: position)).hidden
+    }
+
     /// How text with `character` in a paragraph with `paragraph` looks.
     private mutating func appearance(of character: WordCharacterFormat, in paragraph: WordParagraphFormat) -> Appearance {
         if let cache = appearanceCache, cache.style == paragraph.style, cache.format == character {
             return cache.appearance
         }
         let appearance = Appearance(
-            bold: styles.isEmphasized(
+            bold: styles.isToggledOn(
                 paragraphStyle: paragraph.style, characterStyle: character.style, direct: character.bold, \.bold
             ),
-            italic: styles.isEmphasized(
+            italic: styles.isToggledOn(
                 paragraphStyle: paragraph.style, characterStyle: character.style, direct: character.italic, \.italic
+            ),
+            hidden: styles.isToggledOn(
+                paragraphStyle: paragraph.style, characterStyle: character.style, direct: character.hidden, \.hidden
             ),
             size: styles.fontSize(paragraphStyle: paragraph.style, characterStyle: character.style, direct: character.fontSize)
         )

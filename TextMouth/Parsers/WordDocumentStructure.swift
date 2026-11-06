@@ -163,6 +163,11 @@ enum WordSprm {
     static let bold = 0x0835
     /// Italic (`sprmCFItalic`).
     static let italic = 0x0836
+    /// Hidden text (`sprmCFVanish`), a toggle property like bold and italic.
+    /// Text hidden only on the web (`sprmCFWebHidden`, 0x0811) and a hidden
+    /// paragraph mark alone (`sprmCFSpecVanish`, 0x0818) are not read as
+    /// hidden, so neither has a name here.
+    static let hidden = 0x083C
     /// The text is a tracked deletion (`sprmCFRMarkDel`).
     static let deleted = 0x0800
     /// The font size in half-points (`sprmCHps`).

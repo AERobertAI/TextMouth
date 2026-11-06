@@ -30,6 +30,8 @@ struct WordCharacterFormat: Equatable {
     var bold: Int?
     /// The direct italic property, valued as `bold` is.
     var italic: Int?
+    /// The direct hidden-text property (`sprmCFVanish`), valued as `bold` is.
+    var hidden: Int?
     /// Whether the characters are special characters (a picture's anchor).
     var isSpecial = false
     /// The font size in half-points, or nil.
@@ -159,6 +161,22 @@ enum WordDocumentProperties {
 
     // MARK: Characters
 
+    /// Sets the field of `format` that the character modifier `opcode` with
+    /// `operand` names, if this reader uses it.
+    private static func apply(_ opcode: Int, _ operand: ArraySlice<UInt8>, to format: inout WordCharacterFormat) {
+        let value = number(in: operand)
+        switch opcode {
+        case WordSprm.bold: format.bold = value
+        case WordSprm.italic: format.italic = value
+        case WordSprm.hidden: format.hidden = value
+        case WordSprm.characterStyle: format.style = value
+        case WordSprm.special: format.isSpecial = value != 0
+        case WordSprm.fontSize: format.fontSize = value
+        case WordSprm.deleted: format.isDeleted = value != 0
+        default: break
+        }
+    }
+
     /// The character formats of the document, as runs of character positions
     /// before `limit`.
     /// - Throws: `OLEDamage` for a page, run, offset, or style index that does
@@ -178,16 +196,7 @@ enum WordDocumentProperties {
             guard start + 1 + size <= page + pageSize - 1 else { throw OLEDamage(reason: "a run's properties run past their page") }
             var format = WordCharacterFormat()
             WordSprm.forEach(in: try document.slice(offset: start + 1, length: size)) { opcode, operand in
-                let value = number(in: operand)
-                switch opcode {
-                case WordSprm.bold: format.bold = value
-                case WordSprm.italic: format.italic = value
-                case WordSprm.characterStyle: format.style = value
-                case WordSprm.special: format.isSpecial = value != 0
-                case WordSprm.fontSize: format.fontSize = value
-                case WordSprm.deleted: format.isDeleted = value != 0
-                default: break
-                }
+                apply(opcode, operand, to: &format)
             }
             if let style = format.style, !styles.contains(styleIndex: style) {
                 throw OLEDamage(reason: "a run's character style \(style) is not in the style sheet")

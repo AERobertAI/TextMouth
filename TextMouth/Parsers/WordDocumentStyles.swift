@@ -29,6 +29,9 @@ struct WordStyleSheet {
         let bold: Int?
         /// The style's own italic property, valued as `bold` is.
         let italic: Int?
+        /// The style's own hidden-text property (`sprmCFVanish`), valued as
+        /// `bold` is.
+        let hidden: Int?
         /// The style's own font size in half-points, or nil.
         let fontSize: Int?
         /// Whether the style says a paragraph in it begins a page, or nil.
@@ -110,6 +113,7 @@ struct WordStyleSheet {
         var pageBreakBefore: Bool?
         var bold: Int?
         var italic: Int?
+        var hidden: Int?
         var fontSize: Int?
         // Paragraph properties of a paragraph style: after the index (2 bytes).
         if kind == 1, let paragraph = groups.first, paragraph.count >= 2 {
@@ -126,6 +130,7 @@ struct WordStyleSheet {
                 guard let value = operand.first else { return }
                 if opcode == WordSprm.bold { bold = Int(value) }
                 if opcode == WordSprm.italic { italic = Int(value) }
+                if opcode == WordSprm.hidden { hidden = Int(value) }
                 if opcode == WordSprm.fontSize, operand.count >= 2 { fontSize = Int(operand[operand.startIndex]) | Int(operand[operand.startIndex + 1]) << 8 }
             }
         }
@@ -135,6 +140,7 @@ struct WordStyleSheet {
             outlineLevel: outlineLevel,
             bold: bold,
             italic: italic,
+            hidden: hidden,
             fontSize: fontSize,
             pageBreakBefore: pageBreakBefore
         )
@@ -191,11 +197,12 @@ struct WordStyleSheet {
     }
 
     /// Whether text with the paragraph style `paragraphStyle`, the character
-    /// style `characterStyle` (or nil), and the direct property `direct` is
-    /// bold (or italic: `property` picks which). A bold or italic property is
-    /// a toggle ([MS-DOC] 2.6.1): 0 and 1 set it off and on, 0x80 keeps what
-    /// the style it is based on, or the paragraph, gives, and 0x81 reverses it.
-    func isEmphasized(
+    /// style `characterStyle` (or nil), and the direct property `direct` has
+    /// the toggle property `property` on: bold, italic, or hidden. Such a
+    /// property is a toggle ([MS-DOC] 2.6.1): 0 and 1 set it off and on, 0x80
+    /// keeps what the style it is based on, or the paragraph, gives, and
+    /// 0x81 reverses it.
+    func isToggledOn(
         paragraphStyle: Int, characterStyle: Int?, direct: Int?, _ property: KeyPath<Style, Int?>
     ) -> Bool {
         var value = false

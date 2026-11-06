@@ -285,6 +285,136 @@ final class WordDocumentReaderTests: XCTestCase {
         XCTAssertEqual(try body([Paragraph(runs: [deleted]), Paragraph("kept")]), "<p>kept</p>\n")
     }
 
+    // MARK: - Hidden Text
+
+    /// A builder whose styles hold, after the standard ones: 12 a paragraph
+    /// style that is hidden, 13 a character style that is hidden, 14 a
+    /// paragraph style based on 12 that says nothing of its own, and 15 a
+    /// paragraph style based on 12 that turns hidden text off.
+    private func hiddenStylesBuilder() -> WordDocumentBuilder {
+        var builder = WordDocumentBuilder()
+        builder.styles.append(WordDocumentBuilder.Style(basedOn: 0, hidden: 1))
+        builder.styles.append(WordDocumentBuilder.Style(kind: 2, hidden: 1))
+        builder.styles.append(WordDocumentBuilder.Style(basedOn: 12))
+        builder.styles.append(WordDocumentBuilder.Style(basedOn: 12, hidden: 0))
+        return builder
+    }
+
+    /// The modifier that hides a paragraph mark (a character property of the mark).
+    private let hiddenMark = WordDocumentBuilder.modifier(WordSprm.hidden, 1)
+
+    func testHiddenTextIsNotReadAndItsWhiteSpaceGoesWithIt() throws {
+        let body = try body([Paragraph(runs: [Run("Seen "), Run("secret words ", hidden: 1), Run("seen again")])])
+        XCTAssertEqual(body, "<p>Seen seen again</p>\n")
+    }
+
+    func testHiddenTextIsATogglePropertyLikeBoldAndItalic() throws {
+        var builder = hiddenStylesBuilder()
+        builder.paragraphs = [
+            // Directly on and off, in a paragraph that is not hidden.
+            Paragraph(runs: [Run("on", hidden: 1)]),
+            Paragraph(runs: [Run("off", hidden: 0)]),
+            // 0x81 reverses what the style gives: hidden from a visible style.
+            Paragraph(runs: [Run("reversed", hidden: 0x81)]),
+            Paragraph(runs: [Run("kept", hidden: 0x80)]),
+            // In a hidden paragraph style: hidden by default, shown by 0, kept by 0x80, shown by 0x81.
+            Paragraph("by style", style: 12),
+            Paragraph(runs: [Run("shown by zero", hidden: 0)], style: 12),
+            Paragraph(runs: [Run("kept hidden", hidden: 0x80)], style: 12),
+            Paragraph(runs: [Run("reversed to shown", hidden: 0x81)], style: 12),
+            // A style based on a hidden one is hidden, unless it says otherwise.
+            Paragraph("inherited", style: 14),
+            Paragraph("overridden", style: 15),
+            // A hidden character style.
+            Paragraph(runs: [Run("hidden by character style", characterStyle: 13)]),
+            Paragraph(runs: [Run("shown over the character style", hidden: 0, characterStyle: 13)]),
+        ]
+        XCTAssertEqual(
+            try body(of: builder.build()),
+            "<p>off</p>\n<p>kept</p>\n<p>shown by zero</p>\n<p>reversed to shown</p>\n<p>overridden</p>\n<p>shown over the character style</p>\n"
+        )
+    }
+
+    func testAParagraphOfOnlyHiddenWordsWritesNothingNotEvenAnEmptyHeading() throws {
+        let body = try body([
+            Paragraph(runs: [Run("Chapter One", hidden: 1)], style: 1),
+            Paragraph(runs: [Run("hidden", hidden: 1)]),
+            Paragraph("After"),
+        ])
+        XCTAssertEqual(body, "<p>After</p>\n")
+    }
+
+    func testAHiddenParagraphMarkAloneJoinsNothing() throws {
+        // A run-in heading's mark is hidden in Word so that the next paragraph
+        // runs on from it; here the paragraphs stay separate and a heading stays a heading.
+        let body = try body([
+            Paragraph(runs: [Run("Run-in heading.")], style: 1, markModifiers: hiddenMark),
+            Paragraph("Body text follows."),
+            Paragraph(runs: [Run("Plain.")], markModifiers: hiddenMark),
+            Paragraph("Last."),
+        ])
+        XCTAssertEqual(body, "<h1>Run-in heading.</h1>\n<p>Body text follows.</p>\n<p>Plain.</p>\n<p>Last.</p>\n")
+    }
+
+    func testHiddenLineBreaksTabsAndColumnBreaksAreNotRead() throws {
+        let body = try body([Paragraph(runs: [Run("a"), Run("\u{0B}", hidden: 1), Run("b "), Run("\u{09}\u{0E}", hidden: 1), Run("c")])])
+        XCTAssertEqual(body, "<p>ab c</p>\n")
+        // The same break shown.
+        XCTAssertEqual(try self.body([Paragraph(runs: [Run("a"), Run("\u{0B}"), Run("b")])]), "<p>a<br>b</p>\n")
+    }
+
+    func testAPageBreakInsideHiddenTextBeginsNoPage() throws {
+        let hiddenBreak = try body([Paragraph(runs: [Run("one "), Run("\u{0C}", hidden: 1), Run("two")])], pages: true)
+        XCTAssertEqual(hiddenBreak, span(1) + "<p>one two</p>\n")
+        let shownBreak = try body([Paragraph(runs: [Run("one "), Run("\u{0C}"), Run("two")])], pages: true)
+        XCTAssertEqual(shownBreak, span(1) + "<p>one \(span(2))two</p>\n")
+    }
+
+    func testAParagraphOfHiddenWordsThatBeginsAPageBeginsNone() throws {
+        let pageBreakBefore = WordDocumentBuilder.modifier(WordSprm.pageBreakBefore, 1)
+        let body = try body([
+            Paragraph("A"),
+            Paragraph(runs: [Run("hidden", hidden: 1)], modifiers: pageBreakBefore),
+            Paragraph("B"),
+        ], pages: true)
+        XCTAssertEqual(body, span(1) + "<p>A</p>\n<p>B</p>\n")
+    }
+
+    func testTextHiddenOnlyOnTheWebAndAHiddenMarkAreStillRead() throws {
+        // sprmCFWebHidden (0x0811) shows in print and in the normal view;
+        // sprmCFSpecVanish (0x0818) hides the paragraph mark alone.
+        var webHidden = Run("web only ")
+        webHidden.extraModifiers = WordDocumentBuilder.modifier(0x0811, 1)
+        var specVanish = Run("spec vanish")
+        specVanish.extraModifiers = WordDocumentBuilder.modifier(0x0818, 1)
+        XCTAssertEqual(try body([Paragraph(runs: [webHidden, specVanish])]), "<p>web only spec vanish</p>\n")
+    }
+
+    func testAHiddenCellKeepsItsPlaceInTheRow() throws {
+        let body = try body([
+            Paragraph(runs: [Run("hidden", hidden: 1)], modifiers: inTable, mark: 0x07),
+            Paragraph("kept", modifiers: inTable, mark: 0x07),
+            Paragraph("", modifiers: rowEnd, mark: 0x07),
+        ])
+        XCTAssertEqual(body, "<table>\n<tr><td></td><td><p>kept</p>\n</td></tr>\n</table>\n")
+    }
+
+    func testHiddenTextInFootnotesIsNotReadEither() throws {
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [Paragraph("Body")]
+        builder.stories[.footnotes] = [Paragraph(runs: [Run("noted "), Run("secret", hidden: 1)])]
+        XCTAssertEqual(try body(of: builder.build()), "<p>Body</p>\n<p>noted</p>\n")
+    }
+
+    func testTheRealSampleWithHiddenTextReadsOnlyItsVisibleParagraphs() throws {
+        // Five paragraphs hold the letter S; the rest of the file is text
+        // made hidden by sprmCFVanish 0x81, in paragraphs and table cells.
+        // textutil leaves the same text out.
+        let body = try sampleBody("doc/libreoffice-tdf102334_hiddenText.doc", pages: false)
+        let text = body.replacingOccurrences(of: "<[^>]+>", with: " ", options: .regularExpression)
+        XCTAssertEqual(text.split(whereSeparator: \.isWhitespace).map(String.init), ["S", "S", "S", "S", "S"], body)
+    }
+
     // MARK: - Fields
 
     func testAFieldKeepsItsResultAndDropsItsInstruction() throws {

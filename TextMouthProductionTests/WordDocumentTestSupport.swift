@@ -18,9 +18,10 @@ struct WordDocumentBuilder {
     /// A run of text with one set of character properties.
     struct Run {
         var text: String
-        /// The direct bold and italic properties: 0, 1, 0x80, or 0x81.
+        /// The direct bold, italic, and hidden-text properties: 0, 1, 0x80, or 0x81.
         var bold: Int?
         var italic: Int?
+        var hidden: Int?
         /// The character style's index.
         var characterStyle: Int?
         /// Other modifiers, as bytes.
@@ -32,7 +33,11 @@ struct WordDocumentBuilder {
         /// Whether the run is a tracked deletion (`sprmCFRMarkDel`).
         var isDeleted = false
 
-        init(_ text: String, bold: Int? = nil, italic: Int? = nil, characterStyle: Int? = nil, fontSize: Int? = nil) {
+        init(
+            _ text: String, bold: Int? = nil, italic: Int? = nil, hidden: Int? = nil,
+            characterStyle: Int? = nil, fontSize: Int? = nil
+        ) {
+            self.hidden = hidden
             self.fontSize = fontSize
             self.text = text
             self.bold = bold
@@ -50,19 +55,24 @@ struct WordDocumentBuilder {
         var modifiers: [UInt8] = []
         /// The character that ends the paragraph.
         var mark: UInt16 = 0x0D
+        /// The character modifiers of the mark itself, as bytes (a hidden
+        /// paragraph mark, for one); none leaves the mark without properties.
+        var markModifiers: [UInt8] = []
 
-        init(_ text: String, style: Int = 0, modifiers: [UInt8] = [], mark: UInt16 = 0x0D) {
+        init(_ text: String, style: Int = 0, modifiers: [UInt8] = [], mark: UInt16 = 0x0D, markModifiers: [UInt8] = []) {
             runs = [Run(text)]
             self.style = style
             self.modifiers = modifiers
             self.mark = mark
+            self.markModifiers = markModifiers
         }
 
-        init(runs: [Run], style: Int = 0, modifiers: [UInt8] = [], mark: UInt16 = 0x0D) {
+        init(runs: [Run], style: Int = 0, modifiers: [UInt8] = [], mark: UInt16 = 0x0D, markModifiers: [UInt8] = []) {
             self.runs = runs
             self.style = style
             self.modifiers = modifiers
             self.mark = mark
+            self.markModifiers = markModifiers
         }
     }
 
@@ -75,6 +85,7 @@ struct WordDocumentBuilder {
         var outlineLevel: Int?
         var bold: Int?
         var italic: Int?
+        var hidden: Int?
         var fontSize: Int?
         /// The style's page-break-before setting (0 or 1).
         var pageBreakBefore: Int?
@@ -182,6 +193,12 @@ struct WordDocumentBuilder {
                 let runStart = units.count
                 units += Array(run.text.utf16)
                 runRanges.append((runStart..<units.count, run, index))
+            }
+            // A mark with properties of its own is a run of its own.
+            if !paragraph.markModifiers.isEmpty {
+                var markRun = Run("")
+                markRun.extraModifiers = paragraph.markModifiers
+                runRanges.append((units.count..<units.count + 1, markRun, index))
             }
             units.append(paragraph.mark)
             paragraphRanges.append(start..<units.count)
@@ -372,6 +389,7 @@ struct WordDocumentBuilder {
         var bytes: [UInt8] = []
         if let bold = run.bold { bytes += modifier(WordSprm.bold, bold) }
         if let italic = run.italic { bytes += modifier(WordSprm.italic, italic) }
+        if let hidden = run.hidden { bytes += modifier(WordSprm.hidden, hidden) }
         if let style = run.characterStyle { bytes += le16(WordSprm.characterStyle) + le16(style) }
         if run.isSpecial { bytes += modifier(WordSprm.special, 1) }
         if let size = run.fontSize { bytes += le16(WordSprm.fontSize) + le16(size) }
@@ -408,6 +426,7 @@ struct WordDocumentBuilder {
             var characters: [UInt8] = []
             if let bold = style.bold { characters += Self.modifier(WordSprm.bold, bold) }
             if let italic = style.italic { characters += Self.modifier(WordSprm.italic, italic) }
+            if let hidden = style.hidden { characters += Self.modifier(WordSprm.hidden, hidden) }
             if let size = style.fontSize { characters += Self.le16(WordSprm.fontSize) + Self.le16(size) }
             if style.kind == 1 {
                 var paragraph = Self.le16(index)
