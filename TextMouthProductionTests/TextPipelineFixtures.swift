@@ -94,18 +94,27 @@ enum TextPipelineFixtures {
         "format-samples/doc/libreoffice-fdo77844.doc",
         "format-samples/doc/libreoffice-list-nolevel.doc",
         "format-samples/doc/libreoffice-nonInlinePageBreakFirstLine.doc",
+        "format-samples/doc/libreoffice-tdf102334_hiddenText.doc",
         "format-samples/doc/libreoffice-tdf104239_chapterNumbering.doc",
+        "format-samples/doc/libreoffice-tdf106541_chapterNumbering.doc",
         "format-samples/doc/libreoffice-tdf106799.doc",
+        "format-samples/doc/libreoffice-tdf112535.doc",
         "format-samples/doc/libreoffice-tdf116194.doc",
         "format-samples/doc/libreoffice-tdf121110_absJustify.doc",
         "format-samples/doc/libreoffice-tdf139495_tinyHeader.doc",
         "format-samples/doc/libreoffice-tdf150197_anlv2ListFormat.doc",
+        "format-samples/doc/libreoffice-tdf73056_cellMargins.doc",
         "format-samples/doc/libreoffice-tdf76349_textboxMargins.doc",
         "format-samples/doc/libreoffice-tdf81705_outlineLevel.doc",
         "format-samples/doc/libreoffice-tdf89377_tableWithBreakBeforeParaStyle.doc",
         "format-samples/doc/libreoffice-tdf95576.doc",
         "format-samples/doc/libreoffice-tdf98284_softLockedFields.doc",
         "format-samples/doc/page-breaks.doc",
+        "format-samples/doc/poi-61911.doc",
+        "format-samples/doc/poi-Bug51944.doc",
+        "format-samples/doc/poi-lists.doc",
+        "format-samples/doc/poi-rasp.doc",
+        "format-samples/doc/poi-textboxes.doc",
         "format-samples/docm/headings-synthetic.docm",
         "format-samples/docm/libreoffice-hello.docm",
         "format-samples/docx/libreoffice-footnote.docx",
@@ -180,17 +189,37 @@ enum TextPipelineFixtures {
     /// The real DOCX files from LibreOffice are held back because the
     /// questions they answer (hidden text, notes, text boxes) are asked of
     /// them in `DOCXRealFileTests`, by name, where a failure says what changed.
-    static let formatSamplesHeldBack: [String: String] = Dictionary(
-        uniqueKeysWithValues: formatSampleNames.compactMap { name -> (String, String)? in
-            if name.hasPrefix("format-samples/rtf/libreoffice-") {
-                return (name, "compared with textutil's reading in RTFTextutilComparisonTests instead of a golden")
-            }
-            if name.hasPrefix("format-samples/docx/libreoffice-") {
-                return (name, "read by name in DOCXRealFileTests instead of a golden")
-            }
-            return nil
+    /// Real Word 97-2003 files added with that reader's follow-ups (hidden
+    /// text, a fast-saved file's piece modifiers, list numbers, and text
+    /// boxes) are held back the same way: `WordDocumentReaderTests` pins what
+    /// each reads as, and `WordDocumentComparisonTests` compares their words
+    /// with textutil's and names every difference.
+    static let formatSamplesHeldBack: [String: String] = {
+        var heldBack: [String: String] = [:]
+        for name in formatSampleNames where name.hasPrefix("format-samples/rtf/libreoffice-") {
+            heldBack[name] = "compared with textutil's reading in RTFTextutilComparisonTests instead of a golden"
         }
-    )
+        for name in formatSampleNames where name.hasPrefix("format-samples/docx/libreoffice-") {
+            heldBack[name] = "read by name in DOCXRealFileTests instead of a golden"
+        }
+        for name in wordFollowUpSamples {
+            heldBack[name] = "pinned by WordDocumentReaderTests and compared with textutil's reading in WordDocumentComparisonTests instead of a golden"
+        }
+        return heldBack
+    }()
+
+    /// The Word 97-2003 samples added with the reader's follow-ups; see `formatSamplesHeldBack`.
+    private static let wordFollowUpSamples = [
+        "format-samples/doc/libreoffice-tdf102334_hiddenText.doc",
+        "format-samples/doc/libreoffice-tdf106541_chapterNumbering.doc",
+        "format-samples/doc/libreoffice-tdf112535.doc",
+        "format-samples/doc/libreoffice-tdf73056_cellMargins.doc",
+        "format-samples/doc/poi-61911.doc",
+        "format-samples/doc/poi-Bug51944.doc",
+        "format-samples/doc/poi-lists.doc",
+        "format-samples/doc/poi-rasp.doc",
+        "format-samples/doc/poi-textboxes.doc",
+    ]
 
     /// The folders of the format samples that macOS's own readers read
     /// (`/usr/bin/textutil`, and PDFKit for "pdf", PG06). What they give can

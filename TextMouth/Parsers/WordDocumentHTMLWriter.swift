@@ -20,7 +20,21 @@ import Foundation
 ///   carries no emphasis, since its style makes the whole line bold;
 /// - other paragraphs are `p`, and bold and italic text is `strong` and `em`;
 /// - the paragraphs of a table become `table`, `tr`, and `td`;
-/// - the pages are written as `TextutilPageBreaks` writes textutil's.
+/// - the pages are written as `TextutilPageBreaks` writes textutil's;
+/// - the paragraphs in lists (`sprmPIlfo`, directly or through the paragraph's
+///   style) are counted as Word counts them (`WordListNumbering`), and what
+///   Word shows before them and does not store in the text is written one of
+///   two ways. By default the paragraph is an item of a list, nested by its
+///   level: a `ul` for a bullet and an `ol` for a number, as the DOCX reader
+///   reads a list, so no number is heard and a numbered heading is its words
+///   alone. With `numbersAreWords` the number is written as the level's number
+///   text ("A.", "1.2.3", "(b)") before the paragraph's words, in a heading as
+///   in a paragraph, so a chapter-numbered book keeps its chapter numbers;
+/// - hidden text (`sprmCFVanish`, through direct formatting and the
+///   character and paragraph styles) and tracked deletions are not read: a
+///   paragraph whose every word is hidden writes nothing, a page break inside
+///   hidden text begins no page, and a hidden paragraph mark alone joins
+///   nothing, so the paragraphs on either side of it stay separate.
 ///
 /// Everything it keeps is in strings; there is no recursion, and nothing the
 /// file says is used as a size or an index here.
@@ -35,6 +49,16 @@ struct WordHTMLWriter {
     private let outputLimit: Int
     private var paragraphs: WordFormatRuns<WordParagraphFormat>.Cursor
     private var characters: WordFormatRuns<WordCharacterFormat>.Cursor
+    /// Counts the numbered paragraphs, in the order they end.
+    private var lists: WordListNumbering
+    /// Whether the story being written is the main one: only it has pages
+    /// and the census that guesses its headings.
+    private var inMainStory = true
+    /// The position of the last character added, where a story's last paragraph ends.
+    private var lastPosition = 0
+    /// Whether a number is written as words before its paragraph, rather than
+    /// the paragraph being an item of an `ol` whose number is not heard.
+    private let numbersAreWords: Bool
 
     /// A document with more page breaks than this reader numbers has no
     /// pages (`TextutilPageBreaks.maximumPages`); the writer says so by
@@ -89,10 +113,12 @@ struct WordHTMLWriter {
     private var headingCache: (format: WordParagraphFormat, level: Int?)?
     private var appearanceCache: (style: Int, format: WordCharacterFormat, appearance: Appearance)?
 
-    /// How text looks: bold, italic, and the size in half-points.
+    /// How text looks: bold, italic, whether it is hidden, and the size in
+    /// half-points.
     private struct Appearance {
         var bold: Bool
         var italic: Bool
+        var hidden: Bool
         var size: Int
     }
 
@@ -112,9 +138,10 @@ struct WordHTMLWriter {
     /// is dropped while this is not zero.
     private var instructionDepth = 0
 
-    /// Whether a bulleted list is open: a `ul` whose items are the paragraphs
-    /// that begin with a bullet.
-    private var listIsOpen = false
+    /// The lists open, outermost first: the level of their items, and whether
+    /// each is an `ol` (true) or a `ul`. The last item of each is still open,
+    /// since a deeper list nests in it.
+    private var openLists: [(level: Int, ordered: Bool)] = []
 
     // Tables.
     private var tableIsOpen = false
@@ -131,10 +158,16 @@ struct WordHTMLWriter {
     ///   - paragraphs: the paragraph formats by character position.
     ///   - characters: the character formats by character position.
     ///   - outputLimit: the most HTML to write; more throws `DocumentTooLargeError`.
+    ///   - lists: the document's lists, for the paragraphs that are in one.
+    ///   - numbersAreWords: whether a list's numbers are written as words
+    ///     (`WordDocumentReader.speaksListNumbers`).
     init(
         styles: WordStyleSheet, sections: WordSections, includesPages: Bool, outputLimit: Int,
-        paragraphs: WordFormatRuns<WordParagraphFormat>, characters: WordFormatRuns<WordCharacterFormat>
+        paragraphs: WordFormatRuns<WordParagraphFormat>, characters: WordFormatRuns<WordCharacterFormat>,
+        lists: WordListTables = .none, numbersAreWords: Bool = false
     ) {
+        self.lists = WordListNumbering(tables: lists)
+        self.numbersAreWords = numbersAreWords
         self.styles = styles
         self.sections = sections
         self.includesPages = includesPages
@@ -150,6 +183,7 @@ struct WordHTMLWriter {
     /// - Throws: `PageLimitExceeded` or `DocumentTooLargeError`, as described
     ///   there.
     mutating func add(position: Int, unit: UInt16) throws {
+        lastPosition = position
         // A surrogate pair is one character; a half on its own is damage,
         // read as the replacement character.
         if let high = pendingHighSurrogate {
@@ -197,17 +231,26 @@ struct WordHTMLWriter {
         case 0x07:
             try endParagraph(mark: unit, at: position)
         case 0x0C:
-            try addPageBreak(at: position)
-            // A section break is a paragraph's mark as well.
+            // A page break inside hidden or deleted text begins no page, but a
+            // section break is a paragraph's mark all the same.
+            if !isHidden(at: position) { try addPageBreak(at: position) }
             if sections.endsSection(at: position) { try endParagraph(mark: unit, at: position) }
         case 0x0B:
-            addLineBreak()
+            // A line break that is a style separator ends the paragraph, so
+            // that a run-in heading stays a heading of its own words.
+            if isHidden(at: position) {
+                break
+            } else if characters.format(at: position)?.isStyleSeparator == true {
+                try endParagraph(mark: 0x0D, at: position)
+            } else {
+                addLineBreak()
+            }
         case 0x09:
             // A tab reads as white space; whether it was a tab matters to a bullet.
-            addWhitespace(" ", isTab: true)
+            if !isHidden(at: position) { addWhitespace(" ", isTab: true) }
         case 0x0E:
             // A column break reads as white space.
-            addWhitespace(" ")
+            if !isHidden(at: position) { addWhitespace(" ") }
         case 0x1E:
             // A non-breaking hyphen.
             try addText("-", at: position)
@@ -225,6 +268,11 @@ struct WordHTMLWriter {
         let format = characters.format(at: position) ?? WordCharacterFormat()
         // Text a tracked change deleted is not in the document any more.
         if format.isDeleted { return }
+        let paragraphFormat = currentParagraphFormat(at: position)
+        let appearance = appearance(of: format, in: paragraphFormat)
+        // Hidden text is not shown in the ordinary view, so it is not read;
+        // its white space goes with it.
+        if appearance.hidden { return }
         if scalar.properties.isWhitespace {
             addWhitespace(scalar)
             return
@@ -232,12 +280,12 @@ struct WordHTMLWriter {
         // A special character in the text (a symbol from a font, 0x28, which
         // is "(" otherwise) has no words to read.
         if format.isSpecial && scalar == "(" { return }
-        let paragraphFormat = currentParagraphFormat(at: position)
+        // The first visible words of a paragraph decide whether it begins a
+        // page, so a paragraph of hidden text begins none.
         if !askedPageBreakBefore {
             askedPageBreakBefore = true
             try beginPageIfParagraphDoes(paragraphFormat)
         }
-        let appearance = appearance(of: format, in: paragraphFormat)
         // A heading carries no emphasis.
         let heading = isHeading(paragraphFormat)
         let emphasis = (bold: appearance.bold && !heading, italic: appearance.italic && !heading)
@@ -291,7 +339,7 @@ struct WordHTMLWriter {
     private mutating func writePendingPages(separated: Bool) {
         if separated { paragraph += " " }
         for page in pendingPages {
-            paragraph += "<span role=\"\(TextutilPageBreaks.pageBreakRole)\" aria-label=\"\(page)\"></span>"
+            paragraph += Self.pageSpan(page)
         }
         pendingPages.removeAll()
         previousWasSpace = true
@@ -308,7 +356,7 @@ struct WordHTMLWriter {
     /// Takes a form feed: a page break, or a section break that starts a page.
     private mutating func addPageBreak(at position: Int) throws {
         addWhitespace(" ")
-        guard includesPages, sections.formFeedStartsPage(at: position) else { return }
+        guard includesPages, inMainStory, sections.formFeedStartsPage(at: position) else { return }
         try beginPage()
     }
 
@@ -327,7 +375,7 @@ struct WordHTMLWriter {
     /// first page begins there already), or when a break is waiting for the
     /// same words already (a form feed, or a section break, right before).
     private mutating func beginPageIfParagraphDoes(_ format: WordParagraphFormat) throws {
-        guard includesPages, wroteCountedCharacter, pendingPages.isEmpty,
+        guard includesPages, inMainStory, wroteCountedCharacter, pendingPages.isEmpty,
               !format.isInTable, format.tableDepth == 0,
               styles.beginsPage(styleIndex: format.style, direct: format.pageBreakBefore) else { return }
         try beginPage()
@@ -356,18 +404,27 @@ struct WordHTMLWriter {
         headingLevel(of: paragraph) != nil && !paragraph.isInTable
     }
 
+    /// Whether the character at `position` is not shown: hidden text, or text
+    /// a tracked change deleted. Asking moves the cursors forward, so
+    /// `position` must not be before any earlier one asked about.
+    private mutating func isHidden(at position: Int) -> Bool {
+        let format = characters.format(at: position) ?? WordCharacterFormat()
+        return format.isDeleted || appearance(of: format, in: currentParagraphFormat(at: position)).hidden
+    }
+
     /// How text with `character` in a paragraph with `paragraph` looks.
     private mutating func appearance(of character: WordCharacterFormat, in paragraph: WordParagraphFormat) -> Appearance {
         if let cache = appearanceCache, cache.style == paragraph.style, cache.format == character {
             return cache.appearance
         }
         let appearance = Appearance(
-            bold: styles.isEmphasized(
+            bold: styles.isToggledOn(
                 paragraphStyle: paragraph.style, characterStyle: character.style, direct: character.bold, \.bold
             ),
-            italic: styles.isEmphasized(
+            italic: styles.isToggledOn(
                 paragraphStyle: paragraph.style, characterStyle: character.style, direct: character.italic, \.italic
             ),
+            hidden: styles.hides(character, in: paragraph),
             size: styles.fontSize(paragraphStyle: paragraph.style, characterStyle: character.style, direct: character.fontSize)
         )
         appearanceCache = (paragraph.style, character, appearance)
@@ -402,7 +459,45 @@ struct WordHTMLWriter {
         paragraphLength = 0
         pendingWhitespace = ""
         previousWasSpace = true
-        documentCensus.merge(census)
+        // Only the main story's words say what its headings are by size and weight.
+        if inMainStory { documentCensus.merge(census) }
+
+        // Its place in a list, if it has one. Every paragraph of a list is
+        // counted, empty or not, as Word counts it. The mark that ends a row
+        // is no paragraph.
+        let isRowEnd = mark == 0x07 && format.isRowEnd
+        let markFormat = characters.format(at: position) ?? WordCharacterFormat()
+        let markIsDeleted = markFormat.isDeleted
+        let marker: WordListNumbering.Marker = isRowEnd ? .none : paragraphMarker(of: format, hasText: hasText, markIsDeleted: markIsDeleted)
+        let level = listLevel
+        // What a number written as words says: a level's number, or the words
+        // of a level that has none.
+        var label = ""
+        switch marker {
+        case .numbered(let text), .labelled(let text): label = numbersAreWords ? text : ""
+        case .bullet, .none: break
+        }
+        // A number written as words goes in front of the paragraph's words;
+        // with no words of its own the paragraph is its number, unless its
+        // mark is hidden or deleted (Word shows a numbered empty paragraph's number).
+        var shown = content
+        var standsAlone = false
+        if !label.isEmpty {
+            if hasText {
+                shown = Self.inserting(Self.escaped(label) + " ", into: content)
+            } else if !(markIsDeleted || styles.hides(markFormat, in: format)) {
+                standsAlone = true
+                shown = Self.escaped(label)
+            }
+        }
+        // A paragraph that is an item of a list: a bullet, or a number that is not written as words.
+        let itemKind: Bool? = {
+            switch marker {
+            case .bullet: return false
+            case .numbered: return numbersAreWords ? nil : true
+            case .labelled, .none: return nil
+            }
+        }()
 
         // A paragraph in a table, however deep.
         let depth = max(format.tableDepth, format.isInTable ? 1 : 0)
@@ -425,25 +520,32 @@ struct WordHTMLWriter {
                 write("<td>")
                 cellIsOpen = true
             }
-            if hasText { write("<p>" + content + "</p>\n") }
+            if hasText || standsAlone {
+                if let ordered = itemKind, hasText { writeItem(content, level: level, ordered: ordered) } else { write("<p>" + shown + "</p>\n") }
+            }
             // The mark of a cell of this table ends the cell; a cell of a
             // table inside it is only the end of a paragraph.
             if mark == 0x07, depth == 1 { closeCell() }
         } else {
             closeTable()
-            if hasText {
+            if standsAlone {
+                write("<p>" + shown + "</p>\n")
+            } else if hasText {
                 if let level = headingLevel(of: format) {
-                    hasRealHeading = true
-                    write("<h\(level)>" + content + "</h\(level)>\n")
+                    if inMainStory { hasRealHeading = true }
+                    write("<h\(level)>" + shown + "</h\(level)>\n")
+                } else if let ordered = itemKind {
+                    // A bullet, or a number that is not heard, is an item of a list.
+                    writeItem(content, level: level, ordered: ordered)
                 } else {
                     // A paragraph short enough to be a heading by its size or
                     // weight, if the document has no real headings.
-                    if let item = Self.bulletItem(in: content, first: first, followedByTab: tabAfterFirst) {
-                        write("<li>" + item + "</li>\n", isListItem: true)
+                    if marker == .none, let item = Self.bulletItem(in: content, first: first, followedByTab: tabAfterFirst) {
+                        writeItem(item, level: 0, ordered: false)
                     } else {
-                        write("<p>" + content + "</p>\n")
-                        if length <= Self.longestHeading, !(length == 1 && startsWithLetter) {
-                            candidates.append((blocks.count - 1, census, content))
+                        write("<p>" + shown + "</p>\n")
+                        if inMainStory, length <= Self.longestHeading, !(length == 1 && startsWithLetter) {
+                            candidates.append((blocks.count - 1, census, shown))
                         }
                     }
                 }
@@ -452,20 +554,104 @@ struct WordHTMLWriter {
         guard outputSize <= outputLimit else { throw DocumentTooLargeError(limit: Int64(outputLimit)) }
     }
 
+    /// The level (0 to 8) of the list paragraph last given a marker.
+    private var listLevel = 0
+    /// Whether the paragraph just ended had its mark deleted by a tracked
+    /// change and so is joined in the document Word keeps to the paragraph
+    /// after it: that one is the same item, counted once.
+    private var joinsNextToItem = false
+
+    /// The marker of the paragraph with `format` that has words (`hasText`)
+    /// or not and whose mark a tracked change deleted (`markIsDeleted`), or
+    /// none when it is not counted. A paragraph with no words and a deleted
+    /// mark is gone; one with words and a deleted mark is joined in the
+    /// document Word keeps to the next paragraph (and the next, while their
+    /// marks are deleted too), so the join is one item, counted once, with
+    /// its number on the first. The words stay in their own paragraphs.
+    private mutating func paragraphMarker(of format: WordParagraphFormat, hasText: Bool, markIsDeleted: Bool) -> WordListNumbering.Marker {
+        if joinsNextToItem {
+            joinsNextToItem = markIsDeleted
+            return .none
+        }
+        if markIsDeleted && !hasText { return .none }
+        let marker = listMarker(of: format)
+        if markIsDeleted && marker != .none { joinsNextToItem = true }
+        return marker
+    }
+
+    /// The marker of the paragraph with `format`, counting it in its list;
+    /// `listLevel` is then its level.
+    private mutating func listMarker(of format: WordParagraphFormat) -> WordListNumbering.Marker {
+        guard !lists.isEmpty,
+              let membership = styles.listMembership(styleIndex: format.style, listIndex: format.listIndex, listLevel: format.listLevel)
+        else { return .none }
+        listLevel = membership.level
+        return lists.marker(instance: membership.instance, level: membership.level)
+    }
+
+    /// `content` (a paragraph's inline HTML) with `text` put before its
+    /// words: after the page-break spans it begins with, so that a page
+    /// begins where its number does.
+    private static func inserting(_ text: String, into content: String) -> String {
+        var index = content.startIndex
+        while content[index...].hasPrefix(pageSpanOpening), let close = content[index...].range(of: "</span>") {
+            index = close.upperBound
+        }
+        return String(content[..<index]) + text + String(content[index...])
+    }
+
     /// The longest paragraph, in characters, that can be a heading by its size or weight.
     private static let longestHeading = 120
 
-    /// Adds a complete block to the output. A list item opens the list if it
-    /// is not open; any other block closes it.
-    private mutating func write(_ block: String, isListItem: Bool = false) {
-        if isListItem != listIsOpen {
-            let tag = isListItem ? "<ul>\n" : "</ul>\n"
-            blocks.append(tag)
-            outputSize += tag.utf8.count
-            listIsOpen = isListItem
-        }
+    /// Adds a complete block to the output, closing the lists that are open.
+    private mutating func write(_ block: String) {
+        closeLists()
+        append(block: block)
+    }
+
+    /// Adds `block` to the output as it is.
+    private mutating func append(block: String) {
         blocks.append(block)
         outputSize += block.utf8.count
+    }
+
+    /// Closes every list that is open.
+    private mutating func closeLists() {
+        while !openLists.isEmpty { closeInnermostList() }
+    }
+
+    /// Closes the innermost open list, and the item it ends with.
+    private mutating func closeInnermostList() {
+        guard let list = openLists.popLast() else { return }
+        append(block: list.ordered ? "</li>\n</ol>\n" : "</li>\n</ul>\n")
+    }
+
+    /// Writes an item of a list whose inline HTML is `content`, at `level`
+    /// (0 to 8). The lists whose items are deeper are closed; an item of the
+    /// level the innermost list is at is its next item (or, when it is the
+    /// other kind of list, `ol` for `ul`, begins a new list); and an item
+    /// deeper than any open one begins a list nested in the open item, so a
+    /// list that begins at level 3 is a list at that level, and its next
+    /// items are its own.
+    private mutating func writeItem(_ content: String, level: Int, ordered: Bool) {
+        while let innermost = openLists.last, innermost.level > level { closeInnermostList() }
+        if let innermost = openLists.last, innermost.level == level {
+            if innermost.ordered == ordered {
+                append(block: "</li>\n")
+            } else {
+                closeInnermostList()
+                openList(level: level, ordered: ordered)
+            }
+        } else {
+            openList(level: level, ordered: ordered)
+        }
+        append(block: "<li>" + content)
+    }
+
+    /// Opens a list at `level`.
+    private mutating func openList(level: Int, ordered: Bool) {
+        append(block: ordered ? "<ol>\n" : "<ul>\n")
+        openLists.append((level, ordered))
     }
 
     /// The characters that begin a bullet only before a tab, as in textutil's
@@ -508,19 +694,46 @@ struct WordHTMLWriter {
         cellIsOpen = false
     }
 
+    // MARK: Stories
+
+    /// Begins another story (the text of a note, of a text box, or one of the
+    /// document's other stories): the paragraph and table and list open end,
+    /// the fields that are still open are closed, and the list numbers count
+    /// again from the start, as a story's paragraphs are counted among
+    /// themselves ([MS-DOC] Determining Level Number). Only the main story
+    /// has pages, and the guess at headings is made from it alone.
+    /// - Parameter isMain: whether it is the main story.
+    mutating func beginStory(isMain: Bool) throws {
+        try endOpenParagraph(at: lastPosition)
+        closeTable()
+        closeLists()
+        fields.removeAll()
+        instructionDepth = 0
+        pendingPages.removeAll()
+        pendingWhitespace = ""
+        joinsNextToItem = false
+        lists.startAgain()
+        inMainStory = isMain
+    }
+
+    /// Ends the paragraph that no mark ended, if there is one.
+    private mutating func endOpenParagraph(at position: Int) throws {
+        if pendingHighSurrogate != nil {
+            pendingHighSurrogate = nil
+            try addText("\u{FFFD}", at: position)
+        }
+        if paragraphHasText || !paragraph.isEmpty { try endParagraph(mark: 0x0D, at: position) }
+    }
+
     // MARK: Finishing
 
     /// Ends the text, writing any paragraph no mark ended and closing any
     /// table, and returns the body of the document: with page 1 at its
     /// start when pages are asked for and the text holds a letter or digit.
     mutating func finish(endingAt position: Int) throws -> String {
-        if pendingHighSurrogate != nil {
-            pendingHighSurrogate = nil
-            try addText("\u{FFFD}", at: position)
-        }
-        if paragraphHasText || !paragraph.isEmpty { try endParagraph(mark: 0x0D, at: position) }
+        try endOpenParagraph(at: position)
         closeTable()
-        if listIsOpen { write("") }
+        closeLists()
         // A document with no real headings gets the guess textutil's readers
         // make: larger paragraphs, then paragraphs wholly in bold.
         if !hasRealHeading {
@@ -530,11 +743,13 @@ struct WordHTMLWriter {
                 blocks[candidate.block] = "<h\(level)>" + Self.withoutEmphasis(candidate.content) + "</h\(level)>\n"
             }
         }
-        let firstPage = includesPages && wroteCountedCharacter
-            ? "<span role=\"\(TextutilPageBreaks.pageBreakRole)\" aria-label=\"1\"></span>"
-            : ""
+        let firstPage = includesPages && wroteCountedCharacter ? Self.pageSpan(1) : ""
         return firstPage + blocks.joined()
     }
+
+    /// How the span that marks a page begins, and the whole span of page `page`.
+    private static let pageSpanOpening = "<span role=\"\(TextutilPageBreaks.pageBreakRole)\""
+    private static func pageSpan(_ page: Int) -> String { pageSpanOpening + " aria-label=\"\(page)\"></span>" }
 
     /// `html` without its emphasis tags (the text is escaped, so these
     /// strings are never text).

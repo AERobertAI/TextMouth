@@ -1,4 +1,5 @@
 import XCTest
+import SwiftSoup
 @testable import TextMouth
 
 /// TextMouth's own reader of Word 97-2003 documents (`WordDocumentReader`,
@@ -68,6 +69,8 @@ final class WordDocumentReaderTests: XCTestCase {
 
     func testTheLibreOfficeSampleHasHeadingsOneToSixAtTheirLevels() throws {
         let body = try sampleBody("doc/libreoffice-tdf104239_chapterNumbering.doc", pages: false)
+        // The headings are numbered by the list their styles are linked to,
+        // but the numbers are silent (see the list tests): each heading is its words alone.
         for level in 1...6 {
             XCTAssertTrue(body.contains("<h\(level)>Heading \(level)</h\(level)>"), body)
         }
@@ -101,6 +104,17 @@ final class WordDocumentReaderTests: XCTestCase {
         XCTAssertEqual(synthetic, try sampleBody("doc/headings.doc", pages: false))
         // The LibreOffice template's body is one empty paragraph, and its only words are in a header text box.
         XCTAssertEqual(try sampleBody("dot/libreoffice-tdf120761_zOrder.dot", pages: false), "<p><strong>Blah blah blah</strong></p>\n")
+    }
+
+    func testRealFilesThatNameStylesThatAreNotThereReadAndAFileOfAnOlderLayoutIsLeftToTextutil() throws {
+        // A style 0xFFFF in a paragraph's properties, and a style sheet whose length holds
+        // fewer slots than it counts: both are the default formatting, and the files read.
+        for sample in ["doc/poi-61911.doc", "doc/libreoffice-tdf112535.doc"] {
+            let html = try XCTUnwrap(WordDocumentReader.html(from: Data(contentsOf: formatSampleURL(sample)), includesPages: true), sample)
+            XCTAssertTrue(html.contains("<body>"), sample)
+        }
+        // wIdent 0xA699 with nFib 0x68 is a Word 95 layout, which this reader leaves to textutil.
+        XCTAssertNil(try WordDocumentReader.html(from: Data(contentsOf: formatSampleURL("doc/poi-Bug51944.doc")), includesPages: true))
     }
 
     // MARK: - Text
@@ -156,6 +170,258 @@ final class WordDocumentReaderTests: XCTestCase {
         builder.paragraphs = [Paragraph(runs: [Run("plain "), Run("bold run here", bold: 1), Run(" plain")])]
         builder.pieceCount = 3
         XCTAssertEqual(try body(of: builder.build()), "<p>plain <strong>bold run here</strong> plain</p>\n")
+    }
+
+    // MARK: - Piece Modifiers (Pcd.prm)
+
+    /// "aaaa bbbb" in two pieces, "aaaa " and "bbbb" with its paragraph mark,
+    /// the second piece having the modifier `prm`, and the CLX holding `groups`.
+    private func twoPieces(prm: Int, groups: [[UInt8]] = [], runs: [Run] = [Run("aaaa bbbb")]) throws -> String {
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [Paragraph(runs: runs)]
+        builder.pieceCount = 2
+        builder.piecePrms = [0, prm]
+        builder.modifierGroups = groups
+        return try body(of: builder.build())
+    }
+
+    func testAPieceModifierOfOneSprmSetsBoldHiddenAndItalic() throws {
+        // Prm0: the sprm is named by its index in the specification's table.
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm0(0x55, 1)), "<p>aaaa <strong>bbbb</strong></p>\n")
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm0(0x56, 1)), "<p>aaaa <em>bbbb</em></p>\n")
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm0(0x5C, 1)), "<p>aaaa</p>\n")
+        // A toggle's 0x81 reverses a style that is not hidden, and 0 leaves it shown.
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm0(0x5C, 0x81)), "<p>aaaa</p>\n")
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm0(0x5C, 0)), "<p>aaaa bbbb</p>\n")
+    }
+
+    func testAPieceModifierComesAfterTheRunsOwnProperties() throws {
+        let boldRun = [Run("aaaa bbbb", bold: 1)]
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm0(0x55, 0), runs: boldRun), "<p><strong>aaaa</strong> bbbb</p>\n")
+    }
+
+    func testAGroupOfPieceModifiersIsAppliedByItsIndex() throws {
+        let bold = WordDocumentBuilder.modifier(WordSprm.bold, 1)
+        let italic = WordDocumentBuilder.modifier(WordSprm.italic, 1)
+        // Prm1: the index of a group in the CLX; here the second of two.
+        let groups = [bold, bold + italic]
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm1(1), groups: groups), "<p>aaaa <strong><em>bbbb</em></strong></p>\n")
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm1(0), groups: groups), "<p>aaaa <strong>bbbb</strong></p>\n")
+    }
+
+    func testAGroupOfPieceModifiersMayHoldCharacterAndParagraphSprmsAtOnce() throws {
+        // Hidden text, and the paragraph's outline level, in one group.
+        let group = WordDocumentBuilder.modifier(WordSprm.hidden, 1) + WordDocumentBuilder.modifier(WordSprm.outlineLevel, 0)
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm1(0), groups: [group]), "<h1>aaaa</h1>\n")
+    }
+
+    func testAnUnknownOrNullPieceModifierChangesNothing() throws {
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm0(0x7F, 1)), "<p>aaaa bbbb</p>\n")
+        // isprm 0 with a zero operand has no effect (sprmCLbcCRJ is not applied).
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm0(0, 0)), "<p>aaaa bbbb</p>\n")
+        // A group holding a sprm cut short is read as far as it goes.
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm1(0), groups: [[0x35, 0x08]]), "<p>aaaa bbbb</p>\n")
+    }
+
+    /// "Chapter One" and "Body" with every character a piece of its own, the
+    /// piece of the first paragraph's mark being the twelfth.
+    private func chapterWithPrmOnPiece(_ piece: Int, group: [UInt8]) throws -> String {
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [Paragraph("Chapter One"), Paragraph("Body")]
+        builder.pieceCount = 17
+        builder.piecePrms = [Int](repeating: 0, count: piece) + [WordDocumentBuilder.prm1(0)]
+        builder.modifierGroups = [group]
+        return try body(of: builder.build())
+    }
+
+    func testAParagraphStyleSetByTheModifiersOfItsLastPieceMakesAHeading() throws {
+        let style = WordDocumentBuilder.le16(WordSprm.paragraphStyle) + WordDocumentBuilder.le16(1)
+        XCTAssertEqual(try chapterWithPrmOnPiece(11, group: style), "<h1>Chapter One</h1>\n<p>Body</p>\n")
+    }
+
+    func testTheModifiersOfAnEarlierPieceDoNotChangeWhatTheParagraphIs() throws {
+        // The paragraph's properties are those of the piece with its mark
+        // ([MS-DOC] 2.4.6.1); the first character's piece says "heading" but is not the last.
+        let style = WordDocumentBuilder.le16(WordSprm.paragraphStyle) + WordDocumentBuilder.le16(1)
+        XCTAssertEqual(try chapterWithPrmOnPiece(0, group: style), "<p>Chapter One</p>\n<p>Body</p>\n")
+    }
+
+    func testTheRealFastSavedSampleHasAHeadingOnlyThePieceModifiersGive() throws {
+        // The second form's company line is Heading 1 by the Prm1 of its
+        // paragraph mark (sprmPIstd 1); the first form's identical line is body text.
+        let body = try sampleBody("doc/poi-rasp.doc", pages: false)
+        XCTAssertTrue(body.contains("<h1>Открытое акционерное общество «УУУУУУУУУУУ»</h1>"), body)
+        // The first form's line is body text, in bold as the file sets it.
+        XCTAssertTrue(body.contains("«ХХХХХХХХХХХ»"), body)
+        XCTAssertFalse(body.contains("<h1>Открытое акционерное общество «ХХХХХХХХХХХ»"), body)
+        XCTAssertEqual(body.components(separatedBy: "<h1>").count - 1, 1, body)
+    }
+
+    // MARK: - Runs Across Pieces, And Each Prm0
+
+    /// "aaaa bbbb" as one paragraph in two pieces stored side by side, so that
+    /// one run of properties covers both (as in a file whose pieces are next to
+    /// each other), the pieces having the modifiers `prms`.
+    private func acrossPieces(prms: [Int], groups: [[UInt8]] = [], style: Int = 0, runs: [Run] = [Run("aaaa bbbb")]) throws -> String {
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [Paragraph(runs: runs, style: style)]
+        builder.pieceCount = 2
+        builder.storesPiecesInOrder = true
+        builder.piecePrms = prms
+        builder.modifierGroups = groups
+        return try body(of: builder.build())
+    }
+
+    func testAParagraphTakesTheModifiersOfThePieceWithItsMarkWhenOneRunCoversTwoPieces() throws {
+        let heading = [WordDocumentBuilder.le16(WordSprm.paragraphStyle) + WordDocumentBuilder.le16(1)]
+        // [MS-DOC] 2.4.6.1: the Pcd of the paragraph's last character, not its first.
+        XCTAssertEqual(try acrossPieces(prms: [WordDocumentBuilder.prm1(0), 0], groups: heading), "<p>aaaa bbbb</p>\n")
+        XCTAssertEqual(try acrossPieces(prms: [0, WordDocumentBuilder.prm1(0)], groups: heading), "<h1>aaaa bbbb</h1>\n")
+    }
+
+    func testCharactersTakeTheirOwnPiecesModifiersWhenOneRunCoversTwoPieces() throws {
+        let bold = WordDocumentBuilder.prm0(0x55, 1)
+        XCTAssertEqual(try acrossPieces(prms: [bold, 0]), "<p><strong>aaaa</strong> bbbb</p>\n")
+        XCTAssertEqual(try acrossPieces(prms: [0, bold]), "<p>aaaa <strong>bbbb</strong></p>\n")
+    }
+
+    func testPieceModifiersAreAppliedAfterThePAPX() throws {
+        // Heading 1 by the paragraph's own properties; the modifiers of its last piece say style 0.
+        let normal = [WordDocumentBuilder.le16(WordSprm.paragraphStyle) + WordDocumentBuilder.le16(0)]
+        XCTAssertEqual(try acrossPieces(prms: [0, WordDocumentBuilder.prm1(0)], groups: normal, style: 1), "<p>aaaa bbbb</p>\n")
+    }
+
+    /// The paragraphs, each character in a piece of its own stored in order, so that a paragraph is one run
+    /// across its pieces, the pieces having the `Prm0`s `modifiers` by the position of their character.
+    private func withPieceModifiers(_ paragraphs: [Paragraph], _ modifiers: [Int: Int], pages: Bool = false) throws -> String {
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = paragraphs
+        let units = paragraphs.reduce(0) { $0 + $1.runs.reduce(0) { $0 + $1.text.utf16.count } + 1 }
+        builder.pieceCount = units
+        builder.storesPiecesInOrder = true
+        builder.piecePrms = (0..<units).map { modifiers[$0] ?? 0 }
+        return try body(of: builder.build(), pages: pages)
+    }
+
+    func testEachSprmOfThePrm0TableTheReaderUsesIsApplied() throws {
+        // Deleted text (0x41: the second character), and plain text (0x53), which takes off hiding.
+        XCTAssertEqual(try withPieceModifiers([Paragraph("abc")], [1: WordDocumentBuilder.prm0(0x41, 1)]), "<p>ac</p>\n")
+        XCTAssertEqual(
+            try withPieceModifiers([Paragraph(runs: [Run("hid", hidden: 1)])], [0: WordDocumentBuilder.prm0(0x53, 1), 1: WordDocumentBuilder.prm0(0x53, 1), 2: WordDocumentBuilder.prm0(0x53, 1)]),
+            "<p>hid</p>\n"
+        )
+        // A special character (0x75): a symbol's "(" is not read.
+        XCTAssertEqual(try withPieceModifiers([Paragraph("a(b")], [1: WordDocumentBuilder.prm0(0x75, 1)]), "<p>ab</p>\n")
+        // Page break before (0x09), on the mark of "B": a page begins before its words.
+        XCTAssertEqual(
+            try withPieceModifiers([Paragraph("A"), Paragraph("B")], [3: WordDocumentBuilder.prm0(0x09, 1)], pages: true),
+            span(1) + "<p>A</p>\n<p>\(span(2))B</p>\n"
+        )
+        // An outline level (0x78) makes a heading, and a level change (0x04) moves Heading 1 to Heading 2.
+        XCTAssertEqual(try withPieceModifiers([Paragraph("t")], [1: WordDocumentBuilder.prm0(0x78, 0)]), "<h1>t</h1>\n")
+        XCTAssertEqual(try withPieceModifiers([Paragraph("Chapter", style: 1)], [7: WordDocumentBuilder.prm0(0x04, 1)]), "<h2>Chapter</h2>\n")
+        XCTAssertEqual(try withPieceModifiers([Paragraph("Chapter", style: 2)], [7: WordDocumentBuilder.prm0(0x04, 0xFF)]), "<h1>Chapter</h1>\n")
+        // In a table (0x18): a cell, though its own properties say nothing.
+        XCTAssertEqual(
+            try withPieceModifiers([Paragraph("cell", mark: 0x07)], [4: WordDocumentBuilder.prm0(0x18, 1)]),
+            "<table>\n<tr><td><p>cell</p>\n</td></tr>\n</table>\n"
+        )
+        // A row's end (0x19): the cells on either side are two rows.
+        let inTable = WordDocumentBuilder.modifier(WordSprm.inTable, 1)
+        let rowEnd = inTable + WordDocumentBuilder.modifier(WordSprm.rowEnd, 1)
+        XCTAssertEqual(
+            try withPieceModifiers([
+                Paragraph("a", modifiers: inTable, mark: 0x07), Paragraph("", modifiers: inTable, mark: 0x07),
+                Paragraph("b", modifiers: inTable, mark: 0x07), Paragraph("", modifiers: rowEnd, mark: 0x07),
+            ], [2: WordDocumentBuilder.prm0(0x19, 1)]),
+            "<table>\n<tr><td><p>a</p>\n</td></tr>\n<tr><td><p>b</p>\n</td></tr>\n</table>\n"
+        )
+    }
+
+    func testPlainTextAndACharacterStyleTakeOffTheDirectFormattingBeforeThemButNotAfter() throws {
+        var plain = Run("x", hidden: 1)
+        plain.extraModifiers = WordDocumentBuilder.modifier(WordSprm.plain, 0)
+        XCTAssertEqual(try body([Paragraph(runs: [plain])]), "<p>x</p>\n")
+        // Hidden before the character style (italic): the style's properties replace it.
+        XCTAssertEqual(try body([Paragraph(runs: [Run("y", hidden: 1, characterStyle: 11)])]), "<p><em>y</em></p>\n")
+        // Hidden after it: it stays.
+        var after = Run("z", characterStyle: 11)
+        after.extraModifiers = WordDocumentBuilder.modifier(WordSprm.hidden, 1)
+        XCTAssertEqual(try body([Paragraph(runs: [after]), Paragraph("kept")]), "<p>kept</p>\n")
+    }
+
+    func testALineBreakThatIsAStyleSeparatorEndsTheParagraph() throws {
+        var separator = Run("\u{0B}")
+        separator.extraModifiers = WordDocumentBuilder.modifier(WordSprm.styleSeparator, 1)
+        // The words are not joined into one line of a heading; both parts are in the paragraph's style.
+        XCTAssertEqual(
+            try body([Paragraph(runs: [Run("Run-in heading."), separator, Run("Body follows.")], style: 1)]),
+            "<h1>Run-in heading.</h1>\n<h1>Body follows.</h1>\n"
+        )
+    }
+
+    // MARK: - Properties in the Data Stream
+
+    /// The `Data` stream with, at offset 16, a `PrcData` of 10 bytes that makes a heading of the paragraph.
+    private var headingInTheDataStream: [UInt8] {
+        let group = WordDocumentBuilder.le16(WordSprm.paragraphStyle) + WordDocumentBuilder.le16(1)
+            + WordDocumentBuilder.modifier(WordSprm.pageBreakBefore, 0) + WordDocumentBuilder.modifier(0x2405, 1)
+        return [UInt8](repeating: 0, count: 16) + WordDocumentBuilder.le16(group.count) + group
+    }
+
+    func testAParagraphWhosePropertiesAreInTheDataStreamIsRead() throws {
+        var builder = WordDocumentBuilder()
+        builder.dataStream = headingInTheDataStream
+        for opcode in [WordSprm.hugeParagraphProperties, WordSprm.tableProperties] {
+            builder.paragraphs = [
+                Paragraph("Title", modifiers: WordDocumentBuilder.le16(opcode) + WordDocumentBuilder.le32(16)), Paragraph("Body"),
+            ]
+            XCTAssertEqual(try body(of: builder.build()), "<h1>Title</h1>\n<p>Body</p>\n", "sprm \(String(opcode, radix: 16))")
+        }
+    }
+
+    func testAHugePapxThatIsNotTheFirstSprmIsIgnoredAndOneNamingNothingReadsAsNone() throws {
+        var builder = WordDocumentBuilder()
+        builder.dataStream = headingInTheDataStream
+        let heading2 = WordDocumentBuilder.le16(WordSprm.paragraphStyle) + WordDocumentBuilder.le16(2)
+        let huge = WordDocumentBuilder.le16(WordSprm.hugeParagraphProperties) + WordDocumentBuilder.le32(16)
+        // Not first: ignored ([MS-DOC] sprmPHugePapx), so the paragraph is Heading 2 and the data is not applied.
+        builder.paragraphs = [Paragraph("Not first", modifiers: heading2 + huge)]
+        XCTAssertEqual(try body(of: builder.build()), "<h2>Not first</h2>\n")
+        // An offset past the stream, a PrcData too small, and a missing Data stream: no properties.
+        for offset in [4000, 0] {
+            builder.paragraphs = [Paragraph("Title", modifiers: WordDocumentBuilder.le16(WordSprm.hugeParagraphProperties) + WordDocumentBuilder.le32(offset))]
+            XCTAssertEqual(try body(of: builder.build()), "<p>Title</p>\n", "offset \(offset)")
+        }
+        builder.dataStream = []
+        builder.paragraphs = [Paragraph("Title", modifiers: huge)]
+        XCTAssertEqual(try body(of: builder.build()), "<p>Title</p>\n")
+    }
+
+    func testPropertiesInTheDataStreamMayNameOthersAndALoopEnds() throws {
+        var builder = WordDocumentBuilder()
+        // At 16, 10 bytes whose first sprm names the PrcData at 40; at 40 the heading's.
+        var data = [UInt8](repeating: 0, count: 64)
+        let link = WordDocumentBuilder.le16(WordSprm.tableProperties) + WordDocumentBuilder.le32(40)
+        let padding = WordDocumentBuilder.modifier(0x2405, 1) + WordDocumentBuilder.modifier(0x2406, 1)
+        data.replaceSubrange(16..<28, with: WordDocumentBuilder.le16(12) + link + padding)
+        let heading = headingInTheDataStream
+        data.replaceSubrange(40..<52, with: Array(heading[16..<28]))
+        builder.dataStream = data
+        builder.paragraphs = [Paragraph("Chained", modifiers: WordDocumentBuilder.le16(WordSprm.hugeParagraphProperties) + WordDocumentBuilder.le32(16))]
+        XCTAssertEqual(try body(of: builder.build()), "<h1>Chained</h1>\n")
+        // A PrcData that names itself: followed a few times, then given up, and the paragraph reads.
+        let loop = WordDocumentBuilder.le16(WordSprm.hugeParagraphProperties) + WordDocumentBuilder.le32(16)
+        builder.dataStream = [UInt8](repeating: 0, count: 16) + WordDocumentBuilder.le16(12) + loop + padding
+        let start = Date()
+        XCTAssertEqual(try body(of: builder.build()), "<p>Chained</p>\n")
+        XCTAssertLessThan(Date().timeIntervalSince(start), 1.0)
+    }
+
+    func testTheRealSampleWhoseTableRowsHaveTheirPropertiesInTheDataStreamHasFiveRows() throws {
+        // Each row's end mark has its in-table and row-end flags (sprmPTableProps) in the Data stream.
+        let body = try sampleBody("doc/libreoffice-tdf73056_cellMargins.doc", pages: false)
+        XCTAssertEqual(body.components(separatedBy: "<tr>").count - 1, 5, body)
     }
 
     func testEmptyParagraphsAndBlankDocumentsWriteNoBlocks() throws {
@@ -242,10 +508,204 @@ final class WordDocumentReaderTests: XCTestCase {
         return builder
     }
 
-    func testAMainStoryWithWordsIsFollowedByItsFootnotesAndEndnotesAndNothingElse() throws {
-        // Headers, comments, and text boxes are left out; the notes follow, as in textutil's reading.
+    func testAMainStoryWithWordsIsFollowedByItsNotesAndTextBoxesAndNothingElse() throws {
+        // Headers, comments, and the text boxes of headers are left out; the
+        // footnotes, the endnotes, and the text boxes follow, as in textutil's reading.
         let body = try body(of: storyDocument(main: [Paragraph("Main words.")]).build())
-        XCTAssertEqual(body, "<p>Main words.</p>\n<p>Footnote words.</p>\n<p>Endnote words.</p>\n")
+        XCTAssertEqual(body, "<p>Main words.</p>\n<p>Footnote words.</p>\n<p>Endnote words.</p>\n<p>Textbox words.</p>\n")
+    }
+
+    func testTextBoxesFollowTheNotesInTheOrderOfTheirStories() throws {
+        // Only text boxes, then boxes with a second paragraph, a table, and a hidden word.
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [Paragraph("Main words.")]
+        builder.stories = [.textBoxes: [Paragraph("Box one."), Paragraph(runs: [Run("Box "), Run("secret ", hidden: 1), Run("two.")])]]
+        XCTAssertEqual(try body(of: builder.build()), "<p>Main words.</p>\n<p>Box one.</p>\n<p>Box two.</p>\n")
+        builder.stories = [.headerTextBoxes: [Paragraph("Header box.")]]
+        XCTAssertEqual(try body(of: builder.build()), "<p>Main words.</p>\n")
+        builder.stories = [.endnotes: [Paragraph("End.")], .textBoxes: [Paragraph("Box.")], .footnotes: [Paragraph("Foot.")]]
+        XCTAssertEqual(try body(of: builder.build()), "<p>Main words.</p>\n<p>Foot.</p>\n<p>End.</p>\n<p>Box.</p>\n")
+    }
+
+    // MARK: - Notes Whose Marks Are Not Shown
+
+    /// A document whose main paragraph is "Seen", a shown footnote mark,
+    /// " and more", and a second mark `second`, with two footnotes.
+    private func noteDocument(second: Run) -> WordDocumentBuilder {
+        var builder = WordDocumentBuilder()
+        // The marks stand at positions 4 and 14 of the main text.
+        builder.paragraphs = [Paragraph(runs: [Run("Seen"), Run("\u{02}"), Run(" and more"), second])]
+        builder.footnoteReferences = [4, 14]
+        builder.stories = [.footnotes: [Paragraph("Shown note."), Paragraph("Second note.")]]
+        return builder
+    }
+
+    func testANoteIsReadOnlyIfItsReferenceMarkIsShown() throws {
+        // Both marks shown: both notes.
+        XCTAssertEqual(
+            try body(of: noteDocument(second: Run("\u{02}")).build()),
+            "<p>Seen and more</p>\n<p>Shown note.</p>\n<p>Second note.</p>\n"
+        )
+        // The second mark hidden: its note is left out.
+        XCTAssertEqual(
+            try body(of: noteDocument(second: Run("\u{02}", hidden: 1)).build()),
+            "<p>Seen and more</p>\n<p>Shown note.</p>\n"
+        )
+        // Or deleted by a tracked change.
+        var deleted = Run("\u{02}")
+        deleted.isDeleted = true
+        XCTAssertEqual(try body(of: noteDocument(second: deleted).build()), "<p>Seen and more</p>\n<p>Shown note.</p>\n")
+    }
+
+    func testEndnotesFollowTheSameRule() throws {
+        var builder = WordDocumentBuilder()
+        var gone = Run("\u{02}")
+        gone.isDeleted = true
+        builder.paragraphs = [Paragraph(runs: [Run("Main."), gone, Run("\u{02}")])]
+        builder.endnoteReferences = [5, 6]
+        builder.stories = [.endnotes: [Paragraph("Lost end."), Paragraph("Kept end.")]]
+        XCTAssertEqual(try body(of: builder.build()), "<p>Main.</p>\n<p>Kept end.</p>\n")
+    }
+
+    func testNoteTablesThatAreNotWholeEntriesOrTooShortReadTheWholeStory() throws {
+        let builder = noteDocument(second: Run("\u{02}", hidden: 1))
+        XCTAssertEqual(try body(of: builder.build()), "<p>Seen and more</p>\n<p>Shown note.</p>\n")
+        let whole = "<p>Seen and more</p>\n<p>Shown note.</p>\n<p>Second note.</p>\n"
+        // Each table's length in the FIB, made a byte longer (not a whole number of entries), and the
+        // text table made too short to place both notes: none is trusted.
+        for (structure, change) in [
+            (WordFileInformationBlock.Structure.footnoteReferences, 1), (.footnoteText, 1), (.footnoteText, -8),
+        ] {
+            let data = builder.build { word, _, layout in
+                let at = layout.pairs + structure.rawValue * 8 + 4
+                let length = Int(word[at]) | Int(word[at + 1]) << 8 | Int(word[at + 2]) << 16 | Int(word[at + 3]) << 24
+                word.replaceSubrange(at..<at + 4, with: WordDocumentBuilder.le32(length + change))
+            }
+            XCTAssertEqual(try body(of: data), whole, "\(structure) \(change)")
+        }
+    }
+
+    func testEveryNoteHiddenLeavesTheMainTextAlone() throws {
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [Paragraph(runs: [Run("Main."), Run("\u{02}\u{02}", hidden: 1)])]
+        builder.footnoteReferences = [5, 6]
+        builder.stories = [.footnotes: [Paragraph("One."), Paragraph("Two.")]]
+        XCTAssertEqual(try body(of: builder.build()), "<p>Main.</p>\n")
+    }
+
+    func testNoteTablesThatDoNotAddUpReadTheWholeStory() throws {
+        // Marks that go back are not trusted, so nothing is left out.
+        var builder = noteDocument(second: Run("\u{02}", hidden: 1))
+        builder.footnoteReferences = [14, 4]
+        XCTAssertEqual(
+            try body(of: builder.build()),
+            "<p>Seen and more</p>\n<p>Shown note.</p>\n<p>Second note.</p>\n"
+        )
+    }
+
+    // MARK: - Tracked Deletions and Moves
+
+    func testADeletionIsATogglePropertyAndNoStyleGivesOne() throws {
+        // Revision-mark deletion is a toggle ([MS-DOC] sprmCFRMarkDel): 1 and
+        // 0x81 delete, 0x80 keeps what a style gives, which is nothing.
+        func run(_ value: Int) -> Run {
+            var run = Run(" word")
+            run.extraModifiers = WordDocumentBuilder.modifier(WordSprm.deleted, value)
+            return run
+        }
+        for (value, expected) in [(1, "<p>Kept</p>\n"), (0x81, "<p>Kept</p>\n"), (0x80, "<p>Kept word</p>\n"), (0, "<p>Kept word</p>\n")] {
+            XCTAssertEqual(try body([Paragraph(runs: [Run("Kept"), run(value)])]), expected, "operand \(value)")
+        }
+    }
+
+    func testMovedTextIsReadOnceBecauseTheFormatHasNoMoves() throws {
+        // [MS-DOC] has no move: a tracked move is a deletion where the text
+        // was and an insertion where it went, so the text is read at its
+        // new place only.
+        var movedFrom = Run("The paragraph that moved. ")
+        movedFrom.isDeleted = true
+        XCTAssertEqual(
+            try body([Paragraph(runs: [movedFrom, Run("First.")]), Paragraph("The paragraph that moved. Second.")]),
+            "<p>First.</p>\n<p>The paragraph that moved. Second.</p>\n"
+        )
+    }
+
+    // MARK: - Hidden Text and Pages, Headings
+
+    func testAPageBreakInsideDeletedTextBeginsNoPage() throws {
+        var deleted = Run("\u{0C}")
+        deleted.isDeleted = true
+        XCTAssertEqual(
+            try body([Paragraph(runs: [Run("one "), deleted, Run("two")])], pages: true),
+            span(1) + "<p>one two</p>\n"
+        )
+    }
+
+    func testAParagraphOfDeletedWordsThatBeginsAPageBeginsNone() throws {
+        var deleted = Run("gone")
+        deleted.isDeleted = true
+        let pageBreakBefore = WordDocumentBuilder.modifier(WordSprm.pageBreakBefore, 1)
+        let body = try body([Paragraph("A"), Paragraph(runs: [deleted], modifiers: pageBreakBefore), Paragraph("B")], pages: true)
+        XCTAssertEqual(body, span(1) + "<p>A</p>\n<p>B</p>\n")
+    }
+
+    func testAHiddenSectionBreakBeginsNoPage() throws {
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [Paragraph("first", mark: 0x0C, markModifiers: hiddenMark), Paragraph("second")]
+        builder.sectionBreaks = [(0, 2)]
+        XCTAssertEqual(try body(of: builder.build(), pages: true), span(1) + "<p>first</p>\n<p>second</p>\n")
+        // The same break shown begins page 2.
+        builder.paragraphs = [Paragraph("first", mark: 0x0C), Paragraph("second")]
+        XCTAssertEqual(try body(of: builder.build(), pages: true), span(1) + "<p>first</p>\n<p>\(span(2))second</p>\n")
+    }
+
+    func testAHiddenHeadingWritesNoHeadingAndLeavesTheGuessBySizeOn() throws {
+        // The Heading 1 paragraph is all hidden: no heading is written, and it
+        // is not a "real" heading that turns off the guess by size.
+        let body = try body([
+            Paragraph(runs: [Run("Hidden chapter", hidden: 1)], style: 1),
+            Paragraph(runs: [Run("Big title", fontSize: 40)]),
+            Paragraph("Body text goes on for a good while here."),
+            Paragraph("More body text."),
+        ])
+        XCTAssertEqual(body, "<h1>Big title</h1>\n<p>Body text goes on for a good while here.</p>\n<p>More body text.</p>\n")
+    }
+
+    // MARK: - The Reading Text
+
+    /// The chapter an import makes of the HTML the reader writes for `data`:
+    /// its reading text, as a listener hears it, and its headings.
+    private func readingChapter(of data: Data) throws -> Chapter {
+        let html = try XCTUnwrap(WordDocumentReader.html(from: data, includesPages: false))
+        let markdown = try HTMLToMarkdownConverter.convert(
+            document: SwiftSoup.parse(html), readingFlow: PublicationSemantics.ReadingFlow(source: html), includesPages: false
+        )
+        return try MarkdownDocParser.parseChapter(markdown: markdown, title: "", includeNavigationHeadings: true)
+    }
+
+    func testEmphasisThatStartsOrEndsOnPunctuationSpeaksNoAsterisk() throws {
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [
+            Paragraph(runs: [Run("He said "), Run("\"stop!\"", bold: 1), Run(" loudly")]),
+            Paragraph(runs: [Run("word"), Run("(aside)", italic: 1), Run(" and "), Run("Really", italic: 1), Run("?", italic: 1)]),
+            Paragraph(runs: [Run("Price: "), Run("$5.00,", bold: 1), Run(" or "), Run("-", bold: 1), Run("dash", bold: 1)]),
+        ]
+        let text = try readingChapter(of: builder.build()).text
+        XCTAssertFalse(text.contains("*"), text)
+        XCTAssertEqual(
+            text, "He said \"stop!\" loudly\n\nword(aside) and Really?\n\nPrice: $5.00, or -dash"
+        )
+    }
+
+    func testTheRealSampleWithTextBoxesReadsThemAfterTheMainText() throws {
+        // The notice's body ends with the Mayor's name; the contact details
+        // of the text boxes follow it, and the last box ends the reading.
+        let body = try sampleBody("doc/poi-textboxes.doc", pages: false)
+        let main = try XCTUnwrap(body.range(of: "mgr inż. Jacek Brygman"), body)
+        let box = try XCTUnwrap(body.range(of: "inwestycje.cekcyn@las.pl"), body)
+        let last = try XCTUnwrap(body.range(of: "ww.ekomel.com.pl"), body)
+        XCTAssertLessThan(main.lowerBound, box.lowerBound)
+        XCTAssertLessThan(box.lowerBound, last.lowerBound)
     }
 
     func testOnlyEndnotesOrOnlyFootnotesFollowTheMainStory() throws {
@@ -256,13 +716,78 @@ final class WordDocumentReaderTests: XCTestCase {
         XCTAssertEqual(try body(of: builder.build()), "<p>Main words.</p>\n<p>Footnote one.</p>\n")
     }
 
-    func testAMainStoryWithNoWordsReadsTheOtherStoriesInFileOrder() throws {
+    func testAMainStoryWithNoWordsReadsItsNotesAndTextBoxesAndNotItsHeadersOrComments() throws {
         for main in [[], [Paragraph("")], [Paragraph("  ... ")]] {
             let body = try body(of: storyDocument(main: main).build())
-            let expected = ["Footnote", "Header", "Comment", "Endnote", "Textbox", "Header textbox"].map { "<p>\($0) words.</p>\n" }.joined()
             // A main story of punctuation keeps its punctuation, as textutil's does.
-            XCTAssertTrue(body.hasSuffix(expected), body)
+            XCTAssertTrue(body.hasSuffix("<p>Footnote words.</p>\n<p>Endnote words.</p>\n<p>Textbox words.</p>\n"), body)
+            for page in ["Header", "Comment"] { XCTAssertFalse(body.contains(page), body) }
         }
+    }
+
+    func testADocumentWhoseWordsAreAllInHeadersAndCommentsReadsEveryStoryInFileOrder() throws {
+        var builder = WordDocumentBuilder()
+        builder.stories = [
+            .headers: [Paragraph("Header words.")], .comments: [Paragraph("Comment words.")],
+            .headerTextBoxes: [Paragraph("Header textbox words.")],
+        ]
+        XCTAssertEqual(
+            try body(of: builder.build()),
+            "<p>Header words.</p>\n<p>Comment words.</p>\n<p>Header textbox words.</p>\n"
+        )
+    }
+
+    func testAFootnoteOrABoxHasNoPagesAndAnOpenFieldDoesNotEatTheNextStory() throws {
+        let pageBreakBefore = WordDocumentBuilder.modifier(WordSprm.pageBreakBefore, 1)
+        var builder = WordDocumentBuilder()
+        // The main story ends in a field whose end is not there.
+        builder.paragraphs = [Paragraph("Main \u{13} NEVER ENDS")]
+        builder.stories = [
+            .footnotes: [Paragraph("Note one.", modifiers: pageBreakBefore), Paragraph("Note two.\u{0C} more.")],
+            .textBoxes: [Paragraph("Box words.", modifiers: pageBreakBefore)],
+        ]
+        // No pages begin in a note or a box, and the notes and the box are read.
+        XCTAssertEqual(
+            try body(of: builder.build(), pages: true),
+            span(1) + "<p>Main</p>\n<p>Note one.</p>\n<p>Note two. more.</p>\n<p>Box words.</p>\n"
+        )
+    }
+
+    // MARK: - The Guess at Headings Is the Main Story's
+
+    func testATextBoxHeadingDoesNotTurnOffTheMainStorysGuessAtHeadings() throws {
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [
+            Paragraph(runs: [Run("Big title", fontSize: 40)]),
+            Paragraph("Body text goes on for a good while here."),
+            Paragraph("More body text."),
+        ]
+        builder.stories = [.textBoxes: [Paragraph("Boxed heading", style: 1)]]
+        XCTAssertEqual(
+            try body(of: builder.build()),
+            "<h1>Big title</h1>\n<p>Body text goes on for a good while here.</p>\n<p>More body text.</p>\n<h1>Boxed heading</h1>\n"
+        )
+    }
+
+    func testMuchSmallTextInTheBoxesDoesNotMakeHeadingsOfTheMainStory() throws {
+        var builder = WordDocumentBuilder()
+        // The main story is 12-point and short; the boxes hold far more text at 8 points.
+        builder.paragraphs = [Paragraph(runs: [Run("Short main paragraph.", fontSize: 24)]), Paragraph(runs: [Run("Another short one here.", fontSize: 24)])]
+        builder.stories = [.textBoxes: [Paragraph(runs: [Run(String(repeating: "Small print goes on and on. ", count: 30), fontSize: 16)])]]
+        let body = try body(of: builder.build())
+        XCTAssertFalse(body.contains("<h"), body)
+        XCTAssertTrue(body.hasPrefix("<p>Short main paragraph.</p>\n<p>Another short one here.</p>\n<p>Small print"), body)
+    }
+
+    func testTheTextBoxTableMakesABoxOfEachRangeAndIgnoresTheLast() throws {
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [Paragraph("Main words.")]
+        builder.stories = [.textBoxes: [Paragraph("Box one."), Paragraph("Box two.")]]
+        builder.writesTextBoxTable = true
+        XCTAssertEqual(try body(of: builder.build()), "<p>Main words.</p>\n<p>Box one.</p>\n<p>Box two.</p>\n")
+        // A table that names only the first box: what lies after it, in the last range, is ignored.
+        builder.textBoxTableLimit = 1
+        XCTAssertEqual(try body(of: builder.build()), "<p>Main words.</p>\n<p>Box one.</p>\n")
     }
 
     func testTheOtherStoriesOfAnEmptyBodyHavePagesToo() throws {
@@ -283,6 +808,145 @@ final class WordDocumentReaderTests: XCTestCase {
         var deleted = Run("gone entirely")
         deleted.isDeleted = true
         XCTAssertEqual(try body([Paragraph(runs: [deleted]), Paragraph("kept")]), "<p>kept</p>\n")
+    }
+
+    // MARK: - Hidden Text
+
+    /// A builder whose styles hold, after the standard ones: 12 a paragraph
+    /// style that is hidden, 13 a character style that is hidden, 14 a
+    /// paragraph style based on 12 that says nothing of its own, and 15 a
+    /// paragraph style based on 12 that turns hidden text off.
+    private func hiddenStylesBuilder() -> WordDocumentBuilder {
+        var builder = WordDocumentBuilder()
+        builder.styles.append(WordDocumentBuilder.Style(basedOn: 0, hidden: 1))
+        builder.styles.append(WordDocumentBuilder.Style(kind: 2, hidden: 1))
+        builder.styles.append(WordDocumentBuilder.Style(basedOn: 12))
+        builder.styles.append(WordDocumentBuilder.Style(basedOn: 12, hidden: 0))
+        return builder
+    }
+
+    /// The modifier that hides a paragraph mark (a character property of the mark).
+    private let hiddenMark = WordDocumentBuilder.modifier(WordSprm.hidden, 1)
+
+    func testHiddenTextIsNotReadAndItsWhiteSpaceGoesWithIt() throws {
+        let body = try body([Paragraph(runs: [Run("Seen "), Run("secret words ", hidden: 1), Run("seen again")])])
+        XCTAssertEqual(body, "<p>Seen seen again</p>\n")
+    }
+
+    func testHiddenTextIsATogglePropertyLikeBoldAndItalic() throws {
+        var builder = hiddenStylesBuilder()
+        builder.paragraphs = [
+            // Directly on and off, in a paragraph that is not hidden.
+            Paragraph(runs: [Run("on", hidden: 1)]),
+            Paragraph(runs: [Run("off", hidden: 0)]),
+            // 0x81 reverses what the style gives: hidden from a visible style.
+            Paragraph(runs: [Run("reversed", hidden: 0x81)]),
+            Paragraph(runs: [Run("kept", hidden: 0x80)]),
+            // In a hidden paragraph style: hidden by default, shown by 0, kept by 0x80, shown by 0x81.
+            Paragraph("by style", style: 12),
+            Paragraph(runs: [Run("shown by zero", hidden: 0)], style: 12),
+            Paragraph(runs: [Run("kept hidden", hidden: 0x80)], style: 12),
+            Paragraph(runs: [Run("reversed to shown", hidden: 0x81)], style: 12),
+            // A style based on a hidden one is hidden, unless it says otherwise.
+            Paragraph("inherited", style: 14),
+            Paragraph("overridden", style: 15),
+            // A hidden character style.
+            Paragraph(runs: [Run("hidden by character style", characterStyle: 13)]),
+            Paragraph(runs: [Run("shown over the character style", hidden: 0, characterStyle: 13)]),
+        ]
+        XCTAssertEqual(
+            try body(of: builder.build()),
+            "<p>off</p>\n<p>kept</p>\n<p>shown by zero</p>\n<p>reversed to shown</p>\n<p>overridden</p>\n<p>shown over the character style</p>\n"
+        )
+    }
+
+    func testAParagraphOfOnlyHiddenWordsWritesNothingNotEvenAnEmptyHeading() throws {
+        let body = try body([
+            Paragraph(runs: [Run("Chapter One", hidden: 1)], style: 1),
+            Paragraph(runs: [Run("hidden", hidden: 1)]),
+            Paragraph("After"),
+        ])
+        XCTAssertEqual(body, "<p>After</p>\n")
+    }
+
+    func testAHiddenParagraphMarkAloneJoinsNothing() throws {
+        // A run-in heading's mark is hidden in Word so that the next paragraph
+        // runs on from it; here the paragraphs stay separate and a heading stays a heading.
+        let body = try body([
+            Paragraph(runs: [Run("Run-in heading.")], style: 1, markModifiers: hiddenMark),
+            Paragraph("Body text follows."),
+            Paragraph(runs: [Run("Plain.")], markModifiers: hiddenMark),
+            Paragraph("Last."),
+        ])
+        XCTAssertEqual(body, "<h1>Run-in heading.</h1>\n<p>Body text follows.</p>\n<p>Plain.</p>\n<p>Last.</p>\n")
+    }
+
+    func testHiddenLineBreaksTabsAndColumnBreaksAreNotRead() throws {
+        // Nothing but the hidden characters stands between the words, so a hidden tab or column break that were read would show as a space.
+        let body = try body([Paragraph(runs: [Run("a"), Run("\u{0B}", hidden: 1), Run("b"), Run("\u{09}\u{0E}", hidden: 1), Run("c")])])
+        XCTAssertEqual(body, "<p>abc</p>\n")
+        // The same characters shown.
+        XCTAssertEqual(try self.body([Paragraph(runs: [Run("a"), Run("\u{0B}"), Run("b")])]), "<p>a<br>b</p>\n")
+        XCTAssertEqual(try self.body([Paragraph(runs: [Run("b"), Run("\u{09}\u{0E}"), Run("c")])]), "<p>b c</p>\n")
+    }
+
+    func testAPageBreakInsideHiddenTextBeginsNoPage() throws {
+        let hiddenBreak = try body([Paragraph(runs: [Run("one "), Run("\u{0C}", hidden: 1), Run("two")])], pages: true)
+        XCTAssertEqual(hiddenBreak, span(1) + "<p>one two</p>\n")
+        let shownBreak = try body([Paragraph(runs: [Run("one "), Run("\u{0C}"), Run("two")])], pages: true)
+        XCTAssertEqual(shownBreak, span(1) + "<p>one \(span(2))two</p>\n")
+    }
+
+    func testAParagraphOfHiddenWordsThatBeginsAPageBeginsNone() throws {
+        let pageBreakBefore = WordDocumentBuilder.modifier(WordSprm.pageBreakBefore, 1)
+        let body = try body([
+            Paragraph("A"),
+            Paragraph(runs: [Run("hidden", hidden: 1)], modifiers: pageBreakBefore),
+            Paragraph("B"),
+        ], pages: true)
+        XCTAssertEqual(body, span(1) + "<p>A</p>\n<p>B</p>\n")
+    }
+
+    func testTextHiddenOnlyOnTheWebAndAHiddenMarkAreStillRead() throws {
+        // sprmCFWebHidden (0x0811) shows in print and in the normal view;
+        // sprmCFSpecVanish (0x0818) hides the paragraph mark alone.
+        var webHidden = Run("web only ")
+        webHidden.extraModifiers = WordDocumentBuilder.modifier(0x0811, 1)
+        var specVanish = Run("spec vanish")
+        specVanish.extraModifiers = WordDocumentBuilder.modifier(0x0818, 1)
+        // The mark of the first paragraph is a style separator: the paragraphs stay two.
+        XCTAssertEqual(
+            try body([
+                Paragraph(runs: [webHidden, specVanish], markModifiers: WordDocumentBuilder.modifier(WordSprm.styleSeparator, 1)),
+                Paragraph("next"),
+            ]),
+            "<p>web only spec vanish</p>\n<p>next</p>\n"
+        )
+    }
+
+    func testAHiddenCellKeepsItsPlaceInTheRow() throws {
+        let body = try body([
+            Paragraph(runs: [Run("hidden", hidden: 1)], modifiers: inTable, mark: 0x07),
+            Paragraph("kept", modifiers: inTable, mark: 0x07),
+            Paragraph("", modifiers: rowEnd, mark: 0x07),
+        ])
+        XCTAssertEqual(body, "<table>\n<tr><td></td><td><p>kept</p>\n</td></tr>\n</table>\n")
+    }
+
+    func testHiddenTextInFootnotesIsNotReadEither() throws {
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [Paragraph("Body")]
+        builder.stories[.footnotes] = [Paragraph(runs: [Run("noted "), Run("secret", hidden: 1)])]
+        XCTAssertEqual(try body(of: builder.build()), "<p>Body</p>\n<p>noted</p>\n")
+    }
+
+    func testTheRealSampleWithHiddenTextReadsOnlyItsVisibleParagraphs() throws {
+        // Five paragraphs hold the letter S; the rest of the file is text
+        // made hidden by sprmCFVanish 0x81, in paragraphs and table cells.
+        // textutil leaves the same text out.
+        let body = try sampleBody("doc/libreoffice-tdf102334_hiddenText.doc", pages: false)
+        let text = body.replacingOccurrences(of: "<[^>]+>", with: " ", options: .regularExpression)
+        XCTAssertEqual(text.split(whereSeparator: \.isWhitespace).map(String.init), ["S", "S", "S", "S", "S"], body)
     }
 
     // MARK: - Fields
@@ -330,10 +994,25 @@ final class WordDocumentReaderTests: XCTestCase {
         XCTAssertEqual(body, "<h1>Zero</h1>\n<h3>Two</h3>\n<h6>Eight</h6>\n<p>Body</p>\n")
     }
 
-    func testBodyTextOutlineLevelOverridesAHeadingStyle() throws {
-        // The paragraph keeps the style's bold: it is body text, so it shows.
-        let body = try body([Paragraph("Not a heading", style: 2, modifiers: WordDocumentBuilder.modifier(WordSprm.outlineLevel, 9))])
-        XCTAssertEqual(body, "<p><strong>Not a heading</strong></p>\n")
+    func testADirectOutlineLevelOnHeadingOneToNineIsIgnoredAndOnAStyleBasedOnOneIsNot() throws {
+        // [MS-DOC] sprmPOutLvl: "This MUST be ignored if the paragraph has an
+        // istd that is greater than or equal to 0x1 and less than or equal to 0x9."
+        var builder = WordDocumentBuilder()
+        // Index 12 is based on Heading 2 and says nothing of its own.
+        builder.styles.append(WordDocumentBuilder.Style(basedOn: 2))
+        let outline = { (level: Int) in WordDocumentBuilder.modifier(WordSprm.outlineLevel, level) }
+        builder.paragraphs = [
+            Paragraph("Heading 2 says body text", style: 2, modifiers: outline(9)),
+            Paragraph("Heading 2 says level 5", style: 2, modifiers: outline(4)),
+            // A style that is based on a heading is not one: its paragraph's own level counts.
+            Paragraph("Based on a heading, body text", style: 12, modifiers: outline(9)),
+            Paragraph("Based on a heading, level 1", style: 12, modifiers: outline(0)),
+        ]
+        XCTAssertEqual(
+            try body(of: builder.build()),
+            "<h2>Heading 2 says body text</h2>\n<h2>Heading 2 says level 5</h2>\n"
+                + "<p><strong>Based on a heading, body text</strong></p>\n<h1>Based on a heading, level 1</h1>\n"
+        )
     }
 
     func testAStyleBasedOnAHeadingIsAHeadingAndOneWithItsOwnOutlineLevelUsesIt() throws {

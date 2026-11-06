@@ -38,6 +38,20 @@ struct WordFileInformationBlock {
         case paragraphBinTable = 13
         /// The complex file information (CLX), which holds the piece table.
         case complexInformation = 33
+        /// Where the footnotes' reference marks lie in the main text (PlcffndRef).
+        case footnoteReferences = 2
+        /// Where each footnote's text lies in the footnote story (PlcffndTxt).
+        case footnoteText = 3
+        /// Where the endnotes' reference marks lie in the main text (PlcfendRef).
+        case endnoteReferences = 46
+        /// Where each endnote's text lies in the endnote story (PlcfendTxt).
+        case endnoteText = 47
+        /// Where each text box's text lies in the text box story (PlcftxbxTxt).
+        case textBoxText = 56
+        /// The list table (PlfLst): the lists and their levels.
+        case listFormats = 73
+        /// The list override table (PlfLfo): the list instances paragraphs name.
+        case listOverrides = 74
     }
 
     // MARK: Fields
@@ -73,8 +87,13 @@ struct WordFileInformationBlock {
     ///   FIB does not fit it.
     static func read(from stream: OLEBytes) throws -> WordFileInformationBlock? {
         let ident = try stream.u16(0)
-        guard ident == identifier || ident == word6Identifier else { throw OLEDamage(reason: "the WordDocument stream is not a FIB") }
         let version = try stream.u16(2)
+        // A file with another identifier and the version of Word 6 or 95 or older
+        // (some Word for Windows and Macintosh files have 0xA699) has their layout,
+        // which this reader leaves to textutil; any other is not a FIB.
+        guard ident == identifier || ident == word6Identifier || version < firstWord97Version else {
+            throw OLEDamage(reason: "the WordDocument stream is not a FIB")
+        }
         if ident == word6Identifier || version < firstWord97Version { return nil }
         guard version <= lastKnownVersion else { throw OLEDamage(reason: "nFib \(version) is not a Word version") }
 
@@ -104,30 +123,60 @@ struct WordFileInformationBlock {
         )
     }
 
-    /// The stories of footnotes and of endnotes, as character positions
-    /// (the stories are laid end to end after the main text: footnotes,
-    /// headers, macros, comments, endnotes, text boxes, header text boxes),
-    /// each cut at `limit`, the characters the document holds; empty ones are
-    /// left out. A FIB too short to give the lengths gives none.
-    func noteRanges(limit: Int) throws -> [Range<Int>] {
-        guard longValueCount >= 9 else { return [] }
-        // ccpFtn, ccpHdd, ccpMcr, ccpAtn, and ccpEdn follow ccpText.
-        let lengths = try (1...5).map { try stream.u32(longValuesOffset + (3 + $0) * 4) }
-        let footnotes = mainTextLength..<mainTextLength + lengths[0]
-        let endnotesStart = mainTextLength + lengths[0] + lengths[1] + lengths[2] + lengths[3]
-        let endnotes = endnotesStart..<endnotesStart + lengths[4]
-        return [footnotes, endnotes].compactMap { range in
-            // A story that begins past the characters the document holds has none.
-            guard range.lowerBound < limit else { return nil }
-            let cut = range.lowerBound..<min(range.upperBound, limit)
-            return cut.isEmpty ? nil : cut
+    /// The stories of a document after its main text, as character positions.
+    /// They are laid end to end after it, in the order of these fields; each
+    /// is cut at the characters the document holds, and one that is empty,
+    /// or that a FIB too short to give its length leaves out, is an empty range.
+    struct Stories {
+        var footnotes = 0..<0
+        var headers = 0..<0
+        var macros = 0..<0
+        var comments = 0..<0
+        var endnotes = 0..<0
+        var textBoxes = 0..<0
+        var headerTextBoxes = 0..<0
+
+        /// The ones that hold characters, in the order the file keeps them.
+        var inFileOrder: [Range<Int>] {
+            [footnotes, headers, macros, comments, endnotes, textBoxes, headerTextBoxes].filter { !$0.isEmpty }
         }
+    }
+
+    /// The stories after the main text (`ccpFtn` to `ccpHdrTxbx`), cut at
+    /// `limit`. A person reading the document sees the footnotes, the
+    /// endnotes, and the main document's text boxes; the headers, the
+    /// comments, and the header text boxes are page furniture or notes to the
+    /// author and are read only when nothing else holds words.
+    func stories(limit: Int) throws -> Stories {
+        var result = Stories()
+        guard longValueCount >= 9 else { return result }
+        // ccpFtn, ccpHdd, ccpMcr, ccpAtn, ccpEdn, ccpTxbx, ccpHdrTxbx follow ccpText, as many as the FIB holds.
+        let lengths = try (4...10).map { index -> Int in
+            index < longValueCount ? try stream.u32(longValuesOffset + index * 4) : 0
+        }
+        var start = mainTextLength
+        func take(_ length: Int) -> Range<Int> {
+            defer { start += length }
+            // A story that begins past the characters the document holds has none.
+            guard start < limit else { return 0..<0 }
+            return start..<min(start + length, limit)
+        }
+        result.footnotes = take(lengths[0])
+        result.headers = take(lengths[1])
+        result.macros = take(lengths[2])
+        result.comments = take(lengths[3])
+        result.endnotes = take(lengths[4])
+        result.textBoxes = take(lengths[5])
+        result.headerTextBoxes = take(lengths[6])
+        return result
     }
 
     /// Where `structure` lies in `table`: its offset and length, checked
     /// against the stream; nil when the document has none (a length of zero).
     /// - Throws: `OLEDamage` when the structure runs past the end of `table`.
     func range(of structure: Structure, in table: OLEBytes) throws -> Range<Int>? {
+        // A FIB with fewer pairs than the structure's place has none of it.
+        guard structure.rawValue < pairCount else { return nil }
         let offset = try stream.u32(pairsOffset + structure.rawValue * 8)
         let length = try stream.u32(pairsOffset + structure.rawValue * 8 + 4)
         guard length > 0 else { return nil }
@@ -155,6 +204,20 @@ enum WordSprm {
     static let inTable = 0x2416
     /// The paragraph ends a row of a table (`sprmPFTtp`).
     static let rowEnd = 0x2417
+    /// The paragraph's style is moved up or down the Heading 1 to 9 styles
+    /// by a signed 8-bit number (`sprmPIncLvl`).
+    static let incrementLevel = 0x2602
+    /// The paragraph's properties are in the Data stream, at the 32-bit
+    /// offset the operand gives (`sprmPHugePapx`), and `sprmPTableProps`
+    /// is the same for a table's.
+    static let hugeParagraphProperties = 0x6646
+    static let tableProperties = 0x646B
+    /// The paragraph is the last of a nested table's row (`sprmPFInnerTtp`).
+    static let innerRowEnd = 0x244C
+    /// The paragraph's level in its list, 0 to 8 (`sprmPIlvl`).
+    static let listLevel = 0x260A
+    /// The list instance the paragraph is in, one-based (`sprmPIlfo`).
+    static let listIndex = 0x460B
     /// The paragraph's outline level, 0 to 8, or 9 for body text (`sprmPOutLvl`).
     static let outlineLevel = 0x2640
     /// The depth of the table the paragraph is in (`sprmPItap`).
@@ -163,16 +226,34 @@ enum WordSprm {
     static let bold = 0x0835
     /// Italic (`sprmCFItalic`).
     static let italic = 0x0836
+    /// Hidden text (`sprmCFVanish`), a toggle property like bold and italic.
+    /// Text hidden only on the web (`sprmCFWebHidden`, 0x0811) and a hidden
+    /// paragraph mark alone (`sprmCFSpecVanish`, 0x0818) are not read as
+    /// hidden, so neither has a name here.
+    static let hidden = 0x083C
     /// The text is a tracked deletion (`sprmCFRMarkDel`).
     static let deleted = 0x0800
     /// The font size in half-points (`sprmCHps`).
     static let fontSize = 0x4A43
-    /// The character style (`sprmCIstd`).
+    /// The character style (`sprmCIstd`); it takes its properties from the
+    /// style, so the direct ones before it do not stay.
     static let characterStyle = 0x4A30
+    /// The characters have no direct formatting and no character style (`sprmCPlain`).
+    static let plain = 0x2A33
+    /// The paragraph mark (or a line break) is a style separator, hidden so
+    /// that a run-in heading's paragraph and the next read as one (`sprmCFSpecVanish`).
+    static let styleSeparator = 0x0818
     /// The character is a special character, such as a picture's anchor (`sprmCFSpec`).
     static let special = 0x0855
     /// How a section begins (`sprmSBkc`).
     static let sectionBreakKind = 0x3009
+
+    // MARK: Operands
+
+    /// The little-endian number in the first (up to four) bytes of `operand`.
+    static func value(of operand: ArraySlice<UInt8>) -> Int {
+        operand.prefix(4).enumerated().reduce(0) { $0 | Int($1.element) << (8 * $1.offset) }
+    }
 
     // MARK: Walking
 

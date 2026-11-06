@@ -1,4 +1,6 @@
 import Foundation
+import SwiftSoup
+import XCTest
 @testable import TextMouth
 
 // MARK: - Building Word 97-2003 Documents in Code
@@ -18,9 +20,10 @@ struct WordDocumentBuilder {
     /// A run of text with one set of character properties.
     struct Run {
         var text: String
-        /// The direct bold and italic properties: 0, 1, 0x80, or 0x81.
+        /// The direct bold, italic, and hidden-text properties: 0, 1, 0x80, or 0x81.
         var bold: Int?
         var italic: Int?
+        var hidden: Int?
         /// The character style's index.
         var characterStyle: Int?
         /// Other modifiers, as bytes.
@@ -32,7 +35,11 @@ struct WordDocumentBuilder {
         /// Whether the run is a tracked deletion (`sprmCFRMarkDel`).
         var isDeleted = false
 
-        init(_ text: String, bold: Int? = nil, italic: Int? = nil, characterStyle: Int? = nil, fontSize: Int? = nil) {
+        init(
+            _ text: String, bold: Int? = nil, italic: Int? = nil, hidden: Int? = nil,
+            characterStyle: Int? = nil, fontSize: Int? = nil
+        ) {
+            self.hidden = hidden
             self.fontSize = fontSize
             self.text = text
             self.bold = bold
@@ -50,19 +57,24 @@ struct WordDocumentBuilder {
         var modifiers: [UInt8] = []
         /// The character that ends the paragraph.
         var mark: UInt16 = 0x0D
+        /// The character modifiers of the mark itself, as bytes (a hidden
+        /// paragraph mark, for one); none leaves the mark without properties.
+        var markModifiers: [UInt8] = []
 
-        init(_ text: String, style: Int = 0, modifiers: [UInt8] = [], mark: UInt16 = 0x0D) {
+        init(_ text: String, style: Int = 0, modifiers: [UInt8] = [], mark: UInt16 = 0x0D, markModifiers: [UInt8] = []) {
             runs = [Run(text)]
             self.style = style
             self.modifiers = modifiers
             self.mark = mark
+            self.markModifiers = markModifiers
         }
 
-        init(runs: [Run], style: Int = 0, modifiers: [UInt8] = [], mark: UInt16 = 0x0D) {
+        init(runs: [Run], style: Int = 0, modifiers: [UInt8] = [], mark: UInt16 = 0x0D, markModifiers: [UInt8] = []) {
             self.runs = runs
             self.style = style
             self.modifiers = modifiers
             self.mark = mark
+            self.markModifiers = markModifiers
         }
     }
 
@@ -75,10 +87,63 @@ struct WordDocumentBuilder {
         var outlineLevel: Int?
         var bold: Int?
         var italic: Int?
+        var hidden: Int?
         var fontSize: Int?
         /// The style's page-break-before setting (0 or 1).
         var pageBreakBefore: Int?
+        /// The style's list instance (`sprmPIlfo`) and level (`sprmPIlvl`).
+        var listIndex: Int?
+        var listLevel: Int?
     }
+
+    /// One level of a list: its number format (an MSONFC), where it counts
+    /// from, and its number text, in which "%1" to "%9" stand for the numbers
+    /// of levels 1 to 9.
+    struct ListLevel {
+        var numberFormat = 0
+        var start = 1
+        var text = ""
+        /// `ilvlRestartLim` when `fNoRestart` is on.
+        var restartLimit: Int?
+        var isLegal = false
+        /// Whether the number is hidden text (`sprmCFVanish` in the level's character properties).
+        var numberIsHidden = false
+
+        init(
+            _ numberFormat: Int = 0, _ text: String = "", start: Int = 1, restartLimit: Int? = nil, isLegal: Bool = false,
+            numberIsHidden: Bool = false
+        ) {
+            self.numberFormat = numberFormat
+            self.text = text
+            self.start = start
+            self.restartLimit = restartLimit
+            self.isLegal = isLegal
+            self.numberIsHidden = numberIsHidden
+        }
+    }
+
+    /// A list: its identifier and its levels (nine, or one if simple).
+    struct List {
+        var identifier: Int
+        var levels: [ListLevel]
+        var isSimple = false
+    }
+
+    /// A change a list instance makes to one level of its list.
+    struct ListOverride {
+        var level: Int
+        /// `LFOLVL.iStartAt`, with `fStartAt` set, if given.
+        var startAt: Int?
+        /// A level in full (`fFormatting`), if given.
+        var replacement: ListLevel?
+    }
+
+    /// A list instance (`LFO`): the list it uses and its overrides.
+    struct ListInstance {
+        var listIdentifier: Int
+        var overrides: [ListOverride] = []
+    }
+
 
     /// The stories of a document after the main one, in the order the file
     /// stores them: the CP ranges of their lengths are the FIB's ccpFtn,
@@ -114,6 +179,32 @@ struct WordDocumentBuilder {
     /// How many pieces to split the text into; more than one stores them in
     /// reverse order in the file.
     var pieceCount = 1
+    /// Whether the pieces are stored one after the other in the order of the
+    /// text instead, so that a run of properties covers characters in more
+    /// than one piece, as a run does in a real file whose pieces are next to
+    /// each other.
+    var storesPiecesInOrder = false
+    /// The `Data` stream (where `sprmPHugePapx` and `sprmPTableProps` keep
+    /// properties), written when not empty.
+    var dataStream: [UInt8] = []
+    /// The character positions in the main text of the reference marks of
+    /// the footnotes and of the endnotes, one for each paragraph of those
+    /// stories (a note is a paragraph); none leaves out the note tables.
+    var footnoteReferences: [Int] = []
+    var endnoteReferences: [Int] = []
+    /// Whether to write the text box table (`PlcftxbxTxt`), a box for each
+    /// paragraph of the text box story.
+    var writesTextBoxTable = false
+    /// How many of the boxes the table names, when fewer than the story holds.
+    var textBoxTableLimit: Int?
+    /// The lists (`PlfLst`) and list instances (`PlfLfo`); none leaves out both.
+    var lists: [List] = []
+    var listInstances: [ListInstance] = []
+    /// The property modifiers (`Pcd.prm`, two bytes) of the pieces, by piece
+    /// index; a piece beyond the list has none. See `prm0(_:_:)` and `prm1(_:)`.
+    var piecePrms: [Int] = []
+    /// The groups of modifiers in the CLX (`Prc`s) that a `Prm1` indexes.
+    var modifierGroups: [[UInt8]] = []
     /// Whether the table stream is `1Table`.
     var usesOneTable = true
     /// The `nFib` written.
@@ -156,6 +247,9 @@ struct WordDocumentBuilder {
         var pieceTable = 0
         /// In the `WordDocument` stream: the offset of each piece's characters, in character order.
         var pieceOffsets: [Int] = []
+        /// In the table stream: the list table (PlfLst) and the list override table (PlfLfo), when there are lists.
+        var listFormats = 0
+        var listOverrides = 0
         /// In the `WordDocument` stream: the offset of the FIB's (offset, length) pairs.
         var pairs = 154
     }
@@ -183,6 +277,12 @@ struct WordDocumentBuilder {
                 units += Array(run.text.utf16)
                 runRanges.append((runStart..<units.count, run, index))
             }
+            // A mark with properties of its own is a run of its own.
+            if !paragraph.markModifiers.isEmpty {
+                var markRun = Run("")
+                markRun.extraModifiers = paragraph.markModifiers
+                runRanges.append((units.count..<units.count + 1, markRun, index))
+            }
             units.append(paragraph.mark)
             paragraphRanges.append(start..<units.count)
         }
@@ -202,7 +302,7 @@ struct WordDocumentBuilder {
         pieceBounds.append(units.count)
         var pieceFileOffsets = [Int](repeating: 0, count: pieceCount)
         // Reverse order in the file when split.
-        for index in (0..<pieceCount).reversed() {
+        for index in storesPiecesInOrder ? Array(0..<pieceCount) : Array((0..<pieceCount).reversed()) {
             pieceFileOffsets[index] = word.count
             for unit in units[pieceBounds[index]..<pieceBounds[index + 1]] {
                 if isCompressed {
@@ -215,17 +315,33 @@ struct WordDocumentBuilder {
         layout.pieceOffsets = pieceFileOffsets
         while word.count % 512 != 0 { word.append(0) }
 
+        // The piece that holds a character position, by halving (a document
+        // of a hundred thousand pieces is built here too).
+        func pieceIndex(of position: Int) -> Int {
+            var low = 0
+            var high = pieceCount
+            while low < high {
+                let middle = (low + high) / 2
+                if position < pieceBounds[middle + 1] { high = middle } else { low = middle + 1 }
+            }
+            return min(low, pieceCount - 1)
+        }
         // A character position's offset in the stream.
         func fileOffset(ofCharacter position: Int) -> Int {
-            let index = (0..<pieceCount).first { position < pieceBounds[$0 + 1] } ?? pieceCount - 1
+            let index = pieceIndex(of: position)
             return pieceFileOffsets[index] + (position - pieceBounds[index]) * (isCompressed ? 1 : 2)
         }
         // Splits a range of character positions at the pieces' ends into ranges of file offsets.
         func fileRanges(of range: Range<Int>) -> [Range<Int>] {
+            // Pieces next to each other make one range of the file.
+            if storesPiecesInOrder, !range.isEmpty {
+                let first = fileOffset(ofCharacter: range.lowerBound)
+                return [first..<first + range.count * (isCompressed ? 1 : 2)]
+            }
             var result: [Range<Int>] = []
             var position = range.lowerBound
             while position < range.upperBound {
-                let index = (0..<pieceCount).first { position < pieceBounds[$0 + 1] } ?? pieceCount - 1
+                let index = pieceIndex(of: position)
                 let end = min(range.upperBound, pieceBounds[index + 1])
                 let first = fileOffset(ofCharacter: position)
                 result.append(first..<first + (end - position) * (isCompressed ? 1 : 2))
@@ -285,18 +401,79 @@ struct WordDocumentBuilder {
             table += packed.plc
         }
 
-        // The CLX: a piece table of the pieces in character order.
+        // The CLX: the groups of piece modifiers, then a piece table of the
+        // pieces in character order.
         layout.clx = table.count
+        for group in modifierGroups { table += [0x01] + Self.le16(group.count) + group }
         var plc: [UInt8] = []
         for index in 0...pieceCount { plc += Self.le32(pieceBounds[index]) }
         for index in 0..<pieceCount {
             let rawOffset = isCompressed ? (pieceFileOffsets[index] * 2) | 0x4000_0000 : pieceFileOffsets[index]
-            plc += Self.le16(0) + Self.le32(rawOffset) + Self.le16(0)
+            plc += Self.le16(0) + Self.le32(rawOffset) + Self.le16(index < piecePrms.count ? piecePrms[index] : 0)
         }
         table += [0x02] + Self.le32(plc.count)
         layout.pieceTable = table.count
         table += plc
         let clxLength = table.count - layout.clx
+
+        // The list tables, after everything else in the table stream: the
+        // PlfLst (its LVLs follow it, outside its length) and the PlfLfo.
+        var listPairs: [Int: (Int, Int)] = [:]
+        if !lists.isEmpty || !listInstances.isEmpty {
+            while table.count % 4 != 0 { table.append(0) }
+            let formats = Self.listTableBytes(lists)
+            layout.listFormats = table.count
+            listPairs[WordFileInformationBlock.Structure.listFormats.rawValue] = (table.count, formats.header.count)
+            table += formats.header + formats.levels
+            while table.count % 4 != 0 { table.append(0) }
+            let overrides = Self.listOverrideBytes(listInstances)
+            layout.listOverrides = table.count
+            listPairs[WordFileInformationBlock.Structure.listOverrides.rawValue] = (table.count, overrides.count)
+            table += overrides
+        }
+
+        // The note tables: where each reference mark stands in the main text
+        // (PlcfRef: the positions, one more, and an FRD for each) and where
+        // each note begins in its story (PlcfTxt: the starts, where the last
+        // ends, and one more).
+        for (story, marks, reference, text) in [
+            (Story.footnotes, footnoteReferences, WordFileInformationBlock.Structure.footnoteReferences, WordFileInformationBlock.Structure.footnoteText),
+            (Story.endnotes, endnoteReferences, WordFileInformationBlock.Structure.endnoteReferences, WordFileInformationBlock.Structure.endnoteText),
+        ] where !marks.isEmpty {
+            var starts = [0]
+            for note in (stories[story] ?? []).prefix(marks.count) {
+                starts.append(starts[starts.count - 1] + note.runs.reduce(0) { $0 + $1.text.utf16.count } + 1)
+            }
+            var referenceBytes: [UInt8] = []
+            for mark in marks { referenceBytes += Self.le32(mark) }
+            referenceBytes += Self.le32(mainLength)
+            for _ in marks { referenceBytes += Self.le16(1) }
+            var textBytes: [UInt8] = []
+            for start in starts { textBytes += Self.le32(start) }
+            textBytes += Self.le32(starts[starts.count - 1] + 1)
+            while table.count % 4 != 0 { table.append(0) }
+            listPairs[reference.rawValue] = (table.count, referenceBytes.count)
+            table += referenceBytes
+            while table.count % 4 != 0 { table.append(0) }
+            listPairs[text.rawValue] = (table.count, textBytes.count)
+            table += textBytes
+        }
+
+        // The text box table: the position where each box begins (a box is a
+        // paragraph of the story), where the last ends, and one more (the
+        // last range, which is ignored), then an FTXBXS of 22 bytes for each box.
+        if writesTextBoxTable, let boxes = stories[.textBoxes], !boxes.isEmpty {
+            var starts = [0]
+            let named = Array(boxes.prefix(textBoxTableLimit ?? boxes.count))
+            for box in named { starts.append(starts[starts.count - 1] + box.runs.reduce(0) { $0 + $1.text.utf16.count } + 1) }
+            var bytes: [UInt8] = []
+            for start in starts { bytes += Self.le32(start) }
+            bytes += Self.le32(starts[starts.count - 1] + 1)
+            bytes += [UInt8](repeating: 0, count: 22 * named.count)
+            while table.count % 4 != 0 { table.append(0) }
+            listPairs[WordFileInformationBlock.Structure.textBoxText.rawValue] = (table.count, bytes.count)
+            table += bytes
+        }
 
         // The pairs of the FIB: (offset, length) of each structure.
         let styleSheetLength = layout.sectionTable - layout.styleSheet
@@ -306,6 +483,7 @@ struct WordDocumentBuilder {
             WordFileInformationBlock.Structure.sectionTable.rawValue: (layout.sectionTable, sectionLength),
             WordFileInformationBlock.Structure.complexInformation.rawValue: (layout.clx, clxLength),
         ]
+        pairs.merge(listPairs) { first, _ in first }
         pairs[WordFileInformationBlock.Structure.paragraphBinTable.rawValue] =
             writesParagraphProperties ? (layout.paragraphBinTable, layout.characterBinTable - layout.paragraphBinTable) : (0, 0)
         pairs[WordFileInformationBlock.Structure.characterBinTable.rawValue] =
@@ -337,6 +515,7 @@ struct WordDocumentBuilder {
             (usesOneTable ? "1Table" : "0Table", parts.table),
             ("\u{05}SummaryInformation", parts.summary),
         ]
+        if !dataStream.isEmpty { file.streams.append(("Data", dataStream)) }
         return file.build().data
     }
 
@@ -351,6 +530,7 @@ struct WordDocumentBuilder {
             (usesOneTable ? "1Table" : "0Table", parts.table),
             ("\u{05}SummaryInformation", parts.summary),
         ]
+        if !dataStream.isEmpty { file.streams.append(("Data", dataStream)) }
         return file.build().data
     }
 
@@ -358,6 +538,18 @@ struct WordDocumentBuilder {
 
     static func le16(_ value: Int) -> [UInt8] { [UInt8(value & 0xFF), UInt8((value >> 8) & 0xFF)] }
     static func le32(_ value: Int) -> [UInt8] { le16(value & 0xFFFF) + le16((value >> 16) & 0xFFFF) }
+
+    /// The paragraph modifiers that put a paragraph in list instance
+    /// `instance` (one-based; the raw 16-bit value is written as it is) at `level`.
+    static func listProperties(instance: Int, level: Int) -> [UInt8] {
+        le16(WordSprm.listIndex) + le16(instance & 0xFFFF) + modifier(WordSprm.listLevel, level)
+    }
+
+    /// A `Prm0`: the sprm in the specification's table at `isprm`, with the one-byte operand `value`.
+    static func prm0(_ isprm: Int, _ value: Int) -> Int { (isprm << 1) | (value << 8) }
+
+    /// A `Prm1`: the group of modifiers at `index` in the CLX.
+    static func prm1(_ index: Int) -> Int { (index << 1) | 1 }
 
     /// A modifier with a one-byte operand.
     static func modifier(_ opcode: Int, _ operand: Int) -> [UInt8] { le16(opcode) + [UInt8(operand)] }
@@ -372,6 +564,7 @@ struct WordDocumentBuilder {
         var bytes: [UInt8] = []
         if let bold = run.bold { bytes += modifier(WordSprm.bold, bold) }
         if let italic = run.italic { bytes += modifier(WordSprm.italic, italic) }
+        if let hidden = run.hidden { bytes += modifier(WordSprm.hidden, hidden) }
         if let style = run.characterStyle { bytes += le16(WordSprm.characterStyle) + le16(style) }
         if run.isSpecial { bytes += modifier(WordSprm.special, 1) }
         if let size = run.fontSize { bytes += le16(WordSprm.fontSize) + le16(size) }
@@ -408,16 +601,92 @@ struct WordDocumentBuilder {
             var characters: [UInt8] = []
             if let bold = style.bold { characters += Self.modifier(WordSprm.bold, bold) }
             if let italic = style.italic { characters += Self.modifier(WordSprm.italic, italic) }
+            if let hidden = style.hidden { characters += Self.modifier(WordSprm.hidden, hidden) }
             if let size = style.fontSize { characters += Self.le16(WordSprm.fontSize) + Self.le16(size) }
             if style.kind == 1 {
                 var paragraph = Self.le16(index)
                 if let outline = style.outlineLevel { paragraph += Self.modifier(WordSprm.outlineLevel, outline) }
                 if let value = style.pageBreakBefore { paragraph += Self.modifier(WordSprm.pageBreakBefore, value) }
+                if let level = style.listLevel { paragraph += Self.modifier(WordSprm.listLevel, level) }
+                if let index = style.listIndex { paragraph += Self.le16(WordSprm.listIndex) + Self.le16(index) }
                 std += group(paragraph) + group(characters)
             } else {
                 std += group(characters)
             }
             bytes += Self.le16(std.count) + std
+        }
+        return bytes
+    }
+
+    // MARK: Lists
+
+    /// The `LVL` of `level` ([MS-DOC] 2.9.149).
+    private static func levelBytes(_ level: ListLevel) -> [UInt8] {
+        // The number text: "%N" is the placeholder for level N, a character of value N - 1.
+        var units: [UInt16] = []
+        var placeholders: [UInt8] = []
+        let characters = Array(level.text.utf16)
+        var index = 0
+        while index < characters.count {
+            if characters[index] == 0x25, index + 1 < characters.count, (0x31...0x39).contains(characters[index + 1]) {
+                placeholders.append(UInt8(units.count + 1))
+                units.append(characters[index + 1] - 0x31)
+                index += 2
+            } else {
+                units.append(characters[index])
+                index += 1
+            }
+        }
+        // The LVLF: start, format, flags, the placeholders (nine bytes), what follows, and sizes.
+        var bytes = le32(level.start) + [UInt8(level.numberFormat)]
+        let legal: UInt8 = level.isLegal ? 0x04 : 0
+        let noRestart: UInt8 = level.restartLimit != nil ? 0x08 : 0
+        bytes.append(legal | noRestart)
+        bytes += (placeholders + [UInt8](repeating: 0, count: 9)).prefix(9)
+        // ixchFollow (a tab), dxaIndentSav and an unused field (4 bytes each), then the
+        // sizes of the two property lists (none), ilvlRestartLim, and grfhic.
+        bytes.append(0)
+        bytes += le32(0)
+        bytes += le32(0)
+        // The number's character properties (hidden or not) follow the LVLF, then the text.
+        let characterProperties: [UInt8] = level.numberIsHidden ? modifier(WordSprm.hidden, 1) : []
+        bytes += [UInt8(characterProperties.count), 0, UInt8(level.restartLimit ?? 0), 0] as [UInt8]
+        return bytes + characterProperties + le16(units.count) + units.flatMap { le16(Int($0)) }
+    }
+
+    /// The `PlfLst` (a count and an `LSTF` for each list) and, apart, the
+    /// `LVL`s that follow it.
+    private static func listTableBytes(_ lists: [List]) -> (header: [UInt8], levels: [UInt8]) {
+        var header = le16(lists.count)
+        var levels: [UInt8] = []
+        for list in lists {
+            header += le32(list.identifier)
+            header += le32(0)
+            // rgistdPara: no style is linked to any of the nine levels.
+            for _ in 0..<9 { header += le16(0x0FFF) }
+            header += [list.isSimple ? 1 : 0, 0] as [UInt8]
+            for level in list.levels.prefix(list.isSimple ? 1 : 9) { levels += levelBytes(level) }
+        }
+        return (header, levels)
+    }
+
+    /// The `PlfLfo`: a count, an `LFO` for each instance, and an `LFOData` for each.
+    private static func listOverrideBytes(_ instances: [ListInstance]) -> [UInt8] {
+        var bytes = le32(instances.count)
+        for instance in instances {
+            bytes += le32(instance.listIdentifier)
+            bytes += le32(0)
+            bytes += le32(0)
+            bytes += [UInt8(instance.overrides.count), 0, 0, 0] as [UInt8]
+        }
+        for instance in instances {
+            bytes += le32(0)
+            for entry in instance.overrides {
+                let flags = entry.level | (entry.startAt != nil ? 0x10 : 0) | (entry.replacement != nil ? 0x20 : 0)
+                bytes += le32(entry.startAt ?? 0)
+                bytes += le32(flags)
+                if let replacement = entry.replacement { bytes += levelBytes(replacement) }
+            }
         }
         return bytes
     }
@@ -522,4 +791,42 @@ struct WordDocumentBuilder {
         stream += [UInt8](repeating: 0, count: 16) + Self.le32(48)
         return stream + set
     }
+}
+
+
+// MARK: - Reading a Built Document
+
+/// The inner HTML of the body of the document `data`, read as the reader does
+/// with its list numbers written as words or not (`speaksNumbers`).
+func wordBody(
+    of data: Data, pages: Bool = false, speaksNumbers: Bool = WordDocumentReader.speaksListNumbers,
+    file: StaticString = #filePath, line: UInt = #line
+) throws -> String {
+    let html = try XCTUnwrap(
+        WordDocumentReader.html(from: data, includesPages: pages, speaksListNumbers: speaksNumbers), file: file, line: line
+    )
+    let start = try XCTUnwrap(html.range(of: "<body>\n"), file: file, line: line)
+    let end = try XCTUnwrap(html.range(of: "</body>"), file: file, line: line)
+    return String(html[start.upperBound..<end.lowerBound])
+}
+
+extension XCTestCase {
+    /// The body of the format sample at `path`, as `wordBody(of:)` reads it.
+    /// (A method of the test case, because the sample's place is found by it.)
+    func wordSampleBody(
+        _ path: String, pages: Bool = false, speaksNumbers: Bool = WordDocumentReader.speaksListNumbers,
+        file: StaticString = #filePath, line: UInt = #line
+    ) throws -> String {
+        try wordBody(of: Data(contentsOf: formatSampleURL(path)), pages: pages, speaksNumbers: speaksNumbers, file: file, line: line)
+    }
+}
+
+/// The chapter an import makes of the HTML the reader writes for `data`: its
+/// reading text, as a listener hears it, and its headings.
+func wordReadingChapter(of data: Data, speaksNumbers: Bool = WordDocumentReader.speaksListNumbers) throws -> Chapter {
+    let html = try XCTUnwrap(WordDocumentReader.html(from: data, includesPages: false, speaksListNumbers: speaksNumbers))
+    let markdown = try HTMLToMarkdownConverter.convert(
+        document: SwiftSoup.parse(html), readingFlow: PublicationSemantics.ReadingFlow(source: html), includesPages: false
+    )
+    return try MarkdownDocParser.parseChapter(markdown: markdown, title: "", includeNavigationHeadings: true)
 }

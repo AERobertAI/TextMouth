@@ -31,13 +31,14 @@ final class PagesUpgradeTests: XCTestCase {
     // MARK: - The Versions
 
     /// The page reader's version each format with pages is at: EPUB and HTML
-    /// at 1.0.3, rich text (.rtf and .rtfd) at 1.2.0, Word 97-2003 (.doc) and
-    /// Word (.docx) at 1.1.0, and the rest at 1.0.0.
+    /// at 1.0.3, rich text (.rtf and .rtfd) and Word 97-2003 (.doc), read by
+    /// TextMouth's own readers since FMT47 and with their follow-ups since, at
+    /// 1.2.0, Word (.docx) at 1.1.0, and the rest at 1.0.0.
     private static func expectedVersion(of format: BookFormat) -> String {
         switch format {
         case .epub, .html: return "1.0.3"
-        case .rtf, .rtfd: return "1.2.0"
-        case .doc, .docx: return "1.1.0"
+        case .rtf, .rtfd, .doc: return "1.2.0"
+        case .docx: return "1.1.0"
         default: return "1.0.0"
         }
     }
