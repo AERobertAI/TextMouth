@@ -334,3 +334,9 @@ Unzip nothing from the plugin into TextMouth. The EPUB it produces is the refere
 - Whether a nonzero compression or DRM scheme field exists in any real file.
 - The trailer of the DRMION envelope (inferred from the plugin removing eight bytes at each end).
 - Overlapping and nested runs, ruby, drop caps, tables in real books.
+
+## Added November 6, 2026: a file from Amazon's own tools
+
+Kindle Previewer 4.0.4 is a free download from Amazon's KDP help page, and it needs no Amazon account. Its installer unpacks with `pkgutil --expand-full`, and its `Contents/MacOS/KindlePreviewer4CLI` runs from there: `KindlePreviewer4CLI book.epub --convert --output folder --locale en` writes `folder/KPF/book_epub.kpf`. calibre's KFX Output 2.22.0, under calibre 9.18 (both plugins need calibre 6.0 or later), takes the KPF and writes a single `.kfx`.
+
+**[V]** on that file, made from the public-domain `TestData/alice.epub`: the walk in these notes gives the source EPUB's 30,585 words in the same order, in 902 text units and 19 sections. The reading order is named `$351`. `$538` is there, and so are the navigation containers `$236`, `$212`, and `$798`, the last with heading levels. A heading with a line break holds a newline in its text. The `.kdf` in the KPF has the fingerprint block the notes describe: `FA 50 0A 5F` at offset 1,024, in a file one 1,024-byte record longer than its 128 pages of 4,096 bytes. The KFX's contents come from Amazon's conversion, but its `CONT` container comes from the plugin, so a store-bought file's container is still unverified.
