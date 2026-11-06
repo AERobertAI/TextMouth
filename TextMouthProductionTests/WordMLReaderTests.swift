@@ -67,7 +67,7 @@ final class WordMLReaderTests: XCTestCase {
     func testPageBreaksSampleHasItsOneBreak() throws {
         let html = try WordMLDocumentReader.html(of: copyOfFormatSample("wordml/page-breaks.wordml"), includesPages: true)
         XCTAssertEqual(html.components(separatedBy: "doc-pagebreak").count - 1, 2)
-        XCTAssertTrue(odfBodyLines(html).contains("<p>First page paragraph two runs on and\(page(2))continues here.</p>"))
+        XCTAssertTrue(odfBodyLines(html).contains("<p>First page paragraph two runs on and \(page(2))continues here.</p>"))
     }
 
     /// The reading is the same with and without pages, but for the page elements.
@@ -159,7 +159,7 @@ final class WordMLReaderTests: XCTestCase {
             "<p>Note here and on.</p>",
             "<p>Box:  after box.</p>", "<p>Boxed words</p>",
             "<p>Field: 7 today link</p>",
-            "<p>One<br>two\(page(3))three</p>",
+            "<p>One<br>two \(page(3))three</p>",
             "<p>Foot text</p>",
         ])
     }
