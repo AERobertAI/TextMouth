@@ -33,7 +33,7 @@ struct KFXInlineText {
     /// Stands for an inline node in a text that is built from a list of
     /// strings and nodes: a noncharacter, which no book's words hold. The
     /// node counts as one code point, as the book's offsets count it.
-    static let placeholder: Unicode.Scalar = "\u{FDD0}"
+    static let placeholder: Unicode.Scalar = Unicode.Scalar(0xFDD0 as UInt32) ?? "\u{FFFD}"
 
     /// Writes `scalar` as HTML into `out`: the characters HTML gives meaning
     /// to escaped, and the control characters (other than the line and tab

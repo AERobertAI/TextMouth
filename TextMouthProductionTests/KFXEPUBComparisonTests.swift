@@ -96,14 +96,18 @@ final class KFXEPUBComparisonTests: XCTestCase {
         // reader takes from the XHTML document's <title> and a KFX book, which
         // keeps no document titles, cannot (neither adds a word):
         // 1. the cover document is titled "Cover" in the EPUB, with its quotes;
-        // 2. the last document, with no heading or contents entry, is titled by
-        //    its <title> in the EPUB and "Chapter 17" (its number) in the KFX.
+        // 2. a document with no heading or contents entry is titled by its
+        //    <title> in the EPUB; Amazon's cut of the text there is not a
+        //    chapter in the KFX (no section begins it), so it has no title.
         var expected = headingLines(epub)
         XCTAssertEqual(expected.first, "1: \"Cover\"")
         expected.removeFirst()
         let lastIndex = try XCTUnwrap(expected.firstIndex(of: "1: Alice\u{2019}s Adventures in Wonderland | Project Gutenberg"))
-        expected[lastIndex] = "1: Chapter 17"
+        expected.remove(at: lastIndex)
         XCTAssertEqual(headingLines(kfx), expected)
+        // And Amazon's front matter is cut into more sections than the EPUB has
+        // documents (17 chapters against the EPUB's 15, the cover aside).
+        XCTAssertEqual(kfx.count, 17)
     }
 
     func testTheFeatureBookHasTheEPUBsThreeChapters() throws {

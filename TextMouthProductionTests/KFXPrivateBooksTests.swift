@@ -51,7 +51,10 @@ final class KFXPrivateBooksTests: XCTestCase {
                     pages += prepared.chapter.pages.count
                 }
             } catch {
-                refusals[error.localizedDescription, default: 0] += 1
+                // A file-system error names the file, so only the reader's own
+                // sentences are kept; anything else is counted by its type.
+                let known = error is MOBIError || error is KFXError || error is DocumentTooLargeError
+                refusals[known ? error.localizedDescription : "\(type(of: error))", default: 0] += 1
             }
         }
         // The sentences are the reader's fixed ones; a damaged-book sentence carries
@@ -62,5 +65,7 @@ final class KFXPrivateBooksTests: XCTestCase {
             print("KFXPrivateBooks: refused \(count) with \u{201C}\(sentence)\u{201D}")
         }
         XCTAssertEqual(read + refused, files.count)
+        // A book that is neither read nor refused with a sentence of the reader's own is a bug.
+        XCTAssertEqual(refusals.keys.filter { !$0.hasSuffix(".") }.count, 0, "refused with something that is no sentence")
     }
 }

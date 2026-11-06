@@ -131,7 +131,7 @@ enum MOBIParser {
         of section: MOBIBook.Section, number: Int, includesPages: Bool
     ) throws -> EPUBParser.PreparedChapter? {
         // The section's HTML in Markdown, its contents entries kept as
-        // heading annotations at their anchors. No page markers are written.
+        // heading annotations at their anchors (and the pages a KFX book names).
         var markdown = try HTMLToMarkdownConverter.convert(
             section.html, stripDuplicateNavigation: false,
             headingTargets: section.headingTargets, pages: section.pages, includesPages: includesPages

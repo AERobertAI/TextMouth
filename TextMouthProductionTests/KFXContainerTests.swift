@@ -220,8 +220,10 @@ final class KFXContainerTests: XCTestCase {
         let info = IonWriter.document(.structure([(413, .int(18)), (414, .int(25))]))
         let infoOffset = Int(bytes[10]) | Int(bytes[11]) << 8
         bytes.replaceSubrange(infoOffset..<(infoOffset + info.count), with: info)
-        // The replaced info is no longer the one the container wrote, but it is a struct the reader reads.
-        assertRefusedQuickly("25 bytes") { try KFXContainer(bytes: bytes) }
+        // The header's info length says the new info's length, so the info reads whole.
+        for index in 0..<4 { bytes[14 + index] = UInt8(info.count >> (8 * index) & 0xFF) }
+        let error = assertRefusedQuickly("25 bytes") { try KFXContainer(bytes: bytes) }
+        XCTAssertTrue(error?.localizedDescription.contains("whole number of rows") == true, "\(String(describing: error))")
     }
 
     func testTheDeclaredCompressionAndProtectionAreRefusedNeverRead() {
@@ -275,7 +277,9 @@ final class KFXContainerTests: XCTestCase {
         let info = IonWriter.document(.structure([(413, .int(18)), (414, .int(Int64(rows * 24)))]))
         let infoOffset = Int(bytes[10]) | Int(bytes[11]) << 8
         bytes.replaceSubrange(infoOffset..<(infoOffset + info.count), with: info)
-        assertRefusedQuickly("200,001 rows") { try KFXContainer(bytes: bytes) }
+        for index in 0..<4 { bytes[14 + index] = UInt8(info.count >> (8 * index) & 0xFF) }
+        let error = assertRefusedQuickly("200,001 rows") { try KFXContainer(bytes: bytes) }
+        XCTAssertTrue(error?.localizedDescription.contains("more than") == true, "\(String(describing: error))")
     }
 
     func testEveryTruncationOfARealContainerIsRefused() throws {
