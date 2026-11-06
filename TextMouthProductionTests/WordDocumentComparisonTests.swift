@@ -54,6 +54,20 @@ final class WordDocumentComparisonTests: XCTestCase {
             "page", "header", "in", "section", "1", "but", "hidden", "there", "inherited", "by", "section", "2", "and",
             "shown", "there",
         ],
+        // The header and the footer, with the PAGE field's instruction and result.
+        "doc/poi-61911.doc": [
+            "Ich", "bin", "die", "Kopfzeile", "Supply", "Agreement", "Territorial", "Concession", "Austria", "page", "PAGE", "6",
+            "Ich", "bin", "die", "Fußzeile", "page", "PAGE", "1",
+        ],
+    ]
+
+    /// Words the reader reads as several that textutil reads as one, by
+    /// sample, with the word textutil makes of them. The row of `IDENTICAL`
+    /// in the cell margins sample is nine table cells of one letter each; the
+    /// reader keeps the cells apart, as a listener moving through the table
+    /// would meet them, where textutil runs their letters together.
+    private static let wordsOnlyTextutilJoins: [String: [(reader: [String], textutil: String)]] = [
+        "doc/libreoffice-tdf73056_cellMargins.doc": [(["I", "D", "E", "N", "T", "I", "C", "A", "L"], "IDENTICAL")],
     ]
 
     /// The runs of words inside a document's text that textutil reads and the
@@ -194,7 +208,15 @@ final class WordDocumentComparisonTests: XCTestCase {
         var differences: [String] = []
         for sample in try allSamples() where !Self.leftToTextutil.contains(sample) {
             let expected = words(try textutilChapter(sample).text)
-            let actual = readerWords(sample, try XCTUnwrap(readerChapter(sample)))
+            var actual = readerWords(sample, try XCTUnwrap(readerChapter(sample)))
+            // The words textutil runs together (each once, where the reader has them apart).
+            for join in Self.wordsOnlyTextutilJoins[sample] ?? [] {
+                guard let start = actual.indices.first(where: { actual[$0...].starts(with: join.reader) }) else {
+                    differences.append("\(sample): the reader's text lacks the words \(join.reader)")
+                    continue
+                }
+                actual.replaceSubrange(start..<start + join.reader.count, with: [join.textutil])
+            }
             // textutil's extra words come last; the reader does not read them.
             let leftOut = Self.wordsOnlyTextutilReads[sample] ?? []
             guard expected.count >= leftOut.count, Array(expected.suffix(leftOut.count)) == leftOut else {

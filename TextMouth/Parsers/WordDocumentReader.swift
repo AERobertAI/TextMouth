@@ -202,7 +202,11 @@ enum WordDocumentReader {
         }
         var written = try write(segments)
         if !written.hasWords, pieces.characterCount > textEnd {
-            let everyStory = stories.inFileOrder + (stories.inFileOrder.last.map { $0.upperBound < pieces.characterCount ? [$0.upperBound..<pieces.characterCount] : [] } ?? [])
+            // Every story, and the characters after the last of them (or after the main
+            // text, when the file names no story): a length that is too small leaves text
+            // no story names, and a document must not lose it.
+            let afterStories = stories.inFileOrder.last?.upperBound ?? textEnd
+            let everyStory = stories.inFileOrder + (afterStories < pieces.characterCount ? [afterStories..<pieces.characterCount] : [])
             written = try write([(main, true)] + everyStory.map { ($0, false) })
         }
         let body = written.body
