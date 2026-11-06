@@ -32,6 +32,60 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// one, properties are the formatting from before the change.
     private var trackedChangeDepth = 0
 
+    /// One line of a paragraph (or of a link's label) as it is gathered. The
+    /// words of the runs wait as raw text with the emphasis of each scalar, and
+    /// are written as Markdown a whole stretch at a time (`commit()`), through
+    /// `MarkdownEmphasis`, which never writes a delimiter that is read aloud: a
+    /// run is not written apart from the runs that touch it, so bold "a" and
+    /// bold "b" are one bold "ab", and white space or punctuation at a run's
+    /// edge stays outside its delimiters. What cannot be part of a stretch (a
+    /// page marker, a line break, a link) ends it: it is written to
+    /// `committed` after the stretch before it.
+    private struct StyledLine {
+        /// The Markdown written so far.
+        var committed = ""
+        /// The words of the stretch in progress, as raw text.
+        var raw = ""
+        /// The emphasis of each Unicode scalar of `raw`.
+        var styles: [MarkdownEmphasis.Style] = []
+
+        /// Adds `text` in `style` to the stretch in progress.
+        mutating func append(_ text: String, style: MarkdownEmphasis.Style) {
+            raw += text
+            styles.append(contentsOf: repeatElement(style, count: text.unicodeScalars.count))
+        }
+
+        /// Writes the stretch in progress as Markdown.
+        mutating func commit() {
+            guard !raw.isEmpty else { return }
+            committed += MarkdownEmphasis.markdown(raw, styles: styles)
+            raw = ""
+            styles = []
+        }
+
+        /// Writes `markdown` after the stretch in progress, which it ends.
+        mutating func appendFixed(_ markdown: String) {
+            commit()
+            committed += markdown
+        }
+
+        /// The whole line as Markdown.
+        mutating func markdown() -> String {
+            commit()
+            return committed
+        }
+
+        /// Whether the line holds nothing but white space so far.
+        var isBlank: Bool {
+            raw.allSatisfy(\.isWhitespace) && committed.allSatisfy(\.isWhitespace)
+        }
+
+        /// The last character of the line so far.
+        var last: Character? {
+            raw.last ?? committed.last
+        }
+    }
+
     /// Everything the converter holds about the paragraph being read: the
     /// paragraph itself, the run and the link inside it, and the list the
     /// paragraph belongs to. One struct, so that a text box (whose paragraphs
@@ -41,8 +95,8 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         // The paragraph (reset at each `w:p`)
         /// The paragraph's style ID (`w:pStyle`), empty for none.
         var style = ""
-        /// The text gathered for the paragraph so far.
-        var text = ""
+        /// The words gathered for the paragraph so far.
+        var line = StyledLine()
         /// Whether any run has added content.
         var hasContent = false
         /// Whether a `w:p` is being read.
@@ -71,7 +125,6 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         var isInRun = false
         var runIsBold = false
         var runIsItalic = false
-        var runIsStrikethrough = false
         var runText = ""
         /// What the run's own properties say about hiding it (`w:vanish`);
         /// nil when they say nothing, so its styles decide.
@@ -89,7 +142,8 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         // The hyperlink
         var isInHyperlink = false
         var hyperlinkRelId = ""
-        var hyperlinkText = ""
+        /// The label of the link being read.
+        var linkLine = StyledLine()
 
         /// The text boxes anchored in this paragraph, finished, waiting for the
         /// paragraph to end (`writePendingBoxes`).
@@ -310,12 +364,8 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             if val != "0" && val != "false" {
                 paragraph.runIsItalic = true
             }
-        case "strike" where paragraph.isInRun:
-            // Strikethrough
-            let val = attributes["w:val"] ?? "true"
-            if val != "0" && val != "false" {
-                paragraph.runIsStrikethrough = true
-            }
+        // Strikethrough (`w:strike`) is written as plain text: a struck word is
+        // read as it is, and a "~~" that is not paired would be read aloud.
         case let name where (name == "br" || name == "cr") && paragraph.isInRun && !runIsUnread:
             // Keep breaks in their run; the paragraph has not received the
             // preceding run text yet, so appending there reverses their order.
@@ -342,7 +392,7 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             // Start of a hyperlink -- capture the relationship ID for the URL
             paragraph.isInHyperlink = true
             paragraph.hyperlinkRelId = attributes["r:id"] ?? ""
-            paragraph.hyperlinkText = ""
+            paragraph.linkLine = StyledLine()
         case "tbl":
             // A table may begin a section, and a page pending when an
             // outermost one begins is written before it (PG07)
@@ -383,10 +433,8 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// their end tags would have: the run, any link, the paragraph, and any
     /// table around it are finished and written out.
     ///
-    /// The run in progress first loses the whitespace at its cut end. That
-    /// whitespace separated the last word read from one that never arrived,
-    /// and before a closing `**` it would stop the emphasis from closing, so
-    /// the asterisks would be read aloud.
+    /// The run in progress first loses the whitespace at its cut end, which
+    /// separated the last word read from one that never arrived.
     private func closeOpenElements() {
         if paragraph.isInRun {
             while paragraph.runText.last?.isWhitespace == true {
@@ -629,7 +677,7 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     private func startParagraph() {
         paragraph.isOpen = true
         paragraph.style = ""
-        paragraph.text = ""
+        paragraph.line = StyledLine()
         paragraph.hasContent = false
         paragraph.listNumId = nil
         paragraph.listLevel = 0
@@ -664,7 +712,7 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
 
     /// Emit the completed paragraph as Markdown
     private func writeParagraph() {
-        let text = Self.removingLineIndentation(paragraph.text.trimmingCharacters(in: .whitespaces))
+        let text = Self.removingLineIndentation(paragraph.line.markdown().trimmingCharacters(in: .whitespaces))
 
         // Inside a table, the paragraph's words belong to the cell being read
         if !tables.isEmpty {
@@ -844,7 +892,6 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         paragraph.isInRun = true
         paragraph.runIsBold = false
         paragraph.runIsItalic = false
-        paragraph.runIsStrikethrough = false
         paragraph.runText = ""
         paragraph.runExplicitlyHidden = nil
         paragraph.runStyle = ""
@@ -889,24 +936,20 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         let pieces = paragraph.runPieces
         paragraph.runPieces = []
         for piece in pieces {
-            appendRunText(piece.text, isPartOfCutRun: true)
+            appendRunText(piece.text)
             pageTracker?.startPage(joinsWords: piece.joinsWords)
             if piece.joinsWords {
                 paragraph.dropsLeadingWhitespace = true
                 separateWordsAroundPageBreak()
             }
         }
-        appendRunText(paragraph.runText, isPartOfCutRun: !pieces.isEmpty)
+        appendRunText(paragraph.runText)
     }
 
-    /// Format `text`, a run or a piece of one, with the run's formatting and
-    /// append it to the paragraph (or to the hyperlink label being read).
-    /// A page that has begun is written first when `text` holds a word.
-    /// - Parameter isPartOfCutRun: whether `text` is one piece of a run cut at
-    ///   a page start. Its leading and trailing whitespace is then written
-    ///   outside the emphasis delimiters, which an emphasis that ends or
-    ///   begins in whitespace would not close.
-    private func appendRunText(_ piece: String, isPartOfCutRun: Bool) {
+    /// Adds `piece`, a run or a piece of one, to the paragraph (or to the
+    /// hyperlink label being read) in the run's emphasis. A page that has begun
+    /// is written first when `piece` holds a word.
+    private func appendRunText(_ piece: String) {
         // After a page `w:br` the whitespace that begins the next words is
         // dropped: one space separates the words on either side of the break,
         // written with the marker (or in the link label), as the newline the
@@ -930,58 +973,42 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             text = String(text.drop(while: \.isWhitespace))
         }
 
-        let formatted = formattedRunText(text, keepingWhitespaceOutside: isPartOfCutRun)
-
-        // Hyperlink runs belong to the link label until </w:hyperlink> emits
-        // it once. Appending here and at link end duplicates the spoken text.
-        if paragraph.isInHyperlink {
-            paragraph.hyperlinkText += formatted
-        } else {
-            paragraph.text += formatted
-        }
-        paragraph.hasContent = true
-    }
-
-    /// `text`, a run's text or a piece of it, as Markdown: its characters
-    /// escaped, then wrapped in the run's emphasis and strikethrough.
-    /// - Parameter keepingWhitespaceOutside: write the whitespace at either
-    ///   end of `text` outside the delimiters (for the pieces of a run cut at
-    ///   a page start); text with only whitespace has no delimiters at all.
-    private func formattedRunText(_ text: String, keepingWhitespaceOutside: Bool) -> String {
-        var core = Substring(text)
-        var leading = Substring()
-        var trailing = Substring()
-        if keepingWhitespaceOutside {
-            leading = core.prefix(while: \.isWhitespace)
-            core = core.dropFirst(leading.count)
-            let trailingCount = core.reversed().prefix(while: \.isWhitespace).count
-            trailing = core.suffix(trailingCount)
-            core = core.dropLast(trailingCount)
-            guard !core.isEmpty else { return "\(leading)\(trailing)" }
-        }
-
         // The run's characters are written as Markdown literals, so each is
         // read exactly as written, as plain text and HTML are (TODO T02,
         // T03): an asterisk, underscore, number sign, or bracket is never
         // taken for emphasis, a heading, a list, or a link, and quotes,
-        // dashes, and ellipses are not turned typographic. Line breaks and
-        // tabs are not punctuation, so they pass through as they are.
-        var formatted = MarkdownLiteral.escaped(String(core))
-
-        // Apply inline formatting markers.
-        // Order matters: strikethrough wraps emphasis wraps bold.
-        if paragraph.runIsBold && paragraph.runIsItalic {
-            formatted = "***\(formatted)***"
-        } else if paragraph.runIsBold {
-            formatted = "**\(formatted)**"
-        } else if paragraph.runIsItalic {
-            formatted = "*\(formatted)*"
+        // dashes, and ellipses are not turned typographic (`MarkdownEmphasis`
+        // writes every stretch through `MarkdownLiteral`). A line break ends
+        // the stretch; tabs are not punctuation, so they pass through.
+        var style = MarkdownEmphasis.Style()
+        if paragraph.runIsBold { style.insert(.strong) }
+        if paragraph.runIsItalic { style.insert(.emphasis) }
+        let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
+        for (index, words) in lines.enumerated() {
+            if index > 0 { appendFixed("\n") }
+            if !words.isEmpty { appendStyled(String(words), style) }
         }
+        paragraph.hasContent = true
+    }
 
-        if paragraph.runIsStrikethrough {
-            formatted = "~~\(formatted)~~"
+    /// Adds `text` in `style` to the line being gathered: the label of the link
+    /// being read, or the paragraph.
+    private func appendStyled(_ text: String, _ style: MarkdownEmphasis.Style) {
+        if paragraph.isInHyperlink {
+            paragraph.linkLine.append(text, style: style)
+        } else {
+            paragraph.line.append(text, style: style)
         }
-        return "\(leading)\(formatted)\(trailing)"
+    }
+
+    /// Adds `markdown` to the line being gathered, ending the stretch of runs
+    /// before it.
+    private func appendFixed(_ markdown: String) {
+        if paragraph.isInHyperlink {
+            paragraph.linkLine.appendFixed(markdown)
+        } else {
+            paragraph.line.appendFixed(markdown)
+        }
     }
 
     // MARK: - Hyperlink Processing
@@ -991,7 +1018,9 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         guard paragraph.isInHyperlink else { return }
         paragraph.isInHyperlink = false
 
-        let text = paragraph.hyperlinkText.trimmingCharacters(in: .whitespacesAndNewlines)
+        var label = paragraph.linkLine
+        paragraph.linkLine = StyledLine()
+        let text = label.markdown().trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
 
         if let target = relationships[paragraph.hyperlinkRelId], !target.isEmpty {
@@ -999,10 +1028,10 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             let escapedTarget = target
                 .replacingOccurrences(of: "(", with: "%28")
                 .replacingOccurrences(of: ")", with: "%29")
-            paragraph.text += "[\(text)](\(escapedTarget))"
+            paragraph.line.appendFixed("[\(text)](\(escapedTarget))")
         } else {
             // No URL found -- just emit the text
-            paragraph.text += text
+            paragraph.line.appendFixed(text)
         }
         paragraph.hasContent = true
     }
@@ -1234,13 +1263,9 @@ extension DOCXToMarkdownConverter {
     /// Anywhere else the marker keeps the words apart (`placePendingPage`).
     fileprivate func separateWordsAroundPageBreak() {
         if paragraphHeadingLevel != nil {
-            if paragraph.isInHyperlink {
-                paragraph.hyperlinkText += "\n"
-            } else {
-                paragraph.text += "\n"
-            }
-        } else if paragraph.isInHyperlink, let last = paragraph.hyperlinkText.last, !last.isWhitespace {
-            paragraph.hyperlinkText += " "
+            appendFixed("\n")
+        } else if paragraph.isInHyperlink, let last = paragraph.linkLine.last, !last.isWhitespace {
+            appendStyled(" ", [])
         }
     }
 
@@ -1282,18 +1307,20 @@ extension DOCXToMarkdownConverter {
         let marker = page.marker.markdown
         if !tables.isEmpty {
             tableTrailingMarker = marker
-        } else if paragraphHeadingLevel != nil || paragraph.text.allSatisfy(\.isWhitespace) {
+        } else if paragraphHeadingLevel != nil || paragraph.line.isBlank {
             paragraph.leadingMarkers.append(marker)
         } else {
+            // The stretch of runs before the marker ends where it stands
+            paragraph.line.commit()
             MarkdownMarkerWriter.write(
-                marker, inline: true, keepingWordsApart: page.joinsWords, into: &paragraph.text
+                marker, inline: true, keepingWordsApart: page.joinsWords, into: &paragraph.line.committed
             )
             return page.joinsWords
         }
         // The marker is not between the words, so the space that keeps them
         // apart is written here. (A paragraph with no words yet needs none.)
-        if page.joinsWords, let last = paragraph.text.last, !last.isWhitespace {
-            paragraph.text += " "
+        if page.joinsWords, let last = paragraph.line.last, !last.isWhitespace {
+            appendStyled(" ", [])
         }
         return page.joinsWords
     }

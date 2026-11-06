@@ -49,6 +49,11 @@ final class DOCXRealFileTests: XCTestCase {
         )
         XCTAssertFalse(result.contains("Hidden text with the referred character style"), result)
         XCTAssertTrue(result.contains("# Shortening numbered headings"), result)
+        // The white space at the edge of a bold run is outside its marks (it was
+        // "**with arbitrary text **using", which is read with its asterisks)
+        XCTAssertTrue(result.contains("**with arbitrary text** using"), result)
+        let heard = try MarkdownDocParser.parseChapter(markdown: result).text
+        XCTAssertFalse(heard.contains("*"), "A mark of emphasis is read aloud")
     }
 
     // MARK: - Notes

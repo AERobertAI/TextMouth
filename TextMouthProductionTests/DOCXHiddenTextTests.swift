@@ -56,11 +56,13 @@ final class DOCXHiddenTextTests: XCTestCase {
     /// emphasis of the words around it is kept.
     func testAHiddenRunIsNotRead() throws {
         XCTAssertEqual(try markdown(paragraphHiding("<w:vanish/>")), "Shown words")
-        // The words around hidden bold text keep their emphasis.
-        let emphasized = docxParagraph(docxRun("Bold", "<w:b/>") + docxRun("gone", "<w:b/><w:vanish/>") + docxRun("stays", "<w:b/>"))
-        let result = try markdown(emphasized)
-        XCTAssertFalse(result.contains("gone"), result)
-        XCTAssertEqual(result, "**Bold****stays**")
+        // The words around hidden bold text keep their emphasis, with no mark of it
+        // read aloud: the runs that touch are one stretch of bold.
+        let emphasized = docxParagraph(docxRun("Bold ", "<w:b/>") + docxRun("gone ", "<w:b/><w:vanish/>") + docxRun("stays", "<w:b/>"))
+        XCTAssertEqual(try markdown(emphasized), "**Bold stays**")
+        XCTAssertEqual(try docxReadingText(body: emphasized, styles: styles), "Bold stays")
+        let apart = docxParagraph(docxRun("See the ") + docxRun("gone ", "<w:vanish/>") + docxRun("note", "<w:b/>"))
+        XCTAssertEqual(try docxReadingText(body: apart, styles: styles), "See the note")
     }
 
     /// `w:vanish` turned off by its value (0, false, off) reads the text; one
