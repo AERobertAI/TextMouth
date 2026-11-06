@@ -66,6 +66,29 @@ final class LibraryLaunchFilesTests: XCTestCase {
         XCTAssertEqual(scene.takeUp.calls, [])
     }
 
+    /// With twelve feed records only in the cloud and a silent sync service,
+    /// only eight reads are started; the rest start as the first return.
+    func testNoMoreThanEightLaunchFilesAreReadAtOnce() throws {
+        let scene = try LaunchScene(test: self, label: "LaunchCap", inCloud: true)
+        let folder = FeedPaths.recordsFolder(in: scene.fixture.root)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        for _ in 0..<12 {
+            let record = FeedPaths.recordFile(of: UUID(), in: folder)
+            try Data("{}".utf8).write(to: record)
+            scene.keepInCloud(record)
+        }
+        let gate = scene.holdFetches()
+        defer { gate.signal() }
+
+        _ = scene.launch()
+
+        XCTAssertTrue(waitUntil(timeout: 5) { scene.fetched.urls.count == 8 }, "started \(scene.fetched.urls.count)")
+        _ = waitUntil(timeout: 0.4) { false }
+        XCTAssertEqual(scene.fetched.urls.count, 8, "more than eight reads were out at once")
+        gate.signal()
+        XCTAssertTrue(waitUntil(timeout: 8) { scene.fetched.urls.count == 12 }, "the queued reads never started")
+    }
+
     /// A read still out is not started again by a second look, so no threads
     /// pile up behind a file the sync service never answers.
     func testAReadStillOutIsNotStartedAgain() throws {

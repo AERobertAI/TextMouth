@@ -312,6 +312,46 @@ final class LibraryCloudFetchTests: XCTestCase {
         XCTAssertNil(model.libraryFetchTask)
     }
 
+    /// A read that returns after the user chose another library opens
+    /// nothing in this process, which is on its way out.
+    func testALateReturnAfterChoosingAnotherLibraryOpensNothing() throws {
+        let world = try CloudWorld(test: self, label: "LateAfterSwitch")
+        let marker = LibraryIdentity.markerURL(in: world.fixture.root)
+        world.keepInCloud(marker)
+        world.stallLimit = .seconds(1)
+        let gate = world.holdFetches(of: marker)
+        defer { gate.release() }
+        let model = world.launch()
+        guard waitUntil(timeout: 8, { model.dataDirectoryUnavailability?.isGettingFromCloud == false }) else {
+            return XCTFail("the stall never showed")
+        }
+        model.librarySwitchPending = true
+
+        gate.release()
+        _ = waitUntil(timeout: 0.6) { false }
+
+        XCTAssertFalse(model.hasStartedLibrary, "a late read opened the library after another was chosen")
+        XCTAssertNotNil(model.dataDirectoryUnavailability)
+    }
+
+    /// At most eight reads are out at once; the others wait for a slot and
+    /// start as slots come back.
+    func testAtMostEightReadsAreOutAtOnce() {
+        let slots = LibraryFetchReadSlots()
+        let started = AnnouncementCount()
+        for _ in 0..<10 {
+            Task { await slots.acquire(); started.count += 1 }
+        }
+        XCTAssertTrue(waitUntil(timeout: 5) { started.count == LibraryFetchReadSlots.limit })
+        _ = waitUntil(timeout: 0.2) { false }
+        XCTAssertEqual(started.count, 8)
+
+        slots.release()
+        XCTAssertTrue(waitUntil(timeout: 5) { started.count == 9 })
+        slots.release()
+        XCTAssertTrue(waitUntil(timeout: 5) { started.count == 10 })
+    }
+
     // MARK: - The Screen
 
     /// The screen announces again when its reason changes, as when the fetch
@@ -406,6 +446,20 @@ final class LibraryCloudFetchTests: XCTestCase {
             ),
             "Getting Your Library"
         )
+    }
+
+    /// Held actions that can't be taken after all are refused in one message
+    /// that names the books not opened, with the refusal's own words.
+    func testHeldOpensAreRefusedNamingTheBooks() {
+        let first = URL(fileURLWithPath: "/tmp/Anchors.epub")
+        let second = URL(fileURLWithPath: "/tmp/Tides.epub")
+
+        XCTAssertEqual(
+            DataDirectoryUnavailableText.heldRefusal(of: [.openFiles([first]), .openFiles([second]), .openBookWindow(UUID())]),
+            "Books can't be added while the library isn't available. Books can't be opened while the library isn't available. "
+                + "Not opened: Anchors.epub, Tides.epub, one book from the library."
+        )
+        XCTAssertNil(DataDirectoryUnavailableText.heldRefusal(of: [.goToLibrary]))
     }
 
     /// Many files are listed in the log by a few names and a count.
