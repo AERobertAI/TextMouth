@@ -340,3 +340,16 @@ Unzip nothing from the plugin into TextMouth. The EPUB it produces is the refere
 Kindle Previewer 4.0.4 is a free download from Amazon's KDP help page, and it needs no Amazon account. Its installer unpacks with `pkgutil --expand-full`, and its `Contents/MacOS/KindlePreviewer4CLI` runs from there: `KindlePreviewer4CLI book.epub --convert --output folder --locale en` writes `folder/KPF/book_epub.kpf`. calibre's KFX Output 2.22.0, under calibre 9.18 (both plugins need calibre 6.0 or later), takes the KPF and writes a single `.kfx`.
 
 **[V]** on that file, made from the public-domain `TestData/alice.epub`: the walk in these notes gives the source EPUB's 30,585 words in the same order, in 902 text units and 19 sections. The reading order is named `$351`. `$538` is there, and so are the navigation containers `$236`, `$212`, and `$798`, the last with heading levels. A heading with a line break holds a newline in its text. The `.kdf` in the KPF has the fingerprint block the notes describe: `FA 50 0A 5F` at offset 1,024, in a file one 1,024-byte record longer than its 128 pages of 4,096 bytes. The KFX's contents come from Amazon's conversion, but its `CONT` container comes from the plugin, so a store-bought file's container is still unverified.
+
+## Added November 6, 2026: what the reader's review found on Amazon's output
+
+From real files made with Kindle Previewer, read with a small reader written from the Ion specification and these notes. No plugin code or output was read.
+
+- **Part 6.2:** strings in `$146` are not only for unfinished KPF. Finished Amazon files use them for inline content, with runs and positions on the parent counting across pieces.
+- **Part 7:** template positions are real (boko). Part 10 (`$326`) is confirmed on covers only.
+- **Amazon cuts:** forced breaks make new sections, and paragraphs over about 64,000 characters become sibling `$269` children.
+- **A page list vanishes whole** when a label is not a number or Roman numeral. A list holding `A-3` and `4b` gave no `$237`.
+- **Weights and lists:** `$360` is 600, `$361` is CSS bold, `$362` is `b` and `strong`, `$363` is 900. `$340`, `$341`, `$342` are bullets by depth, and `$343` decimal, `$345` upper Roman, `$346` lower alpha.
+- **`$683`** is confirmed on math. `$756`, `$757`, `$758` hold ruby. `$597` holds `IS_TARGET_SECTION`.
+- **Position of an empty element** at a paragraph's end is the last code point, not the end.
+- **Previewer:** inline SVG, video, and audio made no KPF in the small books, and a pre-paginated EPUB gives a `.mobi`.
