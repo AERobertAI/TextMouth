@@ -150,9 +150,14 @@ final class DocumentGoldenTests: XCTestCase {
     }
 
     /// The format samples whose goldens are recorded and compared: all but
-    /// those held back until a reader bug is fixed.
+    /// those held back until a reader bug is fixed, and the real OpenDocument
+    /// files from LibreOffice, which `ODTTextutilComparisonTests` compares
+    /// with textutil's reading instead.
     private var recordedFormatSampleNames: [String] {
-        TextPipelineFixtures.formatSampleNames.filter { TextPipelineFixtures.formatSamplesHeldBack[$0] == nil }
+        TextPipelineFixtures.formatSampleNames.filter {
+            TextPipelineFixtures.formatSamplesHeldBack[$0] == nil && !TextPipelineFixtures.isComparedByODTTests($0)
+                && !TextPipelineFixtures.isAwaitingGoldenRerecording($0)
+        }
     }
 
     /// Skip the test, naming the documents, when any golden was recorded on

@@ -273,11 +273,25 @@ final class TextutilSourceCheckTests: XCTestCase {
     }
 
     func testAManifestPastTheLimitIsNotRead() throws {
-        // Padding takes the manifest past 1,000,000 bytes; its encryption
-        // data lies after the padding and is never reached.
-        let padding = String(repeating: " ", count: 1_000_001)
+        // Padding takes the manifest past the byte limit in force (here 5,000
+        // bytes); its encryption data lies after the padding and is never reached.
+        let padding = String(repeating: " ", count: 5_001)
         let manifest = "<manifest>\(padding)<encryption-data/></manifest>"
-        XCTAssertFalse(TextutilSourceCheck.isEncryptedOpenDocument(try zip(holding: "META-INF/manifest.xml", manifest)))
+        let package = try zip(holding: "META-INF/manifest.xml", manifest)
+        DocumentByteLimit.$current.withValue(5_000) {
+            XCTAssertFalse(TextutilSourceCheck.isEncryptedOpenDocument(package))
+        }
+        // Under the standard limit the same manifest, which is not large, is read.
+        XCTAssertTrue(TextutilSourceCheck.isEncryptedOpenDocument(package))
+    }
+
+    /// A manifest larger than a megabyte is read, and the path of the
+    /// manifest may be in any case.
+    func testALargeManifestAndAnyCaseOfItsPathAreRead() throws {
+        let padding = String(repeating: " ", count: 1_200_000)
+        let manifest = "<manifest>\(padding)<encryption-data/></manifest>"
+        XCTAssertTrue(TextutilSourceCheck.isEncryptedOpenDocument(try zip(holding: "META-INF/manifest.xml", manifest)))
+        XCTAssertTrue(TextutilSourceCheck.isEncryptedOpenDocument(try zip(holding: "meta-inf/MANIFEST.XML", "<manifest><encryption-data/></manifest>")))
     }
 
     func testAManifestThatIsNotXMLIsNotEncrypted() throws {

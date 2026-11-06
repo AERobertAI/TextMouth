@@ -548,8 +548,12 @@ final class OnDiskContractTests: XCTestCase {
                 // Rich text and Word 97-2003 went to TextMouth's own readers (FMT47) at 1.1.0;
                 // rich text is at 1.2.0 (deleted text, a number in a cell, notes), DOCX at
                 // 1.1.0 (hidden text, text boxes once, notes), and Word 97-2003 at 1.2.0
-                // (hidden text, piece formatting, list numbers, and text boxes).
-                let raised = ["epub": "1.0.3", "html": "1.0.3", "rtf": "1.2.0", "rtfd": "1.2.0", "doc": "1.2.0", "docx": "1.1.0"]
+                // (hidden text, piece formatting, list numbers, and text boxes). OpenDocument
+                // text and Word 2003 XML went to TextMouth's own readers at 1.1.0.
+                let raised = [
+                    "epub": "1.0.3", "html": "1.0.3", "rtf": "1.2.0", "rtfd": "1.2.0", "doc": "1.2.0", "docx": "1.1.0",
+                    "odt": "1.1.0", "wordml": "1.1.0",
+                ]
                 return (name, raised[name] ?? "1.0.0")
             }),
             Self.because("a page reader's version, or the formats with pages", forces)

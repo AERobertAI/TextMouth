@@ -33,12 +33,13 @@ final class PagesUpgradeTests: XCTestCase {
     /// The page reader's version each format with pages is at: EPUB and HTML
     /// at 1.0.3, rich text (.rtf and .rtfd) and Word 97-2003 (.doc), read by
     /// TextMouth's own readers since FMT47 and with their follow-ups since, at
-    /// 1.2.0, Word (.docx) at 1.1.0, and the rest at 1.0.0.
+    /// 1.2.0, Word (.docx), OpenDocument text (.odt), and Word 2003 XML
+    /// (.wordml, read by its own reader since FMT53) at 1.1.0, and the rest at 1.0.0.
     private static func expectedVersion(of format: BookFormat) -> String {
         switch format {
         case .epub, .html: return "1.0.3"
         case .rtf, .rtfd, .doc: return "1.2.0"
-        case .docx: return "1.1.0"
+        case .docx, .odt, .wordml: return "1.1.0"
         default: return "1.0.0"
         }
     }
@@ -94,14 +95,17 @@ final class PagesUpgradeTests: XCTestCase {
     /// stamps the first note, then the second, and a run that reads the
     /// pages stamps the version alone.
     func testAFailureNoteIsReadWithItsVersion() {
+        // PDF stands for any format still at page reader 1.0.0 (this test
+        // used .odt before OpenDocument text went to its own reader at 1.1.0);
+        // the rule is the same for every format with pages.
         for (stored, outdated) in [
             ("1.0.0+failed-once", true), ("1.0.0+failed", false), ("9.0.0+failed-once", false), ("0.9.0+failed", true),
         ] {
-            XCTAssertEqual(PageReaderVersions.isOutdated(format: .odt, stored: stored), outdated, "stored \"\(stored)\"")
+            XCTAssertEqual(PageReaderVersions.isOutdated(format: .pdf, stored: stored), outdated, "stored \"\(stored)\"")
         }
-        XCTAssertEqual(PageReaderVersions.stamp(for: .odt, pageRunFailed: true, previous: nil), "1.0.0+failed-once")
-        XCTAssertEqual(PageReaderVersions.stamp(for: .odt, pageRunFailed: true, previous: "1.0.0+failed-once"), "1.0.0+failed")
-        XCTAssertEqual(PageReaderVersions.stamp(for: .odt, pageRunFailed: false, previous: "1.0.0+failed-once"), "1.0.0")
+        XCTAssertEqual(PageReaderVersions.stamp(for: .pdf, pageRunFailed: true, previous: nil), "1.0.0+failed-once")
+        XCTAssertEqual(PageReaderVersions.stamp(for: .pdf, pageRunFailed: true, previous: "1.0.0+failed-once"), "1.0.0+failed")
+        XCTAssertEqual(PageReaderVersions.stamp(for: .pdf, pageRunFailed: false, previous: "1.0.0+failed-once"), "1.0.0")
         XCTAssertNil(PageReaderVersions.stamp(for: .markdown, pageRunFailed: true, previous: nil))
         XCTAssertTrue(PageReaderVersions.notesFailure("1.0.0+failed"))
         XCTAssertFalse(PageReaderVersions.notesFailure("1.0.0"))
