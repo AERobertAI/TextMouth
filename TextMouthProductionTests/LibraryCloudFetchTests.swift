@@ -1,6 +1,7 @@
 import SwiftUI
 import XCTest
 @testable import TextMouth
+import os
 
 /// A library whose own files are only in the cloud, as Google Drive's Stream
 /// mode leaves them after a restart, fetches them itself and opens by itself.
@@ -381,9 +382,9 @@ final class LibraryCloudFetchTests: XCTestCase {
         let model = world.launch()
         XCTAssertTrue(model.hasStartedLibrary)
         XCTAssertNil(model.dataDirectoryUnavailability)
-        var returned = 0
+        let returned = OSAllocatedUnfairLock(initialState: 0)
         let observer = NotificationCenter.default.addObserver(forName: .dataDirectoryDidBecomeAvailable, object: nil, queue: .main) { _ in
-            returned += 1
+            returned.withLock { $0 += 1 }
         }
         addTeardownBlock { NotificationCenter.default.removeObserver(observer) }
 
@@ -392,7 +393,7 @@ final class LibraryCloudFetchTests: XCTestCase {
 
         XCTAssertEqual(model.dataDirectoryUnavailability?.isGettingFromCloud, true)
         XCTAssertTrue(waitUntil(timeout: 5) { model.dataDirectoryUnavailability == nil }, "the library never came back")
-        XCTAssertEqual(returned, 1)
+        XCTAssertEqual(returned.withLock { $0 }, 1)
         XCTAssertEqual(model.library.folders.map(\.fullPath), [LibraryFixture.folderName])
         XCTAssertEqual(world.announcements.messages, ["The library is available."])
     }
