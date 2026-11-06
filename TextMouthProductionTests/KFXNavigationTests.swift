@@ -212,7 +212,7 @@ final class KFXNavigationTests: XCTestCase {
             "Chapter One: Headings and Emphasis", "Chapter Two: Lists and Tables", "Chapter Three: Notes, Links and Pictures",
         ])
         XCTAssertEqual(book.title, "The Tool Library Handbook")
-        XCTAssertEqual(book.author, "Author, Test")
+        XCTAssertEqual(book.author, "Test Author", "Previewer wrote Author, Test; flipped back")
         XCTAssertEqual(book.language, "en")
     }
 
