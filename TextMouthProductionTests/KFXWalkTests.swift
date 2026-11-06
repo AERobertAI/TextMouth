@@ -139,7 +139,8 @@ final class KFXWalkTests: XCTestCase {
         book.anchors = ["web": (url: "https://example.org/a?b=1&c=2", node: nil, offset: 0), "inside": (url: nil, node: 801, offset: 4)]
         XCTAssertEqual(
             try htmlOf(book),
-            "<p>see the <a href=\"https://example.org/a?b=1&amp;c=2\">rules</a> or <a href=\"#kfx-801-4\">the start</a></p>")
+            // The place the second link points at, offset 4 of the first node, is marked with an anchor.
+            "<p>see <a id=\"kfx-801-4\"></a>the <a href=\"https://example.org/a?b=1&amp;c=2\">rules</a> or <a href=\"#kfx-801-4\">the start</a></p>")
         XCTAssertEqual(try words(book), ["see", "the", "rules", "or", "the", "start"])
     }
 
