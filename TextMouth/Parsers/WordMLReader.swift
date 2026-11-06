@@ -171,6 +171,10 @@ final class WordMLReader: OfficeXMLReader {
             try startRunIfNeeded()
             if runs.last?.isHidden == true { return skipSubtree() }
             writer.beginNote()
+        case "w:pict", "w:object":
+            // A drawing or text box anchored in hidden text is hidden with it.
+            try startRunIfNeeded()
+            if runs.last?.isHidden == true { return skipSubtree() }
         case "w:tbl": try writer.beginTable(startsPage: false, startsPageAfter: false)
         default: break
         }
@@ -202,7 +206,7 @@ final class WordMLReader: OfficeXMLReader {
     /// Whether the element `name` and everything in it is left unread.
     private func isSkipped(_ name: String, _ attributes: [String: String]) -> Bool {
         switch name {
-        case "w:sectPr", "w:delText", "w:del", "w:instrText", "w:hdr", "w:ftr", "w:binData", "w:docPr":
+        case "w:sectPr", "w:delText", "w:del", "w:moveFrom", "w:instrText", "w:hdr", "w:ftr", "w:binData", "w:docPr":
             return true
         case "aml:annotation":
             // Only an insertion holds words that are read: a deletion is gone,
@@ -259,6 +263,7 @@ final class WordMLReader: OfficeXMLReader {
         let character = sheet.resolved(type: "character", id: direct.characterStyle).run
         let own = character.overridden(by: direct)
         runs[index].isHidden = own.hidden == true
+        if runs[index].isHidden { writer.markHiddenText() }
         // The paragraph's own hidden text is the paragraph's alone.
         writer.beginSpan((writer.currentRun ?? OfficeRun()).applying(bold: own.bold, italic: own.italic, size: own.size))
     }

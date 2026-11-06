@@ -51,9 +51,32 @@ struct OfficeOpenParagraph {
     /// Whether a `text:hidden-paragraph` hid the whole paragraph.
     var isHidden = false
 
+    /// How many tables were open when the paragraph began: a paragraph in a
+    /// table opened inside another paragraph is not deferred with its text boxes.
+    var tableDepth = 0
+    /// Whether the paragraph held hidden text, which was left out: a paragraph
+    /// that then holds no words begins no page.
+    var hasHiddenText = false
+
     /// What has been read of the paragraph since it began, or since its
     /// pieces were last written out.
     var pieces: [OfficePiece] = []
+    /// The notes whose references are in the paragraph, in order. They are
+    /// read (after the main text) only if the paragraph is, so a note in
+    /// hidden text is not read.
+    var notes: [OfficeFlow] = []
+    /// The paragraphs of the text boxes and shapes anchored in the
+    /// paragraph, finished and waiting: they are written right after the
+    /// paragraph, so its sentence stays whole, and not at all if it is hidden.
+    var deferred: [OfficeOpenParagraph] = []
+
+    /// Whether the pieces hold a character other than white space.
+    var hasWords: Bool {
+        pieces.contains { piece in
+            if case .text(let words, _) = piece { return words.unicodeScalars.contains { !$0.properties.isWhitespace } }
+            return false
+        }
+    }
     /// The look of the text now, and the looks of the spans around it.
     private(set) var run: OfficeRun
     private var enclosingRuns: [OfficeRun] = []
@@ -95,6 +118,13 @@ struct OfficeOpenParagraph {
                 guard !followsSpace else { continue }
                 text.unicodeScalars.append(" ")
                 followsSpace = true
+            case Self.softHyphen:
+                // Invisible unless the line breaks there: not a word's end.
+                continue
+            case Self.noBreakSpace, Self.narrowNoBreakSpace:
+                // A space that does not collapse and that keeps a line whole.
+                text.unicodeScalars.append(" ")
+                followsSpace = false
             default:
                 text.unicodeScalars.append(scalar)
                 followsSpace = false
@@ -107,8 +137,26 @@ struct OfficeOpenParagraph {
     /// Adds words that stand as they are (`text:s`, `text:tab`): they do
     /// not collapse, and white space after them is not dropped.
     mutating func addExplicit(_ text: String) {
-        add(text)
+        add(Self.spoken(text))
         followsSpace = false
+    }
+
+    /// The soft hyphen and the no-break spaces.
+    private static let softHyphen: Unicode.Scalar = "\u{AD}"
+    private static let noBreakSpace: Unicode.Scalar = "\u{A0}"
+    private static let narrowNoBreakSpace: Unicode.Scalar = "\u{202F}"
+
+    /// `text` as it is heard: no soft hyphens, which show only where a line
+    /// breaks and would join or split a word, and no-break spaces as spaces.
+    static func spoken(_ text: String) -> String {
+        guard text.unicodeScalars.contains(where: { $0 == softHyphen || $0 == noBreakSpace || $0 == narrowNoBreakSpace }) else {
+            return text
+        }
+        var result = String.UnicodeScalarView()
+        for scalar in text.unicodeScalars where scalar != softHyphen {
+            result.append(scalar == noBreakSpace || scalar == narrowNoBreakSpace ? " " : scalar)
+        }
+        return String(result)
     }
 
     /// `text:line-break`.

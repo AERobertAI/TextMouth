@@ -27,12 +27,15 @@ final class OfficeBlockWriter {
     private let limit: Int64
     private var spent: Int64 = 0
 
-    /// The main text, the notes, and the one being read now.
+    /// The main text, and the one being read now: the main text, or the body
+    /// of a note.
     private let main: OfficeFlow
-    private let notes: OfficeFlow
     private(set) var flow: OfficeFlow
-    /// How many notes' bodies are open.
-    private var noteDepth = 0
+    /// The flows the open notes are inside, innermost last.
+    private var flowsOutsideNotes: [OfficeFlow] = []
+    /// The notes of the paragraphs that were read, in the order the file
+    /// keeps them: they follow the main text.
+    private var committedNotes: [OfficeFlow] = []
 
     /// Whether a page begins at the next letter or digit, and whether a
     /// letter or digit has been read at all (a break before any words begins
@@ -47,7 +50,6 @@ final class OfficeBlockWriter {
         self.includesPages = includesPages
         self.limit = limit
         main = OfficeFlow(includesPages: includesPages, limit: limit)
-        notes = OfficeFlow(includesPages: false, limit: limit)
         flow = main
     }
 
@@ -61,7 +63,9 @@ final class OfficeBlockWriter {
     func finish() throws -> (blocks: [RTFBlock], pageBreaks: Int) {
         var blocks = try main.builder.finish(lastParagraph: .body, inTable: false)
         if !hasHeadings { blocks = RTFSizeHeadings.apply(to: blocks) }
-        blocks += try notes.builder.finish(lastParagraph: .body, inTable: false)
+        for note in committedNotes {
+            blocks += try note.builder.finish(lastParagraph: .body, inTable: false)
+        }
         return (blocks, main.builder.pageBreaks)
     }
 
@@ -112,6 +116,12 @@ final class OfficeBlockWriter {
         flow.paragraphs.last?.run
     }
 
+    /// Notes that hidden text was left out of the paragraph open: if it then
+    /// holds no words, it begins no page.
+    func markHiddenText() {
+        if let last = flow.paragraphs.indices.last { flow.paragraphs[last].hasHiddenText = true }
+    }
+
     /// Hides the paragraph open: it is dropped whole when it ends.
     func hideParagraph() {
         if let last = flow.paragraphs.indices.last { flow.paragraphs[last].isHidden = true }
@@ -119,8 +129,8 @@ final class OfficeBlockWriter {
 
     // MARK: Paragraphs
 
-    /// A paragraph begins. Any words of a paragraph around it are written out
-    /// first.
+    /// A paragraph begins. One that begins inside a paragraph (a text box or a
+    /// shape anchored in it) waits until the paragraph around it is written.
     /// - Parameters:
     ///   - kind: what the paragraph becomes when it ends.
     ///   - run: the look of its text.
@@ -133,9 +143,10 @@ final class OfficeBlockWriter {
         startsPage: Bool = false,
         startsPageAfter: Bool = false
     ) throws {
-        try writeOutOpenParagraph()
-        if case .heading = kind { hasHeadings = true }
+        // A paragraph that begins inside a paragraph (a text box or a shape
+        // anchored in it) waits until the paragraph around it is written.
         var paragraph = OfficeOpenParagraph(kind: kind, run: run)
+        paragraph.tableDepth = flow.tableDepth
         paragraph.startsPageAfter = startsPageAfter
         if startsPage { paragraph.addPageStart() }
         flow.paragraphs.append(paragraph)
@@ -150,6 +161,10 @@ final class OfficeBlockWriter {
         guard var paragraph = flow.paragraphs.popLast() else { return }
         if let bullets = bulletCharacters, paragraph.kind == .body, paragraph.removeLeadingBullet(from: bullets) {
             paragraph.kind = .listItem(level: 0, numbered: false)
+        }
+        if let outer = flow.paragraphs.indices.last, flow.paragraphs[outer].tableDepth == paragraph.tableDepth {
+            flow.paragraphs[outer].deferred.append(paragraph)
+            return
         }
         try write(&paragraph, atEnd: true)
     }
@@ -170,9 +185,20 @@ final class OfficeBlockWriter {
     /// - Parameter atEnd: whether the paragraph itself ended; its break
     ///   after it is written then, and not for a paragraph that goes on.
     private func write(_ paragraph: inout OfficeOpenParagraph, atEnd: Bool) throws {
-        defer { paragraph.pieces = [] }
-        // A hidden paragraph leaves nothing, not even its pages.
+        defer {
+            paragraph.pieces = []
+            paragraph.notes = []
+            paragraph.deferred = []
+        }
+        // A hidden paragraph leaves nothing, not even its pages, its notes,
+        // or the text boxes anchored in it.
         guard !paragraph.isHidden else { return }
+        let hasWords = paragraph.hasWords
+        // A paragraph whose every word is hidden begins no page.
+        if !hasWords, paragraph.hasHiddenText {
+            paragraph.pieces.removeAll { if case .pageStart = $0 { return true } else { return false } }
+            paragraph.startsPageAfter = false
+        }
         for piece in paragraph.pieces {
             switch piece {
             case .text(let words, let run):
@@ -191,9 +217,18 @@ final class OfficeBlockWriter {
             }
         }
         try flow.builder.finishParagraph(paragraph.kind, inTable: flow.tableDepth > 0)
+        // Only a heading with words is a heading: one whose words are all
+        // hidden writes none, and does not turn off the guess at headings.
+        if hasWords, flow.tableDepth == 0, flow === main, case .heading = paragraph.kind { hasHeadings = true }
+        // The notes of a paragraph that is read are read, after the text.
+        committedNotes += paragraph.notes
         // What remains of a paragraph that goes on is plain text.
         paragraph.kind = .body
         if atEnd, paragraph.startsPageAfter { beginPage() }
+        // The text boxes anchored in the paragraph follow it, in order.
+        var waiting = paragraph.deferred
+        paragraph.deferred = []
+        for index in waiting.indices { try write(&waiting[index], atEnd: true) }
     }
 
     // MARK: Pages
@@ -258,17 +293,23 @@ final class OfficeBlockWriter {
 
     // MARK: Notes
 
-    /// The body of a note begins: its paragraphs follow the main text, and
-    /// are not paged.
+    /// The body of a note begins: its paragraphs follow the main text, are
+    /// not paged, and are read only if the paragraph that holds its
+    /// reference is read.
     func beginNote() {
-        noteDepth += 1
-        if noteDepth == 1 { flow = notes }
+        let note = OfficeFlow(includesPages: false, limit: limit)
+        if let last = flow.paragraphs.indices.last {
+            flow.paragraphs[last].notes.append(note)
+        } else {
+            committedNotes.append(note)
+        }
+        flowsOutsideNotes.append(flow)
+        flow = note
     }
 
     /// The body of a note ends.
     func endNote() {
-        noteDepth = max(noteDepth - 1, 0)
-        if noteDepth == 0 { flow = main }
+        if let outside = flowsOutsideNotes.popLast() { flow = outside }
     }
 
     // MARK: Text boxes

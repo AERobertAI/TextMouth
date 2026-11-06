@@ -103,7 +103,12 @@ final class ODTContentReader: ODTXMLReader {
     /// What starting the element `name` does.
     private func start(_ name: String, _ attributes: [String: String]) throws {
         // What is skipped altogether: not text, or text that is not read.
-        if ODTContentReader.isSkipped(name, attributes) { return skipSubtree() }
+        if ODTContentReader.isSkipped(name, attributes) {
+            // Hidden text left out of a paragraph is noted: a paragraph that
+            // then holds no words begins no page.
+            if name == "text:hidden-text" { writer.markHiddenText() }
+            return skipSubtree()
+        }
         switch name {
         // Text
         case "text:p": try beginParagraph(isHeading: false, attributes)
@@ -214,7 +219,10 @@ final class ODTContentReader: ODTXMLReader {
     private func beginSpan(_ attributes: [String: String]) {
         let style = sheet.properties(family: "text", name: attributes["text:style-name"])
         // Text whose style hides it is not read.
-        if style.hidden == true { return skipSubtree() }
+        if style.hidden == true {
+            writer.markHiddenText()
+            return skipSubtree()
+        }
         if let run = writer.currentRun { writer.beginSpan(run.applying(style)) }
     }
 
@@ -222,7 +230,6 @@ final class ODTContentReader: ODTXMLReader {
 
     /// A list begins: its style is its own, or the one around it.
     private func beginList(_ name: String, _ attributes: [String: String]) throws {
-        try writer.writeOutOpenParagraph()
         writer.flow.lists.append(OfficeOpenList(
             styleName: attributes["text:style-name"] ?? writer.flow.lists.last?.styleName,
             isNumbered: name == "text:ordered-list" ? true : (name == "text:unordered-list" ? false : nil)
