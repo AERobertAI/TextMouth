@@ -406,7 +406,7 @@ struct RTFInterpreter {
         guard !text.isEmpty else { return }
         switch state.destination {
         case .body:
-            guard !state.isHidden else { return }
+            guard !state.isUnreadRun else { return }
             lastParagraphProperties = state.paragraph
             try builder.appendText(
                 RTFInterpreter.readable(text),
@@ -526,7 +526,7 @@ struct RTFInterpreter {
         case .listTable:
             readListWord(name, parameter)
         case .body, .listText, .title, .author:
-            if name == "tab", state.destination == .body,
+            if name == "tab", state.destination == .body, !state.isUnreadRun,
                let bullet = builder.takeBulletMark(from: TextutilHTMLStructure.bulletCharacters) {
                 // A bullet and a tab begin a list item, as writers without
                 // lists write one (and as textutil's reading finds them).
@@ -602,7 +602,7 @@ struct RTFInterpreter {
     /// for each would be slow.
     private enum BodyWord: String, CaseIterable {
         case ansi, mac, pc, pca, ansicpg, deff
-        case plain, b, i, v, f, fs, uc
+        case plain, b, i, v, deleted, f, fs, uc
         case line, lbr, par, pard, s, outlinelevel, ls, ilvl, intbl, itap
         case cell, row, nestcell
         case page, pagebb, sect, sectd, sbkpage, sbkeven, sbkodd, sbknone, sbkcol
@@ -633,12 +633,13 @@ struct RTFInterpreter {
         case .b: state.isBold = parameter != 0
         case .i: state.isItalic = parameter != 0
         case .v: state.isHidden = parameter != 0
+        case .deleted: state.isDeleted = parameter != 0
         case .f: state.font = parameter
         case .fs: state.fontSize = max(parameter ?? RTFGroupState.defaultFontSize, 1)
         case .uc: state.unicodeSkip = max(parameter ?? 1, 0)
 
         // Line and paragraph structure
-        case .line, .lbr: builder.appendLineBreak()
+        case .line, .lbr: if !state.isUnreadRun { builder.appendLineBreak() }
         case .par: try endParagraph()
         case .pard: state.paragraph = RTFParagraphProperties()
         case .s: setStyle(parameter)
@@ -657,7 +658,8 @@ struct RTFInterpreter {
 
         // Pages and sections
         case .page:
-            builder.addPageBreak()
+            // A page break inside hidden or deleted text begins no page.
+            if !state.isUnreadRun { builder.addPageBreak() }
             try emit(" ")
         case .pagebb: builder.addParagraphPageBreak()
         case .sect:

@@ -112,6 +112,11 @@ struct RTFGroupState: Equatable {
     var isItalic = false
     /// Hidden text, `\v`, which is not read.
     var isHidden = false
+    /// Text a tracked change deleted, `\deleted`, which is not read (text
+    /// it inserted, `\revised`, is). A revision mark is not character
+    /// formatting, so `\plain` leaves it alone: only the group that set it
+    /// ending, or `\deleted0`, brings the text back.
+    var isDeleted = false
     /// The font size in half points, `\fsN`; 24 (12 points) until set.
     var fontSize = RTFGroupState.defaultFontSize
     /// The font in force, `\fN`; nil until one is set, when the default
@@ -124,6 +129,11 @@ struct RTFGroupState: Equatable {
 
     /// The font size `\plain` and a new document use: 12 points.
     static let defaultFontSize = 24
+
+    /// Whether the text now is read by nobody: hidden by `\v`, or deleted
+    /// by a tracked change. One place for the rule, so that the words, the
+    /// page breaks, and the paragraph marks all follow it.
+    var isUnreadRun: Bool { isHidden || isDeleted }
 
     /// `\plain`: the character formatting back to its defaults. (The
     /// paragraph's properties and the destination are not character
