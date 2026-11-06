@@ -231,7 +231,8 @@ struct WordStyleSheet {
             let size = try table.u16(position)
             position += 2
             guard position + size <= range.upperBound else { break }
-            styles.append(size == 0 ? nil : try Self.legacyStyle(at: position, size: size, baseSize: baseSize, in: table))
+            // A style that does not fit its bytes is an unused slot: it loses that style, not the document.
+            styles.append(size == 0 ? nil : try? Self.legacyStyle(at: position, size: size, baseSize: baseSize, in: table))
             position += size
         }
         while styles.count < styleCount { styles.append(nil) }

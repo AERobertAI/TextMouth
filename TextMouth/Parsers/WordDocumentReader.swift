@@ -159,27 +159,35 @@ enum WordDocumentReader {
         }
         let textEnd = min(fib.mainTextLength, pieces.characterCount)
 
-        // The styles, and the properties that name them.
-        var styles = WordStyleSheet.empty
-        if let range = try fib.range(of: .styleSheet, in: table) {
-            styles = fib.layout == .modern ? try WordStyleSheet(range: range, table: table) : try WordStyleSheet(legacyRange: range, table: table)
+        // The formatting of a Word 6 or Word 95 document is a help to the listener and not the
+        // text: a table that does not fit loses its formatting, not the document, as textutil
+        // reads damaged files of this age. (Word 97's tables throw, as they always did.)
+        func lenient<Value>(_ read: () throws -> Value, else fallback: Value) throws -> Value {
+            guard fib.layout == .legacy else { return try read() }
+            do { return try read() } catch is OLEDamage { return fallback }
         }
+
+        // The styles, and the properties that name them.
+        let styles = try lenient({ () -> WordStyleSheet in
+            guard let range = try fib.range(of: .styleSheet, in: table) else { return .empty }
+            return fib.layout == .modern ? try WordStyleSheet(range: range, table: table) : try WordStyleSheet(legacyRange: range, table: table)
+        }, else: .empty)
         // The Data stream, where a paragraph's properties are when they do not fit its page.
         let data = fib.layout == .modern ? (try? file.stream(named: "Data")).map { OLEBytes($0) } : nil
-        var paragraphs = WordFormatRuns<WordParagraphFormat>(runs: [])
-        if let range = try fib.range(of: .paragraphBinTable, in: table) {
-            paragraphs = try WordDocumentProperties.paragraphRuns(
+        var paragraphs = try lenient({ () -> WordFormatRuns<WordParagraphFormat> in
+            guard let range = try fib.range(of: .paragraphBinTable, in: table) else { return WordFormatRuns(runs: []) }
+            return try WordDocumentProperties.paragraphRuns(
                 binTable: range, table: table, document: document, pieces: pieces, limit: pieces.characterCount, data: data,
                 dialect: dialect
             )
-        }
-        var characters = WordFormatRuns<WordCharacterFormat>(runs: [])
-        if let range = try fib.range(of: .characterBinTable, in: table) {
-            characters = try WordDocumentProperties.characterRuns(
+        }, else: WordFormatRuns(runs: []))
+        let characters = try lenient({ () -> WordFormatRuns<WordCharacterFormat> in
+            guard let range = try fib.range(of: .characterBinTable, in: table) else { return WordFormatRuns(runs: []) }
+            return try WordDocumentProperties.characterRuns(
                 binTable: range, table: table, document: document, pieces: pieces, limit: pieces.characterCount,
                 dialect: dialect
             )
-        }
+        }, else: WordFormatRuns(runs: []))
         // The lists, whose numbers Word does not store in the text. They are
         // a help to the listener and not the text: a list table that does
         // not fit loses the numbers, not the document.
@@ -195,10 +203,10 @@ enum WordDocumentReader {
             paragraphs = numbered.paragraphs
             lists = numbered.lists
         }
-        var sections = WordSections.none
-        if let range = try fib.range(of: .sectionTable, in: table) {
-            sections = try WordSections(range: range, table: table, document: document, dialect: dialect)
-        }
+        let sections = try lenient({ () -> WordSections in
+            guard let range = try fib.range(of: .sectionTable, in: table) else { return .none }
+            return try WordSections(range: range, table: table, document: document, dialect: dialect)
+        }, else: .none)
 
         // Whether the characters at these positions (in order) are hidden or
         // deleted text, for the notes whose reference marks stand there.
