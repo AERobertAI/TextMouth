@@ -49,6 +49,15 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     private var runIsItalic = false
     private var runIsStrikethrough = false
     private var runText = ""
+    /// What the run's own properties say about hiding it (`w:vanish`); nil
+    /// when they say nothing, so its styles decide.
+    private var runExplicitlyHidden: Bool?
+    /// The run's character style (`w:rStyle`), empty for none.
+    private var runStyle = ""
+    /// Whether the run being read is hidden: its text, line and page
+    /// breaks, and tabs are not read, and begin no page. Follows the toggle
+    /// rule of ECMA-376 17.7.3 (`updateRunHidden()`).
+    private var runIsHidden = false
 
     // Hyperlink state
     private var isInHyperlink = false
@@ -108,6 +117,56 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// read. A page break inside deleted text starts no page.
     private var deletionDepth = 0
 
+    // MARK: Structure that is skipped or nested
+
+    /// How deep inside a subtree that is not read the converter is: 0
+    /// outside one. A subtree is skipped whole: an `mc:Choice` after the
+    /// first, an `mc:Fallback` that follows a `mc:Choice`, or a note of the
+    /// kind that is only a separator.
+    private var ignoredDepth = 0
+
+    /// For each `mc:AlternateContent` being read, outermost first, whether
+    /// one of its choices has been read. Markup compatibility has a consumer
+    /// read the first choice it understands and nothing else of the
+    /// element: a text box is written as a `mc:Choice` and again in the
+    /// `mc:Fallback` for older readers, and a listener must hear it once.
+    private var alternateContentChoiceTaken: [Bool] = []
+
+    /// Whether this converter reads the notes part (`word/footnotes.xml` or
+    /// `word/endnotes.xml`): its text is never a heading, and the notes that
+    /// only separate the others are skipped.
+    private let readsNotes: Bool
+
+    /// The paragraph and run being read, set aside while a text box inside
+    /// them is read: a text box's paragraphs are paragraphs in the middle of
+    /// another, whose words must be there when it goes on.
+    private struct ParagraphContext {
+        var style: String
+        var text: String
+        var hasContent: Bool
+        var isInParagraph: Bool
+        var listNumId: String?
+        var listLevel: Int
+        var outlineLevel: DOCXOutlineLevel?
+        var pageBreakBefore: Bool?
+        var endsSection: Bool
+        var leadingMarkers: [String]
+        var dropsLeadingWhitespace: Bool
+        var isInRun: Bool
+        var runIsBold: Bool
+        var runIsItalic: Bool
+        var runIsStrikethrough: Bool
+        var runText: String
+        var runExplicitlyHidden: Bool?
+        var runStyle: String
+        var runIsHidden: Bool
+        var runPieces: [RunPiece]
+        var isInHyperlink: Bool
+        var hyperlinkRelId: String
+        var hyperlinkText: String
+    }
+    private var paragraphContexts: [ParagraphContext] = []
+
     /// The text of a run before a page start inside it.
     private struct RunPiece {
         /// The run's text before the page start.
@@ -123,14 +182,19 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// page begins (PG07); without it the Markdown is what it was before
     /// pages. The sections, which tell where pages begin and how they are
     /// numbered, are read from `data` in a first pass.
+    ///
+    /// With `readsNotes` the part is a notes part, read for its notes: no
+    /// paragraph of it is a heading.
     init(
         data: Data,
         file: String = DOCXParser.Part.document,
         styles: DOCXStyles,
         numbering: DOCXNumbering,
         relationships: [String: String],
-        includesPages: Bool = false
+        includesPages: Bool = false,
+        readsNotes: Bool = false
     ) {
+        self.readsNotes = readsNotes
         self.styles = styles
         self.listCounter = DOCXListCounter(numbering: numbering)
         self.relationships = relationships
@@ -168,6 +232,18 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
                 attributes: [String: String] = [:]) {
         let localName = ParserUtilities.stripNamespacePrefix(elementName)
         elementStack.append(localName)
+
+        // A subtree that is not read is passed over whole, and the structure
+        // that nests paragraphs or chooses between copies is settled before
+        // anything is read from the element.
+        if ignoredDepth > 0 {
+            ignoredDepth += 1
+            return
+        }
+        if beginsStructure(localName, attributes: attributes) == .skip {
+            ignoredDepth = 1
+            return
+        }
 
         // Formatting from before a tracked change says nothing about the
         // text as it now stands: read as current, it would undo the change.
@@ -220,6 +296,16 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         case "rPr":
             // Run properties container
             break
+        case "rStyle" where isInRun:
+            // The run's character style, which may hide its text
+            runStyle = attributes["w:val"] ?? ""
+            updateRunHidden()
+        case "vanish" where isInRun:
+            // Hidden text: not read. Direct formatting wins over the styles.
+            // (`w:webHidden`, hidden only on the web, stays read, and
+            // `w:specVanish` and a paragraph mark's `w:vanish` hide no run.)
+            runExplicitlyHidden = DOCXOnOff.isOn(attributes["w:val"])
+            updateRunHidden()
         case "b" where isInRun:
             // Bold formatting. Check for w:val="0" which means explicitly NOT bold.
             let val = attributes["w:val"] ?? "true"
@@ -238,7 +324,7 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             if val != "0" && val != "false" {
                 runIsStrikethrough = true
             }
-        case "br" where isInRun:
+        case "br" where isInRun && !runIsHidden:
             // Keep breaks in their run; the paragraph has not received the
             // preceding run text yet, so appending there reverses their order.
             if pageTracker != nil && deletionDepth == 0 && attributes["w:type"] == "page" {
@@ -248,10 +334,10 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             } else {
                 runText += "\n"
             }
-        case "lastRenderedPageBreak" where isInRun && pageTracker != nil && deletionDepth == 0:
+        case "lastRenderedPageBreak" where isInRun && !runIsHidden && pageTracker != nil && deletionDepth == 0:
             // Where Word's last layout put a page (PG07); no text of its own
             cutRun(joinsWords: false)
-        case "tab" where isInRun:
+        case "tab" where isInRun && !runIsHidden:
             runText += "\t"
         case "hyperlink":
             // A page that began before the link begins before its words, not
@@ -280,8 +366,9 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     }
 
     func parser(_ parser: XMLParser, foundCharacters string: String) {
-        // Only capture text inside <w:t> elements (handled by element context)
-        if let lastElement = elementStack.last, lastElement == "t" {
+        // Only capture text inside <w:t> elements (handled by element context),
+        // and not in a subtree that is skipped or in a hidden run
+        if ignoredDepth == 0, !runIsHidden, let lastElement = elementStack.last, lastElement == "t" {
             runText += string
             if !string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 producedText = true
@@ -321,6 +408,14 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
                 elementStack.removeLast()
             }
         }
+
+        // The end of a skipped subtree, or of structure that nested or chose
+        // (`beginsStructure`), is settled before anything else.
+        if ignoredDepth > 0 {
+            ignoredDepth -= 1
+            return
+        }
+        endsStructure(localName)
 
         // Inside a tracked change's record nothing started as content, so
         // nothing ends as content either; only the record itself closes.
@@ -370,6 +465,131 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         localName.hasSuffix("Change")
     }
 
+    // MARK: - Skipped and Nested Structure
+
+    /// What to do with an element that has begun.
+    private enum StructureAction {
+        /// Read it as usual.
+        case read
+        /// Pass over it and everything in it.
+        case skip
+    }
+
+    /// The `w:type` values of a note that only separates the others, or
+    /// notices a note continued on the next page: not notes of the document.
+    private static let separatorNoteTypes: Set<String> = ["separator", "continuationSeparator", "continuationNotice"]
+
+    /// Settles the structure the element `localName` begins, before its
+    /// content is read:
+    /// - `mc:AlternateContent` holds copies of the same content for readers
+    ///   of different ages, and only the first `mc:Choice` is read: the later
+    ///   choices and the `mc:Fallback` are skipped, so a text box written in
+    ///   both is heard once;
+    /// - a separator note of the notes part is skipped;
+    /// - a text box (`w:txbxContent`) holds paragraphs in the middle of
+    ///   another, so the paragraph and run around it are set aside.
+    private func beginsStructure(_ localName: String, attributes: [String: String]) -> StructureAction {
+        // The element's parent: the element before it on the stack.
+        let parent = elementStack.dropLast().last
+        switch localName {
+        case "AlternateContent":
+            alternateContentChoiceTaken.append(false)
+        case "Choice" where parent == "AlternateContent":
+            if alternateContentChoiceTaken.last == true { return .skip }
+            if !alternateContentChoiceTaken.isEmpty { alternateContentChoiceTaken[alternateContentChoiceTaken.count - 1] = true }
+        case "Fallback" where parent == "AlternateContent":
+            if alternateContentChoiceTaken.last == true { return .skip }
+        case "footnote", "endnote":
+            if readsNotes, Self.separatorNoteTypes.contains(attributes["w:type"] ?? "") { return .skip }
+        case "txbxContent":
+            setAsideParagraph()
+        default:
+            break
+        }
+        return .read
+    }
+
+    /// Undoes what `beginsStructure` set up when the element ends.
+    private func endsStructure(_ localName: String) {
+        switch localName {
+        case "AlternateContent":
+            _ = alternateContentChoiceTaken.popLast()
+        case "txbxContent":
+            takeUpParagraphAgain()
+        default:
+            break
+        }
+    }
+
+    /// Sets the paragraph, run, and link being read aside and begins with
+    /// none, for the paragraphs of a text box. The box's paragraphs are
+    /// written as they end, so its words come before the paragraph that holds
+    /// its anchor, none of whose words are lost.
+    private func setAsideParagraph() {
+        paragraphContexts.append(ParagraphContext(
+            style: currentParagraphStyle, text: currentParagraphText, hasContent: paragraphHasContent,
+            isInParagraph: isInParagraph, listNumId: listNumId, listLevel: listLevel,
+            outlineLevel: paragraphOutlineLevel, pageBreakBefore: paragraphPageBreakBefore,
+            endsSection: paragraphEndsSection, leadingMarkers: paragraphLeadingMarkers,
+            dropsLeadingWhitespace: dropsLeadingWhitespace, isInRun: isInRun,
+            runIsBold: runIsBold, runIsItalic: runIsItalic, runIsStrikethrough: runIsStrikethrough,
+            runText: runText, runExplicitlyHidden: runExplicitlyHidden, runStyle: runStyle,
+            runIsHidden: runIsHidden, runPieces: runPieces, isInHyperlink: isInHyperlink,
+            hyperlinkRelId: hyperlinkRelId, hyperlinkText: hyperlinkText
+        ))
+        currentParagraphStyle = ""
+        currentParagraphText = ""
+        paragraphHasContent = false
+        isInParagraph = false
+        listNumId = nil
+        listLevel = 0
+        paragraphOutlineLevel = nil
+        paragraphPageBreakBefore = nil
+        paragraphEndsSection = false
+        paragraphLeadingMarkers = []
+        dropsLeadingWhitespace = false
+        isInRun = false
+        runIsBold = false
+        runIsItalic = false
+        runIsStrikethrough = false
+        runText = ""
+        runExplicitlyHidden = nil
+        runStyle = ""
+        runIsHidden = false
+        runPieces = []
+        isInHyperlink = false
+        hyperlinkRelId = ""
+        hyperlinkText = ""
+    }
+
+    /// Takes up again the paragraph that a text box interrupted.
+    private func takeUpParagraphAgain() {
+        guard let outer = paragraphContexts.popLast() else { return }
+        currentParagraphStyle = outer.style
+        currentParagraphText = outer.text
+        paragraphHasContent = outer.hasContent
+        isInParagraph = outer.isInParagraph
+        listNumId = outer.listNumId
+        listLevel = outer.listLevel
+        paragraphOutlineLevel = outer.outlineLevel
+        paragraphPageBreakBefore = outer.pageBreakBefore
+        paragraphEndsSection = outer.endsSection
+        paragraphLeadingMarkers = outer.leadingMarkers
+        dropsLeadingWhitespace = outer.dropsLeadingWhitespace
+        isInRun = outer.isInRun
+        runIsBold = outer.runIsBold
+        runIsItalic = outer.runIsItalic
+        runIsStrikethrough = outer.runIsStrikethrough
+        runText = outer.runText
+        runExplicitlyHidden = outer.runExplicitlyHidden
+        runStyle = outer.runStyle
+        runIsHidden = outer.runIsHidden
+        runPieces = outer.runPieces
+        isInHyperlink = outer.isInHyperlink
+        hyperlinkRelId = outer.hyperlinkRelId
+        hyperlinkText = outer.hyperlinkText
+    }
+
     // MARK: - Paragraph Processing
 
     /// Reset state for a new paragraph
@@ -394,6 +614,8 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// formatting does in Word, so a paragraph marked as body text is no
     /// heading whatever its style; otherwise its style's heading level.
     private var paragraphHeadingLevel: Int? {
+        // A note's text is never a heading, whatever its style says.
+        if readsNotes { return nil }
         if let paragraphOutlineLevel {
             return paragraphOutlineLevel.headingLevel
         }
@@ -575,12 +797,35 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         runIsItalic = false
         runIsStrikethrough = false
         runText = ""
+        runExplicitlyHidden = nil
+        runStyle = ""
+        updateRunHidden()
+    }
+
+    /// Settle whether the run being read is hidden, by the toggle rule of
+    /// ECMA-376 17.7.3 for `w:vanish`: the run's own properties, when they
+    /// say anything, decide; otherwise the paragraph style and the character
+    /// style each hide the run or not (each through the styles they are based
+    /// on), and the run is hidden when exactly one of them does, so a hidden
+    /// character style in a hidden paragraph shows the text again. Called at
+    /// the start of the run and again as its style and `w:vanish` are read,
+    /// which come before any of its text.
+    private func updateRunHidden() {
+        if let runExplicitlyHidden {
+            runIsHidden = runExplicitlyHidden
+            return
+        }
+        // A paragraph that names no style takes the default paragraph style.
+        let paragraphStyle = currentParagraphStyle.isEmpty ? (styles.defaultParagraphStyle ?? "") : currentParagraphStyle
+        let paragraphHides = styles.hiddenParagraphStyles.contains(paragraphStyle)
+        runIsHidden = paragraphHides != styles.hiddenCharacterStyles.contains(runStyle)
     }
 
     /// Apply formatting to the run text and append to paragraph
     private func endRun() {
         guard isInRun else { return }
         isInRun = false
+        runIsHidden = false
 
         // A run with a page start inside it is written piece by piece, a
         // page beginning after each piece (PG07). Any other run is one piece.
