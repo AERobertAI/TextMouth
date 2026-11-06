@@ -488,9 +488,9 @@ final class MultiMacCrashSafetyTests: XCTestCase {
                 return try Data(contentsOf: url)
             }
         ))
-        // The first save that finds the file in the cloud records the
-        // settings then in use as what the file held; a change comes after.
-        service.saveToDisk()
+        // The very first change is made while the file is in the cloud, with
+        // no save attempted before it: loading the file recorded the
+        // settings then in use as what it held.
         service.config.wordsPerMinute = 333
         service.saveToDisk()
         service.fileMayHaveArrived()

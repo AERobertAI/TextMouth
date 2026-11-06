@@ -54,6 +54,34 @@ enum DataDirectoryUnavailableText {
         }
     }
 
+    /// What the window says when actions it held while the library's files
+    /// were on their way cannot be taken after all, because the fetch
+    /// failed, the window closed, or another library was chosen: each
+    /// action's refusal once, then which books were not opened, by file name
+    /// where there is one. Nil when none of the actions needs the library.
+    static func heldRefusal(of actions: [GlobalAction]) -> String? {
+        var sentences: [String] = []
+        var names: [String] = []
+        var unnamedBooks = 0
+        for action in actions {
+            guard let sentence = refusal(of: action) else { continue }
+            if !sentences.contains(sentence) {
+                sentences.append(sentence)
+            }
+            switch action {
+            case .openFiles(let urls): names += urls.map(\.lastPathComponent)
+            case .openBookWindow, .continueToNextBook: unnamedBooks += 1
+            default: break
+            }
+        }
+        guard !sentences.isEmpty else { return nil }
+        if unnamedBooks > 0 {
+            names.append(unnamedBooks == 1 ? "one book from the library" : "\(unnamedBooks) books from the library")
+        }
+        let detail = names.isEmpty ? [] : ["Not opened: " + names.joined(separator: ", ") + "."]
+        return (sentences + detail).joined(separator: " ")
+    }
+
     /// A button's title as a sentence names it: without the "..." that marks
     /// a button opening a window or a chooser ("Use Default Location...").
     private static func buttonName(_ title: String) -> String {

@@ -344,6 +344,14 @@ final class LibraryViewModel: ObservableObject {
     /// and have not returned, including those of a fetch that gave up on a
     /// stuck read: none is read again meanwhile, so no threads pile up.
     var libraryFilesBeingRead: Set<String> = []
+    /// The slots that cap the fetch reads in flight, for the library's
+    /// fetch and the launch files alike.
+    let libraryFetchReadSlots = LibraryFetchReadSlots()
+    /// Whether the user chose another library: this process is about to be
+    /// replaced, so nothing opens in it, and the Library window says which
+    /// book it was asked to open that will not be. Cleared if TextMouth can't
+    /// open again.
+    @Published var librarySwitchPending = false
     /// The waits before the retries of a fetch whose reads fail or bring
     /// nothing: a sync service that isn't up yet just after a restart often
     /// is within half a minute.

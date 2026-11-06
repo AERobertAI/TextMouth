@@ -5,6 +5,11 @@ Part of [TextMouth's documentation](../../README.md).
 Every version of TextMouth, newest first, and what changed for you in each.
 
 ## 0.3.2 (November 6, 2026)
+### A library in the cloud
+- A library in Google Drive, iCloud Drive, or Dropbox now opens by itself when some of its files aren't on this Mac. TextMouth gets them from the sync service, shows Getting Your Library while it does, and opens the library when they arrive. It used to stop on Library Not Available until you chose Try Again (see [Where TextMouth keeps your library](where-your-library-lives.md)).
+- If it can't get them, TextMouth says so and says what to check, after trying again for a little while. Books you opened from Finder while waiting open with the library, or are named if they couldn't.
+- TextMouth also gets your settings, statistics, substitutions, and feed records in the background when a library in the cloud opens, and never saves over a copy still in the cloud.
+- TextMouth can no longer freeze at launch waiting for a folder that is only in the cloud.
 ### Commands
 - The Next Page and Previous Page commands and their keys are gone. To move by page, choose Page as the navigation unit and use Skip Forward and Skip Backward, or use Go to Page… (Option-Command-G) (see [Reader windows](reader-windows.md)). A key you gave either of those commands is dropped the next time TextMouth opens, and your other shortcuts are kept.
 
