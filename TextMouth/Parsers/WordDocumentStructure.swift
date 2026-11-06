@@ -46,6 +46,8 @@ struct WordFileInformationBlock {
         case endnoteReferences = 46
         /// Where each endnote's text lies in the endnote story (PlcfendTxt).
         case endnoteText = 47
+        /// Where each text box's text lies in the text box story (PlcftxbxTxt).
+        case textBoxText = 56
         /// The list table (PlfLst): the lists and their levels.
         case listFormats = 73
         /// The list override table (PlfLfo): the list instances paragraphs name.
@@ -116,34 +118,52 @@ struct WordFileInformationBlock {
         )
     }
 
-    /// The stories a person reading the document sees after its main text:
-    /// the footnotes, the endnotes, and the main document's text boxes, as
-    /// character positions. (The stories are laid end to end after the main
-    /// text: footnotes, headers, macros, comments, endnotes, text boxes,
-    /// header text boxes. The headers, the comments, and the header text
-    /// boxes are page furniture or notes to the author and are not read.)
-    /// Each is cut at `limit`, the characters the document holds; one that
-    /// is empty, or that a FIB too short to give the lengths leaves out, is
-    /// an empty range.
-    func followingStories(limit: Int) throws -> (footnotes: Range<Int>, endnotes: Range<Int>, textBoxes: Range<Int>) {
-        let none = 0..<0
-        guard longValueCount >= 9 else { return (none, none, none) }
-        // ccpFtn, ccpHdd, ccpMcr, ccpAtn, and ccpEdn follow ccpText, and
-        // ccpTxbx follows them when the FIB is long enough to hold it.
-        let lengths = try (1...6).map { index -> Int in
-            index + 3 < longValueCount ? try stream.u32(longValuesOffset + (3 + index) * 4) : 0
+    /// The stories of a document after its main text, as character positions.
+    /// They are laid end to end after it, in the order of these fields; each
+    /// is cut at the characters the document holds, and one that is empty,
+    /// or that a FIB too short to give its length leaves out, is an empty range.
+    struct Stories {
+        var footnotes = 0..<0
+        var headers = 0..<0
+        var macros = 0..<0
+        var comments = 0..<0
+        var endnotes = 0..<0
+        var textBoxes = 0..<0
+        var headerTextBoxes = 0..<0
+
+        /// The ones that hold characters, in the order the file keeps them.
+        var inFileOrder: [Range<Int>] {
+            [footnotes, headers, macros, comments, endnotes, textBoxes, headerTextBoxes].filter { !$0.isEmpty }
         }
-        let footnotes = mainTextLength..<mainTextLength + lengths[0]
-        let endnotesStart = mainTextLength + lengths[0] + lengths[1] + lengths[2] + lengths[3]
-        let endnotes = endnotesStart..<endnotesStart + lengths[4]
-        let textBoxesStart = endnotesStart + lengths[4]
-        let textBoxes = textBoxesStart..<textBoxesStart + lengths[5]
-        let cut = { (range: Range<Int>) -> Range<Int> in
+    }
+
+    /// The stories after the main text (`ccpFtn` to `ccpHdrTxbx`), cut at
+    /// `limit`. A person reading the document sees the footnotes, the
+    /// endnotes, and the main document's text boxes; the headers, the
+    /// comments, and the header text boxes are page furniture or notes to the
+    /// author and are read only when nothing else holds words.
+    func stories(limit: Int) throws -> Stories {
+        var result = Stories()
+        guard longValueCount >= 9 else { return result }
+        // ccpFtn, ccpHdd, ccpMcr, ccpAtn, ccpEdn, ccpTxbx, ccpHdrTxbx follow ccpText, as many as the FIB holds.
+        let lengths = try (4...10).map { index -> Int in
+            index < longValueCount ? try stream.u32(longValuesOffset + index * 4) : 0
+        }
+        var start = mainTextLength
+        func take(_ length: Int) -> Range<Int> {
+            defer { start += length }
             // A story that begins past the characters the document holds has none.
-            guard range.lowerBound < limit else { return none }
-            return range.lowerBound..<min(range.upperBound, limit)
+            guard start < limit else { return 0..<0 }
+            return start..<min(start + length, limit)
         }
-        return (cut(footnotes), cut(endnotes), cut(textBoxes))
+        result.footnotes = take(lengths[0])
+        result.headers = take(lengths[1])
+        result.macros = take(lengths[2])
+        result.comments = take(lengths[3])
+        result.endnotes = take(lengths[4])
+        result.textBoxes = take(lengths[5])
+        result.headerTextBoxes = take(lengths[6])
+        return result
     }
 
     /// Where `structure` lies in `table`: its offset and length, checked

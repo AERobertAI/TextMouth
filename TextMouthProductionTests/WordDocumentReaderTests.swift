@@ -521,13 +521,78 @@ final class WordDocumentReaderTests: XCTestCase {
         XCTAssertEqual(try body(of: builder.build()), "<p>Main words.</p>\n<p>Footnote one.</p>\n")
     }
 
-    func testAMainStoryWithNoWordsReadsTheOtherStoriesInFileOrder() throws {
+    func testAMainStoryWithNoWordsReadsItsNotesAndTextBoxesAndNotItsHeadersOrComments() throws {
         for main in [[], [Paragraph("")], [Paragraph("  ... ")]] {
             let body = try body(of: storyDocument(main: main).build())
-            let expected = ["Footnote", "Header", "Comment", "Endnote", "Textbox", "Header textbox"].map { "<p>\($0) words.</p>\n" }.joined()
             // A main story of punctuation keeps its punctuation, as textutil's does.
-            XCTAssertTrue(body.hasSuffix(expected), body)
+            XCTAssertTrue(body.hasSuffix("<p>Footnote words.</p>\n<p>Endnote words.</p>\n<p>Textbox words.</p>\n"), body)
+            for page in ["Header", "Comment"] { XCTAssertFalse(body.contains(page), body) }
         }
+    }
+
+    func testADocumentWhoseWordsAreAllInHeadersAndCommentsReadsEveryStoryInFileOrder() throws {
+        var builder = WordDocumentBuilder()
+        builder.stories = [
+            .headers: [Paragraph("Header words.")], .comments: [Paragraph("Comment words.")],
+            .headerTextBoxes: [Paragraph("Header textbox words.")],
+        ]
+        XCTAssertEqual(
+            try body(of: builder.build()),
+            "<p>Header words.</p>\n<p>Comment words.</p>\n<p>Header textbox words.</p>\n"
+        )
+    }
+
+    func testAFootnoteOrABoxHasNoPagesAndAnOpenFieldDoesNotEatTheNextStory() throws {
+        let pageBreakBefore = WordDocumentBuilder.modifier(WordSprm.pageBreakBefore, 1)
+        var builder = WordDocumentBuilder()
+        // The main story ends in a field whose end is not there.
+        builder.paragraphs = [Paragraph("Main \u{13} NEVER ENDS")]
+        builder.stories = [
+            .footnotes: [Paragraph("Note one.", modifiers: pageBreakBefore), Paragraph("Note two.\u{0C} more.")],
+            .textBoxes: [Paragraph("Box words.", modifiers: pageBreakBefore)],
+        ]
+        // No pages begin in a note or a box, and the notes and the box are read.
+        XCTAssertEqual(
+            try body(of: builder.build(), pages: true),
+            span(1) + "<p>Main</p>\n<p>Note one.</p>\n<p>Note two. more.</p>\n<p>Box words.</p>\n"
+        )
+    }
+
+    // MARK: - The Guess at Headings Is the Main Story's
+
+    func testATextBoxHeadingDoesNotTurnOffTheMainStorysGuessAtHeadings() throws {
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [
+            Paragraph(runs: [Run("Big title", fontSize: 40)]),
+            Paragraph("Body text goes on for a good while here."),
+            Paragraph("More body text."),
+        ]
+        builder.stories = [.textBoxes: [Paragraph("Boxed heading", style: 1)]]
+        XCTAssertEqual(
+            try body(of: builder.build()),
+            "<h1>Big title</h1>\n<p>Body text goes on for a good while here.</p>\n<p>More body text.</p>\n<h1>Boxed heading</h1>\n"
+        )
+    }
+
+    func testMuchSmallTextInTheBoxesDoesNotMakeHeadingsOfTheMainStory() throws {
+        var builder = WordDocumentBuilder()
+        // The main story is 12-point and short; the boxes hold far more text at 8 points.
+        builder.paragraphs = [Paragraph(runs: [Run("Short main paragraph.", fontSize: 24)]), Paragraph(runs: [Run("Another short one here.", fontSize: 24)])]
+        builder.stories = [.textBoxes: [Paragraph(runs: [Run(String(repeating: "Small print goes on and on. ", count: 30), fontSize: 16)])]]
+        let body = try body(of: builder.build())
+        XCTAssertFalse(body.contains("<h"), body)
+        XCTAssertTrue(body.hasPrefix("<p>Short main paragraph.</p>\n<p>Another short one here.</p>\n<p>Small print"), body)
+    }
+
+    func testTheTextBoxTableMakesABoxOfEachRangeAndIgnoresTheLast() throws {
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [Paragraph("Main words.")]
+        builder.stories = [.textBoxes: [Paragraph("Box one."), Paragraph("Box two.")]]
+        builder.writesTextBoxTable = true
+        XCTAssertEqual(try body(of: builder.build()), "<p>Main words.</p>\n<p>Box one.</p>\n<p>Box two.</p>\n")
+        // A table that names only the first box: what lies after it, in the last range, is ignored.
+        builder.textBoxTableLimit = 1
+        XCTAssertEqual(try body(of: builder.build()), "<p>Main words.</p>\n<p>Box one.</p>\n")
     }
 
     func testTheOtherStoriesOfAnEmptyBodyHavePagesToo() throws {

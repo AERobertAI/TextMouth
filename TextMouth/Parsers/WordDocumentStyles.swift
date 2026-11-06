@@ -184,7 +184,7 @@ struct WordStyleSheet {
         var position = range.lowerBound + 2 + headerSize
         var styles: [Style?] = []
         styles.reserveCapacity(styleCount)
-        for index in 0..<styleCount {
+        for _ in 0..<styleCount {
             // Each style is a 16-bit size and then that many bytes; a size of
             // zero leaves the slot unused. A sheet cut short (its length in the
             // file's header is less than its slots need) has no more styles:

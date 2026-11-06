@@ -459,6 +459,32 @@ final class WordDocumentListTests: XCTestCase {
         XCTAssertEqual(try wordBody(of: builder.build(), speaksNumbers: true), "<p>1. one</p>\n<p>two</p>\n<p>2. three</p>\n")
     }
 
+    // MARK: - Stories
+
+    func testAListCountsAgainInEachNoteAndEachBoxWhenTheirTablesAreGood() throws {
+        var builder = listBuilder([ListLevel(0, "%1.")])
+        builder.paragraphs = [
+            Paragraph("a", modifiers: inList()), Paragraph("b", modifiers: inList()), Paragraph("c\u{02}\u{02}", modifiers: inList()),
+        ]
+        builder.footnoteReferences = [5, 6]
+        builder.stories = [
+            .footnotes: [Paragraph("n1", modifiers: inList()), Paragraph("n2", modifiers: inList())],
+            .textBoxes: [Paragraph("x", modifiers: inList()), Paragraph("y", modifiers: inList())],
+        ]
+        builder.writesTextBoxTable = true
+        XCTAssertEqual(
+            try wordBody(of: builder.build(), speaksNumbers: true),
+            "<p>1. a</p>\n<p>2. b</p>\n<p>3. c</p>\n<p>1. n1</p>\n<p>1. n2</p>\n<p>1. x</p>\n<p>1. y</p>\n"
+        )
+        // Without the tables, each story is read whole and counts from its own start.
+        builder.footnoteReferences = []
+        builder.writesTextBoxTable = false
+        XCTAssertEqual(
+            try wordBody(of: builder.build(), speaksNumbers: true),
+            "<p>1. a</p>\n<p>2. b</p>\n<p>3. c</p>\n<p>1. n1</p>\n<p>2. n2</p>\n<p>1. x</p>\n<p>2. y</p>\n"
+        )
+    }
+
     // MARK: - The Real Samples
 
     func testTheRealSampleWithHeadingsLinkedToAChapterListNumbersThemOnlyInTheWordsForm() throws {

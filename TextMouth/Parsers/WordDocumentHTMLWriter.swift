@@ -51,6 +51,11 @@ struct WordHTMLWriter {
     private var characters: WordFormatRuns<WordCharacterFormat>.Cursor
     /// Counts the numbered paragraphs, in the order they end.
     private var lists: WordListNumbering
+    /// Whether the story being written is the main one: only it has pages
+    /// and the census that guesses its headings.
+    private var inMainStory = true
+    /// The position of the last character added, where a story's last paragraph ends.
+    private var lastPosition = 0
     /// Whether a number is written as words before its paragraph, rather than
     /// the paragraph being an item of an `ol` whose number is not heard.
     private let numbersAreWords: Bool
@@ -178,6 +183,7 @@ struct WordHTMLWriter {
     /// - Throws: `PageLimitExceeded` or `DocumentTooLargeError`, as described
     ///   there.
     mutating func add(position: Int, unit: UInt16) throws {
+        lastPosition = position
         // A surrogate pair is one character; a half on its own is damage,
         // read as the replacement character.
         if let high = pendingHighSurrogate {
@@ -343,7 +349,7 @@ struct WordHTMLWriter {
     /// Takes a form feed: a page break, or a section break that starts a page.
     private mutating func addPageBreak(at position: Int) throws {
         addWhitespace(" ")
-        guard includesPages, sections.formFeedStartsPage(at: position) else { return }
+        guard includesPages, inMainStory, sections.formFeedStartsPage(at: position) else { return }
         try beginPage()
     }
 
@@ -362,7 +368,7 @@ struct WordHTMLWriter {
     /// first page begins there already), or when a break is waiting for the
     /// same words already (a form feed, or a section break, right before).
     private mutating func beginPageIfParagraphDoes(_ format: WordParagraphFormat) throws {
-        guard includesPages, wroteCountedCharacter, pendingPages.isEmpty,
+        guard includesPages, inMainStory, wroteCountedCharacter, pendingPages.isEmpty,
               !format.isInTable, format.tableDepth == 0,
               styles.beginsPage(styleIndex: format.style, direct: format.pageBreakBefore) else { return }
         try beginPage()
@@ -446,7 +452,8 @@ struct WordHTMLWriter {
         paragraphLength = 0
         pendingWhitespace = ""
         previousWasSpace = true
-        documentCensus.merge(census)
+        // Only the main story's words say what its headings are by size and weight.
+        if inMainStory { documentCensus.merge(census) }
 
         // Its place in a list, if it has one. Every paragraph of a list is
         // counted, empty or not, as Word counts it. The mark that ends a row
@@ -518,7 +525,7 @@ struct WordHTMLWriter {
                 write("<p>" + shown + "</p>\n")
             } else if hasText {
                 if let level = headingLevel(of: format) {
-                    hasRealHeading = true
+                    if inMainStory { hasRealHeading = true }
                     write("<h\(level)>" + shown + "</h\(level)>\n")
                 } else if let ordered = itemKind {
                     // A bullet, or a number that is not heard, is an item of a list.
@@ -530,7 +537,7 @@ struct WordHTMLWriter {
                         writeItem(item, level: 0, ordered: false)
                     } else {
                         write("<p>" + shown + "</p>\n")
-                        if length <= Self.longestHeading, !(length == 1 && startsWithLetter) {
+                        if inMainStory, length <= Self.longestHeading, !(length == 1 && startsWithLetter) {
                             candidates.append((blocks.count - 1, census, shown))
                         }
                     }
@@ -681,17 +688,44 @@ struct WordHTMLWriter {
         cellIsOpen = false
     }
 
+    // MARK: Stories
+
+    /// Begins another story (the text of a note, of a text box, or one of the
+    /// document's other stories): the paragraph and table and list open end,
+    /// the fields that are still open are closed, and the list numbers count
+    /// again from the start, as a story's paragraphs are counted among
+    /// themselves ([MS-DOC] Determining Level Number). Only the main story
+    /// has pages, and the guess at headings is made from it alone.
+    /// - Parameter isMain: whether it is the main story.
+    mutating func beginStory(isMain: Bool) throws {
+        try endOpenParagraph(at: lastPosition)
+        closeTable()
+        closeLists()
+        fields.removeAll()
+        instructionDepth = 0
+        pendingPages.removeAll()
+        pendingWhitespace = ""
+        joinsNextToItem = false
+        lists.startAgain()
+        inMainStory = isMain
+    }
+
+    /// Ends the paragraph that no mark ended, if there is one.
+    private mutating func endOpenParagraph(at position: Int) throws {
+        if pendingHighSurrogate != nil {
+            pendingHighSurrogate = nil
+            try addText("\u{FFFD}", at: position)
+        }
+        if paragraphHasText || !paragraph.isEmpty { try endParagraph(mark: 0x0D, at: position) }
+    }
+
     // MARK: Finishing
 
     /// Ends the text, writing any paragraph no mark ended and closing any
     /// table, and returns the body of the document: with page 1 at its
     /// start when pages are asked for and the text holds a letter or digit.
     mutating func finish(endingAt position: Int) throws -> String {
-        if pendingHighSurrogate != nil {
-            pendingHighSurrogate = nil
-            try addText("\u{FFFD}", at: position)
-        }
-        if paragraphHasText || !paragraph.isEmpty { try endParagraph(mark: 0x0D, at: position) }
+        try endOpenParagraph(at: position)
         closeTable()
         closeLists()
         // A document with no real headings gets the guess textutil's readers

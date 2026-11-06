@@ -337,12 +337,21 @@ struct WordListNumbering {
     }
 
     private let tables: WordListTables
+    /// The tables as the counters take them, made once.
+    private let numbering: DOCXNumbering
     private var counter: DOCXListCounter
 
     /// A numbering that has counted nothing yet.
     init(tables: WordListTables) {
         self.tables = tables
-        counter = DOCXListCounter(numbering: tables.numbering)
+        numbering = tables.numbering
+        counter = DOCXListCounter(numbering: numbering)
+    }
+
+    /// Forgets every count: the paragraphs after this are in another story
+    /// (a note, a text box), whose lists count from their own start.
+    mutating func startAgain() {
+        counter = DOCXListCounter(numbering: numbering)
     }
 
     /// Whether no paragraph can be in a list.

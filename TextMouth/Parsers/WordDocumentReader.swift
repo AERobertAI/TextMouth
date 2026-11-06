@@ -159,44 +159,48 @@ enum WordDocumentReader {
             )
         }
 
-        // Writes the text of the character `ranges` (in order, none going
-        // back) and says whether it holds a letter or a digit.
-        func write(_ ranges: [Range<Int>]) throws -> (body: String, hasWords: Bool) {
+        // Writes the text of the stories `segments` (in order, none going back,
+        // each a story of its own for the list numbers and the fields that
+        // are open) and says whether it holds a letter or a digit.
+        func write(_ segments: [(range: Range<Int>, isMain: Bool)]) throws -> (body: String, hasWords: Bool) {
             var writer = WordHTMLWriter(
                 styles: styles, sections: sections, includesPages: includesPages,
                 outputLimit: Int(DocumentByteLimit.current) * 2, paragraphs: paragraphs, characters: characters,
                 lists: lists, numbersAreWords: speaksListNumbers
             )
-            for range in ranges {
-                try pieces.forEachCharacter(from: range.lowerBound, upTo: range.upperBound, in: document) { position, unit in
+            for segment in segments {
+                try writer.beginStory(isMain: segment.isMain)
+                try pieces.forEachCharacter(from: segment.range.lowerBound, upTo: segment.range.upperBound, in: document) { position, unit in
                     try writer.add(position: position, unit: unit)
                 }
             }
-            let body = try writer.finish(endingAt: ranges.last?.upperBound ?? 0)
+            let body = try writer.finish(endingAt: segments.last?.range.upperBound ?? 0)
             return (body, writer.wroteCountedCharacter)
         }
 
         // The main story is the book. The footnotes, the endnotes, and the
         // text boxes of the main story follow it, in that order, as they
         // follow it in textutil's reading, so their words are not lost: a
-        // person reading the document sees them. The headers, the comments,
-        // and the text boxes of the headers are left out, since a header
-        // would repeat page furniture at the end of the book. Only when the
-        // main story holds no words at all (a document whose text is in a
-        // header, say) are all the stories after it read, in the order the
-        // file keeps them, as textutil reads them.
+        // person reading the document sees them, each note and box as a
+        // story of its own. A note is read only if a person would see its
+        // reference mark (not when it is in hidden or deleted text). The
+        // headers, the comments, and the text boxes of the headers are left
+        // out, since a header would repeat page furniture at the end of the
+        // book. Only when all of that holds no words (a document whose text
+        // is in a header, say) is every story read, in the order the file
+        // keeps them, as textutil reads them.
         let main = 0..<textEnd
-        var written = try write([main])
-        if !written.hasWords {
-            if pieces.characterCount > textEnd { written = try write([0..<pieces.characterCount]) }
-        } else {
-            // A note is read only if a person would see its reference mark:
-            // not when the mark is in hidden or deleted text.
-            let stories = try fib.followingStories(limit: pieces.characterCount)
-            let following = shownNotes(of: stories.footnotes, references: .footnoteReferences, texts: .footnoteText)
-                + shownNotes(of: stories.endnotes, references: .endnoteReferences, texts: .endnoteText)
-                + (stories.textBoxes.isEmpty ? [] : [stories.textBoxes])
-            if !following.isEmpty { written = try write([main] + following) }
+        let stories = try fib.stories(limit: pieces.characterCount)
+        var segments: [(range: Range<Int>, isMain: Bool)] = [(main, true)]
+        for note in shownNotes(of: stories.footnotes, references: .footnoteReferences, texts: .footnoteText) { segments.append((note, false)) }
+        for note in shownNotes(of: stories.endnotes, references: .endnoteReferences, texts: .endnoteText) { segments.append((note, false)) }
+        for box in WordNotes.boxRanges(of: stories.textBoxes, texts: try? fib.range(of: .textBoxText, in: table), in: table) {
+            segments.append((box, false))
+        }
+        var written = try write(segments)
+        if !written.hasWords, pieces.characterCount > textEnd {
+            let everyStory = stories.inFileOrder + (stories.inFileOrder.last.map { $0.upperBound < pieces.characterCount ? [$0.upperBound..<pieces.characterCount] : [] } ?? [])
+            written = try write([(main, true)] + everyStory.map { ($0, false) })
         }
         let body = written.body
 

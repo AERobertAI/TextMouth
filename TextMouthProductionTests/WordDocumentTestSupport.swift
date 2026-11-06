@@ -184,6 +184,11 @@ struct WordDocumentBuilder {
     /// stories (a note is a paragraph); none leaves out the note tables.
     var footnoteReferences: [Int] = []
     var endnoteReferences: [Int] = []
+    /// Whether to write the text box table (`PlcftxbxTxt`), a box for each
+    /// paragraph of the text box story.
+    var writesTextBoxTable = false
+    /// How many of the boxes the table names, when fewer than the story holds.
+    var textBoxTableLimit: Int?
     /// The lists (`PlfLst`) and list instances (`PlfLfo`); none leaves out both.
     var lists: [List] = []
     var listInstances: [ListInstance] = []
@@ -439,6 +444,22 @@ struct WordDocumentBuilder {
             while table.count % 4 != 0 { table.append(0) }
             listPairs[text.rawValue] = (table.count, textBytes.count)
             table += textBytes
+        }
+
+        // The text box table: the position where each box begins (a box is a
+        // paragraph of the story), where the last ends, and one more (the
+        // last range, which is ignored), then an FTXBXS of 22 bytes for each box.
+        if writesTextBoxTable, let boxes = stories[.textBoxes], !boxes.isEmpty {
+            var starts = [0]
+            let named = Array(boxes.prefix(textBoxTableLimit ?? boxes.count))
+            for box in named { starts.append(starts[starts.count - 1] + box.runs.reduce(0) { $0 + $1.text.utf16.count } + 1) }
+            var bytes: [UInt8] = []
+            for start in starts { bytes += Self.le32(start) }
+            bytes += Self.le32(starts[starts.count - 1] + 1)
+            bytes += [UInt8](repeating: 0, count: 22 * named.count)
+            while table.count % 4 != 0 { table.append(0) }
+            listPairs[WordFileInformationBlock.Structure.textBoxText.rawValue] = (table.count, bytes.count)
+            table += bytes
         }
 
         // The pairs of the FIB: (offset, length) of each structure.
