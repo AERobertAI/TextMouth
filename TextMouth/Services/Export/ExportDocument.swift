@@ -29,6 +29,13 @@ struct ExportDocument: Equatable, Sendable {
     var titleHeading: ExportHeading?
     /// The book's text, block by block, in reading order.
     var blocks: [ExportBlock]
+    /// Where the book's chapters begin in `blocks`, in order: kept only when
+    /// the writer asks for the book's structure
+    /// (`ExportWalkOptions.keepsChapters`), and empty otherwise, as it is
+    /// for a book with no chapter marker, which is one chapter. A writer
+    /// that makes a file of each chapter (EPUB) reads it; every other
+    /// writer ignores it.
+    var chapterStarts: [ExportChapterStart]
 
     /// The deepest nesting of lists and block quotes the model holds: a list
     /// or quote met deeper in content.md, which is untrusted, is not opened,
@@ -36,11 +43,18 @@ struct ExportDocument: Equatable, Sendable {
     /// therefore recurse through the blocks without bound checks of its own.
     static let maximumNesting = 8
 
-    /// A document of `blocks` for the book `book`, with `titleHeading`.
-    init(book: ExportBookDetails, titleHeading: ExportHeading? = nil, blocks: [ExportBlock]) {
+    /// A document of `blocks` for the book `book`, with `titleHeading`, and
+    /// the chapters `chapterStarts` begin.
+    init(
+        book: ExportBookDetails,
+        titleHeading: ExportHeading? = nil,
+        blocks: [ExportBlock],
+        chapterStarts: [ExportChapterStart] = []
+    ) {
         self.book = book
         self.titleHeading = titleHeading
         self.blocks = blocks
+        self.chapterStarts = chapterStarts
     }
 
     /// Every heading in `blocks`, at any depth, in reading order: the
@@ -48,6 +62,29 @@ struct ExportDocument: Equatable, Sendable {
     var headings: [ExportHeading] {
         ExportBlock.headings(in: blocks)
     }
+}
+
+// MARK: - Chapters and Pages
+
+/// Where a chapter of an exported document begins (EPUB makes a file of each).
+struct ExportChapterStart: Equatable, Sendable {
+    /// The index in the document's `blocks` of the chapter's first block.
+    var blockIndex: Int
+    /// The chapter's title, as its marker in content.md gives it; empty for
+    /// a chapter with none.
+    var title: String
+}
+
+/// The start of a page of the book (PG01), kept when the writer asks for the
+/// book's structure (`ExportWalkOptions.keepsPageMarkers`): a writer that has
+/// a place for pages (EPUB) makes a target of each one.
+struct ExportPageBreak: Equatable, Sendable {
+    /// The page's label as content.md gives it: "12", "xii", "A-3".
+    var label: String
+    /// The page's id: "page_" and the page's number among the book's pages,
+    /// unique in the document. Heading ids (`ExportHeadingIDs`) hold no
+    /// underscore, so no page's id is a heading's.
+    var id: String
 }
 
 // MARK: - The Book
@@ -63,13 +100,18 @@ struct ExportBookDetails: Equatable, Sendable {
     /// nil when the book names none or names one that is not a tag
     /// (`languageTag(_:)`).
     var language: String?
+    /// The book's identity in the library, which a writer that gives its
+    /// file an identifier (EPUB) derives it from, so the same book exported
+    /// twice has the same one; nil for details made without a book.
+    var identifier: UUID?
 
     /// The details given, as they are: a test's, or a caller's that has
     /// already checked them.
-    init(title: String, author: String? = nil, language: String? = nil) {
+    init(title: String, author: String? = nil, language: String? = nil, identifier: UUID? = nil) {
         self.title = title
         self.author = author
         self.language = language
+        self.identifier = identifier
     }
 
     /// The details of `book` as the library holds them: its title, its
@@ -79,7 +121,8 @@ struct ExportBookDetails: Equatable, Sendable {
         self.init(
             title: book.title,
             author: Book.isUnknownAuthor(book.author) ? nil : book.author,
-            language: book.epubLanguage.flatMap(Self.languageTag)
+            language: book.epubLanguage.flatMap(Self.languageTag),
+            identifier: book.id
         )
     }
 
@@ -127,6 +170,10 @@ enum ExportBlock: Equatable, Sendable {
     case thematicBreak
     /// A table.
     case table(ExportTable)
+    /// The start of a page, between two blocks (PG01): only in a document
+    /// walked with `ExportWalkOptions.keepsPageMarkers`. A page that starts
+    /// inside a paragraph is a run of it instead (`ExportRun.pageBreak`).
+    case pageBreak(ExportPageBreak)
 
     /// The block's plain text, in reading order, as braille and any writer
     /// without styles read it:
@@ -136,7 +183,7 @@ enum ExportBlock: Equatable, Sendable {
     ///   feed, an item with no text left out;
     /// - a quote's blocks' text, apart by a blank line;
     /// - a code block's code, as it is;
-    /// - nothing for a thematic break;
+    /// - nothing for a thematic break or the start of a page;
     /// - a table's rows, a row a line, its cells that have words apart by a
     ///   space, as the reader reads a row.
     ///
@@ -155,7 +202,7 @@ enum ExportBlock: Equatable, Sendable {
             return blocks.map(\.plainText).joined(separator: "\n\n")
         case .codeBlock(let code):
             return code
-        case .thematicBreak:
+        case .thematicBreak, .pageBreak:
             return ""
         case .table(let table):
             return table.rows.map { row in
@@ -175,7 +222,28 @@ enum ExportBlock: Equatable, Sendable {
                 return headings(in: quoted)
             case .list(let list):
                 return list.items.flatMap { headings(in: $0.blocks) }
-            case .paragraph, .codeBlock, .thematicBreak, .table:
+            case .paragraph, .codeBlock, .thematicBreak, .table, .pageBreak:
+                return []
+            }
+        }
+    }
+
+    /// Every start of a page in `blocks`, at any depth (as a block, or inside
+    /// a paragraph or heading as a run), in reading order.
+    static func pageBreaks(in blocks: [ExportBlock]) -> [ExportPageBreak] {
+        blocks.flatMap { block -> [ExportPageBreak] in
+            switch block {
+            case .pageBreak(let page):
+                return [page]
+            case .heading(let heading):
+                return heading.runs.compactMap(\.pageBreak)
+            case .paragraph(let runs):
+                return runs.compactMap(\.pageBreak)
+            case .blockQuote(let quoted):
+                return pageBreaks(in: quoted)
+            case .list(let list):
+                return list.items.flatMap { pageBreaks(in: $0.blocks) }
+            case .codeBlock, .thematicBreak, .table:
                 return []
             }
         }
@@ -259,20 +327,37 @@ struct ExportRun: Equatable, Sendable {
     /// address may be a link (`isAllowedLinkAddress(_:)`); nil otherwise. The
     /// text of any other link is plain text.
     var link: String?
+    /// The start of a page at this place in the block's text, for a run that
+    /// is only that: its text is empty. Only in a document walked with
+    /// `ExportWalkOptions.keepsPageMarkers`. A run that starts a page is never
+    /// joined with its neighbours.
+    var pageBreak: ExportPageBreak?
 
-    /// A run of `text` in the style given; plain by default.
-    init(_ text: String, isEmphasis: Bool = false, isStrong: Bool = false, isCode: Bool = false, link: String? = nil) {
+    /// A run of `text` in the style given; plain by default. `pageBreak`
+    /// makes the run the start of a page, and `text` is then empty.
+    init(
+        _ text: String,
+        isEmphasis: Bool = false,
+        isStrong: Bool = false,
+        isCode: Bool = false,
+        link: String? = nil,
+        pageBreak: ExportPageBreak? = nil
+    ) {
         self.text = text
         self.isEmphasis = isEmphasis
         self.isStrong = isStrong
         self.isCode = isCode
         self.link = link
+        self.pageBreak = pageBreak
     }
 
     /// Whether `other` has this run's style and link, so the two, side by
-    /// side, are one run.
+    /// side, are one run. A run that starts a page has no such neighbour:
+    /// two pages that follow each other are two pages.
     func hasSameStyle(as other: ExportRun) -> Bool {
-        isEmphasis == other.isEmphasis && isStrong == other.isStrong && isCode == other.isCode && link == other.link
+        pageBreak == nil && other.pageBreak == nil
+            && isEmphasis == other.isEmphasis && isStrong == other.isStrong && isCode == other.isCode
+            && link == other.link
     }
 
     /// The schemes of the only addresses that become links: the web's and

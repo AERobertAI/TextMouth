@@ -52,7 +52,7 @@ final class ExportDocumentWalkerTests: XCTestCase {
             case .table(let table): return table.rows.flatMap { $0 }
             case .blockQuote(let quoted): return pieces(of: quoted)
             case .list(let list): return list.items.flatMap { pieces(of: $0.blocks) }
-            case .thematicBreak: return []
+            case .thematicBreak, .pageBreak: return []
             }
         }
     }

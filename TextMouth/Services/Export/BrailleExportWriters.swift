@@ -68,7 +68,7 @@ enum BrailleExportBlocks {
                 for row in table.rows {
                     result.append(textBlock(EmphasizedText(row.joined(separator: "; ")), itemDepth: itemDepth))
                 }
-            case .thematicBreak:
+            case .thematicBreak, .pageBreak:
                 // A break holds no text, so braille has nothing to write.
                 break
             }
