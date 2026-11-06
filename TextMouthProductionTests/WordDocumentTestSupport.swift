@@ -125,6 +125,11 @@ struct WordDocumentBuilder {
     /// How many pieces to split the text into; more than one stores them in
     /// reverse order in the file.
     var pieceCount = 1
+    /// The property modifiers (`Pcd.prm`, two bytes) of the pieces, by piece
+    /// index; a piece beyond the list has none. See `prm0(_:_:)` and `prm1(_:)`.
+    var piecePrms: [Int] = []
+    /// The groups of modifiers in the CLX (`Prc`s) that a `Prm1` indexes.
+    var modifierGroups: [[UInt8]] = []
     /// Whether the table stream is `1Table`.
     var usesOneTable = true
     /// The `nFib` written.
@@ -302,13 +307,15 @@ struct WordDocumentBuilder {
             table += packed.plc
         }
 
-        // The CLX: a piece table of the pieces in character order.
+        // The CLX: the groups of piece modifiers, then a piece table of the
+        // pieces in character order.
         layout.clx = table.count
+        for group in modifierGroups { table += [0x01] + Self.le16(group.count) + group }
         var plc: [UInt8] = []
         for index in 0...pieceCount { plc += Self.le32(pieceBounds[index]) }
         for index in 0..<pieceCount {
             let rawOffset = isCompressed ? (pieceFileOffsets[index] * 2) | 0x4000_0000 : pieceFileOffsets[index]
-            plc += Self.le16(0) + Self.le32(rawOffset) + Self.le16(0)
+            plc += Self.le16(0) + Self.le32(rawOffset) + Self.le16(index < piecePrms.count ? piecePrms[index] : 0)
         }
         table += [0x02] + Self.le32(plc.count)
         layout.pieceTable = table.count
@@ -375,6 +382,12 @@ struct WordDocumentBuilder {
 
     static func le16(_ value: Int) -> [UInt8] { [UInt8(value & 0xFF), UInt8((value >> 8) & 0xFF)] }
     static func le32(_ value: Int) -> [UInt8] { le16(value & 0xFFFF) + le16((value >> 16) & 0xFFFF) }
+
+    /// A `Prm0`: the sprm in the specification's table at `isprm`, with the one-byte operand `value`.
+    static func prm0(_ isprm: Int, _ value: Int) -> Int { (isprm << 1) | (value << 8) }
+
+    /// A `Prm1`: the group of modifiers at `index` in the CLX.
+    static func prm1(_ index: Int) -> Int { (index << 1) | 1 }
 
     /// A modifier with a one-byte operand.
     static func modifier(_ opcode: Int, _ operand: Int) -> [UInt8] { le16(opcode) + [UInt8(operand)] }

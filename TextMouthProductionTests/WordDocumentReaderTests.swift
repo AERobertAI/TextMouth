@@ -158,6 +158,89 @@ final class WordDocumentReaderTests: XCTestCase {
         XCTAssertEqual(try body(of: builder.build()), "<p>plain <strong>bold run here</strong> plain</p>\n")
     }
 
+    // MARK: - Piece Modifiers (Pcd.prm)
+
+    /// "aaaa bbbb" in two pieces, "aaaa " and "bbbb" with its paragraph mark,
+    /// the second piece having the modifier `prm`, and the CLX holding `groups`.
+    private func twoPieces(prm: Int, groups: [[UInt8]] = [], runs: [Run] = [Run("aaaa bbbb")]) throws -> String {
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [Paragraph(runs: runs)]
+        builder.pieceCount = 2
+        builder.piecePrms = [0, prm]
+        builder.modifierGroups = groups
+        return try body(of: builder.build())
+    }
+
+    func testAPieceModifierOfOneSprmSetsBoldHiddenAndItalic() throws {
+        // Prm0: the sprm is named by its index in the specification's table.
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm0(0x55, 1)), "<p>aaaa <strong>bbbb</strong></p>\n")
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm0(0x56, 1)), "<p>aaaa <em>bbbb</em></p>\n")
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm0(0x5C, 1)), "<p>aaaa</p>\n")
+        // A toggle's 0x81 reverses a style that is not hidden, and 0 leaves it shown.
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm0(0x5C, 0x81)), "<p>aaaa</p>\n")
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm0(0x5C, 0)), "<p>aaaa bbbb</p>\n")
+    }
+
+    func testAPieceModifierComesAfterTheRunsOwnProperties() throws {
+        let boldRun = [Run("aaaa bbbb", bold: 1)]
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm0(0x55, 0), runs: boldRun), "<p><strong>aaaa</strong> bbbb</p>\n")
+    }
+
+    func testAGroupOfPieceModifiersIsAppliedByItsIndex() throws {
+        let bold = WordDocumentBuilder.modifier(WordSprm.bold, 1)
+        let italic = WordDocumentBuilder.modifier(WordSprm.italic, 1)
+        // Prm1: the index of a group in the CLX; here the second of two.
+        let groups = [bold, bold + italic]
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm1(1), groups: groups), "<p>aaaa <strong><em>bbbb</em></strong></p>\n")
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm1(0), groups: groups), "<p>aaaa <strong>bbbb</strong></p>\n")
+    }
+
+    func testAGroupOfPieceModifiersMayHoldCharacterAndParagraphSprmsAtOnce() throws {
+        // Hidden text, and the paragraph's outline level, in one group.
+        let group = WordDocumentBuilder.modifier(WordSprm.hidden, 1) + WordDocumentBuilder.modifier(WordSprm.outlineLevel, 0)
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm1(0), groups: [group]), "<h1>aaaa</h1>\n")
+    }
+
+    func testAnUnknownOrNullPieceModifierChangesNothing() throws {
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm0(0x7F, 1)), "<p>aaaa bbbb</p>\n")
+        // isprm 0 with a zero operand has no effect (sprmCLbcCRJ is not applied).
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm0(0, 0)), "<p>aaaa bbbb</p>\n")
+        // A group holding a sprm cut short is read as far as it goes.
+        XCTAssertEqual(try twoPieces(prm: WordDocumentBuilder.prm1(0), groups: [[0x35, 0x08]]), "<p>aaaa bbbb</p>\n")
+    }
+
+    /// "Chapter One" and "Body" with every character a piece of its own, the
+    /// piece of the first paragraph's mark being the twelfth.
+    private func chapterWithPrmOnPiece(_ piece: Int, group: [UInt8]) throws -> String {
+        var builder = WordDocumentBuilder()
+        builder.paragraphs = [Paragraph("Chapter One"), Paragraph("Body")]
+        builder.pieceCount = 17
+        builder.piecePrms = [Int](repeating: 0, count: piece) + [WordDocumentBuilder.prm1(0)]
+        builder.modifierGroups = [group]
+        return try body(of: builder.build())
+    }
+
+    func testAParagraphStyleSetByTheModifiersOfItsLastPieceMakesAHeading() throws {
+        let style = WordDocumentBuilder.le16(WordSprm.paragraphStyle) + WordDocumentBuilder.le16(1)
+        XCTAssertEqual(try chapterWithPrmOnPiece(11, group: style), "<h1>Chapter One</h1>\n<p>Body</p>\n")
+    }
+
+    func testTheModifiersOfAnEarlierPieceDoNotChangeWhatTheParagraphIs() throws {
+        // The paragraph's properties are those of the piece with its mark
+        // ([MS-DOC] 2.4.6.1); the first character's piece says "heading" but is not the last.
+        let style = WordDocumentBuilder.le16(WordSprm.paragraphStyle) + WordDocumentBuilder.le16(1)
+        XCTAssertEqual(try chapterWithPrmOnPiece(0, group: style), "<p>Chapter One</p>\n<p>Body</p>\n")
+    }
+
+    func testTheRealFastSavedSampleHasAHeadingOnlyThePieceModifiersGive() throws {
+        // The second form's company line is Heading 1 by the Prm1 of its
+        // paragraph mark (sprmPIstd 1); the first form's identical line is body text.
+        let body = try sampleBody("doc/poi-rasp.doc", pages: false)
+        XCTAssertTrue(body.contains("<h1>Открытое акционерное общество «УУУУУУУУУУУ»</h1>"), body)
+        XCTAssertTrue(body.contains("<p>Открытое акционерное общество «ХХХХХХХХХХХ»</p>"), body)
+        XCTAssertEqual(body.components(separatedBy: "<h1>").count - 1, 1, body)
+    }
+
     func testEmptyParagraphsAndBlankDocumentsWriteNoBlocks() throws {
         XCTAssertEqual(try body([Paragraph(""), Paragraph("   "), Paragraph("")]), "")
         XCTAssertEqual(try body([]), "")

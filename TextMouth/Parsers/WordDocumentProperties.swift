@@ -118,27 +118,35 @@ enum WordDocumentProperties {
         pieces: WordPieceTable, styles: WordStyleSheet, limit: Int
     ) throws -> WordFormatRuns<WordParagraphFormat> {
         try runs(binTable: binTable, table: table, document: document, pieces: pieces, limit: limit,
-                 maximumRuns: (pageSize - 1 - 4) / (4 + paragraphEntrySize)) { page, index, runCount in
+                 maximumRuns: (pageSize - 1 - 4) / (4 + paragraphEntrySize),
+                 // A paragraph is one run, and the modifiers of the piece that
+                 // holds its last character (the last range) are the ones
+                 // that apply to it all ([MS-DOC] 2.4.6.1).
+                 modifiersOfRange: { ranges, _ in ranges.last?.modifiers ?? [] }) { page, index, runCount, modifiers in
+            var format = WordParagraphFormat()
             // The BxPap: the offset in words of the PAPX, and a PHE we skip.
             let offset = try document.u8(page + (runCount + 1) * 4 + index * paragraphEntrySize)
-            guard offset != 0 else { return WordParagraphFormat() }
-            // The PAPX: a size in words (or, when that byte is zero, a second
-            // byte of the size in words), the style index, and the modifiers.
-            let start = page + offset * 2
-            let first = try document.u8(start)
-            var listStart = start + 1
-            var listSize = first * 2 - 1
-            if first == 0 {
-                listStart = start + 2
-                listSize = try document.u8(start + 1) * 2
+            if offset != 0 {
+                // The PAPX: a size in words (or, when that byte is zero, a second
+                // byte of the size in words), the style index, and the modifiers.
+                let start = page + offset * 2
+                let first = try document.u8(start)
+                var listStart = start + 1
+                var listSize = first * 2 - 1
+                if first == 0 {
+                    listStart = start + 2
+                    listSize = try document.u8(start + 1) * 2
+                }
+                guard listSize >= 2, listStart + listSize <= page + pageSize - 1 else {
+                    throw OLEDamage(reason: "a paragraph's properties run past their page")
+                }
+                format.style = try document.u16(listStart)
+                WordSprm.forEach(in: try document.slice(offset: listStart + 2, length: listSize - 2)) { opcode, operand in
+                    apply(opcode, operand, to: &format)
+                }
             }
-            guard listSize >= 2, listStart + listSize <= page + pageSize - 1 else {
-                throw OLEDamage(reason: "a paragraph's properties run past their page")
-            }
-            var format = WordParagraphFormat(style: try document.u16(listStart))
-            WordSprm.forEach(in: try document.slice(offset: listStart + 2, length: listSize - 2)) { opcode, operand in
-                apply(opcode, operand, to: &format)
-            }
+            // Then the piece's own modifiers, over the PAPX's.
+            WordSprm.forEach(in: modifiers) { opcode, operand in apply(opcode, operand, to: &format) }
             guard styles.contains(styleIndex: format.style) else { throw OLEDamage(reason: "a paragraph's style \(format.style) is not in the style sheet") }
             return format
         }
@@ -186,18 +194,23 @@ enum WordDocumentProperties {
         pieces: WordPieceTable, styles: WordStyleSheet, limit: Int
     ) throws -> WordFormatRuns<WordCharacterFormat> {
         try runs(binTable: binTable, table: table, document: document, pieces: pieces, limit: limit,
-                 maximumRuns: (pageSize - 1 - 4) / 5) { page, index, runCount in
+                 maximumRuns: (pageSize - 1 - 4) / 5,
+                 // Each character takes the modifiers of its own piece.
+                 modifiersOfRange: { ranges, position in ranges[position].modifiers }) { page, index, runCount, modifiers in
+            var format = WordCharacterFormat()
             // The run's byte: the offset in words of its CHPX.
             let offset = try document.u8(page + (runCount + 1) * 4 + index)
-            guard offset != 0 else { return WordCharacterFormat() }
-            // The CHPX: a size in bytes and the modifiers.
-            let start = page + offset * 2
-            let size = try document.u8(start)
-            guard start + 1 + size <= page + pageSize - 1 else { throw OLEDamage(reason: "a run's properties run past their page") }
-            var format = WordCharacterFormat()
-            WordSprm.forEach(in: try document.slice(offset: start + 1, length: size)) { opcode, operand in
-                apply(opcode, operand, to: &format)
+            if offset != 0 {
+                // The CHPX: a size in bytes and the modifiers.
+                let start = page + offset * 2
+                let size = try document.u8(start)
+                guard start + 1 + size <= page + pageSize - 1 else { throw OLEDamage(reason: "a run's properties run past their page") }
+                WordSprm.forEach(in: try document.slice(offset: start + 1, length: size)) { opcode, operand in
+                    apply(opcode, operand, to: &format)
+                }
             }
+            // Then the piece's own modifiers, over the CHPX's.
+            WordSprm.forEach(in: modifiers) { opcode, operand in apply(opcode, operand, to: &format) }
             if let style = format.style, !styles.contains(styleIndex: style) {
                 throw OLEDamage(reason: "a run's character style \(style) is not in the style sheet")
             }
@@ -216,11 +229,16 @@ enum WordDocumentProperties {
     /// reads from them.
     /// - Parameters:
     ///   - maximumRuns: the most runs a page of this kind can hold, by its size.
+    ///   - modifiersOfRange: the property modifiers (`Pcd.prm`) that apply to
+    ///     the characters of range number `position` of `ranges`, the ranges
+    ///     one run covers, one for each piece it crosses.
     ///   - format: the format of run `index` of the page at `page`, which holds
-    ///     `runCount` runs.
+    ///     `runCount` runs, with the piece modifiers laid over its properties.
     private static func runs<Format>(
         binTable: Range<Int>, table: OLEBytes, document: OLEBytes, pieces: WordPieceTable, limit: Int,
-        maximumRuns: Int, format: (_ page: Int, _ index: Int, _ runCount: Int) throws -> Format
+        maximumRuns: Int,
+        modifiersOfRange: (_ ranges: [WordPieceTable.Placed], _ position: Int) -> ArraySlice<UInt8>,
+        format: (_ page: Int, _ index: Int, _ runCount: Int, _ modifiers: ArraySlice<UInt8>) throws -> Format
     ) throws -> WordFormatRuns<Format> {
         // A PLC of n+1 file offsets and n page numbers of 4 bytes each.
         let length = binTable.count
@@ -246,9 +264,9 @@ enum WordDocumentProperties {
                 let ranges = try pieces.characterRanges(fileStart: start, fileEnd: end, budget: &budget)
                 // A run with no text in the document is not read.
                 guard !ranges.isEmpty else { continue }
-                let runFormat = try format(page, index, runCount)
-                for range in ranges where range.lowerBound < limit {
-                    result.append(.init(range: range, format: runFormat))
+                for (position, placed) in ranges.enumerated() where placed.range.lowerBound < limit {
+                    let runFormat = try format(page, index, runCount, modifiersOfRange(ranges, position))
+                    result.append(.init(range: placed.range, format: runFormat))
                 }
             }
         }

@@ -158,6 +158,39 @@ final class WordDocumentHostileTests: XCTestCase {
         }), "a block of kind 9 after an empty modifier group")
     }
 
+    func testAPieceModifierNamingAGroupThatIsNotThereIsRefused() {
+        var builder = richDocument()
+        builder.modifierGroups = [WordDocumentBuilder.modifier(WordSprm.bold, 1)]
+        // The group at index 0 exists; index 1 and the largest index of 15 bits do not.
+        for index in [0, 1, 0x7FFF] {
+            builder.piecePrms = [0, WordDocumentBuilder.prm1(index)]
+            if index == 0 {
+                XCTAssertNoThrow(try WordDocumentReader.html(from: builder.build(), includesPages: true), "group 0")
+            } else {
+                assertUnreadable(builder.build(), "a modifier group at index \(index) of 1")
+            }
+        }
+    }
+
+    func testMoreGroupsOfModifiersThanAnIndexCanNameAreRefused() {
+        var builder = richDocument()
+        builder.modifierGroups = [[UInt8]](repeating: [], count: 0x8001)
+        assertUnreadable(builder.build(), "32,769 groups")
+        // Exactly as many as an index can name read fine.
+        builder.modifierGroups = [[UInt8]](repeating: [], count: 0x8000)
+        XCTAssertNoThrow(try WordDocumentReader.html(from: builder.build(), includesPages: true), "32,768 groups")
+    }
+
+    func testAGroupOfModifiersWithDamagedSprmsOnlyLosesFormatting() {
+        var builder = richDocument()
+        // An operand that runs past the group, a size byte past it, and the rest of an opcode.
+        builder.modifierGroups = [[0x35, 0x08], [0x08, 0xD6, 0xFF], [0x35], [0x15, 0xC6, 0xFF, 0x01]]
+        for index in 0..<4 {
+            builder.piecePrms = [WordDocumentBuilder.prm1(index), WordDocumentBuilder.prm1(index), WordDocumentBuilder.prm1(index)]
+            assertSurvives(builder.build(), "damaged group \(index)")
+        }
+    }
+
     func testATextLengthLargerThanTheTextIsReadAsFarAsTheTextGoes() throws {
         let data = richDocument().build { word, _, _ in
             word.replaceSubrange(64 + 12..<64 + 16, with: WordDocumentBuilder.le32(0xFFFF_FFFF))

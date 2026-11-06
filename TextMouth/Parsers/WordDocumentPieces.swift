@@ -14,9 +14,57 @@ import Foundation
 /// a file offset (FC); `characterRanges(fileStart:fileEnd:budget:)` turns
 /// that into the character positions it covers.
 ///
+/// A piece also carries property modifiers (`Pcd.prm`, [MS-DOC] 2.9.214), by
+/// which a fast-saved document sets a paragraph's style, or text's emphasis
+/// or hiding, without a new entry in the bin tables: either one modifier
+/// (`Prm0`, named by its index in the specification's table) or an index into
+/// the CLX's array of modifier groups (`Prm1`). They apply after the
+/// properties of the bin tables, to the paragraph whose last character is in
+/// the piece and to the characters of the piece.
+///
 /// Every offset and count is checked against the data when the table is
 /// read, so reading the text afterwards cannot leave the stream.
 struct WordPieceTable {
+
+    // MARK: Property Modifiers
+
+    /// The most groups of modifiers the CLX can hold: `Prm1`'s index has 15 bits.
+    private static let mostModifierGroups = 0x8000
+
+    /// The sprm a `Prm0` names by `isprm` ([MS-DOC] 2.9.215), for those sprms
+    /// this reader uses; every other entry of the specification's table
+    /// changes nothing the reader reads. Each operand is one byte, the
+    /// `Prm0`'s `val`. Keep the reader's sprms (`WordSprm`) here as it learns
+    /// more.
+    private static let sprmOfIsprm: [Int: Int] = [
+        0x09: WordSprm.pageBreakBefore,
+        0x0C: WordSprm.listLevel,
+        0x18: WordSprm.inTable,
+        0x19: WordSprm.rowEnd,
+        0x41: WordSprm.deleted,
+        0x55: WordSprm.bold,
+        0x56: WordSprm.italic,
+        0x5C: WordSprm.hidden,
+        0x75: WordSprm.special,
+        0x78: WordSprm.outlineLevel,
+    ]
+
+    /// The property modifiers `prm` (a `Pcd`'s last two bytes) gives, as a
+    /// list of sprms in the form of a `grpprl`: empty for none.
+    /// - Parameter groups: the CLX's groups of modifiers, which a `Prm1` indexes.
+    /// - Throws: `OLEDamage` for a `Prm1` whose index names no group.
+    private static func modifiers(of prm: Int, groups: [ArraySlice<UInt8>]) throws -> ArraySlice<UInt8> {
+        if prm & 1 == 1 {
+            // Prm1: fComplex, then the 15-bit index of a group.
+            let index = prm >> 1
+            guard index < groups.count else { throw OLEDamage(reason: "a piece names modifier group \(index) of \(groups.count)") }
+            return groups[index]
+        }
+        // Prm0: fComplex (0), the 7-bit isprm, and the 8-bit operand.
+        let isprm = (prm >> 1) & 0x7F
+        guard let sprm = sprmOfIsprm[isprm] else { return [] }
+        return [UInt8(sprm & 0xFF), UInt8(sprm >> 8), UInt8(prm >> 8)]
+    }
 
     /// One piece of the document's text.
     struct Piece {
@@ -28,6 +76,9 @@ struct WordPieceTable {
         let fileOffset: Int
         /// Whether the characters are one byte each (Windows-1252), not two (UTF-16LE).
         let isCompressed: Bool
+        /// The piece's property modifiers (`Pcd.prm`) as a list of sprms,
+        /// which apply after the bin tables' properties; empty for none.
+        let modifiers: ArraySlice<UInt8>
 
         /// Bytes per character.
         var width: Int { isCompressed ? 1 : 2 }
@@ -57,16 +108,21 @@ struct WordPieceTable {
     ///   lie outside the stream.
     init(clx: Range<Int>, table: OLEBytes, document: OLEBytes) throws {
         // The CLX is any number of property modifier groups (kind 1, a 16-bit
-        // size and the modifiers, which belong to fast-saved changes and are
-        // not read) and then the piece table (kind 2, a 32-bit size).
+        // size and the modifiers, which fast-saved pieces name by their
+        // index) and then the piece table (kind 2, a 32-bit size).
         var position = clx.lowerBound
         var plcStart = 0
         var plcLength = 0
+        var groups: [ArraySlice<UInt8>] = []
         while true {
             guard position < clx.upperBound else { throw OLEDamage(reason: "the CLX holds no piece table") }
             let kind = try table.u8(position)
             if kind == 1 {
                 let size = try table.u16(position + 1)
+                guard groups.count < Self.mostModifierGroups, position + 3 + size <= clx.upperBound else {
+                    throw OLEDamage(reason: "a group of modifiers runs past the CLX")
+                }
+                groups.append(try table.slice(offset: position + 3, length: size))
                 position += 3 + size
             } else if kind == 2 {
                 plcLength = try table.u32(position + 1)
@@ -91,11 +147,15 @@ struct WordPieceTable {
             guard end >= previousEnd else { throw OLEDamage(reason: "piece \(index) ends before it begins") }
             // The descriptor: 2 bytes of flags, the file offset, 2 bytes of modifiers.
             let rawOffset = try table.u32(descriptorsStart + index * 8 + 2)
+            let modifiers = try Self.modifiers(of: try table.u16(descriptorsStart + index * 8 + 6), groups: groups)
             let isCompressed = rawOffset & 0x4000_0000 != 0
             // A compressed offset is stored doubled, so that it is told from
             // an uncompressed one by one bit.
             let offset = isCompressed ? (rawOffset & 0x3FFF_FFFF) / 2 : rawOffset & 0x3FFF_FFFF
-            let piece = Piece(firstCharacter: previousEnd, endCharacter: end, fileOffset: offset, isCompressed: isCompressed)
+            let piece = Piece(
+                firstCharacter: previousEnd, endCharacter: end, fileOffset: offset, isCompressed: isCompressed,
+                modifiers: modifiers
+            )
             guard document.contains(offset: offset, length: piece.length * piece.width) else {
                 throw OLEDamage(reason: "piece \(index) holds \(piece.length) characters that run past the stream")
             }
@@ -146,13 +206,22 @@ struct WordPieceTable {
         }
     }
 
+    /// Some characters and the property modifiers of the piece that holds them.
+    struct Placed {
+        /// The character positions.
+        let range: Range<Int>
+        /// The piece's modifiers, as `Piece.modifiers`.
+        let modifiers: ArraySlice<UInt8>
+    }
+
     /// The character positions that the bytes `fileStart..<fileEnd` of the
-    /// stream hold, as one range for each piece they cross, in file order.
+    /// stream hold, as one range for each piece they cross, in file order,
+    /// each with its piece's property modifiers.
     /// - Parameter budget: how many pieces the caller will still look at in
     ///   all its calls; each piece looked at costs one. Pieces that overlap in
     ///   the file could otherwise make every call cross every piece.
     /// - Throws: `OLEDamage` when the budget is spent.
-    func characterRanges(fileStart: Int, fileEnd: Int, budget: inout Int) throws -> [Range<Int>] {
+    func characterRanges(fileStart: Int, fileEnd: Int, budget: inout Int) throws -> [Placed] {
         guard fileStart < fileEnd else { return [] }
         // The first piece in file order that ends after fileStart, by halving.
         var low = 0
@@ -161,7 +230,7 @@ struct WordPieceTable {
             let middle = (low + high) / 2
             if largestFileEnd[middle] > fileStart { high = middle } else { low = middle + 1 }
         }
-        var ranges: [Range<Int>] = []
+        var ranges: [Placed] = []
         var index = low
         while index < piecesByFile.count, piecesByFile[index].fileOffset < fileEnd {
             budget -= 1
@@ -172,7 +241,7 @@ struct WordPieceTable {
             if start < end {
                 let first = piece.firstCharacter + (start - piece.fileOffset) / piece.width
                 let after = piece.firstCharacter + (end - piece.fileOffset + piece.width - 1) / piece.width
-                ranges.append(first..<min(after, piece.endCharacter))
+                ranges.append(Placed(range: first..<min(after, piece.endCharacter), modifiers: piece.modifiers))
             }
             index += 1
         }

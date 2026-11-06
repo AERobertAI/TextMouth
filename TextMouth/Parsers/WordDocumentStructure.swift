@@ -155,6 +155,8 @@ enum WordSprm {
     static let inTable = 0x2416
     /// The paragraph ends a row of a table (`sprmPFTtp`).
     static let rowEnd = 0x2417
+    /// The paragraph's level in its list, 0 to 8 (`sprmPIlvl`).
+    static let listLevel = 0x260A
     /// The paragraph's outline level, 0 to 8, or 9 for body text (`sprmPOutLvl`).
     static let outlineLevel = 0x2640
     /// The depth of the table the paragraph is in (`sprmPItap`).
