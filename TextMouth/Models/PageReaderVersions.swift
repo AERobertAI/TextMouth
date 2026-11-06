@@ -65,9 +65,11 @@ enum PageReaderVersions {
             // textutil: headings from the style sheet, bold and italic, and
             // pages at every \page, \pagebb, and page-starting \sect, so the
             // books of these two formats are read again once ("1.1.0"). At
-            // "1.2.0" text a tracked change deleted is not read, a list
-            // item's number inside a table cell is, and footnotes and
-            // endnotes are read after the text.
+            // "1.2.0" text a tracked change deleted or moved away is not
+            // read, a list item inside a table cell is a list in the Markdown
+            // (the reading text leaves every list's number out), footnotes
+            // and endnotes are read after the text, and a shape's text box
+            // right after the paragraph that holds it.
             return "1.2.0"
         case .doc:
             // Word 97-2003 is read by TextMouth's own reader (FMT47) from
