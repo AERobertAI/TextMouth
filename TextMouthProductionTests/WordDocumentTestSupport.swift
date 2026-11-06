@@ -461,7 +461,9 @@ struct WordDocumentBuilder {
 
         // The text box table: the position where each box begins (a box is a
         // paragraph of the story), where the last ends, and one more (the
-        // last range, which is ignored), then an FTXBXS of 22 bytes for each box.
+        // last range, which is ignored), then an FTXBXS of 22 bytes for each
+        // range: the boxes and the ignored one (n + 1 positions of four bytes
+        // and n FTXBXS for the n ranges, as the specification says).
         if writesTextBoxTable, let boxes = stories[.textBoxes], !boxes.isEmpty {
             var starts = [0]
             let named = Array(boxes.prefix(textBoxTableLimit ?? boxes.count))
@@ -469,7 +471,7 @@ struct WordDocumentBuilder {
             var bytes: [UInt8] = []
             for start in starts { bytes += Self.le32(start) }
             bytes += Self.le32(starts[starts.count - 1] + 1)
-            bytes += [UInt8](repeating: 0, count: 22 * named.count)
+            bytes += [UInt8](repeating: 0, count: 22 * (named.count + 1))
             while table.count % 4 != 0 { table.append(0) }
             listPairs[WordFileInformationBlock.Structure.textBoxText.rawValue] = (table.count, bytes.count)
             table += bytes
@@ -562,10 +564,12 @@ struct WordDocumentBuilder {
     /// The character properties of a run.
     private static func characterBlob(for run: Run) -> [UInt8] {
         var bytes: [UInt8] = []
+        // Word writes the character style first: it takes off the direct bold, italic, hiding,
+        // and size set before it, so what follows is set over the style.
+        if let style = run.characterStyle { bytes += le16(WordSprm.characterStyle) + le16(style) }
         if let bold = run.bold { bytes += modifier(WordSprm.bold, bold) }
         if let italic = run.italic { bytes += modifier(WordSprm.italic, italic) }
         if let hidden = run.hidden { bytes += modifier(WordSprm.hidden, hidden) }
-        if let style = run.characterStyle { bytes += le16(WordSprm.characterStyle) + le16(style) }
         if run.isSpecial { bytes += modifier(WordSprm.special, 1) }
         if let size = run.fontSize { bytes += le16(WordSprm.fontSize) + le16(size) }
         if run.isDeleted { bytes += modifier(WordSprm.deleted, 1) }
