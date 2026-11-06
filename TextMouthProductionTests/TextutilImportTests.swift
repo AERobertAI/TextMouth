@@ -703,9 +703,12 @@ final class TextutilImportTests: XCTestCase {
     // MARK: - Nothing Left Behind
 
     func testASuccessfulImportLeavesNoTextutilFileAnywhere() throws {
-        try assertLeavesNoTextutilFiles {
-            for sample in ["rtf/headings.rtf", "rtfd/headings.rtfd", "doc/headings.doc", "odt/handwritten.odt"] {
-                _ = try importedForTest(try copyOfFormatSample(sample))
+        // This test is about the files textutil leaves, so the samples go to textutil whatever reads them in the app (`OwnDocumentReaders.forcesTextutil`).
+        try OwnDocumentReaders.$forcesTextutil.withValue(true) {
+            try assertLeavesNoTextutilFiles {
+                for sample in ["rtf/headings.rtf", "rtfd/headings.rtfd", "doc/headings.doc", "odt/handwritten.odt"] {
+                    _ = try importedForTest(try copyOfFormatSample(sample))
+                }
             }
         }
     }
