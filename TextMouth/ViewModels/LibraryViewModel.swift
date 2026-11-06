@@ -340,6 +340,18 @@ final class LibraryViewModel: ObservableObject {
     var libraryFetchToken: UUID?
     /// The data directory's path the running fetch works for.
     var libraryFetchRoot: String?
+    /// The standardized paths of the files whose fetch reads were started
+    /// and have not returned, including those of a fetch that gave up on a
+    /// stuck read: none is read again meanwhile, so no threads pile up.
+    var libraryFilesBeingRead: Set<String> = []
+    /// How long a fetch waits for its reads before it shows the failure.
+    var libraryFetchStallLimit: Duration = BookCloudStorageService.defaultStallLimit
+    /// Whether this Mac is online, which a stalled fetch's log line says.
+    var libraryFetchReachability: NetworkReachability = .system
+    /// The Library window that last announced the Library Not Available
+    /// screen, which then announces that the library is available, since
+    /// an announcement needs a window to come from.
+    weak var unavailabilityWindow: PlatformWindow?
 
     /// The feed engine whose feeds' items this library lists in their feeds'
     /// folders (FR11): the app's (`FeedCenter.shared`) while nil, or the one
@@ -529,14 +541,22 @@ extension LibraryViewModel {
     /// Checks the data directory and makes what it finds the model's state:
     /// the gate that lets writers in or keeps them out, the reason the
     /// Library windows show, and, when the bookmark found the library under
-    /// another path, the data directory itself. Returns whether the library
-    /// is available.
+    /// another path, the data directory itself. Files only in the cloud start
+    /// the library's fetch of them (LibraryViewModel+LibraryFetch), which
+    /// runs this check again after each pass and ends when the library is
+    /// available, so the check cancels a fetch the files have outrun.
+    /// Returns whether the library is available.
     @discardableResult
     func checkDataDirectory() -> Bool {
         let preferences = dataDirectoryEnvironment.preferences
         let root = TextMouthPaths.root
+        // While a fetch runs it reads the files itself, so the check asks
+        // the sync service for nothing.
+        let itemStatus: any CloudItemStatusProviding = libraryFetchTask == nil
+            ? CloudServices.itemStatus
+            : WithoutDownloadRequests(base: CloudServices.itemStatus)
         let (outcome, pending) = DataDirectoryCheck.of(root: root, preferences: preferences)
-            .runNamingPending(itemStatus: CloudServices.itemStatus)
+            .runNamingPending(itemStatus: itemStatus)
         pendingLibraryFiles = pending
         switch outcome {
         case .available(_, let relocated):
@@ -661,7 +681,7 @@ extension LibraryViewModel {
         }
         announcedUnavailability = nil
         NotificationCenter.default.post(name: .dataDirectoryDidBecomeAvailable, object: nil)
-        VoiceOverAnnouncer.announce("The library is available.")
+        VoiceOverAnnouncer.announce("The library is available.", from: unavailabilityWindow)
     }
 
     // MARK: The Library Not Available Screen
@@ -672,6 +692,7 @@ extension LibraryViewModel {
     func announceDataDirectoryUnavailability(from window: PlatformWindow? = nil) {
         guard let reason = dataDirectoryUnavailability, reason != announcedUnavailability else { return }
         announcedUnavailability = reason
+        unavailabilityWindow = window ?? unavailabilityWindow
         VoiceOverAnnouncer.announce(DataDirectoryUnavailableText.announcement(for: reason), from: window)
     }
 

@@ -244,15 +244,31 @@ enum DataDirectoryUnavailability: Equatable, Sendable {
         case .gettingFromCloud(let provider, _, _):
             return Self.notOnThisMac(provider) + " TextMouth is getting them now, and the library opens when they arrive."
         case .cloudFetchFailed(let provider, _, _, _):
-            return "TextMouth couldn't get the library's files from \(provider?.displayName ?? "the cloud"). "
-                + "Check that \(provider?.displayName ?? "the cloud service") is running and that this Mac is online, "
-                + "then choose Try Again."
+            return "TextMouth couldn't get the library's files from \(Self.service(provider)). "
+                + Self.whatToCheck(provider)
         }
     }
 
     /// The first sentence of both download reasons.
     private static func notOnThisMac(_ provider: CloudProvider?) -> String {
-        "Some of the library's files are in \(provider?.displayName ?? "the cloud") and aren't on this Mac yet."
+        "Some of the library's files are in \(service(provider)) and aren't on this Mac yet."
+    }
+
+    /// What `provider` is called in a sentence: its name, or "the cloud"
+    /// when the service is unknown.
+    private static func service(_ provider: CloudProvider?) -> String {
+        provider?.displayName ?? "the cloud"
+    }
+
+    /// What to check when the files couldn't be fetched from `provider`,
+    /// ending in the way out. iCloud Drive is not something that "runs", so
+    /// it is asked about as `likelyCause(in:serviceFolderMissing:)` asks.
+    private static func whatToCheck(_ provider: CloudProvider?) -> String {
+        if provider == .iCloudDrive {
+            return "iCloud Drive may be turned off or signed out, or this Mac may be offline. Check that, then choose Try Again."
+        }
+        return "Check that \(provider?.displayName ?? "the cloud service") is running and that this Mac is online, "
+            + "then choose Try Again."
     }
 
     /// Whether TextMouth is bringing the library's files to this Mac now,
@@ -307,11 +323,11 @@ enum DataDirectoryUnavailability: Equatable, Sendable {
         case .identityUnreadable(_, let reason):
             return "the identity marker in \(name) can't be read: \(reason)"
         case .notDownloaded(let provider, _):
-            return "some of the library's files in \(name) are only in \(provider?.displayName ?? "the cloud"); asked to download them"
+            return "some of the library's files in \(name) are only in \(Self.service(provider)); asked to download them"
         case .gettingFromCloud(let provider, _, let files):
-            return "getting \(Self.listed(files)) in \(name) from \(provider?.displayName ?? "the cloud")"
+            return "getting \(Self.listed(files)) in \(name) from \(Self.service(provider))"
         case .cloudFetchFailed(let provider, _, let files, let ending):
-            return "could not get \(Self.listed(files)) in \(name) from \(provider?.displayName ?? "the cloud"): \(ending)"
+            return "could not get \(Self.listed(files)) in \(name) from \(Self.service(provider)): \(ending)"
         }
     }
 
