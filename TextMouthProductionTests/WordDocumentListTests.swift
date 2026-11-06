@@ -459,6 +459,108 @@ final class WordDocumentListTests: XCTestCase {
         XCTAssertEqual(try wordBody(of: builder.build(), speaksNumbers: true), "<p>1. one</p>\n<p>two</p>\n<p>2. three</p>\n")
     }
 
+    // MARK: - What the Counting Must Not Lose
+
+    func testAPieceModifierThatSetsALevelMovesTheParagraphToIt() throws {
+        // Prm0 0x0C is sprmPIlvl.
+        var builder = listBuilder([ListLevel(0, "%1."), ListLevel(0, "%1.%2")])
+        builder.paragraphs = [Paragraph("x", modifiers: inList(level: 0))]
+        builder.pieceCount = 2
+        builder.storesPiecesInOrder = true
+        builder.piecePrms = [0, WordDocumentBuilder.prm0(0x0C, 1)]
+        XCTAssertEqual(try wordBody(of: builder.build(), speaksNumbers: true), "<p>1.1 x</p>\n")
+    }
+
+    func testTheMarkThatEndsARowIsNotCounted() throws {
+        var builder = listBuilder([ListLevel(0, "%1.")])
+        for end in [WordDocumentBuilder.modifier(WordSprm.rowEnd, 1), WordDocumentBuilder.modifier(WordSprm.innerRowEnd, 1)] {
+            builder.paragraphs = [
+                Paragraph("one", modifiers: inTable + inList(), mark: 0x07),
+                Paragraph("", modifiers: inTable + inList() + end, mark: 0x07),
+                Paragraph("two", modifiers: inTable + inList(), mark: 0x07),
+                Paragraph("", modifiers: rowEnd, mark: 0x07),
+            ]
+            let body = try wordBody(of: builder.build(), speaksNumbers: true)
+            XCTAssertTrue(body.contains("<p>1. one</p>"), body)
+            XCTAssertTrue(body.contains("<p>2. two</p>"), body)
+        }
+    }
+
+    func testLegalNumberingKeepsALeadingZero() throws {
+        var builder = listBuilder([ListLevel(0x16, "%1."), ListLevel(0, "%1.%2", isLegal: true)])
+        builder.paragraphs = [Paragraph("a", modifiers: inList(level: 0)), Paragraph("b", modifiers: inList(level: 1))]
+        XCTAssertEqual(try wordBody(of: builder.build(), speaksNumbers: true), "<p>01. a</p>\n<p>01.1 b</p>\n")
+    }
+
+    func testALevelThatRestartsOnlyAfterALevelAboveZeroIsNotRestartedByTheOnesBelow() throws {
+        // fNoRestart with ilvlRestartLim 1: level 2 starts again after level 0, not after level 1.
+        var builder = listBuilder([ListLevel(0, "%1."), ListLevel(0, "%1.%2"), ListLevel(4, "%3.", restartLimit: 1)])
+        builder.paragraphs = [
+            Paragraph("a", modifiers: inList(level: 0)), Paragraph("b", modifiers: inList(level: 1)),
+            Paragraph("c", modifiers: inList(level: 2)), Paragraph("d", modifiers: inList(level: 1)),
+            Paragraph("e", modifiers: inList(level: 2)), Paragraph("f", modifiers: inList(level: 0)),
+            Paragraph("g", modifiers: inList(level: 2)),
+        ]
+        XCTAssertEqual(
+            try wordBody(of: builder.build(), speaksNumbers: true),
+            "<p>1. a</p>\n<p>1.1 b</p>\n<p>a. c</p>\n<p>1.2 d</p>\n<p>b. e</p>\n<p>2. f</p>\n<p>a. g</p>\n"
+        )
+    }
+
+    func testANegativeStartCountsFromZeroAndControlsInANumberTextAreNotWords() throws {
+        var builder = listBuilder([ListLevel(0, "\u{01}%1.", start: -5)])
+        builder.paragraphs = [Paragraph("x", modifiers: inList()), Paragraph("y", modifiers: inList())]
+        XCTAssertEqual(try wordBody(of: builder.build(), speaksNumbers: true), "<p>0. x</p>\n<p>1. y</p>\n")
+    }
+
+    func testASimpleListHasOneLevelAndTheListsAfterItAreStillRead() throws {
+        var builder = WordDocumentBuilder()
+        builder.lists = [
+            WordDocumentBuilder.List(identifier: 3, levels: [ListLevel(1, "%1)")], isSimple: true),
+            WordDocumentBuilder.List(identifier: -16, levels: (0..<9).map { ListLevel(0, "%\($0 + 1).") }),
+        ]
+        // A signed list identifier, named by its instance.
+        builder.listInstances = [
+            WordDocumentBuilder.ListInstance(listIdentifier: 3), WordDocumentBuilder.ListInstance(listIdentifier: -16),
+        ]
+        builder.paragraphs = [
+            Paragraph("simple", modifiers: inList(1)), Paragraph("second list", modifiers: inList(2)), Paragraph("simple again", modifiers: inList(1)),
+        ]
+        XCTAssertEqual(
+            try wordBody(of: builder.build(), speaksNumbers: true),
+            "<p>I) simple</p>\n<p>1. second list</p>\n<p>II) simple again</p>\n"
+        )
+    }
+
+    func testAPlaceholderOfALessSignificantLevelIsLeftOutAndMarkdownCharactersInANumberAreEscaped() throws {
+        var builder = listBuilder([ListLevel(0, "%2."), ListLevel(0, "<%1> & %2")])
+        builder.paragraphs = [Paragraph("x", modifiers: inList(level: 0)), Paragraph("y", modifiers: inList(level: 1))]
+        // Level 0's text names level 1 (which cannot be known yet): ignored. Level 1's has markup.
+        XCTAssertEqual(try wordBody(of: builder.build(), speaksNumbers: true), "<p>. x</p>\n<p>&lt;1&gt; &amp; 1 y</p>\n")
+    }
+
+    func testAnEmptyNumberedParagraphWhoseMarkIsHiddenByItsStyleShowsNoNumber() throws {
+        var builder = listBuilder([ListLevel(0, "%1.")])
+        // Style 12 is hidden: the mark is hidden text through the paragraph style.
+        builder.styles.append(WordDocumentBuilder.Style(basedOn: 0, hidden: 1))
+        builder.paragraphs = [Paragraph("a", modifiers: inList()), Paragraph("", style: 12, modifiers: inList()), Paragraph("c", modifiers: inList())]
+        XCTAssertEqual(try wordBody(of: builder.build(), speaksNumbers: true), "<p>1. a</p>\n<p>3. c</p>\n")
+    }
+
+    func testAGuessedHeadingKeepsItsNumberInTheWordsForm() throws {
+        // No heading style: a paragraph in a larger size is a heading by the guess, and its number is part of it.
+        var builder = listBuilder([ListLevel(0, "%1.")])
+        builder.paragraphs = [
+            Paragraph(runs: [Run("Big", fontSize: 40)], modifiers: inList()),
+            Paragraph("Body text goes on for a good while here."),
+            Paragraph("More body text."),
+        ]
+        XCTAssertEqual(
+            try wordBody(of: builder.build(), speaksNumbers: true),
+            "<h1>1. Big</h1>\n<p>Body text goes on for a good while here.</p>\n<p>More body text.</p>\n"
+        )
+    }
+
     // MARK: - Stories
 
     func testAListCountsAgainInEachNoteAndEachBoxWhenTheirTablesAreGood() throws {

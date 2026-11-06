@@ -234,10 +234,17 @@ struct WordHTMLWriter {
             // A page break inside hidden or deleted text begins no page, but a
             // section break is a paragraph's mark all the same.
             if !isHidden(at: position) { try addPageBreak(at: position) }
-            // A section break is a paragraph's mark as well.
             if sections.endsSection(at: position) { try endParagraph(mark: unit, at: position) }
         case 0x0B:
-            if !isHidden(at: position) { addLineBreak() }
+            // A line break that is a style separator ends the paragraph, so
+            // that a run-in heading stays a heading of its own words.
+            if isHidden(at: position) {
+                break
+            } else if characters.format(at: position)?.isStyleSeparator == true {
+                try endParagraph(mark: 0x0D, at: position)
+            } else {
+                addLineBreak()
+            }
         case 0x09:
             // A tab reads as white space; whether it was a tab matters to a bullet.
             if !isHidden(at: position) { addWhitespace(" ", isTab: true) }
@@ -332,7 +339,7 @@ struct WordHTMLWriter {
     private mutating func writePendingPages(separated: Bool) {
         if separated { paragraph += " " }
         for page in pendingPages {
-            paragraph += "<span role=\"\(TextutilPageBreaks.pageBreakRole)\" aria-label=\"\(page)\"></span>"
+            paragraph += Self.pageSpan(page)
         }
         pendingPages.removeAll()
         previousWasSpace = true
@@ -586,9 +593,8 @@ struct WordHTMLWriter {
     /// words: after the page-break spans it begins with, so that a page
     /// begins where its number does.
     private static func inserting(_ text: String, into content: String) -> String {
-        let span = "<span role=\"\(TextutilPageBreaks.pageBreakRole)\""
         var index = content.startIndex
-        while content[index...].hasPrefix(span), let close = content[index...].range(of: "</span>") {
+        while content[index...].hasPrefix(pageSpanOpening), let close = content[index...].range(of: "</span>") {
             index = close.upperBound
         }
         return String(content[..<index]) + text + String(content[index...])
@@ -737,11 +743,13 @@ struct WordHTMLWriter {
                 blocks[candidate.block] = "<h\(level)>" + Self.withoutEmphasis(candidate.content) + "</h\(level)>\n"
             }
         }
-        let firstPage = includesPages && wroteCountedCharacter
-            ? "<span role=\"\(TextutilPageBreaks.pageBreakRole)\" aria-label=\"1\"></span>"
-            : ""
+        let firstPage = includesPages && wroteCountedCharacter ? Self.pageSpan(1) : ""
         return firstPage + blocks.joined()
     }
+
+    /// How the span that marks a page begins, and the whole span of page `page`.
+    private static let pageSpanOpening = "<span role=\"\(TextutilPageBreaks.pageBreakRole)\""
+    private static func pageSpan(_ page: Int) -> String { pageSpanOpening + " aria-label=\"\(page)\"></span>" }
 
     /// `html` without its emphasis tags (the text is escaped, so these
     /// strings are never text).

@@ -23,6 +23,8 @@ final class WordDocumentComparisonTests: XCTestCase {
     /// Word 95 documents, whose older layout [MS-DOC] does not describe.
     private static let leftToTextutil: Set<String> = [
         "doc/libreoffice-tdf150197_anlv2ListFormat.doc",
+        // wIdent 0xA699 and nFib 0x68: a layout of Word 95 or older.
+        "doc/poi-Bug51944.doc",
     ]
 
     /// Every sample of the `doc` and `dot` folders, as "folder/name".

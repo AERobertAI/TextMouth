@@ -87,8 +87,13 @@ struct WordFileInformationBlock {
     ///   FIB does not fit it.
     static func read(from stream: OLEBytes) throws -> WordFileInformationBlock? {
         let ident = try stream.u16(0)
-        guard ident == identifier || ident == word6Identifier else { throw OLEDamage(reason: "the WordDocument stream is not a FIB") }
         let version = try stream.u16(2)
+        // A file with another identifier and the version of Word 6 or 95 or older
+        // (some Word for Windows and Macintosh files have 0xA699) has their layout,
+        // which this reader leaves to textutil; any other is not a FIB.
+        guard ident == identifier || ident == word6Identifier || version < firstWord97Version else {
+            throw OLEDamage(reason: "the WordDocument stream is not a FIB")
+        }
         if ident == word6Identifier || version < firstWord97Version { return nil }
         guard version <= lastKnownVersion else { throw OLEDamage(reason: "nFib \(version) is not a Word version") }
 
@@ -199,8 +204,17 @@ enum WordSprm {
     static let inTable = 0x2416
     /// The paragraph ends a row of a table (`sprmPFTtp`).
     static let rowEnd = 0x2417
+    /// The paragraph's style is moved up or down the Heading 1 to 9 styles
+    /// by a signed 8-bit number (`sprmPIncLvl`).
+    static let incrementLevel = 0x2602
+    /// The paragraph's properties are in the Data stream, at the 32-bit
+    /// offset the operand gives (`sprmPHugePapx`), and `sprmPTableProps`
+    /// is the same for a table's.
+    static let hugeParagraphProperties = 0x6646
+    static let tableProperties = 0x646B
+    /// The paragraph is the last of a nested table's row (`sprmPFInnerTtp`).
+    static let innerRowEnd = 0x244C
     /// The paragraph's level in its list, 0 to 8 (`sprmPIlvl`).
-    static let listLevel = 0x260A
     /// The list instance the paragraph is in, one-based (`sprmPIlfo`).
     static let listIndex = 0x460B
     /// The paragraph's outline level, 0 to 8, or 9 for body text (`sprmPOutLvl`).
@@ -220,12 +234,25 @@ enum WordSprm {
     static let deleted = 0x0800
     /// The font size in half-points (`sprmCHps`).
     static let fontSize = 0x4A43
-    /// The character style (`sprmCIstd`).
+    /// The character style (`sprmCIstd`); it takes its properties from the
+    /// style, so the direct ones before it do not stay.
     static let characterStyle = 0x4A30
+    /// The characters have no direct formatting and no character style (`sprmCPlain`).
+    static let plain = 0x2A33
+    /// The paragraph mark (or a line break) is a style separator, hidden so
+    /// that a run-in heading's paragraph and the next read as one (`sprmCFSpecVanish`).
+    static let styleSeparator = 0x0818
     /// The character is a special character, such as a picture's anchor (`sprmCFSpec`).
     static let special = 0x0855
     /// How a section begins (`sprmSBkc`).
     static let sectionBreakKind = 0x3009
+
+    // MARK: Operands
+
+    /// The little-endian number in the first (up to four) bytes of `operand`.
+    static func value(of operand: ArraySlice<UInt8>) -> Int {
+        operand.prefix(4).enumerated().reduce(0) { $0 | Int($1.element) << (8 * $1.offset) }
+    }
 
     // MARK: Walking
 

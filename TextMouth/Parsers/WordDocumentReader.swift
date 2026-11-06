@@ -7,7 +7,8 @@ import Foundation
 /// [MS-DOC] and the compound file [MS-CFB] beneath it, what the user wants
 /// under TextMouth's control: the text, the real heading styles (Heading 1
 /// to 9, and paragraph outline levels, which textutil's reading of a
-/// document loses), bold and italic, tables, and page breaks. It writes one
+/// document loses), bold and italic, hidden text and tracked deletions (not
+/// read), lists, tables, footnotes, endnotes, text boxes, and page breaks. It writes one
 /// HTML document in the form `OwnDocumentReaders` describes, which the shared
 /// converter turns into the reading text.
 ///
@@ -111,10 +112,12 @@ enum WordDocumentReader {
         // The styles, and the properties that name them.
         var styles = WordStyleSheet.empty
         if let range = try fib.range(of: .styleSheet, in: table) { styles = try WordStyleSheet(range: range, table: table) }
+        // The Data stream, where a paragraph's properties are when they do not fit its page.
+        let data = (try? file.stream(named: "Data")).map { OLEBytes($0) }
         var paragraphs = WordFormatRuns<WordParagraphFormat>(runs: [])
         if let range = try fib.range(of: .paragraphBinTable, in: table) {
             paragraphs = try WordDocumentProperties.paragraphRuns(
-                binTable: range, table: table, document: document, pieces: pieces, limit: pieces.characterCount
+                binTable: range, table: table, document: document, pieces: pieces, limit: pieces.characterCount, data: data
             )
         }
         var characters = WordFormatRuns<WordCharacterFormat>(runs: [])

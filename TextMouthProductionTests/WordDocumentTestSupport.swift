@@ -179,6 +179,14 @@ struct WordDocumentBuilder {
     /// How many pieces to split the text into; more than one stores them in
     /// reverse order in the file.
     var pieceCount = 1
+    /// Whether the pieces are stored one after the other in the order of the
+    /// text instead, so that a run of properties covers characters in more
+    /// than one piece, as a run does in a real file whose pieces are next to
+    /// each other.
+    var storesPiecesInOrder = false
+    /// The `Data` stream (where `sprmPHugePapx` and `sprmPTableProps` keep
+    /// properties), written when not empty.
+    var dataStream: [UInt8] = []
     /// The character positions in the main text of the reference marks of
     /// the footnotes and of the endnotes, one for each paragraph of those
     /// stories (a note is a paragraph); none leaves out the note tables.
@@ -294,7 +302,7 @@ struct WordDocumentBuilder {
         pieceBounds.append(units.count)
         var pieceFileOffsets = [Int](repeating: 0, count: pieceCount)
         // Reverse order in the file when split.
-        for index in (0..<pieceCount).reversed() {
+        for index in storesPiecesInOrder ? Array(0..<pieceCount) : Array((0..<pieceCount).reversed()) {
             pieceFileOffsets[index] = word.count
             for unit in units[pieceBounds[index]..<pieceBounds[index + 1]] {
                 if isCompressed {
@@ -325,6 +333,11 @@ struct WordDocumentBuilder {
         }
         // Splits a range of character positions at the pieces' ends into ranges of file offsets.
         func fileRanges(of range: Range<Int>) -> [Range<Int>] {
+            // Pieces next to each other make one range of the file.
+            if storesPiecesInOrder, !range.isEmpty {
+                let first = fileOffset(ofCharacter: range.lowerBound)
+                return [first..<first + range.count * (isCompressed ? 1 : 2)]
+            }
             var result: [Range<Int>] = []
             var position = range.lowerBound
             while position < range.upperBound {
@@ -502,6 +515,7 @@ struct WordDocumentBuilder {
             (usesOneTable ? "1Table" : "0Table", parts.table),
             ("\u{05}SummaryInformation", parts.summary),
         ]
+        if !dataStream.isEmpty { file.streams.append(("Data", dataStream)) }
         return file.build().data
     }
 
@@ -516,6 +530,7 @@ struct WordDocumentBuilder {
             (usesOneTable ? "1Table" : "0Table", parts.table),
             ("\u{05}SummaryInformation", parts.summary),
         ]
+        if !dataStream.isEmpty { file.streams.append(("Data", dataStream)) }
         return file.build().data
     }
 

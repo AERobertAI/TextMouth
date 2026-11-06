@@ -33,10 +33,11 @@ struct WordPieceTable {
 
     /// The sprm a `Prm0` names by `isprm` ([MS-DOC] 2.9.215), for those sprms
     /// this reader uses; every other entry of the specification's table
-    /// changes nothing the reader reads. Each operand is one byte, the
-    /// `Prm0`'s `val`. Keep the reader's sprms (`WordSprm`) here as it learns
-    /// more.
+    /// (justification, borders, and so on) changes nothing the reader reads.
+    /// Each operand is one byte, the `Prm0`'s `val`. Keep the reader's sprms
+    /// (`WordSprm`) here as it learns more.
     private static let sprmOfIsprm: [Int: Int] = [
+        0x04: WordSprm.incrementLevel,
         0x09: WordSprm.pageBreakBefore,
         0x0C: WordSprm.listLevel,
         0x18: WordSprm.inTable,
@@ -44,6 +45,8 @@ struct WordPieceTable {
         0x41: WordSprm.deleted,
         0x55: WordSprm.bold,
         0x56: WordSprm.italic,
+        0x53: WordSprm.plain,
+        0x51: WordSprm.styleSeparator,
         0x5C: WordSprm.hidden,
         0x75: WordSprm.special,
         0x78: WordSprm.outlineLevel,
@@ -52,13 +55,14 @@ struct WordPieceTable {
     /// The property modifiers `prm` (a `Pcd`'s last two bytes) gives, as a
     /// list of sprms in the form of a `grpprl`: empty for none.
     /// - Parameter groups: the CLX's groups of modifiers, which a `Prm1` indexes.
-    /// - Throws: `OLEDamage` for a `Prm1` whose index names no group.
-    private static func modifiers(of prm: Int, groups: [ArraySlice<UInt8>]) throws -> ArraySlice<UInt8> {
+    /// A `Prm1` whose index names no group has no modifiers: the properties
+    /// are hints about the text and a stray index costs formatting, not the
+    /// document, as in Apache POI.
+    private static func modifiers(of prm: Int, groups: [ArraySlice<UInt8>]) -> ArraySlice<UInt8> {
         if prm & 1 == 1 {
             // Prm1: fComplex, then the 15-bit index of a group.
             let index = prm >> 1
-            guard index < groups.count else { throw OLEDamage(reason: "a piece names modifier group \(index) of \(groups.count)") }
-            return groups[index]
+            return index < groups.count ? groups[index] : []
         }
         // Prm0: fComplex (0), the 7-bit isprm, and the 8-bit operand.
         let isprm = (prm >> 1) & 0x7F
@@ -147,7 +151,7 @@ struct WordPieceTable {
             guard end >= previousEnd else { throw OLEDamage(reason: "piece \(index) ends before it begins") }
             // The descriptor: 2 bytes of flags, the file offset, 2 bytes of modifiers.
             let rawOffset = try table.u32(descriptorsStart + index * 8 + 2)
-            let modifiers = try Self.modifiers(of: try table.u16(descriptorsStart + index * 8 + 6), groups: groups)
+            let modifiers = Self.modifiers(of: try table.u16(descriptorsStart + index * 8 + 6), groups: groups)
             let isCompressed = rawOffset & 0x4000_0000 != 0
             // A compressed offset is stored doubled, so that it is told from
             // an uncompressed one by one bit.

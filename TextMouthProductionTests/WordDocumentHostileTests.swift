@@ -158,17 +158,16 @@ final class WordDocumentHostileTests: XCTestCase {
         }), "a block of kind 9 after an empty modifier group")
     }
 
-    func testAPieceModifierNamingAGroupThatIsNotThereIsRefused() {
+    func testAPieceModifierNamingAGroupThatIsNotThereHasNoModifiers() throws {
         var builder = richDocument()
         builder.modifierGroups = [WordDocumentBuilder.modifier(WordSprm.bold, 1)]
-        // The group at index 0 exists; index 1 and the largest index of 15 bits do not.
-        for index in [0, 1, 0x7FFF] {
+        // The group at index 0 exists; index 1 and the largest index of 15 bits do not:
+        // the properties are hints, so a stray index costs the piece's formatting, not the document.
+        builder.piecePrms = [0, WordDocumentBuilder.prm1(0)]
+        for index in [1, 0x7FFF] {
             builder.piecePrms = [0, WordDocumentBuilder.prm1(index)]
-            if index == 0 {
-                XCTAssertNoThrow(try WordDocumentReader.html(from: builder.build(), includesPages: true), "group 0")
-            } else {
-                assertUnreadable(builder.build(), "a modifier group at index \(index) of 1")
-            }
+            let html = try XCTUnwrap(WordDocumentReader.html(from: builder.build(), includesPages: true), "index \(index)")
+            XCTAssertTrue(html.contains("Chapter one"), "index \(index)")
         }
     }
 

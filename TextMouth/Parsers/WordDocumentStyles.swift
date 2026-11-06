@@ -6,7 +6,8 @@ import Foundation
 /// the styles a paragraph or run of text can name by index (`istd`), each
 /// with its built-in identifier (`sti`), the style it is based on, and the
 /// paragraph and character properties the reader needs from it: the outline
-/// level, and bold and italic.
+/// level, bold, italic, and hidden text, the size, a page break before, and
+/// the list the style is linked to.
 ///
 /// The style sheet is how a heading is told from body text: Word's built-in
 /// "Heading 1" to "Heading 9" have `sti` 1 to 9, whatever language the
@@ -252,9 +253,7 @@ struct WordStyleSheet {
                 if opcode == WordSprm.outlineLevel, let value = operand.first { outlineLevel = Int(value) }
                 if opcode == WordSprm.pageBreakBefore, let value = operand.first { pageBreakBefore = value != 0 }
                 if opcode == WordSprm.listLevel, let value = operand.first { listLevel = Int(value) }
-                if opcode == WordSprm.listIndex, operand.count >= 2 {
-                    listIndex = Int(operand[operand.startIndex]) | Int(operand[operand.startIndex + 1]) << 8
-                }
+                if opcode == WordSprm.listIndex, operand.count >= 2 { listIndex = WordSprm.value(of: operand) }
             }
         }
         // Character properties: the second group of a paragraph style, the
@@ -266,7 +265,7 @@ struct WordStyleSheet {
                 if opcode == WordSprm.bold { bold = Int(value) }
                 if opcode == WordSprm.italic { italic = Int(value) }
                 if opcode == WordSprm.hidden { hidden = Int(value) }
-                if opcode == WordSprm.fontSize, operand.count >= 2 { fontSize = Int(operand[operand.startIndex]) | Int(operand[operand.startIndex + 1]) << 8 }
+                if opcode == WordSprm.fontSize, operand.count >= 2 { fontSize = WordSprm.value(of: operand) }
             }
         }
         return Style(

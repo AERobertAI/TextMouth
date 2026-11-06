@@ -11,7 +11,7 @@ struct WordParagraphFormat: Equatable {
     var outlineLevel: Int?
     /// Whether the paragraph is in a table.
     var isInTable = false
-    /// Whether the paragraph is the mark that ends a row of a table.
+    /// Whether the paragraph is the mark that ends a row of a table (or of a nested table).
     var isRowEnd = false
     /// The depth of the table the paragraph is in: 1 for a table, 2 for a
     /// table in a cell of a table; 0 when the paragraph does not say.
@@ -38,6 +38,10 @@ struct WordCharacterFormat: Equatable {
     var italic: Int?
     /// The direct hidden-text property (`sprmCFVanish`), valued as `bold` is.
     var hidden: Int?
+    /// Whether the characters are a style separator (`sprmCFSpecVanish`):
+    /// a hidden mark that ends a paragraph in one style where the next
+    /// begins in another.
+    var isStyleSeparator = false
     /// Whether the characters are special characters (a picture's anchor).
     var isSpecial = false
     /// The font size in half-points, or nil.
@@ -116,11 +120,13 @@ enum WordDocumentProperties {
     /// before `limit`.
     /// - Parameters:
     ///   - binTable: where the PlcfBtePapx lies in `table`.
+    ///   - data: the `Data` stream, where a paragraph's properties are kept
+    ///     when they do not fit its page (`sprmPHugePapx`, `sprmPTableProps`).
     /// - Throws: `OLEDamage` for a page, run, offset, or style index that does
     ///   not fit.
     static func paragraphRuns(
         binTable: Range<Int>, table: OLEBytes, document: OLEBytes,
-        pieces: WordPieceTable, limit: Int
+        pieces: WordPieceTable, limit: Int, data: OLEBytes? = nil
     ) throws -> WordFormatRuns<WordParagraphFormat> {
         try runs(binTable: binTable, table: table, document: document, pieces: pieces, limit: limit,
                  maximumRuns: (pageSize - 1 - 4) / (4 + paragraphEntrySize),
@@ -146,27 +152,73 @@ enum WordDocumentProperties {
                     throw OLEDamage(reason: "a paragraph's properties run past their page")
                 }
                 format.style = try document.u16(listStart)
-                WordSprm.forEach(in: try document.slice(offset: listStart + 2, length: listSize - 2)) { opcode, operand in
-                    apply(opcode, operand, to: &format)
-                }
+                apply(try document.slice(offset: listStart + 2, length: listSize - 2), to: &format, data: data)
             }
             // Then the piece's own modifiers, over the PAPX's.
-            WordSprm.forEach(in: modifiers) { opcode, operand in apply(opcode, operand, to: &format) }
+            apply(modifiers, to: &format, data: data)
             // A style that is not in the sheet (or 0xFFFF, none) has the default
             // formatting: the sheet's questions answer nothing for it.
             return format
         }
     }
 
+    /// The most `Data` stream property lists a paragraph's properties are followed through.
+    private static let mostDataHops = 8
+
+    /// Applies the paragraph modifiers `grpprl` to `format`. When the first of
+    /// them is `sprmPHugePapx` or `sprmPTableProps` (a paragraph whose properties
+    /// are too many for its page, or a table's), its operand is the offset
+    /// in the `Data` stream of a `PrcData` (a 16-bit size, at least 10, and
+    /// the modifiers), which is applied in its place and processes no more of
+    /// this list; that one may name another, so a chain is followed, but only
+    /// so far, since a file can make it a loop. One that is not first is ignored
+    /// ([MS-DOC] sprmPHugePapx).
+    private static func apply(_ grpprl: ArraySlice<UInt8>, to format: inout WordParagraphFormat, data: OLEBytes?) {
+        var group = grpprl
+        for _ in 0...mostDataHops {
+            var next: ArraySlice<UInt8>?
+            var isFirst = true
+            var isRedirected = false
+            WordSprm.forEach(in: group) { opcode, operand in
+                defer { isFirst = false }
+                if isRedirected { return }
+                if isFirst, opcode == WordSprm.hugeParagraphProperties || opcode == WordSprm.tableProperties {
+                    isRedirected = true
+                    next = prcData(at: WordSprm.value(of: operand), in: data)
+                    return
+                }
+                apply(opcode, operand, to: &format)
+            }
+            guard let next else { return }
+            group = next
+        }
+    }
+
+    /// The modifiers of the `PrcData` at `offset` in the `Data` stream: its
+    /// 16-bit size, which must be at least 10, and that many bytes.
+    private static func prcData(at offset: Int, in data: OLEBytes?) -> ArraySlice<UInt8>? {
+        guard let data, let size = try? data.u16(offset), size >= 10 else { return nil }
+        return try? data.slice(offset: offset + 2, length: size)
+    }
+
     /// Sets the field of `format` that the paragraph modifier `opcode` with
     /// `operand` names, if this reader uses it.
     private static func apply(_ opcode: Int, _ operand: ArraySlice<UInt8>, to format: inout WordParagraphFormat) {
-        let value = number(in: operand)
+        let value = WordSprm.value(of: operand)
         switch opcode {
         case WordSprm.paragraphStyle: format.style = value
+        case WordSprm.incrementLevel:
+            // A signed 8-bit offset to the Heading 1 to 9 style (style 1 to 9)
+            // the paragraph is in, held to them; of another style's paragraph, to its own outline level.
+            let offset = value >= 0x80 ? value - 0x100 : value
+            if (1...9).contains(format.style) {
+                format.style = min(max(format.style + offset, 1), 9)
+            } else if let level = format.outlineLevel, level != 9 {
+                format.outlineLevel = min(max(level + offset, 0), 9)
+            }
         case WordSprm.outlineLevel: format.outlineLevel = value
         case WordSprm.inTable: format.isInTable = value != 0
-        case WordSprm.rowEnd: format.isRowEnd = value != 0
+        case WordSprm.rowEnd, WordSprm.innerRowEnd: format.isRowEnd = value != 0
         case WordSprm.tableDepth: format.tableDepth = value
         case WordSprm.pageBreakBefore: format.pageBreakBefore = value != 0
         case WordSprm.listIndex: format.listIndex = value
@@ -180,12 +232,20 @@ enum WordDocumentProperties {
     /// Sets the field of `format` that the character modifier `opcode` with
     /// `operand` names, if this reader uses it.
     private static func apply(_ opcode: Int, _ operand: ArraySlice<UInt8>, to format: inout WordCharacterFormat) {
-        let value = number(in: operand)
+        let value = WordSprm.value(of: operand)
         switch opcode {
         case WordSprm.bold: format.bold = value
         case WordSprm.italic: format.italic = value
         case WordSprm.hidden: format.hidden = value
-        case WordSprm.characterStyle: format.style = value
+        case WordSprm.characterStyle:
+            // A character style brings its own properties: those set directly before it do not stay.
+            resetDirectFormatting(&format)
+            format.style = value
+        case WordSprm.plain:
+            // Plain text has no direct formatting and no character style.
+            resetDirectFormatting(&format)
+            format.style = nil
+        case WordSprm.styleSeparator: format.isStyleSeparator = value == 1 || value == 0x81
         case WordSprm.special: format.isSpecial = value != 0
         case WordSprm.fontSize: format.fontSize = value
         // A toggle ([MS-DOC] 2.6.1): 0x80 keeps what a style gives, and no style
@@ -227,9 +287,14 @@ enum WordDocumentProperties {
 
     // MARK: Shared
 
-    /// The little-endian number in the first (up to four) bytes of `operand`.
-    private static func number(in operand: ArraySlice<UInt8>) -> Int {
-        operand.prefix(4).enumerated().reduce(0) { $0 | Int($1.element) << (8 * $1.offset) }
+    /// Takes off the direct formatting that a style or "plain" replaces: the
+    /// emphasis, hiding, and size. A tracked deletion, and a special character
+    /// (a picture's anchor), are not formatting a style gives or takes.
+    private static func resetDirectFormatting(_ format: inout WordCharacterFormat) {
+        format.bold = nil
+        format.italic = nil
+        format.hidden = nil
+        format.fontSize = nil
     }
 
     /// Walks a bin table's pages and builds the runs of formats `format`
