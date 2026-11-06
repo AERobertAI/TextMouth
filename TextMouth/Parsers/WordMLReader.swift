@@ -182,6 +182,7 @@ final class WordMLReader: OfficeXMLReader {
                 writer.beginPage()
             }
         case "w:tr": rowsHidden.append(false)
+        case "w:tc": try writer.beginCell()
         case "w:p": paragraphs.append(OpenParagraph())
         case "w:r": runs.append(OpenRun())
         case "w:t":
@@ -194,7 +195,7 @@ final class WordMLReader: OfficeXMLReader {
             try startRunIfNeeded()
             guard runs.last?.isHidden == false else { return }
             if attributes["w:type"] == "page" {
-                writer.pageBreak()
+                writer.hardPageBreak()
             } else if attributes["w:type"] != "column" {
                 writer.addLineBreak()
             }
@@ -283,7 +284,7 @@ final class WordMLReader: OfficeXMLReader {
         }
         // Hidden text is settled run by run (`startRunIfNeeded`), not here.
         let base = OfficeRun(size: style.run.size ?? 24).applying(bold: style.run.bold, italic: style.run.italic, size: nil)
-        try writer.beginParagraph(
+        writer.beginParagraph(
             kind: kind, run: base, startsPage: direct.pageBreakBefore ?? style.paragraph.pageBreakBefore ?? false
         )
     }

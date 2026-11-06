@@ -51,7 +51,7 @@ struct ODTStyleProperties: Equatable {
     /// which case a paragraph or table of the style begins a page.
     var hasMasterPage: Bool?
     /// `style:default-outline-level`: the heading level of a paragraph of
-    /// the style.
+    /// the style; 0 when the style declares none (an empty value).
     var outlineLevel: Int?
     /// Bold (`fo:font-weight`).
     var bold: Bool?
@@ -157,25 +157,19 @@ final class ODTStyleSheet {
         let key = family + "\u{0}" + (name ?? "")
         if let known = resolved[key] { return known }
         // The chain, the style first, with a guard against loops.
-        var chain: [ODTStyleProperties] = []
-        var seen: Set<String> = []
-        var next = name
-        while let current = next, !seen.contains(current), chain.count < Self.longestChain,
-              let style = styles[family]?[current] {
-            seen.insert(current)
-            chain.append(style)
-            next = style.parent
-        }
+        let found = OfficeStyleChain.walk(
+            from: name, limit: Self.longestChain, lookup: { self.styles[family]?[$0] }, parent: { $0.parent }
+        )
         // The family's default first, then from the oldest ancestor down.
         var merged = styles[family]?[""] ?? ODTStyleProperties()
-        for style in chain.reversed() { merged = merged.overridden(by: style) }
+        for style in found.styles.reversed() { merged = merged.overridden(by: style) }
         // A paragraph of the styles Title and Subtitle, or of the base style
         // Heading that Writer's headings and titles are based on, is a heading
         // though the style names no outline level, as the DOCX and rich-text
         // readers read their "Title" (level 1) and "Subtitle" (level 2).
         // The name of a parent the document does not define counts too.
         if family == "paragraph", merged.outlineLevel == nil {
-            let named = seen.union(next.map { [$0] } ?? [])
+            let named = found.names.union(found.next.map { [$0] } ?? [])
             // Writer bases Subtitle on Heading too, so it is asked first.
             if named.contains("Subtitle") {
                 merged.outlineLevel = 2
@@ -227,7 +221,9 @@ final class ODTStyleCollector {
                 parent: attributes["style:parent-style-name"],
                 listStyleName: attributes["style:list-style-name"],
                 hasMasterPage: attributes["style:master-page-name"].map { !$0.isEmpty },
-                outlineLevel: attributes["style:default-outline-level"].flatMap { Int($0) }
+                // An empty value, or one that is no number, declares no level (0):
+                // it is not inherited from the style this one is based on.
+                outlineLevel: attributes["style:default-outline-level"].map { Int($0) ?? 0 }
             ))
         case "style:default-style":
             style = (attributes["style:family"] ?? "", "", ODTStyleProperties())
@@ -327,9 +323,11 @@ final class ODTStylesReader: ODTXMLReader {
 extension OfficeRun {
     /// This run with the text properties `properties` state put over it.
     func applying(_ properties: ODTStyleProperties) -> OfficeRun {
-        applying(
+        var run = applying(
             bold: properties.bold, italic: properties.italic,
             size: properties.fontSize.map { OfficeRun.halfPoints($0.applied(to: Double(size) / 2)) }
         )
+        if let hidden = properties.hidden { run.hidden = hidden }
+        return run
     }
 }

@@ -142,15 +142,10 @@ final class WordMLStyleSheet {
     /// it is based on, oldest first. The heading level of a style named
     /// "heading 1" to "heading 9" is its outline level.
     func resolved(type: String, id: String?) -> (paragraph: WordMLParagraphProperties, run: WordMLRunProperties) {
-        var chain: [WordMLStyle] = []
-        var seen: Set<String> = []
-        var next = id ?? (type == "paragraph" ? defaultParagraphID : nil)
-        while let current = next, !seen.contains(current), chain.count < Self.longestChain,
-              let style = styles[type + "\u{0}" + current] {
-            seen.insert(current)
-            chain.append(style)
-            next = style.basedOn
-        }
+        let chain = OfficeStyleChain.walk(
+            from: id ?? (type == "paragraph" ? defaultParagraphID : nil), limit: Self.longestChain,
+            lookup: { self.styles[type + "\u{0}" + $0] }, parent: { $0.basedOn }
+        ).styles
         var paragraph = WordMLParagraphProperties()
         var run = WordMLRunProperties()
         for style in chain.reversed() {

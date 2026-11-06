@@ -9,6 +9,9 @@ struct OfficeRun: Equatable {
     var bold = false
     var italic = false
     var size = 24
+    /// Whether the text is hidden (a paragraph style hides its text, and a
+    /// span can show it again): hidden text is not kept.
+    var hidden = false
 
     /// This run with the properties given put over it; a nil one is
     /// inherited. `size` is in half points.
@@ -34,9 +37,28 @@ enum OfficePiece {
     case text(String, OfficeRun)
     /// `text:line-break`.
     case lineBreak
-    /// A page begins here (`text:soft-page-break`, or a break before the
-    /// paragraph).
+    /// A page begins here (a hard break, or a break before the paragraph),
+    /// and, if no letter or digit has been read, no page begins yet.
     case pageStart
+    /// A page begins here by the layout's own record (`text:soft-page-break`):
+    /// it begins one even before the first words.
+    case softPageStart
+}
+
+/// A block that waits for the paragraph around it to be written: what is
+/// anchored in a paragraph (a text box, a shape, a picture's description) is
+/// read right after the paragraph, so that its sentence stays whole.
+enum OfficeDeferred {
+    /// A paragraph that ended inside the paragraph.
+    case paragraph(OfficeOpenParagraph)
+    /// A table begins, with whether its style begins a page before and after it.
+    case beginTable(startsPage: Bool, startsPageAfter: Bool)
+    /// A cell begins; one that a file repeats is read that many times.
+    case beginCell(repeated: Int)
+    /// A cell, a row, and a table end.
+    case endCell
+    case endRow
+    case endTable
 }
 
 /// A paragraph or heading whose end has not been read yet. The readers of
@@ -48,12 +70,18 @@ struct OfficeOpenParagraph {
     /// Whether the paragraph begins a page after it ends
     /// (`fo:break-after`).
     var startsPageAfter = false
-    /// Whether a `text:hidden-paragraph` hid the whole paragraph.
-    var isHidden = false
+    /// How many `text:hidden-paragraph` fields the paragraph holds that are
+    /// hiding it and that are not: it is hidden when it holds some and all
+    /// of them hide it.
+    var hidingFields = 0
+    var shownFields = 0
+    /// Whether a style hides the paragraph's text: it is then dropped unless
+    /// a span shows some of its words again.
+    var isHiddenByStyle = false
 
-    /// How many tables were open when the paragraph began: a paragraph in a
-    /// table opened inside another paragraph is not deferred with its text boxes.
-    var tableDepth = 0
+    /// Whether the paragraph's fields hide it altogether.
+    var isHidden: Bool { hidingFields > 0 && shownFields == 0 }
+
     /// Whether the paragraph held hidden text, which was left out: a paragraph
     /// that then holds no words begins no page.
     var hasHiddenText = false
@@ -65,10 +93,11 @@ struct OfficeOpenParagraph {
     /// read (after the main text) only if the paragraph is, so a note in
     /// hidden text is not read.
     var notes: [OfficeFlow] = []
-    /// The paragraphs of the text boxes and shapes anchored in the
-    /// paragraph, finished and waiting: they are written right after the
-    /// paragraph, so its sentence stays whole, and not at all if it is hidden.
-    var deferred: [OfficeOpenParagraph] = []
+    /// What is anchored in the paragraph (the paragraphs and tables of text
+    /// boxes and shapes, and pictures' descriptions), finished and waiting:
+    /// written right after the paragraph, so its sentence stays whole, and
+    /// not at all if it is hidden.
+    var deferred: [OfficeDeferred] = []
 
     /// Whether the pieces hold a character other than white space.
     var hasWords: Bool {
@@ -111,6 +140,8 @@ struct OfficeOpenParagraph {
     /// - Returns: the number of bytes of text added.
     @discardableResult
     mutating func addCharacters(_ characters: String) -> Int {
+        // Hidden text is not kept, and does not change the spacing around it.
+        guard !run.hidden else { return 0 }
         var text = ""
         for scalar in characters.unicodeScalars {
             switch scalar {
@@ -161,19 +192,23 @@ struct OfficeOpenParagraph {
 
     /// `text:line-break`.
     mutating func addLineBreak() {
+        guard !run.hidden else { return }
         pieces.append(.lineBreak)
         followsSpace = true
     }
 
-    /// Marks that a page begins here. A break between words that touch (Word
-    /// writes `and`, a page break, `continues` in one run) keeps them apart
-    /// with a space, so that the marker, which is no white space, joins nothing.
-    mutating func addPageStart() {
-        if case .text(let before, _)? = pieces.last, let last = before.unicodeScalars.last, !last.properties.isWhitespace {
+    /// Marks that a page begins here. A hard break between words that touch
+    /// (Word writes `and`, a page break, `continues` in one run) keeps them
+    /// apart with a space, so that the marker, which is no white space,
+    /// joins nothing. The layout's own break (`soft`) adds no space: it
+    /// falls between words, and not inside one.
+    mutating func addPageStart(soft: Bool = false) {
+        if !soft, case .text(let before, _)? = pieces.last, let last = before.unicodeScalars.last,
+           !last.properties.isWhitespace {
             add(" ")
             followsSpace = true
         }
-        pieces.append(.pageStart)
+        pieces.append(soft ? .softPageStart : .pageStart)
     }
 
     /// If the paragraph begins with a bullet character and a tab (how a
@@ -200,7 +235,7 @@ struct OfficeOpenParagraph {
     /// Adds `text` in the current look, joining the text before it when the
     /// look is the same.
     private mutating func add(_ text: String) {
-        guard !text.isEmpty else { return }
+        guard !text.isEmpty, !run.hidden else { return }
         if case .text(var before, let look)? = pieces.last, look == run {
             // The piece is taken out of the array first, so that its string
             // is the only holder and the append does not copy it: a paragraph
@@ -242,6 +277,12 @@ final class OfficeFlow {
     var tableDepth = 0
     /// Whether each open table's style ends its page (`fo:break-after`).
     var tablesStartPageAfter: [Bool] = []
+    /// The paragraphs of the cell open, if a file repeats the cell, to be
+    /// read again for each repeat.
+    var repeatedCell: (times: Int, paragraphs: [OfficeOpenParagraph])?
+    /// The notes of the paragraphs written in this flow, in file order: the
+    /// notes of a note follow it.
+    var committedNotes: [OfficeFlow] = []
     /// The lists open, outermost first, and the lists open outside each
     /// text box that is open (a text box starts lists of its own).
     var lists: [OfficeOpenList] = []

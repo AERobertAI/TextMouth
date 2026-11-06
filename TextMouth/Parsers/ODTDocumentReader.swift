@@ -91,10 +91,7 @@ enum ODTDocumentReader {
     /// opened: the archive itself is not read into memory, only its parts
     /// as they are needed.
     private static func checkSize(of url: URL) throws {
-        let target = url.resolvingSymlinksInPath()
-        let size = try target.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-        guard size > 0 else { throw FileImportError.noTextToRead }
-        try DocumentByteLimit.check(byteCount: Int64(size))
+        _ = try DocumentByteLimit.size(ofFileAt: url)
     }
 
     /// The HTML document of the package: its styles, then its content, with
@@ -174,8 +171,9 @@ enum ODTDocumentReader {
                 throw TextutilConverter.Failure.unreadable(.odt)
             }
             // The media type is the first entry of a package, stored
-            // uncompressed. Packages written by other tools may lack it.
-            if let mediaType = try part(Self.mimetypePath, limit: 256) {
+            // uncompressed. Packages written by other tools may lack it or
+            // damage it: only a type that can be read and is not text refuses.
+            if let mediaType = try? part(Self.mimetypePath, limit: 256) {
                 let text = String(decoding: mediaType, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
                 guard text.hasPrefix(Self.textMediaType) else {
                     throw TextutilConverter.Failure.unreadable(.odt)

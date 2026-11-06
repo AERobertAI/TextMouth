@@ -726,6 +726,7 @@
 		5FCBF3E917E0E5190A3F35D2 /* AudioBookParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CE37CEAAAD30C913992B8C2 /* AudioBookParser.swift */; };
 		5FD74B25EF29C7EC602B1635 /* WordDocumentHTMLWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51A0A4769BCDBDDE8984B4A4 /* WordDocumentHTMLWriter.swift */; };
 		6062EC5F1E01C64D1F39335C /* ListNeighbors.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0D001D2C0B8BB09B91183E0 /* ListNeighbors.swift */; };
+		60BDDFCA48A0388DD50A4D7C /* OfficeStyleChain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43954F93821F0F0ED9D7B354 /* OfficeStyleChain.swift */; };
 		60C1BB7C7C34759A4A268F28 /* FeedDirectory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70557CF2F2F4FFC22CDF6A53 /* FeedDirectory.swift */; };
 		60CA116F9DFA2136F134E460 /* WordDocumentTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAEEC4687D845F9762B8E05B /* WordDocumentTestSupport.swift */; };
 		60F8A4D7748BC7C72915B379 /* FeedIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA03056FAF234BDAE1CA0DC4 /* FeedIndex.swift */; };
@@ -1447,6 +1448,7 @@
 		C27921BD5A95D0CB4D4832B5 /* BrailleFileCodeChoiceModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A84BE9B78D9C1C6E2F61740A /* BrailleFileCodeChoiceModel.swift */; };
 		C27AF83A000840D1E6EDA4BA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DD447A0AC11EA0281C75E54B /* Assets.xcassets */; };
 		C2947A73B9AA61322BEE5F3C /* SpeechPreparationSubstitutionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF32AB722E58729CAA93E891 /* SpeechPreparationSubstitutionTests.swift */; };
+		C2B142B396EDFA5607524416 /* OfficeStyleChain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43954F93821F0F0ED9D7B354 /* OfficeStyleChain.swift */; };
 		C2DB180D46C2583DF7B7F214 /* MultiMacCrashSafetyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F41657911183441D712215F /* MultiMacCrashSafetyTests.swift */; };
 		C2F59D89ED236A420C56726C /* OriginalFileDeletionWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65D91F0E2F2130FC4870C893 /* OriginalFileDeletionWording.swift */; };
 		C302049403C0AC6D2FD78D99 /* MarkdownHeadingAnnotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0D44D68D8817E5C0F9C2A14 /* MarkdownHeadingAnnotation.swift */; };
@@ -2409,6 +2411,7 @@
 		42B3B89B838467740EECFF07 /* TextEncodingChoiceModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextEncodingChoiceModel.swift; sourceTree = "<group>"; };
 		42D7216709EA25E79C8D9856 /* SemanticVersion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticVersion.swift; sourceTree = "<group>"; };
 		42F5595561D1F50CC4346C40 /* DAISYParser+TextExtraction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DAISYParser+TextExtraction.swift"; sourceTree = "<group>"; };
+		43954F93821F0F0ED9D7B354 /* OfficeStyleChain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfficeStyleChain.swift; sourceTree = "<group>"; };
 		43BC25D45D2028782C2FF513 /* FeedItemIndexFileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedItemIndexFileTests.swift; sourceTree = "<group>"; };
 		43F59A558FA1CA98187E21DD /* TextEncodingGuesser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextEncodingGuesser.swift; sourceTree = "<group>"; };
 		4410272B0B82915C751BA320 /* StorageGenerationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageGenerationTests.swift; sourceTree = "<group>"; };
@@ -4199,6 +4202,7 @@
 				327758B773CEE330B6E68D8A /* ODTXMLReader.swift */,
 				360647C79DEC437181319A7C /* OfficeBlockWriter.swift */,
 				F967B7D3BEBECA08E657E6FE /* OfficeParagraph.swift */,
+				43954F93821F0F0ED9D7B354 /* OfficeStyleChain.swift */,
 				22D228E76780F65C44C5D714 /* OfficeXMLReader.swift */,
 				315D44403356D92436195493 /* OwnDocumentReaders.swift */,
 				FA6E0687D4A442DC825D8475 /* PackageSAXParser.swift */,
@@ -6533,6 +6537,7 @@
 				C61A5C62122C4BC9157D05A0 /* ObjCException.swift in Sources */,
 				DE4A5F5E9028AD4DC6281868 /* OfficeBlockWriter.swift in Sources */,
 				0783EAEC210CCB735CCFFE71 /* OfficeParagraph.swift in Sources */,
+				C2B142B396EDFA5607524416 /* OfficeStyleChain.swift in Sources */,
 				D1983B2192748E0A608AF135 /* OfficeXMLReader.swift in Sources */,
 				F2702396D27AA83E76B85EBD /* OffsetMap.swift in Sources */,
 				F926BD33D7D1A537F0268787 /* OggConversionProgress.swift in Sources */,
@@ -7176,6 +7181,7 @@
 				4FCE4B03416CB7DA80BAC853 /* ObjCException.swift in Sources */,
 				3E2FAD7FFD2A0B5B3F7A40FB /* OfficeBlockWriter.swift in Sources */,
 				ECAB5599B8BB4BC8AFC8C85B /* OfficeParagraph.swift in Sources */,
+				60BDDFCA48A0388DD50A4D7C /* OfficeStyleChain.swift in Sources */,
 				8EB81D5135A5561647EFEBC5 /* OfficeXMLReader.swift in Sources */,
 				2A81E81EA6E19856F16AF2EB /* OffsetMap.swift in Sources */,
 				D65FFA6D232A5D6E6878BB7A /* OggConversionProgress.swift in Sources */,
