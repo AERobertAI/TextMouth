@@ -61,7 +61,9 @@ enum KFXParser {
             // Never decrypted: the same sentence as a protected MOBI book.
             throw MOBIError.copyProtected
         case .container:
-            throw KFXError.notReadableYet
+            let book = try KFXBook(bytes: bytes)
+            return try MOBIParser.preparedBook(
+                sections: book.sections, metadata: book.metadata, fallbackTitle: fallbackTitle)
         case .zip, .other:
             throw MOBIError.notAKindleBook
         }
@@ -87,16 +89,25 @@ enum KFXParser {
     /// - Throws: As `prepareBook(url:fallbackTitle:)`.
     static func readMetadata(url: URL) throws -> MOBIBook.Metadata {
         if try KFXSignature.kind(ofFileAt: url) == .zip {
-            _ = try prepareBook(url: url)
+            // A set names itself through the book it makes.
+            let book = try prepareBook(url: url)
+            return MOBIBook.Metadata(
+                title: book.title, author: book.author == Book.unknownAuthor ? "" : book.author,
+                language: book.language)
         }
         return try readMetadata(bytes: [UInt8](try DocumentByteLimit.contents(of: url)))
     }
 
-    /// What the KFX container in `bytes` says about itself. Until the walk
-    /// exists a book names nothing: reading metadata never fails an import,
-    /// so the refusal is the import's own.
+    /// What the KFX container in `bytes` says about itself. A protected
+    /// container names nothing (its metadata is never opened), so it is
+    /// refused here as it is when its text is asked for.
+    /// - Throws: `MOBIError.copyProtected` for a protected container,
+    ///   `MOBIError.notAKindleBook` for a file of another kind.
     static func readMetadata(bytes: [UInt8]) throws -> MOBIBook.Metadata {
-        _ = try prepareBook(bytes: bytes, fallbackTitle: "")
-        throw KFXError.notReadableYet
+        switch KFXSignature.kind(ofPrefix: Array(bytes.prefix(KFXSignature.prefixLength))) {
+        case .protected: throw MOBIError.copyProtected
+        case .container: return try KFXBook.metadata(in: bytes)
+        case .zip, .other: throw MOBIError.notAKindleBook
+        }
     }
 }

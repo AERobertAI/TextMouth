@@ -99,8 +99,9 @@ indirect enum IonValue: Equatable {
 /// - the values one container may hold are counted against a budget.
 enum IonReader {
 
-    /// The deepest nesting read. A book's nodes nest a dozen levels at most.
-    static let maximumDepth = 64
+    /// The deepest nesting read. A node takes two levels (a struct, and a list of
+    /// its children), and a book's nodes nest a dozen levels at most.
+    static let maximumDepth = 128
 
     /// The version marker that starts every Ion document.
     static let versionMarker: [UInt8] = [0xE0, 0x01, 0x00, 0xEA]

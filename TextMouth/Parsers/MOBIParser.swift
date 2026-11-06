@@ -58,17 +58,32 @@ enum MOBIParser {
             )
         }
         let book = try MOBIBook(bytes: fileBytes)
+        return try preparedBook(
+            sections: book.sections, metadata: book.metadata,
+            fallbackTitle: fallbackTitle ?? url.deletingPathExtension().lastPathComponent)
+    }
+
+    /// Makes a book of the HTML `sections` a Kindle book was cut into: each
+    /// section that holds words is a chapter. MOBI and KFX books both end
+    /// here, so they are read into chapters the same way.
+    /// - Parameters:
+    ///   - metadata: What the book says of itself; a title it lacks becomes
+    ///     `fallbackTitle`, an author it lacks the unknown author.
+    /// - Throws: `FileImportError.noTextToRead` for a book with no words.
+    static func preparedBook(
+        sections: [MOBIBook.Section], metadata: MOBIBook.Metadata, fallbackTitle: String
+    ) throws -> PreparedBook {
         var chapters: [EPUBParser.PreparedChapter] = []
-        for section in book.sections {
+        for section in sections {
             if let chapter = try preparedChapter(of: section, number: chapters.count + 1) {
                 chapters.append(chapter)
             }
         }
         guard !chapters.isEmpty else { throw FileImportError.noTextToRead }
         return PreparedBook(
-            title: book.metadata.title.isEmpty ? (fallbackTitle ?? url.deletingPathExtension().lastPathComponent) : book.metadata.title,
-            author: book.metadata.author.isEmpty ? Book.unknownAuthor : book.metadata.author,
-            language: book.metadata.language,
+            title: metadata.title.isEmpty ? fallbackTitle : metadata.title,
+            author: metadata.author.isEmpty ? Book.unknownAuthor : metadata.author,
+            language: metadata.language,
             chapters: chapters
         )
     }

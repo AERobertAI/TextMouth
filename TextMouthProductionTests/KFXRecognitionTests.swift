@@ -86,9 +86,11 @@ final class KFXRecognitionTests: XCTestCase {
     }
 
     func testAnAzwHoldingAContainerGoesToTheKFXReader() throws {
+        // The bytes are a container's signature and nothing else, so the
+        // KFX reader finds it damaged: not a broken MOBI.
         let url = try write(containerBytes, named: "sent.azw")
         XCTAssertThrowsError(try MOBIParser.prepareBook(url: url)) {
-            XCTAssertEqual($0 as? KFXError, .notReadableYet)
+            guard case .damaged = $0 as? MOBIError else { return XCTFail("\($0)") }
         }
     }
 
@@ -106,11 +108,12 @@ final class KFXRecognitionTests: XCTestCase {
 
     // MARK: - Containers not read yet
 
-    func testAContainerIsRefusedUntilTheWalkExists() throws {
+    func testAContainerThatStopsShortIsDamaged() throws {
         let url = try write(containerBytes, named: "book.kfx")
-        assertRefused(
-            url, KFXError.notReadableYet,
-            sentence: "This Kindle book is in the newer KFX format, which TextMouth can't read yet.")
+        XCTAssertThrowsError(try KFXParser.prepareBook(url: url)) {
+            guard case .damaged = $0 as? MOBIError else { return XCTFail("\($0)") }
+            XCTAssertTrue($0.localizedDescription.hasPrefix("This Kindle book is damaged or incomplete: "))
+        }
     }
 
     func testAFileOfAnotherKindNamedKFXIsNotAKindleBook() throws {

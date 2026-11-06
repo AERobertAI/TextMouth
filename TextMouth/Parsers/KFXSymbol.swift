@@ -153,6 +153,13 @@ enum KFXSymbol {
 
     // MARK: Values: styles, render modes, classifications
 
+    /// The numbered list style (decimal) that Kindle Previewer writes for an
+    /// `ol`; the others seen, `$342` and `$340`, are bulleted.
+    static let orderedListStyles: Set<Int> = [343]
+    /// The classification of a table's caption.
+    static let caption = 453
+    /// An inline fragment: a node that a children list names rather than holds.
+    static let inlineFragment = 608
     /// Weights from 700 up: the bold ones of the hundreds `$355` (100) to
     /// `$363` (900), where `$361` is bold.
     static let boldWeights: Set<Int> = [361, 362, 363]

@@ -40,6 +40,11 @@ struct KFXFragments {
         return named["$\(KFXContainer.unnamedEntityID)"] ?? (named.count == 1 ? named.values.first : nil)
     }
 
+    /// Every fragment of `type`, by name.
+    func all(_ type: Int) -> [String: IonValue] {
+        byType[type] ?? [:]
+    }
+
     /// Whether the book has any fragment of `type`.
     func holds(_ type: Int) -> Bool {
         !(byType[type]?.isEmpty ?? true)
