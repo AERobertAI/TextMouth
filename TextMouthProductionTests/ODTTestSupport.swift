@@ -141,18 +141,14 @@ extension TextPipelineFixtures {
         name.hasPrefix("format-samples/odt/libreoffice-")
     }
 
-    /// The older OpenDocument and Word 2003 XML samples, whose goldens record
-    /// textutil's reading and so change now that the Mac reads these formats
-    /// with the own readers (the author of the OpenDocument samples, which
-    /// textutil loses, is one change). They are not compared until the
-    /// goldens are recorded again with `Scripts/test/update-goldens.sh`,
-    /// which runs the hosted tests and so is not run by the reader's agent;
-    /// the commit that records them removes this list and its use in
+    /// The two OpenDocument samples whose goldens record textutil's reading,
+    /// which loses the author: the own reader reads it, so the goldens change
+    /// by that one line. They are not compared until the goldens are recorded
+    /// again with `Scripts/test/update-goldens.sh`, which runs the hosted
+    /// tests and so is not run by the reader's agent; the commit that records
+    /// them removes this list and its use in
     /// `DocumentGoldenTests.recordedFormatSampleNames`.
     static func isAwaitingGoldenRerecording(_ name: String) -> Bool {
-        [
-            "format-samples/odt/handwritten.odt", "format-samples/odt/headings.odt", "format-samples/ott/handwritten.ott",
-            "format-samples/wordml/headings.wordml", "format-samples/wordml/page-breaks.wordml",
-        ].contains(name)
+        ["format-samples/odt/handwritten.odt", "format-samples/ott/handwritten.ott"].contains(name)
     }
 }
