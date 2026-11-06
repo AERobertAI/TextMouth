@@ -27,6 +27,13 @@ enum XMLEscaping {
         escape(text, replacing: attributeReplacements)
     }
 
+    /// `text` with only what XML 1.0 forbids dealt with, as `text(_:)` deals
+    /// with it, and nothing escaped: for a writer that tidies a name before it
+    /// escapes it.
+    static func cleaned(_ text: String) -> String {
+        escape(text, replacing: [:])
+    }
+
     // MARK: Private
 
     /// What `text(_:)` writes in place of the characters it escapes.

@@ -291,7 +291,7 @@ private struct EPUBPackageBuilder {
         pages pageBreaks: [ExportPageBreak]
     ) throws {
         let name = "chapter-\(files.count + 1).xhtml"
-        let documentTitle = Self.nonEmpty(Self.collapsed(title)) ?? Self.nonEmpty(Self.collapsed(document.book.title))
+        let documentTitle = Self.name(title) ?? Self.name(document.book.title)
         let text = Self.xhtmlDocument(
             title: documentTitle ?? Self.untitled,
             language: document.book.language,
@@ -302,7 +302,7 @@ private struct EPUBPackageBuilder {
         contents += headings.map {
             ExportContentsEntry(
                 level: $0.level,
-                title: Self.nonEmpty(Self.collapsed($0.plainText)) ?? Self.untitled,
+                title: Self.name($0.plainText) ?? Self.untitled,
                 address: "\(name)#\($0.id)"
             )
         }
@@ -358,7 +358,7 @@ private struct EPUBPackageBuilder {
     private func navigationDocument() -> String {
         var entries = contents
         if entries.isEmpty, let first = files.first {
-            let title = Self.nonEmpty(Self.collapsed(document.book.title)) ?? Self.untitled
+            let title = Self.name(document.book.title) ?? Self.untitled
             entries = [ExportContentsEntry(level: 1, title: title, address: first.name)]
         }
         var body = [
@@ -373,7 +373,7 @@ private struct EPUBPackageBuilder {
             body += Self.pageListLines(of: pages)
             body.append("</nav>")
         }
-        let title = Self.nonEmpty(Self.collapsed(document.book.title)) ?? Self.untitled
+        let title = Self.name(document.book.title) ?? Self.untitled
         return Self.xhtmlDocument(title: title, language: document.book.language, body: body)
     }
 
@@ -405,7 +405,7 @@ private struct EPUBPackageBuilder {
         modified: Date
     ) -> String {
         let book = document.book
-        let title = nonEmpty(collapsed(book.title)) ?? untitled
+        let title = name(book.title) ?? untitled
         // The book's language where it names one; "und", which is how a
         // language tag says "undetermined", where it does not. The chapters
         // then carry no `lang`, rather than a language they may not be in.
@@ -421,8 +421,8 @@ private struct EPUBPackageBuilder {
             "<dc:identifier id=\"book-id\">\(XMLEscaping.text(EPUBExportWriter.identifier(of: book)))</dc:identifier>",
             "<dc:title>\(XMLEscaping.text(title))</dc:title>",
         ]
-        if let author = book.author, let name = nonEmpty(collapsed(author)) {
-            lines.append("<dc:creator>\(XMLEscaping.text(name))</dc:creator>")
+        if let author = book.author, let creator = name(author) {
+            lines.append("<dc:creator>\(XMLEscaping.text(creator))</dc:creator>")
         }
         lines.append("<dc:language>\(language)</dc:language>")
         lines.append("<meta property=\"dcterms:modified\">\(EPUBExportWriter.timestamp(modified))</meta>")
@@ -464,15 +464,13 @@ private struct EPUBPackageBuilder {
 
     // MARK: Text
 
-    /// `text` with each run of white space, line feeds included, one space,
-    /// and none at either end: a name on one line.
-    private static func collapsed(_ text: String) -> String {
-        text.split(whereSeparator: { $0.isWhitespace || $0.isNewline }).joined(separator: " ")
-    }
-
-    /// `text`, or nil when it would be empty once XML has dropped the
-    /// characters it forbids: a name that has no words in the file.
-    private static func nonEmpty(_ text: String) -> String? {
-        XMLEscaping.text(text).contains(where: { !$0.isWhitespace }) ? text : nil
+    /// `text` as a name on one line: the characters XML forbids dropped (a
+    /// forbidden white space character is a space), each run of white space,
+    /// line feeds included, one space, and none at either end; nil when no
+    /// word is left, so a name that has no words in the file is never
+    /// written empty.
+    private static func name(_ text: String) -> String? {
+        let words = XMLEscaping.cleaned(text).split(whereSeparator: { $0.isWhitespace || $0.isNewline })
+        return words.isEmpty ? nil : words.joined(separator: " ")
     }
 }
