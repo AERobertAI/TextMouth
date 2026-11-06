@@ -63,6 +63,8 @@ final class WordDocumentComparisonTests: XCTestCase {
         "doc/libreoffice-tdf98284_softLockedFields.doc": [
             ["TITLE", "MERGEFORMAT"], ["SAVEDATE", "MERGEFORMAT"], ["LASTSAVEDBY", "MERGEFORMAT"], ["PRINTDATE", "MERGEFORMAT"],
         ],
+        // The instruction of the field that anchors each drawing (SHAPE).
+        "doc/poi-textboxes.doc": [["SHAPE"], ["SHAPE"]],
     ]
 
     /// The headings textutil's size guess finds that the reader does not, by

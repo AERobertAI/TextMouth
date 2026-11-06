@@ -240,7 +240,9 @@ final class WordDocumentReaderTests: XCTestCase {
         // paragraph mark (sprmPIstd 1); the first form's identical line is body text.
         let body = try sampleBody("doc/poi-rasp.doc", pages: false)
         XCTAssertTrue(body.contains("<h1>Открытое акционерное общество «УУУУУУУУУУУ»</h1>"), body)
-        XCTAssertTrue(body.contains("<p>Открытое акционерное общество «ХХХХХХХХХХХ»</p>"), body)
+        // The first form's line is body text, in bold as the file sets it.
+        XCTAssertTrue(body.contains("«ХХХХХХХХХХХ»"), body)
+        XCTAssertFalse(body.contains("<h1>Открытое акционерное общество «ХХХХХХХХХХХ»"), body)
         XCTAssertEqual(body.components(separatedBy: "<h1>").count - 1, 1, body)
     }
 
@@ -356,6 +358,11 @@ final class WordDocumentReaderTests: XCTestCase {
         let last = try XCTUnwrap(body.range(of: "ww.ekomel.com.pl"), body)
         XCTAssertLessThan(main.lowerBound, box.lowerBound)
         XCTAssertLessThan(box.lowerBound, last.lowerBound)
+    }
+
+    func testDIAGNOSTICTextBoxSampleHTML() throws {
+        let body = try sampleBody("doc/poi-textboxes.doc", pages: false)
+        XCTFail("DIAGNOSTIC \(body.count): \(body.prefix(2500)) ... \(body.suffix(600))")
     }
 
     func testOnlyEndnotesOrOnlyFootnotesFollowTheMainStory() throws {
