@@ -68,7 +68,9 @@ enum OwnDocumentReaders {
             guard ODTDocumentReader.isOn else { return nil }
             return try ODTDocumentReader.html(of: url, includesPages: includesPages)
         case .wordml:
-            return nil
+            // Word 2003 XML.
+            guard WordMLDocumentReader.isOn else { return nil }
+            return try WordMLDocumentReader.html(of: url, includesPages: includesPages)
         }
     }
 }

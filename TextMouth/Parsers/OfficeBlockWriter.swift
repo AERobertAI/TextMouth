@@ -142,9 +142,15 @@ final class OfficeBlockWriter {
     }
 
     /// The paragraph open ends: it is written out.
+    /// - Parameter bulletCharacters: when given, a paragraph of text that
+    ///   begins with one of them and white space is a bullet item, the
+    ///   bullet left out (how a writer without lists marks an item).
     /// - Throws: `DocumentTooLargeError`.
-    func endParagraph() throws {
+    func endParagraph(bulletCharacters: Set<Character>? = nil) throws {
         guard var paragraph = flow.paragraphs.popLast() else { return }
+        if let bullets = bulletCharacters, paragraph.kind == .body, paragraph.removeLeadingBullet(from: bullets) {
+            paragraph.kind = .listItem(level: 0, numbered: false)
+        }
         try write(&paragraph, atEnd: true)
     }
 

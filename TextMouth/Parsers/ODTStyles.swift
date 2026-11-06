@@ -313,12 +313,9 @@ final class ODTStylesReader: ODTXMLReader {
 extension OfficeRun {
     /// This run with the text properties `properties` state put over it.
     func applying(_ properties: ODTStyleProperties) -> OfficeRun {
-        var run = self
-        if let bold = properties.bold { run.bold = bold }
-        if let italic = properties.italic { run.italic = italic }
-        if let fontSize = properties.fontSize {
-            run.size = OfficeRun.halfPoints(fontSize.applied(to: Double(size) / 2))
-        }
-        return run
+        applying(
+            bold: properties.bold, italic: properties.italic,
+            size: properties.fontSize.map { OfficeRun.halfPoints($0.applied(to: Double(size) / 2)) }
+        )
     }
 }

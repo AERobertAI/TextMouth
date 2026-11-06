@@ -10,6 +10,16 @@ struct OfficeRun: Equatable {
     var italic = false
     var size = 24
 
+    /// This run with the properties given put over it; a nil one is
+    /// inherited. `size` is in half points.
+    func applying(bold: Bool?, italic: Bool?, size: Int?) -> OfficeRun {
+        var run = self
+        if let bold { run.bold = bold }
+        if let italic { run.italic = italic }
+        if let size { run.size = size }
+        return run
+    }
+
     /// `points` as half points, held to a sane range.
     static func halfPoints(_ points: Double) -> Int {
         min(max(Int((points * 2).rounded()), 1), 2_000)
@@ -110,6 +120,27 @@ struct OfficeOpenParagraph {
     /// Marks that a page begins here.
     mutating func addPageStart() {
         pieces.append(.pageStart)
+    }
+
+    /// If the paragraph begins with a bullet character and a tab (how a
+    /// writer without lists marks a list item: a tab, a bullet, a tab, and the
+    /// item's words), takes them out and returns true; otherwise leaves the
+    /// paragraph as it is and returns false. A dash or an asterisk and a
+    /// space are words, not a bullet: the tab is what shows a mark.
+    /// - Parameter bullets: the characters that are bullets.
+    mutating func removeLeadingBullet(from bullets: Set<Character>) -> Bool {
+        guard case .text(let first, let look)? = pieces.first else { return false }
+        var rest = Substring(first).drop(while: { $0.isWhitespace })
+        guard let bullet = rest.first, bullets.contains(bullet) else { return false }
+        rest = rest.dropFirst()
+        guard rest.first == "\t" else { return false }
+        rest = rest.drop(while: { $0.isWhitespace })
+        if rest.isEmpty {
+            pieces.removeFirst()
+        } else {
+            pieces[0] = .text(String(rest), look)
+        }
+        return true
     }
 
     /// Adds `text` in the current look, joining the text before it when the
