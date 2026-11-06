@@ -180,8 +180,7 @@ enum MarkdownMarkerWriter {
             return Placement(position: .blockStart, index: scalars.endIndex)
         }
         let previousEnd = scalars.index(before: lastStart)
-        let previousStart = scalars[..<previousEnd].lastIndex(of: "\n").map { scalars.index(after: $0) }
-            ?? scalars.startIndex
+        let previousStart = startOfLine(endingAt: previousEnd, in: markdown)
         let previous = Line(scalars[previousStart..<previousEnd])
         if previous.words.isEmpty && !previous.opensContainer {
             // After a blank line a new block begins.
@@ -205,6 +204,16 @@ enum MarkdownMarkerWriter {
             return Placement(position: .blockStart, index: scalars.endIndex)
         }
         return Placement(position: .continuationLine, index: wordsEnd)
+    }
+
+    /// Where the line that ends at `end` begins: just after the last line
+    /// feed before `end`, or the start of `markdown`. A line feed is one byte
+    /// that no longer scalar holds, so the bytes are searched, which is
+    /// several times faster than decoding every scalar of a long line.
+    private static func startOfLine(endingAt end: String.Index, in markdown: String) -> String.Index {
+        let bytes = markdown.utf8
+        guard let lineFeed = bytes[..<end].lastIndex(of: UInt8(ascii: "\n")) else { return markdown.startIndex }
+        return bytes.index(after: lineFeed)
     }
 
     /// What the scan back from the end of the Markdown met first.
@@ -379,12 +388,23 @@ extension MarkdownMarkerWriter {
             if (1...6).contains(hashes.count), afterHashes.first.map(Self.isIndentation) ?? true {
                 return true
             }
-            let marks = words.filter { !Self.isIndentation($0) }
-            if let mark = marks.first, marks.allSatisfy({ $0 == mark }) {
+            // The line's marks (everything but indentation) are all one scalar,
+            // counted without building them into an array: the walk ends at
+            // the first mark that differs, so an ordinary line costs a step or
+            // two however long it is.
+            var mark: Unicode.Scalar?
+            var markCount = 0
+            var allAlike = true
+            for scalar in words where !Self.isIndentation(scalar) {
+                if let first = mark, scalar != first { allAlike = false; break }
+                mark = scalar
+                markCount += 1
+            }
+            if allAlike, let mark {
                 // "===" or "---" under a line (of any length), or a thematic
                 // break of three or more "*", "-", or "_".
                 if mark == "=" || mark == "-" { return true }
-                if (mark == "*" || mark == "_"), marks.count >= 3 { return true }
+                if (mark == "*" || mark == "_"), markCount >= 3 { return true }
             }
             return words.starts(with: "```".unicodeScalars) || words.starts(with: "~~~".unicodeScalars)
                 || Self.isMarkerAlone(words)

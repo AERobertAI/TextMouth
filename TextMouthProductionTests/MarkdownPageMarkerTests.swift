@@ -436,6 +436,17 @@ final class MarkdownPageMarkerTests: XCTestCase {
         XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: "*Roses\n*"), .withinLine)
     }
 
+    /// A line of one repeated mark ends its paragraph only when it is a setext
+    /// underline or a thematic break, wherever its spaces are.
+    func testOnlyLinesOfOneRepeatedMarkEndAParagraph() {
+        for ended in ["a\n===\n", "a\n= =\n", "a\n=\n", "a\n* * *\n", "a\n___\n", "a\n- - -\n", "a\n~~~\n"] {
+            XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: ended), .blockStart, ended)
+        }
+        for continued in ["a\n**\n", "a\n__\n", "a\n-*-\n", "a\n---x\n", "a\n\u{2014}\u{2014}\u{2014}\n"] {
+            XCTAssertEqual(MarkdownMarkerWriter.linePosition(of: continued), .continuationLine, continued)
+        }
+    }
+
     func testAnInlineMarkerStaysInTheLineItStandsIn() {
         let marker = "<!-- page: 2 -->"
         XCTAssertEqual(written(into: "text", inline: true), "text" + marker)
