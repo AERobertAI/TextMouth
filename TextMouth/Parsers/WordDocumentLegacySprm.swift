@@ -11,19 +11,23 @@ import Foundation
 /// hints about the text, and no offset in it reaches anything but itself, so
 /// a list cut short costs formatting and never safety.
 ///
-/// How far each size is trusted:
-/// - **Specification.** Microsoft's [MS-DOC] 2.9.215 (`Prm0`) lists the sprms
-///   of Word 97 that keep their Word 6 numbers, each with an operand of one
-///   byte: the paragraph flags (5, 7, 8, 9, 12 to 15, 24, 25, 29, 37, 44, 50,
-///   51, 53 to 58), the character flags (65 to 67, 71, 75, 85 to 92, 94, 98,
-///   104, 117, 118). No published description of the Word 6 format is
-///   available; these are the numbers the later specification carries.
+/// How far each size is trusted (the table marks each group):
 /// - **Real files.** Every sprm of the real Word 6 and Word 95 documents in
-///   the test samples was walked to the exact end of its list; the sizes
-///   confirmed that way are marked below.
-/// - **Recollection, unconfirmed by a sample.** The rest follow the order of
-///   Word 97's sprms, whose operand sizes they share (indents and spacing
-///   are two bytes, line spacing four). They are marked below too.
+///   the test samples was walked to the exact end of its list, which
+///   confirms the sizes of the sprms they use (marked "confirmed").
+/// - **The offset between the two numberings.** No published description of
+///   the Word 6 format is available. Word 97 kept the order of Word 6's
+///   sprms: a paragraph sprm of Word 97 with the low byte `b` (2 to 0x17 and
+///   beyond) is Word 6's number `b + 2`, and a character sprm of the group
+///   0x0800 is Word 6's `b + 65`, of 0x0835 and after `b + 32`; every
+///   sample agrees, and the operand sizes are the later ones' (one byte for
+///   a flag, two for an indent) (marked "by order"). Microsoft's [MS-DOC]
+///   2.9.215 (`Prm0`) lists the sprms that fit a one-byte operand with
+///   numbers that agree for these, but not for 12, 15, and 80 to 81, where
+///   it numbers Word 97's own additions into Word 6's free or retired places;
+///   so it is evidence for the first only.
+/// - **Recollection**, marked so: the section sprms other than the few
+///   confirmed.
 ///
 /// The sprms the reader acts on are turned into their Word 97 form
 /// (`translation`), so that the readers of properties, styles, and sections
@@ -37,30 +41,30 @@ enum WordLegacySprm {
         var sizes: [Int: Int] = [:]
         /// Records that the sprms `opcodes` have operands of `size` bytes.
         func record(_ size: Int, _ opcodes: [Int]) { for opcode in opcodes { sizes[opcode] = size } }
-        // Paragraph. One byte (specification): flags and the like.
-        record(1, [4, 5, 7, 8, 9, 12, 13, 14, 15, 24, 25, 29, 37, 44, 50, 51, 53, 54, 55, 56, 57, 58])
-        // One byte (recollection): side by side, borders' line style, and position.
+        // Paragraph. One byte, by order, except 5, 13, 24, and 25 (confirmed): flags and the like.
+        record(1, [4, 5, 7, 8, 9, 13, 24, 25, 29, 37, 44, 50, 51, 53, 54, 55, 56, 57, 58])
+        // One byte, by order: side by side, borders' line style, and position.
         record(1, [6, 10, 11])
         // Two bytes, confirmed by real files: the left indent, the first line's indent, a top and a bottom border.
         record(2, [17, 19, 38, 40])
-        // Two bytes (recollection): the style, the other indents, spacing, positions, and borders.
+        // Two bytes, by order: the style, the other indents, spacing, positions, and borders.
         record(2, [2, 16, 18, 21, 22, 26, 27, 28, 30, 31, 32, 33, 34, 35, 36, 39, 41, 42, 43, 45, 46, 47, 48, 49])
-        // The line spacing: a distance and a rule (recollection).
+        // The line spacing: a distance and a rule, by order.
         record(4, [20])
-        // Character. One byte (specification): 65 to 67 deletion, insertion, and field codes; 71, 75; 85 to 92
+        // Character. One byte, by order (confirmed for 85, 94, 98, 104, 117): 65 to 67 deletion, insertion, and field codes; 71, 75; 85 to 92
         // bold to hidden; 94 underline; 98 colour; 104 super and subscript; 117 special; 118 object.
         record(1, [65, 66, 67, 71, 75, 85, 86, 87, 88, 89, 90, 91, 92, 94, 98, 104, 117, 118])
         // One byte, confirmed by real files: the size in half-points.
         record(1, [99])
-        // One byte (recollection): the size's change, and the position's change.
+        // One byte, by order: the size's change, and the position's change.
         record(1, [100, 102])
-        // Two bytes, confirmed by real files: the font, the language, and the fonts of other scripts.
-        record(2, [93, 97, 111, 112])
-        // Two bytes (recollection): the revision's author and reason, spacing, position, kerning, scale.
+        // Two bytes, confirmed by real files: the character style (80), the font, the language, and the fonts of other scripts.
+        record(2, [80, 93, 97, 111, 112])
+        // Two bytes, by order: the revision's author and reason, spacing, position, kerning, scale.
         record(2, [69, 72, 96, 101, 107, 109, 110, 113])
-        // Three bytes (recollection): a character set, a symbol, a size and position.
+        // Three bytes, by order: a character set, a symbol, a size and position.
         record(3, [73, 74, 95])
-        // Four bytes, confirmed by real files: a picture's place (68); (recollection) a revision's date and an object's place.
+        // Four bytes, confirmed by real files: a picture's place (68); by order, a revision's date and an object's place.
         record(4, [68, 70, 119])
         // Section (recollection, except 142, 147, and 164 to 169, confirmed by real files): one byte or two.
         record(1, [142, 143, 146, 147, 150, 151, 152, 153, 158, 159, 162, 163])
@@ -69,8 +73,10 @@ enum WordLegacySprm {
     }()
 
     /// The sprms whose operand begins with its own size (a byte, the number of
-    /// bytes after it): the style permutation, tab stops, and the like.
-    private static let sizedBySizeByte: Set<Int> = [3, 23]
+    /// bytes after it): the style permutation (3), the paragraph's numbering
+    /// (12, an ANLD of 52 bytes in the real files), and the tab stops (15 for
+    /// a paragraph's own, 23 for a change of them).
+    private static let sizedBySizeByte: Set<Int> = [3, 12, 15, 23]
 
     /// The size of the operand of the sprm `opcode` that begins at `start` in
     /// `grpprl`, or nil when it cannot be told: an opcode outside the table,
@@ -92,9 +98,12 @@ enum WordLegacySprm {
         2: (WordSprm.paragraphStyle, false),
         4: (WordSprm.incrementLevel, false),
         9: (WordSprm.pageBreakBefore, false),
+        12: (WordSprm.legacyNumbering, false),
+        13: (WordSprm.legacyNumberingLevel, false),
         24: (WordSprm.inTable, false),
         25: (WordSprm.rowEnd, false),
         65: (WordSprm.deleted, false),
+        80: (WordSprm.characterStyle, false),
         85: (WordSprm.bold, false),
         86: (WordSprm.italic, false),
         92: (WordSprm.hidden, false),

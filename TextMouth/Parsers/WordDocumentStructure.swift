@@ -339,6 +339,12 @@ enum WordSprm {
     static let special = 0x0855
     /// How a section begins (`sprmSBkc`).
     static let sectionBreakKind = 0x3009
+    /// Two opcodes that only a Word 6 or Word 95 document makes
+    /// (`WordLegacySprm`), outside the range Word 97 uses: the paragraph's
+    /// numbering (`sprmPAnld`, whose operand is a size byte and then the 52
+    /// bytes of an `ANLD`) and its level in the numbering (`sprmPNLvlAnm`).
+    static let legacyNumbering = 0xFFF0
+    static let legacyNumberingLevel = 0xFFF1
 
     // MARK: Operands
 

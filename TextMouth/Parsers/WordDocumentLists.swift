@@ -165,6 +165,14 @@ struct WordListTables {
         instances = []
     }
 
+    /// The tables of a Word 6 or Word 95 document, which numbers a paragraph
+    /// by a description of its own (`ANLD`): `levels[i]` are the nine levels
+    /// of list instance `i + 1`, a list of its own, with no overrides.
+    init(legacyInstances levels: [[WordListLevel]]) {
+        lists = Dictionary(uniqueKeysWithValues: levels.enumerated().map { ($0.offset + 1, $0.element) })
+        instances = levels.indices.map { Instance(listIdentifier: $0 + 1, overrides: [:]) }
+    }
+
     /// Whether the document has no list a paragraph could be in.
     var isEmpty: Bool { instances.isEmpty || lists.isEmpty }
 

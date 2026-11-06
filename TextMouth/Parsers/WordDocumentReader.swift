@@ -134,6 +134,8 @@ enum WordDocumentReader {
         let dialect: WordSprm.Dialect = fib.layout == .modern ? .modern : .legacy
         let table: OLEBytes
         let pieces: WordPieceTable
+        // How a Word 6 or Word 95 document's characters are read; nil for Word 97's.
+        var legacyCharacters: WordLegacyCharacters?
         switch fib.layout {
         case .modern:
             guard let tableData = try file.stream(named: fib.tableStreamName) else {
@@ -146,6 +148,7 @@ enum WordDocumentReader {
         case .legacy:
             table = document
             let characters = WordLegacyCharacters.characters(of: fib, in: document)
+            legacyCharacters = characters
             // A document saved with Fast Save has a piece table; one saved in
             // full has its text in one piece between two offsets of the FIB.
             if fib.hasPieceTable, let clx = try fib.range(of: .complexInformation, in: table) {
@@ -185,6 +188,12 @@ enum WordDocumentReader {
         let listOverrides = try? fib.range(of: .listOverrides, in: table)
         if listFormats != nil || listOverrides != nil {
             lists = (try? WordListTables(listFormats: listFormats, listOverrides: listOverrides, table: table)) ?? .none
+        }
+        // A Word 6 or Word 95 paragraph carries its own numbering: give each a list instance.
+        if let legacyCharacters {
+            let numbered = WordLegacyNumbering.apply(to: paragraphs, characters: legacyCharacters)
+            paragraphs = numbered.paragraphs
+            lists = numbered.lists
         }
         var sections = WordSections.none
         if let range = try fib.range(of: .sectionTable, in: table) {

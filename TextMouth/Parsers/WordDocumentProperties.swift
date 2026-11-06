@@ -25,6 +25,12 @@ struct WordParagraphFormat: Equatable {
     var listIndex: Int?
     /// The paragraph's level in its list (`sprmPIlvl`), or nil as for `listIndex`.
     var listLevel: Int?
+    /// For a Word 6 or Word 95 paragraph, the `ANLD` that numbers it (its
+    /// 52 bytes) and its level (1 to 9, 10 for a simple list), as it names
+    /// them; the reader turns them into a list instance and level
+    /// (`WordLegacyNumbering`), which `listIndex` and `listLevel` then hold.
+    var legacyNumbering: [UInt8]?
+    var legacyNumberingLevel: Int?
 }
 
 /// The character properties a run of text names directly (its CHPX), of
@@ -234,6 +240,8 @@ enum WordDocumentProperties {
         case WordSprm.pageBreakBefore: format.pageBreakBefore = value != 0
         case WordSprm.listIndex: format.listIndex = value
         case WordSprm.listLevel: format.listLevel = value
+        case WordSprm.legacyNumbering: format.legacyNumbering = Array(operand.dropFirst())
+        case WordSprm.legacyNumberingLevel: format.legacyNumberingLevel = value
         default: break
         }
     }
