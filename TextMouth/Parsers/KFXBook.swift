@@ -18,31 +18,32 @@ struct KFXBook {
 
     /// Reads the book whose containers are `containers`: one file, or the
     /// several of a set.
-    /// - Parameter includesPages: Whether the book's print page list is
-    ///   written as pages (the sections name where each page begins).
+    /// - Parameters:
+    ///   - sidecars: Containers found beside the book's main file. They add
+    ///     what the main containers lack; one whose fragments do not decode
+    ///     is left out, and the book reads without it.
+    ///   - includesPages: Whether the book's print page list is written as
+    ///     pages (the sections name where each page begins).
     /// - Throws: `KFXError.partOfABook` and `.noFlowingText` for the books
     ///   described above, `MOBIError.damaged` for one that stops short or
     ///   names what it lacks, `DocumentTooLargeError` for one whose text
-    ///   passes `DocumentByteLimit`.
-    init(containers: [KFXContainer], includesPages: Bool = true) throws {
-        var fragmentBudget = KFXContainer.maximumValues
-        var decoded: [KFXContainer.Fragment] = []
-        for container in containers {
-            decoded += try container.fragments(budget: &fragmentBudget)
-        }
-        let fragments = KFXFragments(decoded)
+    ///   passes `DocumentByteLimit`, `ImportCancelled`.
+    init(containers: [KFXContainer], sidecars: [KFXContainer] = [], includesPages: Bool = true) throws {
+        let fragments = KFXFragments(try Self.decoded(containers, sidecars: sidecars))
         let marks = KFXMetadata(fragments)
         metadata = marks.metadata
 
-        // A container with no sections, storylines, or reading order is the
-        // book's metadata or resources, not its text.
-        guard let order = Self.readingOrder(in: fragments) else {
-            if fragments.holds(KFXSymbol.section) || fragments.holds(KFXSymbol.storyline) {
-                throw MOBIError.damaged("the book has no reading order")
-            }
+        // A container with no sections, storylines, or document data is the
+        // book's metadata or resources, not its text (a flat metadata
+        // fragment may hold a reading order, and is still metadata).
+        guard fragments.holds(KFXSymbol.section) || fragments.holds(KFXSymbol.storyline)
+                || fragments.holds(KFXSymbol.documentData) else {
             throw KFXError.partOfABook
         }
-        if marks.hasNoFlowingText(in: fragments) { throw KFXError.noFlowingText }
+        guard let order = Self.readingOrder(in: fragments) else {
+            throw MOBIError.damaged("the book has no reading order")
+        }
+        if marks.hasNoFlowingText(in: fragments) || Self.isAllFixedLayout(order, in: fragments) { throw KFXError.noFlowingText }
 
         let navigation = KFXNavigation(fragments)
         var walk = KFXWalk(
@@ -53,7 +54,38 @@ struct KFXBook {
         // Sections that are all pictures: no words to read.
         guard walked.contains(where: \.holdsText) else { throw KFXError.noFlowingText }
 
-        sections = Self.sections(of: walked, navigation: navigation, includesPages: includesPages)
+        sections = Self.sections(
+            of: walked, names: order, navigation: navigation, fragments: fragments, includesPages: includesPages)
+    }
+
+    /// The fragments of the containers: the main ones strictly, the sidecars
+    /// each by itself, leaving out one that does not decode.
+    private static func decoded(_ containers: [KFXContainer], sidecars: [KFXContainer]) throws -> [KFXContainer.Fragment] {
+        var budget = KFXContainer.maximumValues
+        var decoded: [KFXContainer.Fragment] = []
+        for container in containers { decoded += try container.fragments(budget: &budget) }
+        for sidecar in sidecars {
+            var spare = budget
+            if let fragments = try? sidecar.fragments(budget: &spare) {
+                budget = spare
+                decoded += fragments
+            }
+        }
+        return decoded
+    }
+
+    /// Whether every section of the reading order has page templates whose
+    /// layouts are all fixed, magazine, scale-fit, or spread: a book of
+    /// pictures laid out on pages. One such section (a fixed-layout cover)
+    /// does not make a reflowable book fixed.
+    private static func isAllFixedLayout(_ order: [String], in fragments: KFXFragments) -> Bool {
+        guard !order.isEmpty else { return false }
+        return order.allSatisfy { name in
+            let templates = fragments[KFXSymbol.section, name]?.structValue?[KFXSymbol.pageTemplates]?.listValue ?? []
+            return !templates.isEmpty && templates.allSatisfy { template in
+                template.structValue?[KFXSymbol.templateLayout]?.symbolID.map(KFXSymbol.nonFlowingLayouts.contains) ?? false
+            }
+        }
     }
 
     /// Reads the single container in `bytes`.
@@ -72,9 +104,14 @@ struct KFXBook {
     ///   names its chapter);
     /// - every other contents entry is a heading kept as an annotation at
     ///   its place, one level deeper for each level of nesting;
-    /// - each print page the page list names begins at its place.
+    /// - each print page the page list names begins at its place;
+    /// - a section the book does not begin (no contents entry, no heading at
+    ///   its start, and no mark that its author began it) continues the
+    ///   chapter before it: Amazon cuts a long document where its style asks
+    ///   for a page break, and the cut is not a chapter.
     private static func sections(
-        of walked: [KFXWalk.Section], navigation: KFXNavigation, includesPages: Bool
+        of walked: [KFXWalk.Section], names: [String], navigation: KFXNavigation,
+        fragments: KFXFragments, includesPages: Bool
     ) -> [MOBIBook.Section] {
         // The section that holds each node the navigation points at.
         var sectionOfNode: [Int: Int] = [:]
@@ -86,10 +123,12 @@ struct KFXBook {
         // A place is named once, by the first entry that points at it (as an
         // EPUB's contents name each destination once).
         var named: Set<String> = []
+        var entered = Set<Int>()
         for entry in navigation.contents {
             guard let index = sectionOfNode[entry.node] else { continue }
             let anchor = KFXTargets.anchorID(node: entry.node, offset: entry.offset)
             guard named.insert(anchor).inserted else { continue }
+            entered.insert(index)
             if entry.offset == 0, walked[index].startNodeIDs.contains(entry.node), titles[index] == nil {
                 titles[index] = entry.label
             } else {
@@ -112,22 +151,51 @@ struct KFXBook {
             }
         }
 
-        return walked.enumerated().map { index, section in
-            MOBIBook.Section(
-                title: titles[index], html: section.html, headingTargets: headings[index],
-                pages: HTMLPageTargets(markers: pageTargets[index], sourceLabels: pageLabels[index], pageBreaksArePages: false))
+        // The sections the book's author began are marked by an auxiliary
+        // fragment; a book whose producer writes none has no cuts to join.
+        let marked = beganSections(in: fragments)
+        let marksSections = !fragments.all(KFXSymbol.auxiliaryData).isEmpty
+
+        var result: [MOBIBook.Section] = []
+        for (index, section) in walked.enumerated() {
+            let page = HTMLPageTargets(
+                markers: pageTargets[index], sourceLabels: pageLabels[index], pageBreaksArePages: false)
+            let continues = index > 0 && !result.isEmpty && marksSections && !entered.contains(index)
+                && !section.startsWithHeading && !marked.contains(names[index])
+            if continues {
+                // Joined to the section before it: one chapter.
+                result[result.count - 1].html += section.html
+                result[result.count - 1].headingTargets.merge(headings[index]) { first, _ in first }
+                result[result.count - 1].pages.markers.merge(page.markers) { first, _ in first }
+                result[result.count - 1].pages.sourceLabels.merge(page.sourceLabels) { first, _ in first }
+            } else {
+                result.append(MOBIBook.Section(title: titles[index], html: section.html, headingTargets: headings[index], pages: page))
+            }
         }
+        return result
+    }
+
+    /// The names of the sections an auxiliary fragment marks as their
+    /// author's own (`IS_TARGET_SECTION`). The fragment is named like its
+    /// section, with "-ad" after.
+    private static func beganSections(in fragments: KFXFragments) -> Set<String> {
+        var names: Set<String> = []
+        for (name, value) in fragments.all(KFXSymbol.auxiliaryData) where name.hasSuffix("-ad") {
+            for entry in value.structValue?[KFXSymbol.categoryEntries]?.listValue ?? [] {
+                guard let pair = entry.structValue, pair[KFXSymbol.entryKey]?.stringValue == "IS_TARGET_SECTION",
+                      pair[KFXSymbol.entryValue]?.boolValue == true else { continue }
+                names.insert(String(name.dropLast(3)))
+            }
+        }
+        return names
     }
 
     /// What the containers of a book say about itself, read without walking
     /// its text. A book that has no flowing text, or whose text is in
     /// another container of its set, still names its title and author.
     /// - Throws: `MOBIError.damaged` for a container that does not read.
-    static func metadata(of containers: [KFXContainer]) throws -> MOBIBook.Metadata {
-        var budget = KFXContainer.maximumValues
-        var fragments: [KFXContainer.Fragment] = []
-        for container in containers { fragments += try container.fragments(budget: &budget) }
-        return KFXMetadata(KFXFragments(fragments)).metadata
+    static func metadata(of containers: [KFXContainer], sidecars: [KFXContainer] = []) throws -> MOBIBook.Metadata {
+        KFXMetadata(KFXFragments(try decoded(containers, sidecars: sidecars))).metadata
     }
 
     // MARK: Reading order

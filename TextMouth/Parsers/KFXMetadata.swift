@@ -12,16 +12,25 @@ struct KFXMetadata {
     private var flat: IonStruct?
     /// Whether the document data marks comic panel mode.
     private var hasComicPanels = false
+    /// The names of the features the book's content features fragment lists.
+    private var featureNames: [String] = []
 
     // MARK: Category and key names
 
     private static let titleCategory = "kindle_title_metadata"
     private static let capabilityCategory = "kindle_capability_metadata"
+    private static let auditCategory = "kindle_audit_metadata"
+    /// The tool whose books spell every creator "Last, First" (Kindle
+    /// Previewer flips each name it reads), which is flipped back.
+    private static let flippingCreator = "KindlePreviewer"
+    /// The capability whose presence, whatever its value, marks a comic (0)
+    /// or a children's book (1).
+    private static let popupProgression = "continuous_popup_progression"
     /// The keys of the capability category whose presence, with a value that
     /// is not 0 or false, means the book is not flowing text.
     private static let noFlowingTextCapabilities = [
         "yj_fixed_layout", "yj_textbook", "yj_publisher_panels", "yj_facing_page",
-        "yj_double_page_spread", "continuous_popup_progression", "yj_has_text_popups",
+        "yj_double_page_spread", "yj_has_text_popups",
         "is_dictionary", "dictionary_lookup",
     ]
     /// The content type of a magazine.
@@ -44,6 +53,10 @@ struct KFXMetadata {
         }
         flat = fragments.singleton(KFXSymbol.flatMetadata)?.structValue
         hasComicPanels = fragments.singleton(KFXSymbol.documentData)?.structValue?[KFXSymbol.comicPanels] != nil
+        // The content features fragment lists each feature the book uses.
+        for feature in fragments.singleton(KFXSymbol.contentFeatures)?.structValue?[KFXSymbol.featureList]?.listValue ?? [] {
+            if let name = feature.structValue?[KFXSymbol.entryKey]?.stringValue { featureNames.append(name) }
+        }
     }
 
     /// The text of the first entry called `key` in the title category.
@@ -54,12 +67,25 @@ struct KFXMetadata {
     /// The title, authors, and language, as the Kindle reader reports them.
     /// The authors are as the book spells them, joined with commas.
     var metadata: MOBIBook.Metadata {
-        let authors = entries[Self.titleCategory]?["author"]?.compactMap(\.stringValue) ?? []
+        var authors = entries[Self.titleCategory]?["author"]?.compactMap(\.stringValue) ?? []
+        if entries[Self.auditCategory]?["file_creator"]?.compactMap(\.stringValue).first == Self.flippingCreator {
+            authors = authors.map(Self.unflipped)
+        }
         return MOBIBook.Metadata(
             title: Self.cleaned(text("title") ?? flat?[KFXSymbol.flatTitle]?.stringValue ?? ""),
             author: Self.cleaned(authors.isEmpty ? (flat?[KFXSymbol.flatAuthor]?.stringValue ?? "") : authors.joined(separator: ", ")),
             language: Self.cleaned(text("language") ?? flat?[KFXSymbol.flatLanguage]?.stringValue ?? "").nonEmpty
         )
+    }
+
+    /// A name written "Last, First" as "First Last": only a name with exactly
+    /// one comma and a word on each side is changed. (A name such as
+    /// "Vega, Tomas de la Jr." still reads wrongly.)
+    private static func unflipped(_ name: String) -> String {
+        let parts = name.split(separator: ",", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+        guard parts.count == 2, !parts[0].isEmpty, !parts[1].isEmpty else { return name }
+        return parts[1] + " " + parts[0]
     }
 
     /// `text` with its white space made single spaces and trimmed.
@@ -77,7 +103,10 @@ struct KFXMetadata {
         if fragments.holdsNotebookFields || hasComicPanels { return true }
         for key in Self.noFlowingTextCapabilities {
             if let values = entries[Self.capabilityCategory]?[key], values.contains(where: Self.isSet) { return true }
+            // A feature the book lists by the name of such a capability counts too.
+            if featureNames.contains(key) { return true }
         }
+        if entries[Self.capabilityCategory]?[Self.popupProgression] != nil || featureNames.contains(Self.popupProgression) { return true }
         if text("cde_content_type") == Self.magazineContentType { return true }
         return entries.values.contains { $0[Self.periodicalKey] != nil }
     }

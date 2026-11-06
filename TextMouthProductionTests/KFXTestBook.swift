@@ -1,6 +1,18 @@
 import Foundation
 @testable import TextMouth
 
+/// One piece of a paragraph that holds inline nodes, as Amazon writes it: the
+/// paragraph's children are strings (the words, spaces included) and nodes.
+enum KFXInlineSpec {
+    case string(String)
+    /// An inline picture with alt text.
+    case image(alt: String)
+    /// An inline container holding words, such as a floated span.
+    case span(String)
+    /// Inline math with its accessible name.
+    case math(alt: String)
+}
+
 /// A node of a test book, which `KFXTestBook` writes as KFX nodes, giving each
 /// an id and putting its text in a content fragment as Amazon's files do.
 indirect enum KFXNodeSpec {
@@ -32,6 +44,9 @@ indirect enum KFXNodeSpec {
     case typed(Int, [KFXNodeSpec])
     /// A text block with no text of its own that holds inline children.
     case inlineParent([String])
+    /// A paragraph (a heading when `heading` is given) of strings and inline
+    /// nodes, with runs that count each node as one code point.
+    case mixed([KFXInlineSpec], runs: [Run] = [], heading: Int? = nil)
     /// A node written as it is, with its own fields.
     case raw(IonOut)
 }
@@ -118,6 +133,26 @@ struct KFXTestBook {
         return .structure([(155, .int(Int64(sectionID))), (159, .symbol(type)), (146, .list(rowNodes))])
     }
 
+    /// One child of a paragraph of strings and inline nodes.
+    private mutating func inlineChild(_ piece: KFXInlineSpec, content: String) -> IonOut {
+        let id = Int64(newID())
+        switch piece {
+        case .string(let text):
+            return .string(text)
+        case .image(let alt):
+            return .structure([(155, .int(id)), (584, .string(alt)), (601, .symbol(283)), (159, .symbol(271))])
+        case .span(let words):
+            let inner = textNode(words, content: content)
+            return .structure([(155, .int(id)), (601, .symbol(283)), (159, .symbol(270)), (146, .list([inner]))])
+        case .math(let alt):
+            let name = textField(alt, content: content)
+            return .structure([
+                (155, .int(id)), (615, .symbol(688)), (601, .symbol(283)), (159, .symbol(270)),
+                (683, .list([.structure([name, (687, .symbol(584))])])),
+            ])
+        }
+    }
+
     /// One node as Ion.
     private mutating func node(_ spec: KFXNodeSpec, content: String) -> IonOut {
         if case .raw(let value) = spec { return value }
@@ -183,6 +218,25 @@ struct KFXTestBook {
                     (155, .int(Int64(newID()))), (159, .symbol(269)), (601, .symbol(283)), textField(piece, content: content),
                 ]))
             }
+            fields.append((146, .list(children)))
+        case .mixed(let pieces, let runs, let heading):
+            fields.append((159, .symbol(269)))
+            if let heading {
+                fields.append((157, symbol("h")))
+                fields.append((790, .int(Int64(heading))))
+            }
+            if !runs.isEmpty {
+                var written: [IonOut] = []
+                for run in runs {
+                    var members: [(Int, IonOut)] = [(143, .int(Int64(run.start))), (144, .int(Int64(run.length)))]
+                    if let style = run.style { members.append((157, symbol(style))) }
+                    if let link = run.link { members.append((179, symbol(link))) }
+                    written.append(.structure(members))
+                }
+                fields.append((142, .list(written)))
+            }
+            var children: [IonOut] = []
+            for piece in pieces { children.append(inlineChild(piece, content: content)) }
             fields.append((146, .list(children)))
         case .raw:
             break
@@ -263,4 +317,18 @@ struct KFXTestBook {
         adjust(&out)
         return out.build()
     }
+}
+
+/// The book navigation (`$389`) of the default reading order holding one
+/// container of `type` (212 contents, 237 page list) whose units, with their
+/// labels, point at a node and an offset in code points.
+func kfxNavigation(type: Int, name: String = "n1", _ units: [(label: String, node: Int, offset: Int)]) -> IonOut {
+    var written: [IonOut] = []
+    for unit in units {
+        let label: IonOut = .structure([(244, .string(unit.label))])
+        let position: IonOut = .structure([(155, .int(Int64(unit.node))), (143, .int(Int64(unit.offset)))])
+        written.append(.annotated([393], .structure([(241, label), (246, position)])))
+    }
+    let container: IonOut = .annotated([391], .structure([(235, .symbol(type)), (239, .string(name)), (247, .list(written))]))
+    return .list([.structure([(178, .symbol(351)), (392, .list([container]))])])
 }

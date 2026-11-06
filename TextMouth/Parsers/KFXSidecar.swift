@@ -52,15 +52,12 @@ enum KFXSidecar {
                 visited += 1
                 guard visited <= maximumEntries else { return scan }
                 let item = directory.appendingPathComponent(name)
-                // Nothing is followed out of the folder: a link is skipped.
+                // A link named like a voucher still says the book is protected;
+                // nothing else about a link is followed out of the folder.
+                if KFXSignature.isVoucherName(name) { scan.isProtected = true; continue }
                 guard !isSymbolicLink(item) else { continue }
                 if isPlainDirectory(item, manager) {
                     if depth < maximumDepth { queue.append((item, depth + 1)) }
-                    continue
-                }
-                let lowered = name.lowercased()
-                if lowered == "voucher" || lowered.hasSuffix(".voucher") {
-                    scan.isProtected = true
                     continue
                 }
                 switch (try? KFXSignature.kind(ofFileAt: item)) ?? .other {

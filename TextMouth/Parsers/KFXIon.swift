@@ -137,6 +137,9 @@ enum IonReader {
         var position = 0
         while position < view.count {
             if view.hasPrefix(versionMarker, at: position) {
+                // A run of markers is values too, as far as the budget goes.
+                budget -= 1
+                guard budget >= 0 else { throw MOBIError.damaged("the book holds more values than TextMouth reads") }
                 position += versionMarker.count
                 continue
             }
@@ -260,6 +263,8 @@ enum IonReader {
                 guard length >= 3 else { throw MOBIError.damaged("an annotation is too short") }
                 guard stack.count < maximumDepth else { throw MOBIError.damaged("values nest too deeply") }
                 let ids = try annotationIDs(in: view, at: position, limit: end)
+                budget -= ids.ids.count
+                guard budget >= 0 else { throw MOBIError.damaged("the book holds more values than TextMouth reads") }
                 stack.append(Frame(kind: .annotation(ids.ids), end: end))
                 position = ids.next
             default:

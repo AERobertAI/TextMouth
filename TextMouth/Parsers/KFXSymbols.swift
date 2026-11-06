@@ -19,7 +19,7 @@ struct KFXSymbols: Equatable {
     static let sharedMaximumLimit = 100_000
 
     /// A table with no local symbols: the shared ones alone.
-    static let sharedOnly = KFXSymbols(sharedMaximum: 0, local: [])
+    static let sharedOnly = KFXSymbols(sharedMaximum: Int(Int32.max), local: [])
 
     // MARK: Names
 

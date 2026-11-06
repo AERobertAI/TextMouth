@@ -79,8 +79,6 @@ enum KFXSymbol {
     static let runs = 142
     /// A node's heading level (an integer).
     static let headingLevel = 790
-    /// A node's image resource name.
-    static let imageResource = 175
     /// A node's alternative text.
     static let altText = 584
     /// A node's render mode.
@@ -89,10 +87,6 @@ enum KFXSymbol {
     static let classification = 615
     /// A node's list style.
     static let listStyle = 100
-    /// A node's list start number.
-    static let listStart = 104
-    /// A node's layout.
-    static let layout = 156
     /// The name field of a content pointer (the system symbol `name`).
     static let contentName = 4
     /// The index field of a content pointer.
@@ -106,11 +100,6 @@ enum KFXSymbol {
     static let runLength = 144
     /// A run's link: the name of an anchor.
     static let runLink = 179
-    /// A run's marker for what it is (a note reference).
-    static let runKind = 616
-    /// The run kind that is a reference to a note.
-    static let noteReference = 617
-
     // MARK: Fields of content fragments, styles, anchors
 
     /// A content fragment's strings.
@@ -123,8 +112,6 @@ enum KFXSymbol {
     static let layoutHints = 761
     /// The layout hint that marks a heading.
     static let headingHint = 760
-    /// An anchor's own name.
-    static let anchorName = 180
     /// An anchor's position (a struct of node id and offset).
     static let anchorPosition = 183
     /// An anchor's web address.
@@ -153,9 +140,27 @@ enum KFXSymbol {
 
     // MARK: Values: styles, render modes, classifications
 
-    /// The numbered list style (decimal) that Kindle Previewer writes for an
-    /// `ol`; the others seen, `$342` and `$340`, are bulleted.
-    static let orderedListStyles: Set<Int> = [343]
+    /// The numbered list styles: decimal (`$343`), upper Roman (`$345`), and
+    /// lower alpha (`$346`); `$340` to `$342` are bullets by depth.
+    static let orderedListStyles: Set<Int> = [343, 345, 346]
+    /// The content features fragment, and its list of features.
+    static let contentFeatures = 585
+    static let featureList = 590
+    /// A page template's layout: fixed, magazine, scale-fit, and spread
+    /// layouts are not flowing text.
+    static let templateLayout = 156
+    static let nonFlowingLayouts: Set<Int> = [324, 325, 326, 437]
+    /// A node's annotations (a list), as math carries its spoken form.
+    static let annotations = 683
+    /// An annotation's kind.
+    static let annotationKind = 687
+    /// The annotation kind that is a node's accessible name (the same number
+    /// as the alt text of a picture).
+    static let accessibleName = 584
+    /// The annotation kind that holds a formula's MathML.
+    static let mathML = 690
+    /// An auxiliary fragment of a section, named like the section with "-ad".
+    static let auxiliaryData = 597
     /// The classification of a table's caption.
     static let caption = 453
     /// An inline fragment: a node that a children list names rather than holds.
@@ -167,6 +172,4 @@ enum KFXSymbol {
     static let italicStyles: Set<Int> = [382, 381]
     /// Inline render mode: the node flows within its line.
     static let inlineRender = 283
-    /// Classifications that mark a note's body.
-    static let noteClassifications: Set<Int> = [618, 619, 281]
 }

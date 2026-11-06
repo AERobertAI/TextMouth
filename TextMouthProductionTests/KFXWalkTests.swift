@@ -177,7 +177,7 @@ final class KFXWalkTests: XCTestCase {
             .text("After."),
         ])
         let html = try htmlOf(book)
-        XCTAssertTrue(html.contains("<table><caption><p>Loans by season</p></caption><thead><tr><td><p>Season</p></td>"), html)
+        XCTAssertTrue(html.contains("<table><caption><p>Loans by season</p></caption><thead><tr><td>Season</td>"), html)
         XCTAssertEqual(
             try words(book),
             ["Before.", "Loans", "by", "season", "Season", "Loans", "Spring", "Forty", "Autumn", "Thirty", "After."])

@@ -166,7 +166,7 @@ final class KFXSetTests: XCTestCase {
     func testAMemberFarLargerThanTheLimitIsRefusedBeforeItIsInflated() throws {
         // 70 MB of zeros deflates to a few dozen KB; the member declares its size.
         let size = Int(DocumentByteLimit.standard) + 6_000_000
-        let bomb = KFXSignature.containerMagic + [UInt8](repeating: 0, count: size)
+        let bomb = KFXSignature.containerMagic + [2, 0] + [UInt8](repeating: 0, count: size)
         let url = try makeSet([("bomb.kfx", bomb)], compression: .deflate)
         XCTAssertLessThan(try XCTUnwrap(try url.resourceValues(forKeys: [.fileSizeKey]).fileSize), 1_000_000)
         let error = assertRefusedQuickly("zip bomb") { try KFXParser.prepareBook(url: url) }
@@ -298,7 +298,7 @@ final class KFXSetTests: XCTestCase {
         let imported = try importedForTest(try copyOfFormatSample("kfx/kfx-features.kfx"))
         XCTAssertEqual(imported.book.format, .kfx)
         XCTAssertEqual(imported.book.title, "The Tool Library Handbook")
-        XCTAssertEqual(imported.book.author, "Author, Test")
+        XCTAssertEqual(imported.book.author, "Test Author")
         XCTAssertTrue(imported.report.isComplete)
         let content = try openedContent(of: imported.book)
         XCTAssertEqual(content.chapters.map(\.title), [

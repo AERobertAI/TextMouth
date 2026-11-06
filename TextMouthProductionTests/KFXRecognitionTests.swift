@@ -27,7 +27,7 @@ final class KFXRecognitionTests: XCTestCase {
     private var protectedBytes: [UInt8] { KFXSignature.protectedMagic + Array(repeating: 0x55, count: 64) }
 
     /// The bytes that begin a KFX container (the signature, version 2, and
-    /// filler: the walk is not in yet, so no layer reads more).
+    /// filler, which is no sound container).
     private var containerBytes: [UInt8] { KFXSignature.containerMagic + [2, 0] + Array(repeating: 0, count: 64) }
 
     /// Asserts that reading the file at `url` as KFX throws `expected`, with
@@ -106,7 +106,7 @@ final class KFXRecognitionTests: XCTestCase {
         }
     }
 
-    // MARK: - Containers not read yet
+    // MARK: - Containers that stop short
 
     func testAContainerThatStopsShortIsDamaged() throws {
         let url = try write(containerBytes, named: "book.kfx")

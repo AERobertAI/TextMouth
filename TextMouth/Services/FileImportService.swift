@@ -980,6 +980,7 @@ enum FileImportService {
             )
             let bookID = UUID()
             let dateAdded = Date()
+            try refuseProtectedKindleBook(at: sourceURL, format: format)
 
             try run.begin(.preparingPackage)
             let staging = try ImportStaging.makeEmpty(publishingTo: try destinationPackageURL(
@@ -1170,6 +1171,20 @@ enum FileImportService {
         guard name.caseInsensitiveCompare(cacheName) == .orderedSame else { return name }
         let cacheBaseName = (cacheName as NSString).deletingPathExtension
         return "\(cacheBaseName) (book).\(source.pathExtension)"
+    }
+
+    /// Refuses a Kindle KFX book that is protected by what sits beside it: a
+    /// voucher, or a protected file in its `.sdr` folder. Only the book's file
+    /// is copied into the library, and the text is read from that copy, where
+    /// nothing stands beside it, so the refusal is made here, on the source
+    /// (an `.azw` that holds KFX is one, as Kindle's apps name KFX books).
+    /// - Throws: `MOBIError.copyProtected`.
+    private static func refuseProtectedKindleBook(at source: URL, format: BookFormat) throws {
+        var holdsKFX = format == .kfx
+        if format == .mobi, let kind = try? KFXSignature.kind(ofFileAt: source) {
+            holdsKFX = kind == .container || kind == .protected
+        }
+        if holdsKFX, KFXParser.isProtected(near: source) { throw MOBIError.copyProtected }
     }
 
     /// Copies what an import of `source`, a book of `format`, reads into the
