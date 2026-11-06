@@ -1046,7 +1046,8 @@ final class DOCXStructureTests: XCTestCase {
         ])
 
         XCTAssertTrue(reading.markdown.contains("| x y | z |"), reading.markdown)
-        XCTAssertEqual(reading.markdown.components(separatedBy: "\n").filter { $0.hasPrefix("|") }.count, 4, reading.markdown)
+        // The header row, its separator, and the second row: three lines, none cut short.
+        XCTAssertEqual(reading.markdown.components(separatedBy: "\n").filter { $0.hasPrefix("|") }.count, 3, reading.markdown)
         XCTAssertFalse(reading.spoken.contains("|"), reading.spoken)
         XCTAssertTrue(reading.spoken.contains("x y"), reading.spoken)
         XCTAssertTrue(reading.spoken.contains("m n"), reading.spoken)
