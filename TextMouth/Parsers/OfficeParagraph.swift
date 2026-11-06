@@ -1,25 +1,14 @@
 import Foundation
 
-// MARK: - What the Content Reader Holds While It Reads
+// MARK: - What an Office Document Reader Holds While It Reads
 
 /// The look of the text being read: the emphasis and the size (in half
 /// points, as the rich-text blocks keep it) that `RTFSizeHeadings` and the
 /// HTML writer use.
-struct ODTRun: Equatable {
+struct OfficeRun: Equatable {
     var bold = false
     var italic = false
     var size = 24
-
-    /// This run with the text properties `properties` state put over it.
-    func applying(_ properties: ODTStyleProperties) -> ODTRun {
-        var run = self
-        if let bold = properties.bold { run.bold = bold }
-        if let italic = properties.italic { run.italic = italic }
-        if let fontSize = properties.fontSize {
-            run.size = ODTRun.halfPoints(fontSize.applied(to: Double(size) / 2))
-        }
-        return run
-    }
 
     /// `points` as half points, held to a sane range.
     static func halfPoints(_ points: Double) -> Int {
@@ -30,9 +19,9 @@ struct ODTRun: Equatable {
 /// One piece of an open paragraph, kept until the paragraph is finished,
 /// because a paragraph can turn out to be hidden after its words are read
 /// (`text:hidden-paragraph` comes after the text it hides).
-enum ODTPiece {
+enum OfficePiece {
     /// Words, in the look they were read in.
-    case text(String, ODTRun)
+    case text(String, OfficeRun)
     /// `text:line-break`.
     case lineBreak
     /// A page begins here (`text:soft-page-break`, or a break before the
@@ -40,8 +29,10 @@ enum ODTPiece {
     case pageStart
 }
 
-/// A paragraph or heading whose end has not been read yet.
-struct ODTOpenParagraph {
+/// A paragraph or heading whose end has not been read yet. The readers of
+/// OpenDocument text (FMT27) and Word 2003 XML (FMT53) both keep their
+/// paragraphs here.
+struct OfficeOpenParagraph {
     /// What the paragraph becomes when it ends.
     var kind: RTFBlockBuilder.Kind
     /// Whether the paragraph begins a page after it ends
@@ -52,17 +43,17 @@ struct ODTOpenParagraph {
 
     /// What has been read of the paragraph since it began, or since its
     /// pieces were last written out.
-    var pieces: [ODTPiece] = []
+    var pieces: [OfficePiece] = []
     /// The look of the text now, and the looks of the spans around it.
-    private(set) var run: ODTRun
-    private var enclosingRuns: [ODTRun] = []
+    private(set) var run: OfficeRun
+    private var enclosingRuns: [OfficeRun] = []
     /// Whether the text so far ends in white space (or is empty), so that
     /// the next white space of the markup collapses into it: OpenDocument
     /// reads a run of white space in the markup as one space, and none at
     /// the start of a paragraph or after a line break.
     private var followsSpace = true
 
-    init(kind: RTFBlockBuilder.Kind, run: ODTRun) {
+    init(kind: RTFBlockBuilder.Kind, run: OfficeRun) {
         self.kind = kind
         self.run = run
     }
@@ -70,7 +61,7 @@ struct ODTOpenParagraph {
     // MARK: Looks
 
     /// Begins a span or link whose text has the look `run`.
-    mutating func beginSpan(_ run: ODTRun) {
+    mutating func beginSpan(_ run: OfficeRun) {
         enclosingRuns.append(self.run)
         self.run = run
     }
@@ -138,9 +129,10 @@ struct ODTOpenParagraph {
     }
 }
 
-/// One open `text:list`: the list style its items are marked by, and
-/// whether the next paragraph is the first of an item.
-struct ODTOpenList {
+/// One open list of an OpenDocument document (`text:list`): the list style
+/// its items are marked by, and whether the next paragraph is the first of
+/// an item.
+struct OfficeOpenList {
     /// The list style by name, from the list or the one around it.
     var styleName: String?
     /// For the lists of OpenDocument 1.1 (`text:ordered-list` and
@@ -156,7 +148,7 @@ struct ODTOpenList {
 /// Where paragraphs are being collected: the main text, or the notes that
 /// follow it. Each has its own builder, so a note in the middle of a
 /// paragraph does not break the paragraph.
-final class ODTFlow {
+final class OfficeFlow {
     /// Builds the blocks: it gathers the words, places the pages, groups
     /// the cells of a table, and keeps the budget (`RTFBlockBuilder`).
     var builder: RTFBlockBuilder
@@ -167,11 +159,11 @@ final class ODTFlow {
     var tablesStartPageAfter: [Bool] = []
     /// The lists open, outermost first, and the lists open outside each
     /// text box that is open (a text box starts lists of its own).
-    var lists: [ODTOpenList] = []
-    var listsOutsideTextBoxes: [[ODTOpenList]] = []
+    var lists: [OfficeOpenList] = []
+    var listsOutsideTextBoxes: [[OfficeOpenList]] = []
     /// The paragraphs open, outermost first: a text box in a paragraph
     /// holds paragraphs of its own.
-    var paragraphs: [ODTOpenParagraph] = []
+    var paragraphs: [OfficeOpenParagraph] = []
 
     init(includesPages: Bool, limit: Int64) {
         builder = RTFBlockBuilder(includesPages: includesPages, limit: limit)

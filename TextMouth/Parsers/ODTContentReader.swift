@@ -24,39 +24,19 @@ import Foundation
 /// - the phonetic guide above a word (`text:ruby-text`) is not read, only
 ///   the word it guides.
 ///
-/// The paragraphs of a document are kept in `ODTFlow`s: one for the main
-/// text, one for the notes. A paragraph is held until it ends, so that one
-/// that turns out to be hidden is dropped whole.
+/// The words, the pages, and the tables are gathered by `OfficeBlockWriter`,
+/// which Word 2003 XML's reader uses too; this class knows OpenDocument's
+/// elements and styles.
 final class ODTContentReader: ODTXMLReader {
     /// The styles (from `styles.xml`, and this part's automatic styles).
     private let sheet: ODTStyleSheet
     private let collector: ODTStyleCollector
 
-    /// Whether the pages are marked.
-    private let includesPages: Bool
-
-    /// The most bytes of text the document may hold, and how many have been
-    /// read: the budget that stops a hostile file from making the result
-    /// large (`text:s` with a count of a billion, say).
-    private let limit: Int64
-    private var spent: Int64 = 0
-
-    /// The main text, the notes, and the one being read now.
-    private let main: ODTFlow
-    private let notes: ODTFlow
-    private var flow: ODTFlow
-    /// How many `text:note-body` elements are open.
-    private var noteDepth = 0
+    /// Gathers the blocks.
+    private let writer: OfficeBlockWriter
 
     /// Whether `office:text`, the body, has begun.
     private var inBody = false
-    /// Whether a page begins at the next letter or digit, and whether a
-    /// letter or digit has been read at all (a break before any words begins
-    /// no page: the document's first page is page 1 already).
-    private var pagePending = false
-    private var hasCountedText = false
-    /// Whether any paragraph is a heading by its style or its outline level.
-    private var hasHeadings = false
 
     /// The most spaces one `text:s` stands for. Real documents indent a
     /// few dozen; a count past this is a hostile file's.
@@ -66,11 +46,7 @@ final class ODTContentReader: ODTXMLReader {
     init(data: Data, file: String, sheet: ODTStyleSheet, includesPages: Bool, limit: Int64) {
         self.sheet = sheet
         collector = ODTStyleCollector(sheet: sheet)
-        self.includesPages = includesPages
-        self.limit = limit
-        main = ODTFlow(includesPages: includesPages, limit: limit)
-        notes = ODTFlow(includesPages: false, limit: limit)
-        flow = main
+        writer = OfficeBlockWriter(includesPages: includesPages, limit: limit)
         super.init(data: data, file: file)
     }
 
@@ -80,12 +56,7 @@ final class ODTContentReader: ODTXMLReader {
     /// and how many page breaks the body holds.
     /// - Throws: `DocumentTooLargeError`.
     func finish() throws -> (blocks: [RTFBlock], pageBreaks: Int) {
-        var blocks = try main.builder.finish(lastParagraph: .body, inTable: false)
-        // A document that names no heading keeps the headings textutil's
-        // reading finds by size, as the rich-text reader does.
-        if !hasHeadings { blocks = RTFSizeHeadings.apply(to: blocks) }
-        blocks += try notes.builder.finish(lastParagraph: .body, inTable: false)
-        return (blocks, main.builder.pageBreaks)
+        try writer.finish()
     }
 
     // MARK: Elements
@@ -97,7 +68,7 @@ final class ODTContentReader: ODTXMLReader {
                 inBody = true
             } else if ODTStyleCollector.handles(name) {
                 collector.start(name, attributes: attributes)
-                if sheet.count > ODTStyleSheet.maximumStyles { fail(TextutilConverter.Failure.unreadable(.odt)) }
+                if sheet.count > ODTStyleSheet.maximumStyles { fail(TextutilConverter.Failure.unreadable(format)) }
             }
             return
         }
@@ -121,15 +92,12 @@ final class ODTContentReader: ODTXMLReader {
     }
 
     override func characters(_ text: String) {
-        guard inBody, let last = flow.paragraphs.indices.last else { return }
-        let bytes = flow.paragraphs[last].addCharacters(text)
-        charge(bytes)
-    }
-
-    /// Spends `bytes` of the budget, ending the read when it is gone.
-    private func charge(_ bytes: Int) {
-        spent += Int64(bytes)
-        if spent > limit { fail(DocumentTooLargeError(limit: limit)) }
+        guard inBody else { return }
+        do {
+            try writer.addMarkupCharacters(text)
+        } catch {
+            fail(error)
+        }
     }
 
     /// What starting the element `name` does.
@@ -142,33 +110,24 @@ final class ODTContentReader: ODTXMLReader {
         case "text:h": try beginParagraph(isHeading: true, attributes)
         case "text:span", "text:a": beginSpan(attributes)
         case "text:s":
-            let count = min(max(attributes["text:c"].flatMap { Int($0) } ?? 1, 0), Self.mostSpaces)
-            charge(count)
-            addExplicit(String(repeating: " ", count: count))
-        case "text:tab": addExplicit("\t")
-        case "text:line-break":
-            if let last = flow.paragraphs.indices.last { flow.paragraphs[last].addLineBreak() }
-        case "text:soft-page-break": softPageBreak()
+            try writer.addLiteral(String(repeating: " ", count: min(max(attributes["text:c"].flatMap { Int($0) } ?? 1, 0), Self.mostSpaces)))
+        case "text:tab": try writer.addLiteral("\t")
+        case "text:line-break": writer.addLineBreak()
+        case "text:soft-page-break": writer.pageBreak()
         case "text:hidden-paragraph":
-            if attributes["text:is-hidden"] == "true", let last = flow.paragraphs.indices.last {
-                flow.paragraphs[last].isHidden = true
-            }
+            if attributes["text:is-hidden"] == "true" { writer.hideParagraph() }
         // Lists
         case "text:list", "text:ordered-list", "text:unordered-list": try beginList(name, attributes)
         case "text:list-item":
-            if let last = flow.lists.indices.last { flow.lists[last].awaitsFirstParagraph = true }
+            if let last = writer.flow.lists.indices.last { writer.flow.lists[last].awaitsFirstParagraph = true }
         case "text:list-header":
-            if let last = flow.lists.indices.last { flow.lists[last].awaitsFirstParagraph = false }
+            if let last = writer.flow.lists.indices.last { writer.flow.lists[last].awaitsFirstParagraph = false }
         // Tables
         case "table:table": try beginTable(attributes)
         // Text boxes
-        case "draw:text-box":
-            flow.listsOutsideTextBoxes.append(flow.lists)
-            flow.lists = []
+        case "draw:text-box": writer.beginTextBox()
         // Notes
-        case "text:note-body":
-            noteDepth += 1
-            if noteDepth == 1 { flow = notes }
+        case "text:note-body": writer.beginNote()
         default:
             break
         }
@@ -177,23 +136,15 @@ final class ODTContentReader: ODTXMLReader {
     /// What ending the element `name` does.
     private func end(_ name: String) throws {
         switch name {
-        case "text:p", "text:h": try endParagraph()
-        case "text:span", "text:a":
-            if let last = flow.paragraphs.indices.last { flow.paragraphs[last].endSpan() }
-        case "text:list", "text:ordered-list", "text:unordered-list": _ = flow.lists.popLast()
-        case "text:list-item":
-            if let last = flow.lists.indices.last { flow.lists[last].awaitsFirstParagraph = false }
-        case "table:table-cell":
-            // A cell of a table inside a cell is part of the cell around it.
-            if flow.tableDepth == 1 { try flow.builder.endCell() }
-        case "table:table-row":
-            if flow.tableDepth == 1 { try flow.builder.endRow() }
-        case "table:table": try endTable()
-        case "draw:text-box":
-            if let outside = flow.listsOutsideTextBoxes.popLast() { flow.lists = outside }
-        case "text:note-body":
-            noteDepth = max(noteDepth - 1, 0)
-            if noteDepth == 0 { flow = main }
+        case "text:p", "text:h": try writer.endParagraph()
+        case "text:span", "text:a": writer.endSpan()
+        case "text:list", "text:ordered-list", "text:unordered-list": _ = writer.flow.lists.popLast()
+        case "text:list-item": consumeFirstParagraphOfListItem()
+        case "table:table-cell": try writer.endCell()
+        case "table:table-row": try writer.endRow()
+        case "table:table": try writer.endTable()
+        case "draw:text-box": writer.endTextBox()
+        case "text:note-body": writer.endNote()
         default:
             break
         }
@@ -240,82 +191,23 @@ final class ODTContentReader: ODTXMLReader {
         let style = sheet.properties(family: "paragraph", name: attributes["text:style-name"])
         // A paragraph whose style hides its text is not read at all.
         if style.hidden == true { return skipSubtree() }
-        // A paragraph inside a text box that is inside a paragraph: the
-        // words so far are written out first, so they stay in order.
-        try writeOutOpenParagraph()
 
         // Whether it is a heading: `text:h`, or a paragraph whose style
         // carries an outline level.
-        let level = attributes["text:outline-level"].flatMap { Int($0) } ?? style.outlineLevel
         let kind: RTFBlockBuilder.Kind
         if isHeading || style.outlineLevel != nil {
-            hasHeadings = true
+            let level = attributes["text:outline-level"].flatMap { Int($0) } ?? style.outlineLevel
             kind = .heading(min(max(level ?? 1, 1), 6))
             consumeFirstParagraphOfListItem()
         } else {
             kind = itemKind(style) ?? .body
         }
-
-        var paragraph = ODTOpenParagraph(
+        try writer.beginParagraph(
             kind: kind,
-            run: ODTRun(size: ODTRun.halfPoints(sheet.defaultPointSize)).applying(style)
+            run: OfficeRun(size: OfficeRun.halfPoints(sheet.defaultPointSize)).applying(style),
+            startsPage: style.breaksBefore == true || style.hasMasterPage == true,
+            startsPageAfter: style.breaksAfter == true
         )
-        paragraph.startsPageAfter = style.breaksAfter == true
-        if style.breaksBefore == true || style.hasMasterPage == true { paragraph.addPageStart() }
-        flow.paragraphs.append(paragraph)
-    }
-
-    /// A paragraph or heading ends: it is written out.
-    private func endParagraph() throws {
-        guard var paragraph = flow.paragraphs.popLast() else { return }
-        try write(&paragraph, atEnd: true)
-    }
-
-    /// Writes out the words of the paragraph open at the innermost level
-    /// and goes on with the rest of it as a paragraph of text, for a block
-    /// that begins inside a paragraph (a text box holds paragraphs and
-    /// tables of its own).
-    private func writeOutOpenParagraph() throws {
-        guard let last = flow.paragraphs.indices.last else { return }
-        var paragraph = flow.paragraphs[last]
-        try write(&paragraph, atEnd: false)
-        flow.paragraphs[last] = paragraph
-    }
-
-    /// Writes `paragraph`'s pieces into the builder, and ends the
-    /// paragraph there.
-    /// - Parameter atEnd: whether the paragraph itself ended; its break
-    ///   after it is written then, and not for a paragraph that goes on.
-    private func write(_ paragraph: inout ODTOpenParagraph, atEnd: Bool) throws {
-        defer { paragraph.pieces = [] }
-        // A hidden paragraph leaves nothing, not even its pages.
-        guard !paragraph.isHidden else { return }
-        for piece in paragraph.pieces {
-            switch piece {
-            case .text(let words, let run):
-                let isCounted = words.unicodeScalars.contains(where: TextutilPageBreaks.isCounted)
-                // The page that waits begins at the first letter or digit.
-                if isCounted, pagePending, flow === main {
-                    flow.builder.addPageBreak()
-                    pagePending = false
-                }
-                try flow.builder.appendText(words, bold: run.bold, italic: run.italic, size: run.size)
-                if isCounted, flow === main { hasCountedText = true }
-            case .lineBreak:
-                flow.builder.appendLineBreak()
-            case .pageStart:
-                beginPage()
-            }
-        }
-        try flow.builder.finishParagraph(paragraph.kind, inTable: flow.tableDepth > 0)
-        // What remains of a paragraph that goes on is plain text.
-        paragraph.kind = .body
-        if atEnd, paragraph.startsPageAfter { beginPage() }
-    }
-
-    /// Adds words that stand as they are to the paragraph open.
-    private func addExplicit(_ text: String) {
-        if let last = flow.paragraphs.indices.last { flow.paragraphs[last].addExplicit(text) }
     }
 
     /// A span or link begins: its text has the look its style gives it.
@@ -323,56 +215,32 @@ final class ODTContentReader: ODTXMLReader {
         let style = sheet.properties(family: "text", name: attributes["text:style-name"])
         // Text whose style hides it is not read.
         if style.hidden == true { return skipSubtree() }
-        guard let last = flow.paragraphs.indices.last else { return }
-        flow.paragraphs[last].beginSpan(flow.paragraphs[last].run.applying(style))
-    }
-
-    // MARK: Pages
-
-    /// A `text:soft-page-break`: where the layout last put a page. Inside a
-    /// paragraph it is held with the paragraph's words until the paragraph
-    /// ends, so that one that turns out to be hidden begins no page.
-    private func softPageBreak() {
-        if let last = flow.paragraphs.indices.last {
-            flow.paragraphs[last].addPageStart()
-        } else {
-            beginPage()
-        }
-    }
-
-    /// A page begins at the next letter or digit, as the pages of textutil's
-    /// reading do, if a letter or digit has been read (the first page is
-    /// page 1 already), pages are wanted, and the main text, not the notes
-    /// that follow it, is being read. Breaks that meet before a letter or
-    /// digit begin one page.
-    private func beginPage() {
-        guard includesPages, flow === main, hasCountedText else { return }
-        pagePending = true
+        if let run = writer.currentRun { writer.beginSpan(run.applying(style)) }
     }
 
     // MARK: Lists
 
     /// A list begins: its style is its own, or the one around it.
     private func beginList(_ name: String, _ attributes: [String: String]) throws {
-        try writeOutOpenParagraph()
-        flow.lists.append(ODTOpenList(
-            styleName: attributes["text:style-name"] ?? flow.lists.last?.styleName,
+        try writer.writeOutOpenParagraph()
+        writer.flow.lists.append(OfficeOpenList(
+            styleName: attributes["text:style-name"] ?? writer.flow.lists.last?.styleName,
             isNumbered: name == "text:ordered-list" ? true : (name == "text:unordered-list" ? false : nil)
         ))
     }
 
     /// Takes the mark of a list item's first paragraph.
     private func consumeFirstParagraphOfListItem() {
-        if let last = flow.lists.indices.last { flow.lists[last].awaitsFirstParagraph = false }
+        if let last = writer.flow.lists.indices.last { writer.flow.lists[last].awaitsFirstParagraph = false }
     }
 
     /// What a paragraph of `style` becomes when it is the first of a list
     /// item: an item of the list, numbered or bulleted by the level's style.
     /// Nil when it is not, or when the level shows no mark.
     private func itemKind(_ style: ODTStyleProperties) -> RTFBlockBuilder.Kind? {
-        guard let last = flow.lists.indices.last, flow.lists[last].awaitsFirstParagraph else { return nil }
+        guard let last = writer.flow.lists.indices.last, writer.flow.lists[last].awaitsFirstParagraph else { return nil }
         consumeFirstParagraphOfListItem()
-        let list = flow.lists[last]
+        let list = writer.flow.lists[last]
         let level = last
         let marker: ODTListMarker
         if let isNumbered = list.isNumbered {
@@ -393,22 +261,10 @@ final class ODTContentReader: ODTXMLReader {
 
     /// A table begins.
     private func beginTable(_ attributes: [String: String]) throws {
-        try writeOutOpenParagraph()
         let style = sheet.properties(family: "table", name: attributes["table:style-name"])
-        if flow.tableDepth == 0, style.breaksBefore == true || style.hasMasterPage == true { beginPage() }
-        flow.tableDepth += 1
-        flow.tablesStartPageAfter.append(style.breaksAfter == true)
-    }
-
-    /// A table ends. The outermost one is closed in the builder by a
-    /// paragraph that holds nothing, which also keeps the table from joining
-    /// one that follows it.
-    private func endTable() throws {
-        guard flow.tableDepth > 0 else { return }
-        flow.tableDepth -= 1
-        let startsPageAfter = flow.tablesStartPageAfter.popLast() ?? false
-        guard flow.tableDepth == 0 else { return }
-        try flow.builder.finishParagraph(.body, inTable: false)
-        if startsPageAfter { beginPage() }
+        try writer.beginTable(
+            startsPage: style.breaksBefore == true || style.hasMasterPage == true,
+            startsPageAfter: style.breaksAfter == true
+        )
     }
 }
