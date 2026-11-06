@@ -168,6 +168,10 @@ final class ODTTextutilComparisonTests: XCTestCase {
         /// For a difference too long to list: how many words, instead.
         var textutilOnlyCount: Int?
         var ownOnlyCount: Int?
+        /// With a count, the first and last of the words, sorted, so that a
+        /// count that stays right while the words change is noticed.
+        var textutilOnlyEnds: (first: String, last: String)?
+        var ownOnlyEnds: (first: String, last: String)?
         /// The headings of the own reading, as "level: words".
         var headings: [String] = []
         /// The headings of textutil's reading that the own reading lacks:
@@ -200,10 +204,11 @@ final class ODTTextutilComparisonTests: XCTestCase {
         ),
         RealFile(
             name: "libreoffice-ooo32780-1.odt", textutilOnlyCount: 212, ownOnlyCount: 21,
+            textutilOnlyEnds: ("And", "wrists"), ownOnlyEnds: ("4", "the"),
             why: "textutil reads the text of the hidden sections, which a person does not see (212 words); the own reader reads the bodies of the notes, which textutil drops (21 words)"
         ),
         RealFile(
-            name: "libreoffice-ooo77837-1.odt", textutilOnly: ["footnote1"], ownOnlyCount: 386,
+            name: "libreoffice-ooo77837-1.odt", textutilOnly: ["footnote1"], ownOnlyCount: 386, ownOnlyEnds: ("0", "you"),
             headings: ["1: Demo of bug", "1: References", "1: Main index"],
             why: "textutil runs the endnote's number into the word before it and drops the endnote's body, which here holds the whole bibliography; the own reader reads the word whole and the note after the text"
         ),
@@ -227,7 +232,7 @@ final class ODTTextutilComparisonTests: XCTestCase {
             why: "the own reader begins pages at the breaks before a paragraph, at master pages, and at soft page breaks, which textutil's plain text loses"
         ),
         RealFile(
-            name: "libreoffice-tdf152015.odt", textutilOnly: ["1", "2", "3"], ownOnlyCount: 61,
+            name: "libreoffice-tdf152015.odt", textutilOnly: ["1", "2", "3"], ownOnlyCount: 61, ownOnlyEnds: ("04", "v"),
             headings: ["1: Das Restschuldbefreiungsverfahren in der InsO", "3: Zwischenergebnis für die Zeit während Wohlverhaltenphase"],
             why: "textutil reads the numbers of the footnotes and drops their bodies; the own reader reads the bodies after the text, without the numbers"
         ),
@@ -272,11 +277,17 @@ final class ODTTextutilComparisonTests: XCTestCase {
             let found = try differences(own: own, textutil: textutil)
             if let count = file.textutilOnlyCount {
                 if found.textutilOnly.count != count { problems.append("\(file.name): \(found.textutilOnly.count) words only textutil has, expected \(count)") }
+                if let ends = file.textutilOnlyEnds, (found.textutilOnly.first, found.textutilOnly.last) != (ends.first, ends.last) {
+                    problems.append("\(file.name): first and last words only textutil has \(found.textutilOnly.first ?? "none"), \(found.textutilOnly.last ?? "none"), expected \(ends)")
+                }
             } else if found.textutilOnly != file.textutilOnly.sorted() {
                 problems.append("\(file.name): words only textutil has \(found.textutilOnly), expected \(file.textutilOnly)")
             }
             if let count = file.ownOnlyCount {
                 if found.ownOnly.count != count { problems.append("\(file.name): \(found.ownOnly.count) words only the own reader has, expected \(count)") }
+                if let ends = file.ownOnlyEnds, (found.ownOnly.first, found.ownOnly.last) != (ends.first, ends.last) {
+                    problems.append("\(file.name): first and last words only the own reader has \(found.ownOnly.first ?? "none"), \(found.ownOnly.last ?? "none"), expected \(ends)")
+                }
             } else if found.ownOnly != file.ownOnly.sorted() {
                 problems.append("\(file.name): words only the own reader has \(found.ownOnly), expected \(file.ownOnly)")
             }
