@@ -2879,7 +2879,7 @@ enum FileImportService {
         // always offers .ssml.
         types.append(.webArchive)
         types.append(UTType(importedAs: "org.w3.ssml", conformingTo: .xml))
-        // Kindle books (FMT42): .mobi, .prc, and .azw, for which macOS
+        // Kindle books (FMT42, FMT48): .mobi, .prc, .azw, and .azw3, for which macOS
         // declares no type; the app imports one in Info.plist.
         types.append(UTType(importedAs: "com.textmouth.mobi", conformingTo: .data))
         // Kindle KFX books (FMT52): .kfx, .kfx-zip, .azw8, and .kpf, the same.

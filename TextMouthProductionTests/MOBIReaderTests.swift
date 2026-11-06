@@ -137,11 +137,10 @@ final class MOBIReaderTests: XCTestCase {
     func testKindleBooksAreRecognizedByTheirExtensions() throws {
         XCTAssertEqual(BookFormat.mobi.rawValue, "mobi")
         XCTAssertEqual(BookFormat.mobi.displayName, "Kindle Book (MOBI)")
-        for name in ["a.mobi", "a.MOBI", "a.prc", "a.azw"] {
+        // An .azw3 is a Kindle book in KF8 (FMT48), named for the reader that reads it.
+        for name in ["a.mobi", "a.MOBI", "a.prc", "a.azw", "a.azw3", "a.AZW3"] {
             XCTAssertEqual(BookFormat.detect(from: URL(fileURLWithPath: "/tmp/\(name)")), .mobi, name)
         }
-        // AZW3 is KF8, the next format (FMT48), not this one.
-        XCTAssertNil(BookFormat.detect(from: URL(fileURLWithPath: "/tmp/a.azw3")))
         XCTAssertNil(PageReaderVersions.current(for: .mobi))
     }
 
@@ -150,7 +149,7 @@ final class MOBIReaderTests: XCTestCase {
     }
 
     func testTheFinderOffersTextMouthForKindleBooks() throws {
-        for fileExtension in ["mobi", "prc", "azw"] {
+        for fileExtension in ["mobi", "prc", "azw", "azw3"] {
             let type = try XCTUnwrap(documentType(listing: fileExtension), fileExtension)
             XCTAssertEqual(type["CFBundleTypeRole"] as? String, "Viewer")
             XCTAssertEqual(type["LSHandlerRank"] as? String, "Alternate")
