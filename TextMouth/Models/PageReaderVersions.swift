@@ -76,10 +76,11 @@ enum PageReaderVersions {
             // "1.1.0", which finds the pages and the headings by the
             // document's own structure, so every .doc book is read again once.
             // At "1.2.0" it leaves hidden text out, reads the formatting
-            // that a fast-saved document keeps in its pieces, writes Word's
-            // own list numbers and bullets (which Word does not store in
-            // the text), and reads the main document's text boxes after the
-            // notes, so every .doc book is read again once more.
+            // that a fast-saved document keeps in its pieces, makes Word's own
+            // numbered and bulleted paragraphs list items (their numbers are
+            // not heard while `WordDocumentReader.speaksListNumbers` is off),
+            // and reads the main document's text boxes after the notes, so
+            // every .doc book is read again once more.
             return "1.2.0"
         case .odt, .wordml:
             // OpenDocument text (FMT27) and Word 2003 XML (FMT53) are read by
