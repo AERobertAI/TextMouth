@@ -169,26 +169,37 @@ final class LibraryCloudFetchTests: XCTestCase {
     /// Choosing another library during a fetch drops the fetch before the new
     /// library is recorded: a pass that returns while TextMouth waits to open
     /// again opens nothing, checks nothing, and shows nothing new.
-    func testChoosingAnotherLibraryDropsTheFetch() async throws {
+    ///
+    /// The test is not `async`: it waits by spinning the main run loop
+    /// (`waitUntil`), which lets the model's main-actor tasks run only while
+    /// no actor job of the test is itself running. Every wait is bounded and
+    /// ends the test when it runs out.
+    func testChoosingAnotherLibraryDropsTheFetch() throws {
         let world = try CloudWorld(test: self, label: "Switch")
         world.keepInCloud(world.index)
         let gate = world.holdFetches()
+        let relaunch = SwitchRelaunch()
+        // Whatever a failed assertion leaves shut or waiting is opened.
+        defer {
+            gate.release()
+            relaunch.finish()
+        }
         let model = world.launch()
-        XCTAssertTrue(waitUntil(timeout: 5) { world.fetched.urls.count == 1 }, "the fetch never started")
+        guard waitUntil(timeout: 5, { world.fetched.urls.count == 1 }) else { return XCTFail("the fetch never started") }
         let chosen = try makeSandboxDirectory("SwitchChosen")
         _ = try LibraryIdentity.adopt(in: chosen)
-        let relaunch = SwitchRelaunch()
         let before = model.dataDirectoryUnavailability
+        let result = OutcomeBox()
 
-        let switching = Task { await model.useLibraryReturningOutcome(at: chosen, relaunching: relaunch.relauncher) }
-        XCTAssertTrue(waitUntil(timeout: 5) { relaunch.isWaiting }, "TextMouth never asked to open again")
+        Task { result.outcome = await model.useLibraryReturningOutcome(at: chosen, relaunching: relaunch.relauncher) }
+        guard waitUntil(timeout: 5, { relaunch.isWaiting }) else { return XCTFail("TextMouth never asked to open again") }
         XCTAssertNil(model.libraryFetchTask, "the fetch was not dropped before the new library was recorded")
         gate.release()
         _ = waitUntil(timeout: 0.5) { false }
         relaunch.finish()
-        let outcome = await switching.value
+        guard waitUntil(timeout: 5, { result.outcome != nil }) else { return XCTFail("the switch never ended") }
 
-        XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
+        XCTAssertEqual(result.outcome?.succeeded, true, result.outcome?.failureMessage ?? "")
         XCTAssertEqual(model.dataDirectoryUnavailability, before, "the dropped fetch changed the screen")
         XCTAssertFalse(model.hasStartedLibrary)
         XCTAssertEqual(world.announcements.messages, [])
@@ -506,9 +517,12 @@ private final class CloudWorld {
 
     /// Lays out the library, puts it in Google Drive as the scripted service
     /// says, installs the service and the announcement log until the test
-    /// ends.
+    /// ends, and opens any hold on the fetch then, whatever the test's
+    /// assertions did.
     init(test: XCTestCase, label: String) throws {
         fixture = try LibraryFixture(test: test, label: label)
+        let hold = hold
+        test.addTeardownBlock { hold.releaseAll() }
         cloud.setLocation(.cloud(.googleDrive), of: fixture.root)
         let previousService = CloudServices.itemStatus
         CloudServices.itemStatus = cloud
@@ -641,6 +655,12 @@ private final class HoldBox: @unchecked Sendable {
         return FetchGate(semaphore: semaphore)
     }
 
+    /// Opens every hold made so far.
+    func releaseAll() {
+        let held = lock.withLock { gate }
+        held?.signal()
+    }
+
     /// Waits (at most ten seconds, so a broken test can't hang) when the
     /// read of `file` is held.
     func waitIfHeld(for file: URL) {
@@ -702,19 +722,25 @@ private struct ReasonScreen: View {
     }
 }
 
-/// A relauncher whose "open again" waits until the test lets it finish,
-/// opening and quitting nothing.
+/// A relauncher whose "open again" waits until the test lets it finish, or
+/// ten seconds pass, opening and quitting nothing.
 @MainActor
 private final class SwitchRelaunch {
     /// Whether TextMouth has asked to open again and waits.
     private(set) var isWaiting = false
-    private var continuation: CheckedContinuation<Void, Never>?
+    /// Whether the test has let the waiting "open again" return.
+    private var isFinished = false
 
     var relauncher: TextMouthRelauncher {
         TextMouthRelauncher(
             openNewInstance: { [self] in
                 isWaiting = true
-                await withCheckedContinuation { continuation = $0 }
+                // Polled rather than suspended on a continuation, so it can
+                // never wait for ever.
+                let deadline = ContinuousClock.now + .seconds(10)
+                while !isFinished, ContinuousClock.now < deadline {
+                    try? await Task.sleep(for: .milliseconds(20))
+                }
             },
             quit: {}
         )
@@ -722,9 +748,14 @@ private final class SwitchRelaunch {
 
     /// Lets the waiting "open again" return.
     func finish() {
-        continuation?.resume()
-        continuation = nil
+        isFinished = true
     }
+}
+
+/// The outcome of a switch of libraries, once it ends.
+@MainActor
+private final class OutcomeBox {
+    var outcome: OperationOutcome?
 }
 
 /// Releases the fetches a `HoldBox` holds.

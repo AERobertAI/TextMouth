@@ -108,6 +108,8 @@ private final class LaunchScene {
     /// when `inCloud`, and installs the service until the test ends.
     init(test: XCTestCase, label: String, inCloud: Bool) throws {
         fixture = try LibraryFixture(test: test, label: label)
+        // A hold left shut by a failed assertion is opened when the test ends.
+        test.addTeardownBlock { @MainActor [weak self] in self?.hold?.signal() }
         if inCloud {
             cloud.setLocation(.cloud(.googleDrive), of: fixture.root)
         }
