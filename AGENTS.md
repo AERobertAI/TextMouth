@@ -194,7 +194,7 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - **`braille/emphasis` (b4ca969e).** Helper protocol 2 carries emphasis both ways where liblouis reads it back: UEB, but not EBAE or most of this Mac's tables.
 - **`team/pages` (77e798a0).**
   - A `<!-- page: LABEL -->` marker in content.md.
-  - Page as a navigation unit, with Next Page, Previous Page, and Go to Page…, and the page on the reader screen and in Where Am I?.
+  - Page as a navigation unit, with Go to Page…, and the page on the reader screen and in Where Am I?.
   - Pages for EPUB, PDF, DOCX, DAISY text, and textutil's formats.
   - B12 (a finished Edit Text change is kept by automatic re-reads) and B13 (textutil's joined words).
   - **PG09's launch re-read of existing books** was merged switched off, since its Opus review found it unsafe for the live library.
