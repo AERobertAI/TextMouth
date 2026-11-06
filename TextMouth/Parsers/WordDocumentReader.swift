@@ -188,6 +188,25 @@ enum WordDocumentReader {
                 dialect: dialect
             )
         }, else: WordFormatRuns(runs: []))
+        // The code page of each stretch of a Word 6 or Word 95 document of one-byte characters.
+        var codePages: WordLegacyCodePages?
+        if let legacyCharacters, legacyCharacters.width == 1 {
+            codePages = WordLegacyCodePages.build(
+                characters: legacyCharacters, styles: styles, paragraphs: paragraphs, characterRuns: characters,
+                pieces: pieces, document: document
+            )
+        }
+        // The fonts, for the symbols: a symbol of the font named Symbol is a character with words to read, and
+        // one of any other font (a picture) is not. A table that does not fit gives none, and every symbol is white space.
+        var fonts = WordFontTable.none
+        if let range = try? fib.range(of: .fontTable, in: table) {
+            if fib.layout == .modern {
+                fonts = (try? WordFontTable.modern(range: range, in: table)) ?? .none
+            } else {
+                fonts = (try? WordFontTable.legacy(range: range, in: table)) ?? .none
+            }
+        }
+        let symbolFonts = fonts.symbolFonts
         // The lists, whose numbers Word does not store in the text. They are
         // a help to the listener and not the text: a list table that does
         // not fit loses the numbers, not the document.
@@ -237,12 +256,14 @@ enum WordDocumentReader {
             var writer = WordHTMLWriter(
                 styles: styles, sections: sections, includesPages: includesPages,
                 outputLimit: Int(DocumentByteLimit.current) * 2, paragraphs: paragraphs, characters: characters,
-                lists: lists, numbersAreWords: speaksListNumbers
+                lists: lists, numbersAreWords: speaksListNumbers, symbolFonts: symbolFonts
             )
             var charactersWritten = 0
             for segment in segments {
                 try writer.beginStory(isMain: segment.isMain)
-                try pieces.forEachCharacter(from: segment.range.lowerBound, upTo: segment.range.upperBound, in: document) { position, unit in
+                try pieces.forEachCharacter(
+                    from: segment.range.lowerBound, upTo: segment.range.upperBound, in: document, codePages: codePages
+                ) { position, unit in
                     try writer.add(position: position, unit: unit)
                     // A cancelled import stops here, however long the document is.
                     charactersWritten += 1
