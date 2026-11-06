@@ -95,6 +95,24 @@ final class WordDocumentLegacyComparisonTests: XCTestCase {
         XCTAssertEqual(differences, [], differences.joined(separator: "\n"))
     }
 
+    /// How often `mark` stands in `text`.
+    private func count(_ mark: String, in text: String) -> Int {
+        text.components(separatedBy: mark).count - 1
+    }
+
+    func testTheReaderReadsTheSameBracketsAsTextutilOnEverySample() throws {
+        // The words above are letters and digits only, and hid that every Word 6 symbol was read as a left parenthesis.
+        var differences: [String] = []
+        for sample in Self.samples where !Self.readInTheRightCodePageNotTextutils.contains(sample) {
+            guard let chapter = try textutilChapter(sample) else { continue }
+            let reader = try readerChapter(sample).text
+            for mark in ["(", ")", "[", "]", "\u{2014}", "\u{00B0}"] where count(mark, in: chapter.text) != count(mark, in: reader) {
+                differences.append("\(sample): \(mark) textutil \(count(mark, in: chapter.text)), reader \(count(mark, in: reader))")
+            }
+        }
+        XCTAssertEqual(differences, [], differences.joined(separator: "\n"))
+    }
+
     func testTheReaderFindsAtLeastTextutilsHeadings() throws {
         var differences: [String] = []
         for sample in Self.samples where !Self.readInTheRightCodePageNotTextutils.contains(sample) {
