@@ -203,6 +203,7 @@ final class ODTStyleCollector {
     /// The list style being defined, and the marks of its levels so far.
     private var list: (name: String, levels: [Int: ODTListMarker])?
 
+    /// A collector that adds the styles it reads to `sheet`.
     init(sheet: ODTStyleSheet) {
         self.sheet = sheet
     }
@@ -306,6 +307,7 @@ final class ODTStylesReader: ODTXMLReader {
         super.init(data: data, file: file)
     }
 
+    /// A style element starts; the master pages' text is skipped.
     override func startElement(_ name: String, attributes: [String: String]) {
         // The master pages' headers and footers hold text, which is not read.
         if name == "style:master-page" || name == "office:master-styles" { return skipSubtree() }
@@ -313,6 +315,7 @@ final class ODTStylesReader: ODTXMLReader {
         if collector.sheet.count > ODTStyleSheet.maximumStyles { fail(TextutilConverter.Failure.unreadable(.odt)) }
     }
 
+    /// A style element ends, and the style is added.
     override func endElement(_ name: String) {
         collector.end(name)
     }

@@ -157,6 +157,9 @@ enum ODTDocumentReader {
         /// form (`-web`).
         private static let textMediaType = "application/vnd.oasis.opendocument.text"
 
+        /// What every OpenDocument media type begins with.
+        private static let openDocumentMediaTypes = "application/vnd.oasis.opendocument."
+
         private let archive: Archive
 
         /// Opens the package at `url`.
@@ -175,7 +178,9 @@ enum ODTDocumentReader {
             // damage it: only a type that can be read and is not text refuses.
             if let mediaType = try? part(Self.mimetypePath, limit: 256) {
                 let text = String(decoding: mediaType, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
-                guard text.hasPrefix(Self.textMediaType) else {
+                // Only a type that says another kind of OpenDocument document
+                // refuses; one that is junk says nothing.
+                guard text.hasPrefix(Self.textMediaType) || !text.hasPrefix(Self.openDocumentMediaTypes) else {
                     throw TextutilConverter.Failure.unreadable(.odt)
                 }
             }
@@ -224,15 +229,18 @@ final class ODTMetadataReader: ODTXMLReader {
     /// The element whose text is being read, if it is one of these.
     private var current: String?
 
+    /// An element starts: the title or the creator is the one whose text is read.
     override func startElement(_ name: String, attributes: [String: String]) {
         current = ["dc:title", "dc:creator", "meta:initial-creator"].contains(name) ? name : nil
     }
 
+    /// An element ends: at the end of the metadata the first creator stands in for a missing author.
     override func endElement(_ name: String) {
         current = nil
         if name == "office:meta" && author.isEmpty { author = initialCreator }
     }
 
+    /// Text of the title or a creator.
     override func characters(_ text: String) {
         // A name is a few words; a part that holds more is not read further.
         switch current {

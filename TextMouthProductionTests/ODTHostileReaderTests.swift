@@ -195,18 +195,22 @@ final class ODTHostileReaderTests: XCTestCase {
         XCTAssertEqual(odfPlainText(html), "one two three")
     }
 
-    /// A chain of 100,000 styles, each based on the next, is followed only so
-    /// far, and a million styles are refused.
-    func testVeryLongStyleChainsAndVeryManyStyles() throws {
+    /// A chain of 100 styles, each based on the next, is followed only 64
+    /// styles far: the bold at its tenth is read, the italic at its
+    /// eightieth is not. More than 100,000 styles are refused.
+    func testVeryLongStyleChainsAreCutAndVeryManyStylesAreRefused() throws {
         var chain = ""
-        for index in 0..<2_000 {
-            chain += "<style:style style:name=\"S\(index)\" style:family=\"paragraph\" style:parent-style-name=\"S\(index + 1)\"/>"
+        for index in 0..<100 {
+            let properties = index == 10 ? "<style:text-properties fo:font-weight=\"bold\"/>"
+                : index == 80 ? "<style:text-properties fo:font-style=\"italic\"/>" : ""
+            chain += "<style:style style:name=\"S\(index)\" style:family=\"paragraph\" style:parent-style-name=\"S\(index + 1)\">\(properties)</style:style>"
         }
         let html = try XCTUnwrap(read(makeODT(body: "<text:p text:style-name=\"S0\">words</text:p>", automaticStyles: chain), "long chain"))
-        XCTAssertEqual(odfPlainText(html), "words")
+        XCTAssertEqual(odfBodyLines(html), ["<p><strong>words</strong></p>"])
 
+        // One more than the most styles a document may define.
         var many = ""
-        for index in 0..<(ODTStyleSheet.maximumStyles + 10) {
+        for index in 0...ODTStyleSheet.maximumStyles {
             many += "<style:style style:name=\"M\(index)\" style:family=\"text\"/>"
         }
         // A hundred thousand elements of styles take longer than a hostile

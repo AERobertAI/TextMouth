@@ -296,8 +296,9 @@ final class ODTReaderTests: XCTestCase {
     }
 
     /// A tracked deletion is not read, a tracked insertion is; a comment
-    /// (`office:annotation`) and a picture's description are not read.
-    func testTrackedDeletionsCommentsAndPictureDescriptionsAreNotRead() throws {
+    /// (`office:annotation`) is not read; a picture is read as its
+    /// description, after the paragraph that holds its anchor.
+    func testTrackedDeletionsAndCommentsAreNotReadAndAPictureIsItsDescription() throws {
         let lines = try odfLines(
             """
             <text:tracked-changes><text:changed-region text:id="c"><text:deletion>\
@@ -308,18 +309,46 @@ final class ODTReaderTests: XCTestCase {
             </text:p>
             """
         )
-        XCTAssertEqual(lines, ["<p>after inserted text</p>"])
+        XCTAssertEqual(lines, ["<p>after inserted text</p>", "<p>alt words</p>"])
+    }
+
+    /// A picture, formula, chart, or shape is read as its description
+    /// (`svg:desc`, or else `svg:title`) in a paragraph after the one that
+    /// holds its anchor, so the sentence stays whole; one with neither is
+    /// silent, and so is one anchored in hidden text. The description of a
+    /// frame anchored to the page is a paragraph of its own.
+    func testPicturesAreReadAsTheirDescriptions() throws {
+        let lines = try odfLines(
+            """
+            <text:p>One <draw:frame><draw:image/><svg:title>T1</svg:title><svg:desc>Described</svg:desc></draw:frame> two.</text:p>\
+            <text:p>Three <draw:frame><draw:image/><svg:title>Only title</svg:title></draw:frame> four.</text:p>\
+            <text:p>Five <draw:frame><draw:image/></draw:frame> six.</text:p>\
+            <text:p>Seven <draw:custom-shape><svg:desc>A shape</svg:desc></draw:custom-shape> eight.</text:p>\
+            <text:p>Nine <draw:frame><draw:object/><svg:desc>A formula</svg:desc></draw:frame> ten.</text:p>\
+            <text:p>Hid <text:span text:style-name="Gone"><draw:frame><svg:desc>Hidden picture</svg:desc></draw:frame></text:span> end.</text:p>\
+            <draw:frame><draw:image/><svg:desc>Anchored to the page</svg:desc></draw:frame>
+            """,
+            styles: gone
+        )
+        XCTAssertEqual(lines, [
+            "<p>One two.</p>", "<p>Described</p>", "<p>Three four.</p>", "<p>Only title</p>", "<p>Five six.</p>",
+            "<p>Seven eight.</p>", "<p>A shape</p>", "<p>Nine ten.</p>", "<p>A formula</p>", "<p>Hid end.</p>",
+            "<p>Anchored to the page</p>",
+        ])
     }
 
     /// A phonetic guide is not read, only the word it guides; the fields
-    /// are read for their results; index sources are not read.
+    /// are read for their results; the source an index is made from is not
+    /// read, even where its words lie in a paragraph (an index in a text box
+    /// anchored in one), and its entries are.
     func testRubyFieldsAndIndexSources() throws {
         let lines = try odfLines(
             """
             <text:p>Say <text:ruby><text:ruby-base>base</text:ruby-base><text:ruby-text>guide</text:ruby-text></text:ruby> \
-            on <text:date>1 January</text:date> page <text:page-number>7</text:page-number>.</text:p>\
-            <text:table-of-content><text:table-of-content-source><text:index-title-template>Template</text:index-title-template>\
-            </text:table-of-content-source><text:index-body><text:p>Entry one</text:p></text:index-body></text:table-of-content>
+            on <text:date>1 January</text:date> page <text:page-number>7</text:page-number>.\
+            <draw:frame><draw:text-box><text:table-of-content><text:table-of-content-source>\
+            <text:index-title-template>Template</text:index-title-template></text:table-of-content-source>\
+            <text:index-body><text:p>Entry one</text:p></text:index-body></text:table-of-content></draw:text-box></draw:frame></text:p>
             """
         )
         XCTAssertEqual(lines, ["<p>Say base on 1 January page 7.</p>", "<p>Entry one</p>"])
@@ -425,16 +454,19 @@ final class ODTReaderTests: XCTestCase {
 
     // MARK: - Pages
 
-    /// Pages begin at a style's break before and break after, at a paragraph
-    /// or table that names a master page, and at the layout's soft page
-    /// breaks; breaks that meet before a word are one page; a break in hidden
-    /// text begins none; the first words are on page 1 already.
+    /// Pages begin at a style's break before and break after (the paragraph
+    /// after "Ends a page." has no break of its own), at a paragraph or
+    /// table that names a master page, and at the layout's soft page breaks;
+    /// breaks that meet before a word are one page, but a blank paragraph
+    /// between two breaks is a page of its own; a break in hidden text
+    /// begins none; the first words are on page 1 already.
     func testPagesBeginWhereTheFileBreaksThem() throws {
         let lines = try odfLines(
             """
             <text:p text:style-name="Chap">Chapter one starts the document.</text:p>\
             <text:p>Body text.<text:soft-page-break/> more text on page two.</text:p>\
             <text:p text:style-name="After">Ends a page.</text:p>\
+            <text:p>Plain after the break.</text:p>\
             <text:p text:style-name="Hid">hidden break</text:p>\
             <text:p text:style-name="Chap">Chapter two.</text:p>\
             <text:p text:style-name="Master">Master page.</text:p>\
@@ -456,12 +488,64 @@ final class ODTReaderTests: XCTestCase {
             page(1) + "<p>Chapter one starts the document.</p>",
             "<p>Body text. \(page(2))more text on page two.</p>",
             "<p>Ends a page.</p>",
-            "<p>\(page(3))Chapter two.</p>",
-            "<p>\(page(4))Master page.</p>",
+            "<p>\(page(3))Plain after the break.</p>",
+            "<p>\(page(4))Chapter two.</p>",
+            "<p>\(page(5))Master page.</p>",
             "<table>",
-            "<tr><td><p>\(page(5))In table</p></td></tr>",
+            "<tr><td><p>\(page(6))In table</p></td></tr>",
             "</table>",
-            "<p>\(page(6))Last.</p>",
+            "<p>\(page(7))\(page(8))Last.</p>",
+        ])
+    }
+
+    /// A table's own style breaks the page before and after it; a break in a
+    /// cell or a text box is not a page (a page cannot begin there); a
+    /// paragraph whose only words are a hidden field begins no page.
+    func testTableStylesBreakPagesButCellsAndHiddenFieldsDoNot() throws {
+        let styles = """
+            <style:style style:name="TA" style:family="table"><style:table-properties fo:break-after="page"/></style:style>\
+            <style:style style:name="TBefore" style:family="table"><style:table-properties fo:break-before="page"/></style:style>\
+            <style:style style:name="Chap" style:family="paragraph"><style:paragraph-properties fo:break-before="page"/></style:style>
+            """
+        let lines = try odfLines(
+            """
+            <text:p>Before.</text:p><table:table table:style-name="TBefore"><table:table-row><table:table-cell>\
+            <text:p text:style-name="Chap">In first.</text:p></table:table-cell></table:table-row></table:table>\
+            <table:table table:style-name="TA"><table:table-row><table:table-cell><text:p>In second.</text:p>\
+            </table:table-cell></table:table-row></table:table><text:p>Tail.</text:p>\
+            <text:p text:style-name="Chap"><text:hidden-text text:is-hidden="true">x</text:hidden-text></text:p>\
+            <text:p>Same page.</text:p>\
+            <text:p>Box <draw:frame><draw:text-box><text:p text:style-name="Chap">In a box.</text:p></draw:text-box></draw:frame></text:p>
+            """,
+            styles: styles,
+            pages: true
+        )
+        XCTAssertEqual(lines, [
+            page(1) + "<p>Before.</p>",
+            "<table>", "<tr><td><p>\(page(2))In first.</p></td></tr>", "</table>",
+            "<table>", "<tr><td><p>In second.</p></td></tr>", "</table>",
+            "<p>\(page(3))Tail.</p>",
+            "<p>Same page.</p>",
+            "<p>Box </p>", "<p>In a box.</p>",
+        ])
+    }
+
+    /// The layout's soft page breaks: one before any words begins a page;
+    /// one adds no space inside a word; a row of a table has one, however
+    /// many of its cells the layout broke.
+    func testSoftPageBreaks() throws {
+        let lines = try odfLines(
+            """
+            <text:soft-page-break/><text:p>First words.</text:p><text:p>exam<text:soft-page-break/>ple</text:p>\
+            <table:table><table:table-row><table:table-cell><text:p>A<text:soft-page-break/> a</text:p></table:table-cell>\
+            <table:table-cell><text:p>B<text:soft-page-break/> b</text:p></table:table-cell></table:table-row></table:table>
+            """,
+            pages: true
+        )
+        XCTAssertEqual(lines, [
+            page(1) + "<p>\(page(2))First words.</p>",
+            "<p>exam\(page(3))ple</p>",
+            "<table>", "<tr><td><p>A \(page(4))a</p></td><td><p>B b</p></td></tr>", "</table>",
         ])
     }
 
@@ -474,17 +558,19 @@ final class ODTReaderTests: XCTestCase {
         XCTAssertEqual(lines, ["<p>One</p>", "<p>Two</p>"])
     }
 
-    /// Notes are not paged: a break inside a note begins no page.
+    /// Notes are not paged: a break inside a note begins no page, in the main
+    /// text that follows either (a page that waited in the note would begin
+    /// at the next words of the main text).
     func testABreakInANoteBeginsNoPage() throws {
         let lines = try odfLines(
             """
             <text:p>Main<text:note><text:note-citation>1</text:note-citation><text:note-body>\
-            <text:p text:style-name="Chap">Note words</text:p></text:note-body></text:note>.</text:p>
+            <text:p text:style-name="Chap">Note words</text:p></text:note-body></text:note>.</text:p><text:p>Then more.</text:p>
             """,
             styles: "<style:style style:name=\"Chap\" style:family=\"paragraph\"><style:paragraph-properties fo:break-before=\"page\"/></style:style>",
             pages: true
         )
-        XCTAssertEqual(lines, [page(1) + "<p>Main.</p>", "<p>Note words</p>"])
+        XCTAssertEqual(lines, [page(1) + "<p>Main.</p>", "<p>Then more.</p>", "<p>Note words</p>"])
     }
 
     // MARK: - The Names
@@ -551,6 +637,26 @@ final class ODTReaderTests: XCTestCase {
         }
     }
 
+    /// A damaged media type is ignored: one that is too long, junk, or empty
+    /// says nothing, and the book reads. Only a type that says another kind
+    /// of OpenDocument document refuses.
+    func testADamagedMediaTypeIsIgnored() throws {
+        let content = odfContent(body: "<text:p>Words</text:p>")
+        for (label, mediaType) in [
+            ("too long", String(repeating: "x", count: 340)),
+            ("junk", "\u{1}\u{2}\u{FFFD}"),
+            ("empty", ""),
+            ("another kind of package", "application/vnd.sun.xml.writer"),
+        ] {
+            let url = try makeODT(content: content, mediaType: mediaType)
+            XCTAssertEqual(odfBodyLines(try ODTDocumentReader.html(of: url, includesPages: false)), ["<p>Words</p>"], label)
+        }
+        // A wrong checksum on it is no reason to refuse the book either.
+        let wrongChecksum = try makeODT(content: content, compression: .deflate)
+        try setRecordedChecksum(of: "mimetype", in: wrongChecksum, to: 1)
+        XCTAssertEqual(odfBodyLines(try ODTDocumentReader.html(of: wrongChecksum, includesPages: false)), ["<p>Words</p>"])
+    }
+
     /// A package may leave out its media type, and may name a template,
     /// master, or web form; each reads.
     func testTheMediaTypeMayBeAbsentOrAnotherOpenDocumentTextType() throws {
@@ -582,7 +688,9 @@ final class ODTReaderTests: XCTestCase {
         <style:style style:name="Gone" style:family="text"><style:text-properties text:display="none"/></style:style>\
         <style:style style:name="Gone" style:family="paragraph"><style:text-properties text:display="none"/></style:style>\
         <style:style style:name="Chap" style:family="paragraph"><style:paragraph-properties fo:break-before="page"/></style:style>\
-        <style:style style:name="Big" style:family="paragraph"><style:text-properties fo:font-size="24pt"/></style:style>
+        <style:style style:name="Big" style:family="paragraph"><style:text-properties fo:font-size="24pt"/></style:style>\
+        <style:style style:name="GoneP" style:family="paragraph"><style:text-properties text:display="none"/></style:style>\
+        <style:style style:name="Show" style:family="text"><style:text-properties text:display="true"/></style:style>
         """
     }
 
@@ -696,12 +804,139 @@ final class ODTReaderTests: XCTestCase {
 
     /// A line break, a tab, a no-break space, and a soft hyphen join no
     /// words and are spoken as nothing odd: the first three are spacing, the
-    /// last is not there.
+    /// last is not there. Splitting on white space counts a no-break space as
+    /// a space, so the HTML is checked as well: it holds a plain space.
     func testSpacingCharactersJoinNoWordsAndAreNotSpoken() throws {
         let heard = try odfHeard(
             "<text:p>one<text:line-break/>two<text:tab/>three<text:s text:c=\"2\"/>four \u{00A0}five\u{00A0}six co\u{00AD}operate</text:p>"
         )
         XCTAssertEqual(heard, ["one", "two", "three", "four", "five", "six", "cooperate"])
+        XCTAssertEqual(try odfLines("<text:p>a\u{00A0}b\u{202F}c co\u{00AD}op</text:p>"), ["<p>a b c coop</p>"])
+    }
+
+    // MARK: - Fields, Bodies, and Cells
+
+    /// Two `text:hidden-paragraph` fields, one hiding and one not, keep the
+    /// paragraph; all hiding drops it; a paragraph whose style hides it shows
+    /// the span that shows itself; a variable field with `text:display="none"`
+    /// is hidden and one that shows its value is read.
+    func testHiddenParagraphFieldsStyleSpansAndVariableFields() throws {
+        let lines = try odfLines(
+            """
+            <text:p>Kept<text:hidden-paragraph text:is-hidden="true"/><text:hidden-paragraph text:is-hidden="false"/></text:p>\
+            <text:p>Dropped<text:hidden-paragraph text:is-hidden="true"/><text:hidden-paragraph text:is-hidden="true"/></text:p>\
+            <text:p text:style-name="GoneP">Hidden <text:span text:style-name="Show">shown</text:span> hidden</text:p>\
+            <text:p>Var <text:variable-set text:display="none">secret</text:variable-set>shown \
+            <text:user-field-get text:display="none">x</text:user-field-get><text:variable-set text:display="value">seen</text:variable-set> end.</text:p>
+            """,
+            styles: gone
+        )
+        XCTAssertEqual(lines, ["<p>Kept</p>", "<p>shown</p>", "<p>Var shown seen end.</p>"])
+    }
+
+    /// The body begins at the first child of `office:body` that is a text
+    /// document, whatever it is named; a spreadsheet's is not read.
+    func testTheBodyMayBeNamedOtherThanOfficeText() throws {
+        func read(_ body: String) throws -> [String] {
+            let content = """
+                <?xml version="1.0"?><office:document-content \(Self.odfNamespaces)><office:body>\(body)</office:body></office:document-content>
+                """
+            return odfBodyLines(try ODTDocumentReader.html(of: makeODT(content: content), includesPages: false))
+        }
+        XCTAssertEqual(try read("<office:texture-mode><text:p>Misnamed body</text:p></office:texture-mode>"), ["<p>Misnamed body</p>"])
+        XCTAssertEqual(try read("<office:spreadsheet><text:p>not text</text:p></office:spreadsheet>"), [])
+    }
+
+    /// An element of the text namespace written with the namespace as the
+    /// default, not under a prefix, is read.
+    func testTheDefaultNamespaceIsRead() throws {
+        let content = """
+            <?xml version="1.0"?><office:document-content \(Self.odfNamespaces)><office:body><office:text>\
+            <p xmlns="urn:oasis:names:tc:opendocument:xmlns:text:1.0">Default namespace</p></office:text></office:body>\
+            </office:document-content>
+            """
+        XCTAssertEqual(odfBodyLines(try ODTDocumentReader.html(of: makeODT(content: content), includesPages: false)), ["<p>Default namespace</p>"])
+    }
+
+    /// An empty `style:default-outline-level` declares no level and is not
+    /// inherited from the style this one is based on.
+    func testAnEmptyOutlineLevelDeclaresNoLevel() throws {
+        let lines = try odfLines(
+            """
+            <text:p text:style-name="Plain">Not a heading</text:p><text:p text:style-name="Named">A heading</text:p>
+            """,
+            styles: """
+            <style:style style:name="H1" style:family="paragraph" style:default-outline-level="1"/>\
+            <style:style style:name="Plain" style:family="paragraph" style:parent-style-name="H1" style:default-outline-level=""/>\
+            <style:style style:name="Named" style:family="paragraph" style:parent-style-name="H1"/>
+            """
+        )
+        XCTAssertEqual(lines, ["<p>Not a heading</p>", "<h1>A heading</h1>"])
+    }
+
+    /// A cell a file repeats is read that many times, up to a limit; an
+    /// empty one is that many empty cells.
+    func testRepeatedCellsAreReadWithACap() throws {
+        let html = try odfLines(
+            """
+            <table:table><table:table-row><table:table-cell table:number-columns-repeated="3"><text:p>cell</text:p></table:table-cell>\
+            <table:table-cell table:number-columns-repeated="2"/>\
+            <table:table-cell table:number-columns-repeated="999999999"><text:p>many</text:p></table:table-cell></table:table-row></table:table>
+            """
+        )
+        let cells = html[1].components(separatedBy: "<td").dropFirst()
+        XCTAssertEqual(cells.count, 3 + 2 + 16)
+        XCTAssertEqual(cells.filter { $0.contains("cell") }.count, 3)
+        XCTAssertEqual(cells.filter { $0.contains("many") }.count, 16)
+    }
+
+    /// A list in a text box starts at its own level, a list header is not an
+    /// item, and a list nested 100 deep is read to its words.
+    func testListsInTextBoxesListHeadersAndDeepLists() throws {
+        XCTAssertEqual(try odfLines(
+            """
+            <text:list><text:list-item><text:p>outer<draw:frame><draw:text-box><text:list><text:list-item>\
+            <text:p>inner</text:p></text:list-item></text:list></draw:text-box></draw:frame></text:p></text:list-item></text:list>
+            """
+        ), ["<ul>", "<li>outer</li>", "<li>inner</li>", "</ul>"])
+        XCTAssertEqual(try odfLines(
+            "<text:list><text:list-header><text:p>Header words</text:p></text:list-header><text:list-item><text:p>item</text:p></text:list-item></text:list>"
+        ), ["<p>Header words</p>", "<ul>", "<li>item</li>", "</ul>"])
+        let deep = (0..<100).map { "<text:list><text:list-item><text:p>level \($0)</text:p>" }.joined()
+            + String(repeating: "</text:list-item></text:list>", count: 100)
+        let words = try odfHeard(deep).filter { $0.allSatisfy(\.isNumber) }
+        XCTAssertEqual(words, (0..<100).map(String.init))
+    }
+
+    /// A heading only in a table or in a note does not turn off the guess at
+    /// headings; a script, an embedded object, and a table's title and
+    /// description (also in a text box) are not read.
+    func testHeadingsInTablesAndNotesScriptsObjectsAndTableTitles() throws {
+        let lines = try odfLines(
+            """
+            <table:table><table:table-row><table:table-cell><text:h text:outline-level="1">In a cell</text:h>\
+            </table:table-cell></table:table-row></table:table>\
+            <text:p text:style-name="Big">Large words</text:p>\
+            <text:p>Body words here are many enough to be the body size.</text:p>\
+            <text:p>More body words to outweigh the large one entirely.</text:p>\
+            <text:p>Ref<text:note><text:note-citation>1</text:note-citation><text:note-body>\
+            <text:h text:outline-level="1">In a note</text:h></text:note-body></text:note></text:p>\
+            <text:p>Words<text:script>secret script</text:script> <draw:frame><draw:object><office:document>\
+            <text:p>inside object</text:p></office:document></draw:object></draw:frame> end.\
+            <draw:frame><draw:text-box><table:table><table:title>Alt title</table:title><table:desc>Alt desc</table:desc>\
+            <table:table-row><table:table-cell><text:p>cell</text:p></table:table-cell></table:table-row></table:table>\
+            </draw:text-box></draw:frame></text:p>
+            """,
+            styles: gone
+        )
+        XCTAssertEqual(lines, [
+            "<table>", "<tr><td><p>In a cell</p></td></tr>", "</table>",
+            "<h1>Large words</h1>",
+            "<p>Body words here are many enough to be the body size.</p>",
+            "<p>More body words to outweigh the large one entirely.</p>",
+            "<p>Ref</p>", "<p>Words end.</p>", "<table>", "<tr><td><p>cell</p></td></tr>", "</table>",
+            "<h1>In a note</h1>",
+        ])
     }
 
     // MARK: - A Damaged Optional Part

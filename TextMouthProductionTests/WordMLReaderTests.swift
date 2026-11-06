@@ -216,6 +216,122 @@ final class WordMLReaderTests: XCTestCase {
         XCTAssertEqual(heard, ["one", "two", "three", "fourfive", "six", "seven"])
     }
 
+    // MARK: - Outline Levels, Toggles, Rows, Lists, and Sections
+
+    /// A document with no `wx:sect` wrapper, so a test can write several.
+    private func sections(_ body: String, head: String = "") -> String {
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
+            + "<w:wordDocument \(namespaces) xml:space=\"preserve\">\(head)<w:body>\(body)</w:body></w:wordDocument>"
+    }
+
+    /// Outline levels follow the DOCX reader's rule: 0 to 8 are headings, 9
+    /// is body text that overrides a style's heading level, and a number too
+    /// large for an Int (which once trapped) is body text. Title is level 1
+    /// and Subtitle level 2. Every other integer of the format is held to a
+    /// range or parsed safely, and one more than a number reads as nothing.
+    func testOutlineLevelsTitlesAndIntegersAtTheirExtremes() throws {
+        let max = "9223372036854775807"
+        let head = """
+            <w:styles>\
+            <w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/></w:style>\
+            <w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/></w:style>\
+            <w:style w:type="paragraph" w:styleId="Subtitle"><w:name w:val="Subtitle"/></w:style>\
+            <w:style w:type="paragraph" w:styleId="TOCHeading"><w:name w:val="TOC Heading"/><w:basedOn w:val="Heading1"/>\
+            <w:pPr><w:outlineLvl w:val="9"/></w:pPr></w:style>\
+            <w:style w:type="paragraph" w:styleId="Huge"><w:name w:val="Huge"/><w:pPr><w:outlineLvl w:val="\(max)"/></w:pPr></w:style>\
+            <w:style w:type="paragraph" w:styleId="Listed"><w:name w:val="Listed"/><w:pPr><w:listPr><w:ilvl w:val="\(max)"/>\
+            <w:ilfo w:val="1"/></w:listPr></w:pPr></w:style>\
+            </w:styles>
+            """
+        let body = """
+            <wx:sect>\
+            <w:p><w:pPr><w:pStyle w:val="Title"/></w:pPr><w:r><w:t>The Title</w:t></w:r></w:p>\
+            <w:p><w:pPr><w:pStyle w:val="Subtitle"/></w:pPr><w:r><w:t>The Subtitle</w:t></w:r></w:p>\
+            <w:p><w:pPr><w:pStyle w:val="TOCHeading"/></w:pPr><w:r><w:t>Body text level nine</w:t></w:r></w:p>\
+            <w:p><w:pPr><w:pStyle w:val="Huge"/><w:outlineLvl w:val="\(max)"/></w:pPr><w:r><w:rPr><w:sz w:val="\(max)"/></w:rPr>\
+            <w:t>Huge numbers</w:t></w:r></w:p>\
+            <w:p><w:pPr><w:outlineLvl w:val="-\(max)"/><w:pageBreakBefore w:val="\(max)"/></w:pPr><w:r><w:rPr><w:sz w:val="-9223372036854775808"/>\
+            <w:b w:val="OFF"/></w:rPr><w:t>Negative numbers</w:t></w:r></w:p>\
+            <w:p><w:pPr><w:pStyle w:val="Listed"/></w:pPr><w:r><w:t>list by style</w:t></w:r></w:p>\
+            </wx:sect>
+            """
+        let lines = try bodyLines(of: sections(body, head: head), pages: false)
+        XCTAssertEqual(lines, [
+            "<h1>The Title</h1>", "<h2>The Subtitle</h2>", "<p>Body text level nine</p>", "<p>Huge numbers</p>",
+            "<p>Negative numbers</p>", "<ul>", "<li>list by style</li>", "</ul>",
+        ])
+    }
+
+    /// Hidden text, bold, and italic are settled run by run: the paragraph's
+    /// style XOR the character style, unless the run states it itself, and
+    /// `w:val="off"` works on all three. A character style that does not
+    /// mention bold leaves the paragraph style's bold as it is.
+    func testTogglePropertiesAreSettledRunByRun() throws {
+        let head = """
+            <w:styles>\
+            <w:style w:type="paragraph" w:styleId="Bolded"><w:name w:val="Bolded"/><w:rPr><w:b/><w:i w:val="off"/></w:rPr></w:style>\
+            <w:style w:type="paragraph" w:styleId="Hides"><w:name w:val="Hides"/><w:rPr><w:vanish/></w:rPr></w:style>\
+            <w:style w:type="character" w:styleId="Strong"><w:name w:val="Strong"/><w:rPr><w:b/></w:rPr></w:style>\
+            <w:style w:type="character" w:styleId="Slant"><w:name w:val="Slant"/><w:rPr><w:i/></w:rPr></w:style>\
+            <w:style w:type="character" w:styleId="Gone"><w:name w:val="Gone"/><w:rPr><w:vanish/></w:rPr></w:style>\
+            </w:styles>
+            """
+        let body = """
+            <w:p><w:pPr><w:pStyle w:val="Bolded"/></w:pPr>\
+            <w:r><w:rPr><w:rStyle w:val="Strong"/></w:rPr><w:t>twice is plain</w:t></w:r>\
+            <w:r><w:rPr><w:rStyle w:val="Slant"/></w:rPr><w:t> slanted</w:t></w:r>\
+            <w:r><w:rPr><w:b w:val="off"/></w:rPr><w:t> off</w:t></w:r><w:r><w:t> bold</w:t></w:r></w:p>\
+            <w:p><w:pPr><w:pStyle w:val="Hides"/></w:pPr><w:r><w:rPr><w:vanish w:val="off"/></w:rPr><w:t>shown by off</w:t></w:r>\
+            <w:r><w:rPr><w:rStyle w:val="Gone"/></w:rPr><w:t> toggled back</w:t></w:r><w:r><w:t> hidden</w:t></w:r></w:p>
+            """
+        XCTAssertEqual(try bodyLines(of: document(body: body, head: head)), [
+            "<p>twice is plain<strong><em> slanted</em></strong> off<strong> bold</strong></p>",
+            "<p>shown by off toggled back</p>",
+        ])
+    }
+
+    /// A row marked hidden is not read; a title in the custom properties is
+    /// not the document's; a list mark with no list table decides numbered
+    /// or bulleted; sections that are not continuous begin pages.
+    func testHiddenRowsCustomPropertiesListMarksAndSections() throws {
+        let head = """
+            <o:DocumentProperties><o:Title>Real Title</o:Title></o:DocumentProperties>\
+            <o:CustomDocumentProperties><o:Title>Custom</o:Title></o:CustomDocumentProperties>
+            """
+        let body = """
+            <wx:sect>\
+            <w:p><w:pPr><w:listPr><w:ilvl w:val="0"/><w:ilfo w:val="7"/><wx:t wx:val="1."/></w:listPr></w:pPr><w:r><w:t>numbered by mark</w:t></w:r></w:p>\
+            <w:p><w:pPr><w:listPr><w:ilvl w:val="0"/><w:ilfo w:val="7"/><wx:t wx:val="\u{2022}"/></w:listPr></w:pPr><w:r><w:t>bullet by mark</w:t></w:r></w:p>\
+            <w:tbl><w:tr><w:trPr><w:hidden/></w:trPr><w:tc><w:p><w:r><w:t>hidden row</w:t></w:r></w:p></w:tc></w:tr>\
+            <w:tr><w:tc><w:p><w:r><w:t>shown row</w:t></w:r></w:p></w:tc></w:tr></w:tbl>\
+            <w:sectPr><w:type w:val="continuous"/></w:sectPr></wx:sect>\
+            <wx:sect><w:p><w:r><w:t>Second section next page.</w:t></w:r></w:p><w:sectPr/></wx:sect>\
+            <wx:sect><w:p><w:r><w:t>Third continuous.</w:t></w:r></w:p><w:sectPr><w:type w:val="continuous"/></w:sectPr></wx:sect>
+            """
+        let html = try WordMLDocumentReader.html(of: file(holding: sections(body, head: head)), includesPages: true)
+        XCTAssertTrue(html.contains("<title>Real Title</title>"))
+        XCTAssertEqual(odfBodyLines(html), [
+            page(1) + "<ol>", "<li>numbered by mark</li>", "</ol>", "<ul>", "<li>bullet by mark</li>", "</ul>",
+            "<table>", "<tr><td></td></tr>", "<tr><td><p>shown row</p></td></tr>", "</table>",
+            "<p>\(page(2))Second section next page.</p>", "<p>Third continuous.</p>",
+        ])
+    }
+
+    /// A list that a `w:lists` table defines is numbered or bulleted by its
+    /// number format, and a level with the format "none" is a paragraph.
+    func testListsByTheirDefinition() throws {
+        let head = """
+            <w:lists><w:listDef w:listDefId="0"><w:lvl w:ilvl="0"><w:nfc w:val="0"/></w:lvl><w:lvl w:ilvl="1"><w:nfc w:val="23"/></w:lvl>\
+            </w:listDef><w:list w:ilfo="1"><w:ilst w:val="0"/></w:list></w:lists>
+            """
+        func item(_ level: Int, _ text: String) -> String {
+            "<w:p><w:pPr><w:listPr><w:ilvl w:val=\"\(level)\"/><w:ilfo w:val=\"1\"/><wx:t wx:val=\"x\"/></w:listPr></w:pPr><w:r><w:t>\(text)</w:t></w:r></w:p>"
+        }
+        XCTAssertEqual(try bodyLines(of: document(body: item(0, "one") + item(1, "sub"), head: head)), [
+            "<ol>", "<li>one<ul>", "<li>sub</li>", "</ul>", "</li>", "</ol>",
+        ])
+    }
+
     /// A bullet and a tab that begin a paragraph make it a bullet item; a
     /// dash and a space are words.
     func testBulletsWrittenAsTextAreItemsButDashesAreWords() throws {
