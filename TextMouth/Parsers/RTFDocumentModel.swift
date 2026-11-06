@@ -15,10 +15,24 @@ enum RTFInline: Equatable {
     case pageBreak(Int)
 }
 
+/// Where a list item stands in its list.
+struct RTFListPosition: Equatable {
+    /// The nesting depth (0 is the outermost list).
+    var level: Int
+    /// Whether the list is numbered.
+    var numbered: Bool
+}
+
 /// A paragraph's content.
 struct RTFParagraph: Equatable {
     /// The paragraph's content, in order.
     var inlines: [RTFInline] = []
+    /// For a paragraph in a table's cell that is a list item: its place in
+    /// its list, so that the cell writes the number or bullet a list item
+    /// has outside a table. (A list item outside a table is an
+    /// `RTFBlock.listItem` and carries it there.) Nil for any other
+    /// paragraph.
+    var listItem: RTFListPosition?
 
     /// The paragraph's words with no markup: what a listener hears.
     var plainText: String {

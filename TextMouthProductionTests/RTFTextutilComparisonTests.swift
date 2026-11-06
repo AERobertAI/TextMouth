@@ -173,10 +173,7 @@ final class RTFTextutilComparisonTests: XCTestCase {
         RealFile(name: "libreoffice-cp950listleveltext2.rtf"),
         RealFile(name: "libreoffice-fdo44715.rtf"),
         RealFile(name: "libreoffice-tdf108055.rtf", pages: (3, 3)),
-        RealFile(
-            name: "libreoffice-tdf146489.rtf", textutilOnly: ["1"],
-            why: "textutil reads the number of a list item inside a table cell (\"1.\") and the own reader reads the item without it; neutral to slightly worse, and rare"
-        ),
+        RealFile(name: "libreoffice-tdf146489.rtf"),
         RealFile(name: "libreoffice-fdo74709.rtf"),
         RealFile(
             name: "libreoffice-tdf128428_dntblnsbdb.rtf", textutilRefuses: true,

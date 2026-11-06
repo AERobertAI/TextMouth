@@ -722,13 +722,13 @@ struct RTFInterpreter {
     private mutating func endCell() throws {
         // The cell's last paragraph is a paragraph of the table whatever
         // its properties say.
-        try builder.endCell()
+        try builder.endCell(lastParagraph: paragraphKind(of: state.paragraph))
         listMarker = nil
     }
 
     /// `\row`: the row ends.
     private mutating func endRow() throws {
-        try builder.endRow()
+        try builder.endRow(lastParagraph: paragraphKind(of: state.paragraph))
         listMarker = nil
     }
 }

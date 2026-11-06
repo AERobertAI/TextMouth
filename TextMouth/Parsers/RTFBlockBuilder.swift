@@ -223,7 +223,7 @@ struct RTFBlockBuilder {
         paragraphBreakCounted = false
         try spend(Self.paragraphAllowance)
         if inTable {
-            if finished.hasWords { cell.append(finished) }
+            if finished.hasWords { cell.append(Self.markingListItem(finished, as: kind)) }
             return
         }
         closeTable()
@@ -237,14 +237,26 @@ struct RTFBlockBuilder {
 
     // MARK: Tables
 
+    /// `paragraph` for a table's cell: when it is a list item, carrying its
+    /// place in the list (a heading or body paragraph carries nothing).
+    private static func markingListItem(_ paragraph: RTFParagraph, as kind: Kind) -> RTFParagraph {
+        guard case .listItem(let level, let numbered) = kind else { return paragraph }
+        var marked = paragraph
+        marked.listItem = RTFListPosition(level: level, numbered: numbered)
+        return marked
+    }
+
     /// `\cell`: the cell ends. Its paragraph, if it holds words, is the
     /// cell's last.
+    /// - Parameter kind: what that last paragraph is, which matters when it
+    ///   is a list item: the cell then writes its number or bullet. A
+    ///   paragraph that `\cell` ends has no `\par` of its own.
     /// - Throws: `DocumentTooLargeError`: every cell is charged to the budget,
     ///   empty or not.
-    mutating func endCell() throws {
+    mutating func endCell(lastParagraph kind: Kind = .body) throws {
         try spend(Self.runAllowance)
         closeRun()
-        if paragraph.hasWords { cell.append(paragraph) }
+        if paragraph.hasWords { cell.append(Self.markingListItem(paragraph, as: kind)) }
         paragraph = RTFParagraph()
         paragraphBreakCounted = false
         row.append(cell)
@@ -253,11 +265,12 @@ struct RTFBlockBuilder {
     }
 
     /// `\row`: the row ends.
+    /// - Parameter kind: what the words not yet closed in a cell are.
     /// - Throws: `DocumentTooLargeError`.
-    mutating func endRow() throws {
+    mutating func endRow(lastParagraph kind: Kind = .body) throws {
         // Words not yet closed in a cell are kept in one.
         closeRun()
-        if paragraph.hasWords || !cell.isEmpty { try endCell() }
+        if paragraph.hasWords || !cell.isEmpty { try endCell(lastParagraph: kind) }
         guard !row.isEmpty else { return }
         if table == nil { table = RTFTable() }
         table?.rows.append(row)
