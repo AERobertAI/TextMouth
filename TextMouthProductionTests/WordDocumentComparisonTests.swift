@@ -83,10 +83,17 @@ final class WordDocumentComparisonTests: XCTestCase {
     /// reader reads and textutil does not (it shows that line as body text).
     /// The document therefore has a real heading, so the reader makes no
     /// guess by size, and the first form's line is a bold paragraph.
+    ///
+    /// The whole body of the text box sample is the one cell of a table that
+    /// lays the page out, and the reader never guesses a heading inside a
+    /// table, where a larger or bold line is as likely a cell's label as a
+    /// heading; textutil guesses the title and the two bold lines of the
+    /// signature.
     private static let headingsOnlyTextutilFinds: [String: Set<String>] = [
         "doc/libreoffice-tdf81705_outlineLevel.doc": ["Contents"],
         "doc/libreoffice-tdf139495_tinyHeader.doc": ["Tiny header", "PAGE", "PAGE 1"],
         "doc/poi-rasp.doc": ["Открытое акционерное общество «ХХХХХХХХХХХ»"],
+        "doc/poi-textboxes.doc": ["INFORMACJA O WYBORZE NAJKORZYSTNIEJSZEJ OFERTY", "Wójt Gminy", "mgr inż. Jacek Brygman"],
     ]
 
     /// The numbers the reader writes at the start of paragraphs that Word

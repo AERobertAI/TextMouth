@@ -360,11 +360,6 @@ final class WordDocumentReaderTests: XCTestCase {
         XCTAssertLessThan(box.lowerBound, last.lowerBound)
     }
 
-    func testDIAGNOSTICTextBoxSampleHTML() throws {
-        let body = try sampleBody("doc/poi-textboxes.doc", pages: false)
-        XCTFail("DIAGNOSTIC \(body.count): \(body.prefix(2500)) ... \(body.suffix(600))")
-    }
-
     func testOnlyEndnotesOrOnlyFootnotesFollowTheMainStory() throws {
         var builder = storyDocument(main: [Paragraph("Main words.")])
         builder.stories = [.endnotes: [Paragraph("Endnote one."), Paragraph("Endnote two.")], .headers: [Paragraph("Header.")]]
