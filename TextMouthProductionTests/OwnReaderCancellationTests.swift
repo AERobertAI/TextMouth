@@ -28,9 +28,9 @@ final class OwnReaderCancellationTests: XCTestCase {
 
     /// Inside an import the check passes until the import is cancelled, and
     /// throws `ImportCancelled` from then on.
-    func testTheCheckThrowsOnceTheImportIsCancelled() {
+    func testTheCheckThrowsOnceTheImportIsCancelled() throws {
         let cancellation = ImportCancellation()
-        ImportCancellation.$current.withValue(cancellation) {
+        try ImportCancellation.$current.withValue(cancellation) {
             XCTAssertNoThrow(try ImportCancellation.throwIfCancelled())
             cancellation.cancel()
             XCTAssertThrowsError(try ImportCancellation.throwIfCancelled()) { error in
@@ -89,7 +89,7 @@ final class OwnReaderCancellationTests: XCTestCase {
         let cancellation = ImportCancellation()
         cancellation.cancel()
         let started = Date()
-        ImportCancellation.$current.withValue(cancellation) {
+        try ImportCancellation.$current.withValue(cancellation) {
             XCTAssertThrowsError(try RTFDocumentReader.html(from: Data(Self.largeRichText), includesPages: true)) { error in
                 XCTAssertEqual(error as? ImportCancelled, ImportCancelled())
             }
@@ -128,7 +128,7 @@ final class OwnReaderCancellationTests: XCTestCase {
 
         let cancelled = ImportCancellation()
         cancelled.cancel()
-        ImportCancellation.$current.withValue(cancelled) {
+        try ImportCancellation.$current.withValue(cancelled) {
             XCTAssertThrowsError(try MOBIParser.prepareBook(url: book)) { error in
                 XCTAssertEqual(error as? ImportCancelled, ImportCancelled())
             }
