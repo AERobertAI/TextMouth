@@ -31,10 +31,24 @@ struct DOCXStyles {
     /// Character style IDs whose text is hidden, resolved the same way.
     var hiddenCharacterStyles: Set<String> = []
 
+    /// Table style IDs whose text is hidden (`w:vanish` in the style's own
+    /// run properties, not in its conditional formatting), resolved the same
+    /// way through the table styles they are based on.
+    var hiddenTableStyles: Set<String> = []
+
+    /// Whether the document defaults hide all text (`w:vanish` in
+    /// `w:docDefaults`). By ECMA-376 17.7.3 no style then shows it again;
+    /// only a run's own properties can.
+    var documentDefaultsHide = false
+
     /// The ID of the default paragraph style (`w:default` on a paragraph
     /// style): the style a paragraph that names none takes. Nil when the
     /// part names none.
     var defaultParagraphStyle: String?
+
+    /// The ID of the default table style (`w:default` on a table style): the
+    /// style a table that names none takes. Nil when the part names none.
+    var defaultTableStyle: String?
 }
 
 /// Whether the `w:val` of an on/off property (`w:pageBreakBefore`) turns it
@@ -142,6 +156,7 @@ class DOCXStylesParser: DOCXSAXParser {
         let hidden = Self.inherited(through: declarations, own: \.ownHidden).filter(\.value).keys
         styles.hiddenParagraphStyles = Set(hidden.filter { declarations[$0]?.type == "paragraph" })
         styles.hiddenCharacterStyles = Set(hidden.filter { declarations[$0]?.type == "character" })
+        styles.hiddenTableStyles = Set(hidden.filter { declarations[$0]?.type == "table" })
         return styles
     }
 
@@ -168,13 +183,19 @@ class DOCXStylesParser: DOCXSAXParser {
             inStyle = true
             // The default paragraph style is the one a paragraph with no
             // style takes.
-            if currentStyleType == "paragraph", let flag = attributes["w:default"], DOCXOnOff.isOn(flag),
-               !currentStyleId.isEmpty {
-                styles.defaultParagraphStyle = currentStyleId
+            if let flag = attributes["w:default"], DOCXOnOff.isOn(flag), !currentStyleId.isEmpty {
+                if currentStyleType == "paragraph" {
+                    styles.defaultParagraphStyle = currentStyleId
+                } else if currentStyleType == "table" {
+                    styles.defaultTableStyle = currentStyleId
+                }
             }
         case "vanish" where inStyle && trackedChangeDepth == 0 && Self.isStyleRunProperty(elementStack):
             // The style's text is hidden, unless turned off
             currentHidden = DOCXOnOff.isOn(attributes["w:val"])
+        case "vanish" where !inStyle && trackedChangeDepth == 0 && Self.isDocumentDefaultRunProperty(elementStack):
+            // Every run is hidden by default, unless turned off
+            styles.documentDefaultsHide = DOCXOnOff.isOn(attributes["w:val"])
         case "pageBreakBefore" where inStyle && trackedChangeDepth == 0:
             // The style's paragraphs begin a page (PG07), unless turned off
             currentPageBreakBefore = DOCXOnOff.isOn(attributes["w:val"])
@@ -234,6 +255,12 @@ class DOCXStylesParser: DOCXSAXParser {
     /// table style's conditional formatting (`w:tblStylePr`).
     private static func isStyleRunProperty(_ stack: [String]) -> Bool {
         stack.count >= 3 && stack[stack.count - 2] == "rPr" && stack[stack.count - 3] == "style"
+    }
+
+    /// Whether the element at the top of `stack` is a direct child of the
+    /// default run properties (`w:docDefaults/w:rPrDefault/w:rPr`).
+    private static func isDocumentDefaultRunProperty(_ stack: [String]) -> Bool {
+        stack.dropLast().suffix(3) == ["docDefaults", "rPrDefault", "rPr"]
     }
 
     /// What the style being read says about being a heading by itself: its

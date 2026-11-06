@@ -157,6 +157,203 @@ final class DOCXHiddenTextTests: XCTestCase {
         XCTAssertEqual(parsed.defaultParagraphStyle, "Normal")
     }
 
+    // MARK: - Hidden by a table style, the document defaults, or a row
+
+    /// Styles with table styles that hide their text: directly, through
+    /// `w:basedOn`, turned off again in a child, and only in conditional
+    /// formatting (which hides nothing here), beside a hidden paragraph style
+    /// and a hidden character style.
+    private let tableStyles = """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>
+        <w:style w:type="paragraph" w:styleId="Secret"><w:name w:val="Secret"/><w:rPr><w:vanish/></w:rPr></w:style>
+        <w:style w:type="character" w:styleId="Hide"><w:name w:val="Hide"/><w:rPr><w:vanish/></w:rPr></w:style>
+        <w:style w:type="table" w:default="1" w:styleId="TableNormal"><w:name w:val="Normal Table"/></w:style>
+        <w:style w:type="table" w:styleId="Ghost"><w:name w:val="Ghost"/><w:rPr><w:vanish/></w:rPr></w:style>
+        <w:style w:type="table" w:styleId="GhostChild"><w:name w:val="GhostChild"/><w:basedOn w:val="Ghost"/></w:style>
+        <w:style w:type="table" w:styleId="GhostOff"><w:name w:val="GhostOff"/><w:basedOn w:val="Ghost"/><w:rPr><w:vanish w:val="0"/></w:rPr></w:style>
+        <w:style w:type="table" w:styleId="Banded"><w:name w:val="Banded"/><w:tblStylePr w:type="firstRow"><w:rPr><w:vanish/></w:rPr></w:tblStylePr></w:style>
+        </w:styles>
+        """
+
+    /// A one-cell table of the paragraph "Cell" (its run having `runProperties`
+    /// and its paragraph `paragraphStyle`) in table style `tableStyle`.
+    private func table(
+        style tableStyle: String?, runProperties: String = "", paragraphStyle: String? = nil
+    ) -> String {
+        let properties = tableStyle.map { "<w:tblPr><w:tblStyle w:val=\"\($0)\"/></w:tblPr>" } ?? "<w:tblPr/>"
+        let cell = docxParagraph(docxRun("Cell", runProperties), style: paragraphStyle)
+        return "<w:tbl>\(properties)<w:tr><w:tc>\(cell)</w:tc></w:tr></w:tbl>"
+    }
+
+    /// The words a listener hears of `body`, read with `styles`.
+    private func spoken(_ body: String, styles: String) throws -> String {
+        try docxReadingText(body: docxParagraph(docxRun("Before")) + body + docxParagraph(docxRun("After")), styles: styles)
+            .split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    }
+
+    /// A table style that hides its text hides the table's words, also
+    /// through the table style it is based on, until a child turns it off.
+    /// A table with another style, or none, is read, and so is one whose
+    /// style hides only in its conditional formatting (ECMA-376 17.7.2).
+    func testATableStyleCanHideItsText() throws {
+        for (style, expected) in [
+            ("Ghost", "Before After"), ("GhostChild", "Before After"), ("GhostOff", "Before Cell After"),
+            ("Banded", "Before Cell After"), ("TableNormal", "Before Cell After"), (nil, "Before Cell After"),
+        ] as [(String?, String)] {
+            XCTAssertEqual(try spoken(table(style: style), styles: tableStyles), expected, style ?? "no style")
+        }
+    }
+
+    /// The table style, the paragraph style, and the character style are
+    /// toggled together (ECMA-376 17.7.3): the text is hidden when an odd
+    /// number of them hide it, and a run's own `w:vanish` decides alone.
+    func testATableStyleTogglesWithTheParagraphAndCharacterStyles() throws {
+        let rStyle = "<w:rStyle w:val=\"Hide\"/>"
+        let cases: [(String?, String, String?, String)] = [
+            // (table style, run properties, paragraph style, what is heard)
+            ("Ghost", "", "Secret", "Before Cell After"),
+            ("Ghost", rStyle, nil, "Before Cell After"),
+            ("Ghost", rStyle, "Secret", "Before After"),
+            (nil, rStyle, "Secret", "Before Cell After"),
+            (nil, "", "Secret", "Before After"),
+            ("Ghost", "<w:vanish w:val=\"0\"/>", nil, "Before Cell After"),
+            (nil, "<w:vanish/>", nil, "Before After"),
+            ("Ghost", rStyle + "<w:vanish/>", nil, "Before After"),
+        ]
+        for (tableStyle, runProperties, paragraphStyle, expected) in cases {
+            let body = table(style: tableStyle, runProperties: runProperties, paragraphStyle: paragraphStyle)
+            XCTAssertEqual(try spoken(body, styles: tableStyles), expected, "\(tableStyle ?? "-") \(runProperties) \(paragraphStyle ?? "-")")
+        }
+    }
+
+    /// A table that names no style takes the default table style, as a
+    /// paragraph does; here it hides.
+    func testTheDefaultTableStyleAppliesToATableWithNoStyle() throws {
+        let styles = tableStyles.replacingOccurrences(of: "w:default=\"1\" w:styleId=\"TableNormal\"", with: "w:styleId=\"TableNormal\"")
+            .replacingOccurrences(of: "<w:style w:type=\"table\" w:styleId=\"Ghost\">", with: "<w:style w:type=\"table\" w:default=\"1\" w:styleId=\"Ghost\">")
+        XCTAssertEqual(try spoken(table(style: nil), styles: styles), "Before After")
+        XCTAssertEqual(try spoken(table(style: "TableNormal"), styles: styles), "Before Cell After")
+        XCTAssertEqual(try spoken(table(style: "GhostOff"), styles: styles), "Before Cell After")
+    }
+
+    /// The innermost table's style is the one that counts for a table inside
+    /// a cell.
+    func testANestedTablesOwnStyleDecides() throws {
+        let inner = table(style: "Ghost")
+        let outer = "<w:tbl><w:tblPr><w:tblStyle w:val=\"TableNormal\"/></w:tblPr><w:tr><w:tc>"
+            + docxParagraph(docxRun("Outer")) + inner + docxParagraph(docxRun("Tail")) + "</w:tc></w:tr></w:tbl>"
+        XCTAssertEqual(try spoken(outer, styles: tableStyles), "Before Outer Tail After")
+    }
+
+    /// The document defaults can hide all text (`w:docDefaults`): a style
+    /// cannot show it again, only a run's own `w:vanish` can. Defaults that
+    /// say nothing, or turn it off, hide nothing.
+    func testDocumentDefaultsCanHideAllText() throws {
+        func styles(_ defaultProperties: String) -> String {
+            """
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+            <w:docDefaults><w:rPrDefault><w:rPr>\(defaultProperties)</w:rPr></w:rPrDefault></w:docDefaults>
+            <w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>
+            <w:style w:type="paragraph" w:styleId="Secret"><w:name w:val="Secret"/><w:rPr><w:vanish/></w:rPr></w:style>
+            <w:style w:type="character" w:styleId="Hide"><w:name w:val="Hide"/><w:rPr><w:vanish/></w:rPr></w:style>
+            <w:style w:type="character" w:styleId="Show"><w:name w:val="Show"/><w:rPr><w:vanish w:val="0"/></w:rPr></w:style>
+            </w:styles>
+            """
+        }
+        let paragraph = docxParagraph(docxRun("Words"))
+        let hidden = styles("<w:vanish/>")
+        XCTAssertEqual(try spoken(paragraph, styles: hidden), "")
+        // Nothing but a run's own properties shows the text again.
+        XCTAssertEqual(try spoken(docxParagraph(docxRun("Words", "<w:rStyle w:val=\"Show\"/>")), styles: hidden), "")
+        XCTAssertEqual(try spoken(docxParagraph(docxRun("Words", "<w:rStyle w:val=\"Hide\"/>")), styles: hidden), "")
+        XCTAssertEqual(try spoken(docxParagraph(docxRun("Words"), style: "Secret"), styles: hidden), "")
+        XCTAssertEqual(try spoken(docxParagraph(docxRun("Words", "<w:vanish w:val=\"0\"/>")), styles: hidden), "Words")
+        for shown in [styles(""), styles("<w:vanish w:val=\"0\"/>"), styles("<w:sz w:val=\"22\"/>")] {
+            XCTAssertEqual(try spoken(paragraph, styles: shown), "Before Words After")
+        }
+    }
+
+    /// A row marked hidden (`w:trPr` holding `w:hidden`) is not read, as in a
+    /// Word 2003 XML document: its words are hidden text, whatever their own
+    /// properties say, in a table nested in it too. It stays a row, empty, and
+    /// the other rows are read. `w:hidden` with a value of 0 hides nothing,
+    /// and the properties a record of a change holds are those from before it.
+    func testAHiddenRowIsNotRead() throws {
+        func row(_ text: String, rowProperties: String = "", runProperties: String = "") -> String {
+            "<w:tr><w:trPr>\(rowProperties)</w:trPr><w:tc>\(docxParagraph(docxRun(text, runProperties)))</w:tc></w:tr>"
+        }
+        func spokenRows(_ rows: String...) throws -> String {
+            try spoken("<w:tbl><w:tblPr/>" + rows.joined() + "</w:tbl>", styles: styles)
+        }
+        XCTAssertEqual(try spokenRows(row("hidden row", rowProperties: "<w:hidden/>"), row("shown row")),
+                       "Before shown row After")
+        XCTAssertEqual(try spokenRows(row("shown row"), row("hidden row", rowProperties: "<w:hidden/>")),
+                       "Before shown row After")
+        // A row hidden by its value, and by every value that turns it on.
+        for value in ["1", "true", "on"] {
+            XCTAssertEqual(try spokenRows(row("hidden row", rowProperties: "<w:hidden w:val=\"\(value)\"/>")), "Before After", value)
+        }
+        for value in ["0", "false", "off"] {
+            XCTAssertEqual(try spokenRows(row("shown row", rowProperties: "<w:hidden w:val=\"\(value)\"/>")),
+                           "Before shown row After", value)
+        }
+        // The row's own say-so wins over the words' own properties.
+        XCTAssertEqual(try spokenRows(row("hidden row", rowProperties: "<w:hidden/>", runProperties: "<w:vanish w:val=\"0\"/>")),
+                       "Before After")
+        // A record of a change to the row's properties holds the ones from before it.
+        let change = "<w:trPrChange w:id=\"1\" w:author=\"A\"><w:trPr><w:hidden/></w:trPr></w:trPrChange>"
+        XCTAssertEqual(try spokenRows(row("shown row", rowProperties: change)), "Before shown row After")
+        // The next row is not hidden with it, and a nested table in the row is.
+        let nested = "<w:tbl><w:tblPr/>" + row("inner") + "</w:tbl>"
+        let hiddenWithNested = "<w:tr><w:trPr><w:hidden/></w:trPr><w:tc>\(docxParagraph(docxRun("outer")))\(nested)</w:tc></w:tr>"
+        XCTAssertEqual(try spokenRows(hiddenWithNested, row("after")), "Before after After")
+        // A hidden row inside a nested table hides that row only.
+        let mixed = "<w:tbl><w:tblPr/>" + row("gone", rowProperties: "<w:hidden/>") + row("inner") + "</w:tbl>"
+        let outer = "<w:tr><w:tc>\(docxParagraph(docxRun("outer")))\(mixed)</w:tc></w:tr>"
+        XCTAssertEqual(try spokenRows(outer), "Before outer inner After")
+        // A table of hidden rows only is not written.
+        XCTAssertEqual(try spokenRows(row("gone", rowProperties: "<w:hidden/>")), "Before After")
+    }
+
+    /// A page break in a hidden row begins no page, and the page a visible
+    /// break after it begins is still marked.
+    func testAPageBreakInAHiddenRowBeginsNoPage() throws {
+        let breaking = "<w:r><w:br w:type=\"page\"/></w:r>"
+        let hiddenRow = "<w:tbl><w:tblPr/><w:tr><w:trPr><w:hidden/></w:trPr><w:tc>\(docxParagraph(breaking + docxRun("gone")))</w:tc></w:tr>"
+            + "<w:tr><w:tc>\(docxParagraph(docxRun("seen")))</w:tc></w:tr></w:tbl>"
+        let markdown = try docxMarkdown(
+            body: docxParagraph(docxRun("first")) + hiddenRow + docxParagraph(breaking + docxRun("last")),
+            styles: styles, includesPages: true)
+        XCTAssertEqual(try pageLabels(of: markdown), ["1", "2"])
+        XCTAssertFalse(markdown.contains("gone"), markdown)
+    }
+
+    /// What the styles part names: the table styles that hide, the default
+    /// table style, and whether the document defaults hide.
+    func testTheStylesPartNamesTheHidingTableStylesAndDefaults() throws {
+        let docx = try makeDOCXPackage(document: docxDocumentXML(docxParagraph(docxRun("x"))), styles: tableStyles)
+        let parsed = try DOCXParser.readStyles(from: docx)
+        XCTAssertEqual(parsed.hiddenTableStyles, ["Ghost", "GhostChild"])
+        XCTAssertEqual(parsed.defaultTableStyle, "TableNormal")
+        XCTAssertFalse(parsed.documentDefaultsHide)
+        XCTAssertEqual(parsed.hiddenParagraphStyles, ["Secret"])
+
+        let hiding = tableStyles.replacingOccurrences(
+            of: "<w:style w:type=\"paragraph\" w:default",
+            with: "<w:docDefaults><w:rPrDefault><w:rPr><w:vanish/></w:rPr></w:rPrDefault></w:docDefaults><w:style w:type=\"paragraph\" w:default")
+        let hidingDocx = try makeDOCXPackage(document: docxDocumentXML(docxParagraph(docxRun("x"))), styles: hiding)
+        XCTAssertTrue(try DOCXParser.readStyles(from: hidingDocx).documentDefaultsHide)
+        // A `w:vanish` in the defaults' paragraph properties' run mark is not the defaults' run properties.
+        let paragraphDefaults = tableStyles.replacingOccurrences(
+            of: "<w:style w:type=\"paragraph\" w:default",
+            with: "<w:docDefaults><w:pPrDefault><w:pPr><w:rPr><w:vanish/></w:rPr></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type=\"paragraph\" w:default")
+        let paragraphDocx = try makeDOCXPackage(document: docxDocumentXML(docxParagraph(docxRun("x"))), styles: paragraphDefaults)
+        XCTAssertFalse(try DOCXParser.readStyles(from: paragraphDocx).documentDefaultsHide)
+    }
+
     // MARK: - Headings and paragraphs
 
     /// A heading whose every word is hidden writes no empty heading, one with
