@@ -1,3 +1,4 @@
+import SwiftUI
 import XCTest
 @testable import TextMouth
 
@@ -165,25 +166,155 @@ final class LibraryCloudFetchTests: XCTestCase {
         XCTAssertEqual(world.fetched.urls.count, 1)
     }
 
-    /// A data directory changed during a fetch, as Use Default Location
-    /// does, drops the fetch's results: it opens nothing and shows nothing.
-    func testAFetchOfAChangedDataDirectoryIsDropped() throws {
-        let world = try CloudWorld(test: self, label: "Changed")
+    /// Choosing another library during a fetch drops the fetch before the new
+    /// library is recorded: a pass that returns while TextMouth waits to open
+    /// again opens nothing, checks nothing, and shows nothing new.
+    func testChoosingAnotherLibraryDropsTheFetch() async throws {
+        let world = try CloudWorld(test: self, label: "Switch")
         world.keepInCloud(world.index)
         let gate = world.holdFetches()
         let model = world.launch()
         XCTAssertTrue(waitUntil(timeout: 5) { world.fetched.urls.count == 1 }, "the fetch never started")
-        let elsewhere = try makeSandboxDirectory("ChangedElsewhere")
-        StorageBoundary.shared.publish(root: elsewhere)
-        let original = world.fixture.root
-        addTeardownBlock { @MainActor in StorageBoundary.shared.publish(root: original) }
+        let chosen = try makeSandboxDirectory("SwitchChosen")
+        _ = try LibraryIdentity.adopt(in: chosen)
+        let relaunch = SwitchRelaunch()
+        let before = model.dataDirectoryUnavailability
+
+        let switching = Task { await model.useLibraryReturningOutcome(at: chosen, relaunching: relaunch.relauncher) }
+        XCTAssertTrue(waitUntil(timeout: 5) { relaunch.isWaiting }, "TextMouth never asked to open again")
+        XCTAssertNil(model.libraryFetchTask, "the fetch was not dropped before the new library was recorded")
+        gate.release()
+        _ = waitUntil(timeout: 0.5) { false }
+        relaunch.finish()
+        let outcome = await switching.value
+
+        XCTAssertTrue(outcome.succeeded, outcome.failureMessage ?? "")
+        XCTAssertEqual(model.dataDirectoryUnavailability, before, "the dropped fetch changed the screen")
+        XCTAssertFalse(model.hasStartedLibrary)
+        XCTAssertEqual(world.announcements.messages, [])
+    }
+
+    // MARK: - Stuck and Slow Reads
+
+    /// One stuck read stops no other: the other file is read and fetched, the
+    /// failure shows after the stall limit and says the sync service gave no
+    /// answer and that this Mac is offline, the stuck file is held so neither
+    /// the fetch nor Try Again reads it again, and when it returns late the
+    /// check runs and the library opens.
+    func testAStuckReadStopsNoOtherAndOpensTheLibraryWhenItReturns() throws {
+        let world = try CloudWorld(test: self, label: "Stuck")
+        let marker = LibraryIdentity.markerURL(in: world.fixture.root)
+        world.keepInCloud(marker)
+        world.keepInCloud(world.index)
+        world.stallLimit = .seconds(2)
+        world.reachability = .offline
+        let gate = world.holdFetches(of: marker)
+
+        let model = world.launch()
+
+        XCTAssertTrue(waitUntil(timeout: 8) { model.dataDirectoryUnavailability?.isGettingFromCloud == false }, "the stall never showed")
+        guard case .cloudFetchFailed(_, _, _, let ending)? = model.dataDirectoryUnavailability else {
+            return XCTFail("unexpected reason \(String(describing: model.dataDirectoryUnavailability))")
+        }
+        XCTAssertEqual(ending, "no answer within 2 seconds, and this Mac is offline")
+        XCTAssertEqual(Set(world.fetched.names(in: world.fixture.root)), ["library.json", LibraryIdentity.fileName])
+        XCTAssertEqual(model.libraryFilesBeingRead, [marker.standardizedFileURL.path])
+
+        // Try Again rechecks without reading the stuck file again.
+        XCTAssertFalse(model.retryDataDirectory())
+        XCTAssertEqual(world.fetched.urls.count, 2, "Try Again read the stuck file again")
+        XCTAssertEqual(model.dataDirectoryUnavailability?.isGettingFromCloud, false)
 
         gate.release()
+        XCTAssertTrue(waitUntil(timeout: 5) { model.hasStartedLibrary }, "the late read never opened the library")
+        XCTAssertNil(model.dataDirectoryUnavailability)
+        XCTAssertTrue(model.libraryFilesBeingRead.isEmpty)
+        XCTAssertEqual(world.announcements.messages.last, "The library is available.")
+    }
 
-        XCTAssertTrue(waitUntil(timeout: 5) { model.libraryFetchTask == nil }, "the dropped fetch never ended")
+    /// A read that fails fast just after a restart is retried a few times
+    /// while the screen keeps saying the files are on their way, and the
+    /// library opens when a retry succeeds.
+    func testAFailedReadIsRetriedBeforeTheFailureShows() throws {
+        let world = try CloudWorld(test: self, label: "Retries")
+        world.keepInCloud(world.index)
+        world.retryDelays = [.milliseconds(50), .milliseconds(50), .milliseconds(50)]
+        world.failuresLeft.set(2)
+
+        let model = world.launch()
+
+        XCTAssertTrue(waitUntil(timeout: 5) { world.fetched.urls.count == 2 })
+        XCTAssertEqual(model.dataDirectoryUnavailability?.isGettingFromCloud, true, "the failure showed before the retries")
+        XCTAssertTrue(waitUntil(timeout: 5) { model.hasStartedLibrary }, "the library never opened")
+        XCTAssertEqual(world.fetched.urls.count, 3)
+    }
+
+    /// Retries that all fail end in the failure, after the first read and one
+    /// read for each retry, and no more.
+    func testRetriesThatAllFailEndInTheFailure() throws {
+        let world = try CloudWorld(test: self, label: "RetriesFail")
+        world.keepInCloud(world.index)
+        world.retryDelays = [.milliseconds(20), .milliseconds(20)]
+        world.fetchFails.set(true)
+
+        let model = world.launch()
+
+        XCTAssertTrue(waitUntil(timeout: 5) { model.dataDirectoryUnavailability?.isGettingFromCloud == false })
+        _ = waitUntil(timeout: 0.3) { false }
+        XCTAssertEqual(world.fetched.urls.count, 3)
+        XCTAssertNil(model.libraryFetchTask)
+    }
+
+    /// A reason found while a fetch runs does not stay on the screen when the
+    /// files are only in the cloud again: Try Again finds the folder gone,
+    /// then back with its files in the cloud, and the screen says they are
+    /// on their way, with no second fetch.
+    func testTheReasonFollowsTryAgainDuringAFetch() throws {
+        let world = try CloudWorld(test: self, label: "Stale")
+        world.keepInCloud(world.index)
+        let gate = world.holdFetches()
+        let model = world.launch()
+        XCTAssertTrue(waitUntil(timeout: 5) { world.fetched.urls.count == 1 })
+        try world.fixture.takeAway()
+        XCTAssertFalse(model.retryDataDirectory())
+        XCTAssertEqual(model.dataDirectoryUnavailability, .folderMissing(folder: world.fixture.root.path))
+
+        try world.fixture.bringBack()
+        XCTAssertFalse(model.retryDataDirectory())
+
+        XCTAssertEqual(model.dataDirectoryUnavailability?.isGettingFromCloud, true)
+        XCTAssertEqual(world.fetched.urls.count, 1)
+        gate.release()
+    }
+
+    /// A fetched marker that names another library ends in that reason, not
+    /// in an open library.
+    func testAFetchedMarkerOfAnotherLibraryIsRefused() throws {
+        let world = try CloudWorld(test: self, label: "OtherLibrary")
+        DataDirectoryPreferences.expectedIdentity.write(UUID(), to: world.fixture.preferences)
+        world.keepInCloud(LibraryIdentity.markerURL(in: world.fixture.root))
+
+        let model = world.launch()
+
+        XCTAssertTrue(waitUntil(timeout: 5) { model.dataDirectoryUnavailability == .differentLibrary(folder: world.fixture.root.path) })
         XCTAssertFalse(model.hasStartedLibrary)
-        XCTAssertTrue(model.dataDirectoryUnavailability?.isGettingFromCloud == true)
-        XCTAssertEqual(world.announcements.messages, [])
+        XCTAssertNil(model.libraryFetchTask)
+    }
+
+    // MARK: - The Screen
+
+    /// The screen announces again when its reason changes, as when the fetch
+    /// ends: one announcement for each reason it shows.
+    func testTheScreenAnnouncesEachNewReason() {
+        let announced = AnnouncementCount()
+        let box = ReasonBox(.gettingFromCloud(.googleDrive, folder: "/x/TextMouth", files: ["library.json"]))
+        let screen = ReasonScreen(box: box, onAnnounce: { announced.count += 1 })
+
+        withHostedView(screen, until: { $0.fittingSize.height > 0 }) { _ in
+            XCTAssertTrue(waitUntil(timeout: 5) { announced.count == 1 }, "the first reason was not announced")
+            box.reason = .cloudFetchFailed(.googleDrive, folder: "/x/TextMouth", files: ["library.json"], ending: "")
+            XCTAssertTrue(waitUntil(timeout: 5) { announced.count == 2 }, "the new reason was not announced")
+        }
     }
 
     // MARK: - Losing the Library While Running
@@ -349,6 +480,15 @@ private final class CloudWorld {
     let fetchFails = Flag()
     /// What VoiceOver was told.
     let announcements = AnnouncementLog()
+    /// How long a fetch waits for its reads.
+    var stallLimit: Duration = .seconds(30)
+    /// The waits between the retries of a fetch.
+    var retryDelays: [Duration] = []
+    /// Whether this Mac is online, as a stalled fetch's log line says.
+    var reachability: NetworkReachability = .online
+    /// How many more reads fail, each with an offline error, before reads
+    /// succeed again.
+    let failuresLeft = Counter()
     /// Whether a read brings the file to this Mac.
     var arrivals: Bool {
         get { arrivalFlag.value }
@@ -392,9 +532,10 @@ private final class CloudWorld {
         effects.set(effect, for: file)
     }
 
-    /// Makes the fetch wait until the returned gate is released.
-    func holdFetches() -> FetchGate {
-        hold.install()
+    /// Makes the fetch wait until the returned gate is released: every read,
+    /// or only the read of `file`.
+    func holdFetches(of file: URL? = nil) -> FetchGate {
+        hold.install(for: file)
     }
 
     /// Starts a library model under test with the scripted fetch.
@@ -405,18 +546,25 @@ private final class CloudWorld {
         let arrivalFlag = arrivalFlag
         let effects = effects
         let hold = hold
+        let failuresLeft = failuresLeft
         let environment = DataDirectoryEnvironment(
             preferences: fixture.preferences,
             volumeNotifications: fixture.volumeNotifications,
             libraryFetch: { file in
                 fetched.record(file)
-                hold.waitIfHeld()
-                if fetchFails.value { throw URLError(.notConnectedToInternet) }
+                hold.waitIfHeld(for: file)
+                if fetchFails.value || failuresLeft.takeOne() { throw URLError(.notConnectedToInternet) }
                 try effects.run(for: file)
                 if arrivalFlag.value { cloud.setStatus(Self.status(.downloaded), of: file) }
             }
         )
-        return LibraryViewModel(dataDirectoryEnvironment: environment)
+        let model = LibraryViewModel(dataDirectoryEnvironment: environment)
+        // The fetch's first pass starts once this turn ends, so these
+        // settings are in place before it reads.
+        model.libraryFetchStallLimit = stallLimit
+        model.libraryFetchRetryDelays = retryDelays
+        model.libraryFetchReachability = reachability
+        return model
     }
 
     /// A status in `state`, as the scripted service reports a file in it.
@@ -479,19 +627,103 @@ private final class EffectTable: @unchecked Sendable {
 private final class HoldBox: @unchecked Sendable {
     private let lock = NSLock()
     private var gate: DispatchSemaphore?
+    /// The standardized path of the one file held, or nil when every read is.
+    private var heldPath: String?
 
-    /// Holds every fetch from now on until the returned gate is released.
-    func install() -> FetchGate {
+    /// Holds every fetch from now on, or only the read of `file`, until the
+    /// returned gate is released.
+    func install(for file: URL?) -> FetchGate {
         let semaphore = DispatchSemaphore(value: 0)
-        lock.withLock { gate = semaphore }
+        lock.withLock {
+            gate = semaphore
+            heldPath = file?.standardizedFileURL.path
+        }
         return FetchGate(semaphore: semaphore)
     }
 
-    /// Waits (at most ten seconds, so a broken test can't hang) while held.
-    func waitIfHeld() {
-        guard let semaphore = lock.withLock({ gate }) else { return }
-        _ = semaphore.wait(timeout: .now() + 10)
-        semaphore.signal()
+    /// Waits (at most ten seconds, so a broken test can't hang) when the
+    /// read of `file` is held.
+    func waitIfHeld(for file: URL) {
+        let held = lock.withLock { () -> DispatchSemaphore? in
+            guard let gate, heldPath == nil || heldPath == file.standardizedFileURL.path else { return nil }
+            return gate
+        }
+        guard let held else { return }
+        _ = held.wait(timeout: .now() + 10)
+        held.signal()
+    }
+}
+
+/// A thread-safe count of failures still to come.
+private final class Counter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var remaining = 0
+
+    func set(_ count: Int) { lock.withLock { remaining = count } }
+
+    /// Whether a failure is still due; takes it.
+    func takeOne() -> Bool {
+        lock.withLock {
+            guard remaining > 0 else { return false }
+            remaining -= 1
+            return true
+        }
+    }
+}
+
+/// The reason a test screen shows, changed while it is on screen.
+@MainActor
+private final class ReasonBox: ObservableObject {
+    @Published var reason: DataDirectoryUnavailability
+
+    init(_ reason: DataDirectoryUnavailability) { self.reason = reason }
+}
+
+/// How many times a test screen asked for an announcement.
+@MainActor
+private final class AnnouncementCount {
+    var count = 0
+}
+
+/// The Library Not Available screen showing the box's reason.
+private struct ReasonScreen: View {
+    @ObservedObject var box: ReasonBox
+    let onAnnounce: () -> Void
+
+    var body: some View {
+        DataDirectoryUnavailableView(
+            unavailability: box.reason,
+            notice: nil,
+            focusDelay: 0,
+            onAnnounce: onAnnounce,
+            onTryAgain: {},
+            onQuit: {}
+        )
+    }
+}
+
+/// A relauncher whose "open again" waits until the test lets it finish,
+/// opening and quitting nothing.
+@MainActor
+private final class SwitchRelaunch {
+    /// Whether TextMouth has asked to open again and waits.
+    private(set) var isWaiting = false
+    private var continuation: CheckedContinuation<Void, Never>?
+
+    var relauncher: TextMouthRelauncher {
+        TextMouthRelauncher(
+            openNewInstance: { [self] in
+                isWaiting = true
+                await withCheckedContinuation { continuation = $0 }
+            },
+            quit: {}
+        )
+    }
+
+    /// Lets the waiting "open again" return.
+    func finish() {
+        continuation?.resume()
+        continuation = nil
     }
 }
 

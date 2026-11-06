@@ -438,6 +438,74 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         XCTAssertEqual(try decodedStats(at: file).totalListeningSeconds, 9_180)
     }
 
+    /// Statistics found only in the cloud are taken up the moment the library's
+    /// fetch brings the file (`fileMayHaveArrived()`), without waiting for a
+    /// save: nothing is written over the file meanwhile or by the hook, and
+    /// the listening credited meanwhile is added to what the file holds.
+    func testStatisticsThatArriveAreTakenUpByTheFetchWithoutASave() throws {
+        let file = try makeSandboxDirectory("StatsArrive").appendingPathComponent("reading_stats.json")
+        let theirs = try statsData(totalSeconds: 9_000)
+        try theirs.write(to: file)
+        installItemStatus(FakeCloudItemStatusProvider())
+        let reader = CloudFileReader()
+        let service = ReadingStatsService(fileURL: file, readFile: { try reader.read($0) })
+        addTeardownBlock { @MainActor in service.shutdown() }
+        let start = Date(timeIntervalSince1970: 1_790_000_000)
+        service.startSession(bookID: UUID(), at: start)
+        service.endSession(at: start.addingTimeInterval(120))
+        ReadingStatsService.waitForQueuedSaves()
+
+        service.fileMayHaveArrived()
+
+        XCTAssertTrue(service.statsAwaitFileInCloud, "the file is still in the cloud")
+        XCTAssertEqual(try Data(contentsOf: file), theirs)
+
+        reader.isInCloud = false
+        service.fileMayHaveArrived()
+
+        XCTAssertFalse(service.statsAwaitFileInCloud)
+        XCTAssertEqual(service.stats.totalListeningSeconds, 9_120)
+        XCTAssertEqual(try Data(contentsOf: file), theirs, "taking the file up wrote over it")
+    }
+
+    /// A settings file found only in the cloud is merged by the fetch's hook
+    /// once it arrives, without a restart: a setting changed here meanwhile
+    /// keeps its new value, every other one takes the file's, and until then
+    /// nothing is written over the file.
+    func testSettingsThatArriveAreMergedByTheFetchWithoutARestart() throws {
+        let file = try makeSandboxDirectory("ConfigArrive").appendingPathComponent("config.json")
+        var theirConfig = ConfigService.AppConfig()
+        theirConfig.pitchMultiplier = 1.5
+        let theirs = try ConfigService.fileData(for: theirConfig)
+        try theirs.write(to: file)
+        let inCloud = CloudFlag()
+        let service = ConfigService(fileURL: file, fileOperations: ConfigService.FileOperations(
+            write: { data, url in try data.write(to: url, options: .atomic) },
+            openForEvents: { _ in -1 },
+            close: { _ in },
+            read: { url in
+                if inCloud.value { throw POSIXError(.EDEADLK) }
+                return try Data(contentsOf: url)
+            }
+        ))
+        // The first save that finds the file in the cloud records the
+        // settings then in use as what the file held; a change comes after.
+        service.saveToDisk()
+        service.config.wordsPerMinute = 333
+        service.saveToDisk()
+        service.fileMayHaveArrived()
+        XCTAssertEqual(try Data(contentsOf: file), theirs, "the file in the cloud was written over")
+
+        inCloud.value = false
+        service.fileMayHaveArrived()
+
+        XCTAssertEqual(service.config.wordsPerMinute, 333, "the change made meanwhile was lost")
+        XCTAssertEqual(service.config.pitchMultiplier, 1.5, "the file's setting was not taken up")
+        let saved = try ConfigService.decode(Data(contentsOf: file))
+        XCTAssertEqual(saved.wordsPerMinute, 333)
+        XCTAssertEqual(saved.pitchMultiplier, 1.5)
+    }
+
     /// Statistics cut short, as a write interrupted on another Mac leaves
     /// them, are preserved beside the file before anything replaces it, so
     /// nothing they held is lost; the statistics start afresh, and the next
@@ -830,6 +898,13 @@ final class MultiMacCrashSafetyTests: XCTestCase {
             TextSubstitutionService.shared.loadRules()
         }
     }
+}
+
+/// A flag a test's file operations read, set from the test.
+@MainActor
+private final class CloudFlag {
+    /// Whether the file is only in the cloud.
+    var value = true
 }
 
 /// Counts the writes a test's file operations make.
