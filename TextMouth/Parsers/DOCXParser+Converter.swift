@@ -32,37 +32,80 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// one, properties are the formatting from before the change.
     private var trackedChangeDepth = 0
 
-    // Paragraph-level state (reset at each <w:p>)
-    private var currentParagraphStyle = ""
-    private var currentParagraphText = ""
-    private var paragraphHasContent = false
-    private var isInParagraph = false
-    private var listNumId: String?
-    private var listLevel: Int = 0
-    /// The paragraph's own outline level (`w:outlineLvl` in its
-    /// properties), which wins over its style's heading level.
-    private var paragraphOutlineLevel: DOCXOutlineLevel?
+    /// Everything the converter holds about the paragraph being read: the
+    /// paragraph itself, the run and the link inside it, and the list the
+    /// paragraph belongs to. One struct, so that a text box (whose paragraphs
+    /// are paragraphs in the middle of another) sets the whole of it aside
+    /// and takes it up again, and no field can be forgotten.
+    private struct ParagraphState {
+        // The paragraph (reset at each `w:p`)
+        /// The paragraph's style ID (`w:pStyle`), empty for none.
+        var style = ""
+        /// The text gathered for the paragraph so far.
+        var text = ""
+        /// Whether any run has added content.
+        var hasContent = false
+        /// Whether a `w:p` is being read.
+        var isOpen = false
+        /// The list numbering the paragraph is in (`w:numId`), nil for none.
+        var listNumId: String?
+        /// The paragraph's level in its list (`w:ilvl`).
+        var listLevel = 0
+        /// The paragraph's own outline level (`w:outlineLvl` in its
+        /// properties), which wins over its style's heading level.
+        var outlineLevel: DOCXOutlineLevel?
+        /// What the paragraph's own properties say about `w:pageBreakBefore`;
+        /// nil when they say nothing, so its style decides.
+        var pageBreakBefore: Bool?
+        /// Whether the paragraph's properties hold a `w:sectPr`, which makes
+        /// it the last paragraph of its section.
+        var endsSection = false
+        /// The markers of pages that begin at the paragraph, written as
+        /// blocks before it when it ends, whatever the paragraph is.
+        var leadingMarkers: [String] = []
+        /// Whether the whitespace that begins the next words is dropped: set
+        /// by a page `w:br`, cleared by the first words after it.
+        var dropsLeadingWhitespace = false
 
-    // Run-level state (reset at each <w:r>)
-    private var isInRun = false
-    private var runIsBold = false
-    private var runIsItalic = false
-    private var runIsStrikethrough = false
-    private var runText = ""
-    /// What the run's own properties say about hiding it (`w:vanish`); nil
-    /// when they say nothing, so its styles decide.
-    private var runExplicitlyHidden: Bool?
-    /// The run's character style (`w:rStyle`), empty for none.
-    private var runStyle = ""
-    /// Whether the run being read is hidden: its text, line and page
-    /// breaks, and tabs are not read, and begin no page. Follows the toggle
-    /// rule of ECMA-376 17.7.3 (`updateRunHidden()`).
-    private var runIsHidden = false
+        // The run (reset at each `w:r`)
+        var isInRun = false
+        var runIsBold = false
+        var runIsItalic = false
+        var runIsStrikethrough = false
+        var runText = ""
+        /// What the run's own properties say about hiding it (`w:vanish`);
+        /// nil when they say nothing, so its styles decide.
+        var runExplicitlyHidden: Bool?
+        /// The run's character style (`w:rStyle`), empty for none.
+        var runStyle = ""
+        /// Whether the run being read is hidden: its text, line and page
+        /// breaks, and tabs are not read, and begin no page. Follows the
+        /// toggle rule of ECMA-376 17.7.3 (`updateRunHidden()`).
+        var runIsHidden = false
+        /// The pieces the run has been cut into at its page starts, in
+        /// order. Empty for a run without one, which is formatted whole.
+        var runPieces: [RunPiece] = []
 
-    // Hyperlink state
-    private var isInHyperlink = false
-    private var hyperlinkRelId = ""
-    private var hyperlinkText = ""
+        // The hyperlink
+        var isInHyperlink = false
+        var hyperlinkRelId = ""
+        var hyperlinkText = ""
+
+        // The list
+        /// Whether the paragraph before this one was a list item. Numbering
+        /// starts again when a non-list paragraph interrupts a list.
+        var previousWasList = false
+        /// The list items open in the Markdown list being written, outermost
+        /// first. A heading, paragraph, or table ends the list and empties it.
+        var openListItems: [OpenListItem] = []
+    }
+
+    /// The paragraph being read.
+    private var paragraph = ParagraphState()
+
+    /// The paragraphs set aside while a text box inside them is read,
+    /// outermost first.
+    private var asideParagraphs: [ParagraphState] = []
 
     /// The tables being read, outermost first. A table inside a cell is read
     /// above the table holding it and, once finished, becomes part of that cell.
@@ -71,11 +114,6 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// Numbers the list paragraphs from the package's list definitions.
     /// Its counts start again when a non-list paragraph interrupts a list.
     private var listCounter: DOCXListCounter
-    private var previousParagraphWasList = false
-
-    /// The list items open in the Markdown list being written, outermost
-    /// first. A heading, paragraph, or table ends the list and empties it.
-    private var openListItems: [OpenListItem] = []
 
     /// Whether any readable text has been read. Damage after this point
     /// leaves text worth keeping; damage before it leaves none.
@@ -88,30 +126,10 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// what it was before pages.
     private var pageTracker: DOCXPageTracker?
 
-    /// What the paragraph's own properties say about `w:pageBreakBefore`;
-    /// nil when they say nothing, so its style decides.
-    private var paragraphPageBreakBefore: Bool?
-
-    /// Whether the paragraph's properties hold a `w:sectPr`, which makes it
-    /// the last paragraph of its section.
-    private var paragraphEndsSection = false
-
-    /// The markers of pages that begin at the paragraph being read, written as
-    /// blocks before it when it ends, whatever the paragraph is.
-    private var paragraphLeadingMarkers: [String] = []
-
     /// The marker of the last page that began inside the table being read,
     /// written as a block after the outermost table. Pages that begin in a
     /// table cannot be told apart in its Markdown, so they merge into one.
     private var tableTrailingMarker: String?
-
-    /// The pieces the run being read has been cut into at its page starts, in
-    /// order. Empty for a run without one, which is formatted whole as ever.
-    private var runPieces: [RunPiece] = []
-
-    /// Whether the whitespace that begins the next words is dropped: set by a
-    /// page `w:br`, cleared by the first words after it (or the paragraph's end).
-    private var dropsLeadingWhitespace = false
 
     /// How many deletions (`w:del`, `w:moveFrom`) enclose the element being
     /// read. A page break inside deleted text starts no page.
@@ -136,36 +154,6 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// `word/endnotes.xml`): its text is never a heading, and the notes that
     /// only separate the others are skipped.
     private let readsNotes: Bool
-
-    /// The paragraph and run being read, set aside while a text box inside
-    /// them is read: a text box's paragraphs are paragraphs in the middle of
-    /// another, whose words must be there when it goes on.
-    private struct ParagraphContext {
-        var style: String
-        var text: String
-        var hasContent: Bool
-        var isInParagraph: Bool
-        var listNumId: String?
-        var listLevel: Int
-        var outlineLevel: DOCXOutlineLevel?
-        var pageBreakBefore: Bool?
-        var endsSection: Bool
-        var leadingMarkers: [String]
-        var dropsLeadingWhitespace: Bool
-        var isInRun: Bool
-        var runIsBold: Bool
-        var runIsItalic: Bool
-        var runIsStrikethrough: Bool
-        var runText: String
-        var runExplicitlyHidden: Bool?
-        var runStyle: String
-        var runIsHidden: Bool
-        var runPieces: [RunPiece]
-        var isInHyperlink: Bool
-        var hyperlinkRelId: String
-        var hyperlinkText: String
-    }
-    private var paragraphContexts: [ParagraphContext] = []
 
     /// The text of a run before a page start inside it.
     private struct RunPiece {
@@ -259,17 +247,17 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         case "pPr":
             // Paragraph properties container -- handled via child elements
             break
-        case "pageBreakBefore" where isInParagraph:
+        case "pageBreakBefore" where paragraph.isOpen:
             // The paragraph begins a page (PG07), unless it says val "off"
-            paragraphPageBreakBefore = DOCXOnOff.isOn(attributes["w:val"])
-        case "sectPr" where isInParagraph:
+            paragraph.pageBreakBefore = DOCXOnOff.isOn(attributes["w:val"])
+        case "sectPr" where paragraph.isOpen:
             // A section's properties inside a paragraph's: the paragraph ends the section
-            paragraphEndsSection = true
+            paragraph.endsSection = true
         case "del", "moveFrom":
             deletionDepth += 1
         case "pStyle":
             // Paragraph style reference (e.g. "Heading1", "ListParagraph")
-            currentParagraphStyle = attributes["w:val"] ?? ""
+            paragraph.style = attributes["w:val"] ?? ""
         case "numPr":
             // List numbering properties -- handled via child elements
             break
@@ -277,18 +265,18 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             // Word lists support nine levels. Malformed values must not reach
             // a level lookup or a potentially enormous indentation allocation.
             if let val = attributes["w:val"], let level = Int(val) {
-                listLevel = DOCXNumbering.levelIndexes.contains(level) ? level : 0
+                paragraph.listLevel = DOCXNumbering.levelIndexes.contains(level) ? level : 0
             }
         case "numId":
             // List numbering definition ID
             let val = attributes["w:val"] ?? "0"
             if val != "0" {
-                listNumId = val
+                paragraph.listNumId = val
             }
         case "outlineLvl":
             // The paragraph's own outline level: a heading level, or body text
             if let outline = DOCXOutlineLevel(attributes["w:val"]) {
-                paragraphOutlineLevel = outline
+                paragraph.outlineLevel = outline
             }
         case "r":
             // Start of a text run -- reset run formatting state
@@ -296,35 +284,35 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         case "rPr":
             // Run properties container
             break
-        case "rStyle" where isInRun:
+        case "rStyle" where paragraph.isInRun:
             // The run's character style, which may hide its text
-            runStyle = attributes["w:val"] ?? ""
+            paragraph.runStyle = attributes["w:val"] ?? ""
             updateRunHidden()
-        case "vanish" where isInRun:
+        case "vanish" where paragraph.isInRun:
             // Hidden text: not read. Direct formatting wins over the styles.
             // (`w:webHidden`, hidden only on the web, stays read, and
             // `w:specVanish` and a paragraph mark's `w:vanish` hide no run.)
-            runExplicitlyHidden = DOCXOnOff.isOn(attributes["w:val"])
+            paragraph.runExplicitlyHidden = DOCXOnOff.isOn(attributes["w:val"])
             updateRunHidden()
-        case "b" where isInRun:
+        case "b" where paragraph.isInRun:
             // Bold formatting. Check for w:val="0" which means explicitly NOT bold.
             let val = attributes["w:val"] ?? "true"
             if val != "0" && val != "false" {
-                runIsBold = true
+                paragraph.runIsBold = true
             }
-        case "i" where isInRun:
+        case "i" where paragraph.isInRun:
             // Italic formatting
             let val = attributes["w:val"] ?? "true"
             if val != "0" && val != "false" {
-                runIsItalic = true
+                paragraph.runIsItalic = true
             }
-        case "strike" where isInRun:
+        case "strike" where paragraph.isInRun:
             // Strikethrough
             let val = attributes["w:val"] ?? "true"
             if val != "0" && val != "false" {
-                runIsStrikethrough = true
+                paragraph.runIsStrikethrough = true
             }
-        case "br" where isInRun && !runIsHidden:
+        case "br" where paragraph.isInRun && !paragraph.runIsHidden:
             // Keep breaks in their run; the paragraph has not received the
             // preceding run text yet, so appending there reverses their order.
             if pageTracker != nil && deletionDepth == 0 && attributes["w:type"] == "page" {
@@ -332,21 +320,21 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
                 // words around it are kept apart by the marker, not a newline.
                 cutRun(joinsWords: true)
             } else {
-                runText += "\n"
+                paragraph.runText += "\n"
             }
-        case "lastRenderedPageBreak" where isInRun && !runIsHidden && pageTracker != nil && deletionDepth == 0:
+        case "lastRenderedPageBreak" where paragraph.isInRun && !paragraph.runIsHidden && pageTracker != nil && deletionDepth == 0:
             // Where Word's last layout put a page (PG07); no text of its own
             cutRun(joinsWords: false)
-        case "tab" where isInRun && !runIsHidden:
-            runText += "\t"
+        case "tab" where paragraph.isInRun && !paragraph.runIsHidden:
+            paragraph.runText += "\t"
         case "hyperlink":
             // A page that began before the link begins before its words, not
             // inside the label (PG07)
             placePendingPage()
             // Start of a hyperlink -- capture the relationship ID for the URL
-            isInHyperlink = true
-            hyperlinkRelId = attributes["r:id"] ?? ""
-            hyperlinkText = ""
+            paragraph.isInHyperlink = true
+            paragraph.hyperlinkRelId = attributes["r:id"] ?? ""
+            paragraph.hyperlinkText = ""
         case "tbl":
             // A table may begin a section, and a page pending when an
             // outermost one begins is written before it (PG07)
@@ -368,8 +356,8 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     func parser(_ parser: XMLParser, foundCharacters string: String) {
         // Only capture text inside <w:t> elements (handled by element context),
         // and not in a subtree that is skipped or in a hidden run
-        if ignoredDepth == 0, !runIsHidden, let lastElement = elementStack.last, lastElement == "t" {
-            runText += string
+        if ignoredDepth == 0, !paragraph.runIsHidden, let lastElement = elementStack.last, lastElement == "t" {
+            paragraph.runText += string
             if !string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 producedText = true
             }
@@ -390,9 +378,9 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// and before a closing `**` it would stop the emphasis from closing, so
     /// the asterisks would be read aloud.
     private func closeOpenElements() {
-        if isInRun {
-            while runText.last?.isWhitespace == true {
-                runText.removeLast()
+        if paragraph.isInRun {
+            while paragraph.runText.last?.isWhitespace == true {
+                paragraph.runText.removeLast()
             }
         }
         while let innermost = elementStack.last {
@@ -521,90 +509,36 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         }
     }
 
-    /// Sets the paragraph, run, and link being read aside and begins with
-    /// none, for the paragraphs of a text box. The box's paragraphs are
-    /// written as they end, so its words come before the paragraph that holds
-    /// its anchor, none of whose words are lost.
+    /// Sets the paragraph being read aside, whole, and begins with a new one,
+    /// for the paragraphs of a text box. The box's paragraphs are written as
+    /// they end, so its words come before the paragraph that holds its anchor,
+    /// none of whose words are lost.
     private func setAsideParagraph() {
-        paragraphContexts.append(ParagraphContext(
-            style: currentParagraphStyle, text: currentParagraphText, hasContent: paragraphHasContent,
-            isInParagraph: isInParagraph, listNumId: listNumId, listLevel: listLevel,
-            outlineLevel: paragraphOutlineLevel, pageBreakBefore: paragraphPageBreakBefore,
-            endsSection: paragraphEndsSection, leadingMarkers: paragraphLeadingMarkers,
-            dropsLeadingWhitespace: dropsLeadingWhitespace, isInRun: isInRun,
-            runIsBold: runIsBold, runIsItalic: runIsItalic, runIsStrikethrough: runIsStrikethrough,
-            runText: runText, runExplicitlyHidden: runExplicitlyHidden, runStyle: runStyle,
-            runIsHidden: runIsHidden, runPieces: runPieces, isInHyperlink: isInHyperlink,
-            hyperlinkRelId: hyperlinkRelId, hyperlinkText: hyperlinkText
-        ))
-        currentParagraphStyle = ""
-        currentParagraphText = ""
-        paragraphHasContent = false
-        isInParagraph = false
-        listNumId = nil
-        listLevel = 0
-        paragraphOutlineLevel = nil
-        paragraphPageBreakBefore = nil
-        paragraphEndsSection = false
-        paragraphLeadingMarkers = []
-        dropsLeadingWhitespace = false
-        isInRun = false
-        runIsBold = false
-        runIsItalic = false
-        runIsStrikethrough = false
-        runText = ""
-        runExplicitlyHidden = nil
-        runStyle = ""
-        runIsHidden = false
-        runPieces = []
-        isInHyperlink = false
-        hyperlinkRelId = ""
-        hyperlinkText = ""
+        asideParagraphs.append(paragraph)
+        paragraph = ParagraphState()
     }
 
     /// Takes up again the paragraph that a text box interrupted.
     private func takeUpParagraphAgain() {
-        guard let outer = paragraphContexts.popLast() else { return }
-        currentParagraphStyle = outer.style
-        currentParagraphText = outer.text
-        paragraphHasContent = outer.hasContent
-        isInParagraph = outer.isInParagraph
-        listNumId = outer.listNumId
-        listLevel = outer.listLevel
-        paragraphOutlineLevel = outer.outlineLevel
-        paragraphPageBreakBefore = outer.pageBreakBefore
-        paragraphEndsSection = outer.endsSection
-        paragraphLeadingMarkers = outer.leadingMarkers
-        dropsLeadingWhitespace = outer.dropsLeadingWhitespace
-        isInRun = outer.isInRun
-        runIsBold = outer.runIsBold
-        runIsItalic = outer.runIsItalic
-        runIsStrikethrough = outer.runIsStrikethrough
-        runText = outer.runText
-        runExplicitlyHidden = outer.runExplicitlyHidden
-        runStyle = outer.runStyle
-        runIsHidden = outer.runIsHidden
-        runPieces = outer.runPieces
-        isInHyperlink = outer.isInHyperlink
-        hyperlinkRelId = outer.hyperlinkRelId
-        hyperlinkText = outer.hyperlinkText
+        guard let outer = asideParagraphs.popLast() else { return }
+        paragraph = outer
     }
 
     // MARK: - Paragraph Processing
 
     /// Reset state for a new paragraph
     private func startParagraph() {
-        isInParagraph = true
-        currentParagraphStyle = ""
-        currentParagraphText = ""
-        paragraphHasContent = false
-        listNumId = nil
-        listLevel = 0
-        paragraphOutlineLevel = nil
-        paragraphPageBreakBefore = nil
-        paragraphEndsSection = false
-        paragraphLeadingMarkers = []
-        dropsLeadingWhitespace = false
+        paragraph.isOpen = true
+        paragraph.style = ""
+        paragraph.text = ""
+        paragraph.hasContent = false
+        paragraph.listNumId = nil
+        paragraph.listLevel = 0
+        paragraph.outlineLevel = nil
+        paragraph.pageBreakBefore = nil
+        paragraph.endsSection = false
+        paragraph.leadingMarkers = []
+        paragraph.dropsLeadingWhitespace = false
         // The first paragraph of a section may begin a page (PG07)
         pageTracker?.beginBlock()
     }
@@ -616,22 +550,22 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     private var paragraphHeadingLevel: Int? {
         // A note's text is never a heading, whatever its style says.
         if readsNotes { return nil }
-        if let paragraphOutlineLevel {
-            return paragraphOutlineLevel.headingLevel
+        if let outline = paragraph.outlineLevel {
+            return outline.headingLevel
         }
-        return styles.headingLevels[currentParagraphStyle]
+        return styles.headingLevels[paragraph.style]
     }
 
     /// Emit the completed paragraph as Markdown
     private func endParagraph() {
-        let text = Self.removingLineIndentation(currentParagraphText.trimmingCharacters(in: .whitespaces))
+        let text = Self.removingLineIndentation(paragraph.text.trimmingCharacters(in: .whitespaces))
 
         // Inside a table, the paragraph's words belong to the cell being read
         if !tables.isEmpty {
             if !text.isEmpty {
                 appendToTable(.text(text))
             }
-            isInParagraph = false
+            paragraph.isOpen = false
             return
         }
 
@@ -641,47 +575,47 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         // Handle empty paragraphs (just add a blank line)
         guard !text.isEmpty else {
             markdown += "\n"
-            isInParagraph = false
+            paragraph.isOpen = false
             return
         }
 
         // Determine if this paragraph is a list item
-        let isListParagraph = listNumId != nil
-            || styles.bulletListStyles.contains(currentParagraphStyle)
-            || styles.numberedListStyles.contains(currentParagraphStyle)
+        let isListParagraph = paragraph.listNumId != nil
+            || styles.bulletListStyles.contains(paragraph.style)
+            || styles.numberedListStyles.contains(paragraph.style)
 
         // TextMouth's policy for a list interrupted by other text: every
         // list starts again from its start value afterwards. (Word would
         // continue the list's count; DOCXEdgeCaseTests pins this policy.)
-        if !isListParagraph && previousParagraphWasList {
+        if !isListParagraph && paragraph.previousWasList {
             listCounter.restartAll()
         }
-        previousParagraphWasList = isListParagraph
+        paragraph.previousWasList = isListParagraph
 
         // Check if this paragraph is a heading
         if let headingLevel = paragraphHeadingLevel {
             let prefix = String(repeating: "#", count: headingLevel)
-            openListItems.removeAll()
+            paragraph.openListItems.removeAll()
             markdown += "\n\(prefix) \(text)\n\n"
         }
         // Check if this paragraph is a list item (via numPr or list style)
-        else if let numId = listNumId {
-            writeListItem(text, level: listLevel, marker: listCounter.marker(numId: numId, level: listLevel))
+        else if let numId = paragraph.listNumId {
+            writeListItem(text, level: paragraph.listLevel, marker: listCounter.marker(numId: numId, level: paragraph.listLevel))
         }
         // Style-based list detection (e.g. "ListBullet", "ListNumber" styles)
-        else if styles.bulletListStyles.contains(currentParagraphStyle) {
+        else if styles.bulletListStyles.contains(paragraph.style) {
             writeListItem(text, level: 0, marker: .bullet)
         }
-        else if styles.numberedListStyles.contains(currentParagraphStyle) {
-            writeListItem(text, level: 0, marker: listCounter.marker(numberedStyle: currentParagraphStyle))
+        else if styles.numberedListStyles.contains(paragraph.style) {
+            writeListItem(text, level: 0, marker: listCounter.marker(numberedStyle: paragraph.style))
         }
         // Regular paragraph
         else {
-            openListItems.removeAll()
+            paragraph.openListItems.removeAll()
             markdown += "\n\(text)\n"
         }
 
-        isInParagraph = false
+        paragraph.isOpen = false
     }
 
     /// `text` without the spaces and tabs that begin its lines after the
@@ -751,10 +685,10 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         // close stood at this item's depth, in the list this item continues
         // when both are numbered or both bulleted.
         var previousAtDepth: OpenListItem?
-        while let innermost = openListItems.last, innermost.level >= level {
-            previousAtDepth = openListItems.removeLast()
+        while let innermost = paragraph.openListItems.last, innermost.level >= level {
+            previousAtDepth = paragraph.openListItems.removeLast()
         }
-        let parent = openListItems.last
+        let parent = paragraph.openListItems.last
         let indent = parent.map { max($0.indent + 4, $0.contentColumn) } ?? 0
 
         let markerText: String
@@ -768,7 +702,7 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             }
         }
         markdown += String(repeating: " ", count: indent) + markerText + text + "\n"
-        openListItems.append(OpenListItem(
+        paragraph.openListItems.append(OpenListItem(
             level: level,
             indent: indent,
             contentColumn: indent + markerText.count,
@@ -792,13 +726,13 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
 
     /// Reset state for a new text run
     private func startRun() {
-        isInRun = true
-        runIsBold = false
-        runIsItalic = false
-        runIsStrikethrough = false
-        runText = ""
-        runExplicitlyHidden = nil
-        runStyle = ""
+        paragraph.isInRun = true
+        paragraph.runIsBold = false
+        paragraph.runIsItalic = false
+        paragraph.runIsStrikethrough = false
+        paragraph.runText = ""
+        paragraph.runExplicitlyHidden = nil
+        paragraph.runStyle = ""
         updateRunHidden()
     }
 
@@ -811,35 +745,35 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// the start of the run and again as its style and `w:vanish` are read,
     /// which come before any of its text.
     private func updateRunHidden() {
-        if let runExplicitlyHidden {
-            runIsHidden = runExplicitlyHidden
+        if let explicit = paragraph.runExplicitlyHidden {
+            paragraph.runIsHidden = explicit
             return
         }
         // A paragraph that names no style takes the default paragraph style.
-        let paragraphStyle = currentParagraphStyle.isEmpty ? (styles.defaultParagraphStyle ?? "") : currentParagraphStyle
+        let paragraphStyle = paragraph.style.isEmpty ? (styles.defaultParagraphStyle ?? "") : paragraph.style
         let paragraphHides = styles.hiddenParagraphStyles.contains(paragraphStyle)
-        runIsHidden = paragraphHides != styles.hiddenCharacterStyles.contains(runStyle)
+        paragraph.runIsHidden = paragraphHides != styles.hiddenCharacterStyles.contains(paragraph.runStyle)
     }
 
     /// Apply formatting to the run text and append to paragraph
     private func endRun() {
-        guard isInRun else { return }
-        isInRun = false
-        runIsHidden = false
+        guard paragraph.isInRun else { return }
+        paragraph.isInRun = false
+        paragraph.runIsHidden = false
 
         // A run with a page start inside it is written piece by piece, a
         // page beginning after each piece (PG07). Any other run is one piece.
-        let pieces = runPieces
-        runPieces = []
+        let pieces = paragraph.runPieces
+        paragraph.runPieces = []
         for piece in pieces {
             appendRunText(piece.text, isPartOfCutRun: true)
             pageTracker?.startPage(joinsWords: piece.joinsWords)
             if piece.joinsWords {
-                dropsLeadingWhitespace = true
+                paragraph.dropsLeadingWhitespace = true
                 separateWordsAroundPageBreak()
             }
         }
-        appendRunText(runText, isPartOfCutRun: !pieces.isEmpty)
+        appendRunText(paragraph.runText, isPartOfCutRun: !pieces.isEmpty)
     }
 
     /// Format `text`, a run or a piece of one, with the run's formatting and
@@ -855,10 +789,10 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         // written with the marker (or in the link label), as the newline the
         // break used to be read as a single space.
         var text = piece
-        if dropsLeadingWhitespace {
+        if paragraph.dropsLeadingWhitespace {
             text = String(text.drop(while: \.isWhitespace))
             if !text.isEmpty {
-                dropsLeadingWhitespace = false
+                paragraph.dropsLeadingWhitespace = false
             }
         }
         guard !text.isEmpty else { return }
@@ -868,7 +802,7 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         // page waits for the text after the link. A marker that joins words
         // (a page `w:br`) brings the space between them, so the whitespace
         // that begins this text is dropped.
-        if !isInHyperlink && pageTracker?.isPending == true && text.contains(where: { !$0.isWhitespace }),
+        if !paragraph.isInHyperlink && pageTracker?.isPending == true && text.contains(where: { !$0.isWhitespace }),
            placePendingPage() {
             text = String(text.drop(while: \.isWhitespace))
         }
@@ -877,12 +811,12 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
 
         // Hyperlink runs belong to the link label until </w:hyperlink> emits
         // it once. Appending here and at link end duplicates the spoken text.
-        if isInHyperlink {
-            hyperlinkText += formatted
+        if paragraph.isInHyperlink {
+            paragraph.hyperlinkText += formatted
         } else {
-            currentParagraphText += formatted
+            paragraph.text += formatted
         }
-        paragraphHasContent = true
+        paragraph.hasContent = true
     }
 
     /// `text`, a run's text or a piece of it, as Markdown: its characters
@@ -913,15 +847,15 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
 
         // Apply inline formatting markers.
         // Order matters: strikethrough wraps emphasis wraps bold.
-        if runIsBold && runIsItalic {
+        if paragraph.runIsBold && paragraph.runIsItalic {
             formatted = "***\(formatted)***"
-        } else if runIsBold {
+        } else if paragraph.runIsBold {
             formatted = "**\(formatted)**"
-        } else if runIsItalic {
+        } else if paragraph.runIsItalic {
             formatted = "*\(formatted)*"
         }
 
-        if runIsStrikethrough {
+        if paragraph.runIsStrikethrough {
             formatted = "~~\(formatted)~~"
         }
         return "\(leading)\(formatted)\(trailing)"
@@ -931,23 +865,23 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
 
     /// Emit a completed hyperlink as Markdown
     private func endHyperlink() {
-        guard isInHyperlink else { return }
-        isInHyperlink = false
+        guard paragraph.isInHyperlink else { return }
+        paragraph.isInHyperlink = false
 
-        let text = hyperlinkText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = paragraph.hyperlinkText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
 
-        if let target = relationships[hyperlinkRelId], !target.isEmpty {
+        if let target = relationships[paragraph.hyperlinkRelId], !target.isEmpty {
             // Escape parentheses in URLs to avoid breaking markdown link syntax
             let escapedTarget = target
                 .replacingOccurrences(of: "(", with: "%28")
                 .replacingOccurrences(of: ")", with: "%29")
-            currentParagraphText += "[\(text)](\(escapedTarget))"
+            paragraph.text += "[\(text)](\(escapedTarget))"
         } else {
             // No URL found -- just emit the text
-            currentParagraphText += text
+            paragraph.text += text
         }
-        paragraphHasContent = true
+        paragraph.hasContent = true
     }
 
     // MARK: - Table Processing
@@ -1052,7 +986,7 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     private func writeTable(_ table: ReadTable) {
         let written = table.nestsTables ? Self.paragraphMarkdown(of: table) : Self.markdownTable(of: table)
         guard let written else { return }
-        openListItems.removeAll()
+        paragraph.openListItems.removeAll()
         markdown += written
     }
 
@@ -1158,8 +1092,8 @@ extension DOCXToMarkdownConverter {
     /// - Parameter joinsWords: whether the page start is a `w:br`, which stood
     ///   between two words that must stay apart.
     fileprivate func cutRun(joinsWords: Bool) {
-        runPieces.append(RunPiece(text: runText, joinsWords: joinsWords))
-        runText = ""
+        paragraph.runPieces.append(RunPiece(text: paragraph.runText, joinsWords: joinsWords))
+        paragraph.runText = ""
     }
 
     /// Separate the words around a page `w:br` just read, where no marker will
@@ -1173,13 +1107,13 @@ extension DOCXToMarkdownConverter {
     /// Anywhere else the marker keeps the words apart (`placePendingPage`).
     fileprivate func separateWordsAroundPageBreak() {
         if paragraphHeadingLevel != nil {
-            if isInHyperlink {
-                hyperlinkText += "\n"
+            if paragraph.isInHyperlink {
+                paragraph.hyperlinkText += "\n"
             } else {
-                currentParagraphText += "\n"
+                paragraph.text += "\n"
             }
-        } else if isInHyperlink, let last = hyperlinkText.last, !last.isWhitespace {
-            hyperlinkText += " "
+        } else if paragraph.isInHyperlink, let last = paragraph.hyperlinkText.last, !last.isWhitespace {
+            paragraph.hyperlinkText += " "
         }
     }
 
@@ -1187,8 +1121,8 @@ extension DOCXToMarkdownConverter {
     /// properties say `w:pageBreakBefore` (a `w:val` of "0", "false", or "off"
     /// says not), or else when its style or one it is based on does.
     fileprivate func startPageIfParagraphBreaksBefore() {
-        guard pageTracker != nil, isInParagraph else { return }
-        let breaksBefore = paragraphPageBreakBefore ?? styles.pageBreakBeforeStyles.contains(currentParagraphStyle)
+        guard pageTracker != nil, paragraph.isOpen else { return }
+        let breaksBefore = paragraph.pageBreakBefore ?? styles.pageBreakBeforeStyles.contains(paragraph.style)
         if breaksBefore {
             pageTracker?.startPage()
         }
@@ -1198,8 +1132,8 @@ extension DOCXToMarkdownConverter {
     /// properties held the section's `w:sectPr`: the next block begins the
     /// next section.
     fileprivate func endSectionIfParagraphEndedIt() {
-        guard paragraphEndsSection else { return }
-        paragraphEndsSection = false
+        guard paragraph.endsSection else { return }
+        paragraph.endsSection = false
         pageTracker?.endSection()
     }
 
@@ -1221,18 +1155,18 @@ extension DOCXToMarkdownConverter {
         let marker = page.marker.markdown
         if !tables.isEmpty {
             tableTrailingMarker = marker
-        } else if paragraphHeadingLevel != nil || currentParagraphText.allSatisfy(\.isWhitespace) {
-            paragraphLeadingMarkers.append(marker)
+        } else if paragraphHeadingLevel != nil || paragraph.text.allSatisfy(\.isWhitespace) {
+            paragraph.leadingMarkers.append(marker)
         } else {
             MarkdownMarkerWriter.write(
-                marker, inline: true, keepingWordsApart: page.joinsWords, into: &currentParagraphText
+                marker, inline: true, keepingWordsApart: page.joinsWords, into: &paragraph.text
             )
             return page.joinsWords
         }
         // The marker is not between the words, so the space that keeps them
         // apart is written here. (A paragraph with no words yet needs none.)
-        if page.joinsWords, let last = currentParagraphText.last, !last.isWhitespace {
-            currentParagraphText += " "
+        if page.joinsWords, let last = paragraph.text.last, !last.isWhitespace {
+            paragraph.text += " "
         }
         return page.joinsWords
     }
@@ -1241,7 +1175,7 @@ extension DOCXToMarkdownConverter {
     /// table ends any list, so the list is closed first.
     fileprivate func writePendingPageBeforeTable() {
         guard tables.isEmpty, let page = pageTracker?.takePendingMarker() else { return }
-        openListItems.removeAll()
+        paragraph.openListItems.removeAll()
         MarkdownMarkerWriter.write(page.marker.markdown, inline: false, into: &markdown)
     }
 
@@ -1258,11 +1192,11 @@ extension DOCXToMarkdownConverter {
     /// of a Markdown list, so any open list is closed first; that changes no
     /// reading text.
     fileprivate func writeLeadingPageMarkers() {
-        guard !paragraphLeadingMarkers.isEmpty else { return }
-        openListItems.removeAll()
-        for marker in paragraphLeadingMarkers {
+        guard !paragraph.leadingMarkers.isEmpty else { return }
+        paragraph.openListItems.removeAll()
+        for marker in paragraph.leadingMarkers {
             MarkdownMarkerWriter.write(marker, inline: false, into: &markdown)
         }
-        paragraphLeadingMarkers = []
+        paragraph.leadingMarkers = []
     }
 }
