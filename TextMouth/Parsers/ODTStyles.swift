@@ -169,6 +169,20 @@ final class ODTStyleSheet {
         // The family's default first, then from the oldest ancestor down.
         var merged = styles[family]?[""] ?? ODTStyleProperties()
         for style in chain.reversed() { merged = merged.overridden(by: style) }
+        // A paragraph of the styles Title and Subtitle, or of the base style
+        // Heading that Writer's headings and titles are based on, is a heading
+        // though the style names no outline level, as the DOCX and rich-text
+        // readers read their "Title" (level 1) and "Subtitle" (level 2).
+        // The name of a parent the document does not define counts too.
+        if family == "paragraph", merged.outlineLevel == nil {
+            let named = seen.union(next.map { [$0] } ?? [])
+            // Writer bases Subtitle on Heading too, so it is asked first.
+            if named.contains("Subtitle") {
+                merged.outlineLevel = 2
+            } else if named.contains("Title") || named.contains("Heading") {
+                merged.outlineLevel = 1
+            }
+        }
         resolved[key] = merged
         return merged
     }

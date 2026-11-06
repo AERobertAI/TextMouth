@@ -196,18 +196,17 @@ final class ODTTextutilComparisonTests: XCTestCase {
         ),
         RealFile(
             name: "libreoffice-ooo77837-1.odt", textutilOnly: ["footnote1"], ownOnlyCount: 387,
-            headings: ["1: Demo of bug"],
+            headings: ["1: Demo of bug", "1: References", "1: Main index"],
             why: "textutil runs the endnote's number into the word before it and drops the endnote's body, which here holds the whole bibliography; the own reader reads the word whole and the note after the text"
         ),
         RealFile(
             name: "libreoffice-referencelanguage.odt",
             headings: [
-                "1: Sequence", "1: Chapter", "1: Paragraph", "1: Paragraph II", "1: Paragraph III", "1: „Őseinket...”",
-                "1: A fejezetek", "1: Az egyebek", "1: 2018-asok", "1: 50-esek", "1: Isten",
+                "1: reference-language", "1: Sequence", "1: Chapter", "1: Paragraph", "1: Paragraph II", "1: Paragraph III",
+                "1: „Őseinket...”", "1: A fejezetek", "1: Az egyebek", "1: 2018-asok", "1: 50-esek", "1: Isten",
             ],
-            textutilHeadingsNotOwn: ["1: reference language"],
             pages: (2, 1),
-            why: "the own reader begins a page at the layout's soft page break, and keeps the headings the file names, at the levels it names (textutil takes levels from sizes); textutil also takes the large paragraph \"reference language\", which the file does not make a heading, for one"
+            why: "the own reader begins a page at the layout's soft page break, and keeps the headings at the levels the file names (textutil takes levels from sizes, 2 for most of these)"
         ),
         RealFile(name: "libreoffice-space.odt", headings: ["1: Simple spaces", "1: Spaces and <s/>"]),
         RealFile(name: "libreoffice-spellmenu-redline.odt"),
@@ -221,9 +220,8 @@ final class ODTTextutilComparisonTests: XCTestCase {
         ),
         RealFile(
             name: "libreoffice-tdf152015.odt", textutilOnly: ["1", "2", "3"], ownOnlyCount: 61,
-            headings: ["3: Zwischenergebnis für die Zeit während Wohlverhaltenphase"],
-            textutilHeadingsNotOwn: ["1: Das Restschuldbefreiungsverfahren in der InsO"],
-            why: "textutil reads the numbers of the footnotes and drops their bodies; the own reader reads the bodies after the text, without the numbers. textutil also takes a large paragraph the file does not make a heading for one"
+            headings: ["1: Das Restschuldbefreiungsverfahren in der InsO", "3: Zwischenergebnis für die Zeit während Wohlverhaltenphase"],
+            why: "textutil reads the numbers of the footnotes and drops their bodies; the own reader reads the bodies after the text, without the numbers"
         ),
         RealFile(
             name: "libreoffice-tdf152710.odt",

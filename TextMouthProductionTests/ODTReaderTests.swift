@@ -126,6 +126,37 @@ final class ODTReaderTests: XCTestCase {
         ])
     }
 
+    /// The styles Title and Subtitle, and the base style Heading that Writer
+    /// bases its headings and titles on, make headings though they name no
+    /// outline level: Title and Heading level 1, Subtitle level 2, as the
+    /// DOCX and rich-text readers read "Title" and "Subtitle". A style that
+    /// names its outline level keeps it.
+    func testTitleSubtitleAndTheBaseHeadingStyleAreHeadings() throws {
+        let styles = """
+            <style:style style:name="Heading" style:family="paragraph"/>\
+            <style:style style:name="Title" style:family="paragraph" style:parent-style-name="Heading"/>\
+            <style:style style:name="Subtitle" style:family="paragraph" style:parent-style-name="Heading"/>\
+            <style:style style:name="Contents_20_Heading" style:family="paragraph" style:parent-style-name="Heading"/>\
+            <style:style style:name="Heading_20_2" style:family="paragraph" style:parent-style-name="Heading" style:default-outline-level="2"/>\
+            <style:style style:name="Table_20_Heading" style:family="paragraph"/>\
+            <style:style style:name="Mine" style:family="paragraph" style:parent-style-name="Undefined_20_Title"/>\
+            <style:style style:name="Mine2" style:family="paragraph" style:parent-style-name="Title"/>
+            """
+        let lines = try odfLines(
+            """
+            <text:p text:style-name="Title">The Title</text:p><text:p text:style-name="Subtitle">The Subtitle</text:p>\
+            <text:p text:style-name="Contents_20_Heading">Contents</text:p><text:p text:style-name="Heading_20_2">Two</text:p>\
+            <text:p text:style-name="Table_20_Heading">Not a heading</text:p><text:p text:style-name="Mine">Not one either</text:p>\
+            <text:p text:style-name="Mine2">A title's child</text:p>
+            """,
+            styles: styles
+        )
+        XCTAssertEqual(lines, [
+            "<h1>The Title</h1>", "<h2>The Subtitle</h2>", "<h1>Contents</h1>", "<h2>Two</h2>",
+            "<p>Not a heading</p>", "<p>Not one either</p>", "<h1>A title's child</h1>",
+        ])
+    }
+
     /// `text:h` without a level is a heading of level 1; a level past 6
     /// is a level-6 heading; the number a heading shows is not read.
     func testTextHLevels() throws {
