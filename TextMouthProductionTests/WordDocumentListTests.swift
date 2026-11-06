@@ -239,21 +239,52 @@ final class WordDocumentListTests: XCTestCase {
 
     // MARK: - Empty, Skipped, Table, and Page
 
-    func testAnEmptyNumberedParagraphIsCountedAndASkippedLevelIsNot() throws {
+    func testASkippedLevelIsNotCounted() throws {
         var builder = listBuilder([ListLevel(0, "%1.")])
         builder.paragraphs = [
             Paragraph("A", modifiers: inList()),
-            Paragraph("", modifiers: inList()),
             // Level 12 (0x0C): the list skips the paragraph.
             Paragraph("skipped", modifiers: inList(level: 12)),
             Paragraph("C", modifiers: inList()),
         ]
-        let words = try wordBody(of: builder.build(), speaksNumbers: true)
-        XCTAssertTrue(words.contains("<p>1. A</p>\n"), words)
-        XCTAssertTrue(words.contains("<p>skipped</p>\n<p>3. C</p>\n"), words)
         try assertBody(
-            builder, words: words,
+            builder,
+            words: "<p>1. A</p>\n<p>skipped</p>\n<p>2. C</p>\n",
             silent: ol(["A"]) + "<p>skipped</p>\n" + ol(["C"])
+        )
+    }
+
+    func testAnEmptyNumberedParagraphIsItsNumberUnlessItsMarkIsHiddenOrDeleted() throws {
+        // Word shows a numbered empty paragraph's number, and counts it.
+        var builder = listBuilder([ListLevel(0, "%1.")])
+        builder.paragraphs = [
+            Paragraph("A", modifiers: inList()),
+            Paragraph("", modifiers: inList()),
+            Paragraph("C", modifiers: inList()),
+        ]
+        // Silent, an empty item has no words and is left out.
+        try assertBody(builder, words: "<p>1. A</p>\n<p>2.</p>\n<p>3. C</p>\n", silent: ol(["A", "C"]))
+        // With its mark hidden, or deleted, the number is not shown; a hidden one is counted.
+        let hidden = WordDocumentBuilder.modifier(WordSprm.hidden, 1)
+        let deleted = WordDocumentBuilder.modifier(WordSprm.deleted, 1)
+        builder.paragraphs[1] = Paragraph("", modifiers: inList(), markModifiers: hidden)
+        try assertBody(builder, words: "<p>1. A</p>\n<p>3. C</p>\n", silent: ol(["A", "C"]))
+        // A deleted one is not counted either: it is gone.
+        builder.paragraphs[1] = Paragraph("", modifiers: inList(), markModifiers: deleted)
+        try assertBody(builder, words: "<p>1. A</p>\n<p>2. C</p>\n", silent: ol(["A", "C"]))
+    }
+
+    func testANumberedCellWithNoWordsBesideCellsOfWordsIsItsNumber() throws {
+        // A table's numbered first column: "1." | "Apples", as Word shows it.
+        var builder = listBuilder([ListLevel(0, "%1.")])
+        builder.paragraphs = [
+            Paragraph("", modifiers: inTable + inList(), mark: 0x07),
+            Paragraph("Apples", modifiers: inTable, mark: 0x07),
+            Paragraph("", modifiers: rowEnd, mark: 0x07),
+        ]
+        XCTAssertEqual(
+            try wordBody(of: builder.build(), speaksNumbers: true),
+            "<table>\n<tr><td><p>1.</p>\n</td><td><p>Apples</p>\n</td></tr>\n</table>\n"
         )
     }
 
@@ -304,6 +335,130 @@ final class WordDocumentListTests: XCTestCase {
         XCTAssertEqual(try wordBody(of: builder.build(), speaksNumbers: true), "<p>1. A</p>\n<p>2. B</p>\n")
     }
 
+    // MARK: - Levels With No Number, And Levels Out of Order
+
+    func testALessSignificantLevelBeforeAMoreSignificantOneStartsTheMoreSignificantOne() throws {
+        // Microsoft KB Q197139: four second-level items, then a first-level one, make the
+        // first the second, whatever came before: 1.1 to 1.4, then 2.
+        var builder = listBuilder([ListLevel(0, "%1."), ListLevel(0, "%1.%2")])
+        builder.paragraphs = ["a", "b", "c", "d"].map { Paragraph($0, modifiers: inList(level: 1)) } + [Paragraph("e", modifiers: inList(level: 0))]
+        try assertBody(
+            builder,
+            words: "<p>1.1 a</p>\n<p>1.2 b</p>\n<p>1.3 c</p>\n<p>1.4 d</p>\n<p>2. e</p>\n",
+            silent: ol(["a", "b", "c", "d"]) + ol(["e"])
+        )
+    }
+
+    func testALevelThatCountsFromAnOverriddenStartNamesItForTheLevelsAboveIt() throws {
+        // An instance that starts level 0 at 2 and level 1 at 99 (how Word stores "Set Numbering Value"):
+        // the third-level paragraph is 2.99.1, and the numbers go on from there.
+        var builder = listBuilder(
+            [ListLevel(0, "%1."), ListLevel(0, "%1.%2"), ListLevel(0, "%1.%2.%3")],
+            extraInstances: [WordDocumentBuilder.ListInstance(listIdentifier: 7, overrides: [
+                WordDocumentBuilder.ListOverride(level: 0, startAt: 2), WordDocumentBuilder.ListOverride(level: 1, startAt: 99),
+            ])]
+        )
+        builder.paragraphs = [
+            Paragraph("a", modifiers: inList(2, level: 2)),
+            Paragraph("b", modifiers: inList(2, level: 1)),
+            Paragraph("c", modifiers: inList(2, level: 0)),
+        ]
+        XCTAssertEqual(try wordBody(of: builder.build(), speaksNumbers: true), "<p>2.99.1 a</p>\n<p>2.100 b</p>\n<p>3. c</p>\n")
+    }
+
+    func testALevelWithNoNumberSequenceStillCountsAndRestartsTheLevelsUnderIt() throws {
+        // "Part" headings of no number, with numbered items under each: the items start again.
+        var builder = listBuilder([ListLevel(0xFF, ""), ListLevel(0, "%2.")])
+        builder.paragraphs = [
+            Paragraph("Part one", modifiers: inList(level: 0)),
+            Paragraph("Apple", modifiers: inList(level: 1)),
+            Paragraph("Pear", modifiers: inList(level: 1)),
+            Paragraph("Part two", modifiers: inList(level: 0)),
+            Paragraph("Saw", modifiers: inList(level: 1)),
+        ]
+        try assertBody(
+            builder,
+            words: "<p>Part one</p>\n<p>1. Apple</p>\n<p>2. Pear</p>\n<p>Part two</p>\n<p>1. Saw</p>\n",
+            silent: "<p>Part one</p>\n" + ol(["Apple", "Pear"]) + "<p>Part two</p>\n" + ol(["Saw"])
+        )
+        // The same with bullets as the first level.
+        builder = listBuilder([ListLevel(0x17, "\u{F0B7}"), ListLevel(0, "%2.")])
+        builder.paragraphs = [
+            Paragraph("Part one", modifiers: inList(level: 0)),
+            Paragraph("Apple", modifiers: inList(level: 1)),
+            Paragraph("Part two", modifiers: inList(level: 0)),
+            Paragraph("Saw", modifiers: inList(level: 1)),
+        ]
+        XCTAssertEqual(
+            try wordBody(of: builder.build(), speaksNumbers: true),
+            "<ul>\n<li>Part one</li>\n</ul>\n<p>1. Apple</p>\n<ul>\n<li>Part two</li>\n</ul>\n<p>1. Saw</p>\n"
+        )
+    }
+
+    func testAPlaceholderOfALevelWithNoNumberSequenceIsIgnored() throws {
+        // [MS-DOC] LVL: placeholders for levels that have no number sequence MUST be ignored.
+        var builder = listBuilder([ListLevel(0xFF, ""), ListLevel(4, "%1%2."), ListLevel(2, "%1%2.%3")])
+        builder.paragraphs = [
+            Paragraph("Letter A", modifiers: inList(level: 1)),
+            Paragraph("A dot I", modifiers: inList(level: 2)),
+            Paragraph("Letter B", modifiers: inList(level: 1)),
+        ]
+        XCTAssertEqual(
+            try wordBody(of: builder.build(), speaksNumbers: true),
+            "<p>a. Letter A</p>\n<p>a.i A dot I</p>\n<p>b. Letter B</p>\n"
+        )
+        // And one of a bullet level.
+        builder = listBuilder([ListLevel(0, "%1."), ListLevel(0x17, "\u{F0B7}"), ListLevel(0, "%1.%2.%3")])
+        builder.paragraphs = [Paragraph("x", modifiers: inList(level: 0)), Paragraph("y", modifiers: inList(level: 2))]
+        XCTAssertEqual(try wordBody(of: builder.build(), speaksNumbers: true), "<p>1. x</p>\n<p>1..1 y</p>\n")
+    }
+
+    func testALevelWithNoNumberKeepsItsTextAsWords() throws {
+        // [MS-DOC]'s own example of a list: a level whose text is "Example:" and has no number.
+        var builder = listBuilder([ListLevel(0xFF, "Note:")])
+        builder.paragraphs = [Paragraph("read this", modifiers: inList())]
+        try assertBody(builder, words: "<p>Note: read this</p>\n", silent: "<p>read this</p>\n")
+    }
+
+    func testANumberThatIsHiddenTextIsCountedAndNotShown() throws {
+        var builder = listBuilder([ListLevel(0, "%1.", numberIsHidden: true), ListLevel(0, "%1.%2")])
+        builder.paragraphs = [Paragraph("a", modifiers: inList(level: 0)), Paragraph("b", modifiers: inList(level: 1))]
+        XCTAssertEqual(try wordBody(of: builder.build(), speaksNumbers: true), "<p>a</p>\n<p>1.1 b</p>\n")
+    }
+
+    func testALevelInFullUsesItsOwnStartNotTheOverridesStart() throws {
+        // LFOLVL: iStartAt MUST be ignored when a level follows; the level's own start counts.
+        var builder = listBuilder([ListLevel(0, "%1.")], extraInstances: [
+            WordDocumentBuilder.ListInstance(listIdentifier: 7, overrides: [
+                WordDocumentBuilder.ListOverride(level: 0, startAt: 7, replacement: ListLevel(0, "%1)", start: 3)),
+            ]),
+        ])
+        builder.paragraphs = [Paragraph("x", modifiers: inList(2))]
+        XCTAssertEqual(try wordBody(of: builder.build(), speaksNumbers: true), "<p>3) x</p>\n")
+    }
+
+    // MARK: - Paragraphs a Tracked Change Deleted
+
+    func testAParagraphWhollyDeletedIsNotCountedAndOneWithOnlyItsMarkDeletedIsJoined() throws {
+        let deletedMark = WordDocumentBuilder.modifier(WordSprm.deleted, 1)
+        var gone = Run("two")
+        gone.isDeleted = true
+        var builder = listBuilder([ListLevel(0, "%1.")])
+        builder.paragraphs = [
+            Paragraph("one", modifiers: inList()),
+            Paragraph(runs: [gone], modifiers: inList(), markModifiers: deletedMark),
+            Paragraph("three", modifiers: inList()),
+        ]
+        XCTAssertEqual(try wordBody(of: builder.build(), speaksNumbers: true), "<p>1. one</p>\n<p>2. three</p>\n")
+        // Only the mark of the first deleted: its words and the next paragraph's are one item, with its number on the first.
+        builder.paragraphs = [
+            Paragraph("one", modifiers: inList(), markModifiers: deletedMark),
+            Paragraph("two", modifiers: inList()),
+            Paragraph("three", modifiers: inList()),
+        ]
+        XCTAssertEqual(try wordBody(of: builder.build(), speaksNumbers: true), "<p>1. one</p>\n<p>two</p>\n<p>2. three</p>\n")
+    }
+
     // MARK: - The Real Samples
 
     func testTheRealSampleWithHeadingsLinkedToAChapterListNumbersThemOnlyInTheWordsForm() throws {
@@ -315,7 +470,7 @@ final class WordDocumentListTests: XCTestCase {
         XCTAssertTrue(words.contains("<h4>i. Heading 4</h4>"), words)
         // A bullet level has no number to write in a heading.
         XCTAssertTrue(words.contains("<h5>Heading 5</h5>"), words)
-        XCTAssertTrue(words.contains("<h6>A.I.a.i.1.1 Heading 6</h6>"), words)
+        XCTAssertTrue(words.contains("<h6>A.I.a.i..1 Heading 6</h6>"), words)
         // Silent: the headings are their words alone, at their levels.
         let silent = try wordSampleBody("doc/libreoffice-tdf104239_chapterNumbering.doc", speaksNumbers: false)
         for level in 1...6 { XCTAssertTrue(silent.contains("<h\(level)>Heading \(level)</h\(level)>"), silent) }
@@ -388,7 +543,7 @@ final class WordDocumentListTests: XCTestCase {
         let words = try wordReadingChapter(of: data, speaksNumbers: true)
         XCTAssertTrue(words.text.hasPrefix("A. Heading 1\n\nI. Heading 2\n\na. Heading 3"), words.text)
         XCTAssertEqual(words.headings.first?.text, "A. Heading 1")
-        XCTAssertTrue(words.text.hasSuffix("A.I.a.i.1.1 Heading 6"), words.text)
+        XCTAssertTrue(words.text.hasSuffix("A.I.a.i..1 Heading 6"), words.text)
         let silent = try wordReadingChapter(of: data, speaksNumbers: false)
         XCTAssertEqual(silent.text, "Heading 1\n\nHeading 2\n\nHeading 3\n\nHeading 4\n\nHeading 5\n\nHeading 6")
         XCTAssertEqual(silent.headings.map(\.text), (1...6).map { "Heading \($0)" })

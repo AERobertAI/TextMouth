@@ -27,6 +27,9 @@ struct WordListLevel {
     /// Whether the level writes every number it names in Arabic numerals
     /// (`fLegal`: "1.1.2" in legal documents, whatever the levels' own formats).
     let isLegal: Bool
+    /// Whether the number is hidden text (`sprmCFVanish` in the level's
+    /// character properties): it counts but is not shown.
+    let numberIsHidden: Bool
     /// The characters of the number text (`xst`), at most `longestText`.
     let text: [UInt16]
     /// The one-based positions in `text` of the placeholders (`rgbxchNums`,
@@ -89,8 +92,13 @@ struct WordListLevel {
             if place == 0 { break }
             placeholders.insert(place)
         }
-        // The text follows the property lists.
+        // The text follows the property lists: the paragraph's, then the number's characters'.
         let textStart = position + 28 + sizeOfParagraphProperties + sizeOfCharacterProperties
+        var numberIsHidden = false
+        WordSprm.forEach(in: try table.slice(offset: position + 28 + sizeOfParagraphProperties, length: sizeOfCharacterProperties)) { opcode, operand in
+            // A toggle, with no style under it: 1 and 0x81 hide.
+            if opcode == WordSprm.hidden, let value = operand.first { numberIsHidden = value == 1 || value == 0x81 }
+        }
         let count = try table.u16(textStart)
         let characters = try table.slice(offset: textStart + 2, length: count * 2)
         let text = stride(from: 0, to: min(count, longestText) * 2, by: 2).map { index -> UInt16 in
@@ -105,6 +113,7 @@ struct WordListLevel {
             // fNoRestart is bit 3 of the flags (bits 0 and 1 are the justification, bit 2 fLegal).
             restartLimit: flags & 0x08 != 0 ? restartLimit : nil,
             isLegal: flags & 0x04 != 0,
+            numberIsHidden: numberIsHidden,
             text: text,
             placeholders: placeholders
         )
@@ -161,6 +170,8 @@ struct WordListTables {
 
     /// The most levels a list has.
     static let levelCount = 9
+    /// The most list instances a paragraph can name (`sprmPIlfo`, 0x07FE).
+    static let mostInstances = 0x07FE
 
     // MARK: Reading
 
@@ -197,9 +208,11 @@ struct WordListTables {
         if let listOverrides {
             let count = try table.u32(listOverrides.lowerBound)
             guard 4 + count * 16 <= listOverrides.count else { throw OLEDamage(reason: "the list override table holds \(count) lists") }
-            // The LFODatas follow the LFOs, one for each.
+            // The LFODatas follow the LFOs, one for each. Only the first 0x7FE
+            // instances can be named (`sprmPIlfo`), so no more are kept: a file
+            // that claims millions costs nothing.
             var position = listOverrides.lowerBound + 4 + count * 16
-            for index in 0..<count {
+            for index in 0..<min(count, Self.mostInstances) {
                 let entry = listOverrides.lowerBound + 4 + index * 16
                 let identifier = Int(Int32(truncatingIfNeeded: try table.u32(entry)))
                 let overrideCount = try table.u8(entry + 12)
@@ -220,8 +233,9 @@ struct WordListTables {
                     guard position <= listOverrides.upperBound else { throw OLEDamage(reason: "a list override runs past its table") }
                     let levelIndex = flags & 0x0F
                     if levelIndex < Self.levelCount {
+                        // With a level in full, its own start counts: the LFOLVL's iStartAt MUST be ignored.
                         overrides[levelIndex] = Override(
-                            startAt: flags & 0x10 != 0 ? min(max(startAt, 0), 0x7FFF) : nil, level: level
+                            startAt: flags & 0x10 != 0 && level == nil ? min(max(startAt, 0), 0x7FFF) : nil, level: level
                         )
                     }
                 }
@@ -295,6 +309,13 @@ struct WordListTables {
 /// `DOCXListCounter`'s, which the DOCX reader numbers its lists with, so a
 /// number is the same in both formats.
 ///
+/// Every paragraph in a list is counted and restarts the levels under it,
+/// whatever its level shows: a level of bullets or of no number sequence
+/// counts too (the specification's step 8 tests only the level). A level
+/// that comes before any more significant one takes that one to be at its
+/// start, so the next of the more significant level is the second, as Word
+/// numbers it (KB Q197139).
+///
 /// Unlike the DOCX reader, which writes a Markdown list and starts every
 /// list again after a paragraph that is not in one, this keeps counting:
 /// Word does, and a chapter's number must not start again at each chapter's
@@ -303,12 +324,16 @@ struct WordListNumbering {
 
     /// What stands before a paragraph.
     enum Marker: Equatable {
-        /// Nothing: the paragraph is not in a list, or its level has no number.
+        /// Nothing: the paragraph is not in a list, or its level shows nothing.
         case none
         /// A bullet.
         case bullet
-        /// A number, as the level's text writes it ("1.2.", "Article IV", "(a)").
-        case number(String)
+        /// A number, as the level's text writes it ("1.2.", "Article IV",
+        /// "(a)"); empty when the level's number is hidden text.
+        case numbered(String)
+        /// A level with no number sequence whose text is words ("Note:"): the
+        /// words, and no number.
+        case labelled(String)
     }
 
     private let tables: WordListTables
@@ -328,14 +353,17 @@ struct WordListNumbering {
     /// so each paragraph of a list must be asked about once, in order.
     mutating func marker(instance: Int, level: Int) -> Marker {
         guard let definition = tables.level(instance: instance, level: level) else { return .none }
-        if definition.isBullet { return .bullet }
-        if definition.hasNoNumber { return .none }
         let name = String(instance)
-        guard case .number(let number) = counter.marker(numId: name, level: level) else { return .none }
+        // Count the paragraph first, whatever its level shows, so that it
+        // restarts the levels under it and the levels over it have a count.
+        let counted = counter.marker(numId: name, level: level)
+        counter.startLevels(moreSignificantThan: level, numId: name)
+        if definition.isBullet { return .bullet }
 
         // The level's text, with each placeholder replaced by the number of
         // the level it names: this paragraph's, or the latest of a more
-        // significant level.
+        // significant level. A placeholder of a level with no number
+        // sequence (a bullet, or none) is ignored ([MS-DOC] LVL).
         var written: [UInt16] = []
         for (index, unit) in definition.text.enumerated() {
             guard definition.placeholders.contains(index + 1) else {
@@ -345,11 +373,22 @@ struct WordListNumbering {
             }
             let named = Int(unit)
             // A placeholder for a less significant level cannot be filled: the file is invalid.
-            guard named <= level, let namedLevel = tables.level(instance: instance, level: named) else { continue }
-            let value = named == level ? number : (counter.lastNumber(numId: name, level: named) ?? namedLevel.start)
+            guard named <= level, let namedLevel = tables.level(instance: instance, level: named),
+                  !namedLevel.isBullet, !namedLevel.hasNoNumber else { continue }
+            let value: Int
+            if named == level {
+                guard case .number(let number) = counted else { continue }
+                value = number
+            } else {
+                guard let latest = counter.lastNumber(numId: name, level: named) else { continue }
+                value = latest
+            }
             written += Array(namedLevel.label(forNumber: value, legal: definition.isLegal).utf16)
         }
-        let text = String(decoding: written, as: UTF16.self).trimmingCharacters(in: .whitespacesAndNewlines)
-        return text.isEmpty ? .none : .number(text)
+        var text = String(decoding: written, as: UTF16.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        // A number that is hidden text is counted and not shown.
+        if definition.numberIsHidden { text = "" }
+        if definition.hasNoNumber { return text.isEmpty ? .none : .labelled(text) }
+        return .numbered(text)
     }
 }

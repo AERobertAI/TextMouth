@@ -424,6 +424,88 @@ final class WordDocumentHostileTests: XCTestCase {
         }
     }
 
+    // MARK: - The Lists
+
+    /// A document with a list of nine levels, its instance, and two paragraphs in it.
+    private func listedDocument() -> WordDocumentBuilder {
+        var builder = WordDocumentBuilder()
+        builder.lists = [WordDocumentBuilder.List(identifier: 7, levels: (0..<9).map { WordDocumentBuilder.ListLevel(0, "%\($0 + 1).") })]
+        builder.listInstances = [WordDocumentBuilder.ListInstance(listIdentifier: 7)]
+        let inList = WordDocumentBuilder.listProperties(instance: 1, level: 0)
+        builder.paragraphs = [Paragraph("Chapter one", modifiers: inList), Paragraph("Chapter two", modifiers: inList)]
+        return builder
+    }
+
+    /// Asserts that `data` reads, in under a second, as a document that still holds its words.
+    private func assertStillReads(_ data: Data, _ message: String, file: StaticString = #filePath, line: UInt = #line) {
+        let start = Date()
+        for speaks in [true, false] {
+            do {
+                let html = try WordDocumentReader.html(from: data, includesPages: true, speaksListNumbers: speaks)
+                XCTAssertTrue(try XCTUnwrap(html).contains("Chapter two"), message, file: file, line: line)
+            } catch {
+                XCTFail("\(message): \(error)", file: file, line: line)
+            }
+        }
+        XCTAssertLessThan(Date().timeIntervalSince(start), 1.0, message, file: file, line: line)
+    }
+
+    func testTheListTablesCutOffAtManyLengthsLoseTheNumbersAndNotTheDocument() {
+        let builder = listedDocument()
+        // The tables are at the end of the table stream, so cutting it there cuts them.
+        for length in stride(from: 0, through: 700, by: 5) {
+            assertStillReads(builder.build { _, table, layout in
+                table.removeSubrange(min(layout.listFormats + length, table.count)...)
+            }, "table stream cut \(length) bytes into the list tables")
+        }
+    }
+
+    func testListTablesWithCountsAtTheMaximumOrOffsetsPastTheEndLoseTheNumbersAndNotTheDocument() {
+        let builder = listedDocument()
+        // Counts of lists and of instances as large as they can be written.
+        for count in [0x7FFF, 0xFFFF] {
+            assertStillReads(damaged(builder, table: { table, layout in
+                self.put(self.le16(count), at: layout.listFormats, in: &table)
+            }), "\(count) lists")
+        }
+        for count in [0x7FF, 0x1_0000, 3_000_000, 0x7FFF_FFFF, 0xFFFF_FFFF] {
+            assertStillReads(damaged(builder, table: { table, layout in
+                self.put(self.le32(count), at: layout.listOverrides, in: &table)
+            }), "\(count) list instances")
+        }
+        // Each list table's offset and length in the FIB, pointed past the end.
+        for structure in [WordFileInformationBlock.Structure.listFormats, .listOverrides] {
+            for (offset, length) in [(0x7FFF_FFF0, 100), (0, 0x7FFF_FFF0), (0xFFFF_FFFF, 0xFFFF_FFFF)] {
+                assertStillReads(damaged(builder, word: { word, layout in
+                    self.put(self.le32(offset) + self.le32(length), at: layout.pairs + structure.rawValue * 8, in: &word)
+                }), "\(structure) at \(offset) of \(length) bytes")
+            }
+        }
+    }
+
+    func testAnOverrideWithMoreLevelsThanItHoldsOrALevelPastTheEndLosesTheNumbersAndNotTheDocument() {
+        var builder = listedDocument()
+        builder.listInstances = [WordDocumentBuilder.ListInstance(listIdentifier: 7, overrides: [
+            WordDocumentBuilder.ListOverride(level: 0, replacement: WordDocumentBuilder.ListLevel(0, "%1)", start: 2)),
+        ])]
+        // The count of overrides (255) larger than the data holds.
+        assertStillReads(damaged(builder, table: { table, layout in
+            self.put([0xFF], at: layout.listOverrides + 4 + 12, in: &table)
+        }), "255 overrides")
+        // The number text of a level as long as it can be written.
+        assertStillReads(damaged(builder, table: { table, layout in
+            self.put(self.le16(0xFFFF), at: layout.listFormats + 2 + 28 + 28, in: &table)
+        }), "a level text of 64 K characters")
+    }
+
+    func testMoreInstancesThanCanBeNamedAreNotKept() throws {
+        // 5,000 instances; a paragraph can name the first 0x7FE only.
+        var builder = listedDocument()
+        builder.listInstances = (0..<5000).map { _ in WordDocumentBuilder.ListInstance(listIdentifier: 7) }
+        builder.paragraphs = [Paragraph("kept", modifiers: WordDocumentBuilder.listProperties(instance: 0x7FE, level: 0))]
+        XCTAssertEqual(try wordBody(of: builder.build(), speaksNumbers: true), "<p>1. kept</p>\n")
+    }
+
     // MARK: - Time
 
     /// Asserts that reading `data` takes under `seconds` and gives HTML.

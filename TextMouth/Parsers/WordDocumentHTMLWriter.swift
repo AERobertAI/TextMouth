@@ -133,9 +133,10 @@ struct WordHTMLWriter {
     /// is dropped while this is not zero.
     private var instructionDepth = 0
 
-    /// The lists open, outermost first: true for an `ol`, false for a `ul`.
-    /// The last item of each is still open, since a deeper list nests in it.
-    private var openLists: [Bool] = []
+    /// The lists open, outermost first: the level of their items, and whether
+    /// each is an `ol` (true) or a `ul`. The last item of each is still open,
+    /// since a deeper list nests in it.
+    private var openLists: [(level: Int, ordered: Bool)] = []
 
     // Tables.
     private var tableIsOpen = false
@@ -451,19 +452,36 @@ struct WordHTMLWriter {
         // counted, empty or not, as Word counts it. The mark that ends a row
         // is no paragraph.
         let isRowEnd = mark == 0x07 && format.isRowEnd
-        let marker: WordListNumbering.Marker = isRowEnd ? .none : listMarker(of: format)
+        let markFormat = characters.format(at: position) ?? WordCharacterFormat()
+        let markIsDeleted = markFormat.isDeleted
+        let marker: WordListNumbering.Marker = isRowEnd ? .none : paragraphMarker(of: format, hasText: hasText, markIsDeleted: markIsDeleted)
         let level = listLevel
-        // A number written as words goes in front of the paragraph's words.
+        // What a number written as words says: a level's number, or the words
+        // of a level that has none.
+        var label = ""
+        switch marker {
+        case .numbered(let text), .labelled(let text): label = numbersAreWords ? text : ""
+        case .bullet, .none: break
+        }
+        // A number written as words goes in front of the paragraph's words;
+        // with no words of its own the paragraph is its number, unless its
+        // mark is hidden or deleted (Word shows a numbered empty paragraph's number).
         var shown = content
-        if numbersAreWords, case .number(let number) = marker, hasText {
-            shown = Self.inserting(Self.escaped(number) + " ", into: content)
+        var standsAlone = false
+        if !label.isEmpty {
+            if hasText {
+                shown = Self.inserting(Self.escaped(label) + " ", into: content)
+            } else if !(markIsDeleted || styles.hides(markFormat, in: format)) {
+                standsAlone = true
+                shown = Self.escaped(label)
+            }
         }
         // A paragraph that is an item of a list: a bullet, or a number that is not written as words.
         let itemKind: Bool? = {
             switch marker {
             case .bullet: return false
-            case .number: return numbersAreWords ? nil : true
-            case .none: return nil
+            case .numbered: return numbersAreWords ? nil : true
+            case .labelled, .none: return nil
             }
         }()
 
@@ -488,15 +506,17 @@ struct WordHTMLWriter {
                 write("<td>")
                 cellIsOpen = true
             }
-            if hasText {
-                if let ordered = itemKind { writeItem(content, level: level, ordered: ordered) } else { write("<p>" + shown + "</p>\n") }
+            if hasText || standsAlone {
+                if let ordered = itemKind, hasText { writeItem(content, level: level, ordered: ordered) } else { write("<p>" + shown + "</p>\n") }
             }
             // The mark of a cell of this table ends the cell; a cell of a
             // table inside it is only the end of a paragraph.
             if mark == 0x07, depth == 1 { closeCell() }
         } else {
             closeTable()
-            if hasText {
+            if standsAlone {
+                write("<p>" + shown + "</p>\n")
+            } else if hasText {
                 if let level = headingLevel(of: format) {
                     hasRealHeading = true
                     write("<h\(level)>" + shown + "</h\(level)>\n")
@@ -522,6 +542,28 @@ struct WordHTMLWriter {
 
     /// The level (0 to 8) of the list paragraph last given a marker.
     private var listLevel = 0
+    /// Whether the paragraph just ended had its mark deleted by a tracked
+    /// change and so is joined in the document Word keeps to the paragraph
+    /// after it: that one is the same item, counted once.
+    private var joinsNextToItem = false
+
+    /// The marker of the paragraph with `format` that has words (`hasText`)
+    /// or not and whose mark a tracked change deleted (`markIsDeleted`), or
+    /// none when it is not counted. A paragraph with no words and a deleted
+    /// mark is gone; one with words and a deleted mark is joined in the
+    /// document Word keeps to the next paragraph (and the next, while their
+    /// marks are deleted too), so the join is one item, counted once, with
+    /// its number on the first. The words stay in their own paragraphs.
+    private mutating func paragraphMarker(of format: WordParagraphFormat, hasText: Bool, markIsDeleted: Bool) -> WordListNumbering.Marker {
+        if joinsNextToItem {
+            joinsNextToItem = markIsDeleted
+            return .none
+        }
+        if markIsDeleted && !hasText { return .none }
+        let marker = listMarker(of: format)
+        if markIsDeleted && marker != .none { joinsNextToItem = true }
+        return marker
+    }
 
     /// The marker of the paragraph with `format`, counting it in its list;
     /// `listLevel` is then its level.
@@ -562,38 +604,41 @@ struct WordHTMLWriter {
 
     /// Closes every list that is open.
     private mutating func closeLists() {
-        while let ordered = openLists.popLast() {
-            append(block: ordered ? "</li>\n</ol>\n" : "</li>\n</ul>\n")
-        }
+        while !openLists.isEmpty { closeInnermostList() }
+    }
+
+    /// Closes the innermost open list, and the item it ends with.
+    private mutating func closeInnermostList() {
+        guard let list = openLists.popLast() else { return }
+        append(block: list.ordered ? "</li>\n</ol>\n" : "</li>\n</ul>\n")
     }
 
     /// Writes an item of a list whose inline HTML is `content`, at `level`
-    /// (0 to 8), opening, closing, or continuing lists so that the item stands
-    /// at that depth: a deeper list nests in the item before it, and a list
-    /// cannot begin more than one step below the open one, so a document that
-    /// begins at level 3 gets a list at the first level. An item of the other
-    /// kind (`ol` for `ul`) begins a new list.
+    /// (0 to 8). The lists whose items are deeper are closed; an item of the
+    /// level the innermost list is at is its next item (or, when it is the
+    /// other kind of list, `ol` for `ul`, begins a new list); and an item
+    /// deeper than any open one begins a list nested in the open item, so a
+    /// list that begins at level 3 is a list at that level, and its next
+    /// items are its own.
     private mutating func writeItem(_ content: String, level: Int, ordered: Bool) {
-        let depth = min(max(level, 0), openLists.count)
-        // Close the lists deeper than the item's.
-        while openLists.count > depth + 1 {
-            append(block: openLists.removeLast() ? "</li>\n</ol>\n" : "</li>\n</ul>\n")
-        }
-        if openLists.count == depth + 1 {
-            if openLists[depth] == ordered {
-                // The next item of the same list.
+        while let innermost = openLists.last, innermost.level > level { closeInnermostList() }
+        if let innermost = openLists.last, innermost.level == level {
+            if innermost.ordered == ordered {
                 append(block: "</li>\n")
             } else {
-                // The kind of list changed: a new list begins.
-                append(block: openLists.removeLast() ? "</li>\n</ol>\n" : "</li>\n</ul>\n")
-                append(block: ordered ? "<ol>\n" : "<ul>\n")
-                openLists.append(ordered)
+                closeInnermostList()
+                openList(level: level, ordered: ordered)
             }
         } else {
-            append(block: ordered ? "<ol>\n" : "<ul>\n")
-            openLists.append(ordered)
+            openList(level: level, ordered: ordered)
         }
         append(block: "<li>" + content)
+    }
+
+    /// Opens a list at `level`.
+    private mutating func openList(level: Int, ordered: Bool) {
+        append(block: ordered ? "<ol>\n" : "<ul>\n")
+        openLists.append((level, ordered))
     }
 
     /// The characters that begin a bullet only before a tab, as in textutil's

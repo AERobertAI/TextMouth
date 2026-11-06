@@ -106,13 +106,19 @@ struct WordDocumentBuilder {
         /// `ilvlRestartLim` when `fNoRestart` is on.
         var restartLimit: Int?
         var isLegal = false
+        /// Whether the number is hidden text (`sprmCFVanish` in the level's character properties).
+        var numberIsHidden = false
 
-        init(_ numberFormat: Int = 0, _ text: String = "", start: Int = 1, restartLimit: Int? = nil, isLegal: Bool = false) {
+        init(
+            _ numberFormat: Int = 0, _ text: String = "", start: Int = 1, restartLimit: Int? = nil, isLegal: Bool = false,
+            numberIsHidden: Bool = false
+        ) {
             self.numberFormat = numberFormat
             self.text = text
             self.start = start
             self.restartLimit = restartLimit
             self.isLegal = isLegal
+            self.numberIsHidden = numberIsHidden
         }
     }
 
@@ -606,8 +612,10 @@ struct WordDocumentBuilder {
         bytes.append(0)
         bytes += le32(0)
         bytes += le32(0)
-        bytes += [0, 0, UInt8(level.restartLimit ?? 0), 0] as [UInt8]
-        return bytes + le16(units.count) + units.flatMap { le16(Int($0)) }
+        // The number's character properties (hidden or not) follow the LVLF, then the text.
+        let characterProperties: [UInt8] = level.numberIsHidden ? modifier(WordSprm.hidden, 1) : []
+        bytes += [UInt8(characterProperties.count), 0, UInt8(level.restartLimit ?? 0), 0] as [UInt8]
+        return bytes + characterProperties + le16(units.count) + units.flatMap { le16(Int($0)) }
     }
 
     /// The `PlfLst` (a count and an `LSTF` for each list) and, apart, the

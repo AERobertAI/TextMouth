@@ -108,7 +108,7 @@ final class WordDocumentComparisonTests: XCTestCase {
     /// the rest to be textutil's words; a number missing from the reader's
     /// text, or left over, fails it. (Bullets add no words.)
     private static let listNumbersOnlyReaderReads: [String: [String]] = [
-        "doc/libreoffice-tdf104239_chapterNumbering.doc": ["A.", "I.", "a.", "i.", "A.I.a.i.1.1"],
+        "doc/libreoffice-tdf104239_chapterNumbering.doc": ["A.", "I.", "a.", "i.", "A.I.a.i..1"],
         "doc/libreoffice-list-nolevel.doc": ["1.", "1.1", "2.", "2.1"],
         "doc/libreoffice-tdf106541_chapterNumbering.doc": ["1", "1.1", "2", "2.1"],
         "doc/poi-lists.doc": ["1.", "2.", "3.", "1.", "2.", "2.1.", "2.2.", "2.2.1.", "2.2.2.", "2.2.2.1.", "2.2.3.", "3."],
