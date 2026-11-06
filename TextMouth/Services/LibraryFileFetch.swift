@@ -12,17 +12,23 @@ typealias LibraryFileFetch = @Sendable (URL) throws -> Void
 /// marker, library.json, the Feeds folder, and each feed's folder and
 /// index), never a book or an episode.
 ///
-/// Apple's TN3150 says any read of a dataless item downloads it: reading a
-/// byte of a file brings the whole file, and listing a folder brings the
-/// folder's entries. Nothing here asks the sync service by name, so it works
-/// on every File Provider drive, Google Drive's Stream mode included.
+/// Apple's TN3150 says any read of a dataless item downloads it, and listing
+/// a folder brings the folder's entries. A provider that fetches partial
+/// content (Google Drive and Dropbox adopt `NSFileProviderPartialContentFetching`)
+/// brings only the range a read asks for, so a file is read to its end, and
+/// the chunks are discarded: no large file is ever held in memory. Nothing
+/// here asks the sync service by name, so it works on every File Provider
+/// drive, Google Drive's Stream mode included.
 enum LibraryFileFetcher {
+    /// How many bytes one read of a file asks for.
+    private static let chunkSize = 65_536
+
     /// The fetch the app uses.
     static let app: LibraryFileFetch = { item in try fetch(item) }
 
-    /// Brings `item` to this Mac: a folder is listed, and a file has one
-    /// byte read, so no large file is ever held in memory. Throws what the
-    /// read threw, such as a network error while the Mac is offline.
+    /// Brings `item` to this Mac: a folder is listed, and a file is read to
+    /// its end in chunks that are thrown away. Throws what the read threw,
+    /// such as a network error while the Mac is offline.
     ///
     /// Must run with the thread's default download policy, never inside
     /// `DatalessFiles.withoutDownloading`.
@@ -36,6 +42,6 @@ enum LibraryFileFetcher {
         }
         let handle = try FileHandle(forReadingFrom: item)
         defer { try? handle.close() }
-        _ = try handle.read(upToCount: 1)
+        while let chunk = try handle.read(upToCount: chunkSize), !chunk.isEmpty {}
     }
 }
