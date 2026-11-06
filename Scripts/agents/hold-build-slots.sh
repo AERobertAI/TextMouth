@@ -50,8 +50,14 @@ while [ ! -e "$RELEASE_FLAG" ]; do
   sleep 60
 done
 
-# Free only the slots this script took, never a build's.
+# Free only the slots this script took, never a build's. Each rm names its
+# folder literally, relative to the slots' folder: the user's rule for every rm.
+cd "$SLOT_ROOT" || exit 0
 for i in $held; do
-  rm -r "$SLOT_ROOT/slot$i"
+  case "$i" in
+    1) rm -r slot1 ;;
+    2) rm -r slot2 ;;
+    3) rm -r slot3 ;;
+  esac
 done
 echo "released slots$held at $(date '+%H:%M:%S')"
