@@ -85,7 +85,7 @@ struct WordPieceTable {
         let modifiers: ArraySlice<UInt8>
 
         /// Bytes per character.
-        var width: Int { isCompressed ? 1 : 2 }
+        let width: Int
         /// The number of characters.
         var length: Int { endCharacter - firstCharacter }
         /// The offset after the piece's last byte.
@@ -94,6 +94,9 @@ struct WordPieceTable {
 
     /// The pieces in character order.
     let pieces: [Piece]
+    /// How the characters of a Word 6 or Word 95 document are read, or nil
+    /// for a Word 97 document (Windows-1252 or UTF-16 by the piece).
+    private let legacyCharacters: WordLegacyCharacters?
     /// The pieces in file order, for turning file offsets into positions.
     private let piecesByFile: [Piece]
     /// For each piece in file order, the largest `fileEnd` of it and of
@@ -110,7 +113,10 @@ struct WordPieceTable {
     /// - Throws: `OLEDamage` for a CLX of an unknown kind, a piece table whose
     ///   size or character positions do not fit, or a piece whose characters
     ///   lie outside the stream.
-    init(clx: Range<Int>, table: OLEBytes, document: OLEBytes) throws {
+    /// - Parameter characters: for a Word 6 or Word 95 document, how its
+    ///   characters are stored: its pieces have a plain file offset (no
+    ///   compression bit), and its groups of modifiers are in the older form.
+    init(clx: Range<Int>, table: OLEBytes, document: OLEBytes, characters: WordLegacyCharacters? = nil) throws {
         // The CLX is any number of property modifier groups (kind 1, a 16-bit
         // size and the modifiers, which fast-saved pieces name by their
         // index) and then the piece table (kind 2, a 32-bit size).
@@ -126,7 +132,8 @@ struct WordPieceTable {
                 guard groups.count < Self.mostModifierGroups, position + 3 + size <= clx.upperBound else {
                     throw OLEDamage(reason: "a group of modifiers runs past the CLX")
                 }
-                groups.append(try table.slice(offset: position + 3, length: size))
+                let group = try table.slice(offset: position + 3, length: size)
+                groups.append(characters == nil ? group : WordLegacySprm.modern(group))
                 position += 3 + size
             } else if kind == 2 {
                 plcLength = try table.u32(position + 1)
@@ -152,13 +159,14 @@ struct WordPieceTable {
             // The descriptor: 2 bytes of flags, the file offset, 2 bytes of modifiers.
             let rawOffset = try table.u32(descriptorsStart + index * 8 + 2)
             let modifiers = Self.modifiers(of: try table.u16(descriptorsStart + index * 8 + 6), groups: groups)
-            let isCompressed = rawOffset & 0x4000_0000 != 0
-            // A compressed offset is stored doubled, so that it is told from
-            // an uncompressed one by one bit.
-            let offset = isCompressed ? (rawOffset & 0x3FFF_FFFF) / 2 : rawOffset & 0x3FFF_FFFF
+            // A Word 97 piece says in one bit whether its characters are
+            // compressed, and then stores the offset doubled; a Word 6 or
+            // Word 95 piece has the offset as it is.
+            let isCompressed = characters == nil && rawOffset & 0x4000_0000 != 0
+            let offset = characters != nil ? rawOffset : (isCompressed ? (rawOffset & 0x3FFF_FFFF) / 2 : rawOffset & 0x3FFF_FFFF)
             let piece = Piece(
                 firstCharacter: previousEnd, endCharacter: end, fileOffset: offset, isCompressed: isCompressed,
-                modifiers: modifiers
+                modifiers: modifiers, width: characters?.width ?? (isCompressed ? 1 : 2)
             )
             guard document.contains(offset: offset, length: piece.length * piece.width) else {
                 throw OLEDamage(reason: "piece \(index) holds \(piece.length) characters that run past the stream")
@@ -167,14 +175,41 @@ struct WordPieceTable {
             previousEnd = end
         }
         self.pieces = pieces
+        legacyCharacters = characters
+        (piecesByFile, largestFileEnd) = Self.fileOrder(of: pieces)
+    }
 
+    /// A Word 6 or Word 95 document saved in full (no Fast Save): its text
+    /// is one piece, the bytes of the stream from `bytes`.
+    /// - Throws: `OLEDamage` when the characters run past the stream.
+    init(contiguous bytes: Range<Int>, document: OLEBytes, characters: WordLegacyCharacters) throws {
+        let count = bytes.count / characters.width
+        legacyCharacters = characters
+        guard count > 0 else {
+            pieces = []
+            (piecesByFile, largestFileEnd) = ([], [])
+            return
+        }
+        guard document.contains(offset: bytes.lowerBound, length: count * characters.width) else {
+            throw OLEDamage(reason: "the text runs past the stream")
+        }
+        pieces = [Piece(
+            firstCharacter: 0, endCharacter: count, fileOffset: bytes.lowerBound, isCompressed: false,
+            modifiers: [], width: characters.width
+        )]
+        (piecesByFile, largestFileEnd) = Self.fileOrder(of: pieces)
+    }
+
+    /// The pieces that hold characters in file order, and for each the
+    /// largest end offset of it and of those before it.
+    private static func fileOrder(of pieces: [Piece]) -> (pieces: [Piece], largestFileEnd: [Int]) {
         let byFile = pieces.filter { $0.length > 0 }.sorted { $0.fileOffset < $1.fileOffset }
-        piecesByFile = byFile
         var largest = 0
-        largestFileEnd = byFile.map { piece in
+        let ends = byFile.map { piece -> Int in
             largest = max(largest, piece.fileEnd)
             return largest
         }
+        return (byFile, ends)
     }
 
     // MARK: Reading the Text
@@ -205,7 +240,21 @@ struct WordPieceTable {
             guard piece.endCharacter > start else { continue }
             let end = min(piece.endCharacter, limit)
             var position = max(piece.firstCharacter, start)
-            if piece.isCompressed {
+            if let characters = legacyCharacters {
+                // A Word 6 or Word 95 character: a byte, or a 16-bit unit
+                // that holds a byte or a pair. One that is no character of
+                // the code page is left out.
+                var decoded: [UInt16: UInt16?] = [:]
+                while position < end {
+                    let at = piece.fileOffset + (position - piece.firstCharacter) * piece.width
+                    if piece.width == 1 {
+                        try body(position, characters.unit(ofByte: bytes[at]))
+                    } else if let unit = characters.unit(ofStored: UInt16(bytes[at]) | UInt16(bytes[at + 1]) << 8, cache: &decoded) {
+                        try body(position, unit)
+                    }
+                    position += 1
+                }
+            } else if piece.isCompressed {
                 while position < end {
                     try body(position, Self.unicode(ofWindows1252: bytes[piece.fileOffset + position - piece.firstCharacter]))
                     position += 1
