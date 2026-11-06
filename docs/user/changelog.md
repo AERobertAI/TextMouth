@@ -19,7 +19,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 
 ### Every document reader reads the same
 - Rich text, Word 97-2003, Word, OpenDocument text, and Word 2003 XML documents now follow one rule: TextMouth reads what a person reading the document sees in its ordinary view. Hidden text is not read, and text hidden only on the web is. A tracked deletion is not read and an insertion is. Text a tracked change moved is read once, in its new place. A field's code is never read, and its result is.
-- Footnotes and endnotes follow the main text, in the order the file keeps them, with no reference marks. A note is read only if a person would see its reference. Comments, headers, and footers are not read.
+- Footnotes and endnotes follow the main text, in the order the file keeps them, with no reference marks (a Word 97-2003 document's custom mark, the symbol an author typed in place of a number, is still read). A note is read only if a person would see its reference. Comments, headers, and footers are not read.
 - A text box is read right after the paragraph that holds its anchor, so a sentence stays whole. A Word 97-2003 document keeps its text boxes apart, and they follow its notes. A Word text box that the file writes twice is read once.
 - Rich text: text a tracked change deleted is no longer read aloud, footnotes and endnotes are read after the text, and a list inside a table cell is a list in an export.
 - Word documents: hidden text is no longer read, notes follow the text, and the marks of bold, italic, and strikethrough are never spoken. Some Word documents spoke an asterisk or a tilde where bold or italic text began or ended beside punctuation.
