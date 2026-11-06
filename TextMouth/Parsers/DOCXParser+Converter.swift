@@ -2,8 +2,23 @@ import Foundation
 
 // MARK: - DOCX to Markdown Converter
 
+/// What the body of a document refers to in its notes parts: the notes a
+/// person who reads the body sees a reference to, and the character styles
+/// those references are written in.
+struct DOCXNoteReferences {
+    /// The `w:id` of each footnote the body refers to, in a run that was read.
+    var footnotes: Set<String> = []
+    /// The `w:id` of each endnote the body refers to.
+    var endnotes: Set<String> = []
+    /// The character styles (`w:rStyle`) of the runs that hold a reference: a
+    /// note's own number is written in one, and is not a word.
+    var runStyles: Set<String> = []
+}
+
 /// Markdown converted from a document's text part.
 struct DOCXConversion {
+    /// The notes the part refers to (empty for a notes part).
+    let references: DOCXNoteReferences
     /// The document text: everything read from the part, up to any damage.
     let markdown: String
     /// Set when the part broke off or stopped being well-formed after some
@@ -13,7 +28,8 @@ struct DOCXConversion {
     let diagnostic: DOCXParserError?
 }
 
-/// Converts the XML content of word/document.xml into Markdown text.
+/// Converts the XML content of word/document.xml, or of a notes part
+/// (word/footnotes.xml, word/endnotes.xml), into Markdown text.
 /// Uses XMLParser (SAX-style) to walk through the document structure,
 /// tracking paragraph styles, run formatting, and list context to emit
 /// properly formatted Markdown.
@@ -138,6 +154,20 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         /// The pieces the run has been cut into at its page starts, in
         /// order. Empty for a run without one, which is formatted whole.
         var runPieces: [RunPiece] = []
+        /// Whether the text of the run is a note's mark (a custom mark, or the
+        /// number's run), which is not a word.
+        var runSkipsText = false
+        /// How many runs of the paragraph have begun.
+        var runCount = 0
+        /// Whether the paragraph is the first of its note.
+        var isFirstOfNote = false
+        /// Whether the paragraph begins a page that has not been started yet
+        /// (`w:pageBreakBefore`). It is started with the first run that is
+        /// read; a paragraph all of whose runs are unread begins none.
+        var pageStartWaits = false
+        /// Whether any run of the paragraph was read, and whether any was not.
+        var hasReadRun = false
+        var hasUnreadRun = false
 
         // The hyperlink
         var isInHyperlink = false
@@ -209,9 +239,36 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     private var alternateContentChoiceTaken: [Bool] = []
 
     /// Whether this converter reads the notes part (`word/footnotes.xml` or
-    /// `word/endnotes.xml`): its text is never a heading, and the notes that
-    /// only separate the others are skipped.
+    /// `word/endnotes.xml`): its text is never a heading, the notes that only
+    /// separate the others are skipped, and so are the notes `noteIDs` (when
+    /// given) does not list.
     private let readsNotes: Bool
+
+    /// For a notes part: the `w:id` of the notes to read, those the body
+    /// refers to; nil to read every note.
+    private let noteIDs: Set<String>?
+
+    /// For a notes part: the character styles the body's references are written
+    /// in. The first run of a note, in one of them, holds the note's own mark.
+    private let referenceStyles: Set<String>
+
+    /// What the body refers to in the notes parts (collected by the text part's
+    /// converter).
+    private var references = DOCXNoteReferences()
+
+    /// How many paragraphs of the note being read have begun.
+    private var paragraphsOfNote = 0
+
+    /// How many elements have been read, to look at whether the import was
+    /// cancelled every so many of them.
+    private var elementsRead = 0
+
+    /// Whether the parse was stopped because the import was cancelled.
+    private var wasCancelled = false
+
+    /// How many elements are read between two looks at whether the import was
+    /// cancelled: a few thousand, which costs nothing measurable.
+    private static let elementsBetweenCancellationChecks = 4_096
 
     /// The text of a run before a page start inside it.
     private struct RunPiece {
@@ -230,7 +287,9 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// numbered, are read from `data` in a first pass.
     ///
     /// With `readsNotes` the part is a notes part, read for its notes: no
-    /// paragraph of it is a heading.
+    /// paragraph of it is a heading, and only the notes `noteIDs` lists are
+    /// read. `referenceStyles` are the character styles the body's references
+    /// are written in.
     init(
         data: Data,
         file: String = DOCXParser.Part.document,
@@ -238,9 +297,13 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         numbering: DOCXNumbering,
         relationships: [String: String],
         includesPages: Bool = false,
-        readsNotes: Bool = false
+        readsNotes: Bool = false,
+        noteIDs: Set<String>? = nil,
+        referenceStyles: Set<String> = []
     ) {
         self.readsNotes = readsNotes
+        self.noteIDs = noteIDs
+        self.referenceStyles = referenceStyles
         self.styles = styles
         self.listCounter = DOCXListCounter(numbering: numbering)
         self.relationships = relationships
@@ -260,14 +323,18 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// complete, none of it read aloud as symbols, and the damage is
     /// returned as the diagnostic.
     /// - Throws: `DOCXParserError.malformedXML` naming the part when it is
-    ///   damaged before any text.
+    ///   damaged before any text, and `ImportCancelled` when the import
+    ///   running the conversion was cancelled.
     func convert() throws -> DOCXConversion {
         do {
             try parseDocument()
-            return DOCXConversion(markdown: normalizeWhitespace(markdown), diagnostic: nil)
+            return DOCXConversion(references: references, markdown: normalizeWhitespace(markdown), diagnostic: nil)
+        } catch where wasCancelled {
+            // The import was cancelled and the parse stopped for it
+            throw ImportCancelled()
         } catch let damage as DOCXParserError where producedText {
             closeOpenElements()
-            return DOCXConversion(markdown: normalizeWhitespace(markdown), diagnostic: damage)
+            return DOCXConversion(references: references, markdown: normalizeWhitespace(markdown), diagnostic: damage)
         }
     }
 
@@ -278,6 +345,14 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
                 attributes: [String: String] = [:]) {
         let localName = ParserUtilities.stripNamespacePrefix(elementName)
         elementStack.append(localName)
+
+        // Cancel is heard while a very large part is parsed
+        elementsRead += 1
+        if elementsRead % Self.elementsBetweenCancellationChecks == 0, ImportCancellation.current?.isCancelled == true {
+            wasCancelled = true
+            parser.abortParsing()
+            return
+        }
 
         // A subtree that is not read is passed over whole, and the structure
         // that nests paragraphs or chooses between copies is settled before
@@ -346,6 +421,11 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             // The run's character style, which may hide its text
             paragraph.runStyle = attributes["w:val"] ?? ""
             updateRunHidden()
+            // The first run of a note, in the style the references are in, is
+            // its mark
+            if readsNotes && paragraph.isFirstOfNote && paragraph.runCount == 1 && referenceStyles.contains(paragraph.runStyle) {
+                paragraph.runSkipsText = true
+            }
         case "vanish" where paragraph.isInRun:
             // Hidden text: not read. Direct formatting wins over the styles.
             // (`w:webHidden`, hidden only on the web, stays read, and
@@ -366,6 +446,24 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
             }
         // Strikethrough (`w:strike`) is written as plain text: a struck word is
         // read as it is, and a "~~" that is not paired would be read aloud.
+        case "footnoteReference", "endnoteReference":
+            // A reference a person who reads the body sees: its note is read,
+            // and the note's mark, if it is custom, follows in this run and is
+            // not a word
+            if paragraph.isInRun && !runIsUnread, let id = attributes["w:id"] {
+                if localName == "footnoteReference" {
+                    references.footnotes.insert(id)
+                } else {
+                    references.endnotes.insert(id)
+                }
+                if !paragraph.runStyle.isEmpty { references.runStyles.insert(paragraph.runStyle) }
+                if let custom = attributes["w:customMarkFollows"], DOCXOnOff.isOn(custom) {
+                    paragraph.runSkipsText = true
+                }
+            }
+        case "footnoteRef", "endnoteRef":
+            // The note's own number: whatever else its run holds is its mark
+            if paragraph.isInRun { paragraph.runSkipsText = true }
         case let name where (name == "br" || name == "cr") && paragraph.isInRun && !runIsUnread:
             // Keep breaks in their run; the paragraph has not received the
             // preceding run text yet, so appending there reverses their order.
@@ -388,6 +486,7 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         case "hyperlink":
             // A page that began before the link begins before its words, not
             // inside the label (PG07)
+            startWaitingPage()
             placePendingPage()
             // Start of a hyperlink -- capture the relationship ID for the URL
             paragraph.isInHyperlink = true
@@ -416,7 +515,7 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         // and not in a subtree that is skipped, in a hidden run, or in text a
         // tracked change deleted or moved away (its words are read once, where
         // they were moved to)
-        if ignoredDepth == 0, !runIsUnread, let lastElement = elementStack.last, lastElement == "t" {
+        if ignoredDepth == 0, !runIsUnread, !paragraph.runSkipsText, let lastElement = elementStack.last, lastElement == "t" {
             paragraph.runText += string
             if !string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 producedText = true
@@ -566,7 +665,12 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         case "Fallback" where parent == "AlternateContent":
             if alternateContentChoiceTaken.last == true { return .skip }
         case "footnote", "endnote":
-            if readsNotes, Self.separatorNoteTypes.contains(attributes["w:type"] ?? "") { return .skip }
+            guard readsNotes else { break }
+            // A separator is not a note, and a note no read reference points
+            // to is one nobody sees
+            if Self.separatorNoteTypes.contains(attributes["w:type"] ?? "") { return .skip }
+            if let noteIDs, !noteIDs.contains(attributes["w:id"] ?? "") { return .skip }
+            paragraphsOfNote = 0
         case "txbxContent":
             // A text box anchored in text nobody reads is not read
             if runIsUnread { return .skip }
@@ -686,6 +790,12 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         paragraph.endsSection = false
         paragraph.leadingMarkers = []
         paragraph.dropsLeadingWhitespace = false
+        paragraph.runCount = 0
+        paragraph.pageStartWaits = false
+        paragraph.hasReadRun = false
+        paragraph.hasUnreadRun = false
+        paragraph.isFirstOfNote = readsNotes && paragraphsOfNote == 0
+        if readsNotes { paragraphsOfNote += 1 }
         // The first paragraph of a section may begin a page (PG07)
         pageTracker?.beginBlock()
     }
@@ -706,6 +816,9 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     /// The paragraph ends: its Markdown is written, and then the text boxes
     /// anchored in it.
     private func endParagraph() {
+        // A paragraph that holds runs, none of them read, begins no page; one
+        // with no run at all still begins its page
+        if !(paragraph.hasUnreadRun && !paragraph.hasReadRun) { startWaitingPage() }
         writeParagraph()
         writePendingBoxes()
     }
@@ -895,6 +1008,8 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
         paragraph.runText = ""
         paragraph.runExplicitlyHidden = nil
         paragraph.runStyle = ""
+        paragraph.runSkipsText = false
+        paragraph.runCount += 1
         updateRunHidden()
     }
 
@@ -929,6 +1044,12 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     private func endRun() {
         guard paragraph.isInRun else { return }
         paragraph.isInRun = false
+        if runIsUnread {
+            paragraph.hasUnreadRun = true
+        } else {
+            paragraph.hasReadRun = true
+            startWaitingPage()
+        }
         paragraph.runIsHidden = false
 
         // A run with a page start inside it is written piece by piece, a
@@ -1151,6 +1272,10 @@ class DOCXToMarkdownConverter: DOCXSAXParser {
     private static func markdownTable(of table: ReadTable) -> String? {
         let rows = table.rows.map { row in row.map(cellText) }
 
+        // A table in which no cell holds a word (every word hidden, say) is not
+        // written
+        guard rows.contains(where: { $0.contains { !$0.isEmpty } }) else { return nil }
+
         // Determine column count from the widest row
         let columnCount = rows.map(\.count).max() ?? 0
         guard columnCount > 0 else { return nil }
@@ -1275,9 +1400,19 @@ extension DOCXToMarkdownConverter {
     fileprivate func startPageIfParagraphBreaksBefore() {
         guard pageTracker != nil, paragraph.isOpen else { return }
         let breaksBefore = paragraph.pageBreakBefore ?? styles.pageBreakBeforeStyles.contains(paragraph.style)
+        // The page starts with the first run that is read, so that a paragraph
+        // whose words are all hidden begins none (`startWaitingPage()`)
         if breaksBefore {
-            pageTracker?.startPage()
+            paragraph.pageStartWaits = true
         }
+    }
+
+    /// Starts the page a paragraph's `w:pageBreakBefore` waits to begin, if one
+    /// does.
+    fileprivate func startWaitingPage() {
+        guard paragraph.pageStartWaits else { return }
+        paragraph.pageStartWaits = false
+        pageTracker?.startPage()
     }
 
     /// The paragraph that was just written ended its section when its

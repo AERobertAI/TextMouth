@@ -86,7 +86,9 @@ enum DOCXParser {
     ///   styles, numbering, or relationships part is present but damaged,
     ///   since reading on would silently turn headings into plain paragraphs,
     ///   numbered steps into bullets, or links into bare text; or when the
-    ///   text part is damaged before any of its text.
+    ///   text part is damaged before any of its text. A damaged notes part
+    ///   refuses nothing: its damage is reported and its notes are left out.
+    ///   `ImportCancelled` when the import running it is cancelled.
     static func extractMarkdown(
         from url: URL,
         includesPages: Bool = true,
@@ -95,13 +97,16 @@ enum DOCXParser {
         let archive = IndexedArchive(try openArchive(at: url))
 
         // Parse styles first so we can identify heading paragraph styles
+        try ImportCancellation.throwIfCancelled()
         let styles = try parseStyles(from: archive)
 
         // Parse numbering definitions for bullet and numbered lists
+        try ImportCancellation.throwIfCancelled()
         let numbering = try parseNumbering(from: archive)
 
         // Read the main document content. Its raw bytes go to the parser,
         // which honors the declared encoding and reports any invalid byte.
+        try ImportCancellation.throwIfCancelled()
         let documentXML = try extractData(from: archive, path: Part.document)
 
         // Parse relationships for hyperlink targets
@@ -120,15 +125,31 @@ enum DOCXParser {
         }
 
         // The footnotes and then the endnotes follow the text, each in the
-        // order its part keeps them (a Word document reads them the same way).
+        // order its part keeps them (a Word document reads them the same way),
+        // those a read reference points to. A notes part that is damaged, or
+        // larger than a part may be, loses its notes and is reported, but never
+        // refuses the book: the notes change nothing about how the body reads.
         var markdown = conversion.markdown
-        for notesPart in [Part.footnotes, Part.endnotes] {
-            let notes = try convertNotes(from: archive, at: notesPart, styles: styles, numbering: numbering)
-            if let diagnostic = notes?.diagnostic {
-                reportIncompleteContent(diagnostic)
-            }
-            if let notesMarkdown = notes?.markdown, !notesMarkdown.isEmpty {
-                markdown = markdown.isEmpty ? notesMarkdown : markdown + "\n\n" + notesMarkdown
+        let references = conversion.references
+        for (notesPart, ids) in [(Part.footnotes, references.footnotes), (Part.endnotes, references.endnotes)] {
+            try ImportCancellation.throwIfCancelled()
+            do {
+                let notes = try convertNotes(
+                    from: archive, at: notesPart, ids: ids, referenceStyles: references.runStyles,
+                    styles: styles, numbering: numbering
+                )
+                if let diagnostic = notes?.diagnostic {
+                    reportIncompleteContent(diagnostic)
+                }
+                if let notesMarkdown = notes?.markdown, !notesMarkdown.isEmpty {
+                    markdown = markdown.isEmpty ? notesMarkdown : markdown + "\n\n" + notesMarkdown
+                }
+            } catch let cancelled as ImportCancelled {
+                throw cancelled
+            } catch let damage as DOCXParserError {
+                reportIncompleteContent(damage)
+            } catch {
+                reportIncompleteContent(.malformedXML(file: notesPart, reason: "it could not be unpacked"))
             }
         }
         return markdown
@@ -137,17 +158,20 @@ enum DOCXParser {
     /// The notes part at `path` as Markdown, or nil when the package has no
     /// such part. The part goes through the same conversion as the text, with
     /// these differences: no page begins in it, its text is never a heading,
-    /// the notes that are only separators are left out, the marks that
-    /// stand for the notes' numbers (`w:footnoteRef`, `w:endnoteRef`) hold no
-    /// text, and a link in it keeps its label alone (its targets are in a
-    /// part of their own, not read). The part is held to the size limit every
-    /// part is.
+    /// only the notes `ids` lists are read (those a read reference points to),
+    /// the notes that are only separators are left out, the marks that stand
+    /// for the notes' numbers (`w:footnoteRef`, `w:endnoteRef`, and a custom
+    /// mark in the style `referenceStyles` names) are not read, and a link in
+    /// it keeps its label alone (its targets are in a part of their own, not
+    /// read). The part is held to the size limit every part is.
     /// - Throws: `DOCXParserError.malformedXML` naming the part when it holds
     ///   more than `ArchiveEntryLimits.current` allows, or is damaged before
     ///   any of its text.
     private static func convertNotes(
         from archive: IndexedArchive,
         at path: String,
+        ids: Set<String>,
+        referenceStyles: Set<String>,
         styles: DOCXStyles,
         numbering: DOCXNumbering
     ) throws -> DOCXConversion? {
@@ -159,7 +183,9 @@ enum DOCXParser {
             numbering: numbering,
             relationships: [:],
             includesPages: false,
-            readsNotes: true
+            readsNotes: true,
+            noteIDs: ids,
+            referenceStyles: referenceStyles
         ).convert()
     }
 

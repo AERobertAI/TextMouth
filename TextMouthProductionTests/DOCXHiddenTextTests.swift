@@ -31,6 +31,7 @@ final class DOCXHiddenTextTests: XCTestCase {
         <w:style w:type="character" w:styleId="Show"><w:name w:val="Show"/><w:basedOn w:val="Hide"/><w:rPr><w:vanish w:val="false"/></w:rPr></w:style>
         <w:style w:type="character" w:styleId="WasHidden"><w:name w:val="WasHidden"/><w:rPr><w:rPrChange w:id="1" w:author="A"><w:rPr><w:vanish/></w:rPr></w:rPrChange></w:rPr></w:style>
         <w:style w:type="table" w:styleId="Grid"><w:name w:val="Grid"/><w:tblStylePr w:type="firstRow"><w:rPr><w:vanish/></w:rPr></w:tblStylePr></w:style>
+        <w:style w:type="paragraph" w:styleId="Odd"><w:name w:val="Odd"/><w:tblStylePr w:type="firstRow"><w:rPr><w:vanish/></w:rPr></w:tblStylePr></w:style>
         </w:styles>
         """
 
@@ -149,6 +150,8 @@ final class DOCXHiddenTextTests: XCTestCase {
     func testTheStylesPartNamesTheHidingStyles() throws {
         let docx = try makeDOCXPackage(document: docxDocumentXML(docxParagraph(docxRun("x"))), styles: styles)
         let parsed = try DOCXParser.readStyles(from: docx)
+        // (Neither the table style's conditional formatting nor the same inside a
+        // paragraph style, "Odd", makes a style hide.)
         XCTAssertEqual(parsed.hiddenParagraphStyles, ["Secret", "SecretChild"])
         XCTAssertEqual(parsed.hiddenCharacterStyles, ["Hide", "HideChild"])
         XCTAssertEqual(parsed.defaultParagraphStyle, "Normal")
@@ -216,5 +219,87 @@ final class DOCXHiddenTextTests: XCTestCase {
         let deleted = "<w:del w:id=\"1\" w:author=\"A\"><w:r><w:delText xml:space=\"preserve\">gone </w:delText></w:r></w:del>"
         let inserted = "<w:ins w:id=\"2\" w:author=\"A\">" + docxRun("added ") + "</w:ins>"
         XCTAssertEqual(try markdown(docxParagraph(docxRun("Kept ") + deleted + inserted + docxRun("end"))), "Kept added end")
+    }
+
+    // MARK: - Fields, links, and boxes
+
+    /// The result of a hidden field, a hidden link's label, and hidden text in
+    /// a text box are left out as hidden words are anywhere; the words around
+    /// them are read.
+    func testHiddenFieldsLinksAndBoxes() throws {
+        let hiddenField = """
+            <w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText> PAGE </w:instrText></w:r>\
+            <w:r><w:fldChar w:fldCharType="separate"/></w:r>\
+            \(docxRun("7", "<w:vanish/>"))<w:r><w:fldChar w:fldCharType="end"/></w:r>
+            """
+        let hiddenLink = "<w:hyperlink r:id=\"rId9\">\(docxRun("link label", "<w:vanish/>"))</w:hyperlink>"
+        let box = "<w:r><w:pict><w:txbxContent>\(docxParagraph(docxRun("hidden in box", "<w:vanish/>") + docxRun("shown in box")))</w:txbxContent></w:pict></w:r>"
+        let body = docxParagraph(docxRun("A ") + hiddenField + docxRun("B ") + hiddenLink + docxRun("C") + box)
+        XCTAssertEqual(try docxReadingText(body: body), "A B C\n\nshown in box")
+    }
+
+    // MARK: - Moved and deleted text
+
+    /// Text a change moved is read once, where it was moved to; the old place
+    /// (`w:moveFrom`) is a deletion. A `w:t` inside `w:del` is not read either.
+    func testMovedTextIsReadOnceAndDeletedTextNever() throws {
+        let from = "<w:moveFrom w:id=\"1\" w:author=\"A\">\(docxRun("moved words "))</w:moveFrom>"
+        let to = "<w:moveTo w:id=\"2\" w:author=\"A\">\(docxRun("moved words"))</w:moveTo>"
+        let deleted = "<w:del w:id=\"3\" w:author=\"A\">\(docxRun("gone "))</w:del>"
+        let body = docxParagraph(docxRun("Start ") + from + docxRun("middle ") + to + docxRun(" end ") + deleted + docxRun("last"))
+        XCTAssertEqual(try docxReadingText(body: body), "Start middle moved words end last")
+    }
+
+    /// A line break, a tab, and a hyphen in a deleted or moved-away run are left
+    /// out with it.
+    func testBreaksInDeletedRunsAreLeftOut() throws {
+        let deleted = "<w:del w:id=\"1\" w:author=\"A\"><w:r><w:br/><w:tab/><w:noBreakHyphen/></w:r></w:del>"
+        XCTAssertEqual(try docxReadingText(body: docxParagraph(docxRun("One") + deleted + docxRun("Two"))), "OneTwo")
+    }
+
+    /// A non-breaking hyphen is the hyphen RTF's `\\_` gives, and `w:cr` breaks
+    /// the line as `w:br` does, unless hidden.
+    func testNoBreakHyphenAndCarriageReturn() throws {
+        let body = docxParagraph(
+            docxRun("well") + "<w:r><w:noBreakHyphen/></w:r>" + docxRun("known") + "<w:r><w:cr/></w:r>" + docxRun("next")
+                + "<w:r><w:rPr><w:vanish/></w:rPr><w:noBreakHyphen/><w:cr/></w:r>" + docxRun(" end")
+        )
+        XCTAssertEqual(try docxReadingText(body: body), "well-known next end")
+    }
+
+    // MARK: - Pages and tables
+
+    /// A paragraph that holds hidden words and no visible ones begins no page
+    /// by `w:pageBreakBefore`, whether the property is its own or its style's;
+    /// a paragraph with no run at all still begins its page, and so does one
+    /// whose words are visible.
+    func testPageBreakBeforeOnAnUnreadParagraphBeginsNoPage() throws {
+        let breaking = "<w:pPr><w:pageBreakBefore/></w:pPr>"
+        let hidden = "<w:p>\(breaking)\(docxRun("hidden", "<w:vanish/>"))</w:p>"
+        let styled = docxParagraph(docxRun("hidden", "<w:vanish/>"), style: "BreaksBefore")
+        let empty = "<w:p>\(breaking)</w:p>"
+        let visible = "<w:p>\(breaking)\(docxRun("seen"))</w:p>"
+        let styles = self.styles.replacingOccurrences(
+            of: "</w:styles>",
+            with: "<w:style w:type=\"paragraph\" w:styleId=\"BreaksBefore\"><w:pPr><w:pageBreakBefore/></w:pPr></w:style></w:styles>"
+        )
+        func pages(_ paragraphs: String...) throws -> [String] {
+            let markdown = try docxMarkdown(body: docxParagraph(docxRun("first")) + paragraphs.joined() + docxParagraph(docxRun("last")),
+                                           styles: styles, includesPages: true)
+            return try pageLabels(of: markdown)
+        }
+        XCTAssertEqual(try pages(hidden), ["1"])
+        XCTAssertEqual(try pages(styled), ["1"])
+        XCTAssertEqual(try pages(empty), ["1", "2"])
+        XCTAssertEqual(try pages(visible), ["1", "2"])
+    }
+
+    /// A table in which no cell holds a word writes no table.
+    func testATableOfHiddenWordsIsNotWritten() throws {
+        func table(_ properties: String) -> String {
+            "<w:tbl><w:tr><w:tc>\(docxParagraph(docxRun("x", properties)))</w:tc><w:tc>\(docxParagraph(docxRun("y", properties)))</w:tc></w:tr></w:tbl>"
+        }
+        XCTAssertEqual(try markdown(docxParagraph(docxRun("Before")), table("<w:vanish/>"), docxParagraph(docxRun("After"))), "Before\n\nAfter")
+        XCTAssertTrue(try markdown(table("")).contains("| x | y |"))
     }
 }
