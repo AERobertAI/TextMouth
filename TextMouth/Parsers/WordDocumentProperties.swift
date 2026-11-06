@@ -145,11 +145,12 @@ enum WordDocumentProperties {
     ///   not fit.
     static func paragraphRuns(
         binTable: Range<Int>, table: OLEBytes, document: OLEBytes,
-        pieces: WordPieceTable, limit: Int, data: OLEBytes? = nil, dialect: WordSprm.Dialect = .modern
+        pieces: WordPieceTable, limit: Int, data: OLEBytes? = nil, dialect: WordSprm.Dialect = .modern,
+        declaredPageCount: Int = 0
     ) throws -> WordFormatRuns<WordParagraphFormat> {
         let entrySize = paragraphEntrySize(dialect)
         return try runs(binTable: binTable, table: table, document: document, pieces: pieces, limit: limit,
-                 dialect: dialect, maximumRuns: (pageSize - 1 - 4) / (4 + entrySize),
+                 dialect: dialect, declaredPageCount: declaredPageCount, maximumRuns: (pageSize - 1 - 4) / (4 + entrySize),
                  // A paragraph is one run, and the modifiers of the piece that
                  // holds its last character (the last range) are the ones
                  // that apply to it all ([MS-DOC] 2.4.6.1).
@@ -302,10 +303,10 @@ enum WordDocumentProperties {
     ///   not fit.
     static func characterRuns(
         binTable: Range<Int>, table: OLEBytes, document: OLEBytes,
-        pieces: WordPieceTable, limit: Int, dialect: WordSprm.Dialect = .modern
+        pieces: WordPieceTable, limit: Int, dialect: WordSprm.Dialect = .modern, declaredPageCount: Int = 0
     ) throws -> WordFormatRuns<WordCharacterFormat> {
         try runs(binTable: binTable, table: table, document: document, pieces: pieces, limit: limit,
-                 dialect: dialect, maximumRuns: (pageSize - 1 - 4) / 5,
+                 dialect: dialect, declaredPageCount: declaredPageCount, maximumRuns: (pageSize - 1 - 4) / 5,
                  // Each character takes the modifiers of its own piece.
                  modifiersOfRange: { ranges, position in ranges[position].modifiers }) { page, index, runCount, modifiers in
             var format = WordCharacterFormat()
@@ -342,6 +343,8 @@ enum WordDocumentProperties {
     /// Walks a bin table's pages and builds the runs of formats `format`
     /// reads from them.
     /// - Parameters:
+    ///   - declaredPageCount: for a Word 6 or Word 95 document, how many pages of this kind the FIB
+    ///     says the file holds (the table may list fewer); 0 for none.
     ///   - maximumRuns: the most runs a page of this kind can hold, by its size.
     ///   - modifiersOfRange: the property modifiers (`Pcd.prm`) that apply to
     ///     the characters of range number `position` of `ranges`, the ranges
@@ -350,7 +353,7 @@ enum WordDocumentProperties {
     ///     `runCount` runs, with the piece modifiers laid over its properties.
     private static func runs<Format>(
         binTable: Range<Int>, table: OLEBytes, document: OLEBytes, pieces: WordPieceTable, limit: Int,
-        dialect: WordSprm.Dialect, maximumRuns: Int,
+        dialect: WordSprm.Dialect, declaredPageCount: Int, maximumRuns: Int,
         modifiersOfRange: (_ ranges: [WordPieceTable.Placed], _ position: Int) -> ArraySlice<UInt8>,
         format: (_ page: Int, _ index: Int, _ runCount: Int, _ modifiers: ArraySlice<UInt8>) throws -> Format
     ) throws -> WordFormatRuns<Format> {
@@ -362,20 +365,38 @@ enum WordDocumentProperties {
         let pageCount = (length - 4) / (4 + numberSize)
         let pageNumbersStart = binTable.lowerBound + (pageCount + 1) * 4
 
-        // The pieces examined in all, for the overlap bound of the piece table.
-        var budget = 16 * (pieces.pieces.count + pageCount * maximumRuns) + 4096
-        var result: [WordFormatRuns<Format>.Run] = []
+        // The pages the table lists, then (in a Word 6 or Word 95 document saved in full) the pages
+        // the FIB says exist beyond the last listed: a bin table that stops short leaves the formatting
+        // of the rest of the file on pages that follow the last, one after another.
+        var pageNumbers: [Int] = []
         for pageIndex in 0..<pageCount {
+            pageNumbers.append(try dialect == .modern
+                ? table.u32(pageNumbersStart + pageIndex * 4) & 0x003F_FFFF
+                : table.u16(pageNumbersStart + pageIndex * 2))
+        }
+        if dialect == .legacy, declaredPageCount > pageCount, let last = pageNumbers.last {
+            for offset in 1...(declaredPageCount - pageCount) {
+                // A page past the stream ends the pages there are.
+                guard document.contains(offset: (last + offset) * pageSize, length: pageSize) else { break }
+                pageNumbers.append(last + offset)
+            }
+        }
+        let listedCount = pageCount
+
+        // The pieces examined in all, for the overlap bound of the piece table.
+        var budget = 16 * (pieces.pieces.count + pageNumbers.count * maximumRuns) + 4096
+        var result: [WordFormatRuns<Format>.Run] = []
+        for (pageIndex, number) in pageNumbers.enumerated() {
             // A page of runs is a unit of work; a cancelled import stops between them.
             try ImportCancellation.throwIfCancelled()
-            // The page number is the low 22 bits (all 16 in Word 6 and Word 95).
-            let number = try dialect == .modern
-                ? table.u32(pageNumbersStart + pageIndex * 4) & 0x003F_FFFF
-                : table.u16(pageNumbersStart + pageIndex * 2)
             let page = number * pageSize
+            let isFollowing = pageIndex >= listedCount
             guard document.contains(offset: page, length: pageSize) else {
                 throw OLEDamage(reason: "a properties page at \(page) is past the stream")
             }
+            // A page that follows the listed ones and is no page of runs (its count of runs is too
+            // large) is not one: the formatting is a help, and this is not what the table said.
+            if isFollowing, try document.u8(page + pageSize - 1) > maximumRuns { continue }
             let runCount = try document.u8(page + pageSize - 1)
             guard runCount <= maximumRuns else { throw OLEDamage(reason: "a properties page holds \(runCount) runs") }
             for index in 0..<runCount {

@@ -167,6 +167,12 @@ enum WordDocumentReader {
             do { return try read() } catch is OLEDamage { return fallback }
         }
 
+        // How many pages of a bin table the FIB says the file holds, for a document saved in full: the
+        // pages beyond the last the table lists follow it. (A Fast Save document's pieces say where they are.)
+        func followingPages(of structure: WordFileInformationBlock.Structure) -> Int {
+            fib.hasPieceTable ? 0 : fib.declaredPageCount(of: structure)
+        }
+
         // The styles, and the properties that name them.
         let styles = try lenient({ () -> WordStyleSheet in
             guard let range = try fib.range(of: .styleSheet, in: table) else { return .empty }
@@ -178,14 +184,14 @@ enum WordDocumentReader {
             guard let range = try fib.range(of: .paragraphBinTable, in: table) else { return WordFormatRuns(runs: []) }
             return try WordDocumentProperties.paragraphRuns(
                 binTable: range, table: table, document: document, pieces: pieces, limit: pieces.characterCount, data: data,
-                dialect: dialect
+                dialect: dialect, declaredPageCount: followingPages(of: .paragraphBinTable)
             )
         }, else: WordFormatRuns(runs: []))
         let characters = try lenient({ () -> WordFormatRuns<WordCharacterFormat> in
             guard let range = try fib.range(of: .characterBinTable, in: table) else { return WordFormatRuns(runs: []) }
             return try WordDocumentProperties.characterRuns(
                 binTable: range, table: table, document: document, pieces: pieces, limit: pieces.characterCount,
-                dialect: dialect
+                dialect: dialect, declaredPageCount: followingPages(of: .characterBinTable)
             )
         }, else: WordFormatRuns(runs: []))
         // The code page of each stretch of a Word 6 or Word 95 document of one-byte characters.

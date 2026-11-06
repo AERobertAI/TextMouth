@@ -132,6 +132,18 @@ struct WordFileInformationBlock {
     var hasTwoByteCharacters: Bool { flags & 0x1000 != 0 }
     /// Whether the table stream is `1Table` (`fWhichTblStm`), or `0Table`.
     var usesOneTable: Bool { flags & 0x0200 != 0 }
+    /// For a Word 6 or Word 95 document, how many formatted disk pages of the bin table `structure` the file
+    /// holds (`cpnBteChp` at 0x18E, `cpnBtePap` at 0x190), or 0 for any other structure or document or a FIB too
+    /// short to say. The table itself may list fewer, and the rest follow the last listed.
+    func declaredPageCount(of structure: Structure) -> Int {
+        guard layout == .legacy, stream.count >= 0x192 else { return 0 }
+        switch structure {
+        case .characterBinTable: return (try? stream.u16(0x18E)) ?? 0
+        case .paragraphBinTable: return (try? stream.u16(0x190)) ?? 0
+        default: return 0
+        }
+    }
+
     /// The name of the table stream.
     var tableStreamName: String { usesOneTable ? "1Table" : "0Table" }
 
@@ -144,13 +156,15 @@ struct WordFileInformationBlock {
     static func read(from stream: OLEBytes) throws -> WordFileInformationBlock? {
         let ident = try stream.u16(0)
         let version = try stream.u16(2)
-        // A file with another identifier and the version of Word 6 or 95 or older
-        // (some Word for Windows and Macintosh files have 0xA697 to 0xA699)
-        // has their layout; any other is not a FIB.
-        guard ident == identifier || ident == word6Identifier || version < firstWord97Version else {
-            throw OLEDamage(reason: "the WordDocument stream is not a FIB")
-        }
-        if ident == word6Identifier || version < firstWord97Version {
+        // A file whose identifier is Word 97's (0xA5EC, which [MS-DOC] says every Word 97 and later
+        // FIB has) is read by that layout whatever its version: Word installs a special empty
+        // document with an `nFib` of 0x00C0. Any other identifier with the version of Word 6 or 95 or
+        // older (Word 6's own is 0xA5DC, and some Word for Windows and Macintosh files have 0xA697 to
+        // 0xA699) has the older layout; any other is not a FIB.
+        if ident != identifier {
+            guard ident == word6Identifier || version < firstWord97Version else {
+                throw OLEDamage(reason: "the WordDocument stream is not a FIB")
+            }
             // Word 5 and older keep to textutil; Word 6 and Word 95 are read here.
             guard version >= firstLegacyVersion, version < firstWord97Version else { return nil }
             return try readLegacy(from: stream, version: version)
