@@ -284,6 +284,28 @@ struct RTFBlockBuilder {
         }
     }
 
+    // MARK: Text boxes
+
+    /// Adds the text of shapes' text boxes right after the paragraph or cell
+    /// that has just ended and held their anchors: as blocks of the body, or as
+    /// paragraphs of the cell (a cell holds paragraphs, not blocks).
+    /// - Parameters:
+    ///   - inTable: whether the paragraph that ended is in a table's cell.
+    ///   - afterCell: whether a `\cell` ended it, so that the cell has been
+    ///     closed into its row.
+    mutating func appendBoxBlocks(_ boxes: [RTFBlock], inTable: Bool, afterCell: Bool) {
+        guard inTable else {
+            blocks.append(contentsOf: boxes)
+            return
+        }
+        let paragraphs = RTFHTMLWriter.paragraphs(of: boxes).filter(\.hasWords)
+        if afterCell, !row.isEmpty {
+            row[row.count - 1].append(contentsOf: paragraphs)
+        } else {
+            cell.append(contentsOf: paragraphs)
+        }
+    }
+
     // MARK: Tables
 
     /// `paragraph` for a table's cell: when it is a list item, carrying its

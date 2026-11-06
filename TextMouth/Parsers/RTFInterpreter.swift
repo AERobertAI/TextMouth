@@ -103,21 +103,30 @@ struct RTFInterpreter {
 
     // MARK: Notes
 
-    /// What the body had in hand when a footnote or endnote began, to take
-    /// up again when it ends. A note is built by a builder of its own, so
-    /// its paragraphs, tables, and page breaks never touch the body's.
+    /// What the body had in hand when a footnote, an endnote, or a shape's
+    /// text box began, to take up again when it ends. Such text is built by a
+    /// builder of its own, so its paragraphs, tables, and page breaks never
+    /// touch the body's.
     private struct BodyInHand {
         var builder: RTFBlockBuilder
         var listMarker: String?
         var lastParagraphProperties: RTFParagraphProperties
+        /// Whether it is a text box, not a note.
+        var isBox: Bool
     }
-    /// The body, set aside while a note is read; nil when none is.
+    /// The body, set aside while a note or a text box is read; nil when none is.
     private var bodyInHand: BodyInHand?
     /// The blocks of the notes finished so far, in the file's order.
     private var noteBlocks: [RTFBlock] = []
-    /// Whether a note is being read (a note inside a note is skipped, so
-    /// that a hostile file cannot nest builders).
-    private var isReadingNote: Bool { bodyInHand != nil }
+    /// The blocks of the text boxes finished since the paragraph that holds
+    /// their anchor began: they are written right after it (`writeBoxes`).
+    private var pendingBoxBlocks: [RTFBlock] = []
+    /// Whether a note or a text box is being read (one inside another is read
+    /// in place, or skipped for a note, so that a hostile file cannot nest
+    /// builders).
+    private var isReadingSideText: Bool { bodyInHand != nil }
+    /// Whether a note is being read.
+    private var isReadingNote: Bool { bodyInHand.map { !$0.isBox } ?? false }
 
     // MARK: Entry point
 
@@ -161,6 +170,8 @@ struct RTFInterpreter {
         if case .heading = kind, builder.currentParagraphHasWords { hasNamedHeading = true }
         var document = RTFDocument()
         document.blocks = try builder.finish(lastParagraph: kind, inTable: lastParagraphProperties.inTable)
+        // Text boxes anchored in the paragraph the document ended in
+        document.blocks.append(contentsOf: pendingBoxBlocks)
         document.notes = noteBlocks
         document.title = title
         document.author = author
@@ -292,16 +303,19 @@ struct RTFInterpreter {
     private func destination(named name: String, starred: Bool) -> RTFDestination? {
         // The words in a shape's text box (`\shptxt`, and `\dptxbxtext` of an
         // old drawing object) are text of the document, set in a frame: they
-        // are read. A shape in a header or a footer is skipped with its text
-        // box; one in a note is read with the note.
-        if state.destination == .shape, name == "shptxt" || name == "dptxbxtext" { return .body }
+        // are read, right after the paragraph that holds the shape's anchor (in
+        // place when the shape is in a note or another box). A shape in a
+        // header or a footer is skipped with its text box.
+        if state.destination == .shape, name == "shptxt" || name == "dptxbxtext" {
+            return isReadingSideText ? .body : .box
+        }
         if state.destination.isUnread { return nil }
         // A note is read where the body is read: not inside the title, a list
         // marker, or another note, and only when a person who reads the body
         // sees its reference: a note referred to in hidden or deleted text is
         // not read.
         if name == "footnote" {
-            return state.destination == .body && !isReadingNote && !state.isUnreadRun ? .note : .skipped
+            return state.destination == .body && !isReadingSideText && !state.isUnreadRun ? .note : .skipped
         }
         if state.destination == .info {
             // Only the title and the author are read of the info group.
@@ -329,28 +343,33 @@ struct RTFInterpreter {
         case .listText:
             markerText = ""
         case .note:
-            beginNote()
+            beginSideText(isBox: false)
+        case .box:
+            beginSideText(isBox: true)
         default:
             break
         }
     }
 
-    /// A footnote or endnote begins: the body is set aside, and the note is
-    /// built apart, with no page breaks and all of what is left of the text
+    /// A footnote, an endnote, or a shape's text box begins: the body is set
+    /// aside, and the text is built apart, with no page breaks and all of what is left of the text
     /// budget. The note is its own context: it begins with no paragraph
     /// properties of the paragraph around its reference mark (no table, no
     /// list), and with that run's emphasis undone. (Its reference is read, or
     /// the note would not have begun, so the text of the note is read.) Text
     /// before the note's first `\pard` may be the note's own custom mark, so it
     /// is held until that is known (`holdsNoteMark`).
-    private mutating func beginNote() {
-        bodyInHand = BodyInHand(builder: builder, listMarker: listMarker, lastParagraphProperties: lastParagraphProperties)
+    private mutating func beginSideText(isBox: Bool) {
+        bodyInHand = BodyInHand(
+            builder: builder, listMarker: listMarker, lastParagraphProperties: lastParagraphProperties, isBox: isBox
+        )
         builder = RTFBlockBuilder(includesPages: false, limit: builder.limit, budget: builder.remainingBudget)
         listMarker = nil
         state.paragraph = RTFParagraphProperties()
         state.isBold = false
         state.isItalic = false
-        holdsNoteMark = true
+        // (A text box has no mark.)
+        holdsNoteMark = !isBox
         heldNoteMark = []
     }
 
@@ -385,9 +404,10 @@ struct RTFInterpreter {
         }
     }
 
-    /// The note being read ends (or the document does): its blocks join the
-    /// notes, what it spent is charged to the body's budget, and the body is
-    /// taken up again. Does nothing when no note is being read.
+    /// The note or text box being read ends (or the document does): its blocks
+    /// join the notes, or wait for the end of the paragraph that holds the box's
+    /// anchor; what it spent is charged to the body's budget, and the body is
+    /// taken up again. Does nothing when none is being read.
     /// - Throws: `DocumentTooLargeError`.
     private mutating func finishNote() throws {
         guard let saved = bodyInHand else { return }
@@ -400,7 +420,21 @@ struct RTFInterpreter {
         lastParagraphProperties = saved.lastParagraphProperties
         bodyInHand = nil
         try builder.spend(spent)
-        noteBlocks.append(contentsOf: blocks)
+        if saved.isBox {
+            pendingBoxBlocks.append(contentsOf: blocks)
+        } else {
+            noteBlocks.append(contentsOf: blocks)
+        }
+    }
+
+    /// Writes the text boxes anchored in the paragraph or cell that has just
+    /// ended, right after it, in its cell when it is in one.
+    /// - Parameter afterCell: whether a `\cell` ended it, so the cell is the
+    ///   last one of the row.
+    private mutating func writeBoxes(inTable: Bool, afterCell: Bool = false) {
+        guard !isReadingSideText, !pendingBoxBlocks.isEmpty else { return }
+        builder.appendBoxBlocks(pendingBoxBlocks, inTable: inTable, afterCell: afterCell)
+        pendingBoxBlocks = []
     }
 
     /// The group that began `destination` (inside `parent`) ends.
@@ -412,7 +446,7 @@ struct RTFInterpreter {
             author = infoText.trimmingCharacters(in: .whitespacesAndNewlines)
         case .listText:
             listMarker = markerText
-        case .note:
+        case .note, .box:
             try finishNote()
         case .listTable:
             listTable.finish()
@@ -531,7 +565,7 @@ struct RTFInterpreter {
     private mutating func emit(_ text: String) throws {
         guard !text.isEmpty else { return }
         switch state.destination {
-        case .body, .note:
+        case .body, .note, .box:
             guard !state.isUnreadRun else {
                 // The words are not read, and a page that a `\pagebb` of their
                 // paragraph began is not begun if they were all it held
@@ -656,7 +690,7 @@ struct RTFInterpreter {
             readStyleWord(name, parameter)
         case .listTable:
             readListWord(name, parameter)
-        case .body, .note, .listText, .title, .author:
+        case .body, .note, .box, .listText, .title, .author:
             if name == "tab", state.destination.isBody, !state.isUnreadRun,
                let bullet = builder.takeBulletMark(from: TextutilHTMLStructure.bulletCharacters) {
                 // A bullet and a tab begin a list item, as writers without
@@ -867,6 +901,7 @@ struct RTFInterpreter {
         // A heading that holds no words (all hidden, say) names no heading
         if case .heading = kind, builder.currentParagraphHasWords { hasNamedHeading = true }
         try builder.finishParagraph(kind, inTable: forcedInTable || properties.inTable)
+        writeBoxes(inTable: forcedInTable || properties.inTable)
         listMarker = nil
     }
 
@@ -875,6 +910,7 @@ struct RTFInterpreter {
         // The cell's last paragraph is a paragraph of the table whatever
         // its properties say.
         try builder.endCell(lastParagraph: paragraphKind(of: state.paragraph))
+        writeBoxes(inTable: true, afterCell: true)
         listMarker = nil
     }
 

@@ -36,6 +36,10 @@ enum RTFDestination: Equatable {
     /// The number or bullet a list item shows (`\listtext`, `\pntext`),
     /// read only to learn which kind of list it is, and never read aloud.
     case listText
+    /// The text of a shape's text box (`\shptxt`, `\dptxbxtext`): the body of the
+    /// document set in a frame, read right after the paragraph that holds the
+    /// shape's anchor.
+    case box
     /// A footnote or an endnote (`\footnote`, with `\ftnalt` for an
     /// endnote): its text is read after the main text, in the order the file
     /// keeps the notes. Its group's text is the body of the document, set
@@ -52,7 +56,7 @@ enum RTFDestination: Equatable {
     /// Whether the text of the destination is the document's own words,
     /// set in paragraphs: the body and a note.
     var isBody: Bool {
-        self == .body || self == .note
+        self == .body || self == .note || self == .box
     }
 
     /// The destination the control word `name` starts when it is the first
