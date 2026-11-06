@@ -233,7 +233,9 @@ struct StorageSettingsView: View {
                         isRecoveringIndex: isRecoveringIndex,
                         directoryExists: directoryExists,
                         hasUnsavedChanges: hasUnsavedChanges,
-                        isLibraryUnavailable: unavailability != nil
+                        isLibraryUnavailable: unavailability != nil,
+                        unavailableStatus: unavailability.map(DataDirectoryUnavailableText.title(for:))
+                            ?? DataDirectoryUnavailableText.title
                     ))
                     .foregroundColor(
                         unavailability != nil || isRecoveringIndex || hasUnsavedChanges
@@ -609,10 +611,11 @@ struct StorageSettingsView: View {
         isRecoveringIndex: Bool,
         directoryExists: Bool,
         hasUnsavedChanges: Bool = false,
-        isLibraryUnavailable: Bool = false
+        isLibraryUnavailable: Bool = false,
+        unavailableStatus: String = DataDirectoryUnavailableText.title
     ) -> String {
         if isLibraryUnavailable {
-            return DataDirectoryUnavailableText.title
+            return unavailableStatus
         }
         if isRecoveringIndex {
             return LibraryIndexRecoveryText.settingsStatus

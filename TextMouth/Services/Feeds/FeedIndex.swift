@@ -328,7 +328,10 @@ enum FeedIndexFiles {
             && !keptRows.owns(tmbDirectoryName: name) {
             let package = folder.appendingPathComponent(name, isDirectory: true)
             let marker = TextMouthPaths.removedFromLibraryMarkerPath(in: package)
-            guard !FileManager.default.fileExists(atPath: marker.path),
+            // The marker is looked up with downloads refused, since a package
+            // only in the cloud would be downloaded on the main thread; the
+            // record read below is refused too, and skips the package.
+            guard !DatalessFiles.withoutDownloading({ FileManager.default.fileExists(atPath: marker.path) }),
                   let record = try? DatalessFiles.withoutDownloading({ try StoredBookRecord.read(from: package) }).info else {
                 continue
             }

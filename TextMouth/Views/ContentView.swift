@@ -23,6 +23,10 @@ struct LibraryWindowView: View {
     @State private var showTextInput = false
     /// The NSWindow hosting this library view, captured via WindowAccessor
     @State private var hostWindow: PlatformWindow?
+    /// The app-wide action that reached this window while the library's
+    /// files were on their way from the cloud, such as a book opened from
+    /// Finder: taken once the library opens, refused if it does not.
+    @State private var heldGlobalAction: GlobalAction?
 
     /// Finder-style folder navigation history (back/forward with Cmd+[ / Cmd+])
     @StateObject private var folderNav = FolderNavigationHistory()
@@ -146,6 +150,11 @@ struct LibraryWindowView: View {
             }
         }
         .navigationTitle(windowTitle)
+        // A held action is taken when the library opens, or refused when the
+        // fetch ends without it.
+        .onChange(of: libraryViewModel.dataDirectoryUnavailability) {
+            releaseHeldGlobalAction(openingReadersWith: openReaderWindow)
+        }
         .frame(minWidth: 600, minHeight: 400)
         .fileImporter(
             isPresented: $showFileImporter,
@@ -262,8 +271,8 @@ struct LibraryWindowView: View {
     private var windowTitle: String {
         // VoiceOver names the window by its title when moving between
         // windows, so it says why the library isn't shown (FR02).
-        guard libraryViewModel.dataDirectoryUnavailability == nil else {
-            return DataDirectoryUnavailableText.title
+        if let reason = libraryViewModel.dataDirectoryUnavailability {
+            return DataDirectoryUnavailableText.title(for: reason)
         }
         let location = LibraryLocation(view: shownView, folderPath: currentFolderPath)
         return location.windowTitle(sortedBy: libraryViewModel.sortState(at: location))
@@ -326,6 +335,29 @@ struct LibraryWindowView: View {
         }
     }
 
+    /// Refuses `action` because the library can't be used: the window says
+    /// so, and the requests the action carried are dropped with it.
+    private func refuse(_ action: GlobalAction) {
+        guard let refusal = DataDirectoryUnavailableText.refusal(of: action) else { return }
+        libraryViewModel.refuseWhileDataDirectoryUnavailable(refusal, from: hostWindow)
+        ReaderOpenRefusal.dropRequests(for: action)
+    }
+
+    /// Takes the held action once the library is open, or refuses it when
+    /// the library is unavailable and no longer on its way. Nothing happens
+    /// while the files are still arriving.
+    private func releaseHeldGlobalAction(openingReadersWith openReaderWindow: OpenWindowAction) {
+        guard let action = heldGlobalAction else { return }
+        let reason = libraryViewModel.dataDirectoryUnavailability
+        guard reason?.isGettingFromCloud != true else { return }
+        heldGlobalAction = nil
+        if reason == nil {
+            takeGlobalAction(action, openingReadersWith: openReaderWindow)
+        } else {
+            refuse(action)
+        }
+    }
+
     /// Takes an app-wide action the router chose this Library window for.
     /// A panel is presented on this window, brought to the front first: a
     /// reader, Settings, or another Library window may be key, and the panel
@@ -334,11 +366,16 @@ struct LibraryWindowView: View {
         // Nothing is added to the library or opened from it while it can't
         // be used (FR02): the window comes forward and says so instead, and
         // a refused open's requests are dropped with it.
-        if libraryViewModel.dataDirectoryUnavailability != nil,
-           let refusal = DataDirectoryUnavailableText.refusal(of: action) {
+        // While the library's files are on their way, the action waits for
+        // the library, which opens by itself, instead of being refused.
+        if let reason = libraryViewModel.dataDirectoryUnavailability,
+           DataDirectoryUnavailableText.refusal(of: action) != nil {
             bringToFront()
-            libraryViewModel.refuseWhileDataDirectoryUnavailable(refusal, from: hostWindow)
-            ReaderOpenRefusal.dropRequests(for: action)
+            if reason.isGettingFromCloud {
+                heldGlobalAction = action
+            } else {
+                refuse(action)
+            }
             return
         }
         // Nor while it moves (FR02).

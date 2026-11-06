@@ -978,6 +978,17 @@ final class ConfigService: ObservableObject {
         return contents
     }
 
+    /// Takes up config.json once it is on this Mac, after it was found only in
+    /// the cloud (`noteFileInCloud()`): the file is merged with the settings
+    /// in use as the first save that finds it would, so a setting changed
+    /// here meanwhile keeps its new value and every other one takes the
+    /// file's, without a restart. Does nothing unless the file was waiting
+    /// in the cloud; while it still is, nothing is read or written.
+    func fileMayHaveArrived() {
+        guard isFileInCloud else { return }
+        saveToDisk()
+    }
+
     /// Notes that config.json is only in the cloud, so it is neither read
     /// nor written now (FR02), which the debug log says once.
     private func noteFileInCloud() {
