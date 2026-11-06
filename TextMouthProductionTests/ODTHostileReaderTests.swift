@@ -27,13 +27,12 @@ final class ODTHostileReaderTests: XCTestCase {
         file: StaticString = #filePath,
         line: UInt = #line
     ) -> String? {
-        let start = Date()
-        defer {
-            let elapsed = Date().timeIntervalSince(start)
-            XCTAssertLessThan(elapsed, seconds ?? allowedSeconds, "\(label) took \(elapsed) seconds", file: file, line: line)
-        }
+        // On another thread, so that a read that hangs fails the test.
+        guard let outcome = finishing(within: seconds ?? allowedSeconds, label, file: file, line: line, {
+            try ODTDocumentReader.html(of: url, includesPages: true)
+        }) else { return nil }
         do {
-            return try ODTDocumentReader.html(of: url, includesPages: true)
+            return try outcome.get()
         } catch {
             let known = error is TextutilConverter.Failure || error is DocumentTooLargeError || error is FileImportError
             XCTAssertTrue(known, "\(label) threw an error the reader does not name: \(error)", file: file, line: line)

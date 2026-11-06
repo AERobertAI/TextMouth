@@ -42,9 +42,15 @@ final class OfficeBlockWriter {
     private var pendingBreaks = 0
     /// Whether a paragraph was written since the page that waits was asked for.
     private var paragraphSincePendingBreak = false
-    /// Whether a letter or digit has been read at all (a hard break before
-    /// any words begins no page: the document's first page is page 1 already).
+    /// Whether a letter or digit has been read in the main flow's own
+    /// paragraphs (a hard break before any words begins no page: the
+    /// document's first page is page 1 already). The words of text boxes and
+    /// shapes anchored before them do not count: they are not the first page's
+    /// text, and the text proper has not begun.
     private var hasCountedText = false
+    /// How many paragraphs that hold what is anchored in another are being
+    /// written (text boxes, shapes, and the descriptions of pictures).
+    private var anchoredDepth = 0
     /// Whether the row of the table open has had its soft page break: the
     /// layout records one for each cell it breaks, and a row breaks once.
     private var rowHasSoftBreak = false
@@ -73,9 +79,43 @@ final class OfficeBlockWriter {
     /// - Throws: `DocumentTooLargeError`.
     func finish() throws -> (blocks: [RTFBlock], pageBreaks: Int) {
         var blocks = try main.builder.finish(lastParagraph: .body, inTable: false)
-        if !hasHeadings { blocks = RTFSizeHeadings.apply(to: blocks) }
+        if !hasHeadings { blocks = Self.withHeadingsBySize(blocks) }
         try appendNotes(of: main, to: &blocks)
         return (blocks, main.builder.pageBreaks)
+    }
+
+    /// `blocks` with the headings found by size, as the rich-text reader
+    /// finds them, but without the descriptions of pictures: those are not
+    /// the document's text, so they are neither counted in the body size nor
+    /// ever a heading. (The guess ignores a paragraph with no words, so the
+    /// descriptions are emptied for it and the original paragraphs put back.)
+    private static func withHeadingsBySize(_ blocks: [RTFBlock]) -> [RTFBlock] {
+        let emptied = blocks.map { block -> RTFBlock in
+            switch block {
+            case .paragraph(let paragraph): return .paragraph(withoutDescription(paragraph))
+            case .heading(let paragraph, let level): return .heading(withoutDescription(paragraph), level: level)
+            case .listItem(let paragraph, let level, let numbered):
+                return .listItem(withoutDescription(paragraph), level: level, numbered: numbered)
+            case .table(var table):
+                table.rows = table.rows.map { $0.map { $0.map(withoutDescription) } }
+                return .table(table)
+            }
+        }
+        let guessed = RTFSizeHeadings.apply(to: emptied)
+        // A paragraph the guess made a heading, with its own words back.
+        return zip(blocks, guessed).map { original, found in
+            guard case .paragraph(let paragraph) = original, case .heading(_, let level) = found else { return original }
+            return .heading(paragraph, level: level)
+        }
+    }
+
+    /// `paragraph`, or an empty one if it is a description.
+    private static func withoutDescription(_ paragraph: RTFParagraph) -> RTFParagraph {
+        let isDescription = paragraph.inlines.contains { inline in
+            if case .text(_, _, _, let size) = inline { return size == OfficeRun.descriptionSize }
+            return false
+        }
+        return isDescription ? RTFParagraph() : paragraph
     }
 
     /// Appends the blocks of the notes of `flow`, each followed by the notes
@@ -232,7 +272,7 @@ final class OfficeBlockWriter {
                     pendingBreaks = 0
                 }
                 try flow.builder.appendText(words, bold: run.bold, italic: run.italic, size: run.size)
-                if isCounted, flow === main { hasCountedText = true }
+                if isCounted, flow === main, anchoredDepth == 0 { hasCountedText = true }
             case .lineBreak:
                 flow.builder.appendLineBreak()
             case .pageStart:
@@ -250,6 +290,8 @@ final class OfficeBlockWriter {
         if !isWordless { paragraphSincePendingBreak = true }
         if atEnd, paragraph.startsPageAfter { beginPage() }
         // What is anchored in the paragraph follows it, in order.
+        anchoredDepth += 1
+        defer { anchoredDepth -= 1 }
         for item in paragraph.deferred { try run(item) }
     }
 

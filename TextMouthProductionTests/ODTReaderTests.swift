@@ -892,11 +892,73 @@ final class ODTReaderTests: XCTestCase {
         XCTAssertEqual(cells.filter { $0.contains("many") }.count, 16)
     }
 
+    /// A picture's description is the document's words but never a heading,
+    /// and it is no part of the guess at headings by size: with body text of
+    /// 10 pt and a description written at the default 12 pt, it was promoted
+    /// (`layout/tdf117187.odt`). A paragraph that really is larger still is.
+    func testADescriptionIsNeverAHeadingNorCountedInTheGuess() throws {
+        let styles = """
+            <style:style style:name="Small" style:family="paragraph"><style:text-properties fo:font-size="10pt"/></style:style>\
+            <style:style style:name="Big" style:family="paragraph"><style:text-properties fo:font-size="18pt"/></style:style>
+            """
+        let body = (0..<3).map { "<text:p text:style-name=\"Small\">Body paragraph number \($0) has a good many words in it.</text:p>" }.joined()
+            + "<text:p text:style-name=\"Small\">Picture <draw:frame><draw:image/><svg:desc>Alt words here</svg:desc></draw:frame> end.</text:p>"
+        XCTAssertEqual(try odfLines(body, styles: styles), [
+            "<p>Body paragraph number 0 has a good many words in it.</p>", "<p>Body paragraph number 1 has a good many words in it.</p>",
+            "<p>Body paragraph number 2 has a good many words in it.</p>", "<p>Picture end.</p>", "<p>Alt words here</p>",
+        ])
+        // A real large paragraph is a heading, and the description beside it is not.
+        let withTitle = "<text:p text:style-name=\"Big\">Big title</text:p>" + body
+        let lines = try odfLines(withTitle, styles: styles)
+        XCTAssertEqual(lines.first, "<h1>Big title</h1>")
+        XCTAssertEqual(lines.last, "<p>Alt words here</p>")
+        // A document of descriptions alone: every one body text, none a heading.
+        let alone = "<text:p><draw:frame><draw:image/><svg:desc>Only alt text</svg:desc></draw:frame></text:p>"
+        XCTAssertEqual(try odfLines(alone), ["<p>Only alt text</p>"])
+    }
+
+    /// A frame that holds a text box reads the box, and its description, which
+    /// repeats the box's words (`odfimport/PageBackground.odt`), is not read
+    /// again; so with a shape that has paragraphs of its own. A picture or
+    /// object with no text box has its description read.
+    func testADescriptionIsReadOnlyForAFrameWithNoWordsOfItsOwn() throws {
+        XCTAssertEqual(try odfLines(
+            "<text:p>Before <draw:frame><draw:text-box><text:p>Box words</text:p></draw:text-box><svg:desc>Box words</svg:desc></draw:frame> after.</text:p>"
+        ), ["<p>Before after.</p>", "<p>Box words</p>"])
+        XCTAssertEqual(try odfLines(
+            "<text:p>Before <draw:custom-shape><text:p>Shape words</text:p><svg:desc>Shape description</svg:desc></draw:custom-shape> after.</text:p>"
+        ), ["<p>Before after.</p>", "<p>Shape words</p>"])
+        XCTAssertEqual(try odfLines(
+            "<text:p>Before <draw:frame><draw:image/><svg:desc>Alt words</svg:desc></draw:frame> after.</text:p>"
+        ), ["<p>Before after.</p>", "<p>Alt words</p>"])
+        XCTAssertEqual(try odfLines(
+            "<text:p>Before <draw:frame><draw:object/><svg:title>A formula</svg:title></draw:frame> after.</text:p>"
+        ), ["<p>Before after.</p>", "<p>A formula</p>"])
+    }
+
+    /// The first page ends only at the main text's own words: the words of a
+    /// text box anchored before them do not make a master page's empty
+    /// paragraph begin page 2 (`layout/tdf122607.odt` read 4 pages where the
+    /// file says 3). With words of its own first, the same paragraph does.
+    func testTextBoxWordsBeforeTheTextBeginNoPage() throws {
+        let master = "<style:style style:name=\"First\" style:family=\"paragraph\" style:master-page-name=\"First_20_Page\"/>"
+        let page1 = "<span role=\"doc-pagebreak\" aria-label=\"1\"></span>"
+        XCTAssertEqual(try odfLines(
+            "<text:p><draw:frame><draw:text-box><text:p>Box words come first</text:p></draw:text-box></draw:frame></text:p>"
+                + "<text:p text:style-name=\"First\"/><text:p>Main words follow.</text:p>",
+            styles: master, pages: true
+        ), [page1 + "<p>Box words come first</p>", "<p>Main words follow.</p>"])
+        XCTAssertEqual(try odfLines(
+            "<text:p>Main words first.</text:p><text:p text:style-name=\"First\"/><text:p>Second page.</text:p>",
+            styles: master, pages: true
+        ), [page1 + "<p>Main words first.</p>", "<p><span role=\"doc-pagebreak\" aria-label=\"2\"></span>Second page.</p>"])
+    }
+
     /// A list in a text box starts at its own level, a list header is not an
-    /// item, and a list nested 95 deep (193 elements deep, under the 200 the
-    /// reader allows, and past the 40 list levels it tells apart) is read to
-    /// its words. One nested 100 deep is 203 elements deep, past the limit,
-    /// and is refused.
+    /// item, and a list nested 98 deep (199 elements deep, the most the 200 the
+    /// reader allows leaves, and past the 40 list levels it tells apart) is
+    /// read to its words. One nested 99 deep is 201 elements deep, past the
+    /// limit, and is refused.
     func testListsInTextBoxesListHeadersAndDeepLists() throws {
         XCTAssertEqual(try odfLines(
             """
@@ -907,14 +969,14 @@ final class ODTReaderTests: XCTestCase {
         XCTAssertEqual(try odfLines(
             "<text:list><text:list-header><text:p>Header words</text:p></text:list-header><text:list-item><text:p>item</text:p></text:list-item></text:list>"
         ), ["<p>Header words</p>", "<ul>", "<li>item</li>", "</ul>"])
-        let deep = (0..<95).map { "<text:list><text:list-item><text:p>level \($0)</text:p>" }.joined()
-            + String(repeating: "</text:list-item></text:list>", count: 95)
+        let deep = (0..<98).map { "<text:list><text:list-item><text:p>level \($0)</text:p>" }.joined()
+            + String(repeating: "</text:list-item></text:list>", count: 98)
         let words = try odfHeard(deep).filter { $0.allSatisfy(\.isNumber) }
-        XCTAssertEqual(words, (0..<95).map(String.init))
-        // The limit is on the elements' depth (200), not on the lists: 100
+        XCTAssertEqual(words, (0..<98).map(String.init))
+        // The limit is on the elements' depth (200), not on the lists: 99
         // levels of lists, with the three elements above them, is past it.
-        let tooDeep = (0..<100).map { "<text:list><text:list-item><text:p>level \($0)</text:p>" }.joined()
-            + String(repeating: "</text:list-item></text:list>", count: 100)
+        let tooDeep = (0..<99).map { "<text:list><text:list-item><text:p>level \($0)</text:p>" }.joined()
+            + String(repeating: "</text:list-item></text:list>", count: 99)
         XCTAssertThrowsError(try odfLines(tooDeep)) {
             XCTAssertEqual($0 as? TextutilConverter.Failure, .unreadable(.odt))
         }

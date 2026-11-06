@@ -23,6 +23,11 @@ struct OfficeRun: Equatable {
         return run
     }
 
+    /// The size of the text of a description (a picture's alt text): no real
+    /// text has it, so that the guess at headings by size can leave such a
+    /// paragraph out of its census and out of its candidates.
+    static let descriptionSize = -1
+
     /// `points` as half points, held to a sane range.
     static func halfPoints(_ points: Double) -> Int {
         min(max(Int((points * 2).rounded()), 1), 2_000)
