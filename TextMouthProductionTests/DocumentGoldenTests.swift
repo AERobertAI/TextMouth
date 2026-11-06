@@ -156,7 +156,6 @@ final class DocumentGoldenTests: XCTestCase {
     private var recordedFormatSampleNames: [String] {
         TextPipelineFixtures.formatSampleNames.filter {
             TextPipelineFixtures.formatSamplesHeldBack[$0] == nil && !TextPipelineFixtures.isComparedByODTTests($0)
-                && !TextPipelineFixtures.isAwaitingGoldenRerecording($0)
         }
     }
 

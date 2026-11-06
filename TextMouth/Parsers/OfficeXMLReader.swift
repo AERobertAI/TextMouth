@@ -195,10 +195,9 @@ class OfficeXMLReader: PackageSAXParser {
     /// Ends the read with `ImportCancelled` if the import running on this
     /// thread was cancelled, as a conversion by textutil is stopped. A read
     /// outside an import is never stopped. This is the one place the reader
-    /// asks (`ImportCancellation.throwIfCancelled()`, from the rich-text
-    /// branch, does the same where it is on the branch).
+    /// asks.
     private func stopIfCancelled() {
-        if ImportCancellation.current?.isCancelled == true { fail(ImportCancelled()) }
+        do { try ImportCancellation.throwIfCancelled() } catch { fail(error) }
     }
 
     /// Ends the read with `error`, which `read()` throws.
