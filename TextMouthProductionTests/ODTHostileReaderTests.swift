@@ -213,7 +213,8 @@ final class ODTHostileReaderTests: XCTestCase {
         let page1 = "<span role=\"\(TextutilPageBreaks.pageBreakRole)\" aria-label=\"1\"></span>"
         XCTAssertEqual(odfBodyLines(html), [page1 + "<p><strong>words</strong></p>"])
 
-        // One more than the most styles a document may define.
+        // One more than the most styles a document may define: the edge, and
+        // the last style in the part, so that nothing follows it to count it.
         var many = ""
         for index in 0...ODTStyleSheet.maximumStyles {
             many += "<style:style style:name=\"M\(index)\" style:family=\"text\"/>"

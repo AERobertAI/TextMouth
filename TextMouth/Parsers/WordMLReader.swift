@@ -370,6 +370,8 @@ final class WordMLReader: OfficeXMLReader {
         case "w:style":
             if let finished = style { sheet.add(finished.style, type: finished.type, id: finished.id) }
             style = nil
+            // A style is added where it ends, so this is where the limit is met.
+            if sheet.count > WordMLStyleSheet.maximumStyles { fail(TextutilConverter.Failure.unreadable(format)) }
         case "w:lvl": listLevel = nil
         case "w:listDef": listDefinition = nil
         case "w:list": currentList = nil

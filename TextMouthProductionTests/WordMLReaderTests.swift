@@ -538,6 +538,21 @@ final class WordMLReaderTests: XCTestCase {
         }
     }
 
+    /// A document may define 100,000 styles; the 100,001st ends the read as
+    /// an unreadable document (the limit is met where a style ends, so the
+    /// last style of a part is checked too).
+    func testTheStyleLimitHoldsAtItsEdge() throws {
+        func styles(_ count: Int) -> String {
+            "<w:styles>" + (0..<count).map { "<w:style w:type=\"character\" w:styleId=\"S\($0)\"/>" }.joined() + "</w:styles>"
+        }
+        let url = try file(holding: document(body: paragraph("words"), head: styles(WordMLStyleSheet.maximumStyles)))
+        XCTAssertEqual(odfPlainText(try WordMLDocumentReader.html(of: url, includesPages: false)), "words")
+        let over = try file(holding: document(body: paragraph("words"), head: styles(WordMLStyleSheet.maximumStyles + 1)), named: "over.xml")
+        XCTAssertThrowsError(try WordMLDocumentReader.html(of: over, includesPages: false)) {
+            XCTAssertEqual($0 as? TextutilConverter.Failure, .unreadable(.wordml))
+        }
+    }
+
     // MARK: - The Switch
 
     /// iOS always reads Word 2003 XML with this reader, and the Mac does since

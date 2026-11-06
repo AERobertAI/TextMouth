@@ -110,7 +110,6 @@ final class ODTContentReader: ODTXMLReader {
                 }
             } else if ODTStyleCollector.handles(name) {
                 collector.start(name, attributes: attributes)
-                if sheet.count > ODTStyleSheet.maximumStyles { fail(TextutilConverter.Failure.unreadable(format)) }
             }
             return
         }
@@ -125,6 +124,8 @@ final class ODTContentReader: ODTXMLReader {
     override func endElement(_ name: String) {
         guard inBody else {
             collector.end(name)
+            // A style is added where it ends, so this is where the limit is met.
+            if sheet.count > ODTStyleSheet.maximumStyles { fail(TextutilConverter.Failure.unreadable(format)) }
             return
         }
         do {
