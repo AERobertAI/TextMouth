@@ -26,41 +26,75 @@ struct OfficeNameScope {
     /// file, which is then read without any translation.
     private var translations: [String: String] = [:]
 
-    /// The translations in force before each open element declared its
-    /// own, or nil for an element that declared none.
-    private var enclosing: [[String: String]?] = []
+    /// The usual prefix of the default namespace (`xmlns="…"`), if the file
+    /// binds one to a namespace of the format: names without a prefix are in it.
+    private var defaultPrefix: String?
+
+    /// One declaration an element made, to be undone when it closes: the
+    /// prefix (nil for the default namespace) and what it was bound to before.
+    private struct Change {
+        let prefix: String?
+        let before: String?
+    }
+
+    /// What each open element changed. An element that declares nothing, the
+    /// common case, holds an empty array, which costs nothing: the time an
+    /// element takes is the time of its own declarations, not of every
+    /// prefix the file binds.
+    private var changes: [[Change]] = []
 
     /// Opens an element whose attributes are `attributes`, noting any
     /// namespace declarations they hold.
     mutating func enter(_ attributes: [String: String]) {
-        // The common case: an element declares no namespace.
-        guard attributes.keys.contains(where: { $0.hasPrefix("xmlns:") }) else {
-            enclosing.append(nil)
-            return
+        var made: [Change] = []
+        for (name, uri) in attributes {
+            if name == "xmlns" {
+                made.append(Change(prefix: nil, before: defaultPrefix))
+                defaultPrefix = usualPrefixes[uri]
+            } else if name.hasPrefix("xmlns:") {
+                let prefix = String(name.dropFirst("xmlns:".count))
+                made.append(Change(prefix: prefix, before: translations[prefix]))
+                if let usual = usualPrefixes[uri], usual != prefix {
+                    translations[prefix] = usual
+                } else {
+                    // Bound to the usual prefix, or to a namespace not read.
+                    translations[prefix] = nil
+                }
+            }
         }
-        enclosing.append(translations)
-        for (name, uri) in attributes where name.hasPrefix("xmlns:") {
-            let prefix = String(name.dropFirst("xmlns:".count))
-            if let usual = usualPrefixes[uri], usual != prefix {
-                translations[prefix] = usual
+        changes.append(made)
+    }
+
+    /// Closes the element opened last, undoing its declarations.
+    mutating func leave() {
+        guard let made = changes.popLast() else { return }
+        for change in made.reversed() {
+            if let prefix = change.prefix {
+                translations[prefix] = change.before
             } else {
-                // Bound to the usual prefix, or to a namespace not read.
-                translations[prefix] = nil
+                defaultPrefix = change.before
             }
         }
     }
 
-    /// Closes the element opened last, forgetting its declarations.
-    mutating func leave() {
-        guard let before = enclosing.popLast() else { return }
-        if let before { translations = before }
+    /// The name of an element, as written, with its prefix translated to the
+    /// usual one; a name without a prefix is in the default namespace.
+    func usualElement(_ name: String) -> String {
+        guard let colon = name.firstIndex(of: ":") else {
+            return defaultPrefix.map { $0 + ":" + name } ?? name
+        }
+        return usual(name, colon: colon)
     }
 
-    /// `name` (an element's or an attribute's, as written) with its prefix
-    /// translated to the usual one.
+    /// `name` (an attribute's, as written) with its prefix translated to the
+    /// usual one. An attribute without a prefix is in no namespace.
     func usual(_ name: String) -> String {
-        guard !translations.isEmpty, let colon = name.firstIndex(of: ":"),
-              let usual = translations[String(name[..<colon])] else { return name }
+        guard !translations.isEmpty, let colon = name.firstIndex(of: ":") else { return name }
+        return usual(name, colon: colon)
+    }
+
+    private func usual(_ name: String, colon: String.Index) -> String {
+        guard let usual = translations[String(name[..<colon])] else { return name }
         return usual + name[colon...]
     }
 
@@ -95,8 +129,16 @@ struct OfficeNameScope {
 /// given for a document it cannot read, naming the format it was read as.
 class OfficeXMLReader: PackageSAXParser {
     /// The deepest nesting of elements read. Office text nests a dozen
-    /// levels in a long table of lists; `libxml2` itself stops at 256.
+    /// levels in a long table of lists. The parser itself reads far deeper
+    /// (5,000 levels parse on this Mac), so this limit is the only guard.
     private static let deepestNesting = 200
+
+    /// How many elements pass between two asks whether the import was
+    /// cancelled.
+    private static let elementsBetweenCancelChecks = 4_096
+
+    /// How many elements have started.
+    private var elementCount = 0
 
     /// How many elements are open.
     private(set) var depth = 0
@@ -133,9 +175,11 @@ class OfficeXMLReader: PackageSAXParser {
     ///   that is damaged, declares a document type, or nests too deeply, and
     ///   whatever error a subclass ended the read with.
     final func read() throws {
-        // XML declares entities only in a document type declaration.
-        // Looking in the raw bytes costs nothing against the parse.
-        if data.range(of: Data("<!DOCTYPE".utf8)) != nil || data.range(of: Data("<!ENTITY".utf8)) != nil {
+        // No part has a document type declaration (entities declared there
+        // can expand into gigabytes), and none has a start tag that long
+        // (the parser takes time that grows with the square of its attributes).
+        // Both are found in the raw bytes, in any encoding (`XMLInputGuard`).
+        if XMLInputGuard.declaresDocumentType(data) || XMLInputGuard.hasStartTag(in: data) {
             throw TextutilConverter.Failure.unreadable(format)
         }
         do {
@@ -146,6 +190,15 @@ class OfficeXMLReader: PackageSAXParser {
             throw failure ?? error
         }
         if let failure { throw failure }
+    }
+
+    /// Ends the read with `ImportCancelled` if the import running on this
+    /// thread was cancelled, as a conversion by textutil is stopped. A read
+    /// outside an import is never stopped. This is the one place the reader
+    /// asks (`ImportCancellation.throwIfCancelled()`, from the rich-text
+    /// branch, does the same where it is on the branch).
+    private func stopIfCancelled() {
+        if ImportCancellation.current?.isCancelled == true { fail(ImportCancelled()) }
     }
 
     /// Ends the read with `error`, which `read()` throws.
@@ -184,13 +237,15 @@ class OfficeXMLReader: PackageSAXParser {
     ) {
         running = parser
         depth += 1
+        elementCount += 1
+        if elementCount % Self.elementsBetweenCancelChecks == 0 { stopIfCancelled() }
         names.enter(attributeDict)
         guard depth <= Self.deepestNesting else {
             fail(TextutilConverter.Failure.unreadable(format))
             return
         }
         guard skippedDepth == nil else { return }
-        startElement(names.usual(elementName), attributes: names.usual(attributeDict))
+        startElement(names.usualElement(elementName), attributes: names.usual(attributeDict))
     }
 
     final func parser(
@@ -209,7 +264,7 @@ class OfficeXMLReader: PackageSAXParser {
             if skipped == depth { skippedDepth = nil }
             return
         }
-        endElement(names.usual(elementName))
+        endElement(names.usualElement(elementName))
     }
 
     final func parser(_ parser: XMLParser, foundCharacters string: String) {

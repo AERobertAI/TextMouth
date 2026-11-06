@@ -467,6 +467,7 @@
 		3E2FAD7FFD2A0B5B3F7A40FB /* OfficeBlockWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 360647C79DEC437181319A7C /* OfficeBlockWriter.swift */; };
 		3E790D2507D71B7EA8F37FC9 /* ReaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227031800A34F0E8E5166D55 /* ReaderView.swift */; };
 		3E97B1DE3A1A93A6E1C0B1AF /* TextAnchor.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE33C70E9656A474AE748067 /* TextAnchor.swift */; };
+		3E9D534A7F786D9F72B33B00 /* XMLInputGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3277B50DE3523B5780546251 /* XMLInputGuard.swift */; };
 		3EB0DD48CBF1F425DD240738 /* CountWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E9078D938630C13A93F8B97 /* CountWording.swift */; };
 		3EE0F1C05C6CC84151E61438 /* FeedRefresherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B37FEF360310FC570790EB7 /* FeedRefresherTests.swift */; };
 		3F24799437A7342BEB112BD2 /* AudioEditCaches.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F906D01E7D55955980E2D3B /* AudioEditCaches.swift */; };
@@ -711,6 +712,7 @@
 		5E41506D5916EE738A08867B /* NowPlayingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2D187AA27CB277F31962348 /* NowPlayingService.swift */; };
 		5E672595605B353E2356D37F /* TranscriptionOffers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C37B39F2A2351610BACE0E53 /* TranscriptionOffers.swift */; };
 		5E744AE6A006B6FDCD2B25A2 /* MarkdownExportWriterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA57971FD93B4B8AE00F8DC3 /* MarkdownExportWriterTests.swift */; };
+		5E9C6E34F83C16033DB593D5 /* XMLInputGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3277B50DE3523B5780546251 /* XMLInputGuard.swift */; };
 		5EA3A7FC5EFFC1A02A1B1646 /* MP3Tag.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF43F1231BD81696BEAE1ADC /* MP3Tag.swift */; };
 		5F1DA44A3BB9AAE4C9C2137D /* LegacyWhereAmIProductionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E3FAF0607E7C7D3A110455D /* LegacyWhereAmIProductionTests.swift */; };
 		5F23E601E35ACCEB213A292A /* RTFStyleSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C98D4FC74ADEC533CDFE9E1D /* RTFStyleSheet.swift */; };
@@ -2321,6 +2323,7 @@
 		32380021A079E8D0F0840AE7 /* MOBIBookStructureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MOBIBookStructureTests.swift; sourceTree = "<group>"; };
 		3238950E230484033F26885C /* DAISYParser+SAXParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DAISYParser+SAXParser.swift"; sourceTree = "<group>"; };
 		327758B773CEE330B6E68D8A /* ODTXMLReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ODTXMLReader.swift; sourceTree = "<group>"; };
+		3277B50DE3523B5780546251 /* XMLInputGuard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XMLInputGuard.swift; sourceTree = "<group>"; };
 		32F63354CCD23FD02A58C6F3 /* FeedItemBookInfoSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedItemBookInfoSheet.swift; sourceTree = "<group>"; };
 		334CD988636746C990492F0E /* LogsInFinder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogsInFinder.swift; sourceTree = "<group>"; };
 		3386D994555FA61359487942 /* DOCXParser+Numbering.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DOCXParser+Numbering.swift"; sourceTree = "<group>"; };
@@ -4247,6 +4250,7 @@
 				C9968ABBF36B90DCC5C52B3E /* WordMLReader.swift */,
 				98299AF911E1BAF9F81601FB /* WordMLStyles.swift */,
 				222778998EA559EECD759D02 /* XMLDocumentSniffer.swift */,
+				3277B50DE3523B5780546251 /* XMLInputGuard.swift */,
 			);
 			path = Parsers;
 			sourceTree = "<group>";
@@ -6753,6 +6757,7 @@
 				843D5EB7373ED213459865F5 /* WordMLStyles.swift in Sources */,
 				E13F6CCF384A1F8F6BF9556C /* XMLDocumentSniffer.swift in Sources */,
 				3C005CAC3196E4368DF92A35 /* XMLEscaping.swift in Sources */,
+				3E9D534A7F786D9F72B33B00 /* XMLInputGuard.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -7395,6 +7400,7 @@
 				D14A37967C8736B042984AD5 /* WordMLStyles.swift in Sources */,
 				F39BE96F64060F3317D18330 /* XMLDocumentSniffer.swift in Sources */,
 				E8335D8EDAFA07DC75D6487D /* XMLEscaping.swift in Sources */,
+				5E9C6E34F83C16033DB593D5 /* XMLInputGuard.swift in Sources */,
 				E7C3963CD29968768019C2E5 /* XMLTree+iOS.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
