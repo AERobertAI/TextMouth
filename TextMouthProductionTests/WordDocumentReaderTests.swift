@@ -69,11 +69,10 @@ final class WordDocumentReaderTests: XCTestCase {
 
     func testTheLibreOfficeSampleHasHeadingsOneToSixAtTheirLevels() throws {
         let body = try sampleBody("doc/libreoffice-tdf104239_chapterNumbering.doc", pages: false)
-        // The headings are numbered by the list their styles are linked to
-        // (see the list tests), so each one's words end the heading.
+        // The headings are numbered by the list their styles are linked to,
+        // but the numbers are silent (see the list tests): each heading is its words alone.
         for level in 1...6 {
-            XCTAssertTrue(body.contains("<h\(level)>"), body)
-            XCTAssertTrue(body.contains("Heading \(level)</h\(level)>"), body)
+            XCTAssertTrue(body.contains("<h\(level)>Heading \(level)</h\(level)>"), body)
         }
     }
 
