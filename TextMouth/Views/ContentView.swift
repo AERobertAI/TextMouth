@@ -23,10 +23,11 @@ struct LibraryWindowView: View {
     @State private var showTextInput = false
     /// The NSWindow hosting this library view, captured via WindowAccessor
     @State private var hostWindow: PlatformWindow?
-    /// The app-wide action that reached this window while the library's
-    /// files were on their way from the cloud, such as a book opened from
-    /// Finder: taken once the library opens, refused if it does not.
-    @State private var heldGlobalAction: GlobalAction?
+    /// The app-wide actions that reached this window while the library's
+    /// files were on their way from the cloud, such as books opened from
+    /// Finder, in order: all taken once the library opens, all refused, with
+    /// the books named, if it does not.
+    @State private var heldGlobalActions: [GlobalAction] = []
 
     /// Finder-style folder navigation history (back/forward with Cmd+[ / Cmd+])
     @StateObject private var folderNav = FolderNavigationHistory()
@@ -145,6 +146,7 @@ struct LibraryWindowView: View {
             NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
         }
         .onDisappear {
+            refuseHeldGlobalActions()
             if let hostWindow {
                 libraryWindowRouter.unregister(hostWindow)
             }
@@ -153,7 +155,13 @@ struct LibraryWindowView: View {
         // A held action is taken when the library opens, or refused when the
         // fetch ends without it.
         .onChange(of: libraryViewModel.dataDirectoryUnavailability) {
-            releaseHeldGlobalAction(openingReadersWith: openReaderWindow)
+            releaseHeldGlobalActions(openingReadersWith: openReaderWindow)
+        }
+        // Nor can they open when another library was chosen.
+        .onChange(of: libraryViewModel.librarySwitchPending) {
+            if libraryViewModel.librarySwitchPending {
+                refuseHeldGlobalActions()
+            }
         }
         .frame(minWidth: 600, minHeight: 400)
         .fileImporter(
@@ -335,26 +343,45 @@ struct LibraryWindowView: View {
         }
     }
 
-    /// Refuses `action` because the library can't be used: the window says
-    /// so, and the requests the action carried are dropped with it.
-    private func refuse(_ action: GlobalAction) {
-        guard let refusal = DataDirectoryUnavailableText.refusal(of: action) else { return }
-        libraryViewModel.refuseWhileDataDirectoryUnavailable(refusal, from: hostWindow)
-        ReaderOpenRefusal.dropRequests(for: action)
+    /// Refuses `actions` because the library can't be used: the window says
+    /// so, and the requests the actions carried are dropped with them. Actions
+    /// that were held while the files were on their way (`wasHeld`) are
+    /// refused together in one sentence that names the books not opened.
+    private func refuse(_ actions: [GlobalAction], wasHeld: Bool) {
+        let message = wasHeld
+            ? DataDirectoryUnavailableText.heldRefusal(of: actions)
+            : actions.first.flatMap(DataDirectoryUnavailableText.refusal(of:))
+        for action in actions {
+            ReaderOpenRefusal.dropRequests(for: action)
+        }
+        guard let message else { return }
+        libraryViewModel.refuseWhileDataDirectoryUnavailable(message, from: hostWindow)
     }
 
-    /// Takes the held action once the library is open, or refuses it when
-    /// the library is unavailable and no longer on its way. Nothing happens
-    /// while the files are still arriving.
-    private func releaseHeldGlobalAction(openingReadersWith openReaderWindow: OpenWindowAction) {
-        guard let action = heldGlobalAction else { return }
+    /// Refuses every held action: the fetch failed, the window is closing, or
+    /// another library was chosen. Does nothing when none is held.
+    private func refuseHeldGlobalActions() {
+        guard !heldGlobalActions.isEmpty else { return }
+        let held = heldGlobalActions
+        heldGlobalActions = []
+        refuse(held, wasHeld: true)
+    }
+
+    /// Takes every held action, in order, once the library is open, or
+    /// refuses them all when the library is unavailable and no longer on its
+    /// way. Nothing happens while the files are still arriving.
+    private func releaseHeldGlobalActions(openingReadersWith openReaderWindow: OpenWindowAction) {
+        guard !heldGlobalActions.isEmpty else { return }
         let reason = libraryViewModel.dataDirectoryUnavailability
         guard reason?.isGettingFromCloud != true else { return }
-        heldGlobalAction = nil
         if reason == nil {
-            takeGlobalAction(action, openingReadersWith: openReaderWindow)
+            let held = heldGlobalActions
+            heldGlobalActions = []
+            for action in held {
+                takeGlobalAction(action, openingReadersWith: openReaderWindow)
+            }
         } else {
-            refuse(action)
+            refuseHeldGlobalActions()
         }
     }
 
@@ -372,9 +399,9 @@ struct LibraryWindowView: View {
            DataDirectoryUnavailableText.refusal(of: action) != nil {
             bringToFront()
             if reason.isGettingFromCloud {
-                heldGlobalAction = action
+                heldGlobalActions.append(action)
             } else {
-                refuse(action)
+                refuse([action], wasHeld: false)
             }
             return
         }
