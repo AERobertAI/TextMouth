@@ -80,7 +80,9 @@ final class LibraryLaunchFilesTests: XCTestCase {
         let gate = scene.holdFetches()
         defer { gate.signal() }
 
-        _ = scene.launch()
+        // Kept alive: the fetch holds the model weakly.
+        let model = scene.launch()
+        defer { withExtendedLifetime(model) {} }
 
         XCTAssertTrue(waitUntil(timeout: 5) { scene.fetched.urls.count == 8 }, "started \(scene.fetched.urls.count)")
         _ = waitUntil(timeout: 0.4) { false }
