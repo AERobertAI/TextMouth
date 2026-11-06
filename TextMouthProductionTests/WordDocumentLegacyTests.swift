@@ -452,20 +452,23 @@ final class WordDocumentLegacyTests: XCTestCase {
         }
     }
 
-    func testTheMacLeavesTheOldLayoutToTextutilUntilTheSwitchAndIOSReadsIt() throws {
+    func testBothAppsReadTheOldLayoutAndTextutilIsReachedOnlyWhenForced() throws {
         let copy = try copyOfFormatSample("doc6/poi-Word6.doc")
-        let html = try OwnDocumentReaders.html(of: copy, as: .doc, includesPages: false)
-        #if os(macOS)
-        XCTAssertNil(html)
-        XCTAssertFalse(WordDocumentReader.readsWord6AndWord95)
-        #else
-        XCTAssertNotNil(html)
-        #endif
+        XCTAssertTrue(WordDocumentReader.readsWord6AndWord95)
+        XCTAssertNotNil(try OwnDocumentReaders.html(of: copy, as: .doc, includesPages: false))
+        // Bound to textutil (as the tests that pin its reading are), the router leaves the file to it.
+        try OwnDocumentReaders.$forcesTextutil.withValue(true) {
+            XCTAssertNil(try OwnDocumentReaders.html(of: copy, as: .doc, includesPages: false))
+        }
         // Asked not to read it, the reader itself says nil, and Word 97 documents read.
         XCTAssertNil(try WordDocumentReader.html(from: Builder().build(), includesPages: false, readsOldLayout: false))
         var modern = WordDocumentBuilder()
         modern.paragraphs = [WordDocumentBuilder.Paragraph("Word 97")]
         XCTAssertNotNil(try WordDocumentReader.html(from: modern.build(), includesPages: false, readsOldLayout: false))
+    }
+
+    func testTheDocPageReaderIsAtOnePointThree() {
+        XCTAssertEqual(PageReaderVersions.current(for: .doc), "1.3.0")
     }
 
     func testWord1AndWord2DocumentsAreRefusedWithTheUnreadableSentenceAtOnce() throws {

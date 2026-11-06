@@ -225,6 +225,7 @@ enum TextPipelineFixtures {
 
     /// The Word 97-2003 samples added with the reader's follow-ups; see `formatSamplesHeldBack`.
     private static let wordFollowUpSamples = [
+        "format-samples/doc/libreoffice-tdf150197_anlv2ListFormat.doc",
         "format-samples/doc/libreoffice-tdf102334_hiddenText.doc",
         "format-samples/doc/libreoffice-tdf106541_chapterNumbering.doc",
         "format-samples/doc/libreoffice-tdf112535.doc",

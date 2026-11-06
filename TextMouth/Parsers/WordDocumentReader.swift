@@ -57,19 +57,13 @@ enum WordDocumentReader {
     static var isOn: Bool { true }
 
     /// Whether this platform reads Word 6 and Word 95 documents with this
-    /// reader: iOS, which has no textutil, always; the Mac keeps textutil for
-    /// them until the reader has been checked against textutil's reading of
-    /// the same files (`WordDocumentComparisonTests`), which the branch that
-    /// turns this on does. `OwnDocumentReaders` asks it; the reader's own
-    /// entry points read the old layout whatever it says, so that the tests
-    /// can.
-    static var readsWord6AndWord95: Bool {
-        #if os(macOS)
-        false
-        #else
-        true
-        #endif
-    }
+    /// reader: iOS, which has no textutil, always, and the Mac too, since the
+    /// reader was checked against textutil's reading of the same files
+    /// (`WordDocumentLegacyComparisonTests`): the same words in the same order
+    /// on every sample, the same headings, and the same pages but for a
+    /// continuous section break that begins no page. The reader's own entry
+    /// points read the old layout whatever it says, so that the tests can.
+    static var readsWord6AndWord95: Bool { true }
 
     /// How many characters are written between two asks whether the import
     /// was cancelled (`ImportCancellation`).
