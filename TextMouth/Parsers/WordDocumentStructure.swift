@@ -38,6 +38,10 @@ struct WordFileInformationBlock {
         case paragraphBinTable = 13
         /// The complex file information (CLX), which holds the piece table.
         case complexInformation = 33
+        /// The list table (PlfLst): the lists and their levels.
+        case listFormats = 73
+        /// The list override table (PlfLfo): the list instances paragraphs name.
+        case listOverrides = 74
     }
 
     // MARK: Fields
@@ -128,6 +132,8 @@ struct WordFileInformationBlock {
     /// against the stream; nil when the document has none (a length of zero).
     /// - Throws: `OLEDamage` when the structure runs past the end of `table`.
     func range(of structure: Structure, in table: OLEBytes) throws -> Range<Int>? {
+        // A FIB with fewer pairs than the structure's place has none of it.
+        guard structure.rawValue < pairCount else { return nil }
         let offset = try stream.u32(pairsOffset + structure.rawValue * 8)
         let length = try stream.u32(pairsOffset + structure.rawValue * 8 + 4)
         guard length > 0 else { return nil }
@@ -157,6 +163,8 @@ enum WordSprm {
     static let rowEnd = 0x2417
     /// The paragraph's level in its list, 0 to 8 (`sprmPIlvl`).
     static let listLevel = 0x260A
+    /// The list instance the paragraph is in, one-based (`sprmPIlfo`).
+    static let listIndex = 0x460B
     /// The paragraph's outline level, 0 to 8, or 9 for body text (`sprmPOutLvl`).
     static let outlineLevel = 0x2640
     /// The depth of the table the paragraph is in (`sprmPItap`).
