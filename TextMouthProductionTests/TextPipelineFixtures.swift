@@ -108,6 +108,15 @@ enum TextPipelineFixtures {
         "format-samples/doc/page-breaks.doc",
         "format-samples/docm/headings-synthetic.docm",
         "format-samples/docm/libreoffice-hello.docm",
+        "format-samples/docx/libreoffice-footnote.docx",
+        "format-samples/docx/libreoffice-nestedAlternateContent.docx",
+        "format-samples/docx/libreoffice-tdf109310_endnoteStyleForMSO.docx",
+        "format-samples/docx/libreoffice-tdf119800.docx",
+        "format-samples/docx/libreoffice-tdf123262_textFootnoteSeparators.docx",
+        "format-samples/docx/libreoffice-tdf138771.docx",
+        "format-samples/docx/libreoffice-tdf154370.docx",
+        "format-samples/docx/libreoffice-tdf32363.docx",
+        "format-samples/docx/libreoffice-tdf92470_footnoteRestart.docx",
         "format-samples/docx/page-breaks.docx",
         "format-samples/dot/headings-synthetic.dot",
         "format-samples/dot/libreoffice-tdf120761_zOrder.dot",
@@ -167,10 +176,20 @@ enum TextPipelineFixtures {
     /// `RTFTextutilComparisonTests`, which names every difference, and a
     /// golden of textutil's reading would pin what the own reader replaces
     /// (textutil refuses three of them outright).
+    ///
+    /// The real DOCX files from LibreOffice are held back because the
+    /// questions they answer (hidden text, notes, text boxes) are asked of
+    /// them in `DOCXRealFileTests`, by name, where a failure says what changed.
     static let formatSamplesHeldBack: [String: String] = Dictionary(
-        uniqueKeysWithValues: formatSampleNames
-            .filter { $0.hasPrefix("format-samples/rtf/libreoffice-") }
-            .map { ($0, "compared with textutil's reading in RTFTextutilComparisonTests instead of a golden") }
+        uniqueKeysWithValues: formatSampleNames.compactMap { name -> (String, String)? in
+            if name.hasPrefix("format-samples/rtf/libreoffice-") {
+                return (name, "compared with textutil's reading in RTFTextutilComparisonTests instead of a golden")
+            }
+            if name.hasPrefix("format-samples/docx/libreoffice-") {
+                return (name, "read by name in DOCXRealFileTests instead of a golden")
+            }
+            return nil
+        }
     )
 
     /// The folders of the format samples that macOS's own readers read
