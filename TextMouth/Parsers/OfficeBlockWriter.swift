@@ -49,7 +49,9 @@ final class OfficeBlockWriter {
     /// text, and the text proper has not begun.
     private var hasCountedText = false
     /// How many paragraphs that hold what is anchored in another are being
-    /// written (text boxes, shapes, and the descriptions of pictures).
+    /// written (text boxes, shapes, and the descriptions of pictures). A text
+    /// box anchored to the page, outside any paragraph, is written as it is
+    /// read, and `listsOutsideTextBoxes` of the flow says one is open.
     private var anchoredDepth = 0
     /// Whether the row of the table open has had its soft page break: the
     /// layout records one for each cell it breaks, and a row breaks once.
@@ -272,7 +274,7 @@ final class OfficeBlockWriter {
                     pendingBreaks = 0
                 }
                 try flow.builder.appendText(words, bold: run.bold, italic: run.italic, size: run.size)
-                if isCounted, flow === main, anchoredDepth == 0 { hasCountedText = true }
+                if isCounted, flow === main, anchoredDepth == 0, flow.listsOutsideTextBoxes.isEmpty { hasCountedText = true }
             case .lineBreak:
                 flow.builder.appendLineBreak()
             case .pageStart:

@@ -948,6 +948,13 @@ final class ODTReaderTests: XCTestCase {
                 + "<text:p text:style-name=\"First\"/><text:p>Main words follow.</text:p>",
             styles: master, pages: true
         ), [page1 + "<p>Box words come first</p>", "<p>Main words follow.</p>"])
+        // A text box anchored to the page, outside any paragraph, is written as
+        // it is read: its words are no more the text's own than the others'.
+        XCTAssertEqual(try odfLines(
+            "<draw:frame text:anchor-type=\"page\"><draw:text-box><text:p>Box words come first</text:p></draw:text-box></draw:frame>"
+                + "<text:p text:style-name=\"First\"/><text:p>Main words follow.</text:p>",
+            styles: master, pages: true
+        ), [page1 + "<p>Box words come first</p>", "<p>Main words follow.</p>"])
         XCTAssertEqual(try odfLines(
             "<text:p>Main words first.</text:p><text:p text:style-name=\"First\"/><text:p>Second page.</text:p>",
             styles: master, pages: true
