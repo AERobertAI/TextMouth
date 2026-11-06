@@ -60,7 +60,7 @@ final class ODTHostileReaderTests: XCTestCase {
     /// never a trap: the end of a ZIP archive is where its directory is.
     func testPackagesTruncatedAtManyLengths() throws {
         for sample in ["odt/handwritten.odt", "odt/libreoffice-tdf169882.odt"] {
-            let whole = try Data(contentsOf: formatSampleURL(sample))
+            let whole = try Data(contentsOf: copyOfFormatSample(sample))
             let folder = try makeSandboxDirectory("ODTTruncated")
             let stride = max(whole.count / 120, 1)
             for length in Swift.stride(from: 0, to: whole.count, by: stride) {
@@ -281,7 +281,7 @@ final class ODTHostileReaderTests: XCTestCase {
     /// it) give a document or a clean error, every time, with a fixed seed.
     func testFlippedBytesNeverTrap() throws {
         for (sample, seed) in [("odt/handwritten.odt", UInt64(20_261_105)), ("odt/libreoffice-tdf156905.odt", UInt64(7))] {
-            let url = try formatSampleURL(sample)
+            let url = try copyOfFormatSample(sample)
             var generator = SeededGenerator(state: seed)
             // The markup, flipped before it is packaged.
             let archive = try Archive(url: url, accessMode: .read)

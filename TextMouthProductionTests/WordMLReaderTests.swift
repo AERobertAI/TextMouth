@@ -252,7 +252,7 @@ final class WordMLReaderTests: XCTestCase {
 
     /// A sample cut off at many lengths ends in a clean error or a document.
     func testDocumentsTruncatedAtManyLengths() throws {
-        let whole = try String(contentsOf: formatSampleURL("wordml/headings.wordml"), encoding: .utf8)
+        let whole = try String(contentsOf: copyOfFormatSample("wordml/headings.wordml"), encoding: .utf8)
         let characters = Array(whole)
         for length in stride(from: 0, to: characters.count, by: max(characters.count / 150, 1)) {
             try read(String(characters.prefix(length)), "cut at \(length)")
@@ -309,7 +309,7 @@ final class WordMLReaderTests: XCTestCase {
 
     /// Bytes flipped in a sample give a document or a clean error, every time.
     func testFlippedBytesNeverTrap() throws {
-        let whole = try Data(contentsOf: formatSampleURL("wordml/headings.wordml"))
+        let whole = try Data(contentsOf: copyOfFormatSample("wordml/headings.wordml"))
         var state: UInt64 = 20_261_105
         func next() -> Int {
             state = state &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
