@@ -53,7 +53,7 @@ final class KFXSetTests: XCTestCase {
     }
 
     /// A `.kfx-zip` holding `members`.
-    private func zip(_ members: [(String, [UInt8])], named name: String = "set.kfx-zip", compression: CompressionMethod = .none) throws -> URL {
+    private func makeSet(_ members: [(String, [UInt8])], named name: String = "set.kfx-zip", compression: CompressionMethod = .none) throws -> URL {
         let made = try makeTemporaryZip(
             prefix: "kfx-set", orderedEntries: members.map { TestZIPEntry($0.0, Data($0.1)) }, compressionMethod: compression)
         addTeardownBlock { try? FileManager.default.removeItem(at: made) }
@@ -74,7 +74,7 @@ final class KFXSetTests: XCTestCase {
         let looseURL = try folder("Loose").appendingPathComponent("book.kfx")
         try write(bytes, to: looseURL)
         let direct = try KFXParser.prepareBook(url: looseURL)
-        let set = try KFXParser.prepareBook(url: zip([("book.kfx", bytes)]))
+        let set = try KFXParser.prepareBook(url: makeSet([("book.kfx", bytes)]))
         XCTAssertEqual(words(set), words(direct))
         XCTAssertEqual(words(set), ["Alpha", "one.", "Beta", "two."])
         XCTAssertEqual(set.title, "Real Title")
@@ -82,7 +82,7 @@ final class KFXSetTests: XCTestCase {
 
     func testTheRealFeatureBookInASetReadsAsItsContainerDoes() throws {
         let bytes = [UInt8](try Data(contentsOf: formatSampleURL("kfx/kfx-features.kfx")))
-        let set = try KFXParser.prepareBook(url: zip([("kfx-features.kfx", bytes), ("readme.txt", Array("note".utf8))]))
+        let set = try KFXParser.prepareBook(url: makeSet([("kfx-features.kfx", bytes), ("readme.txt", Array("note".utf8))]))
         let direct = try KFXParser.prepareBook(url: formatSampleURL("kfx/kfx-features.kfx"))
         XCTAssertEqual(words(set), words(direct))
         XCTAssertEqual(set.chapters.count, 3)
@@ -98,14 +98,14 @@ final class KFXSetTests: XCTestCase {
         second.add(type: 145, name: "content_1", .structure([
             (4, .symbol(second.id(of: "content_1"))), (146, .list([.string("Alpha one."), .string("Beta two.")])),
         ]))
-        let set = try KFXParser.prepareBook(url: zip([("main.kfx", main), ("text.kfx", second.build()), ("meta.kfx", metadataContainer(title: "From Meta"))]))
+        let set = try KFXParser.prepareBook(url: makeSet([("main.kfx", main), ("text.kfx", second.build()), ("meta.kfx", metadataContainer(title: "From Meta"))]))
         XCTAssertEqual(words(set), ["Alpha", "one.", "Beta", "two."])
         XCTAssertEqual(set.title, "From Meta")
         XCTAssertEqual(set.author, "Sidecar Author")
     }
 
     func testAFragmentTheFirstContainerHoldsIsTheOneReadWhateverALaterOneSays() throws {
-        let set = try KFXParser.prepareBook(url: zip([
+        let set = try KFXParser.prepareBook(url: makeSet([
             ("main.kfx", smallBookBytes(title: "Real Title")), ("forged.kfx", metadataContainer(title: "Forged Title")),
         ]))
         XCTAssertEqual(set.title, "Real Title")
@@ -117,7 +117,7 @@ final class KFXSetTests: XCTestCase {
     }
 
     func testASetWhoseOnlyContainersHoldNoTextIsPartOfABook() throws {
-        let url = try zip([("meta.kfx", metadataContainer(title: "Only Metadata"))])
+        let url = try makeSet([("meta.kfx", metadataContainer(title: "Only Metadata"))])
         XCTAssertThrowsError(try KFXParser.prepareBook(url: url)) {
             XCTAssertEqual($0 as? KFXError, .partOfABook)
         }
@@ -133,11 +133,11 @@ final class KFXSetTests: XCTestCase {
             [("main.kfx", plain), ("voucher", Array("key".utf8))],
             [("main.kfx", plain), ("B0ABC_EBOK.voucher", Array("key".utf8))],
         ] {
-            XCTAssertThrowsError(try KFXParser.prepareBook(url: zip(members))) {
+            XCTAssertThrowsError(try KFXParser.prepareBook(url: makeSet(members))) {
                 XCTAssertEqual($0 as? MOBIError, .copyProtected)
                 XCTAssertEqual($0.localizedDescription, Self.protectedSentence)
             }
-            XCTAssertThrowsError(try KFXParser.readMetadata(url: zip(members))) { XCTAssertEqual($0 as? MOBIError, .copyProtected) }
+            XCTAssertThrowsError(try KFXParser.readMetadata(url: makeSet(members))) { XCTAssertEqual($0 as? MOBIError, .copyProtected) }
         }
     }
 
@@ -154,12 +154,12 @@ final class KFXSetTests: XCTestCase {
 
     func testAnArchiveWithMoreContainersThanASetHoldsIsRefusedQuickly() throws {
         let container = smallBookBytes(title: nil)
-        let url = try zip((0...KFXPackage.maximumContainers).map { ("part\($0).kfx", container) })
+        let url = try makeSet((0...KFXPackage.maximumContainers).map { ("part\($0).kfx", container) })
         assertRefusedQuickly("65 containers") { try KFXParser.prepareBook(url: url) }
     }
 
     func testAnArchiveWithMoreMembersThanASetCouldHoldIsRefusedQuickly() throws {
-        let url = try zip((0...KFXPackage.maximumMembers).map { ("f\($0).txt", [UInt8]()) })
+        let url = try makeSet((0...KFXPackage.maximumMembers).map { ("f\($0).txt", [UInt8]()) })
         assertRefusedQuickly("4,097 members") { try KFXParser.prepareBook(url: url) }
     }
 
@@ -167,14 +167,14 @@ final class KFXSetTests: XCTestCase {
         // 70 MB of zeros deflates to a few dozen KB; the member declares its size.
         let size = Int(DocumentByteLimit.standard) + 6_000_000
         let bomb = KFXSignature.containerMagic + [UInt8](repeating: 0, count: size)
-        let url = try zip([("bomb.kfx", bomb)], compression: .deflate)
+        let url = try makeSet([("bomb.kfx", bomb)], compression: .deflate)
         XCTAssertLessThan(try XCTUnwrap(try url.resourceValues(forKeys: [.fileSizeKey]).fileSize), 1_000_000)
         let error = assertRefusedQuickly("zip bomb") { try KFXParser.prepareBook(url: url) }
         XCTAssertEqual(error as? DocumentTooLargeError, DocumentTooLargeError(limit: DocumentByteLimit.standard))
     }
 
     func testAMemberThatStartsLikeAContainerButIsNotOneIsDamageNotACrash() throws {
-        let url = try zip([("main.kfx", smallBookBytes(title: nil)), ("junk.kfx", KFXSignature.containerMagic + [2, 0, 9, 9, 9])])
+        let url = try makeSet([("main.kfx", smallBookBytes(title: nil)), ("junk.kfx", KFXSignature.containerMagic + [2, 0, 9, 9, 9])])
         assertRefusedQuickly("junk member") { try KFXParser.prepareBook(url: url) }
     }
 

@@ -1,6 +1,30 @@
 import XCTest
 @testable import TextMouth
 
+/// A navigation unit (annotated `$393`): its label, the node and offset it
+/// points at, an optional type, and nested units.
+fileprivate func navUnit(
+    _ label: String?, _ node: Int, offset: Int = 0, type: Int? = nil, children: [IonOut] = []
+) -> IonOut {
+    var members: [(Int, IonOut)] = []
+    if let type { members.append((238, .symbol(type))) }
+    if let label { members.append((241, .structure([(244, .string(label))]))) }
+    members.append((246, .structure([(155, .int(Int64(node))), (143, .int(Int64(offset)))])))
+    if !children.isEmpty { members.append((247, .list(children))) }
+    return .annotated([393], .structure(members))
+}
+
+/// A navigation container (annotated `$391`) of `type` (212 contents, 237
+/// page list, 798 headings).
+fileprivate func navContainer(_ type: Int, name: String = "n1", _ units: [IonOut]) -> IonOut {
+    .annotated([391], .structure([(235, .symbol(type)), (239, .string(name)), (247, .list(units))]))
+}
+
+/// The book navigation of the default reading order.
+fileprivate func navList(_ containers: [IonOut]) -> IonOut {
+    .list([.structure([(178, .symbol(351)), (392, .list(containers))])])
+}
+
 /// The navigation of the KFX reader (FMT52, layer 4): the table of contents
 /// as chapters and headings, the headings container's levels, and the print
 /// page list as pages, on books built in code, and the feature book Amazon's
@@ -9,37 +33,13 @@ final class KFXNavigationTests: XCTestCase {
 
     // MARK: - Helpers
 
-    /// A navigation unit (annotated `$393`): its label, the node and offset it
-    /// points at, an optional type, and nested units.
-    private func unit(
-        _ label: String?, _ node: Int, offset: Int = 0, type: Int? = nil, children: [IonOut] = []
-    ) -> IonOut {
-        var members: [(Int, IonOut)] = []
-        if let type { members.append((238, .symbol(type))) }
-        if let label { members.append((241, .structure([(244, .string(label))]))) }
-        members.append((246, .structure([(155, .int(Int64(node))), (143, .int(Int64(offset)))])))
-        if !children.isEmpty { members.append((247, .list(children))) }
-        return .annotated([393], .structure(members))
-    }
-
-    /// A navigation container (annotated `$391`) of `type` (212 contents, 237
-    /// page list, 798 headings).
-    private func container(_ type: Int, name: String = "n1", _ units: [IonOut]) -> IonOut {
-        .annotated([391], .structure([(235, .symbol(type)), (239, .string(name)), (247, .list(units))]))
-    }
-
-    /// The book navigation of the default reading order.
-    private func navigation(_ containers: [IonOut]) -> IonOut {
-        .list([.structure([(178, .symbol(351)), (392, .list(containers))])])
-    }
-
     /// A book of `sections` (each a list of nodes) whose navigation is built from the written ids.
     private func bookWith(
         _ sections: [[KFXNodeSpec]], navigation make: @escaping ([Int]) -> [IonOut]
     ) -> KFXTestBook {
         var book = KFXTestBook()
         book.sections = sections.enumerated().map { (name: "c\($0.offset)", nodes: $0.element) }
-        book.navigation = { [self] ids in navigation(make(ids)) }
+        book.navigation = { ids in navList(make(ids)) }
         return book
     }
 
@@ -52,7 +52,7 @@ final class KFXNavigationTests: XCTestCase {
 
     func testAnEntryAtTheStartOfASectionTitlesItsChapter() throws {
         let book = bookWith([[.text("Alpha words."), .text("More.")], [.text("Beta words.")]]) { ids in
-            [container(212, [unit("First Chapter", ids[0]), unit("Second Chapter", ids[2])])]
+            [navContainer(212, [navUnit("First Chapter", ids[0]), navUnit("Second Chapter", ids[2])])]
         }
         let chapters = try prepare(book).chapters.map(\.chapter)
         XCTAssertEqual(chapters.map(\.title), ["First Chapter", "Second Chapter"])
@@ -62,7 +62,7 @@ final class KFXNavigationTests: XCTestCase {
 
     func testAnEntryInTheMiddleOfASectionIsAHeadingAtItsPlace() throws {
         let book = bookWith([[.text("Alpha words."), .text("Middle words."), .text("Last words.")]]) { ids in
-            [container(212, [unit("Start", ids[0]), unit("The Middle", ids[1]), unit("The Last", ids[2], offset: 5)])]
+            [navContainer(212, [navUnit("Start", ids[0]), navUnit("The Middle", ids[1]), navUnit("The Last", ids[2], offset: 5)])]
         }
         let chapter = try prepare(book).chapters[0].chapter
         XCTAssertEqual(chapter.headings.map(\.text), ["Start", "The Middle", "The Last"])
@@ -75,7 +75,7 @@ final class KFXNavigationTests: XCTestCase {
 
     func testNestedEntriesAreDeeperHeadings() throws {
         let book = bookWith([[.text("Alpha."), .text("Beta."), .text("Gamma.")]]) { ids in
-            [container(212, [unit("Part", ids[0], children: [unit("Chapter", ids[1], children: [unit("Section", ids[2])])])])]
+            [navContainer(212, [navUnit("Part", ids[0], children: [navUnit("Chapter", ids[1], children: [navUnit("Section", ids[2])])])])]
         }
         let chapter = try prepare(book).chapters[0].chapter
         XCTAssertEqual(chapter.headings.map { "\($0.level): \($0.text)" }, ["1: Part", "2: Chapter", "3: Section"])
@@ -83,7 +83,7 @@ final class KFXNavigationTests: XCTestCase {
 
     func testEntriesWithNoLabelOrNoPlaceInTheBookAreLeftOut() throws {
         let book = bookWith([[.text("Alpha."), .text("Beta.")]]) { ids in
-            [container(212, [unit("  ", ids[0]), unit("Ghost", 999_999), unit("Real\n  Entry", ids[1])])]
+            [navContainer(212, [navUnit("  ", ids[0]), navUnit("Ghost", 999_999), navUnit("Real\n  Entry", ids[1])])]
         }
         let chapter = try prepare(book).chapters[0].chapter
         XCTAssertEqual(chapter.headings.map(\.text), ["Chapter 1", "Real Entry"])
@@ -91,7 +91,7 @@ final class KFXNavigationTests: XCTestCase {
 
     func testAnEntryThatNamesTheSameStartTwiceTitlesTheChapterOnce() throws {
         let book = bookWith([[.text("Alpha.")]]) { ids in
-            [container(212, [unit("First name", ids[0]), unit("Second name", ids[0])])]
+            [navContainer(212, [navUnit("First name", ids[0]), navUnit("Second name", ids[0])])]
         }
         XCTAssertEqual(try prepare(book).chapters[0].chapter.title, "First name")
     }
@@ -100,9 +100,9 @@ final class KFXNavigationTests: XCTestCase {
 
     func testTheHeadingsContainerGivesLevelsAndTheirUnitsChildrenInheritThem() throws {
         var test = bookWith([[.text("One."), .text("Two."), .text("Three."), .text("Four.")]]) { ids in
-            [container(798, [
-                unit("heading-nav-unit", ids[0], type: 799, children: [unit(nil, ids[0]), unit(nil, ids[2])]),
-                unit("heading-nav-unit", ids[1], type: 803, children: [unit(nil, ids[1])]),
+            [navContainer(798, [
+                navUnit("heading-nav-unit", ids[0], type: 799, children: [navUnit(nil, ids[0]), navUnit(nil, ids[2])]),
+                navUnit("heading-nav-unit", ids[1], type: 803, children: [navUnit(nil, ids[1])]),
             ])]
         }
         let html = try KFXBook(bytes: test.build()).sections[0].html
@@ -111,7 +111,7 @@ final class KFXNavigationTests: XCTestCase {
 
     func testAHeadingsUnitOfAnUnknownTypeNamesNoLevel() throws {
         var test = bookWith([[.text("One.")]]) { ids in
-            [container(798, [unit("x", ids[0], type: 900), unit("y", ids[0], type: 798)])]
+            [navContainer(798, [navUnit("x", ids[0], type: 900), navUnit("y", ids[0], type: 798)])]
         }
         XCTAssertEqual(try KFXBook(bytes: test.build()).sections[0].html, "<p>One.</p>")
     }
@@ -120,7 +120,7 @@ final class KFXNavigationTests: XCTestCase {
 
     func testThePrintPageListBeginsEachPageAtItsNode() throws {
         let book = bookWith([[.text("Alpha one."), .text("Beta two."), .text("Gamma three.")]]) { ids in
-            [container(237, [unit("iii", ids[0]), unit("iv", ids[1]), unit("5", ids[2])])]
+            [navContainer(237, [navUnit("iii", ids[0]), navUnit("iv", ids[1]), navUnit("5", ids[2])])]
         }
         let prepared = try prepare(book)
         let chapter = prepared.chapters[0].chapter
@@ -133,7 +133,7 @@ final class KFXNavigationTests: XCTestCase {
 
     func testAPageAtAnOffsetBeginsAtTheNextWordAndIsNeverSpoken() throws {
         let book = bookWith([[.text("Hello world again")]]) { ids in
-            [container(237, [unit("7", ids[0], offset: 5), unit("8", ids[0], offset: 12)])]
+            [navContainer(237, [navUnit("7", ids[0], offset: 5), navUnit("8", ids[0], offset: 12)])]
         }
         let chapter = try prepare(book).chapters[0].chapter
         XCTAssertEqual(chapter.pages.map(\.label), ["7", "8"])
@@ -146,7 +146,7 @@ final class KFXNavigationTests: XCTestCase {
     }
 
     func testNoPagesAreWrittenWhenNotAskedFor() throws {
-        let book = bookWith([[.text("Alpha.")]]) { ids in [container(237, [unit("1", ids[0])])] }
+        let book = bookWith([[.text("Alpha.")]]) { ids in [navContainer(237, [navUnit("1", ids[0])])] }
         let prepared = try prepare(book, includesPages: false)
         XCTAssertTrue(prepared.chapters[0].chapter.pages.isEmpty)
         XCTAssertFalse(prepared.chapters[0].markdown.contains("<!-- page:"))
@@ -154,14 +154,14 @@ final class KFXNavigationTests: XCTestCase {
 
     func testAMachineMadePageListIsNotPages() throws {
         let book = bookWith([[.text("Alpha."), .text("Beta.")]]) { ids in
-            [container(237, name: "APPROXIMATE_PAGE_LIST", [unit("1", ids[0]), unit("2", ids[1])])]
+            [navContainer(237, name: "APPROXIMATE_PAGE_LIST", [navUnit("1", ids[0]), navUnit("2", ids[1])])]
         }
         XCTAssertTrue(try prepare(book).chapters[0].chapter.pages.isEmpty)
     }
 
     func testPagesWithNoPlaceInTheBookAreLeftOutAndTheRestAreStillPages() throws {
         let book = bookWith([[.text("Alpha."), .text("Beta.")]]) { ids in
-            [container(237, [unit("1", 424_242), unit("2", ids[1]), unit("3", ids[1])])]
+            [navContainer(237, [navUnit("1", 424_242), navUnit("2", ids[1]), navUnit("3", ids[1])])]
         }
         // The second entry for the same place is not a second page.
         XCTAssertEqual(try prepare(book).chapters[0].chapter.pages.map(\.label), ["2"])
@@ -169,7 +169,7 @@ final class KFXNavigationTests: XCTestCase {
 
     func testAPageLabelThatNamesNoPageTakesItsOrdinal() throws {
         let book = bookWith([[.text("Alpha."), .text("Beta.")]]) { ids in
-            [container(237, [unit("", ids[0]), unit("Page", ids[1])])]
+            [navContainer(237, [navUnit("", ids[0]), navUnit("Page", ids[1])])]
         }
         XCTAssertEqual(try prepare(book).chapters[0].chapter.pages.map(\.label), ["1", "2"])
     }
@@ -178,12 +178,12 @@ final class KFXNavigationTests: XCTestCase {
 
     func testNavigationThatPointsPastTheTextOrIsNotNavigationNeverBreaksTheWords() throws {
         for bad in [
-            navigation([container(212, [unit("Far", 801, offset: 1_000_000)])]),
-            navigation([container(237, [unit("Far", 801, offset: Int(Int32.max))])]),
+            navList([navContainer(212, [navUnit("Far", 801, offset: 1_000_000)])]),
+            navList([navContainer(237, [navUnit("Far", 801, offset: Int(Int32.max))])]),
             .list([.int(1), .null, .string("x")]),
             .structure([]),
-            navigation([container(212, [.int(1), .null, unit("Neg", 801, offset: -4)])]),
-            navigation([.int(3)]),
+            navList([navContainer(212, [.int(1), .null, navUnit("Neg", 801, offset: -4)])]),
+            navList([.int(3)]),
         ] {
             var book = KFXTestBook()
             book.sections = [("c0", [.text("Alpha beta gamma.")])]
@@ -197,10 +197,10 @@ final class KFXNavigationTests: XCTestCase {
         var book = KFXTestBook()
         book.sections = [("c0", [.text("Alpha beta.")])]
         // Ion cuts nesting at its own depth; a list just inside it is read.
-        var nested = unit("Deep", 801)
-        for _ in 0..<30 { nested = unit("Level", 801, children: [nested]) }
+        var nested = navUnit("Deep", 801)
+        for _ in 0..<30 { nested = navUnit("Level", 801, children: [nested]) }
         let deepest = nested
-        book.navigation = { _ in self.navigation([self.container(212, [deepest])]) }
+        book.navigation = { _ in navList([navContainer(212, [deepest])]) }
         XCTAssertNoThrow(try prepare(book))
     }
 
