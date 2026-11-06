@@ -113,8 +113,9 @@ final class WordDocumentReaderTests: XCTestCase {
             let html = try XCTUnwrap(WordDocumentReader.html(from: Data(contentsOf: formatSampleURL(sample)), includesPages: true), sample)
             XCTAssertTrue(html.contains("<body>"), sample)
         }
-        // wIdent 0xA699 with nFib 0x68 is a Word 95 layout, which this reader leaves to textutil.
-        XCTAssertNil(try WordDocumentReader.html(from: Data(contentsOf: formatSampleURL("doc/poi-Bug51944.doc")), includesPages: true))
+        // wIdent 0xA699 with nFib 0x68 is a Word 95 layout, which this reader leaves to textutil
+        // when it is told not to read it (the Mac's choice; `WordDocumentLegacyTests` reads it).
+        XCTAssertNil(try WordDocumentReader.html(from: Data(contentsOf: formatSampleURL("doc/poi-Bug51944.doc")), includesPages: true, readsOldLayout: false))
     }
 
     // MARK: - Text

@@ -11,10 +11,11 @@ import Foundation
 /// character with its lead byte above (a character of Shift JIS "8A C7" is
 /// stored C7 8A).
 ///
-/// The code page is not in the FIB's language alone (a Japanese document says
-/// English there), so it comes, in turn, from the character set of the
-/// fonts the document names (the font table has one for each font:
-/// SHIFTJIS_CHARSET and the like), then from the language, then is
+/// The code page is not in the FIB's language alone (a Japanese or a Russian
+/// document says English there), so it comes, in turn, from the character
+/// set of the fonts the document names (the font table has one for each
+/// font: SHIFTJIS_CHARSET and the like; a Far East set counts only for a
+/// document of two-byte characters), then from the language, then is
 /// Windows-1252; a document marked as a Macintosh one is Mac Roman.
 struct WordLegacyCharacters {
 
@@ -74,11 +75,18 @@ struct WordLegacyCharacters {
         if fib.characterSet == 256, let encoding = encoding(named: "macintosh") {
             return WordLegacyCharacters(width: width, encoding: encoding)
         }
-        let identifier = fontSets.lazy.compactMap { codePage(ofFontCharacterSet: $0) }.first
+        // A font of a Far East character set names a double-byte code page, which only a
+        // document of two-byte characters (`fExtChar`) is written in: the Western
+        // editions of Word 6 and Word 95 name such fonts too, beside their own.
+        let identifier = fontSets.lazy.compactMap { codePage(ofFontCharacterSet: $0) }
+            .first { width == 2 || !doubleByteCodePages.contains($0) }
             ?? codePage(ofLanguage: fib.languageIdentifier)
         let encoding = encoding(named: identifier) ?? encoding(named: TextEncodingCatalog.windows1252Identifier) ?? .windowsCP1252
         return WordLegacyCharacters(width: width, encoding: encoding)
     }
+
+    /// The code pages whose characters can be two bytes.
+    private static let doubleByteCodePages: Set<String> = ["cp932", "cp936", "cp949", "cp950"]
 
     /// The encoding the catalog names `identifier`.
     private static func encoding(named identifier: String) -> String.Encoding? {
