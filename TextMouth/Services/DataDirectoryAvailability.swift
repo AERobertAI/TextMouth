@@ -199,13 +199,22 @@ enum DataDirectoryUnavailability: Equatable, Sendable {
     /// in the cloud, and TextMouth asked the sync service for it. `provider`
     /// is nil when the service is unknown.
     case notDownloaded(CloudProvider?, folder: String)
+    /// Those files are only in the cloud, and TextMouth is reading them now
+    /// to bring them to this Mac; the library opens by itself when they
+    /// arrive. `files` are the first pass's, by name in the data directory.
+    case gettingFromCloud(CloudProvider?, folder: String, files: [String])
+    /// TextMouth tried to bring those files from the cloud and could not;
+    /// Try Again starts over. `ending` says in a few words how the fetch
+    /// ended, for the debug log (never an absolute path).
+    case cloudFetchFailed(CloudProvider?, folder: String, files: [String], ending: String)
 
     /// The data directory's full path, as the screen shows it.
     var folder: String {
         switch self {
         case .driveNotConnected(_, let folder), .cloudFolderMissing(_, _, let folder), .folderMissing(let folder),
              .notAFolder(let folder), .unreadable(let folder, _), .libraryMissing(let folder),
-             .differentLibrary(let folder), .identityUnreadable(let folder, _), .notDownloaded(_, let folder):
+             .differentLibrary(let folder), .identityUnreadable(let folder, _), .notDownloaded(_, let folder),
+             .gettingFromCloud(_, let folder, _), .cloudFetchFailed(_, let folder, _, _):
             return folder
         }
     }
@@ -231,8 +240,50 @@ enum DataDirectoryUnavailability: Equatable, Sendable {
         case .identityUnreadable(_, let reason):
             return "The folder is there, but TextMouth can't read its library identity file: \(reason)"
         case .notDownloaded(let provider, _):
-            return "Some of the library's files are in \(provider?.displayName ?? "the cloud") and aren't on this Mac yet."
+            return Self.notOnThisMac(provider)
+        case .gettingFromCloud(let provider, _, _):
+            return Self.notOnThisMac(provider) + " TextMouth is getting them now, and the library opens when they arrive."
+        case .cloudFetchFailed(let provider, _, _, _):
+            return "TextMouth couldn't get the library's files from \(Self.service(provider)). "
+                + Self.whatToCheck(provider)
         }
+    }
+
+    /// The first sentence of both download reasons.
+    private static func notOnThisMac(_ provider: CloudProvider?) -> String {
+        "Some of the library's files are in \(service(provider)) and aren't on this Mac yet."
+    }
+
+    /// What `provider` is called in a sentence: its name, or "the cloud"
+    /// when the service is unknown.
+    private static func service(_ provider: CloudProvider?) -> String {
+        provider?.displayName ?? "the cloud"
+    }
+
+    /// What to check when the files couldn't be fetched from `provider`,
+    /// ending in the way out. iCloud Drive is not something that "runs", so
+    /// it is asked about as `likelyCause(in:serviceFolderMissing:)` asks.
+    private static func whatToCheck(_ provider: CloudProvider?) -> String {
+        if provider == .iCloudDrive {
+            return "iCloud Drive may be turned off or signed out, or this Mac may be offline. Check that, then choose Try Again."
+        }
+        return "Check that \(provider?.displayName ?? "the cloud service") is running and that this Mac is online, "
+            + "then choose Try Again."
+    }
+
+    /// Whether TextMouth is bringing the library's files to this Mac now,
+    /// which the screen's heading says (`DataDirectoryUnavailableText.title(for:)`).
+    var isGettingFromCloud: Bool {
+        if case .gettingFromCloud = self {
+            return true
+        }
+        return false
+    }
+
+    /// `files` as a log line lists them: at most eight, then how many more.
+    static func listed(_ files: [String]) -> String {
+        let shown = files.prefix(8).joined(separator: ", ")
+        return files.count > 8 ? "\(shown) and \(files.count - 8) more" : shown
     }
 
     /// Why a folder in `provider`'s folder may be missing: the service's
@@ -250,7 +301,9 @@ enum DataDirectoryUnavailability: Equatable, Sendable {
     /// The reason as a debug log line gives it: the folder by its short
     /// name (`DataDirectoryPaths.shortName(of:)`), never its absolute path.
     var logDescription: String {
-        let name = DataDirectoryPaths.shortName(of: URL(fileURLWithPath: folder))
+        // A folder, named as one: this runs on the main thread, where a stat(2)
+        // of a path under a dataless folder would wait on the network.
+        let name = DataDirectoryPaths.shortName(of: URL(fileURLWithPath: folder, isDirectory: true))
         switch self {
         case .driveNotConnected(let volume, _):
             return "the drive \(volume) holding \(name) isn't connected"
@@ -270,7 +323,11 @@ enum DataDirectoryUnavailability: Equatable, Sendable {
         case .identityUnreadable(_, let reason):
             return "the identity marker in \(name) can't be read: \(reason)"
         case .notDownloaded(let provider, _):
-            return "some of the library's files in \(name) are only in \(provider?.displayName ?? "the cloud"); asked to download them"
+            return "some of the library's files in \(name) are only in \(Self.service(provider)); asked to download them"
+        case .gettingFromCloud(let provider, _, let files):
+            return "getting \(Self.listed(files)) in \(name) from \(Self.service(provider))"
+        case .cloudFetchFailed(let provider, _, let files, let ending):
+            return "could not get \(Self.listed(files)) in \(name) from \(Self.service(provider)): \(ending)"
         }
     }
 
@@ -337,6 +394,16 @@ enum DataDirectoryPaths {
     /// never its absolute path (`DiagnosticLog`'s content policy).
     static func shortName(of folder: URL) -> String {
         folder.standardizedFileURL.pathComponents.filter { $0 != "/" }.suffix(2).joined(separator: "/")
+    }
+
+    /// How a debug log line names `item` inside the data directory at
+    /// `root`: by its path relative to `root` (`library.json`, `Feeds`),
+    /// never an absolute path.
+    static func relativeName(of item: URL, in root: URL) -> String {
+        let rootComponents = root.standardizedFileURL.pathComponents
+        let components = item.standardizedFileURL.pathComponents
+        guard components.starts(with: rootComponents) else { return item.lastPathComponent }
+        return components.dropFirst(rootComponents.count).joined(separator: "/")
     }
 
     /// Whether `path` lies inside a Trash folder: a home's .Trash or a
@@ -429,9 +496,20 @@ struct DataDirectoryCheck {
     /// Runs the check, asking `itemStatus` where files are and for the
     /// downloads it needs. Never waits on the network.
     func run(itemStatus: any CloudItemStatusProviding) -> Outcome {
-        DatalessFiles.withoutDownloading {
-            assess(itemStatus: itemStatus)
+        runNamingPending(itemStatus: itemStatus).outcome
+    }
+
+    /// Runs the check as `run(itemStatus:)` does, and also names the files
+    /// it is waiting for: the identity marker, library.json, and the Feeds
+    /// folder and each feed's folder and index that are only in the cloud
+    /// (`pending`, empty unless the outcome is `.notDownloaded`). Those are
+    /// the only files the library fetches (`LibraryFileFetch`).
+    func runNamingPending(itemStatus: any CloudItemStatusProviding) -> (outcome: Outcome, pending: [URL]) {
+        var pending: [URL] = []
+        let outcome = DatalessFiles.withoutDownloading {
+            assess(itemStatus: itemStatus, pending: &pending)
         }
+        return (outcome, pending)
     }
 
     /// The folder the bookmark leads to when the data directory's path is
@@ -449,14 +527,14 @@ struct DataDirectoryCheck {
     // MARK: Steps
 
     /// The check itself, on a thread that leaves dataless files in the cloud.
-    private func assess(itemStatus: any CloudItemStatusProviding) -> Outcome {
+    private func assess(itemStatus: any CloudItemStatusProviding, pending: inout [URL]) -> Outcome {
         if isDefaultLocation {
             // Today's first-run behavior: created when missing, never refused.
             return .available(try? LibraryIdentity.read(in: root), relocatedTo: nil)
         }
         switch FolderState(of: root) {
         case .folder:
-            return assessLibrary(in: root, itemStatus: itemStatus)
+            return assessLibrary(in: root, itemStatus: itemStatus, pending: &pending)
         case .missing:
             if let relocated = libraryFoundByBookmark() {
                 return .available(relocated.identity, relocatedTo: relocated.folder)
@@ -471,7 +549,7 @@ struct DataDirectoryCheck {
         case .unreadable(let reason):
             return .unavailable(.unreadable(folder: root.path, reason: reason))
         case .onlyInCloud:
-            return notDownloaded([Self.libraryIndex(in: root)], in: root, itemStatus: itemStatus)
+            return notDownloaded([Self.libraryIndex(in: root)], in: root, itemStatus: itemStatus, pending: &pending)
         }
     }
 
@@ -483,19 +561,23 @@ struct DataDirectoryCheck {
     /// this Mac first: one only in the cloud, or a folder holding them whose
     /// listing is (`feedIndexFiles(in:)`), is asked of the sync service, and
     /// the library waits for it as it waits for library.json.
-    private func assessLibrary(in folder: URL, itemStatus: any CloudItemStatusProviding) -> Outcome {
+    private func assessLibrary(
+        in folder: URL,
+        itemStatus: any CloudItemStatusProviding,
+        pending: inout [URL]
+    ) -> Outcome {
         let marker = LibraryIdentity.markerURL(in: folder)
         let index = Self.libraryIndex(in: folder)
         let inCloud = ([marker, index] + Self.feedIndexFiles(in: folder))
             .filter { Self.isOnlyInCloud($0, itemStatus: itemStatus) }
         guard inCloud.isEmpty else {
-            return notDownloaded(inCloud, in: folder, itemStatus: itemStatus)
+            return notDownloaded(inCloud, in: folder, itemStatus: itemStatus, pending: &pending)
         }
         let identity: LibraryIdentity?
         do {
             identity = try LibraryIdentity.read(in: folder)
         } catch where DatalessFiles.isDownloadRefusal(error) {
-            return notDownloaded([marker], in: folder, itemStatus: itemStatus)
+            return notDownloaded([marker], in: folder, itemStatus: itemStatus, pending: &pending)
         } catch {
             return .unavailable(.identityUnreadable(folder: folder.path, reason: error.localizedDescription))
         }
@@ -543,8 +625,14 @@ struct DataDirectoryCheck {
 
     /// Asks the sync service to download `files`, the identity marker,
     /// library.json, or a feed's folder or index, and reports the library as
-    /// waiting for them.
-    private func notDownloaded(_ files: [URL], in folder: URL, itemStatus: any CloudItemStatusProviding) -> Outcome {
+    /// waiting for them. `pending` receives the files, for the caller to fetch.
+    private func notDownloaded(
+        _ files: [URL],
+        in folder: URL,
+        itemStatus: any CloudItemStatusProviding,
+        pending: inout [URL]
+    ) -> Outcome {
+        pending = files
         for file in files {
             try? itemStatus.requestDownload(of: file)
         }
@@ -577,7 +665,7 @@ struct DataDirectoryCheck {
     /// Whether the file at `file` exists with its content only in the
     /// cloud: as the sync service reports it, or as the file system marks
     /// it (`SF_DATALESS`).
-    private static func isOnlyInCloud(_ file: URL, itemStatus: any CloudItemStatusProviding) -> Bool {
+    static func isOnlyInCloud(_ file: URL, itemStatus: any CloudItemStatusProviding) -> Bool {
         switch itemStatus.status(of: file).state {
         case .notDownloaded, .downloading:
             return true

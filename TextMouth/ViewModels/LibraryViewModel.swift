@@ -329,6 +329,45 @@ final class LibraryViewModel: ObservableObject {
     private(set) var availableDataDirectory: DataDirectoryLocation?
     /// The reason last announced to VoiceOver, so each is announced once.
     private(set) var announcedUnavailability: DataDirectoryUnavailability?
+    /// The files the last check named as only in the cloud, which the fetch
+    /// reads next (`LibraryFileFetch`); empty when the check named none.
+    var pendingLibraryFiles: [URL] = []
+    /// The fetch of those files while one runs (LibraryViewModel+LibraryFetch);
+    /// nil otherwise, so a second never starts beside it.
+    var libraryFetchTask: Task<Void, Never>?
+    /// Names the running fetch: a fetch whose token is no longer this one's
+    /// drops its results.
+    var libraryFetchToken: UUID?
+    /// The data directory's path the running fetch works for.
+    var libraryFetchRoot: String?
+    /// The standardized paths of the files whose fetch reads were started
+    /// and have not returned, including those of a fetch that gave up on a
+    /// stuck read: none is read again meanwhile, so no threads pile up.
+    var libraryFilesBeingRead: Set<String> = []
+    /// The slots that cap the fetch reads in flight, for the library's
+    /// fetch and the launch files alike.
+    let libraryFetchReadSlots = LibraryFetchReadSlots()
+    /// Whether the user chose another library: this process is about to be
+    /// replaced, so nothing opens in it, and the Library window says which
+    /// book it was asked to open that will not be. Cleared if TextMouth can't
+    /// open again.
+    @Published var librarySwitchPending = false
+    /// The waits before the retries of a fetch whose reads fail or bring
+    /// nothing: a sync service that isn't up yet just after a restart often
+    /// is within half a minute.
+    var libraryFetchRetryDelays = LibraryViewModel.defaultLibraryFetchRetryDelays
+    /// How long a fetch waits for its reads before it shows the failure.
+    var libraryFetchStallLimit: Duration = BookCloudStorageService.defaultStallLimit
+    /// Whether this Mac is online, which a stalled fetch's log line says.
+    var libraryFetchReachability: NetworkReachability = .system
+    /// The Library window that last announced the Library Not Available
+    /// screen, which then announces that the library is available, since
+    /// an announcement needs a window to come from.
+    weak var unavailabilityWindow: PlatformWindow?
+    /// What the services that read the library's small launch files are told
+    /// when each has been fetched from the cloud (`fetchLaunchFilesInBackground`):
+    /// the app's services, unless a test passes recorders.
+    var launchFileTakeUp = LibraryLaunchFileTakeUp.app
 
     /// The feed engine whose feeds' items this library lists in their feeds'
     /// folders (FR11): the app's (`FeedCenter.shared`) while nil, or the one
@@ -415,6 +454,9 @@ final class LibraryViewModel: ObservableObject {
         startFeeds()
         // In a library another Mac can open, say this Mac has it open.
         dataDirectoryEnvironment.sessionLease?.begin()
+        // In a cloud library, the other small files it opens with that are
+        // only in the cloud come down now, without holding anything back.
+        fetchLaunchFilesInBackground()
     }
 
     // MARK: - Book Update Helpers
@@ -469,13 +511,23 @@ struct DataDirectoryEnvironment {
     /// (`LibrarySessionLease`), held while the library is open; nil holds
     /// none.
     var sessionLease: LibrarySessionLease?
+    /// Reads one file or folder of the library that is only in the cloud, so
+    /// it comes to this Mac; nil fetches nothing, and the library then waits
+    /// for Try Again as before.
+    var libraryFetch: LibraryFileFetch?
 
-    /// An environment of a test's own, holding no session lease unless it
-    /// passes one.
-    init(preferences: UserDefaults, volumeNotifications: NotificationCenter, sessionLease: LibrarySessionLease? = nil) {
+    /// An environment of a test's own, holding no session lease and fetching
+    /// nothing unless it passes them.
+    init(
+        preferences: UserDefaults,
+        volumeNotifications: NotificationCenter,
+        sessionLease: LibrarySessionLease? = nil,
+        libraryFetch: LibraryFileFetch? = nil
+    ) {
         self.preferences = preferences
         self.volumeNotifications = volumeNotifications
         self.sessionLease = sessionLease
+        self.libraryFetch = libraryFetch
     }
 
     /// The app's: this process's preferences, the shared workspace, and the
@@ -485,7 +537,8 @@ struct DataDirectoryEnvironment {
         DataDirectoryEnvironment(
             preferences: TextMouthRuntime.current.preferences,
             volumeNotifications: NSWorkspace.shared.notificationCenter,
-            sessionLease: .shared
+            sessionLease: .shared,
+            libraryFetch: LibraryFileFetcher.app
         )
         #else
         // iOS has no workspace to announce unmounted volumes (phase 0): the
@@ -493,7 +546,8 @@ struct DataDirectoryEnvironment {
         DataDirectoryEnvironment(
             preferences: TextMouthRuntime.current.preferences,
             volumeNotifications: .default,
-            sessionLease: .shared
+            sessionLease: .shared,
+            libraryFetch: LibraryFileFetcher.app
         )
         #endif
     }
@@ -506,16 +560,27 @@ extension LibraryViewModel {
     /// Checks the data directory and makes what it finds the model's state:
     /// the gate that lets writers in or keeps them out, the reason the
     /// Library windows show, and, when the bookmark found the library under
-    /// another path, the data directory itself. Returns whether the library
-    /// is available.
+    /// another path, the data directory itself. Files only in the cloud start
+    /// the library's fetch of them (LibraryViewModel+LibraryFetch), which
+    /// runs this check again after each pass and ends when the library is
+    /// available, so the check cancels a fetch the files have outrun.
+    /// Returns whether the library is available.
     @discardableResult
     func checkDataDirectory() -> Bool {
         let preferences = dataDirectoryEnvironment.preferences
         let root = TextMouthPaths.root
-        let outcome = DataDirectoryCheck.of(root: root, preferences: preferences)
-            .run(itemStatus: CloudServices.itemStatus)
+        // While a fetch runs it reads the files itself, so the check asks
+        // the sync service for nothing.
+        let itemStatus: any CloudItemStatusProviding = libraryFetchTask == nil
+            ? CloudServices.itemStatus
+            : WithoutDownloadRequests(base: CloudServices.itemStatus)
+        let (outcome, pending) = DataDirectoryCheck.of(root: root, preferences: preferences)
+            .runNamingPending(itemStatus: itemStatus)
+        pendingLibraryFiles = pending
         switch outcome {
         case .available(_, let relocated):
+            // Files that arrived end any fetch still waiting on them.
+            cancelLibraryFetch()
             if let relocated {
                 useRelocatedDataDirectory(relocated, foundFor: root)
             }
@@ -533,7 +598,11 @@ extension LibraryViewModel {
             return true
         case .unavailable(let reason):
             DataDirectoryGate.close(root)
-            noteDataDirectoryUnavailable(reason)
+            // Files only in the cloud are fetched, and the fetch says so
+            // on the screen; any other reason is shown as it is.
+            if !beginLibraryFetch(for: reason) {
+                noteDataDirectoryUnavailable(reason)
+            }
             return false
         }
     }
@@ -611,16 +680,28 @@ extension LibraryViewModel {
             }
             return false
         }
+        openLibraryAfterDataDirectoryReturned()
+        return true
+    }
+
+    /// Opens the library once a check has found it (the check has already
+    /// opened the gate and cleared the reason): the whole startup when it
+    /// was unavailable at launch, or, after it was lost while TextMouth ran,
+    /// a fresh read of library.json, then the lease again. Services that
+    /// left their files unread are told to read them, and VoiceOver hears
+    /// that the library is available. Try Again and the fetch of the
+    /// library's files (LibraryViewModel+LibraryFetch) both end here.
+    func openLibraryAfterDataDirectoryReturned() {
         if hasStartedLibrary {
             reloadLibraryAfterDataDirectoryReturned()
             dataDirectoryEnvironment.sessionLease?.begin()
+            fetchLaunchFilesInBackground()
         } else {
             startLibrary()
         }
         announcedUnavailability = nil
         NotificationCenter.default.post(name: .dataDirectoryDidBecomeAvailable, object: nil)
-        VoiceOverAnnouncer.announce("The library is available.")
-        return true
+        VoiceOverAnnouncer.announce("The library is available.", from: unavailabilityWindow)
     }
 
     // MARK: The Library Not Available Screen
@@ -631,6 +712,7 @@ extension LibraryViewModel {
     func announceDataDirectoryUnavailability(from window: PlatformWindow? = nil) {
         guard let reason = dataDirectoryUnavailability, reason != announcedUnavailability else { return }
         announcedUnavailability = reason
+        unavailabilityWindow = window ?? unavailabilityWindow
         VoiceOverAnnouncer.announce(DataDirectoryUnavailableText.announcement(for: reason), from: window)
     }
 
@@ -690,7 +772,7 @@ extension LibraryViewModel {
         guard hasStartedLibrary, dataDirectoryUnavailability == nil, let available = availableDataDirectory else {
             return
         }
-        if let root, URL(fileURLWithPath: root).standardizedFileURL.path != available.named.path {
+        if let root, URL(fileURLWithPath: root, isDirectory: true).standardizedFileURL.path != available.named.path {
             return
         }
         guard !checkDataDirectory() else { return }

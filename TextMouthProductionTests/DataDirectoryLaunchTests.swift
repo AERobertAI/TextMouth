@@ -185,7 +185,7 @@ final class DataDirectoryLaunchTests: XCTestCase {
 /// drive is, and brought back. Taking it away copies it aside and removes
 /// it, rather than moving it, since a bookmark follows a moved folder.
 @MainActor
-private struct LibraryFixture {
+struct LibraryFixture {
     /// The folder row every fixture library holds.
     static let folderName = "Sea Charts"
 

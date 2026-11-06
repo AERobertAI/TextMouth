@@ -205,6 +205,77 @@ final class CloudDriveIntegrationTests: XCTestCase {
         }
     }
 
+    // MARK: - The Library's Own Fetch
+
+    /// A file of about 12 MiB, once uploaded and then evicted so that it is
+    /// only in the cloud, is brought back whole by the fetch the library uses
+    /// for the files it opens from (`LibraryFileFetcher`). A drive that
+    /// fetches partial content brings only the range a read asks for, so the
+    /// check that nothing is left in the cloud, and that the bytes read back
+    /// are the ones written, both run with downloading switched off: a read
+    /// that downloaded the rest itself could not hide a short fetch. Nothing
+    /// is asserted about how long the drive takes.
+    func testTheLibraryFetchBringsAnEvictedFileBackWhole() async throws {
+        await forEachRoot(label: "library-fetch") { root, run in
+            let written = SyntheticPackage.randomBytes(count: 12 * 1024 * 1024)
+            let file = run.appendingPathComponent("library.json")
+            try written.write(to: file, options: .withoutOverwriting)
+            guard try await CloudDriveWait.until(limit: CloudDriveWait.upload, { areUploaded([file], on: root) }) != nil else {
+                throw CloudDriveStepFailure(reason: "library.json was not reported uploaded, so it can't be evicted safely.")
+            }
+            try items.removeLocalCopy(of: file)
+            guard try await CloudDriveWait.until(limit: CloudDriveWait.removal, { Self.isDataless(file) }) != nil else {
+                throw CloudDriveStepFailure(
+                    reason: "library.json was still on this Mac after its removal: \(describeStatuses(of: [file]))"
+                )
+            }
+
+            try LibraryFileFetcher.fetch(file)
+
+            XCTAssertFalse(Self.isDataless(file), "\(root.driveName): the fetch left library.json in the cloud")
+            let readBack = DatalessFiles.withoutDownloading { Result { try Data(contentsOf: file) } }
+            switch readBack {
+            case .success(let bytes):
+                XCTAssertEqual(bytes, written, "\(root.driveName): library.json came back changed")
+            case .failure(let error):
+                XCTFail("\(root.driveName): library.json could not be read without downloading after the fetch: \(error)")
+            }
+        }
+    }
+
+    /// A folder holding a small file, evicted so that its listing is only in
+    /// the cloud, is listed by the fetch (`LibraryFileFetcher`), as the
+    /// library's Feeds folder is: afterwards the folder is no longer dataless
+    /// and lists its file with downloading switched off. A drive that can't
+    /// evict a folder fails the step with the reason.
+    func testTheLibraryFetchListsAnEvictedFolder() async throws {
+        await forEachRoot(label: "library-fetch-folder") { root, run in
+            let folder = run.appendingPathComponent("Feeds", isDirectory: true)
+            let file = try Self.writeTextFile(at: folder.appendingPathComponent("record.json"))
+            guard try await CloudDriveWait.until(limit: CloudDriveWait.upload, { areUploaded([file], on: root) }) != nil else {
+                throw CloudDriveStepFailure(reason: "record.json was not reported uploaded, so its folder can't be evicted safely.")
+            }
+            do {
+                try items.removeLocalCopy(of: folder)
+            } catch {
+                throw CloudDriveStepFailure(
+                    reason: "\(root.driveName) refused to remove the local copy of a folder: " + CloudDriveFindings.describe(error)
+                )
+            }
+            guard try await CloudDriveWait.until(limit: CloudDriveWait.removal, { Self.isDataless(folder) }) != nil else {
+                throw CloudDriveStepFailure(
+                    reason: "The Feeds folder was still on this Mac after its removal: \(describeStatuses(of: [folder]))"
+                )
+            }
+
+            try LibraryFileFetcher.fetch(folder)
+
+            XCTAssertFalse(Self.isDataless(folder), "\(root.driveName): the fetch left the folder in the cloud")
+            let names = DatalessFiles.withoutDownloading { try? FileManager.default.contentsOfDirectory(atPath: folder.path) }
+            XCTAssertEqual(names, ["record.json"], "\(root.driveName): the folder's listing did not come back")
+        }
+    }
+
     // MARK: - Remove Download While Uploading (Step 10)
 
     /// A package holding one new 20 MB file, whose download the book service
